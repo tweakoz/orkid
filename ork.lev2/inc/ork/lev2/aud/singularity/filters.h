@@ -14,6 +14,7 @@
 #include <memory>
 #include <stdlib.h>
 #include "krztypes.h"
+#include "delays.h"
 
 namespace ork::audio::singularity {
 
@@ -42,10 +43,22 @@ struct TrapSVF {
   void SetWithQ(eFilterMode m, float center, float Q);
   void SetWithRes(eFilterMode m, float center, float res);
   void SetWithBWoct(eFilterMode m, float center, float bwOct);
-  void Tick(float input);
+  float Tick(float input);
 
 private:
-  void compute(float input);
+  void _compute(float input);
+};
+
+struct SimpleAllpass {
+
+  SimpleAllpass();
+  ~SimpleAllpass();
+  float compute(float input);
+
+  float _feed = 0.99f;
+  float _y0 = 0.0f;
+  delaycontext_ptr_t _delay;
+
 };
 
 struct TrapAllpass {
@@ -115,12 +128,12 @@ struct OnePoleHiPass {
   float lp_outl;
 };
 
-struct SimpleHighPass {
+struct OnePoleHighPass {
     float _xm1 = 0.0f;
     float _ym1 = 0.0f;
     float _alpha = 0.0f;
 
-    inline SimpleHighPass() {
+    inline OnePoleHighPass() {
       set(100,44100);
     }
     inline void set(float fc, float sampleRate) {
@@ -141,4 +154,5 @@ struct SimpleHighPass {
         return output;
     }
 };
+
 } // namespace ork::audio::singularity

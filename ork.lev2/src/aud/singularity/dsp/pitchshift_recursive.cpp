@@ -11,7 +11,11 @@
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::RecursivePitchShifterData, "DspFxPitchShifterRecursive");
+
 namespace ork::audio::singularity {
+
+void RecursivePitchShifterData::describeX(class_t* clazz) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,7 +29,6 @@ RecursivePitchShifterData::RecursivePitchShifterData(std::string name, float fb)
   mix_param->useDefaultEvaluator();
   pitch_param->useDefaultEvaluator();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 dspblk_ptr_t RecursivePitchShifterData::createInstance() const { // override
@@ -37,11 +40,26 @@ dspblk_ptr_t RecursivePitchShifterData::createInstance() const { // override
 RecursivePitchShifter::RecursivePitchShifter(const RecursivePitchShifterData* dbd)
     : DspBlock(dbd) {
   _mydata = dbd;
-  _delayA.setStaticDelayTime(0.5);
-  _delayB.setStaticDelayTime(0.5);
 
-  _delayOuter.setStaticDelayTime(0.25);
+  auto syni = synth::instance();
+  _delayA = syni->allocDelayLine();
+  _delayB = syni->allocDelayLine();
+  _delayC = syni->allocDelayLine();
+  _delayD = syni->allocDelayLine();
+  _delayOuter = syni->allocDelayLine();
 
+  _delayA->setStaticDelayTime(0.5);
+  _delayB->setStaticDelayTime(0.5);
+  _delayOuter->setStaticDelayTime(0.25);
+
+}
+RecursivePitchShifter::~RecursivePitchShifter(){
+  auto syni = synth::instance();
+  syni->freeDelayLine(_delayA);
+  syni->freeDelayLine(_delayB);
+  syni->freeDelayLine(_delayC);
+  syni->freeDelayLine(_delayD);
+  syni->freeDelayLine(_delayOuter);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,10 +128,10 @@ void RecursivePitchShifter::compute(DspBuffer& dspbuf) // final
     float btime  = dbase + dscale * rampb;
     float ctime  = dbase + dscale * rampc;
     float dtime  = dbase + dscale * rampd;
-    _delayA.setStaticDelayTime(atime);
-    _delayB.setStaticDelayTime(btime);
-    _delayC.setStaticDelayTime(ctime);
-    _delayD.setStaticDelayTime(dtime);
+    _delayA->setStaticDelayTime(atime);
+    _delayB->setStaticDelayTime(btime);
+    _delayC->setStaticDelayTime(ctime);
+    _delayD->setStaticDelayTime(dtime);
     _phaseA += phaseinc;
     _phaseB += phaseinc;
     _phaseC += phaseinc;
@@ -124,7 +142,7 @@ void RecursivePitchShifter::compute(DspBuffer& dspbuf) // final
 
     float oinp = ibuf[i];
     float inp  = oinp;
-    float delout = _delayOuter.out(fi);
+    float delout = _delayOuter->out(fi);
     inp        += delout;
 
     inp        = _hipassfilter.compute(inp);
@@ -141,15 +159,15 @@ void RecursivePitchShifter::compute(DspBuffer& dspbuf) // final
     // do fdn4 operation
     /////////////////////////////////////
 
-    float aout = _delayA.out(fi);
-    float bout = _delayB.out(fi);
-    float cout = _delayC.out(fi);
-    float dout = _delayD.out(fi);
+    float aout = _delayA->out(fi);
+    float bout = _delayB->out(fi);
+    float cout = _delayC->out(fi);
+    float dout = _delayD->out(fi);
 
-    _delayA.inp(inp);
-    _delayB.inp(inp);
-    _delayC.inp(inp);
-    _delayD.inp(inp);
+    _delayA->inp(inp);
+    _delayB->inp(inp);
+    _delayC->inp(inp);
+    _delayD->inp(inp);
 
     /////////////////////////////////////
     // output to dsp channels
@@ -160,8 +178,8 @@ void RecursivePitchShifter::compute(DspBuffer& dspbuf) // final
                 cout * maskc + //
                 dout * maskd;
 
-    float final_out = lerp(oinp, out * outgain, mix);
-    _delayOuter.inp(oinp+out*_mydata->_feedback);
+    float final_out = lerp(oinp, oinp + out * outgain, mix);
+    _delayOuter->inp(oinp+out*_mydata->_feedback);
 
     obuf[i] = final_out;
   }

@@ -5,9 +5,11 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <ork/kernel/opq.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 
 namespace ork::audio::singularity {
 
@@ -46,16 +48,16 @@ void TrapSVF::Clear() {
 // double oversample for higher center
 
 void TrapSVF::SetWithQ(eFilterMode mode, float center, float Q) {
-  const float FCMAX = OSR / 6.0f; // with oversampling
+  const float FCMAX = OSR / 3.0f; // with oversampling
   center            = clip_float(center, 30, FCMAX);
 
   // Q = fc/dF
   // fc = Q*dF
   // dF=fc/Q
-  float dF = center / Q;
-  // printf( "svf<%p> center<%f> Q<%f> dF<%f>\n", this, center, Q, dF );
-  // Q = clip_float(Q,0.0025,100);
   Q = clip_float(Q, 0.0125, 18);
+  float dF = center / Q;
+  //printf( "svf<%p> center<%f> Q<%f> dF<%f>\n", this, center, Q, dF );
+  // Q = clip_float(Q,0.0025,100);
 
   // printf( "center<%f> Q<%f> OSR<%f>\n", center, Q, OSR );
 
@@ -117,7 +119,7 @@ void TrapSVF::SetWithBWoct(eFilterMode mode, float center, float bwOct) {
   SetWithQ(mode, center, Q);
 }
 
-void TrapSVF::compute(float input) {
+void TrapSVF::_compute(float input) {
   v0     = input;
   v3     = v0 - ic2eq;
   v1     = a1 * ic1eq + a2 * v3;
@@ -127,9 +129,10 @@ void TrapSVF::compute(float input) {
   output = m0 * v0 + m1 * v1 + m2 * v2;
 }
 
-void TrapSVF::Tick(float input) {
-  compute(input);
-  compute(input);
+float TrapSVF::Tick(float input) {
+  _compute(input);
+  _compute(input);
+  return output;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -367,15 +370,18 @@ void OnePoleLoPass::init() {
 }
 
 void OnePoleLoPass::set(float cutoff) {
-  cutoff       = clip_float(cutoff, 10, 20000);
-  float lp_cut = pi2 * cutoff;
-  float lp_n   = 1.0f / (lp_cut + 3.0f * SR);
-  lp_b1        = (3 * SR - lp_cut) * lp_n;
-  lp_a0        = lp_cut * lp_n;
+ cutoff = clip_float(cutoff, 10, 20000);  // Clip the cutoff frequency within a valid range
+
+  const float SR = getSampleRate();        // Assuming getSampleRate() correctly retrieves the current sample rate
+  float thetaC = pi2 * cutoff / SR;        // Normalized cutoff frequency (radians/sample)
+  float gamma = cos(thetaC) / (1 + sin(thetaC));  // Intermediate calculation for coefficient
+
+  lp_a0 = 1 - gamma;  // Coefficient for the current input
+  lp_b1 = gamma;      // Coefficient for the previous output
 }
 float OnePoleLoPass::compute(float input) {
-  lp_outl = 2.0f * input * lp_a0 + lp_outl * lp_b1;
-  return lp_outl;
+  lp_outl = input * lp_a0 + lp_outl * lp_b1;  // Low-pass filter equation
+  return input; //lp_outl;
 }
 //=================================================
 void OnePoleHiPass::init() {
@@ -393,8 +399,75 @@ void OnePoleHiPass::set(float cutoff) {
 }
 float OnePoleHiPass::compute(float input) {
   lp_outl = 2.0f * input * lp_a0 + lp_outl * lp_b1;
-
   return (input - lp_outl);
 }
+//////////////////////////////////////////////////////////
+ParallelLowPass::ParallelLowPass(){
+  for( int j=0; j<8; j++ ){
+    _filter[j].Clear();
+    _filter[j].SetWithQ(EM_LPF,10000,0.5f);
+    _biquads[j].Clear();
+    _biquads[j].SetLowShelf(10000,0);
+  }
+}
+vec8f ParallelLowPass::compute(const vec8f& input){
+  vec8f rval;
+  for( int j=0; j<8; j++ ){
+    float inp = input._elements[j];
+    //float output = _filter[j].Tick(inp);
+    float output = _biquads[j].compute(inp);
+    rval._elements[j] = output;
+  }
+  return rval;
+}
+void ParallelLowPass::set(float cutoff){
+  for( int j=0; j<8; j++ ){
+    _filter[j].SetWithQ(EM_LPF,cutoff,0.05f);
+    _biquads[j].SetLpf(cutoff);
+  }
+}
+//////////////////////////////////////////////////////////
+ParallelHighPass::ParallelHighPass(){
+  for( int j=0; j<8; j++ ){
+    _filter[j].clear();
+    _filter[j].set(60,getSampleRate());
+    _biquads[j].Clear();
+    _biquads[j].SetLowShelf(10000,0);
+  }
+}
+vec8f ParallelHighPass::compute(const vec8f& input){
+  vec8f rval;
+  for( int j=0; j<8; j++ ){
+    float inp = input._elements[j];
+    //float output = _filter[j].compute(inp);
+    float output = _biquads[j].compute(inp);
+    rval._elements[j] = output;
+  }
+  return rval;
+}
+void ParallelHighPass::set(float cutoff){
+  for( int j=0; j<8; j++ ){
+    _filter[j].clear();
+    _filter[j].set(cutoff,getSampleRate());
+    _biquads[j].SetHpf(cutoff);
+  }
+}
 
+//////////////////////////////////////////////////////////
+
+SimpleAllpass::SimpleAllpass(){
+  _delay = synth::instance()->allocDelayLine();
+  _delay->setStaticDelayTime(0.003);
+}
+SimpleAllpass::~SimpleAllpass(){
+  synth::instance()->freeDelayLine(_delay);
+}
+float SimpleAllpass::compute(float input){
+  float output  = input*(-_feed)+_delay->out(0.0f);
+  _delay->inp(input+output*_feed);
+  return output;
+}
+
+
+//////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-//#include <audiofile.h>
+#include <sndfile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -15,18 +15,36 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::SAMPLER_DATA, "DspSampler");
+ImplementReflectionX(ork::audio::singularity::KmRegionData, "SynKmRegionData");
+ImplementReflectionX(ork::audio::singularity::KeyMapData, "SynKeyMapData");
+ImplementReflectionX(ork::audio::singularity::SampleData, "SynSampleData");
+ImplementReflectionX(ork::audio::singularity::MultiSampleData, "SynMultiSampleData");
 
 namespace ork::audio::singularity {
+
+void SAMPLER_DATA::describeX(class_t* clazz) {
+}
+void KmRegionData::describeX(class_t* clazz) {
+}
+void KeyMapData::describeX(class_t* clazz) {
+}
+void SampleData::describeX(class_t* clazz) {
+}
+void MultiSampleData::describeX(class_t* clazz) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 kmpblockdata_ptr_t KmpBlockData::clone() const {
-  auto rval = std::make_shared<KmpBlockData>();
-  rval->_transpose = _transpose;
+  auto rval          = std::make_shared<KmpBlockData>();
+  rval->_transpose   = _transpose;
   rval->_timbreShift = _timbreShift;
-  rval->_keyTrack = _keyTrack;
-  rval->_velTrack = _velTrack;
-  if(_keymap){
+  rval->_keyTrack    = _keyTrack;
+  rval->_velTrack    = _velTrack;
+  if (_keymap) {
     rval->_keymap = _keymap->clone();
   }
   rval->_pbMode = _pbMode;
@@ -35,7 +53,7 @@ kmpblockdata_ptr_t KmpBlockData::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-kmregion* KeyMap::getRegion(int note, int vel) const {
+kmregion_ptr_t KeyMapData::getRegion(int note, int vel) const {
   int k2vel = vel / 18; // map 0..127 -> 0..7
 
   for (auto r : _regions) {
@@ -54,34 +72,34 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
   return nullptr;
 }
 
-kmregion* kmregion::clone() const{
-  auto rval = new kmregion;
-  rval->_lokey = _lokey;
-  rval->_hikey = _hikey;
-  rval->_lovel = _lovel;
-  rval->_hivel = _hivel;
-  rval->_tuning = _tuning;
-  rval->_linGain = _linGain;
+kmregion_ptr_t KmRegionData::clone() const {
+  auto rval               = std::make_shared<KmRegionData>();
+  rval->_lokey            = _lokey;
+  rval->_hikey            = _hikey;
+  rval->_lovel            = _lovel;
+  rval->_hivel            = _hivel;
+  rval->_tuning           = _tuning;
+  rval->_linGain          = _linGain;
   rval->_loopModeOverride = _loopModeOverride;
-  rval->_sample = _sample;
-  rval->_multiSample = _multiSample;
-  rval->_sampID = _sampID;
-  rval->_multsampID = _multsampID;
-  rval->_volAdj = _volAdj;
-  rval->_sampleName = _sampleName;
+  rval->_sample           = _sample;
+  rval->_multiSample      = _multiSample;
+  rval->_sampID           = _sampID;
+  rval->_multsampID       = _multsampID;
+  rval->_volAdj           = _volAdj;
+  rval->_sampleName       = _sampleName;
 
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_ptr_t KeyMap::clone() const {
-  auto rval = std::make_shared<KeyMap>();
+keymap_ptr_t KeyMapData::clone() const {
+  auto rval = std::make_shared<KeyMapData>();
   for (auto r : _regions) {
     auto rclone = r->clone();
     rval->_regions.push_back(rclone);
   }
-  return rval;  
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,7 +107,8 @@ keymap_ptr_t KeyMap::clone() const {
 SAMPLER_DATA::SAMPLER_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAMPLER";
-  //addParam("pch")->usePitchEvaluator();
+  _lowpassfrq = 14000.0f;
+  // addParam("pch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SAMPLER_DATA::createInstance() const { // override
@@ -99,29 +118,29 @@ dspblk_ptr_t SAMPLER_DATA::createInstance() const { // override
 ///////////////////////////////////////////////////////////////////////////////
 
 SAMPLER::SAMPLER(const DspBlockData* dbd)
-  : DspBlock(dbd) {
-    auto sampler_data = dynamic_cast<const SAMPLER_DATA*>(dbd);
-    _spOsc = new sampleOsc(sampler_data);
+    : DspBlock(dbd) {
+  auto sampler_data = dynamic_cast<const SAMPLER_DATA*>(dbd);
+  _spOsc            = new SampleOscillator(sampler_data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SAMPLER::doKeyOn(const KeyOnInfo& koi) { // final
-  //NatEnvWrapperInst
+  // NatEnvWrapperInst
   auto L = koi._layer;
   auto A = L->_alg;
   auto S = A->_stageblock._stages[0];
   auto C = L->_ctrlBlock;
   OrkAssert(C);
   NatEnvWrapperInst* nat = nullptr;
-  for( auto ci : C->_cinst ){
+  for (auto ci : C->_cinst) {
     auto as_nat = dynamic_cast<NatEnvWrapperInst*>(ci);
-    if(as_nat){
+    if (as_nat) {
       nat = as_nat;
       break;
     }
   }
-  if(nat){
+  if (nat) {
     _spOsc->_natenvwrapperinst = nat;
   }
   _spOsc->keyOn(koi);
@@ -186,248 +205,84 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sample::sample()
+SampleData::SampleData()
     : _sampleBlock(nullptr)
     , _blk_start(0)
     , _blk_alt(0)
     , _blk_loopstart(0)
     , _blk_loopend(0)
-    , _blk_end(0) 
+    , _blk_end(0)
     , _loopPoint(0)
     , _subid(0)
     , _sampleRate(0.0f)
     , _linGain(1.0f)
     , _rootKey(0)
-    , _highestPitch(0) 
+    , _highestPitch(0)
     , _loopMode(eLoopMode::NOTSET) {
+      _interpMethod = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-void sample::load(const std::string& fname)
-{
-    printf( "loading sample<%s>\n", fname.c_str() );
 
-    auto af_file = afOpenFile(fname.c_str(), "r", nullptr);
+void SampleData::loadFromAudioFile(const std::string& fname) {
+    printf("loading sample<%s>\n", fname.c_str());
 
-
-    _numFrames = afGetFrameCount(af_file, AF_DEFAULT_TRACK);
-    float frameSize = afGetVirtualFrameSize(af_file, AF_DEFAULT_TRACK, 1);
-    int channelCount = afGetVirtualChannels(af_file, AF_DEFAULT_TRACK);
-    _sampleRate = afGetRate(af_file, AF_DEFAULT_TRACK);
-
-    int sampleFormat, sampleWidth;
-
-    afGetVirtualSampleFormat(af_file, AF_DEFAULT_TRACK, &sampleFormat,
-        &sampleWidth);
-
-    int numbytes = _numFrames*frameSize;
-
-    printf( "frameCount<%d>\n", _numFrames );
-    printf( "frameSize<%f>\n", frameSize );
-    printf( "numbytes<%d>\n", numbytes );
-
-
-    auto buffer = malloc(numbytes);
-    int count = afReadFrames(af_file, AF_DEFAULT_TRACK, buffer, _numFrames);
-    printf( "readcount<%d>\n", count );
-
-    _data = (s16*) buffer;
-
-    ////////////////////////////
-    // get loop
-    ////////////////////////////
-
-    int numloopids = afGetLoopIDs(af_file, AF_DEFAULT_INST, NULL);
-    printf( "numloopids<%d>\n", numloopids );
-
-    auto loopids = new int[numloopids];
-    afGetLoopIDs(af_file, AF_DEFAULT_INST, loopids);
-    for (int i=0; i<numloopids; i++)
-        printf( "loopid<%d> : %d\n", i, loopids[i] );
-
-    int nummkrids = afGetMarkIDs(af_file, AF_DEFAULT_TRACK, NULL);
-    printf( "nummkrids<%d>\n", nummkrids );
-    auto mkrids = new int[nummkrids];
-    afGetMarkIDs(af_file, AF_DEFAULT_TRACK, mkrids);
-    for (int i=0; i<nummkrids; i++)
-    {
-        const char* mkrname = afGetMarkName(af_file, AF_DEFAULT_TRACK, mkrids[i]);
-        auto mkrpos = afGetMarkPosition(af_file, AF_DEFAULT_TRACK, mkrids[i]);
-
-        printf( "mkrid<%d> : %d : pos<%d> name<%s>\n", i, mkrids[i], int(mkrpos), mkrname );
+    // Open the sound file
+    SF_INFO sfinfo;
+    SNDFILE *sf_file = sf_open(fname.c_str(), SFM_READ, &sfinfo);
+    if (sf_file == nullptr) {
+        printf("Error opening file\n");
+        return; // Early return on error
     }
 
-    int lpa_startMKR = afGetLoopStart(af_file, AF_DEFAULT_INST, 1);
-    int lpa_endMKR = afGetLoopEnd(af_file, AF_DEFAULT_INST, 1);
+    // Initialize variables based on the sound file info
+    _blk_start = 0;
+    _blk_end = sfinfo.frames;
+    int channelCount = sfinfo.channels;
+    _sampleRate = sfinfo.samplerate;
 
-    printf( "loopa_markers start<%d> end<%d>\n", lpa_startMKR,lpa_endMKR );
+    float highestPitch = _originalPitch * 48000.0f / _sampleRate;
+    float highestPitchN = frequency_to_midi_note(highestPitch); // Assuming this function is defined elsewhere
+    float highestPitchCents = static_cast<int>(highestPitchN * 100.0f) + 1.0f;
+    _highestPitch = static_cast<int>(highestPitchCents);
 
-    auto lptrack1 = afGetLoopTrack(af_file, AF_DEFAULT_INST, 1);
+    // Calculate the number of samples to read (frames * channels)
+    int numSamples = static_cast<int>(_blk_end * channelCount);
+    printf("frameCount<%lld>\n", _blk_end);
+    printf("channelCount<%d>\n", channelCount);
+    printf("numSamples<%d>\n", numSamples);
+    printf("sampleRate<%f>\n", _sampleRate);
 
-    int lpstartfr = afGetLoopStartFrame(af_file, AF_DEFAULT_INST, 1);
-    int lpendfr = afGetLoopEndFrame(af_file, AF_DEFAULT_INST, 1);
+    // Read the samples from the file
+    std::vector<float> fbuf(numSamples); // Assuming float format for simplicity
+    int readcount = sf_readf_float(sf_file, fbuf.data(), _blk_end);
+    printf("readCount<%d>\n", readcount);
 
-    _loopPoint = lpstartfr;
+    // No need to manually convert formats, libsndfile handles conversion
 
-    printf( "loopa_frames start<%d> end<%d>\n", lpstartfr,lpendfr );
+    // Normalization and bias correction
+    float _min = *std::min_element(fbuf.begin(), fbuf.end());
+    float _max = *std::max_element(fbuf.begin(), fbuf.end());
+    printf("_min<%g> _max<%g>\n", _min, _max);
 
-    afCloseFile(af_file);
+    float frange = _max - _min;
+    float fbias = (_max + _min) * 0.5f;
+    for (auto& F : fbuf) {
+        F -= fbias;
+        F /= (frange * 0.5f);
+    }
+    printf("frange<%f> fbias<%f>\n", frange, fbias);
 
-}*/
+    // Assuming WaveformData and _user are defined and initialized elsewhere
+    auto& waveformOUT = _user.make<WaveformData>();
+    waveformOUT._sampledata.resize(_blk_end * channelCount); // Assuming 16-bit output, correct size calculation needed
+    for (int i = 0; i < _blk_end * channelCount; i++) {
+        waveformOUT._sampledata[i] = static_cast<int16_t>(fbuf[i] * 32767.0f);
+    }
+    _sampleBlock = waveformOUT._sampledata.data();
 
-///////////////////////////////////////////////////////////////////////////////
-
-sampleOsc::sampleOsc(const SAMPLER_DATA* data)
-    : _sampler_data(data)
-    , _lyr(nullptr)
-    , _active(false)
-    , _pbindex(0.0f)
-    , _pbindexNext(0.0f)
-    , _pbincrem(0.0f)
-    , _curratio(1.0f)
-    , _loopMode(eLoopMode::NONE)
-    , _loopCounter(0) {
-
-    _natAmpEnv = std::make_shared<NatEnv>();
-}
-
-void sampleOsc::setSrRatio(float pbratio) {
-  _curratio = pbratio;
-  auto sample = _regionsearch._sample;
-  if (sample) {
-    _playbackRate = sample->_sampleRate * _curratio;
-    _pbincrem     = (_dt * _playbackRate * 65536.0f);
-  } else {
-    _playbackRate = 0.0f;
-    _pbincrem     = 0.0f;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void sampleOsc::keyOn(const KeyOnInfo& koi) {
-  int note = koi._key;
-
-  _lyr = koi._layer;
-  OrkAssert(_lyr);
-
-  _regionsearch = _sampler_data->findRegion(_lyr->_layerdata, koi);
-  _curcents = _regionsearch._baseCents;
-  updateFreqRatio();
-  auto& HKF = _lyr->_HKF;
-  HKF._kmregion = _regionsearch._kmregion;
-
-  float pbratio = this->_curSampSRratio;
-
-  pbratio *= 0.5f;
-
-  lyrdata_constptr_t ld = _lyr->_layerdata;
-
-  auto sample = _regionsearch._sample;
-
-  if (nullptr == sample) {
-    printf("sampleOsc no sample!\n");
-    return;
-  }
-
-  OrkAssert(sample);
-
-  _blk_start     = int64_t(sample->_blk_start) << 16;
-  _blk_alt       = int64_t(sample->_blk_alt) << 16;
-  _blk_loopstart = int64_t(sample->_blk_loopstart) << 16;
-  _blk_loopend   = int64_t(sample->_blk_loopend) << 16;
-  _blk_end       = int64_t(sample->_blk_end) << 16;
-
-  _pbindex     = _blk_start;
-  _pbindexNext = _blk_start;
-
-  _pbincrem = 0;
-  _dt       = synth::instance()->_dt;
-
-  _loopMode = sample->_loopMode;
-
-  switch (_loopMode) {
-    case eLoopMode::BIDIR:
-      _pbFunc = &sampleOsc::playLoopBid;
-      break;
-    case eLoopMode::FWD:
-      _pbFunc = &sampleOsc::playLoopFwd;
-      break;
-    case eLoopMode::NONE:
-      _pbFunc = &sampleOsc::playNoLoop;
-      break;
-    case eLoopMode::FROMKM:
-      _pbFunc = nullptr;
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-  switch (_regionsearch._kmregion->_loopModeOverride) {
-    case eLoopMode::BIDIR:
-      _pbFunc = &sampleOsc::playLoopBid;
-      break;
-    case eLoopMode::FWD:
-      _pbFunc = &sampleOsc::playLoopFwd;
-      break;
-    case eLoopMode::NONE:
-      _pbFunc = &sampleOsc::playNoLoop;
-      break;
-    case eLoopMode::NOTSET:
-      if (_pbFunc == nullptr)
-        _pbFunc = &sampleOsc::playNoLoop;
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-  // printf( "LOOPMODE<%d>\n", int(_loopMode));
-  // printf( "LOOPMODEOV<%d>\n", int(_kmregion->_loopModeOverride));
-
-  _synsr = getSampleRate();
-
-  /*04-05 Pitch at Highest Playback Rate: unsigned word (affected by
-         change in Root Key Number and Pitch Adjust) -- value is
-         some kind of computed highest pitch plus Pitch Adjust
-         entered on Sample Editor MISC page: value in cents*/
-
-  setSrRatio(pbratio);
-
-  // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
-  // _curratio, int(_playbackRate), int(_isLooped) );
-  //printf("sample<%s>\n", sample->_name.c_str());
-  //printf("sampleBlock<%p>\n", (void*) sample->_sampleBlock);
-  //printf("st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
-  //printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
-  _active = true;
-
-  _forwarddir = true;
-
-  _loopCounter = 0;
-  _released    = false;
-
-  _enableNatEnv = ld->_usenatenv;
-
-  //printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
-
-  if (_enableNatEnv) {
-    // probably should explicity create a NatEnv controller
-    //  and bind it to AMP
-    //_lyr->_AENV = _NATENV;
-    _natAmpEnv->keyOn(koi, sample);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void sampleOsc::keyOff() {
-
-  _released = true;
-  printf("osc<%p> beginRelease\n", (void*) this);
-
-  if (_enableNatEnv)
-    _natAmpEnv->keyOff();
+    printf("closing..\n");
+    sf_close(sf_file);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -445,8 +300,9 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
   /////////////////////////////////////////////
 
   auto km = ld->_keymap;
-  if (nullptr == km){
+  if (nullptr == km) {
     RegionSearch not_found;
+    printf("no keymap!\n");
     return not_found;
   }
 
@@ -476,16 +332,16 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
   int pchdeltacents = pchdeltakey * pchkeytrack;        // 0*0=0
   int pchfinalcents = (pchtrans * 100) + pchdeltacents; // 0*100+0=0
 
-  auto region = km->getRegion(RFOUND._sampselnote, 64);
+  auto region      = km->getRegion(RFOUND._sampselnote, 64);
   RFOUND._kmregion = region;
 
   if (region) {
     ///////////////////////////////////////
-    auto sample  = region->_sample;
-    float sampsr = sample->_sampleRate;
-    int highestP = sample->_highestPitch;
-    RFOUND._sampleRoot  = sample->_rootKey;
-    RFOUND._keydiff     = note - RFOUND._sampleRoot;
+    auto sample        = region->_sample;
+    float sampsr       = sample->_sampleRate;
+    int highestP       = sample->_highestPitch;
+    RFOUND._sampleRoot = sample->_rootKey;
+    RFOUND._keydiff    = note - RFOUND._sampleRoot;
     ///////////////////////////////////////
 
     RFOUND._kmcents  = kmfinalcents + region->_tuning;
@@ -493,66 +349,253 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
 
     ///////////////////////////////////////
 
-    float SRratio = 96000.0f / sampsr;
-    int RKcents   = (RFOUND._sampleRoot)*100;
-    int delcents  = highestP - RKcents;
-    int frqerc    = linear_freq_ratio_to_cents(SRratio);
-    int pitchadjx = (frqerc - delcents);  //+1200;
-    int pitchadj  = sample->_pitchAdjust; //+1200;
+    // float SRratio = synth::instance()->sampleRate() / sampsr;
+    float SRratio       = 96000.0f / sampsr;
+    int RKcents         = (RFOUND._sampleRoot) * 100;
+    int delcents        = highestP - RKcents;
+    int frqerc          = linear_freq_ratio_to_cents(SRratio);
+    int pitchadjx_cents = (frqerc - delcents);
+    int pitchadj_cents  = sample->_pitchAdjust;
 
     // if( SRratio<3.0f )
     //    pitchadj >>=1;
-    // printf( "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadjx<%d>\n", sampsr, SRratio, RKcents, highestP,
-    // delcents, frqerc, pitchadjx );
 
-    RFOUND._curpitchadj  = pitchadj;
-    RFOUND._curpitchadjx = pitchadjx;
+    RFOUND._curpitchadj  = pitchadj_cents;
+    RFOUND._curpitchadjx = pitchadjx_cents;
 
-    RFOUND._baseCents = RFOUND._kmcents + /*_pchcents*/ +pitchadjx - 1200;
-    //_basecentsOSC = 6000;//(note-0)*100;//pitchadjx-1200;
-    if (pitchadj) {
-      RFOUND._baseCents = RFOUND._kmcents + /*_pchcents*/ +pitchadj;
-      //_basecentsOSC = _pchcents+pitchadj;
+    RFOUND._baseCents = RFOUND._kmcents + pitchadjx_cents;
+    RFOUND._baseCents -= 1200.0f;
+
+    //_basecentsOSC = 6000;//(note-0)*100;//pitchadjx_cents-1200;
+    if (pitchadj_cents) {
+      RFOUND._baseCents = RFOUND._kmcents + pitchadjx_cents + pitchadj_cents;
+      //_basecentsOSC = _pchcents+pitchadj ;
     }
+    printf(
+        "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadj<%d> pitchadjx<%d> bascents<%g>\n",
+        sampsr,
+        SRratio,
+        RKcents,
+        highestP,
+        delcents,
+        frqerc,
+        pitchadj_cents,
+        pitchadjx_cents,
+        RFOUND._baseCents);
+
+    // sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852>
+    // bascents<-9752> pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0>
+    // totcents<0.000000> rat<1.000000>
+
+    // sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852>
+    // bascents<-9752> pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0>
+    // totcents<0.000000> rat<1.000000>
 
     // float outputPAD = decibel_to_linear_amp_ratio(F4._inputPad);
     // float ampCOARSE = decibel_to_linear_amp_ratio(F4._coarse);
 
     //_totalGain = sample->_linGain* region->_linGain; // * _layerGain * outputPAD * ampCOARSE;
 
-    RFOUND._preDSPGAIN = sample->_linGain * region->_linGain;
+    RFOUND._preDSPGAIN = sample->_linGain * region->_linGain * 4.0;
 
     ///////////////////////////////////////
     //  trigger sample playback oscillator
     ///////////////////////////////////////
 
     RFOUND._sample = sample;
-    //_spOsc->keyOn(_curSampSRratio);
+    // printf("region found<%s> root<%d> keydiff<%d> cents<%f> preDSPGAIN<%f>\n", region->_sampleName.c_str(), RFOUND._sampleRoot,
+    // RFOUND._keydiff, RFOUND._baseCents, RFOUND._preDSPGAIN); _spOsc->keyOn(_curSampSRratio);
+  } else {
+    printf("no region found\n");
   }
   return RFOUND;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void sampleOsc::updateFreqRatio() {
-  int cents_at_root = (_regionsearch._sampleRoot * 100);
-  int delta_cents   = _curcents - cents_at_root;
-  _samppbnote = _regionsearch._sampleRoot + (delta_cents / 100);
-  _curSampSRratio = cents_to_linear_freq_ratio(delta_cents);
+SampleOscillator::SampleOscillator(const SAMPLER_DATA* data)
+    : _sampler_data(data)
+    , _lyr(nullptr)
+    , _active(false)
+    , _pbindex(0.0f)
+    , _pbindexNext(0.0f)
+    , _pbincrem(0.0f)
+    , _curratio(1.0f)
+    , _loopMode(eLoopMode::NONE)
+    , _loopCounter(0)
+    , _lpFilter(8) {
+
+  _lpFilter2A.set(2000.0f);
+  _lpFilter2B.set(2000.0f);
+  for( int i=0; i<4; i++ ){
+    _bq[i].Clear();
+    _bq[i].SetLpf(data->_lowpassfrq);
+  }
+
+  _natAmpEnv = std::make_shared<NatEnv>();
+}
+
+void SampleOscillator::setSrRatio(float pbratio) {
+  _curratio   = pbratio;
+  auto sample = _regionsearch._sample;
+  if (sample) {
+    _playbackRate = sample->_sampleRate * _curratio;
+    _pbincrem     = (_dt * _playbackRate * 65536.0f);
+  } else {
+    _playbackRate = 0.0f;
+    _pbincrem     = 0.0f;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void sampleOsc::compute(int inumfr) {
+void SampleOscillator::keyOn(const KeyOnInfo& koi) {
+  int note = koi._key;
+
+  _lyr = koi._layer;
+  OrkAssert(_lyr);
+
+  _regionsearch = _sampler_data->findRegion(_lyr->_layerdata, koi);
+  _curcents     = _regionsearch._baseCents;
+  updateFreqRatio();
+  auto& HKF     = _lyr->_HKF;
+  HKF._kmregion = _regionsearch._kmregion;
+
+  float pbratio = this->_curSampSRratio;
+
+  pbratio *= 0.5f;
+
+  lyrdata_constptr_t ld = _lyr->_layerdata;
+
+  auto sample = _regionsearch._sample;
+
+  if (nullptr == sample) {
+    printf("SampleOscillator no sample!\n");
+    return;
+  }
+
+  OrkAssert(sample);
+
+  _blk_start     = int64_t(sample->_blk_start) << 16;
+  _blk_alt       = int64_t(sample->_blk_alt) << 16;
+  _blk_loopstart = int64_t(sample->_blk_loopstart) << 16;
+  _blk_loopend   = int64_t(sample->_blk_loopend) << 16;
+  _blk_end       = int64_t(sample->_blk_end) << 16;
+
+  _pbindex     = _blk_start;
+  _pbindexNext = _blk_start;
+
+  _pbincrem = 0;
+  _dt       = synth::instance()->_dt;
+
+  _loopMode = sample->_loopMode;
+
+  switch (_loopMode) {
+    case eLoopMode::BIDIR:
+      _pbFunc = &SampleOscillator::playLoopBid;
+      break;
+    case eLoopMode::FWD:
+      _pbFunc = &SampleOscillator::playLoopFwd;
+      break;
+    case eLoopMode::NONE:
+      _pbFunc = &SampleOscillator::playNoLoop;
+      break;
+    case eLoopMode::FROMKM:
+      _pbFunc = nullptr;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  switch (_regionsearch._kmregion->_loopModeOverride) {
+    case eLoopMode::BIDIR:
+      _pbFunc = &SampleOscillator::playLoopBid;
+      break;
+    case eLoopMode::FWD:
+      _pbFunc = &SampleOscillator::playLoopFwd;
+      break;
+    case eLoopMode::NONE:
+      _pbFunc = &SampleOscillator::playNoLoop;
+      break;
+    case eLoopMode::NOTSET:
+      if (_pbFunc == nullptr)
+        _pbFunc = &SampleOscillator::playNoLoop;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  // printf( "LOOPMODE<%d>\n", int(_loopMode));
+  // printf( "LOOPMODEOV<%d>\n", int(_kmregion->_loopModeOverride));
+
+  _synsr = getSampleRate();
+
+  /*04-05 Pitch at Highest Playback Rate: unsigned word (affected by
+         change in Root Key Number and Pitch Adjust) -- value is
+         some kind of computed highest pitch plus Pitch Adjust
+         entered on Sample Editor MISC page: value in cents*/
+
+  setSrRatio(pbratio);
+
+  // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
+  // _curratio, int(_playbackRate), int(_isLooped) );
+  // printf("sample<%s>\n", sample->_name.c_str());
+  // printf("sampleBlock<%p>\n", (void*) sample->_sampleBlock);
+  // printf("st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
+  // printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
+  _active = true;
+
+  _forwarddir = true;
+
+  _loopCounter = 0;
+  _released    = false;
+
+  _enableNatEnv = ld->_usenatenv;
+
+  // printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
+
+  if (_enableNatEnv) {
+    // probably should explicity create a NatEnv controller
+    //  and bind it to AMP
+    //_lyr->_AENV = _NATENV;
+    _natAmpEnv->keyOn(koi, sample);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SampleOscillator::keyOff() {
+
+  _released = true;
+  // printf("osc<%p> beginRelease\n", (void*) this);
+
+  if (_enableNatEnv)
+    _natAmpEnv->keyOff();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SampleOscillator::updateFreqRatio() {
+  int cents_at_root = (_regionsearch._sampleRoot * 100);
+  int delta_cents   = _curcents - cents_at_root;
+  _samppbnote       = _regionsearch._sampleRoot + (delta_cents / 100);
+  _curSampSRratio   = cents_to_linear_freq_ratio(delta_cents);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SampleOscillator::compute(int inumfr) {
 
   _curcents = _regionsearch._baseCents //
-            + _lyr->_curPitchOffsetInCents;
+              + _lyr->_curPitchOffsetInCents;
   _curcents = clip_float(_curcents, -0, 12700);
 
-  if(0)printf( "_baseCents<%f> offs<%f> _curcents<%d>\n", //
-      		 _regionsearch._baseCents, //
-           _lyr->_curPitchOffsetInCents, //
-           _curcents );
+  if (0)
+    printf(
+        "_baseCents<%f> offs<%f> _curcents<%d>\n", //
+        _regionsearch._baseCents,                  //
+        _lyr->_curPitchOffsetInCents,              //
+        _curcents);
 
   if (false == _active) {
     for (int i = 0; i < inumfr; i++) {
@@ -582,9 +625,9 @@ void sampleOsc::compute(int inumfr) {
 
     float sampleval = _pbFunc ? (this->*_pbFunc)() : 0.0f;
 
-    if(_pbFunc){
-      //printf("sampleval<%g>\n", sampleval);
-    }else{
+    if (_pbFunc) {
+      // printf("sampleval<%g>\n", sampleval);
+    } else {
       printf("sampleval no_pbFunc\n");
     }
     // float sampleval = std::invoke(this, _pbFunc);
@@ -592,21 +635,19 @@ void sampleOsc::compute(int inumfr) {
     _OUTPUT[i] = sampleval;
 
     float natval = _natAmpEnv->compute();
-    _NATENV[i] = natval;
-    
+    _NATENV[i]   = natval;
 
-    if(_natenvwrapperinst){
-      _lyr->_ampenvgain = 0.0f; //natval;
+    if (_natenvwrapperinst) {
+      _lyr->_ampenvgain = 0.0f; // natval;
       _OUTPUT[i] *= natval;
       _natenvwrapperinst->_value.x = natval;
     }
-
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float sampleOsc::playNoLoop() {
+float SampleOscillator::playNoLoop() {
   _pbindexNext = _pbindex + _pbincrem;
 
   auto sample = _regionsearch._sample;
@@ -631,25 +672,34 @@ float sampleOsc::playNoLoop() {
 
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
+  float sampA_filtered = _lpFilter2A.compute(sampA);
+  float sampB_filtered = _lpFilter2B.compute(sampB);
   float samp  = (sampB * fract + sampA * invfr) * kinv32k;
-
+  //printf("fract<%g> sampA<%g> sampB<%g> samp<%g>\n", fract, sampA_filtered, sampB_filtered, samp);
   ///////////////
 
   _pbindex = _pbindexNext;
 
-  return samp;
+  return _bq[3].compute(
+          _bq[2].compute(
+              _bq[1].compute(
+                  _bq[0].compute(samp))));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float sampleOsc::playLoopFwd() {
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+float SampleOscillator::playLoopFwd() {
   _pbindexNext = _pbindex + _pbincrem;
-  auto sample = _regionsearch._sample;
+  auto sample  = _regionsearch._sample;
 
   bool did_loop = false;
 
   if ((_pbindexNext >> 16) > (_blk_loopend >> 16)) {
-     //printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
+    // printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
 
     int64_t over = (_pbindexNext - _blk_loopend) - (1 << 16);
     _pbindexNext = _blk_loopstart + over;
@@ -672,46 +722,72 @@ float sampleOsc::playLoopFwd() {
 
   // printf( "iia<%d> lpstart<%d> lpend<%d>\n", iiA,int(_blk_loop>>16),int(_blk_end>>16));
 
-  ///////////////
-  // linear
+  float samp = 0.0f;
+
   auto sblk = sample->_sampleBlock;
   OrkAssert(sblk != nullptr);
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
-  float samp  = (sampB * fract + sampA * invfr) * kinv32k;
-  ///////////////
-  //printf("iiA<%zd> iiB<%zd> sampA<%g> sampB<%g> samp<%g>\n", iiA, iiB, sampA, sampB, samp);
-  ///////////////
-  // cosine
-  // float mu2 = (1.0f-cos(fract*pi))*0.5f;
-  // float samp = (sampA*(1.0f-mu2)+sampB*mu2)*kinv32k;
-  ///////////////
+  float sampA_filtered = _lpFilter.process(sampA);
+  float sampB_filtered = _lpFilter.process(sampB);
 
+  switch (sample->_interpMethod) {
+    case 0: {
+      ///////////////
+      // linear
+      ///////////////
+      samp = (sampB * fract + sampA * invfr) * kinv32k;
+      break;
+    }
+    case 1: {
+      ///////////////
+      // cosine
+      ///////////////
+      float mu2 = (1.0f - cos(fract * pi)) * 0.5f;
+      samp      = (sampA * (1.0f - mu2) + sampB * mu2) * kinv32k;
+      break;
+    }
+    case 2: {
+      ///////////////
+      // cubic
+      ///////////////
+      int64_t iiC = iiB + 1;
+      if (iiC > (_blk_loopend >> 16))
+        iiC = (_blk_loopstart >> 16);
+      int64_t iiD = iiC + 1;
+      if (iiD > (_blk_loopend >> 16))
+        iiD = (_blk_loopstart >> 16);
+      //float sampC = float(sblk[iiC]);
+      //float sampD = float(sblk[iiD]);
+      float sampC_filtered = _lpFilter.process(float(sblk[iiC]));
+      float sampD_filtered = _lpFilter.process(float(sblk[iiD]));
+      float mu    = fract;
+      float mu2   = mu * mu;
+      float a0    = sampD_filtered - sampC_filtered - sampA_filtered + sampB_filtered;
+      float a1    = sampA_filtered - sampB_filtered - a0;
+      float a2    = sampC_filtered - sampA_filtered;
+      float a3    = sampB_filtered;
+      samp        = (a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3) * kinv32k;
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
+  }
   ///////////////
-  // cubic
-  // int64_t iiC = iiB+1;
-  // if( iiC > (_blk_loopend>>16) )
-  //    iiC = (_blk_loopstart>>16);
-  // int64_t iiD = iiC+1;
-  // if( iiD > (_blk_loopend>>16) )
-  //    iiD = (_blk_loopstart>>16);
-  // float sampC = float(sblk[iiC] );
-  // float sampD = float(sblk[iiD] );
-  // float mu = fract;
-  // float mu2 = mu*mu;
-  // float a0 = sampD - sampC - sampA + sampB;
-  // float a1 = sampA - sampB - a0;
-  // float a2 = sampC - sampA;
-  // float a3 = sampB;
-  // float samp = (a0*mu*mu2+a1*mu2+a2*mu+a3)*kinv32k;
+  // printf("iiA<%zd> iiB<%zd> sampA<%g> sampB<%g> samp<%g>\n", iiA, iiB, sampA, sampB, samp);
+
   ///////////////
 
   _pbindex = _pbindexNext;
 
-  return samp;
+  return _bq[3].compute(
+          _bq[2].compute(
+              _bq[1].compute(
+                  _bq[0].compute(samp))));
 }
 
-float sampleOsc::playLoopBid() {
+float SampleOscillator::playLoopBid() {
   OrkAssert(false);
   return 0.0f;
   /*

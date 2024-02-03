@@ -28,7 +28,7 @@ static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod
 
 void BlockModulationData::describeX(class_t* clazz) {
   clazz->directObjectProperty("Src1", &BlockModulationData::_src1);
-  clazz->directProperty("Src1Depth", &BlockModulationData::_src1Depth);
+  clazz->directProperty("Src1Depth", &BlockModulationData::_src1Scale);
   clazz->directObjectProperty("Src2", &BlockModulationData::_src2);
   clazz->directProperty("Src2MinDepth", &BlockModulationData::_src2MinDepth);
   clazz->directProperty("Src2MaxDepth", &BlockModulationData::_src2MaxDepth);
@@ -47,7 +47,7 @@ dspparammod_ptr_t BlockModulationData::clone() const{
   rval->_src1 = _src1;
   rval->_src2 = _src2;
   rval->_src2DepthCtrl = _src2DepthCtrl;
-  rval->_src1Depth = _src1Depth;
+  rval->_src1Scale = _src1Scale;
   rval->_src2MinDepth = _src2MinDepth;
   rval->_src2MaxDepth = _src2MaxDepth;
   rval->_evaluator = _evaluator;
@@ -173,17 +173,21 @@ void DspParamData::useDefaultEvaluator() {
 void DspParamData::useAmplitudeEvaluator() {
   _evaluatorid      = "amplitude";
   _mods->_evaluator = [this](DspParam& param_inst) -> float {
-    param_inst._kval  = _keyTrack * param_inst._keyOff;
-    param_inst._vval  = lerp(-_velTrack, 0.0f, param_inst._unitVel);
-    param_inst._s1val = param_inst._C1();
-    param_inst._s2val = param_inst._C2();
+    float KT = _keyTrack * param_inst._keyOff;
+    param_inst._kval  = KT;
+    float VT = lerp(-_velTrack, 0.0f, param_inst._unitVel);
+    param_inst._vval  = VT;
+    float c1 = param_inst._C1();
+    float c2 = param_inst._C2();
+    param_inst._s1val = c1;
+    param_inst._s2val = c2;
     float x    = (_coarse) //
-              + param_inst._s1val //
-              + param_inst._s2val //
-              + param_inst._kval  //
-              + param_inst._vval;
+              + c1 //
+              + c2 //
+              + KT  //
+              + VT;
      if(_debug){
-      printf("ampeval<%s> vt<%f> kt<%f> x<%f>\n", _name.c_str(), _velTrack, _keyTrack, x);
+      printf("ampeval<%s> unitvel<%g> _coarse<%g> vt<%f> VT<%g> kt<%f> KT<%g> c1<%g> c2<%g> x<%f>\n", _name.c_str(), param_inst._unitVel, _coarse, _velTrack, VT, _keyTrack, KT, c1, c2, x);
      }
     return x;
   };
@@ -258,15 +262,22 @@ void DspParamData::usePitchEvaluator() {
 void DspParamData::useFrequencyEvaluator() {
   _evaluatorid      = "frequency";
   _mods->_evaluator = [this](DspParam& param_inst) -> float {
-    float ktcents  = _keyTrack * param_inst._keyOff;
-    param_inst._vval      = _velTrack * param_inst._unitVel;
-    float vtcents  = param_inst._vval;
-    float totcents = param_inst._C1() + param_inst._C2() + ktcents + vtcents;
+
+    float kt       = (param_inst._keyOff *_keyTrack);
+    float vt       = (param_inst._unitVel * _velTrack);
+    float c1       = param_inst._C1();
+    float c2       = param_inst._C2();
+
+
+
+    param_inst._vval      = vt;
+    float totcents = c1 + c2 + kt + vt;
     float ratio    = cents_to_linear_freq_ratio(totcents);
+    float output = _coarse * ratio;
      if(_debug){
-       printf( "frqeval<%s> vtcents<%f> ratio<%f>\n", _name.c_str(), vtcents, ratio );
+       printf( "frqeval<%s> coarse<%g> kt<%f> ko<%g> vt<%f> c1<%g> c2<%g> ratio<%f> output<%g>\n", _name.c_str(), _coarse, kt, param_inst._keyOff, vt, c1, c2, ratio, output );
      }
-    return _coarse * ratio;
+    return output;
   };
 }
 
@@ -332,11 +343,10 @@ void DspParam::keyOn(int ikey, int ivel) {
   _keyRaw  = ikey;
   _keyOff  = float(ikey - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
-
   float kt = _data->_keyTrack;
-
+  
   if(_data->_debug){
-   printf( "DspParam<%s> keyOn: ikey<%d> ivel<%d> keytrack<%g>  keystart<%d> _keyOff<%g>\n", _data->_name.c_str(), ikey, ivel, kt, _data->_keystartNote, _keyOff );
+   printf( "DspParam<%s> keyOn: ikey<%d> ivel<%d> _unitVel<%g> keytrack<%g>  keystart<%d> _keyOff<%g>\n", _data->_name.c_str(), ikey, ivel, _unitVel, kt, _data->_keystartNote, _keyOff );
   }
 
   if (false == _data->_keystartBipolar) {

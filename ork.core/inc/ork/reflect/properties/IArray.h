@@ -14,7 +14,7 @@
 
 namespace ork { namespace reflect {
 
-using array_abstract_item_t = svar256_t;
+using array_abstract_item_t = svar128_t;
 using array_varray_t = std::vector<array_abstract_item_t>;
 
 class IArray : public ObjectProperty {

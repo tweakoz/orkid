@@ -13,26 +13,12 @@
 #include "PolyBLEP.h"
 #include "layer.h"
 #include <ork/kernel/varmap.inl>
+#include "dspbuffer.h"
 
 namespace ork::audio::singularity {
 
 struct outputBuffer;
 struct DspBlock;
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct DspBuffer final {
-  DspBuffer();
-  void resize(int inumframes);
-
-  float* channel(int ich);
-
-  int _maxframes;
-  int _numframes;
-
-private:
-  std::vector<float> _channels[kmaxdspblocksperstage];
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 // IoConfig:

@@ -14,7 +14,7 @@
 #include "layer.h"
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
-//#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/aud/singularity/seq.h>
 
 namespace ork::audio::singularity {
 
@@ -73,12 +73,13 @@ struct OutputBus {
   /////////////////////////
 
   void setBusDSP(lyrdata_ptr_t ld);
-
+  
   lyrdata_ptr_t _dsplayerdata;
   layer_ptr_t _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
   std::string _fxname;
-
+  prgdata_constptr_t _uiprogram;
+  float _prog_gain = 0.0f;
   std::vector<outbus_ptr_t> _children;
   fxpresetmap_t::iterator _fxcurpreset;
   /////////////////////////
@@ -86,6 +87,20 @@ struct OutputBus {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AudioThreadHandler{
+  using audiohandler_t = std::function<void(synth*)>;
+  audiohandler_t _handler = [](synth*){};
+};
+
+using audiothreadhandler_ptr_t = std::shared_ptr<AudioThreadHandler>;
+
+struct ProgramChannel{
+    prgdata_constptr_t _currentProgram;
+    std::unordered_set<programInst*> _monoprogs;
+    int _monokeycount = 0;
+    std::vector<int> _mononotes;
+};
+using programchannel_ptr_t = std::shared_ptr<ProgramChannel>;
 
 struct synth {
   synth();
@@ -114,13 +129,13 @@ struct synth {
   programInst* keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
   void keyOff(programInst* p);
 
-  void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld);
+  void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod = nullptr);
   void _keyOffLayer(layer_ptr_t l);
   void _cleanupKeyOnModifiers();
 
 
   programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
-  void liveKeyOff(programInst* p);
+  void liveKeyOff(programInst* p,int note, int velocity);
 
   layer_ptr_t allocLayer();
   void releaseLayer(layer_ptr_t l);
@@ -149,6 +164,8 @@ struct synth {
   outputBuffer _obuf;
   float _sampleRate;
   float _dt;
+  float _system_tempo = 120.0f;
+  programchannel_ptr_t _prgchannel;
 
   using keyonmodvect_t = std::vector<keyonmod_ptr_t>;
   using proginstset_t = std::set<programInst*>;
@@ -165,6 +182,13 @@ struct synth {
   std::map<std::string, hudsamples_t> _hudsample_map;
   LockedResource<keyonmodvect_t> _CCIVALS;
   LockedResource<eventmap_t> _eventmap;
+  std::vector<audiothreadhandler_ptr_t> _audiothreadhandlers;
+
+  using delaydequeue_t = std::deque<delaycontext_ptr_t>;
+  LockedResource<delaydequeue_t> _delayspool;
+
+  delaycontext_ptr_t allocDelayLine();
+  void freeDelayLine(delaycontext_ptr_t);
 
   void resize(int numframes);
 
@@ -195,6 +219,7 @@ struct synth {
   int64_t _samplesuntilnexttick = 0;
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
+  float _velcurvepower          = 0.5f;
 
   outbus_ptr_t _curprogrambus;
 
@@ -209,7 +234,7 @@ struct synth {
 
   std::vector<keyonmod_ptr_t> _kmod_exec_list;
   std::vector<size_t> _kmod_rem_list;
-
+  sequencer_ptr_t _sequencer;
 };
 
 } // namespace ork::audio::singularity

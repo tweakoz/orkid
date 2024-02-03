@@ -236,9 +236,9 @@ struct ReaderImpl {
             SRC_XF_POS[2].GetDouble());
         auto rot = fquat(
             SRC_XF_ROT[0].GetDouble(), //
-            SRC_XF_POS[1].GetDouble(), //
-            SRC_XF_POS[2].GetDouble(), //
-            SRC_XF_POS[3].GetDouble());
+            SRC_XF_ROT[1].GetDouble(), //
+            SRC_XF_ROT[2].GetDouble(), //
+            SRC_XF_ROT[3].GetDouble());
 
         float sca = SRC_XF_SCA.GetDouble();
 
@@ -302,11 +302,11 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
       const auto& value = as_typed.value();
 
       auto op = [=]() {
-        Request req;
-        req._requestID = RequestID::SPAWN_DYNAMIC_ANON;
+        auto req = std::make_shared<Request>();
+        req->_requestID = RequestID::SPAWN_DYNAMIC_ANON;
         uint64_t objID = _controller->_objectIdCounter.fetch_add(1);
         OrkAssert(objID == value._entref._entID);
-        auto& IMPL      = req._payload.make<impl::_SpawnAnonDynamic>();
+        auto& IMPL      = req->_payload.make<impl::_SpawnAnonDynamic>();
         IMPL._SAD       = value._SAD;
         IMPL._spawn_rec = _controller->_scenedata->findTypedObject<SpawnData>(value._SAD._edataname);
         OrkAssert(IMPL._spawn_rec);
@@ -322,9 +322,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
     else if (auto as_typed = data.tryAs<impl::_Despawn>()) {
       const auto& value = as_typed.value();
       auto op           = [=]() {
-        Event simevent;
-        simevent._eventID = EventID::DESPAWN;
-        auto& DEV         = simevent._payload.make<impl::_Despawn>();
+        auto simevent = std::make_shared<Event>();
+        simevent->_eventID = EventID::DESPAWN;
+        auto& DEV         = simevent->_payload.make<impl::_Despawn>();
         DEV._entref       = value._entref;
         _controller->_enqueueEvent(simevent);
       };
@@ -344,9 +344,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
         // notify sim to update reference
         //////////////////////////////////////////////////////
 
-        Event simevent;
-        simevent._eventID = EventID::FIND_SYSTEM;
-        auto& FSYS        = simevent._payload.make<impl::_FindSystem>();
+        auto simevent = std::make_shared<Event>();
+        simevent->_eventID = EventID::FIND_SYSTEM;
+        auto& FSYS        = simevent->_payload.make<impl::_FindSystem>();
 
         FSYS._sysref = SystemRef{._sysID = ID};
         FSYS._syskey = value._syskey;
@@ -369,9 +369,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
         // notify sim to update reference
         //////////////////////////////////////////////////////
 
-        Event simevent;
-        simevent._eventID = EventID::FIND_COMPONENT;
-        auto& FCOMP       = simevent._payload.make<impl::_FindComponent>();
+        auto simevent = std::make_shared<Event>();
+        simevent->_eventID = EventID::FIND_COMPONENT;
+        auto& FCOMP       = simevent->_payload.make<impl::_FindComponent>();
 
         FCOMP._entref    = value._entref;
         FCOMP._compclazz = value._compclazz; // T::GetClassStatic();
@@ -385,9 +385,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
     else if (auto as_typed = data.tryAs<impl::_SystemEvent>()) {
       const auto& value = as_typed.value();
       auto op           = [=]() {
-        Event simevent;
-        simevent._eventID = EventID::SYSTEM_EVENT;
-        auto& SEV         = simevent._payload.make<impl::_SystemEvent>();
+        auto simevent = std::make_shared<Event>();
+        simevent->_eventID = EventID::SYSTEM_EVENT;
+        auto& SEV         = simevent->_payload.make<impl::_SystemEvent>();
 
         SEV._sysref    = value._sysref;
         SEV._eventID   = value._eventID;
@@ -401,8 +401,8 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
     else if (auto as_typed = data.tryAs<impl::_SystemRequest>()) {
       const auto& value = as_typed.value();
       auto op           = [=]() {
-        Request simrequest;
-        simrequest._requestID = RequestID::SYSTEM_REQUEST;
+        auto simrequest = std::make_shared<Request>();
+        simrequest->_requestID = RequestID::SYSTEM_REQUEST;
 
         uint64_t objID = _controller->_objectIdCounter.fetch_add(1);
 
@@ -412,7 +412,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
 
         auto rref = ResponseRef{._responseID = objID};
 
-        auto& SRQ = simrequest._payload.make<impl::_SystemRequest>();
+        auto& SRQ = simrequest->_payload.make<impl::_SystemRequest>();
 
         SRQ._sysref    = value._sysref;
         SRQ._requestID = value._requestID;
@@ -428,9 +428,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
     else if (auto as_typed = data.tryAs<impl::_ComponentEvent>()) {
       const auto& value = as_typed.value();
       auto op           = [=]() {
-        Event simevent;
-        simevent._eventID = EventID::COMPONENT_EVENT;
-        auto& CEV         = simevent._payload.make<impl::_ComponentEvent>();
+        auto simevent = std::make_shared<Event>();
+        simevent->_eventID = EventID::COMPONENT_EVENT;
+        auto& CEV         = simevent->_payload.make<impl::_ComponentEvent>();
 
         CEV._compref   = value._compref;
         CEV._eventID   = value._eventID;
@@ -444,9 +444,9 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
     else if (auto as_typed = data.tryAs<impl::_ComponentRequest>()) {
       const auto& value = as_typed.value();
       auto op           = [=]() {
-        Request simrequest;
-        simrequest._requestID = RequestID::COMPONENT_REQUEST;
-        auto& CRQ             = simrequest._payload.make<impl::_ComponentRequest>();
+        auto simrequest = std::make_shared<Request>();
+        simrequest->_requestID = RequestID::COMPONENT_REQUEST;
+        auto& CRQ             = simrequest->_payload.make<impl::_ComponentRequest>();
 
         uint64_t objID = _controller->_objectIdCounter.fetch_add(1);
         OrkAssert(objID == value._respref._responseID);

@@ -79,7 +79,7 @@ int main(int argc, char** argv,char**envp) {
     auto envname                 = FormatString("%sENV", opname.c_str());
     auto ENV                     = layerdata->appendController<YmEnvData>(envname);
     amp_param->_mods->_src1      = ENV;
-    amp_param->_mods->_src1Depth = 1.0;
+    amp_param->_mods->_src1Scale = 1.0;
     return ENV;
   };
   auto op0env = modop("OP0", op0);

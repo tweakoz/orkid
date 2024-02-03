@@ -24,21 +24,55 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
   auto algCFG = getAlgConfig(_curALG);
 
   hfp._inputALG      = db.GetTypedData<u8>(it);
-  hfp._inputCourse   = db.GetTypedData<u8>(it);
-  hfp._inputFine     = db.GetTypedData<u8>(it);
-  hfp._inputKeyTrack = db.GetTypedData<u8>(it);
-  hfp._inputVelTrack = db.GetTypedData<u8>(it);
-  hfp._inputSrc1     = db.GetTypedData<u8>(it);
-  hfp._inputDepth    = db.GetTypedData<u8>(it);
-  hfp._inputDptCtl   = db.GetTypedData<u8>(it);
-  hfp._inputMinDepth = db.GetTypedData<u8>(it);
-  hfp._inputMaxDepth = db.GetTypedData<u8>(it);
-  hfp._inputSrc2     = db.GetTypedData<u8>(it);
-  hfp._inputFiltAlg  = db.GetTypedData<u8>(it);
-  hfp._inputMoreTSCR = db.GetTypedData<u8>(it);
-  hfp._inputRESERVED = db.GetTypedData<u8>(it);
-  hfp._input14       = hfp._inputRESERVED;
-  hfp._input15       = db.GetTypedData<u8>(it);
+  hfp._inputCourse   = db.GetTypedData<u8>(it); // coarse
+  hfp._inputFine     = db.GetTypedData<u8>(it); // fine
+  hfp._inputKeyTrack = db.GetTypedData<u8>(it); // kscale
+  hfp._inputVelTrack = db.GetTypedData<u8>(it); // vscale
+  hfp._inputSrc1     = db.GetTypedData<u8>(it); // control
+  hfp._inputDepth    = db.GetTypedData<u8>(it); // range
+  hfp._inputDptCtl   = db.GetTypedData<u8>(it); // depth
+  hfp._inputMinDepth = db.GetTypedData<u8>(it); // mindepth
+  hfp._inputMaxDepth = db.GetTypedData<u8>(it); // maxdepth
+  hfp._inputSrc2     = db.GetTypedData<u8>(it); // source
+
+  // tscr word
+  hfp._tscra = db.GetTypedData<u8>(it); // 2:downshift, 6:filtAlg
+  hfp._tscrb = db.GetTypedData<u8>(it); // moreTscr
+
+  // output word
+  hfp._owrda = db.GetTypedData<u8>(it); // 3: headroom, 2:pair, 3:rfu2
+  hfp._owrdb = db.GetTypedData<u8>(it); // 2: rfu, 2: panmode, 4: pan
+  // owrda 12 0x0c | 0b 000 01 100 
+  // owrdb 84 0x54 | 0b 0101 01 00 | 0100 01 01
+  //
+
+  if( true ){ // big endian
+  hfp._inputMoreTSCR  = hfp._tscrb;
+  hfp._downshift = (hfp._tscra&3);
+  hfp._filtalg = (hfp._tscra>>2)&0x3f;
+  _curLayer->_headroom = (hfp._owrda&7);
+  _curLayer->_pair = (hfp._owrda>>2)&3;
+  _curLayer->_panmode = (hfp._owrdb>>2)&3;
+  _curLayer->_pan = (hfp._owrdb>>4)&0xf;
+  _curLayer->_headroom = 7-_curLayer->_headroom ;
+  _curLayer->_headroom = (_curLayer->_headroom-2)*6;
+  }
+  else{
+    hfp._inputMoreTSCR  = hfp._tscrb;
+    hfp._filtalg = hfp._tscra & 0x3F;
+    hfp._downshift = (hfp._tscra>>6)&3;
+    _curLayer->_headroom = (hfp._owrda>>5)&7;
+    _curLayer->_pair = (hfp._owrda>>3)&3;
+    _curLayer->_panmode = (hfp._owrdb>>4) & 0x3;
+    _curLayer->_pan = (hfp._owrdb) & 0xf;
+    _curLayer->_headroom = (_curLayer->_headroom-2)*6;
+  }
+
+  //hfp._downshift  = db.GetTypedData<u8>(it); 
+  //hfp._inputMoreTSCR = db.GetTypedData<u8>(it); // 3: headroom, 2:pair, 3:rfu2
+  //hfp._inputRESERVED = db.GetTypedData<u8>(it); 
+  //hfp._input14       = hfp._inputRESERVED;
+  //hfp._input15       = db.GetTypedData<u8>(it);
 
   hfp._blockScheme = getDspBlockScheme(hfp._inputALG);
 
@@ -78,7 +112,7 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
       break;
     }
     default:
-      assert(false);
+      OrkAssert(false);
   }
 
   auto rawalgschm = hfp._blockScheme;
@@ -105,7 +139,7 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
     hfp._blockScheme = "???";
   }
 
-  switch (int(hfp._inputFiltAlg & 3)) {
+  switch (hfp._downshift) {
     case 0:
       hfp._outputPAD = 0; // dB
       break;
@@ -119,7 +153,7 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
       hfp._outputPAD = -18; // dB
       break;
   }
-  hfp._outputFiltAlg = ork::FormatString("%d", hfp._inputFiltAlg >> 2);
+  //hfp._outputFiltAlg = ork::FormatString("%d", hfp._inputFiltAlg >> 2);
 
   hfp._var14.set<int>("Var14", "???", "%d", (int)hfp._input14);
   hfp._var15.set<int>("Var15", "???", "%d", (int)hfp._input15);
@@ -177,6 +211,11 @@ void filescanner::emitHobbes(const Hobbes* h, rapidjson::Value& parent) {
       AddStringKVMember(hseg, "BLOCK_ALG ", hfp._algName);
 
     AddStringKVMember(hseg, "PARAM_SCHEME", hfp._blockScheme);
+    AddMember<int>(hseg, "DBG_TSCRA", hfp._tscra);
+    AddMember<int>(hseg, "DBG_TSCRB", hfp._tscrb);
+    AddMember<int>(hseg, "DBG_OWRDA", hfp._owrda);
+    AddMember<int>(hseg, "DBG_OWRDB", hfp._owrdb);
+    AddMember<int>(hseg, "DBG_DOWNSHIFT", hfp._downshift);
 
     fparamOutput(hfp, h->_blockName, hseg);
     AddMember(parent, h->_blockName, hseg);

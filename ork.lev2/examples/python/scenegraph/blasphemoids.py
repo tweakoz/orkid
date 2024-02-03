@@ -15,6 +15,7 @@ from orkengine.core import *
 from orkengine.lev2 import *
 from obt import host
 tokens = CrcStringProxy()
+enableVR = False
 ################################################################################
 #from pathlib import Path as plpath
 #this_dir = plpath(os.path.dirname(os.path.abspath(__file__)))
@@ -66,24 +67,28 @@ class Blasphemoids(_simsetup.SimApp):
     param_v4parref = material.shader.param("testvec4")
     self.v4parref = vec4()
     #stereo_material_inst = material.createFxInstance()
-    material.technique = material.shader.technique("std_stereo")
-    material.bindParamMatrix4(material.param("mvpL"), tokens.RCFD_Camera_MVP_Left)
-    material.bindParamMatrix4(material.param("mvpR"), tokens.RCFD_Camera_MVP_Right)
-    material.bindParamVec4(param_v4parref, self.v4parref)
-    material.bindParamTexture(param_volumetex, volumetexture)
-    #self.stereo_material_inst = stereo_material_inst
+    permu = FxPipelinePermutation()
+    permu.rendering_model = "FORWARD_PBR"
+    permu.technique = material.technique("std_stereo")
+
+    pipeline = material.fxcache.findPipeline(permu) 
+    pipeline.bindParam( material.param("mvpL"), tokens.RCFD_Camera_MVP_Left)
+    pipeline.bindParam( material.param("mvpR"), tokens.RCFD_Camera_MVP_Right)
+    #material.bindParamVec4(param_v4parref, self.v4parref)
+    #material.bindParamTexture(param_volumetex, volumetexture)
+    self.stereo_material_inst = pipeline
     self.timeparam = material.param("time")
     self.laser_a = vec3(0,0,0)
     self.laser_b = vec3(0,0,-100)
-    self.layer.createLineNode("laserline",
-                              self.laser_a,
-                              self.laser_b,
-                              stereo_material_inst)
+    self.layer1.createLineNode("laserline",
+                               self.laser_a,
+                               self.laser_b,
+                               pipeline)
     ##############################################
     # create hand model node
     ##############################################
-    model = Model("data://tests/pbr1/pbr1.glb")
-    self.handnode = model.createNode("handnode",self.layer)
+    model = XgmModel("data://tests/pbr1/pbr1.glb")
+    self.handnode = model.createNode("handnode",self.layer1)
     ##############################################
     # input setup
     ##############################################
@@ -93,8 +98,8 @@ class Blasphemoids(_simsetup.SimApp):
   def onUpdate(self,updinfo):
     super().onUpdate(updinfo)
     self.abstime = updinfo.absolutetime
-    #left = self.hands.channel("left.matrix")
-    right = self.hands.channel("right.matrix")
+    left = self.hands.channel("left.matrix") if enableVR else fmtx4()
+    right = self.hands.channel("right.matrix") if enableVR else fmtx4()
     iset = self.instanceset
     hand = right # todo fix controller assignment
     if hand!=None:
@@ -129,7 +134,7 @@ class Blasphemoids(_simsetup.SimApp):
     ##########################
     # animate laser pointer
     ##########################
-    self.stereo_material_inst.param[self.timeparam] = self.abstime*10
+    self.stereo_material_inst.bindParam(self.timeparam,mself.abstime*10.0)
     ##########################
     # render scenegraph
     ##########################

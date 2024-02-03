@@ -8,7 +8,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <iostream>
 
 namespace py = pybind11;
@@ -57,6 +57,8 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
+    } else if (auto as_reflcodec = val.tryAs<refl_codec_adapter_ptr_t>()) {
+      return as_reflcodec.value()->encode();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {

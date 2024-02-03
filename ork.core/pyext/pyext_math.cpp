@@ -77,6 +77,9 @@ void pyinit_math(py::module& module_core) {
   module_core.def("fmtx4_to_dmtx4", [](const fmtx4& dmtx) -> dmtx4 { //
     return fmtx4_to_dmtx4(dmtx);
   });
+  module_core.def("log_base", [](float base, float inp) -> float { //
+    return log_base(base, inp);
+  });
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("lerp_float", [](float a, float b, float index) -> float { //
     return ::std::lerp(a, b, index);

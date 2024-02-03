@@ -41,6 +41,15 @@ ioconfig_ptr_t IoConfig::clone() const{
   rval->_outputs = _outputs;
   return rval;
 }
+///////////////////////////////////////////////////////////////////////////////
+
+void DspStageData::setNumIos(int numinp, int numout) {
+  for (int i = 0; i < numinp; i++)
+    _ioconfig->_inputs.push_back(i);
+  for (int i = 0; i < numout; i++)
+    _ioconfig->_outputs.push_back(i);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 size_t IoConfig::numInputs() const {
   return _inputs.size();
@@ -144,15 +153,6 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
   auto blk                  = std::make_shared<DspBlockData>();
   _blockdatas[_numblocks++] = blk;
   return blk;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DspStageData::setNumIos(int numinp, int numout) {
-  for (int i = 0; i < numinp; i++)
-    _ioconfig->_inputs.push_back(i);
-  for (int i = 0; i < numout; i++)
-    _ioconfig->_outputs.push_back(i);
 }
 
 } // namespace ork::audio::singularity

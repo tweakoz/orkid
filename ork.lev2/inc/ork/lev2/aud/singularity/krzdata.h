@@ -46,8 +46,8 @@ struct KrzBankDataParser {
   void parseFun(const rapidjson::Value& JO, lyrdata_ptr_t ld, controlblockdata_ptr_t cblock, const std::string& name);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
   prgdata_ptr_t parseProgram(const rapidjson::Value& JO);
-  multisample* parseMultiSample(const rapidjson::Value& JO);
-  sample* parseSample(const rapidjson::Value& JO, const multisample* parent);
+  multisample_ptr_t parseMultiSample(const rapidjson::Value& JO);
+  sample_ptr_t parseSample(const rapidjson::Value& JO, multisample_constptr_t parent);
 
   KrzAlgData parseAlg(const rapidjson::Value& JO);
   void parseKmpBlock(const Value& JO, KmpBlockData& kmblk);
@@ -60,7 +60,7 @@ struct KrzBankDataParser {
   bankdata_ptr_t _objdb;
   std::map<int, prgdata_ptr_t> _tempprograms;
   std::map<int, keymap_ptr_t> _tempkeymaps;
-  std::map<int, multisample*> _tempmultisamples;
+  std::map<int, multisample_ptr_t> _tempmultisamples;
 };
 
 } // namespace ork::audio::singularity

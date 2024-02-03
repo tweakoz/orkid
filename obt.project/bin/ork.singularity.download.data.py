@@ -85,3 +85,26 @@ batch_wget({
  base_k2000man/"k2vx_reference_guide"/"k2vx.pdf": (dest_kurzweil/"k2vx.pdf","bd129f4b014c7a596420fe2ce9efb73c"),
  base_k2000man/"series_musicians_guide"/"k2000_series_musicians_guide.pdf": (dest_kurzweil/"k2000_series_musicians_guide.pdf","5814572ea8f5e8492e128dac08feea66"),
 })
+
+ensureDirectoryExists(dest_path/"midifiles")
+
+batch_wget({
+  "https://bitmidi.com/uploads/22424.mid": (dest_path/"midifiles"/"castle1.mid","96320847155ffc38e72a5b658259c465"),
+  "https://bitmidi.com/uploads/107580.mid": (dest_path/"midifiles"/"castle2.mid","706e48788695b6aca723e2cdad03f097"),
+  "https://bitmidi.com/uploads/107583.mid": (dest_path/"midifiles"/"castle3.mid","b370bcb8c9fdced91f174d9376154d5a"),
+  "https://bitmidi.com/uploads/16752.mid": (dest_path/"midifiles"/"moonlight.mid","3cb2f37a8f74f93a60d31c1b818ba43f"),
+})
+
+ensureDirectoryExists(dest_path/"wavs")
+
+wav_base = URL("https://github.com/sgossner/VSCO-2-CE/raw/master/VSCO%201%20Percussion/drums")
+wav_base2 = URL("https://github.com/sgossner/VSCO-2-CE/raw/master/Strings/Violin%20Section")
+
+batch_wget({
+  wav_base/"bass/bdrum2_pp_1.wav": (dest_path/"wavs"/"bdrum2_pp_1.wav","4fb66f1bcb4e61c4afc5e30856dc0b0d"),
+  wav_base/"bass/bdrum2_pp_2.wav": (dest_path/"wavs"/"bdrum2_pp_2.wav","16d5ea349fa3e417abac7000fa213ed5"),
+  wav_base/"bass/bdrum_f_1.wav": (dest_path/"wavs"/"bdrum_f_1.wav","9b9d75dc4e1afec44d1c470f9d169bdb"),
+  wav_base/"bass/bdrum_f_2.wav": (dest_path/"wavs"/"bdrum_f_2.wav","3261005b0abd0821eeb3de8e046563ab"),
+  wav_base/"snare/OldSnare/snare_f3.wav": (dest_path/"wavs"/"snare_f3.wav","9259193b9fa91197f09550b577fdf92c"),
+  wav_base2/"Trem/VlnEns_Trem_A2_v1.wav": (dest_path/"wavs"/"VlnEns_Trem_A2_v1.wav","b40592fb499763f86eae4c39bdaad033")
+})

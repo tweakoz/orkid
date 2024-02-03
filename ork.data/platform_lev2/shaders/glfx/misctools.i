@@ -1,7 +1,11 @@
 
 libblock lib_mmnoise {
 
-  float octavenoise(sampler3D krntex,vec3 pos,vec3 d, float time, int numoct){
+  float octavenoise(sampler3D krntex,
+                    vec3 pos,
+                    vec3 d, 
+                    float time, 
+                    int numoct){
     float val = 0;
     float freq = 1.0;
     float amp = 0.25;

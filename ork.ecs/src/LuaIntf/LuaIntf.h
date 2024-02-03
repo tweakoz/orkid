@@ -30,9 +30,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 
-#if defined(__APPLE__)
 #include <type_traits>
 #include <cstdint>
+
+#if defined(__APPLE__)
 namespace std{
 template <class> struct result_of;
 

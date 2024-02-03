@@ -18,9 +18,9 @@ template <typename KeyType, typename ValueType> //
 class ITypedMap : public IMap {
 
 public:
-protected:
   virtual bool GetKey(object_constptr_t, int idx, KeyType&) const              = 0;
   virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const = 0;
+protected:
   virtual bool ReadElement(
       object_constptr_t, //
       const KeyType&,

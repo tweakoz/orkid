@@ -16,6 +16,7 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/aud/singularity/alg_pan.inl>
 
 ImplementReflectionX(ork::audio::singularity::LayerData, "SynLayer");
 
@@ -148,6 +149,13 @@ void Layer::reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Layer::reTriggerMono(int note, int velocity){
+  this->_layerBasePitch = clip_float(note * 100, -0, 12700);
+  this->_curnote = note;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->reset();
   this->_HKF._miscText   = "";
@@ -156,7 +164,6 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->_HKF._layerdata  = ld;
   this->_HKF._layerIndex = this->_ldindex;
   this->_HKF._useFm4     = false;
-
   this->_layerBasePitch = clip_float(note * 100, -0, 12700);
 
   this->_ignoreRelease = ld->_ignRels;
@@ -164,6 +171,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->_layerdata     = ld;
   this->_outbus        = obus;
   this->_layerLinGain  = ld->_layerLinGain;
+  this->_gainModifier = decibel_to_linear_amp_ratio(obus->_prog_gain);
 
   this->_curvel = velocity;
 
@@ -276,22 +284,53 @@ void Layer::beginCompute(int numframes) {
     _alg->beginCompute();
 }
 ///////////////////////////////////////////////////////////////////////////////
+float Layer::currentPan() const{
+  int panmode = _layerdata->_panmode;
+  int pan = _layerdata->_pan;
+  float fpan = float(pan-7)/7.0;
+  switch(panmode){
+    case 0: // Fixed
+      break;
+    case 1: // +MIDI
+      fpan += 0.5f;
+      break;
+    case 2:{ // Auto
+      int ko = _curnote-60;
+      fpan = float(ko)/60.0;
+      break;
+    }
+    case 3:{ // Reverse(Auto)
+      int ko = -(_curnote-60);
+      fpan = float(ko)/60.0;
+      break;
+    }
+  }
+  return fpan;
+}
+///////////////////////////////////////////////////////////////////////////////
 void Layer::mixToBus(int base, int count) {
   float* lyroutl  = _dspbuffer->channel(0) + base;
   float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;
   float* bus_outl = out_buf._leftBuffer + base;
   float* bus_outr = out_buf._rightBuffer + base;
+  //////////////////////////////////
+  float fpan = currentPan();
+  float panL = panBlend(fpan).lmix;
+  float panR = panBlend(fpan).rmix;
+  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
+  float LG = _layerLinGain * _gainModifier * headroom;
+  //////////////////////////////////
   for (int i = 0; i < count; i++) {
-    bus_outl[i] += lyroutl[i] * _layerLinGain;
-    bus_outr[i] += lyroutr[i] * _layerLinGain;
+    bus_outl[i] += (lyroutl[i]*LG*panL);
+    bus_outr[i] += (lyroutr[i]*LG*panR);
   }
   if (0) { // test tone
     for (int i = 0; i < _numFramesForBlock; i++) {
       double phase = 120.0 * pi2 * double(_testtoneph) / getSampleRate();
       float samp   = sinf(phase) * .6;
-      bus_outl[i]  = samp * _layerLinGain;
-      bus_outr[i]  = samp * _layerLinGain;
+      bus_outl[i]  = samp * _layerLinGain * _gainModifier;
+      bus_outr[i]  = samp * _layerLinGain * _gainModifier;
       _testtoneph++;
     }
   }
@@ -304,9 +343,16 @@ void Layer::replaceBus(int base, int count) {
   auto& out_buf        = _outbus->_buffer;
   float* bus_outl      = out_buf._leftBuffer + base;
   float* bus_outr      = out_buf._rightBuffer + base;
+  //////////////////////////////////
+  float fpan = currentPan();
+  float panL = panBlend(fpan).lmix;
+  float panR = panBlend(fpan).rmix;
+  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
+  float LG = _layerLinGain * _gainModifier * headroom;
+  //////////////////////////////////
   for (int i = 0; i < count; i++) {
-    bus_outl[i] = lyroutl[i] * _layerLinGain;
-    bus_outr[i] = lyroutr[i] * _layerLinGain;
+    bus_outl[i] = (lyroutl[i]*LG*panL);
+    bus_outr[i] = (lyroutr[i]*LG*panR);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,8 +425,8 @@ controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   //}
 
   auto it = [=]() -> float {
-    float src1depth = mods->_src1Depth;
-    float out       = src1() * src1depth;
+    float src1scale = mods->_src1Scale;
+    float out       = src1() * src1scale + mods->_src1Bias ;
     // printf( "src1out<%f>\n", out );
     return out;
   };

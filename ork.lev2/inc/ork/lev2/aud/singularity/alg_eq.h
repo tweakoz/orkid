@@ -13,7 +13,8 @@
 namespace ork::audio::singularity {
 
 struct PARABASS_DATA : public DspBlockData {
-  PARABASS_DATA(std::string name);
+  DeclareConcreteX(PARABASS_DATA,DspBlockData);
+  PARABASS_DATA(std::string name="DspEqParaBass");
   dspblk_ptr_t createInstance() const override;
 };
 
@@ -25,7 +26,8 @@ struct PARABASS : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct STEEP_RESONANT_BASS_DATA : public DspBlockData {
-  STEEP_RESONANT_BASS_DATA(std::string name);
+  DeclareConcreteX(STEEP_RESONANT_BASS_DATA,DspBlockData);
+  STEEP_RESONANT_BASS_DATA(std::string name="DspEqSteepResonantBass");
   dspblk_ptr_t createInstance() const override;
 };
 struct STEEP_RESONANT_BASS : public DspBlock {
@@ -38,7 +40,8 @@ struct STEEP_RESONANT_BASS : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PARAMID_DATA : public DspBlockData {
-  PARAMID_DATA(std::string name);
+  DeclareConcreteX(PARAMID_DATA,DspBlockData);
+  PARAMID_DATA(std::string name="DspEqParaMid");
   dspblk_ptr_t createInstance() const override;
 };
 struct PARAMID : public DspBlock {
@@ -49,7 +52,8 @@ struct PARAMID : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PARATREBLE_DATA : public DspBlockData {
-  PARATREBLE_DATA(std::string name);
+  DeclareConcreteX(PARATREBLE_DATA,DspBlockData);
+  PARATREBLE_DATA(std::string name="DspEqParaTreble");
   dspblk_ptr_t createInstance() const override;
 };
 struct PARATREBLE : public DspBlock {
@@ -62,7 +66,8 @@ struct PARATREBLE : public DspBlock {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 struct ParametricEqData : public DspBlockData {
-  ParametricEqData(std::string name);
+  DeclareConcreteX(ParametricEqData,DspBlockData);
+  ParametricEqData(std::string name="DspEqParametricEq");
   // krzname  "PARAMETRIC EQ"
   dspblk_ptr_t createInstance() const override;
 };

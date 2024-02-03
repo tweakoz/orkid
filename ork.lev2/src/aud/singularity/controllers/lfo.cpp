@@ -12,12 +12,16 @@
 
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/reflect/properties/registerX.inl>
-ImplementReflectionX(ork::audio::singularity::LfoData, "SynLfoData");
+ImplementReflectionX(ork::audio::singularity::LfoData, "SynLfo");
 
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 void LfoData::describeX(class_t* clazz) {
+  clazz->directProperty("initialPhase", &LfoData::_initialPhase);
+  clazz->directProperty("minRate", &LfoData::_minRate);
+  clazz->directProperty("maxRate", &LfoData::_maxRate);
+  clazz->directProperty("shape", &LfoData::_shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,7 +33,6 @@ LfoData::LfoData()
     , _shape("Sine") {
 }
 LfoData::~LfoData(){
-  printf("XX\n");
 }
 
 ControllerInst* LfoData::instantiate(layer_ptr_t l) const {
@@ -116,6 +119,7 @@ void LfoInst::keyOn(const KeyOnInfo& KOI) // final
   else if (_data->_shape == "Rise Saw")
     _mapper = [](float inp) -> float {
       float saw = fmod(inp * 2.0f, 2.0f) - 1.0f;
+      printf("saw<%g>\n", saw );
       return saw;
     };
   else if (_data->_shape == "Fall Saw")
@@ -177,10 +181,13 @@ void LfoInst::compute() // final
 
     _currate = lerp(_data->_minRate, _data->_maxRate, _rateLerp);
 
-    // printf( "lforate<%f>\n", rate );
     _phaseInc = dt * _currate;
     _phase += _phaseInc;
+
+
     _value.x = _mapper(_phase);
+
+    // printf( "dt<%g> lforate<%f> PI<%g> _phase<%g> out<%g>\n", dt, _currate, _phaseInc, _phase, _value.x );
   }
 }
 

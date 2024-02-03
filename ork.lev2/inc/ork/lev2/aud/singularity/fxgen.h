@@ -19,6 +19,9 @@ namespace ork::audio::singularity {
 dspblkdata_ptr_t appendStereoChorus(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
+dspblkdata_ptr_t appendMildStereoChorus(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(
     lyrdata_ptr_t layer, //

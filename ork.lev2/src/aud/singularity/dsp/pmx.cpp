@@ -17,8 +17,8 @@
 #include <ork/reflect/properties/registerX.inl>
 //#include <ork/reflect/properties/DirectTyped.hpp>
 
-ImplementReflectionX(ork::audio::singularity::PMXData, "SynPMX");
-ImplementReflectionX(ork::audio::singularity::PMXMixData, "SynPMXMixer");
+ImplementReflectionX(ork::audio::singularity::PMXData, "DspOscPMX");
+ImplementReflectionX(ork::audio::singularity::PMXMixData, "DspOscPMX|Mixer");
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
@@ -54,11 +54,12 @@ void PMXData::describeX(class_t* clazz) {
 PMXData::PMXData(std::string name)
     : DspBlockData(name) {
 
+  addParam("pitch")->usePitchEvaluator();
   auto amp = addParam("amp");
   amp->useDefaultEvaluator(); // amp
-  amp->_units = "0-1";
+  amp->_units = "dB";
   auto fbl    = addParam("feedback");
-  fbl->_units = "0-1";
+  fbl->_units = "amount";
   fbl->useDefaultEvaluator(); // feedback
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,13 +79,17 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   int inumframes   = _layer->_dspwritecount;
   float* output    = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
 
-  float pitch_cents = _layer->_curPitchOffsetInCents;
 
-  float amp        = _param[0].eval();
-  float fbl        = _param[1].eval();
+  float pchoff     = _param[0].eval();
+  float amp        = _param[1].eval();
+  float fbl        = _param[2].eval();
+
+  float pitch_cents = _layer->_curPitchInCents+pchoff;
   float note      = (pitch_cents) * 0.01;
   float frq        = midi_note_to_frequency(note);
   
+  //printf("PMX frq<%g>\n", frq );
+
   float clampedamp = std::clamp(amp, 0.0f, 1.0f);
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
   ///////////////////////////////////////////////////////////////
@@ -132,7 +137,7 @@ void PMX::doKeyOn(const KeyOnInfo& koi) { // final
   if (_pmxdata->_txprogramdata) {
     auto name = _pmxdata->_txprogramdata->_name;
     int alg   = _pmxdata->_txprogramdata->_alg;
-     //printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
+     printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

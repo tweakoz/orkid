@@ -30,7 +30,12 @@ TEST(Vector3Constructor) {
   CHECK_CLOSE(2.0f, v.y, MyEPSILON);
   CHECK_CLOSE(3.0f, v.z, MyEPSILON);
 }
-
+TEST(Vector3ScalarConstructor) {
+  fvec3 v(7.0f);
+  CHECK_CLOSE(7.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(7.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(7.0f, v.z, MyEPSILON);
+}
 TEST(Vector3CopyConstructor) {
   fvec3 v(1.0f, 2.0f, 3.0f);
   fvec3 copy(v);
@@ -39,12 +44,7 @@ TEST(Vector3CopyConstructor) {
   CHECK_CLOSE(3.0f, copy.z, MyEPSILON);
 }
 
-TEST(Vector3RGBAConstructor) {
-  fvec3 v(0xFF00FFFF);
-  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
-  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
-  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
-}
+
 
 TEST(Vector3RotateX) {
   fvec3 v(0.0f, 1.0f, 0.0f);

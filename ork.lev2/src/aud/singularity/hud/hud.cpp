@@ -178,7 +178,7 @@ HudLayoutGroup::HudLayoutGroup() //
           case ' ': {
             for (auto item : _activenotes) {
               auto pi = item.second;
-              synth::instance()->liveKeyOff(pi);
+              //synth::instance()->liveKeyOff(pi);
             }
             _activenotes.clear();
             was_handled = true;
@@ -213,8 +213,9 @@ HudLayoutGroup::HudLayoutGroup() //
               auto it2 = _activenotes.find(note);
               if (it2 != _activenotes.end()) {
                 auto pi = it2->second;
-                if (pi)
-                  synth::instance()->liveKeyOff(pi);
+                if (pi){
+                  //synth::instance()->liveKeyOff(pi);
+                }
                 _activenotes.erase(it2);
               }
             }

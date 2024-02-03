@@ -107,7 +107,7 @@ struct NewIoDriver {
   svar64_t _impl;  
   const reflect::ObjectProperty* _par_prop = nullptr;
   object_ptr_t _object = nullptr;
-  svar256_t _abstract_val;
+  varmap::var_t _abstract_val;
   newiodriver_ptr_t _parent;
 };
 

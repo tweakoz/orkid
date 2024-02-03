@@ -342,22 +342,28 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
   int _f2b_count                  = 0;
   int _f2b_index                  = -1;
   int _b2f_count                  = 0;
-  bool do_log                     = _debug; // matchTestPoly(input_poly);
+    bool do_log                     = _debug; // matchTestPoly(input_poly);
   printPoly("PROCEDGES POLY", input_poly);
 
-  if (do_log)
+  if (do_log){
     logchan_clip->log("  procEdges inppoly<%d> numv<%d>", input_poly->_submeshIndex, inuminverts);
-
+  }
+  
   for (int iva = 0; iva < inuminverts; iva++) {
 
     int ivb        = (iva + 1) % inuminverts;
     auto out_vtx_a = _outsubmesh.mergeVertex(*input_poly->vertex(iva));
     auto out_vtx_b = _outsubmesh.mergeVertex(*input_poly->vertex(ivb));
     auto he_ab     = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
-    // get the side of each vert to the plane
+
+    /////////////////////////////////////////////
+    // classify each vertex by side of the plane
+    /////////////////////////////////////////////
+
     bool is_vertex_a_front = _clipprimitive->isPointInFront(out_vtx_a->mPos);
     bool is_vertex_b_front = _clipprimitive->isPointInFront(out_vtx_b->mPos);
-    if (do_log)
+
+    if (do_log){
       logchan_clip->log(
           "   iva<%d> edge<%d->%d> front<%d,%d>",
           iva,
@@ -365,23 +371,34 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
           out_vtx_b->_poolindex,
           int(is_vertex_a_front),
           int(is_vertex_b_front));
+    }
+
     auto& plstat    = _outsubmesh.mergeVar<SurfaceStatus>(he_ab, "plstatus");
+
     plstat._status  = ESurfaceStatus::NONE;
     plstat._vertexA = out_vtx_a;
     plstat._vertexB = out_vtx_b;
-    if (is_vertex_a_front and is_vertex_b_front) {
+
+    // both in front
+    if (is_vertex_a_front and is_vertex_b_front) { 
       plstat._status  = ESurfaceStatus::FRONT;
       plstat._vertexA = out_vtx_a;
       plstat._vertexB = out_vtx_b;
-      if (do_log)
+      if (do_log){
         logchan_clip->log("    emit front he_ab<%p>", (void*)he_ab.get());
-    } else if ((not is_vertex_a_front) and (not is_vertex_b_front)) {
+      }
+    }
+    // both in back
+     else if ((not is_vertex_a_front) and (not is_vertex_b_front)) {
       plstat._status  = ESurfaceStatus::BACK;
       plstat._vertexA = out_vtx_a;
       plstat._vertexB = out_vtx_b;
-      if (do_log)
+      if (do_log){
         logchan_clip->log("    emit back he_ab<%p>", (void*)he_ab.get());
-    } else { // did we cross plane ?
+      }
+    }
+    // did we cross plane ?
+    else { 
       OrkAssert(is_vertex_a_front != is_vertex_b_front);
       bool front_to_back = (is_vertex_a_front and not is_vertex_b_front);
       bool back_to_front = (not is_vertex_a_front and is_vertex_b_front);
@@ -391,8 +408,9 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
       dray3 lsegab(out_vtx_a->mPos - n_ab * 1000.0, n_ab);
       bool does_intersect = _clipprimitive->doesIntersect(lsegab, isectdist, vPos);
       dvec3 LerpedVertex;
-      if (do_log)
+      if (do_log){
         logchan_clip->log("    does_intersectAB<%d>", int(does_intersect));
+      }
       if (does_intersect) {
         double fDist   = (out_vtx_a->mPos - out_vtx_b->mPos).magnitude();
         double fDist2  = (out_vtx_a->mPos - vPos).magnitude();
@@ -401,8 +419,9 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
       } else {
         dray3 lsegba(out_vtx_b->mPos + n_ab * 1000.0, -n_ab);
         does_intersect = _clipprimitive->doesIntersect(lsegba, isectdist, vPos);
-        if (do_log)
+        if (do_log){
           logchan_clip->log("    does_intersectBA<%d>", int(does_intersect));
+        }
         double fDist   = (out_vtx_b->mPos - out_vtx_a->mPos).magnitude();
         double fDist2  = (out_vtx_b->mPos - vPos).magnitude();
         double fScalar = (abs(fDist) < SURFACE_EPSILON) ? 0.0 : fDist2 / fDist;
@@ -457,7 +476,10 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
         }
       } // isect1 ?
       else {
-        // OrkAssert(false); // crossed the plane, but non intersecting ?
+        printf("front_to_back<%d>\n", int(front_to_back));
+        printf("back_to_front<%d>\n", int(back_to_front));
+        printf("isectdist<%g>\n", isectdist );
+         OrkAssert(false); // crossed the plane, but non intersecting ?
       }
     } // did we cross plane ?
   }   // for (int iva = 0; iva < inuminverts; iva++) {

@@ -15,7 +15,8 @@ namespace ork::audio::singularity {
 // nonlinear blocks
 ///////////////////////////////////////////////////////////////////////////////
 struct SHAPER_DATA : public DspBlockData {
-  SHAPER_DATA(std::string name);
+  DeclareConcreteX(SHAPER_DATA,DspBlockData);
+  SHAPER_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 
@@ -25,7 +26,8 @@ struct SHAPER : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
 };
 struct SHAPE2_DATA : public DspBlockData {
-  SHAPE2_DATA(std::string name);
+  DeclareConcreteX(SHAPE2_DATA,DspBlockData);
+  SHAPE2_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SHAPE2 : public DspBlock {
@@ -34,7 +36,8 @@ struct SHAPE2 : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
 };
 struct TWOPARAM_SHAPER_DATA : public DspBlockData {
-  TWOPARAM_SHAPER_DATA(std::string name);
+  DeclareConcreteX(TWOPARAM_SHAPER_DATA,DspBlockData);
+  TWOPARAM_SHAPER_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct TWOPARAM_SHAPER : public DspBlock {
@@ -46,7 +49,8 @@ struct TWOPARAM_SHAPER : public DspBlock {
 };
 //
 struct WrapData : public DspBlockData {
-  WrapData(std::string name);
+  DeclareConcreteX(WrapData,DspBlockData);
+  WrapData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct Wrap : public DspBlock {
@@ -55,7 +59,8 @@ struct Wrap : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
 };
 struct DistortionData : public DspBlockData {
-  DistortionData(std::string name);
+  DeclareConcreteX(DistortionData,DspBlockData);
+  DistortionData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct Distortion : public DspBlock {

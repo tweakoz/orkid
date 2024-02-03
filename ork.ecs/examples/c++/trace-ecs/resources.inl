@@ -87,6 +87,7 @@ struct Resources {
   }
 
   void onGpuInit(Context* ctx) {
+    _controller->gpuInit(ctx);
   }
 
   void onUpdateInit() {

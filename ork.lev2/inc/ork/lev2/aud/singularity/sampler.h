@@ -9,6 +9,7 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/envelope.h>
+#include <ork/lev2/aud/singularity/filters.h>
 
 namespace ork::audio::singularity {
 
@@ -31,19 +32,27 @@ struct natenvseg {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct sample {
-  sample();
+struct WaveformData{
+  std::vector<s16> _sampledata;
+};
+
+struct SampleData : public ork::Object {
+
+  DeclareConcreteX(SampleData, ork::Object);
+
+  SampleData();
+
+  void loadFromAudioFile(const std::string& filename);
 
   std::string _name;
   const s16* _sampleBlock;
 
   int _blk_start;
   int _blk_alt;
+  int _blk_end;
 
   int _blk_loopstart;
   int _blk_loopend;
-
-  int _blk_end;
 
   int _loopPoint;
   int _subid;
@@ -51,6 +60,10 @@ struct sample {
   float _linGain;
   int _rootKey;
   int _highestPitch;
+  int _interpMethod = 0;
+  float _originalPitch = 0.0f;
+  
+  svar64_t _user;
 
   eLoopMode _loopMode = eLoopMode::NONE;
   natenvwrapperdata_ptr_t _naturalEnvelope;
@@ -59,17 +72,23 @@ struct sample {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct multisample {
+struct MultiSampleData : public ork::Object {
+
+  DeclareConcreteX(MultiSampleData, ork::Object);
+
   std::string _name;
   int _objid;
-  std::map<int, sample*> _samples;
+  std::map<int, sample_ptr_t> _samples;
+  std::map<std::string, sample_ptr_t> _samplesByName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct kmregion {
+struct KmRegionData : public ork::Object {
 
-  kmregion* clone() const;
+  DeclareConcreteX(KmRegionData, ork::Object);
+
+  kmregion_ptr_t clone() const;
   int _lokey = 0, _hikey = 0;
   int _lovel = 0, _hivel = 127;
   int _tuning                 = 0;
@@ -78,21 +97,23 @@ struct kmregion {
   float _linGain              = 1.0f;
   int _multsampID = -1, _sampID = -1;
   std::string _sampleName;
-  const multisample* _multiSample = nullptr;
-  const sample* _sample           = nullptr;
+  multisample_constptr_t _multiSample = nullptr;
+  sample_constptr_t _sample           = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct KeyMap {
+struct KeyMapData : public ork::Object {
+
+  DeclareConcreteX(KeyMapData, ork::Object);
 
   keymap_ptr_t clone() const;
 
   std::string _name;
-  std::vector<kmregion*> _regions;
+  std::vector<kmregion_ptr_t> _regions;
   int _kmID = -1;
 
-  kmregion* getRegion(int note, int vel) const;
+  kmregion_ptr_t getRegion(int note, int vel) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,19 +136,18 @@ struct RegionSearch{
   int _keydiff = -1;
   float _baseCents = 0.0f;
   float _preDSPGAIN = 1.0f;
-  const kmregion* _kmregion = nullptr;
   int _curpitchadjx = 0;
   int _curpitchadj = 0;
   int _kmcents = 0;
   int _pchcents = 0;
-  const sample* _sample = nullptr;
-
+  sample_constptr_t _sample = nullptr;
+  kmregion_constptr_t _kmregion = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 
 struct NatEnv {
   NatEnv();
-  void keyOn(const KeyOnInfo& KOI, const sample* s);
+  void keyOn(const KeyOnInfo& KOI, sample_constptr_t s);
   void keyOff();
   const natenvseg& getCurSeg() const;
   float compute();
@@ -149,16 +169,37 @@ struct NatEnv {
   envadjust_method_t _envadjust;
 };
 
-struct SAMPLER_DATA : public DspBlockData {
-  SAMPLER_DATA(std::string name);
-  dspblk_ptr_t createInstance() const override;
-  RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
+///////////////////////////////////////////////////////////////////////////////
+
+class SamplerLowPassFilter {
+public:
+    SamplerLowPassFilter(size_t order) : _coeffs(order, 1.0f / order), _buffer(order, 0.0f), _order(order) {}
+
+    float process(float input) {
+        // Shift buffer contents
+        for (size_t i = _order - 1; i > 0; --i) {
+            _buffer[i] = _buffer[i - 1];
+        }
+        _buffer[0] = input;
+
+        // Apply filter
+        float output = 0.0f;
+        for (size_t i = 0; i < _order; ++i) {
+            output += _buffer[i] * _coeffs[i];
+        }
+        return output;
+    }
+
+private:
+    std::vector<float> _coeffs;
+    std::vector<float> _buffer;
+    size_t _order;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct sampleOsc {
-  sampleOsc(const SAMPLER_DATA* data);
+struct SampleOscillator {
+  SampleOscillator(const SAMPLER_DATA* data);
 
   void keyOn(const KeyOnInfo& koi);
   void keyOff();
@@ -171,10 +212,10 @@ struct sampleOsc {
   float playLoopBid();
   // bool playbackDone() const;
 
-  // typedef float(sampleOsc::*pbfunc_t)();
+  // typedef float(SampleOscillator::*pbfunc_t)();
   // pbfunc_t _pbFunc = nullptr;
 
-  float (sampleOsc::*_pbFunc)() = nullptr;
+  float (SampleOscillator::*_pbFunc)() = nullptr;
 
   const SAMPLER_DATA* _sampler_data;
   layer_ptr_t _lyr;
@@ -215,6 +256,22 @@ struct sampleOsc {
   natenv_ptr_t _natAmpEnv;
 
   bool _released;
+  SamplerLowPassFilter _lpFilter; 
+  OnePoleLoPass _lpFilter2A; 
+  OnePoleLoPass _lpFilter2B; 
+  BiQuad _bq[4];
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SAMPLER_DATA : public DspBlockData {
+
+  DeclareConcreteX(SAMPLER_DATA, DspBlockData);
+
+  SAMPLER_DATA(std::string name="");
+  dspblk_ptr_t createInstance() const override;
+  RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
+  float _lowpassfrq;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,7 +283,7 @@ struct SAMPLER final : public DspBlock {
 
   void doKeyOn(const KeyOnInfo& koi);
   void doKeyOff();
-  sampleOsc* _spOsc = nullptr;
+  SampleOscillator* _spOsc = nullptr;
   natenvwrapperdata_ptr_t _natenvwrapperdata;
   float _filtp;
 };

@@ -24,7 +24,6 @@ static logchannel_ptr_t logchan_synth = logger()->createChannel("singul.syn", fv
 void synth::nextEffect(outbus_ptr_t bus) {
   _eventmap.atomicOp([=](eventmap_t& emap) { //
     emap.insert(std::make_pair(0.0f, [=]() {
-
       ///////////////////////////////
       auto it = bus->_fxcurpreset;
       if (it == _fxpresets.end()) {
@@ -36,8 +35,8 @@ void synth::nextEffect(outbus_ptr_t bus) {
         it = _fxpresets.begin();
       }
       ///////////////////////////////
-      bus->_fxcurpreset    = it;
-      auto nextpreset = *(bus->_fxcurpreset);
+      bus->_fxcurpreset = it;
+      auto nextpreset   = *(bus->_fxcurpreset);
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
       bus->_fxname = nextpreset->_name;
@@ -49,7 +48,7 @@ void synth::nextEffect(outbus_ptr_t bus) {
 void synth::prevEffect(outbus_ptr_t bus) {
   _eventmap.atomicOp([=](eventmap_t& emap) { //
     emap.insert(std::make_pair(0.0f, [=]() {
-      auto it      = bus->_fxcurpreset;
+      auto it = bus->_fxcurpreset;
       if (it != _fxpresets.end()) {
         if (it == _fxpresets.begin()) {
           // If it's the beginning, rotate to the end
@@ -60,8 +59,8 @@ void synth::prevEffect(outbus_ptr_t bus) {
         }
       }
       ///////////////////////////////
-      bus->_fxcurpreset    = it;
-      auto nextpreset = *(bus->_fxcurpreset);
+      bus->_fxcurpreset = it;
+      auto nextpreset   = *(bus->_fxcurpreset);
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
       bus->_fxname = nextpreset->_name;
@@ -84,7 +83,7 @@ void synth::setEffect(outbus_ptr_t bus, std::string name) {
       auto deferred_operation = [=]() {
         assert(nextpreset->_algdata != nullptr); // did you add presets ?
         bus->setBusDSP(nextpreset);
-        bus->_fxname = name;
+        bus->_fxname      = name;
         bus->_fxcurpreset = it;
         logchan_synth->log("switched to effect<%s>", name.c_str());
       };
@@ -119,6 +118,31 @@ outbus_ptr_t synth::outputBus(std::string named) const {
              : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
+std::atomic<int> galloccount = 0;
+delaycontext_ptr_t synth::allocDelayLine(){
+  delaycontext_ptr_t rval;
+  _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+    OrkAssert(unlocked.size());
+    rval = unlocked.back();
+    unlocked.pop_back();
+    int count = galloccount.fetch_add(1);
+    printf("alloc<%d>\n", count );
+  });
+  return rval;
+}
+void synth::freeDelayLine(delaycontext_ptr_t delay){
+  auto op = [this,delay](){
+    delay->clear();
+    _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+      unlocked.push_front(delay);
+      int count = galloccount.fetch_add(-1);
+      printf("free<%d>\n", count );
+    });
+  };
+  opq::concurrentQueue()->enqueue(op);
+
+}
+///////////////////////////////////////////////////////////////////////////////
 synth::synth()
     : _timeaccum(0.0f)
     , _sampleRate(0.0f)
@@ -127,17 +151,39 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
-  _tempbus         = std::make_shared<OutputBus>();
-  _tempbus->_name  = "temp-dsp";
-  _numactivevoices = 0;
-  auto mainbus     = createOutputBus("main");
-  _curprogrambus   = mainbus;
+  logchan_synth->log("clearing delay lines...");
+  std::atomic<int> delayopcounter = 0;
+  for( int i=0; i<1024; i++){
+    auto op = [this,&delayopcounter](){
+      delayopcounter.fetch_add(1);
+      auto delay = std::make_shared<DelayContext>();
+      delay->clear();
+      _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+        unlocked.push_back(delay);
+        delayopcounter.fetch_sub(1);
+      });
+    };
+    opq::concurrentQueue()->enqueue(op);
+  }
+  while(delayopcounter.load()>0){
+    usleep(1000);
+  }
+  logchan_synth->log("delay lines cleared.");
+
+  _sequencer  = std::make_shared<Sequencer>(this);
+  _prgchannel = std::make_shared<ProgramChannel>();
+
+  _tempbus              = std::make_shared<OutputBus>();
+  _tempbus->_name       = "temp-dsp";
+  _numactivevoices      = 0;
+  auto mainbus          = createOutputBus("main");
+  _curprogrambus        = mainbus;
   mainbus->_fxcurpreset = _fxpresets.rbegin().base();
 
   // TODO - synth::instance(); is creating chicken and egg problems
   loadAllFxPresets(this);
 
-  setEffect(mainbus,"none");
+  setEffect(mainbus, "none");
 
   for (int i = 0; i < kmaxlayerspersynth; i++) {
     auto l = std::make_shared<Layer>();
@@ -250,8 +296,9 @@ void synth::deactivateVoices() {
     }
 
     auto it = _activeVoices.find(l);
-    assert(it != _activeVoices.end());
-    _activeVoices.erase(it);
+    if(it!=_activeVoices.end()){
+      _activeVoices.erase(it);
+    }
 
     int inumv = _activeVoices.size();
 
@@ -268,6 +315,8 @@ void synth::deactivateVoices() {
       l->_alg->_algdata.returnAlgInst(l->_alg);
       l->_alg = nullptr;
     }
+
+    /////////////////////////////////////
 
     done = (_deactiveateVoiceQ.size() == 0);
   }
@@ -310,51 +359,107 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
   if (not pdata)
     return nullptr;
   programInst* pi = nullptr;
-  _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
-    auto it = piset.begin();
-    assert(it != piset.end());
-    pi = *it;
-    piset.erase(it);
-  });
-  pi->_progdata = pdata;
 
-  addEvent(0.0f, [note, velocity, pdata, this, pi, kmods]() {
-    logchan_synth->log("liveKeyOn note<%d>", note);
+  bool needs_new_trigger = true;
 
-    int clampn = std::clamp(note, 0, 127);
-    int clampv = std::clamp(velocity, 0, 127);
-
-    pi->keyOn(clampn, clampv, pdata, kmods);
-    if (kmods) {
-      _CCIVALS.atomicOp([kmods](keyonmodvect_t& unlocked) { unlocked.push_back(kmods); });
+  if (pdata->_monophonic) {
+    _prgchannel->_monokeycount++;
+    _prgchannel->_mononotes.push_back(note);
+    for (auto monopi : _prgchannel->_monoprogs) {
+      if (monopi->_progdata == pdata) {
+        pi                = monopi;
+        needs_new_trigger = false;
+        addEvent(0.0f, [note, velocity, monopi]() {
+          for (auto l : monopi->_layers) {
+            l->reTriggerMono(note, velocity);
+          }
+        });
+      }
     }
-    _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
-      piset.insert(pi);
+  }
+
+  if (needs_new_trigger) {
+    _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
+      auto it = piset.begin();
+      assert(it != piset.end());
+      pi = *it;
+      piset.erase(it);
     });
-
-    _lnoteframe   = 0;
-    _lnotetime    = 0.0f;
-    _clearhuddata = true;
-
-    for (auto h : _onkey_subscribers) {
-      h(clampn, clampv, pi);
+    pi->_progdata = pdata;
+    if (pdata->_monophonic) {
+      _prgchannel->_monokeycount = 1;
+      _prgchannel->_mononotes.clear();
+      _prgchannel->_mononotes.push_back(note);
     }
-  });
+    addEvent(0.0f, [note, velocity, pdata, this, pi, kmods]() {
+      logchan_synth->log("liveKeyOn note<%d>", note);
+
+      int clampn = std::clamp(note, 0, 127);
+      int clampv = std::clamp(velocity, 0, 127);
+
+      pi->keyOn(clampn, clampv, pdata, kmods);
+      if (kmods) {
+        _CCIVALS.atomicOp([kmods](keyonmodvect_t& unlocked) { unlocked.push_back(kmods); });
+      }
+      _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
+        piset.insert(pi);
+      });
+
+      _lnoteframe   = 0;
+      _lnotetime    = 0.0f;
+      _clearhuddata = true;
+
+      for (auto h : _onkey_subscribers) {
+        h(clampn, clampv, pi);
+      }
+    });
+  }
   return pi;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void synth::liveKeyOff(programInst* pinst) {
-  addEvent(0.0f, [pinst, this]() {
-    pinst->keyOff();
-    _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
-      auto it = piset.find(pinst);
-      assert(it != piset.end());
-      piset.erase(it);
+void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
+  auto pdata      = pinst->_progdata;
+  bool do_key_off = true;
+  if (pdata->_monophonic) {
+    _prgchannel->_monokeycount--;
+    do_key_off = (_prgchannel->_monokeycount == 0);
+    if (not do_key_off) {
+      int count = _prgchannel->_mononotes.size();
+      for(int i=count-1; i>=0; i-- ){
+        if( _prgchannel->_mononotes[i] == note ){
+          auto it = _prgchannel->_mononotes.begin()+i;
+          _prgchannel->_mononotes.erase(it);
+          count = _prgchannel->_mononotes.size();
+          if(count){
+            int prev = _prgchannel->_mononotes[count-1];
+            addEvent(0.0f, [prev, pinst]() {
+              for (auto l : pinst->_layers) {
+                l->reTriggerMono(prev, 0);
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+
+  if (do_key_off) {
+    auto it = _prgchannel->_monoprogs.find(pinst);
+    if (it != _prgchannel->_monoprogs.end()) {
+      _prgchannel->_monoprogs.erase(it);
+    }
+    addEvent(0.0f, [pinst, this]() {
+      pinst->keyOff();
+      _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+        auto it = piset.find(pinst);
+        assert(it != piset.end());
+        piset.erase(it);
+      });
+      _freeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+        piset.insert(pinst);
+      });
     });
-    _freeProgInst.atomicOp([pinst](proginstset_t& piset) { //
-      piset.insert(pinst);
-    });
-  });
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -374,8 +479,29 @@ template <typename T> void _remove_items(std::vector<T>& vec, const std::vector<
 }
 
 void synth::mainThreadHandler() {
+
+  /////////////////////////////////
+  // execute external audio thread handlers
+  /////////////////////////////////
+
+  for (auto h : _audiothreadhandlers) {
+    h->_handler(this);
+  }
+
+  /////////////////////////////////
+  // process sequencer
+  /////////////////////////////////
+
+  _sequencer->process();
+
+  /////////////////////////////////
+  // in critical section,
+  //  separate _CCIVALS into items to execute and items to remove
+  /////////////////////////////////
+
   _kmod_exec_list.clear();
   _kmod_rem_list.clear();
+
   _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked) {
     size_t index = 0;
     for (auto kmod : unlocked) {
@@ -386,7 +512,13 @@ void synth::mainThreadHandler() {
       }
       index++;
     }
+    _remove_items(unlocked, _kmod_rem_list); // remove dangling items
   });
+
+  /////////////////////////////////
+  // execute remaining items
+  /////////////////////////////////
+
   for (auto kmod : _kmod_exec_list) {
     for (auto item : kmod->_mods) {
       auto kmdata = item.second;
@@ -404,10 +536,14 @@ void synth::mainThreadHandler() {
       }
     }
   }
-  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked) { _remove_items(unlocked, _kmod_rem_list); });
 }
 
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
+
+  float fv = float(velocity) / 127.0f;
+  fv = powf(fv, _velcurvepower);
+  velocity = int(fv*127.0f);
+
   assert(pdata);
   programInst* pi = nullptr;
 
@@ -698,9 +834,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   /////////////////////////////
   // final clamping
   /////////////////////////////
+  float clamp = 2.0f;
   for (int i = 0; i < inumframes; i++) {
-    float L = clip_float(master_left[i] * _masterGain, -1.0f, 1.0f);
-    float R = clip_float(master_right[i] * _masterGain, -1.0f, 1.0f);
+    //float L = clip_float(master_left[i] * _masterGain, -clamp, clamp);
+    //float R = clip_float(master_right[i] * _masterGain, -clamp, clamp);
+    float L = master_left[i] * _masterGain;
+    float R = master_right[i] * _masterGain;
     if (isnan(L) or isinf(L)) {
       L = 0.0f;
     }
@@ -733,7 +872,7 @@ programInst::~programInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld) {
+void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod) {
   std::lock_guard<std::mutex> lock(l->_mutex);
 
   assert(ld != nullptr);
@@ -747,6 +886,9 @@ void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld)
 
   if (ld->_outbus.size()) {
     obus = outputBus(ld->_outbus);
+  }
+  if (kmod and kmod->_outbus_override) {
+    obus = kmod->_outbus_override;
   }
 
   l->keyOn(note, velocity, ld, obus);
@@ -765,7 +907,8 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod) {
   _keymods = kmod;
 
-  auto syn = synth::instance();
+  auto syn     = synth::instance();
+  auto prgchan = syn->_prgchannel;
 
   size_t layer_mask = 0xffffffff;
   if (kmod) {
@@ -774,8 +917,14 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
   // printf( "layer_mask<0x%08x>\n", layer_mask);
   size_t ilayer         = 0;
   size_t num_layerdatas = pd->_layerdatas.size();
+
+  if (_progdata->_monophonic) {
+    prgchan->_monoprogs.insert(this);
+  }
+
   for (size_t ilayer = 0; ilayer < num_layerdatas; ilayer++) {
     auto ld = pd->_layerdatas[ilayer];
+
     if ((layer_mask & (1 << ilayer)) == 0) {
       continue;
     }
@@ -793,21 +942,20 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     if (velocity < ld->_loVel || velocity > ld->_hiVel)
       continue;
 
-    // printf("KEYON L%d\n", ilayer);
+    auto l = syn->allocLayer();
+    assert(l != nullptr);
+    assert(ld != nullptr);
 
-    auto l      = syn->allocLayer();
     l->_ldindex = ilayer - 1;
     l->_keymods = _keymods;
     l->_name    = ld->_name;
 
-    assert(l != nullptr);
-
-    assert(ld != nullptr);
-
-    syn->_keyOnLayer(l, note, velocity, ld);
+    syn->_keyOnLayer(l, note, velocity, ld, kmod);
 
     _layers.push_back(l);
-  }
+
+  } // for (size_t ilayer = 0; ilayer < num_layerdatas; ilayer++) {
+
   int inuml = _layers.size();
   int solol = syn->_soloLayer;
 
@@ -818,6 +966,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
   } else {
     syn->_hudLayer = nullptr;
   }
+  // printf("KEYON L%d\n", ilayer);
 
   // if (syn->_hudLayer)
   // syn->_hudbuf.push(syn->_hudLayer->_HKF);

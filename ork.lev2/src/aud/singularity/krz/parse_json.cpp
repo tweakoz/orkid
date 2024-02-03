@@ -22,11 +22,11 @@ using namespace rapidjson;
 
 namespace ork::audio::singularity {
 
-const s16* getK2V3InternalSoundBlock() {
-  static s16* gdata = nullptr;
-  if (nullptr == gdata) {
-    gdata          = (s16*)malloc(24 << 20);
-    auto data_read = gdata;
+struct SoundBlockData{
+
+  SoundBlockData(){
+    _romDATA          = (s16*)malloc(24 << 20);
+    auto data_read = _romDATA;
     ///////////////////////////////////////////////////////////////////////////////////////////
     auto load_sound_block = [&](file::Path filename, size_t numbytes) {
       printf("Loading Soundblock<%s>\n", filename.c_str());
@@ -43,9 +43,13 @@ const s16* getK2V3InternalSoundBlock() {
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_base.bin", 8 << 20);
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext1.bin", 8 << 20);
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext2.bin", 8 << 20);
-    ///////////////////////////////////////////////////////////////////////////////////////////
   }
-  return gdata;
+  s16* _romDATA = nullptr;
+};
+
+const s16* getK2V3InternalSoundBlock() {
+  static auto romblocks = std::make_shared<SoundBlockData>();
+  return romblocks->_romDATA;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,7 +175,7 @@ static KrzAlgCfg getAlgConfig(int algID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
-  auto kmapout = std::make_shared<KeyMap>();
+  auto kmapout = std::make_shared<KeyMapData>();
 
   kmapout->_kmID = kmid;
   kmapout->_name = jsonobj["Keymap"].GetString();
@@ -184,7 +188,7 @@ keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
   {
     const auto& jsonrgn = jsonrgns[i];
 
-    auto kmr         = new kmregion;
+    auto kmr         = std::make_shared<KmRegionData>();
     kmr->_lokey      = jsonrgn["loKey"].GetInt() + 12;
     kmr->_hikey      = jsonrgn["hiKey"].GetInt() + 12;
     kmr->_lovel      = jsonrgn["loVel"].GetInt();
@@ -207,8 +211,8 @@ keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* parent) {
-  auto sout           = new sample;
+sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_constptr_t parent) {
+  auto sout           = std::make_shared<SampleData>();
   sout->_sampleBlock  = getK2V3InternalSoundBlock();
   sout->_name         = jsonobj["subSampleName"].GetString();
   sout->_subid        = jsonobj["subSampleIndex"].GetInt();
@@ -300,8 +304,8 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-multisample* KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
-  auto msout    = new multisample;
+multisample_ptr_t KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
+  auto msout    = std::make_shared<MultiSampleData>();
   msout->_name  = jsonobj["MultiSample"].GetString();
   msout->_objid = jsonobj["objectID"].GetInt();
   // printf( "Got MultiSample name<%s>\n", msout->_name.c_str() );
@@ -312,6 +316,7 @@ multisample* KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
   {
     auto s                     = parseSample(jsonsamps[i], msout);
     msout->_samples[s->_subid] = s;
+    msout->_samplesByName[s->_name] = s;
   }
   return msout;
 }
@@ -480,7 +485,7 @@ void KrzBankDataParser::parseFBlock(
     mods->_src1           = SRC1;
     if (s1.HasMember("Depth")) {
       auto& d          = s1["Depth"];
-      mods->_src1Depth = d["Value"].GetFloat();
+      mods->_src1Scale = d["Value"].GetFloat();
     }
     use_mods = true;
   }
@@ -772,6 +777,10 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   layerdata->_keymap = km;
 
   parseKmpBlock(keymapSeg, *layerdata->_kmpBlock);
+
+  layerdata->_headroom = jsonobj["headroom"].GetInt();
+  layerdata->_panmode = jsonobj["panmode"].GetInt();
+  layerdata->_pan = jsonobj["pan"].GetInt();
 
   layerdata->_loKey = jsonobj["loKey"].GetInt();
   layerdata->_hiKey = jsonobj["hiKey"].GetInt();
@@ -1246,6 +1255,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
     int objid               = it.first;
     auto km                 = it.second;
     _objdb->_keymaps[objid] = km;
+    _objdb->_keymapsByName[km->_name] = km;
     for (auto kr : km->_regions) {
       int msid  = kr->_multsampID;
       auto msit = _tempmultisamples.find(msid);
@@ -1269,8 +1279,9 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
   }
   for (auto it : _tempmultisamples) {
     int objid                    = it.first;
-    multisample* ms              = it.second;
-    _objdb->_multisamples[objid] = ms;
+    auto multsample              = it.second;
+    _objdb->_multisamples[objid] = multsample;
+    _objdb->_multisamplesByName[multsample->_name] = multsample;
   }
 
   /////////////////////////////////////////

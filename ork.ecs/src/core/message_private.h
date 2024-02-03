@@ -50,54 +50,54 @@ struct _FindComponent {
 };
 
 struct _SystemEvent {
+  svar64_t _eventData;
   sys_ref_t _sysref;
   token_t _eventID;
-  svar64_t _eventData;
 };
 
 struct _SimulationRequest {
-  token_t _requestID;
   svar64_t _eventData;
+  token_t _requestID;
   response_ref_t _respref;
 };
 
 struct _SystemRequest {
+  svar64_t _eventData;
   sys_ref_t _sysref;
   token_t _requestID;
-  svar64_t _eventData;
   response_ref_t _respref;
 };
 struct _SystemResponse {
+  svar64_t _eventData;
+  svar64_t _responseData;
   sys_ref_t _sysref;
   token_t _requestID;
-  svar64_t _eventData;
   response_ref_t _respref;
-  svar64_t _responseData;
 };
 
 struct _ComponentEvent {
+  svar64_t _eventData;
   comp_ref_t _compref;
   token_t _eventID;
-  svar64_t _eventData;
 };
 struct _ComponentRequest {
+  svar64_t _eventData;
   comp_ref_t _compref;
   token_t _requestID;
-  svar64_t _eventData;
   response_ref_t _respref;
 };
 struct _ComponentResponse {
+  svar64_t _eventData;
+  svar64_t _responseData;
   comp_ref_t _compref;
   token_t _requestID;
-  svar64_t _eventData;
   response_ref_t _respref;
-  svar64_t _responseData;
 };
 struct _SimulationResponse {
-  token_t _requestID;
   svar64_t _eventData;
-  response_ref_t _respref;
   svar64_t _responseData;
+  token_t _requestID;
+  response_ref_t _respref;
 };
 
 } //namespace ork::ecs::impl {

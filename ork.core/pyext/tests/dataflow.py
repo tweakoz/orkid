@@ -49,6 +49,7 @@ aout = a.createUniformFloatOutputPlug("outputX")
 binp = b.createUniformFloatXfInputPlug("inputX")
 graphdata.connect(binp,aout)
 
+
 #####################################################
 # generate execution topology
 #####################################################

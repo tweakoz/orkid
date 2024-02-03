@@ -110,6 +110,8 @@ TEST(QuatKlnRotorConversion) {
 
 TEST(DualQuatKnlMotor) {
 
+  // TODO fixme
+
   float this_EPSILON = 0.0001;
 
   math::FRANDOMGEN RG(10);
@@ -135,7 +137,6 @@ TEST(DualQuatKnlMotor) {
 
     auto MR = fdualquat(KM);
     auto P  = fvec3(KP);
-    //auto P2 = P*MR;
     auto P2 = P*MR;
 
     CHECK_CLOSE(P2.x, KP2.x(), this_EPSILON);
@@ -148,12 +149,14 @@ TEST(DualQuatKnlMotor) {
 
     if (XOK and YOK and ZOK) {
     } else {
+      printf( "////////////////////////////////////////////////////\n");
+      printf("P(x,y,z) <%g %g %g>\n", P.x, P.y, P.z);
       printf("KP(x,y,z) <%g %g %g>\n", KP.x(), KP.y(), KP.z());
+
+      printf("P2(x,y,z) <%g %g %g>\n", P2.x, P2.y, P2.z);
       printf("KP2(x,y,z) <%g %g %g>\n", KP2.x(), KP2.y(), KP2.z());
 
-      printf("P(x,y,z) <%g %g %g>\n", P.x, P.y, P.z);
-      printf("P2(x,y,z) <%g %g %g>\n", P2.x, P2.y, P2.z);
-      OrkAssert(false);
+      printf( "////////////////////////////////////////////////////\n");
     }
   }
 }

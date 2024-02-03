@@ -136,7 +136,7 @@ ELSE()
 ENDIF()
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
-target_link_libraries(ork_lev2 PRIVATE assimp audiofile shaderc_shared )
+target_link_libraries(ork_lev2 PRIVATE assimp audiofile sndfile shaderc_shared )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
 

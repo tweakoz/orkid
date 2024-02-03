@@ -12,9 +12,13 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 
+ImplementReflectionX(ork::audio::singularity::Fdn4ReverbData, "DspFxReverbFDN4");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void Fdn4ReverbData::describeX(class_t* clazz) {}
 
 Fdn4ReverbData::Fdn4ReverbData(std::string name)
     : DspBlockData(name) {
@@ -55,6 +59,12 @@ void Fdn4ReverbData::matrixHouseholder(float fbgain) {
 Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
     : DspBlock(dbd)
     , _mydata(dbd) {
+      auto syni = synth::instance();
+      _delayA = syni->allocDelayLine();
+      _delayB = syni->allocDelayLine();
+      _delayC = syni->allocDelayLine();
+      _delayD = syni->allocDelayLine();
+
   ///////////////////////////
   float input_g  = dbd->_input_gain;
   float output_g = dbd->_output_gain;
@@ -67,12 +77,19 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
   _outputGainsL = fvec4(output_g, output_g, 0, 0);
   _outputGainsR = fvec4(0, 0, output_g, output_g);
-  _delayA.setStaticDelayTime(tbase);
-  _delayB.setStaticDelayTime(tbase * tscale);
-  _delayC.setStaticDelayTime(tbase * tscale*tscale);
-  _delayD.setStaticDelayTime(tbase * tscale*tscale*tscale);
+  _delayA->setStaticDelayTime(tbase);
+  _delayB->setStaticDelayTime(tbase * tscale);
+  _delayC->setStaticDelayTime(tbase * tscale*tscale);
+  _delayD->setStaticDelayTime(tbase * tscale*tscale*tscale);
 }
+Fdn4Reverb::~Fdn4Reverb(){
+  auto syni = synth::instance();
+  syni->freeDelayLine(_delayA);
+  syni->freeDelayLine(_delayB);
+  syni->freeDelayLine(_delayC);
+  syni->freeDelayLine(_delayD);
 
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -110,10 +127,10 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     // do fdn4 operation
     /////////////////////////////////////
 
-    float aout = _delayA.out(fi);
-    float bout = _delayB.out(fi);
-    float cout = _delayC.out(fi);
-    float dout = _delayD.out(fi);
+    float aout = _delayA->out(fi);
+    float bout = _delayB->out(fi);
+    float cout = _delayC->out(fi);
+    float dout = _delayD->out(fi);
 
     auto abcd_out = fvec4(aout, bout, cout, dout);
 
@@ -139,10 +156,10 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
       dinpB =_allpassD[i].Tick(dinpB);
     }
 
-    _delayA.inp(ainpB);
-    _delayB.inp(binpB);
-    _delayC.inp(cinpB);
-    _delayD.inp(dinpB);
+    _delayA->inp(ainpB);
+    _delayB->inp(binpB);
+    _delayC->inp(cinpB);
+    _delayD->inp(dinpB);
 
     /////////////////////////////////////
     // output to dsp channels

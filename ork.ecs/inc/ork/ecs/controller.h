@@ -45,18 +45,20 @@ struct Controller {
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	using evq_t = std::vector<svar256_t>;
+	using evq_t = std::vector<svar32_t>;
 	using delayed_opq_t = std::multimap<float, void_lambda_t>;
   using delayed_opv_t = std::vector<void_lambda_t>;
 
 	struct Event {
 	  EventID _eventID;
-	  svar128_t _payload;
+	  svar160_t _payload;
 	};
 	struct Request {
 	  RequestID _requestID;
-	  svar128_t _payload;
+	  svar160_t _payload;
 	};
+	using event_ptr_t = std::shared_ptr<Event>;
+	using request_ptr_t = std::shared_ptr<Request>;
 
 	struct Transaction{
 		std::vector<svar256_t> _items;
@@ -70,7 +72,7 @@ struct Controller {
 		FILE* _output_file = nullptr;
 		void _traceEvent(const Event& event);
 		void _traceRequest(const Request& request);
-		std::string _traceVar128(const svar128_t& var);
+		std::string _traceVar128(const svar160_t& var);
 		std::string _traceVar64(const svar64_t& var);
 		std::string _traceTable(const DataTable& table);
 		bool _firstitem = true;
@@ -105,6 +107,7 @@ struct Controller {
 	void startSimulation();
 	void stopSimulation();
 	void bindScene(scenedata_ptr_t scene);
+	void gpuInit(lev2::Context* ctx);
 	void gpuExit(lev2::Context* ctx);
 	void updateExit();
 	void render(ui::drawevent_constptr_t drwev);
@@ -148,8 +151,8 @@ private:
 	friend struct TraceReader;
 	friend struct LuaContext;
 
-	void _enqueueEvent(Event& event);
-	void _enqueueRequest(Request& request);
+	void _enqueueEvent(event_ptr_t event);
+	void _enqueueRequest(request_ptr_t request);
 
   void _mutateObject(std::function<void(id2obj_map_t&)> operation);
 
@@ -181,6 +184,7 @@ private:
 	retainvec_t _forceRetained;
 
 	Timer _timer;
+	bool _needsGpuInit = true;
 
 };
 

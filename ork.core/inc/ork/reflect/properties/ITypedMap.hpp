@@ -97,6 +97,22 @@ void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) con
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
+template  <typename KeyType, typename ValueType> struct PAIRSET {
+  static void set(map_pair_t& the_pair, const KeyType& key, const ValueType& value) {
+    the_pair.first.set<KeyType>(key);
+    the_pair.second.set<ValueType>(value);
+  }
+};
+// custom setter for var_t's so we can use them as values in maps
+//   (since they can not be embedded in another var_t due to size contraints)
+template<typename KeyType>
+struct PAIRSET<KeyType, varmap::var_t> {
+    static void set(map_pair_t& the_pair, const KeyType& key, const varmap::var_t& value) {
+      the_pair.first.set<KeyType>(key);
+      the_pair.second = value;
+    }
+};
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType> //
 map_kvarray_t ITypedMap<KeyType, ValueType>::enumerateElements(object_constptr_t instance) const {
   map_kvarray_t rval;
@@ -110,8 +126,7 @@ map_kvarray_t ITypedMap<KeyType, ValueType>::enumerateElements(object_constptr_t
     GetVal(instance, K, V);
     //////////////////////////////
     map_pair_t P;
-    P.first.set<KeyType>(K);
-    P.second.set<ValueType>(V);
+    PAIRSET<KeyType, ValueType>::set(P, K, V);
     rval.push_back(P);
   }
   return rval;

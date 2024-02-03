@@ -197,6 +197,9 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
     fnear = 0.01f;
   if (ffar < 0.5f)
     ffar = 0.5f;
+  if(fnear>ffar){
+    ffar = fnear + 1;
+  }
   ///////////////////////////////////////////////////
   fvec3 target = mTarget;
   ///////////////////////////////////////////////////

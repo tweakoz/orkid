@@ -13,7 +13,11 @@ from collections import defaultdict
 import re
 from orkengine.core import *
 from orkengine.lev2 import *
+from _seq import midiToSingularitySequence
+from mido import MidiFile 
+
 ################################################################################
+sys.path.append((thisdir()).normalized.as_string) # add parent dir to path
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
 ################################################################################
@@ -67,17 +71,20 @@ class SingulTestApp(object):
     self.context = ctx
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
-    self.aux1bus = self.synth.createOutputBus("aux1")
-    self.aux2bus = self.synth.createOutputBus("aux2")
-    self.aux3bus = self.synth.createOutputBus("aux3")
-    self.aux4bus = self.synth.createOutputBus("aux4")
+    self.synth.system_tempo = 120.0
+    self.sequencer = self.synth.sequencer
+
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()
+    #self.synth.setEffect(self.mainbus,"Reverb:OilTank")
     self.synth.setEffect(self.mainbus,"none")
-    self.synth.setEffect(self.aux1bus,"none")
-    self.synth.setEffect(self.aux2bus,"none")
-    self.synth.setEffect(self.aux3bus,"none")
-    self.synth.setEffect(self.aux4bus,"Reverb:OilTank")
+    self.numaux = 8
+    self.auxbusses = []
+    self.auxbus_sources = []
+    for i in range(0,self.numaux):
+      self.auxbusses += [self.synth.createOutputBus("aux%d" % (i+1))]
+      self.auxbus_sources += [self.auxbusses[i].createScopeSource()]
+      self.synth.setEffect(self.auxbusses[i],"none")
 
     lg_group = self.ezapp.topLayoutGroup
 
@@ -137,7 +144,7 @@ class SingulTestApp(object):
 
     self.mainbus_source.connect(self.oscope_sink)
     self.mainbus_source.connect(self.spectra_sink)
-
+    self.program_source = self.mainbus_source
     ######################### 
 
     self.gain = -24.0
@@ -197,37 +204,72 @@ class SingulTestApp(object):
     print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
     print("###########################################")
     pass
-
+  def setBusProgram(self,bus,prg):
+    self.synth.programbus = bus
+    self.synth.programbus.uiprogram = prg
+  def setUiProgram(self,prg):
+    self.synth.programbus.uiprogram = prg
+    if self.pgmview:
+      self.pgmview.setProgram(prg)
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
+      def _setSource(bus,source):
+        self.program_source.disconnect(self.oscope_sink)
+        self.program_source.disconnect(self.spectra_sink)
+        self.synth.programbus = bus
+        self.program_source = source
+        source.connect(self.oscope_sink)
+        source.connect(self.spectra_sink)
+        self.prog = bus.uiprogram
+        self.setUiProgram(self.prog)
       if KC == ord("0"): # solo layer off
         if uievent.shift:
           self.synth.soloLayer = -1
         else:
-          self.synth.programbus = self.mainbus
+          _setSource(self.mainbus,self.mainbus_source)
       elif KC == ord("1"): # solo layer 1
         if uievent.shift:
           self.synth.soloLayer = 0
         else:
-          self.synth.programbus = self.aux1bus
+          _setSource(self.auxbusses[0],self.auxbus_sources[0])
       elif KC == ord("2"): # solo layer 2
         if uievent.shift:
           self.synth.soloLayer = 1
         else:
-          self.synth.programbus = self.aux2bus
+          _setSource(self.auxbusses[1],self.auxbus_sources[1])
       elif KC == ord("3"): # solo layer 3
         if uievent.shift:
           self.synth.soloLayer = 2
         else:
-          self.synth.programbus = self.aux3bus
-      elif KC == ord("4"): # solo layer 3
+          _setSource(self.auxbusses[2],self.auxbus_sources[2])
+      elif KC == ord("4"): # solo layer 4
         if uievent.shift:
           self.synth.soloLayer = 3
         else:
-          self.synth.programbus = self.aux4bus
+          _setSource(self.auxbusses[3],self.auxbus_sources[3])
+      elif KC == ord("5"): # solo layer 5
+        if uievent.shift:
+          self.synth.soloLayer = 4
+        else:
+          _setSource(self.auxbusses[4],self.auxbus_sources[4])
+      elif KC == ord("6"): # solo layer 6
+        if uievent.shift:
+          self.synth.soloLayer = 5
+        else:
+          _setSource(self.auxbusses[5],self.auxbus_sources[5])
+      elif KC == ord("7"): # solo layer 7
+        if uievent.shift:
+          self.synth.soloLayer = 6
+        else:
+          _setSource(self.auxbusses[6],self.auxbus_sources[6])
+      elif KC == ord("8"): # solo layer 8
+        if uievent.shift:
+          self.synth.soloLayer = 7
+        else:
+          _setSource(self.auxbusses[7],self.auxbus_sources[7])
       elif KC == ord(" "): # hold drones
         for KC in self.voices:
           voice = self.voices[KC]
@@ -243,15 +285,18 @@ class SingulTestApp(object):
           self.prog_index = len(self.sorted_progs)-1
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
+        self.synth.programbus.uiprogram = self.prog
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
         return res
+        self.prog_index += 1
       elif KC == ord("."): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
+        self.synth.programbus.uiprogram = self.prog
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
         return res
@@ -259,23 +304,30 @@ class SingulTestApp(object):
       KC = uievent.keycode
       if KC in self.base_notes:
        if KC not in self.voices:
-         index_fixed = self.prog_index % len(self.sorted_progs)
-         prgname = self.sorted_progs[index_fixed]
-         self.prog = self.soundbank.programByName(prgname)
-         note = self.base_notes[KC] + (self.octave*12)
-         mods = self.genMods()
-         voice = self.synth.keyOn(note,127,self.prog,mods)
-         self.onNote(voice)
-         self.voices[KC] = voice
+         #index_fixed = self.prog_index % len(self.sorted_progs)
+         #prgname = self.sorted_progs[index_fixed]
+         self.prog = self.synth.programbus.uiprogram
+         if self.prog!=None:
+           note = self.base_notes[KC] + (self.octave*12)
+           mods = self.genMods()
+           voice = self.synth.keyOn(note,127,self.prog,mods)
+           self.onNote(voice)
+           self.voices[KC] = voice
          return res
       else:
         if KC == ord("["): # decr gain
-          self.gain -= 6.0
-          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          if uievent.shift:
+            self.gain -= 6.0
+            self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          else:
+            self.synth.programbus.gain = self.synth.programbus.gain - 3.0
           return res
         if KC == ord("]"): # incr gain
-          self.gain += 6.0
-          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          if uievent.shift:
+            self.gain += 6.0
+            self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          else:
+            self.synth.programbus.gain = self.synth.programbus.gain + 3.0
           return res
         elif KC == ord("-"): # next effect
           self.synth.prevEffect(self.synth.programbus)
@@ -298,21 +350,51 @@ class SingulTestApp(object):
           if self.octave > 8:
             self.octave = 8
           return res
-        elif KC == ord("N"): # new chart 
-          self.clearChart()
+        elif KC == ord("M"): # 
+          #timestamp = singularity.TimeStamp
+          #prg = self.synth.programbus.uiprogram
+          #prgname = prg.name
+          #print(prgname)
+          #print(prg)
+          #sequence = singularity.Sequence(prgname)
+          #timebase = sequence.timebase
+          ##timebase.numerator = 4
+          ##timebase.denominator = 4
+          ##timebase.tempo = 120.0
+          ##timebase.ppq = 100 # pulses per beat
+          #sequencer = self.synth.sequencer
+          #track = sequence.createTrack(prgname)
+          #track.program = prg
+          #track.outputbus = self.synth.programbus
+          #clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(64,0,0))
+
+          #midi_path = singularity.baseDataPath()/"midifiles"
+          #midiToSingularitySequence(
+            #midifile=MidiFile(str(midi_path/"moonlight.mid")),
+            #temposcale=1.9,
+            #sequence=sequence,
+            #CLIP=clip,
+            #feel=3)
+          #self.playback = sequencer.playSequence(sequence,self.synth.time+1)
           return res
-        elif KC == ord("M"): # show chart
-          self.showCharts()
-          return res
+
+        #elif KC == ord("N"): # new chart 
+        #  self.clearChart()
+        #  return res
+        #elif KC == ord("M"): # show chart
+        #  self.showCharts()
+        #  return res
 
   
     elif uievent.code == tokens.KEY_UP.hashed:
       KC = uievent.keycode
-      if KC in self.voices:
-        voice = self.voices[KC]
-        self.synth.keyOff(voice)
-        del self.voices[KC]
-        return res
+      if KC in self.base_notes:
+        note = self.base_notes[KC] + (self.octave*12)
+        if KC in self.voices:
+          voice = self.voices[KC]
+          self.synth.keyOff(voice,note,0)
+          del self.voices[KC]
+          return res
 
     return ui.HandlerResult()
 

@@ -15,7 +15,8 @@ namespace ork::audio::singularity {
 // oscils
 ///////////////////////////////////////////////////////////////////////////////
 struct PITCH_DATA : public DspBlockData {
-  PITCH_DATA(std::string name);
+  DeclareConcreteX(PITCH_DATA,DspBlockData);
+  PITCH_DATA(std::string name="X");
   dspblkdata_ptr_t clone() const final;
   dspblk_ptr_t createInstance() const final;
 };
@@ -25,10 +26,13 @@ struct PITCH : public DspBlock {
   PITCH(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
+  float _target = 0.0f;
+  float _current = 0.0f;
 };
 
 struct SWPLUSSHP_DATA : public DspBlockData {
-  SWPLUSSHP_DATA(std::string name);
+  DeclareConcreteX(SWPLUSSHP_DATA,DspBlockData);
+  SWPLUSSHP_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SWPLUSSHP : public DspBlock {
@@ -39,7 +43,8 @@ struct SWPLUSSHP : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SAWPLUS_DATA : public DspBlockData {
-  SAWPLUS_DATA(std::string name);
+  DeclareConcreteX(SAWPLUS_DATA,DspBlockData);
+  SAWPLUS_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SAWPLUS : public DspBlock {
@@ -50,7 +55,8 @@ struct SAWPLUS : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SINE_DATA : public DspBlockData {
-  SINE_DATA(std::string name);
+  DeclareConcreteX(SINE_DATA,DspBlockData);
+  SINE_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SINE : public DspBlock {
@@ -61,7 +67,8 @@ struct SINE : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SAW_DATA : public DspBlockData {
-  SAW_DATA(std::string name);
+  DeclareConcreteX(SAW_DATA,DspBlockData);
+  SAW_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SAW : public DspBlock {
@@ -72,7 +79,8 @@ struct SAW : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SQUARE_DATA : public DspBlockData {
-  SQUARE_DATA(std::string name);
+  DeclareConcreteX(SQUARE_DATA,DspBlockData);
+  SQUARE_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SQUARE : public DspBlock {
@@ -83,7 +91,8 @@ struct SQUARE : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SINEPLUS_DATA : public DspBlockData {
-  SINEPLUS_DATA(std::string name);
+  DeclareConcreteX(SINEPLUS_DATA,DspBlockData);
+  SINEPLUS_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SINEPLUS : public DspBlock {
@@ -94,7 +103,8 @@ struct SINEPLUS : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SHAPEMODOSC_DATA : public DspBlockData {
-  SHAPEMODOSC_DATA(std::string name);
+  DeclareConcreteX(SHAPEMODOSC_DATA,DspBlockData);
+  SHAPEMODOSC_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SHAPEMODOSC : public DspBlock {
@@ -105,7 +115,8 @@ struct SHAPEMODOSC : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PLUSSHAPEMODOSC_DATA : public DspBlockData {
-  PLUSSHAPEMODOSC_DATA(std::string name);
+  DeclareConcreteX(PLUSSHAPEMODOSC_DATA,DspBlockData);
+  PLUSSHAPEMODOSC_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct PLUSSHAPEMODOSC : public DspBlock {
@@ -116,7 +127,8 @@ struct PLUSSHAPEMODOSC : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SYNCM_DATA : public DspBlockData {
-  SYNCM_DATA(std::string name);
+  DeclareConcreteX(SYNCM_DATA,DspBlockData);
+  SYNCM_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SYNCM : public DspBlock {
@@ -128,7 +140,8 @@ struct SYNCM : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct SYNCS_DATA : public DspBlockData {
-  SYNCS_DATA(std::string name);
+  DeclareConcreteX(SYNCS_DATA,DspBlockData);
+  SYNCS_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct SYNCS : public DspBlock {
@@ -140,7 +153,8 @@ struct SYNCS : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PWM_DATA : public DspBlockData {
-  PWM_DATA(std::string name);
+  DeclareConcreteX(PWM_DATA,DspBlockData);
+  PWM_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct PWM : public DspBlock {
@@ -152,7 +166,8 @@ struct PWM : public DspBlock {
 };
 
 struct NOISE_DATA : public DspBlockData {
-  NOISE_DATA(std::string name);
+  DeclareConcreteX(NOISE_DATA,DspBlockData);
+  NOISE_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct NOISE : public DspBlock {

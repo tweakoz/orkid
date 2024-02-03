@@ -9,7 +9,11 @@
 #include <fstream>
 
 using namespace rapidjson;
-namespace ork::audio::singularity::krzio {
+namespace ork::audio::singularity {
+
+const s16* getK2V3InternalSoundBlock();
+
+namespace krzio {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +204,8 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_ualt         = uAltStart;
       pitem->_uloop        = uLoopOfSpan;
       pitem->_uend         = uEndOfSpan;
+      std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
+      printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
         // printf( "///\n");
         // printf( "/// sample==<%s>\n", nam.c_str() );
@@ -261,8 +267,11 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
         //////////////////////////////////////
         // pdls_sample->Resize(inumsmps);
         void* pdest      = pitem->_sampleData;
-        const void* psrc = (const void*)(_sfile.mpSampleData + opts.start);
-        memcpy(pdest, psrc, inumsmps * 2);
+        auto sample_block = getK2V3InternalSoundBlock();
+
+        pitem->_sampleData = (void*) (sample_block + opts.start);
+        //const void* psrc = (const void*)(_sfile.mpSampleData + opts.start);
+        //memcpy(pdest, psrc, inumsmps * 2);
         //_sfile.WriteSample( buffer, opts );
         //////////////////////////////////////
         pitem->_valid = true;
@@ -356,4 +365,4 @@ void filescanner::emitSample(const SampleItem* si, rapidjson::Value& parent) {
   /////////////////////////////
   parent.PushBack(sampleobject, _japrog);
 }
-} // namespace ork::audio::singularity::krzio
+}} // namespace ork::audio::singularity::krzio

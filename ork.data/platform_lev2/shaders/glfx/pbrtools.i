@@ -750,14 +750,16 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
       texelFetch(InstanceMatrices, ivec2(matrix_u + 3, matrix_v), 0));
   mat3 instance_rot = mat3(instance_matrix);
   ////////////////////////////////
-  vec4 instanced_pos      = (instance_matrix * position);
-  vec4 instanced_modcolor = texelFetch(InstanceColors, ivec2(modcolor_u, modcolor_v), 0);
-  vec3 wnormal            = normalize(instance_rot * normal);
+  //vec4 instanced_pos      = (instance_matrix * position);
+  //vs_instanced(position, normal, binormal, instance_matrix);
   ////////////////////////////////
-  gl_Position = mvp * position;
+  gl_Position = mvp * instance_matrix * position;
   frg_wpos    = (m * position).xyz;
   frg_wnrm    = normalize(mrot * normal);
   frg_uv = vec2(0,0);
+  frg_pickSUBID.x  = gl_InstanceID;
+  frg_pickSUBID.y  = 2;
+  frg_pickSUBID.z  = 3;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //

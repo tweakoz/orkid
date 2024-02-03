@@ -8,13 +8,15 @@
 #pragma once
 
 #include "dspblocks.h"
+#include "dsp_mix.h"
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
 struct AMP_ADAPTIVE_DATA : public DspBlockData {
-  AMP_ADAPTIVE_DATA(std::string name);
+  DeclareConcreteX(AMP_ADAPTIVE_DATA,DspBlockData);
+  AMP_ADAPTIVE_DATA(std::string name="DspAmpAdaptive");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_ADAPTIVE : public DspBlock {
@@ -22,10 +24,10 @@ struct AMP_ADAPTIVE : public DspBlock {
   AMP_ADAPTIVE(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  float _filt;
 };
 struct AMP_MONOIO_DATA : public DspBlockData {
-  AMP_MONOIO_DATA(std::string name);
+  DeclareConcreteX(AMP_MONOIO_DATA,DspBlockData);
+  AMP_MONOIO_DATA(std::string name="DspAmpMono");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_MONOIO : public DspBlock {
@@ -33,11 +35,11 @@ struct AMP_MONOIO : public DspBlock {
   AMP_MONOIO(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PLUSAMP_DATA : public DspBlockData {
-  PLUSAMP_DATA(std::string name);
+  DeclareConcreteX(PLUSAMP_DATA,DspBlockData);
+  PLUSAMP_DATA(std::string name="DspAmpPlus");
   dspblk_ptr_t createInstance() const override;
 };
 struct PLUSAMP : public DspBlock {
@@ -50,7 +52,8 @@ struct PLUSAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XAMP_DATA : public DspBlockData {
-  XAMP_DATA(std::string name);
+  DeclareConcreteX(XAMP_DATA,DspBlockData);
+  XAMP_DATA(std::string name="DspAmpX");
   dspblk_ptr_t createInstance() const override;
 };
 struct XAMP : public DspBlock {
@@ -63,7 +66,8 @@ struct XAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct STEREO_GAIN_DATA : public DspBlockData {
-  STEREO_GAIN_DATA(std::string name);
+  DeclareConcreteX(STEREO_GAIN_DATA,DspBlockData);
+  STEREO_GAIN_DATA(std::string name="DspAmpStereoGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct STEREO_GAIN : public DspBlock {
@@ -74,7 +78,8 @@ struct STEREO_GAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GAIN_DATA : public DspBlockData {
-  GAIN_DATA(std::string name);
+  DeclareConcreteX(GAIN_DATA,DspBlockData);
+  GAIN_DATA(std::string name="DspAmpMonoGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct GAIN : public DspBlock {
@@ -85,7 +90,8 @@ struct GAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct BANGAMP_DATA : public DspBlockData {
-  BANGAMP_DATA(std::string name);
+  DeclareConcreteX(BANGAMP_DATA,DspBlockData);
+  BANGAMP_DATA(std::string name="DspAmpBang");
   dspblk_ptr_t createInstance() const override;
 };
 struct BANGAMP : public DspBlock {
@@ -97,7 +103,8 @@ struct BANGAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct AMPU_AMPL_DATA : public DspBlockData {
-  AMPU_AMPL_DATA(std::string name);
+  DeclareConcreteX(AMPU_AMPL_DATA,DspBlockData);
+  AMPU_AMPL_DATA(std::string name="DspAmpUL");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMPU_AMPL : public DspBlock {
@@ -110,7 +117,8 @@ struct AMPU_AMPL : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct BAL_AMP_DATA : public DspBlockData {
-  BAL_AMP_DATA(std::string name);
+  DeclareConcreteX(BAL_AMP_DATA,DspBlockData);
+  BAL_AMP_DATA(std::string name="DspAmpBalance");
   dspblk_ptr_t createInstance() const override;
 };
 struct BAL_AMP : public DspBlock {
@@ -122,7 +130,8 @@ struct BAL_AMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct AMP_MOD_OSC_DATA : public DspBlockData {
-  AMP_MOD_OSC_DATA(std::string name);
+  DeclareConcreteX(AMP_MOD_OSC_DATA,DspBlockData);
+  AMP_MOD_OSC_DATA(std::string name="DspAmpModOsc");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_MOD_OSC : public DspBlock {
@@ -134,7 +143,8 @@ struct AMP_MOD_OSC : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XGAIN_DATA : public DspBlockData {
-  XGAIN_DATA(std::string name);
+  DeclareConcreteX(XGAIN_DATA,DspBlockData);
+  XGAIN_DATA(std::string name="DspAmpXGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct XGAIN : public DspBlock {
@@ -146,7 +156,8 @@ struct XGAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XFADE_DATA : public DspBlockData {
-  XFADE_DATA(std::string name);
+  DeclareConcreteX(XFADE_DATA,DspBlockData);
+  XFADE_DATA(std::string name="DspAmpXFade");
   dspblk_ptr_t createInstance() const override;
 };
 struct XFADE : public DspBlock {
@@ -158,7 +169,8 @@ struct XFADE : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PANNER_DATA : public DspBlockData {
-  PANNER_DATA(std::string name);
+  DeclareConcreteX(PANNER_DATA,DspBlockData);
+  PANNER_DATA(std::string name="DspAmpPanner");
   dspblk_ptr_t createInstance() const override;
 };
 struct PANNER : public DspBlock {
@@ -167,6 +179,31 @@ struct PANNER : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   float _plmix, _prmix; // for smoothing
+};
+///////////////////////////////////////////////////////////////////////////////
+struct PANNER2D_DATA : public DspBlockData {
+  DeclareConcreteX(PANNER2D_DATA,DspBlockData);
+  PANNER2D_DATA(std::string name="DspAmpPanner2D");
+  dspblk_ptr_t createInstance() const override;
+};
+struct PANNER2D : public DspBlock {
+  using dataclass_t = PANNER2D_DATA;
+  PANNER2D(const DspBlockData* dbd);
+  ~PANNER2D();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  float _mixL, _mixR; // for smoothing
+  delaycontext_ptr_t _delayL, _delayR;
+  TrapSVF _filter1L, _filter1R;
+  TrapSVF _fbLP;
+  TrapSVF _dcBLOCK;
+  TrapAllpass _allpassA, _allpassB, _allpassC;
+  SimpleAllpass _ap2A, _ap2B, _ap2C;
+  float _feedback = 0.995f;
+  float _a0 = 1.0f;
+  float _a1 = 1.0f;
+  float _a2 = 1.0f;
+  float _ap2 = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

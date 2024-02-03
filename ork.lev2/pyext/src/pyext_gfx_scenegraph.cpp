@@ -319,6 +319,13 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](scene_ptr_t SG, float time) { //
                 SG->_currentTime = time;
               })
+          .def_property("pickFormat", 
+              [](scene_ptr_t SG) -> int { //
+                return SG->_pickFormat;
+              },
+              [](scene_ptr_t SG, int time) { //
+                SG->_pickFormat = int(time);
+              })
     ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
 }

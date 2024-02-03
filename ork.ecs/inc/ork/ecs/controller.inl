@@ -21,9 +21,9 @@ template <typename T> sys_ref_t Controller::findSystem() {
   // notify sim to update reference
   //////////////////////////////////////////////////////
 
-  Event simevent;
-  simevent._eventID   = EventID::FIND_SYSTEM;
-  auto& FSYS          = simevent._payload.make<impl::_FindSystem>();
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::FIND_SYSTEM;
+  auto& FSYS          = simevent->_payload.make<impl::_FindSystem>();
 
   FSYS._sysref = SystemRef{._sysID = ID};
   FSYS._syskey = T::SystemType;
@@ -47,9 +47,9 @@ template <typename T> comp_ref_t Controller::findEntityComponent(ent_ref_t ent) 
   // notify sim to update reference
   //////////////////////////////////////////////////////
 
-  Event simevent;
-  simevent._eventID   = EventID::FIND_COMPONENT;
-  auto& FCOMP          = simevent._payload.make<impl::_FindComponent>();
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::FIND_COMPONENT;
+  auto& FCOMP          = simevent->_payload.make<impl::_FindComponent>();
 
   FCOMP._entref = ent;
   FCOMP._compclazz = T::componentClass();

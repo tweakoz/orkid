@@ -53,6 +53,9 @@ struct LayerData : public ork::Object {
   bool _atk3Hold                  = false; // TilDec
   bool _usenatenv                 = false; // todo: move to krz
   float _layerLinGain             = 1.0f;
+  int _panmode = -1;
+  int _pan = 0;
+  int _headroom = 0;
 
   algdata_ptr_t _algdata;
   std::string _outbus;
@@ -60,7 +63,7 @@ struct LayerData : public ork::Object {
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
-  keymap_constptr_t _keymap;
+  keymap_ptr_t _keymap;
   //std::map<std::string, controllerdata_ptr_t> _controllermap;
   controlblockdata_ptr_t _ctrlBlock = nullptr;
   varmap::varmap_ptr_t _varmap;
@@ -101,6 +104,7 @@ struct Layer {
   bool isHudLayer() const;
 
   void keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus);
+  void reTriggerMono(int note, int velocity);
   void keyOff();
 
   std::mutex _mutex;
@@ -113,7 +117,9 @@ struct Layer {
   int _curvel;
   int _ldindex;
   float _layerLinGain = 1.0f;
+  float _gainModifier = 1.0f;
   float _curPitchOffsetInCents;
+  float _curPitchInCents;
   float _centsPerKey;
   int _lyrPhase;
   bool _ignoreRelease;
@@ -147,6 +153,8 @@ struct Layer {
   lyrdata_constptr_t _layerdata;
   oschardsynctrack_ptr_t _oschsynctracks[kmaxdspblocksperstage];
   scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];
+
+  float currentPan() const;
 
 private:
 

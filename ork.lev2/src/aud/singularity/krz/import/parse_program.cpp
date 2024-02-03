@@ -193,6 +193,10 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
         u8 dlyMax             = db.GetTypedData<u8>(it); // 0e
         u8 xfade              = db.GetTypedData<u8>(it); // 0f
 
+        _curLayer->_dbg_vrange = vRange;
+        _curLayer->_dbg_flags = flags;
+        _curLayer->_dbg_moreflags = moreFlags;
+
         _curLayer->_loVel = (flags >> 3) & 0x07;
         _curLayer->_hiVel = 7 - (flags & 0x07);
 
@@ -235,7 +239,7 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
         break;
       }
       default:
-        assert(false);
+        OrkAssert(false);
         break;
     }
   }
@@ -285,6 +289,12 @@ void filescanner::emitLayer(const Layer* l, rapidjson::Value& parent) {
   layerobject.AddMember("layerId", (int)l->_layerIndex, _japrog);
 
   ////////////////
+  layerobject.AddMember("dbg_vrange", int(l->_dbg_vrange), _japrog);
+  layerobject.AddMember("dbg_flags", int(l->_dbg_flags), _japrog);
+  layerobject.AddMember("dbg_moreflags", int(l->_dbg_moreflags), _japrog);
+  layerobject.AddMember("headroom", int(l->_headroom), _japrog);
+  layerobject.AddMember("panmode", int(l->_panmode), _japrog);
+  layerobject.AddMember("pan", int(l->_pan), _japrog);
 
   layerobject.AddMember("loKey", int(l->_loKey), _japrog);
   layerobject.AddMember("hiKey", int(l->_hiKey), _japrog);

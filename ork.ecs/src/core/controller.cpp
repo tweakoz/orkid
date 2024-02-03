@@ -13,6 +13,7 @@
 
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
+#include <ork/lev2/ui/event.h>
 
 #include "message_private.h"
 #include <ork/util/logger.h>
@@ -48,6 +49,7 @@ void Controller::forceRetain(const svar64_t& item){
 void Controller::beginWriteTrace(file::Path outpath){
   _tracewriter = std::make_shared<TraceWriter>(this,outpath);
 }
+
 void Controller::readTrace(file::Path inpath){
   _tracereader = std::make_shared<TraceReader>(this,inpath);
 }
@@ -60,6 +62,18 @@ Controller::~Controller() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Controller::gpuInit(lev2::Context* ctx) {
+  _simulation.atomicOp([this,ctx](simulation_ptr_t& unlocked){
+    if(unlocked){
+      _simulation.atomicOp([ctx](simulation_ptr_t& unlocked){
+        //unlocked = nullptr;
+      });
+    }
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Controller::gpuExit(lev2::Context* ctx) {
   _forceRetained.clear();
   _simulation.atomicOp([ctx](simulation_ptr_t& unlocked){
@@ -67,6 +81,9 @@ void Controller::gpuExit(lev2::Context* ctx) {
     unlocked = nullptr;
   });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Controller::updateExit() {
   //this->stopSimulation();
   _delopq.atomicOp([=](delayed_opq_t& unlocked){
@@ -86,7 +103,13 @@ void Controller::updateExit() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::render(ui::drawevent_constptr_t drwev) {
-  _simulation._unprotected_ref()->render(drwev);
+  if(_needsGpuInit){
+    gpuInit(drwev->_target);
+  }
+  auto sim = _simulation._unprotected_ref();
+  if(sim){
+    sim->render(drwev);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -97,13 +120,13 @@ void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Controller::_enqueueEvent(Event& event) {
+void Controller::_enqueueEvent(event_ptr_t event) {
   _eventQueue.atomicOp([&](evq_t& unlocked) { unlocked.push_back(event); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Controller::_enqueueRequest(Request& request) {
+void Controller::_enqueueRequest(request_ptr_t request) {
   _eventQueue.atomicOp([&](evq_t& unlocked) { unlocked.push_back(request); });
 }
 
@@ -172,9 +195,9 @@ bool Controller::_pollEvents(Simulation* unlocked_sim, evq_t& out_events){
 
         auto& evreq = *it;
 
-        if( auto as_ev = evreq.tryAs<Controller::Event>() ){
+        if( auto as_ev = evreq.tryAs<Controller::event_ptr_t>() ){
 
-          auto& payload = as_ev.value()._payload;
+          auto& payload = as_ev.value()->_payload;
 
           if(auto as_barrier = payload.tryAs<impl::entbarrier_ptr_t>() ){
             auto entref = as_barrier.value()->_entref;
@@ -246,12 +269,13 @@ ent_ref_t Controller::spawnNamedDynamicEntity(const SpawnNamedDynamic& SND) {
 ///////////////////////////////////////////////////////////////////////////////
 
 ent_ref_t Controller::spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD) {
-  Request req;
-  req._requestID = RequestID::SPAWN_DYNAMIC_ANON;
+  auto req = std::make_shared<Request>();
+
+  req->_requestID = RequestID::SPAWN_DYNAMIC_ANON;
 
   uint64_t objID = _objectIdCounter.fetch_add(1);
 
-  auto& IMPL      = req._payload.make<impl::_SpawnAnonDynamic>();
+  auto& IMPL      = req->_payload.make<impl::_SpawnAnonDynamic>();
   IMPL._SAD       = SAD;
 
   if( SAD._userspawndata ){
@@ -277,9 +301,9 @@ ent_ref_t Controller::spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::despawnEntity(const ent_ref_t& EREF){
-  Event simevent;
-  simevent._eventID   = EventID::DESPAWN;
-  auto& DEV           = simevent._payload.make<impl::_Despawn>();
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::DESPAWN;
+  auto& DEV           = simevent->_payload.make<impl::_Despawn>();
 
   DEV._entref    = EREF;
 
@@ -291,11 +315,11 @@ void Controller::despawnEntity(const ent_ref_t& EREF){
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::entBarrier(ent_ref_t EREF){
-  Event simevent;
-  simevent._eventID   = EventID::ENTITY_BARRIER;
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::ENTITY_BARRIER;
   auto BEV = std::make_shared<impl::_EntBarrier>();
   BEV->_entref = EREF;
-  simevent._payload.make<impl::entbarrier_ptr_t>(BEV);
+  simevent->_payload.make<impl::entbarrier_ptr_t>(BEV);
   _enqueueEvent(simevent);
 }
 
@@ -307,10 +331,10 @@ void Controller::entBarrier(ent_ref_t EREF){
 //void Controller::endTransaction(){
 
   //Event simevent;
-  //simevent._eventID   = EventID::TRANSACTION;
+  //simevent->_eventID   = EventID::TRANSACTION;
   //auto BEV = std::make_shared<impl::_EntBarrier>();
   //BEV->_entref = EREF;
-  //simevent._payload.make<impl::entbarrier_ptr_t>(BEV);
+  //simevent->_payload.make<impl::entbarrier_ptr_t>(BEV);
   //_enqueueEvent(simevent);
   //_currentXact = nullptr;
 
@@ -321,9 +345,9 @@ void Controller::entBarrier(ent_ref_t EREF){
 
 void Controller::systemNotify(sys_ref_t sys, token_t evID, svar64_t data) {
 
-  Event simevent;
-  simevent._eventID   = EventID::SYSTEM_EVENT;
-  auto& SEV           = simevent._payload.make<impl::_SystemEvent>();
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::SYSTEM_EVENT;
+  auto& SEV           = simevent->_payload.make<impl::_SystemEvent>();
 
   SEV._sysref    = sys;
   SEV._eventID   = evID;
@@ -335,14 +359,14 @@ void Controller::systemNotify(sys_ref_t sys, token_t evID, svar64_t data) {
 ///////////////////////////////////////////////////////////////////////////////
 
 response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t data) {
-  Request simrequest;
-  simrequest._requestID = RequestID::SYSTEM_REQUEST;
+  auto simrequest = std::make_shared<Request>();
+  simrequest->_requestID = RequestID::SYSTEM_REQUEST;
 
   uint64_t objID = _objectIdCounter.fetch_add(1);
 
   auto rref = ResponseRef{._responseID = objID};
 
-  auto& SRQ = simrequest._payload.make<impl::_SystemRequest>();
+  auto& SRQ = simrequest->_payload.make<impl::_SystemRequest>();
 
   SRQ._sysref    = sys;
   SRQ._requestID = reqID;
@@ -358,9 +382,9 @@ response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t 
 
 void Controller::componentNotify(comp_ref_t comp, token_t evID, svar64_t data) {
 
-  Event simevent;
-  simevent._eventID   = EventID::COMPONENT_EVENT;
-  auto& CEV           = simevent._payload.make<impl::_ComponentEvent>();
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::COMPONENT_EVENT;
+  auto& CEV           = simevent->_payload.make<impl::_ComponentEvent>();
 
   CEV._compref   = comp;
   CEV._eventID   = evID;
@@ -373,9 +397,9 @@ void Controller::componentNotify(comp_ref_t comp, token_t evID, svar64_t data) {
 
 response_ref_t Controller::componentRequest(comp_ref_t comp, token_t reqID, svar64_t data) {
 
-  Request simrequest;
-  simrequest._requestID = RequestID::COMPONENT_REQUEST;
-  auto& CRQ             = simrequest._payload.make<impl::_ComponentRequest>();
+  auto simrequest = std::make_shared<Request>();
+  simrequest->_requestID = RequestID::COMPONENT_REQUEST;
+  auto& CRQ             = simrequest->_payload.make<impl::_ComponentRequest>();
 
   uint64_t objID = _objectIdCounter.fetch_add(1);
 
@@ -395,9 +419,9 @@ response_ref_t Controller::componentRequest(comp_ref_t comp, token_t reqID, svar
 
 response_ref_t Controller::simulationRequest(token_t reqID, svar64_t data) {
 
-  Request simrequest;
-  simrequest._requestID = RequestID::SIMULATION_REQUEST;
-  auto& SRQ             = simrequest._payload.make<impl::_SimulationRequest>();
+  auto simrequest = std::make_shared<Request>();
+  simrequest->_requestID = RequestID::SIMULATION_REQUEST;
+  auto& SRQ             = simrequest->_payload.make<impl::_SimulationRequest>();
 
   uint64_t objID = _objectIdCounter.fetch_add(1);
 

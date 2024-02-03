@@ -51,6 +51,14 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/dsp_pmx.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/dsp_ringmod.h>
+#include <ork/lev2/aud/singularity/alg_eq.h>
+#include <ork/lev2/aud/singularity/alg_filters.h>
+#include <ork/lev2/aud/singularity/alg_nonlin.h>
+#include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/alg_pan.inl>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
@@ -286,6 +294,11 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::AlgData);
     RegisterClassX(audio::singularity::DspStageData);
 
+    RegisterClassX(audio::singularity::KmRegionData);
+    RegisterClassX(audio::singularity::KeyMapData);
+    RegisterClassX(audio::singularity::SampleData);
+    RegisterClassX(audio::singularity::MultiSampleData);
+
     RegisterClassX(audio::singularity::BlockModulationData);
     RegisterClassX(audio::singularity::DspParamData);
 
@@ -294,6 +307,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::RateLevelEnvData);
     RegisterClassX(audio::singularity::YmEnvData);
     RegisterClassX(audio::singularity::LfoData);
+    RegisterClassX(audio::singularity::GradientData);
     RegisterClassX(audio::singularity::FunData);
     RegisterClassX(audio::singularity::ConstantControllerData);
     RegisterClassX(audio::singularity::CustomControllerData);
@@ -303,6 +317,77 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::PMXData);
     RegisterClassX(audio::singularity::PMXMixData);
     RegisterClassX(audio::singularity::MonoInStereoOutData);
+    RegisterClassX(audio::singularity::SAMPLER_DATA);
+
+    RegisterClassX(audio::singularity::AMP_ADAPTIVE_DATA);
+    RegisterClassX(audio::singularity::AMP_MONOIO_DATA);
+    RegisterClassX(audio::singularity::PLUSAMP_DATA);
+    RegisterClassX(audio::singularity::XAMP_DATA);
+    RegisterClassX(audio::singularity::STEREO_GAIN_DATA);
+    RegisterClassX(audio::singularity::GAIN_DATA);
+    RegisterClassX(audio::singularity::BANGAMP_DATA);
+    RegisterClassX(audio::singularity::AMPU_AMPL_DATA);
+    RegisterClassX(audio::singularity::BAL_AMP_DATA);
+    RegisterClassX(audio::singularity::AMP_MOD_OSC_DATA);
+    RegisterClassX(audio::singularity::XGAIN_DATA);
+    RegisterClassX(audio::singularity::XFADE_DATA);
+    RegisterClassX(audio::singularity::PANNER_DATA);
+    RegisterClassX(audio::singularity::PANNER2D_DATA);
+    RegisterClassX(audio::singularity::RingModData);
+
+    RegisterClassX(audio::singularity::STEEP_RESONANT_BASS_DATA);
+    RegisterClassX(audio::singularity::PARABASS_DATA);
+    RegisterClassX(audio::singularity::PARAMID_DATA);
+    RegisterClassX(audio::singularity::PARATREBLE_DATA);
+    RegisterClassX(audio::singularity::ParametricEqData);
+
+    RegisterClassX(audio::singularity::BANDPASS_FILT_DATA);
+    RegisterClassX(audio::singularity::BAND2_DATA);
+    RegisterClassX(audio::singularity::NOTCH_FILT_DATA);
+    RegisterClassX(audio::singularity::NOTCH2_DATA);
+    RegisterClassX(audio::singularity::DOUBLE_NOTCH_W_SEP_DATA);
+    RegisterClassX(audio::singularity::LOPAS2_DATA);
+    RegisterClassX(audio::singularity::LP2RES_DATA);
+    RegisterClassX(audio::singularity::LPGATE_DATA);
+    RegisterClassX(audio::singularity::FOURPOLE_HIPASS_W_SEP_DATA);
+    RegisterClassX(audio::singularity::LPCLIP_DATA);
+    RegisterClassX(audio::singularity::LowPassData);
+    RegisterClassX(audio::singularity::HighPassData);
+    RegisterClassX(audio::singularity::AllPassData);
+    RegisterClassX(audio::singularity::HighFreqStimulatorData);
+    RegisterClassX(audio::singularity::TwoPoleLowPassData);
+    RegisterClassX(audio::singularity::TwoPoleAllPassData);
+    RegisterClassX(audio::singularity::FourPoleLowPassWithSepData);
+
+    RegisterClassX(audio::singularity::SHAPER_DATA);
+    RegisterClassX(audio::singularity::SHAPE2_DATA);
+    RegisterClassX(audio::singularity::TWOPARAM_SHAPER_DATA);
+    RegisterClassX(audio::singularity::WrapData);
+    RegisterClassX(audio::singularity::DistortionData);
+
+    RegisterClassX(audio::singularity::PITCH_DATA);
+    RegisterClassX(audio::singularity::SWPLUSSHP_DATA);
+    RegisterClassX(audio::singularity::SAWPLUS_DATA);
+    RegisterClassX(audio::singularity::SINE_DATA);
+    RegisterClassX(audio::singularity::SAW_DATA);
+    RegisterClassX(audio::singularity::SINEPLUS_DATA);
+    RegisterClassX(audio::singularity::SHAPEMODOSC_DATA);
+    RegisterClassX(audio::singularity::PLUSSHAPEMODOSC_DATA);
+    RegisterClassX(audio::singularity::SYNCM_DATA);
+    RegisterClassX(audio::singularity::SYNCS_DATA);
+    RegisterClassX(audio::singularity::PWM_DATA);
+    RegisterClassX(audio::singularity::NOISE_DATA);
+
+    RegisterClassX(audio::singularity::PitchShifterData);
+    RegisterClassX(audio::singularity::RecursivePitchShifterData);
+
+    RegisterClassX(audio::singularity::Sum2Data);
+    RegisterClassX(audio::singularity::StereoEnhancerData);
+    RegisterClassX(audio::singularity::StereoDynamicEchoData);
+    RegisterClassX(audio::singularity::TestReverbData);
+    RegisterClassX(audio::singularity::Fdn8ReverbData);
+    RegisterClassX(audio::singularity::Fdn4ReverbXData);
+    RegisterClassX(audio::singularity::Fdn4ReverbData);
 
      //////////////////////////////////////////
   }

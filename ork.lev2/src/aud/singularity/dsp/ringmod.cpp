@@ -11,7 +11,14 @@
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::RingModData, "DspAmpRingMod");
+
 namespace ork::audio::singularity {
+
+void RingModData::describeX(class_t* clazz){
+
+}
+
 RingModData::RingModData(std::string name)
     : DspBlockData(name) {
   _blocktype = "RingMod";

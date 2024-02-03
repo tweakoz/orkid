@@ -12,9 +12,13 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 
+ImplementReflectionX(ork::audio::singularity::StereoDynamicEchoData, "DspFxDelayStereoDynamicEcho");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void StereoDynamicEchoData::describeX(class_t* clazz) {}
 
 StereoDynamicEchoData::StereoDynamicEchoData(std::string name)
     : DspBlockData(name) {
@@ -39,8 +43,15 @@ dspblk_ptr_t StereoDynamicEchoData::createInstance() const { // override
 
 StereoDynamicEcho::StereoDynamicEcho(const StereoDynamicEchoData* dbd)
     : DspBlock(dbd) {
+  auto syni = synth::instance();
+  _delayL = syni->allocDelayLine();
+  _delayR = syni->allocDelayLine();
 }
-
+StereoDynamicEcho::~StereoDynamicEcho(){
+  auto syni = synth::instance();
+  syni->freeDelayLine(_delayL);
+  syni->freeDelayLine(_delayR);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
@@ -60,8 +71,12 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
 
   float invfr = 1.0f / inumframes;
 
-  _delayL.setNextDelayTime(delaytimeL);
-  _delayR.setNextDelayTime(delaytimeR);
+  delaytimeL = std::clamp(delaytimeL, 0.001f, 10.0f);
+  delaytimeR = std::clamp(delaytimeR, 0.001f, 10.0f);
+
+
+  _delayL->setNextDelayTime(delaytimeL);
+  _delayR->setNextDelayTime(delaytimeR);
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
 
@@ -72,15 +87,15 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
     // read delayed signal
     /////////////////////////////////////
 
-    float delayoutL = _delayL.out(fi);
-    float delayoutR = _delayR.out(fi);
+    float delayoutL = _delayL->out(fi);
+    float delayoutR = _delayR->out(fi);
 
     /////////////////////////////////////
     // input to delayline
     /////////////////////////////////////
 
-    _delayL.inp(inl + delayoutL * feedback);
-    _delayR.inp(inr + delayoutR * feedback);
+    _delayL->inp(inl + delayoutL * feedback);
+    _delayR->inp(inr + delayoutR * feedback);
 
     /////////////////////////////////////
     // output to dsp channels

@@ -70,9 +70,18 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               })
           .def(
               "keyOff",                                      //
-              [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
-                synth->liveKeyOff(prgi.get());
+              [](synth_ptr_t synth, prginst_rawptr_t prgi,int note, int vel) { //
+                synth->liveKeyOff(prgi.get(),note,vel);
               })
+          .def(
+              "mainThreadHandler",                           //
+              [](synth_ptr_t synth) { //
+                synth->mainThreadHandler();
+              })
+          .def_property(
+              "velCurvePower", //
+              [](synth_ptr_t synth) -> float { return synth->_velcurvepower; },
+              [](synth_ptr_t synth, float pwr) { synth->_velcurvepower = pwr; })
           .def_property(
               "masterGain", //
               [](synth_ptr_t synth) -> float { return synth->_masterGain; },
@@ -84,7 +93,17 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def_property(
               "programbus", //
               [](synth_ptr_t synth) -> outbus_ptr_t { return synth->_curprogrambus; },
-              [](synth_ptr_t synth, outbus_ptr_t bus) { synth->_curprogrambus = bus; });
+              [](synth_ptr_t synth, outbus_ptr_t bus) { synth->_curprogrambus = bus; })
+          .def_property_readonly(
+              "sequencer", //
+              [](synth_ptr_t synth) -> sequencer_ptr_t { return synth->_sequencer; })
+          .def_property_readonly(
+              "time", //
+              [](synth_ptr_t synth) -> float { return synth->_timeaccum; })
+          .def_property(
+              "system_tempo", //
+              [](synth_ptr_t synth) -> float { return synth->_system_tempo; },
+              [](synth_ptr_t synth, float tempo) { synth->_system_tempo = tempo; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
@@ -101,7 +120,17 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                            })
                        .def("createScopeSource", [](outbus_ptr_t bus) -> scopesource_ptr_t { //
                          return bus->createScopeSource();
-                       });
+                       })
+                       .def_property("uiprogram", //
+                                     [](outbus_ptr_t bus) -> prgdata_constptr_t { return bus->_uiprogram; },
+                                     [](outbus_ptr_t bus, prgdata_constptr_t pd) { bus->_uiprogram = pd; })
+                       .def_property("layer", //
+                                     [](outbus_ptr_t bus) -> lyrdata_constptr_t { return bus->_dsplayerdata; },
+                                     [](outbus_ptr_t bus, lyrdata_ptr_t ld) { bus->setBusDSP(ld); })
+
+                       .def_property("gain", //
+                                     [](outbus_ptr_t bus) -> float { return bus->_prog_gain; },
+                                     [](outbus_ptr_t bus, float g) { bus->_prog_gain = g; });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
 }
 ///////////////////////////////////////////////////////////////////////////////

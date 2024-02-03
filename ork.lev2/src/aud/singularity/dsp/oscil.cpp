@@ -13,6 +13,20 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::PITCH_DATA, "DspPitch");
+ImplementReflectionX(ork::audio::singularity::SWPLUSSHP_DATA, "DspOscilSawAndShaper");
+ImplementReflectionX(ork::audio::singularity::SAWPLUS_DATA, "DspOscilSawPlus");
+ImplementReflectionX(ork::audio::singularity::SINE_DATA, "DspOscilSine");
+ImplementReflectionX(ork::audio::singularity::SAW_DATA, "DspOscilSaw");
+ImplementReflectionX(ork::audio::singularity::SQUARE_DATA, "DspOscilSquare");
+ImplementReflectionX(ork::audio::singularity::SINEPLUS_DATA, "DspOscilSinePlus");
+ImplementReflectionX(ork::audio::singularity::SHAPEMODOSC_DATA, "DspOscilShapeMod");
+ImplementReflectionX(ork::audio::singularity::PLUSSHAPEMODOSC_DATA, "DspOscilShapeModPlus");
+ImplementReflectionX(ork::audio::singularity::SYNCM_DATA, "DspOscilSyncModulator");
+ImplementReflectionX(ork::audio::singularity::SYNCS_DATA, "DspOscilSyncCarrier");
+ImplementReflectionX(ork::audio::singularity::PWM_DATA, "DspOscilPWM");
+ImplementReflectionX(ork::audio::singularity::NOISE_DATA, "DspOscilNoise");
+
 namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
@@ -20,10 +34,14 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PITCH_DATA::describeX(class_t* clazz){}
+
 PITCH_DATA::PITCH_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PITCH";
-  addParam("pitch")->usePitchEvaluator();
+  auto P = addParam("pitch");
+  P->usePitchEvaluator();
+  P->_debug = true;
   //addParam("pch2")->usePitchEvaluator();
 }
 
@@ -61,15 +79,44 @@ PITCH::PITCH(const DspBlockData* dbd)
 
 void PITCH::compute(DspBuffer& dspbuf) // final
 {
+  auto LD = _layer->_layerdata;  
+  auto PD = LD->_programdata;
+  float portorate = PD->_portamento_rate;
+
   float value = _param[0].eval();
+  _target = _layer->_layerBasePitch + value;
+  if(portorate==0.0f){
+    _current = _target;
+  }
+  else {
+    float crate = controlRate();
+    float elapsed = 1.0f / crate;
+    // portorate in cents per second
+    // get in ticks..
+    float prate_this_tick = portorate*elapsed;
+    float delta = (_target-_current);
+    float delta_mag = abs(delta);
+    float delta_sgn = (delta>=0.0f) ? 1.0f : -1.0f;
+    float ir = 1.0f-portorate;
+    if(delta_mag>prate_this_tick){
+      delta_mag = prate_this_tick;
+    }
+    _current = _current+delta_mag*delta_sgn;
+  }
+
   _layer->_curPitchOffsetInCents = value;
+  _layer->_curPitchInCents = _current;
+  //printf( "pch<%g>\n", value );
   
 }
-void PITCH::doKeyOn(const KeyOnInfo& koi) // final
-{
+void PITCH::doKeyOn(const KeyOnInfo& koi) { // final
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SINE_DATA::describeX(class_t* clazz){}
+
 SINE_DATA::SINE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SINE";
@@ -112,6 +159,9 @@ void SINE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SAW_DATA::describeX(class_t* clazz){}
+
 SAW_DATA::SAW_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAW";
@@ -124,7 +174,7 @@ dspblk_ptr_t SAW_DATA::createInstance() const { // override
 
 SAW::SAW(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(getSampleRate(), PolyBLEP::SAWTOOTH) {
+    , _pblep(getSampleRate(), PolyBLEP::RAMP) {
 }
 
 void SAW::compute(DspBuffer& dspbuf) // final
@@ -140,7 +190,7 @@ void SAW::compute(DspBuffer& dspbuf) // final
   float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
-  // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
+   //printf( "centoff<%g> frq<%f>\n", centoff, frq );
   if (1) {
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
@@ -153,6 +203,9 @@ void SAW::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SQUARE_DATA::describeX(class_t* clazz){}
+
 SQUARE_DATA::SQUARE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SQUARE";
@@ -194,6 +247,9 @@ void SQUARE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SINEPLUS_DATA::describeX(class_t* clazz){}
+
 SINEPLUS_DATA::SINEPLUS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SINEPLUS";
@@ -237,6 +293,9 @@ void SINEPLUS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SAWPLUS_DATA::describeX(class_t* clazz){}
+
 SAWPLUS_DATA::SAWPLUS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAWPLUS";
@@ -285,6 +344,9 @@ void SAWPLUS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SWPLUSSHP_DATA::describeX(class_t* clazz){}
+
 SWPLUSSHP_DATA::SWPLUSSHP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SWPLUSSHP";
@@ -332,6 +394,9 @@ void SWPLUSSHP::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SHAPEMODOSC_DATA::describeX(class_t* clazz){}
+
 SHAPEMODOSC_DATA::SHAPEMODOSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SHAPEMODOSC";
@@ -406,6 +471,9 @@ void SHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PLUSSHAPEMODOSC_DATA::describeX(class_t* clazz){}
+
 PLUSSHAPEMODOSC_DATA::PLUSSHAPEMODOSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PLUSSHAPEMODOSC";
@@ -493,6 +561,9 @@ void PLUSSHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SYNCM_DATA::describeX(class_t* clazz){}
+
 SYNCM_DATA::SYNCM_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SYNCM";
@@ -536,6 +607,9 @@ void SYNCM::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SYNCS_DATA::describeX(class_t* clazz){}
+
 SYNCS_DATA::SYNCS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SYNCS";
@@ -589,6 +663,9 @@ void SYNCS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PWM_DATA::describeX(class_t* clazz){}
+
 PWM_DATA::PWM_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PWM";
@@ -625,6 +702,9 @@ void PWM::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void NOISE_DATA::describeX(class_t* clazz){}
+
 NOISE_DATA::NOISE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "NOISE";

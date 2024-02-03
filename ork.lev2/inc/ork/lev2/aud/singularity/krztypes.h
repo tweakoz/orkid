@@ -48,7 +48,7 @@ static constexpr double kinv4g  = 1.0 / double(1L << 32);
 static constexpr int frames_per_controlpass = 32;
 static constexpr float kfpc                 = 1.0f / float(frames_per_controlpass);
 inline constexpr float getSampleRate() {
-  return 44100.0f;
+  return 48000.0f;
 }
 inline constexpr float getInverseSampleRate() {
   return 1.0f / getSampleRate();
@@ -63,11 +63,11 @@ constexpr float PI2XISR = pi2 * getInverseSampleRate();
 ///////////////////////////////////////////////////////////////////////////////
 struct ProgramData;
 struct LayerData;
-struct KeyMap;
+struct KeyMapData;
 struct KmpBlockData;
-struct kmregion;
-struct sample;
-struct multisample;
+struct KmRegionData;
+struct SampleData;
+struct MultiSampleData;
 struct synth;
 struct Layer;
 struct outputBuffer;
@@ -106,7 +106,24 @@ struct CzProgData;
 struct OutputBus;
 struct KeyOnModifiers;
 struct NatEnvWrapperData;
-
+struct DelayContext;
+struct SAMPLER_DATA;
+///////////////////////////////////////////////////////////////////////////////
+// sequencer
+///////////////////////////////////////////////////////////////////////////////
+struct Event;
+struct Sequencer;
+struct Sequence;
+struct Track;
+struct Clip;
+struct TimeStamp;
+struct TimeBase;
+struct EventClip;
+struct FourOnFloorClip;
+struct SequencePlayback;
+struct TrackPlayback;
+struct ClipPlayback;
+struct EventIterator;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,8 +140,8 @@ using ioconfig_constptr_t         = std::shared_ptr<const IoConfig>;
 using algdata_ptr_t               = std::shared_ptr<AlgData>;
 using algdata_constptr_t          = std::shared_ptr<const AlgData>;
 using alg_ptr_t                   = std::shared_ptr<Alg>;
-using keymap_ptr_t                = std::shared_ptr<KeyMap>;
-using keymap_constptr_t           = std::shared_ptr<const KeyMap>;
+using keymap_ptr_t                = std::shared_ptr<KeyMapData>;
+using keymap_constptr_t           = std::shared_ptr<const KeyMapData>;
 using dspblk_ptr_t                = std::shared_ptr<DspBlock>;
 using dspbuf_ptr_t                = std::shared_ptr<DspBuffer>;
 using dspblkdata_ptr_t            = std::shared_ptr<DspBlockData>;
@@ -169,6 +186,25 @@ using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
 using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
+using delaycontext_ptr_t = std::shared_ptr<DelayContext>;
+using sample_ptr_t = std::shared_ptr<SampleData>;
+using sample_constptr_t = std::shared_ptr<const SampleData>;
+using multisample_ptr_t = std::shared_ptr<MultiSampleData>;
+using multisample_constptr_t = std::shared_ptr<const MultiSampleData>;
+using kmregion_ptr_t = std::shared_ptr<KmRegionData>;
+using kmregion_constptr_t = std::shared_ptr<const KmRegionData>;
+using samplerdata_ptr_t = std::shared_ptr<SAMPLER_DATA>;
+///////////////////////////////////////////////////////////////////////////////
+using sequencer_ptr_t = std::shared_ptr<Sequencer>;
+using sequence_ptr_t = std::shared_ptr<Sequence>;
+using track_ptr_t = std::shared_ptr<Track>;
+using clip_ptr_t = std::shared_ptr<Clip>;
+using event_ptr_t = std::shared_ptr<Event>;
+using timestamp_ptr_t = std::shared_ptr<TimeStamp>;
+using timebase_ptr_t = std::shared_ptr<TimeBase>;
+using sequenceplayback_ptr_t = std::shared_ptr<SequencePlayback>;
+using clipplayback_ptr_t = std::shared_ptr<ClipPlayback>;
+using trackplayback_ptr_t = std::shared_ptr<TrackPlayback>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

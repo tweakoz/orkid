@@ -187,10 +187,10 @@ int main(int argc, char** argv, char** envp) {
     spawn_timer += dt;
 
     //printf( "spawn_timer<%g>\n", spawn_timer );
-    if( spawn_timer>4.0 ){
+    if( spawn_timer>1.0 ){
       SpawnAnonDynamic SAD{._edataname = "ent_ball"_pool}; // by anon we mean "unnamed"
-      float x = controller->random(-1,1);
-      float z = controller->random(-1,1);
+      float x = controller->random(-3,3);
+      float z = controller->random(-3,3);
       SAD._overridexf = std::make_shared<DecompTransform>();
       SAD._overridexf->set(fvec3(x,10,z),fquat(),1);
       auto ent     = controller->spawnAnonDynamicEntity(SAD);

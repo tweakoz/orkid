@@ -567,7 +567,7 @@ public:
   }
   //////////////////////////////////////////////////////////////
 private:
-  char _buffer[ksize];
+  __attribute((aligned(16))) char _buffer[ksize];
   ork::atomic<descriptor_factory_t> _descriptorFactory;
   //////////////////////////////////////////////////////////////
 };

@@ -88,6 +88,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.barysub_isect = self.submesh_dynamic.withBarycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
     #print("intersection convexVolume: %s" % submesh_dynamic.convexVolume)
+  ##############################################
+  def onUiEvent(self,ev):
+    return ui.HandlerResult()
 
 
 ###############################################################################

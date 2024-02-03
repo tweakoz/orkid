@@ -12,12 +12,29 @@
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::AMP_ADAPTIVE_DATA, "DspAmpAdaptive");
+ImplementReflectionX(ork::audio::singularity::AMP_MONOIO_DATA, "DspAmpMono");
+ImplementReflectionX(ork::audio::singularity::PLUSAMP_DATA, "DspAmpPlus");
+ImplementReflectionX(ork::audio::singularity::XAMP_DATA, "DspAmpX");
+ImplementReflectionX(ork::audio::singularity::STEREO_GAIN_DATA, "DspAmpStereoGain");
+ImplementReflectionX(ork::audio::singularity::GAIN_DATA, "DspAmpMonoGain");
+ImplementReflectionX(ork::audio::singularity::BANGAMP_DATA, "DspAmpBang");
+ImplementReflectionX(ork::audio::singularity::AMPU_AMPL_DATA, "DspAmpUL");
+ImplementReflectionX(ork::audio::singularity::BAL_AMP_DATA, "DspAmpBalance");
+ImplementReflectionX(ork::audio::singularity::AMP_MOD_OSC_DATA, "DspAmpModOsc");
+ImplementReflectionX(ork::audio::singularity::XGAIN_DATA, "DspAmpXGain");
+ImplementReflectionX(ork::audio::singularity::XFADE_DATA, "DspAmpXFade");
+
 namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMP_ADAPTIVE_DATA::describeX(class_t* clazz){
+
+}
 
 AMP_ADAPTIVE_DATA::AMP_ADAPTIVE_DATA(std::string name)
     : DspBlockData(name) {
@@ -47,12 +64,15 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
   //printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
   float baseG = laychgain;
   baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  //////////////////////////////////
   bool use_natenv = LD->_usenatenv;
   //////////////////////////////////
   switch(numinp){
     case 1:{
       auto bufferL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
       auto bufferR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+
+
       for (int i = 0; i < inumframes; i++) {
         //printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain ); 
         float ampenv = use_natenv //
@@ -60,8 +80,10 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
                      : _layer->_ampenvgain;
         float linG = baseG*ampenv;
         float inp     = bufferL[i];
-        bufferL[i] = clip_float(inp * linG, kminclip, kmaxclip);
-        bufferR[i] = clip_float(inp * linG, kminclip, kmaxclip);
+
+
+        bufferL[i] = inp * linG;
+        bufferR[i] = inp * linG;
       }
       break;
     }
@@ -76,8 +98,8 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
         float linG = baseG*ampenv;
         float inpL     = chanL[i];
         float inpR     = chanR[i];
-        chanL[i] = clip_float(inpL * linG, kminclip, kmaxclip);
-        chanR[i] = clip_float(inpR * linG, kminclip, kmaxclip);
+        chanL[i] = inpL * linG;
+        chanR[i] = inpR * linG;
       }
       break;
     }
@@ -85,18 +107,21 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
       OrkAssert(false);
   }
   //////////////////////////////////
-  _fval[0] = _filt;
+  _fval[0] = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP_ADAPTIVE::doKeyOn(const KeyOnInfo& koi) // final
 {
-  _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMP_MONOIO_DATA::describeX(class_t* clazz){
+
+}
 
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
@@ -124,27 +149,28 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
   float ampenv = _layer->_ampenvgain;
   //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    //_filt      = 0.995 * _filt + 0.005 * paramgain;
-    float linG = paramgain; // decibel_to_linear_amp_ratio(_filt);
+    float linG = paramgain; 
     linG *= laychgain;
     linG *= ampenv;
     float inp     = inputchan[i];
-    outputchan[i] = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
-    // printf("inp<%g>\n", inp);
+    outputchan[i] = inp * linG * _dbd->_inputPad;
   }
   //////////////////////////////////
-  _fval[0] = _filt;
+  _fval[0] = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 {
-  _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PLUSAMP_DATA::describeX(class_t* clazz){
+
+}
 
 PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
     : DspBlockData(name) {
@@ -191,7 +217,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
       //float ae   = _param[1].eval();
       // float ae   = aenv[i];
       float res = (inU + inL) * 0.5 * _filt * 2.0;
-      res       = clip_float(res, -2, 2);
+      res       = res;
       ubuf[i]   = res;
       lbuf[i]   = res;
     }
@@ -204,6 +230,10 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void XAMP_DATA::describeX(class_t* clazz){
+
+}
 
 XAMP_DATA::XAMP_DATA(std::string name)
     : DspBlockData(name) {
@@ -257,6 +287,10 @@ void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GAIN_DATA::describeX(class_t* clazz){
+
+}
+
 GAIN_DATA::GAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "GAIN";
@@ -286,6 +320,10 @@ void GAIN::compute(DspBuffer& dspbuf) // final
       outputchan[i] = outp;
     }
   }
+}
+
+void STEREO_GAIN_DATA::describeX(class_t* clazz){
+
 }
 
 STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
@@ -319,6 +357,10 @@ void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void XFADE_DATA::describeX(class_t* clazz){
+
+}
 
 XFADE_DATA::XFADE_DATA(std::string name)
     : DspBlockData(name) {
@@ -370,6 +412,10 @@ void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XGAIN_DATA::describeX(class_t* clazz){
+
+}
+
 XGAIN_DATA::XGAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XGAIN";
@@ -399,7 +445,7 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
       float inU  = ubuf[i] * _dbd->_inputPad;
       float inL  = lbuf[i] * _dbd->_inputPad;
       float res  = (inU * inL) * linG;
-      res        = clip_float(res, -1, 1);
+      res        = res;
 
       outputchan[i] = res;
     }
@@ -412,6 +458,10 @@ void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMPU_AMPL_DATA::describeX(class_t* clazz){
+
+}
 
 AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
     : DspBlockData(name) {
@@ -459,8 +509,8 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
       float resU  = inU * _filtU;
       float resL  = inL * _filtL;
 
-      ubuf[i] = clip_float(resU * u_lrmix.lmix + resL * l_lrmix.lmix, kminclip, kmaxclip);
-      lbuf[i] = clip_float(resU * u_lrmix.rmix + resL * l_lrmix.rmix, kminclip, kmaxclip);
+      ubuf[i] = resU * u_lrmix.lmix + resL * l_lrmix.lmix;
+      lbuf[i] = resU * u_lrmix.rmix + resL * l_lrmix.rmix;
     }
   _fval[0] = _filtU;
   _fval[1] = _filtL;
@@ -478,6 +528,10 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void BAL_AMP_DATA::describeX(class_t* clazz){
+
+}
 
 BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
     : DspBlockData(name) {
@@ -516,6 +570,10 @@ void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void AMP_MOD_OSC_DATA::describeX(class_t* clazz){
+
+}
+
 AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMPMODOSC";
@@ -553,53 +611,9 @@ void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PANNER_DATA::PANNER_DATA(std::string name)
-    : DspBlockData(name) {
-  _blocktype = "PANNER";
-  addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
+void BANGAMP_DATA::describeX(class_t* clazz){
+
 }
-dspblk_ptr_t PANNER_DATA::createInstance() const {
-  return std::make_shared<PANNER>(this);
-}
-
-PANNER::PANNER(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-void PANNER::compute(DspBuffer& dspbuf) // final
-{
-  int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
-  float pos      = _param[0].eval();
-  float pan      = pos * 0.01f;
-  float lmix     = (pan > 0) ? lerp(0.5, 0, pan) : lerp(0.5, 1, -pan);
-  float rmix     = (pan > 0) ? lerp(0.5, 1, pan) : lerp(0.5, 0, -pan);
-
-  lmix *= 0.25;
-  rmix *= 0.25;
-
-  _fval[0] = pos;
-
-  // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
-  if (1)
-    for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * _dbd->_inputPad;
-      _plmix      = _plmix * 0.995f + lmix * 0.005f;
-      _prmix      = _prmix * 0.995f + rmix * 0.005f;
-
-      ubuf[i] = input * _plmix;
-      lbuf[i] = input * _prmix;
-    }
-}
-void PANNER::doKeyOn(const KeyOnInfo& koi) // final
-{
-  _plmix = 0.0f;
-  _prmix = 0.0f;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
 
 BANGAMP_DATA::BANGAMP_DATA(std::string name)
     : DspBlockData(name) {
@@ -645,5 +659,6 @@ void BANGAMP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _smooth = 0.0f;
 }
+
 
 } // namespace ork::audio::singularity

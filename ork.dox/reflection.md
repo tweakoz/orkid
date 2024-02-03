@@ -5,7 +5,7 @@ ork.core includes a built in reflection system facilitating easy editors and ser
 
 ---
 
-* reflection property registration example 
+## reflection property registration example 
 
 ```cpp
 
@@ -82,13 +82,16 @@ void MapTest::describeX(ObjectClass* clazz) {
       "directstrint_unordered_map", //
       &MapTest::_directstrintumap);
   ///////////////////////////////////
-  clazz->directMapProperty(
+  auto P1 = clazz->directMapProperty(
       "directstrint_lut", //
       &MapTest::_directstrintlut);
+  P1->annotate("editor.visible", false);  // not visible in UI editors
   ///////////////////////////////////
   clazz->directObjectMapProperty(
       "directstrobj_map", //
-      &MapTest::_directstrobjmap);
+      &MapTest::_directstrobjmap)        // annotation direct on property declaration
+      ->annotate("python.visible",false) // not visible from python bindings
+      ->annotate("hello",true);          // continued annotation
   ///////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -249,7 +252,62 @@ int main( int argc, char** argv, char** envp ){
 
 ---
 
-* ork.lev2 has example ImGui based editors for editing reflection based objects.
+## Standard annotations for classes
+  - **AssetSet** : **assetset_ptr_t** :  assetset for a given asset class
+  - **ork.asset.loader** : **asset::loader_ptr_t** :  loader object for a given asset class
+  - TODO : fix namespacing
+
+## Standard Editor annotations for properties
+
+  - **editor.visible** : **bool** :  is property displayable in UI editors ?
+  - **editor.range** : **float_range or int_range** :  range for sliders in editor 
+  - **editor.range.log** : **bool** :  range for sliders in editor shoud use log mode instead of linear mode 
+  - **editor.range.min** : **bool** :  min val for sliders in editor
+  - **editor.range.max** : **bool** :  max val for sliders in editor
+  - **editor.range.precision** : **bool** :  number of digits to display for sliders in editor
+  - **editor.factory.classbase** : **object::class_ptr_t** :  instantiable base class for object properties 
+  - **editor.type** : **object::class_ptr_t** :  override editor widget type for a given property
+  - TODO : fix namespacing
+
+## Standard Python Binding annotations for properties
+
+  - **python.visible** : **bool** :  is property visible from python bindings ?
+  - TODO : fix namespacing
+
+## Standard Serialization/DeSerialization (SerDes) annotations for properties
+
+  - **reflect.no_instantiate** : **bool** :  typically for object maps or vectors - if true then contents of property (objects) are instantiated externally from reflection deserialization
+  - TODO : fix namespacing
+
+
+---
+
+## python bindings
+
+the reflection system is accessible from python
+```python
+graphdata = dflow.GraphData.createShared()
+a = graphdata.create("A",dflow.LambdaModule)
+b = graphdata.create("B",dflow.LambdaModule)
+
+print("graphdata.uuid:", graphdata.uuid)
+print("graphdata.properties:", graphdata.properties.dict)
+```
+
+would result in something like 
+```bash
+graphdata.uuid: c433e999-ac18-477e-84e9-8e5668fbbc85
+graphdata.properties: {
+  'Modules': {
+    'A': LambdaModuleData(0x561f6345e790), 
+    'B': LambdaModuleData(0x561f63484040)
+  }
+}
+```
+
+---
+
+## ork.lev2 has example ImGui based editors for editing reflection based objects.
 
 ![Reflection Editor:1](ReflectionEditor.png)
 
