@@ -18,8 +18,9 @@ namespace ork::audio::singularity {
 
 struct KrzSynthData : public SynthData {
   static bankdata_ptr_t baseObjects();
-  KrzSynthData();
-  void loadBank(const file::Path& syxpath);
+  KrzSynthData(bool base_data=true);
+  void loadBank(const file::Path& syxpath, int remap_base=0);
+  int _remap_base = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,6 +62,7 @@ struct KrzBankDataParser {
   std::map<int, prgdata_ptr_t> _tempprograms;
   std::map<int, keymap_ptr_t> _tempkeymaps;
   std::map<int, multisample_ptr_t> _tempmultisamples;
+  int _remap_base = 0;
 };
 
 } // namespace ork::audio::singularity

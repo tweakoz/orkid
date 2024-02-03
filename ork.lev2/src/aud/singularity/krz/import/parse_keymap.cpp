@@ -339,7 +339,7 @@ void filescanner::ParseKeyMap(const datablock& db, datablock::iterator& it, int 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitKeymap(const Keymap* km, rapidjson::Value& parent) {
+void filescanner::emitKeymap(int object_id, const Keymap* km, rapidjson::Value& parent) {
 
   rapidjson::Value kmapobject(kObjectType);
   AddStringKVMember(kmapobject, "Keymap", km->mKeymapName);

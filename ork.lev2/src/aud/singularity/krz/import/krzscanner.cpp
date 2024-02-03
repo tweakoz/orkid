@@ -76,14 +76,23 @@ void filescanner::scanAndDump() {
 
   /////////////////////////////////////////////
 
-  for (auto km : _keymaps)
-    emitKeymap(km.second, _joprogobjs);
+  for (auto km : _keymaps){
+    int id = km.first;
+    auto keymap = km.second;
+    emitKeymap(id, keymap, _joprogobjs);
+  }
 
-  for (auto ms : _samples)
-    emitMultiSample(ms.second, _joprogobjs);
+  for (auto ms : _samples){
+    int id = ms.first;
+    auto msample = ms.second;
+    emitMultiSample(id, msample, _joprogobjs);
+  }
 
-  for (auto p : _programs)
-    emitProgram(p.second, _joprogobjs);
+  for (auto p : _programs){
+    int id = p.first;
+    auto program = p.second;
+    emitProgram(id, program, _joprogobjs);
+  }
 
   /////////////////////////////////////////////
 

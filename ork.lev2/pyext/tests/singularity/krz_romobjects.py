@@ -60,9 +60,8 @@ class KrzApp(SingulTestApp):
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
-    self.krzdata = singularity.KrzSynthData()
-    self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
-    self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
+    self.krzdata = singularity.KrzSynthData(base_objects=True)
+    
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.krzprogs.keys())
@@ -230,7 +229,7 @@ class KrzApp(SingulTestApp):
     "World_Rave_Kit",
     "Xylophone"
     ]
-    #self.sorted_progs = sorted(ok_list)
+    self.sorted_progs = sorted(ok_list)
     #print("krzprogs<%s>" % self.krzprogs)    
     PRG = "Doomsday" # "Stereo_Grand"
     #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")

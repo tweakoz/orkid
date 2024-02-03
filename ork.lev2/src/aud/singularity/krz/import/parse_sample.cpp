@@ -24,8 +24,7 @@ SampleItem::SampleItem()
 ///////////////////////////////////////////////////////////////////////////////
 
 MultiSample::MultiSample()
-    : _objectId(-1) 
-    , _isStereo(false) {
+    : _isStereo(false) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,7 +56,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
 
   auto multisample              = new MultiSample;
-  multisample->_objectId        = iObjectID;
+  //multisample->_objectId        = iObjectID;
   multisample->_multiSampleName = ObjName;
   multisample->_numSoundFiles   = uNumSoundFilesMinusOne + 1;
 
@@ -178,10 +177,6 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
     float pitchADJ = calch - float(uHighestPitch);
     //////////////////////////
 
-    if (multisample->_objectId == 112) {
-      int inumsmps = (uEndOfSpan - uStart);
-      //printf("MS112 samp<%d> ustart<%08x> inumsmps<%d>\n", int(usamp), int(uStart), inumsmps);
-    }
     //if (uStart <= 0x3fffff) // rom block 0 ?
     {
       char buffer[256];
@@ -297,19 +292,19 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitMultiSample(const MultiSample* ms, rapidjson::Value& parent) {
+void filescanner::emitMultiSample(int object_id, const MultiSample* ms, rapidjson::Value& parent) {
   //if (ms->_objectId > 200)
   //  return;
 
   Value jsonobj(kObjectType);
   AddStringKVMember(jsonobj, "MultiSample", ms->_multiSampleName);
-  jsonobj.AddMember("objectID", ms->_objectId, _japrog);
+  jsonobj.AddMember("objectID", object_id, _japrog);
 
   rapidjson::Value samplearrayobject(kArrayType);
 
   for (auto sub : ms->_subSamples) {
     if (sub->_valid)
-      emitSample(sub, samplearrayobject);
+      emitSample(sub->miSampleId, sub, samplearrayobject);
   }
 
   jsonobj.AddMember("numSoundFiles", ms->_numSoundFiles, _japrog);
@@ -320,7 +315,7 @@ void filescanner::emitMultiSample(const MultiSample* ms, rapidjson::Value& paren
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitSample(const SampleItem* si, rapidjson::Value& parent) {
+void filescanner::emitSample(int object_id, const SampleItem* si, rapidjson::Value& parent) {
 
   rapidjson::Value sampleobject(kObjectType);
 

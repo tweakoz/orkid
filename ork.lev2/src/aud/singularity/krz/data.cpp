@@ -67,16 +67,25 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
   return parser._objdb;
 }
 
-KrzSynthData::KrzSynthData()
+///////////////////////////////////////////////////////////////////////////////
+
+KrzSynthData::KrzSynthData(bool base_data)
     : SynthData() {
-  _bankdata = baseObjects();
+  if(base_data){
+    _bankdata = baseObjects();
+  }
+  else{
+    _bankdata = std::make_shared<BankData>();
+  }
   
 }
 
-void KrzSynthData::loadBank(const file::Path& syxpath){
+///////////////////////////////////////////////////////////////////////////////
+
+void KrzSynthData::loadBank(const file::Path& syxpath, int remap_base){
   auto as_json = krzio::convert(syxpath.c_str());
   KrzBankDataParser parser;
-  parser.loadKrzJsonFromString(as_json, 0);
+  parser.loadKrzJsonFromString(as_json, remap_base);
   _bankdata->merge(*parser._objdb);
 }
 

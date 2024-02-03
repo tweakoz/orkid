@@ -248,17 +248,17 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitProgram(const Program* p, rapidjson::Value& parent) {
-  //if (p->_programID > 200)
+void filescanner::emitProgram(int object_id, const Program* p, rapidjson::Value& parent) {
+  //if (object_id > 200)
     //return;
 
   if (p->_debug)
-    printf("/////////////////////////////////////// EMIT PROGRAM <%d:%p:%s>\n", p->_programID, (void*)p, p->_programName.c_str());
+    printf("/////////////////////////////////////// EMIT PROGRAM <%d:%p:%s>\n", object_id, (void*)p, p->_programName.c_str());
 
   rapidjson::Value prgobject(kObjectType);
 
   AddStringKVMember(prgobject, "Program", p->_programName);
-  prgobject.AddMember("objectID", p->_programID, _japrog);
+  prgobject.AddMember("objectID", object_id, _japrog);
 
   AddMember(prgobject, "format", p->_programFormat);
 

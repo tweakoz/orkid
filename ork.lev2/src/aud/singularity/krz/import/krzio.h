@@ -214,7 +214,7 @@ struct SampleItem {
 struct MultiSample {
   MultiSample();
 
-  int _objectId;
+  //int _objectId;
   std::string _multiSampleName;
   std::vector<SampleItem*> _subSamples;
   bool _isStereo;
@@ -617,11 +617,13 @@ struct filescanner {
 
   /////////////////////////////////////////////
 
-  void emitMultiSample(const MultiSample* ms, rapidjson::Value& parent);
-  void emitSample(const SampleItem* si, rapidjson::Value& parent);
-  void emitKeymap(const Keymap* km, rapidjson::Value& parent);
+  void emitMultiSample(int id, const MultiSample* ms, rapidjson::Value& parent);
+  void emitSample(int id, const SampleItem* si, rapidjson::Value& parent);
+  void emitKeymap(int id, const Keymap* km, rapidjson::Value& parent);
+  void emitProgram(int id, const Program* p, rapidjson::Value& parent);
 
-  void emitProgram(const Program* p, rapidjson::Value& parent);
+  /////////////////////////////////////////////
+
   void emitLayer(const Layer* l, rapidjson::Value& parent);
   void emitAsr(const Asr* a, rapidjson::Value& parent);
   void emitEnv(const Env* e, rapidjson::Value& parent);

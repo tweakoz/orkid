@@ -318,14 +318,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sampler_type = py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData")
-      .def_property(
-          "lowpassfreq",
-          [](samplerdata_ptr_t sampler) -> float { //
-            return sampler->_lowpassfrq;
-          },
-          [](samplerdata_ptr_t sampler, float frq) { //
-            sampler->_lowpassfrq = frq;
-          });
+                          .def_property(
+                              "lowpassfreq",
+                              [](samplerdata_ptr_t sampler) -> float { //
+                                return sampler->_lowpassfrq;
+                              },
+                              [](samplerdata_ptr_t sampler, float frq) { //
+                                sampler->_lowpassfrq = frq;
+                              });
   type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
   /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
@@ -583,7 +583,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                    format = as_crc.value();
                                  }
                                } else if (key == "audiofile") {
-                                 auto filename     = item.second.cast<std::string>();
+                                 auto filename = item.second.cast<std::string>();
                                  sample->loadFromAudioFile(filename);
                                } else if (key == "waveform") {
                                  auto& wavedataOUT = sample->_user.make<WaveformData>();
@@ -638,10 +638,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  sample->_loopPoint   = item.second.cast<int>();
                                  sample->_blk_loopend = sample->_loopPoint + sample->_blk_start;
                                  sample->_loopMode    = eLoopMode::FWD;
-                               } else if( key == "interpMethod" ){
-                                  sample->_interpMethod = item.second.cast<int>();                                
+                               } else if (key == "interpMethod") {
+                                 sample->_interpMethod = item.second.cast<int>();
                                }
-
                              }
                              return sample;
                            }))
@@ -863,9 +862,33 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   type_codec->registerStdCodec<czsyndata_ptr_t>(czdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto krzdata_type = py::class_<KrzSynthData, SynthData, krzsyndata_ptr_t>(singmodule, "KrzSynthData")
-                          .def(py::init<>())
-                          .def("loadBank", [](krzsyndata_ptr_t krzdata, std::string bankname, const file::Path& bankpath) {
-                            krzdata->loadBank(bankpath);
+                          .def(py::init<>([](py::kwargs kwargs) -> krzsyndata_ptr_t {
+                            bool base_objects = true;
+                            for (auto item : kwargs) {
+                              auto key = item.first.cast<std::string>();
+                              if (key == "base_objects") {
+                                base_objects = item.second.cast<bool>();
+                              }
+                            }
+                            auto krzdata = std::make_shared<KrzSynthData>(base_objects);
+                            return krzdata;
+                          }))
+                          .def("loadBank", [](krzsyndata_ptr_t krzdata, py::kwargs kwargs) {
+                            std::string bank_name;
+                            file::Path bank_path;
+                            int remap_base = 0;
+                            for (auto item : kwargs) {
+                              auto key = item.first.cast<std::string>();
+                              if (key == "name") {
+                                bank_name = item.second.cast<std::string>();
+                              } else if (key == "path") {
+                                bank_path = item.second.cast<file::Path>();
+                                // krzdata->appendBank(bankpath, bank_name);
+                              } else if (key == "remap_base") {
+                                remap_base = item.second.cast<int>();
+                              }
+                            }
+                            krzdata->loadBank(bank_path);
                           });
   type_codec->registerStdCodec<krzsyndata_ptr_t>(krzdata_type);
   /////////////////////////////////////////////////////////////////////////////////

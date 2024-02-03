@@ -36,6 +36,8 @@ struct WaveformData{
   std::vector<s16> _sampledata;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct SampleData : public ork::Object {
 
   DeclareConcreteX(SampleData, ork::Object);
