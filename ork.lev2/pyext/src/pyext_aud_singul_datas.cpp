@@ -25,6 +25,7 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
+#include <pybind11/numpy.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
@@ -316,8 +317,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           });
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sampler_type =
-      py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData");
+  auto sampler_type = py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData");
   type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
   /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
@@ -551,15 +551,15 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto sampdata_type = py::class_<SampleData, sample_ptr_t>(singmodule, "SampleData") //
                            .def(py::init([type_codec](py::kwargs kwargs) -> sample_ptr_t {
                              auto sample            = std::make_shared<SampleData>();
-                             sample->_highestPitch = 20000;
-                             sample->_blk_start = 0;
-                             sample->_blk_alt   = 0;
-                             sample->_blk_end   = 0;
+                             sample->_highestPitch  = 20000;
+                             sample->_blk_start     = 0;
+                             sample->_blk_alt       = 0;
+                             sample->_blk_end       = 0;
                              sample->_blk_loopstart = 0;
-                             sample->_blk_loopend = 0;
-                             sample->_loopPoint = 0;
-                             sample->_linGain = 1.0f;
-                             sample->_loopMode = eLoopMode::NONE;
+                             sample->_blk_loopend   = 0;
+                             sample->_loopPoint     = 0;
+                             sample->_linGain       = 1.0f;
+                             sample->_loopMode      = eLoopMode::NONE;
 
                              crcstring_ptr_t format = nullptr;
                              for (auto item : kwargs) {
@@ -575,17 +575,32 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                    format = as_crc.value();
                                  }
                                } else if (key == "waveform") {
-                                 auto wavedataIN   = item.second.cast<py::list>();
-                                 size_t count      = wavedataIN.size();
-                                 sample->_blk_end   = count-1;
                                  auto& wavedataOUT = sample->_user.make<WaveformData>();
-                                 wavedataOUT._sampledata.resize(count);
                                  OrkAssert(format != nullptr);
                                  switch (format->_hashed) {
-                                   case "FLOAT32_LIST"_crcu: {
+                                   case "F32_LIST"_crcu: {
+                                     auto wavedataIN  = item.second.cast<py::list>();
+                                     size_t count     = wavedataIN.size();
+                                     sample->_blk_end = count - 1;
+                                     wavedataOUT._sampledata.resize(count);
                                      for (size_t i = 0; i < count; i++) {
                                        auto wsamp                 = wavedataIN[i].cast<float>();
-                                       wavedataOUT._sampledata[i] = s16(wsamp*32767.0f);
+                                       wavedataOUT._sampledata[i] = s16(wsamp * 32767.0f);
+                                     }
+                                     sample->_sampleBlock = wavedataOUT._sampledata.data();
+                                     break;
+                                   }
+                                   case "F32_NPARRAY"_crcu: {
+                                     auto wavedataIN   = item.second.cast<py::array_t<float>>(); // Cast input to NumPy array
+                                     auto wavedata_buf = wavedataIN.request();                   // Request buffer info
+                                     size_t count      = wavedata_buf.size; // Get the number of elements in the array
+                                     sample->_blk_end  = count - 1;
+                                     auto& wavedataOUT = sample->_user.make<WaveformData>();
+                                     wavedataOUT._sampledata.resize(count);
+                                     auto wavedata_ptr = static_cast<float*>(wavedata_buf.ptr); // Direct pointer to the data
+                                     for (size_t i = 0; i < count; i++) {
+                                       auto wsamp                 = wavedata_ptr[i];
+                                       wavedataOUT._sampledata[i] = s16(wsamp * 32767.0f);
                                      }
                                      sample->_sampleBlock = wavedataOUT._sampledata.data();
                                      break;
@@ -601,15 +616,15 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                } else if (key == "sampleRate") {
                                  sample->_sampleRate = item.second.cast<float>();
                                } else if (key == "highestPitchCents") {
-                                 sample->_highestPitch = (int) item.second.cast<float>();
+                                 sample->_highestPitch = (int)item.second.cast<float>();
                                } else if (key == "pitchAdjustCents") {
-                                 sample->_pitchAdjust = (int) item.second.cast<float>();
+                                 sample->_pitchAdjust = (int)item.second.cast<float>();
                                } else if (key == "rootKey") {
                                  sample->_rootKey = item.second.cast<int>();
                                } else if (key == "loopPoint") {
-                                 sample->_loopPoint = item.second.cast<int>();
+                                 sample->_loopPoint   = item.second.cast<int>();
                                  sample->_blk_loopend = sample->_loopPoint + sample->_blk_start;
-                                 sample->_loopMode = eLoopMode::FWD;
+                                 sample->_loopMode    = eLoopMode::FWD;
                                }
                              }
                              return sample;

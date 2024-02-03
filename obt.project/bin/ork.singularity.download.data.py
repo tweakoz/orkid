@@ -94,3 +94,15 @@ batch_wget({
   "https://bitmidi.com/uploads/107583.mid": (dest_path/"midifiles"/"castle3.mid","b370bcb8c9fdced91f174d9376154d5a"),
   "https://bitmidi.com/uploads/16752.mid": (dest_path/"midifiles"/"moonlight.mid","3cb2f37a8f74f93a60d31c1b818ba43f"),
 })
+
+ensureDirectoryExists(dest_path/"wavs")
+
+wav_base = URL("https://github.com/sgossner/VSCO-2-CE/raw/master/VSCO%201%20Percussion/drums")
+
+batch_wget({
+  wav_base/"bass/bdrum2_pp_1.wav": (dest_path/"wavs"/"bdrum2_pp_1.wav","4fb66f1bcb4e61c4afc5e30856dc0b0d"),
+  wav_base/"bass/bdrum2_pp_2.wav": (dest_path/"wavs"/"bdrum2_pp_2.wav","16d5ea349fa3e417abac7000fa213ed5"),
+  wav_base/"bass/bdrum_f_1.wav": (dest_path/"wavs"/"bdrum_f_1.wav","9b9d75dc4e1afec44d1c470f9d169bdb"),
+  wav_base/"bass/bdrum_f_2.wav": (dest_path/"wavs"/"bdrum_f_2.wav","3261005b0abd0821eeb3de8e046563ab"),
+  wav_base/"snare/OldSnare/snare_f3.wav": (dest_path/"wavs"/"snare_f3.wav","9259193b9fa91197f09550b577fdf92c"),
+})
