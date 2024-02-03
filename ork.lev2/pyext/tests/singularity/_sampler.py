@@ -6,12 +6,14 @@ def createLayer(program):
   newlyr = program.newLayer()
   dspstg = newlyr.appendStage("DSP")
   ampstg = newlyr.appendStage("AMP")
-  dspstg.ioconfig.inputs = []
+  dspstg.ioconfig.inputs = [0,1]
   dspstg.ioconfig.outputs = [0,1]
   ampstg.ioconfig.inputs = [0,1]
   ampstg.ioconfig.outputs = [0,1]
   pchblock = dspstg.appendDspBlock("Pitch","pitch")
   newlyr.pitchBlock = pchblock
+  newlyr.panmode = 2
+  newlyr.pan = 7
   #########################################
   # carrier
   #########################################
@@ -37,10 +39,13 @@ def createSampleLayer(program,
                       multisample,
                       lokey,
                       hikey,
-                      lowpass):
+                      lowpass,
+                      tuning=0,
+                      pan=7):
 
         
   newlyr, SOSCIL = createLayer(program)
+  newlyr.pan = pan
   keymap = S.KeyMapData("KMAP")
   the_sample = multisample.sampleByIndex(0)
   R0 = keymap.addRegion(
@@ -48,6 +53,7 @@ def createSampleLayer(program,
     hikey=hikey,
     lovel=0,
     hivel=127,
+    tuning=tuning,
     multisample=multisample,
     sample=the_sample)
   newlyr.keymap = keymap    

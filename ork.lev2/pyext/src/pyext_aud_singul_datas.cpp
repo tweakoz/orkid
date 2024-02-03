@@ -497,6 +497,20 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t ldata, keymap_ptr_t kmap) { //
                               ldata->_keymap = kmap;
                             })
+                        .def_property("panmode",
+                                      [](lyrdata_ptr_t ldata) -> int { //
+                                        return ldata->_panmode;
+                                      },
+                                      [](lyrdata_ptr_t ldata, int val) { //
+                                        ldata->_panmode = val;
+                                      }) 
+                        .def_property("pan",
+                                      [](lyrdata_ptr_t ldata) -> int { //
+                                        return ldata->_pan;
+                                      },
+                                      [](lyrdata_ptr_t ldata, int val) { //
+                                        ldata->_pan = val;
+                                      }) 
                         .def("__repr__", [](lyrdata_ptr_t ldata) -> std::string {
                           std::ostringstream oss;
                           oss << "LayerData( name: " << ldata->_name << ", stage_count: " << ldata->_algdata->_numstages << " )";

@@ -540,8 +540,8 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
   // _curratio, int(_playbackRate), int(_isLooped) );
   // printf("sample<%s>\n", sample->_name.c_str());
-  // printf("sampleBlock<%p>\n", (void*) sample->_sampleBlock);
-  // printf("st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
+  printf("sampler::SAMPLEBLOCK<%p>\n", (void*) sample->_sampleBlock);
+  printf("sampler::SAMPLEBLOCK st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
   // printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
   _active = true;
 

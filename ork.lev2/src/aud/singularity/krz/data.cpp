@@ -90,8 +90,11 @@ bankdata_ptr_t KrzSynthData::loadBank(const file::Path& syxpath, int remap_base)
   auto krz_data = krzio::convert(syxpath.c_str());
   KrzBankDataParser parser;
   parser._sampledata = (const s16*) krz_data->_sample_data.data();
+  
   bankdata_ptr_t bankdata = parser.loadKrzJsonFromString(krz_data->_json_programs, remap_base);
   _bankdata->merge(*bankdata);
+
+  _bankdata->_uservars.set<krzio::krzimportdata_ptr_t>(syxpath.c_str(),krz_data);
   return bankdata;
 }
 

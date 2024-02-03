@@ -61,21 +61,47 @@ class KrzApp(SingulTestApp):
 
     newprog = self.soundbank.newProgram("YO")
 
-    createSampleLayer(
-      newprog,
-      multisample=self.krzsamps["Kick1"],
-      lokey=0,
-      hikey=63,
-      lowpass=8000)
-    
+    #############################
+    layers = [
+      { "name":"Kick1", "lokey":0, "hikey":60, "tuning":0, "lowpass":12000.0, "pan": 5 },
+      { "name":"UNNAMED_WS_206", "lokey":61, "hikey":61, "tuning":-2000, "lowpass":18000.0, "pan": 6 },
+      { "name":"Kick2", "lokey":62, "hikey":62, "tuning":0, "lowpass":12000.0, "pan": 4 },
+      { "name":"UNNAMED_WS_207", "lokey":63, "hikey":63, "tuning":-2000, "lowpass":12000.0, "pan": 4 },
+      { "name":"Snare1", "lokey":64, "hikey":64, "tuning":-1200, "lowpass":12000.0, "pan": 8 },
+      { "name":"UNNAMED_WS", "lokey":65, "hikey":65, "tuning":-1800, "lowpass":12000.0, "pan": 9 },
+      { "name":"UNNAMED_WS_201", "lokey":66, "hikey":66, "tuning":-2400, "lowpass":18000.0, "pan": 9 },
+      { "name":"Snare2", "lokey":67, "hikey":67, "tuning":-1200, "lowpass":12000.0, "pan": 10 },
+      { "name":"Closed_HiHat", "lokey":68, "hikey":69, "tuning":-1200, "lowpass":18000.0, "pan": 7 },
+      { "name":"Open_HiHat", "lokey":70, "hikey":71, "tuning":-1200, "lowpass":18000.0, "pan": 7 },
+      { "name":"Crash", "lokey":72, "hikey":72, "tuning":-1800, "lowpass":18000.0, "pan": 7 },
+      { "name":"UNNAMED_WS_205", "lokey":73, "hikey":73, "tuning":-2400, "lowpass":12000.0, "pan": 7 },
+    ]
+    #############################
+    # create layers
+    #############################
+    for item in layers:
+      n = item["name"]
+      lo = item["lokey"]
+      hi = item["hikey"]
+      t = item["tuning"]
+      l = item["lowpass"]
+      createSampleLayer(
+        newprog,
+        multisample=self.krzsamps[n],
+        lokey=lo,
+        hikey=hi,
+        lowpass=l,
+        tuning=t)
+    #############################
     PRG = "YO"
     self.setBusProgram(main,self.soundbank.programByName(PRG))
     self.prog_index = find_index(self.sorted_progs, PRG)
     self.prog = self.soundbank.programByName(PRG)
     self.setUiProgram(self.prog)
+    self.synth.setEffect(main,"Reverb:TEST")
 
     
-    self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+    self.synth.masterGain = singularity.decibelsToLinear(-12.0)
 
 ###############################################################################
 

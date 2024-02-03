@@ -227,6 +227,14 @@ sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_co
   sout->_blk_loopend   = jsonobj["uEnd"].GetInt();
   sout->_blk_end       = jsonobj["uEnd"].GetInt();
 
+  printf( "sample<%s> start<%d> alt<%d> loopstart<%d> loopend<%d> end<%d>\n",
+          sout->_name.c_str(),
+          sout->_blk_start,
+          sout->_blk_alt,
+          sout->_blk_loopstart,
+          sout->_blk_loopend,
+          sout->_blk_end );
+
   int orchestral_base     = 16 << 20;
   int contemporary_base   = 20 << 20;
   int orchestral_offset   = orchestral_base - (4 << 20);

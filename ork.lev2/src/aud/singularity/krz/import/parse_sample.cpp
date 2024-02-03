@@ -198,6 +198,9 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       _subSamples[idlsk]     = pitem;
       opts.inumchans         = 1;
 
+  
+
+
       pitem->_rootKey      = int(uRootKey);
       pitem->_playbackMode = iPlaybackMode;
       pitem->_volAdj       = fVolAdj;
@@ -206,24 +209,27 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_highestPitch = uHighestPitch;
       pitem->_sampleRate   = fSampleRate;
       pitem->_start        = int(uStart);
-      pitem->_loopPoint    = int(uLoopOfSpan);
       pitem->_end          = int(uEndOfSpan);
-      pitem->_isLooped     = bLoopSwitch;
       pitem->_loopPoint    = int(uLoopOfSpan - uStart) - 1;
       pitem->_ustart       = uStart;
       pitem->_ualt         = uAltStart;
       pitem->_uloop        = uLoopOfSpan;
       pitem->_uend         = uEndOfSpan;
+
+
+      bLoopSwitch = bLoopSwitch & (uLoopOfSpan != uEndOfSpan);
+      pitem->_isLooped     = bLoopSwitch;
+
       std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
-      //printf( "/// sample==<%s>\n", nam.c_str() );
+      printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
-        // printf( "///\n");
-        // printf( "/// sample==<%s>\n", nam.c_str() );
-        // printf( "///\n");
-        // printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
-        // printf( "uStart<%08x:%d>\n", uStart,uStart );
-        // printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
-        // printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
+        printf( "///\n");
+        printf( "/// sample==<%s>\n", nam.c_str() );
+        printf( "///\n");
+        printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
+        printf( "uStart<%08x:%d>\n", uStart,uStart );
+        printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
+        printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
         opts.loopstart = pitem->_loopPoint;
       }
       // printf( "inumsmps<%d>\n", inumsmps );
