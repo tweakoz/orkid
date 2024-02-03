@@ -75,7 +75,7 @@ class WaveformsApp(SingulTestApp):
       SOSCIL = dspstg.appendDspBlock("Sampler","soscil")
       return newlyr, SOSCIL
 
-    if True:      
+    if False:      
       newlyr, SOSCIL = createLayer()
 
       #########################################
@@ -159,63 +159,31 @@ class WaveformsApp(SingulTestApp):
     ############################
     
     def createSampleLayer(filename,orig_pitch,lokey,hikey):
-      with wave.open(str(filename), 'rb') as wav_file:
-        # Extract audio data
-        n_channels, _, framerate, n_frames, _, _ = wav_file.getparams()
-        data = wav_file.readframes(n_frames)
-        width = wav_file.getsampwidth()
-        audio_data = None
-        if width == 1:
-          dtype = np.uint8  # 8-bit WAV files are unsigned
-          audio_data = np.frombuffer(data, dtype=dtype)
-        elif width == 2:
-          audio_data = np.frombuffer(data, dtype=np.int16)
-          audio_data = audio_data.astype(np.float32) / 32768.0          
-          audio_data = audio_data / np.max(np.abs(audio_data))  # Normalize to -1 to 1                
-        elif width == 3:
-          dtype = np.float32
-          audio_data = np.frombuffer(data, dtype=np.uint8)
-          audio_data = audio_data.reshape(-1, 3)  
-          audio_data = np.pad(audio_data, ((0, 0), (1, 0)), 'constant', constant_values=(0,))
-          audio_data = audio_data.view(np.int32).reshape(audio_data.shape[0], -1)
-          audio_data = ((audio_data >> 8) / 2**23).astype(np.float32)
-          audio_data = audio_data / np.max(np.abs(audio_data))  # Normalize to -1 to 1                
-        elif width == 4:
-          dtype = np.int32  # 32-bit WAV files are signed
-          audio_data = np.frombuffer(data, dtype=dtype)
-          audio_data = audio_data / np.iinfo(dtype).max
-        else:
-          raise ValueError("Unsupported sample width <%d>"%width)
-                
-        # Convert to stereo or mono
-        if n_channels > 1:
-          #assert(False)
-          #audio_data = audio_data.reshape((-1, n_channels))
-          # get just channel 0
-          audio_data = audio_data[::2]
+
           
         newlyr, SOSCIL = createLayer()
 
-        wavelength = len(audio_data)
-        samplerate = framerate
-        root_key = 48
-        highestPitch = orig_pitch * 48000.0/samplerate
-        highestPitchN = singularity.frequencyToMidiNote(highestPitch)
-        highestPitchCents = int(highestPitchN*100.0)+1
-        fratio   = 96000.0 / math.floor(samplerate);
-        frqerc = singularity.linearFrequencyRatioToCents(fratio)
-        calch    = root_key * (frqerc / 100.0)
-        pitchADJcents = calch - highestPitchCents
-        delcents = frqerc-pitchADJcents
+        #wavelength = len(audio_data)
+        #samplerate = framerate
+        #root_key = 48
+        #highestPitch = orig_pitch * 48000.0/samplerate
+        #highestPitchN = singularity.frequencyToMidiNote(highestPitch)
+        #highestPitchCents = int(highestPitchN*100.0)+1
+        #fratio   = 96000.0 / math.floor(samplerate);
+        #frqerc = singularity.linearFrequencyRatioToCents(fratio)
+        #calch    = root_key * (frqerc / 100.0)
+        #pitchADJcents = calch - highestPitchCents
+        #delcents = frqerc-pitchADJcents
 
         the_sample = S.SampleData(
           name = "MySample2",
-          format = tokens.F32_NPARRAY,
-          waveform = audio_data,
-          rootKey = root_key,                
+          #format = tokens.F32_NPARRAY,
+          originalPitch = orig_pitch,
+          audiofile = str(filename),
+          rootKey = 48,                
           pitchAdjustCents = 0.0,
-          sampleRate = samplerate,  
-          highestPitchCents = highestPitchCents,
+          #sampleRate = samplerate,  
+          #highestPitchCents = highestPitchCents,
           _interpMethod = 1,
         )
         multisample = S.MultiSampleData("MSAMPLE",[the_sample])

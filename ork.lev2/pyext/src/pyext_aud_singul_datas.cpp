@@ -574,6 +574,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  if (auto as_crc = fmt.tryAs<crcstring_ptr_t>()) {
                                    format = as_crc.value();
                                  }
+                               } else if (key == "audiofile") {
+                                 auto filename     = item.second.cast<std::string>();
+                                 sample->loadFromAudioFile(filename);
                                } else if (key == "waveform") {
                                  auto& wavedataOUT = sample->_user.make<WaveformData>();
                                  OrkAssert(format != nullptr);
@@ -621,6 +624,8 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  sample->_pitchAdjust = (int)item.second.cast<float>();
                                } else if (key == "rootKey") {
                                  sample->_rootKey = item.second.cast<int>();
+                               } else if (key == "originalPitch") {
+                                 sample->_originalPitch = item.second.cast<float>();
                                } else if (key == "loopPoint") {
                                  sample->_loopPoint   = item.second.cast<int>();
                                  sample->_blk_loopend = sample->_loopPoint + sample->_blk_start;

@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-// #include <audiofile.h>
+#include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -221,78 +221,95 @@ SampleData::SampleData()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-void sample::load(const std::string& fname)
-{
-    printf( "loading sample<%s>\n", fname.c_str() );
 
-    auto af_file = afOpenFile(fname.c_str(), "r", nullptr);
+void SampleData::loadFromAudioFile(const std::string& fname) {
+  printf("loading sample<%s>\n", fname.c_str());
 
+  auto af_file = afOpenFile(fname.c_str(), "r", nullptr);
 
-    _numFrames = afGetFrameCount(af_file, AF_DEFAULT_TRACK);
-    float frameSize = afGetVirtualFrameSize(af_file, AF_DEFAULT_TRACK, 1);
-    int channelCount = afGetVirtualChannels(af_file, AF_DEFAULT_TRACK);
-    _sampleRate = afGetRate(af_file, AF_DEFAULT_TRACK);
+  // Initialize variables
+  _blk_start       = 0;
+  _blk_end         = afGetFrameCount(af_file, AF_DEFAULT_TRACK);
+  float frameSize  = afGetVirtualFrameSize(af_file, AF_DEFAULT_TRACK, 1);
+  int channelCount = afGetVirtualChannels(af_file, AF_DEFAULT_TRACK);
+  _sampleRate      = afGetRate(af_file, AF_DEFAULT_TRACK);
 
-    int sampleFormat, sampleWidth;
+  float highestPitch = _originalPitch * 48000.0f / _sampleRate;
+  // Assuming frequency_to_midi_note is defined elsewhere
+  float highestPitchN     = frequency_to_midi_note(highestPitch);
+  float highestPitchCents = static_cast<int>(highestPitchN * 100.0f) + 1.0f;
+  _highestPitch           = static_cast<int>(highestPitchCents);
 
-    afGetVirtualSampleFormat(af_file, AF_DEFAULT_TRACK, &sampleFormat,
-        &sampleWidth);
+  int sampleFormat, sampleWidth;
+  afGetVirtualSampleFormat(af_file, AF_DEFAULT_TRACK, &sampleFormat, &sampleWidth);
 
-    int numbytes = _numFrames*frameSize;
+  int numBytes = static_cast<int>(_blk_end * frameSize * channelCount); // Corrected to consider channelCount in size calculation
+  printf("frameCount<%d>\n", _blk_end);
+  printf("frameSize<%f>\n", frameSize);
+  printf("numBytes<%d>\n", numBytes);
+  printf("channelCount<%d>\n", channelCount);
+  printf("sampleWidth<%d>\n", sampleWidth);
 
-    printf( "frameCount<%d>\n", _numFrames );
-    printf( "frameSize<%f>\n", frameSize );
-    printf( "numbytes<%d>\n", numbytes );
+  std::vector<uint8_t> bufS8(numBytes);             // Directly initialize with size
+  std::vector<float> fbuf(_blk_end * channelCount); // Corrected size to consider channelCount
 
+  int count = afReadFrames(af_file, AF_DEFAULT_TRACK, bufS8.data(), _blk_end);
+  printf("readCount<%d>\n", count);
 
-    auto buffer = malloc(numbytes);
-    int count = afReadFrames(af_file, AF_DEFAULT_TRACK, buffer, _numFrames);
-    printf( "readcount<%d>\n", count );
-
-    _data = (s16*) buffer;
-
-    ////////////////////////////
-    // get loop
-    ////////////////////////////
-
-    int numloopids = afGetLoopIDs(af_file, AF_DEFAULT_INST, NULL);
-    printf( "numloopids<%d>\n", numloopids );
-
-    auto loopids = new int[numloopids];
-    afGetLoopIDs(af_file, AF_DEFAULT_INST, loopids);
-    for (int i=0; i<numloopids; i++)
-        printf( "loopid<%d> : %d\n", i, loopids[i] );
-
-    int nummkrids = afGetMarkIDs(af_file, AF_DEFAULT_TRACK, NULL);
-    printf( "nummkrids<%d>\n", nummkrids );
-    auto mkrids = new int[nummkrids];
-    afGetMarkIDs(af_file, AF_DEFAULT_TRACK, mkrids);
-    for (int i=0; i<nummkrids; i++)
-    {
-        const char* mkrname = afGetMarkName(af_file, AF_DEFAULT_TRACK, mkrids[i]);
-        auto mkrpos = afGetMarkPosition(af_file, AF_DEFAULT_TRACK, mkrids[i]);
-
-        printf( "mkrid<%d> : %d : pos<%d> name<%s>\n", i, mkrids[i], int(mkrpos), mkrname );
+  switch (sampleWidth) {
+    case 16: {
+      // Corrected loop to iterate over samples considering channelCount
+      int16_t* samples = reinterpret_cast<int16_t*>(bufS8.data());
+      for (int i = 0; i < _blk_end * channelCount; ++i) {
+        fbuf[i] = samples[i] / 32768.0f;
+      }
+      break;
     }
+    case 24: {
+      // Implementing 24-bit to float conversion
+      for (int i = 0, j = 0; i < _blk_end * channelCount; ++i, j += 3) {
+        // Assemble the 24-bit sample from 3 bytes
+        //int32_t sample = bufS8[j+0] | (bufS8[j + 1] << 8) | (bufS8[j + 2] << 16);
+        //int32_t sample = bufS8[j+2] | (bufS8[j + 1] << 8) | (bufS8[j + 0] << 16);
+        int32_t sample = bufS8[j+0] | (bufS8[j + 1] << 8) | (bufS8[j + 2] << 16);
+        if (sample & 0x00800000)
+          sample |= 0xFF000000; // Sign-extend to 32 bits
 
-    int lpa_startMKR = afGetLoopStart(af_file, AF_DEFAULT_INST, 1);
-    int lpa_endMKR = afGetLoopEnd(af_file, AF_DEFAULT_INST, 1);
+        // Now, sample is correctly sign-extended and can be normalized
+        fbuf[i] = sample / 8388608.0f; // 2^23 = 8388608 for normalization
+      }
+      break;
+    }
+    default:
+      printf("Unsupported sample width: %d\n", sampleWidth);
+      OrkAssert(false);
+      return; // Early return for unsupported bit depths
+  }
 
-    printf( "loopa_markers start<%d> end<%d>\n", lpa_startMKR,lpa_endMKR );
+  // Normalization and bias correction
+  float _min = *std::min_element(fbuf.begin(), fbuf.end());
+  float _max = *std::max_element(fbuf.begin(), fbuf.end());
+  printf("_min<%g> _max<%g>\n", _min, _max);
 
-    auto lptrack1 = afGetLoopTrack(af_file, AF_DEFAULT_INST, 1);
+  float frange = _max - _min;
+  float fbias  = (_max + _min) * 0.5f;
+  for (auto& F : fbuf) {
+    F -= fbias;
+    F /= (frange * 0.5f);
+  }
+  printf("frange<%f> fbias<%f>\n", frange, fbias);
 
-    int lpstartfr = afGetLoopStartFrame(af_file, AF_DEFAULT_INST, 1);
-    int lpendfr = afGetLoopEndFrame(af_file, AF_DEFAULT_INST, 1);
+  // Assuming WaveformData and _user are defined and initialized elsewhere
+  auto& waveformOUT = _user.make<WaveformData>();
+  waveformOUT._sampledata.resize(_blk_end * channelCount); // Assuming 16-bit output, correct size calculation needed
+  for (int i = 0; i < _blk_end * channelCount; i++) {
+    waveformOUT._sampledata[i] = static_cast<int16_t>(fbuf[i] * 32767.0f);
+  }
+  _sampleBlock = waveformOUT._sampledata.data();
 
-    _loopPoint = lpstartfr;
-
-    printf( "loopa_frames start<%d> end<%d>\n", lpstartfr,lpendfr );
-
-    afCloseFile(af_file);
-
-}*/
+  printf("closing..\n");
+  afCloseFile(af_file);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -722,11 +739,11 @@ float sampleOsc::playLoopFwd() {
   float sampB = float(sblk[iiB]);
 
   switch (sample->_interpMethod) {
-    case 0:{
+    case 0: {
       ///////////////
       // linear
       ///////////////
-      samp        = (sampB * fract + sampA * invfr) * kinv32k;
+      samp = (sampB * fract + sampA * invfr) * kinv32k;
       break;
     }
     case 1: {

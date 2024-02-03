@@ -41,6 +41,8 @@ struct SampleData : public ork::Object {
 
   SampleData();
 
+  void loadFromAudioFile(const std::string& filename);
+
   std::string _name;
   const s16* _sampleBlock;
 
@@ -58,6 +60,7 @@ struct SampleData : public ork::Object {
   int _rootKey;
   int _highestPitch;
   int _interpMethod = 0;
+  float _originalPitch = 0.0f;
 
   svar64_t _user;
 
