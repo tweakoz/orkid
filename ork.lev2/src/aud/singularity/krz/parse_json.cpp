@@ -29,7 +29,7 @@ struct SoundBlockData{
     auto data_read = _romDATA;
     ///////////////////////////////////////////////////////////////////////////////////////////
     auto load_sound_block = [&](file::Path filename, size_t numbytes) {
-      printf("Loading Soundblock<%s>\n", filename.c_str());
+      //printf("Loading Soundblock<%s>\n", filename.c_str());
       FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
       if (fin == nullptr) {
         printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
@@ -758,7 +758,7 @@ void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
-  printf("Got Prgram<%s> layer..\n", name.c_str());
+  //printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
   const auto& keymapSeg = calvinSeg["KEYMAP"];
   const auto& pitchSeg  = calvinSeg["PITCH"];
@@ -1022,7 +1022,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
 
-    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
+    //printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
     if (blockn1 != "PITCH" and blockn2 != "PITCH") {
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
       if (dspblock) {
@@ -1042,11 +1042,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
   int blockindex = 0;
 
-  printf("ACFG._wp<%d>\n", ACFG._wp);
+  /*printf("ACFG._wp<%d>\n", ACFG._wp);
   printf("ACFG._w1<%d>\n", ACFG._w1);
   printf("ACFG._w2<%d>\n", ACFG._w2);
   printf("ACFG._w3<%d>\n", ACFG._w3);
-  printf("ACFG._wa<%d>\n", ACFG._wa);
+  printf("ACFG._wa<%d>\n", ACFG._wa);*/
 
   auto dspstage = layerdata->stageByName("DSP");
   auto ampstage = layerdata->stageByName("AMP");
@@ -1179,12 +1179,12 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
 
 void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
-  printf("fname<%s>\n", realfname.c_str());
+  //printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
   OrkAssert(fin != nullptr);
   fseek(fin, 0, SEEK_END);
   int size = ftell(fin);
-  printf("filesize<%d>\n", size);
+  //printf("filesize<%d>\n", size);
   fseek(fin, 0, SEEK_SET);
   auto jsondata = (char*)malloc(size + 1);
   fread(jsondata, size, 1, fin);

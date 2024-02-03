@@ -23,17 +23,19 @@ filescanner::filescanner(const char* pname)
     , _globalsFlag(false)
 //, _curLayerObject(nullptr)
 {
-  printf("Opening<%s>\n", pname);
+  _filename = pname;
   mpFile = fopen(pname, "rb");
-  printf("file<%p>\n", (void*) mpFile);
+  //printf("file<%p>\n", (void*) mpFile);
   fseek(mpFile, 0, SEEK_END);
   int ilen = ftell(mpFile);
   miSize   = ilen;
-  printf("length<%d>\n", ilen);
+  //printf("length<%d>\n", ilen);
   mpData = malloc(ilen);
   fseek(mpFile, 0, SEEK_SET);
   fread(mpData, ilen, 1, mpFile);
   mMainDataBlock.AddBytes(mpData, ilen);
+
+  //printf("Opening KRZ<%s> length<%d>\n", pname, ilen);
 
   // Value jsonKRZ(kArrayType);
   // jsonKRZ.SetString("KRZ");
@@ -58,7 +60,7 @@ void filescanner::SkipData(int ibytes) {
 
 void filescanner::scanAndDump() {
   size_t inumb = mDatablocks.size();
-  printf("NumBlocks<%d>\n", int(inumb));
+  //printf("NumBlocks<%d>\n", int(inumb));
 
   // printf( "///////////////////////////////////////////////////////////////////////\n");
   // printf( "///////////////////////////////////////////////////////////////////////\n");
@@ -109,9 +111,9 @@ std::string filescanner::jsonPrograms() const{
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
   std::string json_str = std::string(strbuf.GetString(), strbuf.GetSize());
-  printf( "json<^%s>\n", json_str.c_str() );
-  printf( "len1<%d>\n", (int) strbuf.GetSize() );
-  printf( "len2<%d>\n", (int) json_str.length() );
+  //printf( "json<^%s>\n", json_str.c_str() );
+  //printf( "len1<%d>\n", (int) strbuf.GetSize() );
+  //printf( "len2<%d>\n", (int) json_str.length() );
   return json_str;
 }
 
@@ -178,7 +180,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
   else
     ObjectName = (const char*)pObjName;
 
-  printf( "obj<%s>\n",ObjectName.c_str());
+  //printf( "obj<%s>\n",ObjectName.c_str());
   // Value jsonobj(kObjectType);
 
   // Value nameobj(kStringType);

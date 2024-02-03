@@ -126,7 +126,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   if(_lerpincr>0.2){
     _lerpincr = 0.2;
   }
-  printf( "initSeg<%d> basetime<%g> adjtime<%g> _lerpincr<%g>\n", iseg, _rawtime, _adjtime, _lerpincr);
+  if(0)printf( "initSeg<%d> basetime<%g> adjtime<%g> _lerpincr<%g>\n", iseg, _rawtime, _adjtime, _lerpincr);
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,prevseg](std::vector<std::string>& unlocked){
           auto s = FormatString("seg<%d->%d> _startval<%g> _destval<%g> _lerpincr<%g> _lerpindex<%g>", prevseg,  _segmentIndex, _startval, _destval, _lerpincr, _lerpindex );

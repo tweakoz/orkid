@@ -25,7 +25,7 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
 
   //if (iObjectID >= 189 && iObjectID <= 191) {
     //prg->_debug = true;
-    printf("/////////////////////////////////////// NEW PROGRAM <%d:%p:%s>\n", iObjectID, (void*)prg, ObjName.c_str());
+   //printf("/////////////////////////////////////// PARSED PROGRAM <%d:%p:%s>\n", iObjectID, (void*)prg, ObjName.c_str());
   //}
 
   _curProgram = prg;
@@ -73,7 +73,7 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
   ///////////////////////
   bOK                       = db.GetData(u8v, it);
   const int iNumberOfLayers = int(u8v);
-  printf(" Number of Layers <%d>\n", iNumberOfLayers);
+  //printf(" Number of Layers <%d>\n", iNumberOfLayers);
   ///////////////////////
   // 03 Play Modes
   ///////////////////////

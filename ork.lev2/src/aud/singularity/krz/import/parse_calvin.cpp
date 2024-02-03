@@ -133,7 +133,7 @@ void filescanner::emitCalvin(const Calvin* c, rapidjson::Value& parent) {
     auto l0  = p->_layers[0];
     auto c0  = l0->_calvin;
     auto& kp = c0->_kmpage;
-    printf("prg190 emit calvin<%p> KMID1<%d>\n", (void*) c, kp._kmid1);
+    //printf("prg190 emit calvin<%p> KMID1<%d>\n", (void*) c, kp._kmid1);
     assert(kp._kmid1 == 58);
     AddMember(kmseg, "YO", std::string("WHATUP"));
     // assert(false);

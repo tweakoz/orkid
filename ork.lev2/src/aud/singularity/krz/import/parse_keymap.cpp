@@ -178,6 +178,8 @@ void filescanner::ParseKeyMap(const datablock& db, datablock::iterator& it, int 
   kmap->miKeymapID  = iObjectID;
   kmap->mKeymapName = ObjName;
 
+  //printf( "parseKeyMap<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+
   _keymaps[iObjectID] = kmap;
 
   u16 uSampleHeaderID, uMethod, uBasePitch, uCentsPerEntry, uNumberOfEntries, uEntrySize;

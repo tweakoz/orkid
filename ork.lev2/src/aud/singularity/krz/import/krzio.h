@@ -663,7 +663,8 @@ struct filescanner {
   FILE* mpFile;
   int miSize;
   void* mpData;
-
+  std::string _filename;
+  
   datablock mMainDataBlock;
   std::vector<datablock> mDatablocks;
   datablock::iterator mMainIterator;

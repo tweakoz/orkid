@@ -230,8 +230,8 @@ class KrzApp(SingulTestApp):
     "World_Rave_Kit",
     "Xylophone"
     ]
-    self.sorted_progs = sorted(ok_list)
-    print("krzprogs<%s>" % self.krzprogs)    
+    #self.sorted_progs = sorted(ok_list)
+    #print("krzprogs<%s>" % self.krzprogs)    
     PRG = "Doomsday" # "Stereo_Grand"
     #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)

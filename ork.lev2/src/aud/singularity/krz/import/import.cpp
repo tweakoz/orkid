@@ -47,7 +47,6 @@ std::string convert(std::string krzpath) {
   //	switch( u32v )
   //	{}
   //	assert( kKRZHwTypeK2000==u32v );
-  printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x>\n", krzpath.c_str(), os_release, hw_type );
   /////////////////////////////////////////////
   scanner.SkipData(8);
   /////////////////////////////////////////////
@@ -75,7 +74,8 @@ std::string convert(std::string krzpath) {
   ////////////////////////
   int isampledatacount = scanner.miSize - krz.miFileHeaderAndPRAMLength;
 
-  printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
+  //printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
+  printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x> FileSize<%d> SampleDataSize<%d>\n", krzpath.c_str(), os_release, hw_type, scanner.miSize, isampledatacount );
 
   if (isampledatacount) {
     krz.mpSampleData       = (s16*)malloc(isampledatacount);

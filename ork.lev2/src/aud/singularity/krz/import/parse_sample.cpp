@@ -35,6 +35,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
   u8 u8v;
   s8 s8v;
 
+
   u16 uBaseID, uNumSoundFilesMinusOne, uOffset, uReserved2, uCopyID;
   u8 uFlags, uReserved1;
   bOK = db.GetData(uBaseID, it);
@@ -45,10 +46,24 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
   bOK = db.GetData(uCopyID, it);
   bOK = db.GetData(uReserved2, it);
 
+  auto itf = _samples.find(iObjectID);
+
+  if(itf!=_samples.end()){
+    auto end = _samples.rbegin();
+    printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+    iObjectID = end->first + 1;
+    OrkAssert(false);
+  }
+
+
   auto multisample              = new MultiSample;
   multisample->_objectId        = iObjectID;
   multisample->_multiSampleName = ObjName;
   multisample->_numSoundFiles   = uNumSoundFilesMinusOne + 1;
+
+
+  printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+
   _samples[iObjectID]           = multisample;
 
   multisample->_isStereo = (uFlags & 1);
@@ -165,7 +180,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
     if (multisample->_objectId == 112) {
       int inumsmps = (uEndOfSpan - uStart);
-      printf("MS112 samp<%d> ustart<%08x> inumsmps<%d>\n", int(usamp), int(uStart), inumsmps);
+      //printf("MS112 samp<%d> ustart<%08x> inumsmps<%d>\n", int(usamp), int(uStart), inumsmps);
     }
     //if (uStart <= 0x3fffff) // rom block 0 ?
     {
@@ -205,7 +220,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_uloop        = uLoopOfSpan;
       pitem->_uend         = uEndOfSpan;
       std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
-      printf( "/// sample==<%s>\n", nam.c_str() );
+      //printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
         // printf( "///\n");
         // printf( "/// sample==<%s>\n", nam.c_str() );

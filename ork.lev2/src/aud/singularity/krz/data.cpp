@@ -32,10 +32,10 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
   auto base_path = base/"k2v3base.bin";
 
   auto bin_file = fopen(base_path.c_str(), "rb");
-  printf("file<%p:%s>\n", (void*) bin_file, base_path.c_str());
+  //printf("file<%p:%s>\n", (void*) bin_file, base_path.c_str());
   fseek(bin_file, 0, SEEK_END);
   size_t ilen = ftell(bin_file);
-  printf("length<%zu>\n", ilen);
+  //printf("length<%zu>\n", ilen);
   auto bin_data = malloc(ilen);
   fseek(bin_file, 0, SEEK_SET);
   fread(bin_data, ilen, 1, bin_file);

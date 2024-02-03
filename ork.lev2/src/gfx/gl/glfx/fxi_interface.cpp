@@ -198,7 +198,7 @@ bool Interface::BindPass(int ipass) {
 
   if(was_compiled){
     double toptimer_time = top_timer.SecsSinceStart();
-    printf( "toptimer_time<%f>\n", toptimer_time );
+    //printf( "toptimer_time<%f>\n", toptimer_time );
   }
 
   return true;

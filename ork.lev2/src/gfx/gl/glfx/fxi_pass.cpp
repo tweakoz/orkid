@@ -241,7 +241,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
     }
   }
   double postproc_time = pptimer.SecsSinceStart();
-   printf( "postproctime<%f>\n", postproc_time );
+   //printf( "postproctime<%f>\n", postproc_time );
 }
 
 } // namespace ork::lev2::glslfx
