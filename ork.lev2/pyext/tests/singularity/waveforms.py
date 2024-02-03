@@ -189,7 +189,10 @@ class WaveformsApp(SingulTestApp):
                 
         # Convert to stereo or mono
         if n_channels > 1:
-          audio_data = audio_data.reshape((-1, n_channels))
+          #assert(False)
+          #audio_data = audio_data.reshape((-1, n_channels))
+          # get just channel 0
+          audio_data = audio_data[::2]
           
         newlyr, SOSCIL = createLayer()
 
@@ -213,6 +216,7 @@ class WaveformsApp(SingulTestApp):
           pitchAdjustCents = 0.0,
           sampleRate = samplerate,  
           highestPitchCents = highestPitchCents,
+          _interpMethod = 1,
         )
         multisample = S.MultiSampleData("MSAMPLE",[the_sample])
         keymap = S.KeyMapData("KMAP")

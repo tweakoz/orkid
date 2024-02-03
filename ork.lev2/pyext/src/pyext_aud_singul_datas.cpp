@@ -625,7 +625,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  sample->_loopPoint   = item.second.cast<int>();
                                  sample->_blk_loopend = sample->_loopPoint + sample->_blk_start;
                                  sample->_loopMode    = eLoopMode::FWD;
+                               } else if( key == "interpMethod" ){
+                                  sample->_interpMethod = item.second.cast<int>();                                
                                }
+
                              }
                              return sample;
                            }))

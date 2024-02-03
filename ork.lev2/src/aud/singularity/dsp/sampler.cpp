@@ -512,12 +512,12 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
 
     ///////////////////////////////////////
 
-    //float SRratio = synth::instance()->sampleRate() / sampsr;
-    float SRratio = 96000.0f / sampsr;
-    int RKcents   = (RFOUND._sampleRoot) * 100;
-    int delcents  = highestP - RKcents;
-    int frqerc    = linear_freq_ratio_to_cents(SRratio);
-    int pitchadjx_cents = (frqerc - delcents); 
+    // float SRratio = synth::instance()->sampleRate() / sampsr;
+    float SRratio       = 96000.0f / sampsr;
+    int RKcents         = (RFOUND._sampleRoot) * 100;
+    int delcents        = highestP - RKcents;
+    int frqerc          = linear_freq_ratio_to_cents(SRratio);
+    int pitchadjx_cents = (frqerc - delcents);
     int pitchadj_cents  = sample->_pitchAdjust;
 
     // if( SRratio<3.0f )
@@ -534,13 +534,25 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
       RFOUND._baseCents = RFOUND._kmcents + pitchadjx_cents + pitchadj_cents;
       //_basecentsOSC = _pchcents+pitchadj ;
     }
-    printf( "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadj<%d> pitchadjx<%d> bascents<%g>\n", sampsr, SRratio, RKcents, highestP,  delcents, frqerc, pitchadj_cents, pitchadjx_cents, RFOUND._baseCents );
+    printf(
+        "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadj<%d> pitchadjx<%d> bascents<%g>\n",
+        sampsr,
+        SRratio,
+        RKcents,
+        highestP,
+        delcents,
+        frqerc,
+        pitchadj_cents,
+        pitchadjx_cents,
+        RFOUND._baseCents);
 
-    //sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852> bascents<-9752>
-    //pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0> totcents<0.000000> rat<1.000000>
+    // sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852>
+    // bascents<-9752> pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0>
+    // totcents<0.000000> rat<1.000000>
 
-    //sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852> bascents<-9752>
-    //pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0> totcents<0.000000> rat<1.000000>
+    // sampsr<88100.000000> srrat<1.089671> rkc<6000> hp<20000> delc<14000> frqerc<148> pitchadj<0> pitchadjx<-13852>
+    // bascents<-9752> pitcheval<0x14f11a8f8:pitch> _keyTrack<0> kr<-0> course<0.000000> fine<0> c1<0> c2<0> ko<-7> vt<0>
+    // totcents<0.000000> rat<1.000000>
 
     // float outputPAD = decibel_to_linear_amp_ratio(F4._inputPad);
     // float ampCOARSE = decibel_to_linear_amp_ratio(F4._coarse);
@@ -702,38 +714,57 @@ float sampleOsc::playLoopFwd() {
 
   // printf( "iia<%d> lpstart<%d> lpend<%d>\n", iiA,int(_blk_loop>>16),int(_blk_end>>16));
 
-  ///////////////
-  // linear
+  float samp = 0.0f;
+
   auto sblk = sample->_sampleBlock;
   OrkAssert(sblk != nullptr);
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
-  float samp  = (sampB * fract + sampA * invfr) * kinv32k;
+
+  switch (sample->_interpMethod) {
+    case 0:{
+      ///////////////
+      // linear
+      ///////////////
+      samp        = (sampB * fract + sampA * invfr) * kinv32k;
+      break;
+    }
+    case 1: {
+      ///////////////
+      // cosine
+      ///////////////
+      float mu2 = (1.0f - cos(fract * pi)) * 0.5f;
+      samp      = (sampA * (1.0f - mu2) + sampB * mu2) * kinv32k;
+      break;
+    }
+    case 2: {
+      ///////////////
+      // cubic
+      ///////////////
+      int64_t iiC = iiB + 1;
+      if (iiC > (_blk_loopend >> 16))
+        iiC = (_blk_loopstart >> 16);
+      int64_t iiD = iiC + 1;
+      if (iiD > (_blk_loopend >> 16))
+        iiD = (_blk_loopstart >> 16);
+      float sampC = float(sblk[iiC]);
+      float sampD = float(sblk[iiD]);
+      float mu    = fract;
+      float mu2   = mu * mu;
+      float a0    = sampD - sampC - sampA + sampB;
+      float a1    = sampA - sampB - a0;
+      float a2    = sampC - sampA;
+      float a3    = sampB;
+      samp        = (a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3) * kinv32k;
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
+  }
   ///////////////
   // printf("iiA<%zd> iiB<%zd> sampA<%g> sampB<%g> samp<%g>\n", iiA, iiB, sampA, sampB, samp);
-  ///////////////
-  // cosine
-  // float mu2 = (1.0f-cos(fract*pi))*0.5f;
-  // float samp = (sampA*(1.0f-mu2)+sampB*mu2)*kinv32k;
-  ///////////////
 
-  ///////////////
-  // cubic
-  // int64_t iiC = iiB+1;
-  // if( iiC > (_blk_loopend>>16) )
-  //    iiC = (_blk_loopstart>>16);
-  // int64_t iiD = iiC+1;
-  // if( iiD > (_blk_loopend>>16) )
-  //    iiD = (_blk_loopstart>>16);
-  // float sampC = float(sblk[iiC] );
-  // float sampD = float(sblk[iiD] );
-  // float mu = fract;
-  // float mu2 = mu*mu;
-  // float a0 = sampD - sampC - sampA + sampB;
-  // float a1 = sampA - sampB - a0;
-  // float a2 = sampC - sampA;
-  // float a3 = sampB;
-  // float samp = (a0*mu*mu2+a1*mu2+a2*mu+a3)*kinv32k;
   ///////////////
 
   _pbindex = _pbindexNext;

@@ -57,6 +57,7 @@ struct SampleData : public ork::Object {
   float _linGain;
   int _rootKey;
   int _highestPitch;
+  int _interpMethod = 0;
 
   svar64_t _user;
 
