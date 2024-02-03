@@ -48,7 +48,7 @@ static constexpr double kinv4g  = 1.0 / double(1L << 32);
 static constexpr int frames_per_controlpass = 32;
 static constexpr float kfpc                 = 1.0f / float(frames_per_controlpass);
 inline constexpr float getSampleRate() {
-  return 44100.0f;
+  return 48000.0f;
 }
 inline constexpr float getInverseSampleRate() {
   return 1.0f / getSampleRate();

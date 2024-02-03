@@ -9,6 +9,7 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/envelope.h>
+#include <ork/lev2/aud/singularity/filters.h>
 
 namespace ork::audio::singularity {
 
@@ -61,7 +62,7 @@ struct SampleData : public ork::Object {
   int _highestPitch;
   int _interpMethod = 0;
   float _originalPitch = 0.0f;
-
+  
   svar64_t _user;
 
   eLoopMode _loopMode = eLoopMode::NONE;
@@ -170,8 +171,35 @@ struct NatEnv {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct sampleOsc {
-  sampleOsc(const SAMPLER_DATA* data);
+class SamplerLowPassFilter {
+public:
+    SamplerLowPassFilter(size_t order) : _coeffs(order, 1.0f / order), _buffer(order, 0.0f), _order(order) {}
+
+    float process(float input) {
+        // Shift buffer contents
+        for (size_t i = _order - 1; i > 0; --i) {
+            _buffer[i] = _buffer[i - 1];
+        }
+        _buffer[0] = input;
+
+        // Apply filter
+        float output = 0.0f;
+        for (size_t i = 0; i < _order; ++i) {
+            output += _buffer[i] * _coeffs[i];
+        }
+        return output;
+    }
+
+private:
+    std::vector<float> _coeffs;
+    std::vector<float> _buffer;
+    size_t _order;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SampleOscillator {
+  SampleOscillator(const SAMPLER_DATA* data);
 
   void keyOn(const KeyOnInfo& koi);
   void keyOff();
@@ -184,10 +212,10 @@ struct sampleOsc {
   float playLoopBid();
   // bool playbackDone() const;
 
-  // typedef float(sampleOsc::*pbfunc_t)();
+  // typedef float(SampleOscillator::*pbfunc_t)();
   // pbfunc_t _pbFunc = nullptr;
 
-  float (sampleOsc::*_pbFunc)() = nullptr;
+  float (SampleOscillator::*_pbFunc)() = nullptr;
 
   const SAMPLER_DATA* _sampler_data;
   layer_ptr_t _lyr;
@@ -228,6 +256,10 @@ struct sampleOsc {
   natenv_ptr_t _natAmpEnv;
 
   bool _released;
+  SamplerLowPassFilter _lpFilter; 
+  OnePoleLoPass _lpFilter2A; 
+  OnePoleLoPass _lpFilter2B; 
+  BiQuad _bq[4];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,6 +271,7 @@ struct SAMPLER_DATA : public DspBlockData {
   SAMPLER_DATA(std::string name="");
   dspblk_ptr_t createInstance() const override;
   RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
+  float _lowpassfrq;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -250,7 +283,7 @@ struct SAMPLER final : public DspBlock {
 
   void doKeyOn(const KeyOnInfo& koi);
   void doKeyOff();
-  sampleOsc* _spOsc = nullptr;
+  SampleOscillator* _spOsc = nullptr;
   natenvwrapperdata_ptr_t _natenvwrapperdata;
   float _filtp;
 };

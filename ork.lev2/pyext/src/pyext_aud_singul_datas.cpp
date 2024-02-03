@@ -317,7 +317,15 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           });
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sampler_type = py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData");
+  auto sampler_type = py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData")
+      .def_property(
+          "lowpassfreq",
+          [](samplerdata_ptr_t sampler) -> float { //
+            return sampler->_lowpassfrq;
+          },
+          [](samplerdata_ptr_t sampler, float frq) { //
+            sampler->_lowpassfrq = frq;
+          });
   type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
   /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
