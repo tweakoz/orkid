@@ -26,37 +26,6 @@ class KrzApp(SingulTestApp):
   
   ##############################################
 
-  def genMods(self):
-    timebase = self.time
-    modrate = math.sin(self.time)*5
-    mods = singularity.KeyOnModifiers()
-    mods.layerMask = self.layermask
-    mods.outputbus = self.synth.programbus
-    #def sub(name,value):
-    #  print("sub<%s> value<%s>" % (name,value))
-    #mods.controllers.subscribers = {
-    #"AMPENV": sub,
-    #}
-    return mods
-
-  ##############################################
-
-  def onNote(self,voice):
-    if False:
-      LD = self.prog.layer(self.layerID)
-      LD = self.prog.layer(0)
-      DST = LD.stage("DSP")
-      DST.dspblock(2).bypass = True
-    #ST.dspblock(0).paramByName("pitch").debug = True
-    #ST.dspblock(4).paramByName("cutoff").debug = True
-    #ST.dspblock(2).bypass = True
-    #ST.dspblock(3).bypass = True
-    #ST.dspblock(4).bypass = True
-    #print("dspblk<%s>" % dspblk.name)
-    pass
-
-  ##############################################
-
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
@@ -233,7 +202,7 @@ class KrzApp(SingulTestApp):
     #print("krzprogs<%s>" % self.krzprogs)    
     PRG = "Doomsday" # "Stereo_Grand"
     #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
-    self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+    self.synth.masterGain = singularity.decibelsToLinear(-36.0)
     main = self.synth.outputBus("main")
     aux8 = self.synth.outputBus("aux8")
     self.setBusProgram(aux8,self.soundbank.programByName("Chamber_Section"))

@@ -28,37 +28,6 @@ class KrzApp(SingulTestApp):
   
   ##############################################
 
-  def genMods(self):
-    timebase = self.time
-    modrate = math.sin(self.time)*5
-    mods = singularity.KeyOnModifiers()
-    mods.layerMask = self.layermask
-    mods.outputbus = self.synth.programbus
-    #def sub(name,value):
-    #  print("sub<%s> value<%s>" % (name,value))
-    #mods.controllers.subscribers = {
-    #"AMPENV": sub,
-    #}
-    return mods
-
-  ##############################################
-
-  def onNote(self,voice):
-    if False:
-      LD = self.prog.layer(self.layerID)
-      LD = self.prog.layer(0)
-      DST = LD.stage("DSP")
-      DST.dspblock(2).bypass = True
-    #ST.dspblock(0).paramByName("pitch").debug = True
-    #ST.dspblock(4).paramByName("cutoff").debug = True
-    #ST.dspblock(2).bypass = True
-    #ST.dspblock(3).bypass = True
-    #ST.dspblock(4).bypass = True
-    #print("dspblk<%s>" % dspblk.name)
-    pass
-
-  ##############################################
-
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
 
@@ -95,7 +64,7 @@ class KrzApp(SingulTestApp):
     createSampleLayer(
       newprog,
       multisample=self.krzsamps["Kick1"],
-      lokey=60,
+      lokey=0,
       hikey=63,
       lowpass=8000)
     
