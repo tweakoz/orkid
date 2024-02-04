@@ -879,6 +879,7 @@ programInst::~programInst() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod) {
+
   std::lock_guard<std::mutex> lock(l->_mutex);
 
   assert(ld != nullptr);
@@ -911,6 +912,10 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod) {
+
+  _note = note;
+  _velocity = velocity;
+
   _keymods = kmod;
 
   auto syn     = synth::instance();

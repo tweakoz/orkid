@@ -30,6 +30,8 @@ struct programInst {
   prgdata_constptr_t _progdata;
   keyonmod_ptr_t _keymods;
   std::vector<layer_ptr_t> _layers;
+  int _note = 0;
+  int _velocity = 0;
 };
 
 using onkey_t = std::function<void(

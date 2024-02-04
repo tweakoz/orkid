@@ -109,7 +109,19 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth, float tempo) { synth->_system_tempo = tempo; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
+  auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")
+    .def_property_readonly(
+        "program", //
+        [](prginst_rawptr_t prgi) -> prgdata_constptr_t { return prgi->_progdata; })
+    .def_property_readonly(
+        "keymods", //
+        [](prginst_rawptr_t prgi) -> keyonmod_ptr_t { return prgi->_keymods; })
+    .def_property_readonly(
+        "note",
+        [](prginst_rawptr_t prgi) -> int { return prgi->_note; })
+    .def_property_readonly(
+        "velocity",
+        [](prginst_rawptr_t prgi) -> int { return prgi->_velocity; });
   type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //

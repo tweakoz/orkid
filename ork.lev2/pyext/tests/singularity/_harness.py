@@ -280,7 +280,8 @@ class SingulTestApp(object):
         self.voices = dict()
       elif KC == ord("C"): # release drones
         for v in self.held_voices:
-          self.synth.keyOff(v)
+          note = v.note
+          self.synth.keyOff(v,note,0)
         self.held_voices = []
       elif KC == ord(","): # prev program
         self.prog_index -= 1
