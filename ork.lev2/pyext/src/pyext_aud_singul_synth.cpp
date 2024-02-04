@@ -78,6 +78,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth) { //
                 synth->mainThreadHandler();
               })
+          .def(
+              "resetTimer", //
+              [](synth_ptr_t synth) { synth->_timeaccum=0.0f; })
           .def_property(
               "velCurvePower", //
               [](synth_ptr_t synth) -> float { return synth->_velcurvepower; },

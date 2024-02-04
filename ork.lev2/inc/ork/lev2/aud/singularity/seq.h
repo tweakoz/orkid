@@ -88,6 +88,7 @@ struct TimeBase {
   int _denominator = 4;
   float _tempo     = 120.0f;
   int _ppq         = 96;
+  int _measureMax  = 0;
   timebase_ptr_t _parent;
 };
 
@@ -253,6 +254,7 @@ struct Sequencer {
   Sequencer(synth* the_synth);
   sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence,float timeoffset);
   void process();
+  void clearPlaybacks();
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;
   synth* _the_synth = nullptr;

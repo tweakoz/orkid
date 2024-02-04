@@ -401,4 +401,35 @@ void DrawBorder(Context* context, int X1, int Y1, int X2, int Y2, int color) {
   addline(X1, Y2, X1, Y1);
   // drawHudLines(context, lines);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HudEventRouter::registerSinkForHudEvent(uint32_t eventID, hudeventsink_ptr_t sink){
+  _routing_map[eventID].push_back(sink);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HudEventRouter::routeEvent(hudevent_ptr_t hev){
+  uint32_t eventID = hev->_eventID;
+  auto it = _routing_map.find(eventID);
+  if(it!=_routing_map.end()){
+    auto& sinks = it->second;
+    for(auto sink : sinks){
+      sink->_onEvent(hev);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HudEventRouter::processEvents(){
+  hudevent_ptr_t hev;
+  while(_hudevents.try_pop(hev)){
+    routeEvent(hev);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::audio::singularity

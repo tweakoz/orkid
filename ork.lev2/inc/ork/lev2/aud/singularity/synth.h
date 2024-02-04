@@ -198,6 +198,8 @@ struct synth {
   std::map<int, prgdata_ptr_t>::iterator _globalprgit;
   void nextProgram();
   void prevProgram();
+  void enqueueHudEvent(hudevent_ptr_t hev);
+  void registerSinkForHudEvent(uint32_t eventID, hudeventsink_ptr_t sink);
 
   int _soloLayer       = -1;
   bool _stageEnable[5] = {true, true, true, true, true};
@@ -231,6 +233,7 @@ struct synth {
 
   HudFrameControl _curhud_kframe;
   hudvp_ptr_t _hudvp;
+  hudeventrouter_ptr_t _hudEventRouter;
 
   std::vector<keyonmod_ptr_t> _kmod_exec_list;
   std::vector<size_t> _kmod_rem_list;

@@ -350,32 +350,19 @@ class SingulTestApp(object):
           if self.octave > 8:
             self.octave = 8
           return res
-        elif KC == ord("M"): # 
-          #timestamp = singularity.TimeStamp
-          #prg = self.synth.programbus.uiprogram
-          #prgname = prg.name
-          #print(prgname)
-          #print(prg)
-          #sequence = singularity.Sequence(prgname)
-          #timebase = sequence.timebase
-          ##timebase.numerator = 4
-          ##timebase.denominator = 4
-          ##timebase.tempo = 120.0
-          ##timebase.ppq = 100 # pulses per beat
-          #sequencer = self.synth.sequencer
-          #track = sequence.createTrack(prgname)
-          #track.program = prg
-          #track.outputbus = self.synth.programbus
-          #clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(64,0,0))
-
-          #midi_path = singularity.baseDataPath()/"midifiles"
-          #midiToSingularitySequence(
-            #midifile=MidiFile(str(midi_path/"moonlight.mid")),
-            #temposcale=1.9,
-            #sequence=sequence,
-            #CLIP=clip,
-            #feel=3)
-          #self.playback = sequencer.playSequence(sequence,self.synth.time+1)
+        elif KC == ord("N"): # 
+          if uievent.shift:
+            self.curseq = singularity.Sequence("NewSequence")
+            self.curseq.timebase.numerator = 4
+            self.curseq.timebase.denominator = 4
+            self.curseq.timebase.tempo = 120.0
+            self.curseq.timebase.ppq = 100
+            self.curseq.timebase.measureMax = 4
+            self.clicktrack = self.curseq.createTrack("click")
+            self.clicktrack.program = None
+            self.synth.resetTimer()
+            self.playback = self.sequencer.clearPlaybacks()
+            self.playback = self.sequencer.playSequence(self.curseq,0.0)
           return res
 
         #elif KC == ord("N"): # new chart 

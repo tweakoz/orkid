@@ -81,6 +81,10 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               [](timebase_ptr_t tbase) { return tbase->_duration; },
               [](timebase_ptr_t tbase, float val) { tbase->_duration = val; })
           .def_property(
+              "measureMax",
+              [](timebase_ptr_t tbase) { return tbase->_measureMax; },
+              [](timebase_ptr_t tbase, int val) { tbase->_measureMax = val; })
+          .def_property(
               "ppq", [](timebase_ptr_t tbase) { return tbase->_ppq; }, [](timebase_ptr_t tbase, int val) { tbase->_ppq = val; })
           .def_property("parent", [](timebase_ptr_t tbase) { return tbase->_parent; }, [](timebase_ptr_t tbase, timebase_ptr_t val) {
             tbase->_parent = val;
@@ -225,6 +229,9 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer")
                          .def("playSequence", [](sequencer_ptr_t& sequencer, sequence_ptr_t sequence, float timeoffset) -> sequenceplayback_ptr_t { //
                            return sequencer->playSequence(sequence,timeoffset);
+                         })
+                         .def("clearPlaybacks", [](sequencer_ptr_t& sequencer) { //
+                           sequencer->clearPlaybacks();
                          });
   type_codec->registerStdCodec<sequencer_ptr_t>(sequencer_t);
 }

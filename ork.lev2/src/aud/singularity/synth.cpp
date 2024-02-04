@@ -151,6 +151,8 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
+  _hudEventRouter = std::make_shared<HudEventRouter>();
+
   logchan_synth->log("clearing delay lines...");
   std::atomic<int> delayopcounter = 0;
   for( int i=0; i<1024; i++){
@@ -493,6 +495,10 @@ void synth::mainThreadHandler() {
   /////////////////////////////////
 
   _sequencer->process();
+
+  /////////////////////////////////
+
+  _hudEventRouter->processEvents();
 
   /////////////////////////////////
   // in critical section,
@@ -1003,4 +1009,15 @@ void outputBuffer::resize(int inumframes) {
   }
   _numframes = inumframes;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+void synth::registerSinkForHudEvent(uint32_t evID, hudeventsink_ptr_t sink) {
+  _hudEventRouter->registerSinkForHudEvent(evID, sink);
+}
+///////////////////////////////////////////////////////////////////////////////
+void synth::enqueueHudEvent(hudevent_ptr_t hev){
+  _hudEventRouter->_hudevents.push(hev);
+}
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::audio::singularity
