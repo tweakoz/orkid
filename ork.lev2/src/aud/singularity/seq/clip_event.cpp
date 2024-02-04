@@ -32,6 +32,10 @@ event_ptr_t EventClip::createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, 
   return event;
 }
 
+void EventClip::clear() {
+  _events.clear();
+}
+
 ////////////////////////////////////////////////////////////////
 
 eventiterator_ptr_t EventClip::firstEvent() const {

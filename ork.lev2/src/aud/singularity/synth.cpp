@@ -467,14 +467,23 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
         int ppq = timebase->_ppq;
 
         // quantize ts_start->_clocks to CLOSEST 16th note
-        int pp16note = ppq/4;
-        int clocks = ts_start->_clocks;
-        int rem = clocks%pp16note;
-        int qclocks = (rem<pp16note/2) ? (clocks-rem) : (clocks+pp16note-rem);
-        ts_start->_clocks = qclocks;
-
-
-        auto ts_duration = ts_end->sub(ts_start);
+        if(0){
+          int pp16note = ppq/4;
+          int clocks = ts_start->_clocks;
+          int rem = clocks%pp16note;
+          int qclocks = (rem<pp16note/2) ? (clocks-rem) : (clocks+pp16note-rem);
+          ts_start->_clocks = qclocks;
+        }
+        TimeStampComparatorLessEqual compare;
+        bool check = compare(ts_start, ts_end);
+        timestamp_ptr_t ts_duration;
+        if(check){
+          ts_duration = ts_end->sub(ts_start);
+        }
+        else{
+          ts_start = std::make_shared<TimeStamp>();
+          ts_duration = ts_end->sub(ts_start);
+        }
         as_evclip->createNoteEvent(
           ts_start,
           ts_duration,

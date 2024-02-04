@@ -129,6 +129,19 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   using eventclip_ptr_t = std::shared_ptr<EventClip>;
   auto eventclip_t =
       py::class_<EventClip, Clip, eventclip_ptr_t>(singmodule, "EventClip")
+          .def("clear", [](eventclip_ptr_t clip) { //
+            auto syn = synth::instance();
+            syn->addEvent(0,[clip,syn](){
+              syn->panic();
+              auto sequencer = syn->_sequencer;
+              clip->clear(); 
+              auto pb = sequencer->_sequence_playbacks[0];
+              auto seq = pb->_sequence;
+              sequencer->clearPlaybacks();
+              sequencer->playSequence(seq,0.0f);
+              syn->_timeaccum = 0.0f;
+            });
+          })
           .def(
               "createNoteEvent",
               [](const eventclip_ptr_t& clip, timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel) -> event_ptr_t {

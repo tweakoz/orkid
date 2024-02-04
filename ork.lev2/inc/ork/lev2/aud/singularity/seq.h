@@ -159,6 +159,7 @@ struct EventClip : public Clip {
   eventiterator_ptr_t nextEvent(eventiterator_ptr_t) const final;
   bool eventValid(eventiterator_ptr_t) const final;
   event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
+  void clear();
   evmap_t _events;
 
   std::unordered_map<int,noteonevent_ptr_t> _rec_noteon_events;

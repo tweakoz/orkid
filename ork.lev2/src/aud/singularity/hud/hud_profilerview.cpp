@@ -244,9 +244,21 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float g = 1;
     float b = 1;
     if(bus==syn->_curprogrambus){
+      auto sequencer = syn->_sequencer;
+      auto track = sequencer->_recording_track;
       r = 1;
-      g = 0;
-      b = 0;
+      g = 0.5;
+      b = 1;
+      if(track){
+        if( track->_outbus == bus ){
+          int itime = int(syn->_timeaccum*3.0f);
+          if(itime&1){
+            r = 1;
+            g = 0;
+            b = 0;
+          }
+        }
+      }
     } 
 
     auto prgname = bus->_uiprogram ? bus->_uiprogram->_name : "----";

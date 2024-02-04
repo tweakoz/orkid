@@ -222,6 +222,8 @@ class SingulTestApp(object):
     self.synth.programbus.uiprogram = prg
     if self.pgmview:
       self.pgmview.setProgram(prg)
+  def assignTRC(self,trc):
+    self.TRC = trc
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     res.setHandler( self.ezapp.topWidget )
@@ -238,9 +240,8 @@ class SingulTestApp(object):
         self.setUiProgram(self.prog)
         if bus in self.rec_trackclips:
           trandclip = self.rec_trackclips[bus]
-          self.sequencer.recording_track = trandclip.track
-          self.sequencer.recording_clip = trandclip.clip
           trandclip.track.program = bus.uiprogram
+          self.assignTRC(trandclip)
       if KC == ord("0"): # solo layer off
         if uievent.shift:
           self.synth.soloLayer = -1
@@ -380,6 +381,9 @@ class SingulTestApp(object):
           if self.octave > 8:
             self.octave = 8
           return res
+        ######################################
+        # NEW sequence
+        ######################################
         elif KC == ord("N"): # 
           if uievent.shift:
             if self.click_prog != None:
@@ -416,8 +420,7 @@ class SingulTestApp(object):
               #####################################
               self.rec_trackclips = {}
               trc = createTrackAndClipForBus(self.mainbus)
-              self.sequencer.recording_track = trc.track
-              self.sequencer.recording_clip = trc.clip
+              self.assignTRC(trc)
               for i in range(0,self.numaux):
                 trc = createTrackAndClipForBus(self.auxbusses[i])
               #####################################
@@ -425,13 +428,25 @@ class SingulTestApp(object):
               self.playback = self.sequencer.clearPlaybacks()
               self.playback = self.sequencer.playSequence(self.curseq,0.0)
           return res
-
-        #elif KC == ord("N"): # new chart 
-        #  self.clearChart()
-        #  return res
-        #elif KC == ord("M"): # show chart
-        #  self.showCharts()
-        #  return res
+        ######################################
+        # clear track events
+        ######################################
+        elif KC == ord("M"): # 
+          seqr = self.sequencer
+          if uievent.shift:
+            if self.click_prog != None:
+              # clear recording clip
+              if seqr.recording_clip != None:
+                seqr.recording_clip.clear()
+          else:
+            trc = self.TRC
+            if seqr.recording_track==None:
+              seqr.recording_track = trc.track
+              seqr.recording_clip = trc.clip
+            else:
+              seqr.recording_track = None
+              seqr.recording_clip = None
+            pass
 
   
     elif uievent.code == tokens.KEY_UP.hashed:
