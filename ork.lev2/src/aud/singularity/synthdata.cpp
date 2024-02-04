@@ -73,6 +73,11 @@ void BankData::merge(const BankData& oth) {
     //printf( "merge keymap<%d>\n", item.first);
     _keymaps[item.first] = item.second;
   }
+  for (auto item : oth._keymapsByName) {
+    size_t count = _keymapsByName.size();
+    printf( "merge keymapnamed<%s> count<%zu>\n", item.first.c_str(), count);
+    _keymapsByName[item.first] = item.second;
+  }
   for (auto item : oth._multisamples) {
     int object_id = item.first;
     auto multisample = item.second;

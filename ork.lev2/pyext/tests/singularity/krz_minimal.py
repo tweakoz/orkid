@@ -42,10 +42,7 @@ class KrzApp(SingulTestApp):
                              remap_base=remapbase,
                              path=self.syn_data_base/filename)
           
-    do_bank( "quartet.krz", "quartet.krz")
-    do_bank( "monopoly.krz", "monopoly.krz")
-    do_bank( "rapkit.krz", "rapkit.krz")
-    do_bank( "choicdrm.krz", "choicdrm.krz")
+    #do_bank( "quartet.krz", "quartet.krz")
 
     do_bank( "alesisdr", "alesisdr.krz" )
     do_bank( "m1drums", "m1drums.krz")
@@ -73,7 +70,10 @@ class KrzApp(SingulTestApp):
     do_bank( "african.krz", "african.krz")
     do_bank( "gong.krz", "gong.krz")
     do_bank( "idstperc.krz", "idstperc.krz")
-    
+    do_bank( "monopoly.krz", "monopoly.krz")
+    do_bank( "rapkit.krz", "rapkit.krz")
+    do_bank( "choicdrm.krz", "choicdrm.krz")
+
     
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
