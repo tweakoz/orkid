@@ -142,6 +142,9 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               syn->_timeaccum = 0.0f;
             });
           })
+          .def("quantize", [](eventclip_ptr_t clip, int quant) { //
+            clip->quantize(quant);
+          })
           .def(
               "createNoteEvent",
               [](const eventclip_ptr_t& clip, timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel) -> event_ptr_t {

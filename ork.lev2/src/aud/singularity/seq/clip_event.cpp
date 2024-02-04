@@ -36,6 +36,47 @@ void EventClip::clear() {
   _events.clear();
 }
 
+void EventClip::quantize(int quant_clks){
+
+  auto timebase = _sequence->_timebase;
+
+  auto events = _events;
+
+  _events.clear();
+  printf("///////////////////////////////\n");
+  for( auto ev : events ){
+    auto event = ev.second;
+    auto ts_start = ev.first;
+
+    int OM = ts_start->_measures;
+    int OB = ts_start->_beats;
+    int OC = ts_start->_clocks;
+
+    int clocks = ts_start->_clocks;
+    clocks += (ts_start->_beats)*timebase->_ppq;
+    clocks += (ts_start->_measures*4)*timebase->_ppq;
+    int rem = clocks%quant_clks;
+    int qclocks = (rem<quant_clks/2) //
+                ? (clocks-rem) //
+                : (clocks+quant_clks-rem);
+
+   qclocks = (qclocks+clocks)>>1;
+
+    auto new_ts = std::make_shared<TimeStamp>();
+    new_ts->_clocks = qclocks;
+    new_ts = timebase->reduceTimeStamp(new_ts);
+
+    int NM = new_ts->_measures;
+    int NB = new_ts->_beats;
+    int NC = new_ts->_clocks;
+
+     printf("quant clocks [ %05d : %08x : %02d %02d %03d ] -> [ %05d : %08x : %02d %02d %03d ] \n",clocks,clocks, OM, OB, OC, qclocks, qclocks, NM, NB, NC);
+
+    _events.insert( std::make_pair(new_ts,event) );
+  }
+  printf("///////////////////////////////\n");
+}
+
 ////////////////////////////////////////////////////////////////
 
 eventiterator_ptr_t EventClip::firstEvent() const {

@@ -77,6 +77,7 @@ class SingulTestApp(object):
 
   def onGpuInit(self,ctx):
     self.context = ctx
+    self.curseq = None
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
     self.synth.system_tempo = 120.0
@@ -189,41 +190,53 @@ class SingulTestApp(object):
         ord("'"): 17,
     }
     self.voices = dict()
-
+  #####################################
   def onUpdate(self,updinfo):
     self.time = updinfo.absolutetime
-
+  #####################################
   def onGpuUpdate(self,ctx):
     pass
-
-  def showCharts(self):
-    pass
-
-  def clearChart(self):
-    self.charts = dict()
-    self.chart_events = dict()
-
+  #####################################
   def genMods(self):
     return None
-  
+  #####################################
   def onNote(self,voice):
     pass
-
+  #####################################
   def prLayerMask(self):
     as_bools = binary_str = format(self.layermask, '032b')[::-1]
     print("###########################################")
     print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
     print("###########################################")
     pass
+  #####################################
   def setBusProgram(self,bus,prg):
     self.synth.programbus = bus
     self.synth.programbus.uiprogram = prg
+  #####################################
   def setUiProgram(self,prg):
     self.synth.programbus.uiprogram = prg
     if self.pgmview:
       self.pgmview.setProgram(prg)
+  #####################################
   def assignTRC(self,trc):
     self.TRC = trc
+  #####################################
+  def createTrackAndClipForBus(self,bus):
+    if bus.uiprogram != None and \
+       self.curseq != None:
+      track = self.curseq.createTrack("track-"+bus.name)
+      track.program = bus.uiprogram
+      ts0 = singularity.TimeStamp()
+      dur4 = singularity.TimeStamp()
+      dur4.measures = 4
+      clip = track.createEventClipAtTimeStamp("clip-"+bus.name,ts0,dur4)
+      track.outputbus = bus
+      trandclip = TrackAndClip(track, clip)
+      self.rec_trackclips[bus] = trandclip
+      return trandclip
+    return TrackAndClip(None,None)
+  #####################################
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     res.setHandler( self.ezapp.topWidget )
@@ -232,16 +245,25 @@ class SingulTestApp(object):
       def _setSource(bus,source):
         self.program_source.disconnect(self.oscope_sink)
         self.program_source.disconnect(self.spectra_sink)
+        prev_bus = self.synth.programbus
         self.synth.programbus = bus
         self.program_source = source
         source.connect(self.oscope_sink)
         source.connect(self.spectra_sink)
-        self.prog = bus.uiprogram
+        if bus.uiprogram != None:
+          self.prog = bus.uiprogram
+        else:
+          self.prog = prev_bus.uiprogram
         self.setUiProgram(self.prog)
         if bus in self.rec_trackclips:
           trandclip = self.rec_trackclips[bus]
-          trandclip.track.program = bus.uiprogram
+          trandclip.track.program = self.prog
           self.assignTRC(trandclip)
+        else:
+          trandclip = self.createTrackAndClipForBus(bus)
+          if trandclip.track != None:
+            trandclip.track.program = self.prog
+            self.assignTRC(trandclip)
       if KC == ord("0"): # solo layer off
         if uievent.shift:
           self.synth.soloLayer = -1
@@ -392,7 +414,7 @@ class SingulTestApp(object):
               self.curseq.timebase.numerator = 4
               self.curseq.timebase.denominator = 4
               self.curseq.timebase.tempo = 120.0
-              self.curseq.timebase.ppq = 128
+              self.curseq.timebase.ppq = 256
               self.curseq.timebase.measureMax = 4
               self.clicktrack = self.curseq.createTrack("click")
               self.clicktrack.program = self.click_prog
@@ -404,25 +426,11 @@ class SingulTestApp(object):
               self.clicktrack.outputbus = self.auxbusses[0]
               self.clicktrack.outputbus.uiprogram = self.click_prog
               #####################################
-              def createTrackAndClipForBus(bus):
-                if bus.uiprogram != None:
-                  track = self.curseq.createTrack("track-"+bus.name)
-                  track.program = bus.uiprogram
-                  ts0 = singularity.TimeStamp()
-                  dur4 = singularity.TimeStamp()
-                  dur4.measures = 4
-                  clip = track.createEventClipAtTimeStamp("clip-"+bus.name,ts0,dur4)
-                  track.outputbus = bus
-                  trandclip = TrackAndClip(track, clip)
-                  self.rec_trackclips[bus] = trandclip
-                  return trandclip
-                return TrackAndClip(None,None)
-              #####################################
               self.rec_trackclips = {}
-              trc = createTrackAndClipForBus(self.mainbus)
+              trc = self.createTrackAndClipForBus(self.mainbus)
               self.assignTRC(trc)
               for i in range(0,self.numaux):
-                trc = createTrackAndClipForBus(self.auxbusses[i])
+                trc = self.createTrackAndClipForBus(self.auxbusses[i])
               #####################################
               self.synth.resetTimer()
               self.playback = self.sequencer.clearPlaybacks()
@@ -447,6 +455,16 @@ class SingulTestApp(object):
               seqr.recording_track = None
               seqr.recording_clip = None
             pass
+        elif KC == ord("Q"): # 
+          seqr = self.sequencer
+          if uievent.shift:
+            if seqr.recording_clip != None:
+              if self.curseq != None:
+                PPQ = self.curseq.timebase.ppq
+                seqr.recording_clip.quantize(int(PPQ/4)) # 
+                self.synth.resetTimer()
+                self.playback = self.sequencer.clearPlaybacks()
+                self.playback = self.sequencer.playSequence(self.curseq,0.0)
 
   
     elif uievent.code == tokens.KEY_UP.hashed:

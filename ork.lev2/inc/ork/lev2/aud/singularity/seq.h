@@ -125,6 +125,7 @@ using eventiterator_ptr_t = std::shared_ptr<EventIterator>;
 
 struct Clip {
   Clip();
+  Sequence* _sequence = nullptr;
   std::string _name;
   timestamp_ptr_t _duration;
   virtual eventiterator_ptr_t firstEvent() const                   = 0;
@@ -160,6 +161,7 @@ struct EventClip : public Clip {
   bool eventValid(eventiterator_ptr_t) const final;
   event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
   void clear();
+  void quantize(int clocks);
   evmap_t _events;
 
   std::unordered_map<int,noteonevent_ptr_t> _rec_noteon_events;
@@ -192,6 +194,7 @@ using clipmap_t = std::map<timestamp_ptr_t, clip_ptr_t, TimeStampComparatorLess>
 ////////////////////////////////////////////////////////////////
 
 struct Track {
+
   clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createClickClip(std::string named);
@@ -199,6 +202,7 @@ struct Track {
   clipmap_t _clips_by_timestamp;
   prgdata_constptr_t _program;
   outbus_ptr_t _outbus;
+  Sequence* _sequence = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////

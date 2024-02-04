@@ -142,10 +142,16 @@ class KrzApp(SingulTestApp):
       self.sorted_progs.append(item)
     print(self.sorted_progs)
     #############################
-    self.setBusProgram(main,self.soundbank.programByName(DRUM_PRG))
     self.prog_index = find_index(self.sorted_progs, DRUM_PRG)
     self.prog = self.soundbank.programByName(DRUM_PRG)
+    #############################
+    for i in range(0,self.numaux):
+      bus = self.auxbusses[i]
+      self.setBusProgram(bus,self.prog)
+    #############################
+    self.setBusProgram(main,self.soundbank.programByName(DRUM_PRG))
     self.setUiProgram(self.prog)
+    #############################
     self.synth.setEffect(main,"Reverb:TEST")
     self.synth.setEffect(main,"none")
     self.click_prog = self.soundbank.programByName("TOZDRUMS")

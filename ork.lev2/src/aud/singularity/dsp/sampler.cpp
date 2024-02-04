@@ -406,7 +406,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
     // printf("region found<%s> root<%d> keydiff<%d> cents<%f> preDSPGAIN<%f>\n", region->_sampleName.c_str(), RFOUND._sampleRoot,
     // RFOUND._keydiff, RFOUND._baseCents, RFOUND._preDSPGAIN); _spOsc->keyOn(_curSampSRratio);
   } else {
-    printf("no region found\n");
+    //printf("no region found\n");
   }
   return RFOUND;
 }
@@ -470,7 +470,7 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   auto sample = _regionsearch._sample;
 
   if (nullptr == sample) {
-    printf("SampleOscillator no sample!\n");
+    //printf("SampleOscillator no sample!\n");
     return;
   }
 
