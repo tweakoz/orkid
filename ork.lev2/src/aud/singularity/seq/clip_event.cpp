@@ -58,6 +58,7 @@ eventiterator_ptr_t EventClip::nextEvent(eventiterator_ptr_t abstract_iter) cons
     auto iter = std::make_shared<EventIterator>(next_ts);
     iter->_event = next_event;
     iter->_impl.set<evmap_it_t>(next_iter);
+    printf( "nextev<%p> ts<%d>\n", next_event.get(), next_ts->_measures );
     return iter;
   }
   return nullptr;

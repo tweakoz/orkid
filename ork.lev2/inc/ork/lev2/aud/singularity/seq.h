@@ -151,6 +151,8 @@ struct EventClip : public Clip {
   bool eventValid(eventiterator_ptr_t) const final;
   event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
   evmap_t _events;
+
+  std::unordered_map<int,timestamp_ptr_t> _rec_notetimes;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -183,6 +185,7 @@ struct Track {
   clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createClickClip(std::string named);
+  std::string _name;
   clipmap_t _clips_by_timestamp;
   prgdata_constptr_t _program;
   outbus_ptr_t _outbus;
@@ -192,10 +195,20 @@ struct Track {
 
 struct TrackPlayback {
   TrackPlayback(track_ptr_t track);
+  void process(const SequencePlayback* seqpb);
+
+  void _tryAdvanceClip(const SequencePlayback* seqpb);
+  void _cleanupPastEvents(const SequencePlayback* seqpb);
+  void _postDueEvents(const SequencePlayback* seqpb);
+
   track_ptr_t _track;
   clipmap_t::const_iterator _next_clip;
   clipplayback_ptr_t _clip_playback;
   std::unordered_set<activeevent_ptr_t> _active_events;
+  std::vector<activeevent_ptr_t> _active_events_to_erase;
+
+  std::string _clip_str;
+  std::string _ev_str;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -258,6 +271,7 @@ struct SequencePlayback {
   sequence_ptr_t _sequence;
   trackpbmap_t _track_playbacks;
   float _timeoffet = 0.0f;
+  timestamp_ptr_t _currentTS;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -271,6 +285,8 @@ struct Sequencer {
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;
   synth* _the_synth = nullptr;
+  track_ptr_t _recording_track;
+  clip_ptr_t _recording_clip;
 };
 
 } // namespace ork::audio::singularity

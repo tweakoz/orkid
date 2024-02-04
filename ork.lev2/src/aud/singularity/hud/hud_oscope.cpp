@@ -27,7 +27,7 @@ struct ScopeSurf final : public ui::Surface {
   const ScopeSource* _currentSource = nullptr;
   int _updatecount                  = 0;
   float _ostriglev                  = 0;
-  bool _ostrigdir                   = false;
+  bool _ostrigdir                   = true;
   int _osgainmode                   = 3; // auto
   int64_t _oswidth                  = 0;
 };

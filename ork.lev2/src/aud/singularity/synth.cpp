@@ -362,6 +362,22 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
     return nullptr;
   programInst* pi = nullptr;
 
+  ///////////////////////////////////////
+  // SEQUENCER RECORDING
+  ///////////////////////////////////////
+
+  if(_sequencer->_recording_clip){
+    auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
+    if(as_evclip){
+      float time = _timeaccum;
+      auto pb0 = _sequencer->_sequence_playbacks[0];
+      auto ts_start = pb0->_sequence->_timebase->timeToTimeStamp(time); 
+      as_evclip->_rec_notetimes[note] = ts_start;
+    }
+  }
+
+  ///////////////////////////////////////
+
   bool needs_new_trigger = true;
 
   if (pdata->_monophonic) {
@@ -420,6 +436,32 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
 }
 ///////////////////////////////////////////////////////////////////////////////
 void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
+
+  ///////////////////////////////////////
+  // SEQUENCER RECORDING
+  ///////////////////////////////////////
+
+  if(_sequencer->_recording_clip){
+    auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
+    if(as_evclip){
+      float time = _timeaccum;
+      auto pb0 = _sequencer->_sequence_playbacks[0];
+      auto ts_end = pb0->_sequence->_timebase->timeToTimeStamp(time); 
+      auto it = as_evclip->_rec_notetimes.find(note);
+      OrkAssert(it!=as_evclip->_rec_notetimes.end());
+      auto ts_start = it->second;
+      auto ts_duration = ts_end->sub(ts_start);
+      as_evclip->createNoteEvent(
+        ts_start,
+        ts_duration,
+        note,
+        velocity
+      );
+    }
+  }
+
+  ///////////////////////////////////////
+
   auto pdata      = pinst->_progdata;
   bool do_key_off = true;
   if (pdata->_monophonic) {

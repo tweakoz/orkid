@@ -380,7 +380,23 @@ class SingulTestApp(object):
               clip.velH = 128
               self.clicktrack.outputbus = self.auxbusses[0]
               self.clicktrack.outputbus.uiprogram = self.click_prog
-
+              #####################################
+              def createTrackAndClipForBus(bus):
+                if bus.uiprogram != None:
+                  track = self.curseq.createTrack("track-"+bus.name)
+                  track.program = bus.uiprogram
+                  ts0 = singularity.TimeStamp()
+                  dur4 = singularity.TimeStamp()
+                  dur4.measures = 4
+                  clip = track.createEventClipAtTimeStamp("clip-"+bus.name,ts0,dur4)
+                  track.outputbus = bus
+                  return track, clip
+                return None,None
+              TR0,CL0 = createTrackAndClipForBus(self.mainbus)
+              self.sequencer.recording_track = TR0
+              self.sequencer.recording_clip = CL0
+              #####################################
+              
               self.synth.resetTimer()
               self.playback = self.sequencer.clearPlaybacks()
               self.playback = self.sequencer.playSequence(self.curseq,0.0)

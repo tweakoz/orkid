@@ -266,6 +266,17 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
                          })
                          .def("clearPlaybacks", [](sequencer_ptr_t& sequencer) { //
                            sequencer->clearPlaybacks();
+                         })
+                         .def_property("recording_track",
+                                        [](sequencer_ptr_t sequencer) { return sequencer->_recording_track; },
+                                        [](sequencer_ptr_t sequencer, track_ptr_t track) { sequencer->_recording_track = track; })
+                        .def_property("recording_clip",
+                                        [](sequencer_ptr_t sequencer) { return sequencer->_recording_clip; },
+                                        [](sequencer_ptr_t sequencer, clip_ptr_t clip) { sequencer->_recording_clip = clip; })
+                         .def("__repr__", [](sequencer_ptr_t sequencer) -> std::string {
+                           std::ostringstream oss;
+                           oss << "Sequencer( sequence_count: " << sequencer->_sequences.size() << " )";
+                           return oss.str();
                          });
   type_codec->registerStdCodec<sequencer_ptr_t>(sequencer_t);
 }

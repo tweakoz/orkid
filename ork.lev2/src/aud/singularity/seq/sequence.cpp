@@ -233,6 +233,7 @@ Sequence::Sequence(std::string named) {
 track_ptr_t Sequence::createTrack(const std::string& name){
   auto track = std::make_shared<Track>();
   _tracks[name] = track;
+  track->_name = name;
   return track;
 }
 
