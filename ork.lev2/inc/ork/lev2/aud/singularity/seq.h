@@ -164,12 +164,25 @@ struct FourOnFloorClip : public Clip {
 };
 
 ////////////////////////////////////////////////////////////////
+
+struct ClickClip : public Clip {
+  eventiterator_ptr_t firstEvent() const final;
+  eventiterator_ptr_t nextEvent(eventiterator_ptr_t) const final;
+  bool eventValid(eventiterator_ptr_t) const final;
+  int _noteH = 60;
+  int _velH  = 32;
+  int _noteL = 60;
+  int _velL  = 127;
+};
+
+////////////////////////////////////////////////////////////////
 using clipmap_t = std::map<timestamp_ptr_t, clip_ptr_t, TimeStampComparatorLess>;
 ////////////////////////////////////////////////////////////////
 
 struct Track {
   clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
+  clip_ptr_t createClickClip(std::string named);
   clipmap_t _clips_by_timestamp;
   prgdata_constptr_t _program;
   outbus_ptr_t _outbus;

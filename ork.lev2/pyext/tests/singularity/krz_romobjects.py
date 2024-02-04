@@ -236,6 +236,9 @@ class KrzApp(SingulTestApp):
     self.setBusProgram(main,self.soundbank.programByName(PRG))
     self.prog_index = find_index(self.sorted_progs, PRG)
     self.prog = self.soundbank.programByName(PRG)
+    self.click_prog = self.soundbank.programByName("Click")
+    self.click_noteL = 60
+    self.click_noteH = 72
     self.setUiProgram(self.prog)
 
 ###############################################################################

@@ -58,7 +58,10 @@ class SingulTestApp(object):
     self.chart_events = {}
     self.layermask = 0xffffffff
     self.layerID = 0
-
+    self.click_prog = None
+    self.click_noteL = 60
+    self.click_noteH = 60
+    
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
@@ -330,10 +333,18 @@ class SingulTestApp(object):
             self.synth.programbus.gain = self.synth.programbus.gain + 3.0
           return res
         elif KC == ord("-"): # next effect
-          self.synth.prevEffect(self.synth.programbus)
+          if uievent.shift:
+            self.synth.system_tempo -= 1
+            self.curseq.timebase.tempo = self.synth.system_tempo
+          else:
+            self.synth.prevEffect(self.synth.programbus)
           return res
         elif KC == ord("="): # next effect
-          self.synth.nextEffect(self.synth.programbus)
+          if uievent.shift:
+            self.synth.system_tempo += 1
+            self.curseq.timebase.tempo = self.synth.system_tempo
+          else:
+            self.synth.nextEffect(self.synth.programbus)
           return res
         elif KC == ord("!"): # panic
           for voice in self.voices:
@@ -352,17 +363,26 @@ class SingulTestApp(object):
           return res
         elif KC == ord("N"): # 
           if uievent.shift:
-            self.curseq = singularity.Sequence("NewSequence")
-            self.curseq.timebase.numerator = 4
-            self.curseq.timebase.denominator = 4
-            self.curseq.timebase.tempo = 120.0
-            self.curseq.timebase.ppq = 100
-            self.curseq.timebase.measureMax = 4
-            self.clicktrack = self.curseq.createTrack("click")
-            self.clicktrack.program = None
-            self.synth.resetTimer()
-            self.playback = self.sequencer.clearPlaybacks()
-            self.playback = self.sequencer.playSequence(self.curseq,0.0)
+            if self.click_prog != None:
+              self.curseq = singularity.Sequence("NewSequence")
+              self.curseq.timebase.numerator = 4
+              self.curseq.timebase.denominator = 4
+              self.curseq.timebase.tempo = 120.0
+              self.curseq.timebase.ppq = 100
+              self.curseq.timebase.measureMax = 4
+              self.clicktrack = self.curseq.createTrack("click")
+              self.clicktrack.program = self.click_prog
+              clip = self.clicktrack.createClickClip("click")
+              clip.noteL = self.click_noteL
+              clip.noteH = self.click_noteH
+              clip.velL = 64
+              clip.velH = 128
+              self.clicktrack.outputbus = self.auxbusses[0]
+              self.clicktrack.outputbus.uiprogram = self.click_prog
+
+              self.synth.resetTimer()
+              self.playback = self.sequencer.clearPlaybacks()
+              self.playback = self.sequencer.playSequence(self.curseq,0.0)
           return res
 
         #elif KC == ord("N"): # new chart 

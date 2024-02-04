@@ -137,7 +137,7 @@ class KrzApp(SingulTestApp):
         lowpass=10000,
         tuning=0)
     #############################
-    self.sorted_progs = []
+    self.sorted_progs = ["TOZDRUMS","TOZMONKS"]
     for item in self.krzprogs:
       self.sorted_progs.append(item)
     print(self.sorted_progs)
@@ -148,7 +148,9 @@ class KrzApp(SingulTestApp):
     self.setUiProgram(self.prog)
     self.synth.setEffect(main,"Reverb:TEST")
     self.synth.setEffect(main,"none")
-
+    self.click_prog = self.soundbank.programByName("TOZDRUMS")
+    self.click_noteL = 68
+    self.click_noteH = 69
     
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
 

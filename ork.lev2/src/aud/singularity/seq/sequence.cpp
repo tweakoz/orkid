@@ -199,6 +199,20 @@ clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t 
 
 ////////////////////////////////////////////////////////////////
 
+clip_ptr_t Track::createClickClip(std::string named){
+  auto clip = std::make_shared<ClickClip>();
+  clip->_name = named;
+  auto ts0 = std::make_shared<TimeStamp>();
+  ts0->_measures = 0;
+
+  clip->_duration = std::make_shared<TimeStamp>();
+  clip->_duration->_measures = 128;
+  _clips_by_timestamp[ts0] = clip;
+  return clip;
+}
+
+////////////////////////////////////////////////////////////////
+
 clip_ptr_t Track::createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur){
   auto clip = std::make_shared<FourOnFloorClip>();
   clip->_name = named;

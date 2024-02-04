@@ -144,6 +144,35 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
           });
   type_codec->registerStdCodec<eventclip_ptr_t>(eventclip_t);
   /////////////////////////////////////////////////////////////////////////////////
+  using clickclip_ptr_t = std::shared_ptr<ClickClip>;
+  auto clickclip_t       = py::class_<ClickClip, Clip, clickclip_ptr_t>(singmodule, "ClickClip")
+                            .def(
+                                "__repr__",
+                                [](clickclip_ptr_t clip) -> std::string {
+                                  std::ostringstream oss;
+                                  auto dur = clip->_duration;
+                                  oss << "ClickClip( name: " << clip->_name << ", duration: "
+                                      << "( M: " << dur->_measures << ", B: " << dur->_beats << ", C: " << dur->_clocks << ") )";
+                                  return oss.str();
+                                })
+                            .def_property(
+                                "noteL",
+                                [](clickclip_ptr_t clip) { return clip->_noteL; },
+                                [](clickclip_ptr_t clip, int val) { clip->_noteL = val; })
+                            .def_property(
+                                "noteH",
+                                [](clickclip_ptr_t clip) { return clip->_noteH; },
+                                [](clickclip_ptr_t clip, int val) { clip->_noteH = val; })
+                            .def_property(
+                                "velL",
+                                [](clickclip_ptr_t clip) { return clip->_velL; },
+                                [](clickclip_ptr_t clip, int val) { clip->_velL = val; })
+                            .def_property(
+                                "velH",
+                                [](clickclip_ptr_t clip) { return clip->_velH; },
+                                [](clickclip_ptr_t clip, int val) { clip->_velH = val; });
+  type_codec->registerStdCodec<clickclip_ptr_t>(clickclip_t);
+  /////////////////////////////////////////////////////////////////////////////////
   using fouronfloorclip_ptr_t = std::shared_ptr<FourOnFloorClip>;
   auto fouronfloorclip_t       = py::class_<FourOnFloorClip, Clip, fouronfloorclip_ptr_t>(singmodule, "FourOnFloorClip")
                             .def(
@@ -171,6 +200,11 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
                          "createEventClipAtTimeStamp",
                          [](const track_ptr_t& track, std::string name, timestamp_ptr_t ts, timestamp_ptr_t dur) {
                            return track->createEventClipAtTimeStamp(name, ts, dur);
+                         })
+                     .def(
+                         "createClickClip",
+                         [](const track_ptr_t& track, std::string name) {
+                           return track->createClickClip(name);
                          })
                      .def(
                          "createFourOnFloorClipAtTimeStamp",

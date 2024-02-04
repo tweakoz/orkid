@@ -62,7 +62,7 @@ void SequencePlayback::process(Sequencer* sequencer) {
       // reset clock
       syn->_timeaccum = 0.0f;
       _timeoffet = 0.0f;
-      current_timestamp = tbase->timeToTimeStamp(time);
+      current_timestamp = tbase->timeToTimeStamp(0.0f);
       M = current_timestamp->_measures;
       B = current_timestamp->_beats;
       C = current_timestamp->_clocks;
