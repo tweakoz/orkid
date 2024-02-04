@@ -46,6 +46,7 @@ void SequencePlayback::_advanceClock(Sequencer* sequencer){
 
   if(tbase->_measureMax!=0){
     if(current_timestamp->_measures>=tbase->_measureMax){
+      printf( "///////////////// RESET CLOCK ////////////////////\n");
       syn->_timeaccum = 0.0f;
       _timeoffet = 0.0f;
       current_timestamp = tbase->timeToTimeStamp(0.0f);
@@ -55,6 +56,10 @@ void SequencePlayback::_advanceClock(Sequencer* sequencer){
         auto pbtrack                 = std::make_shared<TrackPlayback>(track);
         pbtrack->_next_clip          = track->_clips_by_timestamp.begin();
         _track_playbacks[item.first] = pbtrack;
+
+        printf( "createtrpb<%s>\n", track->_name.c_str() );
+        if(pbtrack->_next_clip!=track->_clips_by_timestamp.end())
+          printf( " clip<%s>\n", pbtrack->_next_clip->second->_name.c_str() );
       }
     }
   }

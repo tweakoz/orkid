@@ -202,7 +202,8 @@ struct synth {
   void prevProgram();
   void enqueueHudEvent(hudevent_ptr_t hev);
   void registerSinkForHudEvent(uint32_t eventID, hudeventsink_ptr_t sink);
-
+  void panic();
+  
   int _soloLayer       = -1;
   bool _stageEnable[5] = {true, true, true, true, true};
   int _lnoteframe;

@@ -367,12 +367,19 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
   ///////////////////////////////////////
 
   if(_sequencer->_recording_clip){
-    auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
-    if(as_evclip){
-      float time = _timeaccum;
-      auto pb0 = _sequencer->_sequence_playbacks[0];
-      auto ts_start = pb0->_sequence->_timebase->timeToTimeStamp(time); 
-      as_evclip->_rec_notetimes[note] = ts_start;
+    auto rec_track = _sequencer->_recording_track;
+    if(rec_track->_outbus==_curprogrambus){
+      auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
+      if(as_evclip){
+        float time = _timeaccum;
+        auto pb0 = _sequencer->_sequence_playbacks[0];
+        auto ts_start = pb0->_sequence->_timebase->timeToTimeStamp(time); 
+        auto nonev = std::make_shared<NoteOnEvent>();
+        nonev->_note = note;
+        nonev->_velocity = velocity;
+        nonev->_timestamp = ts_start;
+        as_evclip->_rec_noteon_events[note] = nonev;
+      }
     }
   }
 
@@ -444,19 +451,37 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
   if(_sequencer->_recording_clip){
     auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
     if(as_evclip){
-      float time = _timeaccum;
-      auto pb0 = _sequencer->_sequence_playbacks[0];
-      auto ts_end = pb0->_sequence->_timebase->timeToTimeStamp(time); 
-      auto it = as_evclip->_rec_notetimes.find(note);
-      OrkAssert(it!=as_evclip->_rec_notetimes.end());
-      auto ts_start = it->second;
-      auto ts_duration = ts_end->sub(ts_start);
-      as_evclip->createNoteEvent(
-        ts_start,
-        ts_duration,
-        note,
-        velocity
-      );
+      auto rec_track = _sequencer->_recording_track;
+      if(rec_track->_outbus==_curprogrambus){
+        float time = _timeaccum;
+        auto pb0 = _sequencer->_sequence_playbacks[0];
+        auto timebase = pb0->_sequence->_timebase;
+        auto ts_end = timebase->timeToTimeStamp(time); 
+        auto it = as_evclip->_rec_noteon_events.find(note);
+        OrkAssert(it!=as_evclip->_rec_noteon_events.end());
+        auto nonev = it->second;
+
+        as_evclip->_rec_noteon_events.erase(it);
+
+        auto ts_start = nonev->_timestamp;
+        int ppq = timebase->_ppq;
+
+        // quantize ts_start->_clocks to CLOSEST 16th note
+        int pp16note = ppq/4;
+        int clocks = ts_start->_clocks;
+        int rem = clocks%pp16note;
+        int qclocks = (rem<pp16note/2) ? (clocks-rem) : (clocks+pp16note-rem);
+        ts_start->_clocks = qclocks;
+
+
+        auto ts_duration = ts_end->sub(ts_start);
+        as_evclip->createNoteEvent(
+          ts_start,
+          ts_duration,
+          nonev->_note,
+          nonev->_velocity
+        );
+      }
     }
   }
 
@@ -1066,5 +1091,14 @@ void synth::enqueueHudEvent(hudevent_ptr_t hev){
   _hudEventRouter->_hudevents.push(hev);
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void synth::panic(){
+  addEvent(0.0f, [=](){
+    for( auto l : _activeVoices ){
+      _deactiveateVoiceQ.push(l);
+    }
+    _activeVoices.clear();
+  });
+}
 
 } // namespace ork::audio::singularity

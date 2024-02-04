@@ -56,7 +56,7 @@ void TrackPlayback::_tryAdvanceClip(const SequencePlayback* seqpb){
       int CM     = clip_start->_measures;
       int CB     = clip_start->_beats;
       int CC     = clip_start->_clocks;
-      printf("    tr<%s> clip_start<%d:%d:%d> check<%d>", _track->_name.c_str(), CM, CB, CC, check);
+      //printf("    tr<%s> clip_start<%d:%d:%d> check<%d>", _track->_name.c_str(), CM, CB, CC, check);
       if (check) {
         ////////////////////////////////////////
         // clip starts before current timestamp

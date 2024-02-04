@@ -28,6 +28,11 @@ def find_index(sorted_list, value):
         return index
     return -1  # Return -1 or some other value to indicate "not found"
 
+class TrackAndClip:
+  def __init__(self,track,clip):
+    self.track = track
+    self.clip = clip
+
 class SingulTestApp(object):
 
   def __init__(self):
@@ -81,7 +86,7 @@ class SingulTestApp(object):
     self.mainbus_source = self.mainbus.createScopeSource()
     #self.synth.setEffect(self.mainbus,"Reverb:OilTank")
     self.synth.setEffect(self.mainbus,"none")
-    self.numaux = 8
+    self.numaux = 9
     self.auxbusses = []
     self.auxbus_sources = []
     for i in range(0,self.numaux):
@@ -90,6 +95,9 @@ class SingulTestApp(object):
       self.synth.setEffect(self.auxbusses[i],"none")
 
     lg_group = self.ezapp.topLayoutGroup
+
+
+    self.rec_trackclips = {}
 
     ######################### 
     # create an profiler view
@@ -228,6 +236,11 @@ class SingulTestApp(object):
         source.connect(self.spectra_sink)
         self.prog = bus.uiprogram
         self.setUiProgram(self.prog)
+        if bus in self.rec_trackclips:
+          trandclip = self.rec_trackclips[bus]
+          self.sequencer.recording_track = trandclip.track
+          self.sequencer.recording_clip = trandclip.clip
+          trandclip.track.program = bus.uiprogram
       if KC == ord("0"): # solo layer off
         if uievent.shift:
           self.synth.soloLayer = -1
@@ -273,6 +286,11 @@ class SingulTestApp(object):
           self.synth.soloLayer = 7
         else:
           _setSource(self.auxbusses[7],self.auxbus_sources[7])
+      elif KC == ord("9"): # solo layer 8
+        if uievent.shift:
+          self.synth.soloLayer = 8
+        else:
+          _setSource(self.auxbusses[8],self.auxbus_sources[8])
       elif KC == ord(" "): # hold drones
         for KC in self.voices:
           voice = self.voices[KC]
@@ -365,11 +383,12 @@ class SingulTestApp(object):
         elif KC == ord("N"): # 
           if uievent.shift:
             if self.click_prog != None:
+              self.synth.panic()
               self.curseq = singularity.Sequence("NewSequence")
               self.curseq.timebase.numerator = 4
               self.curseq.timebase.denominator = 4
               self.curseq.timebase.tempo = 120.0
-              self.curseq.timebase.ppq = 100
+              self.curseq.timebase.ppq = 128
               self.curseq.timebase.measureMax = 4
               self.clicktrack = self.curseq.createTrack("click")
               self.clicktrack.program = self.click_prog
@@ -390,13 +409,18 @@ class SingulTestApp(object):
                   dur4.measures = 4
                   clip = track.createEventClipAtTimeStamp("clip-"+bus.name,ts0,dur4)
                   track.outputbus = bus
-                  return track, clip
-                return None,None
-              TR0,CL0 = createTrackAndClipForBus(self.mainbus)
-              self.sequencer.recording_track = TR0
-              self.sequencer.recording_clip = CL0
+                  trandclip = TrackAndClip(track, clip)
+                  self.rec_trackclips[bus] = trandclip
+                  return trandclip
+                return TrackAndClip(None,None)
               #####################################
-              
+              self.rec_trackclips = {}
+              trc = createTrackAndClipForBus(self.mainbus)
+              self.sequencer.recording_track = trc.track
+              self.sequencer.recording_clip = trc.clip
+              for i in range(0,self.numaux):
+                trc = createTrackAndClipForBus(self.auxbusses[i])
+              #####################################
               self.synth.resetTimer()
               self.playback = self.sequencer.clearPlaybacks()
               self.playback = self.sequencer.playSequence(self.curseq,0.0)

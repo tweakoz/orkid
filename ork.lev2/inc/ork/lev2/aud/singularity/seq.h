@@ -34,6 +34,7 @@ struct TimeStamp {
   timestamp_ptr_t clone() const;
   timestamp_ptr_t add(timestamp_ptr_t duration) const;
   timestamp_ptr_t sub(timestamp_ptr_t duration) const;
+
   int _measures;
   int _beats;
   int _clocks;
@@ -143,6 +144,14 @@ struct ClipPlayback {
 
 ////////////////////////////////////////////////////////////////
 
+struct NoteOnEvent {
+  timestamp_ptr_t _timestamp;
+  int _note;
+  int _velocity;
+};
+using noteonevent_ptr_t = std::shared_ptr<NoteOnEvent>;
+////////////////////////////////////////////////////////////////
+
 struct EventClip : public Clip {
   using evmap_t    = std::multimap<timestamp_ptr_t, event_ptr_t, TimeStampComparatorLess>;
   using evmap_it_t = evmap_t::const_iterator;
@@ -152,7 +161,7 @@ struct EventClip : public Clip {
   event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
   evmap_t _events;
 
-  std::unordered_map<int,timestamp_ptr_t> _rec_notetimes;
+  std::unordered_map<int,noteonevent_ptr_t> _rec_noteon_events;
 };
 
 ////////////////////////////////////////////////////////////////

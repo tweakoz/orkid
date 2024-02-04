@@ -227,19 +227,33 @@ class KrzApp(SingulTestApp):
     ]
     self.sorted_progs = sorted(ok_list)
     #print("krzprogs<%s>" % self.krzprogs)    
-    PRG = "Doomsday" # "Stereo_Grand"
-    #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
-    self.synth.masterGain = singularity.decibelsToLinear(-36.0)
-    main = self.synth.outputBus("main")
-    aux8 = self.synth.outputBus("aux8")
-    self.setBusProgram(aux8,self.soundbank.programByName("Chamber_Section"))
-    self.setBusProgram(main,self.soundbank.programByName(PRG))
+    ##########################################
+    PRG = "Stereo_Grand" 
+    bus_assignments = {
+      "aux1": "Doomsday",
+      "aux2": "Slow_Cello",
+      "aux3": "Jazz_Quartet",
+      "aux4": "Syncro_Taps",
+      "aux5": "TotalCntrl_Orch2",
+      "aux6": "Touch_Clav",
+      "aux7": "WonderSynth_Bass",
+      "aux8": "Chamber_Section",
+      "aux9": "World_Rave_Kit",
+      "main": PRG,
+    }
+    for item in bus_assignments:
+      bus = self.synth.outputBus(item)
+      patch_name = bus_assignments[item]
+      program = self.soundbank.programByName(patch_name)
+      self.setBusProgram(bus, program)
+    ##########################################
     self.prog_index = find_index(self.sorted_progs, PRG)
     self.prog = self.soundbank.programByName(PRG)
     self.click_prog = self.soundbank.programByName("Click")
     self.click_noteL = 60
     self.click_noteH = 72
     self.setUiProgram(self.prog)
+    self.synth.masterGain = singularity.decibelsToLinear(-36.0)
 
 ###############################################################################
 

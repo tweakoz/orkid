@@ -48,6 +48,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 printf("the_synth<%p>\n", (void*)the_synth.get());
                 return the_synth;
               })
+          .def("panic", &synth::panic)
           .def(
               "nextEffect", //
               [](synth_ptr_t synth,outbus_ptr_t obus) { synth->nextEffect(obus); })
