@@ -268,10 +268,13 @@ struct SequencePlayback {
   using trackpbmap_t = std::unordered_map<std::string, trackplayback_ptr_t>;
   SequencePlayback(sequence_ptr_t seq);
   void process(Sequencer* seq);
+  void _advanceClock(Sequencer* seq);
   sequence_ptr_t _sequence;
   trackpbmap_t _track_playbacks;
   float _timeoffet = 0.0f;
   timestamp_ptr_t _currentTS;
+  int _lastM = -1;
+  int _lastB = -1;
 };
 
 ////////////////////////////////////////////////////////////////

@@ -157,18 +157,20 @@ void TrackPlayback::_postDueEvents(const SequencePlayback* seqpb){
         auto evtsplusclip = event_timestamp->add(clippb->_clip_timestamp);
         evtsplusclip      = tbase->reduceTimeStamp(evtsplusclip);
 
-        int EM = evtsplusclip->_measures;
-        int EB = evtsplusclip->_beats;
-        int EC = evtsplusclip->_clocks;
         TimeStampComparatorLessEqual compare;
         bool check = compare(evtsplusclip, current_timestamp);
+        /////////////////
+        // event starts before current timestamp
+        //  so we need to process it
+        /////////////////
         if (check) {
-          // event starts before current timestamp
-          //  so we need to process it
-          _ev_str += FormatString("[EVENT.BEG %d:%d:%d]", EM, EB, EC);
-          auto program = _track->_program;
-          int note     = next_event->_note;
-          int vel      = next_event->_vel;
+          /////////////////
+          if(1){ // log event start
+            int EM = evtsplusclip->_measures;
+            int EB = evtsplusclip->_beats;
+            int EC = evtsplusclip->_clocks;
+            _ev_str += FormatString("[EVENT.BEG %d:%d:%d]", EM, EB, EC);
+          }
           /////////////////
           auto active_event         = std::make_shared<ActiveEvent>();
           active_event->_event      = next_event;
@@ -180,18 +182,28 @@ void TrackPlayback::_postDueEvents(const SequencePlayback* seqpb){
           _active_events.insert(active_event);
           float duration = tbase->time(next_event->_duration);
           /////////////////
+          //auto program = _track->_program;
+          int note     = next_event->_note;
+          int vel      = next_event->_vel;
           enqueue_audio_event(_track, 0.0f, duration, note, vel);
+          /////////////////
+          // find next event
+          /////////////////
           next_event_it          = clip->nextEvent(next_event_it);
           clippb->_next_event_it = next_event_it;
           if (next_event_it and clip->eventValid(next_event_it)) {
-            auto nmpclip = next_event_it->_timestamp->add(clippb->_clip_timestamp);
-            nmpclip      = tbase->reduceTimeStamp(nmpclip);
-            int NM       = nmpclip->_measures;
-            int NB       = nmpclip->_beats;
-            int NC       = nmpclip->_clocks;
-            // _ev_str += FormatString("[NEXT %d:%d:%d]", NM, NB, NC);
+            if(1){ // log next event start
+              auto nmpclip = next_event_it->_timestamp->add(clippb->_clip_timestamp);
+              nmpclip      = tbase->reduceTimeStamp(nmpclip);
+              int NM       = nmpclip->_measures;
+              int NB       = nmpclip->_beats;
+              int NC       = nmpclip->_clocks;
+              _ev_str += FormatString("[NEXT %d:%d:%d]", NM, NB, NC);
+            }
           } else {
-            _ev_str += FormatString("[NO MORE EVENTS]");
+            if(1){ // log no more events
+              _ev_str += FormatString("[NO MORE EVENTS]");
+            }
             clippb->_clipX         = nullptr;
             clippb->_next_event_it = nullptr;
           }
