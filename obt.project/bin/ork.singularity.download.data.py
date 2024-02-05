@@ -71,7 +71,7 @@ dest_kurzweil = dest_path/"kurzweil"
 ensureDirectoryExists(dest_path/"kurzweil")
 
 batch_wget({
- ase_kurzweil/"idstperc.krz": (dest_kurzweil/"idstperc.krz","5b35772d5a0fb984c95a52f3af1b5ae0"),
+ base_kurzweil/"idstperc.krz": (dest_kurzweil/"idstperc.krz","5b35772d5a0fb984c95a52f3af1b5ae0"),
  base_kurzweil/"timpgcff.krz": (dest_kurzweil/"timpgcff.krz","69293fc0fe38fbca9552aaeae1cd278a"),
  base_kurzweil/"gong.krz": (dest_kurzweil/"gong.krz","c5ed60ffa3fbc4c2194b8ebaf7875887"),
  base_kurzweil/"african.krz": (dest_kurzweil/"african.krz","74c4d3c0e94cedac8366510467724085"),
