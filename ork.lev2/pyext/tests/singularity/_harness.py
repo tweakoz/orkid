@@ -237,114 +237,87 @@ class SingulTestApp(object):
       return trandclip
     return TrackAndClip(None,None)
   #####################################
+  def _setSource(self,bus,source):
+    self.program_source.disconnect(self.oscope_sink)
+    self.program_source.disconnect(self.spectra_sink)
+    prev_bus = self.synth.programbus
+    self.synth.programbus = bus
+    self.program_source = source
+    source.connect(self.oscope_sink)
+    source.connect(self.spectra_sink)
+    if bus.uiprogram != None:
+      self.prog = bus.uiprogram
+    else:
+      self.prog = prev_bus.uiprogram
+    self.setUiProgram(self.prog)
+    if bus in self.rec_trackclips:
+      trandclip = self.rec_trackclips[bus]
+      trandclip.track.program = self.prog
+      self.assignTRC(trandclip)
+    else:
+      trandclip = self.createTrackAndClipForBus(bus)
+      if trandclip.track != None:
+        trandclip.track.program = self.prog
+        self.assignTRC(trandclip)
+  #####################################
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      def _setSource(bus,source):
-        self.program_source.disconnect(self.oscope_sink)
-        self.program_source.disconnect(self.spectra_sink)
-        prev_bus = self.synth.programbus
-        self.synth.programbus = bus
-        self.program_source = source
-        source.connect(self.oscope_sink)
-        source.connect(self.spectra_sink)
-        if bus.uiprogram != None:
-          self.prog = bus.uiprogram
-        else:
-          self.prog = prev_bus.uiprogram
-        self.setUiProgram(self.prog)
-        if bus in self.rec_trackclips:
-          trandclip = self.rec_trackclips[bus]
-          trandclip.track.program = self.prog
-          self.assignTRC(trandclip)
-        else:
-          trandclip = self.createTrackAndClipForBus(bus)
-          if trandclip.track != None:
-            trandclip.track.program = self.prog
-            self.assignTRC(trandclip)
-      if KC == ord("0"): # solo layer off
+      ###############  
+      def _xxx(layer,bus,source):
         if uievent.shift:
-          self.synth.soloLayer = -1
+          self.synth.soloLayer = layer
         else:
-          _setSource(self.mainbus,self.mainbus_source)
-      elif KC == ord("1"): # solo layer 1
-        if uievent.shift:
-          self.synth.soloLayer = 0
-        else:
-          _setSource(self.auxbusses[0],self.auxbus_sources[0])
-      elif KC == ord("2"): # solo layer 2
-        if uievent.shift:
-          self.synth.soloLayer = 1
-        else:
-          _setSource(self.auxbusses[1],self.auxbus_sources[1])
-      elif KC == ord("3"): # solo layer 3
-        if uievent.shift:
-          self.synth.soloLayer = 2
-        else:
-          _setSource(self.auxbusses[2],self.auxbus_sources[2])
-      elif KC == ord("4"): # solo layer 4
-        if uievent.shift:
-          self.synth.soloLayer = 3
-        else:
-          _setSource(self.auxbusses[3],self.auxbus_sources[3])
-      elif KC == ord("5"): # solo layer 5
-        if uievent.shift:
-          self.synth.soloLayer = 4
-        else:
-          _setSource(self.auxbusses[4],self.auxbus_sources[4])
-      elif KC == ord("6"): # solo layer 6
-        if uievent.shift:
-          self.synth.soloLayer = 5
-        else:
-          _setSource(self.auxbusses[5],self.auxbus_sources[5])
-      elif KC == ord("7"): # solo layer 7
-        if uievent.shift:
-          self.synth.soloLayer = 6
-        else:
-          _setSource(self.auxbusses[6],self.auxbus_sources[6])
-      elif KC == ord("8"): # solo layer 8
-        if uievent.shift:
-          self.synth.soloLayer = 7
-        else:
-          _setSource(self.auxbusses[7],self.auxbus_sources[7])
-      elif KC == ord("9"): # solo layer 8
-        if uievent.shift:
-          self.synth.soloLayer = 8
-        else:
-          _setSource(self.auxbusses[8],self.auxbus_sources[8])
-      elif KC == ord(" "): # hold drones
-        for KC in self.voices:
-          voice = self.voices[KC]
-          self.held_voices += [voice]
-        self.voices = dict()
-      elif KC == ord("C"): # release drones
-        for v in self.held_voices:
-          note = v.note
-          self.synth.keyOff(v,note,0)
-        self.held_voices = []
-      elif KC == ord(","): # prev program
-        self.prog_index -= 1
+          self._setSource(bus,source)
+      ###############  
+      def _xyz():
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1
-        prgname = self.sorted_progs[self.prog_index]
-        self.prog = self.soundbank.programByName(prgname)
-        self.synth.programbus.uiprogram = self.prog
-        if self.pgmview:
-          self.pgmview.setProgram(self.prog)
-        return res
-        self.prog_index += 1
-      elif KC == ord("."): # next program
-        self.prog_index += 1
-        if self.prog_index >= len(self.sorted_progs):
+        elif self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
         self.synth.programbus.uiprogram = self.prog
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
+        #TODO : update seq-track programs
+        seqr = self.sequencer
+        if self.synth.programbus in self.rec_trackclips.keys():
+          track = self.rec_trackclips[self.synth.programbus].track
+          track.program = self.prog
+        pass
+      ###############  
+      if KC == ord("0"): # solo layer off
+        _xxx(-1,self.mainbus,self.mainbus_source)
+      ###############  
+      elif KC >= ord("1") and KC <= ord("9"): 
+        i = KC - ord("1")
+        _xxx(i,self.auxbusses[i],self.auxbus_sources[i])
+      ###############  
+      elif KC == ord(" "): # hold drones
+        for KC in self.voices:
+          voice = self.voices[KC]
+          self.held_voices += [voice]
+        self.voices = dict()
+      ###############  
+      elif KC == ord("C"): # release drones
+        for v in self.held_voices:
+          note = v.note
+          self.synth.keyOff(v,note,0)
+        self.held_voices = []
+      ###############  
+      elif KC == ord(","): # prev program
+        self.prog_index -= 1
+        _xyz()
         return res
+      ###############  
+      elif KC == ord("."): # next program
+        self.prog_index += 1
+        _xyz()
+        return res
+      ###############  
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC in self.base_notes:
