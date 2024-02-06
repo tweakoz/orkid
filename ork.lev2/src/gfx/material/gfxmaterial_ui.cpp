@@ -251,7 +251,7 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
 
     hTek = pTarg->FXI()->technique(_shader, mTechniqueName);
     hTekStereo = pTarg->FXI()->technique(_shader, "uitextured_stereo");
-    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", (void*) _shader, (void*) pTarg, (void*) hTek);
+    //printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", (void*) _shader, (void*) pTarg, (void*) hTek);
 
     hTransform = pTarg->FXI()->parameter(_shader, "mvp");
     hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");

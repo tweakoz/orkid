@@ -24,8 +24,7 @@ SampleItem::SampleItem()
 ///////////////////////////////////////////////////////////////////////////////
 
 MultiSample::MultiSample()
-    : _objectId(-1) 
-    , _isStereo(false) {
+    : _isStereo(false) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +33,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
   bool bOK;
   u8 u8v;
   s8 s8v;
+
 
   u16 uBaseID, uNumSoundFilesMinusOne, uOffset, uReserved2, uCopyID;
   u8 uFlags, uReserved1;
@@ -45,10 +45,24 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
   bOK = db.GetData(uCopyID, it);
   bOK = db.GetData(uReserved2, it);
 
+  auto itf = _samples.find(iObjectID);
+
+  if(itf!=_samples.end()){
+    auto end = _samples.rbegin();
+    printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+    iObjectID = end->first + 1;
+    OrkAssert(false);
+  }
+
+
   auto multisample              = new MultiSample;
-  multisample->_objectId        = iObjectID;
+  //multisample->_objectId        = iObjectID;
   multisample->_multiSampleName = ObjName;
   multisample->_numSoundFiles   = uNumSoundFilesMinusOne + 1;
+
+
+  //printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+
   _samples[iObjectID]           = multisample;
 
   multisample->_isStereo = (uFlags & 1);
@@ -163,10 +177,6 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
     float pitchADJ = calch - float(uHighestPitch);
     //////////////////////////
 
-    if (multisample->_objectId == 112) {
-      int inumsmps = (uEndOfSpan - uStart);
-      printf("MS112 samp<%d> ustart<%08x> inumsmps<%d>\n", int(usamp), int(uStart), inumsmps);
-    }
     //if (uStart <= 0x3fffff) // rom block 0 ?
     {
       char buffer[256];
@@ -188,6 +198,9 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       _subSamples[idlsk]     = pitem;
       opts.inumchans         = 1;
 
+  
+
+
       pitem->_rootKey      = int(uRootKey);
       pitem->_playbackMode = iPlaybackMode;
       pitem->_volAdj       = fVolAdj;
@@ -196,24 +209,27 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_highestPitch = uHighestPitch;
       pitem->_sampleRate   = fSampleRate;
       pitem->_start        = int(uStart);
-      pitem->_loopPoint    = int(uLoopOfSpan);
       pitem->_end          = int(uEndOfSpan);
-      pitem->_isLooped     = bLoopSwitch;
       pitem->_loopPoint    = int(uLoopOfSpan - uStart) - 1;
       pitem->_ustart       = uStart;
       pitem->_ualt         = uAltStart;
       pitem->_uloop        = uLoopOfSpan;
       pitem->_uend         = uEndOfSpan;
+
+
+      bLoopSwitch = bLoopSwitch & (uLoopOfSpan != uEndOfSpan);
+      pitem->_isLooped     = bLoopSwitch;
+
       std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
-      printf( "/// sample==<%s>\n", nam.c_str() );
+     //printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
-        // printf( "///\n");
-        // printf( "/// sample==<%s>\n", nam.c_str() );
-        // printf( "///\n");
-        // printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
-        // printf( "uStart<%08x:%d>\n", uStart,uStart );
-        // printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
-        // printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
+        //printf( "///\n");
+        //printf( "/// sample==<%s>\n", nam.c_str() );
+        //printf( "///\n");
+        //printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
+        //printf( "uStart<%08x:%d>\n", uStart,uStart );
+        //printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
+        //printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
         opts.loopstart = pitem->_loopPoint;
       }
       // printf( "inumsmps<%d>\n", inumsmps );
@@ -282,19 +298,19 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitMultiSample(const MultiSample* ms, rapidjson::Value& parent) {
+void filescanner::emitMultiSample(int object_id, const MultiSample* ms, rapidjson::Value& parent) {
   //if (ms->_objectId > 200)
   //  return;
 
   Value jsonobj(kObjectType);
   AddStringKVMember(jsonobj, "MultiSample", ms->_multiSampleName);
-  jsonobj.AddMember("objectID", ms->_objectId, _japrog);
+  jsonobj.AddMember("objectID", object_id, _japrog);
 
   rapidjson::Value samplearrayobject(kArrayType);
 
   for (auto sub : ms->_subSamples) {
     if (sub->_valid)
-      emitSample(sub, samplearrayobject);
+      emitSample(sub->miSampleId, sub, samplearrayobject);
   }
 
   jsonobj.AddMember("numSoundFiles", ms->_numSoundFiles, _japrog);
@@ -305,7 +321,7 @@ void filescanner::emitMultiSample(const MultiSample* ms, rapidjson::Value& paren
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitSample(const SampleItem* si, rapidjson::Value& parent) {
+void filescanner::emitSample(int object_id, const SampleItem* si, rapidjson::Value& parent) {
 
   rapidjson::Value sampleobject(kObjectType);
 

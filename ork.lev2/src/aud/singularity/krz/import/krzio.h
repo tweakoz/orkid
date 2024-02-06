@@ -44,7 +44,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity::krzio {
-std::string convert(std::string krzpath);
+
+struct KurzweilImportData{
+  std::string _json_programs;
+  std::vector<uint8_t> _sample_data;
+};
+
+using krzimportdata_ptr_t = std::shared_ptr<KurzweilImportData>;
+krzimportdata_ptr_t convert(std::string krzpath);
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef int16_t s16;
@@ -214,7 +221,7 @@ struct SampleItem {
 struct MultiSample {
   MultiSample();
 
-  int _objectId;
+  //int _objectId;
   std::string _multiSampleName;
   std::vector<SampleItem*> _subSamples;
   bool _isStereo;
@@ -617,11 +624,13 @@ struct filescanner {
 
   /////////////////////////////////////////////
 
-  void emitMultiSample(const MultiSample* ms, rapidjson::Value& parent);
-  void emitSample(const SampleItem* si, rapidjson::Value& parent);
-  void emitKeymap(const Keymap* km, rapidjson::Value& parent);
+  void emitMultiSample(int id, const MultiSample* ms, rapidjson::Value& parent);
+  void emitSample(int id, const SampleItem* si, rapidjson::Value& parent);
+  void emitKeymap(int id, const Keymap* km, rapidjson::Value& parent);
+  void emitProgram(int id, const Program* p, rapidjson::Value& parent);
 
-  void emitProgram(const Program* p, rapidjson::Value& parent);
+  /////////////////////////////////////////////
+
   void emitLayer(const Layer* l, rapidjson::Value& parent);
   void emitAsr(const Asr* a, rapidjson::Value& parent);
   void emitEnv(const Env* e, rapidjson::Value& parent);
@@ -663,7 +672,8 @@ struct filescanner {
   FILE* mpFile;
   int miSize;
   void* mpData;
-
+  std::string _filename;
+  
   datablock mMainDataBlock;
   std::vector<datablock> mDatablocks;
   datablock::iterator mMainIterator;

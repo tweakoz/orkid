@@ -151,6 +151,8 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
+  _hudEventRouter = std::make_shared<HudEventRouter>();
+
   logchan_synth->log("clearing delay lines...");
   std::atomic<int> delayopcounter = 0;
   for( int i=0; i<1024; i++){
@@ -360,6 +362,29 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
     return nullptr;
   programInst* pi = nullptr;
 
+  ///////////////////////////////////////
+  // SEQUENCER RECORDING
+  ///////////////////////////////////////
+
+  if(_sequencer->_recording_clip){
+    auto rec_track = _sequencer->_recording_track;
+    if(rec_track->_outbus==_curprogrambus){
+      auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
+      if(as_evclip){
+        float time = _timeaccum;
+        auto pb0 = _sequencer->_sequence_playbacks[0];
+        auto ts_start = pb0->_sequence->_timebase->timeToTimeStamp(time); 
+        auto nonev = std::make_shared<NoteOnEvent>();
+        nonev->_note = note;
+        nonev->_velocity = velocity;
+        nonev->_timestamp = ts_start;
+        as_evclip->_rec_noteon_events[note] = nonev;
+      }
+    }
+  }
+
+  ///////////////////////////////////////
+
   bool needs_new_trigger = true;
 
   if (pdata->_monophonic) {
@@ -418,6 +443,50 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
 }
 ///////////////////////////////////////////////////////////////////////////////
 void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
+
+  ///////////////////////////////////////
+  // SEQUENCER RECORDING
+  ///////////////////////////////////////
+
+  if(_sequencer->_recording_clip){
+    auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
+    if(as_evclip){
+      auto rec_track = _sequencer->_recording_track;
+      if(rec_track->_outbus==_curprogrambus){
+        float time = _timeaccum;
+        auto pb0 = _sequencer->_sequence_playbacks[0];
+        auto timebase = pb0->_sequence->_timebase;
+        auto ts_end = timebase->timeToTimeStamp(time); 
+        auto it = as_evclip->_rec_noteon_events.find(note);
+        OrkAssert(it!=as_evclip->_rec_noteon_events.end());
+        auto nonev = it->second;
+
+        as_evclip->_rec_noteon_events.erase(it);
+
+        auto ts_start = nonev->_timestamp;
+
+        TimeStampComparatorLessEqual compare;
+        bool check = compare(ts_start, ts_end);
+        timestamp_ptr_t ts_duration;
+        if(check){
+          ts_duration = ts_end->sub(ts_start);
+        }
+        else{
+          ts_start = std::make_shared<TimeStamp>();
+          ts_duration = ts_end->sub(ts_start);
+        }
+        as_evclip->createNoteEvent(
+          ts_start,
+          ts_duration,
+          nonev->_note,
+          nonev->_velocity
+        );
+      }
+    }
+  }
+
+  ///////////////////////////////////////
+
   auto pdata      = pinst->_progdata;
   bool do_key_off = true;
   if (pdata->_monophonic) {
@@ -493,6 +562,10 @@ void synth::mainThreadHandler() {
   /////////////////////////////////
 
   _sequencer->process();
+
+  /////////////////////////////////
+
+  _hudEventRouter->processEvents();
 
   /////////////////////////////////
   // in critical section,
@@ -873,6 +946,7 @@ programInst::~programInst() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod) {
+
   std::lock_guard<std::mutex> lock(l->_mutex);
 
   assert(ld != nullptr);
@@ -905,6 +979,10 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod) {
+
+  _note = note;
+  _velocity = velocity;
+
   _keymods = kmod;
 
   auto syn     = synth::instance();
@@ -1003,4 +1081,24 @@ void outputBuffer::resize(int inumframes) {
   }
   _numframes = inumframes;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+void synth::registerSinkForHudEvent(uint32_t evID, hudeventsink_ptr_t sink) {
+  _hudEventRouter->registerSinkForHudEvent(evID, sink);
+}
+///////////////////////////////////////////////////////////////////////////////
+void synth::enqueueHudEvent(hudevent_ptr_t hev){
+  _hudEventRouter->_hudevents.push(hev);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void synth::panic(){
+  addEvent(0.0f, [=](){
+    for( auto l : _activeVoices ){
+      _deactiveateVoiceQ.push(l);
+    }
+    _activeVoices.clear();
+  });
+}
+
 } // namespace ork::audio::singularity

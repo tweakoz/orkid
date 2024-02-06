@@ -48,6 +48,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 printf("the_synth<%p>\n", (void*)the_synth.get());
                 return the_synth;
               })
+          .def("panic", &synth::panic)
           .def(
               "nextEffect", //
               [](synth_ptr_t synth,outbus_ptr_t obus) { synth->nextEffect(obus); })
@@ -78,6 +79,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth) { //
                 synth->mainThreadHandler();
               })
+          .def(
+              "resetTimer", //
+              [](synth_ptr_t synth) { synth->_timeaccum=0.0f; })
           .def_property(
               "velCurvePower", //
               [](synth_ptr_t synth) -> float { return synth->_velcurvepower; },
@@ -106,7 +110,19 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth, float tempo) { synth->_system_tempo = tempo; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
+  auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")
+    .def_property_readonly(
+        "program", //
+        [](prginst_rawptr_t prgi) -> prgdata_constptr_t { return prgi->_progdata; })
+    .def_property_readonly(
+        "keymods", //
+        [](prginst_rawptr_t prgi) -> keyonmod_ptr_t { return prgi->_keymods; })
+    .def_property_readonly(
+        "note",
+        [](prginst_rawptr_t prgi) -> int { return prgi->_note; })
+    .def_property_readonly(
+        "velocity",
+        [](prginst_rawptr_t prgi) -> int { return prgi->_velocity; });
   type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //

@@ -22,6 +22,8 @@
 
 #include <ork/orkstd.h>
 #include <ork/orktypes.h>
+#include <ork/kernel/svariant.h>
+#include <ork/kernel/concurrent_queue.h>
 #include <ork/math/audiomath.h>
 
 namespace ork::audio::singularity {
@@ -223,5 +225,29 @@ inline void validateSample(float inp) {
   OrkAssert(not isnan(inp));
   OrkAssert(isfinite(inp));
 }
+///////////////////////////////////////////////////////////////////////////////
+struct HudEvent{
+  uint32_t _eventID;
+  svar64_t _eventData;
+};
+
+using hudevent_ptr_t = std::shared_ptr<HudEvent>;
+
+struct HudEventSink {
+  using eventcallback_t = std::function<void(hudevent_ptr_t)>;
+  eventcallback_t _onEvent = [](hudevent_ptr_t) {};
+};
+using hudeventsink_ptr_t = std::shared_ptr<HudEventSink>;
+using hudeventsink_list = std::vector<hudeventsink_ptr_t>;
+
+struct HudEventRouter {
+  void registerSinkForHudEvent(uint32_t eventID, hudeventsink_ptr_t sink);
+  void routeEvent(hudevent_ptr_t hev);
+  void processEvents();
+  std::map<uint32_t, hudeventsink_list> _routing_map;
+  ork::MpMcBoundedQueue<hudevent_ptr_t,1024> _hudevents;
+};
+
+using hudeventrouter_ptr_t = std::shared_ptr<HudEventRouter>;
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

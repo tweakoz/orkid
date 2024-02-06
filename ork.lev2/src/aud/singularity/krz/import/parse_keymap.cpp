@@ -178,6 +178,8 @@ void filescanner::ParseKeyMap(const datablock& db, datablock::iterator& it, int 
   kmap->miKeymapID  = iObjectID;
   kmap->mKeymapName = ObjName;
 
+  //printf( "parseKeyMap<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+
   _keymaps[iObjectID] = kmap;
 
   u16 uSampleHeaderID, uMethod, uBasePitch, uCentsPerEntry, uNumberOfEntries, uEntrySize;
@@ -337,7 +339,7 @@ void filescanner::ParseKeyMap(const datablock& db, datablock::iterator& it, int 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::emitKeymap(const Keymap* km, rapidjson::Value& parent) {
+void filescanner::emitKeymap(int object_id, const Keymap* km, rapidjson::Value& parent) {
 
   rapidjson::Value kmapobject(kObjectType);
   AddStringKVMember(kmapobject, "Keymap", km->mKeymapName);

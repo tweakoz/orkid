@@ -12,7 +12,7 @@ import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import singularity as S
-import wave
+from _sampler import createLayer, createSampleLayer
 
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
@@ -44,39 +44,8 @@ class WaveformsApp(SingulTestApp):
     #newprog.portamentoRate = 60000 # cents per second
     ############################
 
-    def createLayer():
-      newlyr = newprog.newLayer()
-      dspstg = newlyr.appendStage("DSP")
-      ampstg = newlyr.appendStage("AMP")
-      dspstg.ioconfig.inputs = []
-      dspstg.ioconfig.outputs = [0,1]
-      ampstg.ioconfig.inputs = [0,1]
-      ampstg.ioconfig.outputs = [0,1]
-      pchblock = dspstg.appendDspBlock("Pitch","pitch")
-      newlyr.pitchBlock = pchblock
-      #########################################
-      # carrier
-      #########################################
-      ampenv = newlyr.appendController("RateLevelEnv", "AMPENV")
-      ampenv.ampenv = True
-      ampenv.bipolar = False
-      ampenv.sustainSegment = 0
-      ampenv.addSegment("seg0", 0, 1,0.4)
-      ampenv.addSegment("seg1", 1, .5,4)
-      ampenv.addSegment("seg2", 1, 0,2.0)
-      #
-      #########################################
-      # post amp
-      #########################################
-
-      ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
-      ampblock.paramByName("gain").mods.src1 = ampenv
-      ampblock.paramByName("gain").mods.src1scale = 1.0
-      SOSCIL = dspstg.appendDspBlock("Sampler","soscil")
-      return newlyr, SOSCIL
-
-    if False:      
-      newlyr, SOSCIL = createLayer()
+    if True:      
+      newlyr, SOSCIL = createLayer(newprog)
 
       #########################################
       # waveform data
@@ -147,61 +116,12 @@ class WaveformsApp(SingulTestApp):
       keymap = S.KeyMapData("KMAP")
       R0 = keymap.addRegion(
         lokey=0,
-        hikey=56,
+        hikey=96,
         lovel=0,
         hivel=127,
         multisample=multisample,
         sample=the_sample)
       newlyr.keymap = keymap
-
-    ############################
-    # from wave file
-    ############################
-    
-    def createSampleLayer(filename,orig_pitch,lokey,hikey,lowpass):
-
-          
-        newlyr, SOSCIL = createLayer()
-
-        #wavelength = len(audio_data)
-        #samplerate = framerate
-        #root_key = 48
-        #highestPitch = orig_pitch * 48000.0/samplerate
-        #highestPitchN = singularity.frequencyToMidiNote(highestPitch)
-        #highestPitchCents = int(highestPitchN*100.0)+1
-        #fratio   = 96000.0 / math.floor(samplerate);
-        #frqerc = singularity.linearFrequencyRatioToCents(fratio)
-        #calch    = root_key * (frqerc / 100.0)
-        #pitchADJcents = calch - highestPitchCents
-        #delcents = frqerc-pitchADJcents
-
-        the_sample = S.SampleData(
-          name = "MySample2",
-          #format = tokens.F32_NPARRAY,
-          originalPitch = orig_pitch,
-          audiofile = str(filename),
-          rootKey = 48,                
-          pitchAdjustCents = 0.0,
-          #sampleRate = samplerate,  
-          #highestPitchCents = highestPitchCents,
-          _interpMethod = 0,
-        )
-        multisample = S.MultiSampleData("MSAMPLE",[the_sample])
-        keymap = S.KeyMapData("KMAP")
-        R0 = keymap.addRegion(
-          lokey=lokey,
-          hikey=hikey,
-          lovel=0,
-          hivel=127,
-          multisample=multisample,
-          sample=the_sample)
-        newlyr.keymap = keymap    
-        SOSCIL.lowpassfreq = lowpass
-    
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum2_pp_1.wav",47,58,59,12000)
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"snare_f3.wav",96,60,63,12000)
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"VlnEns_Trem_A2_v1.wav",110.5,0,57,7000)
-    #createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum_f_2.wav",73,96)
 
     ############################
     self.soundbank = self.new_soundbank

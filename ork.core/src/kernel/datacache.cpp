@@ -60,7 +60,7 @@ datablock_ptr_t DataBlockCache::findDataBlock(uint64_t key) {
         m[key] = rval;
       }
       else{
-        printf( "not found in cache <%s>\n", cache_path.c_str() );
+        //printf( "not found in cache <%s>\n", cache_path.c_str() );
       }
     } else {
       rval = it->second;

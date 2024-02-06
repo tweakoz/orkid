@@ -52,7 +52,7 @@ bool Shader::Compile() {
   const char* c_str = shadertext.c_str();
 
   if (_DEBUG_SHADER_COMPILE) {
-    printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
+    //printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
   }
 
   GL_NF_ERRORCHECK();
@@ -83,7 +83,7 @@ bool Shader::Compile() {
 
   if(_DEBUG_SHADER_COMPILE){
     double compile_time = ctimer.SecsSinceStart();
-    printf( "SHADER<%s> COMPILE TIME<%f>\n", mName.c_str(), compile_time );
+    //printf( "SHADER<%s> COMPILE TIME<%f>\n", mName.c_str(), compile_time );
   }
   return true;
 }
@@ -194,7 +194,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     glProgramBinary(prgo, binary_format, binary_data, binary_length);
     GL_ERRORCHECK();
     double precompiled_load_time = load_timer.SecsSinceStart();
-    printf( "SHADERPROGRAM TOTAL PRECOMPILED LOADTIME<%f>\n", precompiled_load_time );
+    //printf( "SHADERPROGRAM TOTAL PRECOMPILED LOADTIME<%f>\n", precompiled_load_time );
   }
   ////////////////////////////////////////////////////////////
   // not cached..
@@ -370,7 +370,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       }
       OrkAssert(linkstat == GL_TRUE);
       double link_time = ctimer.SecsSinceStart()-link_start_time;
-      printf( "SHADER LINK TIME<%f>\n", link_time );
+      //printf( "SHADER LINK TIME<%f>\n", link_time );
 
       // printf( "} // linking complete..\n" );
 
@@ -405,7 +405,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
     }
     double compile_time = ctimer.SecsSinceStart();
-    printf( "SHADERPROGRAM TOTAL COMPILE/LINK TIME<%f>\n", compile_time );
+    //printf( "SHADERPROGRAM TOTAL COMPILE/LINK TIME<%f>\n", compile_time );
   
   } // not cached
 
@@ -446,7 +446,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     }
   }
   double getattr_time = gatimer.SecsSinceStart();
-  printf( "getattr_time<%f>\n", getattr_time );
+  //printf( "getattr_time<%f>\n", getattr_time );
 
   //////////////////////////
   pass->postProc(container);

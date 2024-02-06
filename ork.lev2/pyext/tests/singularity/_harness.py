@@ -28,6 +28,11 @@ def find_index(sorted_list, value):
         return index
     return -1  # Return -1 or some other value to indicate "not found"
 
+class TrackAndClip:
+  def __init__(self,track,clip):
+    self.track = track
+    self.clip = clip
+
 class SingulTestApp(object):
 
   def __init__(self):
@@ -58,7 +63,10 @@ class SingulTestApp(object):
     self.chart_events = {}
     self.layermask = 0xffffffff
     self.layerID = 0
-
+    self.click_prog = None
+    self.click_noteL = 60
+    self.click_noteH = 60
+    
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
       self.ezapp.signalExit()
@@ -69,6 +77,7 @@ class SingulTestApp(object):
 
   def onGpuInit(self,ctx):
     self.context = ctx
+    self.curseq = None
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
     self.synth.system_tempo = 120.0
@@ -78,7 +87,7 @@ class SingulTestApp(object):
     self.mainbus_source = self.mainbus.createScopeSource()
     #self.synth.setEffect(self.mainbus,"Reverb:OilTank")
     self.synth.setEffect(self.mainbus,"none")
-    self.numaux = 8
+    self.numaux = 9
     self.auxbusses = []
     self.auxbus_sources = []
     for i in range(0,self.numaux):
@@ -87,6 +96,9 @@ class SingulTestApp(object):
       self.synth.setEffect(self.auxbusses[i],"none")
 
     lg_group = self.ezapp.topLayoutGroup
+
+
+    self.rec_trackclips = {}
 
     ######################### 
     # create an profiler view
@@ -178,128 +190,134 @@ class SingulTestApp(object):
         ord("'"): 17,
     }
     self.voices = dict()
-
+  #####################################
   def onUpdate(self,updinfo):
     self.time = updinfo.absolutetime
-
+  #####################################
   def onGpuUpdate(self,ctx):
     pass
-
-  def showCharts(self):
-    pass
-
-  def clearChart(self):
-    self.charts = dict()
-    self.chart_events = dict()
-
+  #####################################
   def genMods(self):
     return None
-  
+  #####################################
   def onNote(self,voice):
     pass
-
+  #####################################
   def prLayerMask(self):
     as_bools = binary_str = format(self.layermask, '032b')[::-1]
     print("###########################################")
     print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
     print("###########################################")
     pass
+  #####################################
   def setBusProgram(self,bus,prg):
     self.synth.programbus = bus
     self.synth.programbus.uiprogram = prg
+  #####################################
   def setUiProgram(self,prg):
     self.synth.programbus.uiprogram = prg
     if self.pgmview:
       self.pgmview.setProgram(prg)
+  #####################################
+  def assignTRC(self,trc):
+    self.TRC = trc
+  #####################################
+  def createTrackAndClipForBus(self,bus):
+    if bus.uiprogram != None and \
+       self.curseq != None:
+      track = self.curseq.createTrack("track-"+bus.name)
+      track.program = bus.uiprogram
+      ts0 = singularity.TimeStamp()
+      dur4 = singularity.TimeStamp()
+      dur4.measures = 4
+      clip = track.createEventClipAtTimeStamp("clip-"+bus.name,ts0,dur4)
+      track.outputbus = bus
+      trandclip = TrackAndClip(track, clip)
+      self.rec_trackclips[bus] = trandclip
+      return trandclip
+    return TrackAndClip(None,None)
+  #####################################
+  def _setSource(self,bus,source):
+    self.program_source.disconnect(self.oscope_sink)
+    self.program_source.disconnect(self.spectra_sink)
+    prev_bus = self.synth.programbus
+    self.synth.programbus = bus
+    self.program_source = source
+    source.connect(self.oscope_sink)
+    source.connect(self.spectra_sink)
+    if bus.uiprogram != None:
+      self.prog = bus.uiprogram
+    else:
+      self.prog = prev_bus.uiprogram
+    self.setUiProgram(self.prog)
+    if bus in self.rec_trackclips:
+      trandclip = self.rec_trackclips[bus]
+      trandclip.track.program = self.prog
+      self.assignTRC(trandclip)
+    else:
+      trandclip = self.createTrackAndClipForBus(bus)
+      if trandclip.track != None:
+        trandclip.track.program = self.prog
+        self.assignTRC(trandclip)
+  #####################################
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      def _setSource(bus,source):
-        self.program_source.disconnect(self.oscope_sink)
-        self.program_source.disconnect(self.spectra_sink)
-        self.synth.programbus = bus
-        self.program_source = source
-        source.connect(self.oscope_sink)
-        source.connect(self.spectra_sink)
-        self.prog = bus.uiprogram
-        self.setUiProgram(self.prog)
-      if KC == ord("0"): # solo layer off
+      ###############  
+      def _xxx(layer,bus,source):
         if uievent.shift:
-          self.synth.soloLayer = -1
+          self.synth.soloLayer = layer
         else:
-          _setSource(self.mainbus,self.mainbus_source)
-      elif KC == ord("1"): # solo layer 1
-        if uievent.shift:
-          self.synth.soloLayer = 0
-        else:
-          _setSource(self.auxbusses[0],self.auxbus_sources[0])
-      elif KC == ord("2"): # solo layer 2
-        if uievent.shift:
-          self.synth.soloLayer = 1
-        else:
-          _setSource(self.auxbusses[1],self.auxbus_sources[1])
-      elif KC == ord("3"): # solo layer 3
-        if uievent.shift:
-          self.synth.soloLayer = 2
-        else:
-          _setSource(self.auxbusses[2],self.auxbus_sources[2])
-      elif KC == ord("4"): # solo layer 4
-        if uievent.shift:
-          self.synth.soloLayer = 3
-        else:
-          _setSource(self.auxbusses[3],self.auxbus_sources[3])
-      elif KC == ord("5"): # solo layer 5
-        if uievent.shift:
-          self.synth.soloLayer = 4
-        else:
-          _setSource(self.auxbusses[4],self.auxbus_sources[4])
-      elif KC == ord("6"): # solo layer 6
-        if uievent.shift:
-          self.synth.soloLayer = 5
-        else:
-          _setSource(self.auxbusses[5],self.auxbus_sources[5])
-      elif KC == ord("7"): # solo layer 7
-        if uievent.shift:
-          self.synth.soloLayer = 6
-        else:
-          _setSource(self.auxbusses[6],self.auxbus_sources[6])
-      elif KC == ord("8"): # solo layer 8
-        if uievent.shift:
-          self.synth.soloLayer = 7
-        else:
-          _setSource(self.auxbusses[7],self.auxbus_sources[7])
-      elif KC == ord(" "): # hold drones
-        for KC in self.voices:
-          voice = self.voices[KC]
-          self.held_voices += [voice]
-        self.voices = dict()
-      elif KC == ord("C"): # release drones
-        for v in self.held_voices:
-          self.synth.keyOff(v)
-        self.held_voices = []
-      elif KC == ord(","): # prev program
-        self.prog_index -= 1
+          self._setSource(bus,source)
+      ###############  
+      def _xyz():
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1
-        prgname = self.sorted_progs[self.prog_index]
-        self.prog = self.soundbank.programByName(prgname)
-        self.synth.programbus.uiprogram = self.prog
-        if self.pgmview:
-          self.pgmview.setProgram(self.prog)
-        return res
-        self.prog_index += 1
-      elif KC == ord("."): # next program
-        self.prog_index += 1
-        if self.prog_index >= len(self.sorted_progs):
+        elif self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
         self.synth.programbus.uiprogram = self.prog
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
+        #TODO : update seq-track programs
+        seqr = self.sequencer
+        if self.synth.programbus in self.rec_trackclips.keys():
+          track = self.rec_trackclips[self.synth.programbus].track
+          track.program = self.prog
+        pass
+      ###############  
+      if KC == ord("0"): # solo layer off
+        _xxx(-1,self.mainbus,self.mainbus_source)
+      ###############  
+      elif KC >= ord("1") and KC <= ord("9"): 
+        i = KC - ord("1")
+        _xxx(i,self.auxbusses[i],self.auxbus_sources[i])
+      ###############  
+      elif KC == ord(" "): # hold drones
+        for KC in self.voices:
+          voice = self.voices[KC]
+          self.held_voices += [voice]
+        self.voices = dict()
+      ###############  
+      elif KC == ord("C"): # release drones
+        for v in self.held_voices:
+          note = v.note
+          self.synth.keyOff(v,note,0)
+        self.held_voices = []
+      ###############  
+      elif KC == ord(","): # prev program
+        self.prog_index -= 1
+        _xyz()
         return res
+      ###############  
+      elif KC == ord("."): # next program
+        self.prog_index += 1
+        _xyz()
+        return res
+      ###############  
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC in self.base_notes:
@@ -330,10 +348,18 @@ class SingulTestApp(object):
             self.synth.programbus.gain = self.synth.programbus.gain + 3.0
           return res
         elif KC == ord("-"): # next effect
-          self.synth.prevEffect(self.synth.programbus)
+          if uievent.shift:
+            self.synth.system_tempo -= 1
+            self.curseq.timebase.tempo = self.synth.system_tempo
+          else:
+            self.synth.prevEffect(self.synth.programbus)
           return res
         elif KC == ord("="): # next effect
-          self.synth.nextEffect(self.synth.programbus)
+          if uievent.shift:
+            self.synth.system_tempo += 1
+            self.curseq.timebase.tempo = self.synth.system_tempo
+          else:
+            self.synth.nextEffect(self.synth.programbus)
           return res
         elif KC == ord("!"): # panic
           for voice in self.voices:
@@ -350,40 +376,68 @@ class SingulTestApp(object):
           if self.octave > 8:
             self.octave = 8
           return res
-        elif KC == ord("M"): # 
-          #timestamp = singularity.TimeStamp
-          #prg = self.synth.programbus.uiprogram
-          #prgname = prg.name
-          #print(prgname)
-          #print(prg)
-          #sequence = singularity.Sequence(prgname)
-          #timebase = sequence.timebase
-          ##timebase.numerator = 4
-          ##timebase.denominator = 4
-          ##timebase.tempo = 120.0
-          ##timebase.ppq = 100 # pulses per beat
-          #sequencer = self.synth.sequencer
-          #track = sequence.createTrack(prgname)
-          #track.program = prg
-          #track.outputbus = self.synth.programbus
-          #clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(64,0,0))
-
-          #midi_path = singularity.baseDataPath()/"midifiles"
-          #midiToSingularitySequence(
-            #midifile=MidiFile(str(midi_path/"moonlight.mid")),
-            #temposcale=1.9,
-            #sequence=sequence,
-            #CLIP=clip,
-            #feel=3)
-          #self.playback = sequencer.playSequence(sequence,self.synth.time+1)
+        ######################################
+        # NEW sequence
+        ######################################
+        elif KC == ord("N"): # 
+          if uievent.shift:
+            if self.click_prog != None:
+              self.synth.panic()
+              self.curseq = singularity.Sequence("NewSequence")
+              self.curseq.timebase.numerator = 4
+              self.curseq.timebase.denominator = 4
+              self.curseq.timebase.tempo = 120.0
+              self.curseq.timebase.ppq = 256
+              self.curseq.timebase.measureMax = 4
+              self.clicktrack = self.curseq.createTrack("click")
+              self.clicktrack.program = self.click_prog
+              clip = self.clicktrack.createClickClip("click")
+              clip.noteL = self.click_noteL
+              clip.noteH = self.click_noteH
+              clip.velL = 64
+              clip.velH = 128
+              self.clicktrack.outputbus = self.auxbusses[0]
+              self.clicktrack.outputbus.uiprogram = self.click_prog
+              #####################################
+              self.rec_trackclips = {}
+              trc = self.createTrackAndClipForBus(self.mainbus)
+              self.assignTRC(trc)
+              for i in range(0,self.numaux):
+                trc = self.createTrackAndClipForBus(self.auxbusses[i])
+              #####################################
+              self.synth.resetTimer()
+              self.playback = self.sequencer.clearPlaybacks()
+              self.playback = self.sequencer.playSequence(self.curseq,0.0)
           return res
-
-        #elif KC == ord("N"): # new chart 
-        #  self.clearChart()
-        #  return res
-        #elif KC == ord("M"): # show chart
-        #  self.showCharts()
-        #  return res
+        ######################################
+        # clear track events
+        ######################################
+        elif KC == ord("M"): # 
+          seqr = self.sequencer
+          if uievent.shift:
+            if self.click_prog != None:
+              # clear recording clip
+              if seqr.recording_clip != None:
+                seqr.recording_clip.clear()
+          else:
+            trc = self.TRC
+            if seqr.recording_track==None:
+              seqr.recording_track = trc.track
+              seqr.recording_clip = trc.clip
+            else:
+              seqr.recording_track = None
+              seqr.recording_clip = None
+            pass
+        elif KC == ord("Q"): # 
+          seqr = self.sequencer
+          if uievent.shift:
+            if seqr.recording_clip != None:
+              if self.curseq != None:
+                PPQ = self.curseq.timebase.ppq
+                seqr.recording_clip.quantize(int(PPQ/4)) # 
+                self.synth.resetTimer()
+                self.playback = self.sequencer.clearPlaybacks()
+                self.playback = self.sequencer.playSequence(self.curseq,0.0)
 
   
     elif uievent.code == tokens.KEY_UP.hashed:

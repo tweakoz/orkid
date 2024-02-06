@@ -34,6 +34,7 @@ struct TimeStamp {
   timestamp_ptr_t clone() const;
   timestamp_ptr_t add(timestamp_ptr_t duration) const;
   timestamp_ptr_t sub(timestamp_ptr_t duration) const;
+
   int _measures;
   int _beats;
   int _clocks;
@@ -88,6 +89,7 @@ struct TimeBase {
   int _denominator = 4;
   float _tempo     = 120.0f;
   int _ppq         = 96;
+  int _measureMax  = 0;
   timebase_ptr_t _parent;
 };
 
@@ -123,6 +125,7 @@ using eventiterator_ptr_t = std::shared_ptr<EventIterator>;
 
 struct Clip {
   Clip();
+  Sequence* _sequence = nullptr;
   std::string _name;
   timestamp_ptr_t _duration;
   virtual eventiterator_ptr_t firstEvent() const                   = 0;
@@ -142,6 +145,14 @@ struct ClipPlayback {
 
 ////////////////////////////////////////////////////////////////
 
+struct NoteOnEvent {
+  timestamp_ptr_t _timestamp;
+  int _note;
+  int _velocity;
+};
+using noteonevent_ptr_t = std::shared_ptr<NoteOnEvent>;
+////////////////////////////////////////////////////////////////
+
 struct EventClip : public Clip {
   using evmap_t    = std::multimap<timestamp_ptr_t, event_ptr_t, TimeStampComparatorLess>;
   using evmap_it_t = evmap_t::const_iterator;
@@ -149,7 +160,11 @@ struct EventClip : public Clip {
   eventiterator_ptr_t nextEvent(eventiterator_ptr_t) const final;
   bool eventValid(eventiterator_ptr_t) const final;
   event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
+  void clear();
+  void quantize(int clocks);
   evmap_t _events;
+
+  std::unordered_map<int,noteonevent_ptr_t> _rec_noteon_events;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -163,25 +178,51 @@ struct FourOnFloorClip : public Clip {
 };
 
 ////////////////////////////////////////////////////////////////
+
+struct ClickClip : public Clip {
+  eventiterator_ptr_t firstEvent() const final;
+  eventiterator_ptr_t nextEvent(eventiterator_ptr_t) const final;
+  bool eventValid(eventiterator_ptr_t) const final;
+  int _noteH = 60;
+  int _velH  = 32;
+  int _noteL = 60;
+  int _velL  = 127;
+};
+
+////////////////////////////////////////////////////////////////
 using clipmap_t = std::map<timestamp_ptr_t, clip_ptr_t, TimeStampComparatorLess>;
 ////////////////////////////////////////////////////////////////
 
 struct Track {
+
   clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
+  clip_ptr_t createClickClip(std::string named);
+  std::string _name;
   clipmap_t _clips_by_timestamp;
   prgdata_constptr_t _program;
   outbus_ptr_t _outbus;
+  Sequence* _sequence = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////
 
 struct TrackPlayback {
   TrackPlayback(track_ptr_t track);
+  void process(const SequencePlayback* seqpb);
+
+  void _tryAdvanceClip(const SequencePlayback* seqpb);
+  void _cleanupPastEvents(const SequencePlayback* seqpb);
+  void _postDueEvents(const SequencePlayback* seqpb);
+
   track_ptr_t _track;
   clipmap_t::const_iterator _next_clip;
   clipplayback_ptr_t _clip_playback;
   std::unordered_set<activeevent_ptr_t> _active_events;
+  std::vector<activeevent_ptr_t> _active_events_to_erase;
+
+  std::string _clip_str;
+  std::string _ev_str;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -241,9 +282,13 @@ struct SequencePlayback {
   using trackpbmap_t = std::unordered_map<std::string, trackplayback_ptr_t>;
   SequencePlayback(sequence_ptr_t seq);
   void process(Sequencer* seq);
+  void _advanceClock(Sequencer* seq);
   sequence_ptr_t _sequence;
   trackpbmap_t _track_playbacks;
   float _timeoffet = 0.0f;
+  timestamp_ptr_t _currentTS;
+  int _lastM = -1;
+  int _lastB = -1;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -253,9 +298,12 @@ struct Sequencer {
   Sequencer(synth* the_synth);
   sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence,float timeoffset);
   void process();
+  void clearPlaybacks();
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;
   synth* _the_synth = nullptr;
+  track_ptr_t _recording_track;
+  clip_ptr_t _recording_clip;
 };
 
 } // namespace ork::audio::singularity

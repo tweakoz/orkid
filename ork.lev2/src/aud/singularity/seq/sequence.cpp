@@ -193,7 +193,23 @@ clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t 
   auto clip = std::make_shared<EventClip>();
   clip->_name = named;
   clip->_duration = dur;
+  clip->_sequence = _sequence;
   _clips_by_timestamp[ts] = clip;
+  return clip;
+}
+
+////////////////////////////////////////////////////////////////
+
+clip_ptr_t Track::createClickClip(std::string named){
+  auto clip = std::make_shared<ClickClip>();
+  clip->_name = named;
+  auto ts0 = std::make_shared<TimeStamp>();
+  ts0->_measures = 0;
+
+  clip->_duration = std::make_shared<TimeStamp>();
+  clip->_duration->_measures = 128;
+  clip->_sequence = _sequence;
+  _clips_by_timestamp[ts0] = clip;
   return clip;
 }
 
@@ -203,6 +219,7 @@ clip_ptr_t Track::createFourOnFloorClipAtTimeStamp(std::string named, timestamp_
   auto clip = std::make_shared<FourOnFloorClip>();
   clip->_name = named;
   clip->_duration = dur;
+  clip->_sequence = _sequence;
   _clips_by_timestamp[ts] = clip;
   return clip;
 }
@@ -219,6 +236,8 @@ Sequence::Sequence(std::string named) {
 track_ptr_t Sequence::createTrack(const std::string& name){
   auto track = std::make_shared<Track>();
   _tracks[name] = track;
+  track->_name = name;
+  track->_sequence = this;
   return track;
 }
 

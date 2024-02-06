@@ -745,7 +745,7 @@ void TwoPoleLowPass::compute(DspBuffer& dspbuf) // final
   _fval[0]  = fc;
   _fval[1]  = res;
 
-  // printf( "fc<%f>\n", fc );
+  printf( "fc<%f>\n", fc );
   if (1) {
     for (int i = 0; i < inumframes; i++) {
       _smoothFC = (_smoothFC * 0.99f) + fc * .01f;

@@ -26,58 +26,29 @@ class KrzApp(SingulTestApp):
   
   ##############################################
 
-  def genMods(self):
-    timebase = self.time
-    modrate = math.sin(self.time)*5
-    mods = singularity.KeyOnModifiers()
-    mods.layerMask = self.layermask
-    mods.outputbus = self.synth.programbus
-    #def sub(name,value):
-    #  print("sub<%s> value<%s>" % (name,value))
-    #mods.controllers.subscribers = {
-    #"AMPENV": sub,
-    #}
-    return mods
-
-  ##############################################
-
-  def onNote(self,voice):
-    if False:
-      LD = self.prog.layer(self.layerID)
-      LD = self.prog.layer(0)
-      DST = LD.stage("DSP")
-      DST.dspblock(2).bypass = True
-    #ST.dspblock(0).paramByName("pitch").debug = True
-    #ST.dspblock(4).paramByName("cutoff").debug = True
-    #ST.dspblock(2).bypass = True
-    #ST.dspblock(3).bypass = True
-    #ST.dspblock(4).bypass = True
-    #print("dspblk<%s>" % dspblk.name)
-    pass
-
-  ##############################################
-
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
-    self.krzdata = singularity.KrzSynthData()
-    self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
-    self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
+    self.krzdata = singularity.KrzSynthData(base_objects=True)
+    
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.krzprogs.keys())
     ok_list = [
     "20's_Trumpet",
+    "2000_Odyssey",
     "2nd_Oboe",
     "2nd_Violin",
     "3rd_World_Order",
     "40_Something",
     "5_8ve_Percussion",
     "7th_World_String",
+    "AC_Dream",
     "A.Bass+Ride_Pno",
     "AcousGtr+Strings",
     "Acous_12_String",
     "Acoustic_Bass",
+    "All_In_The_Fader",
     "Ambient_Bells",
     "Analog__Brazz",
     "Arco_Dbl_Bass",
@@ -87,9 +58,9 @@ class KrzApp(SingulTestApp):
     "BaroqueOrchestra",
     "Baroque_Strings",
     "Baroque_Strg_Ens",
-    "Bass_String_Sec",
     "Batman_Strings",
     "Big_Drum_Corp",
+    "Bell_Players",
     "BrazKnuckles",
     "Bright_Piano",
     "Brite_Klav",
@@ -111,6 +82,7 @@ class KrzApp(SingulTestApp):
     "Doomsday",
     "Dual_Bass",
     "Dual_Tri_Bass",
+    "Dubb_Bass",
     "Dyn_Brass_+_Horn",
     "Dynamic_Harp",
     "Dyno_EP_Lead",
@@ -118,25 +90,31 @@ class KrzApp(SingulTestApp):
     "EDrum_Kit_2_",
     "Elect_12_String",
     "Ethereal_Echos",
+    "Ethnoo_Lead",
     "Fast_Strings_MW",
     "Fat_Traps_",
     "Finger_Bass",
     "French_Horn_Sec1",
+    "F_Horn_Con_Sord",
     "Fluid_Koto",
     "Fun_Delay_Square",
     "General_MIDI_kit",
     "Glass_Web",
     "Glassy_Eyes",
     "Glistener",
+    "Grand_Strings",
+    "Gtr_Jazz_Band",
     "Guitar_Mutes_1",
     "Guitar_Mutes_2",
     "Guitar___Flute",
     "Hammeron",
     "Harmon_Section",
+    "Harp_On_It",
     "Harp_w_8ve_CTL",
     "Hi_Res_Sweeper",
     "Hip_Brass",
     "Horn+Flute_w_Str",
+    "Hot_Tamali_Kit",
     "Hybrid_Breath",
     "Hybrid_Sweep",
     "Islanders",
@@ -145,7 +123,10 @@ class KrzApp(SingulTestApp):
     "Jazz_Lab_Band",
     "Jazz_Muted_Trp",
     "Jazz_Quartet",
+    "Jethro's_Flute",
     "Klakran",
+    "Klarinet",
+    "Koto_Followers",
     "Kotobira",
     "Kotolin",
     "Mallet_Voice",
@@ -156,20 +137,29 @@ class KrzApp(SingulTestApp):
     "Mbira_Stack",
     "Medicine_Man",
     "Mello_Hyb_Brass",
+    "Metal_Garden",
     "Miles_Unmuted",
     "Mixed_Choir",
+    "Mogue_Bass",
     "My_JayDee",
     "Native_Drum",
     "Oboe+Flute_w_Str",
+    "Oh_Bee!!!",
+    "Orch_Bassoon",
     "Orch_Clarinet",
     "Orch_EnglishHorn",
+    "Orch_Percussion1",
+    "Orch_Trumpet",
     "Orch_Viola",
     "Orchestral_Pad",
     "Orchestral_Winds",
     "Ostinato_Bass",
     "Outside_L_A",
     "ParaKoto",
+    "Pedal_Pipes",
+    "Pedal_Steel",
     "Perc_Voices",
+    "Piano___S_String",
     "Pipes",
     "Pizzicato_String",
     "Preview_Drums",
@@ -179,6 +169,7 @@ class KrzApp(SingulTestApp):
     "Real_Drums",
     "Ritual_Metals",
     "Rock_Axe",
+    "Rock_Axe_mono",
     "Rock_Kit",
     "Shimmerling",
     "Shudder_Kit_",
@@ -187,12 +178,16 @@ class KrzApp(SingulTestApp):
     "Slo_Chorus_Gtr",
     "Slo_Solo_Strings",
     "Slo_SynthOrch",
+    "Slow_Arco_Bass",
     "Slow_Cello",
     "Slow_Horn",
+    "Soaring_Brass",
     "Soft_Trumpet",
     "Solo_Bassoon",
     "Solo_Trombone",
     "Solo_Trumpet",
+    "SpaceStation",
+    "Stackoid",
     "Steel_Str_Guitar",
     "Stereo_Grand",
     "StrataClav",
@@ -231,17 +226,34 @@ class KrzApp(SingulTestApp):
     "Xylophone"
     ]
     self.sorted_progs = sorted(ok_list)
-    print("krzprogs<%s>" % self.krzprogs)    
-    PRG = "Doomsday" # "Stereo_Grand"
-    #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
-    self.synth.masterGain = singularity.decibelsToLinear(-24.0)
-    main = self.synth.outputBus("main")
-    aux8 = self.synth.outputBus("aux8")
-    self.setBusProgram(aux8,self.soundbank.programByName("Chamber_Section"))
-    self.setBusProgram(main,self.soundbank.programByName(PRG))
+    #print("krzprogs<%s>" % self.krzprogs)    
+    ##########################################
+    PRG = "Stereo_Grand" 
+    bus_assignments = {
+      "aux1": "Doomsday",
+      "aux2": "Slow_Cello",
+      "aux3": "Jazz_Quartet",
+      "aux4": "Syncro_Taps",
+      "aux5": "TotalCntrl_Orch2",
+      "aux6": "Touch_Clav",
+      "aux7": "WonderSynth_Bass",
+      "aux8": "Chamber_Section",
+      "aux9": "World_Rave_Kit",
+      "main": PRG,
+    }
+    for item in bus_assignments:
+      bus = self.synth.outputBus(item)
+      patch_name = bus_assignments[item]
+      program = self.soundbank.programByName(patch_name)
+      self.setBusProgram(bus, program)
+    ##########################################
     self.prog_index = find_index(self.sorted_progs, PRG)
     self.prog = self.soundbank.programByName(PRG)
+    self.click_prog = self.soundbank.programByName("Click")
+    self.click_noteL = 60
+    self.click_noteH = 72
     self.setUiProgram(self.prog)
+    self.synth.masterGain = singularity.decibelsToLinear(-36.0)
 
 ###############################################################################
 

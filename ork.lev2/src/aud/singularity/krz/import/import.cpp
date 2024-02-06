@@ -10,8 +10,9 @@
 namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string convert(std::string krzpath) {
+krzimportdata_ptr_t convert(std::string krzpath) {
 
+  krzimportdata_ptr_t rval = std::make_shared<KurzweilImportData>();
   rapidjson::Document gconfigdoc;
   // document.Parse(json);
 
@@ -47,6 +48,7 @@ std::string convert(std::string krzpath) {
   //	switch( u32v )
   //	{}
   //	assert( kKRZHwTypeK2000==u32v );
+  /////////////////////////////////////////////
   printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x>\n", krzpath.c_str(), os_release, hw_type );
   /////////////////////////////////////////////
   scanner.SkipData(8);
@@ -54,13 +56,13 @@ std::string convert(std::string krzpath) {
   bool bdone = false;
   int iblock = 0;
   //printf("FileHeaderAndPRAMLength<0x%08x>\n", krz.miFileHeaderAndPRAMLength);
-  while ((iblock < 10) && (false == bdone)) {
-    //printf("iblock<%d>\n", iblock);
+  while ((false == bdone)) {
+    printf("iblock<%d>\n", iblock);
     int blocklen = 0;
     int iseekpos = scanner.mMainIterator.miIndex;
     bOK          = scanner.GetData(blocklen);
     blocklen *= -1;
-    //printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
+    printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
     iblock++;
     if ((iseekpos + 4) < krz.miFileHeaderAndPRAMLength) {
       datablock newblock;
@@ -84,7 +86,20 @@ std::string convert(std::string krzpath) {
     void* pdest          = (void*)krz.mpSampleData;
     const char* psrcbase = (const char*)scanner.mpData;
     const char* psrc     = psrcbase + krz.miFileHeaderAndPRAMLength;
+    rval->_sample_data.resize(isampledatacount);
+
+    printf( "SAMPLEBLOCK<%p> SIZE<%d>\n", (void*) rval->_sample_data.data(), isampledatacount);
+    memcpy((void*)rval->_sample_data.data(), (const void*)psrc, isampledatacount);
     memcpy((void*)pdest, (const void*)psrc, isampledatacount);
+
+    size_t numsamples = isampledatacount / sizeof(s16);
+    for( size_t i=0; i<numsamples; i++ ) {
+      // endian swap
+      int j = i * 2;
+      int k = j + 1;
+      std::swap(rval->_sample_data[j], rval->_sample_data[k]);
+    }
+
   }
   ////////////////////////
   // process objects
@@ -105,7 +120,8 @@ std::string convert(std::string krzpath) {
 
   /////////////////////////////
 
-  return scanner.jsonPrograms();
+  rval->_json_programs = scanner.jsonPrograms();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

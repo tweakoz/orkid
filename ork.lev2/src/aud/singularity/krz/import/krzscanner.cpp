@@ -23,17 +23,19 @@ filescanner::filescanner(const char* pname)
     , _globalsFlag(false)
 //, _curLayerObject(nullptr)
 {
-  printf("Opening<%s>\n", pname);
+  _filename = pname;
   mpFile = fopen(pname, "rb");
-  printf("file<%p>\n", (void*) mpFile);
+  //printf("file<%p>\n", (void*) mpFile);
   fseek(mpFile, 0, SEEK_END);
   int ilen = ftell(mpFile);
   miSize   = ilen;
-  printf("length<%d>\n", ilen);
+  //printf("length<%d>\n", ilen);
   mpData = malloc(ilen);
   fseek(mpFile, 0, SEEK_SET);
   fread(mpData, ilen, 1, mpFile);
   mMainDataBlock.AddBytes(mpData, ilen);
+
+  //printf("Opening KRZ<%s> length<%d>\n", pname, ilen);
 
   // Value jsonKRZ(kArrayType);
   // jsonKRZ.SetString("KRZ");
@@ -58,7 +60,7 @@ void filescanner::SkipData(int ibytes) {
 
 void filescanner::scanAndDump() {
   size_t inumb = mDatablocks.size();
-  printf("NumBlocks<%d>\n", int(inumb));
+  //printf("NumBlocks<%d>\n", int(inumb));
 
   // printf( "///////////////////////////////////////////////////////////////////////\n");
   // printf( "///////////////////////////////////////////////////////////////////////\n");
@@ -74,14 +76,23 @@ void filescanner::scanAndDump() {
 
   /////////////////////////////////////////////
 
-  for (auto km : _keymaps)
-    emitKeymap(km.second, _joprogobjs);
+  for (auto km : _keymaps){
+    int id = km.first;
+    auto keymap = km.second;
+    emitKeymap(id, keymap, _joprogobjs);
+  }
 
-  for (auto ms : _samples)
-    emitMultiSample(ms.second, _joprogobjs);
+  for (auto ms : _samples){
+    int id = ms.first;
+    auto msample = ms.second;
+    emitMultiSample(id, msample, _joprogobjs);
+  }
 
-  for (auto p : _programs)
-    emitProgram(p.second, _joprogobjs);
+  for (auto p : _programs){
+    int id = p.first;
+    auto program = p.second;
+    emitProgram(id, program, _joprogobjs);
+  }
 
   /////////////////////////////////////////////
 
@@ -109,9 +120,9 @@ std::string filescanner::jsonPrograms() const{
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
   std::string json_str = std::string(strbuf.GetString(), strbuf.GetSize());
-  printf( "json<^%s>\n", json_str.c_str() );
-  printf( "len1<%d>\n", (int) strbuf.GetSize() );
-  printf( "len2<%d>\n", (int) json_str.length() );
+  //printf( "json<^%s>\n", json_str.c_str() );
+  //printf( "len1<%d>\n", (int) strbuf.GetSize() );
+  //printf( "len2<%d>\n", (int) json_str.length() );
   return json_str;
 }
 
@@ -178,7 +189,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
   else
     ObjectName = (const char*)pObjName;
 
-  printf( "obj<%s>\n",ObjectName.c_str());
+  //printf( "obj<%s>\n",ObjectName.c_str());
   // Value jsonobj(kObjectType);
 
   // Value nameobj(kStringType);
@@ -218,7 +229,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
     iObjectTYPE = (uObjTypeID & 0xff00) >> 8;
     iObjectID   = (uObjTypeID & 0x00ff);
   }
-  //printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
+  printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
 
   // jsonobj.AddMember("objectID", iObjectID, _japrog);
   /////////////////////////////////////

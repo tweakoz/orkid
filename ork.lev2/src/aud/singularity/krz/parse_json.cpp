@@ -22,14 +22,14 @@ using namespace rapidjson;
 
 namespace ork::audio::singularity {
 
-struct SoundBlockData{
+struct SoundBlockData {
 
-  SoundBlockData(){
-    _romDATA          = (s16*)malloc(24 << 20);
+  SoundBlockData() {
+    _romDATA       = (s16*)malloc(24 << 20);
     auto data_read = _romDATA;
     ///////////////////////////////////////////////////////////////////////////////////////////
     auto load_sound_block = [&](file::Path filename, size_t numbytes) {
-      printf("Loading Soundblock<%s>\n", filename.c_str());
+      // printf("Loading Soundblock<%s>\n", filename.c_str());
       FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
       if (fin == nullptr) {
         printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
@@ -213,7 +213,9 @@ keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
 
 sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_constptr_t parent) {
   auto sout           = std::make_shared<SampleData>();
-  sout->_sampleBlock  = getK2V3InternalSoundBlock();
+
+  sout->_sampleBlock  = _sampledata;
+
   sout->_name         = jsonobj["subSampleName"].GetString();
   sout->_subid        = jsonobj["subSampleIndex"].GetInt();
   sout->_rootKey      = jsonobj["rootKey"].GetInt();
@@ -224,6 +226,14 @@ sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_co
   sout->_blk_loopstart = jsonobj["uLoop"].GetInt();
   sout->_blk_loopend   = jsonobj["uEnd"].GetInt();
   sout->_blk_end       = jsonobj["uEnd"].GetInt();
+
+  printf( "sample<%s> start<%d> alt<%d> loopstart<%d> loopend<%d> end<%d>\n",
+          sout->_name.c_str(),
+          sout->_blk_start,
+          sout->_blk_alt,
+          sout->_blk_loopstart,
+          sout->_blk_loopend,
+          sout->_blk_end );
 
   int orchestral_base     = 16 << 20;
   int contemporary_base   = 20 << 20;
@@ -314,8 +324,8 @@ multisample_ptr_t KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
 
   for (SizeType i = 0; i < jsonsamps.Size(); i++) // Uses SizeType instead of size_t
   {
-    auto s                     = parseSample(jsonsamps[i], msout);
-    msout->_samples[s->_subid] = s;
+    auto s                          = parseSample(jsonsamps[i], msout);
+    msout->_samples[s->_subid]      = s;
     msout->_samplesByName[s->_name] = s;
   }
   return msout;
@@ -758,7 +768,7 @@ void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
-  printf("Got Prgram<%s> layer..\n", name.c_str());
+  // printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
   const auto& keymapSeg = calvinSeg["KEYMAP"];
   const auto& pitchSeg  = calvinSeg["PITCH"];
@@ -779,8 +789,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   parseKmpBlock(keymapSeg, *layerdata->_kmpBlock);
 
   layerdata->_headroom = jsonobj["headroom"].GetInt();
-  layerdata->_panmode = jsonobj["panmode"].GetInt();
-  layerdata->_pan = jsonobj["pan"].GetInt();
+  layerdata->_panmode  = jsonobj["panmode"].GetInt();
+  layerdata->_pan      = jsonobj["pan"].GetInt();
 
   layerdata->_loKey = jsonobj["loKey"].GetInt();
   layerdata->_hiKey = jsonobj["hiKey"].GetInt();
@@ -877,9 +887,9 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
         relAdjust   = lerp(relAdjust, 1.0 / RKT, flerp);
       }
 
-      //atkAdjust = 80.0f;
-      //decAdjust = 80.0f;
-      //relAdjust = 80.0f;
+      // atkAdjust = 80.0f;
+      // decAdjust = 80.0f;
+      // relAdjust = 80.0f;
 
       switch (iseg) {
         case 0:
@@ -1014,15 +1024,13 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     }
   };
 
-  auto parse_dsp_block = [&](dspstagedata_ptr_t stage, 
-                             int blkbase, 
-                             int paramcount) -> dspblkdata_ptr_t {
+  auto parse_dsp_block = [&](dspstagedata_ptr_t stage, int blkbase, int paramcount) -> dspblkdata_ptr_t {
     auto blockn1 = blkname(blkbase + 0);
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
 
-    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
+    // printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
     if (blockn1 != "PITCH" and blockn2 != "PITCH") {
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
       if (dspblock) {
@@ -1042,11 +1050,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
   int blockindex = 0;
 
-  printf("ACFG._wp<%d>\n", ACFG._wp);
+  /*printf("ACFG._wp<%d>\n", ACFG._wp);
   printf("ACFG._w1<%d>\n", ACFG._w1);
   printf("ACFG._w2<%d>\n", ACFG._w2);
   printf("ACFG._w3<%d>\n", ACFG._w3);
-  printf("ACFG._wa<%d>\n", ACFG._wa);
+  printf("ACFG._wa<%d>\n", ACFG._wa);*/
 
   auto dspstage = layerdata->stageByName("DSP");
   auto ampstage = layerdata->stageByName("AMP");
@@ -1081,9 +1089,9 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (ACFG._wa) {
     parse_dsp_block(ampstage, blockindex, ACFG._wa);
     blockindex += ACFG._wa;
-    //if (krzalgdat._algindex >= 1 and krzalgdat._algindex <= 4) {
-    //  auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
-    //}
+    // if (krzalgdat._algindex >= 1 and krzalgdat._algindex <= 4) {
+    //   auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
+    // }
   }
 
   // if last stage is panner, then ioconfig numoutputs is 2
@@ -1095,8 +1103,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
 
   //////////////////////////////////////////////////////
 
-  if(name=="Doomsday"){
-    //OrkAssert(false);
+  if (name == "Doomsday") {
+    // OrkAssert(false);
   }
   // printf( "got keymapID<%d:%p:%s>\n", kmid, km, km->_name.c_str() );
   return layerdata;
@@ -1152,18 +1160,19 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
       int numblocks = stage->_namedblockdatas.size();
       for (int iblock = 0; iblock < numblocks; iblock++) {
         auto block = stage->_blockdatas[iblock];
-        if(block){
+        if (block) {
           pdata->addHudInfo(FormatString("    BLOCK: %s", block->_blocktype.c_str()));
-          if(block->_blocktype=="SAMPLER"){
+          if (block->_blocktype == "SAMPLER") {
             auto sampler = std::dynamic_pointer_cast<SAMPLER_DATA>(block);
-            auto kmp = l->_kmpBlock;
-            auto keymap = l->_keymap;
-            auto pstr = FormatString("     KEYMAP: %s", keymap->_name.c_str() );
+            auto kmp     = l->_kmpBlock;
+            auto keymap  = l->_keymap;
+            auto pstr    = FormatString("     KEYMAP: %s", keymap->_name.c_str());
             pdata->addHudInfo(pstr);
           }
-          for( auto p : block->_paramd ){
-            if(p){
-              auto pstr = FormatString("     PARAM name: %s units: %s evaluator: %s", p->_name.c_str(), p->_units.c_str(), p->_evaluatorid.c_str() );
+          for (auto p : block->_paramd) {
+            if (p) {
+              auto pstr = FormatString(
+                  "     PARAM name: %s units: %s evaluator: %s", p->_name.c_str(), p->_units.c_str(), p->_evaluatorid.c_str());
               pdata->addHudInfo(pstr);
             }
           }
@@ -1177,28 +1186,30 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
+bankdata_ptr_t KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
-  printf("fname<%s>\n", realfname.c_str());
+  // printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
   OrkAssert(fin != nullptr);
   fseek(fin, 0, SEEK_END);
   int size = ftell(fin);
-  printf("filesize<%d>\n", size);
+  // printf("filesize<%d>\n", size);
   fseek(fin, 0, SEEK_SET);
   auto jsondata = (char*)malloc(size + 1);
   fread(jsondata, size, 1, fin);
   jsondata[size] = 0;
   fclose(fin);
-  loadKrzJsonFromString(jsondata, ibaseid);
+  auto rval = loadKrzJsonFromString(jsondata, ibaseid);
   free((void*)jsondata);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
+bankdata_ptr_t KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
 
-  _objdb = std::make_shared<BankData>();
+  _remap_base = ibaseid;
+  _objdb      = std::make_shared<BankData>();
 
   Document document;
   document.Parse(json_data.c_str());
@@ -1214,8 +1225,18 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
   _tempkeymaps.clear();
   _tempmultisamples.clear();
 
-  for (SizeType i = 0; i < objects.Size(); i++) // Uses SizeType instead of size_t
-  {
+  ///////////////////////////////////
+
+  std::set<int> used_ids;
+  for (SizeType i = 0; i < objects.Size(); i++) { // Uses SizeType instead of size_t
+    const auto& obj = objects[i];
+    int objid       = obj["objectID"].GetInt();
+    used_ids.insert(objid);
+  }
+
+  ///////////////////////////////////
+
+  for (SizeType i = 0; i < objects.Size(); i++) { // Uses SizeType instead of size_t
     const auto& obj = objects[i];
     int objid       = obj["objectID"].GetInt();
     if (obj.HasMember("Keymap")) {
@@ -1235,6 +1256,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
 
   /////////////////////////////////////////
   // fill
+  /////////////////////////////////////////
 
   for (auto it : _tempprograms) {
     int objid         = it.first;
@@ -1252,9 +1274,9 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
     _objdb->_programsByName[prg->_name] = prg;
   }
   for (auto it : _tempkeymaps) {
-    int objid               = it.first;
-    auto km                 = it.second;
-    _objdb->_keymaps[objid] = km;
+    int objid                         = it.first;
+    auto km                           = it.second;
+    _objdb->_keymaps[objid]           = km;
     _objdb->_keymapsByName[km->_name] = km;
     for (auto kr : km->_regions) {
       int msid  = kr->_multsampID;
@@ -1278,12 +1300,12 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
     }
   }
   for (auto it : _tempmultisamples) {
-    int objid                    = it.first;
-    auto multsample              = it.second;
-    _objdb->_multisamples[objid] = multsample;
+    int objid                                      = it.first;
+    auto multsample                                = it.second;
+    _objdb->_multisamples[objid]                   = multsample;
     _objdb->_multisamplesByName[multsample->_name] = multsample;
   }
-
+  return _objdb;
   /////////////////////////////////////////
 }
 

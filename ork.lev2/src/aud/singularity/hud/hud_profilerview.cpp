@@ -25,26 +25,44 @@ struct ProfilerView final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   int _updatecount             = 0;
   SynthProfilerFrame _curprofframe;
+  std::string _timestampLine = "---";
 };
 ///////////////////////////////////////////////////////////////////////////////
 hudpanel_ptr_t createProfilerView2(
     uilayoutgroup_ptr_t vp, //
     std::string named) {
+
+  auto syn = synth::instance();
   auto hudpanel    = std::make_shared<HudPanel>();
-  auto programview = std::make_shared<ProfilerView>();
+  auto prof_view = std::make_shared<ProfilerView>();
   auto pnl = vp->makeChild<ui::Panel>("profiler", 0, 0, 32, 32);
   hudpanel->_uipanel                = pnl.typedWidget();
   hudpanel->_panelLayout            = pnl._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
-  hudpanel->_uisurface = programview;
+  hudpanel->_uisurface = prof_view;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
   hudpanel->_layoutitem = pnl.as_shared();
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
+  ///////////////////////////////////////////////////////////////////////
+  auto tshandler = std::make_shared<HudEventSink>();
+  tshandler->_onEvent = [prof_view](hudevent_ptr_t event) {
+    auto ts = event->_eventData.getShared<TimeStamp>();
+    int M = ts->_measures+1;
+    int B = ts->_beats+1;
+    int C = ts->_clocks;
+    auto tsstr = FormatString("[ M%02d : B%02d ]", M, B);
+    prof_view->_timestampLine = tsstr;
+  };
+  syn->registerSinkForHudEvent(
+    "seq.playback.timestamp.click"_crcu,
+    tshandler
+  );
+  ///////////////////////////////////////////////////////////////////////
   return hudpanel;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,6 +114,28 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       this,
       context, //
       FormatString("ControlRate: %g hz", _curprofframe._controlrate),
+      0,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      this,
+      context, //
+      FormatString("SystemTempo: %g bpm", syn->_system_tempo),
+      0,
+      ycursor,
+      fontscale,
+      1,
+      1,
+      0);
+  ycursor += hud_lineheight();
+  drawtext(
+      this,
+      context, //
+      FormatString("SeqTime: %s", _timestampLine.c_str()),
       0,
       ycursor,
       fontscale,
@@ -204,9 +244,21 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float g = 1;
     float b = 1;
     if(bus==syn->_curprogrambus){
+      auto sequencer = syn->_sequencer;
+      auto track = sequencer->_recording_track;
       r = 1;
-      g = 0;
-      b = 0;
+      g = 0.5;
+      b = 1;
+      if(track){
+        if( track->_outbus == bus ){
+          int itime = int(syn->_timeaccum*3.0f);
+          if(itime&1){
+            r = 1;
+            g = 0;
+            b = 0;
+          }
+        }
+      }
     } 
 
     auto prgname = bus->_uiprogram ? bus->_uiprogram->_name : "----";

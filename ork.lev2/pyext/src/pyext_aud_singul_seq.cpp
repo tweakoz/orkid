@@ -81,6 +81,10 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               [](timebase_ptr_t tbase) { return tbase->_duration; },
               [](timebase_ptr_t tbase, float val) { tbase->_duration = val; })
           .def_property(
+              "measureMax",
+              [](timebase_ptr_t tbase) { return tbase->_measureMax; },
+              [](timebase_ptr_t tbase, int val) { tbase->_measureMax = val; })
+          .def_property(
               "ppq", [](timebase_ptr_t tbase) { return tbase->_ppq; }, [](timebase_ptr_t tbase, int val) { tbase->_ppq = val; })
           .def_property("parent", [](timebase_ptr_t tbase) { return tbase->_parent; }, [](timebase_ptr_t tbase, timebase_ptr_t val) {
             tbase->_parent = val;
@@ -125,6 +129,22 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   using eventclip_ptr_t = std::shared_ptr<EventClip>;
   auto eventclip_t =
       py::class_<EventClip, Clip, eventclip_ptr_t>(singmodule, "EventClip")
+          .def("clear", [](eventclip_ptr_t clip) { //
+            auto syn = synth::instance();
+            syn->addEvent(0,[clip,syn](){
+              syn->panic();
+              auto sequencer = syn->_sequencer;
+              clip->clear(); 
+              auto pb = sequencer->_sequence_playbacks[0];
+              auto seq = pb->_sequence;
+              sequencer->clearPlaybacks();
+              sequencer->playSequence(seq,0.0f);
+              syn->_timeaccum = 0.0f;
+            });
+          })
+          .def("quantize", [](eventclip_ptr_t clip, int quant) { //
+            clip->quantize(quant);
+          })
           .def(
               "createNoteEvent",
               [](const eventclip_ptr_t& clip, timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel) -> event_ptr_t {
@@ -139,6 +159,35 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
             return oss.str();
           });
   type_codec->registerStdCodec<eventclip_ptr_t>(eventclip_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  using clickclip_ptr_t = std::shared_ptr<ClickClip>;
+  auto clickclip_t       = py::class_<ClickClip, Clip, clickclip_ptr_t>(singmodule, "ClickClip")
+                            .def(
+                                "__repr__",
+                                [](clickclip_ptr_t clip) -> std::string {
+                                  std::ostringstream oss;
+                                  auto dur = clip->_duration;
+                                  oss << "ClickClip( name: " << clip->_name << ", duration: "
+                                      << "( M: " << dur->_measures << ", B: " << dur->_beats << ", C: " << dur->_clocks << ") )";
+                                  return oss.str();
+                                })
+                            .def_property(
+                                "noteL",
+                                [](clickclip_ptr_t clip) { return clip->_noteL; },
+                                [](clickclip_ptr_t clip, int val) { clip->_noteL = val; })
+                            .def_property(
+                                "noteH",
+                                [](clickclip_ptr_t clip) { return clip->_noteH; },
+                                [](clickclip_ptr_t clip, int val) { clip->_noteH = val; })
+                            .def_property(
+                                "velL",
+                                [](clickclip_ptr_t clip) { return clip->_velL; },
+                                [](clickclip_ptr_t clip, int val) { clip->_velL = val; })
+                            .def_property(
+                                "velH",
+                                [](clickclip_ptr_t clip) { return clip->_velH; },
+                                [](clickclip_ptr_t clip, int val) { clip->_velH = val; });
+  type_codec->registerStdCodec<clickclip_ptr_t>(clickclip_t);
   /////////////////////////////////////////////////////////////////////////////////
   using fouronfloorclip_ptr_t = std::shared_ptr<FourOnFloorClip>;
   auto fouronfloorclip_t       = py::class_<FourOnFloorClip, Clip, fouronfloorclip_ptr_t>(singmodule, "FourOnFloorClip")
@@ -167,6 +216,11 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
                          "createEventClipAtTimeStamp",
                          [](const track_ptr_t& track, std::string name, timestamp_ptr_t ts, timestamp_ptr_t dur) {
                            return track->createEventClipAtTimeStamp(name, ts, dur);
+                         })
+                     .def(
+                         "createClickClip",
+                         [](const track_ptr_t& track, std::string name) {
+                           return track->createClickClip(name);
                          })
                      .def(
                          "createFourOnFloorClipAtTimeStamp",
@@ -225,6 +279,20 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer")
                          .def("playSequence", [](sequencer_ptr_t& sequencer, sequence_ptr_t sequence, float timeoffset) -> sequenceplayback_ptr_t { //
                            return sequencer->playSequence(sequence,timeoffset);
+                         })
+                         .def("clearPlaybacks", [](sequencer_ptr_t& sequencer) { //
+                           sequencer->clearPlaybacks();
+                         })
+                         .def_property("recording_track",
+                                        [](sequencer_ptr_t sequencer) { return sequencer->_recording_track; },
+                                        [](sequencer_ptr_t sequencer, track_ptr_t track) { sequencer->_recording_track = track; })
+                        .def_property("recording_clip",
+                                        [](sequencer_ptr_t sequencer) { return sequencer->_recording_clip; },
+                                        [](sequencer_ptr_t sequencer, clip_ptr_t clip) { sequencer->_recording_clip = clip; })
+                         .def("__repr__", [](sequencer_ptr_t sequencer) -> std::string {
+                           std::ostringstream oss;
+                           oss << "Sequencer( sequence_count: " << sequencer->_sequences.size() << " )";
+                           return oss.str();
                          });
   type_codec->registerStdCodec<sequencer_ptr_t>(sequencer_t);
 }

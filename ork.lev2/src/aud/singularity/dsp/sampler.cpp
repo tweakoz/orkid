@@ -371,7 +371,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
       RFOUND._baseCents = RFOUND._kmcents + pitchadjx_cents + pitchadj_cents;
       //_basecentsOSC = _pchcents+pitchadj ;
     }
-    printf(
+    if(0)printf(
         "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadj<%d> pitchadjx<%d> bascents<%g>\n",
         sampsr,
         SRratio,
@@ -406,7 +406,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
     // printf("region found<%s> root<%d> keydiff<%d> cents<%f> preDSPGAIN<%f>\n", region->_sampleName.c_str(), RFOUND._sampleRoot,
     // RFOUND._keydiff, RFOUND._baseCents, RFOUND._preDSPGAIN); _spOsc->keyOn(_curSampSRratio);
   } else {
-    printf("no region found\n");
+    //printf("no region found\n");
   }
   return RFOUND;
 }
@@ -470,7 +470,7 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   auto sample = _regionsearch._sample;
 
   if (nullptr == sample) {
-    printf("SampleOscillator no sample!\n");
+    //printf("SampleOscillator no sample!\n");
     return;
   }
 
@@ -540,8 +540,8 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
   // _curratio, int(_playbackRate), int(_isLooped) );
   // printf("sample<%s>\n", sample->_name.c_str());
-  // printf("sampleBlock<%p>\n", (void*) sample->_sampleBlock);
-  // printf("st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
+  //printf("sampler::SAMPLEBLOCK<%p>\n", (void*) sample->_sampleBlock);
+  //printf("sampler::SAMPLEBLOCK st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
   // printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
   _active = true;
 

@@ -41,7 +41,7 @@ PITCH_DATA::PITCH_DATA(std::string name)
   _blocktype = "PITCH";
   auto P = addParam("pitch");
   P->usePitchEvaluator();
-  P->_debug = true;
+  //P->_debug = true;
   //addParam("pch2")->usePitchEvaluator();
 }
 

@@ -37,7 +37,7 @@ namespace ork::lev2 {
 PaStream* pa_stream      = nullptr;
 const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 #if defined(__APPLE__)
-const int DESIRED_NUMFRAMES = 256;
+const int DESIRED_NUMFRAMES = 128;
 #else
 const int DESIRED_NUMFRAMES = 256;
 #endif

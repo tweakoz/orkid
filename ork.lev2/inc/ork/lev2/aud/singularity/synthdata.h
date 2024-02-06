@@ -73,6 +73,7 @@ struct BankData : public ork::Object {
   std::map<std::string, keymap_ptr_t> _keymapsByName;
   std::map<int, multisample_ptr_t> _multisamples;
   std::map<std::string, multisample_ptr_t> _multisamplesByName;
+  varmap::VarMap _uservars;
 
 };
 
