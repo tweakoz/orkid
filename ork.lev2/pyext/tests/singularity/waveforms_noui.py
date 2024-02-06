@@ -30,18 +30,10 @@ sequencer = synth.sequencer
 
 mainbus = synth.outputBus("main")
 synth.setEffect(mainbus,"Reverb:GuyWire")
-synth.masterGain = singularity.decibelsToLinear(12.0)
 #synth.setEffect(mainbus,"none")
-
+synth.masterGain = singularity.decibelsToLinear(18.0)
 audiodata = nodata.NoDataSynthProgram(do_lfo=True,do_rez=True)
-ok_list = [
-  audiodata.prgname
-]
-############################
-sorted_progs = sorted(ok_list)
-prog_index = find_index(sorted_progs, audiodata.prgname)
 synth.programbus.uiprogram = audiodata.patch
-print(prog_index)
 voice = synth.keyOn(36,127,audiodata.patch,None)
 ##############################################
 
