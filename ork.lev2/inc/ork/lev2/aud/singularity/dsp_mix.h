@@ -378,5 +378,19 @@ struct TestReverb : public DspBlock {
   float _out = 0.0f;
   float _fb1 = 0.0f;
 };
+struct StereoDelayData : public DspBlockData {
+  DeclareConcreteX(StereoDelayData,DspBlockData);
+  StereoDelayData(std::string name="X");
+  dspblk_ptr_t createInstance() const override;
+};
+struct StereoDelay : public DspBlock {
+  using dataclass_t = StereoDelayData;
+  StereoDelay(const StereoDelayData*);
+  ~StereoDelay();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  delaycontext_ptr_t _delayL;
+  delaycontext_ptr_t _delayR;
+};
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

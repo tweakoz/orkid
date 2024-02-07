@@ -354,6 +354,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::StereoEnhancerData);
     RegisterClassX(audio::singularity::StereoDynamicEchoData);
     RegisterClassX(audio::singularity::TestReverbData);
+    RegisterClassX(audio::singularity::StereoDelayData);
     RegisterClassX(audio::singularity::Fdn8ReverbData);
     RegisterClassX(audio::singularity::Fdn4ReverbXData);
     RegisterClassX(audio::singularity::Fdn4ReverbData);

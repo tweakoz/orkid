@@ -530,6 +530,27 @@ lyrdata_ptr_t fxpreset_pitchrec() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_stereodelay() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto stdel = fxstage->appendTypedBlock<StereoDelay>("StereoDelay");
+  //stdel->param(0)->_coarse = fc;
+  //stdel->param(0)->_coarse = fc;
+  //eql->addDspChannel(0);
+  //eqr->addDspChannel(1);
+  //appendStereoHighPass(fxlayer, fxstage, 90.0f);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_multitest() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -607,5 +628,6 @@ void loadAllFxPresets(synth* s) {
   addpreset("ShifterChorus", fxpreset_pitchchorus());
   addpreset("ShifterRec", fxpreset_pitchrec());
   addpreset("MultiTest", fxpreset_multitest());
+  addpreset("StereoDelay", fxpreset_stereodelay());
 }
 } // namespace ork::audio::singularity
