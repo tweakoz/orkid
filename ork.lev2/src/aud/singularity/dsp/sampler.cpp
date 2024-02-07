@@ -335,7 +335,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
   auto region      = km->getRegion(RFOUND._sampselnote, 64);
   RFOUND._kmregion = region;
 
-  if (region) {
+  if (region and region->_sample) {
     ///////////////////////////////////////
     auto sample        = region->_sample;
     float sampsr       = sample->_sampleRate;

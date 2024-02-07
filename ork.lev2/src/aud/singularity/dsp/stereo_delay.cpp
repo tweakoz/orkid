@@ -26,9 +26,27 @@ void StereoDelayData::describeX(class_t* clazz) {}
 
 StereoDelayData::StereoDelayData(std::string name)
   : DspBlockData(name) {
-  _blocktype     = "Fdn4Reverb";
-  auto mix_param = addParam();
-  mix_param->useDefaultEvaluator();
+  _blocktype     = "StereoDelay";
+  auto dtL = addParam("delaytimeL","mSec");
+  auto dtR = addParam("delaytimeR","mSec");
+  auto fbL = addParam("feedbackL","unit");
+  auto fbR = addParam("feedbackR","unit");
+  auto fbXL = addParam("feedbackXL","unit");
+  auto fbXR = addParam("feedbackXR","unit");
+
+  dtL->useDefaultEvaluator();
+  dtR->useDefaultEvaluator();
+  fbL->useDefaultEvaluator();
+  fbR->useDefaultEvaluator();
+  fbXL->useDefaultEvaluator();
+  fbXR->useDefaultEvaluator();
+
+  dtL->_coarse = 0.251;
+  dtR->_coarse = 0.376;
+  fbL->_coarse = 0.33;
+  fbR->_coarse = 0.33;
+  fbXL->_coarse = 0.33;
+  fbXR->_coarse = 0.33;
 }
 
 dspblk_ptr_t StereoDelayData::createInstance() const { // override
@@ -57,34 +75,43 @@ StereoDelay::~StereoDelay(){
 void StereoDelay::compute(DspBuffer& dspbuf) {
   int inumframes = _layer->_dspwritecount;
   float invfr = 1.0f / inumframes;
- int ibase      = _layer->_dspwritebase;
-  float mix      = _param[0].eval();
+  int ibase      = _layer->_dspwritebase;
 
   auto ilbuf = getInpBuf(dspbuf, 0) + ibase;
   auto irbuf = getInpBuf(dspbuf, 1) + ibase;
   auto olbuf = getOutBuf(dspbuf, 0) + ibase;
   auto orbuf = getOutBuf(dspbuf, 1) + ibase;
 
+  float dtL   = _param[0].eval();
+  float dtR   = _param[1].eval();
+  float fbL   = _param[2].eval();
+  float fbR   = _param[3].eval();
+  float fbXL  = _param[4].eval();
+  float fbXR  = _param[5].eval();
+
+  _delayL->setNextDelayTime(dtL);
+  _delayR->setNextDelayTime(dtR);
+
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
-    float delout_L = _delayL->out(fi);
-    float delout_R = _delayR->out(fi);
+    float doutL = _delayL->out(fi);
+    float doutR = _delayR->out(fi);
+
     float inl  = ilbuf[i];
     float inr  = irbuf[i];
-    inl += delout_L*0.5;
-    inr += delout_R*0.5;
-    _delayL->inp(inl);
-    _delayR->inp(inr);
-    olbuf[i] = inl;
-    orbuf[i] = inr;
+    float dinL = inl+(doutL*fbL)+(doutR*fbXL);
+    float dinR = inr+(doutR*fbR)+(doutL*fbXR);
+
+    _delayL->inp(dinL);
+    _delayR->inp(dinR);
+    olbuf[i] = dinL;
+    orbuf[i] = dinR;
   }
 }
 
 ///////////////////////////////////////////////////////////
 
 void StereoDelay::doKeyOn(const KeyOnInfo& koi) {
-  _delayL->setStaticDelayTime(.125);
-  _delayR->setStaticDelayTime(.25);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
