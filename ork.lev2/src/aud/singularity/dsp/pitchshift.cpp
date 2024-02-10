@@ -37,7 +37,7 @@ dspblk_ptr_t PitchShifterData::createInstance() const { // override
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr size_t knumstages = 16;
+constexpr size_t knumstages = 4;
 PitchShifter::PitchShifter(const PitchShifterData* dbd)
     : DspBlock(dbd) {
   auto syn = synth::instance();

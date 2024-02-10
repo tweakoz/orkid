@@ -93,6 +93,15 @@ dspstagedata_ptr_t DspStageData::clone() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void DspStageData::clear(){
+  _numblocks = 0;
+  for( int i=0; i<kmaxdspblocksperstage; i++ ){
+    _blockdatas[i] = nullptr;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DspStageData::dump() const {
   printf("DSPSTAGE<%s>\n", _name.c_str());
   printf(" IOCONFIG <%p>:\n", (void*)_ioconfig.get());

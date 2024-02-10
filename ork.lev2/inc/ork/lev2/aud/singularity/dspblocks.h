@@ -146,7 +146,8 @@ struct DspStageData final : public ork::Object {
   DspStageData();
 
   dspstagedata_ptr_t clone() const;
-
+  void clear();
+  
   dspblkdata_ptr_t appendBlock();
 
   template <typename T, typename... A>     //

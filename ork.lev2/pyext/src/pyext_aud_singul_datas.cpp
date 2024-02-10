@@ -341,6 +341,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               })
           .def_property_readonly("ioconfig", [](dspstagedata_ptr_t stgdata) -> ioconfig_ptr_t { return stgdata->_ioconfig; })
           .def(
+              "clear",[](dspstagedata_ptr_t stgdata){
+                stgdata->clear();
+              })
+          .def(
               "appendDspBlock",
               [](dspstagedata_ptr_t stgdata, std::string classname, std::string blockname) -> dspblkdata_ptr_t {
                 auto base_clazz    = rtti::Class::FindClass("SynDspBlock");
