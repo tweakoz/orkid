@@ -72,6 +72,10 @@ public: //
 
   //////////////////////////////////
 
+  vect3_t reflect(const vect3_t& pt) const;
+
+  //////////////////////////////////
+
   T pointDistance(const vect3_t& pt) const;
   const vect3_t& GetNormal(void) const;
   T GetD(void) const;

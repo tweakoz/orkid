@@ -566,6 +566,7 @@ void pyinit_math_la_t(py::module& module_core, //
               [](plane_t& plane, const vec3_t& pta, const vec3_t& ptb, const vec3_t& ptc) {
                 plane.CalcPlaneFromTriangle(pta, ptb, ptc);
               })
+          .def("reflect", [](const plane_t& plane, const vec3_t& point) -> vec3_t { return plane.reflect(point); })
           .def("isPointInFront", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointInFront(point); })
           .def("isPointBehind", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointBehind(point); })
           .def("isPointCoplanar", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointCoplanar(point); })
