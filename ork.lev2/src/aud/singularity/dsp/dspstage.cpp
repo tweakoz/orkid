@@ -98,6 +98,7 @@ void DspStageData::clear(){
   for( int i=0; i<kmaxdspblocksperstage; i++ ){
     _blockdatas[i] = nullptr;
   }
+  _namedblockdatas.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
