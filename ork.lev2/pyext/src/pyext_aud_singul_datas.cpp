@@ -432,6 +432,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               return ldata->appendStage(named);
                             })
                         .def(
+                            "controller",
+                            [](lyrdata_ptr_t ldata, std::string named) -> controllerdata_ptr_t { //
+                              auto ctrlblok           = ldata->_ctrlBlock;
+                              auto it = ctrlblok->_controllers_by_name.find(named);
+                              auto cdata = it->second;
+                              return cdata;
+                            })
+                        .def(
                             "appendController",
                             [](lyrdata_ptr_t ldata, std::string classname, std::string named) -> controllerdata_ptr_t { //
                               auto base_clazz    = rtti::Class::FindClass("SynControllerData");
