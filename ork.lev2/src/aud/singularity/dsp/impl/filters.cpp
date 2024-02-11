@@ -381,7 +381,7 @@ void OnePoleLoPass::set(float cutoff) {
 }
 float OnePoleLoPass::compute(float input) {
   lp_outl = input * lp_a0 + lp_outl * lp_b1;  // Low-pass filter equation
-  return input; //lp_outl;
+  return lp_outl;
 }
 //=================================================
 void OnePoleHiPass::init() {
