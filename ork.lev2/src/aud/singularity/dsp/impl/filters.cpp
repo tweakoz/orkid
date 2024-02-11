@@ -468,6 +468,24 @@ float SimpleAllpass::compute(float input){
   return output;
 }
 
+void MultiStageLoPass::init(int num_stages){
+  _stages.resize(num_stages);
+  for( int i=0; i<num_stages; i++ ){
+    _stages[i].init();
+  }
+}
+void MultiStageLoPass::set(float cutoff){
+  for( int i=0; i<int(_stages.size()); i++ ){
+    _stages[i].set(cutoff);
+  }
+}
+float MultiStageLoPass::compute(float inp){
+  float rval = inp;
+  for( int i=0; i<int(_stages.size()); i++ ){
+    rval = _stages[i].compute(rval);
+  }
+  return rval;
+}
 
 //////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

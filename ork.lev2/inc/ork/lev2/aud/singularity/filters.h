@@ -119,6 +119,12 @@ struct OnePoleLoPass {
   float lp_b1, lp_a0;
   float lp_outl;
 };
+struct MultiStageLoPass {
+  void init(int num_stages);
+  void set(float cutoff);
+  float compute(float inp);
+  std::vector<OnePoleLoPass> _stages;
+};
 
 struct OnePoleHiPass {
   void init();
