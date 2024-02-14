@@ -53,41 +53,39 @@ SpectralScale::~SpectralScale(){
 
 void SpectralScale::compute(DspBuffer& dspbuf) // final
 {
-  int inumframes = _layer->_dspwritecount;
-  int ibase      = _layer->_dspwritebase;
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
   OrkAssert(dspbuf._real.size()==complex_size);
   OrkAssert(dspbuf._imag.size()==complex_size);
-  // scale frequencies by 2, 
-  // maintaining phase and total energy
 
   auto copy_real = dspbuf._real;
   auto copy_imag = dspbuf._imag;
 
-  for (int i = 0; i < complex_size; i++) {
-    dspbuf._real[i] = 0.0f;
-    dspbuf._imag[i] = 0.0f;
-  }
-  size_t half_size = complex_size/2;
+// Define the cut-off for the low-pass filter
+    size_t cutoff = complex_size / 8; // For example, keep the lowest eighth
+    size_t transition_width = cutoff / 4; // Define a transition width for smoother attenuation
 
-  /*for (int i = 0; i < complex_size; i++) {
-    if((i&1)==0){
-      dspbuf._real[i] = copy_real[i/2];
-      dspbuf._imag[i] = copy_imag[i/2];
+    for (size_t i = 0; i < complex_size; i++) {
+        if (i < cutoff) {
+            // Keep frequencies below the cutoff unchanged
+            continue;
+        } else if (i >= cutoff && i < cutoff + transition_width) {
+            // Apply a linear attenuation in the transition zone
+            float factor = 1.0f - static_cast<float>(i - cutoff) / transition_width;
+            dspbuf._real[i] = copy_real[i] * factor;
+            dspbuf._imag[i] = copy_imag[i] * factor;
+        } else {
+            // Attenuate frequencies beyond the transition zone
+            dspbuf._real[i] = 0.0f;
+            dspbuf._imag[i] = 0.0f;
+        }
     }
-  }
-  for (int i = 0; i < half_size; i++) {
-      dspbuf._real[i] = copy_real[i*2];
-      dspbuf._imag[i] = copy_imag[i*2];
-  }
-  */
-  for (int i = 0; i < half_size; i++) {
-    float fj = float(i)/float(half_size);
-    //float scale = sinf(fj*3.14159f);
-    float scale = fj;
-      //dspbuf._real[i] = copy_real[i]*scale;
-      //dspbuf._imag[i] = copy_imag[i];
-  }
+
+    // Mirror the attenuation for the symmetric part of the spectrum if it's not inherently managed by your FFT library
+    for (size_t i = complex_size - cutoff - transition_width; i < complex_size - cutoff; i++) {
+        float factor = static_cast<float>(complex_size - i - cutoff) / transition_width;
+        dspbuf._real[i] = copy_real[i] * factor;
+        dspbuf._imag[i] = copy_imag[i] * factor;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

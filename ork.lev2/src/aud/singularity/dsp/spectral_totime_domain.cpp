@@ -30,7 +30,8 @@ struct TO_TD_IMPL{
   void compute(ToTimeDomain* ttd, DspBuffer& dspbuf, int ibase, int inumframes){
 
     auto ibuf = ttd->getInpBuf(dspbuf, 0) + ibase;
-    auto obuf = ttd->getOutBuf(dspbuf, 0) + ibase;
+    auto obufL = ttd->getOutBuf(dspbuf, 0) + ibase;
+    auto obufR = ttd->getOutBuf(dspbuf, 1) + ibase;
 
     OrkAssert(kSPECTRALSIZE%inumframes==0);
     size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
@@ -40,14 +41,17 @@ struct TO_TD_IMPL{
 
     if(dspbuf._didFFT){
       printf( "run ifft\n");
-      //_fft.ifft(_output.data(), dspbuf._real.data(), dspbuf._imag.data());
+      _fft.ifft(_output.data(), dspbuf._real.data(), dspbuf._imag.data());
       _frames_out = 0;
     }
 
     // output the time domain data
     for( int i=0; i<inumframes; i++ ){
       int j = _frames_out+i;
-      obuf[i] = 0.0f; //_output[j];
+      float fj = float(j)/float(kSPECTRALSIZE-1);
+      float window = 0.54 - 0.46 * cos(PI2 * fj);
+      obufL[i] = _output[j]*window;
+      obufR[i] = _output[j]*window;
     }
     _frames_out += inumframes;
   }
