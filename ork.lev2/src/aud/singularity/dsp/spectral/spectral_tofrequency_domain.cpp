@@ -54,9 +54,10 @@ struct TO_FD_IMPL{
 
     // we have enough data to run the fft
     if(_frames_in>=kSPECTRALSIZE){
-      printf( "run fft\n");
       _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
-      _frames_in = 0;
+      // overlap add 50%
+      std::copy(_input.begin()+kSPECTRALSIZE/2, _input.end(), _input.begin());
+      _frames_in = kSPECTRALSIZE/2;
       dspbuf._didFFT = true;
     }
     else{

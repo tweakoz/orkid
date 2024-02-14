@@ -61,7 +61,7 @@ void SpectralScale::compute(DspBuffer& dspbuf) // final
   auto copy_imag = dspbuf._imag;
 
 // Define the cut-off for the low-pass filter
-    size_t cutoff = complex_size / 8; // For example, keep the lowest eighth
+    size_t cutoff = complex_size / 16; // For example, keep the lowest eighth
     size_t transition_width = cutoff / 4; // Define a transition width for smoother attenuation
 
     for (size_t i = 0; i < complex_size; i++) {

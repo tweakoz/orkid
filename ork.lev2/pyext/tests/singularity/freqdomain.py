@@ -126,8 +126,9 @@ class WaveformsApp(SingulTestApp):
     ############################
     dspstg = newlyr.stage("DSP")
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
-    #sshdom = dspstg.appendDspBlock("SpectralShift","ssh")
-    scadom = dspstg.appendDspBlock("SpectralScale","ssh")
+    #sshdom = dspstg.appendDspBlock("SpectralShift","sop")
+    #scadom = dspstg.appendDspBlock("SpectralScale","sop")
+    spctst = dspstg.appendDspBlock("SpectralTest","sop")
     timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
     print("DSPSTG<%s>" % dspstg)
     print("frqdom<%s>" % frqdom)

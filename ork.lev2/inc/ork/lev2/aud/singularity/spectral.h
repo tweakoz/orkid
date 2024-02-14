@@ -70,6 +70,21 @@ struct SpectralScale : public DspBlock {
 
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct SpectralTestData : public DspBlockData {
+  DeclareConcreteX(SpectralTestData,DspBlockData);
+  SpectralTestData(std::string name="X",float feedback=0.0f);
+  dspblk_ptr_t createInstance() const override;
+};
+struct SpectralTest : public DspBlock {
+  using dataclass_t = SpectralTestData;
+  SpectralTest(const dataclass_t* dbd);
+  ~SpectralTest();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  const dataclass_t* _mydata;
+
+};///////////////////////////////////////////////////////////////////////////////
 struct ToTimeDomainData : public DspBlockData {
   DeclareConcreteX(ToTimeDomainData,DspBlockData);
   ToTimeDomainData(std::string name="X",float feedback=0.0f);
