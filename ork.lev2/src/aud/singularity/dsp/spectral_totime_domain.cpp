@@ -46,9 +46,7 @@ struct TO_TD_IMPL{
     // output the time domain data
     for( int i=0; i<inumframes; i++ ){
       int j = _frames_out+i;
-      float fj = float(j)/float(kSPECTRALSIZE);
-      float window = 0.54 - 0.46 * cos(PI2 * j / (kSPECTRALSIZE - 1));
-      obuf[i] = _output[j];//*window;
+      obuf[i] = _output[j];
     }
     _frames_out += inumframes;
     if(_frames_out==kSPECTRALSIZE){

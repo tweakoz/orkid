@@ -22,9 +22,16 @@ void ToFrequencyDomainData::describeX(class_t* clazz) {}
 struct TO_FD_IMPL{
   TO_FD_IMPL(){
     _input.resize(kSPECTRALSIZE);
+    for( int i=0; i<kSPECTRALSIZE; i++ ){
+      float fj = float(i)/float(kSPECTRALSIZE-1);
+      float window = 0.54 - 0.46 * cos(PI2 * fj);
+      _window.push_back(window);
+    }
   }
   ~TO_FD_IMPL(){
   }
+  // inumframes==32 (.666mSec)
+  // kSPECTRALSIZE==512 (10.666mSec)
   void compute(ToFrequencyDomain* tfd, DspBuffer& dspbuf, int ibase, int inumframes){
     auto ibuf = tfd->getInpBuf(dspbuf, 0) + ibase;
     auto obuf = tfd->getOutBuf(dspbuf, 0) + ibase;
@@ -37,25 +44,25 @@ struct TO_FD_IMPL{
       dspbuf._spectrum_size = kSPECTRALSIZE;
     }
 
+    // input the time domain data for .666mSec chunk
     for( int i=0; i<inumframes; i++ ){
       int j = _frames_in+i;
-      float fj = float(j)/float(kSPECTRALSIZE);
-      float window = 0.54 - 0.46 * cos(PI2 * j / (kSPECTRALSIZE - 1));
-      _input[j] = ibuf[i]*window;
+      _input[j] = ibuf[i]*_window[j];
     }
     _frames_in += inumframes;
 
+    // we have enough data to run the fft
     if(_frames_in>=kSPECTRALSIZE){
       _fft.init(kSPECTRALSIZE);
-      if( dspbuf._spectrum_size != kSPECTRALSIZE ){
-      }
       printf( "run fft\n");
       _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
       _frames_in = 0;
     }
+
   }
   audiofft::AudioFFT _fft;
   std::vector<float> _input;
+  std::vector<float> _window;
   size_t _frames_in = 0;
 };
 
