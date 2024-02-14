@@ -89,41 +89,6 @@ struct RecursivePitchShifter : public DspBlock {
 
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct ToFrequencyDomainData : public DspBlockData {
-  DeclareConcreteX(ToFrequencyDomainData,DspBlockData);
-  ToFrequencyDomainData(std::string name="X",float feedback=0.0f);
-  dspblk_ptr_t createInstance() const override;
-  static constexpr size_t kSPECTRALSIZE = 1024;
-};
-struct ToFrequencyDomain : public DspBlock {
-  using dataclass_t = ToFrequencyDomainData;
-  ToFrequencyDomain(const dataclass_t* dbd);
-  ~ToFrequencyDomain();
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const KeyOnInfo& koi) final;
-
-  const dataclass_t* _mydata;
-
-};
-///////////////////////////////////////////////////////////////////////////////
-struct ToTimeDomainData : public DspBlockData {
-  DeclareConcreteX(ToTimeDomainData,DspBlockData);
-  ToTimeDomainData(std::string name="X",float feedback=0.0f);
-  dspblk_ptr_t createInstance() const override;
-  static constexpr size_t kSPECTRALSIZE = 1024;
-};
-struct ToTimeDomain : public DspBlock {
-  using dataclass_t = ToTimeDomainData;
-  ToTimeDomain(const dataclass_t* dbd);
-  ~ToTimeDomain();
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const KeyOnInfo& koi) final;
-
-  const dataclass_t* _mydata;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
 struct TimeDomainConvolveData : public DspBlockData {
   DeclareConcreteX(TimeDomainConvolveData,DspBlockData);
   TimeDomainConvolveData(std::string name="X");

@@ -10,9 +10,10 @@
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 #include <ork/lev2/aud/singularity/fft.h>
 
-ImplementReflectionX(ork::audio::singularity::ToFrequencyDomainData, "DspFxToFrequencyDomain");
+ImplementReflectionX(ork::audio::singularity::ToFrequencyDomainData, "DspToFrequencyDomain");
 
 namespace ork::audio::singularity {
 
@@ -20,23 +21,42 @@ void ToFrequencyDomainData::describeX(class_t* clazz) {}
 
 struct TO_FD_IMPL{
   TO_FD_IMPL(){
-    constexpr size_t kSPECTRALSIZE = ToFrequencyDomainData::kSPECTRALSIZE;
     _input.resize(kSPECTRALSIZE);
   }
   ~TO_FD_IMPL(){
   }
-  void compute(DspBuffer& dspbuf, int ibase, int inumframes){
-    _fft.init(ToFrequencyDomainData::kSPECTRALSIZE);
-    if( dspbuf._spectrum_size != ToFrequencyDomainData::kSPECTRALSIZE ){
-      dspbuf._spectrum_size = ToFrequencyDomainData::kSPECTRALSIZE;
-      size_t complex_size = audiofft::AudioFFT::ComplexSize(ToFrequencyDomainData::kSPECTRALSIZE);
+  void compute(ToFrequencyDomain* tfd, DspBuffer& dspbuf, int ibase, int inumframes){
+    auto ibuf = tfd->getInpBuf(dspbuf, 0) + ibase;
+    auto obuf = tfd->getOutBuf(dspbuf, 0) + ibase;
+    OrkAssert(kSPECTRALSIZE%inumframes==0);
+    //  
+    if(dspbuf._spectrum_size!=kSPECTRALSIZE){
+      size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
       dspbuf._real.resize(complex_size);
       dspbuf._imag.resize(complex_size);
+      dspbuf._spectrum_size = kSPECTRALSIZE;
     }
-    _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
+
+    for( int i=0; i<inumframes; i++ ){
+      int j = _frames_in+i;
+      float fj = float(j)/float(kSPECTRALSIZE);
+      float window = 0.54 - 0.46 * cos(PI2 * j / (kSPECTRALSIZE - 1));
+      _input[j] = ibuf[i]*window;
+    }
+    _frames_in += inumframes;
+
+    if(_frames_in>=kSPECTRALSIZE){
+      _fft.init(kSPECTRALSIZE);
+      if( dspbuf._spectrum_size != kSPECTRALSIZE ){
+      }
+      printf( "run fft\n");
+      _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
+      _frames_in = 0;
+    }
   }
   audiofft::AudioFFT _fft;
   std::vector<float> _input;
+  size_t _frames_in = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +96,7 @@ void ToFrequencyDomain::compute(DspBuffer& dspbuf) // final
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
   auto impl = _impl[0].getShared<TO_FD_IMPL>();
-  //impl->compute1(this, dspbuf, ibase, inumframes);
+  impl->compute(this, dspbuf, ibase, inumframes);
 
 }
 

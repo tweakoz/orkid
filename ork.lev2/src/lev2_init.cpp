@@ -58,6 +58,7 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
@@ -352,6 +353,7 @@ struct ClassToucher {
 
     RegisterClassX(audio::singularity::ToFrequencyDomainData);
     RegisterClassX(audio::singularity::ToTimeDomainData);
+    RegisterClassX(audio::singularity::SpectralShiftData);
 
     RegisterClassX(audio::singularity::Sum2Data);
     RegisterClassX(audio::singularity::StereoEnhancerData);
