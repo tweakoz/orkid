@@ -21,6 +21,7 @@ struct DspBuffer final {
   int _numframes;
 
   size_t _spectrum_size = 0;
+  bool _didFFT = false;
   std::vector<float> _real;
   std::vector<float> _imag;
 

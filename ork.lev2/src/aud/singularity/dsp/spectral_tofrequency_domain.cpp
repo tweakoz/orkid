@@ -21,6 +21,7 @@ void ToFrequencyDomainData::describeX(class_t* clazz) {}
 
 struct TO_FD_IMPL{
   TO_FD_IMPL(){
+      _fft.init(kSPECTRALSIZE);
     _input.resize(kSPECTRALSIZE);
     for( int i=0; i<kSPECTRALSIZE; i++ ){
       float fj = float(i)/float(kSPECTRALSIZE-1);
@@ -47,16 +48,19 @@ struct TO_FD_IMPL{
     // input the time domain data for .666mSec chunk
     for( int i=0; i<inumframes; i++ ){
       int j = _frames_in+i;
-      _input[j] = ibuf[i]*_window[j];
+      _input[j] = ibuf[i];//*_window[j];
     }
     _frames_in += inumframes;
 
     // we have enough data to run the fft
     if(_frames_in>=kSPECTRALSIZE){
-      _fft.init(kSPECTRALSIZE);
       printf( "run fft\n");
       _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
       _frames_in = 0;
+      dspbuf._didFFT = true;
+    }
+    else{
+      dspbuf._didFFT = false;
     }
 
   }

@@ -19,7 +19,7 @@
 
 namespace ork::audio::singularity {
   
-static constexpr size_t kSPECTRALSIZE = 512;
+static constexpr size_t kSPECTRALSIZE = 4096;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ToFrequencyDomainData : public DspBlockData {
@@ -47,6 +47,22 @@ struct SpectralShift : public DspBlock {
   using dataclass_t = SpectralShiftData;
   SpectralShift(const dataclass_t* dbd);
   ~SpectralShift();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  const dataclass_t* _mydata;
+
+};
+///////////////////////////////////////////////////////////////////////////////
+struct SpectralScaleData : public DspBlockData {
+  DeclareConcreteX(SpectralScaleData,DspBlockData);
+  SpectralScaleData(std::string name="X",float feedback=0.0f);
+  dspblk_ptr_t createInstance() const override;
+};
+struct SpectralScale : public DspBlock {
+  using dataclass_t = SpectralScaleData;
+  SpectralScale(const dataclass_t* dbd);
+  ~SpectralScale();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 

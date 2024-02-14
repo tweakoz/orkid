@@ -38,20 +38,18 @@ struct TO_TD_IMPL{
     OrkAssert(dspbuf._real.size()==complex_size);
     OrkAssert(dspbuf._imag.size()==complex_size);
 
-    if(_frames_out==0){
+    if(dspbuf._didFFT){
       printf( "run ifft\n");
-      _fft.init(kSPECTRALSIZE);
-      _fft.ifft(_output.data(), dspbuf._real.data(), dspbuf._imag.data());
+      //_fft.ifft(_output.data(), dspbuf._real.data(), dspbuf._imag.data());
+      _frames_out = 0;
     }
+
     // output the time domain data
     for( int i=0; i<inumframes; i++ ){
       int j = _frames_out+i;
-      obuf[i] = _output[j];
+      obuf[i] = 0.0f; //_output[j];
     }
     _frames_out += inumframes;
-    if(_frames_out==kSPECTRALSIZE){
-      _frames_out = 0;
-    }
   }
   audiofft::AudioFFT _fft;
   std::vector<float> _output;
