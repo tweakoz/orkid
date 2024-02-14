@@ -20,6 +20,10 @@ struct DspBuffer final {
   int _maxframes;
   int _numframes;
 
+  size_t _spectrum_size = 0;
+  std::vector<float> _real;
+  std::vector<float> _imag;
+
   std::vector<float> _channels[kmaxdspblocksperstage];
 };
 

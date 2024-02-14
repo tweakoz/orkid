@@ -22,20 +22,21 @@ struct TO_FD_IMPL{
   TO_FD_IMPL(){
     constexpr size_t kSPECTRALSIZE = ToFrequencyDomainData::kSPECTRALSIZE;
     _input.resize(kSPECTRALSIZE);
-    size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
-    _real.resize(complex_size);
-    _imag.resize(complex_size);
   }
   ~TO_FD_IMPL(){
   }
-  void compute(){
+  void compute(DspBuffer& dspbuf, int ibase, int inumframes){
     _fft.init(ToFrequencyDomainData::kSPECTRALSIZE);
-    _fft.fft(_input.data(), _real.data(), _imag.data());
+    if( dspbuf._spectrum_size != ToFrequencyDomainData::kSPECTRALSIZE ){
+      dspbuf._spectrum_size = ToFrequencyDomainData::kSPECTRALSIZE;
+      size_t complex_size = audiofft::AudioFFT::ComplexSize(ToFrequencyDomainData::kSPECTRALSIZE);
+      dspbuf._real.resize(complex_size);
+      dspbuf._imag.resize(complex_size);
+    }
+    _fft.fft(_input.data(), dspbuf._real.data(), dspbuf._imag.data());
   }
   audiofft::AudioFFT _fft;
   std::vector<float> _input;
-  std::vector<float> _real;
-  std::vector<float> _imag;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
