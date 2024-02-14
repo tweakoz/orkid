@@ -350,6 +350,9 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::PitchShifterData);
     RegisterClassX(audio::singularity::RecursivePitchShifterData);
 
+    RegisterClassX(audio::singularity::ToFrequencyDomainData);
+    RegisterClassX(audio::singularity::ToTimeDomainData);
+
     RegisterClassX(audio::singularity::Sum2Data);
     RegisterClassX(audio::singularity::StereoEnhancerData);
     RegisterClassX(audio::singularity::StereoDynamicEchoData);

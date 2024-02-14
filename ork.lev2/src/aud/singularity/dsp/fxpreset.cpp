@@ -491,7 +491,7 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   pmod->_src1Scale     = 1.0;
   PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
     float time    = cci->_layer->_layerTime;
-    cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;
+    cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 1200.0f;
     return cci->_value.x;
   };
   /////////////////
@@ -526,7 +526,7 @@ lyrdata_ptr_t fxpreset_pitchrec() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  appendPitchRec(fxlayer, fxstage, 700, 0.5, 0.5);
+  appendPitchRec(fxlayer, fxstage, 400, 0.5, 0.35);
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////

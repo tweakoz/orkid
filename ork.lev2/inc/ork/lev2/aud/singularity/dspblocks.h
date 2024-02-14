@@ -127,6 +127,7 @@ struct DspBlock {
   int _verticalIndex = -1;
 
   varmap::VarMap _vars;
+  svar64_t _impl[4];
 
   int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
