@@ -614,7 +614,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("Reverb:FDN8", fxpreset_fdn8reverb());
   addpreset("Reverb:FDNX", fxpreset_fdnxreverb());
   addpreset("Reverb:OilTank", fxpreset_oiltankreverb());
-  addpreset("Reverb:TEST", fxpreset_testverb());
+  //addpreset("Reverb:TEST", fxpreset_testverb());
   addpreset("Reverb:GuyWire", fxpreset_guywireeverb());
   addpreset("Reverb:NiceVerb", fxpreset_niceverb());
   addpreset("Reverb:EchoVerb", fxpreset_echoverb());

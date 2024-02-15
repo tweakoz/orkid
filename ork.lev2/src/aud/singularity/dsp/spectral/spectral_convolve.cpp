@@ -43,6 +43,50 @@ std::vector<float> createCombFilterIR(int sampleRate, int notchSpacing, int maxF
     return ir;
 }
 
+#include <vector>
+#include <cmath>
+
+// Helper functions
+float unwrapPhase(float phase) {
+    while (phase < -M_PI) phase += 2 * M_PI;
+    while (phase > M_PI) phase -= 2 * M_PI;
+    return phase;
+}
+
+void SpectralImpulseResponse::blend( //
+  const SpectralImpulseResponse& A, //
+  const SpectralImpulseResponse& B, //
+  float index) { //
+
+    size_t size = std::min(A._realL.size(), B._realL.size()); // Assuming both spectrums are the same size
+    _realL.resize(size);
+    _imagL.resize(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        // Convert to magnitude and phase for both spectrums
+        float mag1 = std::sqrt(A._realL[i] * A._realL[i] + A._imagL[i] * A._imagL[i]);
+        float phase1 = std::atan2(A._imagL[i], A._realL[i]);
+        float mag2 = std::sqrt(B._realL[i] * B._realL[i] + B._imagL[i] * B._imagL[i]);
+        float phase2 = std::atan2(B._imagL[i], B._realL[i]);
+
+        // Unwrap phases
+        phase1 = unwrapPhase(phase1);
+        phase2 = unwrapPhase(phase2);
+
+        // Interpolate magnitude and phase
+        float blendedMag = (1 - index) * mag1 + index * mag2;
+        float blendedPhase = (1 - index) * phase1 + index * phase2;
+
+        // Ensure smooth transition by handling phase wrapping
+        blendedPhase = unwrapPhase(blendedPhase);
+
+        // Convert back to real and imaginary
+        _realL[i] = blendedMag * std::cos(blendedPhase);
+        _imagL[i] = blendedMag * std::sin(blendedPhase);
+    }
+}
+
+
 SpectralImpulseResponse::SpectralImpulseResponse(std::vector<float>& impulseL, std::vector<float>& impulseR)
     : _impulseL(impulseL), _impulseR(impulseR) {
 
@@ -70,6 +114,7 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
     : DspBlockData(name) {
   _blocktype = "SpectralConvolve";
 
+  _impulse_dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   for( int i=0; i<100; i++ ){
     float fi = float(i)/100.0f;
     float frq = 500+fi*2000;
@@ -77,7 +122,7 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
     auto impulseR = createCombFilterIR(48000, frq, 20000);
 
     auto imp = std::make_shared<SpectralImpulseResponse>(impulseL,impulseR);
-    _impulses.push_back(imp);
+    _impulse_dataset->_impulses.push_back(imp);
   }
 
   // auto mix_param   = addParam();
@@ -121,7 +166,8 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
       float fi = _layer->_layerTime;
       fi = sin(fi);
       int index = 50+int(fi*49.0f);
-      auto imp = _mydata->_impulses[index];   
+      auto dset = _mydata->_impulse_dataset;
+      auto imp = dset->_impulses[index];   
       _realL = imp->_realL;
       _imagL = imp->_imagL;   
     }

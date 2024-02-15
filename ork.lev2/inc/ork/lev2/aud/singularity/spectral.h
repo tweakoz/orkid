@@ -82,16 +82,25 @@ struct SpectralImpulseResponse{
   std::vector<float> _realR;
   std::vector<float> _imagL;
   std::vector<float> _imagR;
+
+  void blend(const SpectralImpulseResponse& A, //
+             const SpectralImpulseResponse& B, //
+              float index );
 };
 
 using spectralimpulseresponse_ptr_t = std::shared_ptr<SpectralImpulseResponse>;
+
+struct SpectralImpulseResponseDataSet{
+  std::vector<spectralimpulseresponse_ptr_t> _impulses;
+};
+
+using spectralimpulseresponsedataset_ptr_t = std::shared_ptr<SpectralImpulseResponseDataSet>;
 
 struct SpectralConvolveData : public DspBlockData {
   DeclareConcreteX(SpectralConvolveData,DspBlockData);
   SpectralConvolveData(std::string name="X",float feedback=0.0f);
   dspblk_ptr_t createInstance() const override;
-  
-  std::vector<spectralimpulseresponse_ptr_t> _impulses;
+  spectralimpulseresponsedataset_ptr_t _impulse_dataset;
 };
 struct SpectralConvolve : public DspBlock {
   using dataclass_t = SpectralConvolveData;
