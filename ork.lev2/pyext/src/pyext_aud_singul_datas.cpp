@@ -48,6 +48,33 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                            });
   type_codec->registerStdCodec<controllerdata_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto lfo_type = py::class_<LfoData, ControllerData, lfodata_ptr_t>(singmodule, "Lfo")
+                      .def_property(
+                          "initialPhase",
+                          [](lfodata_ptr_t lfo) -> float { //
+                            return lfo->_initialPhase;
+                          },
+                          [](lfodata_ptr_t lfo, float val) { //
+                            lfo->_initialPhase = val;
+                          })
+                      .def_property(
+                          "minRate",
+                          [](lfodata_ptr_t lfo) -> float { //
+                            return lfo->_minRate;
+                          },
+                          [](lfodata_ptr_t lfo, float val) { //
+                            lfo->_minRate = val;
+                          })
+                      .def_property(
+                          "maxRate",
+                          [](lfodata_ptr_t lfo) -> float { //
+                            return lfo->_maxRate;
+                          },
+                          [](lfodata_ptr_t lfo, float val) { //
+                            lfo->_maxRate = val;
+                          });
+  type_codec->registerStdCodec<lfodata_ptr_t>(lfo_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto ratlevenv_type =
       py::class_<RateLevelEnvData, ControllerData, ratelevelenvdata_ptr_t>(singmodule, "RateLevelEnvData") //
           .def_property(
@@ -1114,136 +1141,130 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto spectralIR_type =
       py::class_<SpectralImpulseResponse, spectralimpulseresponse_ptr_t>(singmodule, "SpectralImpulseResponse")
           .def(py::init<>())
-          .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float frq, float top) {
-            ir->combFilter(frq, top);
-          })
-          .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) {
-            ir->lowShelf(frq, gain);
-          })
-          .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) {
-            ir->highShelf(frq, gain);
-          })
-          .def("lowRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) {
-            ir->lowRolloff(frq, slope);
-          })
-          .def("highRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) {
-            ir->highRolloff(frq, slope);
-          })
-          .def("parametricEQ4", [](spectralimpulseresponse_ptr_t ir, fvec4 frqs, fvec4 gains, fvec4 qvals) {
-            ir->parametricEQ4(frqs, gains, qvals);
-          })
-          .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, char ch, float strength) {
-            ir->vowelFormant(ch,strength);
-          })
-          .def("violinFormant", [](spectralimpulseresponse_ptr_t ir, float strength) {
-            ir->violinFormant(strength);
-          })
-          .def("mirror", [](spectralimpulseresponse_ptr_t ir) {
-            ir->mirror();
-          })
-          .def_property("realL", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
-            auto reals = py::array_t<float>(ir->_realL.size());
-            auto reals_buf = reals.request();
-            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
-            for (size_t i = 0; i < ir->_realL.size(); i++) {
-              reals_ptr[i] = ir->_realL[i];
-            }
-            return reals;
-          },
-          [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
-            auto irdata_buf = irdata.request();
-            auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
-            size_t count   = irdata_buf.size;
-            ir->_realL.resize(count);
-            for (size_t i = 0; i < count; i++) {
-              ir->_realL[i] = irdata_ptr[i];
-            }
-          })
-          .def_property("imagL", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
-            auto reals = py::array_t<float>(ir->_imagL.size());
-            auto reals_buf = reals.request();
-            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
-            for (size_t i = 0; i < ir->_imagL.size(); i++) {
-              reals_ptr[i] = ir->_imagL[i];
-            }
-            return reals;
-          },
-          [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
-            auto irdata_buf = irdata.request();
-            auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
-            size_t count   = irdata_buf.size;
-            ir->_imagL.resize(count);
-            for (size_t i = 0; i < count; i++) {
-              ir->_imagL[i] = irdata_ptr[i];
-            }
-          })
-          .def_property("realR", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
-            auto reals = py::array_t<float>(ir->_realR.size());
-            auto reals_buf = reals.request();
-            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
-            for (size_t i = 0; i < ir->_realR.size(); i++) {
-              reals_ptr[i] = ir->_realR[i];
-            }
-            return reals;
-          },
-          [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
-            auto irdata_buf = irdata.request();
-            auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
-            size_t count   = irdata_buf.size;
-            ir->_realR.resize(count);
-            for (size_t i = 0; i < count; i++) {
-              ir->_realR[i] = irdata_ptr[i];
-            }
-          })
-          .def_property("imagR", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
-            auto reals = py::array_t<float>(ir->_imagR.size());
-            auto reals_buf = reals.request();
-            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
-            for (size_t i = 0; i < ir->_imagR.size(); i++) {
-              reals_ptr[i] = ir->_imagR[i];
-            }
-            return reals;
-          },
-          [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
-            auto irdata_buf = irdata.request();
-            auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
-            size_t count   = irdata_buf.size;
-            ir->_imagR.resize(count);
-            for (size_t i = 0; i < count; i++) {
-              ir->_imagR[i] = irdata_ptr[i];
-            }
-          })
-          .def("blend", [](spectralimpulseresponse_ptr_t ir_dest, 
-                           spectralimpulseresponse_ptr_t A,
-                           spectralimpulseresponse_ptr_t B,
-                           float index) {
-            ir_dest->blend(*A,*B,index);
-          })
-          .def("setFrequencyResponse", [](spectralimpulseresponse_ptr_t ir, 
-                                py::array_t<float> realL, 
-                                py::array_t<float> imagL,
-                                py::array_t<float> realR,
-                                py::array_t<float> imagR) {
-            auto realL_buf = realL.request();
-            auto imagL_buf = imagL.request();
-            auto realR_buf = realR.request();
-            auto imagR_buf = imagR.request();
-            auto realL_ptr = static_cast<float*>(realL_buf.ptr);
-            auto imagL_ptr = static_cast<float*>(imagL_buf.ptr);
-            auto realR_ptr = static_cast<float*>(realR_buf.ptr);
-            auto imagR_ptr = static_cast<float*>(imagR_buf.ptr);
-            size_t count   = realL_buf.size;
-            ir->_realL.resize(count);
-            ir->_imagL.resize(count);
-            ir->_realR.resize(count);
-            ir->_imagR.resize(count);
-            for (size_t i = 0; i < count; i++) {
-              ir->_realL[i] = realL_ptr[i];
-              ir->_imagL[i] = imagL_ptr[i];
-              ir->_realR[i] = realR_ptr[i];
-              ir->_imagR[i] = imagR_ptr[i];
-            }
-          })
+          .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float frq, float top) { ir->combFilter(frq, top); })
+          .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->lowShelf(frq, gain); })
+          .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->highShelf(frq, gain); })
+          .def("lowRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) { ir->lowRolloff(frq, slope); })
+          .def("highRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) { ir->highRolloff(frq, slope); })
+          .def(
+              "parametricEQ4",
+              [](spectralimpulseresponse_ptr_t ir, fvec4 frqs, fvec4 gains, fvec4 qvals) { ir->parametricEQ4(frqs, gains, qvals); })
+          .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, char ch, float strength) { ir->vowelFormant(ch, strength); })
+          .def("violinFormant", [](spectralimpulseresponse_ptr_t ir, float strength) { ir->violinFormant(strength); })
+          .def("mirror", [](spectralimpulseresponse_ptr_t ir) { ir->mirror(); })
+          .def_property(
+              "realL",
+              [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+                auto reals     = py::array_t<float>(ir->_realL.size());
+                auto reals_buf = reals.request();
+                auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+                for (size_t i = 0; i < ir->_realL.size(); i++) {
+                  reals_ptr[i] = ir->_realL[i];
+                }
+                return reals;
+              },
+              [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
+                auto irdata_buf = irdata.request();
+                auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
+                size_t count    = irdata_buf.size;
+                ir->_realL.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  ir->_realL[i] = irdata_ptr[i];
+                }
+              })
+          .def_property(
+              "imagL",
+              [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+                auto reals     = py::array_t<float>(ir->_imagL.size());
+                auto reals_buf = reals.request();
+                auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+                for (size_t i = 0; i < ir->_imagL.size(); i++) {
+                  reals_ptr[i] = ir->_imagL[i];
+                }
+                return reals;
+              },
+              [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
+                auto irdata_buf = irdata.request();
+                auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
+                size_t count    = irdata_buf.size;
+                ir->_imagL.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  ir->_imagL[i] = irdata_ptr[i];
+                }
+              })
+          .def_property(
+              "realR",
+              [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+                auto reals     = py::array_t<float>(ir->_realR.size());
+                auto reals_buf = reals.request();
+                auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+                for (size_t i = 0; i < ir->_realR.size(); i++) {
+                  reals_ptr[i] = ir->_realR[i];
+                }
+                return reals;
+              },
+              [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
+                auto irdata_buf = irdata.request();
+                auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
+                size_t count    = irdata_buf.size;
+                ir->_realR.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  ir->_realR[i] = irdata_ptr[i];
+                }
+              })
+          .def_property(
+              "imagR",
+              [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+                auto reals     = py::array_t<float>(ir->_imagR.size());
+                auto reals_buf = reals.request();
+                auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+                for (size_t i = 0; i < ir->_imagR.size(); i++) {
+                  reals_ptr[i] = ir->_imagR[i];
+                }
+                return reals;
+              },
+              [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdata) {
+                auto irdata_buf = irdata.request();
+                auto irdata_ptr = static_cast<float*>(irdata_buf.ptr);
+                size_t count    = irdata_buf.size;
+                ir->_imagR.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  ir->_imagR[i] = irdata_ptr[i];
+                }
+              })
+          .def(
+              "blend",
+              [](spectralimpulseresponse_ptr_t ir_dest,
+                 spectralimpulseresponse_ptr_t A,
+                 spectralimpulseresponse_ptr_t B,
+                 float index) { ir_dest->blend(*A, *B, index); })
+          .def(
+              "setFrequencyResponse",
+              [](spectralimpulseresponse_ptr_t ir,
+                 py::array_t<float> realL,
+                 py::array_t<float> imagL,
+                 py::array_t<float> realR,
+                 py::array_t<float> imagR) {
+                auto realL_buf = realL.request();
+                auto imagL_buf = imagL.request();
+                auto realR_buf = realR.request();
+                auto imagR_buf = imagR.request();
+                auto realL_ptr = static_cast<float*>(realL_buf.ptr);
+                auto imagL_ptr = static_cast<float*>(imagL_buf.ptr);
+                auto realR_ptr = static_cast<float*>(realR_buf.ptr);
+                auto imagR_ptr = static_cast<float*>(imagR_buf.ptr);
+                size_t count   = realL_buf.size;
+                ir->_realL.resize(count);
+                ir->_imagL.resize(count);
+                ir->_realR.resize(count);
+                ir->_imagR.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  ir->_realL[i] = realL_ptr[i];
+                  ir->_imagL[i] = imagL_ptr[i];
+                  ir->_realR[i] = realR_ptr[i];
+                  ir->_imagR[i] = imagR_ptr[i];
+                }
+              })
           .def("setIR", [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdataL, py::array_t<float> irdataR) {
             auto irdata_bufL = irdataL.request();
             auto irdata_bufR = irdataR.request();

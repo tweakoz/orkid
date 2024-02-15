@@ -415,10 +415,8 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
     _impulse_dataset->_impulses.push_back(imp);
   }
 
-  // auto mix_param   = addParam();
-  // auto pitch_param = addParam();
-  // mix_param->useDefaultEvaluator();
-  // pitch_param->useDefaultEvaluator();
+  auto index_param   = addParam();
+  index_param->useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -451,30 +449,21 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
   OrkAssert(dspbuf._real.size() == complex_size);
   OrkAssert(dspbuf._imag.size() == complex_size);
-
-#if 1
-  if ((_layer->_sampleindex & 0x001f) == 0) {
-    float fi  = _layer->_layerTime;
-    fi        = sin(fi*2.0f);
-    int index = 128 + int(fi * 127.0f);
-    auto dset = _mydata->_impulse_dataset;
-    auto imp  = dset->_impulses[index];
-    _realL    = imp->_realL;
-    _imagL    = imp->_imagL;
-  }
-#endif
-  // Assuming dspbuf._real and dspbuf._imag contain the FFT of the incoming signal
-  // Perform element-wise multiplication for convolution in the frequency domain
+  auto dset = _mydata->_impulse_dataset;
+  float fi = _param[0].eval();
+  float fmax = dset->_impulses.size()-1;
+  fi = fi < 0.0f ? 0.0f : fi;
+  fi = fi > fmax ? fmax : fi;
+  int index = int(fi*fmax);
+  auto imp  = dset->_impulses[index];
+  const auto& realL    = imp->_realL;
+  const auto& imagL    = imp->_imagL;
   for (size_t i = 0; i < complex_size; i++) {
-    float tempReal  = dspbuf._real[i] * _realL[i] - dspbuf._imag[i] * _imagL[i];
-    float tempImag  = dspbuf._real[i] * _imagL[i] + dspbuf._imag[i] * _realL[i];
+    float tempReal  = dspbuf._real[i] * realL[i] - dspbuf._imag[i] * imagL[i];
+    float tempImag  = dspbuf._real[i] * imagL[i] + dspbuf._imag[i] * realL[i];
     dspbuf._real[i] = tempReal;
     dspbuf._imag[i] = tempImag;
   }
-
-  // Now dspbuf contains the convolved signal in the frequency domain
-  // You'll need to apply IFFT here to get the time-domain signal back
-  // Remember to manage overlap-add if your system requires it for continuous streaming
 }
 
 ///////////////////////////////////////////////////////////////////////////////

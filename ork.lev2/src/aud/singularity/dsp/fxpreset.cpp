@@ -634,9 +634,15 @@ lyrdata_ptr_t fxpreset_vowels() {
 
     dataset->_impulses[i] = IR;
   }
-
   auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
-  //shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  vowels->param(0)->_coarse = 0.5f;
+  vowels->param(0)->_mods->_src1 = lfo;
+  vowels->param(0)->_mods->_src1Scale = 0.5;
   /////////////////
   return fxlayer;
 }
@@ -653,10 +659,10 @@ lyrdata_ptr_t fxpreset_violins() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
-  auto vowels = fxstage->appendTypedBlock<SpectralConvolve>("vowels");
+  auto violins = fxstage->appendTypedBlock<SpectralConvolve>("violins");
   auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   dataset->_impulses.resize(256);
-  vowels->_impulse_dataset = dataset;
+  violins->_impulse_dataset = dataset;
   for( int i=0; i<256; i++ ){
     float fi = float(i)/256.0f;
     auto IR = std::make_shared<SpectralImpulseResponse>();
@@ -665,7 +671,14 @@ lyrdata_ptr_t fxpreset_violins() {
   }
 
   auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
-  //shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  violins->param(0)->_coarse = 0.5f;
+  violins->param(0)->_mods->_src1 = lfo;
+  violins->param(0)->_mods->_src1Scale = 0.5;
   /////////////////
   return fxlayer;
 }

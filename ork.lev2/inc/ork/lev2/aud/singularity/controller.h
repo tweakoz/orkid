@@ -132,6 +132,8 @@ struct LfoData : public ControllerData {
   std::string _shape;
 };
 
+using lfodata_ptr_t = std::shared_ptr<LfoData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LfoInst : public ControllerInst {
