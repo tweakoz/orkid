@@ -18,6 +18,32 @@ sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from singularity import _frqdom as frqdom
 ################################################################################
 
+def create_violin_formant_response(cplxlen, sample_rate):
+  # Initialize arrays for the complex spectrum (real and imaginary parts)
+  real = np.ones(cplxlen)*0.35
+  imag = np.zeros(cplxlen)
+  
+  # Define violin resonant frequencies and their bandwidth
+  formants = [
+      (280, 100), # Main air resonance (Helmholtz resonance)
+      (450, 100), # First major wood resonance
+      (600, 100), # Second wood resonance
+      (1000, 120), # Additional body resonance
+      (1400, 150), # Upper body resonance
+      (2500, 200), # Brilliance range start
+      (3500, 300), # Brilliance range peak
+      (5000, 400), # High-end brilliance and projection
+  ]
+  for freq, bandwidth in formants:
+    center_bin = int((freq / sample_rate) * cplxlen)
+    bandwidth_bins = int((bandwidth / sample_rate) * cplxlen)
+    for bin in range(max(0, center_bin-bandwidth_bins), 
+                      min(cplxlen, center_bin+bandwidth_bins+1)):
+      real[bin] *= 4.5 # Example boost factor
+  return real, imag
+  
+################################################################################
+  
 class TestApp(frqdom.WaveformsApp):
   def __init__(self):
     super().__init__()
@@ -25,33 +51,13 @@ class TestApp(frqdom.WaveformsApp):
   def modLayer(self,newlyr):
     irdataset = S.SpectralImpulseDataSet()
     irdataset.resize(256)
-    strength = 64.0
-    sirA = S.SpectralImpulseResponse()
-    sirA.vowelFormant('A',strength)
-    sirE = S.SpectralImpulseResponse()
-    sirE.vowelFormant('E',strength)
-    sirI = S.SpectralImpulseResponse()
-    sirI.vowelFormant('I',strength)
-    sirO = S.SpectralImpulseResponse()
-    sirO.vowelFormant('O',strength)
-    sirU = S.SpectralImpulseResponse()
-    sirU.vowelFormant('U',strength)
+    cplxlen = S.spectralComplexSize()
+    violinR,violinI = create_violin_formant_response(cplxlen, 48000)
     for i in range(0,256):
       sir = S.SpectralImpulseResponse()
-      if( i<64 ):
-        fi = i/64.0
-        sir.blend(sirA,sirE,fi)
-      elif( i<128 ):
-        fi = (i-64)/64.0
-        sir.blend(sirE,sirI,fi)
-      elif( i<192 ):
-        fi = (i-128)/64.0
-        sir.blend(sirI,sirO,fi)
-      else:
-        fi = (i-192)/64.0
-        sir.blend(sirO,sirU,fi)   
+      sir.setFrequencyResponse(violinR,violinI,violinR,violinI)
       irdataset.set(i, sir)
-############################
+    ############################
     dspstg = newlyr.stage("DSP")
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
     spccon = dspstg.appendDspBlock("SpectralConvolve","sop4")
