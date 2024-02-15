@@ -18,6 +18,7 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/surface.h>
@@ -340,10 +341,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 return stgdata->_name;
               })
           .def_property_readonly("ioconfig", [](dspstagedata_ptr_t stgdata) -> ioconfig_ptr_t { return stgdata->_ioconfig; })
-          .def(
-              "clear",[](dspstagedata_ptr_t stgdata){
-                stgdata->clear();
-              })
+          .def("clear", [](dspstagedata_ptr_t stgdata) { stgdata->clear(); })
           .def(
               "appendDspBlock",
               [](dspstagedata_ptr_t stgdata, std::string classname, std::string blockname) -> dspblkdata_ptr_t {
@@ -434,9 +432,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                         .def(
                             "controller",
                             [](lyrdata_ptr_t ldata, std::string named) -> controllerdata_ptr_t { //
-                              auto ctrlblok           = ldata->_ctrlBlock;
-                              auto it = ctrlblok->_controllers_by_name.find(named);
-                              auto cdata = it->second;
+                              auto ctrlblok = ldata->_ctrlBlock;
+                              auto it       = ctrlblok->_controllers_by_name.find(named);
+                              auto cdata    = it->second;
                               return cdata;
                             })
                         .def(
@@ -509,20 +507,22 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t ldata, keymap_ptr_t kmap) { //
                               ldata->_keymap = kmap;
                             })
-                        .def_property("panmode",
-                                      [](lyrdata_ptr_t ldata) -> int { //
-                                        return ldata->_panmode;
-                                      },
-                                      [](lyrdata_ptr_t ldata, int val) { //
-                                        ldata->_panmode = val;
-                                      }) 
-                        .def_property("pan",
-                                      [](lyrdata_ptr_t ldata) -> int { //
-                                        return ldata->_pan;
-                                      },
-                                      [](lyrdata_ptr_t ldata, int val) { //
-                                        ldata->_pan = val;
-                                      }) 
+                        .def_property(
+                            "panmode",
+                            [](lyrdata_ptr_t ldata) -> int { //
+                              return ldata->_panmode;
+                            },
+                            [](lyrdata_ptr_t ldata, int val) { //
+                              ldata->_panmode = val;
+                            })
+                        .def_property(
+                            "pan",
+                            [](lyrdata_ptr_t ldata) -> int { //
+                              return ldata->_pan;
+                            },
+                            [](lyrdata_ptr_t ldata, int val) { //
+                              ldata->_pan = val;
+                            })
                         .def("__repr__", [](lyrdata_ptr_t ldata) -> std::string {
                           std::ostringstream oss;
                           oss << "LayerData( name: " << ldata->_name << ", stage_count: " << ldata->_algdata->_numstages << " )";
@@ -698,9 +698,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                 [](multisample_ptr_t msample, std::string named) { //
                                   msample->_name = named;
                                 })
-                            .def_property_readonly("numSamples", [](multisample_ptr_t msample) -> int { //
-                              return msample->_samplesByName.size(); //
-                            })
+                            .def_property_readonly(
+                                "numSamples",
+                                [](multisample_ptr_t msample) -> int {   //
+                                  return msample->_samplesByName.size(); //
+                                })
                             .def("sampleByIndex", [](multisample_ptr_t msample, int index) -> sample_ptr_t { //
                               return msample->_samples[index];
                             });
@@ -765,7 +767,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                [type_codec](bankdata_ptr_t bdata) -> py::dict { //
                                  py::dict rval;
                                  for (auto item : bdata->_programsByName) {
-                                   //int id                         = item.first;
+                                   // int id                         = item.first;
                                    auto prog                      = item.second;
                                    auto name                      = prog->_name;
                                    rval[type_codec->encode(name)] = type_codec->encode(prog);
@@ -1103,6 +1105,96 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                              [](keyonmod_ptr_t kmod) -> outbus_ptr_t { return kmod->_outbus_override; },
                              [](keyonmod_ptr_t kmod, outbus_ptr_t val) { kmod->_outbus_override = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto spectralIR_type =
+      py::class_<SpectralImpulseResponse, spectralimpulseresponse_ptr_t>(singmodule, "SpectralImpulseResponse")
+          .def(py::init<>())
+          .def_property_readonly("realL", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+            auto reals = py::array_t<float>(ir->_realL.size());
+            auto reals_buf = reals.request();
+            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+            for (size_t i = 0; i < ir->_realL.size(); i++) {
+              reals_ptr[i] = ir->_realL[i];
+            }
+            return reals;
+          })
+          .def_property_readonly("imagL", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+            auto reals = py::array_t<float>(ir->_imagL.size());
+            auto reals_buf = reals.request();
+            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+            for (size_t i = 0; i < ir->_imagL.size(); i++) {
+              reals_ptr[i] = ir->_imagL[i];
+            }
+            return reals;
+          })
+          .def_property_readonly("realR", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+            auto reals = py::array_t<float>(ir->_realR.size());
+            auto reals_buf = reals.request();
+            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+            for (size_t i = 0; i < ir->_realR.size(); i++) {
+              reals_ptr[i] = ir->_realR[i];
+            }
+            return reals;
+          })
+          .def_property_readonly("imagR", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
+            auto reals = py::array_t<float>(ir->_imagR.size());
+            auto reals_buf = reals.request();
+            auto reals_ptr = static_cast<float*>(reals_buf.ptr);
+            for (size_t i = 0; i < ir->_imagR.size(); i++) {
+              reals_ptr[i] = ir->_imagR[i];
+            }
+            return reals;
+          })
+          .def("blend", [](spectralimpulseresponse_ptr_t ir_dest, 
+                           spectralimpulseresponse_ptr_t A,
+                           spectralimpulseresponse_ptr_t B,
+                           float index) {
+            ir_dest->blend(*A,*B,index);
+          })
+          .def("set", [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdataL, py::array_t<float> irdataR) {
+            auto irdata_bufL = irdataL.request();
+            auto irdata_bufR = irdataR.request();
+            auto irdata_ptrL = static_cast<float*>(irdata_bufL.ptr);
+            auto irdata_ptrR = static_cast<float*>(irdata_bufR.ptr);
+            size_t count     = irdata_bufL.size;
+            std::vector<float> L, R;
+            L.resize(count);
+            R.resize(count);
+            for (size_t i = 0; i < count; i++) {
+              L[i] = irdata_ptrL[i];
+              R[i] = irdata_ptrR[i];
+            }
+            ir->set(L, R);
+          });
+  type_codec->registerStdCodec<spectralimpulseresponse_ptr_t>(spectralIR_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto spectralIRDSET_type =
+      py::class_<SpectralImpulseResponseDataSet, spectralimpulseresponsedataset_ptr_t>(singmodule, "SpectralImpulseDataSet")
+          .def(py::init<>())
+          .def(
+              "append",
+              [](spectralimpulseresponsedataset_ptr_t irset, std::string name, spectralimpulseresponse_ptr_t ir) {
+                irset->_impulses.push_back(ir);
+              })
+          .def("resize", [](spectralimpulseresponsedataset_ptr_t irset, size_t size) { irset->_impulses.resize(size); })
+          .def("clear", [](spectralimpulseresponsedataset_ptr_t irset) { irset->_impulses.clear(); })
+          .def("set", [](spectralimpulseresponsedataset_ptr_t irset, int index, spectralimpulseresponse_ptr_t ir) {
+            irset->_impulses[index] = ir;
+          });
+  type_codec->registerStdCodec<spectralimpulseresponsedataset_ptr_t>(spectralIRDSET_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto spectralConvolveData_type =
+      py::class_<SpectralConvolveData, DspBlockData, spectralconvolvedata_ptr_t>(singmodule, "SpectralConvolveData")
+          .def_property(
+              "dataset",
+              [](spectralconvolvedata_ptr_t convdata) -> spectralimpulseresponsedataset_ptr_t { //
+                return convdata->_impulse_dataset;
+              },
+              [](spectralconvolvedata_ptr_t convdata, spectralimpulseresponsedataset_ptr_t irset) { //
+                convdata->_impulse_dataset = irset;
+              });
+  type_codec->registerStdCodec<spectralconvolvedata_ptr_t>(spectralConvolveData_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

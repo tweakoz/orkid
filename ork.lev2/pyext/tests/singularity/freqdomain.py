@@ -21,6 +21,16 @@ from singularity._harness import SingulTestApp, find_index
 tokens = CrcStringProxy()
 ################################################################################
 
+def createCombFilterIR(samplerate, notchSpacing, maxFrequency):
+  delayInSamples = int(samplerate / notchSpacing)
+  numberOfNotches = int(maxFrequency / notchSpacing)
+  ir = np.zeros(delayInSamples + 1)
+  ir[0] = 1.0
+  ir[delayInSamples] = -1.0
+  return ir
+
+################################################################################
+
 class WaveformsApp(SingulTestApp):
 
   def __init__(self):
@@ -124,12 +134,22 @@ class WaveformsApp(SingulTestApp):
       newlyr.keymap = keymap
 
     ############################
+    irdataset = S.SpectralImpulseDataSet()
+    irdataset.resize(100)
+    for i in range(0,100):
+      frq = 1000 + (i*100)
+      ir = createCombFilterIR(48000, frq, 20000)
+      sir = S.SpectralImpulseResponse()
+      sir.set(ir,ir)
+      irdataset.set(i, sir)
+    ############################
     dspstg = newlyr.stage("DSP")
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
     #sshdom = dspstg.appendDspBlock("SpectralShift","sop")
     #scadom = dspstg.appendDspBlock("SpectralScale","sop")
     #spctst = dspstg.appendDspBlock("SpectralTest","sop")
     spccon = dspstg.appendDspBlock("SpectralConvolve","sop")
+    spccon.dataset = irdataset
     timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
     print("DSPSTG<%s>" % dspstg)
     print("frqdom<%s>" % frqdom)
