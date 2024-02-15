@@ -135,20 +135,35 @@ class WaveformsApp(SingulTestApp):
 
     ############################
     irdataset = S.SpectralImpulseDataSet()
-    irdataset.resize(100)
-    for i in range(0,100):
-      frq = 1000 + (i*100)
-      ir = createCombFilterIR(48000, frq, 20000)
+    irdataset.resize(256)
+    for i in range(0,256):
+      frq = 220 + (i*16)
+      #ir = createCombFilterIR(48000, frq, 20000)
       sir = S.SpectralImpulseResponse()
-      sir.set(ir,ir)
+      #sir.lowShelf(frq, -30)
+      #sir.highShelf(frq, -48)
+      #sir.lowRolloff(frq, -24)
+      #sir.highRolloff(frq, -36)
+      
+      frqA = 220 + (i*16)
+      frqB = 500 + (i*8)
+      frqC = 1000 + (i*4)
+      frqD = 8000 - (i*8)
+      
+      frqs = vec4(frqA,frqB,frqC,frqD)
+      gains = vec4(-48,-48,-48,-48)
+      qvals = vec4(1,1,1,1)
+      sir.parametricEQ4(frqs,gains,qvals)
+      
+      #sir.set(ir,ir)
       irdataset.set(i, sir)
     ############################
     dspstg = newlyr.stage("DSP")
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
-    #sshdom = dspstg.appendDspBlock("SpectralShift","sop")
-    #scadom = dspstg.appendDspBlock("SpectralScale","sop")
-    #spctst = dspstg.appendDspBlock("SpectralTest","sop")
-    spccon = dspstg.appendDspBlock("SpectralConvolve","sop")
+    #sshdom = dspstg.appendDspBlock("SpectralShift","sop1")
+    #scadom = dspstg.appendDspBlock("SpectralScale","sop2")
+    #spctst = dspstg.appendDspBlock("SpectralTest","sop3")
+    spccon = dspstg.appendDspBlock("SpectralConvolve","sop4")
     spccon.dataset = irdataset
     timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
     print("DSPSTG<%s>" % dspstg)

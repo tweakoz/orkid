@@ -1109,6 +1109,27 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto spectralIR_type =
       py::class_<SpectralImpulseResponse, spectralimpulseresponse_ptr_t>(singmodule, "SpectralImpulseResponse")
           .def(py::init<>())
+          .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float frq, float top) {
+            ir->combFilter(frq, top);
+          })
+          .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) {
+            ir->lowShelf(frq, gain);
+          })
+          .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) {
+            ir->highShelf(frq, gain);
+          })
+          .def("lowRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) {
+            ir->lowRolloff(frq, slope);
+          })
+          .def("highRolloff", [](spectralimpulseresponse_ptr_t ir, float frq, float slope) {
+            ir->highRolloff(frq, slope);
+          })
+          .def("parametricEQ4", [](spectralimpulseresponse_ptr_t ir, fvec4 frqs, fvec4 gains, fvec4 qvals) {
+            ir->parametricEQ4(frqs, gains, qvals);
+          })
+          .def("mirror", [](spectralimpulseresponse_ptr_t ir) {
+            ir->mirror();
+          })
           .def_property_readonly("realL", [](spectralimpulseresponse_ptr_t ir) -> py::array_t<float> {
             auto reals = py::array_t<float>(ir->_realL.size());
             auto reals_buf = reals.request();

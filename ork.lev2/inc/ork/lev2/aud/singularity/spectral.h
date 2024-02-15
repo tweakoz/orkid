@@ -71,26 +71,44 @@ struct SpectralScale : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
+using floatvect_t = std::vector<float>;
 struct SpectralImpulseResponse{
 
   SpectralImpulseResponse();
 
-  SpectralImpulseResponse( std::vector<float>& impulseL, //
-                           std::vector<float>& impulseR );
+  SpectralImpulseResponse( floatvect_t& impulseL, //
+                           floatvect_t& impulseR );
 
-  void set( std::vector<float>& impulseL, //
-            std::vector<float>& impulseR );
+  void combFilter( float frequency, //
+                   float top );
+  void lowShelf( float frequency, //
+                 float gain );
+  void highShelf( float frequency, //
+                  float gain );
+  void lowRolloff( float frequency, //
+                   float slope );
+  void highRolloff( float frequency, //
+                    float slope );
+
+  void parametricEQ4( fvec4 frequencies, //
+                      fvec4 gains, //
+                      fvec4 qvals );
+
+  void set( floatvect_t& impulseL, //
+            floatvect_t& impulseR );
+
+  void mirror();
 
   void blend(const SpectralImpulseResponse& A, //
              const SpectralImpulseResponse& B, //
               float index );
 
-  std::vector<float> _impulseL;
-  std::vector<float> _impulseR;
-  std::vector<float> _realL;
-  std::vector<float> _realR;
-  std::vector<float> _imagL;
-  std::vector<float> _imagR;
+  floatvect_t _impulseL;
+  floatvect_t _impulseR;
+  floatvect_t _realL;
+  floatvect_t _realR;
+  floatvect_t _imagL;
+  floatvect_t _imagR;
 
 };
 
@@ -117,12 +135,12 @@ struct SpectralConvolve : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-  std::vector<float> _impulseL;
-  std::vector<float> _impulseR;
-  std::vector<float> _realL;
-  std::vector<float> _realR;
-  std::vector<float> _imagL;
-  std::vector<float> _imagR;
+  floatvect_t _impulseL;
+  floatvect_t _impulseR;
+  floatvect_t _realL;
+  floatvect_t _realR;
+  floatvect_t _imagL;
+  floatvect_t _imagR;
 
 };
 ///////////////////////////////////////////////////////////////////////////////

@@ -7,6 +7,8 @@
 
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
+#include <vector>
+#include <cmath>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
@@ -22,31 +24,17 @@ void SpectralConvolveData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<float> createCombFilterIR(int sampleRate, int notchSpacing, int maxFrequency) {
-  // Calculate delay in samples for the given notch spacing
-  int delayInSamples = sampleRate / notchSpacing;
-
-  // Calculate the number of notches within the given frequency range
-  int numberOfNotches = maxFrequency / notchSpacing;
-
-  // The length of the IR could be determined by the last notch position
-  // However, for a comb filter, we only need to define the initial delay
-  std::vector<float> ir(delayInSamples + 1, 0.0f); // Initialize with zeros
-
-  // Set the first sample to 1 (the impulse)
-  ir[0] = 1.0f;
-
-  // Set the sample at the delay position to -1 to create a notch
-  // In a basic comb filter, this represents the feedback or feedforward level
-  ir[delayInSamples] = -1.0f; // Adjust this value as needed for your filter design
-
-  return ir;
+SpectralImpulseResponse::SpectralImpulseResponse() {
 }
 
-#include <vector>
-#include <cmath>
+///////////////////////////////////////////////////////////////////////////////
 
-// Helper functions
+SpectralImpulseResponse::SpectralImpulseResponse(floatvect_t& impulseL, floatvect_t& impulseR) {
+  set(impulseL, impulseR);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 float unwrapPhase(float phase) {
   while (phase < -M_PI)
     phase += 2 * M_PI;
@@ -55,16 +43,18 @@ float unwrapPhase(float phase) {
   return phase;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void SpectralImpulseResponse::set(
-    std::vector<float>& impulseL, //
-    std::vector<float>& impulseR) {
+    floatvect_t& impulseL, //
+    floatvect_t& impulseR) {
 
   _impulseL           = impulseL;
   _impulseR           = impulseR;
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
 
-  std::vector<float> irPaddedL(kSPECTRALSIZE, 0.0f);
-  std::vector<float> irPaddedR(kSPECTRALSIZE, 0.0f);
+  floatvect_t irPaddedL(kSPECTRALSIZE, 0.0f);
+  floatvect_t irPaddedR(kSPECTRALSIZE, 0.0f);
   std::copy(impulseL.begin(), impulseL.end(), irPaddedL.begin());
   std::copy(impulseR.begin(), impulseR.end(), irPaddedR.begin());
 
@@ -79,6 +69,8 @@ void SpectralImpulseResponse::set(
   fftR.init(kSPECTRALSIZE);
   fftR.fft(irPaddedR.data(), _realR.data(), _imagR.data());
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void SpectralImpulseResponse::blend(  //
     const SpectralImpulseResponse& A, //
@@ -115,12 +107,213 @@ void SpectralImpulseResponse::blend(  //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpectralImpulseResponse::SpectralImpulseResponse(){
-  
+void SpectralImpulseResponse::mirror() {
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  for (int i = complex_size / 2; i < complex_size; ++i) {
+    int mirrorIndex = complex_size - i;
+    _realL[i]       = _realL[mirrorIndex];
+    _imagL[i]       = -_imagL[mirrorIndex]; // Negate for complex conjugate
+    _realR[i]       = _realR[mirrorIndex];
+    _imagR[i]       = -_imagR[mirrorIndex];
+  }
 }
 
-SpectralImpulseResponse::SpectralImpulseResponse(std::vector<float>& impulseL, std::vector<float>& impulseR) {
+///////////////////////////////////////////////////////////////////////////////
+
+static floatvect_t _createCombFilterIR(int sampleRate, int notchSpacing, int maxFrequency) {
+  // Calculate delay in samples for the given notch spacing
+  int delayInSamples = sampleRate / notchSpacing;
+
+  // Calculate the number of notches within the given frequency range
+  int numberOfNotches = maxFrequency / notchSpacing;
+
+  // The length of the IR could be determined by the last notch position
+  // However, for a comb filter, we only need to define the initial delay
+  floatvect_t ir(delayInSamples + 1, 0.0f); // Initialize with zeros
+
+  // Set the first sample to 1 (the impulse)
+  ir[0] = 1.0f;
+
+  // Set the sample at the delay position to -1 to create a notch
+  // In a basic comb filter, this represents the feedback or feedforward level
+  ir[delayInSamples] = -1.0f; // Adjust this value as needed for your filter design
+
+  return ir;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::combFilter(float frequency, float top) {
+  auto syn        = synth::instance();
+  auto sampleRate = syn->sampleRate();
+  auto impulseL   = _createCombFilterIR(sampleRate, frequency, top);
+  auto impulseR   = _createCombFilterIR(sampleRate, frequency, top);
   set(impulseL, impulseR);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::lowShelf(float frequency, float gain) {
+  auto syn            = synth::instance();
+  auto sampleRate     = syn->sampleRate();
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+
+  // Initialize complex spectrum data
+  _realL.assign(complex_size, 1.0f);
+  _imagL.assign(complex_size, 0.0f);
+  _realR.assign(complex_size, 1.0f);
+  _imagR.assign(complex_size, 0.0f);
+
+  // Calculate the cutoff index in the frequency domain
+  int cutoffIndex = static_cast<int>((frequency / sampleRate) * kSPECTRALSIZE);
+
+  float linearGain = decibel_to_linear_amp_ratio(gain);
+
+  for (int i = 0; i < cutoffIndex; ++i) {
+    _realL[i] = linearGain;
+    _realR[i] = linearGain;
+  }
+
+  // mirror();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::highShelf(float frequency, float gain) {
+  auto syn            = synth::instance();
+  auto sampleRate     = syn->sampleRate();
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+
+  // Initialize complex spectrum data with zeros
+  _realL.assign(complex_size, 1.0f);
+  _imagL.assign(complex_size, 0.0f);
+  _realR.assign(complex_size, 1.0f);
+  _imagR.assign(complex_size, 0.0f);
+
+  // Calculate the cutoff index in the frequency domain
+  int cutoffIndex = static_cast<int>((frequency / sampleRate) * kSPECTRALSIZE);
+
+  float linearGain = decibel_to_linear_amp_ratio(gain);
+
+  for (int i = cutoffIndex; i < complex_size / 2; ++i) {
+    // Processing half due to symmetry
+    _realL[i] = linearGain;
+    _realR[i] = linearGain;
+  }
+
+  // mirror();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::lowRolloff(float frequency, float slope) {
+  // roll off the high frequencies at a given slope (dB per octave)
+  auto syn        = synth::instance();
+  auto sampleRate = syn->sampleRate();
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  _realL.assign(complex_size, 1.0f);
+  _imagL.assign(complex_size, 0.0f);
+  size_t cutoffBin = static_cast<size_t>((frequency / sampleRate) * complex_size);
+  for (size_t bin = 0; bin < complex_size; ++bin) {
+    float binFrequency = static_cast<float>(bin) / complex_size * sampleRate;
+    if (binFrequency > frequency) {
+      float octavesAboveCutoff = log2(binFrequency / frequency);
+      float gainDB             = -abs(slope) * octavesAboveCutoff;
+      float lineargain         = decibel_to_linear_amp_ratio(gainDB);
+      _realL[bin] *= lineargain;
+      _imagL[bin] *= lineargain;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::highRolloff(float frequency, float slope) {
+  // roll off the low frequencies at a given slope (dB per octave)
+  auto syn        = synth::instance();
+  auto sampleRate = syn->sampleRate();
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  _realL.assign(complex_size, 1.0f);
+  _imagL.assign(complex_size, 0.0f);
+  size_t cutoffBin = static_cast<size_t>((frequency / sampleRate) * complex_size);
+  for (size_t bin = 0; bin < complex_size; ++bin) {
+    float binFrequency = static_cast<float>(bin) / complex_size * sampleRate;
+    if (binFrequency < frequency) {
+      float octavesBelowCutoff = log2(frequency / binFrequency);
+      float gainDB             = -abs(slope) * octavesBelowCutoff;
+      float lineargain         = decibel_to_linear_amp_ratio(gainDB);
+      _realL[bin] *= lineargain;
+      _imagL[bin] *= lineargain;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float _calculateParametricEQResponse( float binFrequency, //
+                                      float centerFrequency, // 
+                                      float linearGain, // 
+                                      float qValue, // 
+                                      float sampleRate) { //
+  // Avoid division by zero
+
+  if (binFrequency == 0.0f || centerFrequency == 0.0f || qValue == 0.0f )
+    return 1.0f;
+
+  // Bandwidth calculation
+  float bandwidth          = centerFrequency / qValue;
+  float omega              = 2 * M_PI * binFrequency / sampleRate;
+  float omegaC             = 2 * M_PI * centerFrequency / sampleRate;
+  float bandwidthInRadians = 2 * M_PI * bandwidth / sampleRate;
+
+  // Simplified calculation for the peaking EQ gain adjustment factor
+  // This is an approximation for educational purposes
+  float theta          = (omega - omegaC) / bandwidthInRadians;
+  float gainAdjustment = 1.0f + (linearGain - 1.0f) * std::exp(-theta * theta);
+
+  return gainAdjustment;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::parametricEQ4(
+    fvec4 frequencies, //
+    fvec4 gains,       //
+    fvec4 qvals) {
+  auto syn        = synth::instance();
+  auto sampleRate = syn->sampleRate();
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+
+  // Initialize or ensure spectral data is ready for processing
+  _realL.assign(complex_size, 1.0f); // Start with unity gain for simplicity
+  _imagL.assign(complex_size, 0.0f); // No initial phase change
+
+  // Process each EQ band
+  for (size_t band = 0; band < 4; ++band) {
+    float frequency = frequencies.asArray()[band];
+    float gain      = gains.asArray()[band];
+    float qval      = qvals.asArray()[band];
+
+    // Convert gain from dB to linear scale
+    float linearGain = decibel_to_linear_amp_ratio(gain);
+
+    // Loop through the spectrum and apply the EQ adjustments
+    for (size_t bin = 0; bin < complex_size; ++bin) {
+      float binFrequency = float(bin) / float(kSPECTRALSIZE) * sampleRate;
+
+      // Calculate the frequency response of the parametric EQ for this bin
+      float response = _calculateParametricEQResponse(  binFrequency, //
+                                                        frequency, // 
+                                                        linearGain, // 
+                                                        qval, // 
+                                                        sampleRate);
+
+      //printf( "binF<%g> ctrF<%g> Q<%g> response<%g>\n", binFrequency, frequency, qval, response);
+      // Apply the response to the spectral data
+      _realL[bin] *= response;
+      _imagL[bin] *= response;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,13 +323,9 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
   _blocktype = "SpectralConvolve";
 
   _impulse_dataset = std::make_shared<SpectralImpulseResponseDataSet>();
-  for (int i = 0; i < 100; i++) {
-    float fi      = float(i) / 100.0f;
-    float frq     = 500 + fi * 2000;
-    auto impulseL = createCombFilterIR(48000, frq, 20000);
-    auto impulseR = createCombFilterIR(48000, frq, 20000);
-
-    auto imp = std::make_shared<SpectralImpulseResponse>(impulseL, impulseR);
+  for (int i = 0; i < 256; i++) {
+    auto imp = std::make_shared<SpectralImpulseResponse>();
+    imp->combFilter(50 + i, 10000);
     _impulse_dataset->_impulses.push_back(imp);
   }
 
@@ -181,7 +370,7 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
   if ((_layer->_sampleindex & 0x00ff) == 0) {
     float fi  = _layer->_layerTime;
     fi        = sin(fi);
-    int index = 50 + int(fi * 49.0f);
+    int index = 128 + int(fi * 127.0f);
     auto dset = _mydata->_impulse_dataset;
     auto imp  = dset->_impulses[index];
     _realL    = imp->_realL;
