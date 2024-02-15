@@ -1127,6 +1127,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           .def("parametricEQ4", [](spectralimpulseresponse_ptr_t ir, fvec4 frqs, fvec4 gains, fvec4 qvals) {
             ir->parametricEQ4(frqs, gains, qvals);
           })
+          .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, char ch, float strength) {
+            ir->vowelFormant(ch,strength);
+          })
           .def("mirror", [](spectralimpulseresponse_ptr_t ir) {
             ir->mirror();
           })

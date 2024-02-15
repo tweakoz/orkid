@@ -316,6 +316,44 @@ void SpectralImpulseResponse::parametricEQ4(
   }
 }
 
+struct Formant {
+    float frequency; // Formant frequency in Hz
+    float bandwidth; // Bandwidth of the formant in Hz
+};
+
+using VowelFormants = std::vector<Formant>;
+
+// Example vowel formants for 'A', 'E', 'I', 'O', 'U' (simplified, for demonstration)
+static std::map<char, VowelFormants> _vowelFormantsMap = {
+    {'A', {{700, 110}, {1220, 110}, {2600, 110}}},  // Example formants for 'A'
+    {'E', {{500, 110}, {1750, 110}, {2450, 110}}},  // Example formants for 'E'
+    {'I', {{300, 110}, {2200, 110}, {3000, 110}}},  // Example formants for 'I'
+    {'O', {{400, 110}, {800, 110},  {2600, 110}}},  // Example formants for 'O'
+    {'U', {{350, 110}, {600, 110},  {2700, 110}}}   // Example formants for 'U'
+};
+
+void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
+  auto syn = synth::instance();
+  auto sampleRate = syn->sampleRate();
+  _realL.assign(kSPECTRALSIZE, 1.0f/strength); // Initialize to unity gain
+  _imagL.assign(kSPECTRALSIZE, 0.0f); // No initial phase change
+
+  auto formants = _vowelFormantsMap[toupper(vowel)];
+  for (const auto& formant : formants) {
+      // Here, you would calculate and apply the band-pass filter for each formant.
+      // This requires DSP knowledge to implement correctly.
+      // For demonstration, we'll simply boost frequencies around the formant frequency.
+      int centerBin = static_cast<int>((formant.frequency / sampleRate) * kSPECTRALSIZE);
+      int bandwidthBins = static_cast<int>((formant.bandwidth / sampleRate) * kSPECTRALSIZE);
+
+      for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
+          if (bin >= 0 && bin < kSPECTRALSIZE) {
+              _realL[bin] = 2.5; // Simplified example of boosting the magnitude
+              // No change to _imagL[bin] to keep the example simple
+          }
+      }
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
@@ -367,9 +405,9 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
   OrkAssert(dspbuf._imag.size() == complex_size);
 
 #if 1
-  if ((_layer->_sampleindex & 0x00ff) == 0) {
+  if ((_layer->_sampleindex & 0x001f) == 0) {
     float fi  = _layer->_layerTime;
-    fi        = sin(fi);
+    fi        = sin(fi*3.0f);
     int index = 128 + int(fi * 127.0f);
     auto dset = _mydata->_impulse_dataset;
     auto imp  = dset->_impulses[index];

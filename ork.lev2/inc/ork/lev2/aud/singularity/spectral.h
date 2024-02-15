@@ -94,6 +94,8 @@ struct SpectralImpulseResponse{
                       fvec4 gains, //
                       fvec4 qvals );
 
+  void vowelFormant(char vowel, float strength);
+
   void set( floatvect_t& impulseL, //
             floatvect_t& impulseR );
 

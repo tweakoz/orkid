@@ -1,34 +1,16 @@
-#!/usr/bin/env python3
-
-################################################################################
-# singularity test for editing layers in a soundbank
-# Copyright 1996-2023, Michael T. Mayers.
-# Distributed under the MIT License
-# see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
-################################################################################
-
 import numpy as np
 import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
 from orkengine.lev2 import singularity as S
 from _sampler import createLayer, createSampleLayer
-
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
 from singularity._harness import SingulTestApp, find_index
-tokens = CrcStringProxy()
+from singularity import _frqdom as frqdom
 ################################################################################
-
-def createCombFilterIR(samplerate, notchSpacing, maxFrequency):
-  delayInSamples = int(samplerate / notchSpacing)
-  numberOfNotches = int(maxFrequency / notchSpacing)
-  ir = np.zeros(delayInSamples + 1)
-  ir[0] = 1.0
-  ir[delayInSamples] = -1.0
-  return ir
-
+tokens = CrcStringProxy()
 ################################################################################
 
 class WaveformsApp(SingulTestApp):
@@ -134,43 +116,7 @@ class WaveformsApp(SingulTestApp):
       newlyr.keymap = keymap
 
     ############################
-    irdataset = S.SpectralImpulseDataSet()
-    irdataset.resize(256)
-    for i in range(0,256):
-      frq = 220 + (i*16)
-      #ir = createCombFilterIR(48000, frq, 20000)
-      sir = S.SpectralImpulseResponse()
-      #sir.lowShelf(frq, -30)
-      #sir.highShelf(frq, -48)
-      #sir.lowRolloff(frq, -24)
-      #sir.highRolloff(frq, -36)
-      
-      frqA = 220 + (i*16)
-      frqB = 500 + (i*8)
-      frqC = 1000 + (i*4)
-      frqD = 8000 - (i*8)
-      
-      frqs = vec4(frqA,frqB,frqC,frqD)
-      gains = vec4(-48,-48,-48,-48)
-      qvals = vec4(1,1,1,1)
-      sir.parametricEQ4(frqs,gains,qvals)
-      
-      #sir.set(ir,ir)
-      irdataset.set(i, sir)
-    ############################
-    dspstg = newlyr.stage("DSP")
-    frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
-    #sshdom = dspstg.appendDspBlock("SpectralShift","sop1")
-    #scadom = dspstg.appendDspBlock("SpectralScale","sop2")
-    #spctst = dspstg.appendDspBlock("SpectralTest","sop3")
-    spccon = dspstg.appendDspBlock("SpectralConvolve","sop4")
-    spccon.dataset = irdataset
-    timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
-    print("DSPSTG<%s>" % dspstg)
-    print("frqdom<%s>" % frqdom)
-    print("timdom<%s>" % timdom)
-    #assert(False)
-
+    self.modLayer(newlyr)
     ############################
     self.soundbank = self.new_soundbank
     ############################
@@ -185,7 +131,3 @@ class WaveformsApp(SingulTestApp):
     if self.pgmview:
       self.pgmview.setProgram(newprog)
   ##############################################
-
-###############################################################################
-
-WaveformsApp().ezapp.mainThreadLoop()
