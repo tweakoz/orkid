@@ -16,19 +16,19 @@
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/fft.h>
 
-ImplementReflectionX(ork::audio::singularity::SpectralConvolveData, "DspSpectralConvolve");
+ImplementReflectionX(ork::audio::singularity::SpectralConvolve2Data, "DspSpectralConvolve2");
 
 namespace ork::audio::singularity {
 
-void SpectralConvolveData::describeX(class_t* clazz) {
+void SpectralConvolve2Data::describeX(class_t* clazz) {
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
+SpectralConvolve2Data::SpectralConvolve2Data(std::string name, float fb)
     : DspBlockData(name) {
-  _blocktype = "SpectralConvolve";
+  _blocktype = "SpectralConvolve2";
 
   _impulse_dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   for (int i = 0; i < 256; i++) {
@@ -43,31 +43,26 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblk_ptr_t SpectralConvolveData::createInstance() const { // override
-  return std::make_shared<SpectralConvolve>(this);
+dspblk_ptr_t SpectralConvolve2Data::createInstance() const { // override
+  return std::make_shared<SpectralConvolve2>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpectralConvolve::SpectralConvolve(const SpectralConvolveData* dbd)
+SpectralConvolve2::SpectralConvolve2(const SpectralConvolve2Data* dbd)
     : DspBlock(dbd) {
   _mydata             = dbd;
   auto syni           = synth::instance();
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
-  _realL.resize(complex_size);
-  _imagL.resize(complex_size);
-  _realR.resize(complex_size);
-  _imagR.resize(complex_size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpectralConvolve::~SpectralConvolve() {
+SpectralConvolve2::~SpectralConvolve2() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralConvolve::compute(DspBuffer& dspbuf) {
+void SpectralConvolve2::compute(DspBuffer& dspbuf) {
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
   OrkAssert(dspbuf._real.size() == complex_size);
   OrkAssert(dspbuf._imag.size() == complex_size);
@@ -78,19 +73,11 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
   fi = fi > fmax ? fmax : fi;
   int index = int(fi*fmax);
   auto imp  = dset->_impulses[index];
-  const auto& realL    = imp->_realL;
-  const auto& imagL    = imp->_imagL;
-  for (size_t i = 0; i < complex_size; i++) {
-    float tempReal  = dspbuf._real[i] * realL[i] - dspbuf._imag[i] * imagL[i];
-    float tempImag  = dspbuf._real[i] * imagL[i] + dspbuf._imag[i] * realL[i];
-    dspbuf._real[i] = tempReal;
-    dspbuf._imag[i] = tempImag;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralConvolve::doKeyOn(const KeyOnInfo& koi) { // final
+void SpectralConvolve2::doKeyOn(const KeyOnInfo& koi) { // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////

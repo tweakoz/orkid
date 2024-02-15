@@ -16,6 +16,7 @@
 #include <ork/math/cvector2.h>
 #include "shelveeq.h"
 #include "delays.h"
+#include "fft_convolver.h"
 
 namespace ork::audio::singularity {
   
@@ -147,6 +148,31 @@ struct SpectralConvolve : public DspBlock {
   floatvect_t _imagL;
   floatvect_t _imagR;
 
+};
+///////////////////////////////////////////////////////////////////////////////
+struct SpectralConvolve2Data : public DspBlockData {
+  DeclareConcreteX(SpectralConvolve2Data,DspBlockData);
+  SpectralConvolve2Data(std::string name="X",float feedback=0.0f);
+  dspblk_ptr_t createInstance() const override;
+  spectralimpulseresponsedataset_ptr_t _impulse_dataset;
+};
+using spectralconvolve2data_ptr_t = std::shared_ptr<SpectralConvolve2Data>;
+struct SpectralConvolve2 : public DspBlock {
+  using dataclass_t = SpectralConvolve2Data;
+  SpectralConvolve2(const dataclass_t* dbd);
+  ~SpectralConvolve2();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  const dataclass_t* _mydata;
+  floatvect_t _impulseL;
+  floatvect_t _impulseR;
+  //floatvect_t _realL;
+  //floatvect_t _realR;
+  //floatvect_t _imagL;
+  //floatvect_t _imagR;
+  fftconvolver::FFTConvolver _convolverL;
+  fftconvolver::FFTConvolver _convolverR;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralTestData : public DspBlockData {
