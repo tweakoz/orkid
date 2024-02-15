@@ -52,14 +52,10 @@ class TestApp(frqdom.WaveformsApp):
     irdataset = S.SpectralImpulseDataSet()
     cplxlen = S.spectralComplexSize()
     violinR,violinI = create_violin_formant_response(cplxlen, 48000)
-    COUNT = 256
-    irdataset.resize(COUNT)
-    for i in range(0,COUNT):
-      fi = (i/float(COUNT))
-      sir = S.SpectralImpulseResponse()
-      sir.violinFormant(1.0+fi*64.0)
-      #sir.setFrequencyResponse(violinR,violinI,violinR,violinI)
-      irdataset.set(i, sir)
+    irdataset.resize(1)
+    sir = S.SpectralImpulseResponse()
+    sir.violinFormant(64.0)
+    irdataset.set(0, sir)
     ############################
     dspstg = newlyr.stage("DSP")
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")

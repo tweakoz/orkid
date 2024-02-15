@@ -46,9 +46,15 @@ class TestApp(frqdom.WaveformsApp):
     spccon = dspstg.appendDspBlock("SpectralConvolve","sop4")
     spccon.dataset = irdataset
     timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
-    print("DSPSTG<%s>" % dspstg)
-    print("frqdom<%s>" % frqdom)
-    print("timdom<%s>" % timdom)
+    # create LFO
+    lfo = newlyr.appendController("Lfo","vowel-lfo")
+    lfo.minRate = 0.1
+    lfo.maxRate = 0.1
+    # set LFO as modulator
+    spec_index_param = spccon.paramByIndex(0)
+    spec_index_param.mods.src1 = lfo
+    spec_index_param.mods.src1scale = 0.5
+    spec_index_param.mods.src1bias = 0.5
 
 ###############################################################################
 
