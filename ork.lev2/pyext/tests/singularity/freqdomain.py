@@ -89,8 +89,8 @@ class WaveformsApp(SingulTestApp):
         fs = 0.5+math.sin(fi*2.0*3.14159)+0.5
         t = np.linspace(0, 1, wavelength, endpoint=False)  # Time array for one cycle
         waveform = np.zeros(wavelength)
-        for j in range(0,30):
-          fj = (j/30.0)
+        for j in range(0,90):
+          fj = (j/90.0)
           fn = fs*fj + (1.0-fj)
           waveform = waveform + (np.sin(2 * np.pi * (j + 1)  * t) / (j + 1))*fn
         waveform = waveform / np.max(np.abs(waveform))*0.1  # Normalize to -1 to 1
@@ -128,7 +128,8 @@ class WaveformsApp(SingulTestApp):
     frqdom = dspstg.appendDspBlock("ToFrequencyDomain","2frq")
     #sshdom = dspstg.appendDspBlock("SpectralShift","sop")
     #scadom = dspstg.appendDspBlock("SpectralScale","sop")
-    spctst = dspstg.appendDspBlock("SpectralTest","sop")
+    #spctst = dspstg.appendDspBlock("SpectralTest","sop")
+    spccon = dspstg.appendDspBlock("SpectralConvolve","sop")
     timdom = dspstg.appendDspBlock("ToTimeDomain","2tim")
     print("DSPSTG<%s>" % dspstg)
     print("frqdom<%s>" % frqdom)

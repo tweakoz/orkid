@@ -70,6 +70,46 @@ struct SpectralScale : public DspBlock {
 
 };
 ///////////////////////////////////////////////////////////////////////////////
+
+struct SpectralImpulseResponse{
+
+  SpectralImpulseResponse( std::vector<float>& impulseL, //
+                           std::vector<float>& impulseR );
+
+  std::vector<float> _impulseL;
+  std::vector<float> _impulseR;
+  std::vector<float> _realL;
+  std::vector<float> _realR;
+  std::vector<float> _imagL;
+  std::vector<float> _imagR;
+};
+
+using spectralimpulseresponse_ptr_t = std::shared_ptr<SpectralImpulseResponse>;
+
+struct SpectralConvolveData : public DspBlockData {
+  DeclareConcreteX(SpectralConvolveData,DspBlockData);
+  SpectralConvolveData(std::string name="X",float feedback=0.0f);
+  dspblk_ptr_t createInstance() const override;
+  
+  std::vector<spectralimpulseresponse_ptr_t> _impulses;
+};
+struct SpectralConvolve : public DspBlock {
+  using dataclass_t = SpectralConvolveData;
+  SpectralConvolve(const dataclass_t* dbd);
+  ~SpectralConvolve();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  const dataclass_t* _mydata;
+  std::vector<float> _impulseL;
+  std::vector<float> _impulseR;
+  std::vector<float> _realL;
+  std::vector<float> _realR;
+  std::vector<float> _imagL;
+  std::vector<float> _imagR;
+
+};
+///////////////////////////////////////////////////////////////////////////////
 struct SpectralTestData : public DspBlockData {
   DeclareConcreteX(SpectralTestData,DspBlockData);
   SpectralTestData(std::string name="X",float feedback=0.0f);
@@ -84,7 +124,8 @@ struct SpectralTest : public DspBlock {
 
   const dataclass_t* _mydata;
 
-};///////////////////////////////////////////////////////////////////////////////
+};
+///////////////////////////////////////////////////////////////////////////////
 struct ToTimeDomainData : public DspBlockData {
   DeclareConcreteX(ToTimeDomainData,DspBlockData);
   ToTimeDomainData(std::string name="X",float feedback=0.0f);
