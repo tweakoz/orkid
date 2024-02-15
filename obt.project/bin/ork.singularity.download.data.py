@@ -145,3 +145,15 @@ batch_wget({
 
 batch_wget({
   URL("http://www.tweakoz.com/resources/audio/Feb142023.mp3"): (dest_path/"wavs"/"feb142023.mp3","d6ade30fdc8f9c80a7c846c983b4877a")})
+
+ensureDirectoryExists(dest_path/"IRs")
+
+irbase = URL("https://web.archive.org/web/20120603060726/http://noox.sitesled.com")
+batch_wget({
+  irbase/"Beamsonic1.zip": (dest_path/"IRs"/"Beamsonic1.zip","89fab8afe8f3e630d182a91b6f968ae1"),
+  irbase/"Beamsonic2.zip": (dest_path/"IRs"/"Beamsonic2.zip","e282226755dde4d66ad319dd6d4d1830")
+})
+
+(dest_path/"IRs").chdir()
+command.system(["unzip","-j","-o","Beamsonic1.zip"])
+command.system(["unzip","-j","-o","Beamsonic2.zip"])

@@ -683,6 +683,45 @@ lyrdata_ptr_t fxpreset_violins() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_at4050() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  appendStereoEnhancer(fxlayer, fxstage);
+  appendStereoShaper(fxlayer,fxstage,0.01f);
+  appendStereoHighFreqStimulator(fxlayer,fxstage,2000.0f,30.0f,24.0f);
+  auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto violins = fxstage->appendTypedBlock<SpectralConvolve>("violins");
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(1);
+  violins->_impulse_dataset = dataset;
+  auto IR = std::make_shared<SpectralImpulseResponse>();
+  auto base      = ork::audio::singularity::basePath() / "IRs";
+  auto ir_path = base/"Fender SuperChamp AT4050.wav";
+  IR->loadAudioFile(ir_path.c_str());
+  dataset->_impulses[0] = IR;
+
+  auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  violins->param(0)->_coarse = 0.5f;
+  violins->param(0)->_mods->_src1 = lfo;
+  violins->param(0)->_mods->_src1Scale = 0.5;
+  totd->param(0)->_coarse = -18;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_none() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -728,5 +767,6 @@ void loadAllFxPresets(synth* s) {
   addpreset("StereoDelay", fxpreset_stereodelay());
   addpreset("Vowels", fxpreset_vowels());
   addpreset("Violins", fxpreset_violins());
+  addpreset("Fender-AT4050", fxpreset_at4050());
 }
 } // namespace ork::audio::singularity

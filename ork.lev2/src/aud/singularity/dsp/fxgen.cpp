@@ -143,6 +143,18 @@ void appendStereoDistortion(
   r->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoShaper(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float adj) {
+  auto l               = stage->appendTypedBlock<SHAPER>("distorion-L");
+  auto r               = stage->appendTypedBlock<SHAPER>("distorion-R");
+  l->param(0)->_coarse = adj;
+  r->param(0)->_coarse = adj;
+  l->addDspChannel(0);
+  r->addDspChannel(1);
+}
+///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoStereoDynamicEcho(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,

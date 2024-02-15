@@ -32,6 +32,9 @@ struct TO_TD_IMPL {
     }
 
     void compute(ToTimeDomain* ttd, DspBuffer& dspbuf, int ibase, int inumframes) {
+
+        float gain = ttd->_param[0].eval();
+        float gain_lin = decibel_to_linear_amp_ratio(gain);
         auto obufL = ttd->getOutBuf(dspbuf, 0) + ibase; // Left channel output buffer
         auto obufR = ttd->getOutBuf(dspbuf, 1) + ibase; // Right channel output buffer
 
@@ -71,8 +74,8 @@ struct TO_TD_IMPL {
         // Output the time-domain data to both left and right channels
         // Note: This loop now only needs to handle inumframes since we've already managed the output
         for(int i = 0; i < inumframes; i++){
-            obufL[i] = _output[_frames_out + i];
-            obufR[i] = _output[_frames_out + i];
+            obufL[i] = gain_lin*_output[_frames_out + i];
+            obufR[i] = gain_lin*_output[_frames_out + i];
         }
 
         // Update frames_out to manage the windowed output correctly
@@ -85,11 +88,8 @@ struct TO_TD_IMPL {
 ToTimeDomainData::ToTimeDomainData(std::string name, float fb)
     : DspBlockData(name) {
   _blocktype       = "ToTimeDomain";
-  auto mix_param   = addParam();
-  auto pitch_param = addParam();
-
-  mix_param->useDefaultEvaluator();
-  pitch_param->useDefaultEvaluator();
+  auto gain_param   = addParam("gain","dB");
+  gain_param->useAmplitudeEvaluator();
 }
 ///////////////////////////////////////////////////////////////////////////////
 

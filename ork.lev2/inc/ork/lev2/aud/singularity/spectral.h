@@ -19,7 +19,7 @@
 
 namespace ork::audio::singularity {
   
-static constexpr size_t kSPECTRALSIZE = 2048;
+static constexpr size_t kSPECTRALSIZE = 4096;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ToFrequencyDomainData : public DspBlockData {
@@ -79,6 +79,8 @@ struct SpectralImpulseResponse{
   SpectralImpulseResponse( floatvect_t& impulseL, //
                            floatvect_t& impulseR );
 
+  void loadAudioFile(const std::string& path);
+
   void combFilter( float frequency, //
                    float top );
   void lowShelf( float frequency, //
@@ -112,7 +114,7 @@ struct SpectralImpulseResponse{
   floatvect_t _realR;
   floatvect_t _imagL;
   floatvect_t _imagR;
-
+  svar64_t _impl;
 };
 
 using spectralimpulseresponse_ptr_t = std::shared_ptr<SpectralImpulseResponse>;

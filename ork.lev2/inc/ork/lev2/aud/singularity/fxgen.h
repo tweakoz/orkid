@@ -43,6 +43,11 @@ void appendStereoDistortion(
     dspstagedata_ptr_t stage,
     float adj);
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoShaper(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float adj);
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighPass(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,

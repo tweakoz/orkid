@@ -13,6 +13,7 @@
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/spectral.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/fft.h>
 
 ImplementReflectionX(ork::audio::singularity::SpectralConvolveData, "DspSpectralConvolve");
@@ -121,6 +122,42 @@ void SpectralImpulseResponse::mirror() {
     _realR[i]       = _realR[mirrorIndex];
     _imagR[i]       = -_imagR[mirrorIndex];
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::loadAudioFile(const std::string& path){
+  auto sample = _impl.makeShared<SampleData>();
+  sample->loadFromAudioFile(path);
+  const s16* data = sample->_sampleBlock;
+  OrkAssert(sample->_blk_start == 0);
+
+  floatvect_t impulse(kSPECTRALSIZE, 0.0f);
+
+  int numframes = sample->_blk_end;
+  printf( "numframes<%d>\n", numframes );
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t max_ir_size = 512;
+  if(numframes>max_ir_size){
+    numframes = max_ir_size;
+    for (int i = 0; i < numframes; i++) {
+      float window = (float(i) / float(max_ir_size-1));
+      window = 1.0f - window;
+      window = powf(window, 0.5f);
+      //window = 0.5f * (1.0f - cosf(2.0f * M_PI * window));
+      //scalar = 0.5+sinf(scalar * PI)*0.5;
+      //impulse[i] = scalar * float(data[i]) / 32768.0f;
+      impulse[i] = window * float(data[i]) / 32768.0f;
+      //printf( "impulse<%d> %g\n", i, impulse[i] );
+    }
+  }
+  else{
+    for (int i = 0; i < numframes; i++) {
+      impulse[i] = float(data[i]) / 32768.0f;
+      //printf( "impulse<%d> %g\n", i, impulse[i] );
+    }
+  }
+  set(impulse, impulse);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
