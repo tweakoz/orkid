@@ -195,7 +195,7 @@ void SpectralImpulseResponse::highShelf(float frequency, float gain) {
 
   float linearGain = decibel_to_linear_amp_ratio(gain);
 
-  for (int i = cutoffIndex; i < complex_size / 2; ++i) {
+  for (int i = cutoffIndex; i < complex_size; ++i) {
     // Processing half due to symmetry
     _realL[i] = linearGain;
     _realR[i] = linearGain;
