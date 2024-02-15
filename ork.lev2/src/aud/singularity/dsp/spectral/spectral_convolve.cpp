@@ -25,6 +25,11 @@ void SpectralConvolveData::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 SpectralImpulseResponse::SpectralImpulseResponse() {
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  _realL.resize(complex_size);
+  _imagL.resize(complex_size);
+  _realR.resize(complex_size);
+  _imagR.resize(complex_size);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -321,10 +326,10 @@ struct Formant {
     float bandwidth; // Bandwidth of the formant in Hz
 };
 
-using VowelFormants = std::vector<Formant>;
+using formants_list = std::vector<Formant>;
 
 // Example vowel formants for 'A', 'E', 'I', 'O', 'U' (simplified, for demonstration)
-static std::map<char, VowelFormants> _vowelFormantsMap = {
+static std::map<char, formants_list> _vowelFormantsMap = {
     {'A', {{700, 110}, {1220, 110}, {2600, 110}}},  // Example formants for 'A'
     {'E', {{500, 110}, {1750, 110}, {2450, 110}}},  // Example formants for 'E'
     {'I', {{300, 110}, {2200, 110}, {3000, 110}}},  // Example formants for 'I'
@@ -333,10 +338,13 @@ static std::map<char, VowelFormants> _vowelFormantsMap = {
 };
 
 void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
-  auto syn = synth::instance();
-  auto sampleRate = syn->sampleRate();
+  //auto syn = synth::instance();
+  auto sampleRate = 48000.0f;//syn->sampleRate();
+  //auto sampleRate = syn->sampleRate();
   _realL.assign(kSPECTRALSIZE, 1.0f/strength); // Initialize to unity gain
   _imagL.assign(kSPECTRALSIZE, 0.0f); // No initial phase change
+  _realR.assign(kSPECTRALSIZE, 1.0f/strength); // Initialize to unity gain
+  _imagR.assign(kSPECTRALSIZE, 0.0f); // No initial phase change
 
   auto formants = _vowelFormantsMap[toupper(vowel)];
   for (const auto& formant : formants) {
@@ -348,12 +356,52 @@ void SpectralImpulseResponse::vowelFormant(char vowel, float strength) {
 
       for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
           if (bin >= 0 && bin < kSPECTRALSIZE) {
-              _realL[bin] = 2.5; // Simplified example of boosting the magnitude
+              _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
+              _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
               // No change to _imagL[bin] to keep the example simple
           }
       }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::violinFormant(float strength){
+  auto syn = synth::instance();
+  auto sampleRate = 48000.0f;//syn->sampleRate();
+
+
+  _realL.assign(kSPECTRALSIZE, 1.0f / strength); // Initialize to unity gain
+  _imagL.assign(kSPECTRALSIZE, 0.0f); // No initial phase change
+  _realR.assign(kSPECTRALSIZE, 1.0f / strength); // Initialize to unity gain
+  _imagR.assign(kSPECTRALSIZE, 0.0f); // No initial phase change
+
+  // Define violin resonant frequencies and their bandwidth
+
+  formants_list formants = {
+      {280, 100}, // Main air resonance (Helmholtz resonance)
+      {450, 100}, // First major wood resonance
+      {600, 100}, // Second wood resonance
+      {1000, 120}, // Additional body resonance
+      {1400, 150}, // Upper body resonance
+      {2500, 200}, // Brilliance range start
+      {3500, 300}, // Brilliance range peak
+      {5000, 400}, // High-end brilliance and projection
+  };
+
+  for( auto f : formants ){
+    int centerBin = static_cast<int>((f.frequency / sampleRate) * kSPECTRALSIZE);
+    int bandwidthBins = static_cast<int>((f.bandwidth / sampleRate) * kSPECTRALSIZE);
+    for (int bin = centerBin - bandwidthBins; bin <= centerBin + bandwidthBins; ++bin) {
+        if (bin >= 0 && bin < kSPECTRALSIZE) {
+            _realL[bin] = 1.0f; // Simplified example of boosting the magnitude
+            _realR[bin] = 1.0f; // Simplified example of boosting the magnitude
+            // No change to _imagL[bin] to keep the example simple
+        }
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
@@ -363,7 +411,7 @@ SpectralConvolveData::SpectralConvolveData(std::string name, float fb)
   _impulse_dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   for (int i = 0; i < 256; i++) {
     auto imp = std::make_shared<SpectralImpulseResponse>();
-    imp->combFilter(50 + i, 10000);
+    //imp->combFilter(50 + i, 10000);
     _impulse_dataset->_impulses.push_back(imp);
   }
 
@@ -407,7 +455,7 @@ void SpectralConvolve::compute(DspBuffer& dspbuf) {
 #if 1
   if ((_layer->_sampleindex & 0x001f) == 0) {
     float fi  = _layer->_layerTime;
-    fi        = sin(fi*3.0f);
+    fi        = sin(fi*2.0f);
     int index = 128 + int(fi * 127.0f);
     auto dset = _mydata->_impulse_dataset;
     auto imp  = dset->_impulses[index];

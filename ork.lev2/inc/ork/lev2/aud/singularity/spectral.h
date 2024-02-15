@@ -19,7 +19,7 @@
 
 namespace ork::audio::singularity {
   
-static constexpr size_t kSPECTRALSIZE = 4096;
+static constexpr size_t kSPECTRALSIZE = 2048;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ToFrequencyDomainData : public DspBlockData {
@@ -95,6 +95,7 @@ struct SpectralImpulseResponse{
                       fvec4 qvals );
 
   void vowelFormant(char vowel, float strength);
+  void violinFormant(float strength);
 
   void set( floatvect_t& impulseL, //
             floatvect_t& impulseR );

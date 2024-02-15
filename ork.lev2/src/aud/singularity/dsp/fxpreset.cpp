@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -586,6 +587,89 @@ lyrdata_ptr_t fxpreset_multitest() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_vowels() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto vowels = fxstage->appendTypedBlock<SpectralConvolve>("vowels");
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(256);
+  vowels->_impulse_dataset = dataset;
+  /////////////////
+  float strength = 32.0f;
+  auto A = std::make_shared<SpectralImpulseResponse>();
+  auto E = std::make_shared<SpectralImpulseResponse>();
+  auto I = std::make_shared<SpectralImpulseResponse>();
+  auto O = std::make_shared<SpectralImpulseResponse>();
+  auto U = std::make_shared<SpectralImpulseResponse>();
+  A->vowelFormant('A',strength);
+  E->vowelFormant('E',strength);
+  I->vowelFormant('I',strength);
+  O->vowelFormant('O',strength);
+  U->vowelFormant('U',strength);
+  /////////////////
+  for( int i=0; i<256; i++ ){
+    float fi = float(i)/256.0f;
+    auto IR = std::make_shared<SpectralImpulseResponse>();
+    if( fi < 0.25f ){
+      IR->blend(*A,*E,fi/0.25f);
+    }
+    else if( fi < 0.5f ){
+      IR->blend(*E,*I,(fi-0.25f)/0.25f);
+    }
+    else if( fi < 0.75f ){
+      IR->blend(*I,*O,(fi-0.5f)/0.25f);
+    }
+    else {
+      IR->blend(*O,*U,(fi-0.75f)/0.25f);
+    }
+
+    dataset->_impulses[i] = IR;
+  }
+
+  auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  //shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_violins() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto vowels = fxstage->appendTypedBlock<SpectralConvolve>("vowels");
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(256);
+  vowels->_impulse_dataset = dataset;
+  for( int i=0; i<256; i++ ){
+    float fi = float(i)/256.0f;
+    auto IR = std::make_shared<SpectralImpulseResponse>();
+    IR->violinFormant(16.0f);
+    dataset->_impulses[i] = IR;
+  }
+
+  auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  //shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_none() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -629,5 +713,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("ShifterRec", fxpreset_pitchrec());
   addpreset("MultiTest", fxpreset_multitest());
   addpreset("StereoDelay", fxpreset_stereodelay());
+  addpreset("Vowels", fxpreset_vowels());
+  addpreset("Violins", fxpreset_violins());
 }
 } // namespace ork::audio::singularity

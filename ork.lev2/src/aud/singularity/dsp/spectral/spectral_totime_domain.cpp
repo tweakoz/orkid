@@ -103,7 +103,7 @@ ToTimeDomain::ToTimeDomain(const ToTimeDomainData* dbd)
     : DspBlock(dbd) {
   _mydata = dbd;
 
-  auto syni = synth::instance();
+  //auto syni = synth::instance();
   auto impl = _impl[0].makeShared<TO_TD_IMPL>();
 
 }

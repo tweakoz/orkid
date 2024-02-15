@@ -1135,6 +1135,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           .def("vowelFormant", [](spectralimpulseresponse_ptr_t ir, char ch, float strength) {
             ir->vowelFormant(ch,strength);
           })
+          .def("violinFormant", [](spectralimpulseresponse_ptr_t ir, float strength) {
+            ir->violinFormant(strength);
+          })
           .def("mirror", [](spectralimpulseresponse_ptr_t ir) {
             ir->mirror();
           })

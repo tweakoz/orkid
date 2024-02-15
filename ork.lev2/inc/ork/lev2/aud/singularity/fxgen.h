@@ -119,6 +119,8 @@ lyrdata_ptr_t fxpreset_wackiverb();
 lyrdata_ptr_t fxpreset_pitchoctup();
 lyrdata_ptr_t fxpreset_pitchwave();
 lyrdata_ptr_t fxpreset_pitchchorus();
+lyrdata_ptr_t fxpreset_vowels();
+lyrdata_ptr_t fxpreset_violins();
 lyrdata_ptr_t fxpreset_none();
 void loadAllFxPresets(synth* s);
 ///////////////////////////////////////////////////////////////////////////////
