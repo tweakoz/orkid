@@ -864,15 +864,19 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       // compute/accumulate output busses
       //  (into main output)
       /////////////////////////////
+      std::atomic<int> pending = 0;
+      bool serial = false;
       for (auto busitem : _outputBusses) {
+        bool is_last_bus = (busitem.first == _outputBusses.rbegin()->first);
         auto bus         = busitem.second;
-        auto& bus_buf    = bus->_buffer;
-        float* bus_left  = bus_buf._leftBuffer;
-        float* bus_right = bus_buf._rightBuffer;
-        //////////////////////////////////////////
-        // bus DSP fx
-        //////////////////////////////////////////
-        if (1) {
+        pending.fetch_add(1);
+        auto op = [&pending,bus,this,inumframes](){
+          auto& bus_buf    = bus->_buffer;
+          float* bus_left  = bus_buf._leftBuffer;
+          float* bus_right = bus_buf._rightBuffer;
+          //////////////////////////////////////////
+          // bus DSP fx
+          //////////////////////////////////////////
           auto busdsplayer = bus->_dsplayer;
           if (busdsplayer) {
             auto dsp_buf = busdsplayer->_dspbuffer;
@@ -907,7 +911,25 @@ void synth::compute(int inumframes, const void* inputBuffer) {
             }
             //////////////////////////////////////////
           }
+          pending.fetch_sub(1);
+        };
+        if(serial or is_last_bus){
+          op();
         }
+        else{
+         opq::concurrentQueue()->enqueue(op);
+        }
+      }
+      while(pending.load()>0){
+      }
+      //////////////////////////////////////////
+      // accumulate busses to master
+      //////////////////////////////////////////
+      for (auto busitem : _outputBusses) {
+        auto bus         = busitem.second;
+        auto& bus_buf    = bus->_buffer;
+        float* bus_left  = bus_buf._leftBuffer;
+        float* bus_right = bus_buf._rightBuffer;
         //////////////////////////////////////////
         // accumulate bus to master
         //////////////////////////////////////////
