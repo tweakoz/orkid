@@ -344,11 +344,11 @@ void pyinit_math_la_t(py::module& module_core, //
   auto mat4_type = //
       py::class_<mat4_t>(module_core, mat4_name.c_str(), pybind11::buffer_protocol(),
         "4x4 GLM derived matrix class supporting buffer protocol.\n\n"
-        "This class represents a 4x4 matrix and supports the buffer protocol, "
-        "allowing it to be used in contexts that require direct buffer access. "
-        "The buffer exposes the matrix data as a contiguous array of scalars "
-        "(floats or doubles depending on the build), arranged in row-major order. "
-        "This class is useful for efficient data exchange with libraries like NumPy, "
+        "This class represents a 4x4 matrix and supports the buffer protocol,\n"
+        "allowing it to be used in contexts that require direct buffer access.\n"
+        "The buffer exposes the matrix data as a contiguous array of scalars\n"
+        "(floats or doubles depending on the build), arranged in row-major order.\n"
+        "This class is useful for efficient data exchange with libraries like NumPy,\n"
         "enabling direct manipulation of matrix data without copying.\n")      
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat4_t& mtx) -> pybind11::buffer_info {
