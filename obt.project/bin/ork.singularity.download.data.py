@@ -165,5 +165,6 @@ batch_wget({
 (dest_path/"IRs").chdir()
 command.system(["unzip","-j","-o","Beamsonic1.zip"])
 command.system(["unzip","-j","-o","Beamsonic2.zip"])
+command.system(["unzip","-j","-o","EchoThiefImpulseResponseLibrary.zip"])
 command.system(["unzip","-j","-o","surpriseverb.zip"])
 
