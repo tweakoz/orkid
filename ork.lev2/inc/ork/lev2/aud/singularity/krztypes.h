@@ -152,6 +152,7 @@ using dspstagedata_ptr_t          = std::shared_ptr<DspStageData>;
 using dspstagedata_constptr_t     = std::shared_ptr<const DspStageData>;
 using dspstage_ptr_t              = std::shared_ptr<DspStage>;
 using dspstage_constptr_t         = std::shared_ptr<const DspStage>;
+using layer_ptr_t                 = std::shared_ptr<Layer>;
 using lyrdata_ptr_t               = std::shared_ptr<LayerData>;
 using lyrdata_constptr_t          = std::shared_ptr<const LayerData>;
 using prgdata_ptr_t               = std::shared_ptr<ProgramData>;
@@ -207,6 +208,7 @@ using timebase_ptr_t = std::shared_ptr<TimeBase>;
 using sequenceplayback_ptr_t = std::shared_ptr<SequencePlayback>;
 using clipplayback_ptr_t = std::shared_ptr<ClipPlayback>;
 using trackplayback_ptr_t = std::shared_ptr<TrackPlayback>;
+using layer_vect_t = std::vector<layer_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

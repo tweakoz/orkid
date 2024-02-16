@@ -87,6 +87,8 @@ private:
   std::vector<SplitComplex*> _segmentsIR;
   SampleBuffer _fftBuffer;
   audiofft::AudioFFT _fft;
+
+  std::vector<splitcomplex_ptr_t> _conQ;
   SplitComplex _preMultiplied;
   SplitComplex _conv;
   SampleBuffer _overlap;

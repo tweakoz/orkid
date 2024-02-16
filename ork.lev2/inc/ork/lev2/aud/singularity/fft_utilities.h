@@ -211,6 +211,14 @@ public:
     resize(initialSize);
   }
 
+  inline void accumulate(const SplitComplex& other) {
+        assert(_re.size() == other._re.size() && _im.size() == other._im.size());
+        for (size_t i = 0; i < _re.size(); ++i) {
+            _re[i] += other._re[i];
+            _im[i] += other._im[i];
+        }
+    }
+
   ~SplitComplex()
   {
     clear();
@@ -277,6 +285,7 @@ private:
   SplitComplex& operator=(const SplitComplex&);
 };
 
+using splitcomplex_ptr_t = std::shared_ptr<SplitComplex>;
 
 /**
 * @brief Returns the next power of 2 of a given number

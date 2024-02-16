@@ -821,9 +821,44 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       /////////////////////////////
       // accumulate layers into busses
       /////////////////////////////
-      for (auto l : _activeVoices) {
-        l->mixToBus(_dspwritebase, _dspwritecount);
-        l->updateScopes(_dspwritebase, _dspwritecount);
+      if(false) { // serial 
+        for (auto l : _activeVoices) {
+          l->mixToBus(_dspwritebase, _dspwritecount);
+          l->updateScopes(_dspwritebase, _dspwritecount);
+        }
+      }
+      else{ // parallel
+        //////
+        for( auto bitem : _outputBusses ){
+          auto bus = bitem.second;
+          bus->_exec_layers.clear();
+        }
+        //////
+        for (auto l : _activeVoices) {
+          auto bus = l->_outbus;
+          bus->_exec_layers.push_back(l);
+        }
+        //////
+        std::atomic<int> pending = 0;
+        for( auto bitem : _outputBusses ){
+          auto bus = bitem.second;
+          pending.fetch_add(1);
+          auto op = [this,bus,&pending](){
+            for( auto l : bus->_exec_layers ){
+              l->mixToBus(_dspwritebase, _dspwritecount);
+            }
+            pending.fetch_sub(1);
+          };
+          opq::concurrentQueue()->enqueue(op);
+        }
+        //////
+        while(pending.load()>0){
+        }
+        //////
+        for (auto l : _activeVoices) {
+          l->updateScopes(_dspwritebase, _dspwritecount);
+        }
+        //////
       }
       /////////////////////////////
       // compute/accumulate output busses

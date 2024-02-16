@@ -20,6 +20,7 @@
 // ==================================================================================
 
 #include <ork/lev2/aud/singularity/fft_convolver.h>
+#include <ork/kernel/opq.h>
 #include <cassert>
 #include <cmath>
 
@@ -123,6 +124,11 @@ bool FFTConvolver::init(size_t blockSize, const Sample* ir, size_t irLen)
     _segmentsIR.push_back(segment);
   }
   
+  _conQ.resize(_segCount);
+  for( size_t i=0; i<_segCount; i++ ){
+    _conQ[i] = std::make_shared<SplitComplex>(_fftComplexSize);
+  }
+
   // Prepare convolution buffers  
   _preMultiplied.resize(_fftComplexSize);
   _conv.resize(_fftComplexSize);
@@ -160,16 +166,85 @@ void FFTConvolver::process(const Sample* input, Sample* output, size_t len)
     _fft.fft(_fftBuffer.data(), _segments[_current]->re(), _segments[_current]->im());
 
     // Complex multiplication
-    if (inputBufferWasEmpty)
-    {
+    if (inputBufferWasEmpty) {
+
       _preMultiplied.setZero();
-      for (size_t i=1; i<_segCount; ++i)
-      {
-        const size_t indexIr = i;
-        const size_t indexAudio = (_current + i) % _segCount;
-        ComplexMultiplyAccumulate(_preMultiplied, *_segmentsIR[indexIr], *_segments[indexAudio]);
+
+      ///////////////////////////////////////
+      // single threaded
+      ///////////////////////////////////////
+      if(true) { 
+
+        for (size_t i=1; i<_segCount; i++) {
+          const size_t indexIr = i;
+          const size_t indexAudio = (_current + i) % _segCount;
+          const auto& A = *_segmentsIR[indexIr];
+          const auto& B = *_segments[indexAudio];
+          ComplexMultiplyAccumulate(_preMultiplied, A, B);
+        }
+
       }
-    }
+      ///////////////////////////////////////
+      // concurrent
+      ///////////////////////////////////////
+      else{
+
+        size_t num_chunks = (_segCount+4095)>>12;
+
+        //printf( "_segCount<%zu> num_chunks<%zu>\n", _segCount, num_chunks );
+
+        std::atomic<int> pending = 0;
+
+        for( size_t i=1; i<num_chunks; i++ ){
+          pending.fetch_add(1);
+          opq::concurrentQueue()->enqueue([this,i,&pending](){
+            auto result = _conQ[i];
+            result->setZero();
+            size_t start = i<<12;
+            size_t end = std::min(start+4096,_segCount);
+            for (size_t j=start; j<end; j++) {
+              const size_t indexIr = j;
+              const size_t indexAudio = (_current + j) % _segCount;
+              const auto& A = *_segmentsIR[indexIr];
+              const auto& B = *_segments[indexAudio];
+              ComplexMultiplyAccumulate(*result, A, B);
+            }
+            pending.fetch_add(-1);
+          });
+        }
+
+        // chunk 0 on this thread
+        {
+            auto result = _conQ[0];
+            result->setZero();
+            size_t start = 0;
+            size_t end = std::min(start+4096,_segCount);
+            for (size_t j=start; j<end; j++) {
+              const size_t indexIr = j;
+              const size_t indexAudio = (_current + j) % _segCount;
+              const auto& A = *_segmentsIR[indexIr];
+              const auto& B = *_segments[indexAudio];
+              ComplexMultiplyAccumulate(*result, A, B);
+            }
+        }
+
+        while(pending.load()>0){
+        }
+
+        // merge results
+        for( size_t i=0; i<num_chunks; i++ ){
+          const auto& result = *_conQ[i];
+          _preMultiplied.accumulate(result);
+        }
+
+      } // concurrent
+      ///////////////////////////////////////
+
+
+    } // if (inputBufferWasEmpty) {
+
+    //////////////////////////////////////////////////////////////////////////////
+
     _conv.copyFrom(_preMultiplied);
     ComplexMultiplyAccumulate(_conv, *_segments[_current], *_segmentsIR[0]);
 

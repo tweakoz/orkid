@@ -84,6 +84,7 @@ struct OutputBus {
   float _prog_gain = 0.0f;
   std::vector<outbus_ptr_t> _children;
   fxpresetmap_t::iterator _fxcurpreset;
+  layer_vect_t _exec_layers;
   /////////////////////////
 };
 
