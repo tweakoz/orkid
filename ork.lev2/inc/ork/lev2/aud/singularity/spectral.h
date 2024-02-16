@@ -81,6 +81,7 @@ struct SpectralImpulseResponse{
                            floatvect_t& impulseR );
 
   void loadAudioFile(const std::string& path);
+  void loadAudioFileX(const std::string& path);
 
   void combFilter( float frequency, //
                    float top );
@@ -102,6 +103,8 @@ struct SpectralImpulseResponse{
 
   void set( floatvect_t& impulseL, //
             floatvect_t& impulseR );
+  void setX( floatvect_t& impulseL, //
+             floatvect_t& impulseR );
 
   void mirror();
 
@@ -132,7 +135,7 @@ struct SpectralConvolveData : public DspBlockData {
   dspblk_ptr_t createInstance() const override;
   spectralimpulseresponsedataset_ptr_t _impulse_dataset;
 };
-using spectralconvolvedata_ptr_t = std::shared_ptr<SpectralConvolveData>;
+
 struct SpectralConvolve : public DspBlock {
   using dataclass_t = SpectralConvolveData;
   SpectralConvolve(const dataclass_t* dbd);
@@ -149,31 +152,37 @@ struct SpectralConvolve : public DspBlock {
   floatvect_t _imagR;
 
 };
+
+using spectralconvolvedata_ptr_t = std::shared_ptr<SpectralConvolveData>;
+
 ///////////////////////////////////////////////////////////////////////////////
-struct SpectralConvolve2Data : public DspBlockData {
-  DeclareConcreteX(SpectralConvolve2Data,DspBlockData);
-  SpectralConvolve2Data(std::string name="X",float feedback=0.0f);
+struct SpectralConvolveTDData : public DspBlockData {
+  DeclareConcreteX(SpectralConvolveTDData,DspBlockData);
+  SpectralConvolveTDData(std::string name="X",float feedback=0.0f);
   dspblk_ptr_t createInstance() const override;
   spectralimpulseresponsedataset_ptr_t _impulse_dataset;
 };
-using spectralconvolve2data_ptr_t = std::shared_ptr<SpectralConvolve2Data>;
-struct SpectralConvolve2 : public DspBlock {
-  using dataclass_t = SpectralConvolve2Data;
-  SpectralConvolve2(const dataclass_t* dbd);
-  ~SpectralConvolve2();
+using spectralconvolveTDdata_ptr_t = std::shared_ptr<SpectralConvolveTDData>;
+struct SpectralConvolveTD : public DspBlock {
+  using dataclass_t = SpectralConvolveTDData;
+  SpectralConvolveTD(const dataclass_t* dbd);
+  ~SpectralConvolveTD();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
+  floatvect_t _inpqL;
+  floatvect_t _inpqR;
+  floatvect_t _outqL;
+  floatvect_t _outqR;
   floatvect_t _impulseL;
   floatvect_t _impulseR;
-  //floatvect_t _realL;
-  //floatvect_t _realR;
-  //floatvect_t _imagL;
-  //floatvect_t _imagR;
   fftconvolver::FFTConvolver _convolverL;
   fftconvolver::FFTConvolver _convolverR;
 };
+
+using spectralconvolveTDdata_ptr_t = std::shared_ptr<SpectralConvolveTDData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralTestData : public DspBlockData {
   DeclareConcreteX(SpectralTestData,DspBlockData);

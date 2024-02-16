@@ -153,7 +153,17 @@ batch_wget({
   irbase/"Beamsonic1.zip": (dest_path/"IRs"/"Beamsonic1.zip","89fab8afe8f3e630d182a91b6f968ae1"),
   irbase/"Beamsonic2.zip": (dest_path/"IRs"/"Beamsonic2.zip","e282226755dde4d66ad319dd6d4d1830")
 })
+irbase = URL("http://www.echothief.com/wp-content/uploads/2016/06")
+batch_wget({
+  irbase/"EchoThiefImpulseResponseLibrary.zip": (dest_path/"IRs"/"EchoThiefImpulseResponseLibrary.zip","f4d84fd7187cebdf9e86517517377831"),
+})
+irbase = URL("https://www.logicprohelp.com/applications/core/interface/file/attachment.php?id=4110")
+batch_wget({
+  irbase: (dest_path/"IRs"/"surpriseverb.zip","c461ee6b410726b6858d6219a5da565c"),
+})
 
 (dest_path/"IRs").chdir()
 command.system(["unzip","-j","-o","Beamsonic1.zip"])
 command.system(["unzip","-j","-o","Beamsonic2.zip"])
+command.system(["unzip","-j","-o","surpriseverb.zip"])
+

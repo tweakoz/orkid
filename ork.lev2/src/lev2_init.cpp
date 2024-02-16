@@ -356,6 +356,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::SpectralShiftData);
     RegisterClassX(audio::singularity::SpectralScaleData);
     RegisterClassX(audio::singularity::SpectralConvolveData);
+    RegisterClassX(audio::singularity::SpectralConvolveTDData);
     RegisterClassX(audio::singularity::SpectralTestData);
 
     RegisterClassX(audio::singularity::Sum2Data);

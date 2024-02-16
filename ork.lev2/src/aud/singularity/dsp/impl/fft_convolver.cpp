@@ -23,11 +23,6 @@
 #include <cassert>
 #include <cmath>
 
-#if defined (FFTCONVOLVER_USE_SSE)
-  #include <xmmintrin.h>
-#endif
-
-
 namespace ork::audio::singularity {
 namespace fftconvolver
 {  

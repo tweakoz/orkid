@@ -7,6 +7,7 @@ include_directories(AFTER ${ORKROOT}/ork.core/inc )
 include_directories(AFTER ${ORKROOT}/ork.lev2/inc )
 include_directories(AFTER ${SRCD} )
 include_directories(AFTER $ENV{QTDIR}/include)
+#include_directories(AFTER $ENV{OBT_BUILDS}/sse2neon)
 
 function(setupEXE target sources)
   add_executable (${target} harness.cpp harness_midi.cpp harness_sequence.cpp ${sources} )

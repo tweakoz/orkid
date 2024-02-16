@@ -44,7 +44,7 @@ struct SampleData : public ork::Object {
 
   SampleData();
 
-  void loadFromAudioFile(const std::string& filename);
+  void loadFromAudioFile(const std::string& filename, bool normalize=true);
 
   std::string _name;
   const s16* _sampleBlock;
@@ -55,7 +55,7 @@ struct SampleData : public ork::Object {
 
   int _blk_loopstart;
   int _blk_loopend;
-
+  int _numChannels = 1;
   int _loopPoint;
   int _subid;
   float _sampleRate;

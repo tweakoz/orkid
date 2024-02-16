@@ -84,6 +84,7 @@ IF(${APPLE})
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
+    list(APPEND libs "-framework Accelerate" )
     list(APPEND libs glfw.3)
 ELSEIF(${UNIX})
 

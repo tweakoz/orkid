@@ -224,7 +224,7 @@ SampleData::SampleData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SampleData::loadFromAudioFile(const std::string& fname) {
+void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
     printf("loading sample<%s>\n", fname.c_str());
 
     // Open the sound file
@@ -252,26 +252,29 @@ void SampleData::loadFromAudioFile(const std::string& fname) {
     printf("channelCount<%d>\n", channelCount);
     printf("numSamples<%d>\n", numSamples);
     printf("sampleRate<%f>\n", _sampleRate);
-
+    _numChannels = channelCount;
     // Read the samples from the file
+
     std::vector<float> fbuf(numSamples); // Assuming float format for simplicity
     int readcount = sf_readf_float(sf_file, fbuf.data(), _blk_end);
     printf("readCount<%d>\n", readcount);
 
     // No need to manually convert formats, libsndfile handles conversion
 
-    // Normalization and bias correction
-    float _min = *std::min_element(fbuf.begin(), fbuf.end());
-    float _max = *std::max_element(fbuf.begin(), fbuf.end());
-    printf("_min<%g> _max<%g>\n", _min, _max);
+    if(normalize){
+      // Normalization and bias correction
+      float _min = *std::min_element(fbuf.begin(), fbuf.end());
+      float _max = *std::max_element(fbuf.begin(), fbuf.end());
+      printf("_min<%g> _max<%g>\n", _min, _max);
 
-    float frange = _max - _min;
-    float fbias = (_max + _min) * 0.5f;
-    for (auto& F : fbuf) {
-        F -= fbias;
-        F /= (frange * 0.5f);
+      float frange = _max - _min;
+      float fbias = (_max + _min) * 0.5f;
+      for (auto& F : fbuf) {
+          F -= fbias;
+          F /= (frange * 0.5f);
+      }
+      printf("frange<%f> fbias<%f>\n", frange, fbias);  
     }
-    printf("frange<%f> fbias<%f>\n", frange, fbias);
 
     // Assuming WaveformData and _user are defined and initialized elsewhere
     auto& waveformOUT = _user.make<WaveformData>();

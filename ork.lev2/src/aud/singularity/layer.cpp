@@ -309,6 +309,7 @@ float Layer::currentPan() const{
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Layer::mixToBus(int base, int count) {
+  float prggain = decibel_to_linear_amp_ratio(_layerdata->_programdata->_gainDB);
   float* lyroutl  = _dspbuffer->channel(0) + base;
   float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;
@@ -319,7 +320,7 @@ void Layer::mixToBus(int base, int count) {
   float panL = panBlend(fpan).lmix;
   float panR = panBlend(fpan).rmix;
   float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
-  float LG = _layerLinGain * _gainModifier * headroom;
+  float LG = prggain * _layerLinGain * _gainModifier * headroom;
   //////////////////////////////////
   for (int i = 0; i < count; i++) {
     bus_outl[i] += (lyroutl[i]*LG*panL);

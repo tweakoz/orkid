@@ -458,29 +458,30 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
         auto timebase = pb0->_sequence->_timebase;
         auto ts_end = timebase->timeToTimeStamp(time); 
         auto it = as_evclip->_rec_noteon_events.find(note);
-        OrkAssert(it!=as_evclip->_rec_noteon_events.end());
-        auto nonev = it->second;
+        if( it != as_evclip->_rec_noteon_events.end()){
+          auto nonev = it->second;
 
-        as_evclip->_rec_noteon_events.erase(it);
+          as_evclip->_rec_noteon_events.erase(it);
 
-        auto ts_start = nonev->_timestamp;
+          auto ts_start = nonev->_timestamp;
 
-        TimeStampComparatorLessEqual compare;
-        bool check = compare(ts_start, ts_end);
-        timestamp_ptr_t ts_duration;
-        if(check){
-          ts_duration = ts_end->sub(ts_start);
+          TimeStampComparatorLessEqual compare;
+          bool check = compare(ts_start, ts_end);
+          timestamp_ptr_t ts_duration;
+          if(check){
+            ts_duration = ts_end->sub(ts_start);
+          }
+          else{
+            ts_start = std::make_shared<TimeStamp>();
+            ts_duration = ts_end->sub(ts_start);
+          }
+          as_evclip->createNoteEvent(
+            ts_start,
+            ts_duration,
+            nonev->_note,
+            nonev->_velocity
+          );
         }
-        else{
-          ts_start = std::make_shared<TimeStamp>();
-          ts_duration = ts_end->sub(ts_start);
-        }
-        as_evclip->createNoteEvent(
-          ts_start,
-          ts_duration,
-          nonev->_note,
-          nonev->_velocity
-        );
       }
     }
   }

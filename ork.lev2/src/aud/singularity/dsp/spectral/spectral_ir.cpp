@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <vector>
 #include <cmath>
+#include <ork/util/endian.h>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
@@ -73,6 +74,15 @@ void SpectralImpulseResponse::set(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SpectralImpulseResponse::setX(
+    floatvect_t& impulseL, //
+    floatvect_t& impulseR) {
+  _impulseL           = impulseL;
+  _impulseR           = impulseR;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SpectralImpulseResponse::blend(  //
     const SpectralImpulseResponse& A, //
     const SpectralImpulseResponse& B, //
@@ -123,7 +133,7 @@ void SpectralImpulseResponse::mirror() {
 
 void SpectralImpulseResponse::loadAudioFile(const std::string& path){
   auto sample = _impl.makeShared<SampleData>();
-  sample->loadFromAudioFile(path);
+  sample->loadFromAudioFile(path,false);
   const s16* data = sample->_sampleBlock;
   OrkAssert(sample->_blk_start == 0);
 
@@ -149,11 +159,55 @@ void SpectralImpulseResponse::loadAudioFile(const std::string& path){
   else{
     for (int i = 0; i < numframes; i++) {
       impulse[i] = float(data[i]) / 32768.0f;
-      //printf( "impulse<%d> %g\n", i, impulse[i] );
+      printf( "impulse<%d> %g\n", i, impulse[i] );
     }
   }
   set(impulse, impulse);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::loadAudioFileX(const std::string& path){
+  auto sample = _impl.makeShared<SampleData>();
+  sample->loadFromAudioFile(path, false); // Assume loadFromAudioFile has been adjusted as discussed
+  const s16* data = sample->_sampleBlock;
+  OrkAssert(sample->_blk_start == 0);
+  
+  floatvect_t impulseL, impulseR; // Separate vectors for left and right channels
+  int numframes = sample->_blk_end;
+  int numchannels = sample->_numChannels;
+  printf("numframes<%d> numchannels<%d>\n", numframes, numchannels);
+
+  int lastnonzero = 0;
+  for (int i = 0; i < numframes * numchannels; i += numchannels) {
+    for (int channel = 0; channel < numchannels; ++channel) {
+      if (data[i + channel] != 0)
+        lastnonzero = i / numchannels; // Update to consider multi-channel indexing
+    }
+  }
+
+  int truncated = numframes - lastnonzero;
+  printf("lastnonzero<%d> truncated<%d>\n", lastnonzero, truncated);
+  numframes = lastnonzero;
+
+  // Adjust the loop to handle stereo or mono files
+  for (int i = 0; i < numframes; i++) {
+    if (numchannels == 2) {
+      // For stereo files, alternate between left and right channels
+      impulseL.push_back(float(data[i * 2]) / 32768.0f);     // Left channel
+      impulseR.push_back(float(data[i * 2 + 1]) / 32768.0f); // Right channel
+    } else if (numchannels == 1) {
+      // For mono files, duplicate the sample for both channels
+      float V = float(data[i]) / 32768.0f;
+      impulseL.push_back(V);
+      impulseR.push_back(V);
+    }
+  }
+
+  // Adjust the call to setX to use impulseL and impulseR
+  setX(impulseL, impulseR);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

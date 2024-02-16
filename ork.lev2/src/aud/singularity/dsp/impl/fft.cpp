@@ -25,6 +25,10 @@
 #include <cmath>
 #include <cstring>
 
+#if defined(__APPLE__)
+#define AUDIOFFT_APPLE_ACCELERATE
+#endif
+
 #if defined(AUDIOFFT_APPLE_ACCELERATE)
 #define AUDIOFFT_APPLE_ACCELERATE_USED
 #include <Accelerate/Accelerate.h>

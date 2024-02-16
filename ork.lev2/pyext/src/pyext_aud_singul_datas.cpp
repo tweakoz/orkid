@@ -785,6 +785,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](prgdata_ptr_t pdata, float rate) { //
                               pdata->_portamento_rate = rate;
                             })
+                        .def_property(
+                            "gainDB",
+                            [](prgdata_ptr_t pdata) -> float { return pdata->_gainDB; }, //
+                            [](prgdata_ptr_t pdata, float gainDB) { pdata->_gainDB = gainDB; })
                         .def("__repr__", [](prgdata_ptr_t pdata) -> std::string {
                           std::ostringstream oss;
                           oss << "ProgramData( name: " << pdata->_name << ", layer_count: " << pdata->_layerdatas.size() << " )";
@@ -1142,6 +1146,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
       py::class_<SpectralImpulseResponse, spectralimpulseresponse_ptr_t>(singmodule, "SpectralImpulseResponse")
           .def(py::init<>())
           .def("loadAudioFile", [](spectralimpulseresponse_ptr_t ir, std::string path) { ir->loadAudioFile(path); })
+          .def("loadAudioFileX", [](spectralimpulseresponse_ptr_t ir, std::string path) { ir->loadAudioFileX(path); })
           .def("combFilter", [](spectralimpulseresponse_ptr_t ir, float frq, float top) { ir->combFilter(frq, top); })
           .def("lowShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->lowShelf(frq, gain); })
           .def("highShelf", [](spectralimpulseresponse_ptr_t ir, float frq, float gain) { ir->highShelf(frq, gain); })
@@ -1266,7 +1271,24 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                   ir->_imagR[i] = imagR_ptr[i];
                 }
               })
-          .def("setIR", [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdataL, py::array_t<float> irdataR) {
+          .def(
+              "setIR",
+              [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdataL, py::array_t<float> irdataR) {
+                auto irdata_bufL = irdataL.request();
+                auto irdata_bufR = irdataR.request();
+                auto irdata_ptrL = static_cast<float*>(irdata_bufL.ptr);
+                auto irdata_ptrR = static_cast<float*>(irdata_bufR.ptr);
+                size_t count     = irdata_bufL.size;
+                std::vector<float> L, R;
+                L.resize(count);
+                R.resize(count);
+                for (size_t i = 0; i < count; i++) {
+                  L[i] = irdata_ptrL[i];
+                  R[i] = irdata_ptrR[i];
+                }
+                ir->set(L, R);
+              })
+          .def("setIRX", [](spectralimpulseresponse_ptr_t ir, py::array_t<float> irdataL, py::array_t<float> irdataR) {
             auto irdata_bufL = irdataL.request();
             auto irdata_bufR = irdataR.request();
             auto irdata_ptrL = static_cast<float*>(irdata_bufL.ptr);
@@ -1279,7 +1301,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               L[i] = irdata_ptrL[i];
               R[i] = irdata_ptrR[i];
             }
-            ir->set(L, R);
+            ir->setX(L, R);
           });
   type_codec->registerStdCodec<spectralimpulseresponse_ptr_t>(spectralIR_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -1309,6 +1331,18 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                 convdata->_impulse_dataset = irset;
               });
   type_codec->registerStdCodec<spectralconvolvedata_ptr_t>(spectralConvolveData_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto spectralConvolveTDData_type =
+      py::class_<SpectralConvolveTDData, DspBlockData, spectralconvolveTDdata_ptr_t>(singmodule, "SpectralConvolveTDData")
+          .def_property(
+              "dataset",
+              [](spectralconvolveTDdata_ptr_t convdata) -> spectralimpulseresponsedataset_ptr_t { //
+                return convdata->_impulse_dataset;
+              },
+              [](spectralconvolveTDdata_ptr_t convdata, spectralimpulseresponsedataset_ptr_t irset) { //
+                convdata->_impulse_dataset = irset;
+              });
+  type_codec->registerStdCodec<spectralconvolveTDdata_ptr_t>(spectralConvolveTDData_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
