@@ -600,7 +600,7 @@ void HighFreqStimulator::compute(DspBuffer& dspbuf) // final
   int inumframes    = _layer->_dspwritecount;
   const float* ibuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* obuf       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float fc          = _param[0].eval()*0.3;
+  float fc          = _param[0].eval();
   float drv         = _param[1].eval();
   float amp         = _param[2].eval();
   float drvg        = decibel_to_linear_amp_ratio(drv);
@@ -617,7 +617,7 @@ void HighFreqStimulator::compute(DspBuffer& dspbuf) // final
       _filter2.Tick(saturated);
       float stimmed = _filter2.output;
 
-      obuf[i] = (input + stimmed * ling);
+      obuf[i] = input + (stimmed * ling);
     }
 }
 

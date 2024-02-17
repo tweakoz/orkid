@@ -496,18 +496,19 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   baseLG *= decibel_to_linear_amp_ratio(gainL)*_dbd->_inputPad;
   float baseUG = UpperLinG;
   baseUG *= decibel_to_linear_amp_ratio(gainU)*_dbd->_inputPad;
+  bool use_natenv = _layer->_layerdata->_usenatenv;
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
       _filtU      = 0.999 * _filtU + 0.001 * baseUG;
       _filtL      = 0.999 * _filtL + 0.001 * baseLG;
-      //float linGU = decibel_to_linear_amp_ratio(_filtU);
-      //float linGL = decibel_to_linear_amp_ratio(_filtL);
       float inU   = ubuf[i];
       float inL   = lbuf[i];
-      //float ae    = _param[1].eval();
-      float resU  = inU * _filtU;
-      float resL  = inL * _filtL;
+      float ampenv = use_natenv //
+                    ? 1.0f //
+                    : _layer->_ampenvgain;
+      float resU  = inU * _filtU * ampenv;
+      float resL  = inL * _filtL * ampenv;
 
       ubuf[i] = resU * u_lrmix.lmix + resL * l_lrmix.lmix;
       lbuf[i] = resU * u_lrmix.rmix + resL * l_lrmix.rmix;
