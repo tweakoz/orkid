@@ -385,8 +385,8 @@ void KrzBankDataParser::parseLfo(const rapidjson::Value& jo, controlblockdata_pt
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
   lout->_controller   = jo["rateCtl"].GetString();
-  lout->_minRate      = jo["minRate(hz)"].GetFloat();
-  lout->_maxRate      = jo["maxRate(hz)"].GetFloat();
+  lout->_minRate      = jo["minRate(hz)"].GetFloat()*0.5;
+  lout->_maxRate      = jo["maxRate(hz)"].GetFloat()*0.5;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
