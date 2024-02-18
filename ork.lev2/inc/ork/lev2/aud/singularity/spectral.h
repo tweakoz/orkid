@@ -106,6 +106,11 @@ struct SpectralImpulseResponse{
   void setX( floatvect_t& impulseL, //
              floatvect_t& impulseR );
 
+  void setFromFrequencyBins(  //
+    const floatvect_t& frequencyBinsL,              // gainDB per frequency bin (left)
+    const floatvect_t& frequencyBinsR,              // gainDB per frequency bin (right)
+    float samplerate );                             // sample rata of the frequency bin data
+
   void mirror();
 
   void blend(const SpectralImpulseResponse& A, //
