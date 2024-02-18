@@ -221,4 +221,25 @@ struct ToTimeDomain : public DspBlock {
 
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct TimeToFrequencyDomain {
+  TimeToFrequencyDomain();
+  ~TimeToFrequencyDomain();
+  bool compute(const float* inp, floatvect_t& real, floatvect_t& imag, int inumframes);
+  audiofft::AudioFFT _fft;
+  std::vector<float> _input;
+  std::vector<float> _window;
+  size_t _frames_in = 0;
+};
+struct FrequencyToTimeDomain {
+  FrequencyToTimeDomain();
+  ~FrequencyToTimeDomain();
+  void compute(const floatvect_t& real, const floatvect_t& imag, int inumframes);
+  audiofft::AudioFFT _fft; // FFT object for performing IFFT
+  std::vector<float> _output; // Buffer to hold IFFT output
+  std::vector<float> _overlapBuffer; // Buffer to hold the overlapped portion from the previous frame
+  size_t _frames_out = 0; // Counter to track output frames, reset after processing each block
+};
+
 } //namespace ork::audio::singularity {
