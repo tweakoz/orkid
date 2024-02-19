@@ -385,20 +385,32 @@ void SpectralImpulseResponse::highRolloff(float frequency, float slope) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  void SpectralImpulseResponse::applyToStream(  //
-    floatvect_t& frequencyBinsL,              // streamed frequency bin data (left)
-    floatvect_t& frequencyBinsR) const {       // streamed frequency bin data (right)
+void SpectralImpulseResponse::applyToStream( //
+    floatvect_t& realBinsL,                  // streamed frequency bin data (left)
+    floatvect_t& realBinsR,                  // streamed frequency bin data (right)
+    floatvect_t& imagBinsL,                  // streamed imaginary bin data (left)
+    floatvect_t& imagBinsR) const {          // streamed imaginary bin data (right)
 
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
-  OrkAssert(frequencyBinsL.size() == complex_size);
-  OrkAssert(frequencyBinsR.size() == complex_size);
+  OrkAssert(realBinsL.size() == complex_size);
+  OrkAssert(realBinsR.size() == complex_size);
+  OrkAssert(imagBinsL.size() == complex_size);
+  OrkAssert(imagBinsR.size() == complex_size);
 
   for (size_t i = 0; i < complex_size; ++i) {
-    frequencyBinsL[i] *= _realL[i];
-    frequencyBinsR[i] *= _realR[i];
-  }
+    // Complex multiplication: (a+bi)(c+di) = (ac-bd) + (bc+ad)i
+    float a = realBinsL[i], b = imagBinsL[i]; // Original complex number (left)
+    float c = _realL[i], d = _imagL[i];       // Impulse response complex number (left)
+    realBinsL[i] = a * c - b * d;             // Real part after applying impulse response
+    imagBinsL[i] = b * c + a * d;             // Imaginary part after applying impulse response
 
+    a = realBinsR[i], b = imagBinsR[i]; // Original complex number (right)
+    c = _realR[i], d = _imagR[i];       // Impulse response complex number (right)
+    realBinsR[i] = a * c - b * d;       // Real part after applying impulse response
+    imagBinsR[i] = b * c + a * d;       // Imaginary part after applying impulse response
+  }
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 float _calculateParametricEQResponse(

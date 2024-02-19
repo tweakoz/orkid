@@ -5,7 +5,6 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-
 #pragma once
 
 #include "reflection.h"
@@ -19,13 +18,13 @@
 #include "fft_convolver.h"
 
 namespace ork::audio::singularity {
-  
+
 static constexpr size_t kSPECTRALSIZE = 4096;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct ToFrequencyDomainData : public DspBlockData {
-  DeclareConcreteX(ToFrequencyDomainData,DspBlockData);
-  ToFrequencyDomainData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(ToFrequencyDomainData, DspBlockData);
+  ToFrequencyDomainData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
 };
 struct ToFrequencyDomain : public DspBlock {
@@ -36,12 +35,11 @@ struct ToFrequencyDomain : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralShiftData : public DspBlockData {
-  DeclareConcreteX(SpectralShiftData,DspBlockData);
-  SpectralShiftData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(SpectralShiftData, DspBlockData);
+  SpectralShiftData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
 };
 struct SpectralShift : public DspBlock {
@@ -52,12 +50,11 @@ struct SpectralShift : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralScaleData : public DspBlockData {
-  DeclareConcreteX(SpectralScaleData,DspBlockData);
-  SpectralScaleData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(SpectralScaleData, DspBlockData);
+  SpectralScaleData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
 };
 struct SpectralScale : public DspBlock {
@@ -68,58 +65,69 @@ struct SpectralScale : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 
 using floatvect_t = std::vector<float>;
-struct SpectralImpulseResponse{
+struct SpectralImpulseResponse {
 
   SpectralImpulseResponse();
 
-  SpectralImpulseResponse( floatvect_t& impulseL, //
-                           floatvect_t& impulseR );
+  SpectralImpulseResponse(
+      floatvect_t& impulseL, //
+      floatvect_t& impulseR);
 
   void loadAudioFile(const std::string& path);
   void loadAudioFileX(const std::string& path);
 
-  void combFilter( float frequency, //
-                   float top );
-  void lowShelf( float frequency, //
-                 float gain );
-  void highShelf( float frequency, //
-                  float gain );
-  void lowRolloff( float frequency, //
-                   float slope );
-  void highRolloff( float frequency, //
-                    float slope );
+  void combFilter(
+      float frequency, //
+      float top);
+  void lowShelf(
+      float frequency, //
+      float gain);
+  void highShelf(
+      float frequency, //
+      float gain);
+  void lowRolloff(
+      float frequency, //
+      float slope);
+  void highRolloff(
+      float frequency, //
+      float slope);
 
-  void parametricEQ4( fvec4 frequencies, //
-                      fvec4 gains, //
-                      fvec4 qvals );
+  void parametricEQ4(
+      fvec4 frequencies, //
+      fvec4 gains,       //
+      fvec4 qvals);
 
   void vowelFormant(char vowel, float strength);
   void violinFormant(float strength);
 
-  void set( floatvect_t& impulseL, //
-            floatvect_t& impulseR );
-  void setX( floatvect_t& impulseL, //
-             floatvect_t& impulseR );
+  void
+  set(floatvect_t& impulseL, //
+      floatvect_t& impulseR);
+  void setX(
+      floatvect_t& impulseL, //
+      floatvect_t& impulseR);
 
-  void setFromFrequencyBins(  //
-    const floatvect_t& frequencyBinsL,              // gainDB per frequency bin (left)
-    const floatvect_t& frequencyBinsR,              // gainDB per frequency bin (right)
-    float samplerate );                             // sample rata of the frequency bin data
+  void setFromFrequencyBins(             //
+      const floatvect_t& frequencyBinsL, // gainDB per frequency bin (left)
+      const floatvect_t& frequencyBinsR, // gainDB per frequency bin (right)
+      float samplerate);                 // sample rata of the frequency bin data
 
-  void applyToStream(  //
-    floatvect_t& frequencyBinsL,              // streamed frequency bin data (left)
-    floatvect_t& frequencyBinsR) const;       // streamed frequency bin data (right)
+  void applyToStream(                //
+      floatvect_t& realBinsL,        // streamed frequency bin data (left)
+      floatvect_t& realBinsR,        // streamed frequency bin data (right)
+      floatvect_t& imagBinsL,        // streamed imaginary bin data (left)
+      floatvect_t& imagBinsR) const; // streamed imaginary bin data (right)
 
   void mirror();
 
-  void blend(const SpectralImpulseResponse& A, //
-             const SpectralImpulseResponse& B, //
-              float index );
+  void blend(
+      const SpectralImpulseResponse& A, //
+      const SpectralImpulseResponse& B, //
+      float index);
 
   floatvect_t _impulseL;
   floatvect_t _impulseR;
@@ -132,15 +140,15 @@ struct SpectralImpulseResponse{
 
 using spectralimpulseresponse_ptr_t = std::shared_ptr<SpectralImpulseResponse>;
 
-struct SpectralImpulseResponseDataSet{
+struct SpectralImpulseResponseDataSet {
   std::vector<spectralimpulseresponse_ptr_t> _impulses;
 };
 
 using spectralimpulseresponsedataset_ptr_t = std::shared_ptr<SpectralImpulseResponseDataSet>;
 
 struct SpectralConvolveData : public DspBlockData {
-  DeclareConcreteX(SpectralConvolveData,DspBlockData);
-  SpectralConvolveData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(SpectralConvolveData, DspBlockData);
+  SpectralConvolveData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
   spectralimpulseresponsedataset_ptr_t _impulse_dataset;
 };
@@ -159,15 +167,14 @@ struct SpectralConvolve : public DspBlock {
   floatvect_t _realR;
   floatvect_t _imagL;
   floatvect_t _imagR;
-
 };
 
 using spectralconvolvedata_ptr_t = std::shared_ptr<SpectralConvolveData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralConvolveTDData : public DspBlockData {
-  DeclareConcreteX(SpectralConvolveTDData,DspBlockData);
-  SpectralConvolveTDData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(SpectralConvolveTDData, DspBlockData);
+  SpectralConvolveTDData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
   spectralimpulseresponsedataset_ptr_t _impulse_dataset;
 };
@@ -194,8 +201,8 @@ using spectralconvolveTDdata_ptr_t = std::shared_ptr<SpectralConvolveTDData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 struct SpectralTestData : public DspBlockData {
-  DeclareConcreteX(SpectralTestData,DspBlockData);
-  SpectralTestData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(SpectralTestData, DspBlockData);
+  SpectralTestData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
 };
 struct SpectralTest : public DspBlock {
@@ -206,12 +213,11 @@ struct SpectralTest : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct ToTimeDomainData : public DspBlockData {
-  DeclareConcreteX(ToTimeDomainData,DspBlockData);
-  ToTimeDomainData(std::string name="X",float feedback=0.0f);
+  DeclareConcreteX(ToTimeDomainData, DspBlockData);
+  ToTimeDomainData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
 };
 struct ToTimeDomain : public DspBlock {
@@ -222,7 +228,6 @@ struct ToTimeDomain : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const dataclass_t* _mydata;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -240,10 +245,10 @@ struct FrequencyToTimeDomain {
   FrequencyToTimeDomain();
   ~FrequencyToTimeDomain();
   void compute(const floatvect_t& real, const floatvect_t& imag, int inumframes);
-  audiofft::AudioFFT _fft; // FFT object for performing IFFT
-  std::vector<float> _output; // Buffer to hold IFFT output
+  audiofft::AudioFFT _fft;           // FFT object for performing IFFT
+  std::vector<float> _output;        // Buffer to hold IFFT output
   std::vector<float> _overlapBuffer; // Buffer to hold the overlapped portion from the previous frame
-  size_t _frames_out = 0; // Counter to track output frames, reset after processing each block
+  size_t _frames_out = 0;            // Counter to track output frames, reset after processing each block
 };
 
-} //namespace ork::audio::singularity {
+} // namespace ork::audio::singularity
