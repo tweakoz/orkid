@@ -1085,7 +1085,8 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     l->_ldindex = ilayer - 1;
     l->_keymods = _keymods;
     l->_name    = ld->_name;
-
+    l->_programinst = this;
+    
     syn->_keyOnLayer(l, note, velocity, ld, kmod);
 
     _layers.push_back(l);

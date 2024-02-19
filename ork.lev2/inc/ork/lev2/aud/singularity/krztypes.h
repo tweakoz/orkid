@@ -110,6 +110,7 @@ struct KeyOnModifiers;
 struct NatEnvWrapperData;
 struct DelayContext;
 struct SAMPLER_DATA;
+struct programInst;
 ///////////////////////////////////////////////////////////////////////////////
 // sequencer
 ///////////////////////////////////////////////////////////////////////////////
@@ -197,6 +198,7 @@ using multisample_constptr_t = std::shared_ptr<const MultiSampleData>;
 using kmregion_ptr_t = std::shared_ptr<KmRegionData>;
 using kmregion_constptr_t = std::shared_ptr<const KmRegionData>;
 using samplerdata_ptr_t = std::shared_ptr<SAMPLER_DATA>;
+using programinst_ptr_t = programInst*;
 ///////////////////////////////////////////////////////////////////////////////
 using sequencer_ptr_t = std::shared_ptr<Sequencer>;
 using sequence_ptr_t = std::shared_ptr<Sequence>;

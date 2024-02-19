@@ -15,6 +15,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
 #include <ork/lev2/aud/singularity/seq.h>
+#include <ork/math/cmatrix4.h>
 
 namespace ork::audio::singularity {
 
@@ -32,6 +33,7 @@ struct programInst {
   std::vector<layer_ptr_t> _layers;
   int _note = 0;
   int _velocity = 0;
+  fmtx4 _emitter_matrix;
 };
 
 using onkey_t = std::function<void(
@@ -226,6 +228,7 @@ struct synth {
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
   float _velcurvepower          = 0.5f;
+  fmtx4 _listener_matrix;
 
   outbus_ptr_t _curprogrambus;
 
