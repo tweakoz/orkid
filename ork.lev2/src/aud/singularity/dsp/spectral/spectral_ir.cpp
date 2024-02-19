@@ -50,15 +50,20 @@ float unwrapPhase(float phase) {
 void SpectralImpulseResponse::set(
     floatvect_t& impulseL, //
     floatvect_t& impulseR) {
-
   _impulseL           = impulseL;
   _impulseR           = impulseR;
+  t2f();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SpectralImpulseResponse::t2f(){
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
 
   floatvect_t irPaddedL(kSPECTRALSIZE, 0.0f);
   floatvect_t irPaddedR(kSPECTRALSIZE, 0.0f);
-  std::copy(impulseL.begin(), impulseL.end(), irPaddedL.begin());
-  std::copy(impulseR.begin(), impulseR.end(), irPaddedR.begin());
+  std::copy(_impulseL.begin(), _impulseL.end(), irPaddedL.begin());
+  std::copy(_impulseR.begin(), _impulseR.end(), irPaddedR.begin());
 
   _realL.resize(complex_size);
   _realR.resize(complex_size);
@@ -212,7 +217,7 @@ void SpectralImpulseResponse::loadAudioFile(const std::string& path) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpectralImpulseResponse::loadAudioFileX(const std::string& path) {
+void SpectralImpulseResponse::loadAudioFileX(const std::string& path, bool truncate) {
   auto sample = _impl.makeShared<SampleData>();
   sample->loadFromAudioFile(path, false); // Assume loadFromAudioFile has been adjusted as discussed
   const s16* data = sample->_sampleBlock;
@@ -232,8 +237,11 @@ void SpectralImpulseResponse::loadAudioFileX(const std::string& path) {
   }
 
   int truncated = numframes - lastnonzero;
+  
   printf("lastnonzero<%d> truncated<%d>\n", lastnonzero, truncated);
   numframes = lastnonzero;
+  if(truncate and (numframes>kSPECTRALSIZE))
+    numframes = kSPECTRALSIZE;
 
   // Adjust the loop to handle stereo or mono files
   for (int i = 0; i < numframes; i++) {
@@ -389,7 +397,8 @@ void SpectralImpulseResponse::applyToStream( //
     floatvect_t& realBinsL,                  // streamed frequency bin data (left)
     floatvect_t& realBinsR,                  // streamed frequency bin data (right)
     floatvect_t& imagBinsL,                  // streamed imaginary bin data (left)
-    floatvect_t& imagBinsR) const {          // streamed imaginary bin data (right)
+    floatvect_t& imagBinsR,                  // streamed imaginary bin data (right)
+    float mix) const {                       // mix amount (0.0 to 1.0)
 
   size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
   OrkAssert(realBinsL.size() == complex_size);
@@ -398,16 +407,27 @@ void SpectralImpulseResponse::applyToStream( //
   OrkAssert(imagBinsR.size() == complex_size);
 
   for (size_t i = 0; i < complex_size; ++i) {
-    // Complex multiplication: (a+bi)(c+di) = (ac-bd) + (bc+ad)i
+    // Complex multiplication for impulse response application
     float a = realBinsL[i], b = imagBinsL[i]; // Original complex number (left)
     float c = _realL[i], d = _imagL[i];       // Impulse response complex number (left)
-    realBinsL[i] = a * c - b * d;             // Real part after applying impulse response
-    imagBinsL[i] = b * c + a * d;             // Imaginary part after applying impulse response
+    // Compute processed (affected) bins
+    float processed_realL = a * c - b * d;
+    float processed_imagL = b * c + a * d;
 
+    // Mix original and processed bins for the left channel
+    realBinsL[i] = mix * processed_realL + (1 - mix) * a;
+    imagBinsL[i] = mix * processed_imagL + (1 - mix) * b;
+
+    // Repeat the process for the right channel
     a = realBinsR[i], b = imagBinsR[i]; // Original complex number (right)
     c = _realR[i], d = _imagR[i];       // Impulse response complex number (right)
-    realBinsR[i] = a * c - b * d;       // Real part after applying impulse response
-    imagBinsR[i] = b * c + a * d;       // Imaginary part after applying impulse response
+    // Compute processed (affected) bins
+    float processed_realR = a * c - b * d;
+    float processed_imagR = b * c + a * d;
+
+    // Mix original and processed bins for the right channel
+    realBinsR[i] = mix * processed_realR + (1 - mix) * a;
+    imagBinsR[i] = mix * processed_imagR + (1 - mix) * b;
   }
 }
 

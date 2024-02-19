@@ -78,7 +78,7 @@ struct SpectralImpulseResponse {
       floatvect_t& impulseR);
 
   void loadAudioFile(const std::string& path);
-  void loadAudioFileX(const std::string& path);
+  void loadAudioFileX(const std::string& path, bool truncate = false);
 
   void combFilter(
       float frequency, //
@@ -107,20 +107,24 @@ struct SpectralImpulseResponse {
   void
   set(floatvect_t& impulseL, //
       floatvect_t& impulseR);
+
   void setX(
       floatvect_t& impulseL, //
       floatvect_t& impulseR);
+
+  void t2f();
 
   void setFromFrequencyBins(             //
       const floatvect_t& frequencyBinsL, // gainDB per frequency bin (left)
       const floatvect_t& frequencyBinsR, // gainDB per frequency bin (right)
       float samplerate);                 // sample rata of the frequency bin data
 
-  void applyToStream(                //
-      floatvect_t& realBinsL,        // streamed frequency bin data (left)
-      floatvect_t& realBinsR,        // streamed frequency bin data (right)
-      floatvect_t& imagBinsL,        // streamed imaginary bin data (left)
-      floatvect_t& imagBinsR) const; // streamed imaginary bin data (right)
+  void applyToStream(         //
+      floatvect_t& realBinsL, // streamed frequency bin data (left)
+      floatvect_t& realBinsR, // streamed frequency bin data (right)
+      floatvect_t& imagBinsL, // streamed imaginary bin data (left)
+      floatvect_t& imagBinsR, // streamed imaginary bin data (right)
+      float mix) const;       // mix amount (0.0 to 1.0)
 
   void mirror();
 
