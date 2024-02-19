@@ -111,6 +111,10 @@ struct SpectralImpulseResponse{
     const floatvect_t& frequencyBinsR,              // gainDB per frequency bin (right)
     float samplerate );                             // sample rata of the frequency bin data
 
+  void applyToStream(  //
+    floatvect_t& frequencyBinsL,              // streamed frequency bin data (left)
+    floatvect_t& frequencyBinsR) const;       // streamed frequency bin data (right)
+
   void mirror();
 
   void blend(const SpectralImpulseResponse& A, //

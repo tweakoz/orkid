@@ -385,6 +385,22 @@ void SpectralImpulseResponse::highRolloff(float frequency, float slope) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  void SpectralImpulseResponse::applyToStream(  //
+    floatvect_t& frequencyBinsL,              // streamed frequency bin data (left)
+    floatvect_t& frequencyBinsR) const {       // streamed frequency bin data (right)
+
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  OrkAssert(frequencyBinsL.size() == complex_size);
+  OrkAssert(frequencyBinsR.size() == complex_size);
+
+  for (size_t i = 0; i < complex_size; ++i) {
+    frequencyBinsL[i] *= _realL[i];
+    frequencyBinsR[i] *= _realR[i];
+  }
+
+}
+///////////////////////////////////////////////////////////////////////////////
+
 float _calculateParametricEQResponse(
     float binFrequency,    //
     float centerFrequency, //
