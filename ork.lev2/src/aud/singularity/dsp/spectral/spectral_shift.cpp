@@ -55,7 +55,7 @@ void SpectralShift::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(_mydata->_length);
   OrkAssert(dspbuf._real.size()==complex_size);
   OrkAssert(dspbuf._imag.size()==complex_size);
   float last_real = dspbuf._real[0];

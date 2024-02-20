@@ -52,7 +52,7 @@ SpectralTest::~SpectralTest() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpectralTest::compute(DspBuffer& dspbuf) {
-    size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+    size_t complex_size = audiofft::AudioFFT::ComplexSize(_mydata->_length);
     OrkAssert(dspbuf._real.size()==complex_size);
     OrkAssert(dspbuf._imag.size()==complex_size);
 
@@ -69,8 +69,8 @@ void SpectralTest::compute(DspBuffer& dspbuf) {
     float octaveBandwidth = centerFrequency/2.0f; // 1 octave bandwidth
 
     // Convert center frequency and bandwidth to bin numbers
-    int centerBin = centerFrequency / (sampleRate / kSPECTRALSIZE);
-    int bandwidthBins = octaveBandwidth / (sampleRate / kSPECTRALSIZE);
+    int centerBin = centerFrequency / (sampleRate / _mydata->_length);
+    int bandwidthBins = octaveBandwidth / (sampleRate / _mydata->_length);
 
     // Calculate lower and upper bounds of the notch
     int lowerBound = centerBin - bandwidthBins;

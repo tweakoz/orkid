@@ -35,8 +35,11 @@ using namespace ork::lev2;
 void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  singmodule.def("spectralComplexSize", []() -> int { //
-    int complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  singmodule.def("defaultSpectralSize", []() -> int { //
+    return int(kDEFAULT_SPECTRALSIZE);
+  });
+  singmodule.def("defaultSpectralComplexSize", []() -> int { //
+    int complex_size = audiofft::AudioFFT::ComplexSize(kDEFAULT_SPECTRALSIZE);
     return complex_size;
   });
   /////////////////////////////////////////////////////////////////////////////////

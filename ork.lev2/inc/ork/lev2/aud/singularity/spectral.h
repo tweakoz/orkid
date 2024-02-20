@@ -19,13 +19,13 @@
 
 namespace ork::audio::singularity {
 
-static constexpr size_t kSPECTRALSIZE = 4096;
-
+static constexpr size_t kDEFAULT_SPECTRALSIZE = 4096;
 ///////////////////////////////////////////////////////////////////////////////
 struct ToFrequencyDomainData : public DspBlockData {
   DeclareConcreteX(ToFrequencyDomainData, DspBlockData);
   ToFrequencyDomainData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 struct ToFrequencyDomain : public DspBlock {
   using dataclass_t = ToFrequencyDomainData;
@@ -41,6 +41,7 @@ struct SpectralShiftData : public DspBlockData {
   DeclareConcreteX(SpectralShiftData, DspBlockData);
   SpectralShiftData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 struct SpectralShift : public DspBlock {
   using dataclass_t = SpectralShiftData;
@@ -56,6 +57,7 @@ struct SpectralScaleData : public DspBlockData {
   DeclareConcreteX(SpectralScaleData, DspBlockData);
   SpectralScaleData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 struct SpectralScale : public DspBlock {
   using dataclass_t = SpectralScaleData;
@@ -71,14 +73,14 @@ struct SpectralScale : public DspBlock {
 using floatvect_t = std::vector<float>;
 struct SpectralImpulseResponse {
 
-  SpectralImpulseResponse();
+  SpectralImpulseResponse(size_t length=kDEFAULT_SPECTRALSIZE);
 
   SpectralImpulseResponse(
       floatvect_t& impulseL, //
       floatvect_t& impulseR);
 
   void loadAudioFile(const std::string& path);
-  void loadAudioFileX(const std::string& path, bool truncate = false);
+  void loadAudioFileX(const std::string& path, size_t truncate = 0);
 
   void combFilter(
       float frequency, //
@@ -140,6 +142,7 @@ struct SpectralImpulseResponse {
   floatvect_t _imagL;
   floatvect_t _imagR;
   svar64_t _impl;
+  size_t _length = 0;
 };
 
 using spectralimpulseresponse_ptr_t = std::shared_ptr<SpectralImpulseResponse>;
@@ -155,6 +158,7 @@ struct SpectralConvolveData : public DspBlockData {
   SpectralConvolveData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
   spectralimpulseresponsedataset_ptr_t _impulse_dataset;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 
 struct SpectralConvolve : public DspBlock {
@@ -208,6 +212,7 @@ struct SpectralTestData : public DspBlockData {
   DeclareConcreteX(SpectralTestData, DspBlockData);
   SpectralTestData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 struct SpectralTest : public DspBlock {
   using dataclass_t = SpectralTestData;
@@ -223,6 +228,7 @@ struct ToTimeDomainData : public DspBlockData {
   DeclareConcreteX(ToTimeDomainData, DspBlockData);
   ToTimeDomainData(std::string name = "X", float feedback = 0.0f);
   dspblk_ptr_t createInstance() const override;
+  size_t _length = kDEFAULT_SPECTRALSIZE;
 };
 struct ToTimeDomain : public DspBlock {
   using dataclass_t = ToTimeDomainData;
@@ -237,22 +243,24 @@ struct ToTimeDomain : public DspBlock {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct TimeToFrequencyDomain {
-  TimeToFrequencyDomain();
+  TimeToFrequencyDomain(size_t length = kDEFAULT_SPECTRALSIZE);
   ~TimeToFrequencyDomain();
   bool compute(const float* inp, floatvect_t& real, floatvect_t& imag, int inumframes);
   audiofft::AudioFFT _fft;
   std::vector<float> _input;
   std::vector<float> _window;
   size_t _frames_in = 0;
+  size_t _length;
 };
 struct FrequencyToTimeDomain {
-  FrequencyToTimeDomain();
+  FrequencyToTimeDomain(size_t length = kDEFAULT_SPECTRALSIZE);
   ~FrequencyToTimeDomain();
   void compute(const floatvect_t& real, const floatvect_t& imag, int inumframes);
   audiofft::AudioFFT _fft;           // FFT object for performing IFFT
   std::vector<float> _output;        // Buffer to hold IFFT output
   std::vector<float> _overlapBuffer; // Buffer to hold the overlapped portion from the previous frame
   size_t _frames_out = 0;            // Counter to track output frames, reset after processing each block
+  size_t _length;
 };
 
 } // namespace ork::audio::singularity

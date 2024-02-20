@@ -20,10 +20,11 @@ namespace ork::audio::singularity {
 void ToTimeDomainData::describeX(class_t* clazz) {
 }
 
-FrequencyToTimeDomain::FrequencyToTimeDomain() {
-  _fft.init(kSPECTRALSIZE);                    // Initialize FFT object with spectral size
-  _output.resize(kSPECTRALSIZE);               // Resize output buffer to match FFT size
-  _overlapBuffer.resize(kSPECTRALSIZE / 2, 0); // Resize overlap buffer for 50% overlap, initialized to 0
+FrequencyToTimeDomain::FrequencyToTimeDomain(size_t length) 
+  : _length(length) {
+  _fft.init(_length);                    // Initialize FFT object with spectral size
+  _output.resize(_length);               // Resize output buffer to match FFT size
+  _overlapBuffer.resize(_length / 2, 0); // Resize overlap buffer for 50% overlap, initialized to 0
 }
 FrequencyToTimeDomain::~FrequencyToTimeDomain() {
 }
@@ -33,7 +34,7 @@ void FrequencyToTimeDomain::compute(
     int inumframes) {        //
 
   // Ensure the DSP buffer sizes match expected complex size
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
   OrkAssert(real.size() == complex_size);
   OrkAssert(imag.size() == complex_size);
 
@@ -41,20 +42,20 @@ void FrequencyToTimeDomain::compute(
   _fft.ifft(_output.data(), real.data(), imag.data());
 
   // Apply window and overlap-add for the current frame
-  for (int i = 0; i < kSPECTRALSIZE; i++) {
+  for (int i = 0; i < _length; i++) {
     // Apply Hanning window to the output
-    float window = 0.5 * (1 - cos(2 * M_PI * i / (kSPECTRALSIZE - 1)));
+    float window = 0.5 * (1 - cos(2 * M_PI * i / (_length - 1)));
     _output[i] *= window;
 
     // For the first half of the frame, add it to the overlap buffer from the previous frame
-    if (i < kSPECTRALSIZE / 2) {
+    if (i < _length / 2) {
       _output[i] += _overlapBuffer[i];
     }
 
     // Update overlap buffer with the second half of the current frame
     // This part will be overlapped with the next frame's first half
-    if (i >= kSPECTRALSIZE / 2) {
-      _overlapBuffer[i - kSPECTRALSIZE / 2] = _output[i];
+    if (i >= _length / 2) {
+      _overlapBuffer[i - _length / 2] = _output[i];
     }
 
     // Reset the frames out counter since we're starting fresh after IFFT
@@ -86,7 +87,8 @@ ToTimeDomain::ToTimeDomain(const ToTimeDomainData* dbd)
 
   // auto syni = synth::instance();
   auto impl = _impl[0].makeShared<FrequencyToTimeDomain>();
-}
+  impl->_length = _mydata->_length;
+} 
 ToTimeDomain::~ToTimeDomain() {
 }
 
@@ -103,6 +105,14 @@ void ToTimeDomain::compute(DspBuffer& dspbuf) { // final
   auto impl = _impl[0].getShared<FrequencyToTimeDomain>();
 
   if (dspbuf._didFFT) {
+    if(0){
+      size_t complex_size = audiofft::AudioFFT::ComplexSize(_mydata->_length);
+      for( int i=0; i<complex_size; i++ ){
+        float real = dspbuf._real[i];
+        float imag = dspbuf._imag[i];
+        printf( "idx<%d> real: %g imag: %g\n", i, real, imag );
+      }
+    }
     impl->compute(dspbuf._real, dspbuf._imag, inumframes);
   }
   // Output the time-domain data to both left and right channels

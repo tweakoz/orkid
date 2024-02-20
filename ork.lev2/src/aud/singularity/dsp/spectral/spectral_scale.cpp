@@ -53,7 +53,7 @@ SpectralScale::~SpectralScale(){
 
 void SpectralScale::compute(DspBuffer& dspbuf) // final
 {
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(_mydata->_length);
   OrkAssert(dspbuf._real.size()==complex_size);
   OrkAssert(dspbuf._imag.size()==complex_size);
 

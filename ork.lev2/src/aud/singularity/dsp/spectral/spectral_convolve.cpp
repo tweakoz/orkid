@@ -53,7 +53,7 @@ SpectralConvolve::SpectralConvolve(const SpectralConvolveData* dbd)
     : DspBlock(dbd) {
   _mydata             = dbd;
   auto syni           = synth::instance();
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(dbd->_length);
   _realL.resize(complex_size);
   _imagL.resize(complex_size);
   _realR.resize(complex_size);
@@ -68,7 +68,7 @@ SpectralConvolve::~SpectralConvolve() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpectralConvolve::compute(DspBuffer& dspbuf) {
-  size_t complex_size = audiofft::AudioFFT::ComplexSize(kSPECTRALSIZE);
+  size_t complex_size = audiofft::AudioFFT::ComplexSize(_mydata->_length);
   OrkAssert(dspbuf._real.size() == complex_size);
   OrkAssert(dspbuf._imag.size() == complex_size);
   auto dset = _mydata->_impulse_dataset;

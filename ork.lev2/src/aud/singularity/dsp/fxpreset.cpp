@@ -735,7 +735,7 @@ lyrdata_ptr_t fxpreset_IR(std::string ampname, float mix, float postgain) {
   /////////////////
   auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   dataset->_impulses.resize(1);
-  auto IR = std::make_shared<SpectralImpulseResponse>();
+  auto IR = std::make_shared<SpectralImpulseResponse>(256);
   auto base      = ork::audio::singularity::basePath() / "IRs";
   auto ir_path = base/ampname;
   IR->loadAudioFileX(ir_path.c_str(),false);
