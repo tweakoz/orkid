@@ -28,6 +28,16 @@ FrequencyToTimeDomain::FrequencyToTimeDomain(size_t length)
 }
 FrequencyToTimeDomain::~FrequencyToTimeDomain() {
 }
+void FrequencyToTimeDomain::resize(size_t length) {
+  _length = length;
+  _fft.init(_length);                    // Initialize FFT object with spectral size
+  _output.resize(_length);               // Resize output buffer to match FFT size
+  for( auto& item : _output )
+    item = 0.0f;
+  _overlapBuffer.resize(_length / 2, 0); // Resize overlap buffer for 50% overlap, initialized to 0
+  for( auto& item : _overlapBuffer )
+    item = 0.0f;
+}
 void FrequencyToTimeDomain::compute(
     const floatvect_t& real, //
     const floatvect_t& imag, //

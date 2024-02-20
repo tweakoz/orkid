@@ -245,6 +245,7 @@ struct ToTimeDomain : public DspBlock {
 struct TimeToFrequencyDomain {
   TimeToFrequencyDomain(size_t length = kDEFAULT_SPECTRALSIZE);
   ~TimeToFrequencyDomain();
+  void resize(size_t length);
   bool compute(const float* inp, floatvect_t& real, floatvect_t& imag, int inumframes);
   audiofft::AudioFFT _fft;
   std::vector<float> _input;
@@ -255,6 +256,7 @@ struct TimeToFrequencyDomain {
 struct FrequencyToTimeDomain {
   FrequencyToTimeDomain(size_t length = kDEFAULT_SPECTRALSIZE);
   ~FrequencyToTimeDomain();
+  void resize(size_t length);
   void compute(const floatvect_t& real, const floatvect_t& imag, int inumframes);
   audiofft::AudioFFT _fft;           // FFT object for performing IFFT
   std::vector<float> _output;        // Buffer to hold IFFT output
