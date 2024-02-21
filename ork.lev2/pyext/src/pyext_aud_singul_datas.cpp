@@ -712,7 +712,27 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                },
                                [](sample_ptr_t sample, std::string named) { //
                                  sample->_name = named;
-                               });
+                               })
+                           .def_property(
+                               "start",
+                               [](sample_ptr_t sample) -> int { return sample->_blk_start; },
+                               [](sample_ptr_t sample, int val) { sample->_blk_start = val; })
+                           .def_property(
+                               "end",
+                               [](sample_ptr_t sample) -> int { return sample->_blk_end; },
+                               [](sample_ptr_t sample, int val) { sample->_blk_end = val; })
+                           .def_property(
+                               "loopstart",
+                               [](sample_ptr_t sample) -> int { return sample->_blk_loopstart; },
+                               [](sample_ptr_t sample, int val) { sample->_blk_loopstart = val; })
+                           .def_property(
+                               "loopend",
+                               [](sample_ptr_t sample) -> int { return sample->_blk_loopend; },
+                               [](sample_ptr_t sample, int val) { sample->_blk_loopend = val; })
+                           .def_property(
+                               "loopmode",
+                               [](sample_ptr_t sample) -> int { return int(sample->_loopMode); },
+                               [](sample_ptr_t sample, int val) { sample->_loopMode = eLoopMode(val); });
   type_codec->registerStdCodec<sample_ptr_t>(sampdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto msampdata_type = py::class_<MultiSampleData, multisample_ptr_t>(singmodule, "MultiSampleData") //

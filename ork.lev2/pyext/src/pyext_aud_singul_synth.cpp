@@ -126,7 +126,10 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        .def_property(
                            "emitter_matrix", //
                            [](prginst_rawptr_t prgi) -> fmtx4 { return prgi->_emitter_matrix; },
-                           [](prginst_rawptr_t prgi, fmtx4 pos) { prgi->_emitter_matrix = pos; });
+                           [](prginst_rawptr_t prgi, fmtx4 pos) { prgi->_emitter_matrix = pos; })
+                          .def_property("gain", //
+                           [](prginst_rawptr_t prgi) -> float { return prgi->_gain; },
+                           [](prginst_rawptr_t prgi, float gain) { prgi->_gain = gain; });
   type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
