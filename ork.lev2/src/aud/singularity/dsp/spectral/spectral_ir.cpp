@@ -147,6 +147,8 @@ void SpectralImpulseResponse::blend(  //
   size_t size = std::min(A._realL.size(), B._realL.size()); // Assuming both spectrums are the same size
   _realL.resize(size);
   _imagL.resize(size);
+  _realR.resize(size);
+  _imagR.resize(size);
 
   for (size_t i = 0; i < size; ++i) {
     // Convert to magnitude and phase for both spectrums
@@ -169,6 +171,29 @@ void SpectralImpulseResponse::blend(  //
     // Convert back to real and imaginary
     _realL[i] = blendedMag * std::cos(blendedPhase);
     _imagL[i] = blendedMag * std::sin(blendedPhase);
+  }
+
+  for (size_t i = 0; i < size; ++i) {
+    // Convert to magnitude and phase for both spectrums
+    float mag1   = std::sqrt(A._realR[i] * A._realR[i] + A._imagR[i] * A._imagR[i]);
+    float phase1 = std::atan2(A._imagR[i], A._realR[i]);
+    float mag2   = std::sqrt(B._realR[i] * B._realR[i] + B._imagR[i] * B._imagR[i]);
+    float phase2 = std::atan2(B._imagR[i], B._realR[i]);
+
+    // Unwrap phases
+    phase1 = unwrapPhase(phase1);
+    phase2 = unwrapPhase(phase2);
+
+    // Interpolate magnitude and phase
+    float blendedMag   = (1 - index) * mag1 + index * mag2;
+    float blendedPhase = (1 - index) * phase1 + index * phase2;
+
+    // Ensure smooth transition by handling phase wrapping
+    blendedPhase = unwrapPhase(blendedPhase);
+
+    // Convert back to real and imaginary
+    _realR[i] = blendedMag * std::cos(blendedPhase);
+    _imagR[i] = blendedMag * std::sin(blendedPhase);
   }
 }
 

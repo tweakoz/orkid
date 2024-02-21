@@ -27,6 +27,7 @@ struct GridRenderImpl {
     OrkAssert(_colortexture);
 
     _pbrmaterial       = new PBRMaterial();
+    _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
     _pbrmaterial->_shaderpath = "orkshader://grid";
     _pbrmaterial->_texColor = _colortexture;
     _pbrmaterial->gpuInit(ctx);

@@ -168,6 +168,7 @@ public:
   texture_ptr_t _texMtlRuf;
   texture_ptr_t _texEmissive;
   std::string _textureBaseName;
+  std::string _shader_suffix;
   ///////////////////////////////////////////
 
   // PIK: Picking

@@ -800,49 +800,49 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   // specials
 
-  _tek_GBU_DB_NM_NI_MO = fxi->technique(_shader, "GBU_DB_NM_NI_MO");
+  _tek_GBU_DB_NM_NI_MO = fxi->technique(_shader, "GBU_DB_NM_NI_MO"s+_shader_suffix);
 
-  _tek_GBU_CF_IN_MO = fxi->technique(_shader, "GBU_CF_IN_MO");
-  _tek_GBU_CF_NI_MO = fxi->technique(_shader, "GBU_CF_NI_MO");
+  _tek_GBU_CF_IN_MO = fxi->technique(_shader, "GBU_CF_IN_MO"s+_shader_suffix);
+  _tek_GBU_CF_NI_MO = fxi->technique(_shader, "GBU_CF_NI_MO"s+_shader_suffix);
 
-  _tek_PIK_RI_IN = fxi->technique(_shader, "PIK_RI_IN");
-  _tek_PIK_RI_NI = fxi->technique(_shader, "PIK_RI_NI");
-  _tek_PIK_SK_NI = fxi->technique(_shader, "PIK_SK_NI");
+  _tek_PIK_RI_IN = fxi->technique(_shader, "PIK_RI_IN"s+_shader_suffix);
+  _tek_PIK_RI_NI = fxi->technique(_shader, "PIK_RI_NI"s+_shader_suffix);
+  _tek_PIK_SK_NI = fxi->technique(_shader, "PIK_SK_NI"s+_shader_suffix);
 
   // forwards
 
-  _tek_FWD_UNLIT_NI_MO = fxi->technique(_shader, "FWD_UNLIT_NI_MO");
+  _tek_FWD_UNLIT_NI_MO = fxi->technique(_shader, "FWD_UNLIT_NI_MO"s+_shader_suffix);
 
-  _tek_FWD_SKYBOX_MO          = fxi->technique(_shader, "FWD_SKYBOX_MO");
-  _tek_FWD_SKYBOX_ST          = fxi->technique(_shader, "FWD_SKYBOX_ST");
-  _tek_FWD_CT_NM_RI_NI_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
-  _tek_FWD_CT_NM_RI_IN_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
-  _tek_FWD_CT_NM_RI_NI_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST");
-  _tek_FWD_CT_NM_RI_IN_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST");
-  _tek_FWD_DEPTHPREPASS_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO");
+  _tek_FWD_SKYBOX_MO          = fxi->technique(_shader, "FWD_SKYBOX_MO"s+_shader_suffix);
+  _tek_FWD_SKYBOX_ST          = fxi->technique(_shader, "FWD_SKYBOX_ST"s+_shader_suffix);
+  _tek_FWD_CT_NM_RI_NI_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO"s+_shader_suffix);
+  _tek_FWD_CT_NM_RI_IN_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO"s+_shader_suffix);
+  _tek_FWD_CT_NM_RI_NI_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST"s+_shader_suffix);
+  _tek_FWD_CT_NM_RI_IN_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO"s+_shader_suffix);
 
-  _tek_FWD_CV_EMI_RI_NI_MO = fxi->technique(_shader, "FWD_CV_EMI_RI_NI_MO");
+  _tek_FWD_CV_EMI_RI_NI_MO = fxi->technique(_shader, "FWD_CV_EMI_RI_NI_MO"s+_shader_suffix);
 
-  _tek_FWD_CT_NM_SK_NI_ST = fxi->technique(_shader, "FWD_CT_NM_SK_NI_ST");
+  _tek_FWD_CT_NM_SK_NI_ST = fxi->technique(_shader, "FWD_CT_NM_SK_NI_ST"s+_shader_suffix);
 
   // deferreds
 
-  _tek_GBU_CM_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CM_NM_RI_NI_MO");
-  _tek_GBU_CM_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CM_NM_SK_NI_MO");
-  _tek_GBU_CM_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CM_NM_RI_NI_ST");
+  _tek_GBU_CM_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CM_NM_RI_NI_MO"s+_shader_suffix);
+  _tek_GBU_CM_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CM_NM_SK_NI_MO"s+_shader_suffix);
+  _tek_GBU_CM_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CM_NM_RI_NI_ST"s+_shader_suffix);
 
-  _tek_GBU_CT_NM_RI_IN_MO = fxi->technique(_shader, "GBU_CT_NM_RI_IN_MO");
-  _tek_GBU_CT_NM_RI_IN_ST = fxi->technique(_shader, "GBU_CT_NM_RI_IN_ST");
-  _tek_GBU_CT_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CT_NM_RI_NI_ST");
-  _tek_GBU_CT_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NM_RI_NI_MO");
+  _tek_GBU_CT_NM_RI_IN_MO = fxi->technique(_shader, "GBU_CT_NM_RI_IN_MO"s+_shader_suffix);
+  _tek_GBU_CT_NM_RI_IN_ST = fxi->technique(_shader, "GBU_CT_NM_RI_IN_ST"s+_shader_suffix);
+  _tek_GBU_CT_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CT_NM_RI_NI_ST"s+_shader_suffix);
+  _tek_GBU_CT_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NM_RI_NI_MO"s+_shader_suffix);
 
-  _tek_GBU_CT_NM_SK_IN_MO = fxi->technique(_shader, "GBU_CT_NM_SK_IN_MO");
+  _tek_GBU_CT_NM_SK_IN_MO = fxi->technique(_shader, "GBU_CT_NM_SK_IN_MO"s+_shader_suffix);
 
-  _tek_GBU_CT_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CT_NM_SK_NI_MO");
+  _tek_GBU_CT_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CT_NM_SK_NI_MO"s+_shader_suffix);
 
-  _tek_GBU_CT_NV_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NV_RI_NI_MO");
+  _tek_GBU_CT_NV_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NV_RI_NI_MO"s+_shader_suffix);
 
-  _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO");
+  _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO"s+_shader_suffix);
 
   // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);

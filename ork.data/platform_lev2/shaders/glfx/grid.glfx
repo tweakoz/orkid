@@ -112,6 +112,49 @@ vec4 grid_output(vec3 pos){
   return vec4(oc.xyz,1);
 }
 
+vec4 grid_output2(vec3 pos) {
+    vec2 paramMajor = frg_uv0 + vec2(100.0, 100.0);
+    vec2 dpdxMajor = dFdx(paramMajor) * 2;
+    vec2 dpdyMajor = dFdy(paramMajor) * 2;
+
+    vec2 paramMinor = paramMajor * 10.0;
+    vec2 dpdxMinor = dFdx(paramMinor);
+    vec2 dpdyMinor = dFdy(paramMinor);
+
+    float width = 0.05;
+    float gMajor = filteredGrid(paramMajor, dpdxMajor, dpdyMajor, width);
+    float gMinor = filteredGrid(paramMinor, dpdxMinor, dpdyMinor, width);
+
+    // Default base color setup (might be overridden based on axis logic)
+    vec3 basecolor = vec3(.48, .62, .90) * 0.95;
+    vec3 majorcolor = basecolor * 1.1;
+    vec3 minorcolor = basecolor * 1.05;
+
+    bool on_zaxis = abs(pos.z) < width;
+    bool on_xaxis = abs(pos.x) < width;
+
+    // Determine color based on axis conditions
+    if (pos.x > 0.0 && on_zaxis) {
+        basecolor = vec3(1.0, 0.0, 0.0); // Red for +x axis
+    } else if (pos.x < 0.0 && on_zaxis) {
+        //basecolor = vec3(0.0, 0.0, 0.0); // Black for -x axis
+    } else if (pos.z > 0.0 && on_xaxis) {
+        basecolor = vec3(0.0, 0.0, 1.0); // Blue for +z axis
+    } else if (pos.z < 0.0 && on_xaxis) {
+        //basecolor = vec3(0.0, 0.0, 0.0); // Black for -z axis
+    }
+
+    vec3 color = mix(minorcolor, basecolor, gMinor);
+    vec4 oc = vec4(mix(majorcolor, color, gMajor), 1.0 - gMajor);
+
+    float G = (1.0 - max(gMajor, gMinor));
+
+    oc = vec4(G,G,G,1);
+    oc = vec4(basecolor*G,1);
+    return vec4(oc.xyz, 1);
+}
+
+
 }
 
 ///////////////////////////////////////////////////////////////
@@ -169,6 +212,17 @@ fragment_shader ps_grid_forward_lit_mono
   out_clr = vec4(oc.xyz,1); 
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_mono_v2
+  : iface_grid_forward_lit
+  : lib_frg_grid
+  : lib_fwd
+  : ub_frg_fwd 
+  : ub_frg_fwd_lighting{
+  vec4 gout = grid_output2(frg_wpos.xyz);
+  vec3 oc = forward_lighting_mono(gout.xyz);
+  out_clr = vec4(oc.xyz,1); 
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo
   : iface_grid_forward_lit
   : lib_frg_grid
@@ -193,7 +247,7 @@ libblock lib_frgdeferred_grid_pbr : lib_frg_grid {
     float mtl = 1.0;
     float ruf = 0.0;
 
-    vec3 grid_color = grid_output(frg_pos.xyz).xyz;
+    vec3 grid_color = grid_output2(frg_pos.xyz).xyz;
     out_gbuf = packGbuffer(vec3(0),grid_color,normal,ruf,mtl);
 
   }
@@ -232,6 +286,10 @@ technique FWD_UNLIT_NI_MO {
 technique FWD_CT_NM_RI_NI_MO {
   fxconfig=fxcfg_default;
   vf_pass={vs_grid_forward_lit,ps_grid_forward_lit_mono,sb_forward}
+}
+technique FWD_CT_NM_RI_NI_MO_V2 {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_grid_forward_lit,ps_grid_forward_lit_mono_v2,sb_forward}
 }
 technique FWD_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
