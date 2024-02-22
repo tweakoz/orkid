@@ -151,3 +151,4 @@ def createSampleLayerEX( program,    #
       sample=the_sample)
     newlyr.keymap = keymap    
     SOSCIL.lowpassfreq = lowpass
+    return the_sample, newlyr, SOSCIL
