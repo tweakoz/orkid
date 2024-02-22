@@ -126,7 +126,7 @@ delaycontext_ptr_t synth::allocDelayLine(){
     rval = unlocked.back();
     unlocked.pop_back();
     int count = galloccount.fetch_add(1);
-    printf("alloc<%d>\n", count );
+    //printf("alloc<%d>\n", count );
   });
   return rval;
 }
@@ -136,7 +136,7 @@ void synth::freeDelayLine(delaycontext_ptr_t delay){
     _delayspool.atomicOp([&](delaydequeue_t& unlocked){
       unlocked.push_front(delay);
       int count = galloccount.fetch_add(-1);
-      printf("free<%d>\n", count );
+      //printf("free<%d>\n", count );
     });
   };
   opq::concurrentQueue()->enqueue(op);

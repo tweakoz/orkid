@@ -248,16 +248,16 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
 
     // Calculate the number of samples to read (frames * channels)
     int numSamples = static_cast<int>(_blk_end * channelCount);
-    printf("frameCount<%lld>\n", _blk_end);
-    printf("channelCount<%d>\n", channelCount);
-    printf("numSamples<%d>\n", numSamples);
-    printf("sampleRate<%f>\n", _sampleRate);
+    //printf("frameCount<%lld>\n", _blk_end);
+    //printf("channelCount<%d>\n", channelCount);
+    //printf("numSamples<%d>\n", numSamples);
+    //printf("sampleRate<%f>\n", _sampleRate);
     _numChannels = channelCount;
     // Read the samples from the file
 
     std::vector<float> fbuf(numSamples); // Assuming float format for simplicity
     int readcount = sf_readf_float(sf_file, fbuf.data(), _blk_end);
-    printf("readCount<%d>\n", readcount);
+    //printf("readCount<%d>\n", readcount);
 
     // No need to manually convert formats, libsndfile handles conversion
 
@@ -265,7 +265,7 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
       // Normalization and bias correction
       float _min = *std::min_element(fbuf.begin(), fbuf.end());
       float _max = *std::max_element(fbuf.begin(), fbuf.end());
-      printf("_min<%g> _max<%g>\n", _min, _max);
+      //printf("_min<%g> _max<%g>\n", _min, _max);
 
       float frange = _max - _min;
       float fbias = (_max + _min) * 0.5f;
@@ -273,7 +273,7 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
           F -= fbias;
           F /= (frange * 0.5f);
       }
-      printf("frange<%f> fbias<%f>\n", frange, fbias);  
+      //printf("frange<%f> fbias<%f>\n", frange, fbias);  
     }
 
     // Assuming WaveformData and _user are defined and initialized elsewhere
@@ -284,7 +284,7 @@ void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
     }
     _sampleBlock = waveformOUT._sampledata.data();
 
-    printf("closing..\n");
+    //printf("closing..\n");
     sf_close(sf_file);
 }
 

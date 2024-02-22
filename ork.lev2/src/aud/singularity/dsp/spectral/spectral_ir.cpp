@@ -221,7 +221,7 @@ void SpectralImpulseResponse::loadAudioFile(const std::string& path) {
   floatvect_t impulse(_length, 0.0f);
 
   int numframes = sample->_blk_end;
-  printf("numframes<%d>\n", numframes);
+  //printf("numframes<%d>\n", numframes);
   size_t complex_size = audiofft::AudioFFT::ComplexSize(_length);
   size_t max_ir_size  = 512;
   if (numframes > max_ir_size) {
@@ -239,7 +239,7 @@ void SpectralImpulseResponse::loadAudioFile(const std::string& path) {
   } else {
     for (int i = 0; i < numframes; i++) {
       impulse[i] = float(data[i]) / 32768.0f;
-      printf("impulse<%d> %g\n", i, impulse[i]);
+      //printf("impulse<%d> %g\n", i, impulse[i]);
     }
   }
   set(impulse, impulse);
@@ -256,7 +256,7 @@ void SpectralImpulseResponse::loadAudioFileX(const std::string& path, size_t tru
   floatvect_t impulseL, impulseR; // Separate vectors for left and right channels
   int numframes   = sample->_blk_end;
   int numchannels = sample->_numChannels;
-  printf("numframes<%d> numchannels<%d>\n", numframes, numchannels);
+  //printf("numframes<%d> numchannels<%d>\n", numframes, numchannels);
 
   int lastnonzero = 0;
   for (int i = 0; i < numframes * numchannels; i += numchannels) {
@@ -268,7 +268,7 @@ void SpectralImpulseResponse::loadAudioFileX(const std::string& path, size_t tru
 
   int truncated = numframes - lastnonzero;
   
-  printf("lastnonzero<%d> truncated<%d>\n", lastnonzero, truncated);
+  //printf("lastnonzero<%d> truncated<%d>\n", lastnonzero, truncated);
   numframes = lastnonzero;
   if((truncate!=0) and (numframes>truncate))
     numframes = truncate;

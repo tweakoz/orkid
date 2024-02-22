@@ -207,6 +207,9 @@ public: //
   float far_max;
   float near_min;
 
+  float _loc_min = 0.2f;
+  float _loc_max = 1e6f;
+
   fmtx4 mRot, mTrans;
 
   fvec4 CamBaseLoc;

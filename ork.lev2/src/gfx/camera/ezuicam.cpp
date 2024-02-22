@@ -674,15 +674,13 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         //printf( "RightVector<%g %g %g>\n", RightVector.x, RightVector.y, RightVector.z );
 
         float CameraFactor   = RightVector.magnitude() * 100.0f; // 20 pixels of movement
-        constexpr float kmin = 0.2f;
-        constexpr float kmax = 1e6f;
-        mfLoc                = std::clamp(mfLoc, kmin, kmax);
+        mfLoc                = std::clamp(mfLoc, _loc_min, _loc_max);
         float DeltaInMeters  = float(-mousedelta) * CameraFactor * zmoveamt;
         //printf( "mousedelta<%d>\n", mousedelta );
         //printf( "CameraFactor<%g>\n", CameraFactor );
         //printf( "DeltaInMeters<%g>\n", DeltaInMeters );
         mfLoc += DeltaInMeters;
-        mfLoc = std::clamp(mfLoc, kmin, kmax);
+        mfLoc = std::clamp(mfLoc, _loc_min, _loc_max);
 
       }
 
@@ -732,34 +730,28 @@ void EzUiCam::updateMatrices(void) {
   if (mfLoc < 0.001f)
     mfLoc = 0.001f;
 
-  ///////////////////////////////////////////////////////////////
-  // setup dynamic near / far	(this increases depth buffer effective resolution based on context)
+  // Parameters to define
+  float base_near = 0.1; // Base near plane distance
+  float near_far_ratio = 100000.0; // Ratio between far and near plane distances
 
-  //	loc			log10	near		far			ratio
+  // Calculate the logarithm of the location (mfLoc) to determine the dynamic range
+  float flog10 = log10(mfLoc);
 
-  //	0.01		-2		0.001		1.0			1000.0
-  //	0.1			-1		0.01		10.0		1000.0
-  //	1.0			0		0.1			100.0		1000.0
-  //	10.0		1		1.0			1000.0		1000.0
-  //	100.0		2		10.0		10000.0		1000.0
-  //	1000.0		3		100.0		100000.0	1000.0
-  //	10000.0		4		1000.0		1000000.0	1000.0
-  //	100000.0	5		10000.0		10000000.0	1000.0
+  // Calculate the interpolation index based on the logarithm, adjusted for our dynamic range
+  float flerpidx = (flog10 + 1.0f) / 6.0f;
+  float finvlerpidx = 1.0f - flerpidx;
 
-  float flog10      = log10(mfLoc);
-  float flerpidx    = (flog10 + 1.0f) / 6.0f;
-  float finvlerpidx = float(1.0f) - flerpidx;
+  // Adjust calculations for neardiv and farmul using the base near and ratio
+  float neardiv = (base_near * finvlerpidx + near_far_ratio * base_near) * flerpidx;
+  float farmul = (near_far_ratio * 0.5f * finvlerpidx + 0.5f / near_far_ratio) * flerpidx;
 
-  float neardiv = (0.5f * finvlerpidx + 1000.0f) * flerpidx;
-  float farmul  = (500.0f * finvlerpidx + 0.5f) * flerpidx;
-
+  // Calculate the near and far plane distances
   float fnear = mfLoc / neardiv;
-  float ffar  = mfLoc * farmul;
+  float ffar = mfLoc * farmul;
 
-  if (fnear < near_min)
-    fnear = near_min;
-  if (ffar > far_max)
-    ffar = far_max;
+  // Enforce minimum and maximum values for near and far plane distances
+  if (fnear < near_min) fnear = near_min;
+  if (ffar > far_max) ffar = far_max;
 
   ///////////////////////////////////////////////////////////////
 
