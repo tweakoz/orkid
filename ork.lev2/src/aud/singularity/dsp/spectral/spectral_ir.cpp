@@ -275,13 +275,21 @@ void SpectralImpulseResponse::loadAudioFileX(const std::string& path, size_t tru
 
   // Adjust the loop to handle stereo or mono files
   for (int i = 0; i < numframes; i++) {
+    float scalar = 1.0f;
+
+    if(truncate!=0){
+      scalar = (float(i) / float(truncate - 1));
+      scalar = 1.0f - scalar;
+      scalar = powf(scalar, 2.0f);
+    }
     if (numchannels == 2) {
       // For stereo files, alternate between left and right channels
-      impulseL.push_back(float(data[i * 2]) / 32768.0f);     // Left channel
-      impulseR.push_back(float(data[i * 2 + 1]) / 32768.0f); // Right channel
+      scalar = powf(scalar, 0.5f);
+      impulseL.push_back(scalar*float(data[i * 2]) / 32768.0f);     // Left channel
+      impulseR.push_back(scalar*float(data[i * 2 + 1]) / 32768.0f); // Right channel
     } else if (numchannels == 1) {
       // For mono files, duplicate the sample for both channels
-      float V = float(data[i]) / 32768.0f;
+      float V = scalar*float(data[i]) / 32768.0f;
       impulseL.push_back(V);
       impulseR.push_back(V);
     }
