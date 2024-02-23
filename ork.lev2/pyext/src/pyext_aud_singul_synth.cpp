@@ -82,6 +82,21 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def(
               "resetTimer", //
               [](synth_ptr_t synth) { synth->_timeaccum = 0.0f; })
+          .def(
+              "disableMasterEq", //
+              [](synth_ptr_t synth ) { 
+                synth->disableMasterEq();
+            })
+          .def(
+              "enableMasterEq", //
+              [](synth_ptr_t synth ) { 
+                synth->enableMasterEq();
+            })
+          .def(
+              "setMasterEqBand", //
+              [](synth_ptr_t synth, int band, float frqHZ, float widthHZ, float gainDB ) { 
+                synth->setMasterEqBand(band,frqHZ,widthHZ,gainDB);
+            })
           .def_property(
               "velCurvePower", //
               [](synth_ptr_t synth) -> float { return synth->_velcurvepower; },

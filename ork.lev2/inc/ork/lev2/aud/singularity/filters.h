@@ -79,7 +79,11 @@ struct TrapAllpass {
 struct ParaOne {
   void Clear();
   void set(float f, float w, float g);
+  void set2(float frqHZ, float bandwidthHZ, float gainDB);
   float compute(float inp);
+
+  bool _enable = false;
+  
   float _c0, _c1, _c2;
   float _arc, _gain, _a;
   float _del1, _del2;

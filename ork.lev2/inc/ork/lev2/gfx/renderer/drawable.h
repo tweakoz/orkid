@@ -559,11 +559,29 @@ struct BillboardStringDrawable final : public Drawable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct OverlayStringDrawableData : public DrawableData {
+
+  DeclareConcreteX(OverlayStringDrawableData, DrawableData);
+
+  OverlayStringDrawableData();
+
+  drawable_ptr_t createDrawable() const final;
+  std::string _initialString;
+  fvec2 _position;
+  float _scale = 1.0f;
+  fvec4 _color;
+  std::string _font;
+  //lev2::font_rawconstptr_t _font = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct OverlayStringDrawable final : public Drawable {
 
-  OverlayStringDrawable();
+  OverlayStringDrawable(const OverlayStringDrawableData* data);
   ~OverlayStringDrawable();
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  const OverlayStringDrawableData* _data;
   std::string _font;
   std::string _currentString;
   fvec2 _position;

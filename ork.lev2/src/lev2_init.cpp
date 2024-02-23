@@ -158,6 +158,7 @@ struct ClassToucher {
     InstancedModelDrawableData::GetClassStatic();
     BillboardStringDrawableData::GetClassStatic();
     InstancedBillboardStringDrawableData::GetClassStatic();
+    OverlayStringDrawableData::GetClassStatic();
 
     GridDrawableData::GetClassStatic();
     GroundPlaneDrawableData::GetClassStatic();

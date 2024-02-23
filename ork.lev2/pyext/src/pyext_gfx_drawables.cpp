@@ -313,6 +313,32 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto overlay_drawdata_type = //
+      py::class_<OverlayStringDrawableData, DrawableData, overlay_string_drawabledata_ptr_t>(
+          module_lev2, "OverlayStringDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "text",
+              [](overlay_string_drawabledata_ptr_t drw) -> std::string { return drw->_initialString; },
+              [](overlay_string_drawabledata_ptr_t drw, std::string val) { drw->_initialString = val; })
+          .def_property(
+              "font",
+              [](overlay_string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
+              [](overlay_string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
+          .def_property(
+              "position",
+              [](overlay_string_drawabledata_ptr_t drw) -> fvec2 { return drw->_position; },
+              [](overlay_string_drawabledata_ptr_t drw, fvec2 val) { drw->_position = val; })
+          .def_property(
+              "scale",
+              [](overlay_string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
+              [](overlay_string_drawabledata_ptr_t drw, float val) { drw->_scale = val; })
+          .def_property(
+              "color",
+              [](overlay_string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](overlay_string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
+  type_codec->registerStdCodec<overlay_string_drawabledata_ptr_t>(overlay_drawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 } // namespace ork::lev2

@@ -181,8 +181,14 @@ void ParaOne::Clear() {
 }
 
 void ParaOne::set(float f, float w, float g) {
-  // float arc=f*pi/(srate*0.5);
-  float arc  = f * pi2 * ISR; ///(srate*0.5);
+
+  if(g==0.0f){
+    _enable = false;
+    return;
+  }
+  _enable = true;
+
+  float arc  = f * pi2 * ISR;
   float gain = powf(2.0f, g / 6.0f);
   _a         = (sinf(arc) * w) * ((gain < 1.0f) ? 1.0f : 0.25f);
   float tmp  = 1.0f / (1.0f + _a);
@@ -191,18 +197,49 @@ void ParaOne::set(float f, float w, float g) {
   _c1 = tmp * 2.0f * cosf(arc);
   _c2 = tmp * (_a - 1.0f);
 
-  // printf( "c0<%f> c1<%f> c2<%f>\n", _c0, _c1, _c2 );
 }
 
+void ParaOne::set2(float f, float bandwidth, float g) {
+
+  if(g==0.0f){
+    _enable = false;
+    return;
+  }
+  _enable = true;
+
+  // Basic parameter validation and adjustment for stability
+  f = std::max(20.0f, std::min(f, 24000.0f)); // Limit f to audible range
+  bandwidth = std::max(10.0f, bandwidth); // Minimum bandwidth to avoid too narrow filter
+  g = std::max(-24.0f, std::min(24.0f, g)); // Limit gain to +/-24 dB for practical purposes
+
+  // Convert bandwidth to "Q" factor (assuming bandwidth is -3 dB bandwidth)
+  float Q = f / bandwidth;
+
+  // Convert Q to equivalent width 'w' for this filter design
+  // This conversion depends on the filter's specific design; here we assume an inverse relationship
+  float w = 1.0f / Q; 
+
+  // Calculate coefficients based on adjusted parameters
+  float arc = f * pi2 * ISR;
+  float gain = powf(2.0f, g / 6.0f);
+  _a = (sinf(arc) * w) * ((gain < 1.0f) ? 1.0f : 0.25f);
+  float tmp = 1.0f / (1.0f + _a);
+  _c0 = tmp * _a * (gain - 1.0f);
+  _c1 = tmp * 2.0f * cosf(arc);
+  _c2 = tmp * (_a - 1.0f);
+
+  // Additional checks or adjustments for coefficients to ensure stability could be implemented here
+  // For example, ensuring that _c1 and _c2 values lead to poles inside the unit circle if needed
+}
 float ParaOne::compute(float inp) {
-  float tmp = _c0 * (inp - _del2) + _c1 * _li1 + _c2 * _li2;
-
-  _del2 = _del1;
-  _del1 = inp;
-  _li2  = _li1;
-  _li1  = tmp;
-  inp += _li1;
-
+  if(_enable){
+    float tmp = _c0 * (inp - _del2) + _c1 * _li1 + _c2 * _li2;
+    _del2 = _del1;
+    _del1 = inp;
+    _li2  = _li1;
+    _li1  = tmp;
+    inp += _li1;
+  }
   return inp;
 }
 
