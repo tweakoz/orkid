@@ -32,6 +32,7 @@
   #endif
 #endif
 
+#include <memory>
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
