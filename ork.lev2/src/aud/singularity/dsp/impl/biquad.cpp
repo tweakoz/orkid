@@ -70,6 +70,15 @@ float BiQuad::compute(float input) {
   return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void BiQuad::lerp(const BiQuad& oth, float index){
+  _mfa0 = oth._mfa0*index + _mfa0*(1.0f-index);
+  _mfa1 = oth._mfa1*index + _mfa1*(1.0f-index);
+  _mfa2 = oth._mfa2*index + _mfa2*(1.0f-index);
+  _mfb0 = oth._mfb0*index + _mfb0*(1.0f-index);
+  _mfb1 = oth._mfb1*index + _mfb1*(1.0f-index);
+  _mfb2 = oth._mfb2*index + _mfb2*(1.0f-index);
+}
+///////////////////////////////////////////////////////////////////////////////
 float BiQuad::compute2(float input) {
 
   float output = (_mfb0 * input)  //
@@ -87,6 +96,22 @@ float BiQuad::compute2(float input) {
   _ym1 = output;
 
   return output;
+}
+
+float BiQuad::compute3(float input){
+
+    float output = (_mfb0 * input)  //
+                 + (_mfb1 * _xm1)  // 
+                 + (_mfb2 * _xm2)  // 
+                 - (_mfa1 * _ym1)  // 
+                 - (_mfa2 * _ym2); 
+    
+    _xm2 = _xm1;
+    _xm1 = input;
+    _ym2 = _ym1;
+    _ym1 = output;
+    
+    return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void BiQuad::SetLpfReson(float kfco, float krez) {

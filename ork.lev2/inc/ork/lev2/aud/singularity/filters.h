@@ -83,7 +83,7 @@ struct ParaOne {
   float compute(float inp);
 
   bool _enable = false;
-  
+
   float _c0, _c1, _c2;
   float _arc, _gain, _a;
   float _del1, _del2;
@@ -94,8 +94,10 @@ struct ParaOne {
 struct BiQuad {
   BiQuad();
   void Clear();
+  void lerp(const BiQuad& oth, float index);
   float compute(float input);
   float compute2(float input);
+  float compute3(float input);
   void SetLpfReson(float kfco, float krez);
   void SetLpf(float kfco);
   void SetHpf(float kfco);

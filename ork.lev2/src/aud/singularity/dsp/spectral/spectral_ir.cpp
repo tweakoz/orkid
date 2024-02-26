@@ -139,6 +139,25 @@ void SpectralImpulseResponse::setFromFrequencyBins( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  void SpectralImpulseResponse::setFromComplexBins(             //
+      const floatvect_t& realBinsL,  // complex real bin (left)
+      const floatvect_t& realBinsR,  // complex real bin (right)
+      const floatvect_t& imagBinsL,  // complex imag bin (left)
+      const floatvect_t& imagBinsR){ // complex imag bin (right)
+  OrkAssert(realBinsL.size() == realBinsR.size());
+  OrkAssert(realBinsL.size() == imagBinsL.size());
+  OrkAssert(realBinsR.size() == imagBinsR.size());
+
+  _length = realBinsL.size() * 2;
+
+  _realL = realBinsL;
+  _realR = realBinsR;
+  _imagL = imagBinsL;
+  _imagR = imagBinsR;
+  
+}
+///////////////////////////////////////////////////////////////////////////////
+
 void SpectralImpulseResponse::blend(  //
     const SpectralImpulseResponse& A, //
     const SpectralImpulseResponse& B, //
