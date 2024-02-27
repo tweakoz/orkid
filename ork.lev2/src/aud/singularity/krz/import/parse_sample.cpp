@@ -52,7 +52,7 @@ void filescanner::ParseSampleHeader(const datablock& db, //
 
   if(itf!=_samples.end()){
     auto end = _samples.rbegin();
-    printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+    //printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
     iObjectID = end->first + 1;
     OrkAssert(false);
   }
@@ -64,7 +64,7 @@ void filescanner::ParseSampleHeader(const datablock& db, //
   multisample->_numSoundFiles   = uNumSoundFilesMinusOne + 1;
 
 
-  printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+  //printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
 
   bool is_krz_rom_sample = (iObjectID >=0 and iObjectID <= 199) or (iObjectID >= 800 and iObjectID <= 999);
 

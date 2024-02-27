@@ -57,12 +57,12 @@ krzimportdata_ptr_t convert(std::string krzpath) {
   int iblock = 0;
   //printf("FileHeaderAndPRAMLength<0x%08x>\n", krz.miFileHeaderAndPRAMLength);
   while ((false == bdone)) {
-    printf("iblock<%d>\n", iblock);
+    //printf("iblock<%d>\n", iblock);
     int blocklen = 0;
     int iseekpos = scanner.mMainIterator.miIndex;
     bOK          = scanner.GetData(blocklen);
     blocklen *= -1;
-    printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
+    //printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
     iblock++;
     if ((iseekpos + 4) < krz.miFileHeaderAndPRAMLength) {
       datablock newblock;
@@ -77,7 +77,7 @@ krzimportdata_ptr_t convert(std::string krzpath) {
   ////////////////////////
   int isampledatacount = scanner.miSize - krz.miFileHeaderAndPRAMLength;
 
-  printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
+  //printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
 
   if (isampledatacount) {
     krz.mpSampleData       = (s16*)malloc(isampledatacount);
@@ -88,7 +88,7 @@ krzimportdata_ptr_t convert(std::string krzpath) {
     const char* psrc     = psrcbase + krz.miFileHeaderAndPRAMLength;
     rval->_sample_data.resize(isampledatacount);
 
-    printf( "SAMPLEBLOCK<%p> SIZE<%d>\n", (void*) rval->_sample_data.data(), isampledatacount);
+    //printf( "SAMPLEBLOCK<%p> SIZE<%d>\n", (void*) rval->_sample_data.data(), isampledatacount);
     memcpy((void*)rval->_sample_data.data(), (const void*)psrc, isampledatacount);
     memcpy((void*)pdest, (const void*)psrc, isampledatacount);
 

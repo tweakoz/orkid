@@ -229,7 +229,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
     iObjectTYPE = (uObjTypeID & 0xff00) >> 8;
     iObjectID   = (uObjTypeID & 0x00ff);
   }
-  printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
+  //printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
 
   // jsonobj.AddMember("objectID", iObjectID, _japrog);
   /////////////////////////////////////

@@ -225,7 +225,7 @@ SampleData::SampleData()
 ///////////////////////////////////////////////////////////////////////////////
 
 void SampleData::loadFromAudioFile(const std::string& fname, bool normalize) {
-    printf("loading sample<%s>\n", fname.c_str());
+    //printf("loading sample<%s>\n", fname.c_str());
 
     // Open the sound file
     SF_INFO sfinfo;

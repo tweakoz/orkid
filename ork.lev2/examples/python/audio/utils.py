@@ -172,8 +172,9 @@ class KrzBankSource:
     self.krzsamps = self.soundbank.multiSamplesByName
     self.krzkmaps = self.soundbank.keymapsByName
 
-    for item in self.krzsamps:
-      print(item)
+    #for item in self.krzsamps:
+    #  print(item)
+    
     ###################
     # enable looping on select samples
     ###################

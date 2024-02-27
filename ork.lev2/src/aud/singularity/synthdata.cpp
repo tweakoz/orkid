@@ -61,12 +61,12 @@ void BankData::describeX(class_t* clazz) {
 
 void BankData::merge(const BankData& oth) {
   for (auto item : oth._programs) {
-    printf( "merge program<%d>\n", item.first);
+    //printf( "merge program<%d>\n", item.first);
     _programs[item.first] = item.second;
   }
   for (auto item : oth._programsByName) {
     size_t count = _programsByName.size();
-    printf( "merge programnamed<%s> count<%zu>\n", item.first.c_str(), count);
+    //printf( "merge programnamed<%s> count<%zu>\n", item.first.c_str(), count);
     _programsByName[item.first] = item.second;
   }
   for (auto item : oth._keymaps) {
@@ -75,7 +75,7 @@ void BankData::merge(const BankData& oth) {
   }
   for (auto item : oth._keymapsByName) {
     size_t count = _keymapsByName.size();
-    printf( "merge keymapnamed<%s> count<%zu>\n", item.first.c_str(), count);
+    //printf( "merge keymapnamed<%s> count<%zu>\n", item.first.c_str(), count);
     _keymapsByName[item.first] = item.second;
   }
   for (auto item : oth._multisamples) {
