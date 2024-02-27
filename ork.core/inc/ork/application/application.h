@@ -74,6 +74,7 @@ struct AppInitData{
 
   bool _fullscreen = false;
   bool _offscreen = false;
+  bool _audio = false;
   bool _imgui = false;
   int _top = 100;
   int _left = 100;

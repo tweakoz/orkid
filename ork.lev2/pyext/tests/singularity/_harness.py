@@ -37,7 +37,7 @@ class SingulTestApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=1280)
+    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=1280,use_audio=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
