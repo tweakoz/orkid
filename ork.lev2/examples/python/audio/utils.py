@@ -163,6 +163,9 @@ class KrzBankSource:
     do_bank( "pipeorgn.krz", "pipeorgn.krz")
     do_bank( "lostring.krz", "lostring.krz")
     do_bank( "sledge.krz", "sledge.krz")
+    do_bank( "alesisdr", "alesisdr.krz" )
+    do_bank( "m1drums", "m1drums.krz")
+    do_bank( "emusp12", "emusp12.krz")
 
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
