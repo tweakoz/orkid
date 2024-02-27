@@ -209,6 +209,11 @@ struct Drum4Clip : public Clip {
   int _velC  = 32;
   int _noteD = 60;
   int _velD  = 32;
+  int _durA = 10;
+  int _durB = 10;
+  int _durC = 10;
+  int _durD = 10;
+  
   //mutable int _currentStep = 0;
 
   std::vector<bool> _trackA;

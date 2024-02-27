@@ -236,6 +236,10 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               "noteD", [](drum4clip_ptr_t clip) { return clip->_noteD; }, [](drum4clip_ptr_t clip, int val) { clip->_noteD = val; })
           .def_property(
               "velD", [](drum4clip_ptr_t clip) { return clip->_velD; }, [](drum4clip_ptr_t clip, int val) { clip->_velD = val; })
+          .def_property("durA", [](drum4clip_ptr_t clip) { return clip->_durA; }, [](drum4clip_ptr_t clip, int val) { clip->_durA = val; })
+          .def_property("durB", [](drum4clip_ptr_t clip) { return clip->_durB; }, [](drum4clip_ptr_t clip, int val) { clip->_durB = val; })
+          .def_property("durC", [](drum4clip_ptr_t clip) { return clip->_durC; }, [](drum4clip_ptr_t clip, int val) { clip->_durC = val; })
+          .def_property("durD", [](drum4clip_ptr_t clip) { return clip->_durD; }, [](drum4clip_ptr_t clip, int val) { clip->_durD = val; })
           .def_property(
               "trackA",
               [](drum4clip_ptr_t clip) -> std::vector<bool> { return clip->_trackA; },
