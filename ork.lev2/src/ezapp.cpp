@@ -416,6 +416,7 @@ int OrkEzApp::mainThreadLoop() {
       double step = 1.0 / 400.0;
 
       if(_initdata->_audio){
+        static auto auddev = AudioDevice::instance();
         if(audio::singularity::synth::instance()){
           audio::singularity::synth::instance()->mainThreadHandler();
         }
