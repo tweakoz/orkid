@@ -25,7 +25,7 @@
 #define FFTCONVOLVER_USE_SSE
 
 #if defined (FFTCONVOLVER_USE_SSE)
-  #if defined(__APPLE__)
+  #if ARCHITECTURE==AARCH64
   #include <sse2neon.h>
   #else
   #include <xmmintrin.h>
