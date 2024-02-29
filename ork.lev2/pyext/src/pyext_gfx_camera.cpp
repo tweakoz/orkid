@@ -150,6 +150,18 @@ void pyinit_gfx_camera(py::module& module_lev2) {
               [](ezuicam_ptr_t uic, bool c) { //
                 uic->_constrainZ = c;
               })
+          .def_property("loc_min",[](ezuicam_ptr_t uic) -> float { //
+                return uic->_loc_min;
+              },
+              [](ezuicam_ptr_t uic, float value) { //
+                uic->_loc_min = value;
+              })
+          .def_property("loc_max",[](ezuicam_ptr_t uic) -> float { //
+                return uic->_loc_max;
+              },
+              [](ezuicam_ptr_t uic, float value) { //
+                uic->_loc_max = value;
+              })
           ;
   type_codec->registerStdCodec<ezuicam_ptr_t>(ezuicam_type);
   /////////////////////////////////////////////////////////////////////////////

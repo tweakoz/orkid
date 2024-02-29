@@ -107,6 +107,7 @@ struct Layer {
   void reTriggerMono(int note, int velocity);
   void keyOff();
 
+  programinst_ptr_t _programinst = nullptr;
   std::mutex _mutex;
 
   int _dspwritebase;

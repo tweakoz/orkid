@@ -43,6 +43,11 @@ void appendStereoDistortion(
     dspstagedata_ptr_t stage,
     float adj);
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoShaper(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float adj);
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighPass(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
@@ -119,6 +124,8 @@ lyrdata_ptr_t fxpreset_wackiverb();
 lyrdata_ptr_t fxpreset_pitchoctup();
 lyrdata_ptr_t fxpreset_pitchwave();
 lyrdata_ptr_t fxpreset_pitchchorus();
+lyrdata_ptr_t fxpreset_vowels();
+lyrdata_ptr_t fxpreset_violins();
 lyrdata_ptr_t fxpreset_none();
 void loadAllFxPresets(synth* s);
 ///////////////////////////////////////////////////////////////////////////////

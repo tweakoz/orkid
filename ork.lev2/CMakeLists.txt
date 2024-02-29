@@ -87,6 +87,7 @@ IF(${APPLE})
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
+    list(APPEND libs "-framework Accelerate" )
     list(APPEND libs glfw.3 vulkan.1)
 ELSEIF(${UNIX})
 
@@ -94,15 +95,15 @@ ELSEIF(${UNIX})
     set(ENV{PATH}=$ENV{PATH}:${OBT_VULKAN_ROOT}/bin)
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
     set(ENV{VK_LAYER_PATH}=$ENV{OBT_VULKAN_ROOT}/etc/vulkan/explicit_layer.d)
+
+    target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
+    target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
+
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       list(APPEND libs openvr_api )
       target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
       list(APPEND libs vulkan )
-
-      target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
-
-      target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
 
       IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
       IF(EXISTS ENV{RENDERDOC_DIR}/include/)

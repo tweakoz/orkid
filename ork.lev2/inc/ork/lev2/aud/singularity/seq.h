@@ -190,6 +190,40 @@ struct ClickClip : public Clip {
 };
 
 ////////////////////////////////////////////////////////////////
+
+struct Drum4Clip : public Clip {
+
+  Drum4Clip();
+
+  eventiterator_ptr_t firstEvent() const final;
+  eventiterator_ptr_t nextEvent(eventiterator_ptr_t) const final;
+  bool eventValid(eventiterator_ptr_t) const final;
+
+  eventiterator_ptr_t _makeEvent(int step, int track_id) const;
+
+  int _noteA = 60;
+  int _velA  = 32;
+  int _noteB = 60;
+  int _velB  = 32;
+  int _noteC = 60;
+  int _velC  = 32;
+  int _noteD = 60;
+  int _velD  = 32;
+  int _durA = 10;
+  int _durB = 10;
+  int _durC = 10;
+  int _durD = 10;
+  
+  //mutable int _currentStep = 0;
+
+  std::vector<bool> _trackA;
+  std::vector<bool> _trackB;
+  std::vector<bool> _trackC;
+  std::vector<bool> _trackD;
+
+};
+
+////////////////////////////////////////////////////////////////
 using clipmap_t = std::map<timestamp_ptr_t, clip_ptr_t, TimeStampComparatorLess>;
 ////////////////////////////////////////////////////////////////
 
@@ -197,6 +231,7 @@ struct Track {
 
   clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
+  clip_ptr_t createDrum4ClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clip_ptr_t createClickClip(std::string named);
   std::string _name;
   clipmap_t _clips_by_timestamp;

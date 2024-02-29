@@ -227,14 +227,16 @@ void TrackPlayback::process(const SequencePlayback* seqpb) {
   ///////////////////////////
   // debug output
   ///////////////////////////
-  if (_clip_str.length() or _ev_str.length()) {
-    printf("  TR<%s>\n", _track->_name.c_str());
-  }
-  if (_clip_str.length()) {
-    printf("    %s\n", _clip_str.c_str());
-  }
-  if (_ev_str.length()) {
-    printf("    %s\n", _ev_str.c_str());
+  if(0){
+    if (_clip_str.length() or _ev_str.length()) {
+      printf("  TR<%s>\n", _track->_name.c_str());
+    }
+    if (_clip_str.length()) {
+      printf("    %s\n", _clip_str.c_str());
+    }
+    if (_ev_str.length()) {
+      printf("    %s\n", _ev_str.c_str());
+    }
   }
 }
 

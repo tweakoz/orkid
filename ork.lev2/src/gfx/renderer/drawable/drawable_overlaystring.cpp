@@ -13,8 +13,25 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
 
+ImplementReflectionX(ork::lev2::OverlayStringDrawableData, "OverlayStringDrawableData");
+
 namespace ork::lev2 {
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void OverlayStringDrawableData::describeX(object::ObjectClass* clazz) {
+}
+///////////////////////////////////////////////////////////////////////////////
+OverlayStringDrawableData::OverlayStringDrawableData() {
+  _font = "i14";
+  _color = fcolor4::Yellow();
+}
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t OverlayStringDrawableData::createDrawable() const {
+  return std::make_shared<OverlayStringDrawable>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void OverlayStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
@@ -24,15 +41,17 @@ void OverlayStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
-  cb_renderable._drawDataA.set<std::string>(_currentString);
+  cb_renderable._drawDataA.set<std::string>(_data->_initialString);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 ///////////////////////////////////////////////////////////////////////////////
-OverlayStringDrawable::OverlayStringDrawable()
-    : Drawable() {
+OverlayStringDrawable::OverlayStringDrawable(const OverlayStringDrawableData* data)
+    : Drawable()
+    , _data(data) {
 
-      _font = "i14";
-      _color = fcolor4::Yellow();
+  _font = _data->_font;
+  _color = _data->_color;
+  _currentString = _data->_initialString;
 
   _rendercb = [this](lev2::RenderContextInstData& RCID){
     auto context = RCID.context();

@@ -119,28 +119,27 @@ outbus_ptr_t synth::outputBus(std::string named) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 std::atomic<int> galloccount = 0;
-delaycontext_ptr_t synth::allocDelayLine(){
+delaycontext_ptr_t synth::allocDelayLine() {
   delaycontext_ptr_t rval;
-  _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+  _delayspool.atomicOp([&](delaydequeue_t& unlocked) {
     OrkAssert(unlocked.size());
     rval = unlocked.back();
     unlocked.pop_back();
     int count = galloccount.fetch_add(1);
-    printf("alloc<%d>\n", count );
+    // printf("alloc<%d>\n", count );
   });
   return rval;
 }
-void synth::freeDelayLine(delaycontext_ptr_t delay){
-  auto op = [this,delay](){
+void synth::freeDelayLine(delaycontext_ptr_t delay) {
+  auto op = [this, delay]() {
     delay->clear();
-    _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+    _delayspool.atomicOp([&](delaydequeue_t& unlocked) {
       unlocked.push_front(delay);
       int count = galloccount.fetch_add(-1);
-      printf("free<%d>\n", count );
+      // printf("free<%d>\n", count );
     });
   };
   opq::concurrentQueue()->enqueue(op);
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 synth::synth()
@@ -155,19 +154,19 @@ synth::synth()
 
   logchan_synth->log("clearing delay lines...");
   std::atomic<int> delayopcounter = 0;
-  for( int i=0; i<1024; i++){
-    auto op = [this,&delayopcounter](){
+  for (int i = 0; i < 1024; i++) {
+    auto op = [this, &delayopcounter]() {
       delayopcounter.fetch_add(1);
       auto delay = std::make_shared<DelayContext>();
       delay->clear();
-      _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+      _delayspool.atomicOp([&](delaydequeue_t& unlocked) {
         unlocked.push_back(delay);
         delayopcounter.fetch_sub(1);
       });
     };
     opq::concurrentQueue()->enqueue(op);
   }
-  while(delayopcounter.load()>0){
+  while (delayopcounter.load() > 0) {
     usleep(1000);
   }
   logchan_synth->log("delay lines cleared.");
@@ -298,7 +297,7 @@ void synth::deactivateVoices() {
     }
 
     auto it = _activeVoices.find(l);
-    if(it!=_activeVoices.end()){
+    if (it != _activeVoices.end()) {
       _activeVoices.erase(it);
     }
 
@@ -366,18 +365,18 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, 
   // SEQUENCER RECORDING
   ///////////////////////////////////////
 
-  if(_sequencer->_recording_clip){
+  if (_sequencer->_recording_clip) {
     auto rec_track = _sequencer->_recording_track;
-    if(rec_track->_outbus==_curprogrambus){
+    if (rec_track->_outbus == _curprogrambus) {
       auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
-      if(as_evclip){
-        float time = _timeaccum;
-        auto pb0 = _sequencer->_sequence_playbacks[0];
-        auto ts_start = pb0->_sequence->_timebase->timeToTimeStamp(time); 
-        auto nonev = std::make_shared<NoteOnEvent>();
-        nonev->_note = note;
-        nonev->_velocity = velocity;
-        nonev->_timestamp = ts_start;
+      if (as_evclip) {
+        float time                          = _timeaccum;
+        auto pb0                            = _sequencer->_sequence_playbacks[0];
+        auto ts_start                       = pb0->_sequence->_timebase->timeToTimeStamp(time);
+        auto nonev                          = std::make_shared<NoteOnEvent>();
+        nonev->_note                        = note;
+        nonev->_velocity                    = velocity;
+        nonev->_timestamp                   = ts_start;
         as_evclip->_rec_noteon_events[note] = nonev;
       }
     }
@@ -448,39 +447,34 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
   // SEQUENCER RECORDING
   ///////////////////////////////////////
 
-  if(_sequencer->_recording_clip){
+  if (_sequencer->_recording_clip) {
     auto as_evclip = std::dynamic_pointer_cast<EventClip>(_sequencer->_recording_clip);
-    if(as_evclip){
+    if (as_evclip) {
       auto rec_track = _sequencer->_recording_track;
-      if(rec_track->_outbus==_curprogrambus){
-        float time = _timeaccum;
-        auto pb0 = _sequencer->_sequence_playbacks[0];
+      if (rec_track->_outbus == _curprogrambus) {
+        float time    = _timeaccum;
+        auto pb0      = _sequencer->_sequence_playbacks[0];
         auto timebase = pb0->_sequence->_timebase;
-        auto ts_end = timebase->timeToTimeStamp(time); 
-        auto it = as_evclip->_rec_noteon_events.find(note);
-        OrkAssert(it!=as_evclip->_rec_noteon_events.end());
-        auto nonev = it->second;
+        auto ts_end   = timebase->timeToTimeStamp(time);
+        auto it       = as_evclip->_rec_noteon_events.find(note);
+        if (it != as_evclip->_rec_noteon_events.end()) {
+          auto nonev = it->second;
 
-        as_evclip->_rec_noteon_events.erase(it);
+          as_evclip->_rec_noteon_events.erase(it);
 
-        auto ts_start = nonev->_timestamp;
+          auto ts_start = nonev->_timestamp;
 
-        TimeStampComparatorLessEqual compare;
-        bool check = compare(ts_start, ts_end);
-        timestamp_ptr_t ts_duration;
-        if(check){
-          ts_duration = ts_end->sub(ts_start);
+          TimeStampComparatorLessEqual compare;
+          bool check = compare(ts_start, ts_end);
+          timestamp_ptr_t ts_duration;
+          if (check) {
+            ts_duration = ts_end->sub(ts_start);
+          } else {
+            ts_start    = std::make_shared<TimeStamp>();
+            ts_duration = ts_end->sub(ts_start);
+          }
+          as_evclip->createNoteEvent(ts_start, ts_duration, nonev->_note, nonev->_velocity);
         }
-        else{
-          ts_start = std::make_shared<TimeStamp>();
-          ts_duration = ts_end->sub(ts_start);
-        }
-        as_evclip->createNoteEvent(
-          ts_start,
-          ts_duration,
-          nonev->_note,
-          nonev->_velocity
-        );
       }
     }
   }
@@ -494,13 +488,13 @@ void synth::liveKeyOff(programInst* pinst, int note, int velocity) {
     do_key_off = (_prgchannel->_monokeycount == 0);
     if (not do_key_off) {
       int count = _prgchannel->_mononotes.size();
-      for(int i=count-1; i>=0; i-- ){
-        if( _prgchannel->_mononotes[i] == note ){
-          auto it = _prgchannel->_mononotes.begin()+i;
+      for (int i = count - 1; i >= 0; i--) {
+        if (_prgchannel->_mononotes[i] == note) {
+          auto it = _prgchannel->_mononotes.begin() + i;
           _prgchannel->_mononotes.erase(it);
           count = _prgchannel->_mononotes.size();
-          if(count){
-            int prev = _prgchannel->_mononotes[count-1];
+          if (count) {
+            int prev = _prgchannel->_mononotes[count - 1];
             addEvent(0.0f, [prev, pinst]() {
               for (auto l : pinst->_layers) {
                 l->reTriggerMono(prev, 0);
@@ -614,8 +608,8 @@ void synth::mainThreadHandler() {
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
 
   float fv = float(velocity) / 127.0f;
-  fv = powf(fv, _velcurvepower);
-  velocity = int(fv*127.0f);
+  fv       = powf(fv, _velcurvepower);
+  velocity = int(fv * 127.0f);
 
   assert(pdata);
   programInst* pi = nullptr;
@@ -820,23 +814,61 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       /////////////////////////////
       // accumulate layers into busses
       /////////////////////////////
-      for (auto l : _activeVoices) {
-        l->mixToBus(_dspwritebase, _dspwritecount);
-        l->updateScopes(_dspwritebase, _dspwritecount);
+      if (false) { // serial
+        for (auto l : _activeVoices) {
+          l->mixToBus(_dspwritebase, _dspwritecount);
+          l->updateScopes(_dspwritebase, _dspwritecount);
+        }
+      } else { // parallel
+        //////
+        for (auto bitem : _outputBusses) {
+          auto bus = bitem.second;
+          bus->_exec_layers.clear();
+        }
+        //////
+        for (auto l : _activeVoices) {
+          auto bus = l->_outbus;
+          bus->_exec_layers.push_back(l);
+        }
+        //////
+        std::atomic<int> pending = 0;
+        for (auto bitem : _outputBusses) {
+          auto bus = bitem.second;
+          pending.fetch_add(1);
+          auto op = [this, bus, &pending]() {
+            for (auto l : bus->_exec_layers) {
+              l->mixToBus(_dspwritebase, _dspwritecount);
+            }
+            pending.fetch_sub(1);
+          };
+          opq::concurrentQueue()->enqueue(op);
+        }
+        //////
+        while (pending.load() > 0) {
+        }
+        //////
+        for (auto l : _activeVoices) {
+          l->updateScopes(_dspwritebase, _dspwritecount);
+        }
+        //////
       }
       /////////////////////////////
       // compute/accumulate output busses
       //  (into main output)
       /////////////////////////////
+      std::atomic<int> pending = 0;
+      bool serial              = false;
       for (auto busitem : _outputBusses) {
+        bool is_last_bus = (busitem.first == _outputBusses.rbegin()->first);
         auto bus         = busitem.second;
-        auto& bus_buf    = bus->_buffer;
-        float* bus_left  = bus_buf._leftBuffer;
-        float* bus_right = bus_buf._rightBuffer;
-        //////////////////////////////////////////
-        // bus DSP fx
-        //////////////////////////////////////////
-        if (1) {
+        pending.fetch_add(1);
+        auto op = [&pending, bus, this, inumframes]() {
+          auto& bus_buf    = bus->_buffer;
+          float* bus_left  = bus_buf._leftBuffer;
+          float* bus_right = bus_buf._rightBuffer;
+          //////////////////////////////////////////
+          // bus DSP fx
+          //////////////////////////////////////////
           auto busdsplayer = bus->_dsplayer;
           if (busdsplayer) {
             auto dsp_buf = busdsplayer->_dspbuffer;
@@ -871,7 +903,24 @@ void synth::compute(int inumframes, const void* inputBuffer) {
             }
             //////////////////////////////////////////
           }
+          pending.fetch_sub(1);
+        };
+        if (serial or is_last_bus) {
+          op();
+        } else {
+          opq::concurrentQueue()->enqueue(op);
         }
+      }
+      while (pending.load() > 0) {
+      }
+      //////////////////////////////////////////
+      // accumulate busses to master
+      //////////////////////////////////////////
+      for (auto busitem : _outputBusses) {
+        auto bus         = busitem.second;
+        auto& bus_buf    = bus->_buffer;
+        float* bus_left  = bus_buf._leftBuffer;
+        float* bus_right = bus_buf._rightBuffer;
         //////////////////////////////////////////
         // accumulate bus to master
         //////////////////////////////////////////
@@ -894,6 +943,22 @@ void synth::compute(int inumframes, const void* inputBuffer) {
         }
       }
       ////////////////////////////////
+      // master bus DSP
+      ////////////////////////////////
+      if(_enableMasterEq){
+        for (int i = 0; i < _dspwritecount; i++) {
+          int j   = _dspwritebase + i;
+          float L = master_left[j];
+          float R = master_right[j];
+          for( int ifilt=0; ifilt<1; ifilt++ ){
+            L = _peqL[ifilt].compute(L);
+            R = _peqR[ifilt].compute(R);
+          }
+          master_left[j] = L;
+          master_right[j] = R;
+        }
+      }
+      ////////////////////////////////
       // update indices
       ////////////////////////////////
       _dspwritebase += frames_per_controlpass;
@@ -909,8 +974,8 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   /////////////////////////////
   float clamp = 2.0f;
   for (int i = 0; i < inumframes; i++) {
-    //float L = clip_float(master_left[i] * _masterGain, -clamp, clamp);
-    //float R = clip_float(master_right[i] * _masterGain, -clamp, clamp);
+    // float L = clip_float(master_left[i] * _masterGain, -clamp, clamp);
+    // float R = clip_float(master_right[i] * _masterGain, -clamp, clamp);
     float L = master_left[i] * _masterGain;
     float R = master_right[i] * _masterGain;
     if (isnan(L) or isinf(L)) {
@@ -980,7 +1045,7 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod) {
 
-  _note = note;
+  _note     = note;
   _velocity = velocity;
 
   _keymods = kmod;
@@ -1024,9 +1089,10 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     assert(l != nullptr);
     assert(ld != nullptr);
 
-    l->_ldindex = ilayer - 1;
-    l->_keymods = _keymods;
-    l->_name    = ld->_name;
+    l->_ldindex     = ilayer - 1;
+    l->_keymods     = _keymods;
+    l->_name        = ld->_name;
+    l->_programinst = this;
 
     syn->_keyOnLayer(l, note, velocity, ld, kmod);
 
@@ -1087,18 +1153,34 @@ void synth::registerSinkForHudEvent(uint32_t evID, hudeventsink_ptr_t sink) {
   _hudEventRouter->registerSinkForHudEvent(evID, sink);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void synth::enqueueHudEvent(hudevent_ptr_t hev){
+void synth::enqueueHudEvent(hudevent_ptr_t hev) {
   _hudEventRouter->_hudevents.push(hev);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::panic(){
-  addEvent(0.0f, [=](){
-    for( auto l : _activeVoices ){
+void synth::panic() {
+  addEvent(0.0f, [=]() {
+    for (auto l : _activeVoices) {
       _deactiveateVoiceQ.push(l);
     }
     _activeVoices.clear();
   });
+}
+
+void synth::disableMasterEq(){
+  _enableMasterEq = false;
+}
+void synth::enableMasterEq(){
+  _enableMasterEq = true;
+}
+void synth::setMasterEqBand(int band, float frqHZ, float widthHZ, float gainDB){
+  OrkAssert(band>=0);
+  OrkAssert(band<8);
+  _peqL[band].Clear();
+  _peqR[band].Clear();
+  _peqL[band].set2(frqHZ, widthHZ, gainDB);
+  _peqR[band].set2(frqHZ, widthHZ, gainDB);
+
 }
 
 } // namespace ork::audio::singularity

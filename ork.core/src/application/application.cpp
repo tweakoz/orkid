@@ -67,6 +67,9 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     this->_offscreen  = vars["offscreen"].as<bool>();
     this->_fullscreen = false;
   }
+  if (_commandline_vars->count("audio")) {
+    this->_audio = vars["audio"].as<bool>();
+  }
   if (_commandline_vars->count("top")) {
     this->_top = vars["top"].as<int>();
   }

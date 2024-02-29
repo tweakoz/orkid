@@ -12,6 +12,8 @@
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 #include <ork/lev2/gfx/util/movie.inl>
+#include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/singularity/synth.h>
 
 using namespace std::string_literals;
 
@@ -413,6 +415,13 @@ int OrkEzApp::mainThreadLoop() {
       _update_timeaccumulator += raw_delta;
       double step = 1.0 / 400.0;
 
+      if(_initdata->_audio){
+        static auto auddev = AudioDevice::instance();
+        if(audio::singularity::synth::instance()){
+          audio::singularity::synth::instance()->mainThreadHandler();
+        }
+      }
+
       if(_update_timeaccumulator >= step) {
 
         bool do_update = bool(_mainWindow->_onUpdate);
@@ -465,6 +474,12 @@ int OrkEzApp::mainThreadLoop() {
   ///////////////////////////////
 
   glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
+
+    if(_initdata->_audio){
+      auto the_dev = AudioDevice::instance();
+      auto the_synth = audio::singularity::synth::instance();
+    }
+
     if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
 
@@ -482,9 +497,6 @@ int OrkEzApp::mainThreadLoop() {
   glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuUpdate) {
       _mainWindow->_onGpuUpdate(context);
-    }
-    if(audio::singularity::synth::instance()){
-      audio::singularity::synth::instance()->mainThreadHandler();
     }
   };
 

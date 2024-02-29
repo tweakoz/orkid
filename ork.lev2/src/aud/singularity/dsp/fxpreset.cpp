@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -491,7 +492,7 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   pmod->_src1Scale     = 1.0;
   PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
     float time    = cci->_layer->_layerTime;
-    cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;
+    cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 1200.0f;
     return cci->_value.x;
   };
   /////////////////
@@ -526,7 +527,28 @@ lyrdata_ptr_t fxpreset_pitchrec() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  appendPitchRec(fxlayer, fxstage, 700, 0.5, 0.5);
+  appendPitchRec(fxlayer, fxstage, 400, 0.5, 0.35);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_stereodelay() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto stdel = fxstage->appendTypedBlock<StereoDelay>("StereoDelay");
+  //stdel->param(0)->_coarse = fc;
+  //stdel->param(0)->_coarse = fc;
+  //eql->addDspChannel(0);
+  //eqr->addDspChannel(1);
+  //appendStereoHighPass(fxlayer, fxstage, 90.0f);
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -565,6 +587,176 @@ lyrdata_ptr_t fxpreset_multitest() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_vowels() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto vowels = fxstage->appendTypedBlock<SpectralConvolve>("vowels");
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(256);
+  vowels->_impulse_dataset = dataset;
+  /////////////////
+  float strength = 32.0f;
+  auto A = std::make_shared<SpectralImpulseResponse>();
+  auto E = std::make_shared<SpectralImpulseResponse>();
+  auto I = std::make_shared<SpectralImpulseResponse>();
+  auto O = std::make_shared<SpectralImpulseResponse>();
+  auto U = std::make_shared<SpectralImpulseResponse>();
+  A->vowelFormant('A',strength);
+  E->vowelFormant('E',strength);
+  I->vowelFormant('I',strength);
+  O->vowelFormant('O',strength);
+  U->vowelFormant('U',strength);
+  /////////////////
+  for( int i=0; i<256; i++ ){
+    float fi = float(i)/256.0f;
+    auto IR = std::make_shared<SpectralImpulseResponse>();
+    if( fi < 0.25f ){
+      IR->blend(*A,*E,fi/0.25f);
+    }
+    else if( fi < 0.5f ){
+      IR->blend(*E,*I,(fi-0.25f)/0.25f);
+    }
+    else if( fi < 0.75f ){
+      IR->blend(*I,*O,(fi-0.5f)/0.25f);
+    }
+    else {
+      IR->blend(*O,*U,(fi-0.75f)/0.25f);
+    }
+
+    dataset->_impulses[i] = IR;
+  }
+  auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  vowels->param(0)->_coarse = 0.5f;
+  vowels->param(0)->_mods->_src1 = lfo;
+  vowels->param(0)->_mods->_src1Scale = 0.5;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_violins() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto violins = fxstage->appendTypedBlock<SpectralConvolve>("violins");
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(256);
+  violins->_impulse_dataset = dataset;
+  for( int i=0; i<256; i++ ){
+    float fi = float(i)/256.0f;
+    auto IR = std::make_shared<SpectralImpulseResponse>();
+    IR->violinFormant(16.0f);
+    dataset->_impulses[i] = IR;
+  }
+
+  auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  violins->param(0)->_coarse = 0.5f;
+  violins->param(0)->_mods->_src1 = lfo;
+  violins->param(0)->_mods->_src1Scale = 0.5;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_testamp() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  //appendStereoEnhancer(fxlayer, fxstage);
+  //appendStereoShaper(fxlayer,fxstage,0.01f);
+  //appendStereoHighFreqStimulator(fxlayer,fxstage,2000.0f,30.0f,-30.0f);
+  //auto tofd = fxstage->appendTypedBlock<ToFrequencyDomain>("tofd");
+  auto cabinet = fxstage->appendTypedBlock<SpectralConvolveTD>("cabinet");
+  auto postamp = fxstage->appendTypedBlock<AMP_ADAPTIVE>("postamp");
+  appendStereoHighPass(fxlayer, fxstage, 60.0f);
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(1);
+  cabinet->_impulse_dataset = dataset;
+  auto IR = std::make_shared<SpectralImpulseResponse>();
+  auto base      = ork::audio::singularity::basePath() / "IRs";
+  auto ir_path = base/"Fender SuperChamp AT4050.wav";
+  IR->loadAudioFileX(ir_path.c_str());
+  dataset->_impulses[0] = IR;
+
+  //auto totd = fxstage->appendTypedBlock<ToTimeDomain>("totd");
+  /////////////////
+  auto lfo = fxlayer->appendController<LfoData>("LFO");
+  lfo->_minRate = 0.3;
+  lfo->_maxRate = 0.3;
+
+  cabinet->param(0)->_coarse = 0.5f;
+  cabinet->param(0)->_mods->_src1 = lfo;
+  cabinet->param(0)->_mods->_src1Scale = 0.5;
+  postamp->param(0)->_coarse = -6;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_IR(std::string ampname, float mix, float postgain) {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // load IR dataset
+  /////////////////
+  auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
+  dataset->_impulses.resize(1);
+  auto IR = std::make_shared<SpectralImpulseResponse>(256);
+  auto base      = ork::audio::singularity::basePath() / "IRs";
+  auto ir_path = base/ampname;
+  IR->loadAudioFileX(ir_path.c_str(),false);
+  dataset->_impulses[0] = IR;
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  auto convolve = fxstage->appendTypedBlock<SpectralConvolveTD>("convolve");
+  convolve->_impulse_dataset = dataset;
+  auto postamp = fxstage->appendTypedBlock<AMP_ADAPTIVE>("postamp");
+  appendStereoHighPass(fxlayer, fxstage, 60.0f);
+  /////////////////
+  convolve->param(0)->_coarse = mix;
+  convolve->param(1)->_coarse = 1.0f;
+  postamp->param(0)->_coarse = postgain;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_none() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -593,7 +785,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("Reverb:FDN8", fxpreset_fdn8reverb());
   addpreset("Reverb:FDNX", fxpreset_fdnxreverb());
   addpreset("Reverb:OilTank", fxpreset_oiltankreverb());
-  addpreset("Reverb:TEST", fxpreset_testverb());
+  //addpreset("Reverb:TEST", fxpreset_testverb());
   addpreset("Reverb:GuyWire", fxpreset_guywireeverb());
   addpreset("Reverb:NiceVerb", fxpreset_niceverb());
   addpreset("Reverb:EchoVerb", fxpreset_echoverb());
@@ -607,5 +799,25 @@ void loadAllFxPresets(synth* s) {
   addpreset("ShifterChorus", fxpreset_pitchchorus());
   addpreset("ShifterRec", fxpreset_pitchrec());
   addpreset("MultiTest", fxpreset_multitest());
+  addpreset("StereoDelay", fxpreset_stereodelay());
+  addpreset("Vowels", fxpreset_vowels());
+  addpreset("Violins", fxpreset_violins());
+  addpreset("AmpTest", fxpreset_testamp());
+  addpreset("AmpAT4050A", fxpreset_IR("Fender SuperChamp AT4050.wav",1.0,-12));
+  addpreset("AmpAT4050B", fxpreset_IR("Fender Bassman AT4050.wav",1.0,-12));
+  addpreset("AmpAT4050C", fxpreset_IR("Fender 68-Vibrolux AT4050.wav",1.0,+0));
+  addpreset("AmpJCM2KA", fxpreset_IR("Marshall JCM2000 SM57.wav",1.0,-12));
+  addpreset("AmpJCM2KB", fxpreset_IR("Marshall JCM2000 SM57 off Axis.wav",1.0,-18));
+  addpreset("AmpJMKSC2", fxpreset_IR("JoeMeek SC2 Impulse Hard.wav",1.0,-6));
+  addpreset("AmpSVTB52", fxpreset_IR("Ampeg SVT Beta52.wav",1.0,-6));
+  addpreset("IR-WLANE", fxpreset_IR("WoodruffLane.wav",0.5,-6));
+  addpreset("IR-1", fxpreset_IR("TunnelToHeaven.wav",0.25,-18));
+  addpreset("IR-2", fxpreset_IR("TunnelToHell.wav",0.1,-24));
+  addpreset("IR-3", fxpreset_IR("SteinmanHall.wav",0.20,-6));
+  addpreset("IR-4", fxpreset_IR("StorageTankNo7.wav",0.20,-6));
+  addpreset("IR-5", fxpreset_IR("PacificHall.wav",0.20,-6));
+  addpreset("IR-6", fxpreset_IR("PepperCanyonHall.wav",0.18,-18));
+  addpreset("IR-7", fxpreset_IR("5012 Black Hole.SDIR",0.25,0));
+  
 }
 } // namespace ork::audio::singularity

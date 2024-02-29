@@ -79,7 +79,11 @@ struct TrapAllpass {
 struct ParaOne {
   void Clear();
   void set(float f, float w, float g);
+  void set2(float frqHZ, float bandwidthHZ, float gainDB);
   float compute(float inp);
+
+  bool _enable = false;
+
   float _c0, _c1, _c2;
   float _arc, _gain, _a;
   float _del1, _del2;
@@ -90,8 +94,10 @@ struct ParaOne {
 struct BiQuad {
   BiQuad();
   void Clear();
+  void lerp(const BiQuad& oth, float index);
   float compute(float input);
   float compute2(float input);
+  float compute3(float input);
   void SetLpfReson(float kfco, float krez);
   void SetLpf(float kfco);
   void SetHpf(float kfco);
@@ -118,6 +124,12 @@ struct OnePoleLoPass {
   float compute(float inp);
   float lp_b1, lp_a0;
   float lp_outl;
+};
+struct MultiStageLoPass {
+  void init(int num_stages);
+  void set(float cutoff);
+  float compute(float inp);
+  std::vector<OnePoleLoPass> _stages;
 };
 
 struct OnePoleHiPass {

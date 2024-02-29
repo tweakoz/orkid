@@ -44,6 +44,7 @@ struct ProgramData : public ork::Object {
   std::string _tags;
   bool _monophonic = false;
   float _portamento_rate = 0.0f;
+  float _gainDB = 0.0f;
   std::vector<lyrdata_ptr_t> _layerdatas;
   std::vector<std::string> _hudinfos;
   varmap::varmap_ptr_t _varmap;

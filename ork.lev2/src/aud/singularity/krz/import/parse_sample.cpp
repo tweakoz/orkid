@@ -29,7 +29,10 @@ MultiSample::MultiSample()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it, int iObjectID, std::string ObjName) {
+void filescanner::ParseSampleHeader(const datablock& db, //
+                                    datablock::iterator& it, //
+                                    int iObjectID, //
+                                    std::string ObjName) { //
   bool bOK;
   u8 u8v;
   s8 s8v;
@@ -49,7 +52,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
   if(itf!=_samples.end()){
     auto end = _samples.rbegin();
-    printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+    //printf ("Duplicate sample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
     iObjectID = end->first + 1;
     OrkAssert(false);
   }
@@ -62,6 +65,8 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 
 
   //printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+
+  bool is_krz_rom_sample = (iObjectID >=0 and iObjectID <= 199) or (iObjectID >= 800 and iObjectID <= 999);
 
   _samples[iObjectID]           = multisample;
 
@@ -283,9 +288,14 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
         //////////////////////////////////////
         // pdls_sample->Resize(inumsmps);
         void* pdest      = pitem->_sampleData;
-        auto sample_block = getK2V3InternalSoundBlock();
 
-        pitem->_sampleData = (void*) (sample_block + opts.start);
+        if(is_krz_rom_sample){
+          auto sample_block = getK2V3InternalSoundBlock();
+          pitem->_sampleData = (void*) (sample_block + opts.start);
+        }
+        else{
+          pitem->_sampleData = (void*) nullptr;
+        }
         //const void* psrc = (const void*)(_sfile.mpSampleData + opts.start);
         //memcpy(pdest, psrc, inumsmps * 2);
         //_sfile.WriteSample( buffer, opts );

@@ -24,6 +24,27 @@ template <typename T> bool Plane<T>::IsCoPlanar(const Plane<T>& OtherPlane) cons
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+typename Plane<T>::vect3_t Plane<T>::reflect(const vect3_t& pt) const {
+  // Calculate a point on the plane using the plane's normal and distance.
+  // Any point on the plane can be represented as n * d, 
+  // where n is the normalized normal and d is the distance from the origin.
+  vect3_t pointOnPlane = n * d;
+  
+  // Calculate the vector from the point on the plane to the input point.
+  vect3_t toPointVec = pt - pointOnPlane;
+  
+  // Project this vector onto the plane's normal.
+  T projectionLength = toPointVec.dotWith(n);
+  
+  // Calculate the reflection vector: Reflect the point across the plane.
+  vect3_t reflection = pt - (n * projectionLength*T(2));
+  
+  return reflection;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 Plane<T>::Plane()
     : n()
     , d(T(0)) {

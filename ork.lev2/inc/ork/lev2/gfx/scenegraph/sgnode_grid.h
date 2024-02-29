@@ -18,6 +18,7 @@ public:
   float _extent = 100.0f;
   float _majorTileDim = 1.0f;
   float _minorTileDim = 0.1f;
+  std::string _shader_suffix = "";
 };
 
 ///////////////////////////////////////////////////////////////////////////////

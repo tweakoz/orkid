@@ -70,9 +70,6 @@ struct PitchShifter : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
-  std::vector<int64_t> _phases;
-  std::vector<delaycontext_ptr_t> _delays;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct RecursivePitchShifterData : public DspBlockData {
@@ -88,28 +85,22 @@ struct RecursivePitchShifter : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
-  int64_t _phaseA;
-  int64_t _phaseB;
-  int64_t _phaseC;
-  int64_t _phaseD;
-  BiQuad _hipassfilter;
-  BiQuad _lopassAfilter;
-  BiQuad _lopassBfilter;
-  BiQuad _lopassCfilter;
-  BiQuad _lopassDfilter;
-  BiQuad _lopassEfilter;
-  BiQuad _lopassFfilter;
-  BiQuad _lopassGfilter;
-  BiQuad _lopassHfilter;
-
-  delaycontext_ptr_t _delayA;
-  delaycontext_ptr_t _delayB;
-  delaycontext_ptr_t _delayC;
-  delaycontext_ptr_t _delayD;
-
-  delaycontext_ptr_t _delayOuter;
   const dataclass_t* _mydata;
 
+};
+///////////////////////////////////////////////////////////////////////////////
+struct TimeDomainConvolveData : public DspBlockData {
+  DeclareConcreteX(TimeDomainConvolveData,DspBlockData);
+  TimeDomainConvolveData(std::string name="X");
+  dspblk_ptr_t createInstance() const override;
+};
+struct TimeDomainConvolve : public DspBlock {
+  using dataclass_t = TimeDomainConvolveData;
+  TimeDomainConvolve(const dataclass_t* dbd);
+  ~TimeDomainConvolve();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  const dataclass_t* _mydata;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoDynamicEchoData : public DspBlockData {
@@ -377,6 +368,20 @@ struct TestReverb : public DspBlock {
   OnePoleHighPass _hipass;
   float _out = 0.0f;
   float _fb1 = 0.0f;
+};
+struct StereoDelayData : public DspBlockData {
+  DeclareConcreteX(StereoDelayData,DspBlockData);
+  StereoDelayData(std::string name="X");
+  dspblk_ptr_t createInstance() const override;
+};
+struct StereoDelay : public DspBlock {
+  using dataclass_t = StereoDelayData;
+  StereoDelay(const StereoDelayData*);
+  ~StereoDelay();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  delaycontext_ptr_t _delayL;
+  delaycontext_ptr_t _delayR;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

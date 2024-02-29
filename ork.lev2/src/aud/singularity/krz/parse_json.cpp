@@ -227,7 +227,7 @@ sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_co
   sout->_blk_loopend   = jsonobj["uEnd"].GetInt();
   sout->_blk_end       = jsonobj["uEnd"].GetInt();
 
-  printf( "sample<%s> start<%d> alt<%d> loopstart<%d> loopend<%d> end<%d>\n",
+  if(0)printf( "sample<%s> start<%d> alt<%d> loopstart<%d> loopend<%d> end<%d>\n",
           sout->_name.c_str(),
           sout->_blk_start,
           sout->_blk_alt,
@@ -385,8 +385,8 @@ void KrzBankDataParser::parseLfo(const rapidjson::Value& jo, controlblockdata_pt
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
   lout->_controller   = jo["rateCtl"].GetString();
-  lout->_minRate      = jo["minRate(hz)"].GetFloat();
-  lout->_maxRate      = jo["maxRate(hz)"].GetFloat();
+  lout->_minRate      = jo["minRate(hz)"].GetFloat()*0.5;
+  lout->_maxRate      = jo["maxRate(hz)"].GetFloat()*0.5;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,8 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
 #include <ork/lev2/aud/singularity/seq.h>
+#include <ork/lev2/aud/singularity/filters.h>
+#include <ork/math/cmatrix4.h>
 
 namespace ork::audio::singularity {
 
@@ -32,6 +34,8 @@ struct programInst {
   std::vector<layer_ptr_t> _layers;
   int _note = 0;
   int _velocity = 0;
+  fmtx4 _emitter_matrix;
+  float _gain = 0.0f;
 };
 
 using onkey_t = std::function<void(
@@ -84,6 +88,7 @@ struct OutputBus {
   float _prog_gain = 0.0f;
   std::vector<outbus_ptr_t> _children;
   fxpresetmap_t::iterator _fxcurpreset;
+  layer_vect_t _exec_layers;
   /////////////////////////
 };
 
@@ -108,6 +113,9 @@ struct synth {
   synth();
   ~synth();
 
+  void disableMasterEq();
+  void enableMasterEq();
+  void setMasterEqBand(int band, float frqHZ, float widthHZ, float gainDB);
 
   using eventmap_t = std::multimap<float, void_lambda_t>;
 
@@ -161,6 +169,10 @@ struct synth {
   std::vector<onkey_t> _onkey_subscribers;
   onprofframe_t _onprofilerframe = nullptr;
   outbus_ptr_t _tempbus;
+
+  bool _enableMasterEq = false;
+  ParaOne _peqL[8];
+  ParaOne _peqR[8];
 
   outputBuffer _ibuf;
   outputBuffer _obuf;
@@ -225,6 +237,7 @@ struct synth {
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
   float _velcurvepower          = 0.5f;
+  fmtx4 _listener_matrix;
 
   outbus_ptr_t _curprogrambus;
 

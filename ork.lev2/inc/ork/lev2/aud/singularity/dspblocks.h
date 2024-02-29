@@ -127,6 +127,7 @@ struct DspBlock {
   int _verticalIndex = -1;
 
   varmap::VarMap _vars;
+  svar64_t _impl[4];
 
   int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
@@ -146,7 +147,8 @@ struct DspStageData final : public ork::Object {
   DspStageData();
 
   dspstagedata_ptr_t clone() const;
-
+  void clear();
+  
   dspblkdata_ptr_t appendBlock();
 
   template <typename T, typename... A>     //

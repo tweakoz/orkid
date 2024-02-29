@@ -214,7 +214,7 @@ void DuGeometryBufferInterface::UnLockVB(const VertexBufferBase& VBuf) {
 }
 void DuGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
   std::free((void*)VBuf._impl.get<void*>());
-  VBuf._impl = svar32_t();
+  VBuf._impl = nullptr;
 }
 
 bool ContextDummy::SetDisplayMode(DisplayMode* mode) {

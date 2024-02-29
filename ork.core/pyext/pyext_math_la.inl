@@ -342,7 +342,14 @@ void pyinit_math_la_t(py::module& module_core, //
   type_codec->registerStdCodec<mat3_t>(mtx3_type);
       /////////////////////////////////////////////////////////////////////////////////
   auto mat4_type = //
-      py::class_<mat4_t>(module_core, mat4_name.c_str(), pybind11::buffer_protocol())
+      py::class_<mat4_t>(module_core, mat4_name.c_str(), pybind11::buffer_protocol(),
+        "4x4 GLM derived matrix class supporting buffer protocol.\n\n"
+        "This class represents a 4x4 matrix and supports the buffer protocol,\n"
+        "allowing it to be used in contexts that require direct buffer access.\n"
+        "The buffer exposes the matrix data as a contiguous array of scalars\n"
+        "(floats or doubles depending on the build), arranged in row-major order.\n"
+        "This class is useful for efficient data exchange with libraries like NumPy,\n"
+        "enabling direct manipulation of matrix data without copying.\n")      
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat4_t& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -566,6 +573,7 @@ void pyinit_math_la_t(py::module& module_core, //
               [](plane_t& plane, const vec3_t& pta, const vec3_t& ptb, const vec3_t& ptc) {
                 plane.CalcPlaneFromTriangle(pta, ptb, ptc);
               })
+          .def("reflect", [](const plane_t& plane, const vec3_t& point) -> vec3_t { return plane.reflect(point); })
           .def("isPointInFront", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointInFront(point); })
           .def("isPointBehind", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointBehind(point); })
           .def("isPointCoplanar", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointCoplanar(point); })

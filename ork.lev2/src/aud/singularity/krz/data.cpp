@@ -54,14 +54,28 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 
     auto& base_json = krz_import->_json_programs;
     dblock        = std::make_shared<DataBlock>();
-    auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
-    array.push_back(0);
-    dblock->addData(array.data(), array.size());
-    DataBlockCache::setDataBlock(krzbase_hash, dblock);
     auto json_path = base/"k2v3base.json";
-    FILE* json_file = fopen(json_path.c_str(), "wb");
-    fwrite(base_json.c_str(), base_json.size(), 1, json_file);
-    fclose(json_file);
+    if(false) {
+      auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
+      array.push_back(0);
+      FILE* json_file = fopen(json_path.c_str(), "wb");
+      fwrite(base_json.c_str(), base_json.size(), 1, json_file);
+      fclose(json_file);
+      dblock->addData(array.data(), array.size());
+      DataBlockCache::setDataBlock(krzbase_hash, dblock);
+    }
+    else { // load from file
+      FILE* json_file = fopen(json_path.c_str(), "rb");
+      size_t length = 0;
+      fseek(json_file, 0, SEEK_END);
+      length = ftell(json_file);
+      printf("length<%zu>\n", length);
+      auto mem = malloc(length+1);
+      fseek(json_file,0,SEEK_SET);
+      fread(mem,length,1,json_file);
+      dblock->addData(mem, length+1);
+
+    }
   }
   KrzBankDataParser parser;
   parser._parsingROM = true;

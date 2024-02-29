@@ -64,6 +64,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "use_audio") {
+                  appinitdata->_audio = py::cast<bool>(item.second);
                 } else if (key == "offscreen") {
                   appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {

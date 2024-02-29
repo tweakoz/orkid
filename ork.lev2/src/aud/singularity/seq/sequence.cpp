@@ -226,6 +226,17 @@ clip_ptr_t Track::createFourOnFloorClipAtTimeStamp(std::string named, timestamp_
 
 ////////////////////////////////////////////////////////////////
 
+clip_ptr_t Track::createDrum4ClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur){
+  auto clip = std::make_shared<Drum4Clip>();
+  clip->_name = named;
+  clip->_duration = dur;
+  clip->_sequence = _sequence;
+  _clips_by_timestamp[ts] = clip;
+  return clip;
+}
+
+////////////////////////////////////////////////////////////////
+
 Sequence::Sequence(std::string named) {
   _name = named;
   _timebase = std::make_shared<TimeBase>(); // 4/4 120bpm

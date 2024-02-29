@@ -26,9 +26,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto drawabledata_type = //
       py::class_<DrawableData, ork::Object, drawabledata_ptr_t>(module_lev2, "DrawableData")
-      .def("createDrawable",[](drawabledata_ptr_t data) -> drawable_ptr_t {
-        return data->createDrawable();
-      });
+          .def("createDrawable", [](drawabledata_ptr_t data) -> drawable_ptr_t { return data->createDrawable(); });
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
@@ -118,7 +116,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "minorTileDim",
               [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
-              [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; });
+              [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; })
+          .def_property(
+              "shader_suffix",
+              [](griddrawabledataptr_t drw) -> std::string { return drw->_shader_suffix; },
+              [](griddrawabledataptr_t drw, std::string val) { drw->_shader_suffix = val; });
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bbdrawdata_type = //
@@ -128,7 +130,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "texturepath",
               [](billboarddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
               [](billboarddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
-            .def_property(
+          .def_property(
               "alpha",
               [](billboarddrawabledataptr_t drw) -> float { return drw->_alpha; },
               [](billboarddrawabledataptr_t drw, float val) { drw->_alpha = val; });
@@ -174,18 +176,15 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "font",
               [](string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
               [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
-          .def(
-              "onRender",
-              [](string_drawabledata_ptr_t drw, py::object callback) { 
-                  drw->_onRender = [callback](RenderContextInstData& RCID){
-                    auto RCFD = RCID._RCFD;
-                    auto DB = RCFD->GetDB();
-                    auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
-                    py::gil_scoped_acquire acquire;
-                    callback(int(vpID));
-                  };
-                })
-              ;
+          .def("onRender", [](string_drawabledata_ptr_t drw, py::object callback) {
+            drw->_onRender = [callback](RenderContextInstData& RCID) {
+              auto RCFD = RCID._RCFD;
+              auto DB   = RCFD->GetDB();
+              auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+              py::gil_scoped_acquire acquire;
+              callback(int(vpID));
+            };
+          });
   type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ptcdrawdata_type = //
@@ -259,27 +258,25 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "pipeline_points",
               [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_points_pipeline; },
-              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_points_pipeline = val; }) 
+              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_points_pipeline = val; })
           .def_property(
               "pipeline_text",
               [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_text_pipeline; },
-              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; }) 
-          .def(
-              "onRender",
-              [](labeled_point_drawabledata_ptr_t drw, py::object callback) { 
-                  drw->_onRender = [callback](RenderContextInstData& RCID){
-                    auto RCFD = RCID._RCFD;
-                    auto DB = RCFD->GetDB();
-                    auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
-                    py::gil_scoped_acquire acquire;
-                    callback(int(vpID));
-                  };
-                })
-              ;
+              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; })
+          .def("onRender", [](labeled_point_drawabledata_ptr_t drw, py::object callback) {
+            drw->_onRender = [callback](RenderContextInstData& RCID) {
+              auto RCFD = RCID._RCFD;
+              auto DB   = RCFD->GetDB();
+              auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+              py::gil_scoped_acquire acquire;
+              callback(int(vpID));
+            };
+          });
   type_codec->registerStdCodec<labeled_point_drawabledata_ptr_t>(labeledpoint_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto billboard_drawdata_type = //
-      py::class_<BillboardStringDrawableData, DrawableData, billboard_string_drawabledata_ptr_t>(module_lev2, "BillboardStringDrawableData")
+      py::class_<BillboardStringDrawableData, DrawableData, billboard_string_drawabledata_ptr_t>(
+          module_lev2, "BillboardStringDrawableData")
           .def(py::init<>())
           .def_property(
               "text",
@@ -310,13 +307,38 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](billboard_string_drawabledata_ptr_t drw) -> crcstring_ptr_t { //
                 auto crcstr = std::make_shared<CrcString>(uint64_t(drw->_blendmode));
                 return crcstr;
-            },
+              },
               [](billboard_string_drawabledata_ptr_t drw, crcstring_ptr_t ctest) { //
-                drw->_blendmode = BlendingMacro(ctest->hashed());
-            })*/
-            ;
+                drw->_blendmode = Blending(ctest->hashed());
+              })*/;
   type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto overlay_drawdata_type = //
+      py::class_<OverlayStringDrawableData, DrawableData, overlay_string_drawabledata_ptr_t>(
+          module_lev2, "OverlayStringDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "text",
+              [](overlay_string_drawabledata_ptr_t drw) -> std::string { return drw->_initialString; },
+              [](overlay_string_drawabledata_ptr_t drw, std::string val) { drw->_initialString = val; })
+          .def_property(
+              "font",
+              [](overlay_string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
+              [](overlay_string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
+          .def_property(
+              "position",
+              [](overlay_string_drawabledata_ptr_t drw) -> fvec2 { return drw->_position; },
+              [](overlay_string_drawabledata_ptr_t drw, fvec2 val) { drw->_position = val; })
+          .def_property(
+              "scale",
+              [](overlay_string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
+              [](overlay_string_drawabledata_ptr_t drw, float val) { drw->_scale = val; })
+          .def_property(
+              "color",
+              [](overlay_string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](overlay_string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
+  type_codec->registerStdCodec<overlay_string_drawabledata_ptr_t>(overlay_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 
-} //namespace ork::lev2 {
+} // namespace ork::lev2

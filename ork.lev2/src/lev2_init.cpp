@@ -59,6 +59,7 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/lev2/aud/singularity/spectral.h>
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
@@ -188,6 +189,7 @@ struct ClassToucher {
     InstancedModelDrawableData::GetClassStatic();
     BillboardStringDrawableData::GetClassStatic();
     InstancedBillboardStringDrawableData::GetClassStatic();
+    OverlayStringDrawableData::GetClassStatic();
 
     GridDrawableData::GetClassStatic();
     GroundPlaneDrawableData::GetClassStatic();
@@ -381,10 +383,19 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::PitchShifterData);
     RegisterClassX(audio::singularity::RecursivePitchShifterData);
 
+    RegisterClassX(audio::singularity::ToFrequencyDomainData);
+    RegisterClassX(audio::singularity::ToTimeDomainData);
+    RegisterClassX(audio::singularity::SpectralShiftData);
+    RegisterClassX(audio::singularity::SpectralScaleData);
+    RegisterClassX(audio::singularity::SpectralConvolveData);
+    RegisterClassX(audio::singularity::SpectralConvolveTDData);
+    RegisterClassX(audio::singularity::SpectralTestData);
+
     RegisterClassX(audio::singularity::Sum2Data);
     RegisterClassX(audio::singularity::StereoEnhancerData);
     RegisterClassX(audio::singularity::StereoDynamicEchoData);
     RegisterClassX(audio::singularity::TestReverbData);
+    RegisterClassX(audio::singularity::StereoDelayData);
     RegisterClassX(audio::singularity::Fdn8ReverbData);
     RegisterClassX(audio::singularity::Fdn4ReverbXData);
     RegisterClassX(audio::singularity::Fdn4ReverbData);

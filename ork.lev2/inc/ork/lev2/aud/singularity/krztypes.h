@@ -110,6 +110,7 @@ struct KeyOnModifiers;
 struct NatEnvWrapperData;
 struct DelayContext;
 struct SAMPLER_DATA;
+struct programInst;
 ///////////////////////////////////////////////////////////////////////////////
 // sequencer
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,6 +153,7 @@ using dspstagedata_ptr_t          = std::shared_ptr<DspStageData>;
 using dspstagedata_constptr_t     = std::shared_ptr<const DspStageData>;
 using dspstage_ptr_t              = std::shared_ptr<DspStage>;
 using dspstage_constptr_t         = std::shared_ptr<const DspStage>;
+using layer_ptr_t                 = std::shared_ptr<Layer>;
 using lyrdata_ptr_t               = std::shared_ptr<LayerData>;
 using lyrdata_constptr_t          = std::shared_ptr<const LayerData>;
 using prgdata_ptr_t               = std::shared_ptr<ProgramData>;
@@ -196,6 +198,7 @@ using multisample_constptr_t = std::shared_ptr<const MultiSampleData>;
 using kmregion_ptr_t = std::shared_ptr<KmRegionData>;
 using kmregion_constptr_t = std::shared_ptr<const KmRegionData>;
 using samplerdata_ptr_t = std::shared_ptr<SAMPLER_DATA>;
+using programinst_ptr_t = programInst*;
 ///////////////////////////////////////////////////////////////////////////////
 using sequencer_ptr_t = std::shared_ptr<Sequencer>;
 using sequence_ptr_t = std::shared_ptr<Sequence>;
@@ -207,6 +210,7 @@ using timebase_ptr_t = std::shared_ptr<TimeBase>;
 using sequenceplayback_ptr_t = std::shared_ptr<SequencePlayback>;
 using clipplayback_ptr_t = std::shared_ptr<ClipPlayback>;
 using trackplayback_ptr_t = std::shared_ptr<TrackPlayback>;
+using layer_vect_t = std::vector<layer_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;
