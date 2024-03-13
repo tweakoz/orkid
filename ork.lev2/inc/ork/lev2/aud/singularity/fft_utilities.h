@@ -25,10 +25,10 @@
 #define FFTCONVOLVER_USE_SSE
 
 #if defined (FFTCONVOLVER_USE_SSE)
-  #if ARCHITECTURE==AARCH64
-  #include <sse2neon.h>
+  #if defined(ORK_ARCHITECTURE_X86_64)
+    #include <xmmintrin.h>  
   #else
-  #include <xmmintrin.h>
+    #include <sse2neon.h>
   #endif
 #endif
 
