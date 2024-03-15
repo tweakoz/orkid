@@ -116,7 +116,7 @@ class SceneGraphApp(object):
     self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
     self.projcam_eye = self.deferred_ctx.createAuxBinding("ProjectionEyePostion")
     self.nearfar_binding = self.deferred_ctx.createAuxBinding("NearFar")
-    self.pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
+    self.pbr_common.requestSkyboxTexture(sg_params_def.SkyboxTexPathStr)
 
     ###################################
 
@@ -145,21 +145,24 @@ class SceneGraphApp(object):
       vp_matrix = self.shadow_camera.vpMatrix(aspect)
       #
       self.projmtx_binding.mtx4 = vp_matrix
-      self.nearfar_binding.vec2 = vec2(0.1,100.0)
-      self.projcam_eye.vec3 = v_matrix.inverse.translation
+      near = self.shadow_camera.near
+      far = self.shadow_camera.far
+      
+      self.nearfar_binding.vec2 = vec2(near,far)
+      self.projcam_eye.vec3 = self.shadow_camera.eye
     pass 
 
   ################################################
 
   def onUpdate(self,updinfo):
-    phase = updinfo.absolutetime * 0.2
+    phase = updinfo.absolutetime * 0.4
     x =  math.sin(phase)*10    
     z = -math.cos(phase)*10    
     ###################################
     self.uicam.updateMatrices()
     self.vizcamera.copyFrom( self.uicam.cameradata )
     self.shadow_camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
-    self.shadow_camera.lookAt(vec3(x,5,z)*0.5, # eye
+    self.shadow_camera.lookAt(vec3(x,0,z)*2, # eye
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     self.scene.updateScene(self.cameralut) 
@@ -170,19 +173,6 @@ class SceneGraphApp(object):
     handled = self.uicam.uiEventHandler(uievent)    
     if not handled:
       if uievent.code in [tokens.KEY_DOWN.hashed, tokens.KEY_REPEAT.hashed]:
-        if uievent.keycode == 32: # spacebar
-          self.regenColors()
-        if uievent.keycode == 45: # -
-          self.ambient -= 0.05
-        if uievent.keycode == 61: # =
-          self.ambient += 0.05
-        if uievent.keycode == 91: # [
-          self.specular -= 0.05
-        if uievent.keycode == 93: # ]
-          self.specular += 0.05
-        ##############################
-        self.pbr_common.specularLevel = self.specular
-        self.pbr_common.ambientLevel = vec3(self.ambient)
         handled = True
     return ui.HandlerResult()
 
