@@ -58,10 +58,12 @@ using pickvariant_t = svar128_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct Image;
 struct Texture;
 struct IpcTexture;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
+using image_ptr_t            = std::shared_ptr<Image>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer
@@ -182,7 +184,9 @@ using cameradatalut_ptr_t           = std::shared_ptr<CameraDataLut>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LightingGroup;
+struct LightCollector;
 struct LightManager;
+struct LightManagerData;
 struct Light;
 struct PointLight;
 struct SpotLight;
@@ -211,7 +215,11 @@ using pointlight_ptr_t      = std::shared_ptr<PointLight>;
 using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
-
+using lightinggroup_ptr_t = std::shared_ptr<LightingGroup>;
+using lightmanager_ptr_t = std::shared_ptr<LightManager>;
+using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
+using lightmanagerdata_constptr_t = std::shared_ptr<const LightManagerData>;
+using lightcollector_ptr_t = std::shared_ptr<LightCollector>;
 ///////////////////////////////////////////////////////////////////////////////
 // Drawables
 ///////////////////////////////////////////////////////////////////////////////

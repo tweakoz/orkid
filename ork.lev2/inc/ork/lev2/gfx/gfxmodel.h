@@ -510,6 +510,10 @@ struct RenderContextInstModelData final {
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl);
 datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl);
 
+///////////////////////////////////////////////////////////////////////////////
+
+void computeAmbientOcclusion( meshutil::mesh_ptr_t model, Context* ctx);
+void computeLightMaps( meshutil::mesh_ptr_t model, Context* ctx );
 
 ///////////////////////////////////////////////////////////////////////////////
 

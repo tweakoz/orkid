@@ -872,6 +872,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMapNormal         = fxi->parameter(_shader, "NormalMap");
   _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
   _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
+  _parMapAmbOcc           = fxi->parameter(_shader, "AmbOccMap");
+  _parMapLightMap         = fxi->parameter(_shader, "LightMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");

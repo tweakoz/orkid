@@ -113,6 +113,12 @@ void pyinit_meshutil(py::module& module_lev2) {
           })
       .def("readFromWavefrontObj", [](mesh_ptr_t the_mesh, std::string pth) { //
         the_mesh->ReadFromWavefrontObj(pth);
+      })
+      .def("readFromXGM", [](mesh_ptr_t the_mesh, std::string pth) { //
+        the_mesh->ReadFromXGM(pth);
+      })
+      .def("readFromAssimp", [](mesh_ptr_t the_mesh, std::string pth) { //
+        the_mesh->readFromAssimp(file::Path(pth));
       });
 
   type_codec->registerStdCodec<mesh_ptr_t>(mesh_type);

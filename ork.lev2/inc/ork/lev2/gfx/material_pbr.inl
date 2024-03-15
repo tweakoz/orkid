@@ -143,6 +143,8 @@ public:
   fxparam_constptr_t _paramSpecularLevel   = nullptr;
   fxparam_constptr_t _paramSkyboxLevel     = nullptr;
 
+  fxparam_constptr_t _parMapAmbOcc           = nullptr;
+  fxparam_constptr_t _parMapLightMap         = nullptr;
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
   fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
@@ -167,6 +169,8 @@ public:
   texture_ptr_t _texNormal;
   texture_ptr_t _texMtlRuf;
   texture_ptr_t _texEmissive;
+  texture_ptr_t _texAmbOcc;
+  texture_ptr_t _texLightMap;
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////

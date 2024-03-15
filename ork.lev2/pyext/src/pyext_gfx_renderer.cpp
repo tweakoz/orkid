@@ -85,42 +85,6 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
       }
   )*/
   type_codec->registerStdCodec<rcid_ptr_t>(rcid_type_t);
-
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
-      .def_property(
-          "color",                                 //
-          [](lightdata_ptr_t lightdata) -> fvec3 { //
-            return lightdata->mColor;
-          },
-          [](lightdata_ptr_t lightdata, fvec3 color) { //
-            lightdata->mColor = color;
-          });
-  py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
-      .def(py::init<>())
-      .def(
-          "createNode",                      //
-          [](pointlightdata_ptr_t lightdata, //
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
-            auto xfgen = []() -> fmtx4 { return fmtx4(); };
-            auto light = std::make_shared<PointLight>(xfgen, lightdata.get());
-            return layer->createLightNode(named, light);
-          });
-  py::class_<SpotLightData, LightData, spotlightdata_ptr_t>(module_lev2, "SpotLightData");
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Light, light_ptr_t>(module_lev2, "Light")
-      .def_property(
-          "matrix",                              //
-          [](light_ptr_t light) -> fmtx4_ptr_t { //
-            auto copy = std::make_shared<fmtx4>(light->worldMatrix());
-            return copy;
-          },
-          [](light_ptr_t light, fmtx4_ptr_t mtx) { //
-            light->worldMatrix() = *mtx.get();
-          });
-  py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
-  py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight");
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //
       py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")

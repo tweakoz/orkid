@@ -302,7 +302,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _renderer = std::make_shared<IRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
-  _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
+  _lightManager     = std::make_shared<LightManager>(_lightManagerData);
   _compositorData   = std::make_shared<CompositingData>();
   _topCPD = std::make_shared<CompositingPassData>();
 

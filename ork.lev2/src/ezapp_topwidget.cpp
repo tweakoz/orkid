@@ -37,7 +37,7 @@ void EzTopWidget::enableUiDraw() {
   auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
   /////////////////////////////////////////////////////////////////////
   auto lmd         = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr    = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto lightmgr    = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", lmd);
   auto compdata    = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
   auto CPD         = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
   auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
