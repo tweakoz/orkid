@@ -59,9 +59,16 @@ class SceneGraphApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.node = None
-    self.camera = CameraData()
     self.cameralut = CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
+    self.vizcamera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
+                                              near = 0.01,
+                                              far = 100.0,
+                                              eye = vec3(0,5,20),
+                                              tgt = vec3(0,5,0),
+                                              up = vec3(0,1,0),
+                                              camname="spawncam" )
+    self.shadow_camera = CameraData()
+    self.cameralut.addCamera("shadow_camera",self.shadow_camera)
     self.seed = 12
     self.ambient = ambient
     self.specular = specular
@@ -71,36 +78,77 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    params_dict = {
-      "SkyboxIntensity": skybox,
-      "SpecularIntensity": specular,
-      "DiffuseIntensity": diffuse,
-      "AmbientLight": vec3(ambient),
-      "DepthFogDistance": float(10000)
-    }
-    if envmap != "":
-      params_dict["SkyboxTexPathStr"] = envmap
-    else:
-      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
+    sg_params_def = VarMap()
+    sg_params_def.SkyboxIntensity = skybox
+    sg_params_def.DiffuseIntensity = diffuse
+    sg_params_def.SpecularIntensity = specular
+    sg_params_def.AmbientLevel = vec3(ambient)
+    sg_params_def.preset = "DeferredPBR"
+    sg_params_def.DepthFogDistance = 10000.0
+    sg_params_def.SkyboxTexPathStr = "src://envmaps/blender_night.dds"
+    self.params = sg_params_def 
+    
+    ###################################    
+    
+    comp_tek = NodeCompositingTechnique()
+    comp_tek.renderNode = DeferredPbrRenderNode()
+    comp_tek.outputNode = ScreenOutputNode()
+    comp_tek.renderNode.overrideShader(str(thisdir()/"ambocc_render.glfx"))
+    self.comp_tek = comp_tek
 
-    createSceneGraph(app=self,
-                     rendermodel="DeferredPBR",
-                     params_dict=params_dict)
+    comp_data = CompositingData()
+    comp_scene = comp_data.createScene("scene1")
+    comp_sceneitem = comp_scene.createSceneItem("item1")
+    comp_sceneitem.technique = comp_tek
 
-    self.pbrcommon = self.rendernode.pbr_common
+    sg_params_def.preset = "USER"
+    sg_params_def.compositordata = comp_data
+
+    self.scene = self.ezapp.createScene(sg_params_def)
+    self.layer1 = self.scene.createLayer("layer1")
+    self.output_node = self.scene.compositoroutputnode
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.deferred_ctx = self.render_node.context
+    self.deferred_ctx.lightAccumFormat = tokens.RGBA32F
+    self.depthtex_binding = self.deferred_ctx.createAuxBinding("MapShadowDepth")
+    self.projtex_binding = self.deferred_ctx.createAuxBinding("ProjectionTexture")
+    self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
+    self.projcam_eye = self.deferred_ctx.createAuxBinding("ProjectionEyePostion")
+    self.nearfar_binding = self.deferred_ctx.createAuxBinding("NearFar")
+    self.pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
 
     ###################################
 
     model = XgmModel("data://tests/monkey_pbr.glb")
     comp_model = meshutil.Mesh()
     comp_model.readFromWavefrontObj("data://tests/monkey_pbr.obj")
-    computeAmbientOcclusion(16384, comp_model,ctx)
+    computeAmbientOcclusion(1024, comp_model,ctx)
     
-    self.node = NODE(model,self.layer1,0)
-    subinst = self.node.modelinst.submeshinsts[0]
+    self.node = model.createNode("modelnode",self.layer1)
+    self.modelinst = self.node.user.pyext_retain_modelinst
+    
+  ################################################
 
-    assert(False)
-    
+  def onGpuUpdate(self,context):
+    light_accum_buffer_0 = self.deferred_ctx.lbuffer
+    if light_accum_buffer_0!=None:
+      gbuffer0 = self.deferred_ctx.gbuffer
+      zbuffer0 = gbuffer0.depth_buffer
+      L = light_accum_buffer_0.mrt_buffer(0).texture
+      Z = zbuffer0.texture
+      self.projtex_binding.texture = L
+      self.depthtex_binding.texture = Z
+      # we need an aspect ratio to compute the vp matrix
+      aspect = float(L.width)/float(L.height)
+      v_matrix = self.shadow_camera.vMatrix(aspect)
+      vp_matrix = self.shadow_camera.vpMatrix(aspect)
+      #
+      self.projmtx_binding.mtx4 = vp_matrix
+      self.nearfar_binding.vec2 = vec2(0.1,100.0)
+      self.projcam_eye.vec3 = v_matrix.inverse.translation
+    pass 
+
   ################################################
 
   def onUpdate(self,updinfo):
@@ -108,8 +156,10 @@ class SceneGraphApp(object):
     x =  math.sin(phase)*10    
     z = -math.cos(phase)*10    
     ###################################
-    self.camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
-    self.camera.lookAt(vec3(x,5,z)*0.5, # eye
+    self.uicam.updateMatrices()
+    self.vizcamera.copyFrom( self.uicam.cameradata )
+    self.shadow_camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
+    self.shadow_camera.lookAt(vec3(x,5,z)*0.5, # eye
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     self.scene.updateScene(self.cameralut) 
@@ -117,20 +167,23 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    if uievent.code in [tokens.KEY_DOWN.hashed, tokens.KEY_REPEAT.hashed]:
-      if uievent.keycode == 32: # spacebar
-        self.regenColors()
-      if uievent.keycode == 45: # -
-        self.ambient -= 0.05
-      if uievent.keycode == 61: # =
-        self.ambient += 0.05
-      if uievent.keycode == 91: # [
-        self.specular -= 0.05
-      if uievent.keycode == 93: # ]
-        self.specular += 0.05
-      ##############################
-      self.pbrcommon.specularLevel = self.specular
-      self.pbrcommon.ambientLevel = vec3(self.ambient)
+    handled = self.uicam.uiEventHandler(uievent)    
+    if not handled:
+      if uievent.code in [tokens.KEY_DOWN.hashed, tokens.KEY_REPEAT.hashed]:
+        if uievent.keycode == 32: # spacebar
+          self.regenColors()
+        if uievent.keycode == 45: # -
+          self.ambient -= 0.05
+        if uievent.keycode == 61: # =
+          self.ambient += 0.05
+        if uievent.keycode == 91: # [
+          self.specular -= 0.05
+        if uievent.keycode == 93: # ]
+          self.specular += 0.05
+        ##############################
+        self.pbr_common.specularLevel = self.specular
+        self.pbr_common.ambientLevel = vec3(self.ambient)
+        handled = True
     return ui.HandlerResult()
 
 ###############################################################################
