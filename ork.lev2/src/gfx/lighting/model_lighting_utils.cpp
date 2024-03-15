@@ -9,6 +9,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <random>
 
 #define USE_OIIO
 
@@ -29,6 +30,12 @@ struct triangle{
    fvec3 _tc1;
    fvec3 _tc2;
    fvec3 _N;
+   fvec3 _edge0;
+   fvec3 _edge1;
+   fvec3 _C;
+   float _det;
+   fplane3 _plane;
+
 };
 
 using triangle_vect_t = std::vector<triangle>;
@@ -60,6 +67,20 @@ triangle_vect_t model_to_triangles( meshutil::mesh_ptr_t model ) {
          tri._tc2 = p->vertex(2)->mUV[0].mMapTexCoord;
          auto normal = (tri._v1-tri._v0).crossWith(tri._v2-tri._v0);
          tri._N = normal;
+
+         const auto& v0 = tri._v0;
+         const auto& v1 = tri._v1;
+         const auto& v2 = tri._v2;
+
+         tri._edge0 = v1 - v0;
+         tri._edge1 = v2 - v0;
+
+         tri._C = tri._edge0.crossWith(tri._edge1);
+         tri._det = tri._C.dotWith(tri._C);
+
+         tri._plane = fplane3(tri._N,tri._v0);
+
+
          triangles.push_back(tri);
       }
       //submesh->computeAmbientOcclusion();
@@ -68,7 +89,8 @@ triangle_vect_t model_to_triangles( meshutil::mesh_ptr_t model ) {
    return triangles;
 }
 
-void computeAmbientOcclusion( meshutil::mesh_ptr_t model,
+void computeAmbientOcclusion( int numsamples, 
+                              meshutil::mesh_ptr_t model,
                               Context* ctx  ){
 
    auto triangles = model_to_triangles(model);
@@ -151,14 +173,28 @@ void computeAmbientOcclusion( meshutil::mesh_ptr_t model,
    size_t num_pixels = DIM*DIM;
    std::atomic<int> num_pixels_pending(1);
    std::atomic<int> num_pixels_completed(0);
-   std::atomic<int> pass(0);
-   std::atomic<int> fail(0);
    std::vector<float> _ambient_occlusion;
 
    _ambient_occlusion.resize(num_pixels);
 
+   std::vector<fvec2> perturbs;
+
+   std::mt19937 engine(123); // 123 is the seed
+   std::uniform_int_distribution<int> dist(0, RAND_MAX);
+
+   for( int i=0; i<numsamples; i++ ){
+      int ir1 = dist(engine);
+      int ir2 = dist(engine);
+      float r1 = float(ir1)/float(RAND_MAX);
+      float r2 = float(ir2)/float(RAND_MAX);
+      perturbs.push_back(fvec2(r1,r2));
+   }
+   const fvec3 tangent        = fvec3(1.0, 0.0, 0.0);
+
    auto enq_op = [&](){
       constexpr size_t block_size = 16;
+
+
       for( size_t i=0; i<num_pixels; i+=block_size ){
          std::vector<int> indices;
          for( int j=0; j<block_size; j++ ){
@@ -172,86 +208,77 @@ void computeAmbientOcclusion( meshutil::mesh_ptr_t model,
                     num_triangles,
                     posdata,
                     nrmdata,
+                    numsamples,
+                    &dist,
+                    & engine,
+                    & tangent,
+                    & perturbs,
                     &_ambient_occlusion,
                     & triangles,
                     &num_pixels_pending, //
-                    &num_pixels_completed, //
-                    &pass, //
-                    &fail ](){ //
+                    &num_pixels_completed ](){ //
             int completed = num_pixels_completed.fetch_add(1);
             int pending = num_pixels_pending.fetch_add(-1);
+            fmtx3 tbn;
             for( int I : indices ){
                const auto& this_position = posdata[I];
-               const auto& this_normal = nrmdata[I];
+               auto this_normal = nrmdata[I];
+               fvec3 hemisphere_dir = this_normal.normalized();
+               fvec3 bitangent      = hemisphere_dir.crossWith(tangent).normalized();
+               fvec3 XX = bitangent.crossWith(hemisphere_dir);
+               fvec3 YY = hemisphere_dir.crossWith(XX);
+
+               tbn.setRow(0, tangent);
+               tbn.setRow(1, bitangent);
+               tbn.setRow(2, hemisphere_dir);
                int pp = 0;
                int ff = 0;
-               float radius = 1.0f;
-               float occlusion = 0.0f;
-               for( int isample=0; isample<16; isample++){
+               float radius = 10.0f;
+               float occlusion = 1.0f;
+               float occlusion_count = 0.0f;
+               for( int isample=0; isample<numsamples; isample++){
                   
                   // create perturbed ray from this_normal and random
                   //  on unit hemisphere
-                  float r1 = rand()/float(RAND_MAX);
-                  float r2 = rand()/float(RAND_MAX);
-
-                  fvec3 sample_dir = normalize(fvec3(cos(2.0 * 3.14159 * r1) * sqrt(1.0 - r2), sin(2.0 * 3.14159 * r1) * sqrt(1.0 - r2), sqrt(r2)));
-
                   // Align the sample direction with the hemisphere orientation
-                  fvec3 hemisphere_dir = this_normal.normalized();
-                  fvec3 tangent        = fvec3(1.0, 0.0, 0.0);
-                  fvec3 bitangent      = hemisphere_dir.crossWith(tangent).normalized();
 
-                  fmtx3 tbn;
-                  tbn.setRow(0, tangent);
-                  tbn.setRow(1, bitangent);
-                  tbn.setRow(2, hemisphere_dir);
+                  const auto& perturb = perturbs[isample];
 
-                  sample_dir = tbn * sample_dir;
-                  fvec3 sample_pos = this_position + sample_dir * radius;
+                  fvec3 sample_dir = hemisphere_dir 
+                                   + XX * perturb.x
+                                   + YY * perturb.y;
 
-                  //mat3 tbn            = mat3(tangent, bitangent, hemisphere_dir);
-                  //sample_dir          = tbn * sample_dir;
+                  fvec3 sample_pos = this_position + sample_dir.normalized() * radius;
 
-                  bool occluded = false;
+                  // todo : OCTTREE
                   for( int itri=0; itri<=num_triangles; itri ++){
                      const auto& tri = triangles[itri];
                      const auto& N = tri._N;
                      if(N.dotWith(this_normal)>0.0f){
-                        const auto& v0 = tri._v0;
-                        const auto& v1 = tri._v1;
-                        const auto& v2 = tri._v2;
-                        pass.fetch_add(1);
-                        pp ++;
 
-                        fvec3 edge0 = v1 - v0;
-                        fvec3 edge1 = v2 - v0;
-                        fvec3 edge2 = sample_pos - v0;
+                        fray3 ray(sample_pos, sample_dir);
 
-                        fvec3 C = edge0.crossWith(edge1);
-                        float det = C.dotWith(C);
-                        float u = C.dotWith(edge1.crossWith(edge2)) / det;
-                        float v = C.dotWith(edge2.crossWith(edge0)) / det;
-                        float w = 1.0 - u - v;
-
-                        if (u >= 0.0 && v >= 0.0 && w >= 0.0) {
-                          occluded = true;
-                          float dist = (sample_pos - this_position).magnitude();
-                          //closest = min(closest, dist);
+                        fvec3 intersection;
+                        float distance = 0.0f;
+                        if( tri._plane.Intersect(ray,distance,intersection) ){
+                           fvec3 bary;
+                           if( tri._C.dotWith(tri._C) != 0.0f ){
+                              fvec3 p = intersection - tri._v0;
+                              bary.x = tri._C.dotWith(p) / tri._det;
+                              fvec3 q = p.crossWith(tri._edge0);
+                              bary.y = tri._C.dotWith(q) / tri._det;
+                              fvec3 r = tri._C.crossWith(p);
+                              bary.z = tri._C.dotWith(r) / tri._det;
+                           }
+                           if( bary.x>=0.0f && bary.y>=0.0f && bary.z>=0.0f ){
+                              if(distance>0.05f){
+                                 occlusion *= 0.999f;
+                              }
+                           }
                         }
-
-                        if (occluded) {
-                          occlusion += 1.0;
-                        }
-
-
-                     }
-                     else{
-                        fail.fetch_add(1);
-                        ff ++;
                      }
                   }
                }
-               int total = pp+ff;
                _ambient_occlusion[I] = occlusion;
             }
 
@@ -265,9 +292,7 @@ void computeAmbientOcclusion( meshutil::mesh_ptr_t model,
    while( num_pixels_pending.load() > 0 ){
       int completed = num_pixels_completed.load();
       int pending = num_pixels_pending.load();
-      int p = pass.load();
-      int f = fail.load();
-      printf( "completed<%d> pending<%d> pass<%d> fail<%d>\n", completed, pending, p, f );
+      printf( "completed<%d> pending<%d>\n", completed, pending );
       usleep(2e6);
    }
 

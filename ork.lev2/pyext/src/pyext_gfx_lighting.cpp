@@ -65,11 +65,11 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
   py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight");
   /////////////////////////////////////////////////////////////////////////////////
-  module_lev2.def("computeAmbientOcclusion", [](meshutil::mesh_ptr_t model, ctx_t ctx) {
-    computeAmbientOcclusion(model, ctx.get());
+  module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {
+    computeAmbientOcclusion(numsamples, model, ctx.get());
   });
   module_lev2.def("computeLightMaps", [](meshutil::mesh_ptr_t model, ctx_t ctx){
-    computeAmbientOcclusion(model, ctx.get());
+    computeLightMaps(model, ctx.get());
 
   });
 }
