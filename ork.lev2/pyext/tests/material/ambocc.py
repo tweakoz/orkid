@@ -94,7 +94,7 @@ class SceneGraphApp(object):
     model = XgmModel("data://tests/monkey_pbr.glb")
     comp_model = meshutil.Mesh()
     comp_model.readFromWavefrontObj("data://tests/monkey_pbr.obj")
-    computeAmbientOcclusion(16, comp_model,ctx)
+    computeAmbientOcclusion(16384, comp_model,ctx)
     
     self.node = NODE(model,self.layer1,0)
     subinst = self.node.modelinst.submeshinsts[0]
