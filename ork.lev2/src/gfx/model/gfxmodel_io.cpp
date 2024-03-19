@@ -38,7 +38,7 @@ static bool FORCE_MODEL_REGEN(){
 static bool ASSET_ENCRYPT_MODE(){
   return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
 }
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),false);
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),true);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4),false);
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
@@ -157,7 +157,7 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
-    printf("aaa: load assimp datablock hash<%zx> length<%zu>\n", inp_datablock->hash(), inp_datablock->length() );
+   // printf("aaa: load assimp datablock hash<%zx> length<%zu>\n", inp_datablock->hash(), inp_datablock->length() );
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
@@ -205,7 +205,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
 
 bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
-  printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
+  //printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
 
   hexdumpbytes(datablock->_storage.data(),64);
 

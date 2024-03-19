@@ -13,6 +13,17 @@
 namespace ork::lev2::particle {
 /////////////////////////////////////////
 
+struct SphAttractorModuleData : public ParticleModuleData {
+  DeclareConcreteX(SphAttractorModuleData, ParticleModuleData);
+public:
+  SphAttractorModuleData();
+  static std::shared_ptr<SphAttractorModuleData> createShared();
+  static rtti::castable_ptr_t sharedFactory();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+};
+
+using sphattractormodule_ptr_t = std::shared_ptr<SphAttractorModuleData>;
+
 struct GravityModuleData : public ParticleModuleData {
   DeclareConcreteX(GravityModuleData, ParticleModuleData);
 public:

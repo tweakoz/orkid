@@ -224,28 +224,32 @@ fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_blurx : iface_fmt : lib_cmn_funs {
-  const float stepval = (1.0 / image_width);
+  float stepval = (1.0 / image_width);
   vec3 PixOut   = vec3(0,0,0);
 
   for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
     vec2 UvOffset = vec2(stepval*i, 0.0);
     vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
-
-    PixOut += inpix;
+    float scale =  (BlurFactorI+1) - abs(i); 
+    scale = scale / BlurFactorI;
+    scale = pow(scale,0.5);
+    PixOut += inpix * scale;
   }
   PixOut *= BlurFactor;
   out_clr = vec4(PixOut,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_blury : iface_fmt : lib_cmn_funs {
-  const float stepval = (1.0 / image_height);
+  float stepval = (1.0 / image_height);
   vec3 PixOut   = vec3(0,0,0);
 
   for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
     vec2 UvOffset = vec2(0.0,stepval*i);
     vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
-
-    PixOut += inpix;
+    float scale =  (BlurFactorI+1) - abs(i); 
+    scale = scale / BlurFactorI;
+    scale = pow(scale,0.5);
+    PixOut += inpix * scale;
   }
   PixOut *= BlurFactor;
   out_clr = vec4(PixOut,1);

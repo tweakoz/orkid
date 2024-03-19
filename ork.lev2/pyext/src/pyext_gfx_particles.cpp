@@ -142,6 +142,11 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", []() -> ptc::gravitymodule_ptr_t { return ptc::GravityModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::gravitymodule_ptr_t>(grvmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto sphamoduledata_type = //
+      py::class_<ptc::SphAttractorModuleData, ptc::ModuleData, ptc::sphattractormodule_ptr_t>(ptc_module, "SphAttractor")
+      .def_static("createShared", []() -> ptc::sphattractormodule_ptr_t { return ptc::SphAttractorModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::sphattractormodule_ptr_t>(sphamoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto turbmoduledata_type = //
       py::class_<ptc::TurbulenceModuleData, ptc::ModuleData, ptc::turbulencemodule_ptr_t>(ptc_module, "Turbulence")
       .def_static("createShared", []() -> ptc::turbulencemodule_ptr_t { return ptc::TurbulenceModuleData::createShared(); });

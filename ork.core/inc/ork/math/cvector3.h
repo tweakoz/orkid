@@ -289,11 +289,28 @@ fvec3 dvec3_to_fvec3(const dvec3& dvec);
 dvec3 fvec3_to_dvec3(const fvec3& dvec);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+inline fvec3 sphericalToCartesian(const fvec3& inp) {
+  return fvec3(inp.z * cos(inp.x), inp.z * sin(inp.x), inp.y);
+}
+
+inline fvec3 cartesianToSpherical(const fvec3& vec) {
+  float x = vec.x;
+  float y = vec.y;
+  float z = vec.z;
+  float r = sqrt(x * x + y * y + z * z);
+  float phi = atan2(y, x);
+  float theta = acos(z / r);
+  return fvec3(phi, theta, r);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> inline ork::Vector3<T> operator*(T scalar, const ork::Vector3<T>& b) {
   return ork::Vector3<T>((scalar * b.x), (scalar * b.y), (scalar * b.z));
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -144,7 +144,7 @@ fragment_shader ps_environment //
     sum /= float(count*count);
     d *= float(pow(sum,6));
     d = LinearizeDepth(textureLod(MapShadowDepth, prj_uv.xy,0).r)*0.01;
-    out_color = vec3(d); 
+    out_color = vec3(mod(d*10,1)); 
 
     if(projspace_depth<NearFar.x ){
       out_color = vec3(1,1,0);
