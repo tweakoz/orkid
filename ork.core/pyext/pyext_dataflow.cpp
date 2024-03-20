@@ -85,6 +85,19 @@ void pyinit_dataflow(py::module& module_core) {
                     }
                   }
                 };
+                auto set_fquat = [input](fquat value) {
+                  auto finplug = std::dynamic_pointer_cast<inplugdata<QuatfPlugTraits>>(input);
+                  if (finplug) {
+                    finplug->setValue(value);
+                  } else {
+                    auto xfinplug = std::dynamic_pointer_cast<inplugdata<QuatXfPlugTraits>>(input);
+                    if (xfinplug) {
+                      xfinplug->setValue(value);
+                    } else {
+                      OrkAssert(false);
+                    }
+                  }
+                };
 
                 if (auto as_float = decoded_value.tryAs<float>()) {
                   set_float(as_float.value());
@@ -94,6 +107,10 @@ void pyinit_dataflow(py::module& module_core) {
                   set_fvec3(as_fvec3.value());
                 } else if (auto as_fvec3_ptr = decoded_value.tryAs<fvec3_ptr_t>()) {
                   set_fvec3(*as_fvec3_ptr.value());
+                } else if (auto as_fquat = decoded_value.tryAs<fquat>()) {
+                  set_fquat(as_fquat.value());
+                } else if (auto as_fquat_ptr = decoded_value.tryAs<fquat_ptr_t>()) {
+                  set_fquat(*as_fquat_ptr.value());
                 } else {
                   OrkAssert(false);
                 }

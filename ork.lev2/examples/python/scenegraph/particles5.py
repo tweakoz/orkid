@@ -15,9 +15,24 @@ sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.scenegraph import createSceneGraph
 
+################################################################################
+
 tokens = CrcStringProxy()
 
 ################################################################################
+
+class NODE(object):
+
+  def __init__(self,model,layer, index):
+
+    super().__init__()
+    self.model = model
+    self.sgnode = model.createNode("node%d"%index,layer)
+    self.modelinst = self.sgnode.user.pyext_retain_modelinst
+    self.sgnode.worldTransform.scale = 1
+
+################################################################################
+
 parser = argparse.ArgumentParser(description='scenegraph particles example')
 parser.add_argument('--dynaplugs', action="store_true", help='dynamic plug update' )
 
@@ -36,41 +51,44 @@ def createParticleData( use_streaks = True ):
       # instantiate modules
 
       self.ptc_pool   = self.graphdata.create("POOL",particles.Pool)
-      self.emitter    = self.graphdata.create("EMITN",particles.RingEmitter)
+      self.emitter    = self.graphdata.create("EMITN",particles.EllipticalEmitter)
       self.globals    = self.graphdata.create("GLOB",particles.Globals)
       self.turbulence = self.graphdata.create("TURB",particles.Turbulence)
-      self.sphereatr = self.graphdata.create("SPHR",particles.SphAttractor)
+      self.elliptical = self.graphdata.create("SPHR",particles.EllipticalAttractor)
+      self.gravity = self.graphdata.create("GRAV",particles.Gravity)
 
-      self.streaks    = self.graphdata.create("STRK",particles.StreakRenderer)
-
+      self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
+ 
       self.ptc_pool.pool_size = 16384 # max number of particles in pool
 
       # connect modules in a chain configuration
 
       self.graphdata.connect( self.emitter.inputs.pool,    self.ptc_pool.outputs.pool )
       self.graphdata.connect( self.turbulence.inputs.pool, self.emitter.outputs.pool )
-      self.graphdata.connect( self.sphereatr.inputs.pool,     self.turbulence.outputs.pool )
-      self.graphdata.connect( self.streaks.inputs.pool,    self.sphereatr.outputs.pool )
+      self.graphdata.connect( self.elliptical.inputs.pool,     self.turbulence.outputs.pool )
+      self.graphdata.connect( self.gravity.inputs.pool,     self.elliptical.outputs.pool )
+      self.graphdata.connect( self.streaks.inputs.pool,    self.gravity.outputs.pool )
 
-      self.streaks.inputs.Length = .03
-      self.streaks.inputs.Width = .01
+      self.streaks.inputs.Length = .02
+      self.streaks.inputs.Width = .05
       
       self.emitter.inputs.LifeSpan = 1
-      self.emitter.inputs.EmissionRate = 1000
-      self.emitter.inputs.EmissionRadius = 0.1
-      self.emitter.inputs.EmitterSpinRate = 5
-      self.emitter.inputs.EmissionVelocity = 5
-      self.emitter.inputs.DispersionAngle = 180
-      self.emitter.inputs.Offset = vec3(0,0,0)
-      self.emitter.inputs.Direction = vec3(0,0,0)
+      self.emitter.inputs.EmissionRate = 250
+      self.emitter.inputs.EmissionVelocity = 0.1
+      #self.emitter.inputs.DispersionAngle = 180
+      #self.emitter.inputs.Offset = vec3(0,0,0)
 
-      self.sphereatr.inputs.Radius = 1
-      self.sphereatr.inputs.Inertia = 1/1.0
-      self.sphereatr.inputs.Center = vec3(0,0,0)
-      self.sphereatr.inputs.Dampening = 0.999
+      self.gravity.inputs.G = 0.01
+      self.gravity.inputs.Mass = 1
+      self.gravity.inputs.OthMass = 1
+      self.gravity.inputs.MinDistance = 1
 
-      self.turbulence.inputs.Amount = vec3(1000)
+      self.elliptical.inputs.Inertia = 1/100.0
+      self.elliptical.inputs.P1 = vec3(0,1,0)
+      self.elliptical.inputs.P2 = vec3(0,-1,.1)
+      self.elliptical.inputs.Dampening = 0.999
 
+      self.turbulence.inputs.Amount = vec3(99)
 
       # create and return ParticlesDrawableData object
 
@@ -106,7 +124,19 @@ class ParticlesApp(object):
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
+    params_dict = {
+      "SkyboxIntensity": float(1),
+      "SpecularIntensity": float(10),
+      "DiffuseIntensity": float(10),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(10000)
+    }
+
+    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
+
+    self.model = XgmModel("data://tests/pbr_calib.glb")
+    self.nodeP1 = NODE(self.model,self.layer1,0)
+    self.nodeP2 = NODE(self.model,self.layer1,1)
 
     ###################################
     # create particle data 
@@ -120,12 +150,13 @@ class ParticlesApp(object):
     self.material = particles.GradientMaterial.createShared();
     self.material.blending = tokens.ADDITIVE
     self.material.gradient.setColorStops({
-      0.0:vec4(0,0,0,1),
-      #0.8:vec4(0,0,0,1),
-      0.4:vec4(0,0,0,1),
-      0.5:vec4(1,1,.7,1),
-      0.7:vec4(0,0,0,1),
-      1.0:vec4(0,0,0,1)
+      0.0:vec4(1,1,1,1),
+      #0.0:vec4(0,0,0,1),
+      #0.2:vec4(0,0,0,1),
+      #0.5:vec4(1,1,.7,1),
+      #0.7:vec4(1,1,1,1),
+      #1.0:vec4(0,0,0,1)
+      1.0:vec4(1,1,1,1)
     })
     
     self.material2 = particles.TextureMaterial.createShared();
@@ -156,6 +187,47 @@ class ParticlesApp(object):
     self.counter += updinfo.deltatime
 
     self.material.color = self.color
+
+
+    if hasattr(self.ptc_data,"elliptical"):
+      T = abstime
+      P1 = vec3(0,math.sin(T)+1.0,0)
+      P2 = vec3(0,math.sin(T+math.pi)-1.0,0)
+      
+      
+      self.nodeP1.sgnode.worldTransform.translation = P1
+      self.nodeP1.sgnode.worldTransform.scale = 0.1
+      self.nodeP2.sgnode.worldTransform.translation = P2
+      self.nodeP2.sgnode.worldTransform.scale = 0.1
+      
+      self.ptc_data.elliptical.inputs.P1 = P1
+      self.ptc_data.elliptical.inputs.P2 = P2
+      DY = (P1-P2).normalized()
+      DX = DY.cross(vec3(0,1,1)).normalized()
+      DZ = DX.cross(DY).normalized()
+      #DX = DZ.cross(DY).normalized()
+            
+      EMI = self.ptc_data.emitter.inputs
+      EMI.P1 = P1
+      EMI.P2 = P2
+      EMI.EmissionVelocity = 2.5
+      EMI.DispersionAngle = 180
+      EMI.LifeSpan = 0.5
+      EMI.EmissionRate = 5000
+
+      ELI = self.ptc_data.elliptical.inputs
+      ELI.Inertia = 10000
+      
+      GRV = self.ptc_data.gravity.inputs
+      GRV.Center = P2
+      GRV.G = 1
+
+      STR = self.ptc_data.streaks.inputs
+      STR.Length = .01
+      STR.Width = .003
+
+      TRB = self.ptc_data.turbulence.inputs
+      TRB.Amount = vec3(100)
 
     ##########################################
 

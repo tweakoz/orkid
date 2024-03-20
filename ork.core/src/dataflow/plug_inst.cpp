@@ -92,6 +92,8 @@ bool OutPlugInst::isDirty() const {
   return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 floatxfinpluginst::floatxfinpluginst(const floatxfinplugdata_t* d, ModuleInst* minst)
     : inpluginst<FloatXfPlugTraits>(d, minst)
     , _data(d) {
@@ -102,6 +104,8 @@ const float& floatxfinpluginst::value() const {
   return _xfvalue;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 fvec3xfinpluginst::fvec3xfinpluginst(const fvec3xfinplugdata_t* d, ModuleInst* minst)
     : inpluginst<Vec3XfPlugTraits>(d, minst)
     , _data(d) {
@@ -110,6 +114,20 @@ fvec3xfinpluginst::fvec3xfinpluginst(const fvec3xfinplugdata_t* d, ModuleInst* m
 const fvec3& fvec3xfinpluginst::value() const {
 
   _xfvalue = inpluginst<Vec3XfPlugTraits>::value();
+
+  return _xfvalue;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fquatxfinpluginst::fquatxfinpluginst(const fquatxfinplugdata_t* d, ModuleInst* minst)
+    : inpluginst<QuatXfPlugTraits>(d, minst)
+    , _data(d) {
+}
+
+const fquat& fquatxfinpluginst::value() const {
+
+  _xfvalue = inpluginst<QuatXfPlugTraits>::value();
 
   return _xfvalue;
 }

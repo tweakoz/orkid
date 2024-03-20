@@ -128,6 +128,18 @@ struct fvec3xfinpluginst : public inpluginst<Vec3XfPlugTraits> {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct fquatxfinpluginst : public inpluginst<QuatXfPlugTraits> {
+
+  fquatxfinpluginst(const fquatxfinplugdata_t* d, ModuleInst* minst);
+
+  const fquat& value() const final;
+
+  const fquatxfinplugdata_t* _data = nullptr;
+  mutable fquat _xfvalue;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 using float_inp_pluginst_t     = inpluginst<FloatPlugTraits>;
 using float_inp_pluginst_ptr_t = std::shared_ptr<float_inp_pluginst_t>;
 
@@ -147,5 +159,16 @@ using fvec3xf_inp_pluginst_ptr_t = std::shared_ptr<fvec3xf_inp_pluginst_t>;
 
 using fvec3_out_pluginst_t     = outpluginst<Vec3fPlugTraits>;
 using fvec3_out_pluginst_ptr_t = std::shared_ptr<fvec3_out_pluginst_t>;
+
+//
+
+using fquat_inp_pluginst_t     = inpluginst<QuatfPlugTraits>;
+using fquat_inp_pluginst_ptr_t = std::shared_ptr<fquat_inp_pluginst_t>;
+
+using fquatxf_inp_pluginst_t     = inpluginst<QuatXfPlugTraits>;
+using fquatxf_inp_pluginst_ptr_t = std::shared_ptr<fquatxf_inp_pluginst_t>;
+
+using fquat_out_pluginst_t     = outpluginst<QuatfPlugTraits>;
+using fquat_out_pluginst_ptr_t = std::shared_ptr<fquat_out_pluginst_t>;
 
 } // namespace ork::dataflow
