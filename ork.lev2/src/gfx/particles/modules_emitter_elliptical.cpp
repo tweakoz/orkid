@@ -41,9 +41,8 @@ struct EllipticalEmitterInst : public ParticleModuleInst {
   fvec3 _curBasisZ;
   fvec3 _curOffset;
 
-  //NozzleDirectedEmitter _directedEmitter;
+  // NozzleDirectedEmitter _directedEmitter;
   EmitterCtx _emitter_context;
-
 
   floatxf_inp_pluginst_ptr_t _input_lifespan;
   floatxf_inp_pluginst_ptr_t _input_emissionrate;
@@ -54,14 +53,13 @@ struct EllipticalEmitterInst : public ParticleModuleInst {
   fvec3xf_inp_pluginst_ptr_t _input_p2;
 
   /*
-  
+
   fvec3xf_inp_pluginst_ptr_t _input_directionX;
   fvec3xf_inp_pluginst_ptr_t _input_directionY;
   fvec3xf_inp_pluginst_ptr_t _input_directionZ;
   fvec3xf_inp_pluginst_ptr_t _input_offset;
   fvec3xf_inp_pluginst_ptr_t _input_offset_velocity;
   */
-
 
   float _updaterate = 30.0f;
   RandGen _randgen;
@@ -73,12 +71,11 @@ struct EllipticalEmitterInst : public ParticleModuleInst {
 
 EllipticalEmitterInst::EllipticalEmitterInst(const EllipticalEmitterData* ned, dataflow::GraphInst* ginst)
     : ParticleModuleInst(ned, ginst) {
-    //, _directedEmitter(this){
-  
-  _curBasisX = fvec3(1,0,0);
-  _curBasisY = fvec3(0,1,0);
-  _curBasisZ = fvec3(0,0,1);
+  //, _directedEmitter(this){
 
+  _curBasisX = fvec3(1, 0, 0);
+  _curBasisY = fvec3(0, 1, 0);
+  _curBasisZ = fvec3(0, 0, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -87,22 +84,22 @@ void EllipticalEmitterInst::onLink(GraphInst* inst) {
   _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
   _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
-  _input_p1 = typedInputNamed<Vec3XfPlugTraits>("P1");
-  _input_p2 = typedInputNamed<Vec3XfPlugTraits>("P2");
+  _input_p1               = typedInputNamed<Vec3XfPlugTraits>("P1");
+  _input_p2               = typedInputNamed<Vec3XfPlugTraits>("P2");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
 
-  if(_pool == nullptr)
+  if (_pool == nullptr)
     return;
 
   _timeAccumulator += updata->_dt;
 
-  _lastPosition  = _curOffset;
-  _prevBasisX = _curBasisX;
-  _prevBasisY = _curBasisY;
-  _prevBasisZ = _curBasisZ;
+  _lastPosition = _curOffset;
+  _prevBasisX   = _curBasisX;
+  _prevBasisY   = _curBasisY;
+  _prevBasisZ   = _curBasisZ;
 
   //_curBasisX = _input_directionX->value();
   //_curBasisY = _input_directionY->value();
@@ -110,9 +107,9 @@ void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata
   //_curOffset    = _input_offset->value();
 
   if (_curBasisY.magnitudeSquared() == 0.0f) {
-    _curBasisX = fvec3(1,0,0);
-    _curBasisY = fvec3(0,1,0);
-    _curBasisZ = fvec3(0,0,1);
+    _curBasisX  = fvec3(1, 0, 0);
+    _curBasisY  = fvec3(0, 1, 0);
+    _curBasisZ  = fvec3(0, 0, 1);
     _prevBasisX = _curBasisX;
     _prevBasisY = _curBasisY;
     _prevBasisZ = _curBasisZ;
@@ -141,16 +138,14 @@ void EllipticalEmitterInst::_emit(float fdt) {
   _emitter_context.mDispersion        = _input_dispersionangle->value();
   //_directedEmitter.meDirection        = EmitterDirection::USER;
   //_emitter_context.mPosition          = _input_offset->value();
-  fvec3 offsetVel                     = fvec3(0); //_input_offset_velocity->value();
-  _emitter_context.mOffsetVelocity    = offsetVel;
 
   auto P1 = _input_p1->value();
   auto P2 = _input_p2->value();
   fmtx3 basis;
   fvec3 dirY = (P2 - P1).normalized();
-  fvec3 dirX = dirY.crossWith(fvec3(0,1,1)).normalized();
+  fvec3 dirX = dirY.crossWith(fvec3(0, 1, 1)).normalized();
   fvec3 dirZ = dirX.crossWith(dirY).normalized();
-  dirX = dirY.crossWith(dirZ).normalized();
+  dirX       = dirY.crossWith(dirZ).normalized();
 
   Pool<BasicParticle>& the_pool = *_emitter_context.mPool;
   float fdeltap                 = (_emitter_context.mfEmissionRate * _emitter_context.mfDeltaTime);
@@ -158,31 +153,59 @@ void EllipticalEmitterInst::_emit(float fdt) {
   if (std::isnan(_emitter_context.mfEmitterMark)) {
     _emitter_context.mfEmitterMark = 0.0f;
   }
-  //printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", _emitter_context.mfEmissionRate, _emitter_context.mfDeltaTime, fdeltap, _emitter_context.mfEmitterMark);
+  // printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", _emitter_context.mfEmissionRate, _emitter_context.mfDeltaTime, fdeltap,
+  // _emitter_context.mfEmitterMark);
   int icount = int(_emitter_context.mfEmitterMark);
   fvec3 pos, disp, yo;
+  fvec3 center                 = (P1 + P2) * 0.5f;
+  fvec3 semiMajorAxisDirection = (P1 - P2).normalized();
+  float d                      = (P1 - P2).magnitude(); // Distance between the foci
+  float b                      = 1 + d;                 // Linear relationship for b based on the distance
+
+  // Assuming a and c should be constants, or determined by another specific requirement
+  float a                    = std::max(1.0f, log(b)); // Placeholder value, adjust based on your requirements
+  float c                    = a;                      // Same as a, assuming symmetry about the Y-axis
+  fmtx4 transform_sph_to_wld = createSphericalToEllipticalTransformationMatrix(center, semiMajorAxisDirection, fvec3(a, b, c));
+
   for (int ic = 0; ic < icount; ic++) {
     float fi = float(ic) / float(icount);
-    fvec3 pos;
-    pos.lerp(P1,P2, fi);
-    //computePosDir(fi, pos, basis);
+    float u  = _randgen.ranged_rand(0.0, 1.0);
+    float v  = _randgen.ranged_rand(0.0, 1.0);
+
+    float theta = u * PI2; // Theta ranges from 0 to 2*PI
+    float phi = v * PI2; // Theta ranges from 0 to 2*PI
+
+    // Assuming v maps linearly from the center to the surface
+    float r = v; // Radius factor (since v is normalized to [0, 1])
+
+    // Compute Cartesian coordinates for the point on the ellipsoid
+    float x = sin(theta)*cos(phi);
+    float y = sin(theta)*sin(phi);
+    float z = cos(theta);
+
+    //
+
+    fvec3 pos = fvec3(x, y, z);
+    pos       = fvec4(pos, 1.0).transform(transform_sph_to_wld).xyz(); // Transform back to world space
+    // pos.lerp(P1,P2, fi);
+    // computePosDir(fi, pos, basis);
     pos += _emitter_context.mPosition;
     BasicParticle* __restrict ptc = the_pool.FastAlloc();
     if (ptc) {
       ptc->mfAge      = 0.0f;
       ptc->mfLifeSpan = _emitter_context.mfLifespan;
-      fvec3 dir = dirY;
-      fvec3 vbin = dirX;
-      fvec3 vtan = dirZ;
-      float fu = _randgen.ranged_rand(-0.5,0.5);
-      float fv = _randgen.ranged_rand(-0.5,0.5);
-      disp     = (vbin * fu) + (vtan * fv);
+      fvec3 dir       = dirY;
+      fvec3 vbin      = dirX;
+      fvec3 vtan      = dirZ;
+      float fu        = _randgen.ranged_rand(-0.5, 0.5);
+      float fv        = _randgen.ranged_rand(-0.5, 0.5);
+      disp            = (vbin * fu) + (vtan * fv);
       yo.lerp(dir, disp, _emitter_context.mDispersion);
-      dir                = yo.normalized();
+      dir = pos.normalized();
 
-      ptc->mPosition     = pos;
-      //printf("EmitCB::pos<%g %g %g> dir<%g %g %g>\n", pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
-      ptc->mVelocity     = dir * _emitter_context.mfEmissionVelocity + _emitter_context.mOffsetVelocity;
+      ptc->mPosition = pos;
+      // printf("EmitCB::pos<%g %g %g> dir<%g %g %g>\n", pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
+      ptc->mVelocity     = dir * _emitter_context.mfEmissionVelocity;
       ptc->mLastPosition = pos - (ptc->mVelocity * _emitter_context.mfDeltaTime);
       ptc->mKey          = (void*)_emitter_context.mKey;
     }
@@ -224,15 +247,14 @@ void EllipticalEmitterInst::_reap(float fdt) {
                 );*/
       }
       pool->mInactiveParticles.push_back(ptc);
-      int ilast_alive                = pool->GetNumAlive() - 1;
-      BasicParticle* ptclast         = pool->mActiveParticles[ilast_alive];
+      int ilast_alive           = pool->GetNumAlive() - 1;
+      BasicParticle* ptclast    = pool->mActiveParticles[ilast_alive];
       pool->mActiveParticles[i] = ptclast;
       pool->mActiveParticles.erase(pool->mActiveParticles.begin() + ilast_alive);
       inumalive--;
     }
   }
-      // _emitter_context.mPool->FastFree(ikill)
-
+  // _emitter_context.mPool->FastFree(ikill)
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -242,15 +264,15 @@ EllipticalEmitterData::EllipticalEmitterData() {
 
 //////////////////////////////////////////////////////////////////////////
 
-static void _reshapeEllipticalEmitterIOs( dataflow::moduledata_ptr_t data ){
+static void _reshapeEllipticalEmitterIOs(dataflow::moduledata_ptr_t data) {
 
   auto typed = std::dynamic_pointer_cast<EllipticalEmitterData>(data);
-  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,20};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100,100};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
-  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range = {-1000.0f, 1000.0f};
-  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range = {-1000.0f, 1000.0f};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range         = {0, 20};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range     = {0, 1000};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100, 100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range  = {0, 1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range                = {-1000.0f, 1000.0f};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range                = {-1000.0f, 1000.0f};
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -271,13 +293,10 @@ dgmoduleinst_ptr_t EllipticalEmitterData::createInstance(dataflow::GraphInst* gi
 //////////////////////////////////////////////////////////////////////////
 
 void EllipticalEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return EllipticalEmitterData::createShared();
-  });
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return EllipticalEmitterData::createShared(); });
 
-  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
-    _reshapeEllipticalEmitterIOs(mdata);
-  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>(
+      "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeEllipticalEmitterIOs(mdata); });
 }
 
 //////////////////////////////////////////////////////////////////////////

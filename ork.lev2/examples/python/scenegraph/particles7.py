@@ -213,9 +213,9 @@ class ParticlesApp(object):
       EMI = self.ptc_data.emitter.inputs
       EMI.P1 = P1
       EMI.P2 = P2
-      EMI.EmissionVelocity = 0.1
+      EMI.EmissionVelocity = 1
       EMI.DispersionAngle = 180
-      EMI.LifeSpan = 2.5
+      EMI.LifeSpan = 0.25
       EMI.EmissionRate = 5000
 
       ELI = self.ptc_data.elliptical.inputs

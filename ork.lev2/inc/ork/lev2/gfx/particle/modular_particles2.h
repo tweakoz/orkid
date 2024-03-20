@@ -157,6 +157,8 @@ struct ParticlePoolRenderBuffer {
   int _index             = 0;
 };
 
+fmtx4 createSphericalToEllipticalTransformationMatrix(const fvec3& center, const fvec3& semiMajorAxisDirection, fvec3 vscale);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::particle
 ///////////////////////////////////////////////////////////////////////////////

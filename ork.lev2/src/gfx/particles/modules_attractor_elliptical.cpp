@@ -17,6 +17,32 @@
 using namespace ork::dataflow;
 
 namespace ork::lev2::particle {
+fmtx4 createSphericalToEllipticalTransformationMatrix(const fvec3& center, const fvec3& semiMajorAxisDirection, fvec3 vscale) {
+  // Start with an identity matrix
+  fmtx4 transformation;
+
+  // Scale matrix, assuming uniform scaling in all directions for simplicity
+  fmtx4 S;
+  S.setScale(vscale);
+
+  // To align a vector A with vector B, rotate around their cross product by the angle between them
+  fvec3 yAxis(0, 1, 0); // +Y is up
+  fvec3 rotationAxis = yAxis.crossWith(semiMajorAxisDirection).normalized();
+  float angle        = yAxis.angle(semiMajorAxisDirection);
+
+  // Rotation matrix
+  fquat Q(rotationAxis, angle);
+  fmtx4 R = Q.toMatrix();
+
+  // Translation matrix
+  fmtx4 T;
+  T.setTranslation(center);
+
+  // Combine transformations: note the reverse order of operations
+  transformation = T * S * R;
+
+  return transformation;
+}
 
 struct EllipticalAttractorModuleInst : public ParticleModuleInst {
 
@@ -45,33 +71,6 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
 
   ////////////////////////////////////////////////////
 
-  fmtx4 createTransformationMatrix(const fvec3& center, const fvec3& semiMajorAxisDirection, fvec3 vscale) {
-    // Start with an identity matrix
-    fmtx4 transformation;
-
-    // Scale matrix, assuming uniform scaling in all directions for simplicity
-    fmtx4 S;
-    S.setScale(vscale);
-
-    // To align a vector A with vector B, rotate around their cross product by the angle between them
-    fvec3 yAxis(0, 1, 0); // +Y is up
-    fvec3 rotationAxis = yAxis.crossWith(semiMajorAxisDirection).normalized();
-    float angle        = yAxis.angle(semiMajorAxisDirection);
-
-    // Rotation matrix
-    fquat Q(rotationAxis, angle);
-    fmtx4 R = Q.toMatrix();
-
-    // Translation matrix
-    fmtx4 T;
-    T.setTranslation(center);
-
-    // Combine transformations: note the reverse order of operations
-    transformation = T * S * R;
-
-    return transformation;
-  }
-
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final {
     fvec3 fociA    = _input_p1->value();
     fvec3 fociB    = _input_p2->value();
@@ -87,12 +86,12 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
     float b                      = 1 + d;                       // Linear relationship for b based on the distance
 
     // Assuming a and c should be constants, or determined by another specific requirement
-    float a = std::max(1.0f,log(b)); // Placeholder value, adjust based on your requirements
-    float c = a;   // Same as a, assuming symmetry about the Y-axis
+    float a = std::max(1.0f, log(b)); // Placeholder value, adjust based on your requirements
+    float c = a;                      // Same as a, assuming symmetry about the Y-axis
 
     // Create transformation matrix to stretch coordinate system
     // Assuming fmtx4 is a type compatible with glm::mat4
-    fmtx4 transform_sph_to_wld = createTransformationMatrix(center, semiMajorAxisDirection, fvec3(a, b, c));
+    fmtx4 transform_sph_to_wld = createSphericalToEllipticalTransformationMatrix(center, semiMajorAxisDirection, fvec3(a, b, c));
     fmtx4 transform_wld_to_sph = transform_sph_to_wld.inverse();
 
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
@@ -102,21 +101,22 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
       fvec3 sph_position = (fvec4(particle->mPosition, 1.0).transform(transform_wld_to_sph)).xyz();
 
       // Now apply spherical logic in transformed space
-      float sph_distanceToCenter  = sph_position.magnitude();
+      float sph_distanceToCenter = sph_position.magnitude();
 
       float radius = 1.0f;
 
       float sph_distanceToSurface = sph_distanceToCenter - radius;
-      
-      fvec3 sph_directionToSurface = (sph_distanceToCenter > radius) //
-                               ? sph_position.normalized() * sph_distanceToSurface //
-                               : -sph_position.normalized() * sph_distanceToSurface;
+
+      fvec3 sph_directionToSurface = (sph_distanceToCenter > radius)                         //
+                                         ? sph_position.normalized() * sph_distanceToSurface //
+                                         : -sph_position.normalized() * sph_distanceToSurface;
 
       fvec3 sph_surface_point = center + sph_directionToSurface;
 
-      fvec3 wld_surface_point = fvec4(sph_surface_point, 1.0).transform(transform_sph_to_wld).xyz(); // Transform back to world space
+      fvec3 wld_surface_point =
+          fvec4(sph_surface_point, 1.0).transform(transform_sph_to_wld).xyz(); // Transform back to world space
 
-      fvec3 wld_delta = wld_surface_point - particle->mPosition;
+      fvec3 wld_delta    = wld_surface_point - particle->mPosition;
       float wld_distance = wld_delta.magnitude();
 
       float forceMagnitude = 1.0 / (1.0 + wld_distance);

@@ -215,7 +215,7 @@ class ParticlesApp(object):
       EMI.P2 = P2
       EMI.EmissionVelocity = 0.1
       EMI.DispersionAngle = 180
-      EMI.LifeSpan = 2.5
+      EMI.LifeSpan = 0.25
       EMI.EmissionRate = 5000
 
       ELI = self.ptc_data.elliptical.inputs
@@ -227,8 +227,8 @@ class ParticlesApp(object):
       GRV.MinDistance = 10
 
       STR = self.ptc_data.streaks.inputs
-      STR.Length = 1
-      STR.Width = .025
+      STR.Length = 2
+      STR.Width = .05
 
       TRB = self.ptc_data.turbulence.inputs
       TRB.Amount = vec3(0)
