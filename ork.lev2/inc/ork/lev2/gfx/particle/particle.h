@@ -37,6 +37,9 @@ public:
   inline int GetMax() const {
     return miMaxParticles;
   }
+  inline int numFree() const {
+    return GetMax()-GetNumAlive();
+  }
   inline int GetNumAlive() const {
     return int(mActiveParticles.size());
   }

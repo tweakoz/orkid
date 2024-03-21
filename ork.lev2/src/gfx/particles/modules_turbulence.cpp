@@ -51,6 +51,7 @@ struct TurbulenceModuleInst : public ParticleModuleInst {
       F32 randY = amt.y * fury;
       F32 randZ = amt.z * furz;
       ork::fvec4 accel(randX, randY, randZ);
+      //printf( "accel<%g %g %g>\n", accel.x, accel.y, accel.z);
       particle->mVelocity += accel * dt;
     }
   }
@@ -69,9 +70,9 @@ TurbulenceModuleData::TurbulenceModuleData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _reshapeTurbulenceIOs( dataflow::moduledata_ptr_t mdata ){
-  auto typed = std::dynamic_pointer_cast<TurbulenceModuleData>(mdata);
-  ModuleData::createInputPlug<Vec3XfPlugTraits>(mdata, EPR_UNIFORM, "Amount")->_range = {-100,100};
+static void _reshapeTurbulenceIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<TurbulenceModuleData>(data);
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Amount")->_range = {-1000.0f,1000.0f};
 }
 
 //////////////////////////////////////////////////////////////////////////

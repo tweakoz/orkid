@@ -430,9 +430,9 @@ fragment_shader ps_modtexclr : fface_psys {
   if (alp == 0.0)
     discard;
   float unit_age = frg_uv1.x;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 5, 0);
-  out_clr        = texc*modcolor*(1.0-unit_age); // *  * frg_clr;
+  //out_rufmtl     = vec4(0, 1, 0, 0);
+  //out_normal_mdl = vec4(0, 0, 5, 0);
+  out_clr        = texc;//(1.0-unit_age); // *  * frg_clr;
   out_clr.a      = alp;
 }
 fragment_shader ps_volume : fface_psys {

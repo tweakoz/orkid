@@ -127,7 +127,7 @@ void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata
 void EllipticalEmitterInst::_emit(float fdt) {
 
   float femitvel                      = _input_emissionvelocity->value();
-  float lifespan                      = std::clamp<float>(_input_lifespan->value(), 0.01f, 10.0f);
+  float lifespan                      = std::clamp<float>(_input_lifespan->value(), 0.00f, 10.0f);
   float emissionrate                  = _input_emissionrate->value();
   _emitter_context.mPool              = _pool.get();
   _emitter_context.mfEmissionRate     = emissionrate;
@@ -167,6 +167,14 @@ void EllipticalEmitterInst::_emit(float fdt) {
   float c                    = a;                      // Same as a, assuming symmetry about the Y-axis
   fmtx4 transform_sph_to_wld = createSphericalToEllipticalTransformationMatrix(center, semiMajorAxisDirection, fvec3(a, b, c));
 
+  if(lifespan==0.0f){
+    lifespan = 1.0f;
+
+    if(_pool->numFree() == 0){
+      return;
+    }
+  }
+
   for (int ic = 0; ic < icount; ic++) {
     float fi = float(ic) / float(icount);
     float u  = _randgen.ranged_rand(0.0, 1.0);
@@ -193,7 +201,7 @@ void EllipticalEmitterInst::_emit(float fdt) {
     BasicParticle* __restrict ptc = the_pool.FastAlloc();
     if (ptc) {
       ptc->mfAge      = 0.0f;
-      ptc->mfLifeSpan = _emitter_context.mfLifespan;
+      ptc->mfLifeSpan = lifespan;
       fvec3 dir       = dirY;
       fvec3 vbin      = dirX;
       fvec3 vtan      = dirZ;
@@ -214,6 +222,10 @@ void EllipticalEmitterInst::_emit(float fdt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EllipticalEmitterInst::_reap(float fdt) {
+
+  if(_emitter_context.mfLifespan==0.0f)
+    return;
+
   _emitter_context.mPool       = _pool.get();
   _emitter_context.mfDeltaTime = fdt;
   _emitter_context.mKey        = (void*)this;
