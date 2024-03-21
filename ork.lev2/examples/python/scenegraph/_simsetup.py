@@ -76,6 +76,7 @@ class SimApp(object):
     params_dict = {
       "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
+      "DepthFogDistance": float(10000)
     }
     createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     model = XgmModel("src://environ/objects/misc/ref/uvsph.glb")

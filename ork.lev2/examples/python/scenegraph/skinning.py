@@ -91,6 +91,7 @@ class SkinningApp(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
+    sg_params.DepthFogDistance = 10000.0
     sg_params.preset = "DeferredPBR"
 
     ###################################
