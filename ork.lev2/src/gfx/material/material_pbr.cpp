@@ -168,51 +168,6 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
   bool require_pbr_params = true;
 
   switch (mtl->_variant) {
-    case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
-      auto basic_lambda  = _createBasicStateLambda(mtl);
-      auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
-        auto _this   = (PBRMaterial*)mtl;
-        auto RCFD    = RCID._RCFD;
-        auto context = RCFD->GetTarget();
-        auto FXI     = context->FXI();
-        auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
-        auto pbrcommon        = RCFD->_pbrcommon;
-        auto envtex  = pbrcommon->envSpecularTexture();
-
-        FXI->BindParamCTex(_this->_parMapSpecularEnv, envtex.get() );
-
-        basic_lambda(RCID, ipass);
-        _this->_rasterstate.SetCullTest(ECullTest::OFF);
-        _this->_rasterstate.SetZWriteMask(false);
-        _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-        _this->_rasterstate.SetRGBAWriteMask(true, true);
-        RSI->BindRasterState(_this->_rasterstate);
-      };
-      //////////////////////////////////////////////////////////
-      OrkAssert(permu._instanced==false);
-      OrkAssert(permu._skinned==false);
-      //////////////////////////////////////////////////////////
-      if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
-        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
-        pipeline_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
-        pipeline_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
-        pipeline_stereo->addStateLambda(skybox_lambda);
-        pipeline_stereo->_material = (GfxMaterial*)mtl;
-        pipeline = pipeline_stereo;
-      }
-      else if(mtl->_tek_FWD_SKYBOX_MO){
-        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
-        pipeline_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-        pipeline_stereo->addStateLambda(skybox_lambda);
-        pipeline_stereo->_material = (GfxMaterial*)mtl;
-        pipeline = pipeline_stereo;
-      }
-      //////////////////////////////////////////////////////////
-      break;
-    }
     case 0: { // STANDARD VARIANT
       switch (permu._rendering_model) {
         //////////////////////////////////////////
@@ -280,6 +235,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               RSI->BindRasterState(mtl->_rasterstate);
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
           };
+          printf( "OK1..\n");
           ////////////////////////////////////////////////////////////////////////////////////////////
           if (permu._stereo) {                                     // stereo
             if (permu._instanced) {                                // stereo-instanced
@@ -322,7 +278,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             //////////////////////////////////
           }
           ///// mono ///////////////////////////////////////////////////////////////////////////////////
-          else {                                               
+          else {         
+            printf( "OK2.. permu._instanced<%d> skinned<%d>\n", int(permu._instanced), int(permu._skinned) );
+
+
             if (permu._instanced) {                                // mono-instanced
               tek = permu._skinned                  //
                                        ? mtl->_tek_GBU_CT_NM_SK_IN_MO //
@@ -332,6 +291,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                                        ? mtl->_tek_GBU_CT_NM_SK_NI_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_NI_MO;
             }
+            printf( "OK3.. mtl<%p> tek<%p>\n", mtl, tek );
             //////////////////////////////////
             if(tek){
               pipeline = std::make_shared<FxPipeline>(permu);
@@ -539,6 +499,52 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
       break;
     } // case 0: // STANDARD VARIANT
     //////////////////////////////////////////
+    case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
+      auto basic_lambda  = _createBasicStateLambda(mtl);
+      auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
+        auto _this   = (PBRMaterial*)mtl;
+        auto RCFD    = RCID._RCFD;
+        auto context = RCFD->GetTarget();
+        auto FXI     = context->FXI();
+        auto MTXI    = context->MTXI();
+        auto RSI     = context->RSI();
+        auto pbrcommon        = RCFD->_pbrcommon;
+        auto envtex  = pbrcommon->envSpecularTexture();
+
+        FXI->BindParamCTex(_this->_parMapSpecularEnv, envtex.get() );
+
+        basic_lambda(RCID, ipass);
+        _this->_rasterstate.SetCullTest(ECullTest::OFF);
+        _this->_rasterstate.SetZWriteMask(false);
+        _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+        _this->_rasterstate.SetRGBAWriteMask(true, true);
+        RSI->BindRasterState(_this->_rasterstate);
+      };
+      //////////////////////////////////////////////////////////
+      OrkAssert(permu._instanced==false);
+      OrkAssert(permu._skinned==false);
+      //////////////////////////////////////////////////////////
+      if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
+        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
+        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
+        pipeline_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
+        pipeline_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
+        pipeline_stereo->addStateLambda(skybox_lambda);
+        pipeline_stereo->_material = (GfxMaterial*)mtl;
+        pipeline = pipeline_stereo;
+      }
+      else if(mtl->_tek_FWD_SKYBOX_MO){
+        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
+        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
+        pipeline_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+        pipeline_stereo->addStateLambda(skybox_lambda);
+        pipeline_stereo->_material = (GfxMaterial*)mtl;
+        pipeline = pipeline_stereo;
+      }
+      //////////////////////////////////////////////////////////
+      break;
+    }
+    //////////////////////////////////////////
     case "normalviz"_crcu:
       OrkAssert(false);
       break;
@@ -634,7 +640,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->_material             = (GfxMaterial*)mtl;
   }
   else{
-    printf("No PIPELINE for mtl<%s>\n", mtl->mMaterialName.c_str() );
+    printf("No PIPELINE for mtl<%s> variant<%08x>\n", mtl->mMaterialName.c_str(), mtl->_variant );
+    printf( "permu-renderingmodel<%08x>\n", permu._rendering_model );
     OrkAssert(false);
   }
 
@@ -699,7 +706,8 @@ void PBRMaterial::describeX(class_t* c) {
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         OrkAssert(ok);
-        // logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
+        logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
+        logchan_pbr->log(" token<%s>", token );
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
           mtl->_colorMapName = texname;
@@ -785,6 +793,9 @@ void PBRMaterial::describeX(class_t* c) {
 ////////////////////////////////////////////
 
 void PBRMaterial::gpuInit(Context* targ) /*final*/ {
+
+  printf( "PBRMaterial::gpuInit<%p> _initialTarget<%p> targ<%p>\n", this, _initialTarget, targ );
+
   if (_initialTarget)
     return;
 
@@ -848,6 +859,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO"s+_shader_suffix);
 
+
+  printf( "_tek_GBU_CT_NM_RI_NI_MO<%p>\n", _tek_GBU_CT_NM_RI_NI_MO );
+  printf( "_tek_GBU_CM_NM_RI_NI_MO<%p>\n", _tek_GBU_CM_NM_RI_NI_MO );
   // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
@@ -917,6 +931,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   OrkAssert(_paramMapNormal != nullptr);
   OrkAssert(_parBoneBlock != nullptr);
+
+  printf( "_texColor<%p>\n", _texColor.get() );
+  printf( "_texNormal<%p>\n", _texNormal.get() );
+  printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
   if (_texColor == nullptr) {
     auto loadreq = std::make_shared<asset::LoadRequest>();

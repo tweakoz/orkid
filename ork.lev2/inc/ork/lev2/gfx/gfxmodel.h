@@ -379,6 +379,7 @@ struct XgmModel final {
   static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);
+  static bool _loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock);
 
   /////////////////////////////////////
 
