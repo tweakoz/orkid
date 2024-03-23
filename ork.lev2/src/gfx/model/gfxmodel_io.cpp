@@ -168,11 +168,19 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
                                const std::string& channel_name,
                                ETextureUsage usage ) -> EmbeddedTexture* {
         EmbeddedTexture* rval = nullptr;
-        auto tex_path = base_dir / texture_name;
+        bfs::path tex_path;
+        if(texture_name.find("://")==std::string::npos){
+          tex_path = base_dir / texture_name;
+        }
+        else{
+          auto as_ork = file::Path(texture_name);
+          tex_path = as_ork.toAbsolute().c_str();
+        }
         auto tex_ext  = std::string(tex_path.extension().c_str());
-        if (boost::filesystem::exists(texture_name) and boost::filesystem::is_regular_file(texture_name)) {
+        printf("checking tex<%s>\n", tex_path.c_str() );
+        if (boost::filesystem::exists(tex_path) and boost::filesystem::is_regular_file(tex_path)) {
           ork::file::Path as_ork_path;
-          as_ork_path.fromBFS(texture_name);
+          as_ork_path.fromBFS(tex_path);
           ork::File texfile;
           texfile.OpenFile(as_ork_path, ork::EFM_READ);
           size_t length = 0;
@@ -195,7 +203,8 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
             rval->_name       = texture_name;
 
             rval->fetchDDSdata();
-            embtexmap[tex_path.c_str()] = rval;
+            printf("added tex<%s>\n", tex_path.c_str() );
+            embtexmap[texture_name.c_str()] = rval;
           }
         }
         return rval;
@@ -523,7 +532,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           embtex->_srcdata = texdatcopy;
         }
         embtex->_srcdatalen = datasize;
-        // logchan_mioR->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>d, i, texname, datasize, texturedata);
+        logchan_mioR->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>", i, texname, datasize, texturedata);
       }
     }
 
