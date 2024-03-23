@@ -24,7 +24,12 @@
 #include <ork/util/logger.h>
 #include <ork/util/hexdump.inl>
 #include <ork/kernel/memcpy.inl>
+#include <ork/lev2/gfx/meshutil/meshutil.h>
+#include "../meshutil/assimp_util.inl"
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
 
+using namespace std::literals;
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
 datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
@@ -32,18 +37,19 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-static bool FORCE_MODEL_REGEN(){
+
+static bool FORCE_MODEL_REGEN() {
   return genviron.has("ORKID_LEV2_FORCE_MODEL_REGEN");
 }
-static bool ASSET_ENCRYPT_MODE(){
+static bool ASSET_ENCRYPT_MODE() {
   return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
 }
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),true);
-static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4),false);
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD", fvec3(0.8, 0.8, 0.4), true);
+static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE", fvec3(0.8, 0.7, 0.4), false);
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
-  //logchan_mioR->log("Writing Xgm<%p> to path<%s>d, (void*) mdl, Filename.c_str());
+  // logchan_mioR->log("Writing Xgm<%p> to path<%s>d, (void*) mdl, Filename.c_str());
   auto datablock = writeXgmToDatablock(mdl);
   if (datablock) {
     ork::File outputfile(Filename, ork::EFM_WRITE);
@@ -55,8 +61,8 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset::loadrequest_ptr_t XgmModel::_getLoadRequest(){
-  if( _asset ){
+asset::loadrequest_ptr_t XgmModel::_getLoadRequest() {
+  if (_asset) {
     return _asset->_load_request;
   }
   return nullptr;
@@ -66,7 +72,7 @@ asset::loadrequest_ptr_t XgmModel::_getLoadRequest(){
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
 
-  if(not logchan_mioR->_enabled)
+  if (not logchan_mioR->_enabled)
     logchan_mioR->_enabled = FORCE_MODEL_REGEN();
 
   bool rval        = false;
@@ -78,7 +84,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
   mdl->_varmap.mergeVars(vars);
   /////////////////////
   auto load_req = mdl->_getLoadRequest();
-  if(load_req){
+  if (load_req) {
     load_req->incrementPartialLoadCount();
   }
   /////////////////////
@@ -102,7 +108,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
   }
-  if(load_req){
+  if (load_req) {
     load_req->decrementPartialLoadCount();
   }
   return rval;
@@ -115,34 +121,182 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
   Char4 check_magic(datablockstream.getItem<uint32_t>());
   if (check_magic == Char4("chkf")) { // its a chunkfile
     return _loadXGM(mdl, datablock);
-  }
-  if (check_magic == Char4("glTF")){ // its a glb (binary)
-    if(ASSET_ENCRYPT_MODE()){
-      auto codec = std::make_shared<DefaultEncryptionCodec>();
+  } else if (check_magic == Char4("glTF")) { // its a glb (binary)
+    if (ASSET_ENCRYPT_MODE()) {
+      auto codec               = std::make_shared<DefaultEncryptionCodec>();
       auto encrypted_datablock = datablock->encrypt(codec);
-      auto outpath = file::Path::temp_dir()/"temp.orkemdl";
+      auto outpath             = file::Path::temp_dir() / "temp.orkemdl";
       ork::File outputfile(outpath, ork::EFM_WRITE);
       outputfile.Write(encrypted_datablock->data(), encrypted_datablock->length());
     }
     return _loadAssimp(mdl, datablock);
+  } else if (datablock->is_ascii() and datablock->is_likely_json()) {
+    auto base_dir = datablock->_vars->typedValueForKey<bfs::path>("base-directory").value();
+    datablock->zeroExtend();
+    // check for json "orkscene" object
+    auto as_cstr = (const char*)datablock->data();
+    printf("as_cstr: %s\n", as_cstr);
+    size_t datalen = datablock->length();
+    rapidjson::Document _document;
+    _document.Parse(as_cstr);
+    bool is_object = _document.IsObject();
+    bool has_top   = _document.HasMember("orkscene");
+    OrkAssert(is_object);
+    OrkAssert(has_top);
+    const auto& topnode = _document["orkscene"];
+
+
+    for (auto it = topnode.MemberBegin(); //
+         it != topnode.MemberEnd();
+         ++it) {
+
+      const auto& propkey = it->name;
+      const auto& sgnode  = it->value;
+      auto nodename       = propkey.GetString();
+      printf("nodename<%s>\n", nodename);
+      OrkAssert(sgnode.GetType() == rapidjson::kObjectType);
+
+      auto top_mesh = std::make_shared<meshutil::Mesh>();
+      auto& embtexmap = top_mesh->_varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
+      meshutil::gltfmaterialmap_t materialmap;
+
+      /////////////////////////////////
+      // fetch texture lambda
+      /////////////////////////////////
+
+      auto parse_texture = [&](const std::string& texture_name,ETextureUsage usage ) -> EmbeddedTexture* {
+        EmbeddedTexture* rval = nullptr;
+        auto tex_path = base_dir / texture_name;
+        auto tex_ext  = std::string(tex_path.extension().c_str());
+        if (boost::filesystem::exists(texture_name) and boost::filesystem::is_regular_file(texture_name)) {
+          ork::file::Path as_ork_path;
+          as_ork_path.fromBFS(texture_name);
+          ork::File texfile;
+          texfile.OpenFile(as_ork_path, ork::EFM_READ);
+          size_t length = 0;
+          texfile.GetLength(length);
+          //logchan_meshutilassimp->log("texlen<%zu>\n", length);
+
+          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
+
+            rval     = new EmbeddedTexture;
+            rval->_format = tex_ext.substr(1);
+            rval->_usage  = usage;
+
+            void* dataptr = malloc(length);
+            texfile.Read(dataptr, length);
+            texfile.Close();
+
+            rval->_srcdatalen = length;
+            rval->_srcdata    = (const void*)dataptr;
+            std::string texid   = FormatString("*%d", int(embtexmap.size()));
+            rval->_name       = texture_name;
+
+            rval->fetchDDSdata();
+            embtexmap[texture_name] = rval;
+          }
+        }
+        return rval;
+      };
+
+      /////////////////////////////////
+      // fetch material
+      /////////////////////////////////
+
+      const auto& material = sgnode["material"];
+      auto material_type   = material["type"].GetString();
+      printf("material_type<%s>\n", material_type);
+      auto outmtl    = new meshutil::GltfMaterial;
+      materialmap[0] = outmtl;
+      if ("emissive"s == material_type) {
+        auto texture_name = material["texture"].GetString();
+        outmtl->_name = texture_name;
+        outmtl->_baseColor = fvec4(1,1,1,1);
+        outmtl->_metallicFactor = 0;
+        outmtl->_roughnessFactor = 1;
+        outmtl->_colormap = texture_name;
+        printf("texture_name<%s>\n", texture_name);
+        auto embtex = parse_texture(texture_name,ETEXUSAGE_COLOR);
+      }
+
+      /////////////////////////////////
+      // fetch meshes for material
+      /////////////////////////////////
+
+
+      const auto& meshes = sgnode["meshes"];
+      for (auto itm = meshes.MemberBegin(); //
+           itm != meshes.MemberEnd();
+           ++itm) {
+        auto meshname = itm->name.GetString();
+        auto meshfile = itm->value.GetString();
+        auto mesh_path = base_dir / meshfile;
+        printf("meshname<%s>\n", meshname);
+        printf("mesh_path<%s>\n", mesh_path.c_str());
+        auto mesh = std::make_shared<meshutil::Mesh>();
+        mesh->ReadFromWavefrontObj(mesh_path.c_str());
+        for (auto pgitem : mesh->_submeshesByPolyGroup) {
+          auto pgname  = pgitem.first;
+          auto pgroup  = pgitem.second;
+          int numpolys = pgroup->numPolys(0);
+          top_mesh->MergeSubMesh(*pgroup);
+          printf("  submesh<%s> numpolys<%d>\n", pgname.c_str(), numpolys);
+        }
+      }
+      top_mesh->dumpStats();
+      auto& out_submesh = top_mesh->MergeSubMesh("default");
+      auto& mtlset      = out_submesh.typedAnnotation<std::set<int>>("materialset");
+      mtlset.insert(0);
+      out_submesh.typedAnnotation<meshutil::GltfMaterial*>("gltfmaterial") = outmtl;
+
+
+      meshutil::clusterizeToolMeshToXgmMesh<meshutil::XgmClusterizerStd>(*top_mesh,*mdl);
+
+      auto vmin = top_mesh->_vertexExtents.Min();
+      auto vmax = top_mesh->_vertexExtents.Max();
+      auto center = (vmax+vmin)*0.5f;
+      auto abs_vmaxdelta = (vmax-center).absolute();
+      auto abs_vmindelta = (vmin-center).absolute();
+      auto abs_max = abs_vmaxdelta.maxXYZ(abs_vmindelta);
+      /////////////////////////
+      // compute radius
+      /////////////////////////
+
+      float radius = 0.0f;
+      float vmax_mag = (vmax-center).magnitude();
+      float vmin_mag = (vmin-center).magnitude();
+      if(vmax_mag>radius)
+        radius = vmax_mag;
+      if(vmin_mag>radius)
+        radius = vmin_mag;
+      /////////////////////////
+
+      mdl->mBoundingCenter = center;
+      mdl->mBoundingRadius = radius;
+      mdl->mAABoundXYZ = center;
+      mdl->mAABoundWHD = abs_max;
+
+    }
+    auto xgm_dblock = writeXgmToDatablock(mdl);
+    return _loadXGM(mdl, xgm_dblock);
   }
-  printf( "check_magic<%08x>\n", check_magic );
-  if (check_magic.muVal32 == 0x736d656f ){ // its encrypted
-    printf("aaa: decrypting datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length()  );
+  printf("check_magic<%08x>\n", check_magic);
+  if (check_magic.muVal32 == 0x736d656f) { // its encrypted
+    printf("aaa: decrypting datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length());
     uint32_t codecID = datablockstream.getItem<uint32_t>();
-    auto& storage = datablock->_storage;
+    auto& storage    = datablock->_storage;
     storage.erase(storage.begin(), storage.begin() + 8);
-    printf("aaa: decrypting datablock rehash<%zx> relength<%zu>\n", datablock->hash(), datablock->length()  );
-    auto codec = encryptionCodecFactory(codecID);
+    printf("aaa: decrypting datablock rehash<%zx> relength<%zu>\n", datablock->hash(), datablock->length());
+    auto codec               = encryptionCodecFactory(codecID);
     auto decrypted_datablock = datablock->decrypt(codec);
-    hexdumpbytes(decrypted_datablock->_storage.data(),64);
-    printf("aaa: decrypted_datablock hash<%zx> length<%zu>\n", decrypted_datablock->hash(), decrypted_datablock->length() );
-    bool OK =  _loadAssimp(mdl, decrypted_datablock);
+    hexdumpbytes(decrypted_datablock->_storage.data(), 64);
+    printf("aaa: decrypted_datablock hash<%zx> length<%zu>\n", decrypted_datablock->hash(), decrypted_datablock->length());
+    bool OK = _loadAssimp(mdl, decrypted_datablock);
     printf("assimp load status<%d>\n", int(OK));
-    //OrkAssert(false);
+    // OrkAssert(false);
     return OK;
   }
-  
+
   auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   if (extension == "gltf" or //
       extension == "dae" or  //
@@ -150,51 +304,46 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
       extension == "obj") {
     return _loadAssimp(mdl, datablock);
   }
-  OrkAssert(false);
   return false;
 }
 
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
-   // printf("aaa: load assimp datablock hash<%zx> length<%zu>\n", inp_datablock->hash(), inp_datablock->length() );
+  // printf("aaa: load assimp datablock hash<%zx> length<%zu>\n", inp_datablock->hash(), inp_datablock->length() );
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  basehasher->accumulateString("version-x042423"); 
+  basehasher->accumulateString("version-x042423");
 
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
-  // include asset vars as hash mutator 
-  //  because they may influence the loading mechanism 
+  // include asset vars as hash mutator
+  //  because they may influence the loading mechanism
   /////////////////////////////////////
-  for( auto item : mdl->_varmap._themap ){
+  for (auto item : mdl->_varmap._themap) {
     const std::string& k = item.first;
     const rendervar_t& v = item.second;
     basehasher->accumulateString(k);
-    if(auto as_str = v.tryAs<std::string>() ){
+    if (auto as_str = v.tryAs<std::string>()) {
       basehasher->accumulateString(as_str.value());
-      logchan_mioR->log( "LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());
-    }
-    else if(auto as_bool = v.tryAs<bool>() ){
+      logchan_mioR->log("LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());
+    } else if (auto as_bool = v.tryAs<bool>()) {
       basehasher->accumulateItem<bool>(as_bool.value());
-    }
-    else if(auto as_dbl = v.tryAs<double>() ){
+    } else if (auto as_dbl = v.tryAs<double>()) {
       basehasher->accumulateItem<double>(as_dbl.value());
-    }
-    else{
+    } else {
       OrkAssert(false);
     }
-
   }
   /////////////////////////////////////
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
-  if(FORCE_MODEL_REGEN()){
+  if (FORCE_MODEL_REGEN()) {
     xgm_datablock = nullptr;
   }
-  printf( "xgm_datablock<%p>\n", (void*) xgm_datablock.get() );
+  printf("xgm_datablock<%p>\n", (void*)xgm_datablock.get());
   if (not xgm_datablock) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
@@ -205,9 +354,9 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
 
 bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
-  //printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
+  // printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
 
-  hexdumpbytes(datablock->_storage.data(),64);
+  hexdumpbytes(datablock->_storage.data(), 64);
 
   constexpr int kVERSIONTAG = 0x01234567;
   bool rval                 = false;
@@ -240,21 +389,21 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       HeaderStream->GetItem(XGMVERSIONCODE);
       HeaderStream->GetItem(inumjoints);
     }
-    logchan_mioR->log("XGM: inumjoints<%d>", inumjoints );
+    logchan_mioR->log("XGM: inumjoints<%d>", inumjoints);
     /////////////////////////////////////////////////////////
     if (inumjoints) {
       mdl->_skeleton->resize(inumjoints);
       for (int ij = 0; ij < inumjoints; ij++) {
-        int iskelindex = 0;
-        int iparentindex = 0;
-        int ijointname = 0;
-        int ijointpath = 0;
-        int ijointID = 0;
-        int ijointmatrix = 0;
+        int iskelindex     = 0;
+        int iparentindex   = 0;
+        int ijointname     = 0;
+        int ijointpath     = 0;
+        int ijointID       = 0;
+        int ijointmatrix   = 0;
         int iinvrestmatrix = 0;
-        int inodematrix = 0;
+        int inodematrix    = 0;
 
-        auto jprops = std::make_shared<XgmJointProperties>();
+        auto jprops                          = std::make_shared<XgmJointProperties>();
         mdl->_skeleton->_jointProperties[ij] = jprops;
 
         // read phase 0
@@ -273,40 +422,39 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         HeaderStream->GetItem(iinvrestmatrix);
         const char* pjntname = chunkreader.GetString(ijointname);
         const char* pjntpath = chunkreader.GetString(ijointpath);
-        const char* pjntID = chunkreader.GetString(ijointID);
+        const char* pjntID   = chunkreader.GetString(ijointID);
 
         mdl->_skeleton->_jointIDS[ij] = pjntID;
 
-        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>", ij, pjntID, pjntname );
+        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>", ij, pjntID, pjntname);
 
         fmtx4 scalematrix;
-        //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+        // scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
         std::string jname(pjntname);
         std::string jpath(pjntpath);
         std::string jid(pjntID);
 
-        mdl->_skeleton->addJoint(iskelindex, iparentindex, jname, jpath, jid );
+        mdl->_skeleton->addJoint(iskelindex, iparentindex, jname, jpath, jid);
         ptstring.set(chunkreader.GetString(inodematrix));
-        mdl->_skeleton->RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        mdl->_skeleton->RefNodeMatrix(iskelindex) = scalematrix * PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
-        mdl->_skeleton->RefJointMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        mdl->_skeleton->RefJointMatrix(iskelindex) = scalematrix * PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
-        auto bind_matrix = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        auto bind_matrix                          = scalematrix * PropType<fmtx4>::FromString(ptstring);
         mdl->_skeleton->_bindMatrices[iskelindex] = bind_matrix;
 
         auto& decomp_out = mdl->_skeleton->_bindDecomps[iskelindex];
 
-        bind_matrix.decompose(decomp_out._position, //
-                              decomp_out._orientation, //
-                              decomp_out._scale.x );
+        bind_matrix.decompose(
+            decomp_out._position,    //
+            decomp_out._orientation, //
+            decomp_out._scale.x);
 
         decomp_out._scale.y = decomp_out._scale.x;
         decomp_out._scale.z = decomp_out._scale.x;
-        
+
         mdl->_skeleton->_inverseBindMatrices[iskelindex] = bind_matrix.inverse();
-
-
       }
     }
     ///////////////////////////////////
@@ -327,13 +475,11 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       mdl->_skeleton->miRootNode = (inumbones > 0) ? mdl->_skeleton->bone(0)._parentIndex : -1;
     }
 
-    auto blocalpose = std::make_shared<XgmLocalPose>(mdl->_skeleton);
+    auto blocalpose                  = std::make_shared<XgmLocalPose>(mdl->_skeleton);
     mdl->_skeleton->_bind_local_pose = blocalpose;
     blocalpose->bindPose();
     blocalpose->blendPoses();
     blocalpose->concatenate();
-
-
 
     // mdl->_skeleton->dump();
     ///////////////////////////////////
@@ -342,8 +488,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     HeaderStream->GetItem(mdl->mAABoundWHD);
     HeaderStream->GetItem(mdl->mBoundingRadius);
 
-    logchan_mioR->log( "boundingCenter<%g %g %g>", mdl->mBoundingCenter.x, mdl->mBoundingCenter.y, mdl->mBoundingCenter.z );
-    logchan_mioR->log( "boundingRadius<%g>", mdl->mBoundingRadius);
+    logchan_mioR->log("boundingCenter<%g %g %g>", mdl->mBoundingCenter.x, mdl->mBoundingCenter.y, mdl->mBoundingCenter.z);
+    logchan_mioR->log("boundingRadius<%g>", mdl->mBoundingRadius);
     // END HACK
     ///////////////////////////////////
     int inummeshes = 0, inummats = 0;
@@ -365,14 +511,14 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         auto texname    = chunkreader.GetString(itexname);
         size_t datasize = 0;
         EmbTexStream->GetItem(datasize);
-        auto texturedata = EmbTexStream->GetCurrent();
-        auto embtex         = new EmbeddedTexture;
-        embtexmap[texname]  = embtex;
-        if(datasize){
-          auto texdatcopy  = malloc(datasize);
+        auto texturedata   = EmbTexStream->GetCurrent();
+        auto embtex        = new EmbeddedTexture;
+        embtexmap[texname] = embtex;
+        if (datasize) {
+          auto texdatcopy = malloc(datasize);
           memcpy_fast(texdatcopy, texturedata, datasize);
           EmbTexStream->advance(datasize);
-          embtex->_srcdata    = texdatcopy;
+          embtex->_srcdata = texdatcopy;
         }
         embtex->_srcdatalen = datasize;
         // logchan_mioR->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>d, i, texname, datasize, texturedata);
@@ -382,20 +528,20 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
     materialread_ctx._varmap->mergeVars(mdl->_varmap);
-    materialread_ctx._varmap->makeValueForKey<Context*>("gfxtarget")    = context;
-    materialread_ctx._inputStream = HeaderStream;
+    materialread_ctx._varmap->makeValueForKey<Context*>("gfxtarget") = context;
+    materialread_ctx._inputStream                                    = HeaderStream;
 
     ///////////////////////////////////
     bool use_normalviz = false;
-    if( auto try_override = mdl->_varmap.typedValueForKey<std::string>("override.shader.gbuf") ){
+    if (auto try_override = mdl->_varmap.typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& override_sh = try_override.value();
-      if(override_sh=="normalviz"){
+      if (override_sh == "normalviz") {
         use_normalviz = true;
       }
     }
 
     xgmmaterial_override_map_ptr_t override_map;
-    if( auto try_override_map = mdl->_varmap.typedValueForKey<xgmmaterial_override_map_ptr_t>("override.material.map") ){
+    if (auto try_override_map = mdl->_varmap.typedValueForKey<xgmmaterial_override_map_ptr_t>("override.material.map")) {
       override_map = try_override_map.value();
     }
 
@@ -406,21 +552,21 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       OrkAssert(iimat == imat);
       HeaderStream->GetItem(imatname);
       HeaderStream->GetItem(imatclass);
-      const char* pmatname                = chunkreader.GetString(imatname);
-      const char* pmatclassname           = chunkreader.GetString(imatclass);
+      const char* pmatname      = chunkreader.GetString(imatname);
+      const char* pmatclassname = chunkreader.GetString(imatclass);
 
-      logchan_mioR->log( "pmatname<%s>", pmatname );
-      logchan_mioR->log( "pmatclassname<%s>", pmatclassname );
+      logchan_mioR->log("pmatname<%s>", pmatname);
+      logchan_mioR->log("pmatclassname<%s>", pmatclassname);
       ork::object::ObjectClass* pmatclass = rtti::autocast(rtti::Class::FindClass(pmatclassname));
-      logchan_mioR->log( "pmatclass<%p>", pmatclass );
+      logchan_mioR->log("pmatclass<%p>", pmatclass);
       OrkAssert(pmatclass != nullptr);
 
       static const int kdefaulttranssortpass = 100;
 
       bool do_original_shader = true;
-      if(override_map){
+      if (override_map) {
         auto it = override_map->_mtl_map.find(pmatname);
-        if(it != override_map->_mtl_map.end() ){
+        if (it != override_map->_mtl_map.end()) {
           auto pmat = it->second;
           pmat->SetName(AddPooledString(pmatname));
           mdl->AddMaterial(pmat);
@@ -431,7 +577,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
       ///////////////////////////////////////////////////////////
 
-      if(do_original_shader){
+      if (do_original_shader) {
         ///////////////////////////////////////////////////////////
         // check xgm reader annotation
         ///////////////////////////////////////////////////////////
@@ -449,9 +595,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         else {
           OrkAssert(false);
         }
-
       }
-
     }
     ///////////////////////////////////
     for (int imesh = 0; imesh < inummeshes; imesh++) {
@@ -569,9 +713,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             auto pidxbuf = new StaticIndexBuffer<U16>(newprimgroup->miNumIndices);
 
             void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
-            {
-              memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
-            }
+            { memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16)); }
             context->GBI()->UnLockIB(*pidxbuf);
 
             newprimgroup->mpIndices = pidxbuf;
@@ -587,12 +729,12 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             HeaderStream->GetItem(ibindingname);
 
             const char* jointpath = chunkreader.GetString(ibindingname);
-            auto itfind = mdl->_skeleton->_jointsByPath.find(jointpath);
+            auto itfind           = mdl->_skeleton->_jointsByPath.find(jointpath);
 
-            if(itfind == mdl->_skeleton->_jointsByPath.end()){
-              logerrchannel()->log( "\n\ncannot find joint<%s> in:", jointpath );
-              for( auto it: mdl->_skeleton->_jointsByPath ){
-                logerrchannel()->log( "  %s", it.first.c_str() );
+            if (itfind == mdl->_skeleton->_jointsByPath.end()) {
+              logerrchannel()->log("\n\ncannot find joint<%s> in:", jointpath);
+              for (auto it : mdl->_skeleton->_jointsByPath) {
+                logerrchannel()->log("  %s", it.first.c_str());
               }
               OrkAssert(false);
             }
@@ -603,7 +745,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          //logchan_mioR->log("mdl<%p> mbSkinned<%d>d, (void*) mdl, int(mdl->mbSkinned));
+          // logchan_mioR->log("mdl<%p> mbSkinned<%d>d, (void*) mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }
@@ -613,9 +755,9 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
   else {
     OrkAssert(false);
   }
-  for( int i=0; i < mdl->_skeleton->miNumJoints; i++ ){
+  for (int i = 0; i < mdl->_skeleton->miNumJoints; i++) {
     int iparent = mdl->_skeleton->jointParent(i);
-    if(iparent>=0){
+    if (iparent >= 0) {
       auto jprops = mdl->_skeleton->_jointProperties[iparent];
       jprops->_children.insert(i);
     }
@@ -667,11 +809,11 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
     const std::string& JointName = skel._jointNAMES[ij];
     const std::string& JointPath = skel._jointPATHS[ij];
-    const std::string& JointID = skel._jointIDS[ij];
-    int32_t JointParentIndex   = skel.jointParent(ij);
-    const fmtx4& bind_matrix = skel._bindMatrices[ij];
-    const fmtx4& JointMatrix   = skel.RefJointMatrix(ij);
-    const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ij);
+    const std::string& JointID   = skel._jointIDS[ij];
+    int32_t JointParentIndex     = skel.jointParent(ij);
+    const fmtx4& bind_matrix     = skel._bindMatrices[ij];
+    const fmtx4& JointMatrix     = skel.RefJointMatrix(ij);
+    const fmtx4& NodeMatrix      = skel.RefNodeMatrix(ij);
 
     // write phase 0
     HeaderStream->AddItem(ij);
@@ -698,8 +840,6 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     PropType<fmtx4>::ToString(bind_matrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
-
-
   }
 
   ///////////////////////////////////
@@ -765,19 +905,18 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     auto textureStream = chunkwriter.AddStream("embtexmap");
     textureStream->AddItem<size_t>(embtexmap.size());
     for (auto item : embtexmap) {
-      std::string texname   = item.first;
+      std::string texname = item.first;
       logchan_mioW->log("WriteXgm: writetex<%s>", texname.c_str());
       EmbeddedTexture* ptex = item.second;
       int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
-      auto ddsblock    = ptex->_ddsdestdatablock;
-      if(ddsblock){
+      auto ddsblock = ptex->_ddsdestdatablock;
+      if (ddsblock) {
         size_t blocksize = ddsblock->length();
         textureStream->AddItem<size_t>(blocksize);
         auto data = (const void*)ddsblock->data();
         textureStream->AddData(data, blocksize);
-      }
-      else{
+      } else {
         textureStream->AddItem<size_t>(0);
       }
     }
@@ -796,9 +935,9 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     istring = chunkwriter.stringIndex(pmat->GetName().c_str());
     HeaderStream->AddItem(istring);
 
-    rtti::Class* pclass         = pmat->GetClass();
-    auto classname = pclass->Name();
-    const char* pclassname      = classname.c_str();
+    rtti::Class* pclass    = pmat->GetClass();
+    auto classname         = pclass->Name();
+    const char* pclassname = classname.c_str();
 
     logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
@@ -857,7 +996,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         if (VB->GetNumVertices() > 0) {
           inumenabledclus++;
         } else {
-          logchan_mioW->log("WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
+          logchan_mioW->log(
+              "WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
         }
       }
 
@@ -881,7 +1021,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         int32_t inumpg = cluster->numPrimGroups();
         int32_t inumjb = (int)cluster->numJointBindings();
 
-        logchan_mioW->log("VB<%p> NumVerts<%d>", (void*) VB.get(), VB->GetNumVertices());
+        logchan_mioW->log("VB<%p> NumVerts<%d>", (void*)VB.get(), VB->GetNumVertices());
         logchan_mioW->log("clus<%d> numjb<%d>", ic, inumjb);
 
         int32_t ivbufoffset = ModelDataStream->GetSize();
@@ -891,7 +1031,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           int VBlen = VB->GetNumVertices() * VB->GetVtxSize();
 
-          logchan_mioW->log("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>", (void*) VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
+          logchan_mioW->log("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>", (void*)VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
 
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
@@ -942,18 +1082,18 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         // write cluster bindings
         for (int32_t ij = 0; ij < inumjb; ij++) {
           const std::string& bound_path = cluster->jointBinding(ij);
-          OrkAssert(bound_path!="");
+          OrkAssert(bound_path != "");
           HeaderStream->AddItem(ij);
           istring = chunkwriter.stringIndex(bound_path.c_str());
-          logchan_mioW->log( "bound_path<%s> istring<%d>", bound_path.c_str(), istring );
+          logchan_mioW->log("bound_path<%s> istring<%d>", bound_path.c_str(), istring);
           HeaderStream->AddItem(istring);
         }
       }
     }
   }
   chunkwriter.writeToDataBlock(out_datablock);
-  printf("aaa: _saveXGM datablock hash<%zx> len<%zu>\n", out_datablock->hash(), out_datablock->length() );
-  //OrkAssert(false);
+  printf("aaa: _saveXGM datablock hash<%zx> len<%zu>\n", out_datablock->hash(), out_datablock->length());
+  // OrkAssert(false);
   return out_datablock;
 }
 

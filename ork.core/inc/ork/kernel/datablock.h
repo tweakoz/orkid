@@ -70,6 +70,10 @@ struct DataBlock {
   /// current length of datablock
   size_t length() const;
   /////////////////////////////////////////////
+  bool is_ascii() const;
+  bool is_likely_json() const;
+  void zeroExtend();
+  /////////////////////////////////////////////
   /// hash of entire datablock (will incur a computational cost)
   uint64_t hash() const;
   /////////////////////////////////////////////

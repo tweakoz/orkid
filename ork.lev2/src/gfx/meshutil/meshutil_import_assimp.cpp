@@ -97,7 +97,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto embtex = new lev2::EmbeddedTexture;
 
       embtex->_varmap["src.filename"].set<std::string>(texname);
-      embtex->_varmap["src.format"].set<std::string>(texname);
+      embtex->_varmap["src.format"].set<std::string>(fmt);
 
       embtex->_format = fmt;
 

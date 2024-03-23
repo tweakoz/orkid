@@ -163,4 +163,7 @@ std::string aiNodePathName(const aiNode* node);
 std::deque<const aiNode*> aiNodePath(const aiNode* node);
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename ClusterizerType>
+void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model);
+
 } // namespace ork::meshutil

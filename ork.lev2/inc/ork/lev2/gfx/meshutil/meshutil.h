@@ -267,6 +267,8 @@ struct Mesh {
     return int(_submeshesByPolyGroup.size());
   }
 
+  void dumpStats() const;
+
   submesh_constptr_t submeshFromMaterialName(const std::string& materialname) const;
   submesh_ptr_t submeshFromMaterialName(const std::string& materialname);
   submesh_constptr_t submeshFromGroupName(const std::string& grpname) const;

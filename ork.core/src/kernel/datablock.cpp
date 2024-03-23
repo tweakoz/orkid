@@ -83,6 +83,55 @@ const uint8_t* DataBlock::data(size_t index) const {
   return (const uint8_t*)_storage.data() + index;
 }
 ///////////////////////////////////////////////////////////////////////////////
+bool DataBlock::is_ascii() const {
+  for( uint8_t byte : _storage ){
+    if( byte>=128 )
+      return false;
+  }
+  return true;
+}
+///////////////////////////////////////////////////////////////////////////////
+bool DataBlock::is_likely_json() const {
+
+    std::stack<char> brackets;
+    bool inQuote = false;
+    char prevChar = 0;
+    char ch;
+
+    for( auto ch : _storage ) {
+        // Skip characters within quotes
+        if (ch == '"' && prevChar != '\\') {
+            inQuote = !inQuote;
+            continue;
+        }
+        if (inQuote) {
+            prevChar = ch;
+            continue;
+        }
+
+        switch (ch) {
+            case '{':
+            case '[':
+                brackets.push(ch);
+                break;
+            case '}':
+                if (brackets.empty() || brackets.top() != '{') return false;
+                brackets.pop();
+                break;
+            case ']':
+                if (brackets.empty() || brackets.top() != '[') return false;
+                brackets.pop();
+                break;
+        }
+        prevChar = ch;
+    }
+
+    return brackets.empty();
+}
+void DataBlock::zeroExtend(){
+  _storage.push_back(0);
+}
+///////////////////////////////////////////////////////////////////////////////
 void DataBlock::reserve(size_t len) {
   _storage.reserve(len);
 }

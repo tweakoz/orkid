@@ -1,0 +1,13 @@
+{
+  "orkscene": {
+    "ground":{
+      "meshes": {
+        "a": "monkey_pbr.obj"
+      },
+      "material":{
+        "type": "emissive",
+        "texture": "src://effect_textures/adama.png"
+      }
+    }
+  }
+}

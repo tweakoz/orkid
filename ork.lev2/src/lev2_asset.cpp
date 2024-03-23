@@ -60,6 +60,7 @@ ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr
   bool OK = false;
   if (absolutepath.getExtension() == "xgm" or //
       absolutepath.getExtension() == "dae" or //
+      absolutepath.getExtension() == "orkscene" or //
       absolutepath.getExtension() == "obj" or //
       absolutepath.getExtension() == "glb" or //
       absolutepath.getExtension() == "orkemdl" or //
@@ -87,6 +88,7 @@ void XgmModelLoader::initLoadersForUriProto(const std::string& uriproto) {
   addLocation(ctx, ".xgm");
   addLocation(ctx, ".glb");
   addLocation(ctx, ".orkemdl");
+  addLocation(ctx, ".orkscene");
   addLocation(ctx, ".gltf");
   addLocation(ctx, ".dae");
   addLocation(ctx, ".obj");
