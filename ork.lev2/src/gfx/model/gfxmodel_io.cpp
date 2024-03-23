@@ -45,7 +45,7 @@ static bool ASSET_ENCRYPT_MODE() {
   return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
 }
 static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD", fvec3(0.8, 0.8, 0.4), true);
-static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE", fvec3(0.8, 0.7, 0.4), false);
+static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE", fvec3(0.8, 0.7, 0.4), true);
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
@@ -164,7 +164,9 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
       // fetch texture lambda
       /////////////////////////////////
 
-      auto parse_texture = [&](const std::string& texture_name,ETextureUsage usage ) -> EmbeddedTexture* {
+      auto parse_texture = [&](const std::string& texture_name,
+                               const std::string& channel_name,
+                               ETextureUsage usage ) -> EmbeddedTexture* {
         EmbeddedTexture* rval = nullptr;
         auto tex_path = base_dir / texture_name;
         auto tex_ext  = std::string(tex_path.extension().c_str());
@@ -193,7 +195,7 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
             rval->_name       = texture_name;
 
             rval->fetchDDSdata();
-            embtexmap[texture_name] = rval;
+            embtexmap[tex_path.c_str()] = rval;
           }
         }
         return rval;
@@ -216,7 +218,7 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
         outmtl->_roughnessFactor = 1;
         outmtl->_colormap = texture_name;
         printf("texture_name<%s>\n", texture_name);
-        auto embtex = parse_texture(texture_name,ETEXUSAGE_COLOR);
+        auto embtex = parse_texture(texture_name,"colormap",ETEXUSAGE_COLOR);
       }
 
       /////////////////////////////////

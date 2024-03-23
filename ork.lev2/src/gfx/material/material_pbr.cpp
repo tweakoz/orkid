@@ -37,7 +37,7 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), false);
+static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), true);
 
 //////////////////////////////////////////////////////
 
@@ -663,6 +663,10 @@ void PBRMaterial::describeX(class_t* c) {
     auto txi              = targ->TXI();
     const auto& embtexmap = ctx._varmap->typedValueForKey<embtexmap_t>("embtexmap").value();
 
+    for( auto item : embtexmap ){
+      logchan_pbr->log("embtex<%s>", item.first.c_str() );
+    }
+
     int istring = 0;
 
     ctx._inputStream->GetItem(istring);
@@ -672,7 +676,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->SetName(AddPooledString(materialname));
-    //logchan_pbr->log("read.xgm: materialName<%s>", materialname);
+    logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
     OrkAssert(0 == strcmp(begintextures, "begintextures"));
@@ -685,11 +689,11 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        //logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
+        logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
-        //logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
+        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
         auto tex = std::make_shared<lev2::Texture>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
