@@ -234,6 +234,8 @@ struct submesh {
   dvec3 centerOfPolys() const;
   dvec3 centerOfPolysConcurrent() const;
   double convexVolume() const;
+  dvec3 boundingMin() const;
+  dvec3 boundingMax() const;
 
   //////////////////////////////////////////////////////////////////////////////
 

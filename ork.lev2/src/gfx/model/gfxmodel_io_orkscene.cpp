@@ -14,6 +14,7 @@ namespace ork::lev2 {
 static logchannel_ptr_t logchan_mioROSCN = logger()->createChannel("orksceneREAD", fvec3(0.8, 0.8, 0.4), true);
 
 bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
+  ork::lev2::XgmModel xgmmdlout;
   auto base_dir = datablock->_vars->typedValueForKey<bfs::path>("base-directory").value();
   // check for json "orkscene" object
   auto as_cstr = (const char*)datablock->data();
@@ -41,6 +42,8 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     auto& embtexmap = top_mesh->_varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
     meshutil::gltfmaterialmap_t materialmap;
 
+    top_mesh->_vertexExtents.BeginGrow();
+
     /////////////////////////////////
     // fetch texture lambda
     /////////////////////////////////
@@ -66,7 +69,7 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
         texfile.GetLength(length);
         // logchan_meshutilassimp->log("texlen<%zu>", length);
 
-        if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
+        if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga" or tex_ext == ".dds") {
 
           rval          = new EmbeddedTexture;
           rval->_format = tex_ext.substr(1);
@@ -128,17 +131,33 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
         auto pgname  = pgitem.first;
         auto pgroup  = pgitem.second;
         int numpolys = pgroup->numPolys(0);
-        top_mesh->MergeSubMesh(*pgroup);
+
+        auto min = pgroup->boundingMin();
+        auto max = pgroup->boundingMax();
+
+
+        meshutil::submesh wo;
+        meshutil::submeshTriangulate(*pgroup,wo);
+        top_mesh->MergeSubMesh(wo);
+
+
+        top_mesh->_vertexExtents.Grow(dvec3_to_fvec3(min));
+        top_mesh->_vertexExtents.Grow(dvec3_to_fvec3(max));
+
         logchan_mioROSCN->log("  submesh<%s> numpolys<%d>", pgname.c_str(), numpolys);
       }
     }
+
+    top_mesh->_vertexExtents.EndGrow();
+
     top_mesh->dumpStats();
     auto& out_submesh = top_mesh->MergeSubMesh("default");
     auto& mtlset      = out_submesh.typedAnnotation<std::set<int>>("materialset");
     mtlset.insert(0);
     out_submesh.typedAnnotation<meshutil::GltfMaterial*>("gltfmaterial") = outmtl;
 
-    meshutil::clusterizeToolMeshToXgmMesh<meshutil::XgmClusterizerStd>(*top_mesh, *mdl);
+
+    meshutil::clusterizeToolMeshToXgmMesh<meshutil::XgmClusterizerStd>(*top_mesh, xgmmdlout);
 
     auto vmin          = top_mesh->_vertexExtents.Min();
     auto vmax          = top_mesh->_vertexExtents.Max();
@@ -159,12 +178,16 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
       radius = vmin_mag;
     /////////////////////////
 
-    mdl->mBoundingCenter = center;
-    mdl->mBoundingRadius = radius;
-    mdl->mAABoundXYZ     = center;
-    mdl->mAABoundWHD     = abs_max;
+    xgmmdlout.mBoundingCenter = center;
+    xgmmdlout.mBoundingRadius = radius;
+    xgmmdlout.mAABoundXYZ     = center;
+    xgmmdlout.mAABoundWHD     = abs_max;
+
+    printf( "center<%g %g %g>\n", center.x, center.y, center.z );
+    printf( "radius<%g>\n", radius );
+
   }
-  auto xgm_dblock = writeXgmToDatablock(mdl);
+  auto xgm_dblock = writeXgmToDatablock(&xgmmdlout);
   return _loadXGM(mdl, xgm_dblock);
 }
 

@@ -1150,6 +1150,7 @@ PBRMaterial::PBRMaterial()
   _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr";
+  printf( "new PBRMaterial<%p>\n", this );
 }
 
 ////////////////////////////////////////////

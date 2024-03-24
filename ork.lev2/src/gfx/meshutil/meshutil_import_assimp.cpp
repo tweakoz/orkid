@@ -163,7 +163,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           texfile.GetLength(length);
           //logchan_meshutilassimp->log("texlen<%zu>\n", length);
 
-          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
+          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga" or tex_ext == ".dds") {
 
             auto embtex     = new ork::lev2::EmbeddedTexture;
             embtex->_format = tex_ext.substr(1);
