@@ -2,7 +2,16 @@
   "orkscene": {
     "ground":{
       "meshes": {
-        "a": "monkey_pbr.obj"
+        "a": {
+          "file": "monkey_pbr.obj",
+          "translation": [-1,0,0],
+          "orientation": [1,0,0,0]
+        },
+        "b": {
+          "file": "monkey_pbr.obj",
+          "translation": [1,0,0],
+          "orientation": [0,1,0,0]
+        }
       },
       "material":{
         "type": "emissive",

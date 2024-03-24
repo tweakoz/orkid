@@ -120,12 +120,40 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     for (auto itm = meshes.MemberBegin(); //
          itm != meshes.MemberEnd();
          ++itm) {
+
+
+
       auto meshname  = itm->name.GetString();
-      auto meshfile  = itm->value.GetString();
+      const auto& meshsubo  = itm->value;
+
+      fvec3 load_trans;
+      fquat load_orient;
+
+
+      auto meshfile  = meshsubo["file"].GetString();
+
+      if(meshsubo.HasMember("translation")){
+        const auto& ary = meshsubo["translation"].GetArray();
+        load_trans.x = ary[0].GetDouble();
+        load_trans.y = ary[1].GetDouble();
+        load_trans.z = ary[2].GetDouble();
+      }
+      if(meshsubo.HasMember("orientation")){
+        const auto& ary = meshsubo["orientation"].GetArray();
+        load_orient.w = ary[0].GetDouble();
+        load_orient.x = ary[1].GetDouble();
+        load_orient.y = ary[2].GetDouble();
+        load_orient.z = ary[3].GetDouble();
+      }
+
+
+
       auto mesh_path = base_dir / meshfile;
       logchan_mioROSCN->log("meshname<%s>", meshname);
       logchan_mioROSCN->log("mesh_path<%s>", mesh_path.c_str());
       auto mesh = std::make_shared<meshutil::Mesh>();
+      mesh->_loadXF.fromQuaternion(load_orient);
+      mesh->_loadXF.setTranslation(load_trans);
       mesh->ReadFromWavefrontObj(mesh_path.c_str());
       for (auto pgitem : mesh->_submeshesByPolyGroup) {
         auto pgname  = pgitem.first;

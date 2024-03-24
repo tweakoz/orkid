@@ -309,7 +309,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
             sscanf(Tokens[1].c_str(), "%f", v.asArray() + 0);
             sscanf(Tokens[2].c_str(), "%f", v.asArray() + 1);
             sscanf(Tokens[3].c_str(), "%f", v.asArray() + 2);
-            ObjV.push_back(v);
+            ObjV.push_back(v.transform(_loadXF).xyz());
           }
           if (Tokens[0] == "vn") {
             OrkAssert(Tokens.size() == 4);

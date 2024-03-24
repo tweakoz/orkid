@@ -285,6 +285,7 @@ struct Mesh {
   fvec4 mRangeScale;
   fvec4 mRangeTranslate;
   fmtx4 mMatRange;
+  fmtx4 _loadXF;
   orkmap<std::string, std::string> _annotations;
   submesh_lut_t _submeshesByPolyGroup;
   material_semanticmap_t mShadingGroupToMaterialMap;
