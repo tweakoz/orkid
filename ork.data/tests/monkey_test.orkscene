@@ -1,21 +1,46 @@
 {
   "orkscene": {
-    "ground":{
+    "t1": {
+      "materials": {
+        "a": {
+          "type": "emissive",
+          "emissivemap": "src://effect_textures/uvmap_A.png"
+        },
+        "b": {
+          "type": "pbr",
+          "baseColor": [1,1,1],
+          "mrMap": "src://effect_textures/ptc3.png",
+          "roughnessFactor": 0,
+          "metallicFactor": 1
+        }
+      },
       "meshes": {
         "a": {
           "file": "monkey_pbr.obj",
           "translation": [-1,0,0],
-          "orientation": [1,0,0,0]
+          "axisAngle": [0,1,0,3.1415],
+          "material": "a"
         },
         "b": {
           "file": "monkey_pbr.obj",
           "translation": [1,0,0],
-          "orientation": [0,1,0,0]
+          "axisAngle": [0,1,0,0],
+          "material": "a"
+        },
+        "c": {
+          "file": "monkey_pbr.obj",
+          "translation": [-1,-1,0],
+          "axisAngle": [0,1,0,0],
+          "recomputeBasis": true,
+          "material": "b"
+        },
+        "d": {
+          "file": "monkey_pbr.obj",
+          "translation": [1,-1,0],
+          "axisAngle": [0,1,0,3.1415],
+          "recomputeBasis": true,
+          "material": "b"
         }
-      },
-      "material":{
-        "type": "emissive",
-        "texture": "src://effect_textures/uvmap_A.png"
       }
     }
   }

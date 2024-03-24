@@ -96,21 +96,86 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     // fetch material
     /////////////////////////////////
 
-    const auto& material = sgnode["material"];
-    auto material_type   = material["type"].GetString();
-    logchan_mioROSCN->log("material_type<%s>", material_type);
-    auto outmtl    = new meshutil::GltfMaterial;
-    materialmap[0] = outmtl;
-    if ("emissive"s == material_type) {
-      auto texture_name        = material["texture"].GetString();
-      outmtl->_name            = texture_name;
-      outmtl->_baseColor       = fvec4(1, 1, 1, 1);
-      outmtl->_metallicFactor  = 0;
-      outmtl->_roughnessFactor = 1;
-      outmtl->_colormap        = texture_name;
-      logchan_mioROSCN->log("texture_name<%s>", texture_name);
-      auto embtex = parse_texture(texture_name, "colormap", ETEXUSAGE_COLOR);
+    int material_index = 0;
+    std::map<std::string, meshutil::GltfMaterial*> materials_by_name;
+    if( sgnode.HasMember("materials") ){
+
+      const auto& materials = sgnode["materials"];
+
+      for (auto it_mtls = materials.MemberBegin(); //
+           it_mtls != materials.MemberEnd();
+           ++it_mtls) {
+
+        const auto& mtl_name = it_mtls->name;
+        const auto& material = it_mtls->value;
+
+        auto material_type   = material["type"].GetString();
+        logchan_mioROSCN->log("material_type<%s>", material_type);
+        auto outmtl    = new meshutil::GltfMaterial;
+          outmtl->_name            = mtl_name.GetString();
+
+        auto& out_group = top_mesh->MergeSubMesh(mtl_name.GetString());
+        out_group.typedAnnotation<meshutil::GltfMaterial*>("gltfmaterial") = outmtl;
+
+        materialmap[material_index++] = outmtl;
+        materials_by_name[mtl_name.GetString()] = outmtl;
+        if ("emissive"s == material_type) {
+          outmtl->_baseColor       = fvec4(1, 1, 1, 1);
+          outmtl->_metallicFactor  = 0;
+          outmtl->_roughnessFactor = 1;
+          auto emissivemap         = material["emissivemap"].GetString();
+          outmtl->_emissivemap     = emissivemap;
+          auto embtex              = parse_texture(emissivemap, "emissivemap", ETEXUSAGE_COLOR);
+        } else if ("pbr"s == material_type) {
+          outmtl->_baseColor       = fvec4(1, 1, 1, 1);
+          outmtl->_metallicFactor  = 0;
+          outmtl->_roughnessFactor = 1;
+          if (material.HasMember("baseColor")) {
+            const auto& bc       = material["baseColor"].GetArray();
+            outmtl->_baseColor.x = bc[0].GetDouble();
+            outmtl->_baseColor.y = bc[1].GetDouble();
+            outmtl->_baseColor.z = bc[2].GetDouble();
+          }
+          if (material.HasMember("metallicFactor")) {
+            outmtl->_metallicFactor = material["metallicFactor"].GetDouble();
+          }
+          if (material.HasMember("roughnessFactor")) {
+            outmtl->_roughnessFactor = material["roughnessFactor"].GetDouble();
+          }
+          if (material.HasMember("colorMap")) {
+            auto texture_name = material["colorMap"].GetString();
+            ;
+            outmtl->_colormap = texture_name;
+            auto embtex       = parse_texture(texture_name, "colormap", ETEXUSAGE_COLOR);
+          }
+          if (material.HasMember("mrMap")) {
+            auto texture_name = material["mrMap"].GetString();
+            ;
+            outmtl->_metallicAndRoughnessMap = texture_name;
+            auto embtex                      = parse_texture(texture_name, "colormap", ETEXUSAGE_COLOR);
+          }
+          if (material.HasMember("normalMap")) {
+            auto texture_name = material["normalMap"].GetString();
+            ;
+            outmtl->_normalmap = texture_name;
+            auto embtex        = parse_texture(texture_name, "colormap", ETEXUSAGE_NORMAL);
+          }
+          if (material.HasMember("aoMap")) {
+            auto texture_name = material["aoMap"].GetString();
+            ;
+            outmtl->_amboccmap = texture_name;
+            auto embtex        = parse_texture(texture_name, "colormap", ETEXUSAGE_GREYSCALE);
+          }
+          if (material.HasMember("emissivemap")) {
+            auto texture_name = material["emissivemap"].GetString();
+            ;
+            outmtl->_emissivemap = texture_name;
+            auto embtex          = parse_texture(texture_name, "colormap", ETEXUSAGE_GREYSCALE);
+          }
+        }
+      }
     }
+
 
     /////////////////////////////////
     // fetch meshes for material
@@ -120,33 +185,44 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     for (auto itm = meshes.MemberBegin(); //
          itm != meshes.MemberEnd();
          ++itm) {
-
-
-
-      auto meshname  = itm->name.GetString();
-      const auto& meshsubo  = itm->value;
+      auto meshname        = itm->name.GetString();
+      const auto& meshsubo = itm->value;
 
       fvec3 load_trans;
       fquat load_orient;
 
+      auto meshfile = meshsubo["file"].GetString();
 
-      auto meshfile  = meshsubo["file"].GetString();
+      std::string mesh_mtl = meshsubo["material"].GetString();
+      auto it_m = materials_by_name.find(mesh_mtl);
+      OrkAssert(it_m != materials_by_name.end());
+      auto outmtl = it_m->second;
 
-      if(meshsubo.HasMember("translation")){
+      auto& out_group = top_mesh->MergeSubMesh(mesh_mtl.c_str());
+
+      if (meshsubo.HasMember("translation")) {
         const auto& ary = meshsubo["translation"].GetArray();
-        load_trans.x = ary[0].GetDouble();
-        load_trans.y = ary[1].GetDouble();
-        load_trans.z = ary[2].GetDouble();
+        load_trans.x    = ary[0].GetDouble();
+        load_trans.y    = ary[1].GetDouble();
+        load_trans.z    = ary[2].GetDouble();
       }
-      if(meshsubo.HasMember("orientation")){
+      if (meshsubo.HasMember("orientation")) {
         const auto& ary = meshsubo["orientation"].GetArray();
-        load_orient.w = ary[0].GetDouble();
-        load_orient.x = ary[1].GetDouble();
-        load_orient.y = ary[2].GetDouble();
-        load_orient.z = ary[3].GetDouble();
+        load_orient.w   = ary[0].GetDouble();
+        load_orient.x   = ary[1].GetDouble();
+        load_orient.y   = ary[2].GetDouble();
+        load_orient.z   = ary[3].GetDouble();
       }
-
-
+      if (meshsubo.HasMember("axisAngle")) {
+        const auto& ary = meshsubo["axisAngle"].GetArray();
+        fvec3 axis;
+        float angle;
+        axis.x      = ary[0].GetDouble();
+        axis.y      = ary[1].GetDouble();
+        axis.z      = ary[2].GetDouble();
+        angle       = ary[3].GetDouble();
+        load_orient = fquat(axis, angle);
+      }
 
       auto mesh_path = base_dir / meshfile;
       logchan_mioROSCN->log("meshname<%s>", meshname);
@@ -163,11 +239,19 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
         auto min = pgroup->boundingMin();
         auto max = pgroup->boundingMax();
 
+        meshutil::submesh as_tris;
+        meshutil::submeshTriangulate(*pgroup, as_tris);
 
-        meshutil::submesh wo;
-        meshutil::submeshTriangulate(*pgroup,wo);
-        top_mesh->MergeSubMesh(wo);
+        OrkAssert(outmtl != nullptr);
 
+        if (meshsubo.HasMember("recomputeBasis")) {
+          const auto& do_basis = meshsubo["recomputeBasis"].GetBool();
+          meshutil::submesh smoothed;
+          meshutil::submeshWithSmoothNormalsAndBinormals(as_tris, smoothed, 0.1);
+          out_group.MergeSubMesh(smoothed);
+        } else {
+          out_group.MergeSubMesh(as_tris);
+        }
 
         top_mesh->_vertexExtents.Grow(dvec3_to_fvec3(min));
         top_mesh->_vertexExtents.Grow(dvec3_to_fvec3(max));
@@ -179,10 +263,6 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     top_mesh->_vertexExtents.EndGrow();
 
     top_mesh->dumpStats();
-    auto& out_submesh = top_mesh->MergeSubMesh("default");
-    auto& mtlset      = out_submesh.typedAnnotation<std::set<int>>("materialset");
-    mtlset.insert(0);
-    out_submesh.typedAnnotation<meshutil::GltfMaterial*>("gltfmaterial") = outmtl;
 
 
     meshutil::clusterizeToolMeshToXgmMesh<meshutil::XgmClusterizerStd>(*top_mesh, xgmmdlout);
@@ -213,12 +293,10 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
 
     printf( "center<%g %g %g>\n", center.x, center.y, center.z );
     printf( "radius<%g>\n", radius );
-
   }
   auto xgm_dblock = writeXgmToDatablock(&xgmmdlout);
   return _loadXGM(mdl, xgm_dblock);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork { namespace lev2 {
+} // namespace ork::lev2
