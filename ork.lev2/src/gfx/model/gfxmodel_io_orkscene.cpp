@@ -247,7 +247,7 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
         if (meshsubo.HasMember("recomputeBasis")) {
           const auto& do_basis = meshsubo["recomputeBasis"].GetBool();
           meshutil::submesh smoothed;
-          meshutil::submeshWithSmoothNormalsAndBinormals(as_tris, smoothed, 0.1);
+          meshutil::submeshWithSmoothNormalsAndBinormals(as_tris, smoothed, 10);
           out_group.MergeSubMesh(smoothed);
         } else {
           out_group.MergeSubMesh(as_tris);

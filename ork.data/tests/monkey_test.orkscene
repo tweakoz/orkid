@@ -10,23 +10,11 @@
           "type": "pbr",
           "baseColor": [1,1,1],
           "mrMap": "src://effect_textures/ptc3.png",
-          "roughnessFactor": 0,
-          "metallicFactor": 1
+          "roughnessFactor": 1,
+          "metallicFactor": 0
         }
       },
       "meshes": {
-        "a": {
-          "file": "monkey_pbr.obj",
-          "translation": [-1,0,0],
-          "axisAngle": [0,1,0,3.1415],
-          "material": "a"
-        },
-        "b": {
-          "file": "monkey_pbr.obj",
-          "translation": [1,0,0],
-          "axisAngle": [0,1,0,0],
-          "material": "a"
-        },
         "c": {
           "file": "monkey_pbr.obj",
           "translation": [-1,-1,0],
