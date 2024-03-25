@@ -360,6 +360,30 @@ dvec3 DefaultConnectivity::centerOfPolys() const {
   return _centerOfPolysAccum * 1.0 / double(_centerOfPolysCount);
 }
 ///////////////////////////////////////////////////////////////////////////////
+edge_set_t DefaultConnectivity::edgesForVertex(vertex_ptr_t v) const {
+  edge_set_t rval;
+  auto it = _polys_by_vertex.find(v);
+  if (it != _polys_by_vertex.end()) {
+    poly_set_t connected = it->second;
+
+    auto on_poly = [&](poly_ptr_t p){
+      int inumv = p->_vertices.size();
+      for (int iv = 0; iv < inumv; iv++) {
+        auto v0 = p->vertex(iv);
+        auto v1 = p->vertex((iv + 1) % inumv);
+        if( v0 == v or v1 == v ){
+          auto e = std::make_shared<edge>();
+          e->_vertexA = v0;
+          e->_vertexB = v1;
+          rval.insert(e);
+        }
+      }
+    };
+    connected.visit(on_poly);
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 halfedge_vect_t DefaultConnectivity::edgesForPoly(merged_poly_const_ptr_t p) const {
   auto it = _halfedges_by_poly.find(p);
   if (it != _halfedges_by_poly.end())
