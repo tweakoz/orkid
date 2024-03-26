@@ -620,8 +620,8 @@ compute_shader compute_streaks
 
     mat4 ivL = transpose(inverse(v_L));
     mat4 ivR = transpose(inverse(v_R));
-    float wid = 0.002;
-    float hei = 0.002;
+    float wid = 0.002*LW.x;
+    float hei = 0.002*LW.x;
     vec3 UP = normalize(vec3(ivL[0][0], ivL[1][0], ivL[2][0])) * wid;
     vec3 RT = normalize(vec3(ivL[0][1], ivL[1][1], ivL[2][1])) * hei; // Assume 'hei' is the height of the billboard
 
