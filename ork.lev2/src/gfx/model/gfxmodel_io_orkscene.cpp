@@ -230,8 +230,15 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
       auto mesh = std::make_shared<meshutil::Mesh>();
       mesh->_loadXF.fromQuaternion(load_orient);
       mesh->_loadXF.setTranslation(load_trans);
-      mesh->ReadFromWavefrontObj(mesh_path.c_str());
-      for (auto pgitem : mesh->_submeshesByPolyGroup) {
+      
+     if( false ) { //mesh_path.extension() == ".obj" ){
+        mesh->ReadFromWavefrontObj(mesh_path.c_str());
+     }
+     else{
+        mesh->readFromAssimp(mesh_path.c_str());
+     }
+
+    for (auto pgitem : mesh->_submeshesByPolyGroup) {
         auto pgname  = pgitem.first;
         auto pgroup  = pgitem.second;
         int numpolys = pgroup->numPolys(0);

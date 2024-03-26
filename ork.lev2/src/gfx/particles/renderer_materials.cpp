@@ -214,7 +214,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+  _material->_rasterstate.SetDepthTest(_depthtest);
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
@@ -308,6 +308,8 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
   }
   ///////////////////////////////
   _material->_rasterstate.SetBlending(_blending);
+  _material->_rasterstate.SetZWriteMask(false);
+  _material->_rasterstate.SetDepthTest(_depthtest);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -341,7 +343,7 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+  _material->_rasterstate.SetDepthTest(_depthtest);
   auto fxparameterM      = _material->param("MatM");
   auto fxparameterMVP    = _material->param("MatMVP");
   auto fxparameterIV     = _material->param("MatIV");

@@ -31,20 +31,28 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         },
         [](ptc::basematerial_ptr_t  m, fvec4 color) { //
           m->_color = color;
+        })
+      .def_property("blending", 
+        [](ptc::basematerial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::basematerial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = Blending(blend->hashed());
+        })
+      .def_property("depthtest", 
+        [](ptc::basematerial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_depthtest));
+          return crcstr;
+        },
+        [](ptc::basematerial_ptr_t  m, crcstring_ptr_t dtest) { //
+          m->_depthtest = EDepthTest(dtest->hashed());
         });
  type_codec->registerStdCodec<ptc::basematerial_ptr_t>(mtl_base_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_flat_type = //
       py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
-      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
-      .def_property("blending", 
-        [](ptc::flatmaterial_ptr_t  m) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
-          return crcstr;
-        },
-        [](ptc::flatmaterial_ptr_t  m, crcstring_ptr_t blend) { //
-          m->_blending = Blending(blend->hashed());
-        });
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); });
   type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_grad_type = //
@@ -58,14 +66,6 @@ void pyinit_gfx_particles(py::module& module_lev2) {
           m->_gradient = grad;
         }
         )
-      .def_property("blending", 
-        [](ptc::gradientmaterial_ptr_t  m) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
-          return crcstr;
-        },
-        [](ptc::gradientmaterial_ptr_t  m, crcstring_ptr_t blend) { //
-          m->_blending = Blending(blend->hashed());
-        })
       .def_property("modulation_texture", 
         [](ptc::gradientmaterial_ptr_t  m) -> texture_ptr_t { //
           return m->_modulation_texture;

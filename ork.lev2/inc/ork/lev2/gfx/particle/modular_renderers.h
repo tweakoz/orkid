@@ -42,6 +42,8 @@ public:
   vtx_set_t _vertexSetter;
   vtx_set_streak_t _vertexSetterStreak;
   fvec4 _color;
+  EDepthTest _depthtest = EDepthTest::OFF;
+  Blending _blending = Blending::OFF;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxShaderStorageBuffer* _streakcu_vertex_io_buffer    = nullptr;
@@ -63,7 +65,6 @@ public:
   FlatMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  Blending _blending = Blending::OFF;
 };
 
 using flatmaterial_ptr_t = std::shared_ptr<FlatMaterial>;
@@ -85,7 +86,6 @@ public:
   rtgroup_ptr_t _gradient_rtgroup;
   asset::asset_ptr_t _modulation_texture_asset;
   texture_ptr_t _modulation_texture;
-  Blending _blending = Blending::OFF;
   float _gradientAlphaIntensity = 1.0f;
   float _gradientColorIntensity = 1.0f;
 };

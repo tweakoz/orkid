@@ -72,8 +72,8 @@ fragment_interface fface_psys : uset_frg {
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default {
-  DepthTest=OFF;
-  DepthMask=false;
+  //DepthTest=OFF;
+  //DepthMask=false;
   // CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
