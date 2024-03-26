@@ -590,6 +590,8 @@ compute_interface iface_compute
     storage {
         layout(std430, binding = 0) buffer {
             int          num_vertices;      // 128
+            mat4         v_L;             // 0
+            mat4         v_R;             // 64
             mat4         mvp_L;             // 0
             mat4         mvp_R;             // 64
             vec4         obj_nrmz;          // 132
@@ -606,21 +608,29 @@ compute_shader compute_streaks
 
     int index = int(gl_WorkGroupID.x);
 
-    float len = LW.x;
-    float wid = LW.y;
+    //float len = LW.x;
+    //float wid = LW.y;
       
     vec3 inp_pos  = inp_vertex[index].pos.xyz;
     vec3 inp_vel  = inp_vertex[index].vel.xyz;
     vec2 inp_ar   = inp_vertex[index].age_rand.xy;
     //vec3 inp_nrm  = inp_vertex[index].nrm.xyz;
 
-    vec3 lpos = inp_pos - (inp_vel * len);
+    //vec3 lpos = inp_pos - (inp_vel * len);
+
+    mat4 ivL = transpose(inverse(v_L));
+    mat4 ivR = transpose(inverse(v_R));
+    float wid = 0.002;
+    float hei = 0.002;
+    vec3 UP = normalize(vec3(ivL[0][0], ivL[1][0], ivL[2][0])) * wid;
+    vec3 RT = normalize(vec3(ivL[0][1], ivL[1][1], ivL[2][1])) * hei; // Assume 'hei' is the height of the billboard
+
     vec3 crs = normalize(cross(inp_vel, obj_nrmz.xyz)) * wid;
 
-    vec3 p0 = inp_pos + crs;
-    vec3 p1 = inp_pos - crs;
-    vec3 p2 = lpos - crs;
-    vec3 p3 = lpos + crs;
+    vec3 p0 = inp_pos - UP - RT; // 0 0 
+    vec3 p1 = inp_pos + UP - RT; // 1 0
+    vec3 p2 = inp_pos + UP + RT; // 1 1
+    vec3 p3 = inp_pos - UP + RT; // 0 1
 
     vec4 p0L = mvp_L * vec4(p0,1);
     vec4 p1L = mvp_L * vec4(p1,1);
@@ -645,7 +655,7 @@ compute_shader compute_streaks
 
     out_vertex[o+1].hposL = p2L;
     out_vertex[o+1].hposR = p2R;
-    out_vertex[o+1].uv = vec2(0,1);
+    out_vertex[o+1].uv = vec2(1,1);
     out_vertex[o+1].age_rand = inp_ar;
 
     out_vertex[o+2].hposL = p1L;
@@ -662,12 +672,12 @@ compute_shader compute_streaks
 
     out_vertex[o+4].hposL = p3L;
     out_vertex[o+4].hposR = p3R;
-    out_vertex[o+4].uv = vec2(1,1);
+    out_vertex[o+4].uv = vec2(0,1);
     out_vertex[o+4].age_rand = inp_ar;
 
     out_vertex[o+5].hposL = p2L;
     out_vertex[o+5].hposR = p2R;
-    out_vertex[o+5].uv = vec2(0,1);
+    out_vertex[o+5].uv = vec2(1,1);
     out_vertex[o+5].age_rand = inp_ar;
 }
 
@@ -676,6 +686,8 @@ vertex_interface vface_streak_stereoCI {
   storage {
       layout(std430, binding = 0) buffer {
           int          num_vertices;      // 128
+          mat4         v_L;
+          mat4         v_R;
           mat4         mvp_L;             // 0
           mat4         mvp_R;             // 64
           vec3         obj_nrmz;          // 132
