@@ -12,9 +12,12 @@ namespace ork::lev2::particle {
 /////////////////////////////////////////
 
 using streak_vtx_t           = SVtxV12N12B12T16;
-  using streak_vertex_writer_t = lev2::VtxWriter<streak_vtx_t>;
+using sprite_vtx_t           = SVtxV12N12B12T16;
 
-using vtx_set_t = std::function<void( vertex_writer_t& vw, //
+using sprite_vertex_writer_t = lev2::VtxWriter<sprite_vtx_t>;
+using streak_vertex_writer_t = lev2::VtxWriter<streak_vtx_t>;
+
+using vtx_set_sprite_t = std::function<void( sprite_vertex_writer_t& vw, //
                                        const BasicParticle* ptc, //
                                        float fang, //
                                        float size, //
@@ -33,13 +36,17 @@ public:
   fxpipeline_ptr_t pipeline(const RenderContextInstData& RCID, bool streaks);
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
+
   fxtechnique_constptr_t _tek_sprites;
   fxtechnique_constptr_t _tek_streaks;
+
   fxtechnique_constptr_t _tek_sprites_stereo;
-  fxtechnique_constptr_t _tek_streaks_stereoCI;
+  fxtechnique_constptr_t _tek_sprites_stereoCI;
+
   fxtechnique_constptr_t _tek_streaks_stereo;
+  fxtechnique_constptr_t _tek_streaks_stereoCI;
   
-  vtx_set_t _vertexSetter;
+  vtx_set_sprite_t _vertexSetterSprite;
   vtx_set_streak_t _vertexSetterStreak;
   fvec4 _color;
   EDepthTest _depthtest = EDepthTest::OFF;
@@ -157,6 +164,7 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   basematerial_ptr_t _material;
+  bool _sort = false;
 };
 
 using spritemodule_ptr_t = std::shared_ptr<SpriteRendererData>;

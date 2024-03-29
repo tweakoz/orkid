@@ -38,7 +38,7 @@ void MaterialBase::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 MaterialBase::MaterialBase() {
-  _vertexSetter = [](vertex_writer_t& vw,      //
+  _vertexSetterSprite = [](sprite_vertex_writer_t& vw,      //
                      const BasicParticle* ptc, //
                      float fang,               //
                      float size,               //
@@ -50,7 +50,7 @@ MaterialBase::MaterialBase() {
     fvec2 uv0(fang, size);
     fvec2 uv1(clamped_unitage, ptc->mfRandom);
     //////////////////////////////////////////////////////
-    vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, ucolor));
+    vw.AddVertex(sprite_vtx_t(ptc->mPosition, fvec3(0), fvec3(0), uv0, uv1));
   };
   _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
                            const BasicParticle* ptcl,  //
@@ -106,11 +106,13 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _material->_rasterstate.SetZWriteMask(true);
 
+  auto fxparameterIV      = _material->param("MatIV");
   auto fxparameterMVP      = _material->param("MatMVP");
   auto fxparameterColor  = _material->param("modcolor");
   auto pipeline_cache    = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
+  _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t { return _color; };
   _pipeline->bindParam(fxparameterColor, gen_color);
@@ -153,7 +155,7 @@ GradientMaterial::GradientMaterial() {
   _color    = fvec4(1, .5, 0, 1);
   _gradient = std::make_shared<gradient_fvec4_t>();
   /////////////////////////////////////////////////////////////////////////
-  _vertexSetter = [=](vertex_writer_t& vw,      //
+  _vertexSetterSprite = [=](sprite_vertex_writer_t& vw,      //
                       const BasicParticle* ptc, //
                       float fang,               //
                       float size,               //
@@ -167,7 +169,7 @@ GradientMaterial::GradientMaterial() {
     fvec2 uv0(fang, size);
     fvec2 uv1(clamped_unitage, ptc->mfRandom);
     //////////////////////////////////////////////////////
-    vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, color.vertexColorU32()));
+    vw.AddVertex(sprite_vtx_t(ptc->mPosition, fvec3(0), fvec3(0), uv0, uv1));
   };
   /////////////////////////////////////////////////////////////////////////
   _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
