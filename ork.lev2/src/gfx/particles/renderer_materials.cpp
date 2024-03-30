@@ -206,7 +206,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto grad_par_mvp                      = _grad_render_mtl->param("mvp");
   auto grad_par_time                     = _grad_render_mtl->param("time");
   FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t { return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1); };
-  _grad_render_pipeline->bindParam(grad_par_mvp, "RCFD_Camera_MVP_Mono"_crcsh);
+  _grad_render_pipeline->bindParam(grad_par_mvp, gen_mtx);
   _grad_render_pipeline->bindParam(grad_par_time, 0.0f);
   _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
   auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);

@@ -54,12 +54,18 @@ def createParticleData( use_streaks = True ):
       self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
 
       self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
-      self.sprites.inputs.Size = 0.02
+      self.sprites.inputs.Size = 0.05
       self.sprites.inputs.GradientIntensity = 1
-      #self.sprites.material = particles.FlatMaterial.createShared()
       self.sprites.material = particles.GradientMaterial.createShared()
       self.sprites.material.modulation_texture = Texture.load("src://effect_textures/knob2")
-      #self.sprites.material.color = vec4(1,.8,0,1)
+      gradient = GradientV4()
+      gradient.setColorStops({
+        0.0: vec4(1,0,0,1),
+        0.25: vec4(1,0,1,1),
+        0.5: vec4(1,1,1,1),
+        1.0: vec4(0,0,0,1),
+      })
+      self.sprites.material.gradient = gradient
       self.sprites.material.blending = tokens.ADDITIVE
       
       # emitter module settings
