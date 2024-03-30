@@ -157,6 +157,18 @@ struct ParticlePoolRenderBuffer {
   int _index             = 0;
 };
 
+struct ParticlePoolModuleInst : dflow::DgModuleInst {
+
+  ParticlePoolModuleInst(const ParticlePoolData* data, dflow::GraphInst* ginst);
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final;
+  void onLink(dflow::GraphInst* inst) final;
+
+  particlebuf_outpluginst_ptr_t _output;
+  const ParticlePoolData* _ppd;
+};
+
+using poolmoduleinst_ptr_t = std::shared_ptr<ParticlePoolModuleInst>;
+
 fmtx4 createSphericalToEllipticalTransformationMatrix(const fvec3& center, const fvec3& semiMajorAxisDirection, fvec3 vscale);
 
 ///////////////////////////////////////////////////////////////////////////////
