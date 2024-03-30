@@ -98,25 +98,14 @@ class ParticlesApp(object):
         
     self.TURB.inputs.Amount = vec3(1,1,1)*5
     
-    xf_scale = dataflow.floatxfscaledata()
-    xf_scale.scale = 4.0
-
-    xf_sine = dataflow.floatxfsinedata()
-    xf_abs = dataflow.floatxfabsdata()
-    xf_pow = dataflow.floatxfpowdata()
-    xf_pow.power = 8.0
-    xf_smstep = dataflow.floatxfsmoothstepdata()
-    xf_smstep.edge0 = 0.3
-    xf_smstep.edge1 = 0.7
-    xf_quant = dataflow.floatxfquantizedata()
-    xf_quant.quantization = 0.025
-
-    self.SPRI.inputs.Size.transformer.addTransform("a_quant",xf_quant)
-    self.SPRI.inputs.Size.transformer.addTransform("b_scale",xf_scale)
-    self.SPRI.inputs.Size.transformer.addTransform("c_sine",xf_sine)
-    self.SPRI.inputs.Size.transformer.addTransform("d_abs",xf_abs)
-    self.SPRI.inputs.Size.transformer.addTransform("e_smstep",xf_smstep)
-    self.SPRI.inputs.Size.transformer.addTransform("f_power",xf_pow)
+    sizexf = self.SPRI.inputs.Size.transformer    
+    sizexf.addTransform("a_quant",dataflow.floatxfquantizedata(0.025))
+    sizexf.addTransform("b_scale",dataflow.floatxfscaledata(4.0))
+    sizexf.addTransform("c_sine",dataflow.floatxfsinedata())
+    sizexf.addTransform("d_abs",dataflow.floatxfabsdata())
+    sizexf.addTransform("e_smstep",dataflow.floatxfsmoothstepdata(0.3,0.7))
+    sizexf.addTransform("f_power",dataflow.floatxfpowdata(8.0))
+    
     
     self.graphdata.connect(self.SPRI.inputs.Size,#
                            self.GLOB.outputs.RelTime)

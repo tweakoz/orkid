@@ -319,6 +319,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfmoddata_type = //
       py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(dfgmodule, "floatxfmoddata")
           .def(py::init<>())
+          .def(py::init([](float mod) {
+            auto rval = std::make_shared<floatxfmoddata>();
+            rval->_moddata->_mod = mod;
+            return rval;
+          }))
           .def("__repr__", [](floatxfmoddata_ptr_t p) -> std::string { return FormatString("floatxfmoddata(%p)", (void*)p.get()); })
           .def_property(
               "mod",
@@ -333,6 +338,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfscaledata_type = //
       py::class_<floatxfscaledata, floatxfitembasedata, floatxfscaledata_ptr_t>(dfgmodule, "floatxfscaledata")
           .def(py::init<>())
+          .def(py::init([](float scale) {
+            auto rval = std::make_shared<floatxfscaledata>();
+            rval->_scaledata->_scale = scale;
+            return rval;
+          }))
           .def(
               "__repr__",
               [](floatxfscaledata_ptr_t p) -> std::string { return FormatString("floatxfscaledata(%p)", (void*)p.get()); })
@@ -349,6 +359,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfbiasdata_type = //
       py::class_<floatxfbiasdata, floatxfitembasedata, floatxfbiasdata_ptr_t>(dfgmodule, "floatxfbiasdata")
           .def(py::init<>())
+          .def(py::init([](float bias) {
+            auto rval = std::make_shared<floatxfbiasdata>();
+            rval->_biasdata->_bias = bias;
+            return rval;
+          }))
           .def(
               "__repr__",
               [](floatxfbiasdata_ptr_t p) -> std::string { return FormatString("floatxfbiasdata(%p)", (void*)p.get()); })
@@ -387,6 +402,12 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfsmoothstepdata_type = //
       py::class_<floatxfsmoothstepdata, floatxfitembasedata, floatxfsmoothstepdata_ptr_t>(dfgmodule, "floatxfsmoothstepdata")
           .def(py::init<>())
+          .def(py::init([](float edge0, float edge1) {
+            auto rval = std::make_shared<floatxfsmoothstepdata>();
+            rval->_edge0 = edge0;
+            rval->_edge1 = edge1;
+            return rval;
+          }))
           .def(
               "__repr__",
               [](floatxfsmoothstepdata_ptr_t p) -> std::string {
@@ -409,6 +430,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfquantizedata_type = //
       py::class_<floatxfquantizedata, floatxfitembasedata, floatxfquantizedata_ptr_t>(dfgmodule, "floatxfquantizedata")
           .def(py::init<>())
+          .def(py::init([](float quantization) {
+            auto rval = std::make_shared<floatxfquantizedata>();
+            rval->_quantization = quantization;
+            return rval;
+          }))
           .def(
               "__repr__",
               [](floatxfquantizedata_ptr_t p) -> std::string {
@@ -427,6 +453,11 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfpowdata_type = //
       py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(dfgmodule, "floatxfpowdata")
           .def(py::init<>())
+          .def(py::init([](float power) {
+            auto rval = std::make_shared<floatxfpowdata>();
+            rval->_power = power;
+            return rval;
+          }))
           .def("__repr__", [](floatxfpowdata_ptr_t p) -> std::string { return FormatString("floatxfpowdata(%p)", (void*)p.get()); })
           .def_property(
               "do_pow",
