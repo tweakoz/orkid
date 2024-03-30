@@ -379,6 +379,7 @@ struct XgmModel final {
   static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);
+  static bool _loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock);
 
   /////////////////////////////////////
 
@@ -510,6 +511,10 @@ struct RenderContextInstModelData final {
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl);
 datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl);
 
+///////////////////////////////////////////////////////////////////////////////
+
+void computeAmbientOcclusion( int numsamples, meshutil::mesh_ptr_t model, Context* ctx);
+void computeLightMaps( meshutil::mesh_ptr_t model, Context* ctx );
 
 ///////////////////////////////////////////////////////////////////////////////
 

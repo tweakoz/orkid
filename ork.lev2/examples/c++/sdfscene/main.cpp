@@ -219,6 +219,8 @@ struct GpuResources {
   GpuResources(Context* ctx, file::Path this_dir) {
     _renderer = std::make_shared<IRenderer>();
     _renderer->setContext(ctx);
+
+    _lmd = std::make_shared<LightManagerData>();
     _lightmgr = std::make_shared<LightManager>(_lmd);
 
     _camlut  = std::make_shared<CameraDataLut>();
@@ -264,7 +266,7 @@ struct GpuResources {
   callback_drawable_ptr_t _sdf_drawable;
   textureassetptr_t _voltexA;
   renderer_ptr_t _renderer;
-  LightManagerData _lmd;
+  lightmanagerdata_ptr_t _lmd;
   lightmanager_ptr_t _lightmgr;
   compositingpassdata_ptr_t _TOPCPD;
   compositorimpl_ptr_t _compositorimpl;

@@ -53,7 +53,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   auto renderer = ezapp->_vars->makeSharedForKey<IRenderer>("renderer");
   auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", lmd);
   auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
   auto material = ezapp->_vars->makeSharedForKey<FreestyleMaterial>("material");
   auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");

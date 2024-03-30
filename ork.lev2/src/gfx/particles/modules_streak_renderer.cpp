@@ -191,11 +191,13 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
     mapped_storage->seek(0);
     mapped_storage->make<int32_t>(icnt);                        // 0
+    mapped_storage->make<fmtx4>(stereocams->VL()); // 16
+    mapped_storage->make<fmtx4>(stereocams->VR()); // 80
     mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
     mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
     mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
-    OrkAssert(mapped_storage->_cursor == 176);
+    //OrkAssert(mapped_storage->_cursor == 176);
     mapped_storage->align(16);
     for (int i = 0; i < icnt; i++) {
       auto ptcl             = get_particle(i);

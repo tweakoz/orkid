@@ -267,6 +267,8 @@ struct Mesh {
     return int(_submeshesByPolyGroup.size());
   }
 
+  void dumpStats() const;
+
   submesh_constptr_t submeshFromMaterialName(const std::string& materialname) const;
   submesh_ptr_t submeshFromMaterialName(const std::string& materialname);
   submesh_constptr_t submeshFromGroupName(const std::string& grpname) const;
@@ -283,6 +285,7 @@ struct Mesh {
   fvec4 mRangeScale;
   fvec4 mRangeTranslate;
   fmtx4 mMatRange;
+  fmtx4 _loadXF;
   orkmap<std::string, std::string> _annotations;
   submesh_lut_t _submeshesByPolyGroup;
   material_semanticmap_t mShadingGroupToMaterialMap;

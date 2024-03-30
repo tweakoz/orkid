@@ -59,7 +59,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   //////////////////////////////////////////////////////////
   auto renderer = ezapp->_vars->makeSharedForKey<IRenderer>("renderer");
   auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", lmd);
   auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
   auto material = ezapp->_vars->makeSharedForKey<FreestyleMaterial>("material");
   auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");

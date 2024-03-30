@@ -309,7 +309,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
             sscanf(Tokens[1].c_str(), "%f", v.asArray() + 0);
             sscanf(Tokens[2].c_str(), "%f", v.asArray() + 1);
             sscanf(Tokens[3].c_str(), "%f", v.asArray() + 2);
-            ObjV.push_back(v);
+            ObjV.push_back(v.transform(_loadXF).xyz());
           }
           if (Tokens[0] == "vn") {
             OrkAssert(Tokens.size() == 4);
@@ -459,12 +459,12 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
         int inrmidx = opoly.mnrmindices[iv] - 1;
         int iuv0idx = opoly.muvindices[iv] - 1;
 
-        static fvec3 NoUv0(0.0f, 0.0f, 0.0f);
+        static fvec2 NoUv0(0.0f, 0.0f);
         static fvec3 NoNrm(0.0f, 1.0f, 0.0f);
 
         const fvec3& pos = ObjV[iposidx];
         const fvec3& nrm = inumnrm ? ObjVN[inrmidx] : NoNrm;
-        const fvec3 uv0  = (inumuv0 != 0) ? fvec3(ObjVT[iuv0idx]) : fvec3(NoUv0);
+        const fvec3 uv0  = (inumuv0 != 0) ? fvec2(ObjVT[iuv0idx]) : fvec2(NoUv0);
 
         vertex ToolVertex;
 

@@ -429,7 +429,7 @@ struct LightingGroup {
 
   LightMask mLightMask;
   ork::fixedvector<fmtx4, kmaxinst> mInstances;
-  LightManager* mLightManager;
+  lightmanager_ptr_t _manager;
   Texture* mLightMap;
   Texture* mDPEnvMap;
 
@@ -502,13 +502,12 @@ struct EnumeratedLights {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LightManager {
-  const LightManagerData& mLmd;
 
   LightCollector mcollector;
 
 public:
-  LightManager(const LightManagerData& lmd)
-      : mLmd(lmd) {
+  LightManager(lightmanagerdata_constptr_t lmd)
+      : _data(lmd) {
   }
 
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
@@ -520,6 +519,9 @@ public:
 
   size_t GetNumLightGroups() const;
   void Clear();
+
+  lightmanagerdata_constptr_t _data;
+
 };
 
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;
@@ -529,8 +531,8 @@ struct HeadLightManager {
   LightingGroup mHeadLightGroup;
   AmbientLightData mHeadLightData;
   AmbientLight mHeadLight;
-  LightManagerData mHeadLightManagerData;
-  LightManager mHeadLightManager;
+  lightmanagerdata_ptr_t _managerdata;
+  lightmanager_ptr_t _manager;
 
   HeadLightManager(RenderContextFrameData& FrameData);
 };

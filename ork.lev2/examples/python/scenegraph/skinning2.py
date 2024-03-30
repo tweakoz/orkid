@@ -160,6 +160,7 @@ class SkinningApp(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(0)
+    sg_params.DepthFogDistance = 10000.0
     sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"

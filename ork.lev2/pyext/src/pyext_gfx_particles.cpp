@@ -31,20 +31,28 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         },
         [](ptc::basematerial_ptr_t  m, fvec4 color) { //
           m->_color = color;
+        })
+      .def_property("blending", 
+        [](ptc::basematerial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::basematerial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = Blending(blend->hashed());
+        })
+      .def_property("depthtest", 
+        [](ptc::basematerial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_depthtest));
+          return crcstr;
+        },
+        [](ptc::basematerial_ptr_t  m, crcstring_ptr_t dtest) { //
+          m->_depthtest = EDepthTest(dtest->hashed());
         });
  type_codec->registerStdCodec<ptc::basematerial_ptr_t>(mtl_base_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_flat_type = //
       py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
-      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
-      .def_property("blending", 
-        [](ptc::flatmaterial_ptr_t  m) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
-          return crcstr;
-        },
-        [](ptc::flatmaterial_ptr_t  m, crcstring_ptr_t blend) { //
-          m->_blending = BlendingMacro(blend->hashed());
-        });
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); });
   type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_grad_type = //
@@ -58,14 +66,6 @@ void pyinit_gfx_particles(py::module& module_lev2) {
           m->_gradient = grad;
         }
         )
-      .def_property("blending", 
-        [](ptc::gradientmaterial_ptr_t  m) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
-          return crcstr;
-        },
-        [](ptc::gradientmaterial_ptr_t  m, crcstring_ptr_t blend) { //
-          m->_blending = BlendingMacro(blend->hashed());
-        })
       .def_property("modulation_texture", 
         [](ptc::gradientmaterial_ptr_t  m) -> texture_ptr_t { //
           return m->_modulation_texture;
@@ -137,10 +137,30 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", []() -> ptc::ringemittermodule_ptr_t { return ptc::RingEmitterData::createShared(); });
   type_codec->registerStdCodec<ptc::ringemittermodule_ptr_t>(ringmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto linemitmoduledata_type = //
+      py::class_<ptc::LineEmitterData, ptc::ModuleData, ptc::lineemittermodule_ptr_t>(ptc_module, "LineEmitter")
+      .def_static("createShared", []() -> ptc::lineemittermodule_ptr_t { return ptc::LineEmitterData::createShared(); });
+  type_codec->registerStdCodec<ptc::lineemittermodule_ptr_t>(linemitmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto eliemitmoduledata_type = //
+      py::class_<ptc::EllipticalEmitterData, ptc::ModuleData, ptc::ellipticalemittermodule_ptr_t>(ptc_module, "EllipticalEmitter")
+      .def_static("createShared", []() -> ptc::ellipticalemittermodule_ptr_t { return ptc::EllipticalEmitterData::createShared(); });
+  type_codec->registerStdCodec<ptc::ellipticalemittermodule_ptr_t>(eliemitmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto grvmoduledata_type = //
       py::class_<ptc::GravityModuleData, ptc::ModuleData, ptc::gravitymodule_ptr_t>(ptc_module, "Gravity")
       .def_static("createShared", []() -> ptc::gravitymodule_ptr_t { return ptc::GravityModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::gravitymodule_ptr_t>(grvmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto sphamoduledata_type = //
+      py::class_<ptc::SphAttractorModuleData, ptc::ModuleData, ptc::sphattractormodule_ptr_t>(ptc_module, "SphAttractor")
+      .def_static("createShared", []() -> ptc::sphattractormodule_ptr_t { return ptc::SphAttractorModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::sphattractormodule_ptr_t>(sphamoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto ellimoduledata_type = //
+      py::class_<ptc::EllipticalAttractorModuleData, ptc::ModuleData, ptc::eliattractormodule_ptr_t>(ptc_module, "EllipticalAttractor")
+      .def_static("createShared", []() -> ptc::eliattractormodule_ptr_t { return ptc::EllipticalAttractorModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::eliattractormodule_ptr_t>(ellimoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto turbmoduledata_type = //
       py::class_<ptc::TurbulenceModuleData, ptc::ModuleData, ptc::turbulencemodule_ptr_t>(ptc_module, "Turbulence")

@@ -1,5 +1,8 @@
 libblock lib_math {
 
+  float rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  }
   vec3 rcp(vec3 inp) {
     return vec3(1.0 / inp.x, 1.0 / inp.y, 1.0 / inp.z);
   }

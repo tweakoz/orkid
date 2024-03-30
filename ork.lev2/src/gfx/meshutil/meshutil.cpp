@@ -13,27 +13,27 @@
 
 namespace ork { namespace meshutil {
 
-static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil",fvec3(1,.9,1));
+static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil", fvec3(1, .9, 1));
 
 /////////////////////////////////////////////////////////////////////////
 
 void planar_clip_init();
 
-void misc_init(){
+void misc_init() {
   // register var -> string encoders
 
   auto he_type = TypeId::of<halfedge_ptr_t>();
-  varmap::VarMap::registerStringEncoder(he_type,[](const varmap::VarMap::value_type& val){
+  varmap::VarMap::registerStringEncoder(he_type, [](const varmap::VarMap::value_type& val) {
     auto he = val.template get<halfedge_ptr_t>();
-    return CreateFormattedString("he[%d->%d]", he->_vertexA->_poolindex, he->_vertexB->_poolindex );
+    return CreateFormattedString("he[%d->%d]", he->_vertexA->_poolindex, he->_vertexB->_poolindex);
   });
   auto vtx_type = TypeId::of<vertex_ptr_t>();
-  varmap::VarMap::registerStringEncoder(vtx_type,[](const varmap::VarMap::value_type& val){
+  varmap::VarMap::registerStringEncoder(vtx_type, [](const varmap::VarMap::value_type& val) {
     auto vtx = val.template get<vertex_ptr_t>();
     return CreateFormattedString("vtx[%d]", vtx->_poolindex);
   });
   auto poly_type = TypeId::of<merged_poly_const_ptr_t>();
-  varmap::VarMap::registerStringEncoder(poly_type,[](const varmap::VarMap::value_type& val){
+  varmap::VarMap::registerStringEncoder(poly_type, [](const varmap::VarMap::value_type& val) {
     auto poly = val.template get<merged_poly_const_ptr_t>();
     return CreateFormattedString("poly[%d]", poly->_submeshIndex);
   });
@@ -46,12 +46,24 @@ void misc_init(){
 Mesh::Mesh()
     : _mergeEdges(true) {
 
-    _varmap = std::make_shared<varmap::VarMap>();
+  _varmap = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Mesh::~Mesh() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Mesh::dumpStats() const {
+  printf("mesh<%p>\n", (void*)this);
+  for (auto pgitem : _submeshesByPolyGroup) {
+    auto pgname  = pgitem.first;
+    auto pgroup  = pgitem.second;
+    int numpolys = pgroup->numPolys(0);
+    printf("  submesh<%s> numpolys<%d>\n", pgname.c_str(), numpolys);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -338,7 +350,7 @@ void Mesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
   fmtx4 MatS, MatT;
   MatS.scale(vscale.x, vscale.y, vscale.z);
   MatT.setTranslation(vtrans.x, vtrans.y, vtrans.z);
-  mMatRange = fmtx4::multiply_ltor(MatS,MatT);
+  mMatRange = fmtx4::multiply_ltor(MatS, MatT);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -356,16 +368,16 @@ MaterialInfo::MaterialInfo()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FlatSubMesh::FlatSubMesh( const AssetPath& from_path, lev2::rendervar_strmap_t assetvars ){
+FlatSubMesh::FlatSubMesh(const AssetPath& from_path, lev2::rendervar_strmap_t assetvars) {
   Mesh mesh;
   mesh.readFromAssimp(from_path);
   const auto& submeshes = mesh.RefSubMeshLut();
-  logchan_meshutil->log( "found submeshcount<%d>", int(submeshes.size()));
+  logchan_meshutil->log("found submeshcount<%d>", int(submeshes.size()));
 
   auto out_submesh = std::make_shared<submesh>();
-  for( auto item : submeshes ){
+  for (auto item : submeshes) {
     auto groupname = item.first;
-    logchan_meshutil->log( "merging submesh<%s>", groupname.c_str() );
+    logchan_meshutil->log("merging submesh<%s>", groupname.c_str());
     out_submesh->MergeSubMesh(*item.second);
   }
   fromSubmesh(*out_submesh);
@@ -374,16 +386,16 @@ FlatSubMesh::FlatSubMesh( const AssetPath& from_path, lev2::rendervar_strmap_t a
 ///////////////////////////////////////////////////////////////////////////////
 
 FlatSubMesh::FlatSubMesh(const submesh& mesh) {
-    fromSubmesh(mesh);
+  fromSubmesh(mesh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FlatSubMesh::fromSubmesh(const submesh& mesh){
+void FlatSubMesh::fromSubmesh(const submesh& mesh) {
   ////////////////////////////////////////////////////////
   _aabox = mesh.aabox();
   ////////////////////////////////////////////////////////
-  //auto vpool = mesh._vtxpool;
+  // auto vpool = mesh._vtxpool;
   ////////////////////////////////////////////////////////
   mesh.FindNSidedPolys(TrianglePolyIndices, 3);
   mesh.FindNSidedPolys(QuadPolyIndices, 4);
@@ -397,13 +409,13 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   // generate vertices
   ////////////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
-    auto invtx = mesh.vertex(iv0);
+    auto invtx          = mesh.vertex(iv0);
     const auto& pos     = invtx->mPos;
     const auto& nrm     = invtx->mNrm;
     OutVertex._position = fvec3(pos.x, pos.y, pos.z);
     OutVertex._normal   = fvec3(nrm.x, nrm.y, nrm.z);
     OutVertex._binormal = invtx->mUV[0].mMapBiNormal;
-    OutVertex._uv      = invtx->mUV[0].mMapTexCoord;
+    OutVertex._uv       = invtx->mUV[0].mMapTexCoord;
     OutVertex._color    = invtx->mCol[0].RGBAU32();
     MergeVertsT8.push_back(OutVertex);
   }
@@ -411,9 +423,9 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   // generate triangles
   ////////////////////////////////////////////////////////
   for (int it = 0; it < inumtri; it++) {
-    int idx           = TrianglePolyIndices[it];
+    int idx              = TrianglePolyIndices[it];
     const Polygon& intri = mesh.RefPoly(idx);
-    int numvertices     = intri.numVertices();
+    int numvertices      = intri.numVertices();
     for (int iv = 0; iv < numvertices; iv++) {
       int idx = intri.vertexID(iv);
       MergeTriIndices.push_back(idx);
@@ -423,13 +435,13 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   // generate triangles (from quads)
   ////////////////////////////////////////////////////////
   for (int iq = 0; iq < inumqua; iq++) {
-    int idx           = QuadPolyIndices[iq];
+    int idx              = QuadPolyIndices[iq];
     const Polygon& inqua = mesh.RefPoly(idx);
-    int inumsides     = inqua.numVertices();
-    int idx0          = inqua.vertexID(0);
-    int idx1          = inqua.vertexID(1);
-    int idx2          = inqua.vertexID(2);
-    int idx3          = inqua.vertexID(3);
+    int inumsides        = inqua.numVertices();
+    int idx0             = inqua.vertexID(0);
+    int idx1             = inqua.vertexID(1);
+    int idx2             = inqua.vertexID(2);
+    int idx3             = inqua.vertexID(3);
 
     MergeTriIndices.push_back(idx0);
     MergeTriIndices.push_back(idx1);

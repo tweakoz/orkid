@@ -37,7 +37,7 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), false);
+static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), true);
 
 //////////////////////////////////////////////////////
 
@@ -280,6 +280,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               //RSI->BindRasterState(mtl->_rasterstate);
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
           };
+          printf( "OK1..\n");
           ////////////////////////////////////////////////////////////////////////////////////////////
           if (permu._stereo) {                                     // stereo
             if (permu._instanced) {                                // stereo-instanced
@@ -322,16 +323,20 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             //////////////////////////////////
           }
           ///// mono ///////////////////////////////////////////////////////////////////////////////////
-          else {                                               
-            if (permu._instanced) {                                // mono-instanced
-              tek = permu._skinned                  //
+          else {         
+            printf( "OK2.. permu._instanced<%d> skinned<%d>\n", int(permu._instanced), int(permu._skinned) );
+
+
+            if (permu._instanced) {    // mono-instanced
+              tek = permu._skinned     //
                                        ? mtl->_tek_GBU_CT_NM_SK_IN_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_IN_MO;
-            } else {                                             // mono-non-instanced
-              tek = permu._skinned                  //
+            } else {                   // mono-non-instanced
+              tek = permu._skinned     //
                                        ? mtl->_tek_GBU_CT_NM_SK_NI_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_NI_MO;
             }
+            printf( "OK3.. mtl<%p> tek<%p>\n", mtl, tek );
             //////////////////////////////////
             if(tek){
               pipeline = std::make_shared<FxPipeline>(permu);
@@ -539,6 +544,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
       break;
     } // case 0: // STANDARD VARIANT
     //////////////////////////////////////////
+    //////////////////////////////////////////
     case "normalviz"_crcu:
       OrkAssert(false);
       break;
@@ -634,7 +640,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->_material             = (GfxMaterial*)mtl;
   }
   else{
-    printf("No PIPELINE for mtl<%s>\n", mtl->_name.c_str() );
+    printf("No PIPELINE for mtl<%s> variant<%08x>\n", mtl->_name.c_str(), mtl->_variant );
+    printf( "permu-renderingmodel<%08x>\n", permu._rendering_model );
     OrkAssert(false);
   }
 
@@ -663,6 +670,10 @@ void PBRMaterial::describeX(class_t* c) {
     auto txi              = targ->TXI();
     const auto& embtexmap = ctx._varmap->typedValueForKey<embtexmap_t>("embtexmap").value();
 
+    for( auto item : embtexmap ){
+      logchan_pbr->log("embtex<%s>", item.first.c_str() );
+    }
+
     int istring = 0;
 
     ctx._inputStream->GetItem(istring);
@@ -672,7 +683,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->_name = materialname;
-    //logchan_pbr->log("read.xgm: materialName<%s>", materialname);
+    logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
     OrkAssert(0 == strcmp(begintextures, "begintextures"));
@@ -685,17 +696,18 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        //logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
+        logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
-        //logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
+        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
         auto tex = std::make_shared<lev2::Texture>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         OrkAssert(ok);
-        // logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
+        logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
+        logchan_pbr->log(" token<%s>", token );
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
           mtl->_colorMapName = texname;
@@ -781,6 +793,9 @@ void PBRMaterial::describeX(class_t* c) {
 ////////////////////////////////////////////
 
 void PBRMaterial::gpuInit(Context* targ) /*final*/ {
+
+  printf( "PBRMaterial::gpuInit<%p> _initialTarget<%p> targ<%p>\n", this, _initialTarget, targ );
+
   if (_initialTarget)
     return;
 
@@ -839,6 +854,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO"s+_shader_suffix);
 
+
+  printf( "_tek_GBU_CT_NM_RI_NI_MO<%p>\n", _tek_GBU_CT_NM_RI_NI_MO );
+  printf( "_tek_GBU_CM_NM_RI_NI_MO<%p>\n", _tek_GBU_CM_NM_RI_NI_MO );
   // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
@@ -869,6 +887,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMapNormal         = fxi->parameter(_shader, "NormalMap");
   _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
   _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
+  _parMapAmbOcc           = fxi->parameter(_shader, "AmbOccMap");
+  _parMapLightMap         = fxi->parameter(_shader, "LightMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
@@ -908,6 +928,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   //
 
   OrkAssert(_paramMapNormal != nullptr);
+
+  printf( "_texColor<%p>\n", _texColor.get() );
+  printf( "_texNormal<%p>\n", _texNormal.get() );
+  printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
   if (_texColor == nullptr) {
     auto loadreq = std::make_shared<asset::LoadRequest>();
@@ -1120,6 +1144,7 @@ PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr";
+  printf( "new PBRMaterial<%p>\n", this );
 }
 
 ////////////////////////////////////////////

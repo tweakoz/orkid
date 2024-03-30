@@ -1,0 +1,166 @@
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+import "orkshader://mathtools.i";
+import "orkshader://envtools.i";
+import "orkshader://brdftools.i";
+import "orkshader://deftools.i";
+import "orkshader://gbuftools.i";
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx {
+  mat4 MVPC;
+  mat4 MVPL;
+  mat4 MVPR;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg {
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  usampler2D MapGBuffer;
+  sampler2D MapDepthCluster;
+  sampler2D MapDepth;
+  sampler2D MapSpecularEnv;
+  sampler2D MapDiffuseEnv;
+  sampler2D MapBrdfIntegration;
+  sampler2D MapLightingCookie;
+  sampler2D MapShadowDepth;
+  sampler2D ProjectionTexture;
+  sampler3D MapVolTexA;
+
+  vec2 near_far;
+  mat4 ProjectionTextureMatrix;
+  vec3 ProjectionEyePostion;
+  vec3 EyePostion;
+  vec2 InvViewportSize; // inverse target size
+  float Time;
+  vec2 NearFar;
+  int NumLights;
+  int TileDim;
+  vec2 Zndc2eye;
+  float SkyboxLevel;
+  float SpecularLevel;
+  float DiffuseLevel;
+  vec3 AmbientLevel;
+  float SpecularMipBias;
+  float EnvironmentMipBias;
+  float EnvironmentMipScale;
+  float DepthFogDistance;
+  float DepthFogPower;
+  vec4 ShadowParams;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_v2uv : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+}
+fragment_interface iface_f2uv {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs {
+    vec4 colorOUT;
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_deferred //
+  : ub_frg // 
+  : lib_math // 
+  : lib_envmapping // 
+  : lib_brdf // 
+  : lib_gbuf_decode // 
+  : lib_def { //
+
+float LinearizeDepth(float depth) {
+    float z = depth * 2.0 - 1.0; // Back to NDC 
+    float nearPlane = NearFar.x;
+    float farPlane = NearFar.y;
+    return (2.0 * nearPlane * farPlane) / (farPlane + nearPlane - z * (farPlane - nearPlane));
+}
+
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_passthru2uv : iface_v2uv {
+  frg_uva     = uv0;
+  frg_uvb     = uv1;
+  gl_Position = position;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_environment //
+    : iface_f2uv               //
+    : lib_deferred {           //
+  WPosData wpd     = monoWPD();
+  GBufData gbd     = decodeGBUF(wpd);
+  vec3 wpos = gbd._wpos;
+  vec3 wnrm = normalize(gbd._wnrm);
+
+  vec2 uv          = wpd._muv;
+  vec3 view_epos0  = posatdepth(wpd, 0.0);
+  vec3 view_epos1  = posatdepth(wpd, 1.0);
+  vec3 VIEW_N      = normalize(view_epos1 - view_epos0);
+  vec3 skybox_n    = vec3(VIEW_N.x, -VIEW_N.y, VIEW_N.z);
+  vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
+  vec3 out_color   = skyboxColor;
+
+  if (gbd._mode == 1) {
+    //
+    vec3 dir = normalize(ProjectionEyePostion-wpos);
+    float d = dot(dir,wnrm);
+    if(d<0.0)
+      d = 0.0;
+
+    //
+    vec4 projspace_point = ProjectionTextureMatrix*vec4(wpos,1);
+    float projspace_depth = projspace_point.z;
+    projspace_point.xyz = projspace_point.xyz / projspace_point.w;
+    vec3 prj_uv = projspace_point.xyz * 0.5 + vec3(0.5);
+
+    // supersample shadow calculation
+    vec2 tex_size = textureSize(MapShadowDepth, 0);
+    vec2 inv_tex_size = vec2(1.0/tex_size.x,1.0/tex_size.y);
+    const int count = 32;
+    float bias = +0.1005;
+    float sum = 0;
+    //////////////////////////
+    int cd2 = count>>1;
+    for(int i=0;i<count;i++){
+      for(int j=0;j<count;j++){
+        vec2 uv = prj_uv.xy + vec2(i-cd2,j-cd2)*inv_tex_size*2;
+        float shadow_depth = textureLod(MapShadowDepth, uv,0).r;
+        shadow_depth = LinearizeDepth(shadow_depth);
+        sum += float((shadow_depth + bias) > projspace_depth);
+        //sum += shadow_depth;
+      }
+    }
+    //////////////////////////
+    sum /= float(count*count);
+    d *= float(pow(sum,6));
+    d = LinearizeDepth(textureLod(MapShadowDepth, prj_uv.xy,0).r)*0.01;
+    out_color = vec3(mod(d*10,1)); 
+
+    if(projspace_depth<NearFar.x ){
+      out_color = vec3(1,1,0);
+    }
+    if(prj_uv.x<0 || prj_uv.x>1 || prj_uv.y<0 || prj_uv.y>1){
+      out_color = vec3(1,0,0);
+    }
+  }
+  colorOUT = vec4(out_color, 1);
+}
+///////////////////////////////////////////////////////////////
+technique environmentlighting {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_environment;
+    state_block     = default;
+  }
+}

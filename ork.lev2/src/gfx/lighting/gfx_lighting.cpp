@@ -634,7 +634,7 @@ int LightingGroup::GetLightId(int idx) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingGroup::LightingGroup()
-    : mLightManager(0)
+    : _manager( nullptr )
     , mLightMap(0)
     , mDPEnvMap(0) {
 }
@@ -642,8 +642,10 @@ LightingGroup::LightingGroup()
 ///////////////////////////////////////////////////////////////////////////////
 
 HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
-    : mHeadLight([this]() -> fmtx4 { return mHeadLightMatrix; }, &mHeadLightData)
-    , mHeadLightManager(mHeadLightManagerData) {
+    : mHeadLight([this]() -> fmtx4 { return mHeadLightMatrix; }, &mHeadLightData) {
+
+      _managerdata = std::make_shared<LightManagerData>();
+      _manager     = std::make_shared<LightManager>(_managerdata);
   auto cdata = FrameData.topCPD().cameraMatrices();
   /*
   auto camvd = cdata->computeMatrices();

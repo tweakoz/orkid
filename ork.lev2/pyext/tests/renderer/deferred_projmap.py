@@ -30,6 +30,7 @@ def defaultSceneGraphParams():
   sg_params_def.DiffuseIntensity = 1.0
   sg_params_def.SpecularIntensity = 1.0
   sg_params_def.AmbientLevel = vec3(.125)
+  sg_params_def.DepthFogDistance = 10000.0
   return sg_params_def
 
 ################################################################################

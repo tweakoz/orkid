@@ -97,7 +97,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto embtex = new lev2::EmbeddedTexture;
 
       embtex->_varmap["src.filename"].set<std::string>(texname);
-      embtex->_varmap["src.format"].set<std::string>(texname);
+      embtex->_varmap["src.format"].set<std::string>(fmt);
 
       embtex->_format = fmt;
 
@@ -163,7 +163,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           texfile.GetLength(length);
           //logchan_meshutilassimp->log("texlen<%zu>\n", length);
 
-          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
+          if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga" or tex_ext == ".dds") {
 
             auto embtex     = new ork::lev2::EmbeddedTexture;
             embtex->_format = tex_ext.substr(1);
@@ -483,8 +483,6 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         // merge geometry
         /////////////////////////////////////////////
         auto& out_submesh = MergeSubMesh(name);
-        auto& mtlset      = out_submesh.typedAnnotation<std::set<int>>("materialset");
-        mtlset.insert(mesh->mMaterialIndex);
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
 
@@ -737,9 +735,8 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   for (auto item : inp_model.RefSubMeshLut()) {
     subindex++;
     auto inp_submesh = item.second;
-    auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
     auto gltfmtl     = inp_submesh->typedAnnotation<GltfMaterial*>("gltfmaterial");
-    assert(mtlset.size() == 1); // assimp does 1 material per submesh
+    OrkAssert(gltfmtl != nullptr);
 
     auto mtlout = std::make_shared<ork::lev2::PBRMaterial>();
     mtlout->setTextureBaseName(FormatString("material%d", subindex));

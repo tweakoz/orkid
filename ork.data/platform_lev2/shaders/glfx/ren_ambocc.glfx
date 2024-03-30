@@ -1,0 +1,222 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+  import "mathtools.i";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 MatMVP;
+  mat4 MatMVPL;
+  mat4 MatMVPR;
+  mat4 MatMV;
+  mat4 MatM;
+  mat4 MatV;
+  mat4 MatP;
+  mat4 MatAux;
+
+  vec4 modcolor;
+  float Time;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+  int numpolys;
+  int sample_index;
+  sampler2D mesh_depthmap;
+  sampler2D mesh_posmap;
+  mat4 ProjectionTextureMatrix;
+  vec2 nearFar;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdepth : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec3 vtxnormal : NORMAL;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    float frg_depth;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec3 vtxnormal : NORMAL;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec3 frg_pos;
+    vec3 frg_nrm;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt : ublock_frg {
+  inputs {
+    vec3 frg_pos;
+    vec3 frg_nrm;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_norm;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdepth : ublock_frg {
+  inputs {
+    float frg_depth;
+    vec2 frg_uv;
+  }
+  outputs {
+    layout(location = 0) float out_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  DepthTest = LEQUALS;
+  DepthMask = ON;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_depth : iface_vdepth {
+  gl_Position = MatMVP*position;
+  float depth = gl_Position.z / gl_Position.w;
+  frg_depth     = depth;
+  frg_uv = vec2(0,0);
+
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = vec4(position.xy * 2 - vec2(1, 1), 0, 1);
+  frg_pos     = vec3(uv0.xyz);
+  frg_nrm     = vtxnormal;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_depth
+  : iface_fdepth
+  : lib_math {
+  out_depth = frg_depth;
+}
+///////////////////////////////////////////////////////////////
+libblock lib_shadow //
+  : ublock_frg // 
+  { //
+
+float LinearizeDepth(float depth) {
+    float z = depth * 2.0 - 1.0; // Back to NDC 
+    float nearPlane = nearFar.x;
+    float farPlane = nearFar.y;
+    return (2.0 * nearPlane * farPlane) / (farPlane + nearPlane - z * (farPlane - nearPlane));
+}
+
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdepth_accum : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec3 vtxnormal : NORMAL;
+    vec4 uv0 : TEXCOORD0;
+  }
+  outputs {
+    float frg_depth;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdepth_accum : ublock_frg {
+  inputs {
+    float frg_depth;
+    vec2 frg_uv;
+  }
+  outputs {
+    layout(location = 0) float out_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_depth_accum : iface_vdepth_accum {
+  vec2 UV = position.xy * 2 - vec2(1, 1);
+  gl_Position = vec4(UV, 0, 1);
+  frg_uv = position.xy;
+  frg_depth     = 1.0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_depth_accum
+  : iface_fdepth_accum
+  : lib_shadow {
+
+  vec3 frg_wpos = texture(mesh_posmap, frg_uv).xyz;
+
+  vec2 tex_size = textureSize(mesh_depthmap, 0);
+  vec2 inv_tex_size = vec2(1.0/tex_size.x,1.0/tex_size.y);
+  const int count = 16;
+  float bias = 0.0001;
+  float sum = 0;
+  float d = 1.0;
+  //////////////////////////
+  vec4 projspace_point = ProjectionTextureMatrix*vec4(frg_wpos,1);
+  float projspace_depth = projspace_point.z;
+  projspace_point.xyz = projspace_point.xyz / projspace_point.w;
+  vec3 prj_uv = projspace_point.xyz * 0.5 + vec3(0.5);
+  //vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
+  //////////////////////////
+  int cd2 = count>>1;
+  for(int i=0;i<count;i++){
+    for(int j=0;j<count;j++){
+      vec2 uv = prj_uv.xy + vec2(i-cd2,j-cd2)*inv_tex_size*2;
+      float shadow_depth = textureLod(mesh_depthmap, uv,0).r;
+      shadow_depth = LinearizeDepth(shadow_depth);
+      sum += float((shadow_depth + bias) > projspace_depth);
+    }
+  }
+  //////////////////////////
+  //sum /= float(count*count);
+  d *= float(pow(sum,6));
+  out_depth = sum;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_texcolor 
+  : iface_fmt
+  : lib_math {
+
+  vec3 this_position = frg_pos;
+  vec3 this_normal   = normalize(frg_nrm);
+
+  out_clr = vec4(this_position, 1.0);
+  out_norm = vec4(this_normal, 1.0);
+}
+///////////////////////////////////////////////////////////////
+technique tek_posnrm {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_texcolor;
+    state_block     = sb_default;
+  }
+}
+technique tek_depthmap {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_depth;
+    fragment_shader = ps_depth;
+    state_block     = sb_default;
+  }
+}
+technique tek_depthaccum {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_depth_accum;
+    fragment_shader = ps_depth_accum;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////

@@ -8,6 +8,8 @@
 #pragma once
 
 #include <ork/dataflow/enum.h>
+#include <ork/math/cvector3.h>
+#include <ork/math/quaternion.h>
 
 namespace ork::dataflow {
 
@@ -17,11 +19,14 @@ typedef std::string MorphGroup;
 struct nullpassthrudata;
 struct floatpassthrudata;
 struct fvec3passthrudata;
+struct fquatpassthrudata;
 struct floatxfdata;
 struct fvec3xfdata;
+struct fquatxfdata;
 
 using floatxfdata_ptr_t = std::shared_ptr<floatxfdata>;
 using fvec3xfdata_ptr_t = std::shared_ptr<fvec3xfdata>;
+using fquatxfdata_ptr_t = std::shared_ptr<fquatxfdata>;
 
 struct FloatPlugTraits {
   using elemental_data_type = float;
@@ -41,6 +46,15 @@ struct Vec3fPlugTraits {
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
+struct QuatfPlugTraits {
+  using elemental_data_type = fquat;
+  using elemental_inst_type = fquat;
+  using xformer_t           = nullpassthrudata;
+  using range_type = float_range;
+  using out_traits_t = QuatfPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fquat> data_to_inst(std::shared_ptr<fquat> inp);
+};
 struct FloatXfPlugTraits {
   using elemental_data_type = float;
   using elemental_inst_type = float;
@@ -58,6 +72,15 @@ struct Vec3XfPlugTraits {
   using out_traits_t = Vec3fPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
+};
+struct QuatXfPlugTraits {
+  using elemental_data_type = fquat;
+  using elemental_inst_type = fquat;
+  using xformer_t                    = fquatxfdata;
+  using range_type = float_range;
+  using out_traits_t = QuatfPlugTraits;
+  static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fquat> data_to_inst(std::shared_ptr<fquat> inp);
 };
 
 struct morph_event : public event::Event {
@@ -236,6 +259,17 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct quatinplugdata : public inplugdata<QuatfPlugTraits> {
+  DeclareAbstractX(quatinplugdata, inplugdata<QuatfPlugTraits>);
+
+public:
+  quatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : inplugdata<QuatfPlugTraits>(pmod, epr, pname) {
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
 struct modscabiasdata : public ork::Object {
   DeclareConcreteX(modscabiasdata, ork::Object);
 
@@ -317,8 +351,15 @@ struct fvec3passthrudata : public ork::Object {
     return inp;
   }
 };
+struct fquatpassthrudata : public ork::Object {
+  DeclareAbstractX(fquatpassthrudata, ork::Object);
+  fquat transform(fquat inp) const {
+    return inp;
+  }
+};
 
 using fvec3passthrudata_ptr_t = std::shared_ptr<fvec3passthrudata>;
+using fquatpassthrudata_ptr_t = std::shared_ptr<fquatpassthrudata>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct fvec3xfdata : public ork::Object {
@@ -333,6 +374,15 @@ public:
   orklut<std::string, fvec3passthrudata_ptr_t> _transforms;
 };
 
+struct fquatxfdata : public ork::Object {
+  DeclareConcreteX(fquatxfdata, ork::Object);
+
+public:
+  fquatxfdata();
+  fquat transform(const fquat& input) const;
+  orklut<std::string, fquatpassthrudata_ptr_t> _transforms;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using floatoutplug_t = outplugdata<FloatPlugTraits>;
@@ -341,8 +391,10 @@ using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 
 using floatxfinplugdata_t = inplugdata<FloatXfPlugTraits>;
 using fvec3xfinplugdata_t = inplugdata<Vec3XfPlugTraits>;
+using fquatxfinplugdata_t = inplugdata<QuatXfPlugTraits>;
 
 using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata_t>;
 using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata_t>;
+using fquatxfinplugdata_ptr_t = std::shared_ptr<fquatxfinplugdata_t>;
 
 } // namespace ork::dataflow

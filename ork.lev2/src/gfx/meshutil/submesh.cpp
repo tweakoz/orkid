@@ -302,6 +302,39 @@ poly_index_set_t submesh::connectedPolys(const edge& ed, bool ordered) const { /
   return _connectivityIMPL->polysConnectedToEdge(ed, ordered);
 }
 ///////////////////////////////////////////////////////////////////////////////
+dvec3 submesh::boundingMin() const{
+  dvec3 min(1e9,1e9,1e9);
+  visitAllVertices([&](vertex_const_ptr_t v) {
+    auto pos = v->mPos;
+    if(pos.x<min.x){
+      min.x = pos.x;
+    }
+    if(pos.y<min.y){
+      min.y = pos.y;
+    }
+    if(pos.z<min.z){
+      min.z = pos.z;
+    }
+  });
+  return min;
+}
+dvec3 submesh::boundingMax() const{
+  dvec3 max(-1e9,-1e9,-1e9);
+  visitAllVertices([&](vertex_const_ptr_t v) {
+    auto pos = v->mPos;
+    if(pos.x>max.x){
+      max.x = pos.x;
+    }
+    if(pos.y>max.y){
+      max.y = pos.y;
+    }
+    if(pos.z>max.z){
+      max.z = pos.z;
+    }
+  });
+  return max;
+}
+///////////////////////////////////////////////////////////////////////////////
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
   //float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
   int inumpingroup = 0;

@@ -234,6 +234,8 @@ struct submesh {
   dvec3 centerOfPolys() const;
   dvec3 centerOfPolysConcurrent() const;
   double convexVolume() const;
+  dvec3 boundingMin() const;
+  dvec3 boundingMax() const;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -349,6 +351,7 @@ void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsmesh);
 
 void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithFaceNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh);
+void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians);
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsmesh, float threshold_radians);
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);

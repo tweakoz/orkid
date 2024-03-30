@@ -70,7 +70,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                 switch (pvb->GetStreamFormat()) {
                   //////////////////////////////////////////////////////////////////
                   case lev2::EVtxStreamFormat::V12N12T8I4W4: {
-                    const lev2::SVtxV12N12T8I4W4* ptypedsource = (const lev2::SVtxV12N12T8I4W4*)pvertbase;
+                    printf( "V12N12T8I4W4\n");
+                    auto ptypedsource = (const lev2::SVtxV12N12T8I4W4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     vertex_ptr_t vertexcache[3];
                     for (int ii = 0; ii < inumidx; ii++) {
@@ -91,7 +92,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                   }
                   //////////////////////////////////////////////////////////////////
                   case lev2::EVtxStreamFormat::V12N12B12T8C4: {
-                    const lev2::SVtxV12N12B12T8C4* ptypedsource = (const lev2::SVtxV12N12B12T8C4*)pvertbase;
+                    printf( "V12N12B12T8C4\n");
+                    auto ptypedsource = (const lev2::SVtxV12N12B12T8C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     vertex_ptr_t vertexcache[3];
                     for (int ii = 0; ii < inumidx; ii++) {
@@ -111,8 +113,34 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                     break;
                   }
                   //////////////////////////////////////////////////////////////////
+                  case lev2::EVtxStreamFormat::V12N12B12T16: {
+                    printf( "V12N12B12T16\n");
+                    auto ptypedsource = (const lev2::SVtxV12N12B12T16*)pvertbase;
+                    OrkAssert(0 == (inumidx % 3));
+                    vertex_ptr_t vertexcache[3];
+                    for (int ii = 0; ii < inumidx; ii++) {
+                      U16 uidx                             = pidx16[ii];
+                      const lev2::SVtxV12N12B12T16& InVtx = ptypedsource[uidx];
+                      vertex ToolVertex;
+                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx.mPosition);
+
+                      printf( "pos<%g %g %g>\n", InVtx.mPosition.x, InVtx.mPosition.y, InVtx.mPosition.z);
+                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx.mNormal);
+                      ToolVertex.mUV[0].mMapBiNormal = InVtx.mBiNormal;
+                      ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
+                      ToolVertex.mCol[0]             = fcolor4::White();
+                      vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
+                      if (2 == (ii % 3)) {
+                        Polygon ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
+                        outsub.mergePoly(ToolPoly);
+                      }
+                    }
+                    break;
+                  }
+                  //////////////////////////////////////////////////////////////////
                   case lev2::EVtxStreamFormat::V12N12T16C4: {
-                    const lev2::SVtxV12N12T16C4* ptypedsource = (const lev2::SVtxV12N12T16C4*)pvertbase;
+                    printf( "V12N12T16C4\n");
+                    auto ptypedsource = (const lev2::SVtxV12N12T16C4*)pvertbase;
                     OrkAssert(0 == (inumidx % 3));
                     vertex_ptr_t vertexcache[3];
                     printf("scanning numindices<%d>\n", inumidx);
@@ -133,7 +161,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                     break;
                   }
                   default: {
-                    orkprintf("Mesh::ReadFromXGM() vtxfmt<%d> not supported\n", int(pvb->GetStreamFormat()));
+                    orkprintf("Mesh::ReadFromXGM() vtxfmt<%08x> not supported\n", uint32_t(pvb->GetStreamFormat()));
                     OrkAssert(false);
                     break;
                   }

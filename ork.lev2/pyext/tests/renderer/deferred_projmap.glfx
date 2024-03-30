@@ -143,8 +143,9 @@ fragment_shader ps_environment //
     }
     //////////////////////////
     sum /= float(count*count);
+    //d *= pow(sum,1.1);
     d *= float(pow(sum,6));
-    out_color = pt*d*2; 
+    out_color = pt*d*8; 
     //out_color = vec3(d); 
 
     if(projspace_depth<NearFar.x ){

@@ -1,0 +1,35 @@
+{
+  "orkscene": {
+    "t1": {
+      "materials": {
+        "a": {
+          "type": "emissive",
+          "emissivemap": "src://effect_textures/uvmap_A.png"
+        },
+        "b": {
+          "type": "pbr",
+          "baseColor": [1,1,1],
+          "mrMap": "src://effect_textures/ptc3.png",
+          "roughnessFactor": 1,
+          "metallicFactor": 0
+        }
+      },
+      "meshes": {
+        "c": {
+          "file": "monkey_pbr.obj",
+          "translation": [-1,-1,0],
+          "axisAngle": [0,1,0,0],
+          "recomputeBasis": true,
+          "material": "b"
+        },
+        "d": {
+          "file": "monkey_pbr.obj",
+          "translation": [1,-1,0],
+          "axisAngle": [0,1,0,3.1415],
+          "recomputeBasis": true,
+          "material": "b"
+        }
+      }
+    }
+  }
+}

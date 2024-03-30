@@ -325,7 +325,7 @@ template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis) const
   T denom = n.dotWith(ray.mDirection);
   // Line is parallel to the plane or plane normal faces away from ray
   if (Abs(denom) < Epsilon()){
-    printf( "abs(denom): %f\n", Abs(denom) );
+    //printf( "abs(denom): %f\n", Abs(denom) );
     return false;
   }
 
