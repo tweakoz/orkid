@@ -154,10 +154,6 @@ void GradientMaterial::describeX(class_t* clazz) {
 GradientMaterial::GradientMaterial() {
   _color    = fvec4(1, .5, 0, 1);
   _gradient = std::make_shared<gradient_fvec4_t>();
-  _gradient->_data.clear();
-  _gradient->addDataPoint(0.0f, fvec4(1,1,1,1));
-  _gradient->addDataPoint(0.5f, fvec4(1,1,1,1));
-  _gradient->addDataPoint(1.0f, fvec4(1,1,1,1));
   /////////////////////////////////////////////////////////////////////////
   _vertexSetterSprite = [=](sprite_vertex_writer_t& vw, //
                             const BasicParticle* ptc,   //
