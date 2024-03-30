@@ -92,19 +92,6 @@ geometry_shader gs_billboardquad //
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill_stereo // 
-  : gface_base   //
-  : vface_psys { // import vtxshader outputs
-  
-  // TODO recursive walk up inheritance tree for attribute out->in inheritance
-  outputs {
-    vec4 frg_clr;
-    vec2 frg_uv0;
-    vec2 frg_uv1;
-    layout(secondary_view_offset = 1) int gl_Layer;
-  }
-}
-///////////////////////////////////////////////////////////////
 vertex_interface vface_streak : uset_vtx {
   inputs {
     vec4 position : POSITION;
@@ -199,27 +186,6 @@ geometry_shader gs_streak //
   //EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : fface_psys {
-  out_clr        = modcolor;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
-}
-fragment_shader ps_fragclr : fface_psys {
-  out_clr        = frg_clr;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
-}
-fragment_shader ps_modtex : fface_psys {
-  vec4 texc      = texture(ColorMap, frg_uv0.xy);
-  out_clr        = texc * modcolor;
-  out_rufmtl     = vec4(0, 1, 0, 0);
-  out_normal_mdl = vec4(0, 0, 0, 5.0);
-  if (out_clr.a == 0.0f)
-    discard;
-}
 fragment_shader ps_volume : fface_psys {
   vec2 uv        = frg_uv0.xy;
   float w        = frg_uv1.x;
