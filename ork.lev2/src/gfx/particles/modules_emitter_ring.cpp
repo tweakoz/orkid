@@ -203,7 +203,7 @@ static void _reshapeRingEmitterIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
   auto data = std::make_shared<RingEmitterData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeRingEmitterIOs(data);
   return data;
 }

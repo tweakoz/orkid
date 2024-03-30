@@ -89,21 +89,31 @@ void ParticlePoolModuleInst::onLink(dflow::GraphInst* inst) { // final
 
 using poolmoduleinst_ptr_t = std::shared_ptr<ParticlePoolModuleInst>;
 
-void ParticlePoolData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ParticlePoolData::createShared(); });
-}
 
 ParticlePoolData::ParticlePoolData() {
 }
 
+static void _reshapePoolIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<ParticlePoolData>(data);
+  ModuleData::createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
+  ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_VARYING1, "UnitAge");
+}
+
 std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
   auto data = std::make_shared<ParticlePoolData>();
-  createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
+  _reshapePoolIOs(data);
   return data;
 }
 
 dflow::dgmoduleinst_ptr_t ParticlePoolData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<ParticlePoolModuleInst>(this, ginst);
+}
+
+void ParticlePoolData::describeX(class_t* clazz) {
+  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ParticlePoolData::createShared(); });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapePoolIOs(mdata);
+  });
 }
 
 } // namespace ork::lev2::particle

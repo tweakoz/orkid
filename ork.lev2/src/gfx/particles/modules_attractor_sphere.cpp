@@ -107,7 +107,7 @@ static void _reshapeSphAttractorIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<SphAttractorModuleData> SphAttractorModuleData::createShared() {
   auto data = std::make_shared<SphAttractorModuleData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeSphAttractorIOs(data);
   return data;
 }

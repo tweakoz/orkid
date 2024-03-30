@@ -106,7 +106,7 @@ static void _reshapeGravityIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
   auto data = std::make_shared<GravityModuleData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeGravityIOs(data);
   return data;
 }

@@ -156,7 +156,7 @@ static void _reshapeEllipticalAttractorIOs(dataflow::moduledata_ptr_t data) {
 
 std::shared_ptr<EllipticalAttractorModuleData> EllipticalAttractorModuleData::createShared() {
   auto data = std::make_shared<EllipticalAttractorModuleData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeEllipticalAttractorIOs(data);
   return data;
 }

@@ -96,6 +96,8 @@ class ParticlesApp(object):
         
     self.TURB.inputs.Amount = vec3(1,1,1)*5
     
+    self.EMITN.inputs.LifeSpan = 3
+    self.EMITR.inputs.LifeSpan = 3
     SIZE = self.SPRI.inputs.Size
     SIZEXF = SIZE.transformer 
     SIZEXF.append(floatxf.quantize(0.025))
@@ -104,9 +106,10 @@ class ParticlesApp(object):
     SIZEXF.append(floatxf.abs())
     SIZEXF.append(floatxf.smoothstep(0.3,0.7))
     SIZEXF.append(floatxf.power(8.0))
+    SIZEXF.append(floatxf.scale(0.25))
     
     self.graphdata.connect(SIZE,#
-                           self.GLOB.outputs.RelTime)
+                           self.POOL.outputs.UnitAge)
 
   ################################################
 

@@ -204,7 +204,7 @@ static void _reshapeNozzleEmitterIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   auto data = std::make_shared<NozzleEmitterData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeNozzleEmitterIOs(data);
   return data;
 }

@@ -257,7 +257,7 @@ static void _reshapeLineEmitterIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<LineEmitterData> LineEmitterData::createShared() {
   auto data = std::make_shared<LineEmitterData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeLineEmitterIOs(data);
   return data;
 }

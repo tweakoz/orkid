@@ -316,7 +316,7 @@ StreakRendererData::StreakRendererData() {
 std::shared_ptr<StreakRendererData> StreakRendererData::createShared() {
   auto data = std::make_shared<StreakRendererData>();
 
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeStreakRendererIOs(data);
   return data;
 }

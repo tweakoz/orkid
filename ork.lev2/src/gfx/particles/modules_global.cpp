@@ -124,7 +124,7 @@ static void _reshapeGlobalIOs( dataflow::moduledata_ptr_t data ){
 
 std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
   auto data = std::make_shared<GlobalModuleData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeGlobalIOs(data);
   // DeclareFloatOutPlug(Random);
   // DeclareVect3OutPlug(RandomNormal);

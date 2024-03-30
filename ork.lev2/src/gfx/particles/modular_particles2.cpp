@@ -46,7 +46,7 @@ void ParticleModuleData::describeX(class_t* clazz) {
 ParticleModuleData::ParticleModuleData() {
 }
 
-void ParticleModuleData:: _initShared(dflow::dgmoduledata_ptr_t data){
+void ParticleModuleData:: _initPoolIOs(dflow::dgmoduledata_ptr_t data){
   createInputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
   createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
 }

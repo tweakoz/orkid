@@ -25,10 +25,10 @@ namespace ork::lev2::particle {
 
 struct SpriteRendererInst : public ParticleModuleInst {
 
-  using triple_buf_t           = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
-  using triple_buf_ptr_t       = std::shared_ptr<triple_buf_t>;
-  using sprite_vtxbuf_t        = DynamicVertexBuffer<sprite_vtx_t>;
-  using sprite_vtxbuf_ptr_t    = std::shared_ptr<sprite_vtxbuf_t>;
+  using triple_buf_t        = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
+  using triple_buf_ptr_t    = std::shared_ptr<triple_buf_t>;
+  using sprite_vtxbuf_t     = DynamicVertexBuffer<sprite_vtx_t>;
+  using sprite_vtxbuf_ptr_t = std::shared_ptr<sprite_vtxbuf_t>;
 
   SpriteRendererInst(const SpriteRendererData* srd, dataflow::GraphInst* ginst);
   void onLink(GraphInst* inst) final;
@@ -36,6 +36,7 @@ struct SpriteRendererInst : public ParticleModuleInst {
   void _render(const ork::lev2::RenderContextInstData& RCID);
   const SpriteRendererData* _srd;
   floatxf_inp_pluginst_ptr_t _input_size;
+  float_out_pluginst_ptr_t _output_uage;
   triple_buf_ptr_t _triple_buf;
   sprite_vtxbuf_ptr_t _vertexBuffer;
 };
@@ -58,7 +59,12 @@ void SpriteRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
   ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
-  _input_size             = typedInputNamed<FloatXfPlugTraits>("Size");
+  _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
+
+  auto pool = _graphinst->firstModuleInst<ParticlePoolModuleInst>();
+  OrkAssert(pool);
+  _output_uage = pool->typedOutputNamed<FloatPlugTraits>("UnitAge");
+  OrkAssert(_output_uage);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,7 +73,6 @@ void SpriteRendererInst::compute(
     GraphInst* inst, //
     ui::updatedata_ptr_t updata) {
 
-  
   auto ptcl_context = inst->_impl.getShared<Context>();
   auto drawable     = ptcl_context->_drawable;
   OrkAssert(drawable);
@@ -97,7 +102,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     material->gpuInit(RCID);
     OrkAssert(material->_pipeline);
     double gpu_init_time = gpu_init_timer.SecsSinceStart();
-     printf( "gpu_init_time<%f>\n", gpu_init_time );
+    printf("gpu_init_time<%f>\n", gpu_init_time);
   }
 
   fmtx4 mtx;
@@ -110,7 +115,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   //////////////////////////////////////////
   auto render_buffer = _triple_buf->begin_pull();
   int icnt           = render_buffer->_numParticles;
-  if( 0 == icnt ){
+  if (0 == icnt) {
     _triple_buf->end_pull(render_buffer);
     return;
   }
@@ -158,11 +163,12 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     };
   }
   //////////////////////////////////////////////////////////////////////////////
-  //float fwidth  = _input_width->value();
-  //float flength = _input_length->value();
-  float fsize  = _input_size->value();
-  auto LW       = ork::fvec2(fsize, fsize);
-  //printf( "fsize<%f>\n", fsize );
+  // float fwidth  = _input_width->value();
+  // float flength = _input_length->value();
+  float fsize          = _input_size->value();
+  auto LW              = ork::fvec2(fsize, fsize);
+  bool size_is_varying = true;
+  // printf( "fsize<%f>\n", fsize );
   //////////////////////////////////////////////////////////////////////////////
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////
@@ -171,47 +177,52 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto FXI = context->FXI();
     auto CI  = context->CI();
     ///////////////////////////////////////////////////////////////
-    auto stereocams = CPD._stereoCameraMatrices;
+    auto stereocams  = CPD._stereoCameraMatrices;
     auto worldmatrix = RCID.worldMatrix();
-    auto SMM = stereocams->_mono;
-    //obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
-    obj_nrmz =fvec4(0,1,0,0);
-    //fmtx4 scale_matrix;
-    //scale_matrix.setScale(fsize,fsize,fsize);
-    //worldmatrix = scale_matrix * worldmatrix;
+    auto SMM         = stereocams->_mono;
+    // obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
+    obj_nrmz = fvec4(0, 1, 0, 0);
+    // fmtx4 scale_matrix;
+    // scale_matrix.setScale(fsize,fsize,fsize);
+    // worldmatrix = scale_matrix * worldmatrix;
     ///////////////////////////////////////////////////////////////
-    auto storage = material->_Spritecu_vertex_io_buffer;
-    size_t mapping_size = 1<<20; 
+    auto storage        = material->_Spritecu_vertex_io_buffer;
+    size_t mapping_size = 1 << 20;
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
     mapped_storage->seek(0);
     mapped_storage->make<int32_t>(icnt);                        // 0
-    mapped_storage->make<fmtx4>(stereocams->VL()); // 16
-    mapped_storage->make<fmtx4>(stereocams->VR()); // 80
+    mapped_storage->make<fmtx4>(stereocams->VL());              // 16
+    mapped_storage->make<fmtx4>(stereocams->VR());              // 80
     mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
     mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
-    mapped_storage->make<fvec4>(LW.x,LW.y,0,0);                 // 160
-    //OrkAssert(mapped_storage->_cursor == 176);
+    mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+    // OrkAssert(mapped_storage->_cursor == 176);
     mapped_storage->align(16);
     for (int i = 0; i < icnt; i++) {
-      auto ptcl = get_particle(i);
+      auto ptcl             = get_particle(i);
       float fage            = ptcl->mfAge;
       float flspan          = (ptcl->mfLifeSpan != 0.0f) //
-                            ? ptcl->mfLifeSpan //
-                            : 0.01f;
+                                  ? ptcl->mfLifeSpan     //
+                                  : 0.01f;
       float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-        mapped_storage->make<fvec4>(ptcl->mPosition);
-        mapped_storage->make<fvec4>(ptcl->mVelocity);
-        mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom,0,0);
+      _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+      if (size_is_varying) {
+        fsize = _input_size->value();
+        LW = ork::fvec2(fsize, fsize);
+      }
+      mapped_storage->make<fvec4>(ptcl->mPosition);
+      mapped_storage->make<fvec4>(ptcl->mVelocity);
+      mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
     }
     CI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     CI->bindStorageBuffer(material->_Spritecu_shader, 0, storage);
     ///////////////////////////////////////////////////////////////
-    int wu_width = icnt;
-    int wu_height = 1;
-    int wu_depth = 1;
+    int wu_width   = icnt;
+    int wu_height  = 1;
+    int wu_depth   = 1;
     render_time_1b = prender_timer.SecsSinceStart();
     CI->dispatchCompute(material->_Spritecu_shader, wu_width, wu_height, wu_depth);
     render_time_1c = prender_timer.SecsSinceStart();
@@ -220,18 +231,20 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto pipeline = material->pipeline(RCID, true);
     pipeline->wrappedDrawCall(RCID, [&]() {
       context->RSI()->BindRasterState(material->_material->_rasterstate);
-      context->GBI()->DrawPrimitiveEML(storage, //
-                                       ork::lev2::PrimitiveType::TRIANGLES, //
-                                       0, icnt*6);
-    FXI->reset();
+      context->GBI()->DrawPrimitiveEML(
+          storage,                             //
+          ork::lev2::PrimitiveType::TRIANGLES, //
+          0,
+          icnt * 6);
+      FXI->reset();
     });
 ///////////////////////////////////////////////////////////////
 #endif
   }
   //////////////////////////////////////////////////////////////////////////////
   else { // geometry shader path
-  //////////////////////////////////////////////////////////////////////////////
-    if(icnt){
+         //////////////////////////////////////////////////////////////////////////////
+    if (icnt) {
       sprite_vertex_writer_t vw;
       vw.Lock(context, _vertexBuffer.get(), icnt);
       {
@@ -240,11 +253,16 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         ////////////////////////////////////////////////
         for (int i = 0; i < icnt; i++) {
           auto ptcl = get_particle(i);
+          _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+          if (size_is_varying) {
+            fsize = _input_size->value();
+            LW = ork::fvec2(fsize, fsize);
+          }
           material->_vertexSetterSprite(
               vw,   //
               ptcl, //
               0.0f, // angle
-              LW.x,   // size
+              LW.x, // size
               0xffffffff);
         }
       }
@@ -253,7 +271,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       auto pipeline = material->pipeline(RCID, false);
       material->update(RCID);
       pipeline->wrappedDrawCall(RCID, [&]() {
-        //printf( "YO...\n");
+        // printf( "YO...\n");
         context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       });
@@ -263,24 +281,23 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   _triple_buf->end_pull(render_buffer);
 
   double render_time = prender_timer.SecsSinceStart();
-  if(render_time >0.5f ){
-    printf( "render_time_1<%f>\n", render_time_1 );
-    printf( "render_time_1a<%f>\n", render_time_1a );
-    printf( "render_time_1b<%f>\n", render_time_1b );
-    printf( "render_time_1c<%f>\n", render_time_1c );
-    printf( "render_time_2<%f>\n", render_time_2 );
-    printf( "render_time<%f>\n", render_time );
+  if (render_time > 0.5f) {
+    printf("render_time_1<%f>\n", render_time_1);
+    printf("render_time_1a<%f>\n", render_time_1a);
+    printf("render_time_1b<%f>\n", render_time_1b);
+    printf("render_time_1c<%f>\n", render_time_1c);
+    printf("render_time_2<%f>\n", render_time_2);
+    printf("render_time<%f>\n", render_time);
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _reshapeSpriteRendererIOs( dataflow::moduledata_ptr_t mdata ){
+static void _reshapeSpriteRendererIOs(dataflow::moduledata_ptr_t mdata) {
   auto typed = std::dynamic_pointer_cast<SpriteRendererData>(mdata);
-  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Size")->_range            = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Size")->_range              = {-10, 10};
   ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
-  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range             = {-10, 10};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,9 +310,8 @@ void SpriteRendererData::describeX(class_t* clazz) {
 
   clazz->directProperty("sort", &SpriteRendererData::_sort);
 
-  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
-    _reshapeSpriteRendererIOs(mdata);
-  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>(
+      "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeSpriteRendererIOs(mdata); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -309,15 +325,15 @@ SpriteRendererData::SpriteRendererData() {
 std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
   auto data = std::make_shared<SpriteRendererData>();
 
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeSpriteRendererIOs(data);
   return data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//void SpriteRendererData::reshapeIOs() {
-  //}
+// void SpriteRendererData::reshapeIOs() {
+// }
 
 ///////////////////////////////////////////////////////////////////////////////
 

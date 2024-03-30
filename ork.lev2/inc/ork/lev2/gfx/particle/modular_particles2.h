@@ -88,7 +88,7 @@ struct ParticleModuleData : public ModuleData {
 
 public:
   ParticleModuleData();
-  static void _initShared(dflow::dgmoduledata_ptr_t sub);
+  static void _initPoolIOs(dflow::dgmoduledata_ptr_t sub);
 
   static particlebufferdata_ptr_t _no_connection;
   particlebufferdata_ptr_t _bufferdata;

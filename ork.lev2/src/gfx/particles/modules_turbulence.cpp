@@ -80,7 +80,7 @@ static void _reshapeTurbulenceIOs( dataflow::moduledata_ptr_t data ){
 std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
   auto data = std::make_shared<TurbulenceModuleData>();
 
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeTurbulenceIOs(data);
 
   return data;

@@ -89,7 +89,7 @@ static void _reshapeVortexIOs( dataflow::moduledata_ptr_t mdata ){
 
 std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
   auto data = std::make_shared<VortexModuleData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeVortexIOs(data);
   return data;
 }

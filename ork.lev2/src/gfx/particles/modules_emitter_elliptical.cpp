@@ -291,7 +291,7 @@ static void _reshapeEllipticalEmitterIOs(dataflow::moduledata_ptr_t data) {
 
 std::shared_ptr<EllipticalEmitterData> EllipticalEmitterData::createShared() {
   auto data = std::make_shared<EllipticalEmitterData>();
-  _initShared(data);
+  _initPoolIOs(data);
   _reshapeEllipticalEmitterIOs(data);
   return data;
 }
