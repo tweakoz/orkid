@@ -96,15 +96,16 @@ class ParticlesApp(object):
         
     self.TURB.inputs.Amount = vec3(1,1,1)*5
     
-    sizexf = self.SPRI.inputs.Size.transformer 
-    sizexf.append(floatxf.quantize(0.025))
-    sizexf.append(floatxf.scale(4.0))
-    sizexf.append(floatxf.sine())
-    sizexf.append(floatxf.abs())
-    sizexf.append(floatxf.smoothstep(0.3,0.7))
-    sizexf.append(floatxf.power(8.0))
+    SIZE = self.SPRI.inputs.Size
+    SIZEXF = SIZE.transformer 
+    SIZEXF.append(floatxf.quantize(0.025))
+    SIZEXF.append(floatxf.scale(4.0))
+    SIZEXF.append(floatxf.sine())
+    SIZEXF.append(floatxf.abs())
+    SIZEXF.append(floatxf.smoothstep(0.3,0.7))
+    SIZEXF.append(floatxf.power(8.0))
     
-    self.graphdata.connect(self.SPRI.inputs.Size,#
+    self.graphdata.connect(SIZE,#
                            self.GLOB.outputs.RelTime)
 
   ################################################

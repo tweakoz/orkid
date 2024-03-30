@@ -135,7 +135,7 @@ public:
   int _poolSize  = 16384;
   // dflow::floatxfinplugdata_ptr_t _pathInterval;
   // dflow::floatxfinplugdata_ptr_t _pathProbability;
-  particlebuf_outplugdata_ptr_t _poolOutput;
+  //particlebuf_outplugdata_ptr_t _poolOutput;
   std::string _pathStochasticQueueID;
   std::string _pathIntervalQueueID;
   Char4 _pathStochasticQueueID4;
