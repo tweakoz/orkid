@@ -333,13 +333,22 @@ struct GraphInst {
   void activate();
   void compute(ui::updatedata_ptr_t updata);
   ////////////////////////////////////////////
+  template <typename T> dgmoduleinst_ptr_t firstModuleInst() const {
+    for (auto item : _ordered_module_insts) {
+      auto pinst = std::dynamic_pointer_cast<T>(item);
+      if (pinst)
+        return pinst;
+    }
+    return nullptr;
+  }
+  ////////////////////////////////////////////
 
   graphdata_ptr_t _graphdata;
   graphinst_ptr_t _sharedThis;
   topology_ptr_t _topology;
   scheduler_ptr_t _scheduler;
 
-  std::vector<dgmoduleinst_ptr_t> _module_insts;
+  //std::vector<dgmoduleinst_ptr_t> _module_insts;
   std::unordered_map<std::string,dgmoduleinst_ptr_t> _module_inst_map;
 
   bool _inProgress;

@@ -490,10 +490,10 @@ void pyinit_dataflow(py::module& module_core) {
       py::class_<floatxfdata, ::ork::Object, floatxfdata_ptr_t>(fxfmodule, "floatxfdata")
           .def(py::init<>())
           .def("__repr__", [](floatxfdata_ptr_t p) -> std::string { return FormatString("floatxfdata(%p)", (void*)p.get()); })
-          .def("setTransform", [](floatxfdata_ptr_t p, std::string name, floatxfitembasedata_ptr_t item) { //
+          .def("set", [](floatxfdata_ptr_t p, std::string name, floatxfitembasedata_ptr_t item) { //
             p->_transforms.AddSorted(name, item);
           })
-          .def("appendTransform", [](floatxfdata_ptr_t p, floatxfitembasedata_ptr_t item) { //
+          .def("append", [](floatxfdata_ptr_t p, floatxfitembasedata_ptr_t item) { //
             char name_ch = 'A' + p->_transforms.size();
             std::string name(1, name_ch);
             p->_transforms.AddSorted(name, item);
