@@ -38,11 +38,11 @@ void MaterialBase::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 MaterialBase::MaterialBase() {
-  _vertexSetterSprite = [](sprite_vertex_writer_t& vw,      //
-                     const BasicParticle* ptc, //
-                     float fang,               //
-                     float size,               //
-                     uint32_t ucolor) {        //
+  _vertexSetterSprite = [](sprite_vertex_writer_t& vw, //
+                           const BasicParticle* ptc,   //
+                           float fang,                 //
+                           float size,                 //
+                           uint32_t ucolor) {          //
     float fage            = ptc->mfAge;
     float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
     float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
@@ -71,7 +71,7 @@ MaterialBase::MaterialBase() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
-  _pipeline->_technique = (RCID._RCFD->isStereo())                                    //
+  _pipeline->_technique = (RCID._RCFD->isStereo())                                      //
                               ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereo) //
                               : (streaks ? _tek_streaks : _tek_sprites);
   return _pipeline;
@@ -106,10 +106,10 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _material->_rasterstate.SetZWriteMask(true);
 
-  auto fxparameterIV      = _material->param("MatIV");
-  auto fxparameterMVP     = _material->param("MatMVP");
-  auto fxparameterColor   = _material->param("modcolor");
-  auto pipeline_cache     = _material->pipelineCache();
+  auto fxparameterIV    = _material->param("MatIV");
+  auto fxparameterMVP   = _material->param("MatMVP");
+  auto fxparameterColor = _material->param("modcolor");
+  auto pipeline_cache   = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
@@ -129,7 +129,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
 
-  _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
+  _tek_streaks_stereoCI = _material->technique("tflatparticle_streaks_stereoCI");
 
 #endif
 }
@@ -143,8 +143,8 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::describeX(class_t* clazz) {
   clazz->directObjectProperty("gradient", &GradientMaterial::_gradient);
-  clazz->floatProperty("colorFactor", float_range{-10,10}, &GradientMaterial::_gradientColorIntensity);
-  clazz->floatProperty("alphaFactor", float_range{-10,10}, &GradientMaterial::_gradientAlphaIntensity);
+  clazz->floatProperty("colorFactor", float_range{-10, 10}, &GradientMaterial::_gradientColorIntensity);
+  clazz->floatProperty("alphaFactor", float_range{-10, 10}, &GradientMaterial::_gradientAlphaIntensity);
   clazz->directEnumProperty("blendmode", &GradientMaterial::_blending);
   clazz->directAssetProperty("modtexture", &GradientMaterial::_modulation_texture_asset)
       ->annotate<ConstString>("editor.asset.class", "lev2tex")
@@ -154,12 +154,16 @@ void GradientMaterial::describeX(class_t* clazz) {
 GradientMaterial::GradientMaterial() {
   _color    = fvec4(1, .5, 0, 1);
   _gradient = std::make_shared<gradient_fvec4_t>();
+  _gradient->_data.clear();
+  _gradient->addDataPoint(0.0f, fvec4(1,1,1,1));
+  _gradient->addDataPoint(0.5f, fvec4(1,1,1,1));
+  _gradient->addDataPoint(1.0f, fvec4(1,1,1,1));
   /////////////////////////////////////////////////////////////////////////
-  _vertexSetterSprite = [=](sprite_vertex_writer_t& vw,      //
-                      const BasicParticle* ptc, //
-                      float fang,               //
-                      float size,               //
-                      uint32_t ucolor) {        //
+  _vertexSetterSprite = [=](sprite_vertex_writer_t& vw, //
+                            const BasicParticle* ptc,   //
+                            float fang,                 //
+                            float size,                 //
+                            uint32_t ucolor) {          //
     float fage            = ptc->mfAge;
     float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
     float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
@@ -220,13 +224,13 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
-  auto fxparameterIV                      = _material->param("MatIV");
-  auto fxparameterMVP     = _material->param("MatMVP");
-  auto fxparameterGradMap = _material->param("GradientMap");
+  auto fxparameterIV          = _material->param("MatIV");
+  auto fxparameterMVP         = _material->param("MatMVP");
+  auto fxparameterGradMap     = _material->param("GradientMap");
   auto fxparameterColorFactor = _material->param("ColorFactor");
   auto fxparameterAlphaFactor = _material->param("AlphaFactor");
-  _param_mod_texture      = _material->param("ColorMap");
-  auto pipeline_cache     = _material->pipelineCache();
+  _param_mod_texture          = _material->param("ColorMap");
+  auto pipeline_cache         = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
@@ -271,10 +275,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
 
-  _tek_streaks_stereoCI  = _material->technique("tgradparticle_streaks_stereo");
+  _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereo");
 
 #endif
-
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
@@ -293,12 +296,16 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
         0,   //
         256, //
         1);
+    _grad_render_mtl->_rasterstate.SetBlending(Blending::OFF);
     _grad_render_mtl->_rasterstate.SetRGBAWriteMask(true, true);
+    _grad_render_mtl->_rasterstate.SetZWriteMask(true);
+    _grad_render_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
+    _grad_render_mtl->_rasterstate.SetCullTest(ECullTest::OFF);
     /////////////////////////////////////////
     // ensure this operation is not stereo
     //  as that will mess up viewport settings
     /////////////////////////////////////////
-    auto& CPD = (CompositingPassData&) RCID._RCFD->topCPD();
+    auto& CPD        = (CompositingPassData&)RCID._RCFD->topCPD();
     bool prev_stereo = CPD.isStereoOnePass();
     CPD.setStereoOnePass(false);
     /////////////////////////////////////////
