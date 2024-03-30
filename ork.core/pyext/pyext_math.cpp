@@ -38,7 +38,40 @@ void pyinit_math(py::module& module_core) {
   pyinit_math_la_double(module_core);
   /////////////////////////////////////////////////////////////////////////////////
     auto curve_type = //
-      py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D");
+      py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D")
+      .def(py::init<>())
+      .def("splitSegment", [](multicurve1d_ptr_t self, int iseg) -> void { //
+        self->SplitSegment(iseg);
+      })
+      .def("mergeSegment", [](multicurve1d_ptr_t self, int ifirstseg) -> void { //
+        self->MergeSegment(ifirstseg);
+      })
+      .def("setSegmentType", [](multicurve1d_ptr_t self, int iseg, crcstring_ptr_t segtype) -> void { //
+        auto etype = MultiCurveSegmentType(segtype->hashed());
+        self->SetSegmentType(iseg, etype);
+      })
+      .def("sample", [](multicurve1d_ptr_t self, float fu) -> float { //
+        return self->Sample(fu);
+      })
+      .def("setPoint", [](multicurve1d_ptr_t self, int ipoint, float fu, float fv) -> void { //
+        self->SetPoint(ipoint, fu, fv);
+      })
+      .def_property("min", [](multicurve1d_ptr_t self) -> float { //
+        return self->mMin;
+      }, [](multicurve1d_ptr_t self, float fmin) -> void { //
+        self->SetMin(fmin);
+      })
+      .def_property("max", [](multicurve1d_ptr_t self) -> float { //
+        return self->mMax;
+      }, [](multicurve1d_ptr_t self, float fmax) -> void { //
+        self->SetMax(fmax);
+      })
+      .def_property_readonly("numSegments", [](multicurve1d_ptr_t self) -> int { //
+        return self->GetNumSegments();
+      })
+      .def_property_readonly("numVertices", [](multicurve1d_ptr_t self) -> size_t { //
+        return self->GetNumVertices();
+      });
   type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto gradient_type = //

@@ -83,21 +83,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GlobalModuleData : public ModuleData {
-  DeclareConcreteX(GlobalModuleData, ModuleData);
-
-public:
-  static std::shared_ptr<GlobalModuleData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
-
-public:
-  GlobalModuleData();
-};
-
-using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct ParticleModuleData : public ModuleData {
   DeclareAbstractX(ParticleModuleData, ModuleData);
 
@@ -119,6 +104,21 @@ struct ParticleModuleInst : public dflow::DgModuleInst {
   particlebuf_outpluginst_ptr_t _output_buffer;
   pool_ptr_t _pool;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct GlobalModuleData : public ParticleModuleData {
+  DeclareConcreteX(GlobalModuleData, ParticleModuleData);
+
+public:
+  static std::shared_ptr<GlobalModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+
+public:
+  GlobalModuleData();
+};
+
+using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

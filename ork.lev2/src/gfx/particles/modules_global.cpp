@@ -104,31 +104,28 @@ using globalmoduleinst_ptr_t = std::shared_ptr<GlobalModuleInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlobalModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return GlobalModuleData::createShared();
-  });
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 GlobalModuleData::GlobalModuleData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
-  auto data = std::make_shared<GlobalModuleData>();
-
-  auto timebase      = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeBase");
-  auto timescale     = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeScale");
-  auto reltime       = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTime");
-  auto reltimediv10  = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv10");
-  auto reltimediv100 = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv100");
+static void _reshapeGlobalIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<GlobalModuleData>(data);
+  auto timebase      = ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeBase");
+  auto timescale     = ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeScale");
+  auto reltime       = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTime");
+  auto reltimediv10  = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv10");
+  auto reltimediv100 = ModuleData::createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv100");
 
   timebase->setValue(0.0f);
   timescale->setValue(1.0f);
+}
+///////////////////////////////////////////////////////////////////////////////
 
+std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
+  auto data = std::make_shared<GlobalModuleData>();
+  _initShared(data);
+  _reshapeGlobalIOs(data);
   // DeclareFloatOutPlug(Random);
   // DeclareVect3OutPlug(RandomNormal);
   // DeclareFloatOutPlug(Noise);
@@ -141,6 +138,15 @@ std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
 
 dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<GlobalModuleInst>(this,ginst);
+}
+
+void GlobalModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return GlobalModuleData::createShared();
+  });
+  clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeGlobalIOs(mdata);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/math/spline.h>
-
+#include <ork/util/crc.h>
 #include <ork/config/config.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/reflect/enum_serializer.inl>
@@ -16,11 +16,11 @@
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
-enum class MultiCurveSegmentType {
-  LINEAR = 0,
-  BOX,
-  LOG,
-  EXP,
+enum struct MultiCurveSegmentType : crc_enum_t {
+  CrcEnum(LINEAR),
+  CrcEnum(BOX),
+  CrcEnum(LOG),
+  CrcEnum(EXP),
 };
 DeclareEnumSerializer(MultiCurveSegmentType);
 ///////////////////////////////////////////////////////////////////////////////

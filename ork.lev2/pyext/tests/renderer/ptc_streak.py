@@ -82,18 +82,7 @@ class ParticlesApp(object):
 
     self.STRK.inputs.Length = .1
     self.STRK.inputs.Width = .01
-    #self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = particles.GradientMaterial.createShared()
-    self.STRK.material.modulation_texture = Texture.load("src://effect_textures/knob2")
-    gradient = GradientV4()
-    gradient.setColorStops({
-      0.0: vec4(1,0,0,1),
-      0.25: vec4(1,0,1,1),
-      0.5: vec4(1,1,1,1),
-      1.0: vec4(0,0,0,1),
-    })
-    self.STRK.material.gradient = gradient
-    self.STRK.material.blending = tokens.ADDITIVE
+    self.STRK.material = presetMaterial1()
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)

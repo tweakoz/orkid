@@ -270,6 +270,30 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+struct modxfdata : public ork::Object {
+  DeclareConcreteX(modxfdata, ork::Object);
+
+public:
+  float _mod   = 0.0f;
+};
+using modxfdata_ptr_t = std::shared_ptr<modxfdata>;
+///////////////////////////////////////////////////////////////////////////////
+struct scalexfdata : public ork::Object {
+  DeclareConcreteX(scalexfdata, ork::Object);
+
+public:
+  float _scale   = 0.0f;
+};
+using scalexfdata_ptr_t = std::shared_ptr<scalexfdata>;
+///////////////////////////////////////////////////////////////////////////////
+struct biasxfdata : public ork::Object {
+  DeclareConcreteX(biasxfdata, ork::Object);
+
+public:
+  float _bias   = 0.0f;
+};
+using biasxfdata_ptr_t = std::shared_ptr<biasxfdata>;
+///////////////////////////////////////////////////////////////////////////////
 struct modscabiasdata : public ork::Object {
   DeclareConcreteX(modscabiasdata, ork::Object);
 
@@ -294,18 +318,106 @@ using floatxfitembasedata_ptr_t = std::shared_ptr<floatxfitembasedata>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct floatxfmsbcurvedata : public floatxfitembasedata {
-  DeclareConcreteX(floatxfmsbcurvedata, floatxfitembasedata);
+struct floatxfmoddata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfmoddata, floatxfitembasedata);
 
 public:
-  floatxfmsbcurvedata();
+  floatxfmoddata();
+  float transform(float input) const final; // virtual
+
+  modxfdata_ptr_t _moddata;
+  bool _domod        = true;
+};
+
+using floatxfmoddata_ptr_t = std::shared_ptr<floatxfmoddata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfscaledata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfscaledata, floatxfitembasedata);
+
+public:
+  floatxfscaledata();
+  float transform(float input) const final; // virtual
+
+  scalexfdata_ptr_t _scaledata;
+  bool _doscale        = true;
+};
+
+using floatxfscaledata_ptr_t = std::shared_ptr<floatxfscaledata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfbiasdata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfbiasdata, floatxfitembasedata);
+
+public:
+  floatxfbiasdata();
+  float transform(float input) const final; // virtual
+
+  biasxfdata_ptr_t _biasdata;
+  bool _dobias        = true;
+};
+
+using floatxfbiasdata_ptr_t = std::shared_ptr<floatxfbiasdata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfsinedata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfsinedata, floatxfitembasedata);
+
+public:
+  floatxfsinedata();
+  float transform(float input) const final; // virtual
+
+  bool _dosine        = true;
+};
+
+using floatxfsinedata_ptr_t = std::shared_ptr<floatxfsinedata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfpowdata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfpowdata, floatxfitembasedata);
+
+public:
+  floatxfpowdata();
+  float transform(float input) const final; // virtual
+
+  float _power       = 1.0f;
+  bool _dopow        = true;
+};
+
+using floatxfpowdata_ptr_t = std::shared_ptr<floatxfpowdata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfabsdata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfabsdata, floatxfitembasedata);
+
+public:
+  floatxfabsdata();
+  float transform(float input) const final; // virtual
+
+  bool _doabs        = true;
+};
+
+using floatxfabsdata_ptr_t = std::shared_ptr<floatxfabsdata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfcurvedata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfcurvedata, floatxfitembasedata);
+
+public:
+  floatxfcurvedata();
   float transform(float input) const final; // virtual
 
   multicurve1d_ptr_t _multicurve;
-  modscabiasdata_ptr_t _modscalebias;
-  bool _domodscalebias = false;
-  bool _docurve        = false;
+  bool _docurve        = true;
 };
+
+using floatxfcurvedata_ptr_t = std::shared_ptr<floatxfcurvedata>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

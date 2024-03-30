@@ -40,7 +40,8 @@ void pyinit_dataflow(py::module& module_core) {
                 auto m         = proxy->_module;
                 auto input     = m->inputNamed(key);
                 auto clazzname = input->objectClass()->Name();
-                if(0)printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
+                if (0)
+                  printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
                 if (input) {
                   return type_codec->encode(input);
                 }
@@ -49,8 +50,8 @@ void pyinit_dataflow(py::module& module_core) {
           .def(
               "__setattr__",                                                             //
               [type_codec](input_proxy_ptr_t proxy, std::string key, py::object value) { //
-                auto m         = proxy->_module;
-                auto input     = m->inputNamed(key);
+                auto m     = proxy->_module;
+                auto input = m->inputNamed(key);
                 OrkAssert(input);
                 auto decoded_value = type_codec->decode(value);
 
@@ -147,7 +148,7 @@ void pyinit_dataflow(py::module& module_core) {
               });
   /////////////////////////////////////////////////////////////////////////////
   using moduledata_ptr_t = std::shared_ptr<ModuleData>;
-  auto moduledata_type = //
+  auto moduledata_type   = //
       py::class_<ModuleData, ork::Object, moduledata_ptr_t>(dfgmodule, "ModuleData")
           .def_property_readonly(
               "numInputs",
@@ -291,20 +292,180 @@ void pyinit_dataflow(py::module& module_core) {
           });
   type_codec->registerStdCodec<pylambdamoduledata_ptr_t>(pylambdamoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto floatxfitembasedata_type = //
+      py::class_<floatxfitembasedata, ::ork::Object, floatxfitembasedata_ptr_t>(dfgmodule, "floatxfitembasedata")
+          .def("__repr__", [](floatxfitembasedata_ptr_t p) -> std::string {
+            return FormatString("floatxfitembasedata(%p)", (void*)p.get());
+          });
+  type_codec->registerStdCodec<floatxfitembasedata_ptr_t>(floatxfitembasedata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto modscabiasdata_type = //
+      py::class_<modscabiasdata, ::ork::Object, modscabiasdata_ptr_t>(dfgmodule, "modscabiasdata")
+          .def("__repr__", [](modscabiasdata_ptr_t p) -> std::string { return FormatString("modscabiasdata(%p)", (void*)p.get()); })
+          .def_property(
+              "scale",
+              [](modscabiasdata_ptr_t p) -> float { return p->_scale; }, //
+              [](modscabiasdata_ptr_t p, float val) { p->_scale = val; })
+          .def_property(
+              "bias",
+              [](modscabiasdata_ptr_t p) -> float { return p->_bias; },
+              [](modscabiasdata_ptr_t p, float val) { p->_bias = val; })
+          .def_property(
+              "mod",
+              [](modscabiasdata_ptr_t p) -> float { return p->_mod; },
+              [](modscabiasdata_ptr_t p, float val) { p->_mod = val; });
+  type_codec->registerStdCodec<modscabiasdata_ptr_t>(modscabiasdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfmoddata_type = //
+      py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(dfgmodule, "floatxfmoddata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfmoddata_ptr_t p) -> std::string { return FormatString("floatxfmoddata(%p)", (void*)p.get()); })
+          .def_property(
+              "mod",
+              [](floatxfmoddata_ptr_t p) -> float { return p->_moddata->_mod; }, //
+              [](floatxfmoddata_ptr_t p, float mod) { p->_moddata->_mod = mod; })
+          .def_property(
+              "do_mod",
+              [](floatxfmoddata_ptr_t p) -> bool { return p->_domod; }, //
+              [](floatxfmoddata_ptr_t p, bool val) { p->_domod = val; });
+  type_codec->registerStdCodec<floatxfmoddata_ptr_t>(floatxfmoddata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfscaledata_type = //
+      py::class_<floatxfscaledata, floatxfitembasedata, floatxfscaledata_ptr_t>(dfgmodule, "floatxfscaledata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfscaledata_ptr_t p) -> std::string { return FormatString("floatxfscaledata(%p)", (void*)p.get()); })
+          .def_property(
+              "scale",
+              [](floatxfscaledata_ptr_t p) -> float { return p->_scaledata->_scale; }, //
+              [](floatxfscaledata_ptr_t p, float scale) { p->_scaledata->_scale = scale; })
+          .def_property(
+              "do_scale",
+              [](floatxfscaledata_ptr_t p) -> bool { return p->_doscale; }, //
+              [](floatxfscaledata_ptr_t p, bool val) { p->_doscale = val; });
+  type_codec->registerStdCodec<floatxfscaledata_ptr_t>(floatxfscaledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfbiasdata_type = //
+      py::class_<floatxfbiasdata, floatxfitembasedata, floatxfbiasdata_ptr_t>(dfgmodule, "floatxfbiasdata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfbiasdata_ptr_t p) -> std::string { return FormatString("floatxfbiasdata(%p)", (void*)p.get()); })
+          .def_property(
+              "bias",
+              [](floatxfbiasdata_ptr_t p) -> float { return p->_biasdata->_bias; }, //
+              [](floatxfbiasdata_ptr_t p, float bias) { p->_biasdata->_bias = bias; })
+          .def_property(
+              "do_bias",
+              [](floatxfbiasdata_ptr_t p) -> bool { return p->_dobias; }, //
+              [](floatxfbiasdata_ptr_t p, bool val) { p->_dobias = val; });
+  type_codec->registerStdCodec<floatxfbiasdata_ptr_t>(floatxfbiasdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfsinedata_type = //
+      py::class_<floatxfsinedata, floatxfitembasedata, floatxfsinedata_ptr_t>(dfgmodule, "floatxfsinedata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfsinedata_ptr_t p) -> std::string { return FormatString("floatxfsinedata(%p)", (void*)p.get()); })
+          .def_property(
+              "do_sine",
+              [](floatxfsinedata_ptr_t p) -> bool { return p->_dosine; }, //
+              [](floatxfsinedata_ptr_t p, bool val) { p->_dosine = val; });
+  type_codec->registerStdCodec<floatxfsinedata_ptr_t>(floatxfsinedata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfabsdata_type = //
+      py::class_<floatxfabsdata, floatxfitembasedata, floatxfabsdata_ptr_t>(dfgmodule, "floatxfabsdata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfabsdata_ptr_t p) -> std::string { return FormatString("floatxfabsdata(%p)", (void*)p.get()); })
+          .def_property(
+              "do_abs",
+              [](floatxfabsdata_ptr_t p) -> bool { return p->_doabs; }, //
+              [](floatxfabsdata_ptr_t p, bool val) { p->_doabs = val; });
+  type_codec->registerStdCodec<floatxfabsdata_ptr_t>(floatxfabsdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfpowdata_type = //
+      py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(dfgmodule, "floatxfpowdata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfpowdata_ptr_t p) -> std::string { return FormatString("floatxfpowdata(%p)", (void*)p.get()); })
+          .def_property(
+              "do_pow",
+              [](floatxfpowdata_ptr_t p) -> bool { return p->_dopow; }, //
+              [](floatxfpowdata_ptr_t p, bool val) { p->_dopow = val; })
+          .def_property(
+              "power",
+              [](floatxfpowdata_ptr_t p) -> float { return p->_power; }, //
+              [](floatxfpowdata_ptr_t p, float val) { p->_power = val; });
+  type_codec->registerStdCodec<floatxfpowdata_ptr_t>(floatxfpowdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfcurvedata_type = //
+      py::class_<floatxfcurvedata, floatxfitembasedata, floatxfcurvedata_ptr_t>(dfgmodule, "floatxfcurvedata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfcurvedata_ptr_t p) -> std::string { return FormatString("floatxfcurvedata(%p)", (void*)p.get()); })
+          .def_property(
+              "multicurve",
+              [](floatxfcurvedata_ptr_t p) -> multicurve1d_ptr_t { return p->_multicurve; }, //
+              [](floatxfcurvedata_ptr_t p, multicurve1d_ptr_t curve) { p->_multicurve = curve; })
+          .def_property(
+              "do_curve",
+              [](floatxfcurvedata_ptr_t p) -> bool { return p->_docurve; }, //
+              [](floatxfcurvedata_ptr_t p, bool val) { p->_docurve = val; });
+  type_codec->registerStdCodec<floatxfcurvedata_ptr_t>(floatxfcurvedata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfdata_type = //
+      py::class_<floatxfdata, ::ork::Object, floatxfdata_ptr_t>(dfgmodule, "floatxfdata")
+          .def(py::init<>())
+          .def("__repr__", [](floatxfdata_ptr_t p) -> std::string { return FormatString("floatxfdata(%p)", (void*)p.get()); })
+          .def("addTransform", [](floatxfdata_ptr_t p, std::string name, floatxfitembasedata_ptr_t item) { //
+            p->_transforms.AddSorted(name, item);
+          });
+  type_codec->registerStdCodec<floatxfdata_ptr_t>(floatxfdata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto inplugdata_type = //
-      py::class_<InPlugData, ::ork::Object, inplugdata_ptr_t>(dfgmodule, "InPlugData").def("__repr__", [](inplugdata_ptr_t p) -> std::string {
-        auto clazz     = p->objectClass();
-        auto clazzname = clazz->Name();
-        return FormatString("InPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
-      });
+      py::class_<InPlugData, ::ork::Object, inplugdata_ptr_t>(dfgmodule, "InPlugData")
+          .def("__repr__", [](inplugdata_ptr_t p) -> std::string {
+            auto clazz     = p->objectClass();
+            auto clazzname = clazz->Name();
+            return FormatString("InPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
+          });
   type_codec->registerStdCodec<inplugdata_ptr_t>(inplugdata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto floatxfinplugdata_type = //
+      py::class_<floatxfinplugdata_t, InPlugData, floatxfinplugdata_ptr_t>(dfgmodule, "FloatXfInPlugData")
+          //.def(py::init<moduledata_ptr_t, EPlugRate, const char*>())
+          .def(
+              "__repr__",
+              [](floatxfinplugdata_ptr_t p) -> std::string {
+                auto clazz     = p->objectClass();
+                auto clazzname = clazz->Name();
+                return FormatString("FloatXfInPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
+              })
+          .def_property(
+              "transformer",
+              [](floatxfinplugdata_ptr_t p) -> object_ptr_t { //
+                return p->_transformer;
+              },
+              [](floatxfinplugdata_ptr_t p, object_ptr_t transformer) { //
+                p->_transformer = transformer;
+              });
+  type_codec->registerStdCodec<floatxfinplugdata_ptr_t>(floatxfinplugdata_type);
+
+  /////////////////////////////////////////////////////////////////////////////
   auto outplugdata_type = //
-      py::class_<OutPlugData, ::ork::Object, outplugdata_ptr_t>(dfgmodule, "OutPlugData").def("__repr__", [](outplugdata_ptr_t p) -> std::string {
-        auto clazz     = p->objectClass();
-        auto clazzname = clazz->Name();
-        return FormatString("OutPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
-      });
+      py::class_<OutPlugData, ::ork::Object, outplugdata_ptr_t>(dfgmodule, "OutPlugData")
+          .def("__repr__", [](outplugdata_ptr_t p) -> std::string {
+            auto clazz     = p->objectClass();
+            auto clazzname = clazz->Name();
+            return FormatString("OutPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
+          });
   type_codec->registerStdCodec<outplugdata_ptr_t>(outplugdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto graphdata_type = //
@@ -318,9 +479,11 @@ void pyinit_dataflow(py::module& module_core) {
           ///////////////////////////////
           .def("addModule", [](graphdata_ptr_t g, dgmoduledata_ptr_t m, std::string named) { GraphData::addModule(g, named, m); })
           ///////////////////////////////
-          .def("findModule", [](graphdata_ptr_t g, std::string named) -> dgmoduledata_ptr_t { // 
-            return g->module(named);
-          })
+          .def(
+              "findModule",
+              [](graphdata_ptr_t g, std::string named) -> dgmoduledata_ptr_t { //
+                return g->module(named);
+              })
           ///////////////////////////////
           ///////////////////////////////
           .def(

@@ -60,6 +60,7 @@ class ParticlesApp(object):
     ###################################
 
     ptc_data = {
+      "GLOB":particles.Globals,
       "POOL":particles.Pool,
       "EMITN":particles.NozzleEmitter,
       "EMITR":particles.RingEmitter,
@@ -78,6 +79,10 @@ class ParticlesApp(object):
       ("VORT","SPRI"),
     ]
     createParticleData(self,ptc_data,ptc_connections)
+
+    print(self.GLOB)
+    #assert(False)
+
     self.POOL.pool_size = 16384 # max number of particles in pool
 
     self.SPRI.inputs.Size = 0.05
@@ -91,7 +96,42 @@ class ParticlesApp(object):
     presetVORT1(self.VORT)
     presetGRAV1(self.GRAV)
     
+    
     self.TURB.inputs.Amount = vec3(1,1,1)*5
+
+    xf_size_curve = dataflow.floatxfcurvedata()
+    xf_size_curve.multicurve.splitSegment(0)
+    xf_size_curve.multicurve.setPoint(0,0,0)
+    xf_size_curve.multicurve.setPoint(1,0.5,0.25)
+    xf_size_curve.multicurve.setPoint(2,1,0)
+    
+    xf_mod = dataflow.floatxfmoddata()
+    xf_mod.mod = 1.0
+
+    xf_bias = dataflow.floatxfbiasdata()
+    xf_bias.bias = 0.25
+
+    xf_sine = dataflow.floatxfsinedata()
+
+    #size_curve.do_modscalebias = True
+    #size_curve.modscalebias.mod = 1
+    #size_curve.modscalebias.scale = 1
+    #size_curve.modscalebias.bias = 0
+    
+
+    self.SPRI.inputs.Size.transformer.addTransform("a_mod",xf_mod)
+    self.SPRI.inputs.Size.transformer.addTransform("b_curve",xf_size_curve)
+    self.SPRI.inputs.Size.transformer.addTransform("c_bias",xf_bias)
+    self.SPRI.inputs.Size.transformer.addTransform("d_sine",xf_sine)
+    
+    self.graphdata.connect(self.SPRI.inputs.Size,#
+                           self.GLOB.outputs.RelTime)
+
+    ##################
+    # create particle sg node
+    ##################
+
+
 
   ################################################
 

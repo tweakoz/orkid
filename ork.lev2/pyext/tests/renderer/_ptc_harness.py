@@ -19,6 +19,27 @@ tokens = CrcStringProxy()
 
 ################################################
 
+def presetGRAD1():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(1,0,0,1),
+    0.25: vec4(1,0,1,1),
+    0.5: vec4(1,1,1,1),
+    1.0: vec4(0,0,0,1),
+  })
+  return gradient  
+
+################################################
+
+def presetMaterial1():
+  material = particles.GradientMaterial.createShared()
+  material.modulation_texture = Texture.load("src://effect_textures/knob2")
+  material.gradient = presetGRAD1()
+  material.blending = tokens.ADDITIVE
+  return material
+
+################################################
+
 def presetTURB1(turbulence):
   turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
 

@@ -295,6 +295,15 @@ void quatinplugdata::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+void modxfdata::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modxfdata::_mod);
+}
+void scalexfdata::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("scale", float_range{-1600.0f, 1600.0f}, &scalexfdata::_scale);
+}
+void biasxfdata::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("bias", float_range{-1600.0f, 1600.0f}, &biasxfdata::_bias);
+}
 void modscabiasdata::describeX(object::ObjectClass* clazz) {
   clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabiasdata::_mod);
   clazz->floatProperty("scale", float_range{-1600.0f, 1600.0f}, &modscabiasdata::_scale);
@@ -303,29 +312,141 @@ void modscabiasdata::describeX(object::ObjectClass* clazz) {
 void floatxfitembasedata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxfmsbcurvedata::describeX(object::ObjectClass* clazz) {
-  clazz->directObjectProperty("ModScaleBias", &floatxfmsbcurvedata::_modscalebias);
-  clazz->directObjectProperty("Curve", &floatxfmsbcurvedata::_multicurve);
-  clazz->directProperty("do_modscabia", &floatxfmsbcurvedata::_domodscalebias);
-  clazz->directProperty("do_curve", &floatxfmsbcurvedata::_docurve);
+void floatxfmoddata::describeX(object::ObjectClass* clazz) {
+  clazz->directObjectProperty("mod", &floatxfmoddata::_moddata);
+  clazz->directProperty("do_mod", &floatxfmoddata::_domod);
 
   clazz->annotateTyped<ConstString>("editor.prop.groups", //
-                                    "sort:// do_modscabia do_curve ModScaleBias Curve" );
+                                    "sort:// do_mod mod" );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-floatxfmsbcurvedata::floatxfmsbcurvedata(){
-  _multicurve = std::make_shared<MultiCurve1D>();
-  _modscalebias = std::make_shared<modscabiasdata>();
+floatxfmoddata::floatxfmoddata(){
+  _moddata = std::make_shared<modxfdata>();
 }
 ///////////////////////////////////////////////////////////////////////////////
-float floatxfmsbcurvedata::transform(float input) const {
-  if (_domodscalebias || _docurve) {
+float floatxfmoddata::transform(float input) const {
+  if (_moddata and _domod) {
+    return fmod(input,_moddata->_mod);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfscaledata::floatxfscaledata(){
+  _scaledata = std::make_shared<scalexfdata>();
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfscaledata::transform(float input) const {
+  if (_scaledata and _doscale) {
+    return input*_scaledata->_scale;
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfbiasdata::floatxfbiasdata(){
+  _biasdata = std::make_shared<biasxfdata>();
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfbiasdata::transform(float input) const {
+  if (_biasdata and _dobias) {
+    return input+_biasdata->_bias;
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfsinedata::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("do_sine", &floatxfsinedata::_dosine);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_sine" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfsinedata::floatxfsinedata(){
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfsinedata::transform(float input) const {
+  if (_dosine) {
+    return sinf(input);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfabsdata::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("do_abs", &floatxfabsdata::_doabs);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_abs" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfabsdata::floatxfabsdata(){
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfabsdata::transform(float input) const {
+  if (_doabs) {
+    return fabs(input);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfpowdata::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("do_pow", &floatxfpowdata::_dopow);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_abs" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfpowdata::floatxfpowdata(){
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfpowdata::transform(float input) const {
+  if (_dopow) {
+    return powf(input,_power);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfscaledata::describeX(object::ObjectClass* clazz) {
+  clazz->directObjectProperty("scale", &floatxfscaledata::_scaledata);
+  clazz->directProperty("do_scale", &floatxfscaledata::_doscale);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_scale scale" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfbiasdata::describeX(object::ObjectClass* clazz) {
+  clazz->directObjectProperty("bias", &floatxfbiasdata::_biasdata);
+  clazz->directProperty("do_bias", &floatxfbiasdata::_dobias);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_bias bias" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfcurvedata::describeX(object::ObjectClass* clazz) {
+  clazz->directObjectProperty("Curve", &floatxfcurvedata::_multicurve);
+  clazz->directProperty("do_curve", &floatxfcurvedata::_docurve);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_curve Curve" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfcurvedata::floatxfcurvedata(){
+  _multicurve = std::make_shared<MultiCurve1D>();
+  //_modscalebias = std::make_shared<modscabiasdata>();
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfcurvedata::transform(float input) const {
+  /*if (_docurve) {
     input = (_modscalebias->_mod > 0.0f) ? fmodf(input, _modscalebias->_mod) : input;
     float fsca    = (_modscalebias->_scale * input);
     float biasout = fsca + _modscalebias->_bias;
     input         = biasout;
-  }
+  }*/
   if (_docurve) {
     float clampout = (input < 0.0f) ? 0.0f : (input > 1.0f) ? 1.0f : input;
     input          = _multicurve->Sample(clampout);
@@ -463,10 +584,21 @@ ImplementReflectionX(dflow::OutPlugData, "dflow::outplugdata");
 ImplementReflectionX(dflow::floatxfdata, "dflow::floatxfdata");
 ImplementReflectionX(dflow::fvec3xfdata, "dflow::fvec3xfdata");
 ImplementReflectionX(dflow::fquatxfdata, "dflow::fquatxfdata");
+ImplementReflectionX(dflow::modxfdata, "dflow::modxfdata");
+ImplementReflectionX(dflow::scalexfdata, "dflow::scalexfdata");
+ImplementReflectionX(dflow::biasxfdata, "dflow::biasxfdata");
 ImplementReflectionX(dflow::modscabiasdata, "dflow::modscabiasdata");
+
 ImplementReflectionX(dflow::floatxfitembasedata, "dflow::floatxfitembasedata");
 ImplementReflectionX(dflow::floatxfmodstepdata, "dflow::floatxfmodstepdata");
-ImplementReflectionX(dflow::floatxfmsbcurvedata, "dflow::floatxfmsbcurvedata");
+
+ImplementReflectionX(dflow::floatxfmoddata, "dflow::floatxfmoddata");
+ImplementReflectionX(dflow::floatxfscaledata, "dflow::floatxfscaledata");
+ImplementReflectionX(dflow::floatxfbiasdata, "dflow::floatxfbiasdata");
+ImplementReflectionX(dflow::floatxfsinedata, "dflow::floatxfsinedata");
+ImplementReflectionX(dflow::floatxfabsdata, "dflow::floatxfabsdata");
+ImplementReflectionX(dflow::floatxfpowdata, "dflow::floatxfpowdata");
+ImplementReflectionX(dflow::floatxfcurvedata, "dflow::floatxfcurvedata");
 
 ImplementReflectionX(dflow::floatinplugdata, "dflow::floatinplugdata");
 ImplementReflectionX(dflow::vect3inplugdata, "dflow::vect3inplugdata");

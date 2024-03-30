@@ -60,6 +60,7 @@ class ParticlesApp(object):
     ###################################
 
     ptc_data = {
+      "GLOB":particles.Globals,
       "POOL":particles.Pool,
       "EMITN":particles.NozzleEmitter,
       "EMITR":particles.RingEmitter,
@@ -78,6 +79,10 @@ class ParticlesApp(object):
       ("VORT","SPRI"),
     ]
     createParticleData(self,ptc_data,ptc_connections)
+
+    print(self.GLOB)
+    #assert(False)
+
     self.POOL.pool_size = 16384 # max number of particles in pool
 
     self.SPRI.inputs.Size = 0.05
@@ -90,8 +95,30 @@ class ParticlesApp(object):
     presetTURB1(self.TURB)
     presetVORT1(self.VORT)
     presetGRAV1(self.GRAV)
-    
+        
     self.TURB.inputs.Amount = vec3(1,1,1)*5
+    
+    xf_scale = dataflow.floatxfscaledata()
+    xf_scale.scale = 4.0
+
+    xf_sine = dataflow.floatxfsinedata()
+    xf_abs = dataflow.floatxfabsdata()
+    xf_pow = dataflow.floatxfpowdata()
+    xf_pow.power = 8.0
+
+    self.SPRI.inputs.Size.transformer.addTransform("a_scale",xf_scale)
+    self.SPRI.inputs.Size.transformer.addTransform("b_sine",xf_sine)
+    self.SPRI.inputs.Size.transformer.addTransform("c_abs",xf_abs)
+    self.SPRI.inputs.Size.transformer.addTransform("d_power",xf_pow)
+    
+    self.graphdata.connect(self.SPRI.inputs.Size,#
+                           self.GLOB.outputs.RelTime)
+
+    ##################
+    # create particle sg node
+    ##################
+
+
 
   ################################################
 
