@@ -22,9 +22,7 @@ from _ptc_harness import *
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
-
 args = vars(parser.parse_args())
-
 ################################################################################
 
 class ParticlesApp(object):
@@ -98,23 +96,16 @@ class ParticlesApp(object):
         
     self.TURB.inputs.Amount = vec3(1,1,1)*5
     
-    sizexf = self.SPRI.inputs.Size.transformer    
-    sizexf.addTransform("a_quant",dataflow.floatxfquantizedata(0.025))
-    sizexf.addTransform("b_scale",dataflow.floatxfscaledata(4.0))
-    sizexf.addTransform("c_sine",dataflow.floatxfsinedata())
-    sizexf.addTransform("d_abs",dataflow.floatxfabsdata())
-    sizexf.addTransform("e_smstep",dataflow.floatxfsmoothstepdata(0.3,0.7))
-    sizexf.addTransform("f_power",dataflow.floatxfpowdata(8.0))
-    
+    sizexf = self.SPRI.inputs.Size.transformer 
+    sizexf.appendTransform(floatxf.quantize(0.025))
+    sizexf.appendTransform(floatxf.scale(4.0))
+    sizexf.appendTransform(floatxf.sine())
+    sizexf.appendTransform(floatxf.abs())
+    sizexf.appendTransform(floatxf.smoothstep(0.3,0.7))
+    sizexf.appendTransform(floatxf.power(8.0))
     
     self.graphdata.connect(self.SPRI.inputs.Size,#
                            self.GLOB.outputs.RelTime)
-
-    ##################
-    # create particle sg node
-    ##################
-
-
 
   ################################################
 

@@ -93,12 +93,6 @@ class ParticlesApp(object):
     
     self.TURB.inputs.Amount = vec3(1,1,1)*5
 
-    ##################
-    # create particle sg node
-    ##################
-
-
-
   ################################################
 
   def onUpdate(self,updinfo):

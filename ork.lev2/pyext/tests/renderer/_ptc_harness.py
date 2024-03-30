@@ -17,6 +17,8 @@ from common.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 
+floatxf = dataflow.floatxf   
+
 ################################################
 
 def presetGRAD1():

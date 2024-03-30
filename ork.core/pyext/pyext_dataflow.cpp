@@ -292,15 +292,16 @@ void pyinit_dataflow(py::module& module_core) {
           });
   type_codec->registerStdCodec<pylambdamoduledata_ptr_t>(pylambdamoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto fxfmodule  = dfgmodule.def_submodule("floatxf", "float input plug transform operators");
   auto floatxfitembasedata_type = //
-      py::class_<floatxfitembasedata, ::ork::Object, floatxfitembasedata_ptr_t>(dfgmodule, "floatxfitembasedata")
+      py::class_<floatxfitembasedata, ::ork::Object, floatxfitembasedata_ptr_t>(fxfmodule, "floatxfitembasedata")
           .def("__repr__", [](floatxfitembasedata_ptr_t p) -> std::string {
             return FormatString("floatxfitembasedata(%p)", (void*)p.get());
           });
   type_codec->registerStdCodec<floatxfitembasedata_ptr_t>(floatxfitembasedata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto modscabiasdata_type = //
-      py::class_<modscabiasdata, ::ork::Object, modscabiasdata_ptr_t>(dfgmodule, "modscabiasdata")
+      py::class_<modscabiasdata, ::ork::Object, modscabiasdata_ptr_t>(fxfmodule, "modscabiasdata")
           .def("__repr__", [](modscabiasdata_ptr_t p) -> std::string { return FormatString("modscabiasdata(%p)", (void*)p.get()); })
           .def_property(
               "scale",
@@ -317,7 +318,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<modscabiasdata_ptr_t>(modscabiasdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfmoddata_type = //
-      py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(dfgmodule, "floatxfmoddata")
+      py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(fxfmodule, "floatxfmoddata")
           .def(py::init<>())
           .def(py::init([](float mod) {
             auto rval = std::make_shared<floatxfmoddata>();
@@ -336,7 +337,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfmoddata_ptr_t>(floatxfmoddata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfscaledata_type = //
-      py::class_<floatxfscaledata, floatxfitembasedata, floatxfscaledata_ptr_t>(dfgmodule, "floatxfscaledata")
+      py::class_<floatxfscaledata, floatxfitembasedata, floatxfscaledata_ptr_t>(fxfmodule, "scale")
           .def(py::init<>())
           .def(py::init([](float scale) {
             auto rval = std::make_shared<floatxfscaledata>();
@@ -357,7 +358,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfscaledata_ptr_t>(floatxfscaledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfbiasdata_type = //
-      py::class_<floatxfbiasdata, floatxfitembasedata, floatxfbiasdata_ptr_t>(dfgmodule, "floatxfbiasdata")
+      py::class_<floatxfbiasdata, floatxfitembasedata, floatxfbiasdata_ptr_t>(fxfmodule, "bias")
           .def(py::init<>())
           .def(py::init([](float bias) {
             auto rval = std::make_shared<floatxfbiasdata>();
@@ -378,7 +379,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfbiasdata_ptr_t>(floatxfbiasdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfsinedata_type = //
-      py::class_<floatxfsinedata, floatxfitembasedata, floatxfsinedata_ptr_t>(dfgmodule, "floatxfsinedata")
+      py::class_<floatxfsinedata, floatxfitembasedata, floatxfsinedata_ptr_t>(fxfmodule, "sine")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -390,7 +391,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfsinedata_ptr_t>(floatxfsinedata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfabsdata_type = //
-      py::class_<floatxfabsdata, floatxfitembasedata, floatxfabsdata_ptr_t>(dfgmodule, "floatxfabsdata")
+      py::class_<floatxfabsdata, floatxfitembasedata, floatxfabsdata_ptr_t>(fxfmodule, "abs")
           .def(py::init<>())
           .def("__repr__", [](floatxfabsdata_ptr_t p) -> std::string { return FormatString("floatxfabsdata(%p)", (void*)p.get()); })
           .def_property(
@@ -400,7 +401,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfabsdata_ptr_t>(floatxfabsdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfsmoothstepdata_type = //
-      py::class_<floatxfsmoothstepdata, floatxfitembasedata, floatxfsmoothstepdata_ptr_t>(dfgmodule, "floatxfsmoothstepdata")
+      py::class_<floatxfsmoothstepdata, floatxfitembasedata, floatxfsmoothstepdata_ptr_t>(fxfmodule, "smoothstep")
           .def(py::init<>())
           .def(py::init([](float edge0, float edge1) {
             auto rval = std::make_shared<floatxfsmoothstepdata>();
@@ -428,7 +429,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfsmoothstepdata_ptr_t>(floatxfsmoothstepdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfquantizedata_type = //
-      py::class_<floatxfquantizedata, floatxfitembasedata, floatxfquantizedata_ptr_t>(dfgmodule, "floatxfquantizedata")
+      py::class_<floatxfquantizedata, floatxfitembasedata, floatxfquantizedata_ptr_t>(fxfmodule, "quantize")
           .def(py::init<>())
           .def(py::init([](float quantization) {
             auto rval = std::make_shared<floatxfquantizedata>();
@@ -451,7 +452,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfquantizedata_ptr_t>(floatxfquantizedata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfpowdata_type = //
-      py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(dfgmodule, "floatxfpowdata")
+      py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(fxfmodule, "power")
           .def(py::init<>())
           .def(py::init([](float power) {
             auto rval = std::make_shared<floatxfpowdata>();
@@ -470,7 +471,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfpowdata_ptr_t>(floatxfpowdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfcurvedata_type = //
-      py::class_<floatxfcurvedata, floatxfitembasedata, floatxfcurvedata_ptr_t>(dfgmodule, "floatxfcurvedata")
+      py::class_<floatxfcurvedata, floatxfitembasedata, floatxfcurvedata_ptr_t>(fxfmodule, "multicurve")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -486,10 +487,15 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<floatxfcurvedata_ptr_t>(floatxfcurvedata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfdata_type = //
-      py::class_<floatxfdata, ::ork::Object, floatxfdata_ptr_t>(dfgmodule, "floatxfdata")
+      py::class_<floatxfdata, ::ork::Object, floatxfdata_ptr_t>(fxfmodule, "floatxfdata")
           .def(py::init<>())
           .def("__repr__", [](floatxfdata_ptr_t p) -> std::string { return FormatString("floatxfdata(%p)", (void*)p.get()); })
-          .def("addTransform", [](floatxfdata_ptr_t p, std::string name, floatxfitembasedata_ptr_t item) { //
+          .def("setTransform", [](floatxfdata_ptr_t p, std::string name, floatxfitembasedata_ptr_t item) { //
+            p->_transforms.AddSorted(name, item);
+          })
+          .def("appendTransform", [](floatxfdata_ptr_t p, floatxfitembasedata_ptr_t item) { //
+            char name_ch = 'A' + p->_transforms.size();
+            std::string name(1, name_ch);
             p->_transforms.AddSorted(name, item);
           });
   type_codec->registerStdCodec<floatxfdata_ptr_t>(floatxfdata_type);
