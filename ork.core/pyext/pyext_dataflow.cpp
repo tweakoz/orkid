@@ -319,9 +319,7 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfmoddata_type = //
       py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(dfgmodule, "floatxfmoddata")
           .def(py::init<>())
-          .def(
-              "__repr__",
-              [](floatxfmoddata_ptr_t p) -> std::string { return FormatString("floatxfmoddata(%p)", (void*)p.get()); })
+          .def("__repr__", [](floatxfmoddata_ptr_t p) -> std::string { return FormatString("floatxfmoddata(%p)", (void*)p.get()); })
           .def_property(
               "mod",
               [](floatxfmoddata_ptr_t p) -> float { return p->_moddata->_mod; }, //
@@ -379,21 +377,57 @@ void pyinit_dataflow(py::module& module_core) {
   auto floatxfabsdata_type = //
       py::class_<floatxfabsdata, floatxfitembasedata, floatxfabsdata_ptr_t>(dfgmodule, "floatxfabsdata")
           .def(py::init<>())
-          .def(
-              "__repr__",
-              [](floatxfabsdata_ptr_t p) -> std::string { return FormatString("floatxfabsdata(%p)", (void*)p.get()); })
+          .def("__repr__", [](floatxfabsdata_ptr_t p) -> std::string { return FormatString("floatxfabsdata(%p)", (void*)p.get()); })
           .def_property(
               "do_abs",
               [](floatxfabsdata_ptr_t p) -> bool { return p->_doabs; }, //
               [](floatxfabsdata_ptr_t p, bool val) { p->_doabs = val; });
   type_codec->registerStdCodec<floatxfabsdata_ptr_t>(floatxfabsdata_type);
   /////////////////////////////////////////////////////////////////////////////
-  auto floatxfpowdata_type = //
-      py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(dfgmodule, "floatxfpowdata")
+  auto floatxfsmoothstepdata_type = //
+      py::class_<floatxfsmoothstepdata, floatxfitembasedata, floatxfsmoothstepdata_ptr_t>(dfgmodule, "floatxfsmoothstepdata")
           .def(py::init<>())
           .def(
               "__repr__",
-              [](floatxfpowdata_ptr_t p) -> std::string { return FormatString("floatxfpowdata(%p)", (void*)p.get()); })
+              [](floatxfsmoothstepdata_ptr_t p) -> std::string {
+                return FormatString("floatxfsmoothstepdata(%p)", (void*)p.get());
+              })
+          .def_property(
+              "do_smoothstep",
+              [](floatxfsmoothstepdata_ptr_t p) -> bool { return p->_dosmoothstep; }, //
+              [](floatxfsmoothstepdata_ptr_t p, bool val) { p->_dosmoothstep = val; })
+          .def_property(
+              "edge0",
+              [](floatxfsmoothstepdata_ptr_t p) -> float { return p->_edge0; }, //
+              [](floatxfsmoothstepdata_ptr_t p, float val) { p->_edge0 = val; })
+          .def_property(
+              "edge1",
+              [](floatxfsmoothstepdata_ptr_t p) -> float { return p->_edge1; }, //
+              [](floatxfsmoothstepdata_ptr_t p, float val) { p->_edge1 = val; });
+  type_codec->registerStdCodec<floatxfsmoothstepdata_ptr_t>(floatxfsmoothstepdata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfquantizedata_type = //
+      py::class_<floatxfquantizedata, floatxfitembasedata, floatxfquantizedata_ptr_t>(dfgmodule, "floatxfquantizedata")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](floatxfquantizedata_ptr_t p) -> std::string {
+                return FormatString("floatxfquantizedata(%p)", (void*)p.get());
+              })
+          .def_property(
+              "do_quantize",
+              [](floatxfquantizedata_ptr_t p) -> bool { return p->_doquantize; }, //
+              [](floatxfquantizedata_ptr_t p, bool val) { p->_doquantize = val; })
+          .def_property(
+              "quantization",
+              [](floatxfquantizedata_ptr_t p) -> float { return p->_quantization; }, //
+              [](floatxfquantizedata_ptr_t p, float val) { p->_quantization = val; });
+  type_codec->registerStdCodec<floatxfquantizedata_ptr_t>(floatxfquantizedata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto floatxfpowdata_type = //
+      py::class_<floatxfpowdata, floatxfitembasedata, floatxfpowdata_ptr_t>(dfgmodule, "floatxfpowdata")
+          .def(py::init<>())
+          .def("__repr__", [](floatxfpowdata_ptr_t p) -> std::string { return FormatString("floatxfpowdata(%p)", (void*)p.get()); })
           .def_property(
               "do_pow",
               [](floatxfpowdata_ptr_t p) -> bool { return p->_dopow; }, //

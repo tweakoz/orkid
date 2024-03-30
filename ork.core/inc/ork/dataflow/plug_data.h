@@ -406,6 +406,37 @@ using floatxfabsdata_ptr_t = std::shared_ptr<floatxfabsdata>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct floatxfsmoothstepdata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfsmoothstepdata, floatxfitembasedata);
+
+public:
+  floatxfsmoothstepdata();
+  float transform(float input) const final; // virtual
+
+  bool _dosmoothstep        = true;
+  float _edge0 = 0.0f;
+  float _edge1 = 1.0f;
+};
+
+using floatxfsmoothstepdata_ptr_t = std::shared_ptr<floatxfsmoothstepdata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfquantizedata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfquantizedata, floatxfitembasedata);
+
+public:
+  floatxfquantizedata();
+  float transform(float input) const final; // virtual
+
+  bool _doquantize        = true;
+  float _quantization = 10.0f;
+};
+
+using floatxfquantizedata_ptr_t = std::shared_ptr<floatxfquantizedata>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct floatxfcurvedata : public floatxfitembasedata {
   DeclareConcreteX(floatxfcurvedata, floatxfitembasedata);
 

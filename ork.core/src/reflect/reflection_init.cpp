@@ -60,6 +60,9 @@ struct ClassToucher {
     dflow::floatxfbiasdata::GetClassStatic();
     dflow::floatxfpowdata::GetClassStatic();
     dflow::floatxfsinedata::GetClassStatic();
+    dflow::floatxfabsdata::GetClassStatic();
+    dflow::floatxfsmoothstepdata::GetClassStatic();
+    dflow::floatxfquantizedata::GetClassStatic();
     dflow::floatxfcurvedata::GetClassStatic();
     dflow::floatxfmodstepdata::GetClassStatic();
 

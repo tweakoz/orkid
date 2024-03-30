@@ -390,6 +390,45 @@ float floatxfabsdata::transform(float input) const {
   return input;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void floatxfsmoothstepdata::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("do_smoothstep", &floatxfsmoothstepdata::_dosmoothstep);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_smoothstep" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfsmoothstepdata::floatxfsmoothstepdata(){
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfsmoothstepdata::transform(float input) const {
+  if (_dosmoothstep) {
+    input = std::clamp((input - _edge0) / (_edge1 - _edge0), 0.0f, 1.0f);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
+void floatxfquantizedata::describeX(object::ObjectClass* clazz) {
+  clazz->directProperty("do_quantize", &floatxfquantizedata::_doquantize);
+
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_quantize" );
+
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfquantizedata::floatxfquantizedata(){
+}
+///////////////////////////////////////////////////////////////////////////////
+float floatxfquantizedata::transform(float input) const {
+  if (_doquantize and _quantization>0.0f) {
+      float a       = (1.0f/_quantization);
+      int inumsteps = int(a) + 1;
+      int ib = input * float(inumsteps);
+      input = float(ib) / float(inumsteps);
+  }
+  return input;
+}
+///////////////////////////////////////////////////////////////////////////////
 void floatxfpowdata::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("do_pow", &floatxfpowdata::_dopow);
 
@@ -597,6 +636,8 @@ ImplementReflectionX(dflow::floatxfscaledata, "dflow::floatxfscaledata");
 ImplementReflectionX(dflow::floatxfbiasdata, "dflow::floatxfbiasdata");
 ImplementReflectionX(dflow::floatxfsinedata, "dflow::floatxfsinedata");
 ImplementReflectionX(dflow::floatxfabsdata, "dflow::floatxfabsdata");
+ImplementReflectionX(dflow::floatxfsmoothstepdata, "dflow::floatxfsmoothstepdata");
+ImplementReflectionX(dflow::floatxfquantizedata, "dflow::floatxfquantizedata");
 ImplementReflectionX(dflow::floatxfpowdata, "dflow::floatxfpowdata");
 ImplementReflectionX(dflow::floatxfcurvedata, "dflow::floatxfcurvedata");
 

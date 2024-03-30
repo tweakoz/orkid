@@ -105,11 +105,18 @@ class ParticlesApp(object):
     xf_abs = dataflow.floatxfabsdata()
     xf_pow = dataflow.floatxfpowdata()
     xf_pow.power = 8.0
+    xf_smstep = dataflow.floatxfsmoothstepdata()
+    xf_smstep.edge0 = 0.3
+    xf_smstep.edge1 = 0.7
+    xf_quant = dataflow.floatxfquantizedata()
+    xf_quant.quantization = 0.025
 
-    self.SPRI.inputs.Size.transformer.addTransform("a_scale",xf_scale)
-    self.SPRI.inputs.Size.transformer.addTransform("b_sine",xf_sine)
-    self.SPRI.inputs.Size.transformer.addTransform("c_abs",xf_abs)
-    self.SPRI.inputs.Size.transformer.addTransform("d_power",xf_pow)
+    self.SPRI.inputs.Size.transformer.addTransform("a_quant",xf_quant)
+    self.SPRI.inputs.Size.transformer.addTransform("b_scale",xf_scale)
+    self.SPRI.inputs.Size.transformer.addTransform("c_sine",xf_sine)
+    self.SPRI.inputs.Size.transformer.addTransform("d_abs",xf_abs)
+    self.SPRI.inputs.Size.transformer.addTransform("e_smstep",xf_smstep)
+    self.SPRI.inputs.Size.transformer.addTransform("f_power",xf_pow)
     
     self.graphdata.connect(self.SPRI.inputs.Size,#
                            self.GLOB.outputs.RelTime)
