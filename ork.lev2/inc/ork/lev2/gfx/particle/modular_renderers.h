@@ -34,6 +34,7 @@ public:
   virtual void update(const RenderContextInstData& RCID){}
   MaterialBase();
   fxpipeline_ptr_t pipeline(const RenderContextInstData& RCID, bool streaks);
+
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
 

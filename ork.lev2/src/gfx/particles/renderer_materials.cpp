@@ -107,9 +107,9 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetZWriteMask(true);
 
   auto fxparameterIV      = _material->param("MatIV");
-  auto fxparameterMVP      = _material->param("MatMVP");
-  auto fxparameterColor  = _material->param("modcolor");
-  auto pipeline_cache    = _material->pipelineCache();
+  auto fxparameterMVP     = _material->param("MatMVP");
+  auto fxparameterColor   = _material->param("modcolor");
+  auto pipeline_cache     = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
@@ -206,7 +206,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto grad_par_mvp                      = _grad_render_mtl->param("mvp");
   auto grad_par_time                     = _grad_render_mtl->param("time");
   FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t { return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1); };
-  _grad_render_pipeline->bindParam(grad_par_mvp, gen_mtx);
+  _grad_render_pipeline->bindParam(grad_par_mvp, "RCFD_Camera_MVP_Mono"_crcsh);
   _grad_render_pipeline->bindParam(grad_par_time, 0.0f);
   _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
   auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);
@@ -220,6 +220,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
+  auto fxparameterIV                      = _material->param("MatIV");
   auto fxparameterMVP     = _material->param("MatMVP");
   auto fxparameterGradMap = _material->param("GradientMap");
   auto fxparameterColorFactor = _material->param("ColorFactor");
@@ -228,6 +229,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto pipeline_cache     = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
+  _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {

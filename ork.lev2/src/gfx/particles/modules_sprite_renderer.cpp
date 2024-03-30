@@ -230,7 +230,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   }
   //////////////////////////////////////////////////////////////////////////////
   else { // geometry shader path
-          //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
     if(icnt){
       sprite_vertex_writer_t vw;
       vw.Lock(context, _vertexBuffer.get(), icnt);
@@ -250,9 +250,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       }
       vw.UnLock(context);
 
-      auto pipeline = material->pipeline(RCID, true);
+      auto pipeline = material->pipeline(RCID, false);
       material->update(RCID);
       pipeline->wrappedDrawCall(RCID, [&]() {
+        //printf( "YO...\n");
         context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       });

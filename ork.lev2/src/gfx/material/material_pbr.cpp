@@ -282,12 +282,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             printf( "OK2.. permu._instanced<%d> skinned<%d>\n", int(permu._instanced), int(permu._skinned) );
 
 
-            if (permu._instanced) {                                // mono-instanced
-              tek = permu._skinned                  //
+            if (permu._instanced) {    // mono-instanced
+              tek = permu._skinned     //
                                        ? mtl->_tek_GBU_CT_NM_SK_IN_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_IN_MO;
-            } else {                                             // mono-non-instanced
-              tek = permu._skinned                  //
+            } else {                   // mono-non-instanced
+              tek = permu._skinned     //
                                        ? mtl->_tek_GBU_CT_NM_SK_NI_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_NI_MO;
             }

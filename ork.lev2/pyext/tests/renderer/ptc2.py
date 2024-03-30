@@ -54,10 +54,10 @@ def createParticleData( use_streaks = True ):
       self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
 
       self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
-      self.sprites.inputs.Size = 8 
+      self.sprites.inputs.Size = 0.02
       self.sprites.inputs.GradientIntensity = 1
-      self.sprites.material = particles.FlatMaterial.createShared()
-      self.sprites.material.color = vec4(1,1,1,1)
+      self.sprites.material = particles.GradientMaterial.createShared()
+      #self.sprites.material.color = vec4(1,.8,0,1)
       self.sprites.material.blending = tokens.ADDITIVE
       
       # emitter module settings
