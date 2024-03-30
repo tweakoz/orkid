@@ -93,6 +93,7 @@ class UiSgQuadViewTestApp(object):
     sg_params_fwd.DiffuseIntensity = 1.0
     sg_params_fwd.SpecularIntensity = 1.0
     sg_params_fwd.AmbientLevel = vec3(.125)
+    sg_params_fwd.DepthFogDistance = 10000.0
     sg_params_fwd.preset = "ForwardPBR"
 
 
@@ -140,6 +141,7 @@ class UiSgQuadViewTestApp(object):
             sg_params_def.DiffuseIntensity = 1.0
             sg_params_def.SpecularIntensity = 1.0
             sg_params_def.AmbientLevel = vec3(.125)
+            sg_params_def.DepthFogDistance = 10000.0
             sg_params_def.preset = "DeferredPBR"
             self.scenegraph = scenegraph.Scene(sg_params_def)
           else:

@@ -115,7 +115,14 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
 bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
-  if (check_magic == Char4("chkf")) { // its a chunkfile
+  auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
+  if (extension == "gltf" or //
+    extension == "dae" or  //
+    extension == "fbx" or  //
+    extension == "obj") {
+    return _loadAssimp(mdl, datablock);
+  }
+  else if (check_magic == Char4("chkf")) { // its a chunkfile
     return _loadXGM(mdl, datablock);
   } else if (check_magic == Char4("glTF")) { // its a glb (binary)
     if (ASSET_ENCRYPT_MODE()) {
@@ -148,13 +155,6 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
     return OK;
   }
 
-  auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
-  if (extension == "gltf" or //
-      extension == "dae" or  //
-      extension == "fbx" or  //
-      extension == "obj") {
-    return _loadAssimp(mdl, datablock);
-  }
   return false;
 }
 
