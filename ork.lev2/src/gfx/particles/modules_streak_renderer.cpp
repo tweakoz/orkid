@@ -176,6 +176,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
   bool length_is_varying = _input_length->connectedIsVarying();
   bool width_is_varying  = _input_width->connectedIsVarying();
+
+  int variant =  length_is_varying ? 1 : 0;
+      variant |= width_is_varying ? 2: 0;
   // printf( "fscale<%f>\n", fscale );
   //////////////////////////////////////////////////////////////////////////////
   // compute shader path
@@ -206,25 +209,86 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
     // OrkAssert(mapped_storage->_cursor == 176);
     mapped_storage->align(16);
-    for (int i = 0; i < icnt; i++) {
-      auto ptcl             = get_particle(i);
-      float fage            = ptcl->mfAge;
-      float flspan          = (ptcl->mfLifeSpan != 0.0f) //
-                                  ? ptcl->mfLifeSpan     //
-                                  : 0.01f;
-      float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-      _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
-      if (length_is_varying) {
-        LW.x = _input_length->value(); // transformers applied here..
-      }
-      if (width_is_varying) {
-        LW.y = _input_width->value(); // transformers applied here..
-      }
-      mapped_storage->make<fvec4>(ptcl->mPosition);
-      mapped_storage->make<fvec4>(ptcl->mVelocity);
-      mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
-      mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
+
+    switch(variant){
+      //////////////////////////////////////////
+      case 0:
+      //////////////////////////////////////////
+        for (int i = 0; i < icnt; i++) {
+          auto ptcl             = get_particle(i);
+          float fage            = ptcl->mfAge;
+          float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                                      ? ptcl->mfLifeSpan     //
+                                      : 0.01f;
+          float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+          mapped_storage->make<fvec4>(ptcl->mPosition);
+          mapped_storage->make<fvec4>(ptcl->mVelocity);
+          mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+          mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
+        }
+        break;
+      //////////////////////////////////////////
+      case 1: // length_is_varying
+      //////////////////////////////////////////
+        for (int i = 0; i < icnt; i++) {
+          auto ptcl             = get_particle(i);
+          float fage            = ptcl->mfAge;
+          float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                                      ? ptcl->mfLifeSpan     //
+                                      : 0.01f;
+          float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+          _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+          LW.x = _input_length->value(); // transformers applied here..
+          //LW.y = _input_width->value(); // transformers applied here..
+
+          mapped_storage->make<fvec4>(ptcl->mPosition);
+          mapped_storage->make<fvec4>(ptcl->mVelocity);
+          mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+          mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
+        }
+        break;
+      //////////////////////////////////////////
+      case 2: // width_is_varying
+      //////////////////////////////////////////
+        for (int i = 0; i < icnt; i++) {
+          auto ptcl             = get_particle(i);
+          float fage            = ptcl->mfAge;
+          float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                                      ? ptcl->mfLifeSpan     //
+                                      : 0.01f;
+          float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+          _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+          //LW.x = _input_length->value(); // transformers applied here..
+          LW.y = _input_width->value(); // transformers applied here..
+
+          mapped_storage->make<fvec4>(ptcl->mPosition);
+          mapped_storage->make<fvec4>(ptcl->mVelocity);
+          mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+          mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
+        }
+        break;
+      //////////////////////////////////////////
+      case 3: // length_is_varying and width_is_varying
+      //////////////////////////////////////////
+        for (int i = 0; i < icnt; i++) {
+          auto ptcl             = get_particle(i);
+          float fage            = ptcl->mfAge;
+          float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                                      ? ptcl->mfLifeSpan     //
+                                      : 0.01f;
+          float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+          _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+          LW.x = _input_length->value(); // transformers applied here..
+          LW.y = _input_width->value(); // transformers applied here..
+
+          mapped_storage->make<fvec4>(ptcl->mPosition);
+          mapped_storage->make<fvec4>(ptcl->mVelocity);
+          mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+          mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
+        }
+        break;
     }
+    ///////////////////////////////////////////////////////////////
     CI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
@@ -261,21 +325,66 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         ////////////////////////////////////////////////
         // uniform properties
         ////////////////////////////////////////////////
-        for (int i = 0; i < icnt; i++) {
-          auto ptcl = get_particle(i);
-          _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
-          if (length_is_varying) {
-            LW.x = _input_length->value(); // transformers applied here..
-          }
-          if (width_is_varying) {
-            LW.y = _input_width->value(); // transformers applied here..
-          }
-          material->_vertexSetterStreak(
-              vw,   //
-              ptcl, //
-              LW,   //
-              obj_nrmz);
+        switch(variant){
+          //////////////////////////////////////////
+          case 0:
+          //////////////////////////////////////////
+            for (int i = 0; i < icnt; i++) {
+              auto ptcl = get_particle(i);
+              _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+              material->_vertexSetterStreak(
+                  vw,   //
+                  ptcl, //
+                  LW,   //
+                  obj_nrmz);
+            }
+            break;
+          //////////////////////////////////////////
+          case 1: // length_is_varying 
+          //////////////////////////////////////////
+            for (int i = 0; i < icnt; i++) {
+              auto ptcl = get_particle(i);
+              _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+              LW.x = _input_length->value(); // transformers applied here..
+              material->_vertexSetterStreak(
+                  vw,   //
+                  ptcl, //
+                  LW,   //
+                  obj_nrmz);
+            }
+            break;
+          //////////////////////////////////////////
+          case 2: // width_is_varying
+          //////////////////////////////////////////
+            for (int i = 0; i < icnt; i++) {
+              auto ptcl = get_particle(i);
+              _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+              LW.y = _input_width->value(); // transformers applied here..
+              material->_vertexSetterStreak(
+                  vw,   //
+                  ptcl, //
+                  LW,   //
+                  obj_nrmz);
+            }
+            break;
+          //////////////////////////////////////////
+          case 3: // length_is_varying and width_is_varying
+          //////////////////////////////////////////
+            for (int i = 0; i < icnt; i++) {
+              auto ptcl = get_particle(i);
+              _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
+              LW.x = _input_length->value(); // transformers applied here..
+              LW.y = _input_width->value(); // transformers applied here..
+              material->_vertexSetterStreak(
+                  vw,   //
+                  ptcl, //
+                  LW,   //
+                  obj_nrmz);
+            }
+            break;
+          //////////////////////////////////////////
         }
+
       }
       vw.UnLock(context);
 
