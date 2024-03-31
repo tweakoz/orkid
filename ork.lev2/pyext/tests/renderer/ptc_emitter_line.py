@@ -98,7 +98,7 @@ class ParticlesApp(object):
     self.STRK.inputs.Length = 1.5
     self.STRK.inputs.Width = 0.03
     self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = presetMaterial(grad=gradient,texname="src://effect_textures/ptc1")
+    self.STRK.material = presetMaterial(grad=gradient,texname="src://effect_textures/ptc3")
     presetPOOL1(self.POOL)
     presetEMITL1(self.EMITL)
     presetGRAV1(self.GRAV)
