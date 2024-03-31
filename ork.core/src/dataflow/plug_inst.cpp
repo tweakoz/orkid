@@ -70,9 +70,18 @@ bool InPlugInst::isDirty() const {
 }
 void InPlugInst::_doSetDirty(bool bv) { // override
 }
+bool InPlugInst::connectedIsVarying() const{
+  bool rval = false;
+  if( _connectedOutput ){
+    rval = _connectedOutput->isVarying();
+  }
+
+  return rval;
+ }
 
 OutPlugInst::OutPlugInst(const OutPlugData* plugdata, ModuleInst* minst)
-    : PlugInst(plugdata, minst) {
+    : PlugInst(plugdata, minst)
+    , _outplugdata(plugdata) {
 }
 OutPlugInst::~OutPlugInst() {
 }
@@ -90,6 +99,12 @@ void OutPlugInst::_doSetDirty(bool bv) {
 }
 bool OutPlugInst::isDirty() const {
   return false;
+}
+
+bool OutPlugInst::isVarying() const{
+  bool is_varying = _outplugdata->_plugrate == EPlugRate::EPR_VARYING1;
+  is_varying |= _outplugdata->_plugrate == EPlugRate::EPR_VARYING2;
+  return is_varying;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

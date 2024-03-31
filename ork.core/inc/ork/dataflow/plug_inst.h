@@ -22,6 +22,8 @@ struct PlugInst {
   virtual void _doSetDirty(bool bv) {
   }
 
+  bool connectedIsVarying() const;
+
   ModuleInst* _moduleinst = nullptr;
   const PlugData* _plugdata;
   bool mbDirty;
@@ -42,6 +44,7 @@ struct InPlugInst : public PlugInst {
   bool isDirty() const;
 
   void _doSetDirty(bool bv) override; // virtual
+  bool connectedIsVarying() const;
 
   outpluginst_ptr_t _connectedOutput;
   sigslot2::scoped_connection _connectionPlugConnectionChanged;
@@ -59,6 +62,9 @@ struct OutPlugInst : public PlugInst {
   inpluginst_ptr_t connected(size_t idx) const;
   void _doSetDirty(bool bv) override; // virtual
   bool isDirty() const;
+  bool isVarying() const;
+
+  const OutPlugData* _outplugdata;
 
   dataflow::node_hash _outputhash;
 };
