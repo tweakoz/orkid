@@ -85,7 +85,7 @@ class ParticlesApp(object):
 
     self.SPRI.inputs.Size = 0.05
     self.SPRI.inputs.GradientIntensity = 1
-    self.SPRI.material = presetMaterial1()
+    self.SPRI.material = presetMaterial()
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)

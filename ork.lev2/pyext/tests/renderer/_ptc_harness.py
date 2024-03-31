@@ -24,19 +24,31 @@ floatxf = dataflow.floatxf
 def presetGRAD1():
   gradient = GradientV4()
   gradient.setColorStops({
-    0.0: vec4(1,0,0,1),
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(1,0,0,1),
     0.25: vec4(1,0,1,1),
     0.5: vec4(1,1,1,1),
-    1.0: vec4(0,0,0,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
+def presetGRAD2():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(1,0,0,1),
+    0.25: vec4(1,0.8,0,1),
+    0.5: vec4(1,1,0.5,1),
+    1.0: vec4(0,0,0,0),
   })
   return gradient  
 
 ################################################
 
-def presetMaterial1():
+def presetMaterial(grad=presetGRAD1()):
   material = particles.GradientMaterial.createShared()
   material.modulation_texture = Texture.load("src://effect_textures/knob2")
-  material.gradient = presetGRAD1()
+  material.gradient = grad
   material.blending = tokens.ADDITIVE
   return material
 

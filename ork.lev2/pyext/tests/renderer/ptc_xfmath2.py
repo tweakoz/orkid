@@ -78,11 +78,11 @@ class ParticlesApp(object):
     ]
     createParticleData(self,ptc_data,ptc_connections)
 
-    self.POOL.pool_size = 16384 # max number of particles in pool
+    self.POOL.pool_size = 65536 # max number of particles in pool
 
     #self.STRK.inputs.Size = 0.05
     self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = presetMaterial1()
+    self.STRK.material = presetMaterial(grad=presetGRAD2())
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)
@@ -93,8 +93,10 @@ class ParticlesApp(object):
         
     self.TURB.inputs.Amount = vec3(1,1,1)*5
     
-    self.EMITN.inputs.LifeSpan = 3
-    self.EMITR.inputs.LifeSpan = 3
+    self.EMITN.inputs.EmissionRate = 1500
+    self.EMITR.inputs.EmissionRate = 1500
+    self.EMITN.inputs.LifeSpan = 8
+    self.EMITR.inputs.LifeSpan = 5
     self.STRK.inputs.Width = 0.01
     LEN = self.STRK.inputs.Length
     LENXF = LEN.transformer 
@@ -102,18 +104,18 @@ class ParticlesApp(object):
     WIDXF = WID.transformer 
 
     LENXF.append(floatxf.quantize(0.025))
-    LENXF.append(floatxf.scale(4.0))
+    #LENXF.append(floatxf.scale(4.0))
     LENXF.append(floatxf.sine())
     LENXF.append(floatxf.abs())
-    LENXF.append(floatxf.smoothstep(0.3,0.7))
-    LENXF.append(floatxf.power(8.0))
+    #LENXF.append(floatxf.smoothstep(0.3,0.7))
+    #LENXF.append(floatxf.power(8.0))
     LENXF.append(floatxf.scale(0.05))
 
-    WIDXF.append(floatxf.quantize(0.25))
-    WIDXF.append(floatxf.scale(8.0))
+    WIDXF.append(floatxf.quantize(1.0/32))
+    #WIDXF.append(floatxf.scale(8.0))
     WIDXF.append(floatxf.sine())
     WIDXF.append(floatxf.abs())
-    WIDXF.append(floatxf.scale(0.05))
+    WIDXF.append(floatxf.scale(0.5))
     
     self.graphdata.connect(LEN,#
                            self.POOL.outputs.UnitAge)
