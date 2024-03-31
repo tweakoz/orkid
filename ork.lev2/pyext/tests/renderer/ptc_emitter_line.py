@@ -104,7 +104,7 @@ class ParticlesApp(object):
     presetTURB1(self.TURB)
     self.EMITL.inputs.LifeSpan = 20
     self.EMITL.inputs.EmissionRate = 2000
-    self.EMITL.inputs.EmissionVelocity = 0.03
+    self.EMITL.inputs.EmissionVelocity = 0.01
     self.GRAV.inputs.G = 1e-6
     self.GRAV.inputs.Mass = 1e-5
     self.GRAV.inputs.OthMass = 1e-5
@@ -119,10 +119,6 @@ class ParticlesApp(object):
     self.pending_timer -= updinfo.deltatime
 
     self.counter = self.counter + 1
-
-
-    self.elev_cur = self.elev_cur*0.9 + self.elev_tgt*0.1
-    self.azim_cur = self.azim_cur*0.9 + self.azim_tgt*0.1
 
     cubeP1 = vec3(1,1,-1) # top right back
     cubeP2 = vec3(1,1,1) # top right front
@@ -189,8 +185,8 @@ class ParticlesApp(object):
     self.EMITL.inputs.P2 = self.P2*self.scale
 
     if self.pending_timer<0.0:
-      self.elev_tgt = random.uniform(-math.pi,math.pi)
-      self.azim_tgt = random.uniform(-math.pi,math.pi)
+      self.elev_cur = random.uniform(-math.pi,math.pi)
+      self.azim_cur = random.uniform(-math.pi,math.pi)
       
       # compute 6 points on a cube (rotated by elev/azim)
             
