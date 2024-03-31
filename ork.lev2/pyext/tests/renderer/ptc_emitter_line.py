@@ -88,9 +88,10 @@ class ParticlesApp(object):
     gradient.setColorStops({
       0.0: vec4(0,0,0,0),
       0.25: vec4(1,0,0,1),
-      0.25: vec4(1,0.8,0,1),
-      0.5: vec4(1,1,0.5,1),
-      0.7: vec4(1,0.5,0,1),
+      0.25: vec4(1,0.5,0.8,1),
+      0.5: vec4(1,0.5,1,1),
+      0.7: vec4(0.5,1,0,1),
+      0.9: vec4(0,1,0,1),
       1.0: vec4(0,0,0,0),
     })
 
@@ -103,8 +104,8 @@ class ParticlesApp(object):
     presetGRAV1(self.GRAV)
     presetTURB1(self.TURB)
     self.EMITL.inputs.LifeSpan = 20
-    self.EMITL.inputs.EmissionRate = 2000
-    self.EMITL.inputs.EmissionVelocity = 0.01
+    self.EMITL.inputs.EmissionRate = 3000
+    self.EMITL.inputs.EmissionVelocity = 0.1
     self.GRAV.inputs.G = 1e-6
     self.GRAV.inputs.Mass = 1e-5
     self.GRAV.inputs.OthMass = 1e-5
