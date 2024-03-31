@@ -186,7 +186,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // scale_matrix.setScale(fsize,fsize,fsize);
     // worldmatrix = scale_matrix * worldmatrix;
     ///////////////////////////////////////////////////////////////
-    auto storage        = material->_Spritecu_vertex_io_buffer;
+    auto storage        = material->_cu_vertex_io_buffer;
     size_t mapping_size = 1 << 20;
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
     mapped_storage->seek(0);
@@ -218,13 +218,13 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     CI->unmapStorageBuffer(mapped_storage.get());
     render_time_1a = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
-    CI->bindStorageBuffer(material->_Spritecu_shader, 0, storage);
+    CI->bindStorageBuffer(material->_spritecu_shader, 0, storage);
     ///////////////////////////////////////////////////////////////
     int wu_width   = icnt;
     int wu_height  = 1;
     int wu_depth   = 1;
     render_time_1b = prender_timer.SecsSinceStart();
-    CI->dispatchCompute(material->_Spritecu_shader, wu_width, wu_height, wu_depth);
+    CI->dispatchCompute(material->_spritecu_shader, wu_width, wu_height, wu_depth);
     render_time_1c = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     material->update(RCID);

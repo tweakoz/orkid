@@ -41,11 +41,8 @@ public:
   fxtechnique_constptr_t _tek_sprites;
   fxtechnique_constptr_t _tek_streaks;
 
-  fxtechnique_constptr_t _tek_sprites_stereo;
-  fxtechnique_constptr_t _tek_sprites_stereoCI;
-
-  fxtechnique_constptr_t _tek_streaks_stereo;
   fxtechnique_constptr_t _tek_streaks_stereoCI;
+  fxtechnique_constptr_t _tek_sprites_stereoCI;
   
   vtx_set_sprite_t _vertexSetterSprite;
   vtx_set_streak_t _vertexSetterStreak;
@@ -54,9 +51,10 @@ public:
   Blending _blending = Blending::OFF;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-  FxShaderStorageBuffer* _streakcu_vertex_io_buffer    = nullptr;
-  const FxShaderStorageBlock* _streakcu_storage_block  = nullptr;
+  FxShaderStorageBuffer* _cu_vertex_io_buffer    = nullptr;
+  const FxShaderStorageBlock* _cu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
+  const FxComputeShader* _spritecu_shader              = nullptr;
 #endif
 
 

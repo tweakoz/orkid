@@ -15,6 +15,7 @@ from orkengine.lev2 import *
 sys.path.append(str(path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from common.cameras import *
 from common.scenegraph import createSceneGraph
+from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 
@@ -105,6 +106,15 @@ class ParticlesApp(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
+
 ###############################################################################
+
+def sig_handler(signal_received, frame):
+  print('SIGINT or CTRL-C detected. Exiting gracefully')
+  sys.exit(0)
+
+###############################################################################
+
+signal(SIGINT, sig_handler)
 
 ParticlesApp().ezapp.mainThreadLoop()

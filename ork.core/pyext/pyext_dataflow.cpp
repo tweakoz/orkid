@@ -318,7 +318,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<modscabiasdata_ptr_t>(modscabiasdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto floatxfmoddata_type = //
-      py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(fxfmodule, "floatxfmoddata")
+      py::class_<floatxfmoddata, floatxfitembasedata, floatxfmoddata_ptr_t>(fxfmodule, "mod")
           .def(py::init<>())
           .def(py::init([](float mod) {
             auto rval = std::make_shared<floatxfmoddata>();

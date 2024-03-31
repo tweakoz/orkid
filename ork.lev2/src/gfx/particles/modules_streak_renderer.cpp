@@ -194,7 +194,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // scale_matrix.setScale(fscale,fscale,fscale);
     // worldmatrix = scale_matrix * worldmatrix;
     ///////////////////////////////////////////////////////////////
-    auto storage        = material->_streakcu_vertex_io_buffer;
+    auto storage        = material->_cu_vertex_io_buffer;
     size_t mapping_size = 1 << 20;
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
     mapped_storage->seek(0);

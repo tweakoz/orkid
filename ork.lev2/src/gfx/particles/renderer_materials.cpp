@@ -72,7 +72,7 @@ MaterialBase::MaterialBase() {
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
   _pipeline->_technique = (RCID._RCFD->isStereo())                                      //
-                              ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereo) //
+                              ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereoCI) //
                               : (streaks ? _tek_streaks : _tek_sprites);
   return _pipeline;
 }
@@ -119,17 +119,18 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites        = _material->technique("tflatparticle_sprites");
   _tek_streaks        = _material->technique("tflatparticle_streaks");
-  _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
-  _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
+  _spritecu_shader           = _material->computeShader("compute_sprites");
 
   _tek_streaks_stereoCI = _material->technique("tflatparticle_streaks_stereoCI");
+  _tek_sprites_stereoCI = _material->technique("tflatparticle_sprites_stereoCI");
 
 #endif
 }
@@ -268,10 +269,12 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto FXI = context->FXI();
   auto CI  = context->CI();
 
-  _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  _cu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
+  _spritecu_shader           = _material->computeShader("compute_sprites");
 
   _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereo");
+  _tek_streaks_stereoCI = _material->technique("tgradparticle_sprites_stereo");
 
 #endif
 }
