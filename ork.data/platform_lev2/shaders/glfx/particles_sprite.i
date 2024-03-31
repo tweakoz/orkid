@@ -266,7 +266,6 @@ vertex_interface vface_sprite_stereoCI {
           mat4         mvp_L;             // 0
           mat4         mvp_R;             // 64
           vec3         obj_nrmz;          // 132
-          vec2         LW;                // 144
           InputVertexSprite  inp_vertex[16384]; // 152
           OutputVertexSprite out_vertex[65536]; // 152 + 16384*44
           // total size = 152 + 16384*40 + 65536*40 = 3276952

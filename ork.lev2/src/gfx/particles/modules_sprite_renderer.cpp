@@ -196,7 +196,6 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
     mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
-    mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
     // OrkAssert(mapped_storage->_cursor == 176);
     mapped_storage->align(16);
     for (int i = 0; i < icnt; i++) {
@@ -208,11 +207,12 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
       _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
       if (size_is_varying) {
-        fsize = _input_size->value();
+        fsize = _input_size->value(); // transformers applied here..
         LW = ork::fvec2(fsize, fsize);
       }
       mapped_storage->make<fvec4>(ptcl->mPosition);
       mapped_storage->make<fvec4>(ptcl->mVelocity);
+      mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
       mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
     }
     CI->unmapStorageBuffer(mapped_storage.get());
@@ -255,7 +255,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
           auto ptcl = get_particle(i);
           _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
           if (size_is_varying) {
-            fsize = _input_size->value();
+            fsize = _input_size->value(); // transformers applied here..
             LW = ork::fvec2(fsize, fsize);
           }
           material->_vertexSetterSprite(

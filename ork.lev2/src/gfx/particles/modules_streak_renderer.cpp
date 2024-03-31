@@ -215,10 +215,10 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
       _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
       if (length_is_varying) {
-        LW.x = _input_length->value();
+        LW.x = _input_length->value(); // transformers applied here..
       }
       if (width_is_varying) {
-        LW.y = _input_width->value();
+        LW.y = _input_width->value(); // transformers applied here..
       }
       mapped_storage->make<fvec4>(ptcl->mPosition);
       mapped_storage->make<fvec4>(ptcl->mVelocity);
@@ -265,10 +265,10 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
           auto ptcl = get_particle(i);
           _output_uage->setValue(ptcl->mfAge / ptcl->mfLifeSpan);
           if (length_is_varying) {
-            LW.x = _input_length->value();
+            LW.x = _input_length->value(); // transformers applied here..
           }
           if (width_is_varying) {
-            LW.y = _input_width->value();
+            LW.y = _input_width->value(); // transformers applied here..
           }
           material->_vertexSetterStreak(
               vw,   //
