@@ -206,10 +206,10 @@ fragment_shader ps_volume : fface_psys {
 libblock typelib_compute_streaks {
   pragma_typelib;
   struct InputVertex {
-    vec4 pos;      // 12
-    //ec4 nrm; // 24
-    vec4 vel;      // 24
-    vec4 age_rand; // 32
+    vec4 pos;      // 16
+    vec4 lw;       // 32
+    vec4 vel;      // 48
+    vec4 age_rand; // 64
   };
   struct OutputVertex {
     vec4 hposL;    // 16
@@ -236,7 +236,6 @@ compute_interface iface_compute
             mat4         mvp_L;             // 0
             mat4         mvp_R;             // 64
             vec4         obj_nrmz;          // 132
-            vec4         LW;                // 144
             InputVertex  inp_vertex[16384]; // 152
             OutputVertex out_vertex[65536]; // 152 + 16384*44
             // total size = 152 + 16384*40 + 65536*40 = 3276952
@@ -248,30 +247,22 @@ compute_shader compute_streaks
     : iface_compute {
 
     int index = int(gl_WorkGroupID.x);
-
-    //float len = LW.x;
-    //float wid = LW.y;
-      
+    
     vec3 inp_pos  = inp_vertex[index].pos.xyz;
+    vec3 inp_lw   = inp_vertex[index].lw.xyz;
     vec3 inp_vel  = inp_vertex[index].vel.xyz;
     vec2 inp_ar   = inp_vertex[index].age_rand.xy;
-    //vec3 inp_nrm  = inp_vertex[index].nrm.xyz;
 
-    //vec3 lpos = inp_pos - (inp_vel * len);
+    float len = inp_lw.x;
+    float wid = inp_lw.y;
 
-    mat4 ivL = transpose(inverse(v_L));
-    mat4 ivR = transpose(inverse(v_R));
-    float wid = 0.002*LW.x;
-    float hei = 0.002*LW.x;
-    vec3 UP = normalize(vec3(ivL[0][0], ivL[1][0], ivL[2][0])) * wid;
-    vec3 RT = normalize(vec3(ivL[0][1], ivL[1][1], ivL[2][1])) * hei; // Assume 'hei' is the height of the billboard
-
+    vec3 lpos = inp_pos - (inp_vel * len);
     vec3 crs = normalize(cross(inp_vel, obj_nrmz.xyz)) * wid;
 
-    vec3 p0 = inp_pos - UP - RT; // 0 0 
-    vec3 p1 = inp_pos + UP - RT; // 1 0
-    vec3 p2 = inp_pos + UP + RT; // 1 1
-    vec3 p3 = inp_pos - UP + RT; // 0 1
+    vec3 p0 = inp_pos + crs;
+    vec3 p1 = inp_pos - crs;
+    vec3 p2 = lpos - crs;
+    vec3 p3 = lpos + crs;
 
     vec4 p0L = mvp_L * vec4(p0,1);
     vec4 p1L = mvp_L * vec4(p1,1);
@@ -296,7 +287,7 @@ compute_shader compute_streaks
 
     out_vertex[o+1].hposL = p2L;
     out_vertex[o+1].hposR = p2R;
-    out_vertex[o+1].uv = vec2(1,1);
+    out_vertex[o+1].uv = vec2(0,1);
     out_vertex[o+1].age_rand = inp_ar;
 
     out_vertex[o+2].hposL = p1L;
@@ -313,12 +304,12 @@ compute_shader compute_streaks
 
     out_vertex[o+4].hposL = p3L;
     out_vertex[o+4].hposR = p3R;
-    out_vertex[o+4].uv = vec2(0,1);
+    out_vertex[o+4].uv = vec2(1,1);
     out_vertex[o+4].age_rand = inp_ar;
 
     out_vertex[o+5].hposL = p2L;
     out_vertex[o+5].hposR = p2R;
-    out_vertex[o+5].uv = vec2(1,1);
+    out_vertex[o+5].uv = vec2(0,1);
     out_vertex[o+5].age_rand = inp_ar;
 }
 

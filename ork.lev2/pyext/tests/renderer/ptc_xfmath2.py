@@ -111,11 +111,11 @@ class ParticlesApp(object):
     #LENXF.append(floatxf.power(8.0))
     LENXF.append(floatxf.scale(0.05))
 
-    WIDXF.append(floatxf.quantize(1.0/16))
-    #WIDXF.append(floatxf.scale(8.0))
+    WIDXF.append(floatxf.scale(8.0))
     WIDXF.append(floatxf.sine())
-    WIDXF.append(floatxf.abs())
+    #WIDXF.append(floatxf.abs())
     WIDXF.append(floatxf.scale(0.125))
+    #WIDXF.append(floatxf.quantize(1.0/32))
     
     self.graphdata.connect(LEN,#
                            self.POOL.outputs.UnitAge)

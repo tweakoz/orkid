@@ -204,7 +204,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
     mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
-    mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
     // OrkAssert(mapped_storage->_cursor == 176);
     mapped_storage->align(16);
     for (int i = 0; i < icnt; i++) {
@@ -223,6 +222,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       }
       mapped_storage->make<fvec4>(ptcl->mPosition);
       mapped_storage->make<fvec4>(ptcl->mVelocity);
+      mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
       mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom, 0, 0);
     }
     CI->unmapStorageBuffer(mapped_storage.get());
