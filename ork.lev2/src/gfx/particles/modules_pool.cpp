@@ -15,6 +15,8 @@ namespace dflow = ::ork::dataflow;
 
 namespace ork::lev2::particle {
 
+void computeAges();
+
 ParticlePoolModuleInst::ParticlePoolModuleInst(const ParticlePoolData* data, dataflow::GraphInst* ginst)
     : dflow::DgModuleInst(data, ginst)
     , _ppd(data) {

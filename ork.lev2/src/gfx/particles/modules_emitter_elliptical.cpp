@@ -122,6 +122,7 @@ void EllipticalEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata
     _reap(fdelta);
     _emit(fdelta);
   }
+  _pool->updateUnitAges();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EllipticalEmitterInst::_emit(float fdt) {

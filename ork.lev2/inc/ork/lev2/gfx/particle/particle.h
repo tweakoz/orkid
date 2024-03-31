@@ -81,6 +81,20 @@ public:
     mActiveParticles[iactiveindex] = ptclast;
     mActiveParticles.erase(mActiveParticles.begin() + ilast_alive);
   }
+
+  inline void updateUnitAges() {
+    size_t num_active = GetNumAlive();
+    for(size_t i=0; i<num_active; i++){
+      auto ptcl    = GetActiveParticle(i);
+      float fage   = ptcl->mfAge;
+      float flspan = (ptcl->mfLifeSpan != 0.0f) //
+                   ? ptcl->mfLifeSpan     //
+                   : 0.01f;
+      float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+      ptcl->_unit_age = clamped_unitage;
+    }
+  }
+
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -224,6 +238,7 @@ struct BasicParticle {
   float mfRandom = 0.0f;
   float mfAge = 0.0f;
   float mfLifeSpan = 0.0f;
+  float _unit_age = 0.0f;
   uint32_t mColliderStates = 0;
 
   ork::fvec3 mPosition;

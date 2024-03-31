@@ -104,6 +104,7 @@ void RingEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
   if (_timeAccumulator < 0.01f) {
     _timeAccumulator = 0.0f;
   }
+  _pool->updateUnitAges();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RingEmitterInst::_emit(float fdt) {

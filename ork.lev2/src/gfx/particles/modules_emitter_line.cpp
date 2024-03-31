@@ -125,6 +125,7 @@ void LineEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
     _reap(fdelta);
     _emit(fdelta);
   }
+  _pool->updateUnitAges();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void LineEmitterInst::_emit(float fdt) {
