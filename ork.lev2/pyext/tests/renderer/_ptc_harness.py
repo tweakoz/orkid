@@ -125,10 +125,12 @@ def createParticleData( owner, ptc_data, ptc_connections ):
       n1 = item[1]
       owner.graphdata.connect( owner.__dict__[n1].inputs.pool, owner.__dict__[n0].outputs.pool )
     
+    SG = owner.scene
+    #LMD = SG.lightingmanager
     owner.drawable_data = ParticlesDrawableData()
     owner.drawable_data.graphdata = owner.graphdata
-    ptc_drawable = owner.drawable_data.createDrawable()
+    ptc_drawable = owner.drawable_data.createSGDrawable(SG)
     owner.particlenode = owner.layer1.createDrawableNode("particle-node",ptc_drawable)
-    owner.particlenode.sortkey = 2;
+    #owner.particlenode.sortkey = 2;
 
 

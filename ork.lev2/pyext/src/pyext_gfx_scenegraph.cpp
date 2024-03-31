@@ -233,6 +233,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(py::init<>())
           .def(py::init<varmap::varmap_ptr_t>())
           .def_property_readonly(
+              "lightingmanager",                            //
+              [](scene_ptr_t SG) -> lightmanager_ptr_t { //
+                return SG->_lightManager;
+              })
+          .def_property_readonly(
               "compositordata",                            //
               [](scene_ptr_t SG) -> compositordata_ptr_t { //
                 return SG->_compositorData;

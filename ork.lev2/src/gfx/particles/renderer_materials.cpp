@@ -218,7 +218,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
   _material->_rasterstate.SetDepthTest(_depthtest);
-  _material->_rasterstate.SetZWriteMask(false);
+  _material->_rasterstate.SetZWriteMask(true);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
   auto fxparameterIV          = _material->param("MatIV");

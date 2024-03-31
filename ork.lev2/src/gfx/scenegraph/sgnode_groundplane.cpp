@@ -12,7 +12,7 @@ namespace ork::lev2 {
 
 struct GroundPlaneRenderImpl {
 
-  GroundPlaneRenderImpl(const GroundPlaneDrawableData* grid) : _grounddata(grid) {
+  GroundPlaneRenderImpl(const GroundPlaneDrawableData* gpd) : _grounddata(gpd) {
 
   }
   ~GroundPlaneRenderImpl(){
@@ -52,6 +52,7 @@ struct GroundPlaneRenderImpl {
     const auto& CPD  = RCFD->topCPD();
 
     float extent = _grounddata->_extent;
+
     fvec3 topl(-extent, 0, -extent);
     fvec3 topr(+extent, 0, -extent);
     fvec3 botr(+extent, 0, +extent);
@@ -98,7 +99,8 @@ struct GroundPlaneRenderImpl {
 
     auto pipeline = _pipeline;
     if( nullptr == pipeline ){
-       _fxcache->findPipeline(RCID);
+       pipeline = _fxcache->findPipeline(RCID);
+       _pipeline = pipeline;
     }
     OrkAssert(pipeline);
     pipeline->wrappedDrawCall(RCID, [&]() {
@@ -131,11 +133,10 @@ void GroundPlaneDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t GroundPlaneDrawableData::createDrawable() const {
 
-  auto impl = std::make_shared<GroundPlaneRenderImpl>(this);
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(GroundPlaneRenderImpl::renderGroundPlane);
-  rval->SetUserDataA(impl);
+  auto impl = rval->mDataA.makeShared<GroundPlaneRenderImpl>(this);
   rval->_sortkey = 10;
   return rval;
 }

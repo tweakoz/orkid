@@ -93,8 +93,25 @@ class ParticlesApp(object):
     presetTURB1(self.TURB)
     presetVORT1(self.VORT)
     presetGRAV1(self.GRAV)
+    self.particlenode.worldTransform.translation = vec3(0,3,0)
     
     self.TURB.inputs.Amount = vec3(1,1,1)*5
+
+    gmtl = PBRMaterial() 
+    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
+    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    gmtl.metallicFactor = 1
+    gmtl.roughnessFactor = 1
+    gmtl.baseColor = vec4(1,1,1,1)
+    gmtl.gpuInit(ctx)
+    gdata = GroundPlaneDrawableData()
+    gdata.pbrmaterial = gmtl
+    gdata.extent = 100.0
+    self.gdata = gdata
+    self.drawable_ground = gdata.createSGDrawable(self.scene)
+    self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
+    self.groundnode.worldTransform.translation = vec3(0,-3,0)
 
   ################################################
 

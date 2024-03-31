@@ -30,6 +30,10 @@ template <typename T> struct concurrent_triple_buffer;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+namespace scenegraph{
+  struct Scene;
+  using scene_ptr_t        = std::shared_ptr<Scene>;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // todo find a better name
@@ -320,7 +324,7 @@ struct Drawable {
   bool mEnabled;
   bool _pickable = true;
   std::string _name;
-
+  scenegraph::scene_ptr_t _sg;
   uint32_t _sortkey = 0;
 };
 
@@ -340,6 +344,18 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
 
   DrawableData();
   virtual drawable_ptr_t createDrawable() const = 0;
+
+  inline drawable_ptr_t createSGDrawable(scenegraph::scene_ptr_t SG) const {
+    auto drw = createDrawable();
+    attachSGDrawable(drw, SG);
+    return drw;
+  }
+
+  inline void attachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const {
+    drw->_sg = SG;
+    _doAttachSGDrawable(drw, SG);
+  }
+  virtual void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const {};
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
 };

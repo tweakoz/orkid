@@ -26,10 +26,19 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto drawabledata_type = //
       py::class_<DrawableData, ork::Object, drawabledata_ptr_t>(module_lev2, "DrawableData")
-          .def("createDrawable", [](drawabledata_ptr_t data) -> drawable_ptr_t { return data->createDrawable(); });
+          .def("createDrawable", [](drawabledata_ptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
+          .def("createSGDrawable", [](drawabledata_ptr_t data, scenegraph::scene_ptr_t SG) -> drawable_ptr_t {
+            return data->createSGDrawable(SG);
+          });
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
+  auto drawable_type = py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable")
+    .def_property(
+        "scenegraph",        
+        [](drawable_ptr_t drw) -> scenegraph::scene_ptr_t { return drw->_sg; },
+        [](drawable_ptr_t drw, scenegraph::scene_ptr_t sg) { drw->_sg = sg; });    
+  type_codec->registerStdCodec<drawable_ptr_t>(drawable_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawable_type = //
       py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable");
   type_codec->registerStdCodec<callback_drawable_ptr_t>(cbdrawable_type);
@@ -99,7 +108,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<instanceddrawinstancedata_ptr_t>(instancedata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //
-      py::class_<GridDrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")
+      py::class_<GridDrawableData, DrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")
           .def(py::init<>())
           .def_property(
               "texturepath",
@@ -124,7 +133,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bbdrawdata_type = //
-      py::class_<BillboardDrawableData, billboarddrawabledataptr_t>(module_lev2, "BillboardDrawableData")
+      py::class_<BillboardDrawableData, DrawableData, billboarddrawabledataptr_t>(module_lev2, "BillboardDrawableData")
           .def(py::init<>())
           .def_property(
               "texturepath",
@@ -137,12 +146,15 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<billboarddrawabledataptr_t>(bbdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto groundplanedrawdata_type = //
-      py::class_<GroundPlaneDrawableData, groundplane_drawabledataptr_t>(module_lev2, "GroundPlaneDrawableData")
+      py::class_<GroundPlaneDrawableData, DrawableData, groundplane_drawabledataptr_t>(module_lev2, "GroundPlaneDrawableData")
           .def(py::init<>())
           .def_property(
               "extent",
               [](groundplane_drawabledataptr_t drw) -> float { return drw->_extent; },
-              [](groundplane_drawabledataptr_t drw, float val) { drw->_extent = val; })
+              [](groundplane_drawabledataptr_t drw, float val) { //
+                printf( "set gpd<%p> extent<%g>\n", (void*) drw.get(), val );
+                drw->_extent = val; //
+              })
           .def_property(
               "pbrmaterial",
               [](groundplane_drawabledataptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },

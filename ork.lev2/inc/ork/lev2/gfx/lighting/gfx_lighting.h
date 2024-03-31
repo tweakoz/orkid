@@ -212,6 +212,13 @@ struct PointLight : public Light {
   const PointLightData* _pldata;
 };
 
+struct DynamicPointLight : public PointLight {
+
+  DynamicPointLight();
+
+  PointLightData _inlineData;
+
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -15,6 +15,7 @@ public:
   drawable_ptr_t createDrawable() const final;
   ParticlesDrawableData();
   ~ParticlesDrawableData();
+  void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const final;
 
   dataflow::graphdata_ptr_t _graphdata;
 };

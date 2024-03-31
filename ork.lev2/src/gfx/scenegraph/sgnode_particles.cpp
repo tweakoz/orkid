@@ -1,3 +1,4 @@
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_particles.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_freestyle.h>
@@ -16,9 +17,14 @@ struct ParticlesDrawableInst {
     _updata->_abstime = 0.0f;
     _updata->_dt = 0.003f;
     _timer.Start();
+
+    _testlight = std::make_shared<DynamicPointLight>();
   }
   ///////////////////////////////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
+
+    _graphinst->_vars.makeValueForKey<float>("yo", 0.0f);
+
     /*
     auto load_req = std::make_shared<asset::LoadRequest>(_griddata->_colortexpath);
     auto texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
@@ -77,6 +83,10 @@ struct ParticlesDrawableInst {
   texture_ptr_t _colortexture;
   ui::updatedata_ptr_t _updata;
   fxpipelinecache_constptr_t _fxcache;
+  lightmanager_ptr_t _LM;
+  lightmanagerdata_ptr_t _LMD;
+
+  light_ptr_t _testlight;
   bool _initted = false;
   Timer _timer;
 
@@ -133,6 +143,17 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   ptcl_context->_drawable = rval;
   rval->_sortkey = 20;
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ParticlesDrawableData::_doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const { // final
+  auto impl = drw->mDataA.getShared<ParticlesDrawableInst>();
+  impl->_LM = SG->_lightManager;
+  impl->_LMD = SG->_lightManagerData;
+  OrkAssert(impl->_LM!=nullptr);
+  OrkAssert(impl->_LMD!=nullptr);
+  impl->_LM->mGlobalMovingLights.AddLight(impl->_testlight.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

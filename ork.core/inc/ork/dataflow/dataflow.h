@@ -355,6 +355,7 @@ struct GraphInst {
   std::vector<dgmoduledata_ptr_t> _ordered_module_datas;
   std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
   std::set<int> _outputRegisters;
+  varmap::VarMap _vars;
 
 
 
