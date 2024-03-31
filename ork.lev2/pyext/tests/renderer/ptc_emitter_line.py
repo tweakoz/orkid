@@ -48,6 +48,7 @@ class ParticlesApp(object):
     self.azim_cur = 0.0
     self.azim_tgt = 1
     self.scale = 2.0
+    self.counter = 0
 
   ################################################
   # gpu data init:
@@ -81,7 +82,7 @@ class ParticlesApp(object):
       ("GRAV","STRK"),
     ]
     createParticleData(self,ptc_data,ptc_connections)
-    self.POOL.pool_size = 65536 # max number of particles in pool
+    self.POOL.pool_size = 131072 # max number of particles in pool
 
     gradient = GradientV4()
     gradient.setColorStops({
@@ -102,7 +103,7 @@ class ParticlesApp(object):
     presetGRAV1(self.GRAV)
     presetTURB1(self.TURB)
     self.EMITL.inputs.LifeSpan = 20
-    self.EMITL.inputs.EmissionRate = 1000
+    self.EMITL.inputs.EmissionRate = 2000
     self.EMITL.inputs.EmissionVelocity = 0.03
     self.GRAV.inputs.G = 1e-6
     self.GRAV.inputs.Mass = 1e-5
@@ -116,6 +117,9 @@ class ParticlesApp(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.pending_timer -= updinfo.deltatime
+
+    self.counter = self.counter + 1
+
 
     self.elev_cur = self.elev_cur*0.9 + self.elev_tgt*0.1
     self.azim_cur = self.azim_cur*0.9 + self.azim_tgt*0.1
@@ -143,7 +147,7 @@ class ParticlesApp(object):
     cubeP7 = vec4(cubeP7,0).transform(R).xyz()
     cubeP8 = vec4(cubeP8,0).transform(R).xyz()
 
-    rand = random.randint(0,11)
+    rand = (self.counter>>2) % 12
     if rand==0: # top left back to top right back
       self.P1 = cubeP4
       self.P2 = cubeP1
