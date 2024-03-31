@@ -93,14 +93,15 @@ def presetEMITR1(emitter):
   emitter.inputs.DispersionAngle = 45
   emitter.inputs.Offset = vec3(0,4,0)
   
+################################################
+
 def presetEMITL1(emitter):
   emitter.inputs.LifeSpan = 10
   emitter.inputs.EmissionRate = 800
-  emitter.inputs.EmissionRadius = 2
-  emitter.inputs.EmitterSpinRate = 1
   emitter.inputs.EmissionVelocity = 1
   emitter.inputs.DispersionAngle = 45
-  emitter.inputs.Offset = vec3(0,4,0)
+  emitter.inputs.P1 = vec3(0,0,0)
+  emitter.inputs.P2 = vec3(0,10,0)
   
 ################################################
 

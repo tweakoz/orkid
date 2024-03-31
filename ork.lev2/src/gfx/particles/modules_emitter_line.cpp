@@ -40,6 +40,7 @@ struct LineEmitterInst : public ParticleModuleInst {
   fvec3 _curBasisY;
   fvec3 _curBasisZ;
   fvec3 _curOffset;
+  int _emcounter = 0;
 
   //NozzleDirectedEmitter _directedEmitter;
   EmitterCtx _emitter_context;
@@ -140,8 +141,7 @@ void LineEmitterInst::_emit(float fdt) {
   _emitter_context.mfDeltaTime        = fdt;
   _emitter_context.mfEmissionVelocity = femitvel;
   _emitter_context.mDispersion        = _input_dispersionangle->value();
-  //_directedEmitter.meDirection        = EmitterDirection::USER;
-  //_emitter_context.mPosition          = _input_offset->value();
+
   fvec3 offsetVel                     = fvec3(0); //_input_offset_velocity->value();
   _emitter_context.mOffsetVelocity    = offsetVel;
 
@@ -163,7 +163,7 @@ void LineEmitterInst::_emit(float fdt) {
   int icount = int(_emitter_context.mfEmitterMark);
   fvec3 pos, disp, yo;
   for (int ic = 0; ic < icount; ic++) {
-    float fi = float(ic) / float(icount);
+    float fi = float(rand()&0xffff) / float(1<<16);
     fvec3 pos;
     pos.lerp(P1,P2, fi);
     //computePosDir(fi, pos, basis);

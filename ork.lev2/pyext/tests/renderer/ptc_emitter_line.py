@@ -35,12 +35,19 @@ class ParticlesApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
-    #self.materials = set()
-
     setupUiCamera( app=self, #
                    eye = vec3(0,0,30), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
+    
+    self.pending_timer = 2.0
+    self.P1 = vec3(0,1,0)
+    self.P2 = vec3(0,-1,0)
+    self.elev_cur = 0.0
+    self.elev_tgt = 1
+    self.azim_cur = 0.0
+    self.azim_tgt = 1
+    self.scale = 2.0
 
   ################################################
   # gpu data init:
@@ -62,42 +69,132 @@ class ParticlesApp(object):
 
     ptc_data = {
       "POOL":particles.Pool,
-      "EMITN":particles.NozzleEmitter,
-      "EMITR":particles.RingEmitter,
-      "GLOB":particles.Globals,
+      "EMITL":particles.LineEmitter,
       "GRAV":particles.Gravity,
       "TURB":particles.Turbulence,
-      "VORT":particles.Vortex,
-      "SPRI":particles.SpriteRenderer,
+      "STRK":particles.StreakRenderer,
     }
     ptc_connections = [
-      ("POOL","EMITN"),
-      ("EMITN","EMITR"),
-      ("EMITR","GRAV"),
-      ("GRAV","TURB"),
-      ("TURB","VORT"),
-      ("VORT","SPRI"),
+      ("POOL","EMITL"),
+      ("EMITL","TURB"),
+      ("TURB","GRAV"),
+      ("GRAV","STRK"),
     ]
     createParticleData(self,ptc_data,ptc_connections)
-    self.POOL.pool_size = 16384 # max number of particles in pool
+    self.POOL.pool_size = 65536 # max number of particles in pool
 
-    self.SPRI.inputs.Size = 0.05
-    self.SPRI.inputs.GradientIntensity = 1
-    self.SPRI.material = presetMaterial()
-    self.EMITN.inputs.EmissionVelocity = 0.1
+    gradient = GradientV4()
+    gradient.setColorStops({
+      0.0: vec4(0,0,0,0),
+      0.25: vec4(1,0,0,1),
+      0.25: vec4(1,0.8,0,1),
+      0.5: vec4(1,1,0.5,1),
+      0.7: vec4(1,0.5,0,1),
+      1.0: vec4(0,0,0,0),
+    })
+
+    self.STRK.inputs.Length = 1
+    self.STRK.inputs.Width = 0.01
+    self.STRK.inputs.GradientIntensity = 1
+    self.STRK.material = presetMaterial(grad=gradient)
     presetPOOL1(self.POOL)
-    presetEMITN1(self.EMITN)
-    presetEMITR1(self.EMITR)
-    presetTURB1(self.TURB)
-    presetVORT1(self.VORT)
+    presetEMITL1(self.EMITL)
     presetGRAV1(self.GRAV)
-    
-    self.TURB.inputs.Amount = vec3(1,1,1)*5
+    presetTURB1(self.TURB)
+    self.EMITL.inputs.LifeSpan = 20
+    self.EMITL.inputs.EmissionRate = 1000
+    self.EMITL.inputs.EmissionVelocity = 0.03
+    self.GRAV.inputs.G = 1e-9
+    self.GRAV.inputs.Mass = 1e-5
+    self.GRAV.inputs.OthMass = 1e-5
+    self.GRAV.inputs.MinDistance = 1
+
+    self.TURB.inputs.Amount = vec3(0.5)
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    self.pending_timer -= updinfo.deltatime
+
+    self.elev_cur = self.elev_cur*0.9 + self.elev_tgt*0.1
+    self.azim_cur = self.azim_cur*0.9 + self.azim_tgt*0.1
+
+    cubeP1 = vec3(1,1,-1) # top right back
+    cubeP2 = vec3(1,1,1) # top right front
+    cubeP3 = vec3(-1,1,1) # top left front
+    cubeP4 = vec3(-1,1,-1) # top left back
+    cubeP5 = vec3(1,-1,-1) # bottom right back
+    cubeP6 = vec3(1,-1,1) # bottom right front
+    cubeP7 = vec3(-1,-1,1) # bottom left front
+    cubeP8 = vec3(-1,-1,-1) # bottom left back
+    
+    Qelev = quat(vec3(1,0,0),self.elev_cur)
+    Qazim = quat(vec3(0,1,0),self.azim_cur)
+    Q = Qelev * Qazim
+    R = mtx4(Q)
+    
+    cubeP1 = vec4(cubeP1,0).transform(R).xyz()
+    cubeP2 = vec4(cubeP2,0).transform(R).xyz()
+    cubeP3 = vec4(cubeP3,0).transform(R).xyz()
+    cubeP4 = vec4(cubeP4,0).transform(R).xyz()
+    cubeP5 = vec4(cubeP5,0).transform(R).xyz()
+    cubeP6 = vec4(cubeP6,0).transform(R).xyz()
+    cubeP7 = vec4(cubeP7,0).transform(R).xyz()
+    cubeP8 = vec4(cubeP8,0).transform(R).xyz()
+
+    rand = random.randint(0,11)
+    if rand==0: # top left back to top right back
+      self.P1 = cubeP4
+      self.P2 = cubeP1
+    elif rand==1: # top right back to top right front
+      self.P1 = cubeP1
+      self.P2 = cubeP2
+    elif rand==2: # top right front to top left front
+      self.P1 = cubeP2
+      self.P2 = cubeP3
+    elif rand==3: # top left front to top left back
+      self.P1 = cubeP3
+      self.P2 = cubeP4
+    elif rand==4: # top left back to bottom left back
+      self.P1 = cubeP4
+      self.P2 = cubeP8
+    elif rand==5: # top right back to bottom right back
+      self.P1 = cubeP1
+      self.P2 = cubeP5
+    elif rand==6: # top right front to bottom right front
+      self.P1 = cubeP2
+      self.P2 = cubeP6
+    elif rand==7: # top left front to bottom left front
+      self.P1 = cubeP3
+      self.P2 = cubeP7
+    elif rand==8: # bottom left back to bottom right back
+      self.P1 = cubeP8
+      self.P2 = cubeP5
+    elif rand==9: # bottom right back to bottom right front
+      self.P1 = cubeP5
+      self.P2 = cubeP6
+    elif rand==10: # bottom right front to bottom left front
+      self.P1 = cubeP6
+      self.P2 = cubeP7
+    elif rand==11: # bottom left front to bottom left back
+      self.P1 = cubeP7
+      self.P2 = cubeP8
+
+    self.EMITL.inputs.P1 = self.P1*self.scale
+    self.EMITL.inputs.P2 = self.P2*self.scale
+
+    if self.pending_timer<0.0:
+      self.elev_tgt = random.uniform(-math.pi,math.pi)
+      self.azim_tgt = random.uniform(-math.pi,math.pi)
+      
+      # compute 6 points on a cube (rotated by elev/azim)
+            
+      self.pending_timer = random.uniform(2,3)
+      self.scale = random.uniform(2,4)
+      range = 20
+
+      
 
   ##############################################
 
