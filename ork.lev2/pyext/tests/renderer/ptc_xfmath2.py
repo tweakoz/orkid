@@ -96,17 +96,29 @@ class ParticlesApp(object):
     self.EMITN.inputs.LifeSpan = 3
     self.EMITR.inputs.LifeSpan = 3
     self.STRK.inputs.Width = 0.01
-    SIZE = self.STRK.inputs.Length
-    SIZEXF = SIZE.transformer 
-    SIZEXF.append(floatxf.quantize(0.025))
-    SIZEXF.append(floatxf.scale(4.0))
-    SIZEXF.append(floatxf.sine())
-    SIZEXF.append(floatxf.abs())
-    SIZEXF.append(floatxf.smoothstep(0.3,0.7))
-    SIZEXF.append(floatxf.power(8.0))
-    SIZEXF.append(floatxf.scale(0.25))
+    LEN = self.STRK.inputs.Length
+    LENXF = LEN.transformer 
+    WID = self.STRK.inputs.Width
+    WIDXF = WID.transformer 
+
+    LENXF.append(floatxf.quantize(0.025))
+    LENXF.append(floatxf.scale(4.0))
+    LENXF.append(floatxf.sine())
+    LENXF.append(floatxf.abs())
+    LENXF.append(floatxf.smoothstep(0.3,0.7))
+    LENXF.append(floatxf.power(8.0))
+    LENXF.append(floatxf.scale(0.05))
+
+    WIDXF.append(floatxf.quantize(0.25))
+    WIDXF.append(floatxf.scale(8.0))
+    WIDXF.append(floatxf.sine())
+    WIDXF.append(floatxf.abs())
+    WIDXF.append(floatxf.scale(0.05))
     
-    self.graphdata.connect(SIZE,#
+    self.graphdata.connect(LEN,#
+                           self.POOL.outputs.UnitAge)
+
+    self.graphdata.connect(WID,#
                            self.POOL.outputs.UnitAge)
 
   ################################################
