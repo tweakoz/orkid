@@ -93,8 +93,8 @@ class ParticlesApp(object):
       1.0: vec4(0,0,0,0),
     })
 
-    self.STRK.inputs.Length = 1
-    self.STRK.inputs.Width = 0.01
+    self.STRK.inputs.Length = 0.5
+    self.STRK.inputs.Width = 0.02
     self.STRK.inputs.GradientIntensity = 1
     self.STRK.material = presetMaterial(grad=gradient)
     presetPOOL1(self.POOL)
@@ -104,12 +104,12 @@ class ParticlesApp(object):
     self.EMITL.inputs.LifeSpan = 20
     self.EMITL.inputs.EmissionRate = 1000
     self.EMITL.inputs.EmissionVelocity = 0.03
-    self.GRAV.inputs.G = 1e-9
+    self.GRAV.inputs.G = 1e-6
     self.GRAV.inputs.Mass = 1e-5
     self.GRAV.inputs.OthMass = 1e-5
     self.GRAV.inputs.MinDistance = 1
 
-    self.TURB.inputs.Amount = vec3(0.5)
+    self.TURB.inputs.Amount = vec3(0.75)
 
   ################################################
 
