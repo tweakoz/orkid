@@ -183,5 +183,19 @@ public:
 using streakmodule_ptr_t = std::shared_ptr<StreakRendererData>;
 
 /////////////////////////////////////////
+
+struct LightRendererData : public RendererModuleData {
+  DeclareConcreteX(LightRendererData, RendererModuleData);
+public:
+  LightRendererData();
+  static std::shared_ptr<LightRendererData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+  basematerial_ptr_t _material;
+  bool _sort = false;
+};
+
+using lightmodule_ptr_t = std::shared_ptr<LightRendererData>;
+
+/////////////////////////////////////////
 } //namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////

@@ -172,6 +172,11 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", []() -> ptc::vortexmodule_ptr_t { return ptc::VortexModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::vortexmodule_ptr_t>(vortmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto lightmoduledata_type = //
+      py::class_<ptc::LightRendererData, ptc::ModuleData, ptc::lightmodule_ptr_t>(ptc_module, "LightRenderer")
+      .def_static("createShared", []() -> ptc::lightmodule_ptr_t { return ptc::LightRendererData::createShared(); });
+  type_codec->registerStdCodec<ptc::lightmodule_ptr_t>(lightmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto spritemoduledata_type = //
       py::class_<ptc::SpriteRendererData, ptc::ModuleData, ptc::spritemodule_ptr_t>(ptc_module, "SpriteRenderer")
       .def_property("material",[](ptc::spritemodule_ptr_t r)->ptc::basematerial_ptr_t{

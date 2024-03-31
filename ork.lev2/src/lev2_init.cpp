@@ -172,18 +172,23 @@ struct ClassToucher {
     particle::ParticleModuleData::GetClassStatic();
     particle::ParticlePoolData::GetClassStatic();
     particle::GlobalModuleData::GetClassStatic();
+
     particle::RingEmitterData::GetClassStatic();
     particle::EllipticalEmitterData::GetClassStatic();
     particle::LineEmitterData::GetClassStatic();
     particle::NozzleEmitterData::GetClassStatic();
+
     particle::GravityModuleData::GetClassStatic();
     particle::SphAttractorModuleData::GetClassStatic();
     particle::EllipticalAttractorModuleData::GetClassStatic();
+
     particle::TurbulenceModuleData::GetClassStatic();
     particle::VortexModuleData::GetClassStatic();
+
     particle::RendererModuleData::GetClassStatic();
     particle::SpriteRendererData::GetClassStatic();
     particle::StreakRendererData::GetClassStatic();
+    particle::LightRendererData::GetClassStatic();
 
     particle::particlebuf_outplugdata_t::GetClassStatic();
     particle::particlebuf_inplugdata_t::GetClassStatic();
