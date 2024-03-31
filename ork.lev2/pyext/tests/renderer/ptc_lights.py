@@ -83,9 +83,9 @@ class ParticlesApp(object):
     createParticleData(self,ptc_data,ptc_connections)
     self.POOL.pool_size = 16384 # max number of particles in pool
 
-    self.SPRI.inputs.Size = 0.05
+    self.SPRI.inputs.Size = 0.1
     self.SPRI.inputs.GradientIntensity = 1
-    self.SPRI.material = presetMaterial()
+    self.SPRI.material = presetMaterial(grad=presetGRAD2())
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)
@@ -93,7 +93,7 @@ class ParticlesApp(object):
     presetTURB1(self.TURB)
     presetVORT1(self.VORT)
     presetGRAV1(self.GRAV)
-    self.particlenode.worldTransform.translation = vec3(0,3,0)
+    self.particlenode.worldTransform.translation = vec3(0,1,0)
     
     self.TURB.inputs.Amount = vec3(1,1,1)*5
 
@@ -101,7 +101,7 @@ class ParticlesApp(object):
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
     gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
-    gmtl.metallicFactor = 1
+    gmtl.metallicFactor = 0
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(1,1,1,1)
     gmtl.gpuInit(ctx)
@@ -111,7 +111,7 @@ class ParticlesApp(object):
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
-    self.groundnode.worldTransform.translation = vec3(0,-3,0)
+    self.groundnode.worldTransform.translation = vec3(0,-5,0)
 
   ################################################
 
