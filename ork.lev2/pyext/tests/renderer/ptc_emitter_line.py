@@ -106,7 +106,7 @@ class ParticlesApp(object):
     self.EMITL.inputs.LifeSpan = 20
     self.EMITL.inputs.EmissionRate = 3000
     self.EMITL.inputs.EmissionVelocity = 0.1
-    self.GRAV.inputs.G = 1e-6
+    self.GRAV.inputs.G = 1e-3
     self.GRAV.inputs.Mass = 1e-5
     self.GRAV.inputs.OthMass = 1e-5
     self.GRAV.inputs.MinDistance = 1
