@@ -94,10 +94,10 @@ class ParticlesApp(object):
       1.0: vec4(0,0,0,0),
     })
 
-    self.STRK.inputs.Length = 0.5
-    self.STRK.inputs.Width = 0.02
+    self.STRK.inputs.Length = 1.5
+    self.STRK.inputs.Width = 0.03
     self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = presetMaterial(grad=gradient)
+    self.STRK.material = presetMaterial(grad=gradient,texname="src://effect_textures/ptc1")
     presetPOOL1(self.POOL)
     presetEMITL1(self.EMITL)
     presetGRAV1(self.GRAV)
@@ -110,7 +110,7 @@ class ParticlesApp(object):
     self.GRAV.inputs.OthMass = 1e-5
     self.GRAV.inputs.MinDistance = 1
 
-    self.TURB.inputs.Amount = vec3(0.75)
+    self.TURB.inputs.Amount = vec3(0.5)
 
   ################################################
 
