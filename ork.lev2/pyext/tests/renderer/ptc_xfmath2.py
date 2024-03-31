@@ -82,7 +82,7 @@ class ParticlesApp(object):
 
     #self.STRK.inputs.Size = 0.05
     self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = presetMaterial(grad=presetGRAD2())
+    self.STRK.material = presetMaterial(grad=presetGRAD2(),texname="src://effect_textures/ptc1.png")
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)
@@ -111,11 +111,11 @@ class ParticlesApp(object):
     #LENXF.append(floatxf.power(8.0))
     LENXF.append(floatxf.scale(0.05))
 
-    WIDXF.append(floatxf.quantize(1.0/32))
+    WIDXF.append(floatxf.quantize(1.0/16))
     #WIDXF.append(floatxf.scale(8.0))
     WIDXF.append(floatxf.sine())
     WIDXF.append(floatxf.abs())
-    WIDXF.append(floatxf.scale(0.5))
+    WIDXF.append(floatxf.scale(0.125))
     
     self.graphdata.connect(LEN,#
                            self.POOL.outputs.UnitAge)

@@ -45,9 +45,9 @@ def presetGRAD2():
 
 ################################################
 
-def presetMaterial(grad=presetGRAD1()):
+def presetMaterial(grad=presetGRAD1(),texname="src://effect_textures/knob2"):
   material = particles.GradientMaterial.createShared()
-  material.modulation_texture = Texture.load("src://effect_textures/knob2")
+  material.modulation_texture = Texture.load(texname)
   material.gradient = grad
   material.blending = tokens.ADDITIVE
   return material
