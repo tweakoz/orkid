@@ -81,7 +81,29 @@ void SpriteRendererInst::compute(
   _triple_buf->end_push(output_buffer);
 
   auto material = _srd->_material;
-  inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
+  auto as_grad = dynamic_cast<GradientMaterial*>(material.get());
+  if( true and as_grad ){
+    auto avg_color = fvec4(0,0,0,0);
+    int num_alive = _pool->GetNumAlive();
+    int sample_count = 0;
+    for (int i = 0; i < num_alive; i+=32) {
+      BasicParticle* particle = _pool->GetActiveParticle(i);
+      float unit_age = particle->_unit_age;
+      int index = int(unit_age * 255.0f);
+      avg_color += as_grad->_gradientSamples[index];
+      sample_count++;
+    }
+    //avg_color *= (1.0f/float(sample_count));
+    inst->_vars.makeValueForKey<fvec4>("emission_color") = avg_color;
+
+    float radius = avg_color.xyz().magnitude()*0.05f;
+    //printf( "radius<%f>\n", radius );
+    inst->_vars.makeValueForKey<float>("emission_radius") = radius;
+
+  }
+  else{
+    inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

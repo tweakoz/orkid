@@ -93,6 +93,7 @@ public:
   rtgroup_ptr_t _gradient_rtgroup;
   asset::asset_ptr_t _modulation_texture_asset;
   texture_ptr_t _modulation_texture;
+  fvec4 _gradientSamples[256];
   float _gradientAlphaIntensity = 1.0f;
   float _gradientColorIntensity = 1.0f;
 };

@@ -245,6 +245,7 @@ struct BasicParticle {
   ork::fvec3 mLastPosition;
   ork::fvec3 mVelocity;
   ork::fvec3 mLastVelocity;
+  ork::fvec3 mOrigin;
 
   bool IsDead(void) {
     return (mfAge >= mfLifeSpan);

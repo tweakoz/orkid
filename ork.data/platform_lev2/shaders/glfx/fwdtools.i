@@ -21,12 +21,11 @@ libblock lib_fwd
     return plc;
   }
   /////////////////////////////////////////////////////////
-  vec3 plcalc_forward(LightCtx plc,PbrData pbd){
+  vec3 plcalc_forward(LightCtx plc,PbrData pbd, float lightRadius){
     float dist2light = sqrt(plc._lightdel.x*plc._lightdel.x + plc._lightdel.y*plc._lightdel.y + plc._lightdel.z*plc._lightdel.z);
     float atten = 1.0 / max(.05, dist2light*dist2light);
     vec3 lightdir = normalize(plc._lightdel);
     vec3 halfdir = normalize(plc._viewdir + lightdir);
-    float lightRadius = 7.0;
     float angularRadius = atan(lightRadius, dist2light);
     float ggx = computeGGX(plc._normal, halfdir, plc._roughness + angularRadius); // Example adjustment
     
@@ -163,7 +162,8 @@ libblock lib_fwd
     for(int i=0; i<point_light_count; i++){
       plc._lightdel = _lightpos[i].xyz - wpos;
       vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
-      point_lighting += plcalc_forward(plc,pbd)*LC;
+      float LR = _lightradius[i];
+      point_lighting += plcalc_forward(plc,pbd,LR)*LC;
     }
 
     ///////////////////////////////////////////////

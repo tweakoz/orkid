@@ -33,10 +33,10 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto drawable_type = py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable")
-    .def_property(
-        "scenegraph",        
-        [](drawable_ptr_t drw) -> scenegraph::scene_ptr_t { return drw->_sg; },
-        [](drawable_ptr_t drw, scenegraph::scene_ptr_t sg) { drw->_sg = sg; });    
+                           .def_property(
+                               "scenegraph",
+                               [](drawable_ptr_t drw) -> scenegraph::scene_ptr_t { return drw->_sg; },
+                               [](drawable_ptr_t drw, scenegraph::scene_ptr_t sg) { drw->_sg = sg; });
   type_codec->registerStdCodec<drawable_ptr_t>(drawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawable_type = //
@@ -152,7 +152,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "extent",
               [](groundplane_drawabledataptr_t drw) -> float { return drw->_extent; },
               [](groundplane_drawabledataptr_t drw, float val) { //
-                printf( "set gpd<%p> extent<%g>\n", (void*) drw.get(), val );
+                printf("set gpd<%p> extent<%g>\n", (void*)drw.get(), val);
                 drw->_extent = val; //
               })
           .def_property(
@@ -205,7 +205,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "graphdata",
               [](particles_drawable_data_ptr_t drw) -> dflow::graphdata_ptr_t { return drw->_graphdata; },
-              [](particles_drawable_data_ptr_t drw, dflow::graphdata_ptr_t gdata) { drw->_graphdata = gdata; });
+              [](particles_drawable_data_ptr_t drw, dflow::graphdata_ptr_t gdata) { drw->_graphdata = gdata; })
+          .def_property(
+              "emitterIntensity",
+              [](particles_drawable_data_ptr_t drw) -> float { return drw->_emitterIntensity; },
+              [](particles_drawable_data_ptr_t drw, float intens) { drw->_emitterIntensity = intens; });
   type_codec->registerStdCodec<particles_drawable_data_ptr_t>(ptcdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto terdrawdata_type = //

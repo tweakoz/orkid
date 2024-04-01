@@ -53,22 +53,31 @@ class ParticlesApp(object):
     ###################################
     # create scenegraph
     ###################################
-
-    params_dict = {
-      "SkyboxIntensity": float(1),
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
-      "DepthFogDistance": float(1e6),
-      "SkyboxTexPathStr": "src://envmaps/tozenv_caustic1.png",
-    }
-
-    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
-
+    sceneparams = VarMap() 
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(1)
+    sceneparams.SpecularIntensity = float(1)
+    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0.1)
+    sceneparams.DepthFogDistance = float(1e6)
+    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+    ###################################
+    # post fx node
+    ###################################
+    postNode = DecompBlurPostFxNode()
+    postNode.threshold = 0.99
+    postNode.blurwidth = 16.0
+    postNode.blurfactor = 0.1
+    postNode.amount = 0.1
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToVarMap(sceneparams,"PostFxNode")
+    #self.post_node = postNode
+    ###################################
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer1 = self.scene.createLayer("layer1")
     ###################################
     # create particle drawable 
     ###################################
-
     ptc_data = {
       "POOL":particles.Pool,
       "EMITN":particles.NozzleEmitter,
@@ -92,19 +101,22 @@ class ParticlesApp(object):
       ("DRAG","LITE"),
       ("LITE","SPRI"),
     ]
-
     #######################################
-    def gen_sys(grad,frq):
+    def gen_sys(grad,frq,radius):
       ptc = ParticleContainer(self.scene,self.layer1)
       createParticleData(ptc,ptc_data,ptc_connections)
-      ptc.POOL.pool_size = 4096 # max number of particles in pool
+      ptc.POOL.pool_size = 8192 # max number of particles in pool
       ptc.SPRI.inputs.Size = 0.1
       ptc.SPRI.inputs.GradientIntensity = 1
       ptc.SPRI.material = presetMaterial(grad=grad)
       ptc.EMITN.inputs.EmissionVelocity = 0.1
-      presetPOOL1(ptc.POOL)
+      #presetPOOL1(ptc.POOL)
       presetEMITN1(ptc.EMITN)
       presetEMITR1(ptc.EMITR)
+      ptc.EMITN.inputs.EmissionRate = 100
+      ptc.EMITR.inputs.EmissionRate = 100
+      ptc.EMITN.inputs.LifeSpan = 20
+      ptc.EMITR.inputs.LifeSpan = 20
       presetTURB1(ptc.TURB)
       presetVORT1(ptc.VORT)
       ptc.VORT.inputs.VortexStrength = 0.0
@@ -113,24 +125,23 @@ class ParticlesApp(object):
       ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
       ptc.TURB.inputs.Amount = vec3(1,1,1)*5
       ptc.frq = frq
-      ptc.radius = 50
+      ptc.radius = radius
       ptc.DRAG.inputs.drag = 0.999
+      ptc.drawable_data.emitterIntensity = 5.0
       return ptc
-
     #######################################
-    self.ptc1 = gen_sys(presetGRAD1(),0.5)
-    self.ptc2 = gen_sys(presetGRAD2(),0.6)
-    self.ptc3 = gen_sys(presetGRAD3(),0.7)
-    self.ptc4 = gen_sys(presetGRAD4(),0.8)
-    self.ptc5 = gen_sys(presetGRAD5(),0.9)
-    self.ptc6 = gen_sys(presetGRAD6(),1.1)
-    self.ptc7 = gen_sys(presetGRAD7(),1.15)
-    self.ptc8 = gen_sys(presetGRAD8(),1.3)
-    #self.ptc8.EMITN.inputs.EmissionVelocity = 0.1
-    self.ptc_systems = [self.ptc1,self.ptc2,self.ptc3,self.ptc4,self.ptc5,self.ptc6,self.ptc7,self.ptc8]
-    
+    self.ptc_systems = [
+      gen_sys(presetGRAD1(),0.5,40),
+      gen_sys(presetGRAD2(),0.6,40),
+      gen_sys(presetGRAD3(),0.7,45),
+      gen_sys(presetGRAD4(),0.8,45),
+      gen_sys(presetGRAD5(),0.9,50),
+      gen_sys(presetGRAD6(),1.1,50),
+      gen_sys(presetGRAD7(),1.15,55),
+      gen_sys(presetGRAD8(),1.3,55)
+    ]
+    #self.ptc_systems[0].EMITN.inputs.EmissionVelocity = 0.1
     #######################################
-
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
     gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
@@ -146,14 +157,11 @@ class ParticlesApp(object):
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
-
     #######################################
-
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.sgnode = self.model.createNode("model-node",self.layer1)
     self.sgnode.worldTransform.scale = 35
     self.sgnode.worldTransform.translation = vec3(0,25,0)
-
     #######################################
 
 
@@ -171,8 +179,7 @@ class ParticlesApp(object):
       
       new_trans = vec3(x,y,z)
 
-      delta_dir = (new_trans-prv_trans).normalized()
-
+      #delta_dir = (new_trans-prv_trans).normalized()
       #item.EMITN.inputs.Offset = new_trans
       #item.EMITR.inputs.Offset = new_trans
       #item.PNTA.inputs.position = new_trans

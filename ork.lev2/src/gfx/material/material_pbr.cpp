@@ -362,7 +362,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
             //printf( "num_untextured_pointlights<%d>\n", num_untextured_pointlights );
             auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+            size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
+            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, map_length);
 
             size_t f32_stride    = sizeof(float);
             size_t vec4_stride   = sizeof(fvec4);

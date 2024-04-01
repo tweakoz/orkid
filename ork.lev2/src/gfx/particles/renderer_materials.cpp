@@ -213,6 +213,10 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);
   _gradient_texture = rtb0->_texture;
   ////////////////////////////////////////////////////////////////////
+  for( int i=0; i<256; i++ ){
+    _gradientSamples[i] = _gradient->sample(float(i)/256.0f);
+  }
+  ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);

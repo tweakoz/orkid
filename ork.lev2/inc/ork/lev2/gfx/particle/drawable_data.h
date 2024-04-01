@@ -18,6 +18,7 @@ public:
   void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const final;
 
   dataflow::graphdata_ptr_t _graphdata;
+  float _emitterIntensity = 1.0f;
 };
 
 using particles_drawable_data_ptr_t = std::shared_ptr<ParticlesDrawableData>;
