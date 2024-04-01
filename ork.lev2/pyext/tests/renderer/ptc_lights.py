@@ -56,8 +56,8 @@ class ParticlesApp(object):
     sceneparams = VarMap() 
     sceneparams.preset = "ForwardPBR"
     sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(1)
-    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.SpecularIntensity = float(1.2)
+    sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
@@ -127,8 +127,8 @@ class ParticlesApp(object):
       ptc.frq = frq
       ptc.radius = radius
       ptc.DRAG.inputs.drag = 0.999
-      ptc.drawable_data.emitterIntensity = 5.0
-      ptc.drawable_data.emitterRadius = 2
+      ptc.drawable_data.emitterIntensity = 8.0
+      ptc.drawable_data.emitterRadius = 1.5
       return ptc
     #######################################
     self.ptc_systems = [

@@ -32,14 +32,12 @@ libblock lib_fwd
     //float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
       float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
       vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
-      float spec_amt = 2.0; // SpecularLevel;
-      float diff_amt = 1.0; // DiffuseLevel
 
       vec3 diffusel = vec3(1) - fres;
       diffusel *= (1 - plc._metallic);
-      vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*diff_amt;
+      vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*DiffuseLevel;
 
-      vec3 numerator  = min(ggx * geo * spec_amt, 16)*fres;
+      vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
       float denominator = 4 * satdot(plc._normal,plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
       float ndotl = satdot(plc._normal,lightdir);
       vec3 specular_term = numerator / max(.0625, denominator);
