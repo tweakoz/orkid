@@ -105,7 +105,7 @@ class ParticlesApp(object):
     def gen_sys(grad,frq,radius):
       ptc = ParticleContainer(self.scene,self.layer1)
       createParticleData(ptc,ptc_data,ptc_connections)
-      ptc.POOL.pool_size = 8192 # max number of particles in pool
+      ptc.POOL.pool_size = 4096 # max number of particles in pool
       ptc.SPRI.inputs.Size = 0.1
       ptc.SPRI.inputs.GradientIntensity = 1
       ptc.SPRI.material = presetMaterial(grad=grad)
@@ -113,10 +113,10 @@ class ParticlesApp(object):
       #presetPOOL1(ptc.POOL)
       presetEMITN1(ptc.EMITN)
       presetEMITR1(ptc.EMITR)
-      ptc.EMITN.inputs.EmissionRate = 100
-      ptc.EMITR.inputs.EmissionRate = 100
-      ptc.EMITN.inputs.LifeSpan = 20
-      ptc.EMITR.inputs.LifeSpan = 20
+      ptc.EMITN.inputs.EmissionRate = 50
+      ptc.EMITR.inputs.EmissionRate = 50
+      ptc.EMITN.inputs.LifeSpan = 30
+      ptc.EMITR.inputs.LifeSpan = 30
       presetTURB1(ptc.TURB)
       presetVORT1(ptc.VORT)
       ptc.VORT.inputs.VortexStrength = 0.0
@@ -128,6 +128,7 @@ class ParticlesApp(object):
       ptc.radius = radius
       ptc.DRAG.inputs.drag = 0.999
       ptc.drawable_data.emitterIntensity = 5.0
+      ptc.drawable_data.emitterRadius = 2
       return ptc
     #######################################
     self.ptc_systems = [

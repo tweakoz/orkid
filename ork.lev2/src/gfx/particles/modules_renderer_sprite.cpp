@@ -96,10 +96,6 @@ void SpriteRendererInst::compute(
     //avg_color *= (1.0f/float(sample_count));
     inst->_vars.makeValueForKey<fvec4>("emission_color") = avg_color;
 
-    float radius = avg_color.xyz().magnitude()*0.05f;
-    //printf( "radius<%f>\n", radius );
-    inst->_vars.makeValueForKey<float>("emission_radius") = radius;
-
   }
   else{
     inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;

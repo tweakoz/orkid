@@ -363,7 +363,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             //printf( "num_untextured_pointlights<%d>\n", num_untextured_pointlights );
             auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
             size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
-            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, map_length);
+            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
 
             size_t f32_stride    = sizeof(float);
             size_t vec4_stride   = sizeof(fvec4);
@@ -375,10 +375,11 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             for (auto light : enumlights->_untexturedpointlights) {
               auto C = fvec4(light->color(), light->intensity());
               auto P = light->worldPosition();
+              float R = light->radius();
               pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
               pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
-              pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->radius();
-              //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z);
+              pl_mapped->ref<float>(base_radius + (index * f32_stride))    = R;
+              //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
               index++;
             }
 

@@ -19,6 +19,7 @@ public:
 
   dataflow::graphdata_ptr_t _graphdata;
   float _emitterIntensity = 1.0f;
+  float _emitterRadius = 1.0f;
 };
 
 using particles_drawable_data_ptr_t = std::shared_ptr<ParticlesDrawableData>;

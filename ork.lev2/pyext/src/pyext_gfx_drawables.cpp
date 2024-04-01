@@ -209,7 +209,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "emitterIntensity",
               [](particles_drawable_data_ptr_t drw) -> float { return drw->_emitterIntensity; },
-              [](particles_drawable_data_ptr_t drw, float intens) { drw->_emitterIntensity = intens; });
+              [](particles_drawable_data_ptr_t drw, float intens) { drw->_emitterIntensity = intens; })
+          .def_property(
+              "emitterRadius",
+              [](particles_drawable_data_ptr_t drw) -> float { return drw->_emitterRadius; },
+              [](particles_drawable_data_ptr_t drw, float radius) { drw->_emitterRadius = radius; });
   type_codec->registerStdCodec<particles_drawable_data_ptr_t>(ptcdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto terdrawdata_type = //
