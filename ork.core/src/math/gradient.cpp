@@ -46,7 +46,7 @@ template <typename T> void Gradient<T>::addDataPoint(float flerp, const T& data)
   _data.AddSorted(flerp, data);
 }
 
-template <typename T> T Gradient<T>::sample(float fu) {
+template <typename T> T Gradient<T>::sample(float fu) const {
 
   if (fu < 0.0f)
     return T();
@@ -76,6 +76,16 @@ template <typename T> T Gradient<T>::sample(float fu) {
   float fisu                    = 1.0f - fsu;
   T rval                        = (VA.second * fisu) + (VB.second * fsu);
   return rval;
+}
+
+template <typename T> T Gradient<T>::average() const{
+  T accum;
+  for( int i=0; i<64; i++ ){
+    float fi = float(i)/64.0f;
+    accum += sample(fi);
+  }
+  accum *= (1.0f/64.0f);
+  return accum;
 }
 
 template <typename T> void Gradient<T>::describeX(class_t* clazz) {

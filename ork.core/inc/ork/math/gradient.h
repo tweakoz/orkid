@@ -46,7 +46,8 @@ public:
   Gradient();
 
 	void addDataPoint( float flerp, const T& data );
-	T sample( float atlerp );
+	T sample( float atlerp ) const;
+  T average() const;
 
   bool preDeserialize( ork::reflect::serdes::IDeserializer& deser ) final;
 

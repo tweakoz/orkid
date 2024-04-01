@@ -47,6 +47,7 @@ public:
   vtx_set_sprite_t _vertexSetterSprite;
   vtx_set_streak_t _vertexSetterStreak;
   fvec4 _color;
+  fvec4 _averageColor;
   EDepthTest _depthtest = EDepthTest::OFF;
   Blending _blending = Blending::OFF;
 

@@ -220,6 +220,8 @@ struct DynamicPointLight : public PointLight {
 
 };
 
+using dynamicpointlight_ptr_t = std::shared_ptr<DynamicPointLight>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DirectionalLightData : public LightData {

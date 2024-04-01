@@ -19,6 +19,11 @@ struct ParticlesDrawableInst {
     _timer.Start();
 
     _testlight = std::make_shared<DynamicPointLight>();
+    _testlight->_inlineData._radius = 10.0f;
+    _testlight->_inlineData.mColor      = fvec3(1, 1, 1);
+    _testlight->_xformgenerator = [this]() -> fmtx4 {
+      return _mymatrix;
+    };
   }
   ///////////////////////////////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
@@ -50,12 +55,24 @@ struct ParticlesDrawableInst {
     float abs_time = _timer.SecsSinceStart();
     _updata->_dt = abs_time - _updata->_abstime;
     _updata->_abstime = abs_time;
-
-
     _graphinst->compute(_updata);
+
+    _testlight->_inlineData.mColor      = fvec3(1, 1, 1);
+
+    if( auto try_avgcolor = _graphinst->_vars.typedValueForKey<fvec4>("emission_color") ){
+      _testlight->_inlineData.mColor = try_avgcolor.value().xyz();
+      _testlight->_inlineData._intensity  = 200.0f;
+      _testlight->_inlineData._radius  = 100.0f;
+    }
+
   }
   ///////////////////////////////////////////////////////////////
   void _render(const RenderContextInstData& RCID){
+
+    auto& light_container = _LM->mGlobalMovingLights;
+    light_container.RemoveLight(_testlight.get());
+    light_container.AddLight(_testlight.get());
+
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto context    = RCID.context();
     const RenderContextFrameData* RCFD = RCID._RCFD;
@@ -66,6 +83,11 @@ struct ParticlesDrawableInst {
       _initted = true;
     }
     auto ptcl_context = _graphinst->_impl.getShared<particle::Context>();
+    if( ptcl_context->_drawable and ptcl_context->_drawable->_sgnode ){
+      auto node = ptcl_context->_drawable->_sgnode;
+      _mymatrix = node->_dqxfdata._worldTransform->composed();
+    }
+
     if(ptcl_context->_rcidlambda){
       ptcl_context->_rcidlambda(RCID);
     }
@@ -86,7 +108,8 @@ struct ParticlesDrawableInst {
   lightmanager_ptr_t _LM;
   lightmanagerdata_ptr_t _LMD;
 
-  light_ptr_t _testlight;
+  dynamicpointlight_ptr_t _testlight;
+  fmtx4 _mymatrix;
   bool _initted = false;
   Timer _timer;
 
@@ -153,7 +176,6 @@ void ParticlesDrawableData::_doAttachSGDrawable(drawable_ptr_t drw, scenegraph::
   impl->_LMD = SG->_lightManagerData;
   OrkAssert(impl->_LM!=nullptr);
   OrkAssert(impl->_LMD!=nullptr);
-  impl->_LM->mGlobalMovingLights.AddLight(impl->_testlight.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

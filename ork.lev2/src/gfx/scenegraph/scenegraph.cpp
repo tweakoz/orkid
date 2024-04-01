@@ -136,6 +136,7 @@ Layer::~Layer() {
 
 drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
   drawable_node_ptr_t rval = std::make_shared<DrawableNode>(named, drawable);
+  drawable->_sgnode = rval;
   _drawable_nodes.atomicOp([rval](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(rval); });
   if(DEBUG_LOG){
     logchan_sg->log( "createDrawableNode layer<%s> named<%s> drawable<%p> node<%p>", //

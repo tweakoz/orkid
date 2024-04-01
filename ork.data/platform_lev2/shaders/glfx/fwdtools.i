@@ -39,7 +39,8 @@ libblock lib_fwd
       vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*DiffuseLevel;
       vec3 specular_term = numerator / max(.0625, denominator);
 
-      return (diffuse_term + specular_term) * atten * ndotl;
+      //return(diffuse_term + specular_term) * atten * ndotl;
+      return vec3(atten*ndotl);
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos){
@@ -153,13 +154,14 @@ libblock lib_fwd
     vec3 point_lighting       = vec3(0, 0, 0);
     for(int i=0; i<point_light_count; i++){
       plc._lightdel = _lightpos[i].xyz - wpos;
-      point_lighting += plcalc_forward(plc,pbd)*_lightcolor[i].xyz;
+      vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
+      point_lighting += plcalc_forward(plc,pbd)*LC;
     }
 
     ///////////////////////////////////////////////
     //return vec3(pbd._metallic ,pbd._roughness ,0);
-    //return vec3(env_lighting+point_lighting);//*modcolor;    
-    return vec3(env_lighting);//*modcolor;    
+    return vec3(env_lighting+point_lighting)*modcolor;    
+    //return vec3(env_lighting);//*modcolor;    
 
     //return vec3(rufmtlamb.x * MetallicFactor, //
     //           rufmtlamb.y * RoughnessFactor, //

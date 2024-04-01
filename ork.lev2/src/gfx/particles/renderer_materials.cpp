@@ -165,7 +165,7 @@ GradientMaterial::GradientMaterial() {
     float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
     float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
     //////////////////////////////////////////////////////
-    fvec4 color = _gradient->sample(clamped_unitage);
+    //fvec4 color = _gradient->sample(clamped_unitage);
     //////////////////////////////////////////////////////
     fvec2 uv0(fang, size);
     fvec2 uv1(clamped_unitage, ptc->mfRandom);
@@ -314,6 +314,7 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     });
     CPD.setStereoOnePass(prev_stereo);
     FBI->PopRtGroup();
+    _averageColor = _gradient->average();
     /////////////////////////////////////////
   }
   ///////////////////////////////

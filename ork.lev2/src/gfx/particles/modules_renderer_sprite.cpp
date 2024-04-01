@@ -79,6 +79,9 @@ void SpriteRendererInst::compute(
   auto output_buffer = _triple_buf->begin_push();
   output_buffer->update(*_pool);
   _triple_buf->end_push(output_buffer);
+
+  auto material = _srd->_material;
+  inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

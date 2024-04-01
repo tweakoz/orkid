@@ -54,7 +54,15 @@ class ParticlesApp(object):
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
+    params_dict = {
+      "SkyboxIntensity": float(1),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(1e6)
+    }
+
+    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
 
     ###################################
     # create particle drawable 
@@ -93,7 +101,7 @@ class ParticlesApp(object):
     presetTURB1(self.TURB)
     presetVORT1(self.VORT)
     presetGRAV1(self.GRAV)
-    self.particlenode.worldTransform.translation = vec3(0,1,0)
+    self.particlenode.worldTransform.translation = vec3(30,10,0)
     
     self.TURB.inputs.Amount = vec3(1,1,1)*5
 
@@ -107,7 +115,7 @@ class ParticlesApp(object):
     gmtl.gpuInit(ctx)
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
-    gdata.extent = 100.0
+    gdata.extent = 1000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)

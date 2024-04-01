@@ -32,7 +32,9 @@ template <typename T> struct concurrent_triple_buffer;
 namespace ork::lev2 {
 namespace scenegraph{
   struct Scene;
+  struct Node;
   using scene_ptr_t        = std::shared_ptr<Scene>;
+  using node_ptr_t         = std::shared_ptr<Node>;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -325,6 +327,7 @@ struct Drawable {
   bool _pickable = true;
   std::string _name;
   scenegraph::scene_ptr_t _sg;
+  scenegraph::node_ptr_t _sgnode;
   uint32_t _sortkey = 0;
 };
 
