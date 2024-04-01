@@ -22,25 +22,31 @@ libblock lib_fwd
   }
   /////////////////////////////////////////////////////////
   vec3 plcalc_forward(LightCtx plc,PbrData pbd){
-      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
-                         + plc._lightdel.y*plc._lightdel.y
-                         + plc._lightdel.z*plc._lightdel.z;
-      float atten = 1.0 / max(.05,dist2lightsq);
-      vec3 lightdir = normalize(plc._lightdel);
-      vec3 halfdir = normalize(plc._viewdir + lightdir);
-      float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
+    float dist2light = sqrt(plc._lightdel.x*plc._lightdel.x + plc._lightdel.y*plc._lightdel.y + plc._lightdel.z*plc._lightdel.z);
+    float atten = 1.0 / max(.05, dist2light*dist2light);
+    vec3 lightdir = normalize(plc._lightdel);
+    vec3 halfdir = normalize(plc._viewdir + lightdir);
+    float lightRadius = 7.0;
+    float angularRadius = atan(lightRadius, dist2light);
+    float ggx = computeGGX(plc._normal, halfdir, plc._roughness + angularRadius); // Example adjustment
+    
+    //float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
       float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
       vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
-      vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
-      float denominator = 4 * satdot(plc._normal,plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
+      float spec_amt = 2.0; // SpecularLevel;
+      float diff_amt = 1.0; // DiffuseLevel
+
       vec3 diffusel = vec3(1) - fres;
       diffusel *= (1 - plc._metallic);
+      vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*diff_amt;
+
+      vec3 numerator  = min(ggx * geo * spec_amt, 16)*fres;
+      float denominator = 4 * satdot(plc._normal,plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
       float ndotl = satdot(plc._normal,lightdir);
-      vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*DiffuseLevel;
       vec3 specular_term = numerator / max(.0625, denominator);
 
-      //return(diffuse_term + specular_term) * atten * ndotl;
-      return vec3(atten*ndotl);
+      return(diffuse_term + specular_term) * atten * ndotl;
+      //return lightdir*(atten*ndotl);
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos){
@@ -128,6 +134,7 @@ libblock lib_fwd
     vec3 N = TN*2.0-vec3(1,1,1);
     vec3 normal = normalize(frg_tbn*N);
     vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).xyz;
+    vec3 emission  = texture(EmissiveMap, frg_uv0).xyz;
 
     vec3 wpos = frg_wpos.xyz;
     PbrData pbd;
@@ -161,7 +168,7 @@ libblock lib_fwd
 
     ///////////////////////////////////////////////
     //return vec3(pbd._metallic ,pbd._roughness ,0);
-    return vec3(env_lighting+point_lighting)*modcolor;    
+    return vec3(env_lighting+point_lighting+emission)*modcolor;    
     //return vec3(env_lighting);//*modcolor;    
 
     //return vec3(rufmtlamb.x * MetallicFactor, //

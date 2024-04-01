@@ -65,6 +65,50 @@ def presetGRAD4():
   })
   return gradient  
 
+def presetGRAD5():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(0,1,1,1),
+    0.35: vec4(.5,1,1,1),
+    0.5: vec4(0,1,1,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
+def presetGRAD6():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(0,1,0,1),
+    0.35: vec4(0,1,0,1),
+    0.5: vec4(0,1,0,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
+def presetGRAD7():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(1,1,1,1),
+    0.35: vec4(1,1,1,1),
+    0.5: vec4(1,1,1,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
+def presetGRAD8():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(1,1,.5,1),
+    0.35: vec4(1,1,.5,1),
+    0.5: vec4(1,1,.5,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
 ################################################
 
 def presetMaterial(grad=presetGRAD1(),texname="src://effect_textures/knob2"):
@@ -72,6 +116,7 @@ def presetMaterial(grad=presetGRAD1(),texname="src://effect_textures/knob2"):
   material.modulation_texture = Texture.load(texname)
   material.gradient = grad
   material.blending = tokens.ADDITIVE
+  material.depthtest = tokens.LEQUALS
   return material
 
 ################################################

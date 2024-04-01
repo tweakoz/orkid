@@ -61,7 +61,7 @@ struct ParticlesDrawableInst {
 
     if( auto try_avgcolor = _graphinst->_vars.typedValueForKey<fvec4>("emission_color") ){
       _testlight->_inlineData.mColor = try_avgcolor.value().xyz();
-      _testlight->_inlineData._intensity  = 200.0f;
+      _testlight->_inlineData._intensity  = 800.0f;
       _testlight->_inlineData._radius  = 100.0f;
     }
 

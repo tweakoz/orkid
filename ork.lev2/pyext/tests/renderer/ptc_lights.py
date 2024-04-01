@@ -38,7 +38,7 @@ class ParticlesApp(object):
     #self.materials = set()
 
     setupUiCamera( app=self, #
-                   eye = vec3(0,0,30), #
+                   eye = vec3(0,100,150), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
 
@@ -89,71 +89,40 @@ class ParticlesApp(object):
       ("VORT","LITE"),
       ("LITE","SPRI"),
     ]
+
+    #######################################
+    def gen_sys(grad,frq):
+      ptc = ParticleContainer(self.scene,self.layer1)
+      createParticleData(ptc,ptc_data,ptc_connections)
+      ptc.POOL.pool_size = 4096 # max number of particles in pool
+      ptc.SPRI.inputs.Size = 0.1
+      ptc.SPRI.inputs.GradientIntensity = 1
+      ptc.SPRI.material = presetMaterial(grad=grad)
+      ptc.EMITN.inputs.EmissionVelocity = 0.1
+      presetPOOL1(ptc.POOL)
+      presetEMITN1(ptc.EMITN)
+      presetEMITR1(ptc.EMITR)
+      presetTURB1(ptc.TURB)
+      presetVORT1(ptc.VORT)
+      presetGRAV1(ptc.GRAV)
+      ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
+      ptc.TURB.inputs.Amount = vec3(1,1,1)*5
+      ptc.frq = frq
+      ptc.radius = 50
+      return ptc
+
+    #######################################
+    self.ptc1 = gen_sys(presetGRAD1(),0.5)
+    self.ptc2 = gen_sys(presetGRAD2(),0.6)
+    self.ptc3 = gen_sys(presetGRAD3(),0.7)
+    self.ptc4 = gen_sys(presetGRAD4(),0.8)
+    self.ptc5 = gen_sys(presetGRAD5(),0.9)
+    self.ptc6 = gen_sys(presetGRAD6(),1.1)
+    self.ptc7 = gen_sys(presetGRAD7(),1.15)
+    self.ptc8 = gen_sys(presetGRAD8(),1.3)
+    #self.ptc8.EMITN.inputs.EmissionVelocity = 0.1
+    self.ptc_systems = [self.ptc1,self.ptc2,self.ptc3,self.ptc4,self.ptc5,self.ptc6,self.ptc7,self.ptc8]
     
-    #######################################
-    self.ptc1 = ParticleContainer(self.scene,self.layer1)
-    createParticleData(self.ptc1,ptc_data,ptc_connections)
-    self.ptc1.POOL.pool_size = 8192 # max number of particles in pool
-    self.ptc1.SPRI.inputs.Size = 0.1
-    self.ptc1.SPRI.inputs.GradientIntensity = 1
-    self.ptc1.SPRI.material = presetMaterial(grad=presetGRAD2())
-    self.ptc1.EMITN.inputs.EmissionVelocity = 0.1
-    presetPOOL1(self.ptc1.POOL)
-    presetEMITN1(self.ptc1.EMITN)
-    presetEMITR1(self.ptc1.EMITR)
-    presetTURB1(self.ptc1.TURB)
-    presetVORT1(self.ptc1.VORT)
-    presetGRAV1(self.ptc1.GRAV)
-    self.ptc1.particlenode.worldTransform.translation = vec3(50,10,0)    
-    self.ptc1.TURB.inputs.Amount = vec3(1,1,1)*5
-    #######################################
-    self.ptc2 = ParticleContainer(self.scene,self.layer1)
-    createParticleData(self.ptc2,ptc_data,ptc_connections)
-    self.ptc2.POOL.pool_size = 8192 # max number of particles in pool
-    self.ptc2.SPRI.inputs.Size = 0.1
-    self.ptc2.SPRI.inputs.GradientIntensity = 1
-    self.ptc2.SPRI.material = presetMaterial(grad=presetGRAD1())
-    self.ptc2.EMITN.inputs.EmissionVelocity = 0.1
-    presetPOOL1(self.ptc2.POOL)
-    presetEMITN1(self.ptc2.EMITN)
-    presetEMITR1(self.ptc2.EMITR)
-    presetTURB1(self.ptc2.TURB)
-    presetVORT1(self.ptc2.VORT)
-    presetGRAV1(self.ptc2.GRAV)
-    self.ptc2.particlenode.worldTransform.translation = vec3(-50,10,0)    
-    self.ptc2.TURB.inputs.Amount = vec3(1,1,1)*5
-    #######################################
-    self.ptc3 = ParticleContainer(self.scene,self.layer1)
-    createParticleData(self.ptc3,ptc_data,ptc_connections)
-    self.ptc3.POOL.pool_size = 8192 # max number of particles in pool
-    self.ptc3.SPRI.inputs.Size = 0.1
-    self.ptc3.SPRI.inputs.GradientIntensity = 1
-    self.ptc3.SPRI.material = presetMaterial(grad=presetGRAD3())
-    self.ptc3.EMITN.inputs.EmissionVelocity = 0.1
-    presetPOOL1(self.ptc3.POOL)
-    presetEMITN1(self.ptc3.EMITN)
-    presetEMITR1(self.ptc3.EMITR)
-    presetTURB1(self.ptc3.TURB)
-    presetVORT1(self.ptc3.VORT)
-    presetGRAV1(self.ptc3.GRAV)
-    self.ptc3.particlenode.worldTransform.translation = vec3(0,10,50)    
-    self.ptc3.TURB.inputs.Amount = vec3(1,1,1)*5
-    #######################################
-    self.ptc4 = ParticleContainer(self.scene,self.layer1)
-    createParticleData(self.ptc4,ptc_data,ptc_connections)
-    self.ptc4.POOL.pool_size = 8192 # max number of particles in pool
-    self.ptc4.SPRI.inputs.Size = 0.1
-    self.ptc4.SPRI.inputs.GradientIntensity = 1
-    self.ptc4.SPRI.material = presetMaterial(grad=presetGRAD4())
-    self.ptc4.EMITN.inputs.EmissionVelocity = 0.1
-    presetPOOL1(self.ptc4.POOL)
-    presetEMITN1(self.ptc4.EMITN)
-    presetEMITR1(self.ptc4.EMITR)
-    presetTURB1(self.ptc4.TURB)
-    presetVORT1(self.ptc4.VORT)
-    presetGRAV1(self.ptc4.GRAV)
-    self.ptc4.particlenode.worldTransform.translation = vec3(0,10,-50)    
-    self.ptc4.TURB.inputs.Amount = vec3(1,1,1)*5
     #######################################
 
     gmtl = PBRMaterial() 
@@ -162,7 +131,7 @@ class ParticlesApp(object):
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.9,0.9,1,1)
+    gmtl.baseColor = vec4(0.8,0.8,1,1)
     gmtl.gpuInit(ctx)
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
@@ -172,19 +141,25 @@ class ParticlesApp(object):
     self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
 
+    #######################################
+
+    self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
+    self.sgnode = self.model.createNode("model-node",self.layer1)
+    self.sgnode.worldTransform.scale = 35
+    self.sgnode.worldTransform.translation = vec3(0,25,0)
+
+    #######################################
+
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-    h1 = 10+math.sin(updinfo.absolutetime*0.3)*10
-    h2 = 10+math.sin(updinfo.absolutetime*0.43)*10
-    h3 = 10+math.sin(updinfo.absolutetime*0.55)*10
-    h4 = 10+math.sin(updinfo.absolutetime*0.67)*10
-    self.ptc1.particlenode.worldTransform.translation = vec3(50,h1,0)
-    self.ptc2.particlenode.worldTransform.translation = vec3(-50,h2,0)
-    self.ptc3.particlenode.worldTransform.translation = vec3(0,h3,50)
-    self.ptc4.particlenode.worldTransform.translation = vec3(0,h4,-50)
+    for item in self.ptc_systems:
+      x = item.radius*math.cos(updinfo.absolutetime*item.frq)
+      y = 30+math.sin(updinfo.absolutetime*item.frq)*30
+      z = item.radius*math.sin(updinfo.absolutetime*item.frq)*-1.0
+      item.particlenode.worldTransform.translation = vec3(x,y,z)
     
   ##############################################
 
