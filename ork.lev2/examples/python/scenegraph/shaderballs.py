@@ -71,7 +71,7 @@ class SceneGraphApp(object):
       params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
 
     createSceneGraph(app=self,
-                     rendermodel="DeferredPBR",
+                     rendermodel="ForwardPBR",
                      params_dict=params_dict)
 
     ###################################

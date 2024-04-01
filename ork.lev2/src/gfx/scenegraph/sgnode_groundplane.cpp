@@ -66,7 +66,17 @@ struct GroundPlaneRenderImpl {
     auto uv_botr  = fvec2(+uvextent, +uvextent);
     auto uv_botl  = fvec2(-uvextent, +uvextent);
     auto normal   = fvec3(0, 1, 0);
-    auto binormal = fvec3(1, 0, 1);
+
+    fvec3 dpos1 = topr - topl;
+    fvec3 dpos2 = botl - topl;
+    fvec2 duv1 = uv_topr - uv_topl;
+    fvec2 duv2 = uv_botl - uv_topl;
+    float r = 1.0f / (duv1.x * duv2.y - duv1.y * duv2.x);
+    fvec3 tangent = ((dpos1 * duv2.y - dpos2 * duv1.y)*r).normalized();
+    fvec3 binormal = ((dpos2 * duv1.x - dpos1 * duv2.x)*r).normalized();
+
+
+    //auto binormal = fvec3(0, 0, -1);
 
     auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, 0xffffffff);
     auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, 0xffffffff);

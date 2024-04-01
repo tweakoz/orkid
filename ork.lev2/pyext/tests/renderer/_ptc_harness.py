@@ -43,6 +43,28 @@ def presetGRAD2():
   })
   return gradient  
 
+def presetGRAD3():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(1,0,0,1),
+    0.35: vec4(1,0.8,0,1),
+    0.5: vec4(1,0,0,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
+def presetGRAD4():
+  gradient = GradientV4()
+  gradient.setColorStops({
+    0.0: vec4(0,0,0,0),
+    0.25: vec4(0,0,1,1),
+    0.35: vec4(0,0.8,1,1),
+    0.5: vec4(0,0,1,1),
+    1.0: vec4(0,0,0,0),
+  })
+  return gradient  
+
 ################################################
 
 def presetMaterial(grad=presetGRAD1(),texname="src://effect_textures/knob2"):
@@ -110,6 +132,16 @@ def presetPOOL1(ptc_pool):
   
 ################################################
 
+class ParticleContainer:
+  def __init__(self,scene,layer):
+    self.graphdata = None
+    self.drawable_data = None
+    self.particlenode = None
+    self.scene = scene
+    self.layer = layer
+
+################################################
+
 def createParticleData( owner, ptc_data, ptc_connections ):
 
     owner.graphdata = dataflow.GraphData.createShared()
@@ -130,7 +162,7 @@ def createParticleData( owner, ptc_data, ptc_connections ):
     owner.drawable_data = ParticlesDrawableData()
     owner.drawable_data.graphdata = owner.graphdata
     ptc_drawable = owner.drawable_data.createSGDrawable(SG)
-    owner.particlenode = owner.layer1.createDrawableNode("particle-node",ptc_drawable)
+    owner.particlenode = owner.layer.createDrawableNode("particle-node",ptc_drawable)
     #owner.particlenode.sortkey = 2;
 
 

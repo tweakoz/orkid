@@ -386,11 +386,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LightContainer {
-  static const int kmaxlights = 32;
 
-  typedef fixedlut<float, Light*, kmaxlights> map_type;
+  using light_list_t = std::unordered_set<Light*>;
 
-  map_type mPrioritizedLights;
+  using map_type = std::unordered_map<float, light_list_t> ;
+
+  map_type _prioritizedLights;
 
   void AddLight(Light* plight);
   void RemoveLight(Light* plight);

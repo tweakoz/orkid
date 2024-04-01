@@ -71,6 +71,7 @@ libblock lib_fwd
     vec3 edir = normalize(wpos-eyepos);
     vec3 n    = rawn; 
     vec3 refl = normalize(reflect(edir,n));
+    refl.x *= -1.0;
     /////////////////////////
     float costheta = clamp(dot(n, edir),0.01,1.0);
     vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughnessL,0.25)),0).rg;

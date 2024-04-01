@@ -27,7 +27,6 @@ ImplementReflectionX(ork::lev2::SpotLightData, "SpotLightData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
-template class fixedlut<float, lev2::Light*, lev2::LightContainer::kmaxlights>;
 template class fixedlut<float, lev2::Light*, lev2::GlobalLightContainer::kmaxlights>;
 template class ork::fixedvector<std::pair<U32, lev2::LightingGroup*>, lev2::LightCollector::kmaxonscreengroups>;
 template class ork::fixedvector<lev2::LightingGroup, lev2::LightCollector::kmaxonscreengroups>;
@@ -374,24 +373,21 @@ CameraData SpotLight::shadowCamDat() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LightContainer::AddLight(Light* plight) {
-  if (mPrioritizedLights.size() < map_type::kimax) {
-    mPrioritizedLights.AddSorted(plight->mPriority, plight);
-  }
+  float priority = plight->mPriority;
+   _prioritizedLights[priority].insert(plight);
 }
 
 void LightContainer::RemoveLight(Light* plight) {
-  map_type::iterator it = mPrioritizedLights.find(plight->mPriority);
-  if (it != mPrioritizedLights.end()) {
-    mPrioritizedLights.erase(it);
+  auto it = _prioritizedLights.find(plight->mPriority);
+  if (it != _prioritizedLights.end()) {
+    it->second.erase(plight);
   }
 }
 
-LightContainer::LightContainer()
-    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {
-}
+LightContainer::LightContainer(){}
 
 void LightContainer::Clear() {
-  mPrioritizedLights.clear();
+  _prioritizedLights.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -511,18 +507,17 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
     }
   }
   ////////////////////////////////////////////////////////////
-  for (LightContainer::map_type::const_iterator it = mGlobalMovingLights.mPrioritizedLights.begin();
-       it != mGlobalMovingLights.mPrioritizedLights.end();
-       it++) {
-    Light* plight = it->second;
+  for ( auto pri_item : mGlobalMovingLights._prioritizedLights ) {
+    for( auto item : pri_item.second ) {
+      Light* plight = item;
+      if (true) { // plight->IsInFrustum(frustum)) {
+        size_t idx = out_lights->_alllights.size();
 
-    if (true) { // plight->IsInFrustum(frustum)) {
-      size_t idx = out_lights->_alllights.size();
-
-      plight->miInFrustumID = 1 << idx;
-      out_lights->_alllights.push_back(plight);
-    } else {
-      plight->miInFrustumID = -1;
+        plight->miInFrustumID = 1 << idx;
+        out_lights->_alllights.push_back(plight);
+      } else {
+        plight->miInFrustumID = -1;
+      }
     }
   }
 
