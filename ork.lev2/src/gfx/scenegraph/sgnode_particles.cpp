@@ -12,18 +12,17 @@ namespace ork::lev2 {
 
 struct ParticlesDrawableInst {
 
-  ParticlesDrawableInst(const ParticlesDrawableData* pdd) : _data(pdd) {
-    _updata = std::make_shared<ui::UpdateData>();
+  ParticlesDrawableInst(const ParticlesDrawableData* pdd)
+      : _data(pdd) {
+    _updata           = std::make_shared<ui::UpdateData>();
     _updata->_abstime = 0.0f;
-    _updata->_dt = 0.003f;
+    _updata->_dt      = 0.003f;
     _timer.Start();
 
-    _testlight = std::make_shared<DynamicPointLight>();
+    _testlight                      = std::make_shared<DynamicPointLight>();
     _testlight->_inlineData._radius = 10.0f;
-    _testlight->_inlineData.mColor      = fvec3(1, 1, 1);
-    _testlight->_xformgenerator = [this]() -> fmtx4 {
-      return _mymatrix;
-    };
+    _testlight->_inlineData.mColor  = fvec3(1, 1, 1);
+    _testlight->_xformgenerator     = [this]() -> fmtx4 { return _mymatrix; };
   }
   ///////////////////////////////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
@@ -48,47 +47,47 @@ struct ParticlesDrawableInst {
 
     _fxcache = _pbrmaterial->pipelineCache();
     */
-
   }
   ///////////////////////////////////////////////////////////////
-  void _update(){
-    float abs_time = _timer.SecsSinceStart();
-    _updata->_dt = abs_time - _updata->_abstime;
+  void _update() {
+    float abs_time    = _timer.SecsSinceStart();
+    _updata->_dt      = abs_time - _updata->_abstime;
     _updata->_abstime = abs_time;
     _graphinst->compute(_updata);
 
-    _testlight->_inlineData.mColor      = fvec3(1, 1, 1);
+    _testlight->_inlineData.mColor  = fvec3(1, 1, 1);
     _testlight->_inlineData._radius = _data->_emitterRadius;
 
-    if( auto try_avgcolor = _graphinst->_vars.typedValueForKey<fvec4>("emission_color") ){
-      _testlight->_inlineData.mColor = try_avgcolor.value().xyz();
-      _testlight->_inlineData._intensity  = _data->_emitterIntensity;
+    if (auto try_avgcolor = _graphinst->_vars.typedValueForKey<fvec4>("emission_color")) {
+      _testlight->_inlineData.mColor     = try_avgcolor.value().xyz();
+      _testlight->_inlineData._intensity = _data->_emitterIntensity;
     }
-
   }
   ///////////////////////////////////////////////////////////////
-  void _render(const RenderContextInstData& RCID){
+  void _render(const RenderContextInstData& RCID) {
 
-    auto& light_container = _LM->mGlobalMovingLights;
-    light_container.RemoveLight(_testlight.get());
-    light_container.AddLight(_testlight.get());
+    if (_LM) {
+      auto& light_container = _LM->mGlobalMovingLights;
+      light_container.RemoveLight(_testlight.get());
+      light_container.AddLight(_testlight.get());
+    }
 
-    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
-    auto context    = RCID.context();
+    auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
+    auto context                       = RCID.context();
     const RenderContextFrameData* RCFD = RCID._RCFD;
-    const auto& CPD  = RCFD->topCPD();
-    bool isPickState = context->FBI()->isPickState();
-    if (not _initted){
+    const auto& CPD                    = RCFD->topCPD();
+    bool isPickState                   = context->FBI()->isPickState();
+    if (not _initted) {
       gpuInit(context);
       _initted = true;
     }
     auto ptcl_context = _graphinst->_impl.getShared<particle::Context>();
-    if( ptcl_context->_drawable and ptcl_context->_drawable->_sgnode ){
+    if (ptcl_context->_drawable and ptcl_context->_drawable->_sgnode) {
       auto node = ptcl_context->_drawable->_sgnode;
       _mymatrix = node->_dqxfdata._worldTransform->composed();
     }
 
-    if(ptcl_context->_rcidlambda){
+    if (ptcl_context->_rcidlambda) {
       ptcl_context->_rcidlambda(RCID);
     }
   }
@@ -112,7 +111,6 @@ struct ParticlesDrawableInst {
   fmtx4 _mymatrix;
   bool _initted = false;
   Timer _timer;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,7 +122,7 @@ void ParticlesDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t ParticlesDrawableData::createDrawable() const {
 
-  if(nullptr==_graphdata)
+  if (nullptr == _graphdata)
     return nullptr;
 
   using namespace ork::dataflow;
@@ -141,7 +139,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   auto dg_sorter                       = std::make_shared<DgSorter>(_graphdata.get(), dg_context);
   dg_sorter->_logchannel->_enabled     = true;
   dg_sorter->_logchannel_reg->_enabled = true;
-  auto topo         = dg_sorter->generateTopology();
+  auto topo                            = dg_sorter->generateTopology();
 
   ////////////////////////////////////////////////////
   // create graphinst
@@ -153,29 +151,26 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
 
   ////////////////////////////////////////////////////
 
-  auto impl = std::make_shared<ParticlesDrawableInst>(this);
+  auto impl        = std::make_shared<ParticlesDrawableInst>(this);
   impl->_graphinst = graphinst;
 
-
-  auto rval = std::make_shared<CallbackDrawable>(nullptr);
-  rval->_enqueueOnLayerLambda = [impl](drawablebufitem_constptr_t cdb){
-    impl->_update();
-  };
+  auto rval                   = std::make_shared<CallbackDrawable>(nullptr);
+  rval->_enqueueOnLayerLambda = [impl](drawablebufitem_constptr_t cdb) { impl->_update(); };
   rval->SetRenderCallback(ParticlesDrawableInst::renderParticles);
   rval->SetUserDataA(impl);
   ptcl_context->_drawable = rval;
-  rval->_sortkey = 20;
+  rval->_sortkey          = 20;
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ParticlesDrawableData::_doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const { // final
-  auto impl = drw->mDataA.getShared<ParticlesDrawableInst>();
-  impl->_LM = SG->_lightManager;
+  auto impl  = drw->mDataA.getShared<ParticlesDrawableInst>();
+  impl->_LM  = SG->_lightManager;
   impl->_LMD = SG->_lightManagerData;
-  OrkAssert(impl->_LM!=nullptr);
-  OrkAssert(impl->_LMD!=nullptr);
+  OrkAssert(impl->_LM != nullptr);
+  OrkAssert(impl->_LMD != nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -207,7 +207,13 @@ def createParticleData( owner, ptc_data, ptc_connections ):
     owner.drawable_data = ParticlesDrawableData()
     owner.drawable_data.graphdata = owner.graphdata
     ptc_drawable = owner.drawable_data.createSGDrawable(SG)
-    owner.particlenode = owner.layer.createDrawableNode("particle-node",ptc_drawable)
+    
+    if hasattr(owner,"layer"):
+      layer = owner.layer
+    elif hasattr(owner,"layer1"):
+      layer = owner.layer1
+    
+    owner.particlenode = layer.createDrawableNode("particle-node",ptc_drawable)
     #owner.particlenode.sortkey = 2;
 
 
