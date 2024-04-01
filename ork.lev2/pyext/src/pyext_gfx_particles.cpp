@@ -162,6 +162,11 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", []() -> ptc::eliattractormodule_ptr_t { return ptc::EllipticalAttractorModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::eliattractormodule_ptr_t>(ellimoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto pntattrmoduledata_type = //
+      py::class_<ptc::PointAttractorModuleData, ptc::ModuleData, ptc::pntattractormodule_ptr_t>(ptc_module, "PointAttractor")
+      .def_static("createShared", []() -> ptc::pntattractormodule_ptr_t { return ptc::PointAttractorModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::pntattractormodule_ptr_t>(pntattrmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto turbmoduledata_type = //
       py::class_<ptc::TurbulenceModuleData, ptc::ModuleData, ptc::turbulencemodule_ptr_t>(ptc_module, "Turbulence")
       .def_static("createShared", []() -> ptc::turbulencemodule_ptr_t { return ptc::TurbulenceModuleData::createShared(); });
@@ -171,6 +176,11 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       py::class_<ptc::VortexModuleData, ptc::ModuleData, ptc::vortexmodule_ptr_t>(ptc_module, "Vortex")
       .def_static("createShared", []() -> ptc::vortexmodule_ptr_t { return ptc::VortexModuleData::createShared(); });
   type_codec->registerStdCodec<ptc::vortexmodule_ptr_t>(vortmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto dragmoduledata_type = //
+      py::class_<ptc::DragModuleData, ptc::ModuleData, ptc::dragmodule_ptr_t>(ptc_module, "Drag")
+      .def_static("createShared", []() -> ptc::dragmodule_ptr_t { return ptc::DragModuleData::createShared(); });
+  type_codec->registerStdCodec<ptc::dragmodule_ptr_t>(dragmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto lightmoduledata_type = //
       py::class_<ptc::LightRendererData, ptc::ModuleData, ptc::lightmodule_ptr_t>(ptc_module, "LightRenderer")

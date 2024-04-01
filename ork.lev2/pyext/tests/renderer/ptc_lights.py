@@ -74,9 +74,11 @@ class ParticlesApp(object):
       "EMITN":particles.NozzleEmitter,
       "EMITR":particles.RingEmitter,
       "GLOB":particles.Globals,
+      #"PNTA":particles.PointAttractor,
       "GRAV":particles.Gravity,
       "TURB":particles.Turbulence,
       "VORT":particles.Vortex,
+      "DRAG":particles.Drag,
       "LITE":particles.LightRenderer,
       "SPRI":particles.SpriteRenderer,
     }
@@ -86,7 +88,8 @@ class ParticlesApp(object):
       ("EMITR","GRAV"),
       ("GRAV","TURB"),
       ("TURB","VORT"),
-      ("VORT","LITE"),
+      ("VORT","DRAG"),
+      ("DRAG","LITE"),
       ("LITE","SPRI"),
     ]
 
@@ -104,11 +107,14 @@ class ParticlesApp(object):
       presetEMITR1(ptc.EMITR)
       presetTURB1(ptc.TURB)
       presetVORT1(ptc.VORT)
+      ptc.VORT.inputs.VortexStrength = 0.0
+      ptc.VORT.inputs.OutwardStrength = 0.0
       presetGRAV1(ptc.GRAV)
       ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
       ptc.TURB.inputs.Amount = vec3(1,1,1)*5
       ptc.frq = frq
       ptc.radius = 50
+      ptc.DRAG.inputs.drag = 0.999
       return ptc
 
     #######################################
@@ -156,10 +162,22 @@ class ParticlesApp(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     for item in self.ptc_systems:
+
+      prv_trans = item.particlenode.worldTransform.translation
+
       x = item.radius*math.cos(updinfo.absolutetime*item.frq)
       y = 30+math.sin(updinfo.absolutetime*item.frq)*30
       z = item.radius*math.sin(updinfo.absolutetime*item.frq)*-1.0
-      item.particlenode.worldTransform.translation = vec3(x,y,z)
+      
+      new_trans = vec3(x,y,z)
+
+      delta_dir = (new_trans-prv_trans).normalized()
+
+      #item.EMITN.inputs.Offset = new_trans
+      #item.EMITR.inputs.Offset = new_trans
+      #item.PNTA.inputs.position = new_trans
+      
+      item.particlenode.worldTransform.translation = new_trans
     
   ##############################################
 

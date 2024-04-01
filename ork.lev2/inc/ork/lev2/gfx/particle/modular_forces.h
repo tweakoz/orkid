@@ -24,6 +24,8 @@ public:
 
 using sphattractormodule_ptr_t = std::shared_ptr<SphAttractorModuleData>;
 
+/////////////////////////////////////////
+
 struct EllipticalAttractorModuleData : public ParticleModuleData {
   DeclareConcreteX(EllipticalAttractorModuleData, ParticleModuleData);
 public:
@@ -34,6 +36,21 @@ public:
 };
 
 using eliattractormodule_ptr_t = std::shared_ptr<EllipticalAttractorModuleData>;
+
+/////////////////////////////////////////
+
+struct PointAttractorModuleData : public ParticleModuleData {
+  DeclareConcreteX(PointAttractorModuleData, ParticleModuleData);
+public:
+  PointAttractorModuleData();
+  static std::shared_ptr<PointAttractorModuleData> createShared();
+  //static rtti::castable_ptr_t sharedFactory();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+};
+
+using pntattractormodule_ptr_t = std::shared_ptr<PointAttractorModuleData>;
+
+/////////////////////////////////////////
 
 struct GravityModuleData : public ParticleModuleData {
   DeclareConcreteX(GravityModuleData, ParticleModuleData);
@@ -46,6 +63,8 @@ public:
 
 using gravitymodule_ptr_t = std::shared_ptr<GravityModuleData>;
 
+/////////////////////////////////////////
+
 struct TurbulenceModuleData : public ParticleModuleData {
   DeclareConcreteX(TurbulenceModuleData, ParticleModuleData);
 public:
@@ -56,6 +75,7 @@ public:
 
 using turbulencemodule_ptr_t = std::shared_ptr<TurbulenceModuleData>;
 
+/////////////////////////////////////////
 
 struct VortexModuleData : public ParticleModuleData {
   DeclareConcreteX(VortexModuleData, ParticleModuleData);
@@ -67,6 +87,17 @@ public:
 
 using vortexmodule_ptr_t = std::shared_ptr<VortexModuleData>;
 
+/////////////////////////////////////////
+
+struct DragModuleData : public ParticleModuleData {
+  DeclareConcreteX(DragModuleData, ParticleModuleData);
+public:
+  DragModuleData();
+  static std::shared_ptr<DragModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
+};
+
+using dragmodule_ptr_t = std::shared_ptr<DragModuleData>;
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {
