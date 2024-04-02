@@ -10,7 +10,7 @@
 import sys, math, random, signal, numpy, obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/".."/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+sys.path.append(str(lev2pyexdir())) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim

@@ -14,9 +14,8 @@ from PIL import Image
 
 ################################################################################
 
-l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(str(lev2pyexdir())) # add orklev2pyex dir to path
 this_dir = obt.path.directoryOfInvokingModule()
-sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim

@@ -108,6 +108,17 @@ static file::Path _thisdir() {
   auto abs_path_str = py::cast<std::string>(directory);
   return file::Path(abs_path_str);
 }
+static file::Path _orkdir() {
+  std::string ork_dir;
+  genviron.get("ORKID_WORKSPACE_DIR",ork_dir);
+  return file::Path(ork_dir);
+}
+static file::Path _lev2dir() {
+  return _orkdir()/"ork.lev2";
+}
+static file::Path _lev2pyexdir() {
+  return _lev2dir()/"examples"/"python";
+}
 
 static PoolString _addpoolstring(std::string str) {
   return AddPooledString(str.c_str());
@@ -123,6 +134,9 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.def("coreappinit", &_coreappinit);
   module_core.def("thispath", &_thispath);
   module_core.def("thisdir", &_thisdir);
+  module_core.def("orkdir", &_orkdir);
+  module_core.def("lev2dir", &_lev2dir);
+  module_core.def("lev2pyexdir", &_lev2pyexdir);
   module_core.def("addpoolstring", &_addpoolstring);
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
