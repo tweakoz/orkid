@@ -274,6 +274,23 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->createLayer(named);
               })
           .def(
+              "createDrawableNodeOnLayers",
+              [](scene_ptr_t SG, 
+                 py::list layer_list, //
+                 std::string named,
+                 drawable_ptr_t drawable) -> node_ptr_t { //
+
+                 int layer_count = layer_list.size();
+                 OrkAssert(layer_count>0);
+                 layer_ptr_t l0 = layer_list[0].cast<layer_ptr_t>(); 
+                 auto node = l0->createDrawableNode(named, drawable);
+                 for(int i=1; i<layer_count; i++){
+                   auto l = layer_list[i].cast<layer_ptr_t>();
+                   l->addDrawableNode(node);
+                 }
+                 return node;
+              })
+          .def(
               "updateScene",
               [](scene_ptr_t SG, cameradatalut_ptr_t cameralut) { //
                 SG->enqueueToRenderer(cameralut);

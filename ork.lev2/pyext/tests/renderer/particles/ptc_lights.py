@@ -76,6 +76,7 @@ class ParticlesApp(object):
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
     ###################################
     # create particle drawable 
     ###################################
@@ -156,15 +157,14 @@ class ParticlesApp(object):
     gdata.extent = 1000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.layer_fwd.createDrawableNode("partgroundicle-node",self.drawable_ground)
-    self.layer_donly.addDrawableNode(self.groundnode)
+    self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
     #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
-    self.sgnode = self.model.createNode("model-node",self.layer_fwd)
-    self.layer_donly.addDrawableNode(self.sgnode)
-    self.sgnode.worldTransform.scale = 35
-    self.sgnode.worldTransform.translation = vec3(0,25,0)
+    self.drawable_model = self.model.createDrawable()
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 35
+    self.modelnode.worldTransform.translation = vec3(0,28,0)
     #######################################
 
 
