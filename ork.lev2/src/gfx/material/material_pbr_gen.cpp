@@ -44,9 +44,9 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
   context->makeCurrentContext();
 
   std::vector<uint8_t> initial_bytes;
-  initial_bytes.resize(64 * 32 * sizeof(float) * 4);
+  initial_bytes.resize(4096);
 
-  _buffer     = context->FXI()->createParamBuffer(65536);
+  _buffer     = context->FXI()->createParamBuffer(4096);
   auto mapped = context->FXI()->mapParamBuffer(_buffer);
   // size_t base  = 0;
   // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)

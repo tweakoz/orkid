@@ -21,97 +21,71 @@ floatxf = dataflow.floatxf
 
 ################################################
 
-def presetGRAD1():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(1,0,0,1),
-    0.25: vec4(1,0,1,1),
-    0.5: vec4(1,1,1,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
+gradients = [GradientV4() for i in range(8)]
 
-def presetGRAD2():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(1,0,0,1),
-    0.25: vec4(1,0.8,0,1),
-    0.5: vec4(1,1,0.5,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
+gradients[0].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.25: vec4(1,0,1,1),
+  0.5: vec4(1,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[1].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.25: vec4(1,0.8,0,1),
+  0.5: vec4(1,1,0.5,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[2].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.35: vec4(1,0.8,0,1),
+  0.5: vec4(1,0,0,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[3].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,0,1,1),
+  0.35: vec4(0,0.8,1,1),
+  0.5: vec4(0,0,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[4].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,1,1,1),
+  0.35: vec4(.5,1,1,1),
+  0.5: vec4(0,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[5].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,1,0,1),
+  0.35: vec4(0,1,0,1),
+  0.5: vec4(0,1,0,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[6].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,1,1,1),
+  0.35: vec4(1,1,1,1),
+  0.5: vec4(1,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[7].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,1,.5,1),
+  0.35: vec4(1,1,.5,1),
+  0.5: vec4(1,1,.5,1),
+  1.0: vec4(0,0,0,0),
+})
 
-def presetGRAD3():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(1,0,0,1),
-    0.35: vec4(1,0.8,0,1),
-    0.5: vec4(1,0,0,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
-
-def presetGRAD4():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(0,0,1,1),
-    0.35: vec4(0,0.8,1,1),
-    0.5: vec4(0,0,1,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
-
-def presetGRAD5():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(0,1,1,1),
-    0.35: vec4(.5,1,1,1),
-    0.5: vec4(0,1,1,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
-
-def presetGRAD6():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(0,1,0,1),
-    0.35: vec4(0,1,0,1),
-    0.5: vec4(0,1,0,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
-
-def presetGRAD7():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(1,1,1,1),
-    0.35: vec4(1,1,1,1),
-    0.5: vec4(1,1,1,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
-
-def presetGRAD8():
-  gradient = GradientV4()
-  gradient.setColorStops({
-    0.0: vec4(0,0,0,0),
-    0.25: vec4(1,1,.5,1),
-    0.35: vec4(1,1,.5,1),
-    0.5: vec4(1,1,.5,1),
-    1.0: vec4(0,0,0,0),
-  })
-  return gradient  
+def presetGRAD(index):
+  return gradients[index]  
 
 ################################################
 
-def presetMaterial(grad=presetGRAD1(),texname="src://effect_textures/knob2"):
+def presetMaterial(grad=presetGRAD(0),texname="src://effect_textures/knob2"):
   material = particles.GradientMaterial.createShared()
   material.modulation_texture = Texture.load(texname)
   material.gradient = grad

@@ -148,15 +148,15 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
     GLintptr ubo_offset = 0;
     GLintptr ubo_size   = buffer->_length;
     GL_ERRORCHECK();
-    // glBindBufferRange(GL_UNIFORM_BUFFER,   // target
-    //                ubo_bindingindex,    // index
-    //              buffer->_glbufid, // buffer objid
-    //            ubo_offset,          // offset
-    //          ubo_size);           // length
-    glBindBufferBase(
-        GL_UNIFORM_BUFFER, // target
-        ubo_bindingpoint,  // index
-        buffer->_glbufid); // buffer objid
+    glBindBufferRange(GL_UNIFORM_BUFFER,   // target
+                    ubo_bindingpoint,    // index
+                  buffer->_glbufid, // buffer objid
+                ubo_offset,          // offset
+              ubo_size);           // length
+    //glBindBufferBase(
+    //    GL_UNIFORM_BUFFER, // target
+    //    ubo_bindingpoint,  // index
+     //   buffer->_glbufid); // buffer objid
     //logchan_pass->log("glBindBufferRange bidx<%d> bufid<%d>", int(ubo_bindingindex), int(buffer->_glbufid));
     GL_ERRORCHECK();
     _ubobindings[ubo_bindingpoint] = buffer;

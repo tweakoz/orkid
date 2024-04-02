@@ -92,9 +92,9 @@ uniform_set ub_frg_fwd {
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
-  vec4 _lightcolor[16];
-  vec4 _lightpos[16];
-  float _lightradius[16];
+  vec4 _lightcolor[64];
+  vec4 _lightpos[64];
+  float _lightradius[64];
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces

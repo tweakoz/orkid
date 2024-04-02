@@ -368,8 +368,9 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             size_t f32_stride    = sizeof(float);
             size_t vec4_stride   = sizeof(fvec4);
             size_t base_color    = 0;
-            size_t base_position = base_color + vec4_stride * 16;
-            size_t base_radius   = base_position + vec4_stride * 16;
+            size_t base_position = base_color + vec4_stride * 64;
+            size_t base_radius   = base_position + vec4_stride * 64;
+            // 16*(16+16+8) = 16*40 = 640
 
             size_t index = 0;
             for (auto light : enumlights->_untexturedpointlights) {

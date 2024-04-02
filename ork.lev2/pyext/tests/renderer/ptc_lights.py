@@ -131,16 +131,14 @@ class ParticlesApp(object):
       ptc.drawable_data.emitterRadius = 1.5
       return ptc
     #######################################
-    self.ptc_systems = [
-      gen_sys(presetGRAD1(),0.5,40),
-      gen_sys(presetGRAD2(),0.6,40),
-      gen_sys(presetGRAD3(),0.7,45),
-      gen_sys(presetGRAD4(),0.8,45),
-      gen_sys(presetGRAD5(),0.9,50),
-      gen_sys(presetGRAD6(),1.1,50),
-      gen_sys(presetGRAD7(),1.15,55),
-      gen_sys(presetGRAD8(),1.3,55)
-    ]
+    self.ptc_systems = []
+    count = 32
+    for i in range(count):
+      fi = float(i)/float(count)
+      frq = 0.4 + (fi*2)
+      radius = 35 + fi*35
+      g = i&7
+      self.ptc_systems += [gen_sys(presetGRAD(g),frq,radius)]
     #self.ptc_systems[0].EMITN.inputs.EmissionVelocity = 0.1
     #######################################
     gmtl = PBRMaterial() 
@@ -173,10 +171,10 @@ class ParticlesApp(object):
     for item in self.ptc_systems:
 
       prv_trans = item.particlenode.worldTransform.translation
-
-      x = item.radius*math.cos(updinfo.absolutetime*item.frq)
-      y = 30+math.sin(updinfo.absolutetime*item.frq)*30
-      z = item.radius*math.sin(updinfo.absolutetime*item.frq)*-1.0
+      f = - item.frq
+      x = item.radius*math.cos(updinfo.absolutetime*f)
+      y = 30+math.sin(updinfo.absolutetime*f)*30
+      z = item.radius*math.sin(updinfo.absolutetime*f)*-1.0
       
       new_trans = vec3(x,y,z)
 
