@@ -37,10 +37,10 @@ template <typename T> void Matrix33<T>::setToIdentity() {
 template <typename T> void Matrix33<T>::dump(STRING name) {
   orkprintf("Matrix %p %s\n{	", this, name);
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 3; i++) {
 
-    for (int j = 0; j < 4; j++) {
-      orkprintf("%f ", elemXY(i,j));
+    for (int j = 0; j < 3; j++) {
+      orkprintf("%f ", elemYX(i,j));
     }
 
     orkprintf("\n	");
