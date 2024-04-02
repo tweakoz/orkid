@@ -161,8 +161,8 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](groundplane_drawabledataptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
           .def_property(
               "pipeline",
-              [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline; },
-              [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline = pipe; });
+              [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
+              [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; });
   type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //

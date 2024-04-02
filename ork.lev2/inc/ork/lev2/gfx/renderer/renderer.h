@@ -33,19 +33,11 @@ struct IRenderer {
 public:
   static const int kmaxrables    = 65536;
   static const int kmaxrablesmed = 8192;
-  //static const int kmaxrablessm  = 64;
+  // static const int kmaxrablessm  = 64;
 
-  IRenderer(Context* pTARG=nullptr);
-  virtual ~IRenderer() {}  
-  
-  Context* _target;
-
-  ork::fixedvector<U32, RenderQueue::krqmaxsize> _sortkeys;
-  ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> _sortedNodes;
-
-  ork::fixedvector<ModelRenderable, kmaxrables> _models;
-  ork::fixedvector<SkeletonRenderable, kmaxrables> _skeletons;
-  ork::fixedvector<CallbackRenderable, kmaxrablesmed> _callbacks;
+  IRenderer(Context* pTARG = nullptr);
+  virtual ~IRenderer() {
+  }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
@@ -57,21 +49,9 @@ public:
   // Queued rendering
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  ModelRenderable& enqueueModel() {
-    ModelRenderable& rend = _models.create();
-    enqueueRenderable(&rend);
-    return rend;
-  }
-  SkeletonRenderable& enqueueSkeleton() {
-    SkeletonRenderable& rend = _skeletons.create();
-    enqueueRenderable(&rend);
-    return rend;
-  }
-  CallbackRenderable& enqueueCallback() {
-    CallbackRenderable& rend = _callbacks.create();
-    enqueueRenderable(&rend);
-    return rend;
-  }
+  ModelRenderable& enqueueModel();
+  SkeletonRenderable& enqueueSkeleton();
+  CallbackRenderable& enqueueCallback();
 
   void enqueueRenderable(IRenderable* pRenderable);
 
@@ -81,23 +61,25 @@ public:
 
   void drawEnqueuedRenderables();
 
-  inline void SetPerformanceItem(PerformanceItem* perfitem) {
-    mPerformanceItem = perfitem;
-  }
+  void SetPerformanceItem(PerformanceItem* perfitem);
 
-  Context* GetTarget() const {
-    return _target;
-  }
-  void setContext(Context* ptarg) {
-    _target = ptarg;
-  }
+  Context* GetTarget() const;
+  void setContext(Context* ptarg);
 
-  void fakeDraw() {
-    resetQueue();
-  }
+  void fakeDraw();
 
   void resetQueue(void);
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  Context* _target;
+
+  ork::fixedvector<U32, RenderQueue::krqmaxsize> _sortkeys;
+  ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> _sortedNodes;
+
+  ork::fixedvector<ModelRenderable, kmaxrables> _models;
+  ork::fixedvector<SkeletonRenderable, kmaxrables> _skeletons;
+  ork::fixedvector<CallbackRenderable, kmaxrablesmed> _callbacks;
   RadixSort _radixsorter;
   RenderQueue _unsortedNodes;
   PerformanceItem* mPerformanceItem;

@@ -22,88 +22,172 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
   auto pbrcommon_type = //
       py::class_<pbr::CommonStuff, pbr::commonstuff_ptr_t>(module_lev2, "PbrCommon")
           .def(py::init<>())
-          .def("requestSkyboxTexture",[](pbr::commonstuff_ptr_t pbc, std::string path){
-            pbc->requestSkyboxTexture(path);
-          })
-          .def_property("environmentIntensity",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_environmentIntensity;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_environmentIntensity = v;
-            })
-          .def_property("environmentMipBias",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_environmentMipBias;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_environmentMipBias = v;
-            })
-          .def_property("environmentMipScale",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_environmentMipScale;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_environmentMipScale = v;
-            })
-          .def_property("ambientLevel",
-            [](pbr::commonstuff_ptr_t pbc) -> fvec3 {
-              return pbc->_ambientLevel;
-            },
-            [](pbr::commonstuff_ptr_t pbc, fvec3 v) {
-              pbc->_ambientLevel = v;
-            })
-          .def_property("diffuseLevel",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_diffuseLevel;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_diffuseLevel = v;
-            })
-          .def_property("specularLevel",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_specularLevel;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_specularLevel = v;
-            })
-          .def_property("specularMipBias",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_specularMipBias;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_specularMipBias = v;
-            })
-          .def_property("skyboxLevel",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_skyboxLevel;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_skyboxLevel = v;
-            })
-          .def_property("depthFogDistance",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_depthFogDistance;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_depthFogDistance = v;
-            })
-          .def_property("depthFogPower",
-            [](pbr::commonstuff_ptr_t pbc) -> float {
-              return pbc->_depthFogPower;
-            },
-            [](pbr::commonstuff_ptr_t pbc, float v) {
-              pbc->_depthFogPower = v;
-            })
+          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestSkyboxTexture(path); })
+          .def_property(
+              "environmentIntensity",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentIntensity; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_environmentIntensity = v; })
+          .def_property(
+              "environmentMipBias",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentMipBias; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_environmentMipBias = v; })
+          .def_property(
+              "environmentMipScale",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentMipScale; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_environmentMipScale = v; })
+          .def_property(
+              "ambientLevel",
+              [](pbr::commonstuff_ptr_t pbc) -> fvec3 { return pbc->_ambientLevel; },
+              [](pbr::commonstuff_ptr_t pbc, fvec3 v) { pbc->_ambientLevel = v; })
+          .def_property(
+              "diffuseLevel",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_diffuseLevel; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_diffuseLevel = v; })
+          .def_property(
+              "specularLevel",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_specularLevel; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_specularLevel = v; })
+          .def_property(
+              "specularMipBias",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_specularMipBias; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_specularMipBias = v; })
+          .def_property(
+              "skyboxLevel",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_skyboxLevel; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_skyboxLevel = v; })
+          .def_property(
+              "depthFogDistance",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_depthFogDistance; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_depthFogDistance = v; })
+          .def_property(
+              "depthFogPower",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_depthFogPower; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_depthFogPower = v; })
           .def("__repr__", [](pbr::commonstuff_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrCommon(%p)", d.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<pbr::commonstuff_ptr_t>(pbrcommon_type);
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto pbr_type = //
+      py::class_<PBRMaterial, GfxMaterial, pbrmaterial_ptr_t>(module_lev2, "PBRMaterial")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](pbrmaterial_ptr_t m) -> std::string {
+                return FormatString("PBRMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
+              })
+          .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t { return m->clone(); })
+          .def("addBasicStateLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
+          .def_property_readonly(
+              "fxcache",                                              //
+              [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
+                return m->pipelineCache();                            // material
+              })
+          .def_property_readonly("freestyle", [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t { return m->_as_freestyle; })
+          .def("gpuInit", [](pbrmaterial_ptr_t m, ctx_t& c) { m->gpuInit(c.get()); })
+          .def_property(
+              "metallicFactor",
+              [](pbrmaterial_ptr_t m) -> float { //
+                return m->_metallicFactor;
+              },
+              [](pbrmaterial_ptr_t m, float v) { //
+                m->_metallicFactor = v;
+              })
+          .def_property(
+              "roughnessFactor",
+              [](pbrmaterial_ptr_t m) -> float { //
+                return m->_roughnessFactor;
+              },
+              [](pbrmaterial_ptr_t m, float v) { //
+                m->_roughnessFactor = v;
+              })
+          .def_property(
+              "baseColor",
+              [](pbrmaterial_ptr_t m) -> fvec4 { //
+                return m->_baseColor;
+              },
+              [](pbrmaterial_ptr_t m, fvec4 v) { //
+                m->_baseColor = v;
+              })
+          .def_property(
+              "texColor",
+              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
+                return m->_texColor;
+              },
+              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
+                m->_texColor = v;
+              })
+          .def_property(
+              "texNormal",
+              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
+                return m->_texNormal;
+              },
+              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
+                m->_texNormal = v;
+              })
+          .def_property(
+              "texMtlRuf",
+              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
+                return m->_texMtlRuf;
+              },
+              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
+                m->_texMtlRuf = v;
+              })
+          .def_property(
+              "texEmissive",
+              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
+                return m->_texEmissive;
+              },
+              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
+                m->_texEmissive = v;
+              })
+          .def_property_readonly(
+              "colorMapName",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_colorMapName;
+              })
+          .def_property_readonly(
+              "normalMapName",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_normalMapName;
+              })
+          .def_property_readonly(
+              "mtlRufMapName",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_mtlRufMapName;
+              })
+          .def_property_readonly(
+              "amboccMapName",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_amboccMapName;
+              })
+          .def_property_readonly(
+              "emissiveMapName",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_emissiveMapName;
+              })
+          .def_property(
+              "shaderpath",
+              [](pbrmaterial_ptr_t m) -> std::string { //
+                return m->_shaderpath.c_str();
+              },
+              [](pbrmaterial_ptr_t m, std::string p) { //
+                printf("PBRMaterial<%p> shaderpath<%s>\n", (void*)m.get(), p.c_str());
+                m->_shaderpath = p;
+              })
+          .def_property(
+              "doubleSided",
+              [](pbrmaterial_ptr_t m) -> bool { //
+                return m->_doubleSided;
+              },
+              [](pbrmaterial_ptr_t m, bool p) { //
+                m->_doubleSided = p;
+              });
+  type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} //namespace ork::lev2 {
+} // namespace ork::lev2

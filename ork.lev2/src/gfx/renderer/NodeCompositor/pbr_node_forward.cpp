@@ -41,8 +41,7 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
-      , _camname("Camera")
-      , _layername("None") { //
+      , _camname("Camera") { //
       
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,10 +52,11 @@ struct ForwardPbrNodeImpl {
 
     if (nullptr == _rtgs_main) {
 
-      _rtgs_main = std::make_shared<RtgSet>(context,intToMsaaEnum(_ginitdata->_msaa_samples));
+       auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
+      _rtgs_main = std::make_shared<RtgSet>(context,e_msaa);
       _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
 
-      _layername = _node->_layers;
+      _rtg_depth_only = std::make_shared<RtGroup>(context,iw,ih,e_msaa);
 
       printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -140,7 +140,7 @@ struct ForwardPbrNodeImpl {
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
-      CPD.assignLayers(_layername);
+      CPD.assignLayers("depth_prepass,std_forward");
       CPD._clearColor     = pbrcommon->_clearColor;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
@@ -180,6 +180,25 @@ struct ForwardPbrNodeImpl {
         context->debugPopGroup();
 
         ///////////////////////////////////////////////////////////////////////////
+        // depth prepass
+        ///////////////////////////////////////////////////////////////////////////
+
+        auto rtb_depth = rtg_main->_depthBuffer;
+        _rtg_depth_only->_depthOnly = true;
+        _rtg_depth_only->mNumMrts = 0;
+        _rtg_depth_only->SetMrt(0, rtb_depth);
+        context->debugPushGroup("ForwardPBR::depth-pre pass");
+        DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
+        RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+        irenderer->drawEnqueuedRenderables();
+        //framerenderer.renderMisc();
+        context->debugPopGroup();
+
+        ///////////////////////////////////////////////////////////////////////////
+        // main color pass
+        ///////////////////////////////////////////////////////////////////////////
+
+        irenderer->resetQueue();
 
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         
@@ -212,11 +231,12 @@ struct ForwardPbrNodeImpl {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ForwardNode* _node;
-  std::string _camname, _layername;
+  std::string _camname;
   enumeratedlights_ptr_t _enumeratedLights;
 
   rtgset_ptr_t _rtgs_main;
   rtgset_ptr_t _rtgs_resolve_msaa;
+  rtgroup_ptr_t _rtg_depth_only;
 
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;

@@ -74,7 +74,8 @@ class ParticlesApp(object):
     #self.post_node = postNode
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
-    self.layer1 = self.scene.createLayer("layer1")
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.scene.createLayer("std_forward")
     ###################################
     # create particle drawable 
     ###################################
@@ -103,9 +104,8 @@ class ParticlesApp(object):
     ]
     #######################################
     def gen_sys(grad,frq,radius):
-      LAYER = self.layer1
-      ptc = ParticleContainer(self.scene,LAYER)
-      createParticleData(ptc,ptc_data,ptc_connections,LAYER)
+      ptc = ParticleContainer(self.scene,self.layer_fwd)
+      createParticleData(ptc,ptc_data,ptc_connections,self.layer_fwd)
       ptc.POOL.pool_size = 4096 # max number of particles in pool
       ptc.SPRI.inputs.Size = 0.1
       ptc.SPRI.inputs.GradientIntensity = 1
@@ -149,17 +149,20 @@ class ParticlesApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(0.8,0.8,1,1)
+    gmtl.doubleSided = True
     gmtl.gpuInit(ctx)
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
     gdata.extent = 1000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
+    self.groundnode = self.layer_fwd.createDrawableNode("partgroundicle-node",self.drawable_ground)
+    self.layer_donly.addDrawableNode(self.groundnode)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
     #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
-    self.sgnode = self.model.createNode("model-node",self.layer1)
+    self.sgnode = self.model.createNode("model-node",self.layer_fwd)
+    self.layer_donly.addDrawableNode(self.sgnode)
     self.sgnode.worldTransform.scale = 35
     self.sgnode.worldTransform.translation = vec3(0,25,0)
     #######################################

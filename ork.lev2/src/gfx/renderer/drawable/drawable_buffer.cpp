@@ -70,7 +70,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue do_all<%d>", int(do_all)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
-  //printf( "rendering <%s> are_multiple_layers_selected<%d> do_all<%d>\n", LayerName.c_str(), int(are_multiple_layers_selected), int(do_all) );
+  //printf( "rendering <%s> do_all<%d>\n", LayerName.c_str(), int(do_all) );
   //////////////////////////////////////////////////////////////////////////////////////////////
   auto do_layer = [target,renderer,&numdrawables](const lev2::DrawableBufLayer* player){
       player->_items.atomicOp([player,target,renderer,&numdrawables](const DrawableBufLayer::itemvect_t& unlocked){

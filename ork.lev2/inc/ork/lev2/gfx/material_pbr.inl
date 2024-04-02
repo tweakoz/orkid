@@ -294,7 +294,7 @@ public:
   fvec4 _baseColor;
 
   bool _stereoVtex = false;
-
+  bool _doubleSided = false;
 };
 
 pbrmaterial_ptr_t default3DMaterial(Context* ctx);

@@ -31,7 +31,8 @@ libblock lib_brdf : lib_math {
   }
 
   float geometrySmith(vec3 normal, vec3 viewdir, vec3 lightdir, float roughness) {
-    return geometrySchlickGGX(normal, viewdir, roughness) * geometrySchlickGGX(normal, lightdir, roughness);
+    return geometrySchlickGGX(normal, viewdir, roughness) //
+         * geometrySchlickGGX(normal, lightdir, roughness);
   }
 
   vec3 fresnelSchlick(vec3 normal, vec3 viewdir, vec3 F0) {

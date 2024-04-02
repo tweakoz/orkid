@@ -19,8 +19,8 @@ struct GroundPlaneRenderImpl {
   }
   void gpuInit(lev2::Context* ctx) {
 
-    if( _grounddata->_pipeline ){
-        _pipeline = _grounddata->_pipeline;
+    if( _grounddata->_pipeline_color ){
+        _pipeline_color = _grounddata->_pipeline_color;
     }
     else if( _grounddata->_material ){
         _pbrmaterial = _grounddata->_material;
@@ -32,6 +32,8 @@ struct GroundPlaneRenderImpl {
         _pbrmaterial->_metallicFactor  = 0.0f;
         _pbrmaterial->_roughnessFactor = 1.0f;
         _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
+        _pbrmaterial->_doubleSided = true;
+        
         _fxcache = _pbrmaterial->pipelineCache();
     }
 
@@ -49,6 +51,8 @@ struct GroundPlaneRenderImpl {
     bool isPickState = context->FBI()->isPickState();
 
     const RenderContextFrameData* RCFD = RCID._RCFD;
+
+    bool is_depth_prepass = RCFD->_renderingmodel._modelID=="DEPTH_PREPASS"_crcu;
 
     const auto& CPD  = RCFD->topCPD();
 
@@ -108,12 +112,14 @@ struct GroundPlaneRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    auto pipeline = _pipeline;
-    if( nullptr == pipeline ){
-       pipeline = _fxcache->findPipeline(RCID);
-       _pipeline = pipeline;
-    }
+    auto pipeline = _fxcache->findPipeline(RCID);
     OrkAssert(pipeline);
+
+    if(_pipeline_color and not is_depth_prepass){
+      pipeline = _pipeline_color;
+    }
+
+
     pipeline->wrappedDrawCall(RCID, [&]() {
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
     });
@@ -127,7 +133,7 @@ struct GroundPlaneRenderImpl {
   }
   const GroundPlaneDrawableData* _grounddata;
   pbrmaterial_ptr_t _pbrmaterial;
-  fxpipeline_ptr_t _pipeline;
+  fxpipeline_ptr_t _pipeline_color;
 
   texture_ptr_t _colortexture;
   fxpipelinecache_constptr_t _fxcache;
