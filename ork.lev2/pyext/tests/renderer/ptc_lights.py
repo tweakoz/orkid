@@ -32,7 +32,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=4)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -58,7 +58,7 @@ class ParticlesApp(object):
     sceneparams.SkyboxIntensity = float(1)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
-    sceneparams.AmbientLight = vec3(0.1)
+    sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
     ###################################
