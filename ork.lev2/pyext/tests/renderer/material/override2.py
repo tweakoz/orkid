@@ -13,7 +13,7 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append(str(lev2pyexdir())) # add orklev2pyex dir to path
+lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData

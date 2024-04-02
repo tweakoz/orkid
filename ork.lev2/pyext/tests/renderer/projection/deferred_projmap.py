@@ -14,7 +14,7 @@ from PIL import Image
 
 ################################################################################
 
-sys.path.append(str(lev2pyexdir())) # add orklev2pyex dir to path
+lev2_pyexdir.addToSysPath()
 this_dir = obt.path.directoryOfInvokingModule()
 from common.cameras import *
 from common.shaders import *

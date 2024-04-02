@@ -12,7 +12,7 @@ from obt import path
 from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append(str(lev2pyexdir())) # add orklev2pyex dir to path
+lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.scenegraph import createSceneGraph
 from signal import signal, SIGINT

@@ -117,7 +117,8 @@ static file::Path _lev2dir() {
   return _orkdir()/"ork.lev2";
 }
 static file::Path _lev2pyexdir() {
-  return _lev2dir()/"examples"/"python";
+  static file::Path rval = _lev2dir()/"examples"/"python";
+  return rval;
 }
 
 static PoolString _addpoolstring(std::string str) {
@@ -138,6 +139,7 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.def("lev2dir", &_lev2dir);
   module_core.def("lev2pyexdir", &_lev2pyexdir);
   module_core.def("addpoolstring", &_addpoolstring);
+
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
@@ -234,6 +236,11 @@ PYBIND11_MODULE(_core, module_core) {
       .def_property_readonly("as_string", [](const file::Path& a) -> std::string { return a.c_str(); })
       .def("isAbsolute", &file::Path::isAbsolute)
       .def("IsRelative", &file::Path::isRelative)
+      .def("addToSysPath", [](const file::Path& self) {
+        auto syspath = py::module::import("sys").attr("path");
+        auto str     = self.c_str();
+        syspath.attr("append")(str);
+      })
       .def("__truediv__", [](const file::Path& a, std::string b) -> file::Path { return (a / b); })
       .def("__str__", [](const file::Path& s) -> std::string { return s.c_str(); })
       .def("__repr__", [](const file::Path& s) -> std::string {
@@ -368,6 +375,9 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_math(module_core);
   pyinit_dataflow(module_core);
   pyinit_datablock(module_core);
+  /////////////////////////////////////////////////////////////////////////////////
+  static auto l2pedir = py::cast(_lev2pyexdir());
+  module_core.attr("lev2_pyexdir") = l2pedir;
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {
 
