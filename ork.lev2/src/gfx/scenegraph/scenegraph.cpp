@@ -149,6 +149,10 @@ drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t 
   return rval;
 }
 
+void Layer::addDrawableNode(drawable_node_ptr_t node){
+  _drawable_nodes.atomicOp([node](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(node); });
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::removeDrawableNode(drawable_node_ptr_t node) {

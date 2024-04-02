@@ -151,6 +151,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 layer->_sortkey = sortkey;
               })
           .def(
+              "addDrawableNode",
+              [](layer_ptr_t layer, //
+                 drawable_node_ptr_t node) { //
+                layer->addDrawableNode(node);
+              })
+          .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //
                  std::string named,

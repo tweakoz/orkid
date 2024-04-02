@@ -77,7 +77,7 @@ class ParticlesApp(object):
       ("TURB","VORT"),
       ("VORT","STRK"),
     ]
-    createParticleData(self,ptc_data,ptc_connections)
+    createParticleData(self,ptc_data,ptc_connections,self.layer1)
     self.POOL.pool_size = 16384 # max number of particles in pool
 
     self.STRK.inputs.Length = .1

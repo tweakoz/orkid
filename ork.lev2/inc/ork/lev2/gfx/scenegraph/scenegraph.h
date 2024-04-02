@@ -120,6 +120,8 @@ struct Layer {
   drawable_node_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
   void removeDrawableNode(drawable_node_ptr_t node);
 
+  void addDrawableNode(drawable_node_ptr_t node);
+
   //! create/remove "instanced" drawable node
   /*!
       create an instanced node and assign as an instance in parent_drawable

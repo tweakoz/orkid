@@ -81,7 +81,7 @@ class ParticlesApp(object):
       ("TURB","GRAV"),
       ("GRAV","STRK"),
     ]
-    createParticleData(self,ptc_data,ptc_connections)
+    createParticleData(self,ptc_data,ptc_connections,self.layer1)
     self.POOL.pool_size = 131072 # max number of particles in pool
 
     gradient = GradientV4()

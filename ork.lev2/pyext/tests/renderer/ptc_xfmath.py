@@ -76,7 +76,7 @@ class ParticlesApp(object):
       ("TURB","VORT"),
       ("VORT","SPRI"),
     ]
-    createParticleData(self,ptc_data,ptc_connections)
+    createParticleData(self,ptc_data,ptc_connections,self.layer1)
 
     print(self.GLOB)
     #assert(False)

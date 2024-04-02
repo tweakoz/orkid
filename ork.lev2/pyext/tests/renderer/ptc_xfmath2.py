@@ -76,13 +76,13 @@ class ParticlesApp(object):
       ("TURB","VORT"),
       ("VORT","STRK"),
     ]
-    createParticleData(self,ptc_data,ptc_connections)
+    createParticleData(self,ptc_data,ptc_connections,self.layer1)
 
     self.POOL.pool_size = 65536 # max number of particles in pool
 
     #self.STRK.inputs.Size = 0.05
     self.STRK.inputs.GradientIntensity = 1
-    self.STRK.material = presetMaterial(grad=presetGRAD2(),texname="src://effect_textures/ptc1.png")
+    self.STRK.material = presetMaterial(grad=presetGRAD(1),texname="src://effect_textures/ptc1.png")
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)

@@ -103,8 +103,9 @@ class ParticlesApp(object):
     ]
     #######################################
     def gen_sys(grad,frq,radius):
-      ptc = ParticleContainer(self.scene,self.layer1)
-      createParticleData(ptc,ptc_data,ptc_connections)
+      LAYER = self.layer1
+      ptc = ParticleContainer(self.scene,LAYER)
+      createParticleData(ptc,ptc_data,ptc_connections,LAYER)
       ptc.POOL.pool_size = 4096 # max number of particles in pool
       ptc.SPRI.inputs.Size = 0.1
       ptc.SPRI.inputs.GradientIntensity = 1

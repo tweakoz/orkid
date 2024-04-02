@@ -33,6 +33,7 @@ namespace ork::lev2 {
 namespace scenegraph{
   struct Scene;
   struct Node;
+  struct Layer;
   using scene_ptr_t        = std::shared_ptr<Scene>;
   using node_ptr_t         = std::shared_ptr<Node>;
 }
