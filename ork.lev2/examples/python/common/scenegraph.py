@@ -12,7 +12,12 @@ def createSceneGraph( app=None,
       for k in params_dict.keys():
         sceneparams.__setattr__(k,params_dict[k])
     app.scene = app.ezapp.createScene(sceneparams)
-    app.layer1 = app.scene.createLayer("layer1")
+    
+    layer_name = "All"
+    if rendermodel == "ForwardPBR":
+      layer_name = "std_forward"
+    
+    app.layer1 = app.scene.createLayer(layer_name)
     app.rendernode = app.scene.compositorrendernode
 
     return app.scene
