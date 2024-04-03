@@ -38,6 +38,8 @@ class WaterApp(object):
     self.curtime = 0.0
 
     setupUiCamera( app=self, #
+                   near = 0.1, #
+                   far = 10000, #
                    eye = vec3(0,100,150), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
@@ -133,6 +135,8 @@ class WaterApp(object):
     param_voltexa = freestyle.param("MapVolTexA")
     param_time = freestyle.param("Time")
     param_color = freestyle.param("BaseColor")
+    param_depthmap = freestyle.param("depth_map")
+    param_bufinvdim = freestyle.param("bufinvdim")
     assert(param_time)
     
     def _gentime():
@@ -144,6 +148,9 @@ class WaterApp(object):
     gmtl.bindParam(param_voltexa,self.NOISETEX)
     gmtl.bindParam(param_time,lambda: _gentime() )
     gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
+    gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
+    gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
+    
     #######################################
     # ground drawable
     #######################################
@@ -155,7 +162,7 @@ class WaterApp(object):
     gdata.extent = 10000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
+    self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
 
     #######################################

@@ -42,7 +42,7 @@ struct ForwardPbrNodeImpl {
   ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
       , _camname("Camera") { //
-      
+
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
@@ -51,6 +51,8 @@ struct ForwardPbrNodeImpl {
   void init(lev2::Context* context, int iw, int ih) {
 
     if (nullptr == _rtgs_main) {
+
+      _rtg_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
 
        auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
       _rtgs_main = std::make_shared<RtgSet>(context,e_msaa);
@@ -155,6 +157,7 @@ struct ForwardPbrNodeImpl {
         ///////////////////////////////////////////////////////////////////////////
 
         context->debugMarker(FormatString("ForwardPBR::preclear"));
+        rtg_main->_autoclear = false;
         FBI->PushRtGroup(rtg_main.get());
         CIMPL->pushCPD(CPD);
         auto MTXI = context->MTXI();
@@ -177,7 +180,8 @@ struct ForwardPbrNodeImpl {
                                fvec4(0, 0, 1, 1), //
                                0.9999f); // full screen quad
         });
-        context->debugPopGroup();
+        //context->debugPopGroup();
+        FBI->PopRtGroup();
 
         ///////////////////////////////////////////////////////////////////////////
         // depth prepass
@@ -185,23 +189,33 @@ struct ForwardPbrNodeImpl {
 
         auto rtb_depth = rtg_main->_depthBuffer;
         _rtg_depth_only->_depthOnly = true;
+          _rtg_depth_only->_autoclear = false;
         _rtg_depth_only->mNumMrts = 0;
-        _rtg_depth_only->SetMrt(0, rtb_depth);
+        //_rtg_depth_only->SetMrt(0, rtb_depth);
+        _rtg_depth_only->_depthBuffer = rtb_depth;
         context->debugPushGroup("ForwardPBR::depth-pre pass");
         DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
         RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+
+        //FBI->PushRtGroup(_rtg_depth_only.get());
+        FBI->PushRtGroup(rtg_main.get());
+
         irenderer->drawEnqueuedRenderables();
-        //framerenderer.renderMisc();
+        FBI->PopRtGroup();
         context->debugPopGroup();
+
+        FBI->cloneDepthBuffer(_rtg_depth_only, _rtg_depth_copy);
 
         ///////////////////////////////////////////////////////////////////////////
         // main color pass
         ///////////////////////////////////////////////////////////////////////////
 
         irenderer->resetQueue();
-
+        rtb_depth = _rtg_depth_copy->_depthBuffer;
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
+        RCFD.setUserProperty("DEPTH_MAP"_crcu,rtb_depth->_texture);
         
+        FBI->PushRtGroup(rtg_main.get());
         //printf( "BEG FWD PBR ENQ\n");
         for (const auto& layer_name : CPD.getLayerNames()) {
           context->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
@@ -215,8 +229,8 @@ struct ForwardPbrNodeImpl {
         framerenderer.renderMisc();
         context->debugPopGroup();
         irenderer->resetQueue();
-
         FBI->PopRtGroup();
+
 
         /////////////////////////////////////////////////
 
@@ -237,7 +251,8 @@ struct ForwardPbrNodeImpl {
   rtgset_ptr_t _rtgs_main;
   rtgset_ptr_t _rtgs_resolve_msaa;
   rtgroup_ptr_t _rtg_depth_only;
-
+  rtgroup_ptr_t _rtg_depth_copy;
+  rtbuffer_ptr_t _rtb_depth_copy;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
   fxpipelinecache_constptr_t _skybox_fxcache;

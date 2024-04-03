@@ -428,6 +428,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             auto RCFD       = RCID._RCFD;
             auto context    = RCFD->GetTarget();
             auto RSI        = context->RSI();
+            //_this->_rasterstate.SetBlending(Blending::ADDITIVE);
             _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
             _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
             _this->_rasterstate.SetZWriteMask(true);

@@ -12,11 +12,13 @@ uniform_set ub_frgX {
   sampler3D MapVolTexA;
   sampler2D envmap;
   sampler2D refract_map;
+  sampler2D depth_map;
   vec3 BaseColor;
   vec3 ColorB;
   vec3 ColorC;
   vec3 ColorD;
   float GroundColorPower;
+  vec2 bufinvdim;
 
 }
 ///////////////////////////////////////////////////////////////
@@ -146,11 +148,21 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
       point_lighting += plcalc_forward(plc,pbd,LR)*LC*0.05;
     }
 
+    vec2 uv =  gl_FragCoord.xy * bufinvdim;
+
     vec3 L = env_lighting+point_lighting;
     vec3 out_color = mix(L,skyboxColor,1.0-depth_fogval);
-
+    float depth = texture(depth_map,uv).r;
+    float ndc      = depth * 2.0 - 1.0;
+    float near = 0.1;
+    float far = 10000.0;
+    float lin_num = (2.0 * near * far);
+    float lin_den = (far + near - ndc * (far - near));
+    float linZ =  lin_num / lin_den;
+    //float zeye     = 10000.0 / (ndc - 0.1);
+    //depth = pow(depth,1e4);
     return vec4(out_color, 1);
-    //return vec4(vec3(F), 1);
+    //return vec4(vec3(depth), 1);
 }
 }
 

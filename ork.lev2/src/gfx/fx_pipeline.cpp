@@ -175,6 +175,13 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           FXI->BindParamMatrix(param, worldmatrix);
           break;
         }
+        case "RCFD_DEPTH_MAP"_crcu: {
+          auto RCFD = RCID._RCFD;
+          auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
+          FXI->BindParamCTex(param, depth_tex.get());
+          //OrkAssert(false);
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
