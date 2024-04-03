@@ -34,6 +34,7 @@ struct GridRenderImpl {
     _pbrmaterial->_metallicFactor  = 0.0f;
     _pbrmaterial->_roughnessFactor = 1.0f;
     _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
+    _pbrmaterial->_doubleSided = true;
 
     _fxcache = _pbrmaterial->pipelineCache();
 
