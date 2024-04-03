@@ -80,6 +80,9 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               })
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t { return m->clone(); })
           .def("addBasicStateLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
+          .def("addLightingLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
+          .def("addBasicStateLambda", [](pbrmaterial_ptr_t m) { m->addBasicStateLambda(); })
+          .def("addLightingLambda", [](pbrmaterial_ptr_t m) { m->addLightingLambda(); })
           .def_property_readonly(
               "fxcache",                                              //
               [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //

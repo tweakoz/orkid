@@ -225,3 +225,56 @@ def gen_sys(scene=None,
   ptc.drawable_data.emitterIntensity = 8.0
   ptc.drawable_data.emitterRadius = 1.5
   return ptc
+
+def gen_psys_set(scene,
+                 layer,
+                 count=32,
+                 frqbase=0.4,
+                 radbase=1.0):
+  ptc_data = {
+    "POOL":particles.Pool,
+    "EMITN":particles.NozzleEmitter,
+    "EMITR":particles.RingEmitter,
+    "GLOB":particles.Globals,
+    #"PNTA":particles.PointAttractor,
+    "GRAV":particles.Gravity,
+    "TURB":particles.Turbulence,
+    "VORT":particles.Vortex,
+    "DRAG":particles.Drag,
+    "LITE":particles.LightRenderer,
+    "SPRI":particles.SpriteRenderer,
+  }
+  ptc_connections = [
+    ("POOL","EMITN"),
+    ("EMITN","EMITR"),
+    ("EMITR","GRAV"),
+    ("GRAV","TURB"),
+    ("TURB","VORT"),
+    ("VORT","DRAG"),
+    ("DRAG","LITE"),
+    ("LITE","SPRI"),
+  ]
+  ptc_systems = []
+  for i in range(count):
+    fi = float(i)/float(count)
+    frq = frqbase + (fi*2)
+    radius = (35 + fi*35)*radbase
+    g = i&7
+    ptc_systems += [gen_sys(scene=scene,
+                            ptc_data=ptc_data,
+                            ptc_connections=ptc_connections,
+                            layer=layer,
+                            grad=presetGRAD(g),
+                            frq=frq,
+                            radius=radius)]
+  return ptc_systems
+
+def update_psys_set(psys_set,time,yval):
+  for item in psys_set:
+    prv_trans = item.particlenode.worldTransform.translation
+    f = - item.frq
+    x = item.radius*math.cos(time*f)
+    y = yval #30+math.sin(time*f)*30
+    z = item.radius*math.sin(time*f)*-1.0
+    new_trans = vec3(x,y,z)    
+    item.particlenode.worldTransform.translation = new_trans  

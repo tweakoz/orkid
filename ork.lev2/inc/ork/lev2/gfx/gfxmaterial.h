@@ -207,6 +207,7 @@ public:
   ork::varmap::VarMap _varmap;
   
   std::unordered_map<fxparam_constptr_t, varval_t> _bound_params;
+  std::vector<FxPipeline::statelambda_t> _state_lambdas;
 
   //
 

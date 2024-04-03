@@ -55,108 +55,86 @@ class WaterApp(object):
     ###################################
     sceneparams = VarMap() 
     sceneparams.preset = "ForwardPBR"
-    sceneparams.SkyboxIntensity = float(1.5)
+    sceneparams.SkyboxIntensity = float(1.0)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.0)
-    sceneparams.DepthFogDistance = float(1e6)
+    sceneparams.DepthFogDistance = float(10000)
+    sceneparams.DepthFogPower = float(2)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
     ###################################
     # post fx node
     ###################################
+
     postNode = DecompBlurPostFxNode()
     postNode.threshold = 0.99
     postNode.blurwidth = 16.0
     postNode.blurfactor = 0.1
-    postNode.amount = 0.1
+    postNode.amount = 0.4
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
-    #self.post_node = postNode
+
     ###################################
+    # create scene
+    ###################################
+
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
+
     ###################################
     # create particle drawable 
     ###################################
-    ptc_data = {
-      "POOL":particles.Pool,
-      "EMITN":particles.NozzleEmitter,
-      "EMITR":particles.RingEmitter,
-      "GLOB":particles.Globals,
-      #"PNTA":particles.PointAttractor,
-      "GRAV":particles.Gravity,
-      "TURB":particles.Turbulence,
-      "VORT":particles.Vortex,
-      "DRAG":particles.Drag,
-      "LITE":particles.LightRenderer,
-      "SPRI":particles.SpriteRenderer,
-    }
-    ptc_connections = [
-      ("POOL","EMITN"),
-      ("EMITN","EMITR"),
-      ("EMITR","GRAV"),
-      ("GRAV","TURB"),
-      ("TURB","VORT"),
-      ("VORT","DRAG"),
-      ("DRAG","LITE"),
-      ("LITE","SPRI"),
-    ]
+
+    self.ptc_systems = gen_psys_set( self.scene,
+                                     self.layer_fwd,
+                                     count = 8,
+                                     frqbase=0.1,
+                                     radbase = 4 )
+    for ptc in self.ptc_systems:
+      ptc.drawable_data.emitterIntensity = 1000.0
+      ptc.drawable_data.emitterRadius = 2
+      ptc.EMITN.inputs.EmissionRate = 50
+      ptc.EMITR.inputs.EmissionRate = 50
+      ptc.particlenode.worldTransform.scale = 4
+
     #######################################
-    self.ptc_systems = [gen_sys(scene=self.scene,
-                               ptc_data=ptc_data,
-                               ptc_connections=ptc_connections,
-                               layer=self.layer_fwd,
-                               grad=presetGRAD(0),
-                               frq=1,
-                               radius=50)]
-    ptc = self.ptc_systems[0]
-    ptc.drawable_data.emitterIntensity = 20.0
-    ptc.drawable_data.emitterRadius = 3
-    ptc.EMITN.inputs.EmissionRate = 200
-    ptc.EMITR.inputs.EmissionRate = 200
-    ptc.particlenode.worldTransform.scale = 2   
+    # ground material (water)
     #######################################
+
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
     gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.5,0.5,1,1)
     gmtl.doubleSided = True
     gmtl.shaderpath = str(thisdir()/"water1.glfx")
+    gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
 
     freestyle = gmtl.freestyle
     assert(freestyle)
+    param_refract_map = freestyle.param("refract_map")
     param_voltexa = freestyle.param("MapVolTexA")
     param_time = freestyle.param("Time")
-    #param_colora = freestyle.param("ColorA")
-    #param_colorb = freestyle.param("ColorB")
-    #param_colorc = freestyle.param("ColorC")
-    #param_colord = freestyle.param("ColorD")
+    param_color = freestyle.param("BaseColor")
     assert(param_time)
-
-    #tek = freestyle.technique("FWD_CT_NM_RI_NI_MO")
-    #assert(tek)
-    #permu = FxPipelinePermutation()
-    #permu.rendering_model = "FORWARD_PBR"
-    #permu.technique = tek
-    #fxcache = freestyle.fxcache
-    #pipeline = fxcache.findPipeline(permu)
     
     def _gentime():
       return self.curtime
 
+    self.refract_tex = Texture.load( "src://envmaps/tozenv_caustic1.png")
+
+    gmtl.bindParam(param_refract_map,self.refract_tex)
     gmtl.bindParam(param_voltexa,self.NOISETEX)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    #gmtl.bindParam(param_colora,lambda: self.colorA.hsv2rgb() )
-    #gmtl.bindParam(param_colorb,lambda: self.colorB.hsv2rgb() )
-    #gmtl.bindParam(param_colorc,lambda: self.colorC.hsv2rgb() )
-    #gmtl.bindParam(param_colord,lambda: self.colorD.hsv2rgb() )
+    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
+    #######################################
+    # ground drawable
+    #######################################
 
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
@@ -167,13 +145,16 @@ class WaterApp(object):
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
+
     #######################################
+    # helmet mesh
+    #######################################
+
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
-    #######################################
 
 
   ################################################
@@ -181,14 +162,7 @@ class WaterApp(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
-    for item in self.ptc_systems:
-      prv_trans = item.particlenode.worldTransform.translation
-      f = - item.frq
-      x = item.radius*math.cos(updinfo.absolutetime*f)
-      y = 30+math.sin(updinfo.absolutetime*f)*30
-      z = item.radius*math.sin(updinfo.absolutetime*f)*-1.0      
-      new_trans = vec3(x,y,z)
-      item.particlenode.worldTransform.translation = new_trans
+    update_psys_set(self.ptc_systems,updinfo.absolutetime,30.0)
 
   ##############################################
 

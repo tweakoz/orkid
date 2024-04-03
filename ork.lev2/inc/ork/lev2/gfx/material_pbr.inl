@@ -61,6 +61,9 @@ public:
 
   pbrmaterial_ptr_t clone() const;
   void addBasicStateLambda(fxpipeline_ptr_t pipe);
+  void addLightingLambda(fxpipeline_ptr_t pipe);
+  void addBasicStateLambda();
+  void addLightingLambda();
 
   ////////////////////////////////////////////
 
@@ -296,6 +299,9 @@ public:
   bool _stereoVtex = false;
   bool _doubleSided = false;
 };
+
+FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);
+FxPipeline::statelambda_t createLightingLambda(const PBRMaterial* mtl);
 
 pbrmaterial_ptr_t default3DMaterial(Context* ctx);
 

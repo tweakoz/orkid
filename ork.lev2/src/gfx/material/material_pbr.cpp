@@ -67,7 +67,7 @@ static pbrcache_impl_ptr_t _getpbrcache(){
 
 ////////////////////////////////////////////
 
-static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl){
+FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
   return [mtl](const RenderContextInstData& RCID, int ipass) {
     auto context          = RCID._RCFD->GetTarget();
     auto MTXI             = context->MTXI();
@@ -143,11 +143,79 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
 
 }
 
+FxPipeline::statelambda_t  createLightingLambda(const PBRMaterial* mtl){
+
+  auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
+
+    auto RCFD       = RCID._RCFD;
+    bool is_depth_prepass = RCFD->_renderingmodel._modelID=="DEPTH_PREPASS"_crcu;
+    if(is_depth_prepass)
+      return;
+
+    auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+    auto context    = RCFD->GetTarget();
+    auto FXI        = context->FXI();
+     //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
+
+    int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
+    //printf( "num_untextured_pointlights<%d>\n", num_untextured_pointlights );
+    auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
+    size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
+    auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+
+    size_t f32_stride    = sizeof(float);
+    size_t vec4_stride   = sizeof(fvec4);
+    size_t base_color    = 0;
+    size_t base_position = base_color + vec4_stride * 64;
+    size_t base_radius   = base_position + vec4_stride * 64;
+    // 16*(16+16+8) = 16*40 = 640
+
+    size_t index = 0;
+    for (auto light : enumlights->_untexturedpointlights) {
+      auto C = fvec4(light->color(), light->intensity());
+      auto P = light->worldPosition();
+      float R = light->radius();
+      pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
+      pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
+      pl_mapped->ref<float>(base_radius + (index * f32_stride))    = R;
+      //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
+      index++;
+    }
+
+    pl_mapped->unmap();
+
+    if(mtl->_parUnTexPointLightsCount)
+      FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
+    if(mtl->_parUnTexPointLightsData)
+      FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+
+    auto modcolor = context->RefModColor();
+    FXI->BindParamVect4(mtl->_parModColor, modcolor*mtl->_baseColor);
+
+  };
+  return L;
+}
+
 ////////////////////////////////////////////
 
 void PBRMaterial::addBasicStateLambda(fxpipeline_ptr_t pipe){
-  auto L = _createBasicStateLambda(this);
+  auto L = createBasicStateLambda(this);
   pipe->addStateLambda(L);
+}
+void PBRMaterial::addBasicStateLambda(){
+  auto L = createBasicStateLambda(this);
+  _state_lambdas.push_back(L);
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::addLightingLambda(fxpipeline_ptr_t pipe){
+  auto L = createLightingLambda(this);
+  pipe->addStateLambda(L);
+}
+void PBRMaterial::addLightingLambda(){
+  auto L = createLightingLambda(this);
+  _state_lambdas.push_back(L);
 }
 
 ////////////////////////////////////////////
@@ -351,50 +419,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           // setup forward lighting
           ////////////////////////////////////////////////
 
-          auto lighting_lambda = [mtl](const RenderContextInstData& RCID, int ipass) {
 
-            auto RCFD       = RCID._RCFD;
-            auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-            auto context    = RCFD->GetTarget();
-            auto FXI        = context->FXI();
-             //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
-
-            int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-            //printf( "num_untextured_pointlights<%d>\n", num_untextured_pointlights );
-            auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-            size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
-            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
-
-            size_t f32_stride    = sizeof(float);
-            size_t vec4_stride   = sizeof(fvec4);
-            size_t base_color    = 0;
-            size_t base_position = base_color + vec4_stride * 64;
-            size_t base_radius   = base_position + vec4_stride * 64;
-            // 16*(16+16+8) = 16*40 = 640
-
-            size_t index = 0;
-            for (auto light : enumlights->_untexturedpointlights) {
-              auto C = fvec4(light->color(), light->intensity());
-              auto P = light->worldPosition();
-              float R = light->radius();
-              pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
-              pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
-              pl_mapped->ref<float>(base_radius + (index * f32_stride))    = R;
-              //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
-              index++;
-            }
-
-            pl_mapped->unmap();
-
-            if(mtl->_parUnTexPointLightsCount)
-              FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
-            if(mtl->_parUnTexPointLightsData)
-              FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
-
-            auto modcolor = context->RefModColor();
-            FXI->BindParamVect4(mtl->_parModColor, modcolor*mtl->_baseColor);
-
-          };
           ////////////////////////////////////////////////
           // set raster state
           ////////////////////////////////////////////////
@@ -417,8 +442,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_ST;
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                pipeline->addStateLambda(_createBasicStateLambda(mtl));
-                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda(createLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -428,8 +453,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                pipeline->addStateLambda(_createBasicStateLambda(mtl));
-                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda(createLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -439,8 +464,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_SK_NI_ST;
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                pipeline->addStateLambda(_createBasicStateLambda(mtl));
-                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda(createLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -451,8 +476,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline          = std::make_shared<FxPipeline>(permu);
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
                 pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-                pipeline->addStateLambda(_createBasicStateLambda(mtl));
-                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda(createLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -461,8 +486,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline          = std::make_shared<FxPipeline>(permu);
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
                 pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-                pipeline->addStateLambda(_createBasicStateLambda(mtl));
-                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda(createLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }            
@@ -478,7 +503,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_NI_MO;
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(createBasicStateLambda(mtl));
               pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this   = (PBRMaterial*)mtl;
                 auto RCFD    = RCID._RCFD;
@@ -500,7 +525,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(createBasicStateLambda(mtl));
               pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this   = (PBRMaterial*)mtl;
                 auto RCFD    = RCID._RCFD;
@@ -527,7 +552,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     } // case 0: // STANDARD VARIANT
     //////////////////////////////////////////
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
-      auto basic_lambda  = _createBasicStateLambda(mtl);
+      auto basic_lambda  = createBasicStateLambda(mtl);
       auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
         auto _this   = (PBRMaterial*)mtl;
         auto RCFD    = RCID._RCFD;
@@ -597,7 +622,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
               pipeline->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(createBasicStateLambda(mtl));
               pipeline->addStateLambda(no_cull_stateblock);
               OrkAssert(pipeline->_technique != nullptr);
             }
@@ -610,7 +635,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
               pipeline->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(createBasicStateLambda(mtl));
               pipeline->addStateLambda(no_cull_stateblock);
               OrkAssert(pipeline->_technique != nullptr);
             }
@@ -667,6 +692,9 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->_material             = (GfxMaterial*)mtl;
 
 
+    for( auto l : mtl->_state_lambdas ){
+      pipeline->addStateLambda(l);
+    }
     for( auto item : mtl->_bound_params ){
       pipeline->bindParam(item.first, item.second);
     }

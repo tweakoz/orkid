@@ -11,7 +11,8 @@ uniform_set ub_frgX {
   float Time;
   sampler3D MapVolTexA;
   sampler2D envmap;
-  vec3 ColorA;
+  sampler2D refract_map;
+  vec3 BaseColor;
   vec3 ColorB;
   vec3 ColorC;
   vec3 ColorD;
@@ -61,8 +62,11 @@ libblock lib_ground_vtx {
 ///////////////////////////////////////////////////////////////
 libblock lib_ground_frg
  : ub_frgX 
- : lib_math
- : lib_envmapping {
+	: lib_fwd
+	: lib_brdf
+	: lib_envmapping
+	: lib_def
+  : lib_math {
 
 float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
     float radius = length(pos.xz - center.xz);
@@ -70,18 +74,26 @@ float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
     return sin(radius * frq - timeval) * baseamp * 0.0254 * amp;
 }
 
-vec4 gen_ground_(vec2 UV, vec3 eye_pos) {
+vec4 gen_water_(vec2 UV, vec3 eye_pos) {
     float waveHeight = 0.0254*0.125; // 1 inch in meters
+
 
     vec3 wpos       = frg_wpos.xyz;
 
-    vec3 eye_dir = normalize(wpos-eye_pos);
+    vec3 eye_delta = wpos-eye_pos;
+    vec3 eye_dir = normalize(eye_delta);
+    vec3 skybox_n = vec3(eye_dir.x,eye_dir.y,eye_dir.z)*-1;
+    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+
+    float fogZ = length(eye_delta); 
+    
+    float depth_fogval = 1.0-clamp(pow(fogZ/DepthFogDistance,DepthFogPower),0,1);
 
     vec3 pos = wpos;
     // World space position
 
     float speed = Time * 2.0;
-    float baseamp = 5;
+    float baseamp = 10;
 
     vec3 wave_pos = wpos*0.01;
 
@@ -95,31 +107,62 @@ vec4 gen_ground_(vec2 UV, vec3 eye_pos) {
     vec3 dPdu = dFdx(pos);
     vec3 dPdv = dFdy(pos);
     vec3 normal = normalize(cross(dPdu, dPdv)); // Corrected normal calculation
-    //normal = vec3(0,1,0);
 
-    vec3 R = normalize(reflect(eye_dir, normal));
-    vec3 S = env_equirectangularFlipV(R*vec3(-1,-1,-1),MapSpecularEnv,0);
-    vec3 D = env_equirectangular(R*vec3(-1,-1,-1),MapDiffuseEnv,0);
-    vec3 L = mix(S,D,pow(pos.y,1));
-    vec3 color = vec3(0,.02,.15);
-    L = (L*0.5+color)*0.5;
-    return vec4(L, 1);
+    vec3 skybox_refract_n = refract(skybox_n,normal,1.1);
+    vec3 skyboxRefractColor = env_equirectangularFlipV(skybox_refract_n,refract_map,0.5);
+
+    float F = fresnelSchlick(eye_dir*-1.0, normal, vec3(0.004)).x;
+    F = pow(F, 0.1);
+    vec3 albedo = BaseColor;
+    vec3 altcolor = skyboxRefractColor; //normal*0.5+vec3(0.5,0.5,0.5);
+    albedo = mix(albedo,albedo+altcolor*0.5,1-F);
+    PbrData pbd;
+    pbd._emissive = false;
+    pbd._metallic = 1;
+    pbd._roughness = 0.5;
+    pbd._albedo = albedo;
+    pbd._wpos = wpos;
+    pbd._wnrm = normal;
+    pbd._fogZ = 0.0;
+    pbd._atmos = 0.0;
+    pbd._alpha = 1.0;
+
+    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd,eye_pos);
+
+    ///////////////////////////////////////////////
+    // point lighting
+    ///////////////////////////////////////////////
+
+    LightCtx plc = lcalc_forward(wpos,pbd);
+    vec3 point_lighting       = vec3(0, 0, 0);
+    for(int i=0; i<point_light_count; i++){
+      plc._lightdel = _lightpos[i].xyz - wpos;
+      vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
+      float LR = _lightradius[i];
+      point_lighting += plcalc_forward(plc,pbd,LR)*LC*0.05;
+    }
+
+    vec3 L = env_lighting+point_lighting;
+    vec3 out_color = mix(L,skyboxColor,1.0-depth_fogval);
+
+    return vec4(out_color, 1);
+    //return vec4(vec3(F), 1);
 }
 }
 
 libblock lib_ground_mono {
 
-  vec4 gen_ground_mono(vec2 UV) {
-    return gen_ground_(UV,EyePostion);
+  vec4 gen_water_mono(vec2 UV) {
+    return gen_water_(UV,EyePostion);
   }
 
 }
 
 libblock lib_ground_stereo {
 
-  vec4 gen_ground_stereo(vec2 UV) {
+  vec4 gen_water_stereo(vec2 UV) {
     vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
-    return gen_ground_(UV,eyepos);
+    return gen_water_(UV,eyepos);
   }
 
 }
@@ -150,9 +193,10 @@ vertex_shader vs_ground_stereo //
 fragment_shader ps_fwd_ground_mono
   : iface_forward
   : lib_ground_frg
+  : lib_fwd 
   : lib_ground_mono
   : ub_frgX {
-    out_color = gen_ground_mono(frg_uv0);
+    out_color = gen_water_mono(frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fwd_ground_stereo
@@ -160,7 +204,7 @@ fragment_shader ps_fwd_ground_stereo
   : lib_ground_frg
   : lib_ground_stereo
   : ub_frgX {
-    out_color = gen_ground_stereo(frg_uv0);
+    out_color = gen_water_stereo(frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {

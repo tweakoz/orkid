@@ -80,45 +80,8 @@ class ParticlesApp(object):
     ###################################
     # create particle drawable 
     ###################################
-    ptc_data = {
-      "POOL":particles.Pool,
-      "EMITN":particles.NozzleEmitter,
-      "EMITR":particles.RingEmitter,
-      "GLOB":particles.Globals,
-      #"PNTA":particles.PointAttractor,
-      "GRAV":particles.Gravity,
-      "TURB":particles.Turbulence,
-      "VORT":particles.Vortex,
-      "DRAG":particles.Drag,
-      "LITE":particles.LightRenderer,
-      "SPRI":particles.SpriteRenderer,
-    }
-    ptc_connections = [
-      ("POOL","EMITN"),
-      ("EMITN","EMITR"),
-      ("EMITR","GRAV"),
-      ("GRAV","TURB"),
-      ("TURB","VORT"),
-      ("VORT","DRAG"),
-      ("DRAG","LITE"),
-      ("LITE","SPRI"),
-    ]
-    #######################################
-    self.ptc_systems = []
-    count = 32
-    for i in range(count):
-      fi = float(i)/float(count)
-      frq = 0.4 + (fi*2)
-      radius = 35 + fi*35
-      g = i&7
-      self.ptc_systems += [gen_sys(scene=self.scene,
-                                   ptc_data=ptc_data,
-                                   ptc_connections=ptc_connections,
-                                   layer=self.layer_fwd,
-                                   grad=presetGRAD(g),
-                                   frq=frq,
-                                   radius=radius)]
-    #self.ptc_systems[0].EMITN.inputs.EmissionVelocity = 0.1
+    self.ptc_systems = gen_psys_set(self.scene,
+                                    self.layer_fwd)
     #######################################
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -126,7 +89,7 @@ class ParticlesApp(object):
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.8,0.8,1,1)
+    gmtl.baseColor = vec4(0.8,0.8,1.3,1)
     gmtl.doubleSided = True
     gmtl.gpuInit(ctx)
     gdata = GroundPlaneDrawableData()
