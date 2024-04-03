@@ -70,7 +70,7 @@ libblock lib_ground_frg
 
 float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
     float radius = length(pos.xz - center.xz);
-    float amp = clamp( pow(1 / radius,0.5), 0, 1);
+    float amp = clamp( pow(1 / radius,1.5), 0, 1);
     return sin(radius * frq - timeval) * baseamp * 0.0254 * amp;
 }
 
@@ -97,6 +97,8 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
 
     vec3 wave_pos = wpos*0.01;
 
+    float radius = length(wave_pos.xz);
+
     pos.y += wave_fn(vec3(0,0,0), wave_pos, speed*1.0, 6.28*0.5, baseamp);
     pos.y += wave_fn(vec3(1,0,0), wave_pos, speed*1.5, 6.28*1.0, baseamp);
     pos.y += wave_fn(vec3(-1,0,0), wave_pos, speed*2.0, 6.28*1.5, baseamp);
@@ -108,19 +110,21 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
     vec3 dPdv = dFdy(pos);
     vec3 normal = normalize(cross(dPdu, dPdv)); // Corrected normal calculation
 
-    vec3 skybox_refract_n = refract(skybox_n,normal,1.1);
-    vec3 skyboxRefractColor = env_equirectangularFlipV(skybox_refract_n,refract_map,0.5);
-
+    vec3 skybox_refract_n = refract(skybox_n*-1.0,normal*-1.0,0.5);
+    vec3 skyboxRefractColor = (vec3(1)-env_equirectangular(skybox_refract_n,MapSpecularEnv,0.8))*0.2;
+    skyboxRefractColor.x = pow(skyboxRefractColor.x,0.65);
+    skyboxRefractColor.y = pow(skyboxRefractColor.y,0.55);
+    skyboxRefractColor.z = pow(skyboxRefractColor.z,0.45);
     float F = fresnelSchlick(eye_dir*-1.0, normal, vec3(0.004)).x;
-    F = pow(F, 0.1);
+    F = 0.5;//pow(F, 0.1);
     vec3 albedo = BaseColor;
     vec3 altcolor = skyboxRefractColor; //normal*0.5+vec3(0.5,0.5,0.5);
     albedo = mix(albedo,albedo+altcolor*0.5,1-F);
     PbrData pbd;
     pbd._emissive = false;
     pbd._metallic = 1;
-    pbd._roughness = 0.5;
-    pbd._albedo = albedo;
+    pbd._roughness = 0.5+radius*0.003;
+    pbd._albedo = albedo/(1+radius*0.01);
     pbd._wpos = wpos;
     pbd._wnrm = normal;
     pbd._fogZ = 0.0;

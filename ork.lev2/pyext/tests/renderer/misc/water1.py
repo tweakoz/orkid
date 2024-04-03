@@ -58,7 +58,7 @@ class WaterApp(object):
     sceneparams.SkyboxIntensity = float(1.0)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
-    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.DepthFogPower = float(2)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
@@ -93,12 +93,24 @@ class WaterApp(object):
                                      frqbase=0.1,
                                      radbase = 4 )
     for ptc in self.ptc_systems:
-      ptc.drawable_data.emitterIntensity = 1000.0
+      ptc.drawable_data.emitterIntensity = 700.0
       ptc.drawable_data.emitterRadius = 2
-      ptc.EMITN.inputs.EmissionRate = 50
-      ptc.EMITR.inputs.EmissionRate = 50
+      ptc.EMITN.inputs.EmissionRate = random.uniform(40,80)
+      ptc.EMITR.inputs.EmissionRate = random.uniform(40,80)
       ptc.particlenode.worldTransform.scale = 4
-
+      ptc.frq = random.uniform(-0.5,0.5)
+      x = random.uniform(-0.5,0.5)
+      y = random.uniform(-0.5,0.5)
+      z = random.uniform(-0.5,0.5)
+      ptc.GRAV.inputs.Center = vec3(x,y,z)
+      x = random.uniform(-0.5,0.5)
+      y = random.uniform(-0.5,0.5)
+      z = random.uniform(-0.5,0.5)
+      ptc.EMITN.inputs.Offset = vec3(x,y,z)
+      x = random.uniform(-0.5,0.5)
+      y = random.uniform(-0.5,0.5)
+      z = random.uniform(-0.5,0.5)
+      ptc.EMITR.inputs.Offset = vec3(x,y,z)
     #######################################
     # ground material (water)
     #######################################
@@ -126,7 +138,7 @@ class WaterApp(object):
     def _gentime():
       return self.curtime
 
-    self.refract_tex = Texture.load( "src://envmaps/tozenv_caustic1.png")
+    self.refract_tex = Texture.load( "src://envmaps/tozenv_hellscape.png")
 
     gmtl.bindParam(param_refract_map,self.refract_tex)
     gmtl.bindParam(param_voltexa,self.NOISETEX)
