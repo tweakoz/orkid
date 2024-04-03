@@ -19,6 +19,7 @@ from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 
+sys.path.append(str(thisdir()/".."/"particles"))
 from _ptc_harness import *
 
 ################################################################################
@@ -28,14 +29,13 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
-class ParticlesApp(object):
+class WaterApp(object):
 
   def __init__(self):
     super().__init__()
     self.ezapp = OrkEzApp.create(self,ssaa=4)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-
-    #self.materials = set()
+    self.curtime = 0.0
 
     setupUiCamera( app=self, #
                    eye = vec3(0,100,150), #
@@ -55,12 +55,12 @@ class ParticlesApp(object):
     ###################################
     sceneparams = VarMap() 
     sceneparams.preset = "ForwardPBR"
-    sceneparams.SkyboxIntensity = float(1)
+    sceneparams.SkyboxIntensity = float(1.5)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
     ###################################
     # post fx node
     ###################################
@@ -104,21 +104,19 @@ class ParticlesApp(object):
       ("LITE","SPRI"),
     ]
     #######################################
-    self.ptc_systems = []
-    count = 32
-    for i in range(count):
-      fi = float(i)/float(count)
-      frq = 0.4 + (fi*2)
-      radius = 35 + fi*35
-      g = i&7
-      self.ptc_systems += [gen_sys(scene=self.scene,
-                                   ptc_data=ptc_data,
-                                   ptc_connections=ptc_connections,
-                                   layer=self.layer_fwd,
-                                   grad=presetGRAD(g),
-                                   frq=frq,
-                                   radius=radius)]
-    #self.ptc_systems[0].EMITN.inputs.EmissionVelocity = 0.1
+    self.ptc_systems = [gen_sys(scene=self.scene,
+                               ptc_data=ptc_data,
+                               ptc_connections=ptc_connections,
+                               layer=self.layer_fwd,
+                               grad=presetGRAD(0),
+                               frq=1,
+                               radius=50)]
+    ptc = self.ptc_systems[0]
+    ptc.drawable_data.emitterIntensity = 20.0
+    ptc.drawable_data.emitterRadius = 3
+    ptc.EMITN.inputs.EmissionRate = 200
+    ptc.EMITR.inputs.EmissionRate = 200
+    ptc.particlenode.worldTransform.scale = 2   
     #######################################
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -126,12 +124,45 @@ class ParticlesApp(object):
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.8,0.8,1,1)
+    gmtl.baseColor = vec4(0.5,0.5,1,1)
     gmtl.doubleSided = True
+    gmtl.shaderpath = str(thisdir()/"water1.glfx")
     gmtl.gpuInit(ctx)
+    self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
+
+    freestyle = gmtl.freestyle
+    assert(freestyle)
+    param_voltexa = freestyle.param("MapVolTexA")
+    param_time = freestyle.param("Time")
+    #param_colora = freestyle.param("ColorA")
+    #param_colorb = freestyle.param("ColorB")
+    #param_colorc = freestyle.param("ColorC")
+    #param_colord = freestyle.param("ColorD")
+    assert(param_time)
+
+    #tek = freestyle.technique("FWD_CT_NM_RI_NI_MO")
+    #assert(tek)
+    #permu = FxPipelinePermutation()
+    #permu.rendering_model = "FORWARD_PBR"
+    #permu.technique = tek
+    #fxcache = freestyle.fxcache
+    #pipeline = fxcache.findPipeline(permu)
+    
+    def _gentime():
+      return self.curtime
+
+    gmtl.bindParam(param_voltexa,self.NOISETEX)
+    gmtl.bindParam(param_time,lambda: _gentime() )
+    #gmtl.bindParam(param_colora,lambda: self.colorA.hsv2rgb() )
+    #gmtl.bindParam(param_colorb,lambda: self.colorB.hsv2rgb() )
+    #gmtl.bindParam(param_colorc,lambda: self.colorC.hsv2rgb() )
+    #gmtl.bindParam(param_colord,lambda: self.colorD.hsv2rgb() )
+
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
-    gdata.extent = 1000.0
+    #gmtl.addBasicStateLambdaToPipeline(pipeline)
+    #gdata.pipeline = pipeline
+    gdata.extent = 10000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
@@ -149,23 +180,16 @@ class ParticlesApp(object):
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    self.curtime = updinfo.absolutetime
     for item in self.ptc_systems:
-
       prv_trans = item.particlenode.worldTransform.translation
       f = - item.frq
       x = item.radius*math.cos(updinfo.absolutetime*f)
       y = 30+math.sin(updinfo.absolutetime*f)*30
-      z = item.radius*math.sin(updinfo.absolutetime*f)*-1.0
-      
+      z = item.radius*math.sin(updinfo.absolutetime*f)*-1.0      
       new_trans = vec3(x,y,z)
-
-      #delta_dir = (new_trans-prv_trans).normalized()
-      #item.EMITN.inputs.Offset = new_trans
-      #item.EMITR.inputs.Offset = new_trans
-      #item.PNTA.inputs.position = new_trans
-      
       item.particlenode.worldTransform.translation = new_trans
-    
+
   ##############################################
 
   def onUiEvent(self,uievent):
@@ -184,4 +208,4 @@ def sig_handler(signal_received, frame):
 
 signal(SIGINT, sig_handler)
 
-ParticlesApp().ezapp.mainThreadLoop()
+WaterApp().ezapp.mainThreadLoop()

@@ -665,6 +665,13 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
     pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
     pipeline->_material             = (GfxMaterial*)mtl;
+
+
+    for( auto item : mtl->_bound_params ){
+      pipeline->bindParam(item.first, item.second);
+    }
+
+
   }
   else{
     printf("No PIPELINE for mtl<%s> variant<%08x>\n", mtl->mMaterialName.c_str(), mtl->_variant );

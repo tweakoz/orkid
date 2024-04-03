@@ -71,6 +71,13 @@ SRasterState GfxMaterial::swapRasterState(SRasterState rstate) {
 
 /////////////////////////////////////////////////////////////////////////
 
+void GfxMaterial::bindParam(fxparam_constptr_t p, varval_t v){
+  OrkAssert(p!=nullptr);
+  _bound_params[p] = v;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 RenderQueueSortingData::RenderQueueSortingData()
     : miSortingPass(4)
     , miSortingOffset(0)

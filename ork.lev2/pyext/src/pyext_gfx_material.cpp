@@ -30,7 +30,45 @@ void pyinit_gfx_material(py::module& module_lev2) {
             fxstring<64> fxs;
             fxs.format("GfxMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
             return fxs.c_str();
-          });
+          })
+          .def(
+              "bindParam",                                                                    //
+              [type_codec](material_ptr_t mtl, //
+                 pyfxparam_ptr_t param, //
+                 py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+                else if( py::isinstance<py::float_>(inp_value) ){
+                  float fvalue = py::cast<float>(inp_value);
+                  mtl->bindParam(param.get(),fvalue);
+                }
+                else if( py::isinstance<fvec2>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec2>(inp_value));
+                }
+                else if( py::isinstance<fvec3>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec3>(inp_value));
+                }
+                else if( py::isinstance<fvec4>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec4>(inp_value));
+                }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::hasattr(inp_value, "__call__")){
+                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> GfxMaterial::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object generated = inp_value();
+                    FxPipeline::varval_t asv = type_codec->decode(generated);
+                    return asv;
+                  };
+                  mtl->bindParam(param.get(),L);
+                }
+                else{
+                  py::print("Bad Param Type: ", inp_value);
+                  OrkAssert(false);
+                }
+              });
   type_codec->registerStdCodec<material_ptr_t>(material_type);
   /////////////////////////////////////////////////////////////////////////////////
   // materialinst params proxy

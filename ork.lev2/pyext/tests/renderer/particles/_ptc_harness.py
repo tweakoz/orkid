@@ -189,4 +189,39 @@ def createParticleData( owner,
 
     #owner.particlenode.sortkey = 2;
 
+  #######################################
 
+def gen_sys(scene=None,
+            layer=None,
+            ptc_data=None,
+            ptc_connections=None,
+            grad=None,
+            frq=None,
+            radius=None):
+  ptc = ParticleContainer(scene,layer)
+  createParticleData(ptc,ptc_data,ptc_connections,layer)
+  ptc.POOL.pool_size = 4096 # max number of particles in pool
+  ptc.SPRI.inputs.Size = 0.1
+  ptc.SPRI.inputs.GradientIntensity = 1
+  ptc.SPRI.material = presetMaterial(grad=grad)
+  ptc.EMITN.inputs.EmissionVelocity = 0.1
+  #presetPOOL1(ptc.POOL)
+  presetEMITN1(ptc.EMITN)
+  presetEMITR1(ptc.EMITR)
+  ptc.EMITN.inputs.EmissionRate = 50
+  ptc.EMITR.inputs.EmissionRate = 50
+  ptc.EMITN.inputs.LifeSpan = 30
+  ptc.EMITR.inputs.LifeSpan = 30
+  presetTURB1(ptc.TURB)
+  presetVORT1(ptc.VORT)
+  ptc.VORT.inputs.VortexStrength = 0.0
+  ptc.VORT.inputs.OutwardStrength = 0.0
+  presetGRAV1(ptc.GRAV)
+  ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
+  ptc.TURB.inputs.Amount = vec3(1,1,1)*5
+  ptc.frq = frq
+  ptc.radius = radius
+  ptc.DRAG.inputs.drag = 0.999
+  ptc.drawable_data.emitterIntensity = 8.0
+  ptc.drawable_data.emitterRadius = 1.5
+  return ptc
