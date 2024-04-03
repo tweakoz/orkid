@@ -45,12 +45,14 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
+  mat4 m;
   mat4 vp;
   mat4 v_l;
   mat4 v_r;
   mat4 vp_l;
   mat4 vp_r;
   mat4 inv_vp;
+  mat4 inv_mvp;
   mat4 inv_vp_l;
   mat4 inv_vp_r;
 

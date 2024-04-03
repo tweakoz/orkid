@@ -58,8 +58,6 @@ struct ForwardPbrNodeImpl {
       _rtgs_main = std::make_shared<RtgSet>(context,e_msaa);
       _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
 
-      _rtg_depth_only = std::make_shared<RtGroup>(context,iw,ih,e_msaa);
-
       printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
       //auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
@@ -187,31 +185,28 @@ struct ForwardPbrNodeImpl {
         // depth prepass
         ///////////////////////////////////////////////////////////////////////////
 
-        auto rtb_depth = rtg_main->_depthBuffer;
-        _rtg_depth_only->_depthOnly = true;
-          _rtg_depth_only->_autoclear = false;
-        _rtg_depth_only->mNumMrts = 0;
-        //_rtg_depth_only->SetMrt(0, rtb_depth);
-        _rtg_depth_only->_depthBuffer = rtb_depth;
         context->debugPushGroup("ForwardPBR::depth-pre pass");
         DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
         RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
 
-        //FBI->PushRtGroup(_rtg_depth_only.get());
+        //rtg_main->_depthOnly = true;
         FBI->PushRtGroup(rtg_main.get());
 
         irenderer->drawEnqueuedRenderables();
         FBI->PopRtGroup();
         context->debugPopGroup();
 
-        FBI->cloneDepthBuffer(_rtg_depth_only, _rtg_depth_copy);
+        FBI->cloneDepthBuffer(rtg_main, _rtg_depth_copy);
 
         ///////////////////////////////////////////////////////////////////////////
         // main color pass
         ///////////////////////////////////////////////////////////////////////////
 
+        rtg_main->_depthOnly = false;
+
         irenderer->resetQueue();
-        rtb_depth = _rtg_depth_copy->_depthBuffer;
+        //auto rtb_depth = _rtg_depth_copy->_depthBuffer;
+        auto rtb_depth = rtg_main->_depthBuffer;
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         RCFD.setUserProperty("DEPTH_MAP"_crcu,rtb_depth->_texture);
         
@@ -250,9 +245,7 @@ struct ForwardPbrNodeImpl {
 
   rtgset_ptr_t _rtgs_main;
   rtgset_ptr_t _rtgs_resolve_msaa;
-  rtgroup_ptr_t _rtg_depth_only;
   rtgroup_ptr_t _rtg_depth_copy;
-  rtbuffer_ptr_t _rtb_depth_copy;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
   fxpipelinecache_constptr_t _skybox_fxcache;

@@ -187,6 +187,16 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               },
               [](pbrmaterial_ptr_t m, bool p) { //
                 m->_doubleSided = p;
+              })
+          .def_property(
+              "blending",
+              [](pbrmaterial_ptr_t m) -> crcstring_ptr_t { //
+                auto blending = m->_rasterstate._blending;
+                auto crcstr   = std::make_shared<CrcString>(uint64_t(blending));
+                return crcstr;
+              },
+              [](pbrmaterial_ptr_t m, crcstring_ptr_t ctest) { //
+                m->_rasterstate._blending = Blending(ctest->hashed());
               });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }

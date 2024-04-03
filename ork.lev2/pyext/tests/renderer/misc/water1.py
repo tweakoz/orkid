@@ -127,6 +127,7 @@ class WaterApp(object):
     gmtl.shaderpath = str(thisdir()/"water1.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
+    gmtl.blending = tokens.ALPHA
     self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
 
     freestyle = gmtl.freestyle
@@ -137,6 +138,7 @@ class WaterApp(object):
     param_color = freestyle.param("BaseColor")
     param_depthmap = freestyle.param("depth_map")
     param_bufinvdim = freestyle.param("bufinvdim")
+    param_m= freestyle.param("m")
     assert(param_time)
     
     def _gentime():
@@ -150,6 +152,7 @@ class WaterApp(object):
     gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
+    gmtl.bindParam(param_m,tokens.RCFD_M )
     
     #######################################
     # ground drawable
@@ -163,7 +166,7 @@ class WaterApp(object):
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"partgroundicle-node",self.drawable_ground)
-    self.groundnode.worldTransform.translation = vec3(0,-5,0)
+    self.groundnode.worldTransform.translation = vec3(0,50,0)
 
     #######################################
     # helmet mesh
@@ -181,7 +184,7 @@ class WaterApp(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
-    update_psys_set(self.ptc_systems,updinfo.absolutetime,30.0)
+    update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)
 
   ##############################################
 

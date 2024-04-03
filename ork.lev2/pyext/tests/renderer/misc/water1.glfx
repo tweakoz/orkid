@@ -152,17 +152,18 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
 
     vec3 L = env_lighting+point_lighting;
     vec3 out_color = mix(L,skyboxColor,1.0-depth_fogval);
-    float depth = texture(depth_map,uv).r;
-    float ndc      = depth * 2.0 - 1.0;
-    float near = 0.1;
-    float far = 10000.0;
-    float lin_num = (2.0 * near * far);
-    float lin_den = (far + near - ndc * (far - near));
-    float linZ =  lin_num / lin_den;
-    //float zeye     = 10000.0 / (ndc - 0.1);
-    //depth = pow(depth,1e4);
-    return vec4(out_color, 1);
-    //return vec4(vec3(depth), 1);
+    float depth = textureLod(depth_map,uv,0).r;
+    float ndc_z = depth*2.0 - 1.0;
+    float ndc_x = (uv.x * 2.0 - 1.0);
+    float ndc_y = (uv.y * 2.0 - 1.0);
+    vec4 clip = vec4(ndc_x,ndc_y,ndc_z,1.0);
+    vec4 wld = inverse(vp) * clip;
+    wld /= wld.w;
+
+    float D = clamp( length(wpos-wld.xyz)*0.01, 0, 1 );
+    D = pow(D, 0.25);
+
+    return vec4(out_color, D);
 }
 }
 
