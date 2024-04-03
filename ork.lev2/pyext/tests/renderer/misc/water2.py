@@ -72,7 +72,7 @@ class WaterApp(object):
     postNode.threshold = 0.99
     postNode.blurwidth = 16.0
     postNode.blurfactor = 0.1
-    postNode.amount = 0.2
+    postNode.amount = 0.4
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
 
@@ -154,8 +154,8 @@ class WaterApp(object):
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,0.2 )
-    
+    gmtl.bindParam(param_plightamp,0.05 )
+
     #######################################
     # ground drawable
     #######################################
@@ -168,7 +168,7 @@ class WaterApp(object):
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"partgroundicle-node",self.drawable_ground)
-    self.groundnode.worldTransform.translation = vec3(0,-5,0)
+    self.groundnode.worldTransform.translation = vec3(0,50,0)
 
     #######################################
     # helmet mesh
@@ -187,6 +187,10 @@ class WaterApp(object):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
     update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)
+    mdl_y = 40 + 20*math.sin(self.curtime*1.3)
+    orient = quat(vec3(1,0,0),self.curtime*0.1)
+    self.modelnode.worldTransform.translation = vec3(0,mdl_y,0)
+    self.modelnode.worldTransform.orientation = orient
 
   ##############################################
 

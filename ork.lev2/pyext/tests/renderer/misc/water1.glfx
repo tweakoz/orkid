@@ -19,6 +19,7 @@ uniform_set ub_frgX {
   vec3 ColorD;
   float GroundColorPower;
   vec2 bufinvdim;
+  float plightamp;
 
 }
 ///////////////////////////////////////////////////////////////
@@ -145,7 +146,7 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
       plc._lightdel = _lightpos[i].xyz - wpos;
       vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
       float LR = _lightradius[i];
-      point_lighting += plcalc_forward(plc,pbd,LR)*LC*0.05;
+      point_lighting += plcalc_forward(plc,pbd,LR)*LC*plightamp;
     }
 
     vec2 uv =  gl_FragCoord.xy * bufinvdim;
@@ -161,7 +162,7 @@ vec4 gen_water_(vec2 UV, vec3 eye_pos) {
     wld /= wld.w;
 
     float D = clamp( length(wpos-wld.xyz)*0.01, 0, 1 );
-    D = pow(D, 0.25);
+    D = pow(D, 0.1125);
 
     return vec4(out_color, D);
 }
