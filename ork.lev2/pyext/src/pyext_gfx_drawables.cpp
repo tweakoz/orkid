@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_terclipmap.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 
@@ -164,6 +165,15 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
               [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; });
   type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto clipmapdrawdata_type = //
+      py::class_<ClipMapDrawableData, DrawableData, clipmapdrawabledata_ptr_t>(module_lev2, "ClipMapDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "pbrmaterial",
+              [](clipmapdrawabledata_ptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },
+              [](clipmapdrawabledata_ptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; });
+  type_codec->registerStdCodec<clipmapdrawabledata_ptr_t>(clipmapdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //
       py::class_<StringDrawableData, DrawableData, string_drawabledata_ptr_t>(module_lev2, "StringDrawableData")
