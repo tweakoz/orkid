@@ -388,8 +388,10 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderUnitOrthoWithMateria
 using rigidprim_V12_t = meshutil::RigidPrimitive<lev2::VtxV12>;
 using rigidprim_V12T8_t = meshutil::RigidPrimitive<lev2::VtxV12T8>;
 using rigidprim_V12C4T16_t = meshutil::RigidPrimitive<lev2::SVtxV12C4T16>;
+using rigidprim_SVtxV12N12T16_t = meshutil::RigidPrimitive<lev2::SVtxV12N12T16>;
 using rigidprim_V12_ptr_t = std::shared_ptr<rigidprim_V12_t>;
 using rigidprim_V12T8_ptr_t = std::shared_ptr<rigidprim_V12T8_t>;
 using rigidprim_V12C4T16_ptr_t = std::shared_ptr<rigidprim_V12C4T16_t>;
+using rigidprim_SVtxV12N12T16_ptr_t = std::shared_ptr<rigidprim_SVtxV12N12T16_t>;
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

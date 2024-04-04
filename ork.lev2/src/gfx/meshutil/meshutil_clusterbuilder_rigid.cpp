@@ -169,6 +169,22 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
       break;
     }
     ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12N12T16: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        lev2::SVtxV12N12T16 out_vtx;
+        const auto& pos     = inpvtx.mPos;
+        const auto& nrm     = inpvtx.mNrm;
+        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
+        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
+        out_vtx.mUV.x      = inpvtx.mUV[0].mMapTexCoord.x;
+        out_vtx.mUV.y      = inpvtx.mUV[0].mMapTexCoord.y;
+        out_vtx.mUV.z      = inpvtx.mUV[1].mMapTexCoord.x;
+        out_vtx.mUV.w      = inpvtx.mUV[1].mMapTexCoord.y;
+        return out_vtx;
+      });
+      break;
+    }
+    ////////////////////////////////////////////////////////////////////////////
     default: {
       OrkAssert(false);
       break;
