@@ -24,14 +24,14 @@ struct ClipMapRenderImpl {
     using namespace meshutil;
 
     auto params = std::make_shared<terclipmap::Parameters>();
-    params->_levels = 5;
+    params->_levels = 10;
     params->_scale = 2;
     params->_gridSize = 16;
 
     auto generator = std::make_shared<terclipmap::Generator>(params);
 
-    auto mesh = generator->generateClipmaps();
-    auto subm = mesh->submeshFromGroupName("clipmappolys");
+    auto subm = generator->generateClipmaps();
+    //auto subm = mesh->submeshFromGroupName("clipmappolys");
     
     printf( "generating primitive...\n");
 

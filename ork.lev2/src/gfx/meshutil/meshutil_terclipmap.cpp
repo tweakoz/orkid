@@ -1,7 +1,11 @@
 #include <ork/lev2/gfx/meshutil/terclipmap.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::meshutil::terclipmap {
+namespace ork::meshutil {
+
+extern double _default_quantization;
+
+namespace terclipmap {
 ///////////////////////////////////////////////////////////////////////////////
 
 Generator::Generator(parameters_ptr_t params)
@@ -12,7 +16,7 @@ Generator::Generator(parameters_ptr_t params)
 
 vertex_vect_t Quad::generateTriangleList() const {
   vertex_vect_t triangles;
-  auto addTriangle = [&](const fvec3& v1, const fvec3& v2, const fvec3& v3) {
+  auto addTriangle = [&](const dvec3& v1, const dvec3& v2, const dvec3& v3) {
     triangles.push_back(v1);
     triangles.push_back(v2);
     triangles.push_back(v3);
@@ -74,12 +78,15 @@ vertex_vect_t Quad::generateTriangleList() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-mesh_ptr_t Generator::generateClipmaps() {
+submesh_ptr_t Generator::generateClipmaps() {
 
-  auto mesh = std::make_shared<Mesh>();
-  auto subm = std::make_shared<submesh>();
+  _default_quantization = 0.0;
+
+  //_mesh = std::make_shared<Mesh>();
+  _submesh = std::make_shared<submesh>();
 
   std::vector<level_ptr_t> levels;
+  // for (int level = 0; level < _params->_levels; ++level) {
   for (int level = 0; level < _params->_levels; ++level) {
     auto l = generateLevel(level);
     levels.push_back(l);
@@ -100,18 +107,26 @@ mesh_ptr_t Generator::generateClipmaps() {
       int i0    = itri * 3 + 0;
       int i1    = itri * 3 + 1;
       int i2    = itri * 3 + 2;
-      V0.mPos   = fvec3_to_dvec3(level->_vertices[i0]);
-      V1.mPos   = fvec3_to_dvec3(level->_vertices[i1]);
-      V2.mPos   = fvec3_to_dvec3(level->_vertices[i2]);
-      V0.mNrm   = dvec3(1, 0, 0);
-      V1.mNrm   = dvec3(0, 1, 0);
-      V2.mNrm   = dvec3(0, 0, 1);
-      auto smv0 = subm->mergeVertex(V0);
-      auto smv1 = subm->mergeVertex(V1);
-      auto smv2 = subm->mergeVertex(V2);
+      double fi = double(itri) / double(num_tris);
 
-      subm->mergeTriangle(smv0, smv1, smv2);
-      printf(
+      V0.mPos                = level->_vertices[i0];
+      V1.mPos                = level->_vertices[i1];
+      V2.mPos                = level->_vertices[i2];
+      V0.mNrm                = dvec3(1, 0, 0);
+      V1.mNrm                = dvec3(0, 1, 0);
+      V2.mNrm                = dvec3(0, 0, 1);
+      V0.mUV[0].mMapTexCoord = fvec2(0, 0);
+      V1.mUV[0].mMapTexCoord = fvec2(1, 0);
+      V2.mUV[0].mMapTexCoord = fvec2(1, 1);
+      V0.mUV[0].mMapBiNormal = fvec3(fi, 0, 0);
+      V1.mUV[0].mMapBiNormal = fvec3(0, fi + 1, 0);
+      V2.mUV[0].mMapBiNormal = fvec3(0, 0, fi + 2);
+      auto smv0              = _submesh->mergeVertex(V0);
+      auto smv1              = _submesh->mergeVertex(V1);
+      auto smv2              = _submesh->mergeVertex(V2);
+
+      _submesh->mergeTriangle(smv0, smv1, smv2);
+      if(0)printf(
           "tri<%d> v0<%f %f %f> v1<%f %f %f> v2<%f %f %f>\n",
           itri,
           V0.mPos.x,
@@ -129,9 +144,10 @@ mesh_ptr_t Generator::generateClipmaps() {
 
   printf("merging submesh...\n");
 
-  mesh->MergeSubMesh(*subm, "clipmappolys");
+  //_mesh->MergeSubMesh(*_submesh, "clipmappolys");
 
-  return mesh;
+  // submeshWriteObj(*_submesh, file::Path("/Users/michael/clipmap.obj"));
+  return _submesh;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,9 +156,11 @@ level_ptr_t Generator::generateLevel(int level) {
   level_ptr_t lvl = std::make_shared<Level>();
   auto ring       = generateRing(level); // Inner and outer quad count are the same
   for (auto segment : ring->_segments) {
-    for (auto quad : segment.quads) {
+    for (const auto& quad : segment.quads) {
       auto tris = quad.generateTriangleList();
-      lvl->_vertices.insert(lvl->_vertices.end(), tris.begin(), tris.end());
+      if (tris.size()) {
+        lvl->_vertices.insert(lvl->_vertices.end(), tris.begin(), tris.end());
+      }
     }
   }
   return lvl;
@@ -150,26 +168,15 @@ level_ptr_t Generator::generateLevel(int level) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr static float base_quad_size = 1.0f;
+constexpr static double base_quad_size = 1.0f;
 
-int compute_anchor(int base, int level) { // recursive
-  // compute anchor_right sequence
-  // 0 4 12 28 60 124 252 508
-  // 0 2 6 14 30 62 126 254
-  // given level
-  if (level == 0) {
-    return 0;
-  } else {
-    return base + 2 * compute_anchor(base, level - 1);
-  }
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 ring_ptr_t Generator::generateRing(int level) {
-  ring_ptr_t output    = std::make_shared<Ring>();
-  float this_quad_size = base_quad_size * pow(2, level);
-  float prev_quad_size = this_quad_size * 0.5;
-  float next_quad_size = this_quad_size * 2.0f;
+  ring_ptr_t output     = std::make_shared<Ring>();
+  double this_quad_size = base_quad_size * pow(2, level);
+  double prev_quad_size = this_quad_size * 0.5;
+  double next_quad_size = this_quad_size * 2.0f;
 
   if (level == 0) {
 
@@ -179,22 +186,22 @@ ring_ptr_t Generator::generateRing(int level) {
     // center at origin
 
     RingSegment segment;
-    fvec3 v0, v1, v2, v3;
+    dvec3 v0, v1, v2, v3;
     Quad quad;
-    for (int iy = 0; iy < 8; iy++) {
-      int iyb = iy - 4;
-      int iyt = iy - 3;
-      for (int ix = 0; ix < 8; ix++) {
-        int ixl = ix - 4;
-        int ixr = ix - 3;
-        v0.x    = float(ixl);
-        v1.x    = float(ixr);
-        v2.x    = float(ixr);
-        v3.x    = float(ixl);
-        v0.z    = float(iyb);
-        v1.z    = float(iyb);
-        v2.z    = float(iyt);
-        v3.z    = float(iyt);
+    for (int iy = 0; iy < 16; iy++) {
+      int iyb = iy - 8;
+      int iyt = iy - 7;
+      for (int ix = 0; ix < 16; ix++) {
+        int ixl = ix - 8;
+        int ixr = ix - 7;
+        v0.x    = double(ixl);
+        v1.x    = double(ixr);
+        v2.x    = double(ixr);
+        v3.x    = double(ixl);
+        v0.z    = double(iyb);
+        v1.z    = double(iyb);
+        v2.z    = double(iyt);
+        v3.z    = double(iyt);
 
         quad.vertices[0] = v0 * this_quad_size;
         quad.vertices[1] = v1 * this_quad_size;
@@ -213,23 +220,11 @@ ring_ptr_t Generator::generateRing(int level) {
 
     RingSegment segment;
 
-    int anchor = compute_anchor(4, level);
-
     // inners should interface without tjunctions with the previous level's outers(internals)
     // and interface with this level's internals (which should be twice as big as the previous level's internals)
 
-    // 8*3 = 24  ()
-    // 24*3 = 72
-    // 72*3 = 216
-    // 24/2 = 12
-    // 12*3 = 36
-    // 12*2
-    // 14*4
-    // 16*8
-
-    int DIM   = (12 + (level - 1) * 2);
-
-    float DIMD2 = float(DIM)*0.5;
+    int DIM   = 16;
+    int DIMD2 = 8;
 
     for (int iy = 0; iy < DIM; iy++) {
 
@@ -243,19 +238,19 @@ ring_ptr_t Generator::generateRing(int level) {
           continue;
 
         Quad quad;
-        float X0, X1, Z0, Z1;
+        double X0, X1, Z0, Z1;
         Z0 = -DIMD2 * this_quad_size;
         Z1 = -DIMD2 * this_quad_size;
-        Z0 += float(iy) * this_quad_size;
-        Z1 += float(iy + 1) * this_quad_size;
+        Z0 += double(iy) * this_quad_size;
+        Z1 += double(iy + 1) * this_quad_size;
         X0 = -DIMD2 * this_quad_size;
         X1 = -DIMD2 * this_quad_size;
-        X0 += float(ix) * this_quad_size;
-        X1 += float(ix + 1) * this_quad_size;
-        quad.vertices[0] = fvec3(X0, 0.0f, Z0);
-        quad.vertices[1] = fvec3(X1, 0.0f, Z0);
-        quad.vertices[2] = fvec3(X1, 0.0f, Z1);
-        quad.vertices[3] = fvec3(X0, 0.0f, Z1);
+        X0 += double(ix) * this_quad_size;
+        X1 += double(ix + 1) * this_quad_size;
+        quad.vertices[0] = dvec3(X0, 0.0f, Z0);
+        quad.vertices[1] = dvec3(X1, 0.0f, Z0);
+        quad.vertices[2] = dvec3(X1, 0.0f, Z1);
+        quad.vertices[3] = dvec3(X0, 0.0f, Z1);
         quad._type       = TessellationType::INTERNAL;
         segment.quads.push_back(quad);
       }
@@ -268,4 +263,5 @@ ring_ptr_t Generator::generateRing(int level) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::meshutil::terclipmap
+} // namespace terclipmap
+} // namespace ork::meshutil

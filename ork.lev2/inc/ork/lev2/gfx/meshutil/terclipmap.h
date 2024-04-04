@@ -18,7 +18,7 @@ struct Ring;
 
 using parameters_ptr_t = std::shared_ptr<Parameters>;
 using level_ptr_t = std::shared_ptr<Level>;
-using vertex_vect_t = std::vector<fvec3>;
+using vertex_vect_t = std::vector<dvec3>;
 using ring_ptr_t = std::shared_ptr<Ring>;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ enum class TessellationType {
 struct Quad {
 
     vertex_vect_t generateTriangleList() const; 
-    fvec3 vertices[4];      // Corners of the quad
+    dvec3 vertices[4];      // Corners of the quad
     TessellationType _type; // Type of tessellation required for this quad
 
 };
@@ -73,11 +73,13 @@ struct Generator {
 
     Generator(parameters_ptr_t params);
 
-    mesh_ptr_t generateClipmaps();
+    submesh_ptr_t generateClipmaps();
     ring_ptr_t generateRing(int level);
     level_ptr_t generateLevel(int level);
 
     parameters_ptr_t _params;
+    submesh_ptr_t _submesh;
+    mesh_ptr_t _mesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

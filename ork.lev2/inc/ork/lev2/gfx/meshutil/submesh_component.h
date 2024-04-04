@@ -180,7 +180,7 @@ struct vertex {
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
 
-  uint64_t hash(double quantization=1000.0) const;
+  uint64_t hash(double quantization=0.0) const;
 
   void dump(const std::string& name) const;
   void clearAllExceptPosition();

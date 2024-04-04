@@ -285,7 +285,6 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
 
     auto gpu_cluster = std::make_shared<PrimGroupCluster>();
     _gpuClusters.push_back(gpu_cluster);
-
     hdrstream->GetItem<size_t>(begin_lod_marker);
     OrkAssert(begin_lod_marker == "begin-sector-lod"_crcu);
     hdrstream->GetItem<size_t>(check_cluster);
