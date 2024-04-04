@@ -108,6 +108,8 @@ struct CompositingPassData {
     _var.set<void*>(nullptr);
   }
 
+  CompositingPassData clone() const;
+  
   ////////////////////////////////////////////////////
 
   inline void setSharedCameraMatrices(cameramatrices_ptr_t c){

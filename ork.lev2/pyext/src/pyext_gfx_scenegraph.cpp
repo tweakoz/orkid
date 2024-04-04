@@ -60,6 +60,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 node->_enabled = ena;
               })
           .def_property(
+              "viewRelative",                    //
+              [](node_ptr_t node) -> bool { //
+                return node->_viewRelative;
+              },
+              [](node_ptr_t node, bool ena) { //
+                node->_viewRelative = ena;
+              })
+              
+          .def_property(
               "pickable",                    //
               [](node_ptr_t node) -> bool { //
                 return node->_pickable;

@@ -492,6 +492,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   DB->Reset();
   DB->copyCameras(*cameras.get());
 
+  auto cam = cameras->find("spawncam");
+  auto eye = cam->GetEye();
+
   on_enqueue(DB);
 
   if(DEBUG_LOG){
@@ -557,6 +560,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
                        drawable_layer->_name.c_str() );
     }
     n->_drawable->_pickable = n->_pickable;
+    if(n->_viewRelative){
+      n->_dqxfdata._worldTransform->_viewRelative =true;
+    }
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }
 

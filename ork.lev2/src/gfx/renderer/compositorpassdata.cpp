@@ -33,6 +33,14 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+CompositingPassData CompositingPassData::clone() const {
+  CompositingPassData cpd;
+  cpd = *this;
+  return cpd;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 const ViewportRect& CompositingPassData::GetDstRect() const {
   return mDstRect;
 }

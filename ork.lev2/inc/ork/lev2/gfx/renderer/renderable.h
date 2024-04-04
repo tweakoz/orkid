@@ -72,6 +72,7 @@ struct IRenderable {
   fcolor4 _modColor;
   var_t _drawDataA;
   var_t _drawDataB;
+  bool _viewRelative = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

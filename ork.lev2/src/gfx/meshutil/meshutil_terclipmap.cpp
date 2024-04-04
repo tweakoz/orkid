@@ -178,6 +178,10 @@ ring_ptr_t Generator::generateRing(int level) {
   double prev_quad_size = this_quad_size * 0.5;
   double next_quad_size = this_quad_size * 2.0f;
 
+  constexpr int DIM   = 256;
+  constexpr int DIMD2 = DIM>>1;
+  constexpr int DIMD4 = DIM>>2;
+
   if (level == 0) {
 
     // Special case for level 0
@@ -188,12 +192,12 @@ ring_ptr_t Generator::generateRing(int level) {
     RingSegment segment;
     dvec3 v0, v1, v2, v3;
     Quad quad;
-    for (int iy = 0; iy < 16; iy++) {
-      int iyb = iy - 8;
-      int iyt = iy - 7;
-      for (int ix = 0; ix < 16; ix++) {
-        int ixl = ix - 8;
-        int ixr = ix - 7;
+    for (int iy = 0; iy < DIM; iy++) {
+      int iyb = iy - DIMD2;
+      int iyt = iy - (DIMD2-1);
+      for (int ix = 0; ix < DIM; ix++) {
+        int ixl = ix - DIMD2;
+        int ixr = ix - (DIMD2-1);
         v0.x    = double(ixl);
         v1.x    = double(ixr);
         v2.x    = double(ixr);
@@ -223,18 +227,14 @@ ring_ptr_t Generator::generateRing(int level) {
     // inners should interface without tjunctions with the previous level's outers(internals)
     // and interface with this level's internals (which should be twice as big as the previous level's internals)
 
-    int DIM   = 16;
-    int DIMD2 = 8;
+    auto do_skip = [&](int val){
+      return (val > (DIMD4-1) and val < (DIM - DIMD4));
+    };
 
     for (int iy = 0; iy < DIM; iy++) {
-
-      bool yskip = (iy > 3 and iy < (DIM - 4));
-
       for (int ix = 0; ix < DIM; ix++) {
 
-        bool xskip = (ix > 3 and ix < (DIM - 4));
-
-        if (yskip and xskip)
+        if (do_skip(ix) and do_skip(iy))
           continue;
 
         Quad quad;
