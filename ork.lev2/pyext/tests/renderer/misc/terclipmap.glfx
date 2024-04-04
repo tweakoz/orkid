@@ -33,9 +33,10 @@ libblock lib_ground_vtx_base : ub_frgX {
   };
   
 float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
-    frq = frq * 2.0;
+    frq = frq * 1.0;
     float radius = length(pos.xz - center.xz);
-    float amp = clamp( pow(1 / radius,1.5), 0, 1);
+    float amp = clamp( pow(1 / radius,1.1), 0, 1);
+    amp *= clamp(radius*0.3,0,1);
     return sin(radius * frq - timeval) * baseamp * 0.0254 * amp;
 }
 
@@ -50,10 +51,10 @@ float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
     float radius = length(wave_pos.xz);
 
     float y = wave_fn(vec3(6,0,0), wave_pos, speed*1.0, 6.28*0.5, baseamp);
-    y += wave_fn(vec3(6,0,0), wave_pos, speed*1.5, 6.28*1.0, baseamp);
-    y += wave_fn(vec3(-6,0,0), wave_pos, speed*2.0, 6.28*1.5, baseamp);
-    y += wave_fn(vec3(0,0,6), wave_pos, speed*2.5, 6.28*2.0, baseamp);
-    y += wave_fn(vec3(0,0,-6), wave_pos, speed*3.0, 6.28*2.5, baseamp);
+    y += wave_fn(vec3(6,0,5), wave_pos, speed*1.5, 6.28*1.0, baseamp);
+    y += wave_fn(vec3(-6,0,-2), wave_pos, speed*2.0, 6.28*1.5, baseamp);
+    y += wave_fn(vec3(7,0,6), wave_pos, speed*2.5, 6.28*2.0, baseamp);
+    y += wave_fn(vec3(11,0,-6), wave_pos, speed*3.0, 6.28*2.5, baseamp);
 
     _x.signal = y;
     _x.new_pos = vec4(pos.x,pos.y+y,pos.z,1);
