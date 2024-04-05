@@ -26,7 +26,7 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
     , _graphdata(pg)
     , _serial(NOSERIAL) {
 
-  _logchannel = logger()->createChannel("dgsorter-std", fvec3(0.8, 0.8, 0.4), true);
+  _logchannel = logger()->createChannel("dgsorter-std", fvec3(0.8, 0.8, 0.4), false);
   _logchannel_reg = logger()->createChannel("dgsorter-reg", fvec3(0.4, 0.9, 0.2), false);
 
   /////////////////////////////////////////

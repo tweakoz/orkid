@@ -96,6 +96,25 @@ submesh_ptr_t Generator::generateClipmaps() {
 
   int ilevel = 0;
 
+auto warp_square_to_circle = [&](const dvec3& p) -> dvec3 {
+    double r = std::sqrt(p.x * p.x + p.z * p.z); // Current distance from origin
+    if (r == 0.0) return p; // If the point is the origin, return it directly
+
+    // The maximum component magnitude determines the scaling needed
+    double maxComponent = std::max(std::abs(p.x), std::abs(p.z));
+    double scale = r / maxComponent; // This scaling factor adjusts the radius uniformly
+
+    // Apply the scaling uniformly
+    double newX = p.x / scale;
+    double newZ = p.z / scale;
+
+    // Return the transformed point with y unchanged
+    return dvec3(newX, p.y, newZ);
+};
+
+
+
+
   for (auto level : levels) {
 
     printf("level<%d>\n", ilevel);
@@ -109,9 +128,9 @@ submesh_ptr_t Generator::generateClipmaps() {
       int i2    = itri * 3 + 2;
       double fi = double(itri) / double(num_tris);
 
-      V0.mPos                = level->_vertices[i0];
-      V1.mPos                = level->_vertices[i1];
-      V2.mPos                = level->_vertices[i2];
+      V0.mPos                = warp_square_to_circle(level->_vertices[i0]);
+      V1.mPos                = warp_square_to_circle(level->_vertices[i1]);
+      V2.mPos                = warp_square_to_circle(level->_vertices[i2]);
       V0.mNrm                = dvec3(1, 0, 0);
       V1.mNrm                = dvec3(0, 1, 0);
       V2.mNrm                = dvec3(0, 0, 1);
