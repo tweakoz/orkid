@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
-#include <ork/lev2/gfx/scenegraph/sgnode_terclipmap.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 
@@ -167,7 +167,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto clipmapdrawdata_type = //
-      py::class_<ClipMapDrawableData, DrawableData, clipmapdrawabledata_ptr_t>(module_lev2, "ClipMapDrawableData")
+      py::class_<ClipMapDrawableData, DrawableData, clipmapdrawabledata_ptr_t>(module_lev2, "GeoClipMapDrawable")
           .def(py::init<>())
           .def_property(
               "pbrmaterial",

@@ -1,5 +1,5 @@
-#include <ork/lev2/gfx/scenegraph/sgnode_terclipmap.h>
-#include <ork/lev2/gfx/meshutil/terclipmap.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
+#include <ork/lev2/gfx/meshutil/geoclipmap.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_freestyle.h>
@@ -26,7 +26,7 @@ struct ClipMapRenderImpl {
 
     using namespace meshutil;
 
-    auto params       = std::make_shared<terclipmap::Parameters>();
+    auto params       = std::make_shared<geoclipmap::Parameters>();
     params->_levels   = 10;
     params->_scale    = 2;
     params->_gridSize = 16;
@@ -58,7 +58,7 @@ struct ClipMapRenderImpl {
       read_from_datablock(dblock);
     } else {
       printf("generating primitive...\n");
-      auto generator  = std::make_shared<terclipmap::Generator>(params);
+      auto generator  = std::make_shared<geoclipmap::Generator>(params);
       auto subm       = generator->generateClipmaps();
       _mesh_primitive = std::make_shared<rigidprim_SVtxV12N12T16_t>();
       meshutil::XgmClusterizerStd clusterizer;

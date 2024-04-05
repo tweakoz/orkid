@@ -1,11 +1,11 @@
-#include <ork/lev2/gfx/meshutil/terclipmap.h>
+#include <ork/lev2/gfx/meshutil/geoclipmap.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 
 extern double _default_quantization;
 
-namespace terclipmap {
+namespace geoclipmap {
 ///////////////////////////////////////////////////////////////////////////////
 
 Generator::Generator(parameters_ptr_t params)
@@ -282,5 +282,5 @@ ring_ptr_t Generator::generateRing(int level) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace terclipmap
+} // namespace geoclipmap
 } // namespace ork::meshutil

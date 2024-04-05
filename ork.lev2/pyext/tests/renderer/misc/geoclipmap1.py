@@ -124,7 +124,7 @@ class WaterApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"terclipmap.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmap.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
@@ -161,7 +161,7 @@ class WaterApp(object):
     # ground drawable
     #######################################
 
-    gdata = ClipMapDrawableData()
+    gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
     #gmtl.addBasicStateLambdaToPipeline(pipeline)
     #gdata.pipeline = pipeline
