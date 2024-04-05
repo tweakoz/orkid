@@ -93,7 +93,7 @@ class WaterApp(object):
                                      self.layer_fwd,
                                      count = 8,
                                      frqbase=0.1,
-                                     radbase = 4 )
+                                     radbase = 20 )
     for ptc in self.ptc_systems:
       ptc.drawable_data.emitterIntensity = 700.0
       ptc.drawable_data.emitterRadius = 2
@@ -129,6 +129,7 @@ class WaterApp(object):
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
     self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
+    self.NOISETEX2 = Texture.load("src://effect_textures/NoiseKern.dds")
 
     freestyle = gmtl.freestyle
     assert(freestyle)
@@ -139,7 +140,8 @@ class WaterApp(object):
     param_depthmap = freestyle.param("depth_map")
     param_bufinvdim = freestyle.param("bufinvdim")
     param_plightamp = freestyle.param("plightamp")
-    #param_m= freestyle.param("my_m")
+    param_noizekernmap = freestyle.param("noizekernmap")
+    param_m= freestyle.param("m")
     assert(param_time)
     
     def _gentime():
@@ -149,13 +151,13 @@ class WaterApp(object):
 
     gmtl.bindParam(param_refract_map,self.refract_tex)
     gmtl.bindParam(param_voltexa,self.NOISETEX)
+    gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    #gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
+    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
-    
-    #gmtl.bindParam(param_m,tokens.RCFD_M )
-    #gmtl.bindParam(param_plightamp,0.05 )
+    gmtl.bindParam(param_m,tokens.RCFD_M )
+    gmtl.bindParam(param_plightamp,0.15 )
 
     #######################################
     # ground drawable

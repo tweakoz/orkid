@@ -187,7 +187,7 @@ level_ptr_t Generator::generateLevel(int level) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr static double base_quad_size = 1.0f;
+constexpr static double base_quad_size = 0.5f;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -197,7 +197,7 @@ ring_ptr_t Generator::generateRing(int level) {
   double prev_quad_size = this_quad_size * 0.5;
   double next_quad_size = this_quad_size * 2.0f;
 
-  constexpr int DIM   = 256;
+  constexpr int DIM   = 512;
   constexpr int DIMD2 = DIM>>1;
   constexpr int DIMD4 = DIM>>2;
 

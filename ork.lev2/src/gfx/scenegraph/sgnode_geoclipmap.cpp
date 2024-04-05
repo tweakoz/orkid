@@ -27,7 +27,7 @@ struct ClipMapRenderImpl {
     using namespace meshutil;
 
     auto params       = std::make_shared<geoclipmap::Parameters>();
-    params->_levels   = 10;
+    params->_levels   = 8;
     params->_scale    = 2;
     params->_gridSize = 16;
     auto cmaphasher   = DataBlock::createHasher();
