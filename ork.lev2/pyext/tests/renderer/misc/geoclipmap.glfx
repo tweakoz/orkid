@@ -34,11 +34,11 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
     float radius;
   };
   
-float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
+float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp,float rscale,float falloff){
     frq = frq * 0.00033;
     float radius = length(pos.xz - center.xz);
-    float amp = clamp( pow(1 / radius,0.8), 0, 1);
-    amp *= clamp(radius*0.0013,0,1);
+    float amp = clamp( pow(1 / radius,falloff), 0, 1);
+    amp *= clamp(radius*rscale,0,1);
     return sin(radius * frq - timeval) * baseamp * amp;
 }
 
@@ -47,19 +47,25 @@ float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp){
     mat4 matO2W = inverse(v)*m;
     _x.true_wpos       = matO2W * pos;
 
-    float speed = Time*1.5;
-    float baseamp = 800;
+    float speed = Time*1.65;
+    float baseamp = 1800;
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius = length(wave_pos.xz);
 
 
-    float y = wave_fn(vec3(6,0,0)*140.0, wave_pos, speed*1.0, 6.28*0.5, baseamp);
-    y += wave_fn(vec3(6,0,5)*140.0, wave_pos, speed*1.5, 6.28*1.0, baseamp);
-    y += wave_fn(vec3(-6,0,-2)*104.0, wave_pos, speed*2.0, 6.28*1.5, baseamp);
-    y += wave_fn(vec3(7,0,6)*140.0, wave_pos, speed*2.5, 6.28*2.0, baseamp);
-    y += wave_fn(vec3(11,0,-6)*140.0, wave_pos, speed*3.0, 6.28*7.5, baseamp);
+    float y = wave_fn(vec3(6,0,32)*140.0, wave_pos, speed*1.0, 6.28*0.5, baseamp*1.5,0.00013,0.5);
+    y += wave_fn(vec3(6,0,5)*140.0, wave_pos, speed*1.5, 6.28*1.0, baseamp*1.0,0.0013,1.0);
+    y += wave_fn(vec3(-6,0,-2)*104.0, wave_pos, speed*2.0, 6.28*1.5, baseamp*1.0,0.0013,1.0);
+    y += wave_fn(vec3(7,0,6)*140.0, wave_pos, speed*2.5, 6.28*2.0, baseamp*1.0,0.0013,1.0);
+    y += wave_fn(vec3(11,0,-6)*140.0, wave_pos, speed*3.0, 6.28*7.5, baseamp,0.0013,1.0);
 
-    //float n = texture(noizekernmap,vec2(wave_pos.xz*0.001)).r;
+    /*for( int i=0; i<4; i++ ){
+      float amp = 0.01 / (i+1);
+      float frq = 0.005 + i*0.01;
+      float spd = -0.1+i*0.01;
+      float n = texture(noizekernmap,vec2(wave_pos.xz)*frq+vec2(1,0)*Time*spd).r;
+      y += n*amp;
+    }*/
 
     for( int i=0; i<4; i++ ){
       float amp = 2.0 / (i+1);
@@ -219,7 +225,7 @@ fragment_shader ps_fwd_ground_mono
     PbrData pbd;
     pbd._emissive = false;
     pbd._metallic = 1;
-    pbd._roughness = 0.5;//+radius*0.003;
+    pbd._roughness = 0.6;//+radius*0.003;
     pbd._albedo = albedo;//(1+radius*0.01);
     pbd._wpos = frg_tbn[0].xyz;
     pbd._wnrm = normal;
