@@ -35,6 +35,7 @@ template <typename T> struct Vector2 final
   ~Vector2(){}; 
 
   void rotate(T rad);
+  static Vector2 fromScalar(T _x);
 
   Vector2 yx() const { return Vector2(this->y,this->x); }
 
@@ -55,6 +56,9 @@ template <typename T> struct Vector2 final
 
   void lerp(const Vector2& from, const Vector2& to, T par);
   void serp(const Vector2& PA, const Vector2& PB, const Vector2& PC, const Vector2& PD, T par_x, T par_y);
+
+  Vector2 floor() const;
+  Vector2 fract() const;
 
   static Vector2 zero() {
     return Vector2(T(0), T(0));

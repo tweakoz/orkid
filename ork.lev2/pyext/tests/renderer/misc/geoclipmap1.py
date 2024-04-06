@@ -58,7 +58,7 @@ class WaterApp(object):
     sceneparams = VarMap() 
     sceneparams.preset = "ForwardPBR"
     sceneparams.SkyboxIntensity = float(1.0)
-    sceneparams.SpecularIntensity = float(1.2)
+    sceneparams.SpecularIntensity = float(1.0)
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
@@ -185,6 +185,19 @@ class WaterApp(object):
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
 
+  ################################################
+
+  def _radial_gerstnerwave_fn(self, center, pos, timeval, frq, baseamp, rscale, falloff):
+    radius = (pos.xz() - center.xz()).length
+    amp    = clamp(math.pow(1 / radius, falloff), 0, 1)
+    amp *= clamp(radius * rscale, 0, 1)
+    dir = (pos - center).normalized()
+    # gersnter wave point moves in circe about pos along direction and up vectors
+    phase        = radius * frq - timeval
+    displacementA = dir * math.sin(phase)
+    displacementB = vec3(0, -math.cos(phase), 0)
+    displacement  = (displacementA + displacementB) * baseamp * amp
+    return displacement
 
   ################################################
 
@@ -192,9 +205,55 @@ class WaterApp(object):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
     update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)
-    mdl_y = 0 + 20*math.sin(self.curtime*1.3)
-    orient = quat(vec3(1,0,0),self.curtime*0.1)
-    self.modelnode.worldTransform.translation = vec3(0,mdl_y,0)
+    mdl_y = 0 + 5*math.sin(self.curtime*1.3)
+    
+    orient = quat(vec3(1,0,0),0.5+math.sin(self.curtime*0.1)*0.2)
+    
+    speed   = self.curtime * 1.65
+    baseamp = 15
+    wave_pos = vec3(0,0,0.001)
+    radius  = wave_pos.xz().length
+
+    cdist   = 3000.0
+    falloff = 0.09
+
+    disp = self._radial_gerstnerwave_fn( vec3(-6, 0, -32) * cdist, # center
+                                 wave_pos, # pos
+                                 self.curtime, # timeval
+                                 0.1, # frq
+                                 0.1, # baseamp
+                                 0.1, # rscale
+                                 0.1 ) # falloff
+    
+    disp += self._radial_gerstnerwave_fn(
+      vec3(6, 0, 5) * cdist, # center
+      wave_pos,              # pos
+      speed * 2.1,           # timeval
+      0.0131,                # frq
+      baseamp * 0.3,         # baseamp
+      0.00013,               # rscale
+      falloff)              # falloff
+
+    disp += self._radial_gerstnerwave_fn(
+      vec3(11, 0, -6) * cdist, # center
+      wave_pos,                # pos
+      speed * 0.6,             # timeval
+      0.0131,                  # frq
+      baseamp * 0.3,           # baseamp
+      0.00013,                 # rscale
+      falloff)                # falloff
+
+    disp += self._radial_gerstnerwave_fn(
+      vec3(-11, 0, 6) * cdist, # center
+      wave_pos,                # pos
+      speed * 0.3,             # timeval
+      0.00111,                  # frq
+      baseamp * 0.5,           # baseamp
+      0.00013,                 # rscale
+      falloff)                # falloff
+    
+    
+    self.modelnode.worldTransform.translation = disp+vec3(0,mdl_y,0)
     self.modelnode.worldTransform.orientation = orient
 
   ##############################################

@@ -31,6 +31,10 @@ template <> float Vector3<float>::Abs(float fin) {
   return fabs(fin);
 }
 
+template <> Vector3<float> Vector3<float>::fromScalar(float fin) {
+  return Vector3<float>(fin, fin, fin);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> double Vector3<double>::Sin(double fin) {
@@ -47,6 +51,10 @@ template <> double Vector3<double>::Epsilon() {
 }
 template <> double Vector3<double>::Abs(double fin) {
   return (double)fabs((float)fin);
+}
+
+template <> Vector3<double> Vector3<double>::fromScalar(double fin) {
+  return Vector3<double>(fin, fin, fin);
 }
 
 // FIXED ///////////////////////////////////////////////////////////////////////

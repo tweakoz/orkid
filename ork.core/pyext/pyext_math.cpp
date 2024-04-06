@@ -8,6 +8,8 @@
 #include "pyext.h"
 #include <ork/math/gradient.h>
 #include <ork/math/multicurve.h>
+#include <ork/math/noiselib.inl>
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 void pyinit_math_plane(py::module& module_core);
@@ -112,6 +114,14 @@ void pyinit_math(py::module& module_core) {
   });
   module_core.def("log_base", [](float base, float inp) -> float { //
     return log_base(base, inp);
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("mnoise", [](fvec3 input) -> float { //
+    return libnoise::noise(input);
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("clamp", [](float inp, float a, float b) -> float { //
+    return ::std::clamp(inp, a, b);
   });
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("lerp_float", [](float a, float b, float index) -> float { //

@@ -411,7 +411,7 @@ template <typename T> void Vector3<T>::setHSV(T h, T s, T v) {
     if (kone <= h)
       h -= kone;
     h *= 6.0f;
-    T i  = T(floor(h));
+    T i  = T(::floor(h));
     T f  = h - i;
     T aa = v * (kone - s);
     T bb = v * (kone - (s * f));
@@ -653,6 +653,21 @@ template <typename T> void Vector3<T>::lerp(const Vector3<T>& from, const Vector
   this->x = (from.x * ipar) + (to.x * par);
   this->y = (from.y * ipar) + (to.y * par);
   this->z = (from.z * ipar) + (to.z * par);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> ork::Vector3<T> ork::Vector3<T>::floor() const {
+  return Vector3<T>(std::floor(this->x), std::floor(this->y), std::floor(this->z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> ork::Vector3<T> ork::Vector3<T>::fract() const {
+  T floor_x = std::floor(this->x);
+  T floor_y = std::floor(this->y);
+  T floor_z = std::floor(this->z);
+  return Vector3<T>(this->x - floor_x, this->y - floor_y, this->z - floor_z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

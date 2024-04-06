@@ -746,9 +746,10 @@ void EzUiCam::updateMatrices(void) {
   float farmul = (near_far_ratio * 0.5f * finvlerpidx + 0.5f / near_far_ratio) * flerpidx;
 
   // Calculate the near and far plane distances
-  float fnear = mfLoc / neardiv;
-  float ffar = mfLoc * farmul;
-
+  //float fnear = mfLoc / neardiv;
+  //float ffar = mfLoc * farmul;
+  float fnear = base_near;
+  float ffar = fnear * near_far_ratio;
   // Enforce minimum and maximum values for near and far plane distances
   if (fnear < near_min) fnear = near_min;
   if (ffar > far_max) ffar = far_max;

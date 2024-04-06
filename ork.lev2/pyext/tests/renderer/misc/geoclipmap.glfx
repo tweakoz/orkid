@@ -2,10 +2,10 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "orkshader://mathtools.i";
-  import "orkshader://pbrtools.i";
-  import "orkshader://envtools.i";
-  import "orkshader://misctools.i";
+import "orkshader://mathtools.i";
+import "orkshader://pbrtools.i";
+import "orkshader://envtools.i";
+import "orkshader://misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 
@@ -23,125 +23,160 @@ uniform_set ub_frgX {
   float GroundColorPower;
   vec2 bufinvdim;
   float plightamp;
-
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
-  struct x_pos{
+  struct x_pos {
     vec4 true_wpos;
     vec4 new_pos;
-    float signal;
+    vec3 signal;
     float radius;
   };
-  
-float wave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp,float rscale,float falloff){
-    frq = frq * 0.00033;
+
+  float radial_sinwave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp, float rscale, float falloff) {
+    frq          = frq * 0.00033;
     float radius = length(pos.xz - center.xz);
-    float amp = clamp( pow(1 / radius,falloff), 0, 1);
-    amp *= clamp(radius*rscale,0,1);
+    float amp    = clamp(pow(1 / radius, falloff), 0, 1);
+    amp *= clamp(radius * rscale, 0, 1);
     return sin(radius * frq - timeval) * baseamp * amp;
-}
+  }
 
-  x_pos vs_compute_position(vec4 pos) {
+  vec3 radial_gerstnerwave_fn(vec3 center, vec3 pos, float timeval, float frq, float baseamp, float rscale, float falloff) {
+    float radius = length(pos.xz - center.xz);
+    float amp    = clamp(pow(1 / radius, falloff), 0, 1);
+    amp *= clamp(radius * rscale, 0, 1);
+    vec3 dir = normalize(pos - center);
+    // gersnter wave point moves in circe about pos along direction and up vectors
+    float phase        = radius * frq - timeval;
+    vec3 displacementA = dir * sin(phase);
+    vec3 displacementB = vec3(0, -cos(phase), 0);
+    vec3 displacement  = (displacementA + displacementB) * baseamp * amp;
+    return displacement;
+  }
+
+  x_pos vs_compute_position(vec3 pos) {
     x_pos _x;
-    mat4 matO2W = inverse(v)*m;
-    _x.true_wpos       = matO2W * pos;
+    mat4 matO2W  = inverse(v) * m;
+    _x.true_wpos = matO2W * vec4(pos, 1);
 
-    float speed = Time*1.65;
-    float baseamp = 1800;
+    float speed   = Time * 1.65;
+    float baseamp = 15;
     vec3 wave_pos = _x.true_wpos.xyz;
-    float radius = length(wave_pos.xz);
+    float radius  = length(wave_pos.xz);
 
+    float cdist   = 3000.0;
+    float falloff = 0.09;
 
-    float y = wave_fn(vec3(6,0,32)*140.0, wave_pos, speed*1.0, 6.28*0.5, baseamp*1.5,0.00013,0.5);
-    y += wave_fn(vec3(6,0,5)*140.0, wave_pos, speed*1.5, 6.28*1.0, baseamp*1.0,0.0013,1.0);
-    y += wave_fn(vec3(-6,0,-2)*104.0, wave_pos, speed*2.0, 6.28*1.5, baseamp*1.0,0.0013,1.0);
-    y += wave_fn(vec3(7,0,6)*140.0, wave_pos, speed*2.5, 6.28*2.0, baseamp*1.0,0.0013,1.0);
-    y += wave_fn(vec3(11,0,-6)*140.0, wave_pos, speed*3.0, 6.28*7.5, baseamp,0.0013,1.0);
+    vec3 disp = radial_gerstnerwave_fn(
+        vec3(-6, 0, -32) * cdist, // center
+        wave_pos,                 // pos
+        speed * 0.9,              // timeval
+        0.003131,                 // frq
+        baseamp * 0.3,            // baseamp
+        0.00013,                  // rscale
+        falloff);                 // falloff
 
-    /*for( int i=0; i<4; i++ ){
-      float amp = 0.01 / (i+1);
-      float frq = 0.005 + i*0.01;
-      float spd = -0.1+i*0.01;
-      float n = texture(noizekernmap,vec2(wave_pos.xz)*frq+vec2(1,0)*Time*spd).r;
-      y += n*amp;
-    }*/
+    disp += radial_gerstnerwave_fn(
+        vec3(6, 0, 5) * cdist, // center
+        wave_pos,              // pos
+        speed * 2.1,           // timeval
+        0.0131,                // frq
+        baseamp * 0.3,         // baseamp
+        0.00013,               // rscale
+        falloff);              // falloff
 
-    for( int i=0; i<4; i++ ){
-      float amp = 2.0 / (i+1);
-      float frq = 0.5 + i*0.5;
-      float spd = 3.1 + i*0.1;
-      float n = noise(vec3(wave_pos.xz*frq*0.01,Time*spd));
-      y += n*amp;
+    disp += radial_gerstnerwave_fn(
+        vec3(11, 0, -6) * cdist, // center
+        wave_pos,                // pos
+        speed * 0.6,             // timeval
+        0.0131,                  // frq
+        baseamp * 0.3,           // baseamp
+        0.00013,                 // rscale
+        falloff);                // falloff
+
+    disp += radial_gerstnerwave_fn(
+        vec3(-11, 0, 6) * cdist, // center
+        wave_pos,                // pos
+        speed * 0.3,             // timeval
+        0.00111,                  // frq
+        baseamp * 0.5,           // baseamp
+        0.00013,                 // rscale
+        falloff);                // falloff
+
+    for (int i = 0; i < 4; i++) {
+      float amp = 2.0 / (i + 1);
+      float frq = 0.5 + i * 0.5;
+      float spd = 3.1 + i * 0.1;
+      float n   = noise(vec3(wave_pos.xz * frq * 0.01, Time * spd));
+      disp.y += n * amp;
     }
 
-    _x.signal = y;
-    _x.new_pos = vec4(pos.x,pos.y+y,pos.z,1);
-    _x.radius = radius;
+    vec3 displaced = pos + disp;
+
+    _x.signal  = disp;
+    _x.new_pos = vec4(displaced, 1);
+    _x.radius  = radius;
     return _x;
   }
 }
 libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
 
   vec4 vs_common_mono(vec4 pos, vec3 nrm, vec3 bin) {
-    vec4 cpos       = v * pos;
+    vec4 cpos = v * pos;
 
-    x_pos _x = vs_compute_position(pos);
+    x_pos _x = vs_compute_position(pos.xyz);
 
+    frg_wpos   = _x.new_pos;
+    frg_tbn[0] = _x.true_wpos.xyz;
 
-    frg_wpos        = _x.new_pos;
-    frg_tbn[0]      = _x.true_wpos.xyz;
+    float D = clamp(length(pos) * 0.0001, 0, 1);
 
+    vec3 C       = mix(nrm, vec3(0.5), D);
+    float intens = mix(0.5 + _x.signal.y * 0.1, 0.5, D);
 
-    float D = clamp(length(pos)*0.0001,0,1); 
-
-    vec3 C = mix(nrm,vec3(0.5),D);
-    float intens = mix(0.5+_x.signal*0.1,0.5,D);
-
-    frg_clr         = vec4(vec3(1)*intens, 1); // TODO - split vs_rigid_gbuffer into vertexcolor vs identity
-    frg_uv0         = uv0 * vec2(1, -1);
+    frg_clr = vec4(vec3(1) * intens, 1); // TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+    frg_uv0 = uv0 * vec2(1, -1);
 
     vec3 wnormal    = normalize(mrot * nrm);
     vec3 wbitangent = normalize(mrot * bin); // technically binormal is a bitangent
     vec3 wtangent   = cross(wbitangent, wnormal);
-    //frg_tbn         = mat3(wtangent, wbitangent, vec3(0));
+    // frg_tbn         = mat3(wtangent, wbitangent, vec3(0));
 
     // compute eye to worldpos direction vector
-    frg_camz = normalize(cpos.xyz - frg_wpos.xyz);
+    frg_camz = _x.signal; // normalize(cpos.xyz - frg_wpos.xyz);
 
-    frg_camdist     = 1;
+    frg_camdist = 1;
     return _x.new_pos;
   }
 
   void vs_common_stereo(vec4 pos, vec3 nrm, vec3 bin) {
     vec4 wpos       = m * pos;
-    vec4 cpos_l       = (v_l*m) * pos;
-    vec4 cpos_r       = (v_r*m) * pos;
-    vec3 cpos = (cpos_l.xyz+cpos_r.xyz)*0.5;
+    vec4 cpos_l     = (v_l * m) * pos;
+    vec4 cpos_r     = (v_r * m) * pos;
+    vec3 cpos       = (cpos_l.xyz + cpos_r.xyz) * 0.5;
     vec3 wnormal    = normalize(mrot * normal);
     vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
     vec3 wtangent   = cross(wbitangent, wnormal);
     frg_wpos        = wpos;
-    //frg_wpos        = vec4(normal,1);
-    frg_clr         = vec4(1, 1, 1, 1); // TODO - split vs_rigid_gbuffer into vertexcolor vs identity
-    frg_uv0         = uv0 * vec2(1, -1);
-    frg_tbn         = mat3(wtangent, wbitangent, normal);
-    //frg_camz        = wnormal.xyz;
+    // frg_wpos        = vec4(normal,1);
+    frg_clr = vec4(1, 1, 1, 1); // TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+    frg_uv0 = uv0 * vec2(1, -1);
+    frg_tbn = mat3(wtangent, wbitangent, normal);
+    // frg_camz        = wnormal.xyz;
 
     // compute eye to worldpos direction vector
-    frg_camz = normalize(cpos.xyz - wpos.xyz);
-    frg_camdist     = -cpos.z;
+    frg_camz    = normalize(cpos.xyz - wpos.xyz);
+    frg_camdist = -cpos.z;
   }
-
 }
 
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_ground_mono //
-  : iface_vgbuffer //
-  : lib_ground_vtx { //
+    : iface_vgbuffer         //
+    : lib_ground_vtx {       //
   // mv, mrot, m, mvp_l, mvp_r
   vec4 new_pos = vs_common_mono(position, normal, binormal);
-  gl_Position                   = mvp * new_pos;
+  gl_Position  = mvp * new_pos;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_my_vdprepass : ub_vtx {
@@ -154,21 +189,21 @@ vertex_interface iface_my_vdprepass : ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_my_forward_depthprepass_mono //
-  : iface_my_vdprepass //
-  : lib_ground_vtx_base { //
+    : iface_my_vdprepass                      //
+    : lib_ground_vtx_base {                   //
   x_pos _x = vs_compute_position(position);
 
   vec4 new_pos = _x.new_pos;
   vec4 hpos    = mvp * new_pos;
   gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w-0.05);
+  frg_depth    = (hpos.z) / (hpos.w - 0.05);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_ground_stereo //
-  : iface_vgbuffer_stereo //
-  : lib_ground_vtx //
-  : extension(GL_NV_stereo_view_rendering) //
-  : extension(GL_NV_viewport_array2) { //
+vertex_shader vs_ground_stereo               //
+    : iface_vgbuffer_stereo                  //
+    : lib_ground_vtx                         //
+    : extension(GL_NV_stereo_view_rendering) //
+    : extension(GL_NV_viewport_array2) {     //
   // mv, mrot, m, mvp_l, mvp_r
   vs_common_stereo(position, normal, binormal);
   gl_Position                   = mvp_l * position;
@@ -178,98 +213,109 @@ vertex_shader vs_ground_stereo //
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fwd_ground_mono
-  : iface_forward
-  : lib_fwd 
-  : ub_frgX {
+fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_frgX {
 
+  vec3 wpos = frg_tbn[0];
 
-    vec3 wpos = frg_tbn[0];
+  float signalY  = frg_camz.y * 0.01;
+  signalY        = pow(signalY, 2);
+  float peak_mix = clamp(signalY * 10.0, 0, 1);
 
-    vec2 uv =  gl_FragCoord.xy * bufinvdim;
-    float depth = textureLod(depth_map,uv,0).r;
-    float ndc_z = depth*2.0 - 1.0;
-    float ndc_x = (uv.x * 2.0 - 1.0);
-    float ndc_y = (uv.y * 2.0 - 1.0);
-    vec4 clip = vec4(ndc_x,ndc_y,ndc_z,1.0);
-    vec4 wld = inverse(vp) * clip;
-    wld /= wld.w;
-    float D = clamp( length(wpos.xyz-wld.xyz)*0.01, 0, 1 );
-    D = pow(D, 0.1125);
+  float foam = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float amp    = 2.0 / (4-i);
+    float frq    = 3 + i * 1.007;
+    float spd    = 3.1 + i * 1.1;
+    float n      = noise(wpos.xyz * frq + vec3(0, 1, 0) * Time * spd);
+    float scalar = pow(peak_mix * 5.0, 2.5);
+    foam += n * amp * scalar;
+  }
+  foam = clamp(foam*10, 0, 1);
 
+  vec2 uv     = gl_FragCoord.xy * bufinvdim;
+  float depth = textureLod(depth_map, uv, 0).r;
+  float ndc_z = depth * 2.0 - 1.0;
+  float ndc_x = (uv.x * 2.0 - 1.0);
+  float ndc_y = (uv.y * 2.0 - 1.0);
+  vec4 clip   = vec4(ndc_x, ndc_y, ndc_z, 1.0);
+  vec4 wld    = inverse(vp) * clip;
+  wld /= wld.w;
+  float D = clamp(length(wpos.xyz - wld.xyz) * 0.01, 0, 1);
+  D       = pow(D, 0.1125);
 
-    vec3 dPdu = dFdx(frg_wpos.xyz);
-    vec3 dPdv = dFdy(frg_wpos.xyz);
-    vec3 normal = cross(dPdu, dPdv); // Corrected normal calculation
-    normal = normalize(normal);
+  vec3 dPdu   = dFdx(frg_wpos.xyz);
+  vec3 dPdv   = dFdy(frg_wpos.xyz);
+  vec3 normal = cross(dPdu, dPdv); // Corrected normal calculation
+  normal      = normalize(normal);
 
-    vec3 eye_delta = frg_wpos.xyz-EyePostion;
-    vec3 eye_dir = normalize(eye_delta);
-    vec3 skybox_n = vec3(eye_dir.x,eye_dir.y,eye_dir.z)*-1;
-    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+  vec3 eye_delta   = frg_wpos.xyz - EyePostion;
+  vec3 eye_dir     = normalize(eye_delta);
+  vec3 skybox_n    = vec3(eye_dir.x, eye_dir.y, eye_dir.z) * -1;
+  vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
 
-    float fogZ = length(eye_delta); 
-    float radius = 0.0;
-    
-    float depth_fogval = 1.0-clamp(pow(fogZ/DepthFogDistance,DepthFogPower),0,1);
-    vec3 skybox_refract_n = refract(skybox_n*-1.0,normal*-1.0,0.5);
-    vec3 skyboxRefractColor = (vec3(1)-env_equirectangular(skybox_refract_n,MapSpecularEnv,0.8))*0.2;
-    skyboxRefractColor.x = pow(skyboxRefractColor.x,0.65);
-    skyboxRefractColor.y = pow(skyboxRefractColor.y,0.55);
-    skyboxRefractColor.z = pow(skyboxRefractColor.z,0.45);
-    float F = fresnelSchlick(eye_dir*-1.0, normal, vec3(0.004)).x;
-    F = 0.5;//pow(F, 0.1);
-    vec3 albedo = BaseColor;
-    vec3 altcolor = skyboxRefractColor; //normal*0.5+vec3(0.5,0.5,0.5);
-    albedo = mix(albedo,albedo+altcolor*0.5,1-F);
-    PbrData pbd;
-    pbd._emissive = false;
-    pbd._metallic = 1;
-    pbd._roughness = 0.6;//+radius*0.003;
-    pbd._albedo = albedo;//(1+radius*0.01);
-    pbd._wpos = frg_tbn[0].xyz;
-    pbd._wnrm = normal;
-    pbd._fogZ = 0.0;
-    pbd._atmos = 0.0;
-    pbd._alpha = 1.0;
+  float fogZ   = length(eye_delta);
+  float radius = 0.0;
 
-    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd,EyePostion);
-    ///////////////////////////////////////////////
-    // point lighting
-    ///////////////////////////////////////////////
+  float depth_fogval      = 1.0 - clamp(pow(fogZ / DepthFogDistance, DepthFogPower), 0, 1);
+  vec3 skybox_refract_n   = refract(skybox_n * -1.0, normal * -1.0, 0.5);
+  vec3 skyboxRefractColor = (vec3(1) - env_equirectangular(skybox_refract_n, MapSpecularEnv, 0.8)) * 0.2;
+  skyboxRefractColor.x    = pow(skyboxRefractColor.x, 0.65);
+  skyboxRefractColor.y    = pow(skyboxRefractColor.y, 0.55);
+  skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
+  float F                 = fresnelSchlick(eye_dir * -1.0, normal, vec3(0.004)).x;
+  F                       = 0.5; // pow(F, 0.1);
+  vec3 albedo             = BaseColor;
+  vec3 altcolor           = skyboxRefractColor; // normal*0.5+vec3(0.5,0.5,0.5);
+  albedo                  = mix(albedo, albedo + altcolor * 0.5, 1 - F);
+  PbrData pbd;
+  pbd._emissive = false;
+  pbd._metallic = 0.75;
 
-    LightCtx plc = lcalc_forward(wpos.xyz,pbd);
-    vec3 point_lighting       = vec3(0, 0, 0);
-    for(int i=0; i<point_light_count; i++){
-      plc._lightdel = _lightpos[i].xyz - wpos.xyz;
-      vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
-      float LR = _lightradius[i];
-      point_lighting += plcalc_forward(plc,pbd,LR)*LC*plightamp;
-    }
+  float ssy      = clamp(signalY, 0, 1);
+  pbd._roughness = 0.65; //+(ssy*35.0);//+radius*0.003;
+  pbd._albedo    = albedo;                        //(1+radius*0.01);
+  pbd._wpos      = frg_tbn[0].xyz;
+  pbd._wnrm      = normal;
+  pbd._fogZ      = 0.0;
+  pbd._atmos     = 0.0;
+  pbd._alpha     = 1.0;
 
-    vec3 L = env_lighting+point_lighting;
-    vec3 OC = mix(L,skyboxColor,1.0-depth_fogval);
+  vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, EyePostion);
+  ///////////////////////////////////////////////
+  // point lighting
+  ///////////////////////////////////////////////
 
-    out_color = vec4(OC,D);
+  LightCtx plc        = lcalc_forward(wpos.xyz, pbd);
+  vec3 point_lighting = vec3(0, 0, 0);
+  for (int i = 0; i < point_light_count; i++) {
+    plc._lightdel = _lightpos[i].xyz - wpos.xyz;
+    vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+    float LR      = _lightradius[i];
+    point_lighting += plcalc_forward(plc, pbd, LR) * LC * plightamp;
+  }
+
+  vec3 L  = env_lighting + point_lighting;
+  vec3 OC = L; // mix(L,skyboxColor,1.0-depth_fogval);
+  OC += env_lighting * foam * 0.1;
+  //OC += vec3(foam*0.05);
+  out_color = vec4(OC, D);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fwd_ground_stereo
-  : iface_forward
-  : ub_frgX {
-    out_color = frg_wpos;
+fragment_shader ps_fwd_ground_stereo : iface_forward : ub_frgX {
+  out_color = frg_wpos;
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {
-	fxconfig=fxcfg_default;
-	vf_pass={vs_my_forward_depthprepass_mono,ps_forward_depthprepass,sb_default}
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {
-  fxconfig=fxcfg_default;
-  vf_pass={vs_ground_mono,ps_fwd_ground_mono,sb_default}
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_mono, ps_fwd_ground_mono, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_ST {
-  fxconfig=fxcfg_default;
-  vf_pass={vs_ground_stereo,ps_fwd_ground_stereo,sb_default}
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_stereo, ps_fwd_ground_stereo, sb_default }
 }
