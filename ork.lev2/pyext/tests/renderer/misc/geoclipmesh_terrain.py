@@ -37,7 +37,7 @@ class WaterApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
-    self.height = 100.0 # 1000.0
+    self.height = 2.0 # 1000.0
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #
@@ -132,8 +132,8 @@ class WaterApp(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 10
-    gdata.ringSize = 256
+    gdata.numLevels = 8
+    gdata.ringSize = 512
     gdata.baseQuadSize = 1.0/16
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
@@ -168,7 +168,7 @@ class WaterApp(object):
 
     displaced_offset = self.pos_offset + vec3(0,self._computeTerrainDisplacement(self.pos_offset),0)
     
-    self.uicam.positionOffset = displaced_offset
+    self.uicam.positionOffset = self.uicam.positionOffset*0.99+displaced_offset*0.01
     self.uicam.updateMatrices()
     self.camera.copyFrom( self.uicam.cameradata )
 
