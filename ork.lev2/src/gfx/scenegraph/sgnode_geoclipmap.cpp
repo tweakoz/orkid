@@ -37,6 +37,7 @@ struct ClipMapRenderImpl {
     cmaphasher->accumulateItem<int>(params->_levels);
     cmaphasher->accumulateItem<int>(params->_ringSize);
     cmaphasher->accumulateItem<float>(params->_baseQuadSize);
+    cmaphasher->accumulateItem<int>(params->_circle);
     cmaphasher->finish();
     uint64_t cmaphash = cmaphasher->result();
     // logchan_pbrgen->log("brdfIntegrationMap hashkey<%zx>", cmaphash);

@@ -184,7 +184,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "baseQuadSize",
               [](clipmapdrawabledata_ptr_t drw) -> float { return drw->_baseQuadSize; },
-              [](clipmapdrawabledata_ptr_t drw, float val) { drw->_baseQuadSize = val; });
+              [](clipmapdrawabledata_ptr_t drw, float val) { drw->_baseQuadSize = val; })
+            .def_property(
+              "circle",
+              [](clipmapdrawabledata_ptr_t drw) -> bool { return drw->_circle; },
+              [](clipmapdrawabledata_ptr_t drw, bool val) { drw->_circle = val; });
   type_codec->registerStdCodec<clipmapdrawabledata_ptr_t>(clipmapdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //

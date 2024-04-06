@@ -1,0 +1,162 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+import "orkshader://mathtools.i";
+import "orkshader://pbrtools.i";
+import "orkshader://envtools.i";
+import "orkshader://misctools.i";
+}
+///////////////////////////////////////////////////////////////
+
+uniform_set ub_frgX {
+  float Time;
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
+  struct x_pos {
+    vec4 true_wpos;
+    vec4 new_pos;
+    vec3 signal;
+    float radius;
+  };
+
+
+  x_pos vs_compute_position(vec3 pos) {
+    x_pos _x;
+    mat4 matO2W  = inverse(v) * m;
+    _x.true_wpos = matO2W * vec4(pos, 1);
+
+    float speed   = Time * 1.65;
+    float baseamp = 25;
+    vec3 wave_pos = _x.true_wpos.xyz;
+    float radius  = length(wave_pos.xz);
+
+    _x.signal  = vec3(0,0,0);
+    _x.new_pos = vec4(wave_pos, 1);
+    _x.radius  = radius;
+    return _x;
+  }
+}
+libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
+
+  vec4 vs_common_mono(vec4 pos, vec3 nrm, vec3 bin) {
+    vec4 cpos = v * pos;
+
+    x_pos _x = vs_compute_position(pos.xyz);
+
+    frg_wpos   = _x.new_pos;
+
+    float D = clamp(length(pos) * 0.0001, 0, 1);
+
+    vec3 C       = mix(nrm, vec3(0.5), D);
+    float intens = mix(0.5 + _x.signal.y * 0.1, 0.5, D);
+
+    frg_clr = vec4(vec3(1) * intens, 1); 
+    frg_uv0 = uv0 * vec2(1, -1);
+
+    vec3 wnormal    = normalize(mrot * nrm);
+
+    frg_tbn[0] = _x.true_wpos.xyz;
+    frg_tbn[1] = binormal.xyz;
+    frg_tbn[2] = wnormal.xyz;
+
+    // compute eye to worldpos direction vector
+    frg_camz = _x.signal; // normalize(cpos.xyz - frg_wpos.xyz);
+
+    frg_camdist = 1;
+    return _x.new_pos;
+  }
+
+  void vs_common_stereo(vec4 pos, vec3 nrm, vec3 bin) {
+    vec4 wpos       = m * pos;
+    vec4 cpos_l     = (v_l * m) * pos;
+    vec4 cpos_r     = (v_r * m) * pos;
+    vec3 cpos       = (cpos_l.xyz + cpos_r.xyz) * 0.5;
+    vec3 wnormal    = normalize(mrot * normal);
+    vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
+    vec3 wtangent   = cross(wbitangent, wnormal);
+    frg_wpos        = wpos;
+    // frg_wpos        = vec4(normal,1);
+    frg_clr = vec4(1, 1, 1, 1); // TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+    frg_uv0 = uv0 * vec2(1, -1);
+    frg_tbn = mat3(wtangent, wbitangent, normal);
+    // frg_camz        = wnormal.xyz;
+
+    // compute eye to worldpos direction vector
+    frg_camz    = normalize(cpos.xyz - wpos.xyz);
+    frg_camdist = -cpos.z;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ground_mono //
+    : iface_vgbuffer         //
+    : lib_ground_vtx {       //
+  // mv, mrot, m, mvp_l, mvp_r
+  vec4 new_pos = vs_common_mono(position, normal, binormal);
+  gl_Position  = mvp * new_pos;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_my_vdprepass : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_my_forward_depthprepass_mono //
+    : iface_my_vdprepass                      //
+    : lib_ground_vtx_base {                   //
+  x_pos _x = vs_compute_position(position);
+
+  vec4 new_pos = _x.new_pos;
+  vec4 hpos    = mvp * new_pos;
+  gl_Position  = hpos;
+  frg_depth    = (hpos.z) / (hpos.w - 0.05);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ground_stereo               //
+    : iface_vgbuffer_stereo                  //
+    : lib_ground_vtx                         //
+    : extension(GL_NV_stereo_view_rendering) //
+    : extension(GL_NV_viewport_array2) {     //
+  // mv, mrot, m, mvp_l, mvp_r
+  vs_common_stereo(position, normal, binormal);
+  gl_Position                   = mvp_l * position;
+  gl_SecondaryPositionNV        = mvp_r * position;
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_frgX {
+
+  vec3 wpos   = frg_tbn[0].xyz;
+  vec3 binormal = frg_tbn[1];
+  vec3 normal = frg_tbn[2];
+
+
+  out_color = vec4(normal, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_stereo : iface_forward : ub_frgX {
+  out_color = frg_wpos;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_mono, ps_fwd_ground_mono, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_stereo, ps_fwd_ground_stereo, sb_default }
+}

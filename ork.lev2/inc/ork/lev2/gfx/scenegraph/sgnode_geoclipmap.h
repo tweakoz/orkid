@@ -18,6 +18,7 @@ public:
   int _levels = 4;
   int _ringSize = 512;
   float _baseQuadSize = 0.5f;
+  bool _circle = false;
 };
 
 using clipmapdrawabledata_ptr_t = std::shared_ptr<ClipMapDrawableData>;

@@ -27,6 +27,7 @@ struct Parameters {
     int _levels = 1;
     int _ringSize = 256;
     float _baseQuadSize = 0.5f;
+    bool _circle = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
