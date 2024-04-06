@@ -149,7 +149,8 @@ fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
   vec3 dPdv   = dFdy(frg_wpos.xyz);
   vec3 normal = normalize(cross(dPdu, dPdv)); // Corrected normal calculation
   //out_color = vec4(normal*0.5+bary*0.5, 1);
-  out_color = vec4(normal, alpha);
+  //out_color = vec4(normal, alpha);
+  out_color = vec4(bary, alpha);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fwd_ground_stereo : fif_terrain : ub_frgX {

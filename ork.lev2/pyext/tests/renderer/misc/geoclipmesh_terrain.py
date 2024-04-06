@@ -37,11 +37,12 @@ class WaterApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
+    self.height = 100.0 # 1000.0
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #
-                   eye = vec3(0,1000,0), #
-                   tgt = vec3(0,1000,1), #
+                   eye = vec3(0,self.height,0), #
+                   tgt = vec3(0,self.height,1), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
     
@@ -49,6 +50,20 @@ class WaterApp(object):
     self.zdir = vec3(0,0,1)
     self.key=None
     self.move_dir = 0.0
+    self.pos_offset = vec3(0,0,0)
+
+  def _computeTerrainDisplacement(self, pos):
+    detail = 0.0
+    num_octaves = 8
+    mountain = 0.0
+    for i in range(num_octaves):
+      amp = 500.0 * math.pow(0.5, float(i))
+      frq = math.pow(2.0, float(i)) * 0.0003
+      mountain += mnoise(pos * frq) * amp
+      if i > 4:
+        detail += mnoise(pos * frq * 50.0) * (amp * 0.025)
+    displacement = mountain + detail
+    return displacement
 
   ################################################
   # gpu data init:
@@ -117,9 +132,9 @@ class WaterApp(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 8
-    gdata.ringSize = 512
-    gdata.baseQuadSize = 1
+    gdata.numLevels = 10
+    gdata.ringSize = 256
+    gdata.baseQuadSize = 1.0/16
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
@@ -147,9 +162,13 @@ class WaterApp(object):
     view_vel = self.zdir*wasd_dir.z 
     view_vel += xdir*wasd_dir.x
     
-    view_vel *= 20.0
+    view_vel *= 0.3
     
-    self.uicam.positionOffset += vec3(view_vel.x,0,view_vel.z)*DT*100.0
+    self.pos_offset  += vec3(view_vel.x,0,view_vel.z)*DT*100.0
+
+    displaced_offset = self.pos_offset + vec3(0,self._computeTerrainDisplacement(self.pos_offset),0)
+    
+    self.uicam.positionOffset = displaced_offset
     self.uicam.updateMatrices()
     self.camera.copyFrom( self.uicam.cameradata )
 
