@@ -85,34 +85,6 @@ class WaterApp(object):
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
-    ###################################
-    # create particle drawable 
-    ###################################
-
-    self.ptc_systems = gen_psys_set( self.scene,
-                                     self.layer_fwd,
-                                     count = 8,
-                                     frqbase=0.1,
-                                     radbase = 20 )
-    for ptc in self.ptc_systems:
-      ptc.drawable_data.emitterIntensity = 700.0
-      ptc.drawable_data.emitterRadius = 2
-      ptc.EMITN.inputs.EmissionRate = random.uniform(40,80)
-      ptc.EMITR.inputs.EmissionRate = random.uniform(40,80)
-      ptc.particlenode.worldTransform.scale = 4
-      ptc.frq = random.uniform(-0.5,0.5)
-      x = random.uniform(-0.5,0.5)
-      y = random.uniform(-0.5,0.5)
-      z = random.uniform(-0.5,0.5)
-      ptc.GRAV.inputs.Center = vec3(x,y,z)
-      x = random.uniform(-0.5,0.5)
-      y = random.uniform(-0.5,0.5)
-      z = random.uniform(-0.5,0.5)
-      ptc.EMITN.inputs.Offset = vec3(x,y,z)
-      x = random.uniform(-0.5,0.5)
-      y = random.uniform(-0.5,0.5)
-      z = random.uniform(-0.5,0.5)
-      ptc.EMITR.inputs.Offset = vec3(x,y,z)
     #######################################
     # ground material (water)
     #######################################
@@ -128,36 +100,10 @@ class WaterApp(object):
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
-    self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
-    self.NOISETEX2 = Texture.load("src://effect_textures/NoiseKern.dds")
-
     freestyle = gmtl.freestyle
     assert(freestyle)
-    param_refract_map = freestyle.param("refract_map")
-    param_voltexa = freestyle.param("MapVolTexA")
-    param_time = freestyle.param("Time")
-    param_color = freestyle.param("BaseColor")
-    param_depthmap = freestyle.param("depth_map")
-    param_bufinvdim = freestyle.param("bufinvdim")
-    param_plightamp = freestyle.param("plightamp")
-    param_noizekernmap = freestyle.param("noizekernmap")
     param_m= freestyle.param("m")
-    assert(param_time)
-    
-    def _gentime():
-      return self.curtime
-
-    self.refract_tex = Texture.load( "src://envmaps/tozenv_hellscape.png")
-
-    gmtl.bindParam(param_refract_map,self.refract_tex)
-    gmtl.bindParam(param_voltexa,self.NOISETEX)
-    gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
-    gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
-    gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
-    gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    gmtl.bindParam(param_plightamp,0.15 )
 
     #######################################
     # ground drawable
@@ -168,96 +114,18 @@ class WaterApp(object):
     gdata.numLevels = 16
     gdata.ringSize = 128
     gdata.baseQuadSize = 0.25
-    #gmtl.addBasicStateLambdaToPipeline(pipeline)
-    #gdata.pipeline = pipeline
-    #gdata.extent = 10000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,0,0)
-    self.groundnode.worldTransform.scale = 2
+    self.groundnode.worldTransform.scale = 1
     #self.groundnode.viewRelative = True
-
-    #######################################
-    # helmet mesh
-    #######################################
-
-    self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
-    self.drawable_model = self.model.createDrawable()
-    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
-    self.modelnode.worldTransform.scale = 35
-    self.modelnode.worldTransform.translation = vec3(0,28,0)
-
-  ################################################
-
-  def _radial_gerstnerwave_fn(self, center, pos, timeval, frq, baseamp, rscale, falloff):
-    radius = (pos.xz() - center.xz()).length
-    amp    = clamp(math.pow(1 / radius, falloff), 0, 1)
-    amp *= clamp(radius * rscale, 0, 1)
-    dir = (pos - center).normalized()
-    # gersnter wave point moves in circe about pos along direction and up vectors
-    phase        = radius * frq - timeval
-    displacementA = dir * math.sin(phase)
-    displacementB = vec3(0, -math.cos(phase), 0)
-    displacement  = (displacementA + displacementB) * baseamp * amp
-    return displacement
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
-    update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)
-    mdl_y = 0 + 5*math.sin(self.curtime*1.3)
-    
-    orient = quat(vec3(1,0,0),0.5+math.sin(self.curtime*0.1)*0.4)
-    
-    speed   = self.curtime * 1.65
-    baseamp = 25
-    wave_pos = vec3(0,0,0.001)
-    radius  = wave_pos.xz().length
-
-    cdist   = 3000.0
-    falloff = 0.09
-
-    disp = self._radial_gerstnerwave_fn( vec3(-6, 0, -32) * cdist, # center
-                                 wave_pos, # pos
-                                 self.curtime, # timeval
-                                 0.1, # frq
-                                 0.1, # baseamp
-                                 0.1, # rscale
-                                 0.1 ) # falloff
-    
-    disp += self._radial_gerstnerwave_fn(
-      vec3(6, 0, 5) * cdist, # center
-      wave_pos,              # pos
-      speed * 2.1,           # timeval
-      0.0131,                # frq
-      baseamp * 0.3,         # baseamp
-      0.00013,               # rscale
-      falloff)              # falloff
-
-    disp += self._radial_gerstnerwave_fn(
-      vec3(11, 0, -6) * cdist, # center
-      wave_pos,                # pos
-      speed * 0.6,             # timeval
-      0.0131,                  # frq
-      baseamp * 0.3,           # baseamp
-      0.00013,                 # rscale
-      falloff)                # falloff
-
-    disp += self._radial_gerstnerwave_fn(
-      vec3(-11, 0, 6) * cdist, # center
-      wave_pos,                # pos
-      speed * 0.3,             # timeval
-      0.00111,                  # frq
-      baseamp * 0.5,           # baseamp
-      0.00013,                 # rscale
-      falloff)                # falloff
-    
-    
-    self.modelnode.worldTransform.translation = disp+vec3(0,mdl_y,0)
-    self.modelnode.worldTransform.orientation = orient
 
   ##############################################
 
