@@ -130,7 +130,6 @@ libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
     frg_tbn[0] = _x.true_wpos.xyz;
 
     float D = clamp(length(pos) * 0.0001, 0, 1);
-
     vec3 C       = mix(nrm, vec3(0.5), D);
     float intens = mix(0.5 + _x.signal.y * 0.1, 0.5, D);
 
@@ -140,11 +139,9 @@ libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
     vec3 wnormal    = normalize(mrot * nrm);
     vec3 wbitangent = normalize(mrot * bin); // technically binormal is a bitangent
     vec3 wtangent   = cross(wbitangent, wnormal);
-    // frg_tbn         = mat3(wtangent, wbitangent, vec3(0));
 
     // compute eye to worldpos direction vector
-    frg_camz = _x.signal; // normalize(cpos.xyz - frg_wpos.xyz);
-
+    frg_camz = _x.signal;
     frg_camdist = 1;
     return _x.new_pos;
   }

@@ -124,7 +124,7 @@ class WaterApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmap_water.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_water.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA

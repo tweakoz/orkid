@@ -85,7 +85,7 @@ class GeoClipMapApp(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmap_basic.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_basic.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.OFF
