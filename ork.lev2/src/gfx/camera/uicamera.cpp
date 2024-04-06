@@ -176,6 +176,8 @@ void UiCamera::CommonPostSetup(void) {
   auto v3rt = vec_billboardRight.xyz();
   auto v3in = v3up.crossWith(v3rt);
 
+  _zdir = v3in*-1.0;
+
   // printf( "CPS: aspect<%g>\n", aspect );
   // printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
   // printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );

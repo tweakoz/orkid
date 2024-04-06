@@ -767,19 +767,23 @@ void EzUiCam::updateMatrices(void) {
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).transform(matxf);
   fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).transform(matxf).xyz();
 
+  veye += _position_offset;
+  vtarget += _position_offset;
+
   _camcamdata.Persp(fnear, ffar, _fov);
   _camcamdata.Lookat(veye, vtarget, vup);
 
   // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);
   // printf("mvCenter<%g %g %g>\n", mvCenter.x, mvCenter.y, mvCenter.z);
-  // printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
-  // printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
+   //printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
+   //printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
   // printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
 
   ///////////////////////////////////////////////////////////////
   // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
