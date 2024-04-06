@@ -172,7 +172,19 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "pbrmaterial",
               [](clipmapdrawabledata_ptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },
-              [](clipmapdrawabledata_ptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; });
+              [](clipmapdrawabledata_ptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
+          .def_property(
+              "numLevels",
+              [](clipmapdrawabledata_ptr_t drw) -> int { return drw->_levels; },
+              [](clipmapdrawabledata_ptr_t drw, int val) { drw->_levels = val; })
+          .def_property(
+              "ringSize",
+              [](clipmapdrawabledata_ptr_t drw) -> int { return drw->_ringSize; },
+              [](clipmapdrawabledata_ptr_t drw, int val) { drw->_ringSize = val; })
+          .def_property(
+              "baseQuadSize",
+              [](clipmapdrawabledata_ptr_t drw) -> float { return drw->_baseQuadSize; },
+              [](clipmapdrawabledata_ptr_t drw, float val) { drw->_baseQuadSize = val; });
   type_codec->registerStdCodec<clipmapdrawabledata_ptr_t>(clipmapdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //

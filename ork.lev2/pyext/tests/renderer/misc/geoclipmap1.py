@@ -165,6 +165,9 @@ class WaterApp(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
+    gdata.numLevels = 16
+    gdata.ringSize = 128
+    gdata.baseQuadSize = 0.25
     #gmtl.addBasicStateLambdaToPipeline(pipeline)
     #gdata.pipeline = pipeline
     #gdata.extent = 10000.0
@@ -207,10 +210,10 @@ class WaterApp(object):
     update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)
     mdl_y = 0 + 5*math.sin(self.curtime*1.3)
     
-    orient = quat(vec3(1,0,0),0.5+math.sin(self.curtime*0.1)*0.2)
+    orient = quat(vec3(1,0,0),0.5+math.sin(self.curtime*0.1)*0.4)
     
     speed   = self.curtime * 1.65
-    baseamp = 15
+    baseamp = 25
     wave_pos = vec3(0,0,0.001)
     radius  = wave_pos.xz().length
 

@@ -15,7 +15,9 @@ public:
   ~ClipMapDrawableData();
 
   pbrmaterial_ptr_t _material;
-  float _extent = 100.0f;
+  int _levels = 4;
+  int _ringSize = 512;
+  float _baseQuadSize = 0.5f;
 };
 
 using clipmapdrawabledata_ptr_t = std::shared_ptr<ClipMapDrawableData>;

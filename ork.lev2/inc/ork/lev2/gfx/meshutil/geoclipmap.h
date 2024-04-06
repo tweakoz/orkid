@@ -25,8 +25,8 @@ using ring_ptr_t = std::shared_ptr<Ring>;
 
 struct Parameters {
     int _levels = 1;
-    int _scale = 1;
-    int _gridSize = 256;
+    int _ringSize = 256;
+    float _baseQuadSize = 0.5f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

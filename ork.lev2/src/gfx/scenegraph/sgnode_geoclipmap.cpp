@@ -18,7 +18,7 @@ namespace ork::lev2 {
 struct ClipMapRenderImpl {
 
   ClipMapRenderImpl(const ClipMapDrawableData* gpd)
-      : _grounddata(gpd) {
+      : _data(gpd) {
   }
   ~ClipMapRenderImpl() {
   }
@@ -27,16 +27,16 @@ struct ClipMapRenderImpl {
     using namespace meshutil;
 
     auto params       = std::make_shared<geoclipmap::Parameters>();
-    params->_levels   = 8;
-    params->_scale    = 2;
-    params->_gridSize = 16;
+    params->_levels   = _data->_levels;
+    params->_ringSize = _data->_ringSize;
+    params->_baseQuadSize = _data->_baseQuadSize;
     auto cmaphasher   = DataBlock::createHasher();
     cmaphasher->accumulateString("ClipMapRenderImpl::mesh"); // identifier
     cmaphasher->accumulateItem<float>(1.0);                  // version code
     cmaphasher->accumulateItem<float>(1.0);                  // salt
     cmaphasher->accumulateItem<int>(params->_levels);
-    cmaphasher->accumulateItem<int>(params->_scale);
-    cmaphasher->accumulateItem<int>(params->_gridSize);
+    cmaphasher->accumulateItem<int>(params->_ringSize);
+    cmaphasher->accumulateItem<float>(params->_baseQuadSize);
     cmaphasher->finish();
     uint64_t cmaphash = cmaphasher->result();
     // logchan_pbrgen->log("brdfIntegrationMap hashkey<%zx>", cmaphash);
@@ -78,8 +78,8 @@ struct ClipMapRenderImpl {
       }
     }
 
-    if (_grounddata->_material) {
-      _pbrmaterial  = _grounddata->_material;
+    if (_data->_material) {
+      _pbrmaterial  = _data->_material;
       _fxcache      = _pbrmaterial->pipelineCache();
       _as_freestyle = _pbrmaterial->_as_freestyle;
       //_paramMYM = _as_freestyle->param("my_m");
@@ -149,7 +149,7 @@ struct ClipMapRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<ClipMapRenderImpl>()->_render(RCID);
   }
-  const ClipMapDrawableData* _grounddata;
+  const ClipMapDrawableData* _data;
   pbrmaterial_ptr_t _pbrmaterial;
 
   texture_ptr_t _colortexture;

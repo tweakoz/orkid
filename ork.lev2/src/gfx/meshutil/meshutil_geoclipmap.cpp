@@ -187,19 +187,15 @@ level_ptr_t Generator::generateLevel(int level) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr static double base_quad_size = 0.5f;
-
-///////////////////////////////////////////////////////////////////////////////
-
 ring_ptr_t Generator::generateRing(int level) {
   ring_ptr_t output     = std::make_shared<Ring>();
-  double this_quad_size = base_quad_size * pow(2, level);
+  double this_quad_size = _params->_baseQuadSize * pow(2, level);
   double prev_quad_size = this_quad_size * 0.5;
   double next_quad_size = this_quad_size * 2.0f;
 
-  constexpr int DIM   = 512;
-  constexpr int DIMD2 = DIM>>1;
-  constexpr int DIMD4 = DIM>>2;
+  int DIM   = _params->_ringSize;
+  int DIMD2 = DIM>>1;
+  int DIMD4 = DIM>>2;
 
   if (level == 0) {
 
