@@ -29,7 +29,7 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
-class GeoClipMapApp(object):
+class WaterApp(object):
 
   def __init__(self):
     super().__init__()
@@ -40,10 +40,7 @@ class GeoClipMapApp(object):
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #
-                   #eye = vec3(0,100,-15), #
-                   #tgt = vec3(0,100,--14), #
-                   eye = vec3(0,1,-1)*40, #
-                   tgt = vec3(0,0,0), #
+                   eye = vec3(0,100,150), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
 
@@ -63,10 +60,21 @@ class GeoClipMapApp(object):
     sceneparams.SkyboxIntensity = float(1.0)
     sceneparams.SpecularIntensity = float(1.0)
     sceneparams.DiffuseIntensity = float(1.0)
-    sceneparams.AmbientLight = vec3(1)
+    sceneparams.AmbientLight = vec3(0.1)
     sceneparams.DepthFogDistance = float(10000)
     sceneparams.DepthFogPower = float(2)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula.png"
+    ###################################
+    # post fx node
+    ###################################
+
+    postNode = DecompBlurPostFxNode()
+    postNode.threshold = 0.99
+    postNode.blurwidth = 16.0
+    postNode.blurfactor = 0.1
+    postNode.amount = 0.4
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToVarMap(sceneparams,"PostFxNode")
 
     ###################################
     # create scene
@@ -89,10 +97,11 @@ class GeoClipMapApp(object):
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
     gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain.glfx")
-    gmtl.addLightingLambda()
+    #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
-    gmtl.blending = tokens.OFF
+    gmtl.blending = tokens.ALPHA
     freestyle = gmtl.freestyle
+    assert(freestyle)
     param_m= freestyle.param("m")
     gmtl.bindParam(param_m,tokens.RCFD_M )
 
@@ -102,23 +111,15 @@ class GeoClipMapApp(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 4
-    gdata.ringSize = 256
-    gdata.baseQuadSize = 1
-    gdata.circle = False
-
-    # level0: ringSize * baseQuadSize / 2 = 128 meters radius
-    # level1: level0*2 = 256 meters radius
-    # level2: level1*2 = 512 meters radius
-    # level3 : level2*2 = 1024 meters radius
-    
-    # total : 1920 meters radius
-
+    gdata.numLevels = 16
+    gdata.ringSize = 128
+    gdata.baseQuadSize = 0.25
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"geoclip-node",self.drawable_ground)
+    self.groundnode = self.scene.createDrawableNodeOnLayers([self.layer_fwd],"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,0,0)
     self.groundnode.worldTransform.scale = 1
+    #self.groundnode.viewRelative = True
 
   ################################################
 
@@ -144,4 +145,4 @@ def sig_handler(signal_received, frame):
 
 signal(SIGINT, sig_handler)
 
-GeoClipMapApp().ezapp.mainThreadLoop()
+WaterApp().ezapp.mainThreadLoop()

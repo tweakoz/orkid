@@ -97,7 +97,7 @@ class WaterApp(object):
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
     gmtl.shaderpath = str(thisdir()/"geoclipmesh_test.glfx")
-    gmtl.addLightingLambda()
+    #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
     freestyle = gmtl.freestyle

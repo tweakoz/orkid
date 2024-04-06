@@ -4,13 +4,13 @@
 fxconfig fxcfg_default {
 import "orkshader://mathtools.i";
 import "orkshader://pbrtools.i";
-import "orkshader://envtools.i";
-import "orkshader://misctools.i";
 }
 ///////////////////////////////////////////////////////////////
+
 uniform_set ub_frgX {
   float Time;
 }
+
 ///////////////////////////////////////////////////////////////
 vertex_interface vif_my_depthprepass : ub_vtx {
   inputs {
@@ -31,16 +31,14 @@ vertex_interface vif_terrain : ub_vtx {
   }
   outputs {
     vec4 frg_wpos;
-    //mat3 frg_tbn;
     vec3 frg_mesh_bary;
     vec3 frg_displacement;
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface fif_terrain : ub_frg_fwd : ub_frg_fwd_lighting {
+fragment_interface fif_terrain : ub_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
-    //mat3 frg_tbn;
     vec3 frg_mesh_bary;
     vec3 frg_displacement;
   }
@@ -49,87 +47,62 @@ fragment_interface fif_terrain : ub_frg_fwd : ub_frg_fwd_lighting {
   }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
+libblock lib_ground_vtx_base : ub_frgX {
   struct TerrainData {
-    vec3 _meshPos;
-    vec4 _baseWorldPos;
-    vec4 _terrainPos;
-    vec3 displacement;
+    vec4 true_wpos;
+    vec4 new_pos;
+    vec3 signal;
     float radius;
   };
 
-
   TerrainData vs_compute_position(vec3 pos) {
     TerrainData TD;
-    TD._meshPos = pos;
-    mat4 matO2W  = inverse(v) * m;
-    vec4 base_pos = matO2W * vec4(pos, 1);
-    TD._baseWorldPos = base_pos;
+    mat4 matO2W   = inverse(v) * m;
+    vec4 wave_pos = matO2W * vec4(pos, 1);
+    float radius  = length(wave_pos.xz);
 
-    float speed   = Time * 1.65;
-    float baseamp = 5;
-    float radius  = length(base_pos.xz);
-
-    float displace = baseamp * sin(radius*0.1);
-    vec4 displaced = base_pos + vec4(0,displace,0,0);
-    TD.displacement  = vec3(0,displace,0);
-    TD._terrainPos = displaced;
-    TD.radius  = radius;
+    TD.signal    = vec3(0);
+    TD.true_wpos = wave_pos;
+    TD.new_pos   = vec4(pos, 1);
+    TD.radius    = radius;
     return TD;
-  }
-}
-libblock lib_ground_vtx : ub_frgX : lib_ground_vtx_base {
-
-  vec4 vs_common_mono(vec4 pos, vec3 nrm, vec3 bin) {
-    vec4 cpos = v * pos;
-
-    TerrainData TD = vs_compute_position(pos.xyz);
-    frg_wpos   = TD._terrainPos;
-
-    float D = clamp(length(pos) * 0.0001, 0, 1);
-    vec3 C       = mix(nrm, vec3(0.5), D);
-    float intens = mix(0.5 + TD.displacement.y * 0.1, 0.5, D);
-
-    vec3 wnormal    = normalize(mrot * nrm);
-
-    //frg_tbn[0] = TD._baseWorldPos.xyz;
-    //frg_tbn[1] = binormal.xyz;
-    frg_mesh_bary = wnormal.xyz;
-
-    // compute eye to worldpos direction vector
-    frg_displacement = TD.displacement; 
-    return TD._terrainPos;
-  }
-
-  void vs_common_stereo(vec4 pos, vec3 nrm, vec3 bin) {
   }
 }
 
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_ground_mono //
-    : vif_terrain         //
-    : lib_ground_vtx {       //
-  vec4 _terrainPos = vs_common_mono(position, normal, binormal);
-  gl_Position  = mvp * _terrainPos;
+    : vif_terrain            //
+    : lib_ground_vtx_base {  //
+  vec4 cpos = v * position;
+
+  TerrainData TD = vs_compute_position(position.xyz);
+
+  frg_wpos         = TD.new_pos;
+  frg_mesh_bary    = normal;
+  frg_displacement = vec3(0);
+
+  vec3 wnormal    = normalize(mrot * normal);
+  vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
+  vec3 wtangent   = cross(wbitangent, wnormal);
+
+  gl_Position = mvp * TD.new_pos;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_my_forward_depthprepass_mono //
-    : vif_my_depthprepass                      //
+    : vif_my_depthprepass                     //
     : lib_ground_vtx_base {                   //
-  x_pos _x = vs_compute_position(position);
-
-  vec4 _terrainPos = _x._terrainPos;
-  vec4 hpos    = mvp * _terrainPos;
-  gl_Position  = hpos;
-  frg_depth    = (hpos.z) / (hpos.w - 0.05);
+  TerrainData TD = vs_compute_position(position);
+  vec4 new_pos   = TD.new_pos;
+  vec4 hpos      = mvp * new_pos;
+  gl_Position    = hpos;
+  frg_depth      = (hpos.z) / (hpos.w - 0.05);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_ground_stereo               //
-    : vif_terrain_stereo                  //
-    : lib_ground_vtx                         //
+    : iface_vgbuffer_stereo                  //
+    : lib_ground_vtx_base                    //
     : extension(GL_NV_stereo_view_rendering) //
     : extension(GL_NV_viewport_array2) {     //
-  vs_common_stereo(position, normal, binormal);
   gl_Position                   = mvp_l * position;
   gl_SecondaryPositionNV        = mvp_r * position;
   gl_Layer                      = 0;
@@ -138,15 +111,7 @@ vertex_shader vs_ground_stereo               //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
-
   vec3 bary = frg_mesh_bary;
-
-  vec3 dPdu   = dFdx(frg_wpos.xyz);
-  vec3 dPdv   = dFdy(frg_wpos.xyz);
-  vec3 normal = cross(dPdu, dPdv); // Corrected normal calculation
-  normal      = normalize(normal);
-
-  //out_color = vec4(mod(frg_wpos.xyz,10)*0.1, 1);
   out_color = vec4(bary, 1);
 }
 ///////////////////////////////////////////////////////////////
