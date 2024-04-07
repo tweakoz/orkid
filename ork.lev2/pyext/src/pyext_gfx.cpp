@@ -96,7 +96,9 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
       .def(
           "captureBuffer",
-          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf) -> bool { return fbi.get()->capture(rtb.get(), &capbuf); })
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf) -> bool {
+            return fbi.get()->capture(rtb.get(), &capbuf);
+          })
       .def(
           "captureAsFormat",
           [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf, std::string format) -> bool {
@@ -152,10 +154,10 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<txi_t>(module_lev2, "TextureInterface")
       .def(
           "createColorTexture",
-          [](const txi_t& the_txi, //
-             fvec4 color, //
-             int w, //
-             int h ) -> texture_ptr_t { //
+          [](const txi_t& the_txi,                           //
+             fvec4 color,                                    //
+             int w,                                          //
+             int h) -> texture_ptr_t {                       //
             return the_txi->createColorTexture(color, w, h); //
           })
       .def("__repr__", [](const txi_t& txi) -> std::string {
@@ -233,11 +235,10 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
       .def_buffer([](CaptureBuffer& capbuf) -> pybind11::buffer_info {
-
         pybind11::buffer_info rval;
-        switch(capbuf.format()){
-          case EBufferFormat::RGBA8:{
-            rval =  pybind11::buffer_info(
+        switch (capbuf.format()) {
+          case EBufferFormat::RGBA8: {
+            rval = pybind11::buffer_info(
                 capbuf._data,          // Pointer to buffer
                 sizeof(unsigned char), // Size of one scalar
                 pybind11::format_descriptor<unsigned char>::format(),
@@ -246,24 +247,24 @@ void pyinit_gfx(py::module& module_lev2) {
                 {1});              // Strides (in bytes) for each index
             break;
           }
-          case EBufferFormat::RGBA32F:{
-            rval =  pybind11::buffer_info(
-                capbuf._data,          // Pointer to buffer
+          case EBufferFormat::RGBA32F: {
+            rval = pybind11::buffer_info(
+                capbuf._data,  // Pointer to buffer
                 sizeof(float), // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                 // Number of dimensions
-                {capbuf.length()/4}, // Buffer dimensions
-                {4});              // Strides (in bytes) for each index
+                1,                     // Number of dimensions
+                {capbuf.length() / 4}, // Buffer dimensions
+                {4});                  // Strides (in bytes) for each index
             break;
           }
-          case EBufferFormat::R32F:{
-            rval =  pybind11::buffer_info(
-                capbuf._data,          // Pointer to buffer
+          case EBufferFormat::R32F: {
+            rval = pybind11::buffer_info(
+                capbuf._data,  // Pointer to buffer
                 sizeof(float), // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                 // Number of dimensions
-                {capbuf.length()/4}, // Buffer dimensions
-                {4});              // Strides (in bytes) for each index
+                1,                     // Number of dimensions
+                {capbuf.length() / 4}, // Buffer dimensions
+                {4});                  // Strides (in bytes) for each index
             break;
           }
           default:
@@ -283,6 +284,11 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
+  auto texture_asset_type = //
+      py::class_<TextureAsset, ::ork::asset::Asset, textureassetptr_t>(module_lev2, "TextureAsset")
+          .def_property_readonly("texture", [](textureassetptr_t ta) -> texture_ptr_t { return ta->_texture; });
+  type_codec->registerStdCodec<textureassetptr_t>(texture_asset_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
           .def(
@@ -301,46 +307,47 @@ void pyinit_gfx(py::module& module_lev2) {
               })
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
-          .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); });
+          .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
+          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto pfc_type = py::class_<PixelFetchContext,pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
-      .def_property(
-          "rtgroup",
-          [](pixelfetchctx_ptr_t pfc) -> rtgroup_ptr_t { return pfc->_rtgroup; },
-          [](pixelfetchctx_ptr_t pfc, rtgroup_ptr_t rtg) { pfc->_rtgroup = rtg; })
-      .def_property(
-          "rtgmask",
-          [](pixelfetchctx_ptr_t pfc) -> int { return pfc->miMrtMask; },
-          [](pixelfetchctx_ptr_t pfc, int mask) { pfc->miMrtMask = mask; })
-      .def_property_readonly(
-          "numValues",
-          [](pixelfetchctx_ptr_t pfc) -> int { return pfc->_pickvalues.size(); })
-      .def(
-          "value",
-          [type_codec](pixelfetchctx_ptr_t pfc, int index) -> py::object {
-            OrkAssert(index >= 0);
-            OrkAssert(index < pfc->_pickvalues.size());
-            auto encoded = type_codec->encode(pfc->_pickvalues[index]);
-            return encoded;
-          })
-      .def("dump", [](pixelfetchctx_ptr_t pfc) -> std::string {
-        std::string rval;
-        rval += FormatString("PixelFetchContext(%p){\n", &pfc);
-        rval += FormatString("  numvals: %zu\n", pfc->_pickvalues.size());
-        for (int i = 0; i < pfc->_pickvalues.size(); i++) {
-          auto& val = pfc->_pickvalues[i];
-          rval += FormatString("    val<%d> : %s\n", i, val.typestr().c_str());
-        }
-        rval += "}\n";
-        return rval;
-      })
-      .def("__repr__", [](pixelfetchctx_ptr_t pfc) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("PixelFetchContext(%p)", &pfc);
-        return fxs.c_str();
-      });
+  auto pfc_type = py::class_<PixelFetchContext, pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
+                      .def_property(
+                          "rtgroup",
+                          [](pixelfetchctx_ptr_t pfc) -> rtgroup_ptr_t { return pfc->_rtgroup; },
+                          [](pixelfetchctx_ptr_t pfc, rtgroup_ptr_t rtg) { pfc->_rtgroup = rtg; })
+                      .def_property(
+                          "rtgmask",
+                          [](pixelfetchctx_ptr_t pfc) -> int { return pfc->miMrtMask; },
+                          [](pixelfetchctx_ptr_t pfc, int mask) { pfc->miMrtMask = mask; })
+                      .def_property_readonly("numValues", [](pixelfetchctx_ptr_t pfc) -> int { return pfc->_pickvalues.size(); })
+                      .def(
+                          "value",
+                          [type_codec](pixelfetchctx_ptr_t pfc, int index) -> py::object {
+                            OrkAssert(index >= 0);
+                            OrkAssert(index < pfc->_pickvalues.size());
+                            auto encoded = type_codec->encode(pfc->_pickvalues[index]);
+                            return encoded;
+                          })
+                      .def(
+                          "dump",
+                          [](pixelfetchctx_ptr_t pfc) -> std::string {
+                            std::string rval;
+                            rval += FormatString("PixelFetchContext(%p){\n", &pfc);
+                            rval += FormatString("  numvals: %zu\n", pfc->_pickvalues.size());
+                            for (int i = 0; i < pfc->_pickvalues.size(); i++) {
+                              auto& val = pfc->_pickvalues[i];
+                              rval += FormatString("    val<%d> : %s\n", i, val.typestr().c_str());
+                            }
+                            rval += "}\n";
+                            return rval;
+                          })
+                      .def("__repr__", [](pixelfetchctx_ptr_t pfc) -> std::string {
+                        fxstring<256> fxs;
+                        fxs.format("PixelFetchContext(%p)", &pfc);
+                        return fxs.c_str();
+                      });
   type_codec->registerStdCodec<pixelfetchctx_ptr_t>(pfc_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<VertexBufferBase>(module_lev2, "VertexBufferBase");
@@ -435,9 +442,9 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto appwindow_typ = //
       py::class_<AppWindow, Window, appwindow_ptr_t>(module_lev2, "AppWindow")
-      .def_property_readonly("rootWidget", [](appwindow_ptr_t appwin) -> uiwidget_ptr_t { //
-        return appwin->_rootWidget;
-      });
+          .def_property_readonly("rootWidget", [](appwindow_ptr_t appwin) -> uiwidget_ptr_t { //
+            return appwin->_rootWidget;
+          });
   type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
   /////////////////////////////////////////////////////////////////////////////////
   auto dbufcontext_type = //
@@ -445,25 +452,25 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<dbufcontext_ptr_t>(dbufcontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto gpuev_t = py::class_<GpuEvent, gpuevent_ptr_t>(module_lev2, "GpuEvent")
-      .def(
-          "__repr__",
-          [](gpuevent_ptr_t ev) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("GpuEvent(%p)", ev.get());
-            return fxs.c_str();
-          })
-      .def_property_readonly("eventID", [](gpuevent_ptr_t ev) -> std::string { return ev->_eventID; });
+                     .def(
+                         "__repr__",
+                         [](gpuevent_ptr_t ev) -> std::string {
+                           fxstring<256> fxs;
+                           fxs.format("GpuEvent(%p)", ev.get());
+                           return fxs.c_str();
+                         })
+                     .def_property_readonly("eventID", [](gpuevent_ptr_t ev) -> std::string { return ev->_eventID; });
   type_codec->registerStdCodec<gpuevent_ptr_t>(gpuev_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto gpuevsink_t = py::class_<GpuEventSink, gpueventsink_ptr_t>(module_lev2, "GpuEventSink")
-      .def(
-          "__repr__",
-          [](gpueventsink_ptr_t ev) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("GpuEventSink(%p)", ev.get());
-            return fxs.c_str();
-          })
-      .def_property_readonly("eventID", [](gpueventsink_ptr_t ev) -> std::string { return ev->_eventID; });
+                         .def(
+                             "__repr__",
+                             [](gpueventsink_ptr_t ev) -> std::string {
+                               fxstring<256> fxs;
+                               fxs.format("GpuEventSink(%p)", ev.get());
+                               return fxs.c_str();
+                             })
+                         .def_property_readonly("eventID", [](gpueventsink_ptr_t ev) -> std::string { return ev->_eventID; });
   type_codec->registerStdCodec<gpueventsink_ptr_t>(gpuevsink_t);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

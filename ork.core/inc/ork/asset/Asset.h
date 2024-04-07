@@ -31,6 +31,7 @@ struct LoadRequest{
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();
   void waitForCompletion() const;
+  void enqueueAsync(void_lambda_t on_complete) const;
 
   asset_ptr_t _asset;
   AssetPath _asset_path;

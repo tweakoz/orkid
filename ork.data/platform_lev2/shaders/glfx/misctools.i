@@ -91,6 +91,7 @@ libblock lib_mmnoise {
     return 2.0 * (mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y)) - 1.0;
   }
 
+
 } // libblock lib_mmnoise {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,4 +146,35 @@ libblock lib_cellnoise {
     d1.xy    = min(d1.xy, d1.wz);
     return min(d1.x, d1.y) * (9.0 / 12.0); // return a value scaled to 0.0->1.0
   }
+}
+
+libblock lib_pnoise {
+
+// Dummy implementations for perlinNoise and perlinGradient functions.
+// You'll need to replace these with actual implementations.
+float perlinNoise(vec2 p) {
+    // Placeholder for actual Perlin noise computation
+    return 0.0; // Replace with actual noise calculation
+}
+
+vec2 perlinGradient(vec2 p) {
+    // Placeholder for gradient computation of Perlin noise at point p
+    return vec2(0.0); // Replace with actual gradient calculation
+}
+
+vec4 perlinNoiseWithNormal(vec2 p) {
+    // Placeholder for Perlin noise function and gradient calculation
+    float noiseValue = perlinNoise(p);
+    vec2 grad = perlinGradient(p);
+
+    // Construct the normal. In 2D, the normal's x and y components are derived from the gradient,
+    // and the z component is set to 1. Then, normalize the vector.
+    // Since we're working in 2D and returning a 3D normal, assume a "flat" z-component for the gradient.
+    vec3 normal = normalize(vec3(-grad, 1.0));
+
+    // Combine the noise value and the normal into a vec4
+    return vec4(noiseValue, normal);
+}
+
+
 }

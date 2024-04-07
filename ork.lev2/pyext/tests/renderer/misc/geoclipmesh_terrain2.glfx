@@ -11,6 +11,7 @@ import "orkshader://misctools.i";
 uniform_set ub_frgX {
   float Time;
   vec3 EyePostion;
+  sampler2D height_map;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -64,85 +65,12 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
     vec3 normal;
   };
 
-  /////////////////////////////////////////////////////////
-  // Base mountain terrain generation
-  /////////////////////////////////////////////////////////
-
-  float generateMountain(vec3 position, int numOctaves) {
-    float mountain = 0.0;
-    for (int i = 0; i < numOctaves; i++) {
-      float amp = 500.0 * pow(0.5, float(i));
-      float frq = pow(2.0, float(i)) * 0.0003;
-      mountain += noise(position * frq) * amp;
-    }
-    return mountain;
-  }
-
-  /////////////////////////////////////////////////////////
-  // Detail enhancement
-  /////////////////////////////////////////////////////////
-
-  float addDetail(vec3 position, int startOctave, int numOctaves, float ampFactor, float frqFactor) {
-    float detail = 0.0;
-    for (int i = startOctave; i < numOctaves; i++) {
-      float amp = 500.0 * pow(0.5, float(i)) * ampFactor;
-      float frq = pow(2.0, float(i)) * frqFactor;
-      detail += noise(position * frq) * amp;
-    }
-    return detail;
-  }
-
-  /////////////////////////////////////////////////////////
-  // Water flow paths approximation
-  /////////////////////////////////////////////////////////
-
-  float calculateWaterFlow(vec3 position) {
-    return noise(position * 0.005 + vec3(0.0, 1000.0, 0.0));
-  }
-
-  /////////////////////////////////////////////////////////
-  // Sediment displacement simulation
-  /////////////////////////////////////////////////////////
-
-  float simulateSediment(vec3 position) {
-    return noise(position * 0.02 + vec3(0.0, 500.0, 0.0));
-  }
-
-  /////////////////////////////////////////////////////////
-  // Erosion effect based on water flow and sediment
-  /////////////////////////////////////////////////////////
-
-  float applyErosion(float waterFlow, float sediment) {
-    return mix(0.85, 1.0, clamp(waterFlow * 1.5 - sediment * 0.5, 0.0, 1.0));
-  }
-
-  /////////////////////////////////////////////////////////
-  // Enhanced detail addition based on sediment and erosion
-  /////////////////////////////////////////////////////////
-
-  float addEnhancedDetail(
-      vec3 position, float waterFlow, float sediment, int startOctave, int numOctaves, float baseAmp, float baseFrq) {
-    float detail            = 0.0;
-    float detailAmpModifier = mix(0.5, 2.0, sediment);  // Higher sediment, more detail
-    float detailFrqModifier = mix(2.0, 0.5, waterFlow); // Higher water flow, less detail frequency
-
-    for (int i = startOctave; i < numOctaves; i++) {
-      float amp = baseAmp * pow(0.5, float(i)) * detailAmpModifier;
-      float frq = baseFrq * pow(2.0, float(i)) * detailFrqModifier;
-      detail += noise(position * frq) * amp;
-    }
-    return detail;
-  }
 
   /////////////////////////////////////////////////////////
 
   float computeTerrainFull(vec3 pos) {
-    float mountain  = generateMountain(pos.xyz, 8);
-    float waterFlow = calculateWaterFlow(pos.xyz);
-    float sediment  = simulateSediment(pos.xyz);
-    float detail    = addEnhancedDetail(pos.xyz, waterFlow, sediment, 5, 12, 0.025, 50.0 * 0.0003);
-    float erosion   = applyErosion(waterFlow, sediment);
-    float displace  = mountain * erosion + detail * 100.0;
+    float h  = texture(height_map, pos.xz*0.0015).r;
+    float displace  = h * 60.0;
     return displace;
   }
 
@@ -240,45 +168,8 @@ fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
   //vec3 dPdv     = dFdy(frg_wpos.xyz);
   //vec3 normal   = normalize(cross(dPdu, dPdv));
   vec3 normal = normalize(frg_normal);
-  float L       = dot(normal, vec3(0, 1, 0));
-  // Calculate material weights
-  float height     = frg_wpos.y;
-  float slope      = 1.0 - abs(dot(normalize(normal.xyz), vec3(0, 1, 0)));
-  slope            = pow(slope * 2, 1.5);
-  vec4 mat_weights = vec4(0.0); // rock, snow, grass weights
 
-  // Determine if the area is steep enough to be considered rock
-  // float rock_weight = clamp(slope - 0.50, 0.0, 1.0); // Adjust 0.20 if needed for steeper slopes
-  float rockThreshold   = 0.1;                        // Adjust this value as needed
-  float rock_weight     = step(rockThreshold, slope); // step function is more appropriate for a hard threshold
-  float inv_rock_weight = 1.0 - rock_weight;
-  // Determine the snow weight based on height, but only in less steep areas
-  float height_ramp   = clamp(height / 700.0, 0.0, 1.0);
-  float sg_height_sel = smoothstep(0.8, 0.9, height_ramp);
-  float dg_height_sel = 1.0 - smoothstep(0.3, 0.4, height_ramp);
-
-  // snow
-
-  float snow_weight   = sg_height_sel;
-  float desert_weight = dg_height_sel;
-
-  float grass_weight = 1.0 - (snow_weight + desert_weight);
-
-  // Define material colors (These can be uniforms or constants)
-  vec3 rock_color   = vec3(0.5, 0.5, 0.55); // Dark gray
-  vec3 snow_color   = vec3(1.0, 1.0, 1.0);  // White
-  vec3 grass_color  = vec3(0.0, 1.0, 0.0);  // Green
-  vec3 desert_color = vec3(1.0, 0.9, 0.7);  // Green
-
-  // Blend material colors based on weights
-  vec3 terrain_color = rock_weight * rock_color + snow_weight * inv_rock_weight * snow_color +
-                       grass_weight * inv_rock_weight * grass_color + desert_weight * inv_rock_weight * desert_color;
-
-  // Apply lighting and fog
-  vec3 C         = (terrain_color * 0.75); // + vec3(0.5, 0.5, 0.5); // Adjust if necessary
-  vec3 lit_color = C * L;                  // Apply basic lighting model
-  // lit_color = vec3(slope);
-  vec4 final_color = vec4(lit_color, alpha); // Apply fog effect via alpha
+  vec4 final_color = vec4(normal, alpha); // Apply fog effect via alpha
 
   out_color = final_color;
 }

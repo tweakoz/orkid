@@ -29,6 +29,7 @@ namespace ork {
 void pyinit_math(py::module& module_core);
 void pyinit_dataflow(py::module& module_core);
 void pyinit_datablock(py::module& module_core);
+void pyinit_asset(py::module& module_core);
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -290,6 +291,15 @@ PYBIND11_MODULE(_core, module_core) {
   auto varmaptype_t =                                                         //
       py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap") //
           .def(py::init<>())
+          .def(py::init([](py::dict dict) -> varmap::varmap_ptr_t {
+            auto vmap = std::make_shared<varmap::VarMap>();
+            for (auto item : dict) {
+              auto key = py::cast<std::string>(item.first);
+              auto val = item.second;
+              vmap->setValueForKey(key, val);
+            }
+            return vmap;
+          }))
           .def(
               "__setattr__",                                                                    //
               [type_codec](varmap::varmap_ptr_t vmap, const std::string& key, py::object val) { //
@@ -375,6 +385,7 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_math(module_core);
   pyinit_dataflow(module_core);
   pyinit_datablock(module_core);
+  pyinit_asset(module_core);
   /////////////////////////////////////////////////////////////////////////////////
   static auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;

@@ -37,6 +37,9 @@ LoadRequest::LoadRequest(const AssetPath& p,const vars_t& vars) //
   , _asset_vars(vars) { //
 }
 
+void LoadRequest::enqueueAsync(void_lambda_t on_complete) const{
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -16,6 +16,7 @@ lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.scenegraph import createSceneGraph
 from signal import signal, SIGINT
+from PIL import Image
 
 tokens = CrcStringProxy()
 
@@ -82,7 +83,7 @@ class TERRAINAPP(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
-    self.height = 3.8 # 1000.0
+    self.height = 1.8 # 1000.0
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #
@@ -141,6 +142,19 @@ class TERRAINAPP(object):
     #######################################
     # ground material (water)
     #######################################
+    hmap_path = path.orkid()/"ork.data"/"src"/"terrain"/"testhmap2_2048.png"
+    def on_complete():
+      print("on_complete")
+      assert(False)
+    self.hmlrq = asset.LoadRequest(
+      str(hmap_path),
+      { "hello":"world"
+      }
+    )
+    print(self.hmlrq)
+    self.hmlrq.enqueueAsync(on_complete)
+    # load image in python
+    self.cpu_heightmap = Image.open(str(hmap_path))
 
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -149,14 +163,16 @@ class TERRAINAPP(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain2.glfx")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
     freestyle = gmtl.freestyle
     assert(freestyle)
     param_m= freestyle.param("m")
+    param_hmap = freestyle.param("height_map")
     gmtl.bindParam(param_m,tokens.RCFD_M )
+    
 
     #######################################
     # ground drawable
@@ -164,9 +180,9 @@ class TERRAINAPP(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 4
+    gdata.numLevels = 8
     gdata.ringSize = 512
-    gdata.baseQuadSize = 1.0/16
+    gdata.baseQuadSize = 1.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
@@ -199,10 +215,19 @@ class TERRAINAPP(object):
     #print(scalar)
     self.pos_offset  += vec3(view_vel.x,0,view_vel.z)*DT*100.0
 
-    displacement = computeTerrainDisplacement(self.pos_offset)
+    displacement = 0.0
+    image_coord = self.pos_offset * 0.0015
+    image_coord.x *= self.cpu_heightmap.width
+    image_coord.z *= self.cpu_heightmap.height
+    image_coord.x = image_coord.x % self.cpu_heightmap.width
+    image_coord.z = image_coord.z % self.cpu_heightmap.height
+    #image_coord.x = (self.cpu_heightmap.width-1) - image_coord.x
+    image_coord.z = (self.cpu_heightmap.height-1) - image_coord.z
+    hmap_read = self.cpu_heightmap.getpixel((int(image_coord.x), int(image_coord.z)))
+    displacement = 60 * hmap_read / 65536.0 
     displaced_offset = self.pos_offset + vec3(0,displacement,0)
     
-    self.uicam.positionOffset = self.uicam.positionOffset*0.99+displaced_offset*0.01
+    self.uicam.positionOffset = self.uicam.positionOffset*0.9+displaced_offset*0.1
     self.uicam.updateMatrices()
     self.camera.copyFrom( self.uicam.cameradata )
 
