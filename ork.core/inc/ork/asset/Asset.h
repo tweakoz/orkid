@@ -17,13 +17,17 @@
 namespace ork::asset {
 
 struct LoadRequest;
+struct AssetLoader;
 
 using vars_t          = varmap::VarMap;
 using vars_ptr_t      = std::shared_ptr<vars_t>;
 using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
 using loadrequest_ptr_t = std::shared_ptr<LoadRequest>;
+using assetloader_ptr_t = std::shared_ptr<AssetLoader>;
 
 struct LoadRequest{
+
+  using event_lambda_t = std::function<void(uint32_t,varmap::var_t)>;
 
   LoadRequest();
   LoadRequest(const AssetPath& p);
@@ -38,6 +42,8 @@ struct LoadRequest{
   AssetPath _asset_path;
   vars_ptr_t _asset_vars;
   void_lambda_t _on_load_complete;
+  event_lambda_t _on_event;
+
   std::atomic<int> _partial_load_counter = 0;
 };
 

@@ -146,13 +146,22 @@ class TERRAINAPP(object):
     def on_complete():
       print("on_complete")
       assert(False)
+    def on_event(evcode,data):
+      if evcode == tokens.beginLoadMainThread.hashed:
+        print("beginLoadMainThread data<%s>"%(data))
+      elif evcode == tokens.endLoadMainThread.hashed:
+        print("endLoadMainThread data<%s>"%(data))
+      else:
+        print("unhandled loadreq event<%x> data<%s>"%(evcode,data))
     self.hmlrq = asset.enqueueLoad(
-      str(hmap_path),
-      { "hello":"world"
-      }
+      path = str(hmap_path),
+      vars = { 
+        "hello":"world"
+      },
+      onEvent = on_event
     )
-    print(self.hmlrq)
-    self.hmlrq.enqueueAsync(on_complete)
+    #print(self.hmlrq)
+    #self.hmlrq.enqueueAsync(on_complete,on_event)
     # load image in python
     self.cpu_heightmap = Image.open(str(hmap_path))
 

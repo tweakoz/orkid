@@ -14,6 +14,7 @@
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <math.h>
+#include <ork/lev2/lev2_asset.h>
 #if defined(ENABLE_ISPC)
 #include <ispc_texcomp.h>
 #endif
@@ -282,6 +283,10 @@ void astctestcomp() {
   printf("DONE ASTC compression [SLOW] time<%g> MPPS<%g>\n", time, MPPS);
 }
 #endif
+
+asset::loadrequest_ptr_t Texture::loadRequest() const {
+  return _asset ? _asset->_load_request : asset::loadrequest_ptr_t(nullptr);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

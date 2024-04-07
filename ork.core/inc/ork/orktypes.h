@@ -107,7 +107,7 @@ using object_rawconstptr_t = const Object*;
 namespace asset {
 struct Asset;
 class AssetSet;
-class AssetLoader;
+struct AssetLoader;
 
 using assetset_ptr_t   = std::shared_ptr<AssetSet>;
 using asset_ptr_t      = std::shared_ptr<Asset>;

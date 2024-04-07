@@ -17,6 +17,8 @@ static logchannel_ptr_t logchan_mioRXGM = logger()->createChannel("xgmREAD", fve
 
 bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
+  auto asset_load_req = mdl->_getLoadRequest();
+
   // printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
 
   hexdumpbytes(datablock->_storage.data(), 64);
@@ -342,7 +344,14 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           // logchan_mioRXGM->log("ReadVB NumVerts<%d> VtxSize<%d>d, ivbnum, pvb->GetVtxSize());
           void* poutverts = context->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
+
+            if( asset_load_req and asset_load_req->_on_event ){
+              asset_load_req->_on_event("beginCopyVertexBuffer"_crcu,nullptr);
+            }
             memcpy_fast(poutverts, pverts, ivblen);
+            if( asset_load_req and asset_load_req->_on_event ){
+              asset_load_req->_on_event("endCopyVertexBuffer"_crcu,nullptr);
+            }
             cluster->_vertexBuffer->SetNumVertices(ivbnum);
             if (efmt == EVtxStreamFormat::V12N12B12T8I4W4) {
               auto pv = (const SVtxV12N12B12T8I4W4*)pverts;

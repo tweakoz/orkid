@@ -12,6 +12,7 @@
 #include "gl.h"
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/ui.h>
+#include <ork/lev2/lev2_asset.h>
 #include <ork/file/file.h>
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
@@ -21,6 +22,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
+  auto asset_load_req = ptex->loadRequest();
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -54,9 +56,25 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
     if (ptex->_vars->hasKey("preproc")) {
       auto preproc        = ptex->_vars->typedValueForKey<Texture::proc_t>("preproc").value();
       auto orig_datablock = datablock;
+      if(asset_load_req and asset_load_req->_on_event){
+        asset_load_req->_on_event("beginPreProc"_crcu, nullptr);
+      }
       auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
+      if(asset_load_req and asset_load_req->_on_event){
+        asset_load_req->_on_event("beginPostProc"_crcu, nullptr);
+      }
+    }
+
+    if(asset_load_req and asset_load_req->_on_event){
+      asset_load_req->_on_event("beginLoadMainThread"_crcu, nullptr);
     }
     this->_loadXTXTextureMainThreadPart(load_req);
+    if(asset_load_req and asset_load_req->_on_event){
+      asset_load_req->_on_event("endLoadMainThread"_crcu,nullptr);
+    }
+    if(asset_load_req and asset_load_req->_on_event){
+      asset_load_req->_on_event("loadComplete"_crcu,nullptr);
+    }
   };
   opq::mainSerialQueue()->enqueue(lamb);
   ///////////////////////////////////////////////
@@ -66,6 +84,9 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
+
+  auto asset_load_req = req.ptex->loadRequest();
+
   mTargetGL.makeCurrentContext();
   mTargetGL.debugPushGroup("_loadXTXTextureMainThreadPart");
   OrkAssert(req._cmipchain.get() != nullptr);
@@ -138,7 +159,13 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   if (req.ptex->_vars->hasKey("postproc")) {
     auto dblock    = req._inpstream._datablock;
     auto postproc  = req.ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
+    if(asset_load_req and asset_load_req->_on_event){
+      asset_load_req->_on_event("beginPostProc"_crcu,nullptr);
+    }
     auto postblock = postproc(req.ptex, &mTargetGL, dblock);
+    if(asset_load_req and asset_load_req->_on_event){
+      asset_load_req->_on_event("endPostProc"_crcu,nullptr);
+    }
     OrkAssert(postblock);
   } else {
     // printf("ptex<%p> no postproc\n", ptex);

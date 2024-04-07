@@ -91,6 +91,10 @@ bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
+  auto asset_load_req = req.ptex->loadRequest();
+  if(asset_load_req and asset_load_req->_on_event){
+    asset_load_req->_on_event("beginLoadMainThread"_crcu,nullptr);
+  }
   mTargetGL.makeCurrentContext();
   mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req._ddsheader;
@@ -286,6 +290,14 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   }
 
   mTargetGL.debugPopGroup();
+
+  if(asset_load_req and asset_load_req->_on_event){
+    asset_load_req->_on_event("endLoadMainThread"_crcu,nullptr);
+  }
+  if(asset_load_req and asset_load_req->_on_event){
+    asset_load_req->_on_event("loadComplete"_crcu,nullptr);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
