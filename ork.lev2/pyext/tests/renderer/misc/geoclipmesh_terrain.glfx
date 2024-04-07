@@ -59,42 +59,36 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
     float radius;
   };
 
-TerrainData vs_compute_position(vec3 mesh_pos) {
+  TerrainData vs_compute_position(vec3 mesh_pos) {
     TerrainData TD;
     mat4 matO2W  = inverse(v) * m;
     vec4 vfixPos = matO2W * vec4(mesh_pos, 1);
     float radius = length(vfixPos.xz);
 
-    float mountain = 0.0;
-    float detail = 0.0;
+    float mountain        = 0.0;
+    float detail          = 0.0;
     const int num_octaves = 8; // Reduced for performance
     for (int i = 0; i < num_octaves; i++) {
-        float amp = 500.0 * pow(0.5, float(i)); // Adjusted for a more natural falloff
-        float frq = pow(2.0, float(i)) * 0.0003;
-        mountain += noise(vfixPos.xyz * frq) * amp;
+      float amp = 500.0 * pow(0.5, float(i)); // Adjusted for a more natural falloff
+      float frq = pow(2.0, float(i)) * 0.0003;
+      mountain += noise(vfixPos.xyz * frq) * amp;
 
-        // Adding finer detail at higher octaves
-        if (i > 4) {
-            detail += noise(vfixPos.xyz * frq * 50.0) * (amp * 0.025);
-        }
+      // Adding finer detail at higher octaves
+      if (i > 4) {
+        detail += noise(vfixPos.xyz * frq * 50.0) * (amp * 0.025);
+      }
     }
 
     float displace = mountain + detail; // Combine base terrain and detail
 
-    // Fading effect based on distance to simulate atmospheric perspective
-    float fade = 0.0; //smoothstep(500.0, 1000.0, radius);
-    displace *= (1.0 - fade);
-
-    TD.finalPos = vec4(vfixPos.x, vfixPos.y + displace, vfixPos.z, 1);
+    TD.finalPos     = vec4(vfixPos.x, vfixPos.y + displace, vfixPos.z, 1);
     TD.displacement = vec3(0, displace, 0);
-    TD.vfixPos = vfixPos;
-    TD.meshPos = mesh_pos;
-    TD.meshPos2 = mesh_pos + TD.displacement;
-    TD.radius = radius;
+    TD.vfixPos      = vfixPos;
+    TD.meshPos      = mesh_pos;
+    TD.meshPos2     = mesh_pos + TD.displacement;
+    TD.radius       = radius;
     return TD;
-}
-
-
+  }
 }
 
 ///////////////////////////////////////////////////////////////
@@ -113,14 +107,14 @@ vertex_shader vs_ground_mono //
   vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
   vec3 wtangent   = cross(wbitangent, wnormal);
 
-  gl_Position = mvp * vec4(TD.meshPos2,1);
+  gl_Position = mvp * vec4(TD.meshPos2, 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_my_forward_depthprepass_mono //
     : vif_my_depthprepass                     //
     : lib_ground_vtx_base {                   //
   TerrainData TD = vs_compute_position(position.xyz);
-  vec4 meshPos   = vec4(TD.meshPos2,1);
+  vec4 meshPos   = vec4(TD.meshPos2, 1);
   vec4 hpos      = mvp * meshPos;
   gl_Position    = hpos;
   frg_depth      = (hpos.z) / (hpos.w - 0.05);
@@ -139,17 +133,19 @@ vertex_shader vs_ground_stereo               //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
-  vec3 eye_delta   = frg_wpos.xyz - EyePostion;
+  vec3 eye_delta     = frg_wpos.xyz - EyePostion;
   float eye_distance = length(eye_delta);
-  float fog_factor = eye_distance / (3000.0+EyePostion.y*10);
-  float alpha = clamp( 1.0-fog_factor,  0, 1);
-  alpha = pow(alpha,0.25);
-  vec3 bary = frg_mesh_bary;
-  vec3 dPdu   = dFdx(frg_wpos.xyz);
-  vec3 dPdv   = dFdy(frg_wpos.xyz);
-  vec3 normal = normalize(cross(dPdu, dPdv)); // Corrected normal calculation
-  //out_color = vec4(normal*0.5+bary*0.5, 1);
-  out_color = vec4(normal, alpha);
+  float fog_factor   = eye_distance / (3000.0 + EyePostion.y * 10);
+  float alpha        = clamp(1.0 - fog_factor, 0, 1);
+  alpha              = pow(alpha, 0.25);
+  vec3 bary          = frg_mesh_bary;
+  vec3 dPdu          = dFdx(frg_wpos.xyz);
+  vec3 dPdv          = dFdy(frg_wpos.xyz);
+  vec3 normal        = normalize(cross(dPdu, dPdv)); // Corrected normal calculation
+  // out_color = vec4(normal*0.5+bary*0.5, 1);
+  float L = dot(normal,vec3(0,1,0));
+  vec3 C = (normal*0.5)+vec3(0.5,0.5,0.5);
+  out_color = vec4(C*L, alpha);
   //out_color = vec4(bary, alpha);
 }
 ///////////////////////////////////////////////////////////////

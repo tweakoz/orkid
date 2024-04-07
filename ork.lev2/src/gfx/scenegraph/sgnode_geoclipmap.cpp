@@ -126,13 +126,7 @@ struct ClipMapRenderImpl {
     fmtx4 v_offset;
     fvec3 eye_pos = vmtx_mono.inverse().translation();
     fvec3 eye_dir = vmtx_mono.inverse().zNormal();
-    fplane3 gnd_plane(0, 1, 0, 0);
-    float distance = 0.0;
-    fvec3 result;
-    bool isect = gnd_plane.Intersect(fray3(eye_pos, eye_dir), distance, result);
-
     fvec3 center = fvec3(eye_pos.x, 0.0f, eye_pos.z);
-    // center += result*-1.0f;
     center += fvec3(eye_dir.x, 0.0f, eye_dir.z);// * powf(eye_pos.y, 1.0) * -1.0f;
     v_offset.setTranslation(center);
 

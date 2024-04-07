@@ -162,8 +162,9 @@ class WaterApp(object):
     view_vel = self.zdir*wasd_dir.z 
     view_vel += xdir*wasd_dir.x
     
-    view_vel *= 0.3
-    
+    scalar = self.uicam.loc.y
+    view_vel *= 0.1 * pow(scalar,1.0)
+    #print(scalar)
     self.pos_offset  += vec3(view_vel.x,0,view_vel.z)*DT*100.0
 
     displaced_offset = self.pos_offset + vec3(0,self._computeTerrainDisplacement(self.pos_offset),0)
