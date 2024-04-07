@@ -50,13 +50,9 @@ constexpr const char* block_regex = "(fxconfig|uniform_set|uniform_block|"
                                     "tessctrl_shader|tesseval_shader|"
                                     "geometry_interface|fragment_interface|"
                                     "geometry_shader|fragment_shader|"
-#if defined(ENABLE_COMPUTE_SHADERS)
                                     "compute_shader|compute_interface|"
-#endif
-#if defined(ENABLE_NVMESH_SHADERS)
                                     "nvtask_shader|nvmesh_shader|"
                                     "nvtask_interface|nvmesh_interface|"
-#endif
                                     "technique|pass)";
 
 ///////////////////////////////////////////////////////////////////////////////

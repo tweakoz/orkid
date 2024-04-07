@@ -19,8 +19,8 @@ vertex_interface vface_sprite : uset_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 velocity : BINORMAL;
-    vec2 lw : TEXCOORD0; // size
-    vec2 ra : TEXCOORD1; // random and age
+    vec2 lw : TEXCOORD1; // size
+    vec2 ra : TEXCOORD2; // random and age
   }
   outputs {
     vec3 geo_cnrm; // NOT an array
@@ -31,6 +31,14 @@ vertex_interface vface_sprite : uset_vtx {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_sprite : vface_sprite {
+  gl_Position = position;
+  geo_cnrm = normal;
+  geo_vel  = velocity;
+  geo_lw   = lw;
+  geo_ra = ra;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite_tex : vface_sprite {
   gl_Position = position;
   geo_cnrm = normal;
   geo_vel  = velocity;
@@ -133,7 +141,7 @@ technique tgradparticle_sprites {
 technique ttexparticle_sprites {
   fxconfig = fxcfg_sprite_default;
   pass p0 {
-    vertex_shader   = vs_vtxtexcolor;
+    vertex_shader   = vs_sprite_tex;
     geometry_shader = gs_sprite;
     fragment_shader = ps_modtexclr;
     state_block     = sb_default;

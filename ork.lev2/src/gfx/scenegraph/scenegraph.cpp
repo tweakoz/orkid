@@ -493,7 +493,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   DB->copyCameras(*cameras.get());
 
   auto cam = cameras->find("spawncam");
-  auto eye = cam->GetEye();
+  //auto eye = cam->GetEye();
 
   on_enqueue(DB);
 

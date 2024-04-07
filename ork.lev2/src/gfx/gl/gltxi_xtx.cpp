@@ -42,7 +42,7 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
    //for (auto k : keys) {
     //printf("xtx mipchain varmap-key<%s>\n", k.c_str());
   //}
-   //for (auto k : ptex->_varmap.dumpkeys()) {
+   //for (auto k : ptex->_vars->dumpkeys()) {
    //printf("xtx ptex varmap-key<%s>\n", k.c_str());
   //}
   void_lambda_t lamb = [=]() {
@@ -51,8 +51,8 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
     // texture preprocssing, if any..
     //  on main thread.
     /////////////////////////////////////////////
-    if (ptex->_varmap.hasKey("preproc")) {
-      auto preproc        = ptex->_varmap.typedValueForKey<Texture::proc_t>("preproc").value();
+    if (ptex->_vars->hasKey("preproc")) {
+      auto preproc        = ptex->_vars->typedValueForKey<Texture::proc_t>("preproc").value();
       auto orig_datablock = datablock;
       auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
     }
@@ -73,7 +73,7 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
   GL_ERRORCHECK();
-  req.ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
+  req.ptex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
   if (req.ptex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, req.ptex->_debugName);
   }
@@ -135,9 +135,9 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
     //OrkAssert(false);
   }
 
-  if (req.ptex->_varmap.hasKey("postproc")) {
+  if (req.ptex->_vars->hasKey("postproc")) {
     auto dblock    = req._inpstream._datablock;
-    auto postproc  = req.ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
+    auto postproc  = req.ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
     auto postblock = postproc(req.ptex, &mTargetGL, dblock);
     OrkAssert(postblock);
   } else {

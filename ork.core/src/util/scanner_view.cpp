@@ -114,8 +114,8 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
     bool is_open  = (t.text == "{");
     bool is_close = (t.text == "}");
 
-    // printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
-    //		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
+    if(0)printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+    		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
 
     fflush(stdout);
 

@@ -28,6 +28,14 @@ template <typename val_t> struct TVarMap {
   using str_transformer_map_t = std::unordered_map<ork::TypeId::hashtype_t, str_transformer_t>;
   using map_t = std::map<key_t, value_type>;
   ///////////////////////////////////////////////////////////////////////////
+  std::shared_ptr<TVarMap> clone() const{
+    auto rval = std::make_shared<TVarMap>();
+    for( const auto& item : _themap ){
+      rval->_themap[item.first] = item.second;
+    }
+    return rval;
+  } 
+  ///////////////////////////////////////////////////////////////////////////
   static const val_t& nill() {
     static const val_t noval = nullptr;
     return noval;
@@ -208,6 +216,7 @@ template <typename val_t> struct TVarMap {
 };
 using var_t             = svar128_t;
 using VarMap            = TVarMap<var_t>;
+using varmap_t          = TVarMap<var_t>;
 using varmap_ptr_t      = std::shared_ptr<VarMap>;
 using varmap_constptr_t = std::shared_ptr<const VarMap>;
 

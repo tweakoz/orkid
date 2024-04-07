@@ -231,33 +231,39 @@ void TopNode::parse() {
           sh->parse(_parser,scanview);
           program->addBlockNode(sh);
         } else if (tok.text == "compute_shader") {
-#if defined(ENABLE_COMPUTE_SHADERS)
           auto sh = std::make_shared<ComputeShaderNode>();
           sh->parse(_parser,scanview);
+//#if defined(ENABLE_COMPUTE_SHADERS)
           program->addBlockNode(sh);
-#endif
+//#endif
         } else if (tok.text == "compute_interface") {
-#if defined(ENABLE_COMPUTE_SHADERS)
           auto sif = std::make_shared<ComputeInterfaceNode>();
           sif->parse(_parser,scanview);
+//#if defined(ENABLE_COMPUTE_SHADERS)
           program->addBlockNode(sif);
-#endif
-#if defined(ENABLE_NVMESH_SHADERS)
+//#endif
         } else if (tok.text == "nvtask_shader") {
           auto sh = std::make_shared<NvTaskShaderNode>();
           sh->parse(_parser,scanview);
+#if defined(ENABLE_NVMESH_SHADERS)
           program->addBlockNode(sh);
+#endif
         } else if (tok.text == "nvmesh_shader") {
           auto sh = std::make_shared<NvMeshShaderNode>();
           sh->parse(_parser,scanview);
+#if defined(ENABLE_NVMESH_SHADERS)
           program->addBlockNode(sh);
+#endif
         } else if (tok.text == "nvtask_interface") {
           auto sif = std::make_shared<NvTaskInterfaceNode>();
           sif->parse(_parser,scanview);
+#if defined(ENABLE_NVMESH_SHADERS)
           program->addBlockNode(sif);
+#endif
         } else if (tok.text == "nvmesh_interface") {
           auto sif = std::make_shared<NvMeshInterfaceNode>();
           sif->parse(_parser,scanview);
+#if defined(ENABLE_NVMESH_SHADERS)
           program->addBlockNode(sif);
 #endif
         } else if (tok.text == "technique") {

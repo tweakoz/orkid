@@ -66,7 +66,7 @@ asset::loadrequest_ptr_t XgmModel::_getLoadRequest() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
+bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::vars_ptr_t vars) {
 
   if (not logchan_mioR->_enabled)
     logchan_mioR->_enabled = FORCE_MODEL_REGEN();
@@ -77,7 +77,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
   /////////////////////
   // merge in asset vars
   /////////////////////
-  mdl->_varmap.mergeVars(vars);
+  if(vars){
+    mdl->_varmap.mergeVars(*vars);
+  }
   /////////////////////
   auto load_req = mdl->_getLoadRequest();
   if (load_req) {
@@ -100,7 +102,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
     /////////////////////
     // merge in asset vars
     /////////////////////
-    datablock->_vars->mergeVars(vars);
+    if(vars){
+      datablock->_vars->mergeVars(*vars);
+    }
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
   }

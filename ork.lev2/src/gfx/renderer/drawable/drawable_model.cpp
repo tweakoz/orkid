@@ -71,7 +71,7 @@ asset::loadrequest_ptr_t ModelDrawable::bindModelAsset(AssetPath assetpath) {
   return load_req;
 }
 ///////////////////////////////////////////////////////////////////////////////
-asset::loadrequest_ptr_t ModelDrawable::bindModelAsset( AssetPath assetpath, asset::vars_t asset_vars){
+asset::loadrequest_ptr_t ModelDrawable::bindModelAsset( AssetPath assetpath, asset::vars_ptr_t asset_vars){
 
   auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
   load_req->_asset_vars = asset_vars;
@@ -89,7 +89,7 @@ void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
 
   if (_data) {
 
-    auto& asset_vars = load_req->_asset_vars;
+    auto asset_vars = load_req->_asset_vars;
 
     for (auto item : _data->_assetvars) {
 
@@ -98,13 +98,13 @@ void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
 
       std::string v_str;
       if (auto as_str = v.tryAs<std::string>()) {
-        asset_vars.makeValueForKey<std::string>(k, as_str.value());
+        asset_vars->makeValueForKey<std::string>(k, as_str.value());
         v_str = as_str.value();
       } else if (auto as_bool = v.tryAs<bool>()) {
-        asset_vars.makeValueForKey<bool>(k, as_bool.value());
+        asset_vars->makeValueForKey<bool>(k, as_bool.value());
         v_str = as_bool.value() ? "true" : "false";
       } else if (auto as_dbl = v.tryAs<double>()) {
-        asset_vars.makeValueForKey<double>(k, as_dbl.value());
+        asset_vars->makeValueForKey<double>(k, as_dbl.value());
         v_str = FormatString("%f", as_dbl.value());
       } else {
         OrkAssert(false);

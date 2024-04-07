@@ -16,15 +16,7 @@ void pyinit_asset(py::module& module_core) {
   auto amodule  = module_core.def_submodule("asset", "core asset operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
-  type_codec->registerStdCodec<asset_ptr_t>(aset_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto lreq_type = py::class_<LoadRequest,loadrequest_ptr_t>(amodule, "LoadRequest")
-  .def(py::init([](const std::string& apath) -> loadrequest_ptr_t {
-    return std::make_shared<LoadRequest>(apath);
-  }))
-  .def(py::init([type_codec](const std::string& apath,py::object vars) -> loadrequest_ptr_t {
-
+  amodule.def("enqueueLoad", [type_codec](const std::string& apath,py::object vars) -> loadrequest_ptr_t {
     varmap::varmap_ptr_t as_varmap = nullptr;
     // check if vars is a dictionary
     if (py::isinstance<py::dict>(vars)) {
@@ -39,14 +31,23 @@ void pyinit_asset(py::module& module_core) {
     else{
       as_varmap = vars.cast<varmap::varmap_ptr_t>();
     }
-    return std::make_shared<LoadRequest>(apath,*as_varmap);
+    auto loadreq = std::make_shared<LoadRequest>(apath,as_varmap);
+    return loadreq;
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
+  type_codec->registerStdCodec<asset_ptr_t>(aset_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto lreq_type = py::class_<LoadRequest,loadrequest_ptr_t>(amodule, "LoadRequest")
+  .def(py::init([](const std::string& apath) -> loadrequest_ptr_t {
+    return std::make_shared<LoadRequest>(apath);
   }))
   .def("waitForCompletion", &LoadRequest::waitForCompletion)
   .def("enqueueAsync", [](loadrequest_ptr_t lreq,py::function py_on_complete) {
-    lreq->_asset_vars.makeValueForKey<py::function>("completion_handler") = py_on_complete;
+    lreq->_asset_vars->makeValueForKey<py::function>("completion_handler") = py_on_complete;
     auto cpp_on_complete = ([=]() { //
       py::gil_scoped_acquire acquire;
-      auto pyfn = lreq->_asset_vars.typedValueForKey<py::function>("completion_handler");
+      auto pyfn = lreq->_asset_vars->typedValueForKey<py::function>("completion_handler");
       pyfn.value()();
     });
     lreq->enqueueAsync(cpp_on_complete);

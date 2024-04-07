@@ -25,7 +25,7 @@ struct CtxBaseProgressPimpl { //
     rasstate.SetDepthTest(EDepthTest::ALWAYS);
     auto txi                                                    = context->TXI();
     _loadingtex                                                 = std::make_shared<Texture>();
-    _loadingtex->_varmap.makeValueForKey<bool>("loadimmediate") = true;
+    _loadingtex->_vars->makeValueForKey<bool>("loadimmediate") = true;
     txi->LoadTexture("data://misc/orkidprogressbg", _loadingtex);
     _material->SetTexture(ETEXDEST_DIFFUSE, _loadingtex.get());
   }

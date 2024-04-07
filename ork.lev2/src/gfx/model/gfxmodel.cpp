@@ -28,7 +28,6 @@ XgmModel::XgmModel()
     , mpUserData(0)
     , miNumMaterials(0)
     , mbSkinned(false) {
-    
     _skeleton = std::make_shared<XgmSkeleton>();
 }
 

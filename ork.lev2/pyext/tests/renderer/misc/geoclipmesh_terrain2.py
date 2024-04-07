@@ -146,7 +146,7 @@ class TERRAINAPP(object):
     def on_complete():
       print("on_complete")
       assert(False)
-    self.hmlrq = asset.LoadRequest(
+    self.hmlrq = asset.enqueueLoad(
       str(hmap_path),
       { "hello":"world"
       }

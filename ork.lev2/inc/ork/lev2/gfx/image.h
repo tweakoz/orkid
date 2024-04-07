@@ -21,6 +21,7 @@ struct Image;
 
 struct CompressedImage {
 
+  CompressedImage();
   EBufferFormat _format  = EBufferFormat::NONE;
   datablock_ptr_t _data   = nullptr;
   size_t _width          = 0;
@@ -29,7 +30,7 @@ struct CompressedImage {
   size_t _blocked_height = 0;
   size_t _depth          = 1;
   size_t _numcomponents  = 4; // 3 or 4
-  varmap::VarMap _varmap;
+  varmap::varmap_ptr_t _vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

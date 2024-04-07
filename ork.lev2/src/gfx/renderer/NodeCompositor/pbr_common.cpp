@@ -58,7 +58,7 @@ void CommonStuff::describeX(class_t* c) {
       ->annotate<ConstString>("editor.assetclass", "lev2tex")
       ->annotate<asset::vars_gen_t>(
           "asset.deserialize.vargen", //
-          [](ork::object_ptr_t obj) -> asset::vars_t {
+          [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
             auto _this = std::dynamic_pointer_cast<CommonStuff>(obj);
             OrkAssert(_this);
             OrkAssert(false);
@@ -69,8 +69,8 @@ void CommonStuff::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
   _clearColor = fvec4(0,0,0,1);
-
-  _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") = //
+  _texAssetVarMap = std::make_shared<asset::vars_t>();
+  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") = //
       [this](texture_ptr_t tex, //
              Context* targ, //
              datablock_constptr_t inp_datablock) -> datablock_ptr_t {
@@ -111,9 +111,9 @@ void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset){
-  asset::vars_t old_varmap;
+  asset::vars_ptr_t old_varmap;
   if(_environmentTextureAsset){
-    old_varmap = _environmentTextureAsset->_varmap;
+    old_varmap = _environmentTextureAsset->_varmap.clone();
     //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
   }
   //printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
@@ -121,7 +121,7 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset){
   _environmentTextureAsset = texasset;
   if (nullptr == _environmentTextureAsset)
     return;
-  _environmentTextureAsset->_varmap = _texAssetVarMap;
+  _environmentTextureAsset->_varmap = *_texAssetVarMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
   asset::loadrequest_ptr_t CommonStuff::requestSkyboxTexture(const AssetPath& texture_path) {

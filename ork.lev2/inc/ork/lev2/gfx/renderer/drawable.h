@@ -402,7 +402,7 @@ struct ModelDrawable : public Drawable {
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
 
   asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
-  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_t asset_vars);
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_ptr_t asset_vars);
   void bindModelAsset(asset::loadrequest_ptr_t loadreq);
   void bindModelAsset(xgmmodelassetptr_t asset);
 

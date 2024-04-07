@@ -565,7 +565,7 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
   AssetPath apath(msFileName.c_str());
   auto txi                                                 = context->TXI();
   _texture                                                 = std::make_shared<Texture>();
-  _texture->_varmap.makeValueForKey<bool>("loadimmediate") = true;
+  _texture->_vars->makeValueForKey<bool>("loadimmediate") = true;
   txi->LoadTexture(apath, _texture);
   //////////////////////////////////////////////////////////////////////
 

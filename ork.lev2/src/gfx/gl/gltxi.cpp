@@ -649,7 +649,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, ptex->_debugName);
     }
 
-    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
+    ptex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
     //printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->_textureObject));
 
     //ptex->_impl._assert_on_destroy = true;

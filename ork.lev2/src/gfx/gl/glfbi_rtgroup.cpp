@@ -157,7 +157,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         ptex->_height         = ih;
         ptex->_impl = bufferimpl->_teximpl;
 
-        ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = color_glto->_textureObject;
+        ptex->_vars->makeValueForKey<GLuint>("gltexobj") = color_glto->_textureObject;
 
         mTargetGL.TXI()->ApplySamplingMode(ptex);
         //////////////////////////////////////////
@@ -250,7 +250,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, rtg_impl->_standard->_depthTexObject, 0);
       GL_ERRORCHECK();
       auto dtex = rtgroup->_depthBuffer->_texture;
-      dtex->_varmap.makeValueForKey<GLuint>("gltexobj") = rtg_impl->_standard->_depthTexObject;
+      dtex->_vars->makeValueForKey<GLuint>("gltexobj") = rtg_impl->_standard->_depthTexObject;
       mTargetGL.TXI()->ApplySamplingMode(dtex.get());
       dtex->_isDepthTexture = true;
       auto depthtexobj                     = dtex->_impl.get<gltexobj_ptr_t>();

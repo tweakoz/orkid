@@ -98,7 +98,7 @@ struct CommonStuff : public ork::Object {
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
-  asset::vars_t _texAssetVarMap;
+  asset::vars_ptr_t _texAssetVarMap;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;
   float _environmentMipScale  = 1.0f;

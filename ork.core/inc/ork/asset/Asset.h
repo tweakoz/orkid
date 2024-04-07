@@ -19,14 +19,15 @@ namespace ork::asset {
 struct LoadRequest;
 
 using vars_t          = varmap::VarMap;
-using vars_gen_t      = std::function<vars_t(object_ptr_t)>;
+using vars_ptr_t      = std::shared_ptr<vars_t>;
+using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
 using loadrequest_ptr_t = std::shared_ptr<LoadRequest>;
 
 struct LoadRequest{
 
   LoadRequest();
   LoadRequest(const AssetPath& p);
-  LoadRequest(const AssetPath& p,const vars_t& _asset_vars);
+  LoadRequest(const AssetPath& p, vars_ptr_t _asset_vars);
 
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();
@@ -35,7 +36,7 @@ struct LoadRequest{
 
   asset_ptr_t _asset;
   AssetPath _asset_path;
-  vars_t _asset_vars;
+  vars_ptr_t _asset_vars;
   void_lambda_t _on_load_complete;
   std::atomic<int> _partial_load_counter = 0;
 };

@@ -30,6 +30,10 @@ OIIO_NAMESPACE_USING
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+CompressedImage::CompressedImage(){
+  _vars = std::make_shared<varmap::VarMap>();
+}
+
 void Image::init(size_t w, size_t h, size_t numc) {
   _numcomponents = numc;
   _width         = w;

@@ -114,9 +114,9 @@ StaticTexFileLoader::StaticTexFileLoader()
 
 asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
   auto texture_asset = std::make_shared<TextureAsset>();
-  texture_asset->_varmap               = loadreq->_asset_vars;
-  texture_asset->GetTexture()->_varmap = loadreq->_asset_vars;
-  if (loadreq->_asset_vars.hasKey("postproc")){ //
+  texture_asset->_varmap               = *loadreq->_asset_vars;
+  texture_asset->GetTexture()->_vars   = loadreq->_asset_vars;
+  if (loadreq->_asset_vars->hasKey("postproc")){ //
     logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), loadreq->_asset_path.c_str());
   }
   auto context = lev2::contextForCurrentThread();

@@ -48,14 +48,14 @@ bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t dat
     // texture preprocssing, if any..
     //  on main thread.
     /////////////////////////////////////////////
-    if (ptex->_varmap.hasKey("preproc")) {
-      auto preproc        = ptex->_varmap.typedValueForKey<Texture::proc_t>("preproc").value();
+    if (ptex->_vars->hasKey("preproc")) {
+      auto preproc        = ptex->_vars->typedValueForKey<Texture::proc_t>("preproc").value();
       auto orig_datablock = datablock;
       auto postblock      = preproc(ptex, &mTargetGL, orig_datablock);
     }
     this->_loadDDSTextureMainThreadPart(load_req);
   };
-  if (ptex->_varmap.hasKey("loadimmediate")) {
+  if (ptex->_vars->hasKey("loadimmediate")) {
     lamb();
   } else {
     opq::mainSerialQueue()->enqueue(lamb);
@@ -144,7 +144,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->_textureObject, ptex->_debugName);
   }
 
-  ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->_textureObject;
+  ptex->_vars->makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->_textureObject;
 
 
   auto infname = req._texname;
@@ -276,9 +276,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   //  perform postprocessing, if any..
   ////////////////////////////////////////////////
 
-  if (ptex->_varmap.hasKey("postproc")) {
+  if (ptex->_vars->hasKey("postproc")) {
     auto dblock    = req._inpstream._datablock;
-    auto postproc  = ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
+    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
     auto postblock = postproc(ptex, &mTargetGL, dblock);
     OrkAssert(postblock);
   } else {

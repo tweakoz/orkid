@@ -242,7 +242,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   }
   ///////////////////////////////////////////////
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
-  rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
+  rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
   logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h );
   boost::Crc64 basehasher;
@@ -336,8 +336,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       };
       opq::concurrentQueue()->enqueue(op);
 
-      rawenvmap->_varmap.makeValueForKey<rtgroup_ptr_t>(FormatString("alt-tex-specenv-group-mip%d", imip))   = std::move(outgroup);
-      rawenvmap->_varmap.makeValueForKey<rtbuffer_ptr_t>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = std::move(outbuffr);
+      rawenvmap->_vars->makeValueForKey<rtgroup_ptr_t>(FormatString("alt-tex-specenv-group-mip%d", imip))   = std::move(outgroup);
+      rawenvmap->_vars->makeValueForKey<rtbuffer_ptr_t>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = std::move(outbuffr);
       w >>= 1;
       h >>= 1;
       numpix = w * h;
@@ -359,7 +359,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
 
-  rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
+  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
   __FIND_IT.store(0);
   targ->debugPopGroup();
@@ -399,7 +399,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   }
   ///////////////////////////////////////////////
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
-  rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
+  rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
   logchan_pbrgen->log("filterenv-diff tex<%p> hash<0x%zx>", (void*) rawenvmap.get(), rawenvmap->_contentHash);
   boost::Crc64 basehasher;
@@ -476,8 +476,8 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       };
       opq::concurrentQueue()->enqueue(op);
 
-      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
-      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
+      rawenvmap->_vars->makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
+      rawenvmap->_vars->makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
 
       cap4mip[imip] = captureb;
       w >>= 1;
@@ -503,7 +503,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = "filtenvmap-processed-diffuse";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
-  rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
+  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 
   __FIND_IT.store(0);
   targ->debugPopGroup();

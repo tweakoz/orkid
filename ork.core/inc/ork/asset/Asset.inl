@@ -83,7 +83,7 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
     ///////////////////////////////////////////
 
     const auto& anno = annotation(ConstString("asset.deserialize.vargen"));
-    asset::vars_t assetvars;
+    auto assetvars = std::make_shared<asset::vars_t>();
     if (auto as_gen = anno.tryAs<asset::vars_gen_t>()){
       assetvars = as_gen.value()(instance);
     }

@@ -325,7 +325,7 @@ int main(int argc, char** argv, char** envp) {
         auto texture       = texture_asset->GetTexture();
         int tex_w          = 32;
         int tex_h          = 32;
-        auto texid         = texture->_varmap.typedValueForKey<GLuint>("gltexobj");
+        auto texid         = texture->_vars->typedValueForKey<GLuint>("gltexobj");
 
         ImGui::PushID(i);
         int frame_padding = -1 + i;                               // -1 == uses default padding (style.FramePadding)
@@ -387,7 +387,7 @@ int main(int argc, char** argv, char** envp) {
 
       ////////////////////////////////////////////////
 
-      if (auto as_texid = tex->_varmap.typedValueForKey<GLuint>("gltexobj")) {
+      if (auto as_texid = tex->_vars->typedValueForKey<GLuint>("gltexobj")) {
         win->DrawList->AddImageQuad(
             (void*)as_texid.value(), // GL texture handle
             pb,
