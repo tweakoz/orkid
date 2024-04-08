@@ -53,7 +53,7 @@ fragment_interface fif_terrain : ub_frg_fwd_lighting {
   }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
+libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise  {
   struct TerrainData {
     vec4 vfixPos;
     vec3 meshPos;
@@ -73,8 +73,8 @@ libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
     for (int i = 0; i < numOctaves; i++) {
       float amp = 50.0 * pow(0.5, float(i));
       float frq = pow(2.0, float(i)) * 0.0003;
-      vec4 n = noised(position * frq);
-      mountain += n.x * amp;
+      float n = noise(position * frq);
+      mountain += n * amp;
     }
     return mountain;
   }
@@ -88,8 +88,8 @@ libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
     for (int i = startOctave; i < numOctaves; i++) {
       float amp = 50.0 * pow(0.5, float(i)) * ampFactor;
       float frq = pow(2.0, float(i)) * frqFactor;
-      vec4 n = noised(position * frq);
-      detail += n.x * amp;
+      float n = noise(position * frq);
+      detail += n * amp;
     }
     return detail;
   }
@@ -99,8 +99,8 @@ libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
   /////////////////////////////////////////////////////////
 
   float calculateWaterFlow(vec3 position) {
-      vec4 n = noised(position * 0.005 + vec3(0.0, 1000.0, 0.0));
-    return n.x;
+      float n = noise(position * 0.005 + vec3(0.0, 1000.0, 0.0));
+    return n;
   }
 
   /////////////////////////////////////////////////////////
@@ -108,7 +108,7 @@ libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
   /////////////////////////////////////////////////////////
 
   float simulateSediment(vec3 position) {
-    return noised(position * 0.02 + vec3(0.0, 500.0, 0.0)).x;
+    return noise(position * 0.02 + vec3(0.0, 500.0, 0.0));
   }
 
   /////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ libblock lib_ground_vtx_base : ub_frgX : lib_pnoise  {
     for (int i = startOctave; i < numOctaves; i++) {
       float amp = baseAmp * pow(0.5, float(i)) * detailAmpModifier;
       float frq = baseFrq * pow(2.0, float(i)) * detailFrqModifier;
-      detail += noised(position * frq).x * amp;
+      detail += noise(position * frq) * amp;
     }
     return detail;
   }
