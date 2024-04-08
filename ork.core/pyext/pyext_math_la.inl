@@ -69,12 +69,22 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("normalized", &vec2_t::normalized)
           .def("normalize", &vec2_t::normalizeInPlace)
           .def_property_readonly(
+              "fract", [](const vec2_t& vec) -> vec2_t { //
+              return vec2_t(vec.x - floor(vec.x), vec.y - floor(vec.y));
+           })
+          .def_property_readonly("floor", [](const vec2_t& vec) -> vec2_t { //
+              return vec2_t(floor(vec.x), floor(vec.y));
+           })
+          .def_property_readonly(
               "length", [](const vec2_t& vec) -> T { return vec.magnitude(); })
           .def_property_readonly(
               "lengthSquared", [](const vec2_t& vec) -> T { return vec.magnitudeSquared(); })
+          .def_property_readonly(
+              "yx", [](const vec2_t& vec) -> vec2_t { return vec2_t(vec.y, vec.x); })
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
+          .def("mul", [](const vec2_t& v, float scalar) -> vec2_t { return v*scalar; })
           .def(
               "__str__",
               [](const vec2_t& v) -> std::string {
@@ -159,6 +169,9 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("rotz", &vec3_t::rotateOnZ)
           .def("xy", &vec3_t::xy)
           .def("xz", &vec3_t::xz)
+          .def_property_readonly("yz", [](const vec3_t& inp) -> vec2_t { //
+            return vec2_t(inp.y, inp.z);
+          })
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)

@@ -11,6 +11,12 @@
 #include <string>
 #include <map>
 
+namespace ork{
+struct DataBlock;
+using datablock_ptr_t = std::shared_ptr<DataBlock>;
+std::string dblock_to_str(datablock_ptr_t);
+}
+
 namespace ork::varmap {
 
 typedef std::string key_t;
@@ -188,10 +194,14 @@ template <typename val_t> struct TVarMap {
       return FormatString("double<%g>", as_double.value());
     } else if (auto as_int = val.template tryAs<int>()) {
       return FormatString("int<%d>", as_int.value());
+    } else if (auto as_uint32_t = val.template tryAs<uint32_t>()) {
+      return FormatString("uint32_t<0x%x>", as_uint32_t.value());
     } else if (auto as_uint64_t = val.template tryAs<uint64_t>()) {
       return FormatString("uint64_t<0x%zx>", as_uint64_t.value());
     } else if (auto as_str = val.template tryAs<std::string>()) {
       return FormatString("str<%s>", as_str.value().c_str());
+    } else if (auto as_dblock = val.template tryAs<datablock_ptr_t>()) {
+      return dblock_to_str(as_dblock.value());
     } else {
       auto orktypeid = val.getOrkTypeId();
       auto it = str_transformer_map().find(orktypeid._hashed);

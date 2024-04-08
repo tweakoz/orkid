@@ -73,7 +73,9 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
       asset_load_req->_on_event("endLoadMainThread"_crcu,nullptr);
     }
     if(asset_load_req and asset_load_req->_on_event){
-      asset_load_req->_on_event("loadComplete"_crcu,nullptr);
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<std::string>("loader") = "_loadXTXTexture";
+      asset_load_req->_on_event("loadComplete"_crcu,data);
     }
   };
   opq::mainSerialQueue()->enqueue(lamb);
@@ -101,12 +103,88 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);
   GL_ERRORCHECK();
-   //printf("inummips<%d>\n", inummips);
+   printf("inummips<%d>\n", inummips);
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
-     //printf("tex<%s> mip<%d> w<%ld> h<%ld> len<%zu>\n", req.ptex->_debugName.c_str(), imip, level._width, level._height, level._data->length());
+     printf("tex<%s> mip<%d> w<%ld> h<%ld> len<%zu>\n", req.ptex->_debugName.c_str(), imip, level._width, level._height, level._data->length());
     switch (req.ptex->_texFormat) {
+      case EBufferFormat::R16:
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::R16);
+          data->makeValueForKey<std::string>("format_string") = "R16";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_R16,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RED,          // format
+            GL_UNSIGNED_BYTE, // datatype
+            level._data->data());
+        break;
+      case EBufferFormat::RGBA16:
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGBA16);
+          data->makeValueForKey<std::string>("format_string") = "RGBA16";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_RGBA16,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RGBA,          // format
+            GL_UNSIGNED_BYTE, // datatype
+            level._data->data());
+        break;
+      case EBufferFormat::RGB8:
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGB8);
+          data->makeValueForKey<std::string>("format_string") = "RGB8";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_RGB8,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RGB,          // format
+            GL_UNSIGNED_BYTE, // datatype
+            level._data->data());
+        break;
       case EBufferFormat::RGBA8:
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGBA8);
+          data->makeValueForKey<std::string>("format_string") = "RGBA8";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
         glTexImage2D(         //
             GL_TEXTURE_2D,    // target
             imip,             // miplevel

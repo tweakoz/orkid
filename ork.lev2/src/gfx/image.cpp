@@ -30,27 +30,30 @@ OIIO_NAMESPACE_USING
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-CompressedImage::CompressedImage(){
+CompressedImage::CompressedImage() {
   _vars = std::make_shared<varmap::VarMap>();
 }
 
-void Image::init(size_t w, size_t h, size_t numc) {
-  _numcomponents = numc;
-  _width         = w;
-  _height        = h;
-  _data          = std::make_shared<DataBlock>();
-  _data->allocateBlock(_width * _height * _numcomponents);
+void Image::init(size_t w, size_t h, size_t numc, int bpc) {
+  _numcomponents   = numc;
+  _width           = w;
+  _height          = h;
+  _bytesPerChannel = bpc;
+  _data            = std::make_shared<DataBlock>();
+  _data->allocateBlock(_width * _height * _numcomponents * bpc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Image Image::clone() const {
   Image rval;
-  rval._numcomponents = _numcomponents;
-  rval._width         = _width;
-  rval._height        = _height;
-  rval._data          = std::make_shared<DataBlock>(_data->data(), _data->length());
-  rval._debugName     = _debugName;
+  rval._format          = _format;
+  rval._bytesPerChannel = _bytesPerChannel;
+  rval._numcomponents   = _numcomponents;
+  rval._width           = _width;
+  rval._height          = _height;
+  rval._data            = std::make_shared<DataBlock>(_data->data(), _data->length());
+  rval._debugName       = _debugName;
   return rval;
 }
 
@@ -71,20 +74,65 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
   _width                = spec.width;
   _height               = spec.height;
   _numcomponents        = spec.nchannels;
-  _data                 = std::make_shared<DataBlock>();
-  _data->allocateBlock(_width * _height * _numcomponents);
+  switch (spec.format.basetype) {
+    case TypeDesc::UINT8:
+      _bytesPerChannel = 1;
+      switch (_numcomponents) {
+        case 1:
+          _format = EBufferFormat::R8;
+          break;
+        case 3:
+          _format = EBufferFormat::RGB8;
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA8;
+          break;
+        default:
+          OrkAssert(false);
+          return;
+      }
+      break;
+    case TypeDesc::UINT16:
+      _bytesPerChannel = 2;
+      switch (_numcomponents) {
+        case 1:
+          _format = EBufferFormat::R16;
+          break;
+        case 3:
+          _format = EBufferFormat::RGB16;
+          break;
+        case 4:
+          _format = EBufferFormat::RGBA16;
+          break;
+        default:
+          OrkAssert(false);
+          return;
+      }
+      break;
+    default:
+      OrkAssert(false);
+      return;
+  }
+
+  _data = std::make_shared<DataBlock>();
+  _data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
   auto pixels = (uint8_t*)_data->data();
-  in->read_image(TypeDesc::UINT8, &pixels[0]);
+  if (_bytesPerChannel == 1) {
+    in->read_image(TypeDesc::UINT8, pixels);
+  } else if (_bytesPerChannel == 2) {
+    in->read_image(TypeDesc::UINT16, pixels);
+  }
   in->close();
 
-  if(0){
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-   deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
-   deco::printf(_image_deco, "// _width<%zu>\n", _width);
-   deco::printf(_image_deco, "// _height<%zu>\n", _height);
-   deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
-   deco::printf(_image_deco, "///////////////////////////////////\n");
- }
+  if (1) {
+    deco::printf(_image_deco, "///////////////////////////////////\n");
+    deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
+    deco::printf(_image_deco, "// _width<%zu>\n", _width);
+    deco::printf(_image_deco, "// _height<%zu>\n", _height);
+    deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
+    deco::printf(_image_deco, "// _bytesPerChannel<%d>\n", _bytesPerChannel);
+    deco::printf(_image_deco, "///////////////////////////////////\n");
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,13 +158,19 @@ const uint8_t* Image::pixel(int x, int y) const {
   int index = (y * _width + x) * _numcomponents;
   return ((const uint8_t*)_data->data()) + index;
 }
+uint16_t* Image::pixel16(int x, int y) {
+  int index = (y * _width + x) * _numcomponents;
+  return ((uint16_t*)_data->data()) + index;
+}
+const uint16_t* Image::pixel16(int x, int y) const {
+  int index = (y * _width + x) * _numcomponents;
+  return ((const uint16_t*)_data->data()) + index;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::downsample(Image& imgout) const {
-  imgout.init(_width >> 1, _height >> 1, _numcomponents);
-  auto inp_pixels = (const uint8_t*)_data->data();
-  auto out_pixels = (uint8_t*)imgout._data->data();
+  imgout.init(_width >> 1, _height >> 1, _numcomponents, _bytesPerChannel);
   for (size_t y = 0; y < imgout._height; y++) {
     size_t ya = y * 2;
     size_t yb = ya + 1;
@@ -128,19 +182,45 @@ void Image::downsample(Image& imgout) const {
       if (xb > (_width - 1))
         xb = _width - 1;
 
-      auto outpixel     = imgout.pixel(x, y);
-      auto inppixelXAYA = pixel(xa, ya);
-      auto inppixelXBYA = pixel(xb, ya);
-      auto inppixelXAYB = pixel(xa, yb);
-      auto inppixelXBYB = pixel(xb, yb);
-      for (size_t c = 0; c < _numcomponents; c++) {
-        double xaya  = double(inppixelXAYA[c]);
-        double xbya  = double(inppixelXBYA[c]);
-        double xayb  = double(inppixelXAYB[c]);
-        double xbyb  = double(inppixelXBYB[c]);
-        double avg   = (xaya + xbya + xayb + xbyb) * 0.25;
-        uint8_t uavg = uint8_t(avg);
-        outpixel[c]  = uavg;
+      switch (_format) {
+        case EBufferFormat::RGB8:
+        case EBufferFormat::RGBA8: {
+          auto outpixel     = imgout.pixel(x, y);
+          auto inppixelXAYA = pixel(xa, ya);
+          auto inppixelXBYA = pixel(xb, ya);
+          auto inppixelXAYB = pixel(xa, yb);
+          auto inppixelXBYB = pixel(xb, yb);
+          for (size_t c = 0; c < _numcomponents; c++) {
+            double xaya  = double(inppixelXAYA[c]);
+            double xbya  = double(inppixelXBYA[c]);
+            double xayb  = double(inppixelXAYB[c]);
+            double xbyb  = double(inppixelXBYB[c]);
+            double avg   = (xaya + xbya + xayb + xbyb) * 0.25;
+            uint8_t uavg = uint8_t(avg);
+            outpixel[c]  = uavg;
+          }
+          break;
+        }
+        case EBufferFormat::R16: {
+          auto outpixel     = imgout.pixel16(x, y);
+          auto inppixelXAYA = pixel16(xa, ya);
+          auto inppixelXBYA = pixel16(xb, ya);
+          auto inppixelXAYB = pixel16(xa, yb);
+          auto inppixelXBYB = pixel16(xb, yb);
+          for (size_t c = 0; c < _numcomponents; c++) {
+            double xaya   = double(inppixelXAYA[c]);
+            double xbya   = double(inppixelXBYA[c]);
+            double xayb   = double(inppixelXAYB[c]);
+            double xbyb   = double(inppixelXBYB[c]);
+            double avg    = (xaya + xbya + xayb + xbyb) * 0.25;
+            uint16_t uavg = uint16_t(avg);
+            outpixel[c]   = uavg;
+          }
+          break;
+        }
+        default:
+          OrkAssert(false);
+          break;
       }
     }
   }
@@ -159,7 +239,7 @@ void Image::downsample(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::initWithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
-  init(w, h, numc);
+  init(w, h, numc, 1);
   auto outptr = (uint8_t*)_data->data();
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -175,36 +255,76 @@ void Image::initWithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::convertToRGBA(Image& imgout) const {
-  imgout.init(_width, _height, 4);
-  auto inp_pixels = (const uint8_t*)_data->data();
-  auto out_pixels = (uint8_t*)imgout._data->data();
+  imgout.init(_width, _height, 4, _bytesPerChannel);
   switch (_numcomponents) {
     case 1:
-      for (size_t y = 0; y < imgout._height; y++) {
-        for (size_t x = 0; x < imgout._width; x++) {
-          auto inppixel = pixel(x, y);
-          auto outpixel = imgout.pixel(x, y);
-          outpixel[0]   = inppixel[0];
-          outpixel[1]   = inppixel[0];
-          outpixel[2]   = inppixel[0];
-          outpixel[3]   = 0xff;
+      if (_bytesPerChannel == 1) {
+        auto inp_pixels = (const uint8_t*)_data->data();
+        auto out_pixels = (uint8_t*)imgout._data->data();
+        for (size_t y = 0; y < imgout._height; y++) {
+          for (size_t x = 0; x < imgout._width; x++) {
+            auto inppixel = pixel(x, y);
+            auto outpixel = imgout.pixel(x, y);
+            outpixel[0]   = inppixel[0];
+            outpixel[1]   = inppixel[0];
+            outpixel[2]   = inppixel[0];
+            outpixel[3]   = 0xff;
+          }
+        }
+      } else if (_bytesPerChannel == 2) {
+        auto inp_pixels = (const uint16_t*)_data->data();
+        auto out_pixels = (uint16_t*)imgout._data->data();
+        for (size_t y = 0; y < imgout._height; y++) {
+          for (size_t x = 0; x < imgout._width; x++) {
+            auto inppixel = pixel16(x, y);
+            auto outpixel = imgout.pixel16(x, y);
+            outpixel[0]   = inppixel[0];
+            outpixel[1]   = inppixel[0];
+            outpixel[2]   = inppixel[0];
+            outpixel[3]   = 0xffff;
+          }
         }
       }
       break;
     case 3:
-      for (size_t y = 0; y < imgout._height; y++) {
-        for (size_t x = 0; x < imgout._width; x++) {
-          auto inppixel = pixel(x, y);
-          auto outpixel = imgout.pixel(x, y);
-          outpixel[0]   = inppixel[0];
-          outpixel[1]   = inppixel[1];
-          outpixel[2]   = inppixel[2];
-          outpixel[3]   = 0xff;
+      if (_bytesPerChannel == 1) {
+        auto inp_pixels = (const uint8_t*)_data->data();
+        auto out_pixels = (uint8_t*)imgout._data->data();
+        for (size_t y = 0; y < imgout._height; y++) {
+          for (size_t x = 0; x < imgout._width; x++) {
+            auto inppixel = pixel(x, y);
+            auto outpixel = imgout.pixel(x, y);
+            outpixel[0]   = inppixel[0];
+            outpixel[1]   = inppixel[1];
+            outpixel[2]   = inppixel[2];
+            outpixel[3]   = 0xff;
+          }
+        }
+      } else if (_bytesPerChannel == 2) {
+        auto inp_pixels = (const uint16_t*)_data->data();
+        auto out_pixels = (uint16_t*)imgout._data->data();
+        for (size_t y = 0; y < imgout._height; y++) {
+          for (size_t x = 0; x < imgout._width; x++) {
+            auto inppixel = pixel16(x, y);
+            auto outpixel = imgout.pixel16(x, y);
+            outpixel[0]   = inppixel[0];
+            outpixel[1]   = inppixel[1];
+            outpixel[2]   = inppixel[2];
+            outpixel[3]   = 0xffff;
+          }
         }
       }
       break;
     case 4:
-      memcpy_fast(out_pixels, inp_pixels, _width * _height * 4);
+      if (_bytesPerChannel == 1) {
+        auto inp_pixels = (const uint8_t*)_data->data();
+        auto out_pixels = (uint8_t*)imgout._data->data();
+        memcpy_fast(out_pixels, inp_pixels, _width * _height * 4);
+      } else if (_bytesPerChannel == 2) {
+        auto inp_pixels16 = (const uint16_t*)_data->data();
+        auto out_pixels16 = (uint16_t*)imgout._data->data();
+        memcpy_fast(out_pixels16, inp_pixels16, _width * _height * 4 * 2);
+      }
       break;
     default:
       OrkAssert(false);
@@ -226,25 +346,23 @@ void Image::convertToRGBA(Image& imgout) const {
 
 void Image::compressDefault(CompressedImage& imgout) const {
 #if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
-  compressRGBA(imgout);
+  uncompressed(imgout);
 #else
-  if(GfxEnv::supportsBC7()){
+  if (GfxEnv::supportsBC7()) {
     compressBC7(imgout);
-  }
-  else{
-    compressRGBA(imgout);
+  } else {
+    uncompressed(imgout);
   }
 #endif
 }
 CompressedImageMipChain Image::compressedMipChainDefault() const {
 #if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
-  return compressedMipChainRGBA();
+  return uncompressedMipChain();
 #else
-  if(GfxEnv::supportsBC7()){
+  if (GfxEnv::supportsBC7()) {
     return compressedMipChainBC7();
-  }
-  else{
-    return compressedMipChainRGBA();
+  } else {
+    return uncompressedMipChain();
   }
 #endif
 }
@@ -277,14 +395,14 @@ void Image::compressBC7(CompressedImage& imgout) const {
   // parallel ISPC-BC7 compressor
   ////////////////////////////////////////
   std::atomic<int> pending = 0;
-  //auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "BC7ENC");
+  // auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "BC7ENC");
   auto src_base     = (uint8_t*)src_as_rgba._data->data();
   auto dst_base     = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
   size_t src_stride = _width * 4;
   size_t dst_stride = _width;
   for (int y = 0; y < _height; y += 4) {
     pending.fetch_add(1);
-    opq::concurrentQueue()->enqueue([=,&pending]() {
+    opq::concurrentQueue()->enqueue([=, &pending]() {
       bc7_enc_settings settings;
       GetProfile_alpha_basic(&settings);
       rgba_surface surface;
@@ -298,7 +416,7 @@ void Image::compressBC7(CompressedImage& imgout) const {
     src_base += src_stride * 4;
     dst_base += dst_stride * 4;
   }
-  while(pending.load()>0){
+  while (pending.load() > 0) {
     usleep(1000);
   }
   ////////////////////////////////////////
@@ -335,93 +453,48 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::compressRGBA(CompressedImage& imgout) const {
-  //deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::compressRGBA(%s) w<%zu> h<%zu>\n", _debugName.c_str(), _width, _height);
-  //deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
-  //deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
-  imgout._format = EBufferFormat::RGBA8;
+void Image::uncompressed(CompressedImage& imgout) const {
+  bool is_16 = _bytesPerChannel == 2; // Determine if the source image is 16 bits per channel
+  deco::printf(
+      _image_deco, "// Image::uncompressed(%s) w<%zu> h<%zu> is_16<%d>\n", _debugName.c_str(), _width, _height, int(is_16));
+  imgout._format = _format;
   OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
   imgout._height         = _height;
-  imgout._blocked_width  = (_width + 3) & 0xfffffffc;
-  imgout._blocked_height = (_height + 3) & 0xfffffffc;
-  imgout._numcomponents  = 4;
-  //////////////////////////////////////////////////////////////////
-  imgout._data = std::make_shared<DataBlock>();
-
+  imgout._blocked_width  = 0;  
+  imgout._blocked_height = 0; 
+  imgout._numcomponents  = _numcomponents;
+  imgout._data           = std::make_shared<DataBlock>();
+  size_t data_size = _width * _height * _numcomponents * _bytesPerChannel;
   ork::Timer timer;
   timer.Start();
-  ////////////////////////////////////////
-  // parallel ISPC-RGBA compressor
-  ////////////////////////////////////////
-  //auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "RGBAENC");
   std::atomic<int> pending = 0;
-  size_t src_stride = _width * _numcomponents;
-  size_t dst_stride = _width * 4;
-  auto src_base     = (uint8_t*)this->_data->data();
-  auto dst_base     = (uint8_t*)imgout._data->allocateBlock(dst_stride * _height);
-  for (int y = 0; y < _height; y++) {
-    pending.fetch_add(1);
-    opq::concurrentQueue()->enqueue([=,&pending]() {
-      auto src_line = src_base + y * src_stride;
-      auto dst_line = dst_base + y * dst_stride;
-      switch (_numcomponents) {
-      case 1:
-          for (size_t x = 0; x < imgout._width; x++) {
-            const uint8_t* src_pix_base = src_line + x;
-            uint8_t* dst_pix_base       = dst_line + (x * 4);
-            dst_pix_base[0]             = src_pix_base[0];
-            dst_pix_base[1]             = src_pix_base[0];
-            dst_pix_base[2]             = src_pix_base[0];
-            dst_pix_base[3]             = 0xff;
-          }
-          break;
-        case 3:
-          for (int x = 0; x < _width; x++) {
-            const uint8_t* src_pix_base = src_line + (x * 3);
-            uint8_t* dst_pix_base       = dst_line + (x * 4);
-            dst_pix_base[0]             = src_pix_base[0];
-            dst_pix_base[1]             = src_pix_base[1];
-            dst_pix_base[2]             = src_pix_base[2];
-            dst_pix_base[3]             = 0xff;
-          }
-          break;
-        case 4:
-          memcpy(dst_line, src_line, src_stride);
-          break;
-        default:
-          OrkAssert(false);
-          break;
-      }
-      pending.fetch_sub(1);
-    });
-  }
-  while(pending.load()>0){
-    usleep(1000);
-  }
-  ////////////////////////////////////////
+  size_t src_stride        = _width * _numcomponents * _bytesPerChannel;
+  size_t dst_stride        = src_stride;
+  auto src_base            = (uint8_t*)this->_data->data();
+  auto dst_base            = (uint8_t*)imgout._data->allocateBlock(data_size);
+  std::memcpy(dst_base, src_base, data_size);
 
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
   deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
-  //deco::printf(_image_deco, "///////////////////////////////////\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompressedImageMipChain Image::compressedMipChainRGBA() const {
+CompressedImageMipChain Image::uncompressedMipChain() const {
   CompressedImageMipChain rval;
-  rval._width         = _width;
-  rval._height        = _height;
-  rval._format        = EBufferFormat::RGBA8;
-  rval._numcomponents = 4;
-  Image imga          = this->clone();
+  rval._width           = _width;
+  rval._height          = _height;
+  rval._format          = _format;
+  rval._numcomponents   = 4;
+  rval._bytesPerChannel = _bytesPerChannel;
+  Image imga            = this->clone();
   Image imgb;
   int mipindex = 0;
   while ((imga._width >= 4) and (imga._height >= 4)) {
     CompressedImage cimg;
-    imga.compressRGBA(cimg);
+    imga.uncompressed(cimg);
     rval._levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
@@ -432,11 +505,12 @@ CompressedImageMipChain Image::compressedMipChainRGBA() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels) {
-  _levels        = levels;
-  _width         = levels[0]._width;
-  _height        = levels[0]._height;
-  _format        = levels[0]._format;
-  _numcomponents = levels[0]._numcomponents;
+  _levels          = levels;
+  _width           = levels[0]._width;
+  _height          = levels[0]._height;
+  _format          = levels[0]._format;
+  _numcomponents   = levels[0]._numcomponents;
+  _bytesPerChannel = levels[0]._bytesPerChannel;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -58,7 +58,7 @@ datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   std::string compressed_path;
   if(_format=="bin.nodata"){
     Image img;
-    img.init(4,4,4);
+    img.init(4,4,4,1);
     auto pixels = (uint8_t*) img._data->data();
     for( int i=0; i<(4*4*4); i++ ){
       pixels[i] = 0;

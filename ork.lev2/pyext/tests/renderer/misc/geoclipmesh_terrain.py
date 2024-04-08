@@ -82,7 +82,7 @@ class TERRAINAPP(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
-    self.height = 3.8 # 1000.0
+    self.height = 1.8 # 1000.0
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #

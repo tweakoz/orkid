@@ -21,6 +21,12 @@ void pyinit_datablock(py::module& module_core) {
   auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")
                          .def(py::init<>())
                          .def(
+                             "readByte",
+                             [](datablock_ptr_t db, int integer) -> uint8_t {
+                               auto as_str = db->data();
+                               return as_str[integer];
+                             })
+                         .def(
                              "writeRawData",
                              [](datablock_ptr_t db, py::bytes data) {
                                auto as_str = std::string(data);

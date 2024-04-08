@@ -75,6 +75,8 @@ void Set2D(
     int& ih,
     DataBlockInputStream inpstream) {
 
+  auto asset_load_req = tex->loadRequest();
+
   DataBlockInputStream copy_stream = inpstream;
 
   // size_t ifilelen       = 0;
@@ -133,10 +135,46 @@ void Set2D(
             default:
               assert(false);
           }
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          auto dblock = std::make_shared<DataBlock>();
+          auto copy_src = inpstream.current();
+          dblock->allocateBlock(isiz2);
+          auto dest = dblock->data();
+          memcpy_fast((void*)dest, (const void*)copy_src, isiz2);
+
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = iw;
+          data->makeValueForKey<int>("height") = ih;
+          data->makeValueForKey<datablock_ptr_t>("data") = dblock;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGBA8);
+          data->makeValueForKey<std::string>("format_string") = "RGBA8";
+          data->makeValueForKey<std::string>("method") = "Set2D";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
         break;
       case GL_RGB:
         if ((numC == 3) && (typ == GL_UNSIGNED_BYTE))
           intfmt = GL_RGB;
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          auto dblock = std::make_shared<DataBlock>();
+          auto copy_src = inpstream.current();
+          dblock->allocateBlock(isiz2);
+          auto dest = dblock->data();
+          memcpy_fast((void*)dest, (const void*)copy_src, isiz2);
+
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = iw;
+          data->makeValueForKey<int>("height") = ih;
+          data->makeValueForKey<datablock_ptr_t>("data") = dblock;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGB8);
+          data->makeValueForKey<std::string>("format_string") = "RGB8";
+          data->makeValueForKey<std::string>("method") = "Set2D";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+
+
         break;
       default:
         break;

@@ -16,7 +16,6 @@ lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.scenegraph import createSceneGraph
 from signal import signal, SIGINT
-from PIL import Image
 
 tokens = CrcStringProxy()
 
@@ -28,52 +27,13 @@ parser = argparse.ArgumentParser(description='scenegraph particles example')
 
 args = vars(parser.parse_args())
 
-def calculateWaterFlow(pos):
-    return mnoise(pos * 0.005 + vec3(0.0, 1000.0, 0.0))
-
-def simulateSediment(pos):
-    return mnoise(pos * 0.02 + vec3(0.0, 500.0, 0.0))
-
-def applyErosion(waterFlow, sediment):
-    return mix(0.85, 1.0, clamp(waterFlow * 1.5 - sediment * 0.5, 0.0, 1.0))
-
-def mix(a, b, t):
-    return a + (b - a) * clamp(t, 0.0, 1.0)
-
-def clamp(value, min_val, max_val):
-    return max(min_val, min(value, max_val))
-
-def addEnhancedDetail(pos, waterFlow, sediment, startOctave, numOctaves, baseAmp, baseFrq):
-    detail = 0.0
-    detailAmpModifier = mix(0.5, 2.0, sediment)  # Higher sediment, more detail
-    detailFrqModifier = mix(2.0, 0.5, waterFlow)  # Higher water flow, less detail frequency
-
-    for i in range(startOctave, numOctaves):
-        amp = baseAmp * math.pow(0.5, i) * detailAmpModifier
-        frq = baseFrq * math.pow(2.0, i) * detailFrqModifier
-        detail += mnoise(pos * frq) * amp
-
-    return detail
-      
-def computeTerrainDisplacement(pos):
-    mountain = 0.0
-    for i in range(8):
-        amp = 500.0 * math.pow(0.5, i)
-        frq = math.pow(2.0, i) * 0.0003
-        mountain += mnoise(pos * frq) * amp
-
-    waterFlow = calculateWaterFlow(pos)
-    sediment = simulateSediment(pos)
-    erosion = applyErosion(waterFlow, sediment)
-
-    # Generate enhanced details based on environmental factors
-    detail = addEnhancedDetail(pos, waterFlow, sediment, 5, 12, 0.025, 50.0 * 0.0003)
-    
-    # Apply erosion effect
-    displacement = (mountain * erosion + detail * 100.0)
-    return displacement
-  
 ################################################################################
+
+SCALEXZ = float(0.002)
+HEIGHT = float(500) #1000.0
+BIAS_Y = float(-120) #-1600.0
+CAMHEIGHT = 0
+SPEED = 1
 
 class TERRAINAPP(object):
 
@@ -83,7 +43,7 @@ class TERRAINAPP(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
-    self.height = 10000.8 # 1000.0
+    self.height = CAMHEIGHT
     setupUiCamera( app=self, #
                    near = 0.1, #
                    far = 10000, #
@@ -104,6 +64,59 @@ class TERRAINAPP(object):
   #   made available
   ##############################################
 
+  def _sampleNoiseMap(self,uv):
+    if hasattr(self,"cpu_ntex_imgdata"):
+      imgdata = self.cpu_ntex_imgdata
+      width = self.cpu_ntex_width
+      height = self.cpu_ntex_height
+      x = uv.x
+      y = uv.y
+      x = x % width
+      y = y % height
+      # invert y
+      #y = (height-1) - y
+      x = int(x)
+      y = int(y)
+      
+      idx = (y*width+x)*3
+      #print(uv,x,y,width,height,idx)
+      r = imgdata.readByte(idx+0)
+      return r/255.0
+    else:
+      return 0.0
+      
+  def _texNoise(self,pos2d):
+    f = pos2d.fract
+    u = f * f * (vec2(3,3) - vec2(2,2) * f)
+    du = f * (vec2(1,1) - f).mul(6.0) 
+    p = pos2d.floor
+    a = self._sampleNoiseMap(p)
+    b = self._sampleNoiseMap(p+vec2(1,0))
+    c = self._sampleNoiseMap(p+vec2(0,1))
+    d = self._sampleNoiseMap(p+vec2(1,1))
+    
+    x = a + (b - a) * u.x + (c - a) * u.y + (a - b - c + d) * u.x * u.y
+    yz = du * (vec2(b - a, c - a) + u.yx.mul(a - b - c + d) )      
+    return vec3(x,yz.x,yz.y)
+  
+  def _terrain(self,pos2d,num_octaves):
+    p = pos2d
+    p.x *= SCALEXZ
+    p.y *= SCALEXZ
+    a = 0.0
+    b = 1.0
+    d = vec2(0,0)
+    m2 = vec4(0.8,-0.6,0.6,0.8)
+    for i in range(num_octaves):
+      n = self._texNoise(p)
+      d += n.yz
+      a += b * n.x / (1.0 + d.dot(d))
+      b *= 0.5
+      # treat m2 as a 2x2 matrix (but stored as a vec4)
+      # and compute p = m2 * p * 2.0
+      p = vec2(m2.x*p.x + m2.y*p.y, m2.z*p.x + m2.w*p.y).mul(2)
+    return HEIGHT * a
+
   def onGpuInit(self,ctx):
 
     ###################################
@@ -122,13 +135,13 @@ class TERRAINAPP(object):
     # post fx node
     ###################################
 
-    postNode = DecompBlurPostFxNode()
-    postNode.threshold = 0.99
-    postNode.blurwidth = 16.0
-    postNode.blurfactor = 0.1
-    postNode.amount = 0.4
-    postNode.gpuInit(ctx,8,8);
-    postNode.addToVarMap(sceneparams,"PostFxNode")
+    #postNode = DecompBlurPostFxNode()
+    #postNode.threshold = 0.99
+    #postNode.blurwidth = 16.0
+    #postNode.blurfactor = 0.1
+    #postNode.amount = 0.4
+    #postNode.gpuInit(ctx,8,8);
+    #postNode.addToVarMap(sceneparams,"PostFxNode")
 
     ###################################
     # create scene
@@ -142,39 +155,41 @@ class TERRAINAPP(object):
     #######################################
     # ground material (water)
     #######################################
-    hmap_path = path.orkid()/"ork.data"/"src"/"terrain"/"testhmap2.png"
-    def on_complete():
-      print("on_complete")
-      assert(False)
+
+    noisemap_path = "lev2://textures/noisekern_hot256c.png"
     def on_event(evcode,data):
-      if evcode == tokens.beginLoadMainThread.hashed:
-        print("beginLoadMainThread data<%s>"%(data))
-      elif evcode == tokens.endLoadMainThread.hashed:
-        print("endLoadMainThread data<%s>"%(data))
-      elif evcode == tokens.loadComplete.hashed:
-        print("loadComplete data<%s>"%(data))
-      elif evcode == tokens.cacheCheck.hashed:
+      if evcode == tokens.onMipLoad.hashed:
         data_str = data.dumpToString()
-        print("cacheCheck data<%s>"%(data_str))
-        #assert(False)
-      elif evcode == tokens.onMipLoad.hashed:
-        data_str = data.dumpToString()
-        # data is a datablock
         print("onMipLoad data: %s"%(data_str))
+        if data.level == 0:
+          self.cpu_ntex = data
+          self.cpu_ntex_imgdata = data.data
+          self.cpu_ntex_width = data.width
+          self.cpu_ntex_height = data.height
+          self.cpu_ntex_format = data.format_string
+          assert(data.format_string == "RGB8")
+          numb = data.width*data.height*3
+          assert(data.data.size == numb)
+          print(self.cpu_ntex_imgdata)
+          byte0 = self._sampleNoiseMap(vec2(0.5,0.5))
+          print("byte0<%d>"%(byte0))
+          #self.cpu_ntex_npy = numpy.frombuffer(data.data,dtype=numpy.uint8)
+          #assert(False)
       else:
         data_str = str(data)
         print("unhandled loadreq event<%x> data<%s>"%(evcode,data_str))
+    
+    NOISEMAP = Texture.load(noisemap_path)
+      
     self.hmlrq = asset.enqueueLoad(
-      path = str(hmap_path),
+      path = noisemap_path,
       vars = { 
         "hello":"world"
       },
       onEvent = on_event
     )
-    #print(self.hmlrq)
-    #self.hmlrq.enqueueAsync(on_complete,on_event)
-    # load image in python
-    self.cpu_heightmap = Image.open(str(hmap_path))
+    
+    #######################################
 
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -183,16 +198,24 @@ class TERRAINAPP(object):
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
-    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain2.glfx")
+    gmtl.shaderpath = str(thisdir()/"geoclipmesh_terrain1b.glfx")
     #gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
     freestyle = gmtl.freestyle
     assert(freestyle)
-    param_m= freestyle.param("m")
-    param_hmap = freestyle.param("height_map")
+    param_m = freestyle.param("m")
+    param_SCXZ = freestyle.param("SCXZ")
+    param_SCY = freestyle.param("SCY")
+    param_BIASY = freestyle.param("BIAS_Y")
+    param_nzemap = freestyle.param("noise_map")
+    param_m2 = freestyle.param("v2")
     gmtl.bindParam(param_m,tokens.RCFD_M )
-    
+    gmtl.bindParam(param_SCXZ,SCALEXZ )
+    gmtl.bindParam(param_SCY,HEIGHT )
+    gmtl.bindParam(param_BIASY,BIAS_Y )
+    #gmtl.bindParam(param_nzemap, NOISEMAP)
+    gmtl.bindParam(param_m2,vec4(0.8,-0.6,0.6,0.8) )
 
     #######################################
     # ground drawable
@@ -200,9 +223,9 @@ class TERRAINAPP(object):
 
     gdata = GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
-    gdata.numLevels = 8
+    gdata.numLevels = 6
     gdata.ringSize = 512
-    gdata.baseQuadSize = 0.25
+    gdata.baseQuadSize = 0.01
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
@@ -230,21 +253,13 @@ class TERRAINAPP(object):
     view_vel = self.zdir*wasd_dir.z 
     view_vel += xdir*wasd_dir.x
     
-    scalar = clamp(self.uicam.loc.y,0.0001,1)
-    view_vel *= 40.3 * math.pow(scalar,0.7)
+    scalar = 1.0 #clamp(self.uicam.loc.y,0.0001,1)
+    view_vel *= SPEED * math.pow(scalar,0.7)
     #print(scalar)
     self.pos_offset  += vec3(view_vel.x,0,view_vel.z)*DT*100.0
 
-    displacement = 0.0
-    image_coord = self.pos_offset * 0.0
-    image_coord.x *= self.cpu_heightmap.width
-    image_coord.z *= self.cpu_heightmap.height
-    image_coord.x = image_coord.x % self.cpu_heightmap.width
-    image_coord.z = image_coord.z % self.cpu_heightmap.height
-    #image_coord.x = (self.cpu_heightmap.width-1) - image_coord.x
-    image_coord.z = (self.cpu_heightmap.height-1) - image_coord.z
-    hmap_read = 0 #self.cpu_heightmap.getpixel((int(image_coord.x), int(image_coord.z)))
-    displacement = 60 * hmap_read / 65536.0 
+    displacement = self._terrain(self.pos_offset.xz(),1)+BIAS_Y
+    print(self.pos_offset,displacement)
     displaced_offset = self.pos_offset + vec3(0,displacement,0)
     
     self.uicam.positionOffset = self.uicam.positionOffset*0.9+displaced_offset*0.1

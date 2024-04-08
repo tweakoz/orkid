@@ -172,6 +172,7 @@ TextureAsset::~TextureAsset() {
 
 void TextureAsset::describeX(class_t* clazz) {
   auto loader = std::make_shared<StaticTexFileLoader>();
+  AssetLoader::registerLoaderForExtension("tga",loader);
   AssetLoader::registerLoaderForExtension("png",loader);
   AssetLoader::registerLoaderForExtension("dds",loader);
   registerLoader<TextureAsset>(loader);

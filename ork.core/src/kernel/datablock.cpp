@@ -8,7 +8,14 @@
 #include <ork/kernel/datablock.h>
 #include <ork/util/crc.h>
 
+///////////////////////////////////////////////////////////////////////////////
 namespace ork {
+std::string dblock_to_str(datablock_ptr_t db){
+    if(db==nullptr)
+        return "";
+  std::string rval = FormatString("dblock[len<%d>]",db->_storage.size());
+  return rval;
+}
 ///////////////////////////////////////////////////////////////////////////////
 encryptioncodec_ptr_t encryptionCodecFactory(uint32_t codecID){
   switch(codecID){

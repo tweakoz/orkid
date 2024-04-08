@@ -7,6 +7,7 @@
 
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/datablock.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/python/pycodec.inl>
 #include <iostream>

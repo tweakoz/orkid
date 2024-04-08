@@ -127,7 +127,7 @@ struct ClipMapRenderImpl {
     fvec3 eye_pos = vmtx_mono.inverse().translation();
     fvec3 eye_dir = vmtx_mono.inverse().zNormal();
     fvec3 center = fvec3(eye_pos.x, 0.0f, eye_pos.z);
-    center += fvec3(eye_dir.x, 0.0f, eye_dir.z);// * powf(eye_pos.y, 1.0) * -1.0f;
+    //center += fvec3(eye_dir.x, 0.0f, eye_dir.z);// * powf(eye_pos.y, 1.0) * -1.0f;
     v_offset.setTranslation(center);
 
     auto mut_renderable          = const_cast<CallbackRenderable*>(renderable);

@@ -349,6 +349,17 @@ PYBIND11_MODULE(_core, module_core) {
             rval = FormatString("VarMap(nkeys:%zu)", numkeys );
             return rval;           
           })
+          .def("dumpToString", [](varmap::varmap_ptr_t vmap) -> std::string {
+            std::string rval = "varmap: {\n";
+            for (const auto& item : vmap->_themap) {
+              const auto& key = item.first;
+              auto val = vmap->encodeAsString(key);
+              //printf( "key<%s> val<%s>\n", key.c_str(), val.dumpToString().c_str() );
+              rval += FormatString("  %s: %s\n", key.c_str(), val.c_str());
+            }
+            rval += "}\n";
+            return rval;
+          })
           .def("clone", [](varmap::varmap_ptr_t vmap) -> varmap::varmap_ptr_t {
             auto vmap_out = std::make_shared<varmap::VarMap>();
             (*vmap_out) = (*vmap);

@@ -22,6 +22,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock) {
+  auto asset_load_req = ptex->loadRequest();
   DataBlockInputStream checkstream(src_datablock);
   uint8_t magic[4];
   magic[0]                     = checkstream.getItem<uint8_t>();
@@ -42,6 +43,14 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     basehasher->finish();
     uint64_t hashkey = basehasher->result();
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
+    if(asset_load_req and asset_load_req->_on_event){
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<datablock_ptr_t>("srcDatablock", src_datablock);
+      data->makeValueForKey<datablock_ptr_t>("xtxDatablock", xtx_datablock);
+      data->makeValueForKey<uint64_t>("hashKey", hashkey);
+      data->makeValueForKey<std::string>("cachePath", DataBlockCache::_generateCachePath(hashkey));
+      asset_load_req->_on_event("cacheCheck"_crcu, data);
+    }
 
     if (xtx_datablock) {
       //printf("GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex.get());

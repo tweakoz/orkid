@@ -69,8 +69,8 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
   /////////////////////////////////////////////////////////
 
   float computeTerrainFull(vec3 pos) {
-    float h  = texture(height_map, pos.xz*0.0015).r;
-    float displace  = h * 60.0;
+    float h  = textureLod(height_map, pos.xz*1.0e-6,0).r;
+    float displace  = h * 15000.0;
     return displace;
   }
 
@@ -164,10 +164,10 @@ fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
   alpha              = pow(alpha, 0.25);
 
   // Calculate normal and lighting as before
-  //vec3 dPdu     = dFdx(frg_wpos.xyz);
-  //vec3 dPdv     = dFdy(frg_wpos.xyz);
-  //vec3 normal   = normalize(cross(dPdu, dPdv));
-  vec3 normal = normalize(frg_normal);
+  vec3 dPdu     = dFdx(frg_wpos.xyz);
+  vec3 dPdv     = dFdy(frg_wpos.xyz);
+  vec3 normal   = normalize(cross(dPdu, dPdv));
+  //vec3 normal = normalize(frg_normal);
 
   vec4 final_color = vec4(normal, alpha); // Apply fog effect via alpha
 

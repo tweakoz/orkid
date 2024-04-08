@@ -68,6 +68,11 @@ bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t dat
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex) {
+  auto asset_load_req = ptex->loadRequest();
+  if(asset_load_req and asset_load_req->_on_event){
+    asset_load_req->_on_event("_loadDDSTexture"_crcu,nullptr);
+  }
+
   AssetPath Filename = infname;
   ptex->_debugName   = infname.toStdString();
   ///////////////////////////////////////////////
@@ -85,7 +90,12 @@ bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t
 
   auto inpdata   = std::make_shared<DataBlock>(pdata, ifilelen);
   inpdata->_name = infname.toStdString();
-  return _loadDDSTexture(ptex, inpdata);
+  auto OK = _loadDDSTexture(ptex, inpdata);
+  if(asset_load_req and asset_load_req->_on_event){
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
+    asset_load_req->_on_event("loadComplete"_crcu,data);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,7 +210,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     GL_ERRORCHECK();
   } else if (dds::IsBGR8(ddsh->ddspf)) {
     int size = idepth * iwidth * iheight * 3;
-    // printf("  tex<%s> BGR8\n", ptex->_debugName.c_str());
+     printf("  tex<%s> BGR8\n", ptex->_debugName.c_str());
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
     // printf( "  tex<%s> BGR8\n", ptex->_debugName.c_str() );
     ptex->_texFormat = EBufferFormat::BGR8;
@@ -236,7 +246,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     ptex->_texFormat = EBufferFormat::S3TC_DXT3;
     const dds::DdsLoadInfo& li = dds::loadInfoDXT3;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    // printf("  tex<%s> DXT3\n", ptex->_debugName.c_str());
+     printf("  tex<%s> DXT3\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d>\n", ptex->_debugName.c_str(), size);
 
     if (bVOLUMETEX) {
@@ -251,7 +261,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     ptex->_texFormat = EBufferFormat::S3TC_DXT1;
     const dds::DdsLoadInfo& li = dds::loadInfoDXT1;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
-    // printf("  tex<%s> DXT1\n", ptex->_debugName.c_str());
+     printf("  tex<%s> DXT1\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d> nummips<%d> w<%d> h<%d> \n", ptex->_debugName.c_str(), size, NumMips, iwidth, iheight);
     if (bVOLUMETEX) {
       Set3DC(this, ptex.get(), kRGB_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
@@ -295,7 +305,10 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     asset_load_req->_on_event("endLoadMainThread"_crcu,nullptr);
   }
   if(asset_load_req and asset_load_req->_on_event){
-    asset_load_req->_on_event("loadComplete"_crcu,nullptr);
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<std::string>("infname") = asset_load_req->_asset_path.c_str();
+      data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
+    asset_load_req->_on_event("loadComplete"_crcu,data);
   }
 
 }
