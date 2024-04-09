@@ -77,7 +77,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
   /////////////////////
   // merge in asset vars
   /////////////////////
-  if(vars){
+  if (vars) {
     mdl->_varmap.mergeVars(*vars);
   }
   /////////////////////
@@ -102,7 +102,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
     /////////////////////
     // merge in asset vars
     /////////////////////
-    if(vars){
+    if (vars) {
       datablock->_vars->mergeVars(*vars);
     }
     ///////////////////////////////////
@@ -117,17 +117,37 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
+  auto load_req = mdl->_getLoadRequest();
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
   auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   if (extension == "gltf" or //
-    extension == "dae" or  //
-    extension == "fbx" or  //
-    extension == "obj") {
-    return _loadAssimp(mdl, datablock);
-  }
-  else if (check_magic == Char4("chkf")) { // its a chunkfile
-    return _loadXGM(mdl, datablock);
+      extension == "dae" or  //
+      extension == "fbx" or  //
+      extension == "obj") {
+    bool OK = _loadAssimp(mdl, datablock);
+    if (load_req) {
+      auto data                                    = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<std::string>("loader") = "_loadAssimp";
+      if (OK) {
+        load_req->_on_event("loadComplete"_crcu, data);
+      } else {
+        load_req->_on_event("loadFailed"_crcu, data);
+      }
+    }
+    return OK;
+  } else if (check_magic == Char4("chkf")) { // its a chunkfile
+    bool OK = _loadXGM(mdl, datablock);
+    if (load_req) {
+      auto data                                    = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<std::string>("loader") = "_loadXGM";
+      if (OK) {
+        load_req->_on_event("loadComplete"_crcu, data);
+      } else {
+        load_req->_on_event("loadFailed"_crcu, data);
+      }
+    }
+    return OK;
   } else if (check_magic == Char4("glTF")) { // its a glb (binary)
     if (ASSET_ENCRYPT_MODE()) {
       auto codec               = std::make_shared<DefaultEncryptionCodec>();
@@ -139,7 +159,7 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
     return _loadAssimp(mdl, datablock);
   } else if (datablock->is_ascii() and datablock->is_likely_json()) {
     datablock->zeroExtend();
-    bool OK = _loadOrkScene(mdl,datablock);
+    bool OK = _loadOrkScene(mdl, datablock);
     return OK;
   }
   printf("check_magic<%08x>\n", check_magic);
@@ -188,7 +208,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
     } else if (auto as_dbl = v.tryAs<double>()) {
       basehasher->accumulateItem<double>(as_dbl.value());
     } else {
-      OrkAssert(false);
+      //OrkAssert(false);
     }
   }
   /////////////////////////////////////

@@ -56,6 +56,7 @@ XgmModelLoader::XgmModelLoader()
 ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
   auto absolutepath = loadreq->_asset_path.toAbsolute();
   auto modelasset   = std::make_shared<XgmModelAsset>();
+  modelasset->GetModel()->_asset = modelasset.get();
   logchan_l2asso->log("LoadModelAsset<%s>", absolutepath.c_str());
   bool OK = false;
   if (absolutepath.getExtension() == "xgm" or //

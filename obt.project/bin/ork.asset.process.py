@@ -25,14 +25,18 @@ assets_to_process = [
   "lev2://textures/Inconsolata48.png",
   "lev2://textures/dflayer.png",
   "lev2://textures/dflayersel.png",
+  "data://tests/misc_gltf_samples/DamagedHelmet.glb",
 ]
 asset_count = len(assets_to_process)
 #######################################
-def on_event(evcode,data):
+def on_event(loadreq,evcode,data):
   if evcode == tokens.loadComplete.hashed:
     global asset_count
     asset_count -= 1
-    print("assets remaining<%d>" % asset_count)
+    if loadreq.assetPath in assets_to_process:
+      assets_to_process.remove(loadreq.assetPath)
+    print("rem<%d> COMPLETE: %s" % (asset_count,loadreq.assetPath))
+    print(assets_to_process)
 #######################################
 for item in assets_to_process:
   asset.enqueueLoad(

@@ -56,12 +56,12 @@ void pyinit_asset(py::module& module_core) {
     }
     auto loadreq = std::make_shared<LoadRequest>(apath,as_varmap);
     if(py_on_event){
-      loadreq->_asset_vars->makeValueForKey<py::function>("event_handler") = py_on_event;
+      loadreq->_asset_vars->makeValueForKey<py::function>("_event_handler") = py_on_event;
       auto cpp_on_event = ([=](uint32_t event,varmap::var_t value) { //
         py::gil_scoped_acquire acquire;
-        auto pyfn = loadreq->_asset_vars->typedValueForKey<py::function>("event_handler");
+        auto pyfn = loadreq->_asset_vars->typedValueForKey<py::function>("_event_handler");
         auto encoded = type_codec->encode(value);
-        pyfn.value()(event,encoded);
+        pyfn.value()(loadreq,event,encoded);
       });
       loadreq->_on_event = cpp_on_event;
     }
@@ -84,7 +84,8 @@ void pyinit_asset(py::module& module_core) {
   type_codec->registerStdCodec<asset_ptr_t>(aset_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto lreq_type = py::class_<LoadRequest,loadrequest_ptr_t>(amodule, "LoadRequest")
-  .def("waitForCompletion", &LoadRequest::waitForCompletion);
+  .def("waitForCompletion", &LoadRequest::waitForCompletion)
+  .def_property_readonly("assetPath", [](loadrequest_ptr_t lreq) -> std::string { return lreq->_asset_path.c_str(); });
   type_codec->registerStdCodec<loadrequest_ptr_t>(lreq_type);
 }
 }
