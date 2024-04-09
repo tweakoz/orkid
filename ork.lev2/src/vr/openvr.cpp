@@ -338,7 +338,7 @@ void OpenVrDevice::__composite(lev2::Context* targ, Texture* twoeyetex) const  {
 
     auto fbi = targ->FBI();
 
-    auto twoeyetexOBJ = twoeyetex->_varmap.typedValueForKey<GLuint>("gltexobj").value();
+    auto twoeyetexOBJ = twoeyetex->_vars->typedValueForKey<GLuint>("gltexobj").value();
 
     _ovr::Texture_t twoEyeTexture = {(void*)(uintptr_t)twoeyetexOBJ, _ovr::TextureType_OpenGL, _ovr::ColorSpace_Gamma};
 
