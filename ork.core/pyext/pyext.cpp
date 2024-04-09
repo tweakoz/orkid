@@ -398,7 +398,7 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_datablock(module_core);
   pyinit_asset(module_core);
   /////////////////////////////////////////////////////////////////////////////////
-  static auto l2pedir = py::cast(_lev2pyexdir());
+  auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {

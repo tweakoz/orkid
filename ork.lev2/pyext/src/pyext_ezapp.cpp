@@ -44,13 +44,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_static(
           "create",
           [type_codec](py::object appinstance,py::kwargs kwargs) { //
-
             ork::genviron.init_from_global_env();
-
             auto appinitdata = std::make_shared<AppInitData>();
-            
             rcfd_ptr_t override_rcfd = nullptr;
-
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
@@ -76,10 +72,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               }
             }
 
-
             auto rval                                              = OrkEzApp::create(appinitdata);
+            
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
+            rval->_vars->makeValueForKey<py::object>("appinstance") = appinstance;
             rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
@@ -243,8 +240,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           })
       .def(
           "mainThreadLoop",
-          [](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
-
+          [=](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);

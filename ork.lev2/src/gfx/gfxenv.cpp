@@ -34,7 +34,8 @@
 template class ork::util::ContextTLS<ork::lev2::ThreadGfxContext>;
 
 ork::lev2::Context* ork::lev2::contextForCurrentThread(){
-  return ork::lev2::ThreadGfxContext::context()->_context;
+    auto thrctx = ork::lev2::ThreadGfxContext::context();
+  return thrctx ? thrctx->_context : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
