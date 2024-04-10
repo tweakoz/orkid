@@ -30,6 +30,35 @@ GlFboObject::GlFboObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static bool _checkFboComplete(GLuint fboID){
+  bool rval = false;
+  GLuint cache_prior_fbo = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cache_prior_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+  GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  switch (status) {
+      case GL_FRAMEBUFFER_COMPLETE:
+        rval = true;
+        break;
+      case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n");
+        break;
+      case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT\n");
+        break;
+      case GL_FRAMEBUFFER_UNSUPPORTED:
+        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER_UNSUPPORTED\n");
+        break;
+      default:
+        deco::printf(fvec3::Red(), "GL_FRAMEBUFFER incomplete (?) status: %08x\n", status );
+        break;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, cache_prior_fbo);
+    return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   // printf("FBI<%p> SetRTG<%p>\n", this, rtgroup );
@@ -629,7 +658,12 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
   }
 
   if( auto src_groupimpl = src_rtg->_impl.tryAs<glrtgroupimpl_ptr_t>() ){
+
     auto src_fbo_impl = src_groupimpl.value()->_depthonly;
+
+    bool is_complete = _checkFboComplete(src_fbo_impl->_fbo);
+    OrkAssert(is_complete);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_fbo_impl->_fbo); 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst_rtg_impl->_depthonly->_fbo);
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
