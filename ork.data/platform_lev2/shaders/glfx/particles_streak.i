@@ -145,15 +145,15 @@ libblock lib_streak //
     float wid = geo_lw[0].y;
     float len = geo_lw[0].x;
 
-    vec3 pos = gl_in[0].gl_Position.xyz;
+    vec3 inp_pos = gl_in[0].gl_Position.xyz;
 
-    vec3 lpos = pos - vel * len;
+    //vec3 lpos = inp_pos - vel * len;
     vec3 crs  = wid * normalize(cross(vel, cnrm));
 
-    vec3 p0 = pos + crs;
-    vec3 p1 = pos - crs;
-    vec3 p2 = lpos - crs;
-    vec3 p3 = lpos + crs;
+    vec3 p0 = inp_pos + crs;
+    vec3 p1 = inp_pos - crs;
+    vec3 p2 = inp_pos - crs;
+    vec3 p3 = inp_pos + crs;
 
     outp.pos0 = mvp * vec4(p0, 1.0);
     outp.pos1 = mvp * vec4(p1, 1.0);

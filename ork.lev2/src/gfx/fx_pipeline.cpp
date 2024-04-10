@@ -51,6 +51,9 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
+    if(_debugBreak){
+        OrkBreak();
+    }
   int inumpasses = beginBlock(RCID);
   if(_debugPrint){
     printf( "FxPipeline<%p:%s> wrappedDrawCall inumpasses<%d>\n", this, _debugName.c_str(), inumpasses );

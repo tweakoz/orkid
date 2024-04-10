@@ -298,7 +298,7 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
-  rsi->BindRasterState(_rasterstate);
+  rsi->BindRasterState(_rasterstate,true);
   OrkAssert(tek->mbValidated);
  }
 ///////////////////////////////////////////////////////////////////////////////

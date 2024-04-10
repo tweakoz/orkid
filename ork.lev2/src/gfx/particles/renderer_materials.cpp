@@ -170,7 +170,12 @@ GradientMaterial::GradientMaterial() {
     fvec2 uv0(fang, size);
     fvec2 uv1(clamped_unitage, ptc->mfRandom);
     //////////////////////////////////////////////////////
-    vw.AddVertex(sprite_vtx_t(ptc->mPosition, fvec3(0), fvec3(0), uv0, uv1));
+    vw.AddVertex(sprite_vtx_t( //
+      ptc->mPosition, //
+      fvec3(0), // NRM
+      fvec3(0), // VEL
+      uv0, // UV0
+      fvec2(1,0))); // UV1
   };
   /////////////////////////////////////////////////////////////////////////
   _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
@@ -219,9 +224,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(Blending::ADDITIVE);
+  _material->_rasterstate.SetBlending(Blending::OFF);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(_depthtest);
+  _material->_rasterstate.SetDepthTest(EDepthTest::OFF); //_depthtest);
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
@@ -284,6 +289,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
+
   auto context = RCID.context();
   auto FXI     = context->FXI();
   auto FBI     = context->FBI();
@@ -312,6 +318,7 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     bool prev_stereo = CPD.isStereoOnePass();
     CPD.setStereoOnePass(false);
     /////////////////////////////////////////
+    _grad_render_pipeline->_debugPrint = false;
     FBI->PushRtGroup(_gradient_rtgroup.get());
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
       GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
@@ -319,12 +326,13 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     CPD.setStereoOnePass(prev_stereo);
     FBI->PopRtGroup();
     _averageColor = _gradient->average();
+    FXI->reset();
     /////////////////////////////////////////
   }
   ///////////////////////////////
-  _material->_rasterstate.SetBlending(_blending);
-  _material->_rasterstate.SetZWriteMask(false);
-  _material->_rasterstate.SetDepthTest(_depthtest);
+  //_material->_rasterstate.SetBlending(Blending::OFF);//_blending);
+  //_material->_rasterstate.SetZWriteMask(false);
+  //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);//_depthtest);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////

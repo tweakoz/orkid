@@ -89,8 +89,8 @@ def presetMaterial(grad=presetGRAD(0),texname="src://effect_textures/knob2"):
   material = particles.GradientMaterial.createShared()
   material.modulation_texture = Texture.load(texname)
   material.gradient = grad
-  material.blending = tokens.ADDITIVE
-  material.depthtest = tokens.LEQUALS
+  material.blending = tokens.OFF
+  material.depthtest = tokens.OFF
   return material
 
 ################################################

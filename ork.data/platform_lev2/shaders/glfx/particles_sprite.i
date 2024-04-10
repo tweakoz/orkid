@@ -30,22 +30,6 @@ vertex_interface vface_sprite : uset_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_sprite : vface_sprite {
-  gl_Position = position;
-  geo_cnrm = normal;
-  geo_vel  = velocity;
-  geo_lw   = lw;
-  geo_ra = ra;
-}
-///////////////////////////////////////////////////////////////
-vertex_shader vs_sprite_tex : vface_sprite {
-  gl_Position = position;
-  geo_cnrm = normal;
-  geo_vel  = velocity;
-  geo_lw   = lw;
-  geo_ra = ra;
-}
-///////////////////////////////////////////////////////////////
 geometry_interface gface_sprite //
   : gface_sprite_base { //
 
@@ -72,7 +56,7 @@ libblock lib_sprite //
     PtcOutput outp;
     //vec3 vel  = geo_vel[0].xyz;
     //vec3 cnrm = geo_cnrm[0].xyz;
-    float size = geo_lw[0].y;
+    float size = 0.1;//geo_lw[0].y;
 
     mat4 iv = transpose(MatIV);
     vec3 UP = normalize(vec3(iv[0][0], iv[1][0], iv[2][0])) * size;
@@ -94,11 +78,30 @@ libblock lib_sprite //
   }
 }
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite : vface_sprite {
+  gl_Position = position;
+  geo_cnrm = normal;
+  geo_vel  = velocity;
+  geo_lw   = lw;
+  geo_ra = ra;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_sprite_tex : vface_sprite {
+  gl_Position = position;
+  geo_cnrm = normal;
+  geo_vel  = velocity;
+  geo_lw   = lw;
+  geo_ra = ra;
+}
+///////////////////////////////////////////////////////////////
 geometry_shader gs_sprite //
   : gface_sprite //
   : lib_sprite
   : uset_vtx { //
   PtcOutput outp = computeSprite(MatMVP);
+  vec3 NRM = geo_cnrm[0];
+  vec3 VEL = geo_vel[0];
+  vec2 LW = geo_lw[0];
   gl_Position       = outp.pos0;
   frg_uv1     = geo_ra[0];
   frg_clr     = vec4(0,0,0,0);

@@ -253,7 +253,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     render_time_1c = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     material->update(RCID);
-    auto pipeline = material->pipeline(RCID, true);
+    auto pipeline = material->pipeline(RCID, false);
     pipeline->wrappedDrawCall(RCID, [&]() {
       context->RSI()->BindRasterState(material->_material->_rasterstate);
       context->GBI()->DrawPrimitiveEML(
@@ -305,9 +305,11 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       vw.UnLock(context);
 
       auto pipeline = material->pipeline(RCID, false);
+        //pipeline->_debugBreak = true;
+        pipeline->_debugPrint = true;
+      material->update(RCID);
       pipeline->wrappedDrawCall(RCID, [&]() {
-        material->update(RCID);
-        // printf( "YO...\n");
+        printf( "YO... size_is_varying<%d> icnt<%d> tek<%s> \n", int(size_is_varying), icnt, pipeline->_technique->mTechniqueName.c_str() );
         context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       });
