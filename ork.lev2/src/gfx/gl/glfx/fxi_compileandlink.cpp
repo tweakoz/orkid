@@ -12,7 +12,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/datacache.h>
 
-constexpr bool _DEBUG_SHADER_COMPILE = true;
+constexpr bool _DEBUG_SHADER_COMPILE = false;
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////

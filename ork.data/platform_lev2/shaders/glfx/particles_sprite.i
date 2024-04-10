@@ -19,14 +19,14 @@ vertex_interface vface_sprite : uset_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 velocity : BINORMAL;
-    vec2 lw : TEXCOORD1; // size
-    vec2 ra : TEXCOORD2; // random and age
+    vec2 vtx_rnd_age : TEXCOORD0; // random and age
+    vec2 vtx_ang_size : TEXCOORD1; // size
   }
   outputs {
     vec3 geo_cnrm; // NOT an array
     vec3 geo_vel; // NOT an array
-    vec2 geo_lw; // NOT an array
-    vec2 geo_ra; // NOT an array
+    vec2 geo_size; // NOT an array
+    vec2 geo_rnd_age; // NOT an array
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -38,8 +38,8 @@ geometry_interface gface_sprite //
   inputs {
     vec3 geo_cnrm[];
     vec3 geo_vel[];
-    vec2 geo_lw[];
-    vec2 geo_ra[];
+    vec2 geo_size[];
+    vec2 geo_rnd_age[];
   }
 
   outputs {
@@ -54,9 +54,8 @@ libblock lib_sprite //
   ///////////////////////////////////////////
   PtcOutput computeSprite(mat4 mvp) {
     PtcOutput outp;
-    //vec3 vel  = geo_vel[0].xyz;
-    //vec3 cnrm = geo_cnrm[0].xyz;
-    float size = 0.1;//geo_lw[0].y;
+
+    float size = geo_size[0].y;
 
     mat4 iv = transpose(MatIV);
     vec3 UP = normalize(vec3(iv[0][0], iv[1][0], iv[2][0])) * size;
@@ -82,16 +81,16 @@ vertex_shader vs_sprite : vface_sprite {
   gl_Position = position;
   geo_cnrm = normal;
   geo_vel  = velocity;
-  geo_lw   = lw;
-  geo_ra = ra;
+  geo_size   = vtx_ang_size;
+  geo_rnd_age = vtx_rnd_age;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_sprite_tex : vface_sprite {
   gl_Position = position;
   geo_cnrm = normal;
   geo_vel  = velocity;
-  geo_lw   = lw;
-  geo_ra = ra;
+  geo_size   = vtx_ang_size;
+  geo_rnd_age = vtx_rnd_age;
 }
 ///////////////////////////////////////////////////////////////
 geometry_shader gs_sprite //
@@ -101,9 +100,9 @@ geometry_shader gs_sprite //
   PtcOutput outp = computeSprite(MatMVP);
   vec3 NRM = geo_cnrm[0];
   vec3 VEL = geo_vel[0];
-  vec2 LW = geo_lw[0];
+  vec2 LW = geo_size[0];
   gl_Position       = outp.pos0;
-  frg_uv1     = geo_ra[0];
+  frg_uv1     = geo_rnd_age[0];
   frg_clr     = vec4(0,0,0,0);
   frg_uv0     = vec2(0,0);
   EmitVertex();

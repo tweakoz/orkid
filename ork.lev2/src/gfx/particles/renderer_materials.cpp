@@ -71,9 +71,9 @@ MaterialBase::MaterialBase() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
-  _pipeline->_technique = (RCID._RCFD->isStereo())                                      //
-                              ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereoCI) //
-                              : (streaks ? _tek_streaks : _tek_sprites);
+  _pipeline->_technique = (RCID._RCFD->isStereo())                                        // ?
+                              ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereoCI) // stereo
+                              : (streaks ? _tek_streaks : _tek_sprites);                  // mono
   return _pipeline;
 }
 
@@ -167,31 +167,34 @@ GradientMaterial::GradientMaterial() {
     //////////////////////////////////////////////////////
     //fvec4 color = _gradient->sample(clamped_unitage);
     //////////////////////////////////////////////////////
-    fvec2 uv0(fang, size);
-    fvec2 uv1(clamped_unitage, ptc->mfRandom);
+    fvec2 uv0(ptc->mfRandom,clamped_unitage);
+    fvec2 uv1(fang, size);
     //////////////////////////////////////////////////////
     vw.AddVertex(sprite_vtx_t( //
       ptc->mPosition, //
       fvec3(0), // NRM
       fvec3(0), // VEL
       uv0, // UV0
-      fvec2(1,0))); // UV1
+      uv1)); // UV1
   };
   /////////////////////////////////////////////////////////////////////////
   _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
-                           const BasicParticle* ptcl,  //
+                           const BasicParticle* ptc,  //
                            fvec2 LW,                   //
                            fvec3 obj_nrmz) {           //
-    float fage            = ptcl->mfAge;
-    float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+    float fage            = ptc->mfAge;
+    float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
     float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
     //////////////////////////////////////////////////////
+    fvec2 uv0(ptc->mfRandom,clamped_unitage);
+    fvec2 uv1(LW.x, LW.y);
+    //////////////////////////////////////////////////////
     vw.AddVertex(streak_vtx_t(
-        ptcl->mPosition, //
-        obj_nrmz,        //
-        ptcl->mVelocity, //
-        LW,              //
-        ork::fvec2(clamped_unitage, ptcl->mfRandom)));
+        ptc->mPosition, // pos
+        obj_nrmz,        // nrm
+        ptc->mVelocity, // vel
+        uv0,             // UV0
+        uv1));           // UV1
   };
   /////////////////////////////////////////////////////////////////////////
 }
@@ -224,9 +227,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(Blending::OFF);
+  _material->_rasterstate.SetBlending(Blending::OFF);//_blending);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::OFF); //_depthtest);
+  _material->_rasterstate.SetDepthTest(EDepthTest::OFF);//_depthtest);
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
@@ -330,9 +333,9 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     /////////////////////////////////////////
   }
   ///////////////////////////////
-  //_material->_rasterstate.SetBlending(Blending::OFF);//_blending);
+  //_material->_rasterstate.SetBlending(_blending);
   //_material->_rasterstate.SetZWriteMask(false);
-  //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);//_depthtest);
+  //_material->_rasterstate.SetDepthTest(_depthtest);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////

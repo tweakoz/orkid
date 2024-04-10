@@ -83,6 +83,7 @@ class ParticlesApp(object):
     self.STRK.inputs.Length = .1
     self.STRK.inputs.Width = .01
     self.STRK.material = presetMaterial()
+    #self.STRK.material = particles.FlatMaterial.createShared()
     self.EMITN.inputs.EmissionVelocity = 0.1
     presetPOOL1(self.POOL)
     presetEMITN1(self.EMITN)

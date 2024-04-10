@@ -101,13 +101,13 @@ fragment_shader ps_flat : fface_psys {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grad : fface_psys {
-  float unit_age = frg_uv1.x;
+  float unit_age = frg_uv1.y;
   vec4 C = frg_clr;
   vec4 gmap = texture(GradientMap, vec2(0.01+unit_age*0.98, 0.0));
   vec4 cmap = texture(ColorMap, frg_uv0.xy);
-  out_clr.xyz = (gmap.xyz*cmap.xyz);//*ColorFactor;
-  out_clr.w = gmap.w*cmap.w;//*AlphaFactor;
-  out_clr = vec4(1,0,0,1);
+  out_clr.xyz = (gmap.xyz*cmap.xyz)*ColorFactor;
+  out_clr.w = gmap.w*cmap.w*AlphaFactor;
+  out_clr = vec4(1,1, 0,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modtexclr : fface_psys {
