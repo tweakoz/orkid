@@ -170,8 +170,8 @@ inline GpuResources::GpuResources(
   auto rendnode    = nodetek->tryRenderNodeAs<ork::lev2::pbr::deferrednode::DeferredCompositingNodePbr>();
   _pbrcommon   = rendnode->_pbrcommon;
 
-  _pbrcommon->_depthFogDistance = 4000.0f;
-  _pbrcommon->_depthFogPower    = 5.0f;
+  _pbrcommon->_depthFogDistance = 10000.0f;
+  _pbrcommon->_depthFogPower    = 1.0f;
   _pbrcommon->_skyboxLevel      = 1;
   _pbrcommon->_diffuseLevel     = 1;
   _pbrcommon->_specularLevel    = 1;
