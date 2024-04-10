@@ -52,7 +52,7 @@ libblock lib_fwd
 
     vec3 wpos = pbd._wpos;
     //vec3 metalbase = vec3(0.04);
-    vec3 metalbase = vec3(0.08);
+    vec3 metalbase = vec3(0.2);
     /////////////////////////
     //vec3 albedo = gbd._wnrm;
     vec3 albedo = pbd._albedo;
@@ -86,8 +86,6 @@ libblock lib_fwd
     //brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
     brdf = clamp(brdf,vec2(0),vec2(1));
     /////////////////////////
-    vec3 S0 = mix(vec3(1),albedo,pow(metallic,1));
-    /////////////////////////
     vec3 F0 = mix(metalbase,basecolor,metallic);
     vec3 G0 = mix(metalbase,basecolor,1.0-metallic);
     vec3 F        = fresnelSchlickRoughness(costheta, F0, roughness);
@@ -105,12 +103,7 @@ libblock lib_fwd
     float spec_ruf = pow(roughness,1.3)*0.7;
     float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
     refl = vec3(refl.x,-refl.y,refl.z);
-    //vec3 spec_envA = env_equirectangular(refl,MapSpecularEnv,120);
-    //vec3 spec_envB = env_equirectangular(refl,MapSpecularEnv,0);
-    //vec3 spec_env = mix(spec_envA,spec_envB,roughness);
     vec3 spec_env = env_equirectangular(refl,MapSpecularEnv,spec_miplevel);
-    //spec_env = mix(spec_env,spec_env*basecolor,metallic);
-    //spec_env = clamp(spec_env,0,1);
     vec3 specular_light = ambient+spec_env*SkyboxLevel;
     vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
     vec3 specularMask = clamp(F*brdf.x+brdf.y,0,1);

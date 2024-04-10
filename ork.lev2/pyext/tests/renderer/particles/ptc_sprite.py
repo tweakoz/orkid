@@ -81,7 +81,7 @@ class ParticlesApp(object):
     createParticleData(self,ptc_data,ptc_connections,self.layer1)
     self.POOL.pool_size = 16384 # max number of particles in pool
 
-    self.SPRI.inputs.Size = 0.05
+    self.SPRI.inputs.Size = 0.1
     self.SPRI.inputs.GradientIntensity = 1
     self.SPRI.material = presetMaterial()
     self.EMITN.inputs.EmissionVelocity = 0.1
