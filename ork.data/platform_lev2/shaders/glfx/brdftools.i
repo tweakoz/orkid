@@ -13,7 +13,7 @@ libblock lib_brdf : lib_math {
   }
   vec3 importanceSampleGGXN(vec2 e, vec3 n, float roughness) {
     vec3 h = importanceSampleGGX(e,roughness);
-    vec3 up        = abs(n.z) < 0.999
+    vec3 up        = abs(normalize(n).z) < 0.999
                    ? vec3(0.0, 0.0, 1.0)
                    : vec3(1.0, 0.0, 0.0);
     vec3 tangent   = normalize(cross(up, n));

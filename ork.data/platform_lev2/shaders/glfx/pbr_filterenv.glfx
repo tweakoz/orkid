@@ -79,15 +79,14 @@ fragment_shader ps_filterSpecularEnvMap
 	vec3 o = vec3(0,0,0);
 	float w = 0;
 	//////////////////////////////////
-	float ruf = 4.3/imgdim.x;//*roughness; xyze
-	//////////////////////////////////
 	for( uint i=0; i<8192; i++){
 		vec2 e = hammersley(i,8192);
-		vec3 h = importanceSampleGGXN(e,n,ruf);
+		vec3 h = importanceSampleGGXN(e,n,roughness);
 		vec3 l = normalize(2.0 * dot(v, h) * h - v);
 		float ndotl = satdot(n, l);
 		if(ndotl > 0.0){
 			vec2 luv = env_equirectangularN2UV(l);
+			luv = clamp(luv,0,1);
 		  o += textureLod(prefiltmap, luv,0).rgb * ndotl;
 		  w += ndotl;
 		}

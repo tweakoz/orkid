@@ -209,7 +209,38 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
             level._data->data());
         break;
 #endif
+      case EBufferFormat::RGB32F:
+        printf( "unsupported format<RGB32F>\n");
+        OrkAssert(false);
+        break;
+      case EBufferFormat::RGBA32F:
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGBA32F);
+          data->makeValueForKey<std::string>("format_string") = "RGBA32F";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_RGBA32F  ,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RGBA,          // format
+            GL_FLOAT, // datatype
+            level._data->data());
+        break;       
+      case EBufferFormat::NONE:
+        printf( "unsupported format<NONE>\n");
+        OrkAssert(false);
+        break;
       default:
+        printf( "unsupported format<%zx>\n", (uint64_t)req.ptex->_texFormat);
         OrkAssert(false);
         break;
     }

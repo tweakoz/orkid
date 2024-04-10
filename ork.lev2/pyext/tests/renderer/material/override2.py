@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys
+import math, random, argparse, sys, colorsys
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -84,7 +84,8 @@ class SceneGraphApp(object):
       params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
 
     createSceneGraph(app=self,
-                     rendermodel="DeferredPBR",
+                     #rendermodel="DeferredPBR",
+#                    rendermodel="ForwardPBR",
                      params_dict=params_dict)
 
     self.pbrcommon = self.rendernode.pbr_common
@@ -148,9 +149,13 @@ class SceneGraphApp(object):
       node = self.nodes[i]
       subinst = node.modelinst.submeshinsts[0]
       mtl_cloned = subinst.material
-      r = random.uniform(0,1)
-      g = random.uniform(0,1)
-      b = random.uniform(0,1)
+      h = random.uniform(0,6)
+      s = random.uniform(0,1)
+      v = random.uniform(0,1)
+      rgb = colorsys.hsv_to_rgb(h,s,v)
+      r = rgb[0]
+      g = rgb[1]
+      b = rgb[2]
       mtl_cloned.baseColor = vec4(r,g,b,1)
 
   ################################################

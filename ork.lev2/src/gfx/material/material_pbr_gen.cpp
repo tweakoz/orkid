@@ -35,6 +35,13 @@ static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3
 
 extern std::atomic<int> __FIND_IT;
 
+float roughness_power = 1.0f;
+int _SALT(){
+  //return rand();
+  return 19;  
+}
+
+
 /////////////////////////////////////////////////////////////////////////
 
 static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
@@ -246,6 +253,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   ///////////////////////////////////////////////
   logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h );
   boost::Crc64 basehasher;
+  basehasher.accumulateItem<int>(_SALT());
   basehasher.accumulateString("filterenv-spec-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.accumulateItem<uint32_t>(shader_hash());
@@ -265,7 +273,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
     int numpix = w * h;
     int imip   = 0;
-    while (numpix != 0) {
+    while ((w>4) and (h>4)) {
       numpix = w * h;
       w >>= 1;
       h >>= 1;
@@ -283,7 +291,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     numpix = w * h;
     std::atomic<int> pending = 0;
     std::vector<compressedimg_ptr_t> cimgs;
-    while ( (w>=4) and (h>=4) ) {
+    for( int imip=0; imip<nummips; imip++ ) {
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
@@ -294,13 +302,15 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       filtex->_rtbuffer    = outbuffr;
       outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
 
-      logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
-      logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
-      float roughness = float(imip) / float(nummips - 1);
+      float roughness = float(imip) / float(nummips-1);
+      roughness = powf(roughness, roughness_power);
+      ///////////////////////////////////////////////
+      logchan_pbrgen->log("filterenv imip<%d> nummips<%d> w<%d> h<%d> roughness<%g>", imip, nummips, w, h, roughness);
+      logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap.get());
@@ -330,7 +340,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       cimgs.push_back(cimg);
       auto op = [=,&pending](){
         Image im;
-        im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
         im.compressDefault(*cimg);
         pending.fetch_sub(1);
       };
@@ -404,6 +414,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   logchan_pbrgen->log("filterenv-diff tex<%p> hash<0x%zx>", (void*) rawenvmap.get(), rawenvmap->_contentHash);
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-diff-v0");
+  basehasher.accumulateItem<int>(_SALT());
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.accumulateItem<uint32_t>(shader_hash());
   basehasher.accumulateItem<uint32_t>(this_hash());
@@ -470,7 +481,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       cimgs.push_back(cimg);
       auto op = [=,&pending](){
         Image im;
-        im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
         im.compressDefault(*cimg);
         pending.fetch_sub(1);
       };

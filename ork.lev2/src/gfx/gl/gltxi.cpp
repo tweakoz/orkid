@@ -817,6 +817,10 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   for (size_t l = 0; l < nummips; l++) {
     auto pchl = from_chain->_levels[l];
     switch (from_chain->_format) {
+      case EBufferFormat::RGB32F:
+        OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec3));
+        glTexImage2D(GL_TEXTURE_2D, l, GL_RGB32F, pchl->_width, pchl->_height, 0, GL_RGB, GL_FLOAT, pchl->_data);
+        break;
       case EBufferFormat::RGBA32F:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
         glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);

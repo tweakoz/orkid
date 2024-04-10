@@ -238,7 +238,22 @@ void Image::downsample(Image& imgout) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initWithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
+void Image::initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
+  switch(numc){
+    case 1:
+      _format = EBufferFormat::R8;
+      break;
+    case 3:
+      _format = EBufferFormat::RGB8;
+      break;
+    case 4:
+      _format = EBufferFormat::RGBA8;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  _bytesPerChannel = 1;
   init(w, h, numc, 1);
   auto outptr = (uint8_t*)_data->data();
   for (int y = 0; y < h; y++) {
@@ -454,9 +469,8 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::uncompressed(CompressedImage& imgout) const {
-  bool is_16 = _bytesPerChannel == 2; // Determine if the source image is 16 bits per channel
   deco::printf(
-      _image_deco, "// Image::uncompressed(%s) w<%zu> h<%zu> is_16<%d>\n", _debugName.c_str(), _width, _height, int(is_16));
+      _image_deco, "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>\n", _debugName.c_str(), _width, _height, _bytesPerChannel, _format);
   imgout._format = _format;
   OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
