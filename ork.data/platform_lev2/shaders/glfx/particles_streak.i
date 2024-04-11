@@ -111,9 +111,9 @@ vertex_interface vface_streak : uset_vtx {
 vertex_shader vs_streak : vface_streak {
   gl_Position = position;
   geo_cnrm = vec3(0,1,0);
-  geo_vel  = vec3(1,1,1);//velocity;
+  geo_vel  = velocity;
   geo_rnd_age = vtx_rnd_age;
-  geo_len_wid   = vec2(.2,.3);//vtx_len_wid;
+  geo_len_wid   = vtx_len_wid;
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_streak //
@@ -147,13 +147,13 @@ libblock lib_streak //
 
     vec3 inp_pos = gl_in[0].gl_Position.xyz;
 
-    //vec3 lpos = inp_pos - vel * len;
+    vec3 lpos = inp_pos - vel * len;
     vec3 crs  = wid * normalize(cross(vel, cnrm));
 
     vec3 p0 = inp_pos + crs;
     vec3 p1 = inp_pos - crs;
-    vec3 p2 = inp_pos - crs;
-    vec3 p3 = inp_pos + crs;
+    vec3 p2 = lpos - crs;
+    vec3 p3 = lpos + crs;
 
     outp.pos0 = mvp * vec4(p0, 1.0);
     outp.pos1 = mvp * vec4(p1, 1.0);

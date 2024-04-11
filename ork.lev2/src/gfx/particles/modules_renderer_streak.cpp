@@ -369,13 +369,15 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       vw.UnLock(context);
 
       auto pipeline = material->pipeline(RCID, true);
-      pipeline->_debugBreak = false;
+      pipeline->_debugPrint = false;
       material->update(RCID);
+      //printf( ">>>>>>>\n");
       pipeline->wrappedDrawCall(RCID, [&]() {
         context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
-        printf( "HI... icnt<%d> variant<%d>\n", icnt, variant );
+        //printf( "HI... icnt<%d> variant<%d>\n", icnt, variant );
       });
+      //printf( "<<<<<<<\n");
     }
   }
   double render_time_2 = prender_timer.SecsSinceStart();

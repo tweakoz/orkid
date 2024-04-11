@@ -107,7 +107,7 @@ fragment_shader ps_grad : fface_psys {
   vec4 cmap = texture(ColorMap, frg_uv0.xy);
   out_clr.xyz = (gmap.xyz*cmap.xyz)*ColorFactor;
   out_clr.w = gmap.w*cmap.w*AlphaFactor;
-  out_clr = vec4(1,1, 0,1);
+  //out_clr = vec4(1,1, 0,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modtexclr : fface_psys {

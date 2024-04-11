@@ -12,7 +12,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/datacache.h>
 
-constexpr bool _DEBUG_SHADER_COMPILE = false;
+constexpr bool _DEBUG_SHADER_COMPILE = true;
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ bool Shader::Compile() {
   const char* c_str = shadertext.c_str();
 
   if (_DEBUG_SHADER_COMPILE) {
-    //printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
+    printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
   }
 
   GL_NF_ERRORCHECK();
@@ -83,7 +83,7 @@ bool Shader::Compile() {
 
   if(_DEBUG_SHADER_COMPILE){
     double compile_time = ctimer.SecsSinceStart();
-    //printf( "SHADER<%s> COMPILE TIME<%f>\n", mName.c_str(), compile_time );
+    printf( "SHADER<%s> COMPILE TIME<%f>\n", mName.c_str(), compile_time );
   }
   return true;
 }
@@ -157,7 +157,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
   uint64_t pipeline_hash = pipeline_hasher->result();
 
   auto pipeline_datablock = DataBlockCache::findDataBlock(pipeline_hash);
-  if(_debugDrawCall){
+  if(true) { //_debugDrawCall){
     pipeline_datablock = nullptr;
   }
   ////////////////////////////////////////////////////////////
@@ -215,6 +215,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
       if (false == compile_ok) {
         container->mShaderCompileFailed = true;
+        OrkAssert(false);
       }
       return compile_ok;
     };

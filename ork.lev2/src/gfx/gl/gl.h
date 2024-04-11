@@ -37,19 +37,20 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(RENDERDOC_API_ENABLED)
-#include <renderdoc_app.h>
+//#include <renderdoc_app.h>
+#undef RENDERDOC_API_ENABLED
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
 #define USE_ORKSL_LANG
 
-#if 0 // defined( _DEBUG )
+#if 1 //defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
     if (iErr != GL_NO_ERROR)                                                                                                       \
       printf("GL_ERROR<%08x>\n", iErr);                                                                                            \
-    OrkAssert(iErr == GL_NO_ERROR);                                                                                                \
+    OrkAssert(iErr == GL_NO_ERROR);    \
   }
 #else
 #define GL_ERRORCHECK()                                                                                                            \

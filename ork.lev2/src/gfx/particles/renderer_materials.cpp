@@ -227,9 +227,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(Blending::OFF);//_blending);
+  _material->_rasterstate.SetBlending(_blending);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::OFF);//_depthtest);
+  _material->_rasterstate.SetDepthTest(_depthtest);
   _material->_rasterstate.SetZWriteMask(false);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
@@ -333,9 +333,9 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     /////////////////////////////////////////
   }
   ///////////////////////////////
-  //_material->_rasterstate.SetBlending(_blending);
-  //_material->_rasterstate.SetZWriteMask(false);
-  //_material->_rasterstate.SetDepthTest(_depthtest);
+  _material->_rasterstate.SetBlending(_blending);
+  _material->_rasterstate.SetZWriteMask(false);
+  _material->_rasterstate.SetDepthTest(_depthtest);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
