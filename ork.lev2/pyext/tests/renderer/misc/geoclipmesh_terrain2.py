@@ -16,7 +16,7 @@ lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.scenegraph import createSceneGraph
 from signal import signal, SIGINT
-from PIL import Image
+from PIL import Image as PIL_Image
 
 tokens = CrcStringProxy()
 
@@ -146,7 +146,7 @@ class TERRAINAPP(object):
     def on_complete():
       print("on_complete")
       assert(False)
-    def on_event(evcode,data):
+    def on_event(loadreq,evcode,data):
       if evcode == tokens.beginLoadMainThread.hashed:
         print("beginLoadMainThread data<%s>"%(data))
       elif evcode == tokens.endLoadMainThread.hashed:
@@ -174,7 +174,7 @@ class TERRAINAPP(object):
     #print(self.hmlrq)
     #self.hmlrq.enqueueAsync(on_complete,on_event)
     # load image in python
-    self.cpu_heightmap = Image.open(str(hmap_path))
+    self.cpu_heightmap = PIL_Image.open(str(hmap_path))
 
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")

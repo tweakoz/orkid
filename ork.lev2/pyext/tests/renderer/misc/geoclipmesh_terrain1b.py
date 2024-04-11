@@ -157,7 +157,7 @@ class TERRAINAPP(object):
     #######################################
 
     noisemap_path = "lev2://textures/noisekern_hot256c.png"
-    def on_event(evcode,data):
+    def on_event(loadreq,evcode,data):
       if evcode == tokens.onMipLoad.hashed:
         data_str = data.dumpToString()
         print("onMipLoad data: %s"%(data_str))
