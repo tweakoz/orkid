@@ -215,7 +215,7 @@ match_results_t StatementList::match(FnParseContext ctx) {
   while (not done) {
     if(ctx.tokenValue(0)=="float" and
        ctx.tokenValue(1)=="nz"){
-      printf( "yo\n");
+      //printf( "yo\n");
     }
     auto sta = Statement::match(ctx);
     if (sta) {

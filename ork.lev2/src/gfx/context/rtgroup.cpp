@@ -34,12 +34,11 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
 
 RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples)
     : _parentTarget(ptgt)
-    , mDepth(0)
     , mNumMrts(0)
     , miW(iW)
     , miH(iH)
     , _msaa_samples(msaa_samples)
-    , mbSizeDirty(true) {
+    , mbSizeDirty(true){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,11 +54,9 @@ rtgroup_ptr_t RtGroup::clone() const {
   auto rval = std::make_shared<RtGroup>(_parentTarget, miW, miH, _msaa_samples);
   for (int i = 0; i < kmaxmrts; i++)
     rval->mMrt[i] = _this->mMrt[i];
-  rval->mDepth      = _this->mDepth;
   rval->mNumMrts    = _this->mNumMrts;
   rval->mbSizeDirty = _this->mbSizeDirty;
   rval->_impl       = _this->_impl;
-  rval->_needsDepth = _this->_needsDepth;
   rval->_autoclear  = _this->_autoclear;
   rval->_clearColor = _this->_clearColor;
   rval->_depthOnly  = _this->_depthOnly;
@@ -108,10 +105,11 @@ void RtGroup::Resize(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtgSet::RtgSet(Context* ctx, MsaaSamples s, bool do_rendertarget)
+RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget)
     : _context(ctx)
     , _msaasamples(s)
-    , _do_rendertarget(do_rendertarget) {
+    , _do_rendertarget(do_rendertarget)
+    , _name(name) {
 }
 
 rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
@@ -119,6 +117,7 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
   auto it            = _rtgs.find(key);
   if (it == _rtgs.end()) {
     rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
+    rval->_name = _name + FormatString(".%zx", key);
     rval->_autoclear = _autoclear;
     if(_do_rendertarget){
       rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval.get());

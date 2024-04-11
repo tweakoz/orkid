@@ -188,7 +188,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                //printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -199,7 +199,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                //printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -210,7 +210,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 //if (data->_colortexpath == "")
                   //data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                //printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(

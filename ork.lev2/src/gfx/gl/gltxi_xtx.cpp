@@ -103,10 +103,10 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);
   GL_ERRORCHECK();
-   printf("inummips<%d>\n", inummips);
+   //printf("inummips<%d>\n", inummips);
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
-     printf("tex<%s> mip<%d> w<%ld> h<%ld> len<%zu>\n", req.ptex->_debugName.c_str(), imip, level._width, level._height, level._data->length());
+     //printf("tex<%s> mip<%d> w<%ld> h<%ld> len<%zu>\n", req.ptex->_debugName.c_str(), imip, level._width, level._height, level._data->length());
     switch (req.ptex->_texFormat) {
       case EBufferFormat::R16:
         if(asset_load_req and asset_load_req->_on_event){

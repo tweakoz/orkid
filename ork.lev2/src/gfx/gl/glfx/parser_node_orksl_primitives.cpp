@@ -144,7 +144,6 @@ match_results_t Identifier::match(FnParseContext ctx) {
   match_results_t rval;
   auto token = ctx.tokenValue(0);
   if (token == "nrm") {
-    printf("yo\n");
   }
   auto topnode = ctx._parser->_topNode;
   if (topnode->validateKeyword(token)) { // an identifer cannot be a keyword

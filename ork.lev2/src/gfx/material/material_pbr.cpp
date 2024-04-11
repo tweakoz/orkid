@@ -225,7 +225,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
   fxpipeline_ptr_t pipeline;
 
   if(0 == strcmp(mtl->mMaterialName.c_str(),"Material.001")){
-    printf( "yo\n");
+    //printf( "yo\n");
   }
 
   bool is_picking = permu._is_picking;
@@ -303,7 +303,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               RSI->BindRasterState(mtl->_rasterstate);
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
           };
-          printf( "OK1..\n");
+          //printf( "OK1..\n");
           ////////////////////////////////////////////////////////////////////////////////////////////
           if (permu._stereo) {                                     // stereo
             if (permu._instanced) {                                // stereo-instanced
@@ -347,7 +347,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           }
           ///// mono ///////////////////////////////////////////////////////////////////////////////////
           else {         
-            printf( "OK2.. permu._instanced<%d> skinned<%d>\n", int(permu._instanced), int(permu._skinned) );
+            //printf( "OK2.. permu._instanced<%d> skinned<%d>\n", int(permu._instanced), int(permu._skinned) );
 
 
             if (permu._instanced) {    // mono-instanced
@@ -359,7 +359,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                                        ? mtl->_tek_GBU_CT_NM_SK_NI_MO //
                                        : mtl->_tek_GBU_CT_NM_RI_NI_MO;
             }
-            printf( "OK3.. mtl<%p> tek<%p>\n", mtl, tek );
+            //printf( "OK3.. mtl<%p> tek<%p>\n", mtl, tek );
             //////////////////////////////////
             if(tek){
               pipeline = std::make_shared<FxPipeline>(permu);
@@ -857,7 +857,7 @@ void PBRMaterial::describeX(class_t* c) {
 
 void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
-  printf( "PBRMaterial::gpuInit<%p> _initialTarget<%p> targ<%p>\n", this, _initialTarget, targ );
+  //printf( "PBRMaterial::gpuInit<%p> _initialTarget<%p> targ<%p>\n", this, _initialTarget, targ );
 
   if (_initialTarget)
     return;
@@ -925,8 +925,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO"s+_shader_suffix);
 
 
-  printf( "_tek_GBU_CT_NM_RI_NI_MO<%p>\n", _tek_GBU_CT_NM_RI_NI_MO );
-  printf( "_tek_GBU_CM_NM_RI_NI_MO<%p>\n", _tek_GBU_CM_NM_RI_NI_MO );
+  //printf( "_tek_GBU_CT_NM_RI_NI_MO<%p>\n", _tek_GBU_CT_NM_RI_NI_MO );
+  //printf( "_tek_GBU_CM_NM_RI_NI_MO<%p>\n", _tek_GBU_CM_NM_RI_NI_MO );
   // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
@@ -997,9 +997,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   OrkAssert(_paramMapNormal != nullptr);
   OrkAssert(_parBoneBlock != nullptr);
 
-  printf( "_texColor<%p>\n", _texColor.get() );
-  printf( "_texNormal<%p>\n", _texNormal.get() );
-  printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
+  //printf( "_texColor<%p>\n", _texColor.get() );
+  //printf( "_texNormal<%p>\n", _texNormal.get() );
+  //printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
   if (_texColor == nullptr) {
     auto loadreq = std::make_shared<asset::LoadRequest>();
@@ -1215,7 +1215,7 @@ PBRMaterial::PBRMaterial()
   _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr";
-  printf( "new PBRMaterial<%p>\n", this );
+  //printf( "new PBRMaterial<%p>\n", this );
 }
 
 ////////////////////////////////////////////
@@ -1227,7 +1227,9 @@ PBRMaterial::~PBRMaterial() {
 
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
-  copy->_asset_shader = _asset_shader;
+  *copy = *this;
+
+  /*copy->_asset_shader = _asset_shader;
   copy->_asset_texcolor = _asset_texcolor;
   copy->_asset_texnormal = _asset_texnormal;
   copy->_asset_mtlruf = _asset_mtlruf;
@@ -1258,8 +1260,8 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   // TODO - flyweight clones
 
   if(_initialTarget){
-    copy->gpuInit(_initialTarget);
-  }
+    //copy->gpuInit(_initialTarget);
+  }*/
   return copy;
 }
 

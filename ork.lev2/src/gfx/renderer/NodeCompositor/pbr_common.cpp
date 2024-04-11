@@ -23,6 +23,7 @@
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/util/logger.h>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
@@ -35,6 +36,9 @@ ImplementReflectionX(ork::lev2::pbr::CommonStuff, "pbr::CommonStuff");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::pbr {
+
+static logchannel_ptr_t logchan_pbrcom = logger()->createChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), true);
+
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::describeX(class_t* c) {
   using namespace asset;
@@ -75,8 +79,8 @@ CommonStuff::CommonStuff() {
              Context* targ, //
              datablock_constptr_t inp_datablock) -> datablock_ptr_t {
 
-    printf(
-        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
+    logchan_pbrcom->log(
+        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>",
         tex.get(),
         tex->_debugName.c_str(),
         inp_datablock->length());

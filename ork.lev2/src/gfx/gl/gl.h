@@ -287,6 +287,8 @@ public:
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
 
+  void validateRtGroup(rtgroup_ptr_t rtg) final;
+
   //////////////////////////////////////////////
 
   void _setAsRenderTarget();

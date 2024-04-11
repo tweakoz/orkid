@@ -97,14 +97,12 @@ struct RtGroup final {
   Context* _parentTarget;
   rtbuffer_ptr_t mMrt[kmaxmrts];
   rtbuffer_ptr_t _depthBuffer;
-  DisplayBuffer* mDepth;
   int mNumMrts;
   int miW;
   int miH;
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svar16_t _impl;
-  bool _needsDepth = true;
   bool _autoclear  = true;
   fvec4 _clearColor;
   bool _depthOnly = false;
@@ -116,7 +114,7 @@ struct RtGroup final {
 
 struct RtgSet {
   
-  RtgSet(Context* ctx, MsaaSamples s, bool do_rendertarget=false);
+  RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget=false);
   rtgroup_ptr_t fetch(uint64_t key);
   void addBuffer(std::string name, EBufferFormat fmt);
 
@@ -131,6 +129,7 @@ struct RtgSet {
   std::vector<BufRec> _bufrecs;
   bool _do_rendertarget;
   bool _autoclear = true;
+  std::string _name;
 
 };
 

@@ -36,7 +36,7 @@ bool Shader::Compile() {
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   if (mShaderType == GL_COMPUTE_SHADER) {
-    printf("yo\n");
+    //printf("yo\n");
   }
 #endif
 

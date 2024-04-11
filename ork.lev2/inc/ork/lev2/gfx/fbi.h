@@ -68,6 +68,7 @@ public:
   }
   virtual void rtGroupMipGen(RtGroup* rtg) {
   }
+  virtual void validateRtGroup(rtgroup_ptr_t rtg) {}
 
   ///////////////////////////////////////////////////////
   // viewport / scissor

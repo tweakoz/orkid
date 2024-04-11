@@ -142,7 +142,7 @@ class SceneGraphApp(object):
   ################################################
 
   def regenColors(self):
-    print("SEED: %d"%self.seed)
+    #print("SEED: %d"%self.seed)
     random.seed(self.seed)
     self.seed = self.seed+1
     for i in range(81):

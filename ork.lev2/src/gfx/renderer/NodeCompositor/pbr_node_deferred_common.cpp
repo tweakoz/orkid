@@ -143,11 +143,11 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogPower       = _lightingmtl->param("DepthFogPower");
     _parShadowParams        = _lightingmtl->param("ShadowParams");
     //////////////////////////////////////////////////////////////
-    _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
+    _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, "rtgs-gbuffer", true);
     _rtgs_gbuffer->addBuffer("DeferredGbuffer", EBufferFormat::RGBA32UI);
     _rtgs_gbuffer->_autoclear = false;
     //////////////////////////////////////////////////////////////
-    _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
+    _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, "rtgs-laccum", true);
     _rtgs_laccum->addBuffer("DeferredLightAccum", _lightAccumFormat);
     if(_auxBufferFormat!=EBufferFormat::NONE)
       _rtgs_laccum->addBuffer("Auxiliary", _auxBufferFormat);

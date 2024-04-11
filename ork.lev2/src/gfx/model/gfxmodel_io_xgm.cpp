@@ -252,7 +252,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           auto pmat = as_reader.value()(materialread_ctx);
           pmat->SetName(AddPooledString(pmatname));
           mdl->AddMaterial(pmat);
-          printf( "RUNREADER\n");
+          //printf( "RUNREADER\n");
           pmat->gpuInit(context);
         }
         ///////////////////////////////////////////////////////////

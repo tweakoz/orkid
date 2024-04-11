@@ -55,7 +55,7 @@ struct ForwardPbrNodeImpl {
       _rtg_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
 
        auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-      _rtgs_main = std::make_shared<RtgSet>(context,e_msaa);
+      _rtgs_main = std::make_shared<RtgSet>(context,e_msaa,"rtgs-main");
       _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
 
       printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
@@ -68,7 +68,7 @@ struct ForwardPbrNodeImpl {
       _enumeratedLights = std::make_shared<EnumeratedLights>();
 
       if(_ginitdata->_msaa_samples>1){
-        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context,MsaaSamples::MSAA_1X);
+        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context,MsaaSamples::MSAA_1X,"rtgs-,main-resolve");
         _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer",EBufferFormat::RGBA8);
         //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
         //auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
@@ -184,6 +184,8 @@ struct ForwardPbrNodeImpl {
         ///////////////////////////////////////////////////////////////////////////
         // depth prepass
         ///////////////////////////////////////////////////////////////////////////
+
+        FBI->validateRtGroup(rtg_main);
 
         context->debugPushGroup("ForwardPBR::depth-pre pass");
         DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
