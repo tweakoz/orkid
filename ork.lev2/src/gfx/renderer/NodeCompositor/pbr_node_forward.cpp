@@ -207,8 +207,8 @@ struct ForwardPbrNodeImpl {
         rtg_main->_depthOnly = false;
 
         irenderer->resetQueue();
-        //auto rtb_depth = _rtg_depth_copy->_depthBuffer;
-        auto rtb_depth = rtg_main->_depthBuffer;
+        auto rtb_depth = _rtg_depth_copy->_depthBuffer;
+        //auto rtb_depth = rtg_main->_depthBuffer;
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         RCFD.setUserProperty("DEPTH_MAP"_crcu,rtb_depth->_texture);
         

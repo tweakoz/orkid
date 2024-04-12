@@ -136,6 +136,9 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
       FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
 
       auto VP = monocams->VPMONO();
+      //FXI->BindParamMatrix(mtl->_paramP, monocams->_pmatrix);
+      FXI->BindParamMatrix(mtl->_paramV, monocams->_vmatrix);
+      //FXI->BindParamMatrix(mtl->_paramIV, monocams->_ivmatrix);
       FXI->BindParamMatrix(mtl->_paramVP, VP);
       FXI->BindParamMatrix(mtl->_paramIVP, VP.inverse());
     }

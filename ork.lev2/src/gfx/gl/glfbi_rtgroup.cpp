@@ -793,9 +793,15 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     //_dumpFBOstructure(src_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::src_donly_fbo");
     //_dumpFBOstructure(dst_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::dst_donly_fbo");
+
+    // query current scissor rect
+    GLint scissor[4];
+    glGetIntegerv(GL_SCISSOR_BOX, scissor);
+    glScissor(0, 0, width, height);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src_rtg_impl->_depthonly->_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst_rtg_impl->_depthonly->_fbo);
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    glScissor(scissor[0], scissor[1], scissor[2], scissor[3]);
     GL_ERRORCHECK();
   }
 }
