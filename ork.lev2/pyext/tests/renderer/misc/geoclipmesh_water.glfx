@@ -56,7 +56,7 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
 
   x_pos vs_compute_position(vec3 pos) {
     x_pos _x;
-    mat4 matO2W  = inverse(v) * m;
+    mat4 matO2W  = m;
     _x.true_wpos = matO2W * vec4(pos, 1);
 
     float speed   = Time * 1.65;

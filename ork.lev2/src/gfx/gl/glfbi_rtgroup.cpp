@@ -716,7 +716,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
 void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr_t dst_rtg) {
 
-  glFinish();
+  //glFinish();
 
   int width  = src_rtg->miW;
   int height = src_rtg->miH;
