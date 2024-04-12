@@ -33,10 +33,12 @@ if(NOT OBT_PIPEWIRE_PRAGMA_ONCE)
     # this gets invoked ONCE per cmake invocation
     set(ObtPipewire_DIR $ENV{ORKID_WORKSPACE_DIR}/cmake/configs)
     set(ObtPipewire_LIBRARIES ${ObtPipewireLibrary} )  
+    message( "#################################" )
     message( "ObtPipewire_DIR: " ${ObtPipewire_DIR} )
     message( "ObtPipewireSpaInclude_DIR: " ${ObtPipewireSpaInclude_DIR} )
     message( "ObtPipewireInclude_DIR: " ${ObtPipewireInclude_DIR} )
     message( "ObtPipewire_LIBRARIES: " ${ObtPipewire_LIBRARIES} )
+    message( "#################################" )
     endif()
 
     mark_as_advanced(ObtPipewire_DIR ObtPipewire_LIBRARIES ObtPipewire_INCLUDE_DIRS )

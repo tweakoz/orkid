@@ -43,6 +43,16 @@ void pyinit_vr(py::module& module_lev2) {
         return dev->_far;
       }, [](orkidvr::device_ptr_t dev, float far) { //
         dev->_far = far;
+      })
+      .def_property("active", [](orkidvr::device_ptr_t dev) -> bool { //
+        return dev->_active;
+      }, [](orkidvr::device_ptr_t dev, bool active) { //
+        dev->_active = active;
+      })
+      .def_property("camera", [](orkidvr::device_ptr_t dev) -> std::string { //
+        return dev->_cameraName;
+      }, [](orkidvr::device_ptr_t dev, std::string name) { //
+        dev->_cameraName = name;
       });
   type_codec->registerStdCodec<orkidvr::device_ptr_t>(vrdevice_type);
   /////////////////////////////////////////////////////////////////////////////////

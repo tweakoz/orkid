@@ -12,13 +12,19 @@ find_library(ObtOpenBlas_LIBRARY NAMES openblas PATHS $ENV{OBT_STAGE}/lib NO_DEF
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ObtOpenBlas REQUIRED_VARS ObtOpenBlas_INCLUDE_DIR ObtOpenBlas_LIBRARY)
 
-if(ObtOpenBlas_FOUND)
-  # this gets invoked ONCE per cmake invocation
-  set(ObtOpenBlas_DIR $ENV{ORKID_WORKSPACE_DIR}/cmake/configs)
-  set(ObtOpenBlas_LIBRARIES ${ObtOpenBlas_LIBRARY} )  
-  message( "ObtOpenBlas_DIR: " ${ObtOpenBlas_DIR} )
-  message( "ObtOpenBlas_INCLUDE_DIR: " ${ObtOpenBlas_INCLUDE_DIR} )
-  message( "ObtOpenBlas_LIBRARY: " ${ObtOpenBlas_LIBRARY} )
-endif()
+if(NOT OBT_OPENBLAS_PRAGMA_ONCE)
+  set(OBT_OPENBLAS_PRAGMA_ONCE TRUE)
 
-mark_as_advanced(ObtOpenBlas_DIR ObtOpenBlas_LIBRARY ObtOpenBlas_INCLUDE_DIR ObtOpenBlas_LIBRARIES )
+  if(ObtOpenBlas_FOUND)
+    # this gets invoked ONCE per cmake invocation
+    set(ObtOpenBlas_DIR $ENV{ORKID_WORKSPACE_DIR}/cmake/configs)
+    set(ObtOpenBlas_LIBRARIES ${ObtOpenBlas_LIBRARY} )  
+    message( "#################################" )
+    message( "ObtOpenBlas_DIR: " ${ObtOpenBlas_DIR} )
+    message( "ObtOpenBlas_INCLUDE_DIR: " ${ObtOpenBlas_INCLUDE_DIR} )
+    message( "ObtOpenBlas_LIBRARY: " ${ObtOpenBlas_LIBRARY} )
+    message( "#################################" )
+  endif()
+
+  mark_as_advanced(ObtOpenBlas_DIR ObtOpenBlas_LIBRARY ObtOpenBlas_INCLUDE_DIR ObtOpenBlas_LIBRARIES )
+endif()

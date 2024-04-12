@@ -4,7 +4,8 @@ from orkengine.lev2 import *
 
 def createSceneGraph( app=None, 
                       rendermodel = "ForwardPBR",
-                      params_dict = None ):
+                      params_dict = None,
+                      layer_name = "All"):
     sceneparams = VarMap()
     sceneparams.preset = rendermodel
 
@@ -13,8 +14,7 @@ def createSceneGraph( app=None,
         sceneparams.__setattr__(k,params_dict[k])
     app.scene = app.ezapp.createScene(sceneparams)
     
-    layer_name = "All"
-    if rendermodel == "ForwardPBR":
+    if rendermodel in ["ForwardPBR","FWDPBRVR"]:
       layer_name = "std_forward"
     
     app.layer1 = app.scene.createLayer(layer_name)

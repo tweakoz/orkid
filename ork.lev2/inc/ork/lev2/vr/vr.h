@@ -153,6 +153,7 @@ struct Device {
   bool _do_calibration = false;
 
   svar512_t _private;
+  std::string _cameraName;
 
 protected:
   controllerstate_ptr_t controller(int id);
