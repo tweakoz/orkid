@@ -26,7 +26,7 @@ parser.add_argument("-e", "--envmap", type=str, default="", help='environment ma
 parser.add_argument("-a", "--ambient", type=float, default=0.0, help='ambient intensity')
 parser.add_argument("-s", "--specular", type=float, default=1.0, help='specular intensity')
 parser.add_argument("-d", "--diffuse", type=float, default=1.0, help='diffuse intensity')
-parser.add_argument("-i", "--skybox", type=float, default=2.0, help='skybox envlight intensity')
+parser.add_argument("-i", "--skybox", type=float, default=1.3, help='skybox envlight intensity')
 
 ################################################################################
 
@@ -150,8 +150,8 @@ class SceneGraphApp(object):
       subinst = node.modelinst.submeshinsts[0]
       mtl_cloned = subinst.material
       h = random.uniform(0,6)
-      s = random.uniform(0,1)
-      v = random.uniform(0,1)
+      s = random.uniform(0,0.7)
+      v = random.uniform(0.1,1)
       rgb = colorsys.hsv_to_rgb(h,s,v)
       r = rgb[0]
       g = rgb[1]
@@ -175,15 +175,15 @@ class SceneGraphApp(object):
 
   def onUiEvent(self,uievent):
     if uievent.code in [tokens.KEY_DOWN.hashed, tokens.KEY_REPEAT.hashed]:
-      if uievent.keycode == 32: # spacebar
+      if uievent.keycode == ord(" "): # spacebar
         self.regenColors()
-      if uievent.keycode == 45: # -
+      if uievent.keycode == ord("-"): # -
         self.ambient -= 0.05
-      if uievent.keycode == 61: # =
+      if uievent.keycode == ord("="): # =
         self.ambient += 0.05
-      if uievent.keycode == 91: # [
+      if uievent.keycode == ord("["): # [
         self.specular -= 0.05
-      if uievent.keycode == 93: # ]
+      if uievent.keycode == ord("]"): # ]
         self.specular += 0.05
       ##############################
       self.pbrcommon.specularLevel = self.specular

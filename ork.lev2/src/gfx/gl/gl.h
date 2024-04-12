@@ -105,7 +105,6 @@ struct GLTextureObject {
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint _fbo = 0;
-  GLuint _dsbo = 0;
   GLuint _depthTexObject = 0;
   GlFboObject();
 };
