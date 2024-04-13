@@ -278,3 +278,78 @@ def update_psys_set(psys_set,time,yval):
     z = item.radius*math.sin(time*f)*-1.0
     new_trans = vec3(x,y,z)    
     item.particlenode.worldTransform.translation = new_trans  
+    
+    
+def createDefaultStreakSystem(app=None):    
+    ptc_data = {
+      "POOL":particles.Pool,
+      "EMITN":particles.NozzleEmitter,
+      "EMITR":particles.RingEmitter,
+      "GLOB":particles.Globals,
+      "GRAV":particles.Gravity,
+      "TURB":particles.Turbulence,
+      "VORT":particles.Vortex,
+      "STRK":particles.StreakRenderer,
+    }
+    ptc_connections = [
+      ("POOL","EMITN"),
+      ("EMITN","EMITR"),
+      ("EMITR","GRAV"),
+      ("GRAV","TURB"),
+      ("TURB","VORT"),
+      ("VORT","STRK"),
+    ]
+    createParticleData(app,ptc_data,ptc_connections,app.layer1)
+    app.POOL.pool_size = 16384 # max number of particles in pool
+
+    app.STRK.inputs.Length = .1
+    app.STRK.inputs.Width = .01
+    app.STRK.material = presetMaterial()
+    #app.STRK.material = particles.FlatMaterial.createShared()
+    app.EMITN.inputs.EmissionVelocity = 0.1
+    presetPOOL1(app.POOL)
+    presetEMITN1(app.EMITN)
+    presetEMITR1(app.EMITR)
+    presetTURB1(app.TURB)
+    presetVORT1(app.VORT)
+    presetGRAV1(app.GRAV)
+    
+    app.TURB.inputs.Amount = vec3(1,1,1)*5    
+    
+    
+    
+def createDefaultSpriteSystem(app=None):
+    ptc_data = {
+      "POOL":particles.Pool,
+      "EMITN":particles.NozzleEmitter,
+      "EMITR":particles.RingEmitter,
+      "GLOB":particles.Globals,
+      "GRAV":particles.Gravity,
+      "TURB":particles.Turbulence,
+      "VORT":particles.Vortex,
+      "SPRI":particles.SpriteRenderer,
+    }
+    ptc_connections = [
+      ("POOL","EMITN"),
+      ("EMITN","EMITR"),
+      ("EMITR","GRAV"),
+      ("GRAV","TURB"),
+      ("TURB","VORT"),
+      ("VORT","SPRI"),
+    ]
+    createParticleData(app,ptc_data,ptc_connections,app.layer1)
+    app.POOL.pool_size = 16384 # max number of particles in pool
+
+    app.SPRI.inputs.Size = 0.1
+    app.SPRI.inputs.GradientIntensity = 1
+    app.SPRI.material = presetMaterial()
+    #app.SPRI.material = particles.FlatMaterial.createShared()
+    app.EMITN.inputs.EmissionVelocity = 0.1
+    presetPOOL1(app.POOL)
+    presetEMITN1(app.EMITN)
+    presetEMITR1(app.EMITR)
+    presetTURB1(app.TURB)
+    presetVORT1(app.VORT)
+    presetGRAV1(app.GRAV)
+    
+    app.TURB.inputs.Amount = vec3(1,1,1)*5  

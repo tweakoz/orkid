@@ -7,24 +7,15 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, random, numpy, argparse
-from obt import path
-from pathlib import Path
+import signal
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
-from common.cameras import *
 from common.scenegraph import createSceneGraph
-from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 
 from _ptc_harness import *
-
-################################################################################
-parser = argparse.ArgumentParser(description='scenegraph particles example')
-
-args = vars(parser.parse_args())
 
 ################################################################################
 
@@ -35,65 +26,27 @@ class ParticlesApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
-    #self.materials = set()
-
     setupUiCamera( app=self, #
                    eye = vec3(0,0,30), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
 
+    def onCtrlC(signum, frame):
+      print("signalling EXIT to ezapp")
+      self.ezapp.signalExit()
+
+    signal.signal(signal.SIGINT, onCtrlC)
+
   ################################################
-  # gpu data init:
-  #  called on main thread when graphics context is
-  #   made available
-  ##############################################
 
   def onGpuInit(self,ctx):
-
-    ###################################
-    # create scenegraph
-    ###################################
-
     createSceneGraph(app=self,rendermodel="ForwardPBR")
+    createDefaultSpriteSystem(app=self)
 
-    ###################################
-    # create particle drawable 
-    ###################################
-
-    ptc_data = {
-      "POOL":particles.Pool,
-      "EMITN":particles.NozzleEmitter,
-      "EMITR":particles.RingEmitter,
-      "GLOB":particles.Globals,
-      "GRAV":particles.Gravity,
-      "TURB":particles.Turbulence,
-      "VORT":particles.Vortex,
-      "SPRI":particles.SpriteRenderer,
-    }
-    ptc_connections = [
-      ("POOL","EMITN"),
-      ("EMITN","EMITR"),
-      ("EMITR","GRAV"),
-      ("GRAV","TURB"),
-      ("TURB","VORT"),
-      ("VORT","SPRI"),
-    ]
-    createParticleData(self,ptc_data,ptc_connections,self.layer1)
-    self.POOL.pool_size = 16384 # max number of particles in pool
-
-    self.SPRI.inputs.Size = 0.1
-    self.SPRI.inputs.GradientIntensity = 1
-    self.SPRI.material = presetMaterial()
-    #self.SPRI.material = particles.FlatMaterial.createShared()
-    self.EMITN.inputs.EmissionVelocity = 0.1
-    presetPOOL1(self.POOL)
-    presetEMITN1(self.EMITN)
-    presetEMITR1(self.EMITR)
-    presetTURB1(self.TURB)
-    presetVORT1(self.VORT)
-    presetGRAV1(self.GRAV)
-    
-    self.TURB.inputs.Amount = vec3(1,1,1)*5
+  def onGpuUpdate(self,ctx):
+    # just need a mainthread python callback
+    # so python can process ctrl-c signals...
+    pass 
 
   ################################################
 
@@ -109,13 +62,5 @@ class ParticlesApp(object):
     return ui.HandlerResult()
 
 ###############################################################################
-
-def sig_handler(signal_received, frame):
-  print('SIGINT or CTRL-C detected. Exiting gracefully')
-  sys.exit(0)
-
-###############################################################################
-
-signal(SIGINT, sig_handler)
 
 ParticlesApp().ezapp.mainThreadLoop()
