@@ -65,10 +65,11 @@ class StereoApp1(object):
     for i in range(numinstances):
       self.modelinsts += [modelinst(model,self.layer1,i)]
 
-    print(self.scene.layers)
-    print(self.layer1)
-    print(self.layer1.drawable_nodes)
-    assert(False)
+    ###################################
+
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ##############################################
 

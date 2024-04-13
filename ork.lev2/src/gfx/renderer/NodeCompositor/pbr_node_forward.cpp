@@ -214,14 +214,13 @@ struct ForwardPbrNodeImpl {
         
         FBI->PushRtGroup(rtg_main.get());
         //printf( "BEG FWD PBR ENQ\n");
-        for (const auto& layer_name : CPD.getLayerNames()) {
-          context->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
-          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
-        }
+        context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
+        DB->enqueueLayerToRenderQueue("std_forward", irenderer);
         //printf( "END FWD PBR ENQ\n");
 
         RCFD._renderingmodel = "FORWARD_PBR"_crcu;
         context->debugPushGroup("ForwardPBR::color pass");
+        //irenderer->_debugLog = true;
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         context->debugPopGroup();

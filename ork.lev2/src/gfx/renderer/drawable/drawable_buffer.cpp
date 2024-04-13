@@ -72,8 +72,8 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
 
   //printf( "rendering <%s> do_all<%d>\n", LayerName.c_str(), int(do_all) );
   //////////////////////////////////////////////////////////////////////////////////////////////
-  auto do_layer = [target,renderer,&numdrawables](const lev2::DrawableBufLayer* player){
-      player->_items.atomicOp([player,target,renderer,&numdrawables](const DrawableBufLayer::itemvect_t& unlocked){
+  auto do_layer = [target,renderer,&numdrawables,LayerName](const lev2::DrawableBufLayer* player){
+      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName](const DrawableBufLayer::itemvect_t& unlocked){
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
           auto item = unlocked[id];
@@ -83,6 +83,10 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
             numdrawables++;
             pdrw->enqueueToRenderQueue(item, renderer);
           }
+        }
+        if( renderer->_debugLog ){
+          auto str = FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer<%s> itemcount<%d>", LayerName.c_str(), max_index + 1);
+          printf( "%s\n", str.c_str() );
         }
       }); // player->_items.atomicOp
   };

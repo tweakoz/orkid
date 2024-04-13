@@ -49,7 +49,9 @@ void IRenderer::drawEnqueuedRenderables() {
   size_t renderQueueSize = _unsortedNodes.Size();
   _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
-  // printf( "renderQueueSize<%zu>\n", renderQueueSize);
+  //if(_debugLog){
+    //printf( "renderQueueSize<%zu>\n", renderQueueSize);
+  //}
 
   if (renderQueueSize == 0) {
     _target->debugPopGroup();
@@ -65,7 +67,9 @@ void IRenderer::drawEnqueuedRenderables() {
   for (size_t i = 0; i < renderQueueSize; i++) {
     int skey     = _sortedNodes[i]->_renderable->ComposeSortKey(this);
     _sortkeys[i] = skey;
-    // printf( "skey<%d:%d>\n", i, skey );
+    if(false){ //_debugLog){
+      printf( "skey<%d:%d>\n", i, skey );
+    }
   }
 
   ///////////////////////////////////////////////////////

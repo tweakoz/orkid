@@ -135,9 +135,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 }
                 return node->_userdata;
               })
-              .def("__repr__", [](drawable_node_ptr_t node) {
-                return "dnode<" + node->_name + ">";
-              });
+          .def("__repr__", [](drawable_node_ptr_t node) { return "dnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<drawable_node_ptr_t>(drawablenode_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
@@ -150,9 +148,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto light             = lnode->_light;
                 light->_xformgenerator = [=]() -> fmtx4 { return mtx; };
               })
-              .def("__repr__", [](drawable_node_ptr_t node) {
-                return "lnode<" + node->_name + ">";
-              });
+          .def("__repr__", [](drawable_node_ptr_t node) { return "lnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
@@ -245,15 +241,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto node = layer->createDrawableNode(named, drawable);
                 return node;
               })
-              .def_property_readonly("drawable_nodes",[](layer_ptr_t layer) -> py::list {
-                py::list rval;
-                layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
-                  for (auto it : unlocked) {
-                    rval.append(it);
-                  }
-                });
-                return rval;
-              });
+          .def_property_readonly("drawable_nodes", [](layer_ptr_t layer) -> py::list {
+            py::list rval;
+            layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
+              for (auto it : unlocked) {
+                rval.append(it);
+              }
+            });
+            return rval;
+          });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

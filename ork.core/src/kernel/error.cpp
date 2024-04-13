@@ -70,16 +70,16 @@ void OrkAssertFunction(const char *fmtstr, ...)
 
 	ork::msleep(500);
 
-	char *pFUCKED = nullptr;
-	*pFUCKED = 0;
+	char *pKILL = nullptr; // force kill process via segfault
+	*pKILL = 0;
 
-	std::exception a;
-	throw a;
+	std::exception a; // just in case we are on a platform 
+	throw a;          // that allows nullptr deref without seg-faulting..
 
 	//break 3;
 
 
-	while(1){}
+	while(1){} // and as a last resort, ...
 
 	//assert(false);
 }
