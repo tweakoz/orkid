@@ -81,6 +81,11 @@ void SpriteRendererInst::compute(
   _triple_buf->end_push(output_buffer);
 
   auto material = _srd->_material;
+
+  /////////////////////////////////////
+  // compute light color
+  /////////////////////////////////////
+
   auto as_grad = dynamic_cast<GradientMaterial*>(material.get());
   if( true and as_grad ){
     auto avg_color = fvec4(0,0,0,0);
@@ -100,6 +105,9 @@ void SpriteRendererInst::compute(
   else{
     inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
   }
+
+  /////////////////////////////////////
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

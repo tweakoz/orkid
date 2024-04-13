@@ -38,11 +38,11 @@ public:
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
 
-  fxtechnique_constptr_t _tek_sprites;
-  fxtechnique_constptr_t _tek_streaks;
+  fxtechnique_constptr_t _tek_sprites = nullptr;
+  fxtechnique_constptr_t _tek_streaks = nullptr;
 
-  fxtechnique_constptr_t _tek_streaks_stereoCI;
-  fxtechnique_constptr_t _tek_sprites_stereoCI;
+  fxtechnique_constptr_t _tek_streaks_stereoCI = nullptr;
+  fxtechnique_constptr_t _tek_sprites_stereoCI = nullptr;
   
   vtx_set_sprite_t _vertexSetterSprite;
   vtx_set_streak_t _vertexSetterStreak;

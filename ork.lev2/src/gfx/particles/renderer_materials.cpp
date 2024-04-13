@@ -74,6 +74,9 @@ fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool 
   _pipeline->_technique = (RCID._RCFD->isStereo())                                        // ?
                               ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereoCI) // stereo
                               : (streaks ? _tek_streaks : _tek_sprites);                  // mono
+
+  OrkAssert(_pipeline);
+  OrkAssert(_pipeline->_technique);
   return _pipeline;
 }
 
@@ -285,8 +288,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _streakcu_shader           = _material->computeShader("compute_streaks");
   _spritecu_shader           = _material->computeShader("compute_sprites");
 
-  _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereo");
-  _tek_streaks_stereoCI = _material->technique("tgradparticle_sprites_stereo");
+  _tek_streaks_stereoCI = _material->technique("tgradparticle_streaks_stereoCI");
+  _tek_sprites_stereoCI = _material->technique("tgradparticle_sprites_stereoCI");
+
 
 #endif
 }

@@ -434,7 +434,7 @@ technique tflatparticle_streaks_stereoCI {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique tgradparticle_streaks_stereo {
+technique tgradparticle_streaks_stereoCI {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_streak_stereoCI;

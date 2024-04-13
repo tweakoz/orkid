@@ -339,7 +339,7 @@ technique tflatparticle_sprites_stereoCI {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique tgradparticle_sprites_stereo {
+technique tgradparticle_sprites_stereoCI {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_sprite_stereoCI;

@@ -31,6 +31,7 @@ class StereoApp1(object):
     self.cameralut = CameraDataLut()
     self.vrcamera = CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
+    self.xf_hmd = Transform()
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -73,15 +74,12 @@ class StereoApp1(object):
     self.vrdev.near = 0.1
     self.vrdev.far = 1e5
     
-    self.vrcamera.perspective(.1,1e5,90)
-    self.vrcamera.lookAt( 
-      vec3(0,10,-1), # eye 
-      vec3(0,10,0), # tgt
-      vec3(0,1,0) # up
-    )
-    mtx_hmd = mtx4()
-    mtx_hmd.setColumn(3,vec4(0,10,0,1))
-    self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
+    self.xf_hmd.lookAt( vec3(0,10,-10)*1.5 # eye
+                      , vec3(0,0,0) # tgt
+                      , vec3(0,1,0) # up
+                      )
+    
+    self.vrdev.setPoseMatrix("hmd",self.xf_hmd.composed)
     
     ########################################
 
