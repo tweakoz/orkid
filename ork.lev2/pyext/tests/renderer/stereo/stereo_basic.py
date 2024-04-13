@@ -42,6 +42,7 @@ class StereoApp1(object):
     self.vrcamera = CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
     self.modelinsts=[]
+    self.xf_hmd = Transform()
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")

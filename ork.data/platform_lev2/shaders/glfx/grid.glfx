@@ -286,6 +286,28 @@ fragment_shader ps_grid_forward_lit_stereo
   out_clr = vec4(gout.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_stereo_v2
+  : iface_grid_forward_lit
+  : lib_frg_grid
+  : lib_fwd_stereo
+  : ub_frg_fwd 
+  : ub_frg_fwd_lighting{
+  vec4 gout = grid_output2(frg_wpos.xyz);
+  vec3 oc = forward_lighting_stereo(gout.xyz);
+  out_clr = vec4(gout.xyz,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_stereo_v3
+  : iface_grid_forward_lit
+  : lib_frg_grid
+  : lib_fwd_stereo
+  : ub_frg_fwd 
+  : ub_frg_fwd_lighting{
+  vec4 gout = grid_output3(frg_wpos.xyz);
+  vec3 oc = forward_lighting_stereo(gout.xyz);
+  out_clr = vec4(gout.xyz,1);
+}
+///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid
   : iface_vtx_fwd_grid_unlit {
     frg_uv0 = uv0;
@@ -353,4 +375,13 @@ technique FWD_CT_NM_RI_NI_MO_V3 {
 technique FWD_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_grid_forward_lit_stereo,ps_grid_forward_lit_stereo,sb_forward}
+}
+
+technique FWD_CT_NM_RI_NI_ST_V2 {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_grid_forward_lit_stereo,ps_grid_forward_lit_stereo_v2,sb_forward_blend}
+}
+technique FWD_CT_NM_RI_NI_ST_V3 {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_grid_forward_lit_stereo,ps_grid_forward_lit_stereo_v3,sb_forward_blend}
 }

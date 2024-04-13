@@ -29,8 +29,6 @@ class StereoApp1(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.cameralut = CameraDataLut()
-    self.vrcamera = CameraData()
-    self.cameralut.addCamera("vrcam",self.vrcamera)
     self.xf_hmd = Transform()
 
     def onCtrlC(signum, frame):

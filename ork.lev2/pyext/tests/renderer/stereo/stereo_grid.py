@@ -7,19 +7,27 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, signal
+import math, random, argparse, sys, signal
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append(str(thisdir()/".."/"particles")) 
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
+from common.cameras import *
+from common.shaders import *
+from common.misc import *
 from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
 
-from _ptc_harness import *
+################################################################################
 
+parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("--variant", type=int, default=1, help='grid shader variant (1-3)')
+################################################################################
+
+args = vars(parser.parse_args())
+variant = args["variant"]
 ################################################################################
 
 class StereoApp1(object):
@@ -28,6 +36,7 @@ class StereoApp1(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.materials = set()
     self.cameralut = CameraDataLut()
     self.xf_hmd = Transform()
 
@@ -46,18 +55,22 @@ class StereoApp1(object):
 
     createSceneGraph(app=self,rendermodel="FWDPBRVR")
 
+    ###################################
+
     self.grid_data = createGridData()
+    if variant == 1:
+      self.grid_data.shader_suffix = ""
+    elif variant == 2:
+      self.grid_data.shader_suffix = "_V2"
+    elif variant == 3:
+      self.grid_data.shader_suffix = "_V3"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-    createDefaultSpriteSystem(app=self)
-
   ##############################################
 
-  def onGpuUpdate(self,ctx):
-    # just need a mainthread python callback
-    # so python can process ctrl-c signals...
-    pass 
+  def onUiEvent(self,uievent):
+    return ui.HandlerResult()
 
   ################################################
 
@@ -71,7 +84,7 @@ class StereoApp1(object):
     self.vrdev.IPD = 0.065
     self.vrdev.near = 0.1
     self.vrdev.far = 1e5
-    
+
     self.xf_hmd.lookAt( vec3(0,10,-10)*1.5 # eye
                       , vec3(0,0,0) # tgt
                       , vec3(0,1,0) # up
@@ -83,10 +96,10 @@ class StereoApp1(object):
 
     self.scene.updateScene(self.cameralut) 
 
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    return ui.HandlerResult()
+  def onGpuUpdate(self,ctx):
+    # just need a mainthread python callback
+    # so python can process ctrl-c signals...
+    pass 
 
 ###############################################################################
 
