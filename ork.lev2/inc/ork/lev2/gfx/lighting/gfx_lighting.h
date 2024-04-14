@@ -101,24 +101,9 @@ typedef std::function<fmtx4()> xform_generator_t;
 
 struct Light : public Drawable {
 
-  Light(const LightData* ld)
-      : _data(ld)
-      , mPriority(0.0f)
-      , _dynamic(false)
-  {
-    _xformgenerator = []()->fmtx4{
-      return fmtx4();
-    };
-  }
-
-  Light(xform_generator_t mtx, const LightData* ld = 0)
-      : _data(ld)
-      , _xformgenerator(mtx)
-      , mPriority(0.0f)
-      , _dynamic(false) {
-  }
-  virtual ~Light() {
-  }
+  Light(const LightData* ld);
+  Light(xform_generator_t mtx, const LightData* ld = 0);
+  virtual ~Light();
 
   bool isShadowCaster() const;
   virtual bool IsInFrustum(const Frustum& frustum)              = 0;
@@ -158,6 +143,7 @@ struct Light : public Drawable {
   float mPriority;
   int miInFrustumID;
   bool _dynamic;
+  texture_ptr_t _cookieTexture;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,7 +202,7 @@ struct DynamicPointLight : public PointLight {
 
   DynamicPointLight();
 
-  PointLightData _inlineData;
+  pointlightdata_ptr_t _inlineData;
 
 };
 
@@ -238,7 +224,7 @@ public:
 
 struct DirectionalLight : public Light {
 
-  const DirectionalLightData* mDld;
+  const DirectionalLightData* _dldata;
 
 public:
   bool IsInFrustum(const Frustum& frustum) override;
@@ -265,7 +251,7 @@ struct DynamicDirectionalLight : public DirectionalLight {
 
   DynamicDirectionalLight();
 
-  DirectionalLightData _inlineData;
+  directionallightdata_ptr_t _inlineData;
 
 };
 
@@ -366,14 +352,10 @@ public:
     return ELIGHTTYPE_SPOT;
   }
 
-  void set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
+  void lookAt(const fvec3& pos, const fvec3& target, const fvec3& up);
 
-  float GetFovy() const {
-    return _SLD->GetFovy();
-  }
-  float GetRange() const {
-    return _SLD->GetRange();
-  }
+  float getFovy() const;
+  float getRange() const;
 
   RtGroupRenderTarget* rendertarget(Context* ctx);
   fmtx4 shadowMatrix() const;
@@ -384,8 +366,9 @@ public:
 
   RtGroup* _shadowRTG             = nullptr;
   RtGroupRenderTarget* _shadowIRT = nullptr;
-  const SpotLightData* _SLD       = nullptr;
+  const SpotLightData* _spdata       = nullptr;
 
+  float _fovy = 0.0f;
   fmtx4 mProjectionMatrix;
   fmtx4 mViewMatrix;
   Frustum mWorldSpaceLightFrustum;
@@ -396,7 +379,7 @@ struct DynamicSpotLight : public SpotLight {
 
   DynamicSpotLight();
 
-  SpotLightData _inlineData;
+  spotlightdata_ptr_t _inlineData;
 
 };
 

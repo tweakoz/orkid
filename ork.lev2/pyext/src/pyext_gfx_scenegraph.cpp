@@ -167,6 +167,9 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  drawable_node_ptr_t node) { //
                 layer->addDrawableNode(node);
               })
+          .def("createLightNode", [](layer_ptr_t layer, std::string named, light_ptr_t light) -> node_ptr_t { //
+            return layer->createLightNode(named, light);
+          })
           .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //

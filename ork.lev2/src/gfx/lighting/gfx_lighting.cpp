@@ -87,6 +87,32 @@ lev2::texture_ptr_t LightData::cookie() const {
   return as_tex ? as_tex->GetTexture() : nullptr;
 }
 
+Light::Light(const LightData* ld)
+      : _data(ld)
+      , mPriority(0.0f)
+      , _dynamic(false)
+  {
+    if(ld){
+      _cookieTexture = ld->cookie();
+    }
+
+    _xformgenerator = []()->fmtx4{
+      return fmtx4();
+    };
+  }
+
+  Light::Light(xform_generator_t mtx, const LightData* ld)
+      : _data(ld)
+      , _xformgenerator(mtx)
+      , mPriority(0.0f)
+      , _dynamic(false) {
+    if(ld){
+      _cookieTexture = ld->cookie();
+    }
+  }
+  Light::~Light() {
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,13 +184,22 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DynamicPointLight::DynamicPointLight()
-    : PointLight(&_inlineData) {
+    : PointLight(nullptr) {
+   _inlineData = std::make_shared<PointLightData>();
+    _data = _inlineData.get();
+    _pldata = _inlineData.get();
 }
 DynamicDirectionalLight::DynamicDirectionalLight()
-    : DirectionalLight(&_inlineData) {
+    : DirectionalLight(nullptr) {
+   _inlineData = std::make_shared<DirectionalLightData>();
+    _data = _inlineData.get();
+    _dldata = _inlineData.get();
 }
 DynamicSpotLight::DynamicSpotLight()
-    : SpotLight(&_inlineData) {
+    : SpotLight(nullptr) {
+   _inlineData = std::make_shared<SpotLightData>();
+    _data = _inlineData.get();
+    _spdata = _inlineData.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -178,7 +213,8 @@ DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLight
 ///////////////////////////////////////////////////////////////////////////////
 
 DirectionalLight::DirectionalLight(const DirectionalLightData* dld)
-    : Light(dld) {
+    : Light(dld)
+    , _dldata(dld) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -254,22 +290,29 @@ drawable_ptr_t SpotLightData::createDrawable() const {
 
 SpotLight::SpotLight(const SpotLightData* sld)
     : Light(sld)
-    , _SLD(sld)
+    , _spdata(sld)
     , _shadowmapDim(0) {
 }
 
 SpotLight::SpotLight(xform_generator_t mtx, const SpotLightData* sld)
     : Light(mtx, sld)
-    , _SLD(sld)
+    , _spdata(sld)
     , _shadowmapDim(0) {
+}
+
+float SpotLight::getFovy() const {
+  return _spdata->GetFovy();
+}
+float SpotLight::getRange() const {
+  return _spdata->GetRange();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
-  if (nullptr == _shadowIRT or (_SLD->shadowMapSize() != _shadowmapDim)) {
-    _shadowmapDim = _SLD->shadowMapSize();
-    MsaaSamples msaasamps = intToMsaaEnum(_SLD->shadowSamples());
+  if (nullptr == _shadowIRT or (_spdata->shadowMapSize() != _shadowmapDim)) {
+    _shadowmapDim = _spdata->shadowMapSize();
+    MsaaSamples msaasamps = intToMsaaEnum(_spdata->shadowSamples());
     _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
     _shadowIRT    = new RtGroupRenderTarget(_shadowRTG);
   }
@@ -281,33 +324,21 @@ RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
 bool SpotLight::IsInFrustum(const Frustum& frustum) {
   const auto& mtx = worldMatrix();
   fvec3 pos       = mtx.translation();
-  fvec3 tgt       = pos + mtx.zNormal() * GetRange();
+  fvec3 tgt       = pos + mtx.zNormal() * getRange();
   fvec3 up        = mtx.yNormal();
   float fovy      = 15.0f;
 
-  set(pos, tgt, up, fovy);
+  //set(pos, tgt, up, fovy);
 
   return false; // CollisionTester::FrustumFrustumTest( frustum, mWorldSpaceLightFrustum );
 }
 
 ///////////////////////////////////////////////////////////
 
-void SpotLight::set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy) {
-  // mFovy = fovy;
-
-  // mWorldSpaceDirection = (tgt-pos);
-
-  // mRange = mWorldSpaceDirection.Mag();
-
-  // mWorldSpaceDirection.Normalize();
-
-  mProjectionMatrix.perspective(GetFovy(), 1.0, GetRange() / float(1000.0f), GetRange());
+void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
+  mProjectionMatrix.perspective(getFovy(), 1.0, getRange() / float(1000.0f), getRange());
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
-  // mFovy = fovy;
-
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
-
-  // SetPosition( pos );
 }
 
 ///////////////////////////////////////////////////////////
@@ -332,8 +363,8 @@ bool SpotLight::AffectsCircleXZ(const Circle& cirXZ) {
 
 fmtx4 SpotLight::shadowMatrix() const {
   fmtx4 matW   = worldMatrix();
-  float fovy   = GetFovy();
-  float range  = GetRange();
+  float fovy   = getFovy();
+  float range  = getRange();
   float near   = range / 1000.0f;
   float far    = range;
   float aspect = 1.0;
@@ -347,11 +378,13 @@ fmtx4 SpotLight::shadowMatrix() const {
   return fmtx4::multiply_ltor(matV,matP);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 CameraData SpotLight::shadowCamDat() const {
   CameraData rval;
   fmtx4 matW   = worldMatrix();
-  float fovy   = GetFovy();
-  float range  = GetRange();
+  float fovy   = getFovy();
+  float range  = getRange();
   float near   = range / 1000.0f;
   float far    = range;
   float aspect = 1.0;
@@ -541,18 +574,18 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   for (auto l : out_lights->_alllights) {
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-        auto cookie = as_spot->cookie();
+        auto cookie = as_spot->_cookieTexture;
         if (cookie)
           out_lights->_tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      auto cookie = as_point->cookie();
+      auto cookie = as_point->_cookieTexture;
       if (cookie)
         out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
       else
         out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-      auto cookie = as_spot->cookie();
+      auto cookie = as_spot->_cookieTexture;
       bool decal  = as_spot->decal();
       if (decal) {
         if (cookie)
