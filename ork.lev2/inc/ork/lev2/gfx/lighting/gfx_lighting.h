@@ -220,7 +220,6 @@ struct DynamicPointLight : public PointLight {
 
 };
 
-using dynamicpointlight_ptr_t = std::shared_ptr<DynamicPointLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -258,6 +257,16 @@ public:
 
   DirectionalLight(const DirectionalLightData* pld);
   DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld = 0);
+};
+
+using directionallight_ptr_t = std::shared_ptr<DirectionalLight>;
+
+struct DynamicDirectionalLight : public DirectionalLight {
+
+  DynamicDirectionalLight();
+
+  DirectionalLightData _inlineData;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,6 +391,15 @@ public:
   Frustum mWorldSpaceLightFrustum;
   int _shadowmapDim;
 };
+
+struct DynamicSpotLight : public SpotLight {
+
+  DynamicSpotLight();
+
+  SpotLightData _inlineData;
+
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

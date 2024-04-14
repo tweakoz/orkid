@@ -189,8 +189,11 @@ struct LightManager;
 struct LightManagerData;
 struct Light;
 struct PointLight;
+struct DynamicPointLight;
 struct SpotLight;
+struct DynamicSpotLight;
 struct DirectionalLight;
+struct DynamicDirectionalLight;
 struct AmbientLight;
 struct LightMask;
 struct LightData;
@@ -215,6 +218,11 @@ using pointlight_ptr_t      = std::shared_ptr<PointLight>;
 using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
+
+using dynamicspotlight_ptr_t = std::shared_ptr<DynamicSpotLight>;
+using dynamicdirectionallight_ptr_t = std::shared_ptr<DynamicDirectionalLight>;
+using dynamicpointlight_ptr_t = std::shared_ptr<DynamicPointLight>;
+
 using lightinggroup_ptr_t = std::shared_ptr<LightingGroup>;
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;
 using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;

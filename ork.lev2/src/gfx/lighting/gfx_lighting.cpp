@@ -160,6 +160,12 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 DynamicPointLight::DynamicPointLight()
     : PointLight(&_inlineData) {
 }
+DynamicDirectionalLight::DynamicDirectionalLight()
+    : DirectionalLight(&_inlineData) {
+}
+DynamicSpotLight::DynamicSpotLight()
+    : SpotLight(&_inlineData) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
