@@ -571,6 +571,7 @@ public:
   void BindParamU32(const FxShaderParam* hpar, uint32_t uval) final;
   void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final;
   void BindParamU64(const FxShaderParam* hpar, uint64_t uval) final;
+  void bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t rawlist) final;
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;

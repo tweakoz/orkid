@@ -15,6 +15,7 @@ public:
   ~GridDrawableData();
 
   std::string _colortexpath;
+  std::string _normaltexpath;
   float _extent = 100.0f;
   float _majorTileDim = 1.0f;
   float _minorTileDim = 0.1f;

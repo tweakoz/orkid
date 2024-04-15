@@ -146,7 +146,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
 
 }
 
-FxPipeline::statelambda_t  createLightingLambda(const PBRMaterial* mtl){
+FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
 
   auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
 
@@ -161,16 +161,23 @@ FxPipeline::statelambda_t  createLightingLambda(const PBRMaterial* mtl){
      //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
     int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-    //printf( "num_untextured_pointlights<%d>\n", num_untextured_pointlights );
+    int num_texspotlights = enumlights->_tex2spotlightmap.size();
+
     auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
     size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
     auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
 
+    size_t i32_stride    = sizeof(int32_t);
     size_t f32_stride    = sizeof(float);
     size_t vec4_stride   = sizeof(fvec4);
+    size_t mat4_stride   = sizeof(fmtx4);
+
     size_t base_color    = 0;
     size_t base_position = base_color + vec4_stride * 64;
-    size_t base_radius   = base_position + vec4_stride * 64;
+    size_t base_shmtx    = base_position + vec4_stride * 64;
+    size_t base_radius   = base_shmtx + mat4_stride * 64;
+    size_t base_type     = base_radius + f32_stride * 64;
+    size_t base_sidx     = base_type + i32_stride * 64;
     // 16*(16+16+8) = 16*40 = 640
 
     size_t index = 0;
@@ -180,12 +187,38 @@ FxPipeline::statelambda_t  createLightingLambda(const PBRMaterial* mtl){
       float R = light->radius();
       pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
       pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
+      pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = fmtx4();
       pl_mapped->ref<float>(base_radius + (index * f32_stride))    = R;
+      pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 0;
+      pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = 0;
       //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
       index++;
     }
 
+    texture_rawlist_t texlist;
+    for (auto item : enumlights->_tex2spotlightmap) {
+      auto cookie = item.first;
+      texlist.push_back(cookie);
+      for( auto light : item.second ){
+        auto C = fvec4(light->color(), light->intensity());
+        auto P = light->worldMatrix().translation();
+        pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
+        pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
+        pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = light->shadowMatrix();
+        pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->_spdata->GetRange();
+        pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
+        pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = 0; //light->spotIndex();
+        //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
+        index++;
+      }
+    }
+
     pl_mapped->unmap();
+
+    if(mtl->_parTexSpotLightsCount){
+      FXI->BindParamInt(mtl->_parTexSpotLightsCount, enumlights->_tex2spotlightmap.size());
+      FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
+    }
 
     if(mtl->_parUnTexPointLightsCount)
       FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
@@ -213,11 +246,11 @@ void PBRMaterial::addBasicStateLambda(){
 ////////////////////////////////////////////
 
 void PBRMaterial::addLightingLambda(fxpipeline_ptr_t pipe){
-  auto L = createLightingLambda(this);
+  auto L = createForwardLightingLambda(this);
   pipe->addStateLambda(L);
 }
 void PBRMaterial::addLightingLambda(){
-  auto L = createLightingLambda(this);
+  auto L = createForwardLightingLambda(this);
   _state_lambdas.push_back(L);
 }
 
@@ -447,7 +480,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
                 pipeline->addStateLambda(createBasicStateLambda(mtl));
-                pipeline->addStateLambda(createLightingLambda(mtl));
+                pipeline->addStateLambda(createForwardLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -458,7 +491,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
                 pipeline->addStateLambda(createBasicStateLambda(mtl));
-                pipeline->addStateLambda(createLightingLambda(mtl));
+                pipeline->addStateLambda(createForwardLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -469,7 +502,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
                 pipeline->addStateLambda(createBasicStateLambda(mtl));
-                pipeline->addStateLambda(createLightingLambda(mtl));
+                pipeline->addStateLambda(createForwardLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -481,7 +514,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
                 pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
                 pipeline->addStateLambda(createBasicStateLambda(mtl));
-                pipeline->addStateLambda(createLightingLambda(mtl));
+                pipeline->addStateLambda(createForwardLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
@@ -491,7 +524,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
                 pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
                 pipeline->addStateLambda(createBasicStateLambda(mtl));
-                pipeline->addStateLambda(createLightingLambda(mtl));
+                pipeline->addStateLambda(createForwardLightingLambda(mtl));
                 pipeline->addStateLambda(rsi_lambda);
               }
             }            
@@ -994,6 +1027,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
   _parUnTexPointLightsData  = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
 
+  _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
+
+  _parLightCookies = fxi->parameter(_shader, "light_cookies");
+
+  printf( "_parLightCookies<%p>\n", _parLightCookies );
 
   //
 

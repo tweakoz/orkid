@@ -292,7 +292,8 @@ libblock lib_deferred
         vec3 PL = plcalc2(plc,gbd);//*slc._lightoutput;
         vec3 LN = normalize(slc._lightdel);
         float NdotL = max(0.0,dot(plc._normal,LN));
-        l += slc._lightoutput*NdotL;
+        float Ldist = length(slc._lightdel);
+        l += slc._lightoutput*NdotL/pow(Ldist,2);
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);

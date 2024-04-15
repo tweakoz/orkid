@@ -181,5 +181,28 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   }
 }
 
+void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t texlist) {
+auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
+    auto puni = static_cast<Uniform*>(hpar->GetPlatformHandle());
+    const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
+
+    if (pinst && !texlist.empty()) {
+        int baseLocation = pinst->mLocation;
+        if (baseLocation >= 0) {
+            auto GLTXI = (GlTextureInterface*) mTarget.TXI();
+            for (int i = 0; i < texlist.size(); ++i) {
+                const Texture* pTex = texlist[i];
+                if (pTex) {
+                    int itexunit = pinst->mSubItemIndex + i; // Assumes continuous texture unit indices
+                    GLenum textgt = pinst->mPrivData.get<GLenum>();
+                    GLTXI->bindTextureToUnit(pTex, textgt, itexunit);
+                    glUniform1i(baseLocation + i, itexunit); // Assumes samplers are consecutive in the shader
+                    GL_ERRORCHECK();
+                }
+            }
+        }
+    }
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

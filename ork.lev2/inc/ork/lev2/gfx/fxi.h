@@ -56,6 +56,8 @@ public:
   virtual void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex)                      = 0;
   virtual void BindParamU64(const FxShaderParam* hpar, uint64_t uval)                             = 0;
 
+  virtual void bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t rawlist) {}
+
   void BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;

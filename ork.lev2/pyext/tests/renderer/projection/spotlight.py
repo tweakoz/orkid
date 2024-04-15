@@ -54,7 +54,8 @@ class StereoApp1(object):
       "DepthFogDistance": float(10000)
     }
 
-    createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
+    #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
+    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
 
     ###################################
     frust = dfrustum()
@@ -102,7 +103,7 @@ class StereoApp1(object):
     tex = Texture.load("src://effect_textures/L0D.png")
 
     self.spot_light = DynamicSpotLight()
-    self.spot_light.data.color = vec3(10)
+    self.spot_light.data.color = vec3(500)
     self.spot_light.data.fovy = math.radians(45)
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye

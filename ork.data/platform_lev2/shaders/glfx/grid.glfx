@@ -58,7 +58,11 @@ vertex_shader vs_grid_forward_lit
     frg_camdist = 0.0;
     frg_camz = vec3(0,0,0);
     frg_clr = vec4(1,1,1,1);
-    frg_tbn = mat3(1,0,0,0,1,0,0,0,1);
+    frg_tbn = mat3( // mat3 that rotates z to y
+    1.0, 0.0, 0.0, // First column
+    0.0, 0.0, -1.0, // Second column
+    0.0, 1.0, 0.0  // Third column
+    );
 }
 vertex_shader vs_grid_forward_lit_stereo
   : extension(GL_NV_stereo_view_rendering) //

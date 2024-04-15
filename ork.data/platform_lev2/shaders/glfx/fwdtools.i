@@ -157,18 +157,43 @@ libblock lib_fwd
 
     LightCtx plc = lcalc_forward(wpos,pbd);
     vec3 point_lighting       = vec3(0, 0, 0);
+    vec3 spot_lighting       = vec3(0, 0, 0);
     for(int i=0; i<point_light_count; i++){
       plc._lightdel = _lightpos[i].xyz - wpos;
       vec3 LC = _lightcolor[i].xyz*_lightcolor[i].w;
       float LR = _lightradius[i];
       point_lighting += plcalc_forward(plc,pbd,LR)*LC;
     }
+    for(int i=0; i<spot_light_count; i++){
+      int j = i+point_light_count;
+      mat4 shmtx = _shadowmatrix[j];
+      vec3 lightpos = _lightpos[j].xyz;
+      vec3 lightdel = lightpos-wpos;
+      float lightrange = _lightradius[j];
+      vec4 light_hpos = (shmtx)*vec4(wpos,1);
+      vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+      float lightz = light_ndc.z;
+      vec2 lightuv = light_ndc.xy*0.5+vec2(0.5);
+      bool mask = bool(light_ndc.x>=-1 && light_ndc.x<1) &&
+                   bool(light_ndc.y>=-1 && light_ndc.y<1)&&
+                   bool(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+      int LCI = _samplerIndex[j];
+      vec3 lightcol = _lightcolor[j].xyz;
+      vec3 lighttex = texture(light_cookies[LCI],lightuv).xyz;
+        vec3 LN = normalize(lightdel);
+        float Ldist = length(lightdel);
+        float NdotL = max(0.0,dot(normal,LN));
+
+      spot_lighting = lightcol*lighttex*NdotL/pow(Ldist,2)*float(mask);
+
+    }
 
     ///////////////////////////////////////////////
     //return emission;
     //return point_lighting;
     //return env_lighting;
-    return (env_lighting+point_lighting+emission);//*modcolor;    
+    //return normal;
+    return (env_lighting+point_lighting+spot_lighting+emission);//*modcolor;    
     //return vec3(env_lighting);//*modcolor;    
 
     //return vec3(rufmtlamb.x * MetallicFactor, //

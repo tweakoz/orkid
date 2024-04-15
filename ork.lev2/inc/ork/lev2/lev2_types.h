@@ -64,6 +64,8 @@ struct IpcTexture;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using image_ptr_t            = std::shared_ptr<Image>;
+using texture_list_t = std::vector<texture_ptr_t>;
+using texture_rawlist_t = std::vector<Texture*>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer

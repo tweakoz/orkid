@@ -26,10 +26,18 @@ struct GridRenderImpl {
     _colortexture = texasset->GetTexture();
     OrkAssert(_colortexture);
 
+    load_req = std::make_shared<asset::LoadRequest>(_griddata->_normaltexpath);
+    texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(texasset);
+
+    _normaltexture = texasset->GetTexture();
+    OrkAssert(_normaltexture);
+
     _pbrmaterial       = new PBRMaterial();
     _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
     _pbrmaterial->_shaderpath = "orkshader://grid";
     _pbrmaterial->_texColor = _colortexture;
+    _pbrmaterial->_texNormal = _normaltexture;
     _pbrmaterial->gpuInit(ctx);
     _pbrmaterial->_metallicFactor  = 0.0f;
     _pbrmaterial->_roughnessFactor = 1.0f;
@@ -116,6 +124,7 @@ struct GridRenderImpl {
   PBRMaterial* _pbrmaterial;
 
   texture_ptr_t _colortexture;
+  texture_ptr_t _normaltexture;
   fxpipelinecache_constptr_t _fxcache;
   bool _initted = false;
 
@@ -143,6 +152,7 @@ drawable_ptr_t GridDrawableData::createDrawable() const {
 
 GridDrawableData::GridDrawableData() {
   _colortexpath = "lev2://textures/gridcell_grey";
+  _normaltexpath = "src://effect_textures/default_normal.dds";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
