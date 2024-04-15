@@ -115,6 +115,7 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
   size_t offset_lmtx  = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
   size_t offset_shmtx = offset_lmtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
   size_t offset_rad  = offset_shmtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
+  //printf("offset_cd<%zu> offset_lmtx<%zu> offset_shmtx<%zu> offset_rad<%zu>\n", offset_cd, offset_lmtx, offset_shmtx, offset_rad);
   size_t numlights   = lights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   ctx->debugPushGroup("SimpleLightProcessor::_updateSpotLightUBOparams");
@@ -123,12 +124,10 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
     fvec3 color                      = light->color()*light->intensity();
     float dist2cam                   = light->distance(campos);
 
-    auto shmtx = light->shadowMatrix();
-    //shmtx.dump("shmtx");
     mapping->ref<fvec4>(offset_cd)   = fvec4(color, dist2cam);
     mapping->ref<float>(offset_rad)  = light->getRange();
     mapping->ref<fmtx4>(offset_lmtx)  = light->worldMatrix();
-    mapping->ref<fmtx4>(offset_shmtx) = shmtx;
+    mapping->ref<fmtx4>(offset_shmtx) = light->shadowMatrix();
     offset_cd += sizeof(fvec4);
     offset_lmtx += sizeof(fmtx4);
     offset_shmtx += sizeof(fmtx4);
@@ -210,7 +209,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
     _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
-    printf( "_renderUnshadowedTexturedSpotLights <%d>\n", numlights );
+    //printf( "_renderUnshadowedTexturedSpotLights <%d>\n", numlights );
     //////////////////////////////////////////////////
     fvec4 quad_pos(-1, -1, 2, 2);
     fvec4 quad_uva(0, 0, 1, 1);

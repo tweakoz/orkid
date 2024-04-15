@@ -260,7 +260,7 @@ libblock lib_deferred
     SpotLightCalc2 slc;
     mat4 lmtx = LightMatrix[lidx];
     mat4 shmtx = ShadowMatrix[lidx];
-    vec3 lightpos = (lmtx)[3].xyz+vec3(0,10,0);
+    vec3 lightpos = (lmtx)[3].xyz;
     slc._lightdel = lightpos-gbd._wpos;
     float lightrange = LightRadius[lidx];
     vec4 light_hpos = (shmtx)*vec4(gbd._wpos,1);
@@ -272,7 +272,7 @@ libblock lib_deferred
                  bool(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
     vec3 lightcol = LightColorD[lidx].xyz;
     vec3 lighttex = texture(MapLightingCookie,slc._lightuv).xyz;
-    lighttex = lmtx[1].xyz;
+
     slc._lightoutput = lightcol*lighttex*float(slc._mask);
 
     return slc;
@@ -289,8 +289,10 @@ libblock lib_deferred
       for (int lidx = lbeg; lidx<lend; lidx++) {
         SpotLightCalc2 slc = slcalc(gbd,lidx);
         plc._lightdel = slc._lightdel;
-        //l += plcalc2(plc,gbd);//*slc._lightoutput;
-        l += slc._lightoutput;
+        vec3 PL = plcalc2(plc,gbd);//*slc._lightoutput;
+        vec3 LN = normalize(slc._lightdel);
+        float NdotL = max(0.0,dot(plc._normal,LN));
+        l += slc._lightoutput*NdotL;
       }
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);

@@ -336,9 +336,18 @@ bool SpotLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////
 
 void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
-  mProjectionMatrix.perspective(getFovy(), 1.0, getRange() / float(1000.0f), getRange());
+  float near = getRange() / 1000.0f;
+  float far  = getRange();
+  float fovy = getFovy();
+  mProjectionMatrix.perspective(fovy, 1.0, near, far);
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
+
+  _xformgenerator = [this,pos]() -> fmtx4 {
+    fmtx4 rval;
+    rval.setTranslation(pos);
+    return rval;
+  };
 }
 
 ///////////////////////////////////////////////////////////
@@ -362,20 +371,7 @@ bool SpotLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 SpotLight::shadowMatrix() const {
-  fmtx4 matW   = worldMatrix();
-  float fovy   = getFovy();
-  float range  = getRange();
-  float near   = range / 1000.0f;
-  float far    = range;
-  float aspect = 1.0;
-  fvec3 wnx, wny, wnz, wpos;
-  matW.toNormalVectors(wnx, wny, wnz);
-  wpos      = matW.translation();
-  fvec3 ctr = wpos + wnz * 0.01;
-  fmtx4 matV, matP;
-  matV.lookAt(wpos, ctr, wny);
-  matP.perspective(fovy, aspect, near, far);
-  return fmtx4::multiply_ltor(matV,matP);
+  return mProjectionMatrix*mViewMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

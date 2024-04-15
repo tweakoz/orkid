@@ -57,12 +57,38 @@ class StereoApp1(object):
     createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
 
     ###################################
+    frust = dfrustum()
+    frust .set(fmtx4_to_dmtx4(mtx4()),fmtx4_to_dmtx4(mtx4()))
+    frustum_prim = primitives.FrustumPrimitive()
+    frustum_prim.frustum = frust
+    frustum_prim.topColor = dvec4(0.2,1.0,0.2,1)
+    frustum_prim.bottomColor = dvec4(0.5,0.5,0.5,1)
+    frustum_prim.leftColor = dvec4(0.2,0.2,1.0,1)
+    frustum_prim.rightColor = dvec4(1.0,0.2,0.2,1)
+    frustum_prim.nearColor = dvec4(0.0,0.0,0.0,1)
+    frustum_prim.farColor = dvec4(1.0,1.0,1.0,1)
+    self.frustum_prim = frustum_prim
+    self.frustum = frust
+    material = PBRMaterial()
+    material.texColor = Texture.load("src://effect_textures/white.dds")
+    material.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+    material.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    material.metallicFactor = 1
+    material.roughnessFactor = 1
+    material.gpuInit(ctx)
+    self.frustum_material = material
+    ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
     self.sgnode = model.createNode("nodea",self.layer1)
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.sgnode.worldTransform.scale = 1
     self.sgnode.worldTransform.translation = vec3(0,2,0)
+
+    self.sgnode_l = model.createNode("nodea",self.layer1)
+    self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
+    self.sgnode_l.worldTransform.scale = 0.1
+    self.sgnode_l.worldTransform.translation = vec3(0)
 
     ###################################
 
@@ -73,15 +99,16 @@ class StereoApp1(object):
 
     ###################################
 
-    tex = Texture.load("src://effect_textures/noiseX.png")
+    tex = Texture.load("src://effect_textures/L0D.png")
 
     self.spot_light = DynamicSpotLight()
+    self.spot_light.data.color = vec3(10)
+    self.spot_light.data.fovy = math.radians(45)
     self.spot_light.lookAt(
-      vec3(1,1,1)*8, # eye
+      vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
-    self.spot_light.data.fovy = math.radians(45)
-    self.spot_light.data.range = 10.0
+    self.spot_light.data.range = 100.0
     self.spot_light.cookieTexture = tex
     print(self.spot_light.shadowMatrix)
     self.lnode = self.layer1.createLightNode("spotlight",self.spot_light)
@@ -97,14 +124,35 @@ class StereoApp1(object):
   ################################################
 
   def onUpdate(self,updinfo):
+    phase = updinfo.absolutetime    
+    ########################################
+    x = math.sin(phase)
+    z = math.cos(phase)
+    fovy = 45 + math.sin(phase*3)*20
+    self.spot_light.data.fovy = math.radians(fovy)
+    LPOS =       vec3(x,2,z)*4
+
+    self.spot_light.lookAt(
+      LPOS, # eye
+      vec3(0,0,0), # tgt 
+      vec3(0,1,0)) # up
+    
+    self.sgnode_l.worldTransform.translation = LPOS
     
     ########################################
 
     self.scene.updateScene(self.cameralut) 
 
   def onGpuUpdate(self,ctx):
-    # just need a mainthread python callback
-    # so python can process ctrl-c signals...
+
+    if hasattr(self,"sgnode_frustum"):
+      self.layer1.removeDrawableNode(self.sgnode_frustum )
+
+    #slvp = fmtx4_to_dmtx4(self.spot_light.viewMatrix)
+    #slpp = fmtx4_to_dmtx4(self.spot_light.projectionMatrix)
+    #self.frustum.set(slvp,slpp)
+    #self.frustum_prim.gpuInit(ctx)
+    #self.sgnode_frustum = self.frustum_prim.createNodeWithMaterial("frustum",self.layer1,self.frustum_material)
     pass 
 
 ###############################################################################

@@ -252,6 +252,9 @@ void pyinit_scenegraph(py::module& module_lev2) {
               }
             });
             return rval;
+          })
+          .def("removeDrawableNode", [](layer_ptr_t layer, drawable_node_ptr_t node) { //
+            layer->removeDrawableNode(node);
           });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

@@ -317,13 +317,15 @@ vertex_shader vs_rigid_gbuffer_grid
 }
 libblock lib_frgdeferred_grid_pbr : lib_frg_grid {
   void pscommon(){
-    vec3 normal = vec3(0,0,1);
-    float mtl = 1.0;
-    float ruf = 0.0;
-
+    vec3 normal = vec3(0,1,0);
+    float mtl = 0.0;
+    float ruf = 1.0;
     vec3 grid_color = grid_output2(frg_pos.xyz).xyz;
-    out_gbuf = packGbuffer(vec3(0),grid_color,normal,ruf,mtl);
-
+    out_gbuf = packGbuffer (vec3(0.1), // basecolor
+                            grid_color, // emmisive
+                            normal, // normal
+                            ruf,
+                            mtl);
   }
 }
 fragment_shader ps_gbuffer_nx 
