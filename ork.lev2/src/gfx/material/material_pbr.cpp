@@ -161,7 +161,7 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
      //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
     int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-    int num_texspotlights = enumlights->_tex2spotlightmap.size();
+    int num_texspotlights = 0;
 
     auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
     size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
@@ -202,6 +202,9 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
       auto l0 = item.second[0];
       auto irr = l0->_irradianceCookie;
       texlist.push_back(irr->_filtenvSpecularMap.get());
+    }
+
+    for (auto item : enumlights->_tex2spotlightmap) {
       for( auto light : item.second ){
         auto C = fvec4(light->color(), light->intensity());
         auto P = light->worldMatrix().translation();
@@ -211,15 +214,17 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
         pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->_spdata->GetRange();
         pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
         pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = 0; //light->spotIndex();
-        //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
+        //logchan_pbr->log("doing spotlight<%d> color<%g %g %g> pos<%g %g %g>", index, C.x, C.y, C.z, P.x, P.y, P.z);
         index++;
+        num_texspotlights++;
       }
     }
 
+    //printf( "num_texspotlights<%d> num_untextured_pointlights<%d>\n", num_texspotlights, num_untextured_pointlights );
     pl_mapped->unmap();
 
     if(mtl->_parTexSpotLightsCount){
-      FXI->BindParamInt(mtl->_parTexSpotLightsCount, enumlights->_tex2spotlightmap.size());
+      FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
     }
 

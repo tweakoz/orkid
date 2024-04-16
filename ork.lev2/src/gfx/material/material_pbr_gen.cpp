@@ -225,7 +225,6 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   int h = rawenvmap->_height;
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderTechnique* tekFilterSpecMap = nullptr;
   static const FxShaderParam* param_mvp            = nullptr;
   static const FxShaderParam* param_pfm            = nullptr;
   static const FxShaderParam* param_ruf            = nullptr;
@@ -239,25 +238,27 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
-    if(equirectangular)
-      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapEquirectangular");
-    else
-      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapStandard");
-    OrkAssert(tekFilterSpecMap != nullptr);
     // logchan_pbrgen->log("filterenv mtl<%p> tekFilterSpecMap<%p>", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
     param_imgdim = mtl->param("imgdim");
   }
+  const FxShaderTechnique* tekFilterSpecMap = nullptr;
+    if(equirectangular)
+      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapEquirectangular");
+    else
+      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapStandard");
+    OrkAssert(tekFilterSpecMap != nullptr);
   ///////////////////////////////////////////////
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h );
+  logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d> equirectangular<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h, int(equirectangular) );
   boost::Crc64 basehasher;
   basehasher.accumulateItem<int>(_SALT());
   basehasher.accumulateString("filterenv-spec-v0");
+  basehasher.accumulateItem<uint32_t>(uint32_t(equirectangular));
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.accumulateItem<uint32_t>(shader_hash());
   basehasher.accumulateItem<uint32_t>(this_hash());
@@ -391,7 +392,6 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   auto dwi = targ->DWI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderTechnique* tekFilterDiffMap = nullptr;
   static const FxShaderParam* param_mvp            = nullptr;
   static const FxShaderParam* param_pfm            = nullptr;
   static const FxShaderParam* param_ruf            = nullptr;
@@ -403,24 +403,28 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
+    param_mvp = mtl->param("mvp");
+    param_pfm = mtl->param("prefiltmap");
+    param_ruf = mtl->param("roughness");
+  }
+
+  const FxShaderTechnique* tekFilterDiffMap = nullptr;
     if(equirectangular)
       tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapEquirectangular");
     else
       tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapStandard");
     OrkAssert(tekFilterDiffMap != nullptr);
     logchan_pbrgen->log("filterenv mtl<%p> tekFilterDiffMap<%p>", mtl.get(), tekFilterDiffMap);
-    param_mvp = mtl->param("mvp");
-    param_pfm = mtl->param("prefiltmap");
-    param_ruf = mtl->param("roughness");
-  }
+
   ///////////////////////////////////////////////
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  logchan_pbrgen->log("filterenv-diff tex<%p> hash<0x%zx>", (void*) rawenvmap.get(), rawenvmap->_contentHash);
+  logchan_pbrgen->log("filterenv-diff tex<%p> hash<0x%zx> equirectangular<%d>", (void*) rawenvmap.get(), rawenvmap->_contentHash, int(equirectangular));
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-diff-v0");
   basehasher.accumulateItem<int>(_SALT());
+  basehasher.accumulateItem<uint32_t>(uint32_t(equirectangular));
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
   basehasher.accumulateItem<uint32_t>(shader_hash());
   basehasher.accumulateItem<uint32_t>(this_hash());

@@ -27,6 +27,46 @@ parser = argparse.ArgumentParser(description='scenegraph example')
 args = vars(parser.parse_args())
 ################################################################################
 
+class MySpotLight:
+  def __init__(self,index,layer,model,frq,color,cookie,irr_cookie):
+    self.frequency = frq
+    self.sgnode_l = model.createNode("node_light%d"%index,layer)
+    self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
+    self.sgnode_l.worldTransform.scale = 0.1
+    self.sgnode_l.worldTransform.translation = vec3(0)
+    self.spot_light = DynamicSpotLight()
+    self.spot_light.data.color = color
+    self.spot_light.data.fovy = math.radians(45)
+    self.spot_light.lookAt(
+      vec3(0,2,1)*4, # eye
+      vec3(0,0,0), # tgt 
+      vec3(0,1,0)) # up
+    self.spot_light.data.range = 100.0
+    self.spot_light.cookieTexture = cookie
+    self.spot_light.irradianceCookie = irr_cookie
+    print(self.spot_light.shadowMatrix)
+    self.lnode = layer.createLightNode("spotlight%d"%index,self.spot_light)
+    pass
+  def update(self,abstime):
+    phase = abstime*self.frequency
+    ########################################
+    x = math.sin(phase)
+    y = math.sin(phase*self.frequency*2.0)
+    z = math.cos(phase)
+    fovy = 45
+    self.spot_light.data.fovy = math.radians(fovy)
+    LPOS =       vec3(x,2+y,z)*4
+
+    self.spot_light.lookAt(
+      LPOS, # eye
+      vec3(0,0,0), # tgt 
+      vec3(0,1,0)) # up
+    
+    self.sgnode_l.worldTransform.translation = LPOS
+    
+
+################################################################################
+
 class StereoApp1(object):
 
   def __init__(self):
@@ -86,11 +126,6 @@ class StereoApp1(object):
     self.sgnode.worldTransform.scale = 1
     self.sgnode.worldTransform.translation = vec3(0,2,0)
 
-    self.sgnode_l = model.createNode("nodea",self.layer1)
-    self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
-    self.sgnode_l.worldTransform.scale = 0.1
-    self.sgnode_l.worldTransform.translation = vec3(0)
-
     ###################################
 
     self.grid_data = createGridData()
@@ -100,20 +135,15 @@ class StereoApp1(object):
 
     ###################################
 
-    cookie_path = "src://effect_textures/L0D.png"
-
-    self.spot_light = DynamicSpotLight()
-    self.spot_light.data.color = vec3(200)
-    self.spot_light.data.fovy = math.radians(45)
-    self.spot_light.lookAt(
-      vec3(0,2,1)*4, # eye
-      vec3(0,0,0), # tgt 
-      vec3(0,1,0)) # up
-    self.spot_light.data.range = 100.0
-    self.spot_light.cookieTexture = Texture.load(cookie_path)
-    self.spot_light.irradianceCookie = PbrCommon.requestIrradianceMaps(cookie_path)
-    print(self.spot_light.shadowMatrix)
-    self.lnode = self.layer1.createLightNode("spotlight",self.spot_light)
+    #cookie_path = "src://effect_textures/L0D.png"
+    cookie_path = "src://effect_textures/spinner.dds"
+    light_cookie = Texture.load(cookie_path)
+    irr_cookie = PbrCommon.requestIrradianceMaps(cookie_path)
+    
+    intens = 70
+    self.spotlight1 = MySpotLight(0,self.layer1,model,0.1,vec3(0,intens,0),light_cookie,irr_cookie)
+    self.spotlight2 = MySpotLight(1,self.layer1,model,0.17,vec3(intens,0,0),light_cookie,irr_cookie)
+    self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,intens),light_cookie,irr_cookie)
 
   ##############################################
 
@@ -126,36 +156,17 @@ class StereoApp1(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    phase = updinfo.absolutetime    *0.1
+    self.lighttime = updinfo.absolutetime
     ########################################
-    x = math.sin(phase)
-    z = math.cos(phase)
-    fovy = 45 + math.sin(phase*3)*20
-    self.spot_light.data.fovy = math.radians(fovy)
-    LPOS =       vec3(x,2,z)*4
-
-    self.spot_light.lookAt(
-      LPOS, # eye
-      vec3(0,0,0), # tgt 
-      vec3(0,1,0)) # up
-    
-    self.sgnode_l.worldTransform.translation = LPOS
-    
     ########################################
-
     self.scene.updateScene(self.cameralut) 
 
   def onGpuUpdate(self,ctx):
-
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer1.removeDrawableNode(self.sgnode_frustum )
-
-    #slvp = fmtx4_to_dmtx4(self.spot_light.viewMatrix)
-    #slpp = fmtx4_to_dmtx4(self.spot_light.projectionMatrix)
-    #self.frustum.set(slvp,slpp)
-    #self.frustum_prim.gpuInit(ctx)
-    #self.sgnode_frustum = self.frustum_prim.createNodeWithMaterial("frustum",self.layer1,self.frustum_material)
-    pass 
 
 ###############################################################################
 
