@@ -39,6 +39,133 @@ namespace ork::lev2::pbr {
 
 static logchannel_ptr_t logchan_pbrcom = logger()->createChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), true);
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+static asset::vars_ptr_t _irradianceVars() {
+
+  auto vars                                          = std::make_shared<asset::vars_t>();
+  vars->makeValueForKey<Texture::proc_t>("postproc") = //
+      [vars](
+          texture_ptr_t tex, //
+          Context* targ,     //
+          datablock_constptr_t inp_datablock) -> datablock_ptr_t {
+    logchan_pbrcom->log(
+        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>",
+        tex.get(),
+        tex->_debugName.c_str(),
+        inp_datablock->length());
+
+    auto hasher = DataBlock::createHasher();
+    hasher->accumulateString("irradiancemap-v1");
+    hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
+    hasher->finish();
+    uint64_t cachekey = hasher->result();
+
+    //////////////////////////////////////////
+    // TODO cache at this level...
+    //////////////////////////////////////////
+
+    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
+    if (false) { // irrmapdblock) {
+      // found in cache, nothing to do..
+    } else {
+      // not found in cache, generate
+      irrmapdblock = std::make_shared<DataBlock>();
+      ///////////////////////////
+      auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
+      auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
+      auto brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
+
+      auto load_req = tex->loadRequest();
+      OrkAssert(load_req);
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_map") = brdfIntegrationMap;
+
+      auto irrmaps = load_req->_asset_vars->typedValueForKey<irradiancemaps_ptr_t>("irrmaps").value();
+      irrmaps->_filtenvSpecularMap = filtenvSpecularMap;
+      irrmaps->_filtenvDiffuseMap  = filtenvDiffuseMap;
+      irrmaps->_brdfIntegrationMap = brdfIntegrationMap;
+      //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
+      //////////////////////////////////////////////////////////////
+      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
+    }
+
+    return irrmapdblock;
+  };
+  return vars;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+CommonStuff::CommonStuff() {
+
+  _irradianceMaps = std::make_shared<IrradianceMaps>();
+  _clearColor     = fvec4(0, 0, 0, 1);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset) {
+  asset::vars_ptr_t old_varmap;
+  if (_environmentTextureAsset) {
+    old_varmap = _environmentTextureAsset->_varmap.clone();
+    // printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
+  }
+  // printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
+
+  _environmentTextureAsset = texasset;
+  if (nullptr == _environmentTextureAsset)
+    return;
+  //_environmentTextureAsset->_varmap = *_irradianceVars();
+}
+///////////////////////////////////////////////////////////////////////////////
+
+irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture_path) {
+  auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
+  load_req->_asset_vars    = _irradianceVars();
+  auto irrmaps = std::make_shared<IrradianceMaps>();
+  load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = irrmaps;
+  auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+  OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+  OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
+  return irrmaps;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath& texture_path) {
+  auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
+  load_req->_asset_vars    = _irradianceVars();
+  load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
+  _irradianceMaps->_loadRequest = load_req;
+  auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+  OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+  OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
+  assignEnvTexture(enviromentmap_asset);
+  return load_req;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
+  assignEnvTexture(tex);
+}
+///////////////////////////////////////////////////////////////////////////////
+lev2::texture_ptr_t CommonStuff::envSpecularTexture() const {
+  return _irradianceMaps->_filtenvSpecularMap;
+}
+///////////////////////////////////////////////////////////////////////////////
+lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const {
+  return _irradianceMaps->_filtenvDiffuseMap;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {
+  tex = _environmentTextureAsset;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::setEnvTexturePath(file::Path path) {
+  auto mtl_load_req = std::make_shared<asset::LoadRequest>(path);
+  auto envl_asset   = asset::AssetManager<TextureAsset>::load(mtl_load_req);
+  OrkAssert(false);
+  // TODO - inject asset postload ops ()
+}
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::describeX(class_t* c) {
   using namespace asset;
@@ -66,96 +193,8 @@ void CommonStuff::describeX(class_t* c) {
             auto _this = std::dynamic_pointer_cast<CommonStuff>(obj);
             OrkAssert(_this);
             OrkAssert(false);
-            return _this->_texAssetVarMap;
+            return _irradianceVars();
           });
-
 }
 ///////////////////////////////////////////////////////////////////////////////
-CommonStuff::CommonStuff() {
-  _clearColor = fvec4(0,0,0,1);
-  _texAssetVarMap = std::make_shared<asset::vars_t>();
-  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") = //
-      [this](texture_ptr_t tex, //
-             Context* targ, //
-             datablock_constptr_t inp_datablock) -> datablock_ptr_t {
-
-    logchan_pbrcom->log(
-        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>",
-        tex.get(),
-        tex->_debugName.c_str(),
-        inp_datablock->length());
-
-    auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("irradiancemap-v1");
-    hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
-    hasher->finish();
-    uint64_t cachekey = hasher->result();
-    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (false){ //irrmapdblock) {
-      // found in cache, nothing to do..
-    } else {
-      // not found in cache, generate
-      irrmapdblock = std::make_shared<DataBlock>();
-      ///////////////////////////
-      _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-      _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
-      //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
-      //////////////////////////////////////////////////////////////
-      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-    }
-
-    return irrmapdblock;
-  };
-
-}
-///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
-  assignEnvTexture(tex);
-}
-///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset){
-  asset::vars_ptr_t old_varmap;
-  if(_environmentTextureAsset){
-    old_varmap = _environmentTextureAsset->_varmap.clone();
-    //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
-  }
-  //printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
-
-  _environmentTextureAsset = texasset;
-  if (nullptr == _environmentTextureAsset)
-    return;
-  _environmentTextureAsset->_varmap = *_texAssetVarMap;
-}
-///////////////////////////////////////////////////////////////////////////////
-  asset::loadrequest_ptr_t CommonStuff::requestSkyboxTexture(const AssetPath& texture_path) {
-    auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
-    load_req->_asset_vars = _texAssetVarMap;
-    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-    assignEnvTexture(enviromentmap_asset);
-    return load_req;
-  }
-
-///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::envSpecularTexture() const{
-  return _filtenvSpecularMap;
-}
-///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::envDiffuseTexture() const{
-  return _filtenvDiffuseMap;
-}
-///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {
-  tex = _environmentTextureAsset;
-}
-///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::setEnvTexturePath(file::Path path) {
-  auto mtl_load_req = std::make_shared<asset::LoadRequest>(path);
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(mtl_load_req);
-  OrkAssert(false);
-  // TODO - inject asset postload ops ()
-}
-///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::pbr {
+} // namespace ork::lev2::pbr

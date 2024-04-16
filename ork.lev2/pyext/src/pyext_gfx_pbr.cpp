@@ -19,10 +19,24 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
+  auto irrmap_type = py::class_<pbr::IrradianceMaps,pbr::irradiancemaps_ptr_t>(module_lev2, "IrradianceMap")
+      .def(py::init<>())
+      .def_property_readonly("specular", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
+      .def_property_readonly("diffuse", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
+      .def_property_readonly("brdf", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMap; })
+      .def_property_readonly("loadRequest", [](pbr::irradiancemaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
+      .def("__repr__", [](pbr::irradiancemaps_ptr_t d) -> std::string {
+        fxstring<64> fxs;
+        fxs.format("IrradianceMap(%p)", d.get());
+        return fxs.c_str();
+      });
+  /////////////////////////////////////////////////////////////////////////////////
   auto pbrcommon_type = //
       py::class_<pbr::CommonStuff, pbr::commonstuff_ptr_t>(module_lev2, "PbrCommon")
+          .def_static("requestIrradianceMaps", [](std::string path) -> pbr::irradiancemaps_ptr_t { return pbr::CommonStuff::requestIrradianceMaps(path); })
           .def(py::init<>())
-          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestSkyboxTexture(path); })
+          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestAndRefSkyboxTexture(path); })
+          .def("requestAndRefSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestAndRefSkyboxTexture(path); })
           .def_property(
               "environmentIntensity",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentIntensity; },

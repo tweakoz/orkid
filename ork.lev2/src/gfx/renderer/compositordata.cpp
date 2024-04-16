@@ -104,7 +104,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
 
   auto pbr_common = r1->_pbrcommon;
 
-  auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
+  pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
@@ -131,7 +131,7 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
   auto pbr_common = r1->_pbrcommon;
 
-  auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
+  pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
@@ -194,7 +194,7 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
     selected_output_node = screennode;
   }
 
-  auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
+  r1->_pbrcommon->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
@@ -219,7 +219,7 @@ RenderPresetContext CompositingData::presetForwardPBRVR() {
   auto o1 = t1->createOutputNode<VrCompositingNode>();
   auto r1 = t1->createRenderNode<pbr::ForwardNode>();
 
-  auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
+  r1->_pbrcommon->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();

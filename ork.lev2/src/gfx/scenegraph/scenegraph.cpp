@@ -195,7 +195,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
-      auto load_req     = pbrcommon->requestSkyboxTexture(texture_path);
+      pbrcommon->requestAndRefSkyboxTexture(texture_path);
     }
 
     if (auto try_envintensity = params->tryKeyAsNumber("EnvironmentIntensity")) {
