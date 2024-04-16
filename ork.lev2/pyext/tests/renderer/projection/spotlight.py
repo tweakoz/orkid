@@ -103,7 +103,7 @@ class StereoApp1(object):
     cookie_path = "src://effect_textures/L0D.png"
 
     self.spot_light = DynamicSpotLight()
-    self.spot_light.data.color = vec3(500)
+    self.spot_light.data.color = vec3(200)
     self.spot_light.data.fovy = math.radians(45)
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye
@@ -126,7 +126,7 @@ class StereoApp1(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    phase = updinfo.absolutetime    
+    phase = updinfo.absolutetime    *0.1
     ########################################
     x = math.sin(phase)
     z = math.cos(phase)

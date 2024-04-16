@@ -178,21 +178,39 @@ libblock lib_fwd
       vec4 light_hpos = (shmtx)*vec4(wpos,1);
       vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
       float lightz = light_ndc.z;
-      vec2 lightuv = light_ndc.xy*0.5+vec2(0.5);
+      vec2 diffuse_lightuv = light_ndc.xy*0.5+vec2(0.5);
+
+      // compute specular lightuv
+      vec3 lightdir = normalize(lightdel*-1);
+      vec3 halfdir = normalize(lightdir - normalize(eyepos-wpos));
+      vec4 light_hpos2 = (shmtx)*vec4(wpos+halfdir,1);
+      vec3 light_ndc2 = (light_hpos2.xyz / light_hpos2.w);
+      vec2 specular_lightuv = light_ndc2.xy*0.5+vec2(0.5);
+
+      bool specular_mask = bool(light_ndc2.x>=-1 && light_ndc2.x<1) &&
+                          bool(light_ndc2.y>=-1 && light_ndc2.y<1)&&
+                          bool(light_hpos2.z>=0.0 && light_hpos2.z<=lightrange) ;
+
       bool mask = bool(light_ndc.x>=-1 && light_ndc.x<1) &&
                    bool(light_ndc.y>=-1 && light_ndc.y<1)&&
                    bool(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
       int LCI_STD = _samplerIndex[j];
       //int LCI_SPEC = LCI_STD+1;
       vec3 lightcol = _lightcolor[j].xyz;
-      float level = float(pbd._roughness)*8;
-      vec3 lighttex = textureLod(light_cookies[LCI_STD],lightuv,0).xyz*0.25; // diffuse WIP
-      lighttex += textureLod(light_cookies[LCI_STD],lightuv,level).xyz*0.75; // specular WIP
+      float level = pow(pbd._roughness,0.2);
+      vec3 diffuse_lighttex = textureLod(light_cookies[LCI_STD],diffuse_lightuv,0.70).xyz; // diffuse WIP
+      vec3 specular_lighttex = specular_mask ? textureLod(light_cookies[LCI_STD],specular_lightuv,level).xyz : vec3(0); // specular WIP
+
+      //vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
+
         vec3 LN = normalize(lightdel);
         float Ldist = length(lightdel);
         float NdotL = max(0.0,dot(normal,LN));
 
-      spot_lighting = lightcol*lighttex*NdotL/pow(Ldist,2)*float(mask);
+      float spec_mix = 1.0-pow(pbd._roughness,1.0);
+      vec3 lighttex = diffuse_lighttex * NdotL * (1.0-spec_mix);
+      lighttex += specular_lighttex * NdotL * spec_mix;
+      spot_lighting = lightcol*lighttex/pow(Ldist,2)*float(mask);
 
     }
 
