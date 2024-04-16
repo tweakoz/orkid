@@ -73,12 +73,17 @@ static asset::vars_ptr_t _irradianceVars() {
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
-      auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-      auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      auto brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
 
       auto load_req = tex->loadRequest();
       OrkAssert(load_req);
+
+      auto equirectangular = load_req->_asset_vars->typedValueForKey<bool>("equirectangular").value();
+
+
+      auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
+      auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
+      auto brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
+
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_map") = brdfIntegrationMap;
@@ -123,6 +128,7 @@ irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture
   auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
   load_req->_asset_vars    = _irradianceVars();
   auto irrmaps = std::make_shared<IrradianceMaps>();
+  load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = false;
   load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = irrmaps;
   auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
   OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
@@ -134,6 +140,7 @@ irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture
 asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath& texture_path) {
   auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
   load_req->_asset_vars    = _irradianceVars();
+  load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = true;
   load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
   _irradianceMaps->_loadRequest = load_req;
   auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);

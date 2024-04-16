@@ -71,8 +71,8 @@ public:
   static FxShaderParamBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ);
-  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ);
-  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ);
+  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
+  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
 
   ////////////////////////////////////////////
 

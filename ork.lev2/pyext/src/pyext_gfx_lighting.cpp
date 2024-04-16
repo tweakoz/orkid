@@ -85,6 +85,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](light_ptr_t light, texture_ptr_t tex) { //
             light->_cookieTexture = tex;
+          })
+          .def_property("irradianceCookie",                                 //
+          [](light_ptr_t light) -> pbr::irradiancemaps_ptr_t  { //
+            return light->_irradianceCookie;
+          },
+          [](light_ptr_t light, pbr::irradiancemaps_ptr_t tex) { //
+            light->_irradianceCookie = tex;
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");

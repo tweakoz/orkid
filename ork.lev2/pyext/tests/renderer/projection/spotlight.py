@@ -100,7 +100,7 @@ class StereoApp1(object):
 
     ###################################
 
-    tex = Texture.load("src://effect_textures/L0D.png")
+    cookie_path = "src://effect_textures/L0D.png"
 
     self.spot_light = DynamicSpotLight()
     self.spot_light.data.color = vec3(500)
@@ -110,7 +110,8 @@ class StereoApp1(object):
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
-    self.spot_light.cookieTexture = tex
+    self.spot_light.cookieTexture = Texture.load(cookie_path)
+    self.spot_light.irradianceCookie = PbrCommon.requestIrradianceMaps(cookie_path)
     print(self.spot_light.shadowMatrix)
     self.lnode = self.layer1.createLightNode("spotlight",self.spot_light)
 

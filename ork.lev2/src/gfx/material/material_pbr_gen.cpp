@@ -214,7 +214,7 @@ static uint32_t this_hash() {
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ) {
+texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -239,7 +239,10 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
-    tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
+    if(equirectangular)
+      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapEquirectangular");
+    else
+      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapStandard");
     OrkAssert(tekFilterSpecMap != nullptr);
     // logchan_pbrgen->log("filterenv mtl<%p> tekFilterSpecMap<%p>", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
@@ -379,7 +382,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ) {
+texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -400,7 +403,10 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
-    tekFilterDiffMap = mtl->technique("tek_filterDiffuseMap");
+    if(equirectangular)
+      tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapEquirectangular");
+    else
+      tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapStandard");
     OrkAssert(tekFilterDiffMap != nullptr);
     logchan_pbrgen->log("filterenv mtl<%p> tekFilterDiffMap<%p>", mtl.get(), tekFilterDiffMap);
     param_mvp = mtl->param("mvp");

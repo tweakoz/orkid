@@ -1,28 +1,26 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default
-{
-	glsl_version = "130";
-	import "mathtools.i";
-	import "misctools.i";
-	import "envtools.i";
-	import "brdftools.i";
-
+fxconfig fxcfg_default {
+  glsl_version = "130";
+import "mathtools.i";
+import "misctools.i";
+import "envtools.i";
+import "brdftools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
-	mat4        mv;
-	mat4        mvp;
-	vec2 InvViewportSize; // inverse target size
+  mat4 mv;
+  mat4 mvp;
+  vec2 InvViewportSize; // inverse target size
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-    sampler2D prefiltmap;
-		vec2 imgdim; // target size
-		float roughness;
+  sampler2D prefiltmap;
+  vec2 imgdim; // target size
+  float roughness;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
 }
@@ -34,98 +32,146 @@ state_block sb_default : default {
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vyo
-	: ub_vtx {
-    inputs {
-	    vec4 position : POSITION;
-	    vec2 uv0 : TEXCOORD0;
- 	  }
-    outputs {
-      vec4 frg_clr;
-	    vec2 frg_uv0;
-	  }
+vertex_interface iface_vyo : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_yo
-	: iface_vyo {
-	gl_Position = mvp*position;
-	frg_clr = vec4(1.0,1.0,1.0,1.0);
-	frg_uv0 = uv0;//*vec2(1,-1);
+vertex_shader vs_yo : iface_vyo {
+  gl_Position = mvp * position;
+  frg_clr     = vec4(1.0, 1.0, 1.0, 1.0);
+  frg_uv0     = uv0; //*vec2(1,-1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fyo
-	: ub_frg
-{
+fragment_interface iface_fyo : ub_frg {
   inputs {
     vec4 frg_clr;
-	  vec2 frg_uv0;
-	}
-	outputs {
+    vec2 frg_uv0;
+  }
+  outputs {
     layout(location = 0) vec4 out_clr;
-	}
+  }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_filterSpecularEnvMap
-	: iface_fyo
-	: lib_math
-	: lib_envmapping
-	: lib_brdf {
-	
-	vec2 fcoord = gl_FragCoord.xy;
-	fcoord *= vec2(1.0/(imgdim.x-1),1.0/(imgdim.y-1));//a
-	vec3 n = env_equirectangularUV2N(fcoord);
-	vec3 r = n;
-	vec3 v = r;
-	vec3 o = vec3(0,0,0);
-	float w = 0;
-	//////////////////////////////////
-	for( uint i=0; i<8192; i++){
-		vec2 e = hammersley(i,8192);
-		vec3 h = importanceSampleGGXN(e,n,roughness);
-		vec3 l = normalize(2.0 * dot(v, h) * h - v);
-		float ndotl = satdot(n, l);
-		if(ndotl > 0.0){
-			vec2 luv = env_equirectangularN2UV(l);
-			luv = clamp(luv,0,1);
-		  o += textureLod(prefiltmap, luv,0).rgb * ndotl;
-		  w += ndotl;
-		}
-	}
-	//////////////////////////////////
-	o = o/w; 
-	vec2 luv = env_equirectangularN2UV(n);
-	//o = textureLod(prefiltmap, frg_uv0,0).rgb;
-	out_clr = vec4(o,1);
+fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmapping : lib_brdf {
+
+  vec2 fcoord = gl_FragCoord.xy;
+  fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // Normalize coordinates
+
+  // Assuming 'n' is the normal in world space for the fragment
+  vec3 n  = vec3(0, 1, 0); // Define this function based on your application
+  vec3 r  = n;
+  vec3 v  = r;
+  vec3 o  = vec3(0, 0, 0);
+  float w = 0;
+  for (uint i = 0; i < 8192; i++) {
+    vec2 e = hammersley(i, 8192);
+    // Roughness affects the spread of the texture coordinate sampling
+    float perturbScale = roughness * 0.5; // Control the scale of perturbation
+    vec2 perturb       = vec2(rand(e) * perturbScale, rand(e.yx) * perturbScale);
+    vec2 luv           = fcoord + perturb;
+    luv                = clamp(luv, 0, 1); // Ensure UVs are still within bounds
+
+    vec3 sampledColor = textureLod(prefiltmap, luv, 0).rgb;
+    float weight      = 1.0 / 8192.0; // Uniform weight for each sample
+    o += sampledColor * weight;
+    w += weight;
+  }
+  //////////////////////////////////
+  o       = o / w; // Normalize the output color by the total weight
+  out_clr = vec4(o, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_filterDiffuseEnvMap
-	: iface_fyo
-	: lib_math
-	: lib_envmapping
-	: lib_brdf {
-	//////////////////////////////////
-	vec3 n = env_equirectangularUV2N(frg_uv0*vec2(1,-1));
-	n = n * vec3(-1,-1,1);
-	vec3 up    = vec3(0.0, 0.0, 1.0);
-	vec3 right = cross(up,n);
-	up         = cross(n,right);
-	//////////////////////////////////
-	vec3 o = vec3(0);
-	float w = 0.0;
-	float incr = 0.01;
-	//////////////////////////////////
-	for( uint i=0; i<8192; i++){
-		vec2 e = hammersley(i,8192);
-		vec3 h = importanceSampleGGXN(e,n,2);
-		vec2 luv = env_equirectangularN2UV(normalize(n+h*2));
-		vec2 xuv = env_equirectangularN2UV(normalize(n-h*2));
-	  o += textureLod(prefiltmap, luv,0).rgb;
-		o += textureLod(prefiltmap, xuv,0).rgb;
-	  w += 2;
-	}
-	//////////////////////////////////
-	out_clr = vec4(o/w,1);
-	//out_clr = textureLod(prefiltmap, frg_uv0,0);
+fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapping : lib_brdf {
+
+  vec2 fcoord = gl_FragCoord.xy;
+  fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // a
+  vec3 n  = env_equirectangularUV2N(fcoord);
+  vec3 r  = n;
+  vec3 v  = r;
+  vec3 o  = vec3(0, 0, 0);
+  float w = 0;
+  //////////////////////////////////
+  for (uint i = 0; i < 8192; i++) {
+    vec2 e      = hammersley(i, 8192);
+    vec3 h      = importanceSampleGGXN(e, n, roughness);
+    vec3 l      = normalize(2.0 * dot(v, h) * h - v);
+    float ndotl = satdot(n, l);
+    if (ndotl > 0.0) {
+      vec2 luv = env_equirectangularN2UV(l);
+      luv      = clamp(luv, 0, 1);
+      o += textureLod(prefiltmap, luv, 0).rgb * ndotl;
+      w += ndotl;
+    }
+  }
+  //////////////////////////////////
+  o        = o / w;
+  vec2 luv = env_equirectangularN2UV(n);
+  // o = textureLod(prefiltmap, frg_uv0,0).rgb;
+  out_clr = vec4(o, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_filterDiffuseEnvMapSTD : iface_fyo : lib_math : lib_envmapping : lib_brdf {
+  vec2 fcoord = gl_FragCoord.xy;
+  fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // Normalize coordinates
+
+  // Assuming 'n' is the normal in world space for the fragment
+  vec3 n  = vec3(0, 1, 0); // Define this function based on your application
+  vec3 r  = n;
+  vec3 v  = r;
+  vec3 o  = vec3(0, 0, 0);
+  float w = 0;
+	float RUF = 1;
+  for (uint i = 0; i < 16384; i++) {
+    vec2 e = hammersley(i, 16384);
+
+    // Roughness affects the spread of the texture coordinate sampling
+    float perturbScale = RUF * 0.5; // Control the scale of perturbation
+    vec2 perturb       = vec2(rand(e) * perturbScale, rand(e.yx) * perturbScale);
+    vec2 luv           = fcoord + perturb;
+    luv                = clamp(luv, 0, 1); // Ensure UVs are still within bounds
+
+    vec3 sampledColor = textureLod(prefiltmap, luv, 0).rgb;
+    float weight      = 1.0 / 16384.0; // Uniform weight for each sample
+    o += sampledColor * weight;
+    w += weight;
+  }
+  //////////////////////////////////
+  o       = o / w; // Normalize the output color by the total weight
+  out_clr = vec4(o, 1);
+
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_filterDiffuseEnvMapEQUI : iface_fyo : lib_math : lib_envmapping : lib_brdf {
+  //////////////////////////////////
+  vec3 n     = env_equirectangularUV2N(frg_uv0 * vec2(1, -1));
+  n          = n * vec3(-1, -1, 1);
+  vec3 up    = vec3(0.0, 0.0, 1.0);
+  vec3 right = cross(up, n);
+  up         = cross(n, right);
+  //////////////////////////////////
+  vec3 o     = vec3(0);
+  float w    = 0.0;
+  float incr = 0.01;
+  //////////////////////////////////
+  for (uint i = 0; i < 8192; i++) {
+    vec2 e   = hammersley(i, 8192);
+    vec3 h   = importanceSampleGGXN(e, n, 2);
+    vec2 luv = env_equirectangularN2UV(normalize(n + h * 2));
+    vec2 xuv = env_equirectangularN2UV(normalize(n - h * 2));
+    o += textureLod(prefiltmap, luv, 0).rgb;
+    o += textureLod(prefiltmap, xuv, 0).rgb;
+    w += 2;
+  }
+  //////////////////////////////////
+  out_clr = vec4(o / w, 1);
+  // out_clr = textureLod(prefiltmap, frg_uv0,0);
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_filter : default {
@@ -133,21 +179,39 @@ state_block sb_filter : default {
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-technique tek_filterSpecularMap {
-	fxconfig=fxcfg_default;
-	pass p0 {
-		vertex_shader=vs_yo;
-		fragment_shader=ps_filterSpecularEnvMap;
-		state_block=sb_filter;
-	}
+technique tek_filterSpecularMapStandard {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_yo;
+    fragment_shader = ps_filterSpecularEnvMapSTD;
+    state_block     = sb_filter;
+  }
 }
 ///////////////////////////////////////////////////////////////
-technique tek_filterDiffuseMap {
-	fxconfig=fxcfg_default;
-	pass p0 {
-		vertex_shader=vs_yo;
-		fragment_shader=ps_filterDiffuseEnvMap;
-		state_block=sb_filter;
-	}
+technique tek_filterDiffuseMapStandard {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_yo;
+    fragment_shader = ps_filterDiffuseEnvMapSTD;
+    state_block     = sb_filter;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tek_filterSpecularMapEquirectangular {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_yo;
+    fragment_shader = ps_filterSpecularEnvMapEQUI;
+    state_block     = sb_filter;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tek_filterDiffuseMapEquirectangular {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_yo;
+    fragment_shader = ps_filterDiffuseEnvMapEQUI;
+    state_block     = sb_filter;
+  }
 }
 ///////////////////////////////////////////////////////////////

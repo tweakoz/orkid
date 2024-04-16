@@ -198,7 +198,10 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     texture_rawlist_t texlist;
     for (auto item : enumlights->_tex2spotlightmap) {
       auto cookie = item.first;
-      texlist.push_back(cookie);
+      //texlist.push_back(cookie);
+      auto l0 = item.second[0];
+      auto irr = l0->_irradianceCookie;
+      texlist.push_back(irr->_filtenvSpecularMap.get());
       for( auto light : item.second ){
         auto C = fvec4(light->color(), light->intensity());
         auto P = light->worldMatrix().translation();

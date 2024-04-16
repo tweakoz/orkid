@@ -164,6 +164,11 @@ libblock lib_fwd
       float LR = _lightradius[i];
       point_lighting += plcalc_forward(plc,pbd,LR)*LC;
     }
+
+    ///////////////////////////////////////////////
+    // spot lighting
+    ///////////////////////////////////////////////
+
     for(int i=0; i<spot_light_count; i++){
       int j = i+point_light_count;
       mat4 shmtx = _shadowmatrix[j];
@@ -177,9 +182,12 @@ libblock lib_fwd
       bool mask = bool(light_ndc.x>=-1 && light_ndc.x<1) &&
                    bool(light_ndc.y>=-1 && light_ndc.y<1)&&
                    bool(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
-      int LCI = _samplerIndex[j];
+      int LCI_STD = _samplerIndex[j];
+      //int LCI_SPEC = LCI_STD+1;
       vec3 lightcol = _lightcolor[j].xyz;
-      vec3 lighttex = texture(light_cookies[LCI],lightuv).xyz;
+      float level = float(pbd._roughness)*8;
+      vec3 lighttex = textureLod(light_cookies[LCI_STD],lightuv,0).xyz*0.25; // diffuse WIP
+      lighttex += textureLod(light_cookies[LCI_STD],lightuv,level).xyz*0.75; // specular WIP
         vec3 LN = normalize(lightdel);
         float Ldist = length(lightdel);
         float NdotL = max(0.0,dot(normal,LN));

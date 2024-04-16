@@ -144,6 +144,7 @@ struct Light : public Drawable {
   int miInFrustumID;
   bool _dynamic;
   texture_ptr_t _cookieTexture;
+  pbr::irradiancemaps_ptr_t _irradianceCookie;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
