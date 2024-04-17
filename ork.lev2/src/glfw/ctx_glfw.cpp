@@ -450,6 +450,8 @@ void CtxGLFW::Show() {
   _glfwMonitor = selected_monitor;
 
   glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+
+  printf( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {

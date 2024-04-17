@@ -75,8 +75,32 @@ struct SCRIMPL {
       //w /= 2;
       //h /= 2;
     }
-    _width  = w * (_node->supersample() + 1);
-    _height = h * (_node->supersample() + 1);
+    int multiplier = 1;
+    switch(_node->supersample()){
+      case 0:
+        multiplier=1;
+        break;
+      case 1:
+        multiplier=2;
+        break;
+      case 2:
+        multiplier=3;
+        break;
+      case 3:
+        multiplier=4;
+        break;
+      case 4:
+        multiplier=5;
+        break;
+      case 5:
+        multiplier=6;
+        break;
+      default:
+        OrkAssert(false);
+    }
+
+    _width  = w * multiplier;
+    _height = h * multiplier;
     //////////////////////////////////////////////////////
     drawdata._properties["OutputWidth"_crcu].set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_height);
@@ -117,29 +141,8 @@ ScreenOutputCompositingNode::ScreenOutputCompositingNode()
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
 void ScreenOutputCompositingNode::setSuperSample(int ss) {
-  switch(ss){
-    case 1:
-      _supersample = 1;
-      break;
-    case 4:
-      _supersample = 1;
-      break;
-    case 9:
-      _supersample = 2;
-      break;
-    case 16:
-      _supersample = 3;
-      break;
-    case 25:
-      _supersample = 4;
-      break;
-    case 36:
-      _supersample = 5;
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
+  printf( "setss<%d>\n", ss );
+  _supersample = ss;
 }
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);

@@ -82,7 +82,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
@@ -102,7 +102,8 @@ class StereoApp1(object):
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
-      "DepthFogDistance": float(10000)
+      "DepthFogDistance": float(10000),
+      "supersample": "1",
     }
 
     #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
