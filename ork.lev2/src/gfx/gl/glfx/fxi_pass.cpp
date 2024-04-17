@@ -205,13 +205,12 @@ void Pass::postProc(rootcontainer_ptr_t container) {
     std::string str_name;
 
     bool is_array = false;
-    int array_size = 0;
 
     {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      printf("  find uni<%s>", nambuf);
+      printf("  find uni<%s> unisiz<%d> unityp<%08x>", nambuf, unisiz, unityp);
       GL_ERRORCHECK();
 
       str_name = nambuf;
@@ -220,11 +219,10 @@ void Pass::postProc(rootcontainer_ptr_t container) {
         auto ite = str_name.find(']');
         OrkAssert(ite != str_name.npos);
         std::string str_size = str_name.substr(its + 1, ite - its - 1);
-        array_size = atoi(str_size.c_str());
         is_array = true;
         str_name = str_name.substr(0, its);
         printf( " nnam<%s>", str_name.c_str() );
-        printf( " str_size<%s> asize<%d>", str_size.c_str(), array_size );
+        printf( " str_size<%s>", str_size.c_str() );
       }
     }
 
@@ -240,7 +238,6 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       pinst->mpUniform       = puni;
       pinst->_is_array = (unisiz>1);
       GLint uniloc     = glGetUniformLocation(_programObjectId, str_name.c_str());
-      printf( " LOC<%d> ", uniloc );
       bool is_sampler = false;
       GLenum tex_target = GL_ZERO;
       ///////////////////////////////////////////////////
@@ -264,12 +261,16 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       if (is_sampler) {
         pinst->mPrivData.set<GLenum>(tex_target);
         if(is_array){
+          printf( " LOCS[");
           for(int i=0; i<unisiz; i++){
             auto subitemstr = FormatString("%s[%d]",str_name.c_str(),i);
             GLint subuniloc = glGetUniformLocation(_programObjectId, subitemstr.c_str());
             pinst->_locations.push_back(subuniloc);
+            printf(" %d:%d ", i, subuniloc);
           }
+          printf( "] ");
         } else {
+          printf( " LOC<%d> ", uniloc );
           pinst->_locations.push_back(uniloc);
         }
       }

@@ -86,7 +86,13 @@ uniform_set ub_frg_fwd {
   int spot_light_count;
   //sampler2D UnTexPointLightsData;
 
-  sampler2D light_cookies[8];
+  //sampler2D light_cookies[8];
+  sampler2D light_cookie0;
+  sampler2D light_cookie1;
+  sampler2D light_cookie2;
+  sampler2D light_cookie3;
+  sampler2D light_cookie4;
+  sampler2D light_cookie5;
 
   vec4 ModColor;
   uint obj_pickID;

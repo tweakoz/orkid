@@ -229,7 +229,25 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
 
     if(mtl->_parTexSpotLightsCount){
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
-      FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
+      //FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
+      if(texlist.size()>0){
+        FXI->BindParamCTex(mtl->_parLightCookie0, texlist[0]);
+      }
+      if(texlist.size()>1){
+        FXI->BindParamCTex(mtl->_parLightCookie1, texlist[1]);
+      }
+      if(texlist.size()>2){
+        FXI->BindParamCTex(mtl->_parLightCookie2, texlist[2]);
+      }
+      if(texlist.size()>3){
+        FXI->BindParamCTex(mtl->_parLightCookie3, texlist[3]);
+      }
+      if(texlist.size()>4){
+        FXI->BindParamCTex(mtl->_parLightCookie4, texlist[4]);
+      }
+      if(texlist.size()>5){
+        FXI->BindParamCTex(mtl->_parLightCookie5, texlist[5]);
+      }
     }
 
     if(mtl->_parUnTexPointLightsCount)
@@ -1041,9 +1059,15 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
 
-  _parLightCookies = fxi->parameter(_shader, "light_cookies");
+  //_parLightCookies = fxi->parameter(_shader, "light_cookies");
+  _parLightCookie0 = fxi->parameter(_shader, "light_cookie0");
+  _parLightCookie1 = fxi->parameter(_shader, "light_cookie1");
+  _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
+  _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
+  _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
+  _parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
 
-  printf( "_parLightCookies<%p>\n", _parLightCookies );
+  //printf( "_parLightCookies<%p>\n", _parLightCookies );
 
   //
 

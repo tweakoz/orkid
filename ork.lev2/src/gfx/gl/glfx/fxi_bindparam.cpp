@@ -252,13 +252,13 @@ void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_
         texunits[i] = itexunit;
          printf( "aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit );
         GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
+        glUniform1i(uniloc, itexunit); 
         GL_ERRORCHECK();
       }
       // printf( "\n" );
     }
-    //glUniform1i(uniloc, itexunit); 
     //GLfloat values[5] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-    glUniform1iv(uniloc0, texunits.size(), texunits.data());    
+    //glUniform1iv(uniloc0, texunits.size(), texunits.data());    
   }
 }
 

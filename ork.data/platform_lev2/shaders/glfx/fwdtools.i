@@ -120,6 +120,24 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
 
   /////////////////////////////////////////////////////////
 
+  vec3 _sample_cookie_lod(int index, vec2 uv,  float lod) {
+    vec3 rval = vec3(0);
+    if (index == 0) {
+      rval = textureLod(light_cookie0, uv, lod).xyz;
+    } else if (index == 1) {
+      rval = textureLod(light_cookie1, uv, lod).xyz;
+    } else if (index == 2) {
+      rval = textureLod(light_cookie2, uv, lod).xyz;
+    } else if (index == 3) {
+      rval = textureLod(light_cookie3, uv, lod).xyz;
+    } else if (index == 4) {
+      rval = textureLod(light_cookie4, uv, lod).xyz;
+    } else if (index == 5) {
+      rval = textureLod(light_cookie5, uv, lod).xyz;
+    }
+    return rval;
+  }
+
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
     const float inverse_255 = 1.0 / 255.0;
@@ -170,8 +188,8 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     for (int i = 0; i < spot_light_count; i++) {
       int j                = i + point_light_count;
 
-      int LCI_STD = 0;//_samplerIndex[j*2+0];
-      int LCI_DEP = 1;//_samplerIndex[j*2+1];
+      int LCI_STD = _samplerIndex[j*2+0];
+      int LCI_DEP = _samplerIndex[j*2+1];
 
       mat4 shmtx           = _shadowmatrix[j];
       vec3 lightpos        = _lightpos[j].xyz;
@@ -195,14 +213,15 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
                   bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
 
-      float shadow = textureLod(light_cookies[LCI_DEP], light_ndc.xy * 0.5 + vec2(0.5), 0).x;
+      float shadow = _sample_cookie_lod(LCI_DEP, light_ndc.xy * 0.5 + vec2(0.5), 0).x;
 
 
       vec3 lightcol         = _lightcolor[j].xyz;
       float level           = pow(pbd._roughness, 0.2);
-      vec3 diffuse_lighttex = textureLod(light_cookies[LCI_STD], diffuse_lightuv, 0.70).xyz; // diffuse WIP
-      vec3 specular_lighttex =
-          specular_mask ? textureLod(light_cookies[LCI_STD], specular_lightuv, level).xyz : vec3(0); // specular WIP
+      vec3 diffuse_lighttex = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0.70).xyz; // diffuse WIP
+      vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
+
+      specular_lighttex *= float(specular_mask);
 
       // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
 
@@ -214,7 +233,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 lighttex  = diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask);
-      //spot_lighting += vec3(pow(shadow,1)*0.001);
+      //spot_lighting += vec3(pow(shadow,1));
     }
     //spot_lighting = vec3(point_light_count);
     ///////////////////////////////////////////////
