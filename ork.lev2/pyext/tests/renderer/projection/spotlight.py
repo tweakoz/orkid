@@ -50,6 +50,7 @@ class MySpotLight:
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
     self.spot_light.data.shadowBias = 1e-3
+    self.spot_light.data.shadowMapSize = 128
     self.spot_light.cookieTexture = cookie.tex
     self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
@@ -63,7 +64,7 @@ class MySpotLight:
     y = math.sin(phase*self.frequency*2.0)
     ty = math.sin(phase*2.0)
     z = math.cos(phase)
-    fovy = 45+math.sin(phase*3.5)*10
+    fovy = 25+(1.0+math.sin(phase*3.5))*20
     self.spot_light.data.fovy = math.radians(fovy)
     LPOS =       vec3(x,1+y*0.5,z)*12
 
@@ -143,7 +144,7 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(0.4)
+    self.grid_data.modcolor = vec3(0.3)
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
@@ -154,9 +155,9 @@ class StereoApp1(object):
     cookie2 = MyCookie("data://platform_lev2/textures/transponder24.dds")
     cookie3 = MyCookie("src://effect_textures/knob2.dds")
     
-    self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,2500,0),cookie1)
+    self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,5500,0),cookie1)
     self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(5000,0,0),cookie2)
-    self.spotlight3 = MySpotLight(2,self,model,0.57,vec3(500),cookie3)
+    self.spotlight3 = MySpotLight(2,self,model,0.57,vec3(800),cookie3)
 
   ##############################################
 
