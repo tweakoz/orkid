@@ -24,6 +24,53 @@ from common.scenegraph import createSceneGraph
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
+class MyCookie: 
+  def __init__(self,path):
+    self.path = path
+    self.tex = Texture.load(path)
+    self.irr = PbrCommon.requestIrradianceMaps(path)
+    
+class MySpotLight:
+  def __init__(self,index,app,model,frq,color,cookie):
+    self.cookie = cookie
+    self.frequency = frq
+    self.drawable_model = model.createDrawable()
+    self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 0.25
+    self.modelnode.worldTransform.translation = vec3(0)
+    self.spot_light = DynamicSpotLight()
+    self.spot_light.data.color = color
+    self.spot_light.data.fovy = math.radians(45)
+    self.spot_light.lookAt(
+      vec3(0,2,1)*4, # eye
+      vec3(0,0,0), # tgt 
+      vec3(0,1,0)) # up
+    self.spot_light.data.range = 100.0
+    self.spot_light.cookieTexture = cookie.tex
+    self.spot_light.irradianceCookie = cookie.irr
+    self.spot_light.shadowCaster = True
+    print(self.spot_light.shadowMatrix)
+    self.lnode = app.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)
+    pass
+  def update(self,abstime):
+    phase = abstime*self.frequency
+    ########################################
+    x = math.sin(phase)
+    y = 3.5+(math.sin(phase*self.frequency*2.0)+1.0)*3.5
+    ty = 1.0 #math.sin(phase*2.0)
+    z = math.cos(phase)
+    fovy = 85#+math.sin(phase*3.5)*10
+    self.spot_light.data.fovy = math.radians(fovy)
+    LPOS =       vec3(x*15,y,z*15)
+
+    self.spot_light.lookAt(
+      LPOS, # eye
+      vec3(0,ty,0), # tgt 
+      vec3(0,1,0)) # up
+    
+    self.modelnode.worldTransform.translation = LPOS
+    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized(),phase*self.frequency*16)
+
 ################################################################################
 
 args = vars(parser.parse_args())
@@ -33,13 +80,16 @@ envmap = args["envmap"]
 
 class NODE(object):
 
-  def __init__(self,model,layer, index):
+  def __init__(self,model,app, index):
 
     super().__init__()
     self.model = model
-    self.sgnode = model.createNode("node%d"%index,layer)
-    self.modelinst = self.sgnode.user.pyext_retain_modelinst
+    self.drawable_model = model.createDrawable()
+    self.modelinst = self.drawable_model.modelinst
+    self.sgnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node-%d"%index,self.drawable_model)
     self.sgnode.worldTransform.scale = 1
+    self.sgnode.worldTransform.translation = vec3(0)
+    #self.sgnode = model.createNode("node%d"%index,layer)
 
 ################################################################################
 
@@ -58,10 +108,10 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(1),
+      "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(10000)
     }
 
@@ -73,6 +123,10 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,
                      rendermodel="ForwardPBR",
                      params_dict=params_dict)
+
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.layer1
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
     ###################################
 
@@ -88,7 +142,7 @@ class SceneGraphApp(object):
         submesh.material = copy
 
     for i in range(81):
-      node = NODE(model,self.layer1,i)
+      node = NODE(model,self,i)
 
       x = (i % 9)
       z = int(i/9)
@@ -118,6 +172,12 @@ class SceneGraphApp(object):
 
       self.nodes += [node]
 
+    cookie3 = MyCookie("src://effect_textures/knob2.dds")
+    
+    #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
+    #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
+    self.spotlight3 = MySpotLight(2,self,model,0.27,vec3(900),cookie3)
+
     ###################################
 
     self.grid_data = createGridData()
@@ -131,9 +191,15 @@ class SceneGraphApp(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
+
+  ################################################
+  def onGpuUpdate(self,ctx):
+    self.spotlight3.update(self.lighttime)
+
   ################################################
 
   def onUpdate(self,updinfo):
+    self.lighttime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################

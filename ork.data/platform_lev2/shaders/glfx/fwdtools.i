@@ -268,10 +268,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float NdotL = max(0.0, dot(normal, LN));
 
       float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
-      vec3 lighttex  = pl_c * diffuse_lighttex * NdotL * (1.0 - spec_mix);
+      vec3 lighttex  = plc._F0 *pl_c * diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-       //spot_lighting += plc._F0;
+      //spot_lighting += vec3(NdotL*shadow_factor);
        //spot_lighting += pl_c;
     }
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
