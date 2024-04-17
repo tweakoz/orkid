@@ -38,6 +38,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](lightdata_ptr_t lightdata, fvec3 color) { //
             lightdata->mColor = color;
+          })
+          .def_property("shadowBias",                                 //
+          [](lightdata_ptr_t lightdata) -> float { //
+            return lightdata->mShadowBias;
+          },
+          [](lightdata_ptr_t lightdata, float bias) { //
+            lightdata->mShadowBias = bias;
           });
   py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
       .def(py::init<>())

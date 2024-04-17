@@ -122,6 +122,10 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
               [](griddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
           .def_property(
+              "modcolor",
+              [](griddrawabledataptr_t drw) -> fvec3 { return drw->_modcolor; },
+              [](griddrawabledataptr_t drw, fvec3 val) { drw->_modcolor = val; })
+          .def_property(
               "extent",
               [](griddrawabledataptr_t drw) -> float { return drw->_extent; },
               [](griddrawabledataptr_t drw, float val) { drw->_extent = val; })

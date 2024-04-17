@@ -104,11 +104,9 @@ uniform_set ub_frg_fwd {
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
   vec4 _lightcolor[64];
+  vec4 _lightsizbias[64];
   vec4 _lightpos[64];
   mat4 _shadowmatrix[64];
-  float _lightradius[64];
-  int   _lighttype[64];
-  int   _samplerIndex[64];
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces

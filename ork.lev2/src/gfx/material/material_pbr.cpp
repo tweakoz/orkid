@@ -173,19 +173,15 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     size_t mat4_stride   = sizeof(fmtx4);
 
     size_t base_color    = 0;
-    size_t base_position = base_color + vec4_stride * 64;
+    size_t base_sizbias  = base_color + vec4_stride * 64;
+    size_t base_position = base_sizbias + vec4_stride * 64;
     size_t base_shmtx    = base_position + vec4_stride * 64;
-    size_t base_radius   = base_shmtx + mat4_stride * 64;
-    size_t base_type     = base_radius + f32_stride * 64;
-    size_t base_sidx     = base_type + i32_stride * 64;
 
     if(0){
       printf( "base_color<%zu>\n", base_color );
+      printf( "base_sizbias<%zu>\n", base_sizbias );
       printf( "base_position<%zu>\n", base_position );
       printf( "base_shmtx<%zu>\n", base_shmtx );
-      printf( "base_radius<%zu>\n", base_radius );
-      printf( "base_type<%zu>\n", base_type );
-      printf( "base_sidx<%zu>\n", base_sidx );
     }
     // 16*(16+16+8) = 16*40 = 640
 
@@ -194,13 +190,11 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
       auto C = fvec4(light->color(), light->intensity());
       auto P = light->worldPosition();
       float R = light->radius();
-      pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
-      pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
+      size_t v4_offset = index * vec4_stride;
+      pl_mapped->ref<fvec4>(base_color + v4_offset)    = C;
+      pl_mapped->ref<fvec4>(base_sizbias + v4_offset)   = fvec4(R,0,0,1);
+      pl_mapped->ref<fvec4>(base_position + v4_offset) = P;
       pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = fmtx4();
-      pl_mapped->ref<float>(base_radius + (index * f32_stride))    = R;
-      pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 0;
-      pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = 0;
-      //logchan_pbr->log("doing light<%p> color<%g %g %g> pos<%g %g %g> R<%g>", (void*) light, C.x, C.y, C.z, P.x, P.y, P.z, R);
       index++;
     }
 
@@ -212,11 +206,13 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
 
         auto C = fvec4(light->color(), light->intensity());
         auto P = light->worldMatrix().translation();
-        pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
-        pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
+        float R = light->_spdata->GetRange();
+        float B = light->shadowDepthBias();
+        size_t v4_offset = index * vec4_stride;
+        pl_mapped->ref<fvec4>(base_color + v4_offset)    = C;
+        pl_mapped->ref<fvec4>(base_sizbias + v4_offset)   = fvec4(R,B,0,1);
+        pl_mapped->ref<fvec4>(base_position + v4_offset) = P;
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = light->shadowMatrix();
-        pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->_spdata->GetRange();
-        //pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
         //pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = texlist.size(); //light->spotIndex();
 
         //printf( "light<%d> sidxbase<%d>\n", index, texlist.size() );

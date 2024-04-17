@@ -16,6 +16,7 @@ public:
 
   std::string _colortexpath;
   std::string _normaltexpath;
+  fvec3 _modcolor = fvec3(1, 1, 1);
   float _extent = 100.0f;
   float _majorTileDim = 1.0f;
   float _minorTileDim = 0.1f;

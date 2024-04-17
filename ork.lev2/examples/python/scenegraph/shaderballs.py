@@ -41,6 +41,7 @@ class MySpotLight:
     self.spot_light = DynamicSpotLight()
     self.spot_light.data.color = color
     self.spot_light.data.fovy = math.radians(45)
+    self.spot_light.data.shadowBias = 0
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 
@@ -108,7 +109,7 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(1),
+      "SkyboxIntensity": float(1.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
@@ -176,11 +177,14 @@ class SceneGraphApp(object):
     
     #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
     #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
-    self.spotlight3 = MySpotLight(2,self,model,0.27,vec3(900),cookie3)
+    self.spotlight3 = MySpotLight(2,self,model,0.27,vec3(500),cookie3)
 
     ###################################
 
     self.grid_data = createGridData()
+    self.grid_data.texturepath = "src://effect_textures/white.dds"
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(0.5)
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 

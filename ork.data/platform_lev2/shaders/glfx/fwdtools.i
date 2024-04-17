@@ -175,7 +175,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     for (int i = 0; i < point_light_count; i++) {
       plc._lightdel = _lightpos[i].xyz - wpos;
       vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
-      float LR      = _lightradius[i];
+      float LR      = _lightsizbias[i].x;
       point_lighting += plcalc_forward(plc, pbd, LR) * LC;
     }
 
@@ -194,7 +194,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       mat4 shmtx           = _shadowmatrix[j];
       vec3 lightpos        = _lightpos[j].xyz;
       vec3 lightdel        = lightpos - wpos;
-      float lightrange     = _lightradius[j];
+      float lightrange     = _lightsizbias[j].x;
       vec4 light_hpos      = (shmtx)*vec4(wpos, 1);
       vec3 light_ndc       = (light_hpos.xyz / light_hpos.w);
       float lightz         = light_ndc.z;
@@ -231,9 +231,9 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       if (!shadow_mask) {
         shadow_factor = 1.0;
       } else {
-        float bias             = 0.005; // Increased bias to help with shadow acne
-        float far              = 100.0;
-        float near             = 0.1;
+        float bias             = _lightsizbias[j].y; // Increased bias to help with shadow acne
+        float far              = lightrange;
+        float near             = lightrange*0.001;
         float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
@@ -259,7 +259,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;   // diffuse WIP
       vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
 
-      specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
+      //specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
 
       // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
 
@@ -268,8 +268,9 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float NdotL = max(0.0, dot(normal, LN));
 
       float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
-      vec3 lighttex  = plc._F0 *pl_c * diffuse_lighttex * NdotL * (1.0 - spec_mix);
-      lighttex += specular_lighttex * NdotL * spec_mix;
+      vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
+      vec3 lighttex  = diffuse;
+      lighttex += pbd._albedo * specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
       //spot_lighting += vec3(NdotL*shadow_factor);
        //spot_lighting += pl_c;

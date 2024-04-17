@@ -99,7 +99,7 @@ struct GridRenderImpl {
     auto mtxi = context->MTXI();
     auto gbi  = context->GBI();
     mtxi->PushMMatrix(fmtx4::Identity());
-    fvec4 modcolor = fcolor4::Green();
+    fvec4 modcolor = _griddata->_modcolor;
     if (isPickState) {
       auto pickBuf = context->FBI()->currentPickBuffer();
       //uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)nullptr) : 0;
