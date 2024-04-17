@@ -19,7 +19,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -261,8 +261,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     rtg_impl = as_impl.value();
   } else {
 
-    logchan_rtgroup->log("create new FBO iw<%d> ih<%d>", iw, ih);
-
     rtg_impl             = std::make_shared<GlRtGroupImpl>();
     rtg_impl->_standard  = std::make_shared<GlFboObject>();
     rtg_impl->_depthonly = std::make_shared<GlFboObject>();
@@ -270,6 +268,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
     glGenFramebuffers(1, &rtg_impl->_standard->_fbo);
     GL_ERRORCHECK();
+
+    logchan_rtgroup->log("create new FBO iw<%d> ih<%d> std FBOID<%d>", iw, ih, int(rtg_impl->_standard->_fbo));
 
     //////////////////////////////////////////
     // depth only FBO
@@ -279,6 +279,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
 
     GL_ERRORCHECK();
+
+    logchan_rtgroup->log("create new FBO iw<%d> ih<%d> donly FBOID<%d>", iw, ih, int(rtg_impl->_depthonly->_fbo));
 
     //////////////////////////////////////////
     // depth texture
@@ -304,6 +306,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     //////////////////////////////////////////
 
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
+    logchan_rtgroup->log("bind std FBOID<%d>", int(rtg_impl->_standard->_fbo));
 
     for (int it = 0; it < inumtargets; it++) {
       rtbuffer_ptr_t pB = rtgroup->GetMrt(it);
@@ -352,10 +355,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   if (rtgroup->IsSizeDirty()) {
 
-    logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
+    logchan_rtgroup->log("resize FBOID<%d> iw<%d> ih<%d> ", int(rtg_impl->_standard->_fbo), iw, ih);
 
     //////////////////////////////////////////
-    // initialize depth texture
+    // resize depth texture
     //////////////////////////////////////////
 
     GL_ERRORCHECK();
@@ -380,7 +385,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
     depth_glto->_textureObject = rtg_impl->_standard->_depthTexObject;
     depth_glto->mTarget        = texture_target_2D;
-    // depth_glto->_fbo = rtg_impl->_standard->_fbo;
 
     GL_ERRORCHECK();
     std::string DepthTexName("RtgDepth");
@@ -414,6 +418,19 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     depth_texture->_isDepthTexture       = true;
     auto depthtexobj            = depth_texture->_impl.get<gltexobj_ptr_t>();
     depthtexobj->_textureObject = rtg_impl->_standard->_depthTexObject;
+
+    //////////////////////////////////////////
+    // attach depthtexture to depth only FBO
+    //////////////////////////////////////////
+
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, rtg_impl->_standard->_depthTexObject, 0);
+
+    //////////////////////////////////////////
+    // resize color buffers
+    //////////////////////////////////////////
+
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
 
     //////
     for (int it = 0; it < inumtargets; it++) {
@@ -550,13 +567,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       }
       rtbuffer->SetSizeDirty(false);
 
-      //////////////////////////////////////////
-      // attach depthtexture to depth only FBO
-      //////////////////////////////////////////
-
-      glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, rtg_impl->_standard->_depthTexObject, 0);
-
     } //     for (int it = 0; it < inumtargets; it++) {
 
     //////////////////////////////////////////
@@ -576,6 +586,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
 
   if (rtgroup->_depthOnly) {
+    _dumpFBOstructure(rtg_impl->_depthonly->_fbo, "UPDIMPL::"+rtgroup->_name + ".DONLY");
+    //printf( "SetRtg::BindFBO<%d> depthONLY!!\n", int(rtg_impl->_depthonly->_fbo) );
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
     glBindTexture(texture_target_2D, rtg_impl->_depthonly->_depthTexObject);
     glDrawBuffers(0, buffers);
@@ -607,10 +619,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   // glClearColor( 1.0f,1.0f,0.0f,1.0f );
   GL_ERRORCHECK();
-  GLuint BufferBits = 0;
-  BufferBits |= GL_DEPTH_BUFFER_BIT;
+  GLuint BufferBits = GL_DEPTH_BUFFER_BIT;
   glClearDepth(1.0f);
   glDepthRange(0.0, 1.0f);
+  //printf( "clear<%p> depthONLY<%d>\n", rtg, int(rtg->_depthOnly) );
   if (rtg->GetNumTargets()) {
     BufferBits |= GL_COLOR_BUFFER_BIT;
     const auto& C = rtg->_clearColor;

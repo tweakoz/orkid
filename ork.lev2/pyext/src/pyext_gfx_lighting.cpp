@@ -52,16 +52,16 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           });
   py::class_<SpotLightData, LightData, spotlightdata_ptr_t>(module_lev2, "SpotLightData")
       .def(py::init<>())
-  .def_property(
-          "fovy",                                 //
+      .def_property(
+          "fovy",                                      //
           [](spotlightdata_ptr_t lightdata) -> float { //
             return lightdata->mFovy;
           },
           [](spotlightdata_ptr_t lightdata, float fovy) { //
             lightdata->mFovy = fovy;
           })
-  .def_property(
-          "range",                                 //
+      .def_property(
+          "range",                                     //
           [](spotlightdata_ptr_t lightdata) -> float { //
             return lightdata->mRange;
           },
@@ -79,19 +79,29 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           [](light_ptr_t light, fmtx4_ptr_t mtx) { //
             light->worldMatrix() = *mtx.get();
           })
-          .def_property("cookieTexture",                                 //
+      .def_property(
+          "cookieTexture",                         //
           [](light_ptr_t light) -> texture_ptr_t { //
             return light->_cookieTexture;
           },
           [](light_ptr_t light, texture_ptr_t tex) { //
             light->_cookieTexture = tex;
           })
-          .def_property("irradianceCookie",                                 //
-          [](light_ptr_t light) -> pbr::irradiancemaps_ptr_t  { //
+      .def_property(
+          "irradianceCookie",                                  //
+          [](light_ptr_t light) -> pbr::irradiancemaps_ptr_t { //
             return light->_irradianceCookie;
           },
           [](light_ptr_t light, pbr::irradiancemaps_ptr_t tex) { //
             light->_irradianceCookie = tex;
+          })
+      .def_property(
+          "shadowCaster",                     //
+          [](light_ptr_t light) -> bool { //
+            return light->_castsShadows;
+          },
+          [](light_ptr_t light, bool val) { //
+            light->_castsShadows = val;
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
@@ -99,21 +109,21 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   py::class_<DirectionalLight, Light, directionallight_ptr_t>(module_lev2, "DirectionalLight");
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight")
-    .def("lookAt", &SpotLight::lookAt)
-    .def("affectsSphere", &SpotLight::AffectsSphere)
-    .def("affectsAABox", &SpotLight::AffectsAABox)
-    .def_property_readonly(
-          "shadowMatrix",                              //
+      .def("lookAt", &SpotLight::lookAt)
+      .def("affectsSphere", &SpotLight::AffectsSphere)
+      .def("affectsAABox", &SpotLight::AffectsAABox)
+      .def_property_readonly(
+          "shadowMatrix",                      //
           [](spotlight_ptr_t light) -> fmtx4 { //
             return light->shadowMatrix();
           })
-    .def_property_readonly(
-          "projectionMatrix",                              //
+      .def_property_readonly(
+          "projectionMatrix",                  //
           [](spotlight_ptr_t light) -> fmtx4 { //
             return light->mProjectionMatrix;
           })
-    .def_property_readonly(
-          "viewMatrix",                              //
+      .def_property_readonly(
+          "viewMatrix",                        //
           [](spotlight_ptr_t light) -> fmtx4 { //
             return light->mViewMatrix;
           });
@@ -123,9 +133,9 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   py::class_<DynamicDirectionalLight, DirectionalLight, dynamicdirectionallight_ptr_t>(module_lev2, "DynamicDirectionalLight");
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<DynamicSpotLight, SpotLight, dynamicspotlight_ptr_t>(module_lev2, "DynamicSpotLight")
-    .def(py::init<>())
-    .def_property_readonly(
-          "data",                              //
+      .def(py::init<>())
+      .def_property_readonly(
+          "data",                                                   //
           [](dynamicspotlight_ptr_t light) -> spotlightdata_ptr_t { //
             return light->_inlineData;
           });
@@ -133,11 +143,10 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {
     computeAmbientOcclusion(numsamples, model, ctx.get());
   });
-  module_lev2.def("computeLightMaps", [](meshutil::mesh_ptr_t model, ctx_t ctx){
+  module_lev2.def("computeLightMaps", [](meshutil::mesh_ptr_t model, ctx_t ctx) {
     computeLightMaps(model, ctx.get());
-
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::lev2 {
+} // namespace ork::lev2

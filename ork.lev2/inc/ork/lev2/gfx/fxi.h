@@ -83,7 +83,11 @@ public:
   }
 
   bool _debugDrawCall = false;
-  
+
+  inline FxShader* activeShader() const {
+    return _activeShader;
+  }
+
 protected:
   FxShader* _activeShader;
   const FxShaderTechnique* _activeTechnique;

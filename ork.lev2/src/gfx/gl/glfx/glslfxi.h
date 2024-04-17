@@ -75,16 +75,10 @@ struct Uniform {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformInstance {
-  GLint mLocation;
-  Uniform* mpUniform;
-  int mSubItemIndex;
+  Uniform* mpUniform = nullptr;
+  std::vector<GLint> _locations;
+  bool _is_array = false;
   svar16_t mPrivData;
-
-  UniformInstance()
-      : mLocation(-1)
-      , mpUniform(nullptr)
-      , mSubItemIndex(0) {
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,14 +376,15 @@ struct Pass {
   attr_map_t _vtxAttributesBySemantic;
   ubb_map_t _uboBindingMap;
   Attribute* _vtxAttributeById[kmaxattrID];
-  int _samplerCount     = 0;
   Technique* _technique = nullptr;
+  std::unordered_map<int,int> _samplerBindingMap;
+
+  int assignSampler(int loc);
 
   Pass(const std::string& name)
       : _name(name)
       , _stateBlock(nullptr)
-      , _programObjectId(0)
-      , _samplerCount(0) {
+      , _programObjectId(0) {
     for (int i = 0; i < kmaxattrID; i++)
       _vtxAttributeById[i] = nullptr;
   }

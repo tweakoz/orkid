@@ -57,7 +57,7 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit) {
+void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit) {
   gltexobj_ptr_t tex_obj;
 
   if (tex->_impl.isA<gltexobj_ptr_t>()) {
@@ -146,13 +146,25 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 
   GLuint texID = tex_obj->_textureObject;
 
-  /*printf(
-      "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> tex_unit<%d> textgt<% d>\n ",
-      int(pTex->_isDepthTexture),
-      pTex,
-      texID,
+  if(1){
+    auto fxi = mTargetGL.FXI();
+    auto container = fxi->activeShader()->_internalHandle.get<glslfx::rootcontainer_ptr_t>();
+    auto pass = container->_activePass;
+
+    // get texname
+    std::string texname = tex->_debugName;
+
+
+    printf(
+      "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> tex<%p:%s> \n",
+      pass->_name.c_str(),
+      loc,
       tex_unit,
-      int(textgt));*/
+      texID,
+      int(tex_target),
+      tex,
+      texname.c_str());
+  }
 
   GL_ERRORCHECK();
   glActiveTexture(GL_TEXTURE0 + tex_unit);

@@ -44,6 +44,7 @@ class MySpotLight:
     self.spot_light.data.range = 100.0
     self.spot_light.cookieTexture = cookie
     self.spot_light.irradianceCookie = irr_cookie
+    self.spot_light.shadowCaster = True
     print(self.spot_light.shadowMatrix)
     self.lnode = layer.createLightNode("spotlight%d"%index,self.spot_light)
     pass
@@ -135,15 +136,18 @@ class StereoApp1(object):
 
     ###################################
 
-    #cookie_path = "src://effect_textures/L0D.png"
-    cookie_path = "src://effect_textures/spinner.dds"
-    light_cookie = Texture.load(cookie_path)
-    irr_cookie = PbrCommon.requestIrradianceMaps(cookie_path)
+    cookie_path1 = "src://effect_textures/L0D.png"
+    light_cookie1 = Texture.load(cookie_path1)
+    irr_cookie1 = PbrCommon.requestIrradianceMaps(cookie_path1)
+
+    cookie_path2 = "src://effect_textures/spinner.dds"
+    light_cookie2 = Texture.load(cookie_path2)
+    irr_cookie2 = PbrCommon.requestIrradianceMaps(cookie_path2)
     
-    intens = 70
-    self.spotlight1 = MySpotLight(0,self.layer1,model,0.1,vec3(0,intens,0),light_cookie,irr_cookie)
-    self.spotlight2 = MySpotLight(1,self.layer1,model,0.17,vec3(intens,0,0),light_cookie,irr_cookie)
-    self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,intens),light_cookie,irr_cookie)
+    intens = 570
+    self.spotlight1 = MySpotLight(0,self.layer1,model,0.17,vec3(0,intens,0),light_cookie1,irr_cookie1)
+    self.spotlight2 = MySpotLight(1,self.layer1,model,0.27,vec3(intens,0,0),light_cookie2,irr_cookie2)
+    #self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,intens),light_cookie1,irr_cookie1)
 
   ##############################################
 
@@ -157,14 +161,12 @@ class StereoApp1(object):
 
   def onUpdate(self,updinfo):
     self.lighttime = updinfo.absolutetime
-    ########################################
-    ########################################
     self.scene.updateScene(self.cameralut) 
 
   def onGpuUpdate(self,ctx):
     self.spotlight1.update(self.lighttime)
     self.spotlight2.update(self.lighttime)
-    self.spotlight3.update(self.lighttime)
+   # self.spotlight3.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer1.removeDrawableNode(self.sgnode_frustum )
 

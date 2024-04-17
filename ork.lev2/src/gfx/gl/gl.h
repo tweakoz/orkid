@@ -398,7 +398,7 @@ struct GlTextureInterface : public TextureInterface {
   void _returnPBO(pboptr_t pbo);
   GlTextureInterface(ContextGL& tgt);
 
-  void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
+  void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
   bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
 

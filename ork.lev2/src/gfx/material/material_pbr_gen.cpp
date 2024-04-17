@@ -522,7 +522,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   }
 
   auto alt_tex        = std::make_shared<Texture>();
-  alt_tex->_debugName = "filtenvmap-processed-diffuse";
+  alt_tex->_debugName = rawenvmap->_debugName  + "[filtenvmap-processed-diffuse]";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 

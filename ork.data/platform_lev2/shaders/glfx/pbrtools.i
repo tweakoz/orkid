@@ -84,7 +84,7 @@ uniform_set ub_frg_fwd {
 
   int point_light_count;
   int spot_light_count;
-  sampler2D UnTexPointLightsData;
+  //sampler2D UnTexPointLightsData;
 
   sampler2D light_cookies[8];
 

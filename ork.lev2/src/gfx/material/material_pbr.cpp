@@ -196,16 +196,11 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     }
 
     texture_rawlist_t texlist;
-    for (auto item : enumlights->_tex2spotlightmap) {
-      auto cookie = item.first;
-      //texlist.push_back(cookie);
-      auto l0 = item.second[0];
-      auto irr = l0->_irradianceCookie;
-      texlist.push_back(irr->_filtenvSpecularMap.get());
-    }
 
     for (auto item : enumlights->_tex2spotlightmap) {
       for( auto light : item.second ){
+        auto irr = light->_irradianceCookie;
+
         auto C = fvec4(light->color(), light->intensity());
         auto P = light->worldMatrix().translation();
         pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = C;
@@ -213,14 +208,23 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = light->shadowMatrix();
         pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->_spdata->GetRange();
         pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
-        pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = 0; //light->spotIndex();
+        pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = texlist.size(); //light->spotIndex();
+
+        //printf( "light<%d> sidxbase<%d>\n", index, texlist.size() );
         //logchan_pbr->log("doing spotlight<%d> color<%g %g %g> pos<%g %g %g>", index, C.x, C.y, C.z, P.x, P.y, P.z);
         index++;
         num_texspotlights++;
+
+        auto specmap = irr->_filtenvSpecularMap.get();
+        auto depthmap = light->_depthRTG->_depthBuffer->_texture.get();
+
+        texlist.push_back(specmap);
+        texlist.push_back(depthmap);
+
       }
     }
 
-    //printf( "num_texspotlights<%d> num_untextured_pointlights<%d>\n", num_texspotlights, num_untextured_pointlights );
+    //printf( "texlistsize<%d>\n", texlist.size() );
     pl_mapped->unmap();
 
     if(mtl->_parTexSpotLightsCount){
@@ -1060,6 +1064,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   }
   if (_texNormal == nullptr) {
     static auto defntex = targ->TXI()->createColorTexture(fvec4(0.5,0.5,1,1),8,8);
+      defntex->_debugName = "default_normal";
     _texNormal       = defntex;
     OrkAssert(_texNormal != nullptr);
   }
@@ -1070,6 +1075,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
     if(_metallicFactor!=0.0f){
       static auto metallictex = targ->TXI()->createColorTexture(fvec4(1,0,1,1),8,8);
+      metallictex->_debugName = "default_metallicroughness";
       _texMtlRuf    = metallictex;
     }
 
@@ -1077,6 +1083,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   }
   if (_texEmissive == nullptr) {
     static auto defemitex = targ->TXI()->createColorTexture(fvec4(0,0,0,0),8,8);
+      defemitex->_debugName = "default_emissive";
     _texEmissive    = defemitex;
   }
 }

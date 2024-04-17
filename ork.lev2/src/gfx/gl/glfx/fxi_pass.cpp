@@ -166,10 +166,29 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int Pass::assignSampler(int loc){
+  int unit = -1;
+  auto it = _samplerBindingMap.find(loc);
+  if(it!=_samplerBindingMap.end()){
+    unit = it->second;
+  }
+  else{
+    unit = _samplerBindingMap.size();
+    _samplerBindingMap[loc] = unit;
+  }
+  return unit;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 void Pass::postProc(rootcontainer_ptr_t container) {
   Timer pptimer;
   pptimer.Start();
   auto flatunimap = container->flatUniMap();
+
+
+  printf( "postproc pass<%s>\n", _name.c_str() );
   //////////////////////////
   // query unis
   //////////////////////////
@@ -179,28 +198,36 @@ void Pass::postProc(rootcontainer_ptr_t container) {
   glGetProgramiv(_programObjectId, GL_ACTIVE_UNIFORMS, &numunis);
   GL_ERRORCHECK();
 
-  _samplerCount = 0;
-
   for (int i = 0; i < numunis; i++) {
     GLsizei namlen = 0;
     GLint unisiz   = 0;
     GLenum unityp  = GL_ZERO;
     std::string str_name;
 
+    bool is_array = false;
+    int array_size = 0;
+
     {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      // printf("find uni<%s>", nambuf);
+      printf("  find uni<%s>", nambuf);
       GL_ERRORCHECK();
 
       str_name = nambuf;
       auto its = str_name.find('[');
       if (its != str_name.npos) {
+        auto ite = str_name.find(']');
+        OrkAssert(ite != str_name.npos);
+        std::string str_size = str_name.substr(its + 1, ite - its - 1);
+        array_size = atoi(str_size.c_str());
+        is_array = true;
         str_name = str_name.substr(0, its);
-        // printf( "nnam<%s>", str_name.c_str() );
+        printf( " nnam<%s>", str_name.c_str() );
+        printf( " str_size<%s> asize<%d>", str_size.c_str(), array_size );
       }
     }
+
     auto it = container->_uniforms.find(str_name);
     if (it != container->_uniforms.end()) {
 
@@ -211,34 +238,55 @@ void Pass::postProc(rootcontainer_ptr_t container) {
 
       UniformInstance* pinst = new UniformInstance;
       pinst->mpUniform       = puni;
-
+      pinst->_is_array = (unisiz>1);
       GLint uniloc     = glGetUniformLocation(_programObjectId, str_name.c_str());
-      pinst->mLocation = uniloc;
-
+      printf( " LOC<%d> ", uniloc );
+      bool is_sampler = false;
+      GLenum tex_target = GL_ZERO;
+      ///////////////////////////////////////////////////
       if (puni->_typeName == "sampler2D") {
-        pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
+        is_sampler = true;
+        tex_target = GL_TEXTURE_2D;
       } else if (puni->_typeName == "usampler2D") {
-        pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
+        is_sampler = true;
+        tex_target = GL_TEXTURE_2D;
       } else if (puni->_typeName == "sampler3D") {
-        pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.set<GLenum>(GL_TEXTURE_3D);
+        is_sampler = true;
+        tex_target = GL_TEXTURE_3D;
       } else if (puni->_typeName == "usampler3D") {
-        pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.set<GLenum>(GL_TEXTURE_3D);
+        is_sampler = true;
+        tex_target = GL_TEXTURE_3D;
       } else if (puni->_typeName == "sampler2DShadow") {
-        pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
+        is_sampler = true;
+        tex_target = GL_TEXTURE_2D;
       }
-
+      ///////////////////////////////////////////////////
+      if (is_sampler) {
+        pinst->mPrivData.set<GLenum>(tex_target);
+        if(is_array){
+          for(int i=0; i<unisiz; i++){
+            auto subitemstr = FormatString("%s[%d]",str_name.c_str(),i);
+            GLint subuniloc = glGetUniformLocation(_programObjectId, subitemstr.c_str());
+            pinst->_locations.push_back(subuniloc);
+          }
+        } else {
+          pinst->_locations.push_back(uniloc);
+        }
+      }
+      ///////////////////////////////////////////////////
+      else{ // not sampler
+        pinst->_locations.push_back(uniloc);
+      }
+      ///////////////////////////////////////////////////
       this->_uniformInstances[puni->_name] = pinst;
+      ///////////////////////////////////////////////////
     } else {
       it = flatunimap.find(str_name);
       //printf("uni<%s> not found!", str_name.c_str());
       OrkAssert(it != flatunimap.end());
       // prob a UBO uni
     }
+    printf("\n");
   }
   double postproc_time = pptimer.SecsSinceStart();
    //printf( "postproctime<%f>\n", postproc_time );

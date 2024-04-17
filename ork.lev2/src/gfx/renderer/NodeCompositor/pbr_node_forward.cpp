@@ -138,12 +138,14 @@ struct ForwardPbrNodeImpl {
     {
       FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
+      auto SCENE_MONOCAMS = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+      /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD.assignLayers("depth_prepass,std_forward");
       CPD._clearColor     = pbrcommon->_clearColor;
       CPD._irendertarget  = &rt;
-      CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+      CPD._cameraMatrices = SCENE_MONOCAMS;
       CPD.SetDstRect(tgt_rect);
       CPD._width = newwidth;
       CPD._height = newheight;
@@ -185,6 +187,8 @@ struct ForwardPbrNodeImpl {
         // depth prepass
         ///////////////////////////////////////////////////////////////////////////
 
+        printf( "beg depth prepass\n");
+
         FBI->validateRtGroup(rtg_main);
 
         context->debugPushGroup("ForwardPBR::depth-pre pass");
@@ -200,9 +204,63 @@ struct ForwardPbrNodeImpl {
 
         FBI->cloneDepthBuffer(rtg_main, _rtg_depth_copy);
 
+        printf( "end depth prepass\n");
+
+        ///////////////////////////////////////////////////////////////////////////
+        // shadow passes
+        ///////////////////////////////////////////////////////////////////////////
+
+        if(1){
+          int num_shadow_casters = 0;
+          if(_enumeratedLights){
+            for (auto light :  _enumeratedLights->_alllights ) {
+              if( not light->_castsShadows )
+                continue;
+              
+              printf( "beg shadowpass %d\n", num_shadow_casters);
+
+              if( light->_depthRTG == nullptr ){
+                light->_depthRTG = std::make_shared<RtGroup>(context, light->_depthMapWidth, light->_depthMapHeight );
+                light->_depthRTG->_depthOnly = true;
+                //light->_depthRTG->addBuffer("ShadowDepth", EBufferFormat::R32F);
+              }
+              if( auto as_spotlight = dynamic_cast<SpotLight*>(light) ){
+                CameraMatrices SHADOWCAM;
+                SHADOWCAM._pmatrix = as_spotlight->mProjectionMatrix;
+                SHADOWCAM._vmatrix = as_spotlight->mViewMatrix;
+                SHADOWCAM._vpmatrix = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
+                SHADOWCAM._ivpmatrix = SHADOWCAM._vpmatrix.inverse();
+                SHADOWCAM._ivmatrix = SHADOWCAM._vmatrix.inverse();
+                SHADOWCAM._ipmatrix = SHADOWCAM._pmatrix.inverse();
+                SHADOWCAM._frustum = as_spotlight->mWorldSpaceLightFrustum;
+                SHADOWCAM._explicitProjectionMatrix = true;
+                SHADOWCAM._explicitViewMatrix = true;
+                SHADOWCAM._aspectRatio = 1.0f;
+                //      auto monocams   = CPD._cameraMatrices;
+                CPD._cameraMatrices = & SHADOWCAM;
+
+                FBI->validateRtGroup(light->_depthRTG);
+                DB->enqueueLayerToRenderQueue("shadowpass", irenderer);
+                RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+                FBI->PushRtGroup(light->_depthRTG.get());
+                irenderer->drawEnqueuedRenderables();
+                FBI->PopRtGroup();
+              }
+              printf( "end shadowpass %d\n", num_shadow_casters);
+              num_shadow_casters++;
+              
+            }
+          }
+        }
+
+
         ///////////////////////////////////////////////////////////////////////////
         // main color pass
         ///////////////////////////////////////////////////////////////////////////
+
+        printf( "beg color pass\n");
+
+        CPD._cameraMatrices = SCENE_MONOCAMS;
 
         rtg_main->_depthOnly = false;
 
@@ -227,6 +285,7 @@ struct ForwardPbrNodeImpl {
         irenderer->resetQueue();
         FBI->PopRtGroup();
 
+        printf( "end color pass\n");
 
         /////////////////////////////////////////////////
 

@@ -169,6 +169,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
 
     for (int i = 0; i < spot_light_count; i++) {
       int j                = i + point_light_count;
+
+      int LCI_STD = 0;//_samplerIndex[j*2+0];
+      int LCI_DEP = 1;//_samplerIndex[j*2+1];
+
       mat4 shmtx           = _shadowmatrix[j];
       vec3 lightpos        = _lightpos[j].xyz;
       vec3 lightdel        = lightpos - wpos;
@@ -190,8 +194,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
 
       bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
                   bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
-      int LCI_STD = _samplerIndex[j];
-      // int LCI_SPEC = LCI_STD+1;
+
+      float shadow = textureLod(light_cookies[LCI_DEP], light_ndc.xy * 0.5 + vec2(0.5), 0).x;
+
+
       vec3 lightcol         = _lightcolor[j].xyz;
       float level           = pow(pbd._roughness, 0.2);
       vec3 diffuse_lighttex = textureLod(light_cookies[LCI_STD], diffuse_lightuv, 0.70).xyz; // diffuse WIP
@@ -208,7 +214,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 lighttex  = diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask);
-      //spot_lighting += lightcol*lighttex*float(mask)*NdotL/pow(Ldist, 2);
+      //spot_lighting += vec3(pow(shadow,1)*0.001);
     }
     //spot_lighting = vec3(point_light_count);
     ///////////////////////////////////////////////
