@@ -146,7 +146,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
 
   GLuint texID = tex_obj->_textureObject;
 
-  if(1){
+  if(0){
     auto fxi = mTargetGL.FXI();
     auto container = fxi->activeShader()->_internalHandle.get<glslfx::rootcontainer_ptr_t>();
     auto pass = container->_activePass;

@@ -187,6 +187,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
+            //printf("monocams<%p>\n", (void*)monocams);  
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());

@@ -187,7 +187,7 @@ struct ForwardPbrNodeImpl {
         // depth prepass
         ///////////////////////////////////////////////////////////////////////////
 
-        printf( "beg depth prepass\n");
+       // printf( "beg depth prepass\n");
 
         FBI->validateRtGroup(rtg_main);
 
@@ -204,7 +204,7 @@ struct ForwardPbrNodeImpl {
 
         FBI->cloneDepthBuffer(rtg_main, _rtg_depth_copy);
 
-        printf( "end depth prepass\n");
+        //printf( "end depth prepass\n");
 
         ///////////////////////////////////////////////////////////////////////////
         // shadow passes
@@ -217,7 +217,7 @@ struct ForwardPbrNodeImpl {
               if( not light->_castsShadows )
                 continue;
               
-              printf( "beg shadowpass %d\n", num_shadow_casters);
+              //printf( "beg shadowpass %d\n", num_shadow_casters);
 
               if( light->_depthRTG == nullptr ){
                 light->_depthRTG = std::make_shared<RtGroup>(context, light->_depthMapWidth, light->_depthMapHeight );
@@ -225,7 +225,10 @@ struct ForwardPbrNodeImpl {
                 //light->_depthRTG->addBuffer("ShadowDepth", EBufferFormat::R32F);
               }
               if( auto as_spotlight = dynamic_cast<SpotLight*>(light) ){
+                auto topcomp = RCFD.topCompositor();
+                CompositingPassData shadowCPD = CPD.clone();
                 CameraMatrices SHADOWCAM;
+                shadowCPD._cameraMatrices = & SHADOWCAM;
                 SHADOWCAM._pmatrix = as_spotlight->mProjectionMatrix;
                 SHADOWCAM._vmatrix = as_spotlight->mViewMatrix;
                 SHADOWCAM._vpmatrix = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
@@ -237,16 +240,19 @@ struct ForwardPbrNodeImpl {
                 SHADOWCAM._explicitViewMatrix = true;
                 SHADOWCAM._aspectRatio = 1.0f;
                 //      auto monocams   = CPD._cameraMatrices;
-                CPD._cameraMatrices = & SHADOWCAM;
+                //CPD._cameraMatrices = & SHADOWCAM;
 
+                topcomp->pushCPD(shadowCPD);
                 FBI->validateRtGroup(light->_depthRTG);
-                DB->enqueueLayerToRenderQueue("shadowpass", irenderer);
+                DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
                 RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
                 FBI->PushRtGroup(light->_depthRTG.get());
                 irenderer->drawEnqueuedRenderables();
                 FBI->PopRtGroup();
+
+                topcomp->popCPD();
               }
-              printf( "end shadowpass %d\n", num_shadow_casters);
+              //printf( "end shadowpass %d\n", num_shadow_casters);
               num_shadow_casters++;
               
             }
@@ -258,7 +264,7 @@ struct ForwardPbrNodeImpl {
         // main color pass
         ///////////////////////////////////////////////////////////////////////////
 
-        printf( "beg color pass\n");
+        //printf( "beg color pass\n");
 
         CPD._cameraMatrices = SCENE_MONOCAMS;
 
@@ -285,7 +291,7 @@ struct ForwardPbrNodeImpl {
         irenderer->resetQueue();
         FBI->PopRtGroup();
 
-        printf( "end color pass\n");
+        //printf( "end color pass\n");
 
         /////////////////////////////////////////////////
 

@@ -164,7 +164,7 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     int num_texspotlights = 0;
 
     auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-    size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
+    //size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
     auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
 
     size_t i32_stride    = sizeof(int32_t);
@@ -178,6 +178,15 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     size_t base_radius   = base_shmtx + mat4_stride * 64;
     size_t base_type     = base_radius + f32_stride * 64;
     size_t base_sidx     = base_type + i32_stride * 64;
+
+    if(0){
+      printf( "base_color<%zu>\n", base_color );
+      printf( "base_position<%zu>\n", base_position );
+      printf( "base_shmtx<%zu>\n", base_shmtx );
+      printf( "base_radius<%zu>\n", base_radius );
+      printf( "base_type<%zu>\n", base_type );
+      printf( "base_sidx<%zu>\n", base_sidx );
+    }
     // 16*(16+16+8) = 16*40 = 640
 
     size_t index = 0;
@@ -207,8 +216,8 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
         pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = P;
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = light->shadowMatrix();
         pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->_spdata->GetRange();
-        pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
-        pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = texlist.size(); //light->spotIndex();
+        //pl_mapped->ref<int32_t>(base_type + (index * i32_stride))      = 1;
+        //pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = texlist.size(); //light->spotIndex();
 
         //printf( "light<%d> sidxbase<%d>\n", index, texlist.size() );
         //logchan_pbr->log("doing spotlight<%d> color<%g %g %g> pos<%g %g %g>", index, C.x, C.y, C.z, P.x, P.y, P.z);

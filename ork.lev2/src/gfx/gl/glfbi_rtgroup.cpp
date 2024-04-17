@@ -19,7 +19,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 

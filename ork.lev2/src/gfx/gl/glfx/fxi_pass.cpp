@@ -147,6 +147,7 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
   if(_ubobindings[ubo_bindingpoint] != buffer) {
     GLintptr ubo_offset = 0;
     GLintptr ubo_size   = buffer->_length;
+    //printf( "bind ubo to block<%s> bindingpoint<%d> offset<%d> size<%d>\n",  block->_name.c_str(), int(ubo_bindingpoint), int(ubo_offset), int(ubo_size) );
     GL_ERRORCHECK();
     glBindBufferRange(GL_UNIFORM_BUFFER,   // target
                     ubo_bindingpoint,    // index

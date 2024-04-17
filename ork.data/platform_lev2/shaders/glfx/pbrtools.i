@@ -108,7 +108,7 @@ uniform_block ub_frg_fwd_lighting {
   mat4 _shadowmatrix[64];
   float _lightradius[64];
   int   _lighttype[64];
-  int   _samplerIndex[8];
+  int   _samplerIndex[64];
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces

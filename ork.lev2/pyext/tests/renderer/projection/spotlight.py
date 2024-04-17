@@ -30,10 +30,10 @@ args = vars(parser.parse_args())
 class MySpotLight:
   def __init__(self,index,layer,model,frq,color,cookie,irr_cookie):
     self.frequency = frq
-    self.sgnode_l = model.createNode("node_light%d"%index,layer)
-    self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
-    self.sgnode_l.worldTransform.scale = 0.1
-    self.sgnode_l.worldTransform.translation = vec3(0)
+    #self.sgnode_l = model.createNode("node_light%d"%index,layer)
+    #self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
+    #self.sgnode_l.worldTransform.scale = 0.1
+    #self.sgnode_l.worldTransform.translation = vec3(0)
     self.spot_light = DynamicSpotLight()
     self.spot_light.data.color = color
     self.spot_light.data.fovy = math.radians(45)
@@ -56,14 +56,14 @@ class MySpotLight:
     z = math.cos(phase)
     fovy = 45
     self.spot_light.data.fovy = math.radians(fovy)
-    LPOS =       vec3(x,2+y,z)*4
+    LPOS =       vec3(x,2+y*0.5,z)*4
 
     self.spot_light.lookAt(
       LPOS, # eye
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
     
-    self.sgnode_l.worldTransform.translation = LPOS
+    #self.sgnode_l.worldTransform.translation = LPOS
     
 
 ################################################################################
@@ -97,6 +97,9 @@ class StereoApp1(object):
 
     #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.layer1
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
     ###################################
     frust = dfrustum()
@@ -122,10 +125,10 @@ class StereoApp1(object):
     ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
-    self.sgnode = model.createNode("nodea",self.layer1)
-    self.modelinst = self.sgnode.user.pyext_retain_modelinst
-    self.sgnode.worldTransform.scale = 1
-    self.sgnode.worldTransform.translation = vec3(0,2,0)
+    self.drawable_model = model.createDrawable()
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 1
+    self.modelnode.worldTransform.translation = vec3(0,2,0)
 
     ###################################
 
@@ -140,14 +143,17 @@ class StereoApp1(object):
     light_cookie1 = Texture.load(cookie_path1)
     irr_cookie1 = PbrCommon.requestIrradianceMaps(cookie_path1)
 
-    cookie_path2 = "src://effect_textures/spinner.dds"
+    cookie_path2 = "data://platform_lev2/textures/dfplug.png"
     light_cookie2 = Texture.load(cookie_path2)
     irr_cookie2 = PbrCommon.requestIrradianceMaps(cookie_path2)
+
+    cookie_path3 = "data://platform_lev2/textures/transponder24.dds"
+    light_cookie3 = Texture.load(cookie_path3)
+    irr_cookie3 = PbrCommon.requestIrradianceMaps(cookie_path3)
     
-    intens = 570
-    self.spotlight1 = MySpotLight(0,self.layer1,model,0.17,vec3(0,intens,0),light_cookie1,irr_cookie1)
-    self.spotlight2 = MySpotLight(1,self.layer1,model,0.27,vec3(intens,0,0),light_cookie2,irr_cookie2)
-    #self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,intens),light_cookie1,irr_cookie1)
+    self.spotlight1 = MySpotLight(0,self.layer1,model,0.17,vec3(0,500,0),light_cookie1,irr_cookie1)
+    self.spotlight2 = MySpotLight(1,self.layer1,model,0.27,vec3(500,0,0),light_cookie3,irr_cookie3)
+    self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,250),light_cookie2,irr_cookie2)
 
   ##############################################
 
@@ -166,7 +172,7 @@ class StereoApp1(object):
   def onGpuUpdate(self,ctx):
     self.spotlight1.update(self.lighttime)
     self.spotlight2.update(self.lighttime)
-   # self.spotlight3.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer1.removeDrawableNode(self.sgnode_frustum )
 

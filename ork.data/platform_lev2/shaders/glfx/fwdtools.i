@@ -120,7 +120,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
 
   /////////////////////////////////////////////////////////
 
-  vec3 _sample_cookie_lod(int index, vec2 uv,  float lod) {
+  vec3 _sample_cookie_lod(int index, vec2 uv, float lod) {
     vec3 rval = vec3(0);
     if (index == 0) {
       rval = textureLod(light_cookie0, uv, lod).xyz;
@@ -186,10 +186,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 spot_lighting = vec3(0, 0, 0);
 
     for (int i = 0; i < spot_light_count; i++) {
-      int j                = i + point_light_count;
+      int j = i + point_light_count;
 
-      int LCI_STD = _samplerIndex[j*2+0];
-      int LCI_DEP = _samplerIndex[j*2+1];
+      int LCI_STD = j * 2 + 0;
+      int LCI_DEP = j * 2 + 1;
 
       mat4 shmtx           = _shadowmatrix[j];
       vec3 lightpos        = _lightpos[j].xyz;
@@ -213,12 +213,44 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
                   bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
 
-      float shadow = _sample_cookie_lod(LCI_DEP, light_ndc.xy * 0.5 + vec2(0.5), 0).x;
+      ////////////////////////////////////////////////////////////
+      // compute wpos in shadow space
+      ////////////////////////////////////////////////////////////
 
+      vec4 shadow_hpos    = (shmtx)*vec4(wpos, 1);
+      vec3 shadow_ndc     = (shadow_hpos.xyz / shadow_hpos.w);
+      vec2 shadow_uv      = shadow_ndc.xy * 0.5 + vec2(0.5);
+      float shadow_factor = 0.0;
+      bool shadow_mask    = shadow_ndc.x >= -1 && shadow_ndc.x < 1 && shadow_ndc.y >= -1 && shadow_ndc.y < 1;
+      if (!shadow_mask) {
+        shadow_factor = 1.0;
+      } else {
+        float bias             = 0.005; // Increased bias to help with shadow acne
+        float far              = 100.0;
+        float near             = 0.1;
+        float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
 
-      vec3 lightcol         = _lightcolor[j].xyz;
-      float level           = pow(pbd._roughness, 0.2);
-      vec3 diffuse_lighttex = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0.70).xyz; // diffuse WIP
+        // Percentage-Closer Filtering (PCF)
+        int pcf_width         = 3;            // Size of the PCF kernel
+        float pcf_filter_size = 1.0 / 1024.0; // Adjust based on your shadow map resolution
+
+        for (int x = -pcf_width; x <= pcf_width; x++) {
+          for (int y = -pcf_width; y <= pcf_width; y++) {
+            vec2 pcf_uv     = shadow_uv + vec2(x, y) * pcf_filter_size;
+            float pcf_depth = _sample_cookie_lod(LCI_DEP, pcf_uv, 0).x * 2.0 - 1.0;
+            shadow_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
+          }
+        }
+
+        // Normalize the shadow factor by the number of samples taken
+        shadow_factor /= float((pcf_width * 2 + 1) * (pcf_width * 2 + 1));
+      }
+
+      ///////////////////////
+
+      vec3 lightcol          = _lightcolor[j].xyz;
+      float level            = pow(pbd._roughness, 0.2);
+      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0.70).xyz;   // diffuse WIP
       vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
 
       specular_lighttex *= float(specular_mask);
@@ -232,21 +264,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
       vec3 lighttex  = diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
-      spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask);
-      //spot_lighting += vec3(pow(shadow,1));
+      spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
+      // spot_lighting += vec3(shadow_factor);
     }
-    //spot_lighting = vec3(point_light_count);
-    ///////////////////////////////////////////////
-    // return emission;
-    // return point_lighting;
-    // return env_lighting;
-    // return normal;
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
-    // return vec3(env_lighting);//*modcolor;
-
-    // return vec3(rufmtlamb.x * MetallicFactor, //
-    //            rufmtlamb.y * RoughnessFactor, //
-    //            0);
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;
