@@ -49,7 +49,7 @@ class MySpotLight:
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
-    self.spot_light.data.shadowBias = -1e-5
+    self.spot_light.data.shadowBias = 1e-3
     self.spot_light.cookieTexture = cookie.tex
     self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True

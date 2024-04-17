@@ -191,10 +191,12 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       int LCI_STD = j * 2 + 0;
       int LCI_DEP = j * 2 + 1;
 
+      vec4 LSB = _lightsizbias[j];
+
       mat4 shmtx           = _shadowmatrix[j];
       vec3 lightpos        = _lightpos[j].xyz;
       vec3 lightdel        = lightpos - wpos;
-      float lightrange     = _lightsizbias[j].x;
+      float lightrange     = LSB.x;
       vec4 light_hpos      = (shmtx)*vec4(wpos, 1);
       vec3 light_ndc       = (light_hpos.xyz / light_hpos.w);
       float lightz         = light_ndc.z;
@@ -231,14 +233,14 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       if (!shadow_mask) {
         shadow_factor = 1.0;
       } else {
-        float bias             = _lightsizbias[j].y; // Increased bias to help with shadow acne
+        float bias             = LSB.y; // Increased bias to help with shadow acne
         float far              = lightrange;
         float near             = lightrange*0.001;
         float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
-        int pcf_width         = 3;            // Size of the PCF kernel
-        float pcf_filter_size = 1.0 / 1024.0; // Adjust based on your shadow map resolution
+        int pcf_width         = 1;            // Size of the PCF kernel
+        float pcf_filter_size = 1.0 / LSB.z; // Adjust based on your shadow map resolution
 
         for (int x = -pcf_width; x <= pcf_width; x++) {
           for (int y = -pcf_width; y <= pcf_width; y++) {

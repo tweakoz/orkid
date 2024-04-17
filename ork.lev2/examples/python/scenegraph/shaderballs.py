@@ -41,7 +41,8 @@ class MySpotLight:
     self.spot_light = DynamicSpotLight()
     self.spot_light.data.color = color
     self.spot_light.data.fovy = math.radians(45)
-    self.spot_light.data.shadowBias = 0
+    self.spot_light.data.shadowBias = 1e-3
+    self.spot_light.data.shadowMapSize = 1024
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 

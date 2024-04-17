@@ -45,6 +45,13 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](lightdata_ptr_t lightdata, float bias) { //
             lightdata->mShadowBias = bias;
+          })
+          .def_property("shadowMapSize",                                 //
+          [](lightdata_ptr_t lightdata) -> int { //
+            return lightdata->_shadowMapSize;
+          },
+          [](lightdata_ptr_t lightdata, int size) { //
+            lightdata->_shadowMapSize = size;
           });
   py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
       .def(py::init<>())

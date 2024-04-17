@@ -208,15 +208,14 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
         auto P = light->worldMatrix().translation();
         float R = light->_spdata->GetRange();
         float B = light->shadowDepthBias();
+        float SMS = light->_spdata->shadowMapSize();
+
+        //printf( "B<%f> SMS<%f>\n", B, SMS );
         size_t v4_offset = index * vec4_stride;
         pl_mapped->ref<fvec4>(base_color + v4_offset)    = C;
-        pl_mapped->ref<fvec4>(base_sizbias + v4_offset)   = fvec4(R,B,0,1);
+        pl_mapped->ref<fvec4>(base_sizbias + v4_offset)   = fvec4(R,B,SMS,1);
         pl_mapped->ref<fvec4>(base_position + v4_offset) = P;
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride))    = light->shadowMatrix();
-        //pl_mapped->ref<int32_t>(base_sidx + (index * i32_stride))      = texlist.size(); //light->spotIndex();
-
-        //printf( "light<%d> sidxbase<%d>\n", index, texlist.size() );
-        //logchan_pbr->log("doing spotlight<%d> color<%g %g %g> pos<%g %g %g>", index, C.x, C.y, C.z, P.x, P.y, P.z);
         index++;
         num_texspotlights++;
 
