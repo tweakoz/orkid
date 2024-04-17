@@ -50,7 +50,7 @@ class MySpotLight:
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
     self.spot_light.data.shadowBias = 1e-3
-    self.spot_light.data.shadowMapSize = 512
+    self.spot_light.data.shadowMapSize = 2048
     self.spot_light.cookieTexture = cookie.tex
     self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
@@ -82,7 +82,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=16,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
