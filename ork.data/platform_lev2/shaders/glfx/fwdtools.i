@@ -200,6 +200,11 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float lightz         = light_ndc.z;
       vec2 diffuse_lightuv = light_ndc.xy * 0.5 + vec2(0.5);
 
+      plc._lightdel = lightdel;
+      vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+      float LR      = 50;
+      vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
+
       // compute specular lightuv
       vec3 lightdir         = normalize(lightdel * -1);
       vec3 halfdir          = normalize(lightdir - normalize(eyepos - wpos));
@@ -249,11 +254,11 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       ///////////////////////
 
       vec3 lightcol          = _lightcolor[j].xyz;
-      float level            = pow(pbd._roughness, 0.2);
-      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0.70).xyz;   // diffuse WIP
+      float level            = pbd._roughness*4;
+      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;   // diffuse WIP
       vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
 
-      specular_lighttex *= float(specular_mask);
+      specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
 
       // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
 
@@ -265,7 +270,8 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 lighttex  = diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      // spot_lighting += vec3(shadow_factor);
+       //spot_lighting += plc._F0;
+       //spot_lighting += pl_c;
     }
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }

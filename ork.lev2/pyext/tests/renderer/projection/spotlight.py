@@ -27,13 +27,20 @@ parser = argparse.ArgumentParser(description='scenegraph example')
 args = vars(parser.parse_args())
 ################################################################################
 
+class MyCookie: 
+  def __init__(self,path):
+    self.path = path
+    self.tex = Texture.load(path)
+    self.irr = PbrCommon.requestIrradianceMaps(path)
+    
 class MySpotLight:
-  def __init__(self,index,layer,model,frq,color,cookie,irr_cookie):
+  def __init__(self,index,app,model,frq,color,cookie):
+    self.cookie = cookie
     self.frequency = frq
-    #self.sgnode_l = model.createNode("node_light%d"%index,layer)
-    #self.modelinst_l = self.sgnode_l.user.pyext_retain_modelinst
-    #self.sgnode_l.worldTransform.scale = 0.1
-    #self.sgnode_l.worldTransform.translation = vec3(0)
+    self.drawable_model = model.createDrawable()
+    self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 0.25
+    self.modelnode.worldTransform.translation = vec3(0)
     self.spot_light = DynamicSpotLight()
     self.spot_light.data.color = color
     self.spot_light.data.fovy = math.radians(45)
@@ -42,11 +49,11 @@ class MySpotLight:
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
-    self.spot_light.cookieTexture = cookie
-    self.spot_light.irradianceCookie = irr_cookie
+    self.spot_light.cookieTexture = cookie.tex
+    self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
     print(self.spot_light.shadowMatrix)
-    self.lnode = layer.createLightNode("spotlight%d"%index,self.spot_light)
+    self.lnode = app.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)
     pass
   def update(self,abstime):
     phase = abstime*self.frequency
@@ -54,7 +61,7 @@ class MySpotLight:
     x = math.sin(phase)
     y = math.sin(phase*self.frequency*2.0)
     z = math.cos(phase)
-    fovy = 45
+    fovy = 45+math.sin(phase*3.5)*10
     self.spot_light.data.fovy = math.radians(fovy)
     LPOS =       vec3(x,2+y*0.5,z)*4
 
@@ -63,7 +70,7 @@ class MySpotLight:
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
     
-    #self.sgnode_l.worldTransform.translation = LPOS
+    self.modelnode.worldTransform.translation = LPOS
     
 
 ################################################################################
@@ -139,21 +146,13 @@ class StereoApp1(object):
 
     ###################################
 
-    cookie_path1 = "src://effect_textures/L0D.png"
-    light_cookie1 = Texture.load(cookie_path1)
-    irr_cookie1 = PbrCommon.requestIrradianceMaps(cookie_path1)
-
-    cookie_path2 = "data://platform_lev2/textures/dfplug.png"
-    light_cookie2 = Texture.load(cookie_path2)
-    irr_cookie2 = PbrCommon.requestIrradianceMaps(cookie_path2)
-
-    cookie_path3 = "data://platform_lev2/textures/transponder24.dds"
-    light_cookie3 = Texture.load(cookie_path3)
-    irr_cookie3 = PbrCommon.requestIrradianceMaps(cookie_path3)
+    cookie1 = MyCookie("src://effect_textures/L0D.png")
+    cookie2 = MyCookie("data://platform_lev2/textures/transponder24.dds")
+    cookie3 = MyCookie("src://effect_textures/knob2.dds")
     
-    self.spotlight1 = MySpotLight(0,self.layer1,model,0.17,vec3(0,500,0),light_cookie1,irr_cookie1)
-    self.spotlight2 = MySpotLight(1,self.layer1,model,0.27,vec3(500,0,0),light_cookie3,irr_cookie3)
-    self.spotlight3 = MySpotLight(2,self.layer1,model,0.37,vec3(0,0,250),light_cookie2,irr_cookie2)
+    self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
+    self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
+    self.spotlight3 = MySpotLight(2,self,model,0.57,vec3(100),cookie3)
 
   ##############################################
 
