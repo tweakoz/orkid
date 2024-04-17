@@ -50,7 +50,7 @@ class MySpotLight:
       vec3(0,1,0)) # up
     self.spot_light.data.range = 100.0
     self.spot_light.data.shadowBias = 1e-3
-    self.spot_light.data.shadowMapSize = 128
+    self.spot_light.data.shadowMapSize = 512
     self.spot_light.cookieTexture = cookie.tex
     self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
@@ -143,8 +143,8 @@ class StereoApp1(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V3"
-    self.grid_data.modcolor = vec3(0.3)
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(0.4)
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
