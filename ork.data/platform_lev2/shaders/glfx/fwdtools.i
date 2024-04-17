@@ -204,6 +204,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
       float LR      = 50;
       vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
+      pl_c = mix(pl_c,vec3(1),0.25);
 
       // compute specular lightuv
       vec3 lightdir         = normalize(lightdel * -1);
@@ -267,7 +268,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float NdotL = max(0.0, dot(normal, LN));
 
       float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
-      vec3 lighttex  = diffuse_lighttex * NdotL * (1.0 - spec_mix);
+      vec3 lighttex  = pl_c * diffuse_lighttex * NdotL * (1.0 - spec_mix);
       lighttex += specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
        //spot_lighting += plc._F0;

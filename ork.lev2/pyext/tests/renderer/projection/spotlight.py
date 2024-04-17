@@ -60,18 +60,19 @@ class MySpotLight:
     ########################################
     x = math.sin(phase)
     y = math.sin(phase*self.frequency*2.0)
+    ty = math.sin(phase*2.0)
     z = math.cos(phase)
     fovy = 45+math.sin(phase*3.5)*10
     self.spot_light.data.fovy = math.radians(fovy)
-    LPOS =       vec3(x,2+y*0.5,z)*4
+    LPOS =       vec3(x,1+y*0.5,z)*4
 
     self.spot_light.lookAt(
       LPOS, # eye
-      vec3(0,0,0), # tgt 
+      vec3(0,ty+1,0), # tgt 
       vec3(0,1,0)) # up
     
     self.modelnode.worldTransform.translation = LPOS
-    
+    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized(),phase*self.frequency*16)
 
 ################################################################################
 
@@ -95,7 +96,7 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2),
+      "SkyboxIntensity": float(2.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
