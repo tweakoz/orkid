@@ -220,7 +220,8 @@ struct ForwardPbrNodeImpl {
               //printf( "beg shadowpass %d\n", num_shadow_casters);
 
               if( light->_depthRTG == nullptr ){
-                light->_depthRTG = std::make_shared<RtGroup>(context, light->_depthMapWidth, light->_depthMapHeight );
+                int dim = light->_data->_shadowMapSize;
+                light->_depthRTG = std::make_shared<RtGroup>(context, dim, dim );
                 light->_depthRTG->_depthOnly = true;
                 //light->_depthRTG->addBuffer("ShadowDepth", EBufferFormat::R32F);
               }

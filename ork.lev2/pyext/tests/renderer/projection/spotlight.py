@@ -82,7 +82,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=16,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
@@ -98,7 +98,7 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2.5),
+      "SkyboxIntensity": float(0.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -143,7 +143,7 @@ class StereoApp1(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.shader_suffix = "_V3"
     self.grid_data.modcolor = vec3(0.3)
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)

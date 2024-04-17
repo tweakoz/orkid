@@ -144,8 +144,6 @@ struct Light : public Drawable {
   int miInFrustumID;
   bool _dynamic = false;
   bool _castsShadows = false;
-  int _depthMapWidth = 1024;
-  int _depthMapHeight = 1024;
 
   texture_ptr_t _cookieTexture;
   rtgroup_ptr_t _depthRTG;

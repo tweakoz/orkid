@@ -42,7 +42,7 @@ class MySpotLight:
     self.spot_light.data.color = color
     self.spot_light.data.fovy = math.radians(45)
     self.spot_light.data.shadowBias = 1e-3
-    self.spot_light.data.shadowMapSize = 1024
+    self.spot_light.data.shadowMapSize = 2048
     self.spot_light.lookAt(
       vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 
@@ -58,7 +58,7 @@ class MySpotLight:
     phase = abstime*self.frequency
     ########################################
     x = math.sin(phase)
-    y = 3.5+(math.sin(phase*self.frequency*2.0)+1.0)*3.5
+    y = 1+(math.sin(phase*self.frequency*12.0)+1)*10
     ty = 1.0 #math.sin(phase*2.0)
     z = math.cos(phase)
     fovy = 85#+math.sin(phase*3.5)*10

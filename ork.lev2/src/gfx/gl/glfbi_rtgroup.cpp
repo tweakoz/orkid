@@ -19,7 +19,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -586,7 +586,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
 
   if (rtgroup->_depthOnly) {
-    _dumpFBOstructure(rtg_impl->_depthonly->_fbo, "UPDIMPL::"+rtgroup->_name + ".DONLY");
+    //_dumpFBOstructure(rtg_impl->_depthonly->_fbo, "UPDIMPL::"+rtgroup->_name + ".DONLY");
     //printf( "SetRtg::BindFBO<%d> depthONLY!!\n", int(rtg_impl->_depthonly->_fbo) );
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
     glBindTexture(texture_target_2D, rtg_impl->_depthonly->_depthTexObject);
