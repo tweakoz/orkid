@@ -282,12 +282,13 @@ fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_
   // point lighting
   ///////////////////////////////////////////////
 
-  LightCtx plc        = lcalc_forward(wpos.xyz, pbd);
+  LightCtx plc        = lcalc_forward(wpos.xyz, pbd,EyePostion);
   vec3 point_lighting = vec3(0, 0, 0);
   for (int i = 0; i < point_light_count; i++) {
     plc._lightdel = _lightpos[i].xyz - wpos.xyz;
     vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
-    float LR      = _lightradius[i];
+    vec4 LSB = _lightsizbias[i];
+    float LR      = LSB.x;
     point_lighting += plcalc_forward(plc, pbd, LR) * LC * plightamp;
   }
 
@@ -304,7 +305,7 @@ fragment_shader ps_fwd_ground_stereo : iface_forward : ub_frgX {
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass, sb_default }
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass_mono, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {

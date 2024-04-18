@@ -180,7 +180,7 @@ fragment_shader ps_fwd_ground_stereo : fif_terrain : ub_frgX {
 ///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_RI_NI_MO {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass, sb_default }
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass_mono, sb_default }
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {

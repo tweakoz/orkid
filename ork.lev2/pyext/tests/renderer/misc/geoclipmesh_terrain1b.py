@@ -39,7 +39,7 @@ class TERRAINAPP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=4)
+    self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -259,7 +259,7 @@ class TERRAINAPP(object):
     self.pos_offset  += vec3(view_vel.x,0,view_vel.z)*DT*100.0
 
     displacement = self._terrain(self.pos_offset.xz(),1)+BIAS_Y
-    print(self.pos_offset,displacement)
+    #print(self.pos_offset,displacement)
     displaced_offset = self.pos_offset + vec3(0,displacement,0)
     
     self.uicam.positionOffset = self.uicam.positionOffset*0.9+displaced_offset*0.1
