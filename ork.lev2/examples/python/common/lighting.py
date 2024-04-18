@@ -9,11 +9,28 @@ class MyCookie:
     self.irr = PbrCommon.requestIrradianceMaps(path)
     
 class MySpotLight:
-  def __init__(self,index,app,model,frq,color,cookie,voffset=1,radius=12):
+  def __init__( self,
+                app=None,
+                index=0,
+                model=None,
+                frq=1.0,
+                color=vec3(1),
+                cookie=None,
+                fovbase=20.0,
+                fovamp=20.0,
+                voffset=1,
+                vscale=1,
+                bias=1e-3,
+                dim=2048,
+                range=100.0,
+                radius=12):
     self.radius = radius
     self.voffset = voffset
+    self.vscale = vscale
     self.cookie = cookie
     self.frequency = frq
+    self.fovamp = fovamp
+    self.fovbase = fovbase
     self.drawable_model = model.createDrawable()
     self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 0.25
@@ -25,9 +42,9 @@ class MySpotLight:
       vec3(0,2,1)*4, # eye
       vec3(0,0,0), # tgt 
       vec3(0,1,0)) # up
-    self.spot_light.data.range = 100.0
-    self.spot_light.data.shadowBias = 1e-3
-    self.spot_light.data.shadowMapSize = 2048
+    self.spot_light.data.range = range
+    self.spot_light.data.shadowBias = bias
+    self.spot_light.data.shadowMapSize = dim
     self.spot_light.cookieTexture = cookie.tex
     self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
@@ -38,12 +55,12 @@ class MySpotLight:
     phase = abstime*self.frequency
     ########################################
     x = math.sin(phase)
-    y = math.sin(phase*self.frequency*2.0)
+    y = math.sin(phase*self.frequency*2.0)*self.vscale
     ty = math.sin(phase*2.0)
     z = math.cos(phase)
-    fovy = 25+(1.0+math.sin(phase*3.5))*20
+    fovy = self.fovbase+(1.0+math.sin(phase*3.5))*self.fovamp*0.5
     self.spot_light.data.fovy = math.radians(fovy)
-    LPOS =       vec3(x,self.voffset+y*0.5,z)*self.radius
+    LPOS =       vec3(x*self.radius,self.voffset+y,z*self.radius)
 
     self.spot_light.lookAt(
       LPOS, # eye

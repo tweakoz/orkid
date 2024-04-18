@@ -77,6 +77,11 @@ technique FWD_CT_NM_RI_IN_MO {
 	vf_pass={vs_forward_instanced,ps_forward_test_instanced_mono,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_SK_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skinned_mono,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_ST {
   fxconfig=fxcfg_default;
   vf_pass={vs_forward_test_stereo,ps_forward_test_stereo,sb_default}

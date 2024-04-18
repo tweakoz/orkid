@@ -106,9 +106,11 @@ class StereoApp1(object):
     cookie2 = MyCookie("data://platform_lev2/textures/transponder24.dds")
     cookie3 = MyCookie("src://effect_textures/knob2.dds")
     
-    self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,5500,0),cookie1)
-    self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(5000,0,0),cookie2)
-    self.spotlight3 = MySpotLight(2,self,model,0.57,vec3(800),cookie3)
+    shadow_size = 1024
+    shadow_bias = 1e-5
+    self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17,color=vec3(0,5500,0),cookie=cookie1,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
+    self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37,color=vec3(5000,0,0),cookie=cookie2,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
+    self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57,color=vec3(800),cookie=cookie3,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
 
   ##############################################
 

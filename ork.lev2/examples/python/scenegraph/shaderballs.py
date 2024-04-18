@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys
+import math, random, argparse, sys, colorsys
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -18,60 +18,13 @@ from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
+from common.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
-class MyCookie: 
-  def __init__(self,path):
-    self.path = path
-    self.tex = Texture.load(path)
-    self.irr = PbrCommon.requestIrradianceMaps(path)
-    
-class MySpotLight:
-  def __init__(self,index,app,model,frq,color,cookie):
-    self.cookie = cookie
-    self.frequency = frq
-    self.drawable_model = model.createDrawable()
-    self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
-    self.modelnode.worldTransform.scale = 0.25
-    self.modelnode.worldTransform.translation = vec3(0)
-    self.spot_light = DynamicSpotLight()
-    self.spot_light.data.color = color
-    self.spot_light.data.fovy = math.radians(45)
-    self.spot_light.data.shadowBias = 1e-3
-    self.spot_light.data.shadowMapSize = 2048
-    self.spot_light.lookAt(
-      vec3(0,2,1)*4, # eye
-      vec3(0,0,0), # tgt 
-      vec3(0,1,0)) # up
-    self.spot_light.data.range = 100.0
-    self.spot_light.cookieTexture = cookie.tex
-    self.spot_light.irradianceCookie = cookie.irr
-    self.spot_light.shadowCaster = True
-    print(self.spot_light.shadowMatrix)
-    self.lnode = app.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)
-    pass
-  def update(self,abstime):
-    phase = abstime*self.frequency
-    ########################################
-    x = math.sin(phase)
-    y = 1+(math.sin(phase*self.frequency*12.0)+1)*10
-    ty = 1.0 #math.sin(phase*2.0)
-    z = math.cos(phase)
-    fovy = 85#+math.sin(phase*3.5)*10
-    self.spot_light.data.fovy = math.radians(fovy)
-    LPOS =       vec3(x*15,y,z*15)
-
-    self.spot_light.lookAt(
-      LPOS, # eye
-      vec3(0,ty,0), # tgt 
-      vec3(0,1,0)) # up
-    
-    self.modelnode.worldTransform.translation = LPOS
-    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized(),phase*self.frequency*16)
 
 ################################################################################
 
@@ -163,9 +116,13 @@ class SceneGraphApp(object):
       mtl_cloned = subinst.material.clone()
       mtl_cloned.metallicFactor = float(x/8.0)
       mtl_cloned.roughnessFactor = float(z/8.0)
-      r = random.uniform(0,1)
-      g = random.uniform(0,1)
-      b = random.uniform(0,1)
+      h = random.uniform(0,6)
+      s = random.uniform(0,0.7)
+      v = random.uniform(0.1,1)
+      rgb = colorsys.hsv_to_rgb(h,s,v)
+      r = rgb[0]
+      g = rgb[1]
+      b = rgb[2]
       mtl_cloned.baseColor = vec4(r,g,b,1)
       subinst.overrideMaterial(mtl_cloned)
 
@@ -178,7 +135,20 @@ class SceneGraphApp(object):
     
     #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
     #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
-    self.spotlight3 = MySpotLight(2,self,model,0.27,vec3(500),cookie3)
+    self.spotlight3 = MySpotLight( index=2,
+                                  app=self,
+                                  model=model,
+                                  frq=0.27,
+                                  color=vec3(500,500,400),
+                                  cookie=cookie3,
+                                  radius=16,
+                                  bias=1e-3,
+                                  dim=2048,
+                                  fovamp=0,
+                                  range=200.0,
+                                  fovbase=65,
+                                  voffset=16,
+                                  vscale=14)
 
     ###################################
 

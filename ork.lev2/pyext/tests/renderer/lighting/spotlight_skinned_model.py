@@ -24,10 +24,13 @@ from common.lighting import MySpotLight, MyCookie
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-
+parser.add_argument('--stereo', action='store_true', help='stereo mode')
 ################################################################################
 
 args = vars(parser.parse_args())
+
+stereo = args["stereo"]
+mono = not stereo
 
 ################################################################################
 
@@ -35,13 +38,16 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,sssa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
     self.vrcamera = CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
     self.xf_hmd = Transform()
+
+    if mono:
+      setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,10,0))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -63,13 +69,17 @@ class StereoApp1(object):
     ###################################
 
     params_dict = {
-      "SkyboxIntensity": 2.0,
+      "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
+      "SkyboxIntensity": 1.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(.125),
       "DepthFogDistance": 10000.0,
-      "preset": "FWDPBRVR"
     }
+    if mono:
+      params_dict["preset"] = "ForwardPBR"
+    else:
+      params_dict["preset"] = "FWDPBRVR"
 
     self.model = XgmModel("data://tests/chartest/char_mesh")
     self.anim = XgmAnim("data://tests/chartest/char_testanim1")
@@ -107,13 +117,58 @@ class StereoApp1(object):
     self.grid_node.sortkey = 1
 
     self.ball_model = XgmModel("data://tests/pbr_calib.glb")
-    self.cookie = MyCookie("src://effect_textures/knob2.dds")
-    self.spotlight = MySpotLight(0,self,self.ball_model,0.1,vec3(0,5500,0),self.cookie,radius=8,voffset=8)
-    self.spotlight.spot_light.data.shadowBias = 1e-5
+    self.cookie1 = MyCookie("src://effect_textures/knob2.dds")
+
+    shadow_size = 1024
+    shadow_bias = 1e-3
+    intens = 350
+    self.spotlight1 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.3,
+                                 color=vec3(intens,0,0),
+                                 cookie=self.cookie1,
+                                 radius=12,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=65,
+                                 voffset=16,
+                                 vscale=12)
+
+    self.spotlight2 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.7,
+                                 color=vec3(0,intens,0),
+                                 cookie=self.cookie1,
+                                 radius=16,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=85,
+                                 voffset=17,
+                                 vscale=10)
+
+    self.spotlight3 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.9,
+                                 color=vec3(0,0,intens),
+                                 cookie=self.cookie1,
+                                 radius=19,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=95,
+                                 voffset=20,
+                                 vscale=10)
 
   ##############################################
 
   def onUiEvent(self,uievent):
+    handled = False
+    if mono:
+      handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
 
   ################################################
@@ -149,7 +204,9 @@ class StereoApp1(object):
 
   def onGpuUpdate(self,ctx):
     
-    self.spotlight.update(self.lighttime)
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
 
     self.localpose.bindPose()
     self.anim_inst.currentFrame = self.frame_index
