@@ -514,8 +514,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
                   pipeline->addStateLambda(createForwardLightingLambda(mtl));
                   pipeline->addStateLambda(rsi_lambda);
                 }
-              }
-              else {
+              } else {
                 if (mtl->_tek_FWD_CT_NM_SK_NI_ST) {
                   pipeline             = std::make_shared<FxPipeline>(permu);
                   pipeline->_technique = mtl->_tek_FWD_CT_NM_SK_NI_ST;
@@ -527,7 +526,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
                 }
               }
 
-            } else { // not skinned
+            } else {                  // not skinned
               if (permu._instanced) { // instanced
                 if (mtl->_tek_FWD_CT_NM_RI_IN_ST) {
                   pipeline             = std::make_shared<FxPipeline>(permu);
@@ -554,7 +553,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
           // FORWARD_PBR::STEREO
           /////////////////////////////////////////////////////////////
           // FORWARD_PBR::MONO
-          else { 
+          else {
             if (permu._skinned) {
               if (permu._instanced) {
                 if (mtl->_tek_FWD_CT_NM_SK_IN_MO) {

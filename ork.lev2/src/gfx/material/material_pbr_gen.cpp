@@ -36,11 +36,10 @@ static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3
 extern std::atomic<int> __FIND_IT;
 
 float roughness_power = 1.0f;
-int _SALT(){
-  //return rand();
-  return 19;  
+int _SALT() {
+  // return rand();
+  return 19;
 }
-
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -204,10 +203,9 @@ static file::Path this_path() {
   return file::Path("ork_lev2://src/gfx/material/material_pbr_gen.cpp");
 }
 static uint32_t this_hash() {
-  if(this_path().doesPathExist()){
-    return this_path().hashFileContents();    
-  }
-  else{
+  if (this_path().doesPathExist()) {
+    return this_path().hashFileContents();
+  } else {
     return 0;
   }
 }
@@ -221,15 +219,14 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   auto fxi = targ->FXI();
   auto gbi = targ->GBI();
   auto dwi = targ->DWI();
-  int w = rawenvmap->_width;
-  int h = rawenvmap->_height;
+  int w    = rawenvmap->_width;
+  int h    = rawenvmap->_height;
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderParam* param_mvp            = nullptr;
-  static const FxShaderParam* param_pfm            = nullptr;
-  static const FxShaderParam* param_ruf            = nullptr;
-  static const FxShaderParam* param_imgdim         = nullptr;
-
+  static const FxShaderParam* param_mvp    = nullptr;
+  static const FxShaderParam* param_pfm    = nullptr;
+  static const FxShaderParam* param_ruf    = nullptr;
+  static const FxShaderParam* param_imgdim = nullptr;
 
   targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
   __FIND_IT.store(1);
@@ -239,22 +236,28 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
     // logchan_pbrgen->log("filterenv mtl<%p> tekFilterSpecMap<%p>", mtl.get(), tekFilterSpecMap);
-    param_mvp = mtl->param("mvp");
-    param_pfm = mtl->param("prefiltmap");
-    param_ruf = mtl->param("roughness");
+    param_mvp    = mtl->param("mvp");
+    param_pfm    = mtl->param("prefiltmap");
+    param_ruf    = mtl->param("roughness");
     param_imgdim = mtl->param("imgdim");
   }
   const FxShaderTechnique* tekFilterSpecMap = nullptr;
-    if(equirectangular)
-      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapEquirectangular");
-    else
-      tekFilterSpecMap = mtl->technique("tek_filterSpecularMapStandard");
-    OrkAssert(tekFilterSpecMap != nullptr);
+  if (equirectangular)
+    tekFilterSpecMap = mtl->technique("tek_filterSpecularMapEquirectangular");
+  else
+    tekFilterSpecMap = mtl->technique("tek_filterSpecularMapStandard");
+  OrkAssert(tekFilterSpecMap != nullptr);
   ///////////////////////////////////////////////
-  auto filtex                                                       = std::make_shared<FilteredEnvMap>();
+  auto filtex                                                      = std::make_shared<FilteredEnvMap>();
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d> equirectangular<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h, int(equirectangular) );
+  logchan_pbrgen->log(
+      "filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d> equirectangular<%d>",
+      (void*)rawenvmap.get(),
+      rawenvmap->_contentHash,
+      w,
+      h,
+      int(equirectangular));
   boost::Crc64 basehasher;
   basehasher.accumulateItem<int>(_SALT());
   basehasher.accumulateString("filterenv-spec-v0");
@@ -277,7 +280,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
     int numpix = w * h;
     int imip   = 0;
-    while ((w>4) and (h>4)) {
+    while ((w > 4) and (h > 4)) {
       numpix = w * h;
       w >>= 1;
       h >>= 1;
@@ -290,12 +293,12 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
     imip = 0;
     CompressedImageMipChain::miplevels_t compressed_levels;
-    w      = rawenvmap->_width;
-    h      = rawenvmap->_height;
-    numpix = w * h;
+    w                        = rawenvmap->_width;
+    h                        = rawenvmap->_height;
+    numpix                   = w * h;
     std::atomic<int> pending = 0;
     std::vector<compressedimg_ptr_t> cimgs;
-    for( int imip=0; imip<nummips; imip++ ) {
+    for (int imip = 0; imip < nummips; imip++) {
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
@@ -306,12 +309,11 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       filtex->_rtbuffer    = outbuffr;
       outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
 
-
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
-      float roughness = float(imip) / float(nummips-1);
-      roughness = powf(roughness, roughness_power);
+      float roughness = float(imip) / float(nummips - 1);
+      roughness       = powf(roughness, roughness_power);
       ///////////////////////////////////////////////
       logchan_pbrgen->log("filterenv imip<%d> nummips<%d> w<%d> h<%d> roughness<%g>", imip, nummips, w, h, roughness);
       logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
@@ -319,7 +321,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, rawenvmap.get());
       mtl->bindParamFloat(param_ruf, roughness);
-      mtl->bindParamVec2(param_imgdim, fvec2(w,h));
+      mtl->bindParamVec2(param_imgdim, fvec2(w, h));
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       ///////////////////////////////////////////////
@@ -342,7 +344,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       pending.fetch_add(1);
       auto cimg = std::make_shared<CompressedImage>();
       cimgs.push_back(cimg);
-      auto op = [=,&pending](){
+      auto op = [=, &pending]() {
         Image im;
         im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
         im.compressDefault(*cimg);
@@ -360,7 +362,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     while (pending.load() > 0) {
       usleep(1000);
     }
-    for(auto cimg : cimgs ){
+    for (auto cimg : cimgs) {
       compressed_levels.push_back(*cimg);
     }
     CompressedImageMipChain mipchain;
@@ -392,9 +394,9 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   auto dwi = targ->DWI();
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderParam* param_mvp            = nullptr;
-  static const FxShaderParam* param_pfm            = nullptr;
-  static const FxShaderParam* param_ruf            = nullptr;
+  static const FxShaderParam* param_mvp = nullptr;
+  static const FxShaderParam* param_pfm = nullptr;
+  static const FxShaderParam* param_ruf = nullptr;
 
   __FIND_IT.store(1);
   targ->debugPushGroup("PBRMaterial::filterDiffuseEnvMap");
@@ -409,18 +411,22 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   }
 
   const FxShaderTechnique* tekFilterDiffMap = nullptr;
-    if(equirectangular)
-      tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapEquirectangular");
-    else
-      tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapStandard");
-    OrkAssert(tekFilterDiffMap != nullptr);
-    logchan_pbrgen->log("filterenv mtl<%p> tekFilterDiffMap<%p>", mtl.get(), tekFilterDiffMap);
+  if (equirectangular)
+    tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapEquirectangular");
+  else
+    tekFilterDiffMap = mtl->technique("tek_filterDiffuseMapStandard");
+  OrkAssert(tekFilterDiffMap != nullptr);
+  logchan_pbrgen->log("filterenv mtl<%p> tekFilterDiffMap<%p>", mtl.get(), tekFilterDiffMap);
 
   ///////////////////////////////////////////////
-  auto filtex                                                       = std::make_shared<FilteredEnvMap>();
+  auto filtex                                                      = std::make_shared<FilteredEnvMap>();
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  logchan_pbrgen->log("filterenv-diff tex<%p> hash<0x%zx> equirectangular<%d>", (void*) rawenvmap.get(), rawenvmap->_contentHash, int(equirectangular));
+  logchan_pbrgen->log(
+      "filterenv-diff tex<%p> hash<0x%zx> equirectangular<%d>",
+      (void*)rawenvmap.get(),
+      rawenvmap->_contentHash,
+      int(equirectangular));
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-diff-v0");
   basehasher.accumulateItem<int>(_SALT());
@@ -489,7 +495,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       pending.fetch_add(1);
       auto cimg = std::make_shared<CompressedImage>();
       cimgs.push_back(cimg);
-      auto op = [=,&pending](){
+      auto op = [=, &pending]() {
         Image im;
         im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
         im.compressDefault(*cimg);
@@ -510,7 +516,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     while (pending.load() > 0) {
       usleep(1000);
     }
-    for(auto cimg : cimgs ){
+    for (auto cimg : cimgs) {
       compressed_levels.push_back(*cimg);
     }
 
@@ -522,7 +528,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   }
 
   auto alt_tex        = std::make_shared<Texture>();
-  alt_tex->_debugName = rawenvmap->_debugName  + "[filtenvmap-processed-diffuse]";
+  alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-diffuse]";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 

@@ -208,24 +208,24 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
     int uniloc = pinst->_locations[0];
 
-    //const char* teknam = container->mActiveTechnique->_name.c_str();
+    // const char* teknam = container->mActiveTechnique->_name.c_str();
 
     // printf("Bind2 Tex<%p> par<%s> uniloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), iloc, teknam);
-    //if (uniloc >= 0) {
-      //const char* psem = puni->_semantic.c_str();
-      //const char* pnam = puni->_name.c_str();
-      //GLenum etyp      = puni->_type;
-      // OrkAssert( etyp == GL_FLOAT_MAT4 );
+    // if (uniloc >= 0) {
+    // const char* psem = puni->_semantic.c_str();
+    // const char* pnam = puni->_name.c_str();
+    // GLenum etyp      = puni->_type;
+    // OrkAssert( etyp == GL_FLOAT_MAT4 );
 
-      if (pTex != 0) {
+    if (pTex != 0) {
 
-        auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
-        GLenum textgt = pinst->mPrivData.get<GLenum>();
-        int itexunit  = pass->assignSampler(uniloc);
-        GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
-        glUniform1i(uniloc, itexunit);
-        GL_ERRORCHECK();
-      }
+      auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
+      GLenum textgt = pinst->mPrivData.get<GLenum>();
+      int itexunit  = pass->assignSampler(uniloc);
+      GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
+      glUniform1i(uniloc, itexunit);
+      GL_ERRORCHECK();
+    }
     //}
   }
 }
@@ -239,26 +239,26 @@ void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_
 
   if (pinst && !texlist.empty()) {
     OrkAssert(pinst->_is_array); // only array uniforms are supported (for now
-    auto GLTXI    = (GlTextureInterface*) mTarget.TXI();
+    auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
     auto pass     = container->_activePass;
     GLenum textgt = pinst->mPrivData.get<GLenum>();
     int uniloc0   = pinst->_locations[0];
     std::vector<GLint> texunits(texlist.size());
-    for (int i = 0; i <texlist.size(); ++i ) {
+    for (int i = 0; i < texlist.size(); ++i) {
       const Texture* pTex = texlist[i];
       if (pTex) {
         int uniloc   = pinst->_locations[i];
         int itexunit = pass->assignSampler(uniloc);
-        texunits[i] = itexunit;
-         printf( "aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit );
+        texunits[i]  = itexunit;
+        printf("aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit);
         GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
-        glUniform1i(uniloc, itexunit); 
+        glUniform1i(uniloc, itexunit);
         GL_ERRORCHECK();
       }
       // printf( "\n" );
     }
-    //GLfloat values[5] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-    //glUniform1iv(uniloc0, texunits.size(), texunits.data());    
+    // GLfloat values[5] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    // glUniform1iv(uniloc0, texunits.size(), texunits.data());
   }
 }
 
