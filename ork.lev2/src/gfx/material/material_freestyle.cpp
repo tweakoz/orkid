@@ -23,7 +23,7 @@ FreestyleMaterial::~FreestyleMaterial() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
+fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutation& permu, //
                                                const FreestyleMaterial*mtl){
 
   fxpipeline_ptr_t pipeline = nullptr;

@@ -15,6 +15,7 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/file/chunkfile.h>
 #include <ork/file/chunkfile.inl>
+#include <ork/kernel/varmap.inl>
 
 //using namespace boost::filesystem;
 
@@ -47,6 +48,13 @@ typedef std::shared_ptr<FilteredEnvMap> filtenvmapptr_t;
 class PBRMaterial final : public GfxMaterial {
 
   DeclareConcreteX(PBRMaterial, GfxMaterial);
+
+  static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const PBRMaterial* mtl);
+  fxpipeline_ptr_t _createFxPipelineFWD(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineDEF(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineDPP(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelinePIK(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineUNL(const FxPipelinePermutation& permu) const;
 
 public:
   PBRMaterial(Context* targ);
@@ -318,6 +326,8 @@ public:
 
   bool _stereoVtex = false;
   bool _doubleSided = false;
+  
+  varmap::varmap_ptr_t _vars;
 };
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);

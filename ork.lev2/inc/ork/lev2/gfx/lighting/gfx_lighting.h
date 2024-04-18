@@ -153,6 +153,24 @@ struct Light : public Drawable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LightProbe {
+
+  LightProbe();
+  ~LightProbe();
+  void resize(int dim);
+
+  int _dim = 0;
+  bool _dirty = true;
+  uint64_t _version = 0;
+  std::string _name;
+  fmtx4 _worldMatrix; // +y up, right handed
+  rtgroup_ptr_t _cubeRenderRTG;
+  texture_ptr_t _cubeTexture;
+  varmap::varmap_ptr_t _userdata;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct PointLightData : public LightData {
   DeclareConcreteX(PointLightData, LightData);
 
@@ -504,6 +522,7 @@ using pointlightlist_t    = std::vector<PointLight*>;
 using spotlightlist_t     = std::vector<SpotLight*>;
 using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
 using tex2spotlightmap_t  = std::map<Texture*, spotlightlist_t>;
+using lightprobeset_t = std::vector<lightprobe_ptr_t>;
 
 struct EnumeratedLights {
   std::vector<Light*> _alllights;
@@ -513,6 +532,7 @@ struct EnumeratedLights {
   tex2spotlightmap_t _tex2spotlightmap;
   tex2spotlightmap_t _tex2shadowedspotlightmap;
   tex2spotlightmap_t _tex2spotdecalmap;
+  lightprobeset_t _lightprobes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

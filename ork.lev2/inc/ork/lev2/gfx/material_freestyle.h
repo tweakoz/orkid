@@ -19,6 +19,8 @@ namespace ork::lev2 {
 
 struct FreestyleMaterial final : public GfxMaterial {
 
+  static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const FreestyleMaterial* mtl);
+
   FreestyleMaterial();
   ~FreestyleMaterial();
 

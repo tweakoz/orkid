@@ -203,6 +203,8 @@ struct PointLightData;
 struct SpotLightData;
 struct DirectionalLightData;
 struct AmbientLightData;
+struct LightProbe;
+
 //
 using lightdata_ptr_t      = std::shared_ptr<LightData>;
 using lightdata_constptr_t = std::shared_ptr<const LightData>;
@@ -230,6 +232,8 @@ using lightmanager_ptr_t = std::shared_ptr<LightManager>;
 using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
 using lightmanagerdata_constptr_t = std::shared_ptr<const LightManagerData>;
 using lightcollector_ptr_t = std::shared_ptr<LightCollector>;
+using lightprobe_ptr_t = std::shared_ptr<LightProbe>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Drawables
 ///////////////////////////////////////////////////////////////////////////////
