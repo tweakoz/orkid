@@ -166,6 +166,8 @@ public:
   fxparam_constptr_t _parLightCookie3   = nullptr;
   fxparam_constptr_t _parLightCookie4   = nullptr;
   fxparam_constptr_t _parLightCookie5   = nullptr;
+  fxparam_constptr_t _parLightCookie6   = nullptr;
+  fxparam_constptr_t _parLightCookie7   = nullptr;
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;

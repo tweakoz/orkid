@@ -134,6 +134,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       rval = textureLod(light_cookie4, uv, lod).xyz;
     } else if (index == 5) {
       rval = textureLod(light_cookie5, uv, lod).xyz;
+    } else if (index == 6) {
+      rval = textureLod(light_cookie6, uv, lod).xyz;
+    } else if (index == 7) {
+      rval = textureLod(light_cookie7, uv, lod).xyz;
     }
     return rval;
   }

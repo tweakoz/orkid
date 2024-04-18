@@ -48,7 +48,7 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(0.5),
+      "SkyboxIntensity": float(1.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -105,12 +105,14 @@ class StereoApp1(object):
     cookie1 = MyCookie("src://effect_textures/L0D.png")
     cookie2 = MyCookie("data://platform_lev2/textures/transponder24.dds")
     cookie3 = MyCookie("src://effect_textures/knob2.dds")
+    cookie4 = MyCookie("src://effect_textures/knob2.dds")
     
-    shadow_size = 1024
-    shadow_bias = 1e-5
+    shadow_size = 2048
+    shadow_bias = 1e-4
     self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17,color=vec3(0,5500,0),cookie=cookie1,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
     self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37,color=vec3(5000,0,0),cookie=cookie2,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
     self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57,color=vec3(800),cookie=cookie3,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
+    self.spotlight4 = MySpotLight(index=2,app=self,model=model,frq=0.97,color=vec3(0,0,600),cookie=cookie4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
 
   ##############################################
 
@@ -130,6 +132,7 @@ class StereoApp1(object):
     self.spotlight1.update(self.lighttime)
     self.spotlight2.update(self.lighttime)
     self.spotlight3.update(self.lighttime)
+    self.spotlight4.update(self.lighttime)
     if hasattr(self,"sgnode_frustum"):
       self.layer1.removeDrawableNode(self.sgnode_frustum )
 

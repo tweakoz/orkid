@@ -218,7 +218,7 @@ class StereoApp1(object):
     self.sgnode.worldTransform.translation = vec3(0,3,0)
     
     self.worldpose.fromLocalPose(self.localpose,mtx4())
-    self.frame_index += 0.1
+    self.frame_index += 0.3
     pass 
 
 ###############################################################################

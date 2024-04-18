@@ -254,6 +254,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       if (texlist.size() > 5) {
         FXI->BindParamCTex(mtl->_parLightCookie5, texlist[5]);
       }
+      if (texlist.size() > 6) {
+        FXI->BindParamCTex(mtl->_parLightCookie6, texlist[6]);
+      }
+      if (texlist.size() > 7) {
+        FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
+      }
     }
 
     if (mtl->_parUnTexPointLightsCount)
@@ -514,7 +520,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
                   pipeline->addStateLambda(createForwardLightingLambda(mtl));
                   pipeline->addStateLambda(rsi_lambda);
                 }
-              } else {
+              }
+              else {
                 if (mtl->_tek_FWD_CT_NM_SK_NI_ST) {
                   pipeline             = std::make_shared<FxPipeline>(permu);
                   pipeline->_technique = mtl->_tek_FWD_CT_NM_SK_NI_ST;
@@ -526,7 +533,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
                 }
               }
 
-            } else {                  // not skinned
+            } else { // not skinned
               if (permu._instanced) { // instanced
                 if (mtl->_tek_FWD_CT_NM_RI_IN_ST) {
                   pipeline             = std::make_shared<FxPipeline>(permu);
@@ -553,7 +560,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, co
           // FORWARD_PBR::STEREO
           /////////////////////////////////////////////////////////////
           // FORWARD_PBR::MONO
-          else {
+          else { 
             if (permu._skinned) {
               if (permu._instanced) {
                 if (mtl->_tek_FWD_CT_NM_SK_IN_MO) {
@@ -1223,6 +1230,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
   _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
   _parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
+  _parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
+  _parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
 
   // printf( "_parLightCookies<%p>\n", _parLightCookies );
 

@@ -93,6 +93,8 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie3;
   sampler2D light_cookie4;
   sampler2D light_cookie5;
+  sampler2D light_cookie6;
+  sampler2D light_cookie7;
 
   vec4 ModColor;
   uint obj_pickID;
