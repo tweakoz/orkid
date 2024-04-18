@@ -155,10 +155,13 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
     if(is_depth_prepass)
       return;
 
+  bool is_skinned = RCID._isSkinned;
+  //printf( "lighting_lambda skinned<%d>\n", int(is_skinned));
+
     auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
-     //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
+    //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
     int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
     int num_texspotlights = 0;
@@ -210,7 +213,10 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
         float B = light->shadowDepthBias();
         float SMS = light->_spdata->shadowMapSize();
 
-        //printf( "B<%f> SMS<%f>\n", B, SMS );
+        //printf( "C<%g %g %g %g>\n", C.x, C.y, C.z, C.w );
+        //printf( "P<%g %g %g>\n", P.x, P.y, P.z );
+        //printf( "R<%f> B<%f> SMS<%f>\n", R, B, SMS );
+
         size_t v4_offset = index * vec4_stride;
         pl_mapped->ref<fvec4>(base_color + v4_offset)    = C;
         pl_mapped->ref<fvec4>(base_sizbias + v4_offset)   = fvec4(R,B,SMS,1);
@@ -256,8 +262,10 @@ FxPipeline::statelambda_t  createForwardLightingLambda(const PBRMaterial* mtl){
 
     if(mtl->_parUnTexPointLightsCount)
       FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
-    if(mtl->_parUnTexPointLightsData)
+    if(mtl->_parUnTexPointLightsData){
+      //printf( "binding lighting UBO\n");
       FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+    }
 
     auto modcolor = context->RefModColor();
     FXI->BindParamVect4(mtl->_parModColor, modcolor*mtl->_baseColor);
@@ -540,8 +548,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 pipeline->addStateLambda(rsi_lambda);
               }
             }
-          }
-          else{
+          } // STEREO
+          else{ // MONO
             if (permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
                 pipeline          = std::make_shared<FxPipeline>(permu);
@@ -569,32 +577,101 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           break;
         }
         case "DEPTH_PREPASS"_crcu:
-          if (not permu._instanced and not permu._skinned and not permu._stereo) {
-            if(mtl->_tek_FWD_DEPTHPREPASS_NI_MO){
-              pipeline                     = std::make_shared<FxPipeline>(permu);
-              pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_NI_MO;
-              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(createBasicStateLambda(mtl));
-              pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
-                auto _this   = (PBRMaterial*)mtl;
-                auto RCFD    = RCID._RCFD;
-                auto context = RCFD->GetTarget();
-                auto FXI     = context->FXI();
-                auto MTXI    = context->MTXI();
-                auto RSI     = context->RSI();
-                _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
-                _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(false, false);
-                RSI->BindRasterState(_this->_rasterstate);
-              });
+          if (not permu._instanced and not permu._skinned) {
+            if(permu._stereo){
+              if(mtl->_tek_FWD_DEPTHPREPASS_RI_NI_ST){
+                pipeline                     = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_RI_NI_ST;
+                pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+                pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                  auto _this   = (PBRMaterial*)mtl;
+                  auto RCFD    = RCID._RCFD;
+                  auto context = RCFD->GetTarget();
+                  auto FXI     = context->FXI();
+                  auto MTXI    = context->MTXI();
+                  auto RSI     = context->RSI();
+                  _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
+                  _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+                  _this->_rasterstate.SetZWriteMask(true);
+                  _this->_rasterstate.SetRGBAWriteMask(false, false);
+                  RSI->BindRasterState(_this->_rasterstate);
+                });
+              }
+            }
+            else{
+              if(mtl->_tek_FWD_DEPTHPREPASS_RI_NI_MO){
+                pipeline                     = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_RI_NI_MO;
+                pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                  auto _this   = (PBRMaterial*)mtl;
+                  auto RCFD    = RCID._RCFD;
+                  auto context = RCFD->GetTarget();
+                  auto FXI     = context->FXI();
+                  auto MTXI    = context->MTXI();
+                  auto RSI     = context->RSI();
+                  _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
+                  _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+                  _this->_rasterstate.SetZWriteMask(true);
+                  _this->_rasterstate.SetRGBAWriteMask(false, false);
+                  RSI->BindRasterState(_this->_rasterstate);
+                });
+              }
             }
           }
-          else if (permu._instanced and not permu._skinned and not permu._stereo) {
-            if(mtl->_tek_FWD_DEPTHPREPASS_IN_MO){
+          else if (not permu._instanced and permu._skinned) {
+            if(permu._stereo){
+              if(mtl->_tek_FWD_DEPTHPREPASS_SK_NI_ST){
+                pipeline                     = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_SK_NI_ST;
+                pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+                pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                  auto _this   = (PBRMaterial*)mtl;
+                  auto RCFD    = RCID._RCFD;
+                  auto context = RCFD->GetTarget();
+                  auto FXI     = context->FXI();
+                  auto MTXI    = context->MTXI();
+                  auto RSI     = context->RSI();
+                  _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
+                  _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+                  _this->_rasterstate.SetZWriteMask(true);
+                  _this->_rasterstate.SetRGBAWriteMask(false, false);
+                  RSI->BindRasterState(_this->_rasterstate);
+                });
+              }
+            }
+            else{
+              if(mtl->_tek_FWD_DEPTHPREPASS_SK_NI_MO){
+                pipeline                     = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_SK_NI_MO;
+                pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+                pipeline->addStateLambda(createBasicStateLambda(mtl));
+                pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                  auto _this   = (PBRMaterial*)mtl;
+                  auto RCFD    = RCID._RCFD;
+                  auto context = RCFD->GetTarget();
+                  auto FXI     = context->FXI();
+                  auto MTXI    = context->MTXI();
+                  auto RSI     = context->RSI();
+                  _this->_rasterstate.SetCullTest(mtl->_doubleSided?ECullTest::OFF:ECullTest::PASS_FRONT);
+                  _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+                  _this->_rasterstate.SetZWriteMask(true);
+                  _this->_rasterstate.SetRGBAWriteMask(false, false);
+                  RSI->BindRasterState(_this->_rasterstate);
+                });
+              }
+            }
+          }
+                    else if (permu._instanced and not permu._skinned) {
+            if(mtl->_tek_FWD_DEPTHPREPASS_RI_IN_MO){
               OrkAssert(false);
               pipeline                     = std::make_shared<FxPipeline>(permu);
-              pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
+              pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_RI_IN_MO;
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
               pipeline->addStateLambda(createBasicStateLambda(mtl));
               pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
@@ -967,9 +1044,16 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_FWD_CT_NM_RI_IN_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO"s+_shader_suffix);
   _tek_FWD_CT_NM_RI_NI_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST"s+_shader_suffix);
   _tek_FWD_CT_NM_RI_IN_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST"s+_shader_suffix);
-  _tek_FWD_DEPTHPREPASS_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO"s+_shader_suffix);
 
-  _tek_FWD_DEPTHPREPASS_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_NI_MO"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_RI_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_IN_MO"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_RI_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_NI_MO"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_SK_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_IN_MO"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_SK_NI_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_NI_MO"s+_shader_suffix);
+
+  _tek_FWD_DEPTHPREPASS_RI_IN_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_IN_ST"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_RI_NI_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_RI_NI_ST"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_SK_IN_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_IN_ST"s+_shader_suffix);
+  _tek_FWD_DEPTHPREPASS_SK_NI_ST = fxi->technique(_shader, "FWD_DEPTHPREPASS_SK_NI_ST"s+_shader_suffix);
 
   _tek_FWD_CV_EMI_RI_NI_MO = fxi->technique(_shader, "FWD_CV_EMI_RI_NI_MO"s+_shader_suffix);
 

@@ -139,6 +139,7 @@ struct ForwardPbrNodeImpl {
       FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
       auto SCENE_MONOCAMS = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+      //auto SCENE_STEREOCAMS = ddprops["StereoMatrices"_crcu].get<const StereoCameraMatrices*>();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
@@ -146,6 +147,7 @@ struct ForwardPbrNodeImpl {
       CPD._clearColor     = pbrcommon->_clearColor;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = SCENE_MONOCAMS;
+      //CPD._stereoCameraMatrices = SCENE_STEREOCAMS;
       CPD.SetDstRect(tgt_rect);
       CPD._width = newwidth;
       CPD._height = newheight;
@@ -217,6 +219,8 @@ struct ForwardPbrNodeImpl {
               if( not light->_castsShadows )
                 continue;
               
+              context->debugPushGroup(FormatString("ForwardPBR::shadow-depth-pre pass %d", num_shadow_casters));
+
               //printf( "beg shadowpass %d\n", num_shadow_casters);
 
               if( light->_depthRTG == nullptr ){
@@ -229,6 +233,7 @@ struct ForwardPbrNodeImpl {
                 auto topcomp = RCFD.topCompositor();
                 CompositingPassData shadowCPD = CPD.clone();
                 CameraMatrices SHADOWCAM;
+                shadowCPD.setStereoOnePass(false);
                 shadowCPD._cameraMatrices = & SHADOWCAM;
                 SHADOWCAM._pmatrix = as_spotlight->mProjectionMatrix;
                 SHADOWCAM._vmatrix = as_spotlight->mViewMatrix;
@@ -253,6 +258,9 @@ struct ForwardPbrNodeImpl {
 
                 topcomp->popCPD();
               }
+
+              context->debugPopGroup();
+
               //printf( "end shadowpass %d\n", num_shadow_casters);
               num_shadow_casters++;
               

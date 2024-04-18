@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////
 libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
   /////////////////////////////////////////////////////////
-  LightCtx lcalc_forward(vec3 wpos, PbrData pbd) {
+  LightCtx lcalc_forward(vec3 wpos, PbrData pbd,vec3 eyepos) {
     LightCtx plc;
     const vec3 metalbase = vec3(0.04);
     float metallic       = clamp(pbd._metallic, 0.02, 0.99);
@@ -9,7 +9,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 diffcolor       = mix(basecolor, vec3(0), metallic);
     vec3 speccolor       = mix(vec3(0.02), basecolor, metallic);
     /////////////////////////
-    plc._viewdir   = normalize(EyePostion - wpos);
+    plc._viewdir   = normalize(eyepos - wpos);
     plc._metallic  = metallic; // pbd._metallic;
     plc._roughness = pbd._roughness;
     plc._normal    = pbd._wnrm;
@@ -170,7 +170,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     // point lighting
     ///////////////////////////////////////////////
 
-    LightCtx plc        = lcalc_forward(wpos, pbd);
+    LightCtx plc        = lcalc_forward(wpos, pbd,eyepos);
     vec3 point_lighting = vec3(0, 0, 0);
     for (int i = 0; i < point_light_count; i++) {
       plc._lightdel = _lightpos[i].xyz - wpos;
@@ -202,13 +202,13 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float lightz         = light_ndc.z;
       vec2 diffuse_lightuv = light_ndc.xy * 0.5 + vec2(0.5);
 
-      plc._lightdel = lightdel;
-      vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
-      float LR      = 50;
-      vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
-      pl_c = mix(pl_c,vec3(1),0.25);
+      bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
+                  bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
 
+      ////////////////////////////////////////////////////////////
       // compute specular lightuv
+      ////////////////////////////////////////////////////////////
+
       vec3 lightdir         = normalize(lightdel * -1);
       vec3 halfdir          = normalize(lightdir - normalize(eyepos - wpos));
       vec4 light_hpos2      = (shmtx)*vec4(wpos + halfdir, 1);
@@ -218,8 +218,15 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       bool specular_mask = bool(light_ndc2.x >= -1 && light_ndc2.x < 1) && bool(light_ndc2.y >= -1 && light_ndc2.y < 1) &&
                            bool(light_ndc2.z >= 0.0 && light_ndc2.z <= 1);
 
-      bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
-                  bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
+      ////////////////////////////////////////////////////////////
+
+      plc._lightdel = lightdel;
+      vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+      float LR      = 50;
+      vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
+      pl_c = mix(pl_c,vec3(1),0.25);
+
+
 
       ////////////////////////////////////////////////////////////
       // compute wpos in shadow space
@@ -274,9 +281,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 lighttex  = diffuse;
       lighttex += pbd._albedo * specular_lighttex * NdotL * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      //spot_lighting += vec3(NdotL*shadow_factor);
+      //spot_lighting += vec3(specular_lighttex);
        //spot_lighting += pl_c;
     }
+    //return spot_lighting;
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {

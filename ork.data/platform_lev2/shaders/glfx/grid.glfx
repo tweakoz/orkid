@@ -43,6 +43,11 @@ vertex_interface iface_vtx_fwd_grid_lit : ub_fwd_grid_vtx {
     vec3 frg_camz;
   }
 }
+vertex_interface iface_vtx_fwd_grid_lit_stereo : iface_vtx_fwd_grid_lit {
+  outputs {
+    layout(secondary_view_offset = 1) int gl_Layer;
+  }
+}
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_grid_forward_unlit
 	: iface_vtx_fwd_grid_unlit {
@@ -67,7 +72,7 @@ vertex_shader vs_grid_forward_lit
 vertex_shader vs_grid_forward_lit_stereo
   : extension(GL_NV_stereo_view_rendering) //
   : extension(GL_NV_viewport_array2) //
-  : iface_vtx_fwd_grid_lit {
+  : iface_vtx_fwd_grid_lit_stereo {
     gl_Position = mvp_l*position;
     gl_SecondaryPositionNV = mvp_r*position;
     frg_uv0 = uv0;
@@ -75,6 +80,11 @@ vertex_shader vs_grid_forward_lit_stereo
     frg_camdist = 0.0;
     frg_camz = vec3(0,0,0);
     frg_clr = vec4(1,1,1,1);
+    frg_tbn = mat3( // mat3 that rotates z to y
+    1.0, 0.0, 0.0, // First column
+    0.0, 0.0, -1.0, // Second column
+    0.0, 1.0, 0.0  // Third column
+    );
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
@@ -368,6 +378,18 @@ fragment_shader ps_grid_forward_lit_stereo_v3
   out_clr = vec4(gout.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_stereo_v4
+  : iface_grid_forward_lit
+  : lib_frg_grid
+  : lib_fwd_stereo
+  : ub_frg_fwd 
+  : ub_frg_fwd_lighting
+  : extension(GL_NV_viewport_array) {  //
+  vec4 gout = grid_output4(frg_wpos.xyz);
+  vec3 oc = forward_lighting_stereo(gout.xyz);
+  out_clr = vec4(oc,1);
+}
+///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid
   : iface_vtx_fwd_grid_unlit {
     frg_uv0 = uv0;
@@ -437,6 +459,10 @@ technique FWD_CT_NM_RI_NI_MO_V3 {
 technique FWD_CT_NM_RI_NI_MO_V4 {
   fxconfig=fxcfg_default;
   vf_pass={vs_grid_forward_lit,ps_grid_forward_lit_mono_v4,sb_forward_blend}
+}
+technique FWD_CT_NM_RI_NI_ST_V4 {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_grid_forward_lit_stereo,ps_grid_forward_lit_stereo_v4,sb_forward_blend}
 }
 technique FWD_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;

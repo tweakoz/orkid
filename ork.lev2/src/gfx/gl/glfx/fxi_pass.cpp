@@ -47,7 +47,7 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
   rval->_blockIndex = glGetUniformBlockIndex(_programObjectId, block->_name.c_str());
   rval->_pass       = this;
   rval->_block      = block;
-  rval->_bindingPoint = 0;
+  rval->_bindingPoint = _uboBindingMap.size();
 
   //logchan_pass->log("block<%s> _blockIndex<%d>", block->_name.c_str(), rval->_blockIndex );
 
@@ -144,7 +144,8 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
     //logchan_pass->log("RESIZEUBOB<%d>", ubo_bindingindex + 1);
   }
 
-  if(_ubobindings[ubo_bindingpoint] != buffer) {
+  if(true){  // TODO find a good way to not rebind the same buffer that always works...
+    //_ubobindings[ubo_bindingpoint] != buffer) {
     GLintptr ubo_offset = 0;
     GLintptr ubo_size   = buffer->_length;
     //printf( "bind ubo to block<%s> bindingpoint<%d> offset<%d> size<%d>\n",  block->_name.c_str(), int(ubo_bindingpoint), int(ubo_offset), int(ubo_size) );

@@ -64,6 +64,8 @@ class StereoApp1(object):
       self.grid_data.shader_suffix = "_V2"
     elif variant == 3:
       self.grid_data.shader_suffix = "_V3"
+    elif variant == 4:
+      self.grid_data.shader_suffix = "_V4"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 

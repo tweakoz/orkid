@@ -228,8 +228,16 @@ public:
   fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_ST = nullptr;
-  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_NI_MO = nullptr;
-  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_NI_ST = nullptr;
+
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_IN_MO = nullptr;
+
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_IN_ST = nullptr;
 
   // modcolor
 
