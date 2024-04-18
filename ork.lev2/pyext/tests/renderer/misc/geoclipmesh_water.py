@@ -15,6 +15,7 @@ from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
 from common.cameras import *
 from common.scenegraph import createSceneGraph
+from common.lighting import MySpotLight, MyCookie
 from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
@@ -33,7 +34,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
+    self.ezapp = OrkEzApp.create(self,ssaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -70,9 +71,9 @@ class WaterApp(object):
 
     postNode = DecompBlurPostFxNode()
     postNode.threshold = 0.99
-    postNode.blurwidth = 16.0
+    postNode.blurwidth = 8.0
     postNode.blurfactor = 0.1
-    postNode.amount = 0.4
+    postNode.amount = 0.2
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
 
@@ -84,6 +85,25 @@ class WaterApp(object):
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
+
+    lite_model = XgmModel("data://tests/pbr_calib.glb")
+    cookie = MyCookie("src://effect_textures/knob2.png")
+    shadow_size = 2048
+    shadow_bias = -1e-4
+    self.spotlight1 = MySpotLight( index=0,
+                                  app=self,
+                                  model=lite_model,
+                                  frq=0.177,
+                                  color=vec3(1,1,.7)*9.5e5,
+                                  cookie=cookie,
+                                  fovbase=70.0,
+                                  fovamp=20.0,
+                                  voffset=1500,
+                                  vscale=1300,
+                                  bias=shadow_bias,
+                                  dim=shadow_size,
+                                  radius=700,
+                                  range=4000)
 
     ###################################
     # create particle drawable 
@@ -100,6 +120,7 @@ class WaterApp(object):
       ptc.EMITN.inputs.EmissionRate = random.uniform(40,80)
       ptc.EMITR.inputs.EmissionRate = random.uniform(40,80)
       ptc.particlenode.worldTransform.scale = 4
+      ptc.SPRI.material.colorIntensity = 4
       ptc.frq = random.uniform(-0.5,0.5)
       x = random.uniform(-0.5,0.5)
       y = random.uniform(-0.5,0.5)
@@ -133,14 +154,14 @@ class WaterApp(object):
 
     freestyle = gmtl.freestyle
     assert(freestyle)
-    param_refract_map = freestyle.param("refract_map")
-    param_voltexa = freestyle.param("MapVolTexA")
+    #param_refract_map = freestyle.param("refract_map")
+    #param_voltexa = freestyle.param("MapVolTexA")
     param_time = freestyle.param("Time")
     param_color = freestyle.param("BaseColor")
     param_depthmap = freestyle.param("depth_map")
     param_bufinvdim = freestyle.param("bufinvdim")
     param_plightamp = freestyle.param("plightamp")
-    param_noizekernmap = freestyle.param("noizekernmap")
+    #param_noizekernmap = freestyle.param("noizekernmap")
     param_m= freestyle.param("m")
     assert(param_time)
     
@@ -149,9 +170,9 @@ class WaterApp(object):
 
     self.refract_tex = Texture.load( "src://envmaps/tozenv_hellscape.png")
 
-    gmtl.bindParam(param_refract_map,self.refract_tex)
-    gmtl.bindParam(param_voltexa,self.NOISETEX)
-    gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
+    #gmtl.bindParam(param_refract_map,self.refract_tex)
+    #gmtl.bindParam(param_voltexa,self.NOISETEX)
+    #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
     gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
@@ -188,6 +209,10 @@ class WaterApp(object):
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
 
+
+  def onGpuUpdate(self,ctx):
+    self.spotlight1.update(self.lighttime)
+
   ################################################
 
   def _radial_gerstnerwave_fn(self, center, pos, timeval, frq, baseamp, rscale, falloff):
@@ -205,6 +230,7 @@ class WaterApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
+    self.lighttime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     self.curtime = updinfo.absolutetime
     update_psys_set(self.ptc_systems,updinfo.absolutetime,90.0)

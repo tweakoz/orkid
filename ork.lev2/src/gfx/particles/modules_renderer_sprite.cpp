@@ -98,6 +98,8 @@ void SpriteRendererInst::compute(
       avg_color += as_grad->_gradientSamples[index];
       sample_count++;
     }
+
+    avg_color *= as_grad->_gradientColorIntensity;
     //avg_color *= (1.0f/float(sample_count));
     inst->_vars.makeValueForKey<fvec4>("emission_color") = avg_color;
 

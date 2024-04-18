@@ -66,6 +66,22 @@ void pyinit_gfx_particles(py::module& module_lev2) {
           m->_gradient = grad;
         }
         )
+      .def_property("colorIntensity", 
+        [](ptc::gradientmaterial_ptr_t  m) -> float { //
+          return m->_gradientColorIntensity;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, float intensity) { //
+          m->_gradientColorIntensity = intensity;
+        }
+        )
+      .def_property("alphaIntensity", 
+        [](ptc::gradientmaterial_ptr_t  m) -> float { //
+          return m->_gradientAlphaIntensity;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, float intensity) { //
+          m->_gradientAlphaIntensity = intensity;
+        }
+        )
       .def_property("modulation_texture", 
         [](ptc::gradientmaterial_ptr_t  m) -> texture_ptr_t { //
           return m->_modulation_texture;

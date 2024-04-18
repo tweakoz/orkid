@@ -153,7 +153,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       return;
 
     bool is_skinned = RCID._isSkinned;
-    // printf( "lighting_lambda skinned<%d>\n", int(is_skinned));
+   // printf( "lighting_lambda skinned<%d>\n", int(is_skinned));
 
     auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
     auto context    = RCFD->GetTarget();
@@ -210,9 +210,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         float B   = light->shadowDepthBias();
         float SMS = light->_spdata->shadowMapSize();
 
-        // printf( "C<%g %g %g %g>\n", C.x, C.y, C.z, C.w );
-        // printf( "P<%g %g %g>\n", P.x, P.y, P.z );
-        // printf( "R<%f> B<%f> SMS<%f>\n", R, B, SMS );
+         //printf( "C<%g %g %g %g>\n", C.x, C.y, C.z, C.w );
+         //printf( "P<%g %g %g>\n", P.x, P.y, P.z );
+         //printf( "R<%f> B<%f> SMS<%f>\n", R, B, SMS );
 
         size_t v4_offset                                          = index * vec4_stride;
         pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
@@ -230,7 +230,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       }
     }
 
-    // printf( "texlistsize<%d>\n", texlist.size() );
+     //printf( "texlistsize<%d>\n", texlist.size() );
     pl_mapped->unmap();
 
     if (mtl->_parTexSpotLightsCount) {

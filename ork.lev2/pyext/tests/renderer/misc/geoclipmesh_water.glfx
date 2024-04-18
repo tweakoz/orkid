@@ -11,15 +11,8 @@ import "orkshader://misctools.i";
 
 uniform_set ub_frgX {
   float Time;
-  sampler3D MapVolTexA;
-  sampler2D envmap;
-  sampler2D refract_map;
   sampler2D depth_map;
-  sampler2D noizekernmap;
   vec3 BaseColor;
-  vec3 ColorB;
-  vec3 ColorC;
-  vec3 ColorD;
   float GroundColorPower;
   vec2 bufinvdim;
   float plightamp;
@@ -60,7 +53,7 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
     _x.true_wpos = matO2W * vec4(pos, 1);
 
     float speed   = Time * 1.65;
-    float baseamp = 25;
+    float baseamp = 32;
     vec3 wave_pos = _x.true_wpos.xyz;
     float radius  = length(wave_pos.xz);
 
@@ -89,7 +82,7 @@ libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
         vec3(11, 0, -6) * cdist, // center
         wave_pos,                // pos
         speed * 0.6,             // timeval
-        0.0131,                  // frq
+        0.0091,                  // frq
         baseamp * 0.3,           // baseamp
         0.00013,                 // rscale
         falloff);                // falloff
@@ -210,7 +203,12 @@ vertex_shader vs_ground_stereo               //
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_frgX {
+fragment_shader ps_fwd_ground_mono 
+ : iface_forward 
+ : lib_fwd 
+ : lib_mmnoise 
+ : ub_frgX
+ : ub_frg_fwd {
 
   vec3 wpos = frg_tbn[0];
 
@@ -254,8 +252,8 @@ fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_
   float radius = 0.0;
 
   float depth_fogval      = 1.0 - clamp(pow(fogZ / DepthFogDistance, DepthFogPower), 0, 1);
-  vec3 skybox_refract_n   = refract(skybox_n * -1.0, normal * -1.0, 0.5);
-  vec3 skyboxRefractColor = (vec3(1) - env_equirectangular(skybox_refract_n, MapSpecularEnv, 0.8)) * 0.2;
+  vec3 skybox_refract_n   = reflect(skybox_n * -1.0, normal * -1.0);
+  vec3 skyboxRefractColor = (vec3(1) - env_equirectangular(skybox_refract_n, MapSpecularEnv, 0.8)) * 1.5;
   skyboxRefractColor.x    = pow(skyboxRefractColor.x, 0.65);
   skyboxRefractColor.y    = pow(skyboxRefractColor.y, 0.55);
   skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
@@ -263,13 +261,13 @@ fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_
   F                       = 0.5; // pow(F, 0.1);
   vec3 albedo             = BaseColor;
   vec3 altcolor           = skyboxRefractColor; // normal*0.5+vec3(0.5,0.5,0.5);
-  albedo                  = mix(albedo, albedo + altcolor * 0.5, 1 - F);
+  albedo                  = mix(albedo, skyboxRefractColor, 0.65);
   PbrData pbd;
   pbd._emissive = false;
   pbd._metallic = 0.75;
 
   float ssy      = clamp(signalY, 0, 1);
-  pbd._roughness = 0.65; //+(ssy*35.0);//+radius*0.003;
+  pbd._roughness = 0.5; //+(ssy*35.0);//+radius*0.003;
   pbd._albedo    = albedo;                        //(1+radius*0.01);
   pbd._wpos      = frg_tbn[0].xyz;
   pbd._wnrm      = normal;
@@ -292,7 +290,135 @@ fragment_shader ps_fwd_ground_mono : iface_forward : lib_fwd : lib_mmnoise : ub_
     point_lighting += plcalc_forward(plc, pbd, LR) * LC * plightamp;
   }
 
-  vec3 L  = env_lighting + point_lighting;
+    ///////////////////////////////////////////////
+    // spot lighting
+    ///////////////////////////////////////////////
+
+    vec3 spot_lighting = vec3(0, 0, 0);
+      float shadow_factor = 0.0;
+
+    for (int i = 0; i < spot_light_count; i++) {
+      int j = i + point_light_count;
+
+      // TODO - get sampler offset for spot lights (once we get point light textures)
+      int LCI_STD = i * 2 + 0;
+      int LCI_DEP = i * 2 + 1;
+
+      vec4 LSB = _lightsizbias[j];
+
+      mat4 shmtx           = _shadowmatrix[j];
+      vec3 lightpos        = _lightpos[j].xyz;
+      float lightrange     = LSB.x;
+      vec4 light_hpos      = (shmtx)*vec4(wpos, 1);
+      vec3 light_ndc       = (light_hpos.xyz / light_hpos.w);
+      float lightz         = light_ndc.z;
+      vec2 diffuse_lightuv = light_ndc.xy * 0.5 + vec2(0.5);
+
+      bool mask = bool(light_ndc.x >= -1 && light_ndc.x < 1) && bool(light_ndc.y >= -1 && light_ndc.y < 1) &&
+                  bool(light_ndc.z >= 0.0 && light_ndc.z <= 1);
+
+      ////////////////////////////////////////////////////////////
+      // compute specular lightuv
+      ////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////
+// compute view dependent specular UVs
+///////////////////////////////////////////////////////////
+
+// Compute the view direction and normalize
+vec3 viewDir = normalize(EyePostion - wpos);
+
+// Compute the reflection vector based on view direction and normal
+vec3 reflectDir = reflect(-viewDir, normal);
+
+// intersect reflect dir with near plane of spotlight (3 units away from light position)
+vec3 nearPlanePos = lightpos - reflectDir * 3.0;
+
+// Transform the near plane position to clip space
+vec4 nearPlaneClip = (shmtx) * vec4(nearPlanePos, 1.0);
+
+// Compute the NDC coordinates of the near plane position
+vec3 nearPlaneNDC = nearPlaneClip.xyz / nearPlaneClip.w;
+
+// Compute the UV coordinates of the near plane position
+vec2 specular_lightuv = nearPlaneNDC.xy * 0.5 + vec2(0.5);
+
+// Check if the near plane position is within the frustum
+bool within_frustum = nearPlaneNDC.x >= -1 && nearPlaneNDC.x < 1 && nearPlaneNDC.y >= -1 && nearPlaneNDC.y < 1;
+
+
+// Now specularUV contains the UV coordinates for specular reflections
+// These UVs can be used to fetch data from a texture representing specular highlights
+
+      bool specular_mask = within_frustum;
+
+      ////////////////////////////////////////////////////////////
+
+      vec3 lightdel = lightpos - wpos;
+      plc._lightdel = lightdel;
+      vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
+      float LR      = 50;
+      vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
+      pl_c = mix(pl_c,vec3(1),0.25);
+
+
+
+      ////////////////////////////////////////////////////////////
+      // compute shadow
+      ////////////////////////////////////////////////////////////
+
+      vec4 shadow_hpos    = (shmtx)*vec4(wpos, 1);
+      vec3 shadow_ndc     = (shadow_hpos.xyz / shadow_hpos.w);
+      vec2 shadow_uv      = shadow_ndc.xy * 0.5 + vec2(0.5);
+      bool shadow_mask    = shadow_ndc.x >= -1 && shadow_ndc.x < 1 && shadow_ndc.y >= -1 && shadow_ndc.y < 1;
+      if (!shadow_mask) {
+        shadow_factor = 1.0;
+      } else {
+        float bias             = LSB.y; // Increased bias to help with shadow acne
+        float far              = lightrange;
+        float near             = lightrange*0.001;
+        float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
+
+        // Percentage-Closer Filtering (PCF)
+        int pcf_width         = 1;            // Size of the PCF kernel
+        float pcf_filter_size = 1.0 / LSB.z; // Adjust based on your shadow map resolution
+
+        for (int x = -pcf_width; x <= pcf_width; x++) {
+          for (int y = -pcf_width; y <= pcf_width; y++) {
+            vec2 pcf_uv     = shadow_uv + vec2(x, y) * pcf_filter_size;
+            float pcf_depth = _sample_cookie_lod(LCI_DEP, pcf_uv, 0).x * 2.0 - 1.0;
+            shadow_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
+          }
+        }
+
+        // Normalize the shadow factor by the number of samples taken
+        shadow_factor /= float((pcf_width * 2 + 1) * (pcf_width * 2 + 1));
+      }
+
+      ///////////////////////
+
+      vec3 lightcol          = _lightcolor[j].xyz;
+      float level            = pbd._roughness*4;
+      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;   // diffuse WIP
+      vec3 specular_lighttex = vec3(0);//_sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
+
+      diffuse_lighttex *= plc._F0  * pl_c;// * float(specular_mask);
+
+      // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
+
+      vec3 LN     = normalize(lightdel);
+      float Ldist = length(lightdel);
+      float NdotL = max(0.0, dot(normal, LN));
+
+      float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
+      vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
+      vec3 lighttex  = diffuse*0;
+      lighttex += pbd._albedo * specular_lighttex * NdotL;// * spec_mix;
+      spot_lighting += lightcol * diffuse_lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
+      spot_lighting += vec3(reflectDir)*0.03 * float(mask) * shadow_factor;
+    }
+
+  vec3 L  = env_lighting + point_lighting + spot_lighting;
   vec3 OC = L; // mix(L,skyboxColor,1.0-depth_fogval);
   OC += env_lighting * foam * 0.1;
   //OC += vec3(foam*0.05);

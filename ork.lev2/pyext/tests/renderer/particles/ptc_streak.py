@@ -23,7 +23,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     setupUiCamera( app=self, #
