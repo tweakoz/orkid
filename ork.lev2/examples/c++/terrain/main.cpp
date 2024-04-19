@@ -174,7 +174,7 @@ int main(int argc, char** argv, char** envp) {
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
     context->beginFrame();
-    auto framerenderer = std::make_shared<FrameRenderer>(RCFD, [&]() {});
+    auto framerenderer = std::make_shared<FrameRenderer>(RCFD);
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);

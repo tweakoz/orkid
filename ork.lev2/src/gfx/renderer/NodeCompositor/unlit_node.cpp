@@ -53,8 +53,7 @@ struct IMPL {
   ///////////////////////////////////////
   void _render(UnlitNode* node, CompositorDrawData& drawdata) {
     // float t1 = _profile_timer.SecsSinceStart();
-    auto framerenderer           = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto targ                    = RCFD.GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
@@ -105,7 +104,6 @@ struct IMPL {
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
-        framerenderer->renderMisc();
         targ->debugPopGroup();
         CIMPL->popCPD();
       }

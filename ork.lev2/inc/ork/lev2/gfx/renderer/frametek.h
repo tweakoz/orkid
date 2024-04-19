@@ -12,14 +12,11 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FrameRenderer {
-  typedef std::function<void()> rendermisccb_t;
   /////////////////////////////////////////////
-  FrameRenderer(RenderContextFrameData& RCFD, rendermisccb_t cb);
-  void renderMisc();
+  FrameRenderer(RenderContextFrameData& RCFD);
   RenderContextFrameData& framedata() { return _framedata; }
   /////////////////////////////////////////////
   RenderContextFrameData& _framedata;
-  rendermisccb_t _rendermisccb;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

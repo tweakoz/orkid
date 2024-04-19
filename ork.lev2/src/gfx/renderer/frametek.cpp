@@ -32,13 +32,9 @@ template class ork::orklut<ork::PoolString, anyp>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD, rendermisccb_t cb)
+FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD)
     : _framedata(RCFD)
-    , _rendermisccb(cb) {
-}
-///////////////////////////////////////////
-void FrameRenderer::renderMisc() {
-  _rendermisccb();
+{
 }
 
 ///////////////////////////////////////////////////////////////////////////////

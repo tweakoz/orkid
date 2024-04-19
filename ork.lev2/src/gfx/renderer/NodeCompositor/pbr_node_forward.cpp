@@ -84,8 +84,7 @@ struct ForwardPbrNodeImpl {
     /////////////////////////////////////////////////////////////////////////////////////////
     RtGroupRenderTarget rt(rtg_main.get());
 
-    auto framerenderer           = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
 
     auto pbrcommon = _node->_pbrcommon;
     auto& ddprops  = drawdata._properties;
@@ -235,7 +234,6 @@ struct ForwardPbrNodeImpl {
     context->debugPushGroup("ForwardPBR::color pass");
     // irenderer->_debugLog = true;
     irenderer->drawEnqueuedRenderables();
-    framerenderer->renderMisc();
     context->debugPopGroup();
     irenderer->resetQueue();
     FBI->PopRtGroup();

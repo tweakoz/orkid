@@ -226,7 +226,6 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     auto newmask = RGBAMask{true, true, true, false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
-    framerenderer->renderMisc();
     RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();

@@ -31,20 +31,6 @@ BasicFrameTechnique::BasicFrameTechnique()
 ///////////////////////////////////////////////////////////////////////////////
 
 void BasicFrameTechnique::Render(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
-  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
-  // FrameData.SetDstRect( tgt_rect );
-  /*
-  IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
-  if( _shouldBeginAndEndFrame )
-      pTopRenderTarget->BeginFrame( frenderer );
-  {
-      frenderer.renderMisc();
-  }
-  if( _shouldBeginAndEndFrame )
-      pTopRenderTarget->EndFrame( frenderer );
-      */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,13 +42,6 @@ PickFrameTechnique::PickFrameTechnique()
 ///////////////////////////////////////////////////////////////////////////////
 
 void PickFrameTechnique::Render(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
-  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
-  // FrameData.SetDstRect( tgt_rect );
-  {
-    // frenderer.renderMisc();
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

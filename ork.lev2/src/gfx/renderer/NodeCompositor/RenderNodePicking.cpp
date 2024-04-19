@@ -60,8 +60,7 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(PickingCompositingNode* node, CompositorDrawData& drawdata) {
-    auto framerenderer           = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto& ddprops                = drawdata._properties;
 
     auto context      = RCFD.GetTarget();
@@ -128,7 +127,6 @@ struct IMPL {
         CIMPL->pushCPD(CPD);
         context->debugPushGroup("rnodePicking::drawEnqueuedRenderables");
         irenderer->drawEnqueuedRenderables();
-        framerenderer->renderMisc();
         context->debugPopGroup();
         CIMPL->popCPD();
         FBI->PopRtGroup();
