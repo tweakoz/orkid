@@ -39,7 +39,7 @@ namespace ork::lev2 {
 
 static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), true);
 
-//////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 struct GlobalDefaultMaterial {
   GlobalDefaultMaterial(Context* ctx) {
@@ -53,385 +53,7 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
   return _gdm._material;
 }
 
-//////////////////////////////////////////////////////
-
-//static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const PBRMaterial* mtl);
-using cache_impl_t = FxPipelineCacheImpl<PBRMaterial>;
-
-using pbrcache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
-
-static pbrcache_impl_ptr_t _getpbrcache() {
-  static pbrcache_impl_ptr_t _gcache = std::make_shared<cache_impl_t>();
-  return _gcache;
-}
-
-////////////////////////////////////////////
-
-FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
-  return [mtl](const RenderContextInstData& RCID, int ipass) {
-    auto context          = RCID._RCFD->GetTarget();
-    auto MTXI             = context->MTXI();
-    auto FXI              = context->FXI();
-    auto RSI              = context->RSI();
-    const auto& CPD       = RCID._RCFD->topCPD();
-    const auto& RCFDPROPS = RCID._RCFD->userProperties();
-    bool is_picking       = CPD.isPicking();
-    bool is_stereo        = CPD.isStereoOnePass();
-    auto pbrcommon        = RCID._RCFD->_pbrcommon;
-
-    float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
-
-    FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
-    FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
-    FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
-    FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
-    FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-    FXI->BindParamCTex(mtl->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
-    FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
-    FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-    FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
-    FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
-    FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
-
-    auto worldmatrix = RCID.worldMatrix();
-
-    auto stereocams = CPD._stereoCameraMatrices;
-    auto monocams   = CPD._cameraMatrices;
-
-    FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
-
-    if (stereocams) {
-      fmtx4 vrroot;
-      auto vrrootprop = RCID._RCFD->getUserProperty("vrroot"_crc);
-      if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
-        vrroot = as_mtx.value();
-      }
-
-      OrkAssert(mtl->_paramVPL);
-      OrkAssert(mtl->_paramVPR);
-
-      auto VL  = stereocams->VL();
-      auto VR  = stereocams->VR();
-      auto VPL = stereocams->VPL();
-      auto VPR = stereocams->VPR();
-      if (mtl->_paramVL) {
-        FXI->BindParamMatrix(mtl->_paramVL, VL);
-      }
-      if (mtl->_paramVR) {
-        FXI->BindParamMatrix(mtl->_paramVR, VR);
-      }
-      FXI->BindParamMatrix(mtl->_paramVPL, VPL);
-      FXI->BindParamMatrix(mtl->_paramVPR, VPR);
-      FXI->BindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
-      FXI->BindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
-
-      FXI->BindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
-      FXI->BindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
-
-    } else if (monocams) {
-      auto eye_pos = monocams->_vmatrix.inverse().translation();
-      FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
-      FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
-
-      auto VP = monocams->VPMONO();
-      // FXI->BindParamMatrix(mtl->_paramP, monocams->_pmatrix);
-      FXI->BindParamMatrix(mtl->_paramV, monocams->_vmatrix);
-      // FXI->BindParamMatrix(mtl->_paramIV, monocams->_ivmatrix);
-      FXI->BindParamMatrix(mtl->_paramVP, VP);
-      FXI->BindParamMatrix(mtl->_paramIVP, VP.inverse());
-    }
-  };
-}
-
-////////////////////////////////////////////
-
-void PBRMaterial::addBasicStateLambda(fxpipeline_ptr_t pipe) {
-  auto L = createBasicStateLambda(this);
-  pipe->addStateLambda(L);
-}
-void PBRMaterial::addBasicStateLambda() {
-  auto L = createBasicStateLambda(this);
-  _state_lambdas.push_back(L);
-}
-
-////////////////////////////////////////////
-
-fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& permu, const PBRMaterial* mtl) {
-
-  fxpipeline_ptr_t pipeline;
-
-  if (0 == strcmp(mtl->mMaterialName.c_str(), "Material.001")) {
-    // printf( "yo\n");
-  }
-
-  bool is_picking = permu._is_picking;
-  if (is_picking) {
-    // OrkBreak();
-  }
-
-  mtl->_vars->makeValueForKey<bool>("requirePBRparams") = true;
-
-  switch (mtl->_variant) {
-    case 0: { // STANDARD VARIANT
-      switch (permu._rendering_model) {
-        //////////////////////////////////////////
-        case "PICKING"_crcu: {
-          pipeline = mtl->_createFxPipelinePIK(permu);
-          break;
-        }
-        //////////////////////////////////////////
-        case "FORWARD_UNLIT"_crcu:
-        case 0: {
-          pipeline = mtl->_createFxPipelineUNL(permu);
-          break;
-        }
-        //////////////////////////////////////////
-        case "DEFERRED_PBR"_crcu: {
-          if (is_picking) {
-            OrkAssert(false);
-          }
-          pipeline = mtl->_createFxPipelineDEF(permu);
-          break;
-        }
-        //////////////////////////////////////////
-        case "FORWARD_PBR"_crcu: {
-          pipeline = mtl->_createFxPipelineFWD(permu);
-          break;
-        }
-        //////////////////////////////////////////
-        case "DEPTH_PREPASS"_crcu:
-          pipeline = mtl->_createFxPipelineDPP(permu);
-          break;
-        //////////////////////////////////////////
-        default:
-          OrkAssert(false);
-          break;
-          //////////////////////////////////////////
-      } // switch (cfg._rendering_model) {
-      break;
-    } // case 0: // STANDARD VARIANT
-    //////////////////////////////////////////
-    case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
-      auto basic_lambda  = createBasicStateLambda(mtl);
-      auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
-        auto _this     = (PBRMaterial*)mtl;
-        auto RCFD      = RCID._RCFD;
-        auto context   = RCFD->GetTarget();
-        auto FXI       = context->FXI();
-        auto MTXI      = context->MTXI();
-        auto RSI       = context->RSI();
-        auto pbrcommon = RCFD->_pbrcommon;
-        auto envtex    = pbrcommon->envSpecularTexture();
-
-        FXI->BindParamCTex(_this->_parMapSpecularEnv, envtex.get());
-
-        basic_lambda(RCID, ipass);
-        _this->_rasterstate.SetCullTest(ECullTest::OFF);
-        _this->_rasterstate.SetZWriteMask(false);
-        _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-        _this->_rasterstate.SetRGBAWriteMask(true, true);
-        RSI->BindRasterState(_this->_rasterstate);
-      };
-      //////////////////////////////////////////////////////////
-      OrkAssert(permu._instanced == false);
-      OrkAssert(permu._skinned == false);
-      //////////////////////////////////////////////////////////
-      if (permu._stereo and mtl->_tek_FWD_SKYBOX_ST) {
-        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
-        pipeline_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
-        pipeline_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
-        pipeline_stereo->addStateLambda(skybox_lambda);
-        pipeline_stereo->_material = (GfxMaterial*)mtl;
-        pipeline                   = pipeline_stereo;
-      } else if (mtl->_tek_FWD_SKYBOX_MO) {
-        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
-        pipeline_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-        pipeline_stereo->addStateLambda(skybox_lambda);
-        pipeline_stereo->_material = (GfxMaterial*)mtl;
-        pipeline                   = pipeline_stereo;
-      }
-      //////////////////////////////////////////////////////////
-      break;
-    }
-    //////////////////////////////////////////
-    case "normalviz"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    case "vertexcolor"_crcu: {
-      auto no_cull_stateblock = [mtl](const RenderContextInstData& RCID, int ipass) {
-        auto _this   = (PBRMaterial*)mtl;
-        auto RCFD    = RCID._RCFD;
-        auto context = RCFD->GetTarget();
-        auto FXI     = context->FXI();
-        auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
-        _this->_rasterstate.SetCullTest(ECullTest::OFF);
-        _this->_rasterstate.SetDepthTest(EDepthTest::OFF);
-        _this->_rasterstate.SetZWriteMask(true);
-        _this->_rasterstate.SetRGBAWriteMask(true, false);
-        RSI->BindRasterState(_this->_rasterstate);
-      };
-      switch (permu._rendering_model) {
-        case "FORWARD_PBR"_crcu: {
-          if (not permu._instanced and not permu._skinned and not permu._stereo) {
-            if (mtl->_tek_FWD_CV_EMI_RI_NI_MO) {
-              pipeline             = std::make_shared<FxPipeline>(permu);
-              pipeline->_technique = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
-              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(createBasicStateLambda(mtl));
-              pipeline->addStateLambda(no_cull_stateblock);
-              OrkAssert(pipeline->_technique != nullptr);
-            }
-          }
-          break;
-        }
-        case "DEFERRED_PBR"_crcu: {
-          if (not permu._instanced and not permu._skinned and not permu._stereo) {
-            if (mtl->_tek_GBU_CV_EMI_RI_NI_MO) {
-              pipeline             = std::make_shared<FxPipeline>(permu);
-              pipeline->_technique = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
-              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              pipeline->addStateLambda(createBasicStateLambda(mtl));
-              pipeline->addStateLambda(no_cull_stateblock);
-              OrkAssert(pipeline->_technique != nullptr);
-            }
-          }
-          break;
-        }
-        case "PICKING"_crcu: {
-          if (not permu._instanced and not permu._skinned and not permu._stereo) {
-            if (mtl->_tek_PIK_RI_NI) {
-              pipeline             = std::make_shared<FxPipeline>(permu);
-              pipeline->_technique = mtl->_tek_PIK_RI_NI;
-              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
-              OrkAssert(pipeline->_technique != nullptr);
-            }
-          }
-          break;
-        }
-        default:
-          break;
-      }
-      break;
-    }
-    //////////////////////////////////////////
-    case "font"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    case "font-instanced"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  if (pipeline and pipeline->_technique) {
-
-    pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
-
-    auto require_pbr = mtl->_vars->typedValueForKey<bool>("requirePBRparams");
-
-    if (require_pbr and require_pbr.value()) {
-      pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
-      pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
-      pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
-      pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
-
-      pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
-      pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
-    }
-
-    pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
-    pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
-    pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
-    pipeline->_material             = (GfxMaterial*)mtl;
-
-    for (auto l : mtl->_state_lambdas) {
-      pipeline->addStateLambda(l);
-    }
-    for (auto item : mtl->_bound_params) {
-      pipeline->bindParam(item.first, item.second);
-    }
-
-  } else {
-    std::string rmodelstr, variantstr;
-    switch (permu._rendering_model) {
-      case "DEFERRED_PBR"_crcu:
-        rmodelstr = "DEFERRED_PBR";
-        break;
-      case "FORWARD_PBR"_crcu:
-        rmodelstr = "FORWARD_PBR";
-        break;
-      case "FORWARD_UNLIT"_crcu:
-        rmodelstr = "FORWARD_UNLIT";
-        break;
-      case "PICKING"_crcu:
-        rmodelstr = "PICKING";
-        break;
-      case "DEPTH_PREPASS"_crcu:
-        rmodelstr = "DEPTH_PREPASS";
-        break;
-      default:
-        rmodelstr = "UNKNOWN";
-        break;
-    }
-    switch (mtl->_variant) {
-      case 0:
-        variantstr = "standard";
-        break;
-      case "skybox.forward"_crcu:
-        variantstr = "skybox.forward";
-        break;
-      case "normalviz"_crcu:
-        variantstr = "normalviz";
-        break;
-      case "vertexcolor"_crcu:
-        variantstr = "vertexcolor";
-        break;
-      case "font"_crcu:
-        variantstr = "font";
-        break;
-      case "font-instanced"_crcu:
-        variantstr = "font-instanced";
-        break;
-      default:
-        variantstr = "UNKNOWN";
-        break;
-    }
-    auto shfilename = mtl->_shader->GetName();
-    printf(
-        "No PIPELINE for mtl<%s> shfile<%s> variant<%08x:%s>\n",
-        mtl->mMaterialName.c_str(),
-        shfilename,
-        mtl->_variant,
-        variantstr.c_str());
-    printf("permu-renderingmodel<%08x:%s>\n", permu._rendering_model, rmodelstr.c_str());
-    printf("permu-instanced<%d> skinned<%d> stereo<%d>\n", int(permu._instanced), int(permu._skinned), int(permu._stereo));
-    OrkAssert(false);
-  }
-
-  return pipeline;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-
-fxpipelinecache_constptr_t PBRMaterial::_doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { // final
-  return _getpbrcache()->getCache(this);
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
-  static PbrMatrixBlockApplicator* _gapplicator = new PbrMatrixBlockApplicator;
-  return _gapplicator;
-}
 
 void PBRMaterial::describeX(class_t* c) {
 
@@ -562,7 +184,77 @@ void PBRMaterial::describeX(class_t* c) {
   c->annotate("xgm.reader", reader);
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+PBRMaterial::PBRMaterial(Context* targ)
+    : PBRMaterial() {
+  gpuInit(targ);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PBRMaterial::PBRMaterial()
+    : _baseColor(1, 1, 1) {
+  _vars = std::make_shared<varmap::VarMap>();
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+  miNumPasses = 1;
+  _shaderpath = "orkshader://pbr";
+  // printf( "new PBRMaterial<%p>\n", this );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PBRMaterial::~PBRMaterial() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+pbrmaterial_ptr_t PBRMaterial::clone() const {
+  auto copy = std::make_shared<PBRMaterial>();
+  *copy     = *this;
+
+  /*copy->_asset_shader = _asset_shader;
+  copy->_asset_texcolor = _asset_texcolor;
+  copy->_asset_texnormal = _asset_texnormal;
+  copy->_asset_mtlruf = _asset_mtlruf;
+  copy->_asset_emissive = _asset_emissive;
+
+  copy->_texColor = _texColor;
+  copy->_texNormal = _texNormal;
+  copy->_texMtlRuf = _texMtlRuf;
+  copy->_texEmissive = _texEmissive;
+  copy->_textureBaseName = _textureBaseName;
+
+  copy->_colorMapName = _colorMapName;
+  copy->_normalMapName = _normalMapName;
+  copy->_mtlRufMapName = _mtlRufMapName;
+  copy->_amboccMapName = _amboccMapName;
+  copy->_emissiveMapName = _emissiveMapName;
+  copy->_shaderpath = _shaderpath;
+
+  copy->_metallicFactor = _metallicFactor;
+  copy->_roughnessFactor = _roughnessFactor;
+  copy->_baseColor = _baseColor;
+  copy->_textureBaseName = _textureBaseName;
+
+  copy->_variant = _variant;
+  copy->mMaterialName = mMaterialName;
+  copy->_varmap = _varmap;
+
+  // TODO - flyweight clones
+
+  if(_initialTarget){
+    //copy->gpuInit(_initialTarget);
+  }*/
+  return copy;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
@@ -776,7 +468,7 @@ void PBRMaterial::forceEmissive() {
   OrkAssert(_texNormal != nullptr);
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID) {
   auto fxi     = context->FXI();
@@ -792,21 +484,21 @@ int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID)
   return numpasses;
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::EndBlock(Context* context) {
   auto fxi = context->FXI();
   fxi->EndBlock();
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::gpuUpdate(Context* context) {
   GfxMaterial::gpuUpdate(context);
   // auto fxi    = context->FXI();
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   auto fxi = targ->FXI();
@@ -816,6 +508,8 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   fxi->CommitParams();
   return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::UpdateMVPMatrix(Context* context) {
   auto fxi                           = context->FXI();
@@ -834,6 +528,8 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void PBRMaterial::UpdateMMatrix(Context* context) {
   auto fxi          = context->FXI();
   auto mtxi         = context->MTXI();
@@ -841,7 +537,7 @@ void PBRMaterial::UpdateMMatrix(Context* context) {
   fxi->BindParamMatrix(_paramM, world);
 }
 
-////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::EndPass(Context* targ) {
   targ->FXI()->EndPass();
@@ -934,71 +630,6 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 }
 
-PBRMaterial::PBRMaterial(Context* targ)
-    : PBRMaterial() {
-  gpuInit(targ);
-}
-
-PBRMaterial::PBRMaterial()
-    : _baseColor(1, 1, 1) {
-  _vars = std::make_shared<varmap::VarMap>();
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-  miNumPasses = 1;
-  _shaderpath = "orkshader://pbr";
-  // printf( "new PBRMaterial<%p>\n", this );
-}
-
-////////////////////////////////////////////
-
-PBRMaterial::~PBRMaterial() {
-}
-
-////////////////////////////////////////////
-
-pbrmaterial_ptr_t PBRMaterial::clone() const {
-  auto copy = std::make_shared<PBRMaterial>();
-  *copy     = *this;
-
-  /*copy->_asset_shader = _asset_shader;
-  copy->_asset_texcolor = _asset_texcolor;
-  copy->_asset_texnormal = _asset_texnormal;
-  copy->_asset_mtlruf = _asset_mtlruf;
-  copy->_asset_emissive = _asset_emissive;
-
-  copy->_texColor = _texColor;
-  copy->_texNormal = _texNormal;
-  copy->_texMtlRuf = _texMtlRuf;
-  copy->_texEmissive = _texEmissive;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_colorMapName = _colorMapName;
-  copy->_normalMapName = _normalMapName;
-  copy->_mtlRufMapName = _mtlRufMapName;
-  copy->_amboccMapName = _amboccMapName;
-  copy->_emissiveMapName = _emissiveMapName;
-  copy->_shaderpath = _shaderpath;
-
-  copy->_metallicFactor = _metallicFactor;
-  copy->_roughnessFactor = _roughnessFactor;
-  copy->_baseColor = _baseColor;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_variant = _variant;
-  copy->mMaterialName = mMaterialName;
-  copy->_varmap = _varmap;
-
-  // TODO - flyweight clones
-
-  if(_initialTarget){
-    //copy->gpuInit(_initialTarget);
-  }*/
-  return copy;
-}
 
 ////////////////////////////////////////////
 

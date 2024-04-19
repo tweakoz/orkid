@@ -55,6 +55,8 @@ class PBRMaterial final : public GfxMaterial {
   fxpipeline_ptr_t _createFxPipelineDPP(const FxPipelinePermutation& permu) const;
   fxpipeline_ptr_t _createFxPipelinePIK(const FxPipelinePermutation& permu) const;
   fxpipeline_ptr_t _createFxPipelineUNL(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineSKY(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineVTX(const FxPipelinePermutation& permu) const;
 
 public:
   PBRMaterial(Context* targ);
