@@ -126,6 +126,22 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> fvec3 { return drw->_modcolor; },
               [](griddrawabledataptr_t drw, fvec3 val) { drw->_modcolor = val; })
           .def_property(
+              "intensityA",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityA; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityA = val; })
+          .def_property(
+              "intensityB",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityB; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityB = val; })
+          .def_property(
+              "lineWidth",
+              [](griddrawabledataptr_t drw) -> float { return drw->_lineWidth; },
+              [](griddrawabledataptr_t drw, float val) { drw->_lineWidth = val; })
+          .def_property(
+              "modcolor",
+              [](griddrawabledataptr_t drw) -> fvec3 { return drw->_modcolor; },
+              [](griddrawabledataptr_t drw, fvec3 val) { drw->_modcolor = val; })
+          .def_property(
               "extent",
               [](griddrawabledataptr_t drw) -> float { return drw->_extent; },
               [](griddrawabledataptr_t drw, float val) { drw->_extent = val; })

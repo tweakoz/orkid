@@ -223,7 +223,7 @@ vec4 grid_output4(vec3 pos) {
     vec2 dpdxMinor = dFdx(paramMinor);
     vec2 dpdyMinor = dFdy(paramMinor);
 
-    float width = 0.05;
+    float width = AuxA.z;
     float gMajor = filteredGrid(paramMajor, dpdxMajor, dpdyMajor, width);
     float gMinor = filteredGrid(paramMinor, dpdxMinor, dpdyMinor, width);
 
@@ -240,8 +240,9 @@ vec4 grid_output4(vec3 pos) {
     } else if (pos.z > 0.0 && on_xaxis) {
         basecolor = vec3(0.0, 0.0, 1.0); // Blue for +z axis
     } else {
-      basecolor *= gMajor;
-      basecolor *= gMinor;
+
+      float XXX = (gMajor,gMinor);
+      basecolor = mix(basecolor*AuxA.x,basecolor*AuxA.y,XXX);
 
       // now do a checkerboard pattern on the major size 
 

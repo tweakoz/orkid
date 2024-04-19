@@ -97,6 +97,7 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie7;
 
   vec4 ModColor;
+  vec4 AuxA;
   uint obj_pickID;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;

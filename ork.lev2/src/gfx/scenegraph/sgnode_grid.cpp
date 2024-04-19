@@ -46,6 +46,10 @@ struct GridRenderImpl {
 
     _fxcache = _pbrmaterial->pipelineCache();
 
+    auto as_fstyle = _pbrmaterial->_as_freestyle;
+    _paramAuxA = as_fstyle->param("AuxA");
+
+
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -109,7 +113,10 @@ struct GridRenderImpl {
 
     auto pipeline = _fxcache->findPipeline(RCID);
     OrkAssert(pipeline);
+
+    
     pipeline->wrappedDrawCall(RCID, [&]() {
+      pipeline->_set_typed_param(RCID,_paramAuxA,fvec4(_griddata->_intensityA,_griddata->_intensityB,_griddata->_lineWidth,0));
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
     });
 
@@ -126,6 +133,7 @@ struct GridRenderImpl {
   texture_ptr_t _colortexture;
   texture_ptr_t _normaltexture;
   fxpipelinecache_constptr_t _fxcache;
+  fxparam_constptr_t _paramAuxA;
   bool _initted = false;
 
 };

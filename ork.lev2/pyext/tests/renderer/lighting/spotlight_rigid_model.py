@@ -32,7 +32,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=16)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
@@ -100,7 +100,10 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(0.4)
+    self.grid_data.modcolor = vec3(1)
+    self.grid_data.intensityA = 0.5
+    self.grid_data.intensityB = 0.53
+    self.grid_data.lineWidth = 0.2
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
