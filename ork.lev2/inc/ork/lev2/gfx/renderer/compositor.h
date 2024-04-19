@@ -202,6 +202,7 @@ struct CompositorDrawData {
   rcfd_ptr_t RCFD() const;
   //const RenderContextFrameData& RCFD() const;
   ViewData computeViewData() const;
+  const svar16_t& property(uint64_t key) const;
   compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
   rcfd_ptr_t _RCFD;

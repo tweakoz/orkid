@@ -1,0 +1,8 @@
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: No
+
+Index:
+  External:
+    File: ~/.clangd-index.idx

@@ -153,12 +153,19 @@ struct Light : public Drawable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class LightProbeType {
+  REFLECTION,
+  SH_IRRADIANCE,
+  END
+};
+
 struct LightProbe {
 
   LightProbe();
   ~LightProbe();
   void resize(int dim);
 
+  LightProbeType _type = LightProbeType::REFLECTION;
   int _dim = 0;
   bool _dirty = true;
   uint64_t _version = 0;

@@ -120,6 +120,8 @@ struct CommonStuff : public ork::Object {
   fvec3 _ambientLevel;
   fvec4 _clearColor;
 
+  bool _useDepthPrepass = true;
+
 };
 
 
