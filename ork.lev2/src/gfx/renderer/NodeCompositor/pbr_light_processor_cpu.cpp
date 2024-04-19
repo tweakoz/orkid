@@ -60,9 +60,7 @@ void CpuLightProcessor::_clearFrameLighting() {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CpuLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
-  auto context                 = RCFD.GetTarget();
+  auto context                 = drawdata.context();
   _gpuInit(context);
   _clearFrameLighting();
   _depthClusterBase = _deferredContext.captureDepthClusters(drawdata, VD);
@@ -76,9 +74,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     enumeratedlights_constptr_t enumlights) {
   bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  const auto& RCFD             = framerenderer.framedata();
-  auto gfxctx                  = RCFD.GetTarget();
+  auto gfxctx                 = drawdata.context();
   auto FXI                     = gfxctx->FXI();
   auto RSI                     = gfxctx->RSI();
   auto this_buf                = gfxctx->FBI()->GetThisBuffer();

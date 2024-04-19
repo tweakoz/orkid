@@ -84,8 +84,8 @@ struct ForwardPbrNodeImpl {
     /////////////////////////////////////////////////////////////////////////////////////////
     RtGroupRenderTarget rt(rtg_main.get());
 
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto framerenderer           = drawdata._frameRenderer;
+    RenderContextFrameData& RCFD = framerenderer->framedata();
 
     auto pbrcommon = _node->_pbrcommon;
     auto& ddprops  = drawdata._properties;
@@ -235,7 +235,7 @@ struct ForwardPbrNodeImpl {
     context->debugPushGroup("ForwardPBR::color pass");
     // irenderer->_debugLog = true;
     irenderer->drawEnqueuedRenderables();
-    framerenderer.renderMisc();
+    framerenderer->renderMisc();
     context->debugPopGroup();
     irenderer->resetQueue();
     FBI->PopRtGroup();
@@ -249,11 +249,9 @@ struct ForwardPbrNodeImpl {
   void _render(ForwardNode* node, CompositorDrawData& drawdata) {
     EASY_BLOCK("pbr-_render");
 
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
-
-    auto context      = RCFD.GetTarget();
+    auto context      = drawdata.context();
     auto CIMPL        = drawdata._cimpl;
+    auto& RCFD        = drawdata.RCFD();
 
     /////////////////////////////////////////////////
     // enumerate lights / PBR

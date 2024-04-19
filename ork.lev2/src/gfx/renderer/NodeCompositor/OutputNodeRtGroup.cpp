@@ -71,11 +71,8 @@ struct RTGIMPL {
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
     const auto& CCTX = CIMPL->compositingContext();
-    auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
     int w                        = CCTX.miWidth;
     int h                        = CCTX.miHeight;
@@ -91,8 +88,6 @@ struct RTGIMPL {
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
     auto CIMPL                   = drawdata._cimpl;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -141,9 +136,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* context                  = framedata.GetTarget();
+  Context* context                  = drawdata.context();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
   auto output_rtg = impl->_outputRTG.get();
@@ -158,6 +151,8 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
     if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
       auto src_buffer = try_final.value();
       if (src_buffer) {
+        auto framerenderer = drawdata._frameRenderer;
+        RenderContextFrameData& framedata = framerenderer->framedata();
 
         fbi->PushRtGroup(output_rtg);
 

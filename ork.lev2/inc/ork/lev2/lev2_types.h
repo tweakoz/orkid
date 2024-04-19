@@ -305,7 +305,7 @@ using defaultrenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using rendervar_t = varmap::var_t;
 using rendervar_usermap_t = orklut<CrcString, rendervar_t>;
 using rendervar_strmap_t   = orklut<std::string, rendervar_t>;
-
+using framerenderer_ptr_t     = std::shared_ptr<FrameRenderer>;
 ///////////////////////////////////////////////////////////////////////////////
 // Compositor
 ///////////////////////////////////////////////////////////////////////////////

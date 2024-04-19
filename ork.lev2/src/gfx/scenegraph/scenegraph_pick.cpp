@@ -135,7 +135,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     CPD._ispicking     = true;
     CPD._irendertarget = &rt;
     ///////////////////////////////////////////////////////////////////////////
-    lev2::FrameRenderer framerenderer(RCFD, [&]() {});
+    auto framerenderer = std::make_shared<FrameRenderer>(RCFD, [&]() {});
     lev2::CompositorDrawData drawdata(framerenderer);
     drawdata._cimpl = _compimpl;
     drawdata._properties["StereoEnable"_crcu].set<bool>(false);

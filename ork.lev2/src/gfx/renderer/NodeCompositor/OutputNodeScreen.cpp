@@ -63,8 +63,8 @@ struct SCRIMPL {
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto framerenderer = drawdata._frameRenderer;
+    RenderContextFrameData& RCFD = framerenderer->framedata();
     auto CIMPL                   = drawdata._cimpl;
     const auto& CCTX = CIMPL->compositingContext();
     auto DB                      = RCFD.GetDB();
@@ -110,8 +110,6 @@ struct SCRIMPL {
   }
   void endAssemble(CompositorDrawData& drawdata) {
     auto CIMPL                   = drawdata._cimpl;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -159,9 +157,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* context                  = framedata.GetTarget();
+  Context* context                  = drawdata.context();
   auto fbi                          = context->FBI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
@@ -169,6 +165,10 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
       assert(buffer != nullptr);
       auto tex = buffer->texture();
       if (tex) {
+
+
+        auto framerenderer      = drawdata._frameRenderer;
+        RenderContextFrameData& framedata = framerenderer->framedata();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////

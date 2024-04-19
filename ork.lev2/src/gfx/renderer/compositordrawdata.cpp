@@ -27,10 +27,10 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextFrameData& CompositorDrawData::RCFD() {
-  return mFrameRenderer.framedata();
+  return _frameRenderer->framedata();
 }
 const RenderContextFrameData& CompositorDrawData::RCFD() const {
-  return mFrameRenderer.framedata();
+  return _frameRenderer->framedata();
 }
 Context* CompositorDrawData::context() const {
   return RCFD().GetTarget();

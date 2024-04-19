@@ -58,10 +58,10 @@ lev2::texture_ptr_t DeferredContext::brdfIntegrationTexture() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-auxparambinding_ptr_t DeferredContext::createAuxParamBinding(std::string paramname){
+auxparambinding_ptr_t DeferredContext::createAuxParamBinding(std::string paramname) {
   auto it = _auxbindings.find(paramname);
-  OrkAssert(it==_auxbindings.end());
-  auto mapping = std::make_shared<AuxParamBinding>();
+  OrkAssert(it == _auxbindings.end());
+  auto mapping            = std::make_shared<AuxParamBinding>();
   _auxbindings[paramname] = mapping;
   return mapping;
 }
@@ -80,7 +80,7 @@ void DeferredContext::gpuInit(Context* target) {
   if (nullptr == _rtgs_gbuffer) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
-    printf( "LOADING DeferredContext SHADER<%s>\n", _shadername.c_str() );
+    printf("LOADING DeferredContext SHADER<%s>\n", _shadername.c_str());
     _lightingmtl = std::make_shared<FreestyleMaterial>();
     _lightingmtl->gpuInit(target, _shadername);
     _tekBaseLighting       = _lightingmtl->technique("baselight");
@@ -114,12 +114,12 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     _lightblock = _lightingmtl->paramBlock("ub_light");
     //////////////////////////////////////////////////////////////
-    _parMatIVPArray = _lightingmtl->param("IVPArray");
-    _parMatVArray   = _lightingmtl->param("VArray");
-    _parMatPArray   = _lightingmtl->param("PArray");
-    _parMapGBuf     = _lightingmtl->param("MapGBuffer");
-    _parMapDepth       = _lightingmtl->param("MapDepth");
-    _parMapShadowDepth = _lightingmtl->param("MapShadowDepth");
+    _parMatIVPArray         = _lightingmtl->param("IVPArray");
+    _parMatVArray           = _lightingmtl->param("VArray");
+    _parMatPArray           = _lightingmtl->param("PArray");
+    _parMapGBuf             = _lightingmtl->param("MapGBuffer");
+    _parMapDepth            = _lightingmtl->param("MapDepth");
+    _parMapShadowDepth      = _lightingmtl->param("MapShadowDepth");
     _parMapDepthCluster     = _lightingmtl->param("MapDepthCluster");
     _parLightCookieTexture  = _lightingmtl->param("MapLightingCookie");
     _parMapSpecularEnv      = _lightingmtl->param("MapSpecularEnv");
@@ -143,39 +143,38 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogPower       = _lightingmtl->param("DepthFogPower");
     _parShadowParams        = _lightingmtl->param("ShadowParams");
     //////////////////////////////////////////////////////////////
-    _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, "rtgs-gbuffer", true);
+    _rtgs_gbuffer = std::make_shared<RtgSet>(target, MsaaSamples::MSAA_1X, "rtgs-gbuffer", true);
     _rtgs_gbuffer->addBuffer("DeferredGbuffer", EBufferFormat::RGBA32UI);
     _rtgs_gbuffer->_autoclear = false;
     //////////////////////////////////////////////////////////////
-    _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, "rtgs-laccum", true);
+    _rtgs_laccum = std::make_shared<RtgSet>(target, MsaaSamples::MSAA_1X, "rtgs-laccum", true);
     _rtgs_laccum->addBuffer("DeferredLightAccum", _lightAccumFormat);
-    if(_auxBufferFormat!=EBufferFormat::NONE)
+    if (_auxBufferFormat != EBufferFormat::NONE)
       _rtgs_laccum->addBuffer("Auxiliary", _auxBufferFormat);
     _rtgs_laccum->_autoclear = false;
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
     auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
-    _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
-    _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
+    _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
+    _voltexA           = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
     //////////////////////////////////////////////////////////////
     // new pipeline stuff.
     //////////////////////////////////////////////////////////////
     auto fxcache = _lightingmtl->pipelineCache();
     FxPipelinePermutation permu;
     permu._forced_technique = false //_enableSDF
-                            ? _tekEnvironmentLightingSDF
-                            : _tekEnvironmentLighting;
+                                  ? _tekEnvironmentLightingSDF
+                                  : _tekEnvironmentLighting;
 
     _pipeline_envlighting_model0_mono = fxcache->findPipeline(permu);
 
-    printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );
-
+    printf("SHADER<%s> Load Complete\n", _shadername.c_str());
   }
   target->debugPopGroup();
-  auto ev = std::make_shared<GpuEvent>();
+  auto ev      = std::make_shared<GpuEvent>();
   ev->_eventID = "ork::lev2::pbr::deferrednode::DeferredContext::gpuInit";
   target->enqueueGpuEvent(ev);
-  if(_onGpuInitialized){
+  if (_onGpuInitialized) {
     _onGpuInitialized();
   }
 }
@@ -185,8 +184,8 @@ void DeferredContext::gpuInit(Context* target) {
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
   EASY_BLOCK("renderGbuffer");
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto RSI                     = targ->RSI();
@@ -200,8 +199,8 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   FBI->SetAutoClear(false); // explicit clear
   targ->beginFrame();
   ///////////////////////////////////////////////////////////////////////////
-  const auto TOPCPD  = CIMPL->topCPD();
-  auto CPD           = TOPCPD;
+  const auto TOPCPD = CIMPL->topCPD();
+  auto CPD          = TOPCPD;
   CPD.assignLayers(_layername);
   CPD._irendertarget = _rtgGbuffer->_rendertarget.get();
   CPD.SetDstRect(tgt_rect);
@@ -224,10 +223,10 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
     _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
     FBI->rtGroupClear(_rtgGbuffer.get());
-    auto newmask = RGBAMask{true,true,true,false};
+    auto newmask = RGBAMask{true, true, true, false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
-    framerenderer.renderMisc();
+    framerenderer->renderMisc();
     RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
@@ -307,7 +306,7 @@ void DeferredContext::renderUpdate(RenderCompositingNode* node, CompositorDrawDa
   int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
   int newheight = ddprops["OutputHeight"_crcu].get<int>();
   if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
-    printf( "RESIZEDEFCTX\n");
+    printf("RESIZEDEFCTX\n");
     _width    = newwidth;
     _height   = newheight;
     _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
@@ -376,8 +375,8 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   printf("WTF2\n");
 
   /////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto CIMPL                   = drawdata._cimpl;
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
@@ -428,11 +427,15 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::beginPointLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
+void DeferredContext::beginPointLighting(
+    RenderCompositingNode* node,
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -467,9 +470,9 @@ void DeferredContext::beginPointLighting(RenderCompositingNode* node, Compositor
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewData& VD) {
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   _lightingmtl->end(RCFD);
@@ -480,11 +483,15 @@ void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewD
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
+void DeferredContext::beginSpotLighting(
+    RenderCompositingNode* node,
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -520,8 +527,8 @@ void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorD
 
 void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   _lightingmtl->end(RCFD);
@@ -532,12 +539,15 @@ void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewDa
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
-
+void DeferredContext::beginShadowedSpotLighting(
+    RenderCompositingNode* node,
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -570,8 +580,8 @@ void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, Com
 
 void DeferredContext::endShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   _lightingmtl->end(RCFD);
@@ -581,11 +591,15 @@ void DeferredContext::endShadowedSpotLighting(CompositorDrawData& drawdata, cons
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::beginSpotDecaling(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
+void DeferredContext::beginSpotDecaling(
+    RenderCompositingNode* node,
+    CompositorDrawData& drawdata,
+    const ViewData& VD,
+    lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  auto framerenderer           = drawdata._frameRenderer;
+  RenderContextFrameData& RCFD = framerenderer->framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -626,4 +640,4 @@ void DeferredContext::endSpotDecaling(CompositorDrawData& drawdata, const ViewDa
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::deferrednode
+} // namespace ork::lev2::pbr::deferrednode

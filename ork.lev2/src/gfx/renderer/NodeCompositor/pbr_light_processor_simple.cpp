@@ -52,8 +52,6 @@ void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
   auto context                 = drawdata.context();
   _gpuInit(context);
 

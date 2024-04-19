@@ -201,8 +201,8 @@ struct ViewData {
 
 struct CompositorDrawData {
 
-  CompositorDrawData(lev2::FrameRenderer& renderer)
-      : mFrameRenderer(renderer) {
+  CompositorDrawData(framerenderer_ptr_t renderer)
+      : _frameRenderer(renderer) {
   }
 
   Context* context() const;
@@ -211,7 +211,7 @@ struct CompositorDrawData {
   ViewData computeViewData() const;
   compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
-  lev2::FrameRenderer& mFrameRenderer;
+  framerenderer_ptr_t _frameRenderer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

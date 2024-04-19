@@ -106,8 +106,8 @@ void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virt
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
-  auto& the_renderer = drawdata.mFrameRenderer;
-  auto& framedata    = the_renderer.framedata();
+    auto the_renderer = drawdata._frameRenderer;
+  auto& framedata    = the_renderer->framedata();
   auto target        = framedata.GetTarget();
   auto fbi           = target->FBI();
   auto gbi           = target->GBI();
