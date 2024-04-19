@@ -36,7 +36,7 @@ struct SCRIMPL {
       : _node(node)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
-      _CPD._debugName = "ScreenOutputCompositingNode";
+    _CPD._debugName = "ScreenOutputCompositingNode";
   }
   ///////////////////////////////////////
   ~SCRIMPL() {
@@ -46,54 +46,53 @@ struct SCRIMPL {
     if (_needsinit) {
       _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
       _blit2screenmtl._rasterstate.SetCullTest(ECullTest::OFF);
-      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
-      _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
-      _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");
-      _fxtechnique4x4 = _blit2screenmtl.technique("downsample_4x4");
-      _fxtechnique5x5 = _blit2screenmtl.technique("downsample_5x5");
-      _fxtechnique6x6 = _blit2screenmtl.technique("downsample_6x6");
-      _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
-      _needsinit      = false;
+      _fxtechnique1x1       = _blit2screenmtl.technique("texcolor");
+      _fxtechnique2x2       = _blit2screenmtl.technique("downsample_2x2");
+      _fxtechnique3x3       = _blit2screenmtl.technique("downsample_3x3");
+      _fxtechnique4x4       = _blit2screenmtl.technique("downsample_4x4");
+      _fxtechnique5x5       = _blit2screenmtl.technique("downsample_5x5");
+      _fxtechnique6x6       = _blit2screenmtl.technique("downsample_6x6");
+      _fxpMVP               = _blit2screenmtl.param("MatMVP");
+      _fxpColorMap          = _blit2screenmtl.param("ColorMap");
+      _needsinit            = false;
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
-      auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(_node->_format);
-      dsbuf->_debugName = "MsaaDownsampleBuffer";
+      auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_node->_format);
+      dsbuf->_debugName     = "MsaaDownsampleBuffer";
     }
   }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    auto framerenderer = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
-    const auto& CCTX = CIMPL->compositingContext();
+    const auto& CCTX             = CIMPL->compositingContext();
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
     int w                        = CCTX.miWidth;
     int h                        = CCTX.miHeight;
     if (targ->hiDPI()) {
-      //w /= 2;
-      //h /= 2;
+      // w /= 2;
+      // h /= 2;
     }
     int multiplier = 1;
-    switch(_node->supersample()){
+    switch (_node->supersample()) {
       case 0:
-        multiplier=1;
+        multiplier = 1;
         break;
       case 1:
-        multiplier=2;
+        multiplier = 2;
         break;
       case 2:
-        multiplier=3;
+        multiplier = 3;
         break;
       case 3:
-        multiplier=4;
+        multiplier = 4;
         break;
       case 4:
-        multiplier=5;
+        multiplier = 5;
         break;
       case 5:
-        multiplier=6;
+        multiplier = 6;
         break;
       default:
         OrkAssert(false);
@@ -109,7 +108,7 @@ struct SCRIMPL {
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
-    auto CIMPL                   = drawdata._cimpl;
+    auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -134,12 +133,12 @@ struct SCRIMPL {
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
     : _supersample(0) {
   _format = EBufferFormat::RGBA8;
-  _impl = std::make_shared<SCRIMPL>(this);
+  _impl   = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
 void ScreenOutputCompositingNode::setSuperSample(int ss) {
-  printf( "setss<%d>\n", ss );
+  printf("setss<%d>\n", ss);
   _supersample = ss;
 }
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
@@ -157,8 +156,8 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  Context* context                  = drawdata.context();
-  auto fbi                          = context->FBI();
+  Context* context = drawdata.context();
+  auto fbi         = context->FBI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
@@ -166,16 +165,14 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
       auto tex = buffer->texture();
       if (tex) {
 
-
-        auto framerenderer      = drawdata._frameRenderer;
-        RenderContextFrameData& framedata = framerenderer->framedata();
+        RenderContextFrameData& framedata = drawdata.RCFD();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
 
         int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
 
-        if(num_msaa_samples==1){
+        if (num_msaa_samples == 1) {
           drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
@@ -220,10 +217,9 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           mtl.end(framedata);
           drawdata.context()->debugPopGroup();
           drawdata.context()->debugPopGroup();
-        }
-        else{
+        } else {
           auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
-          context->FBI()->msaaBlit(inp_rtg,impl->_msaadownsamplebuffer);
+          context->FBI()->msaaBlit(inp_rtg, impl->_msaadownsamplebuffer);
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
           mtl.begin(impl->_fxtechnique1x1, framedata);
@@ -239,7 +235,6 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           fbi->popScissor();
           mtl.end(framedata);
         }
-
       }
     }
   }

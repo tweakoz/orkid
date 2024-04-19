@@ -13,10 +13,10 @@ namespace ork::lev2 {
 
 struct FrameRenderer {
   /////////////////////////////////////////////
-  FrameRenderer(RenderContextFrameData& RCFD);
-  RenderContextFrameData& framedata() { return _framedata; }
+  //FrameRenderer(RenderContextFrameData& RCFD);
+  //RenderContextFrameData& framedata() { return _framedata; }
   /////////////////////////////////////////////
-  RenderContextFrameData& _framedata;
+  //RenderContextFrameData& _framedata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

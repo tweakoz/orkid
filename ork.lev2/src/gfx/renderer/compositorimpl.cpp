@@ -110,8 +110,7 @@ void CompositingImpl::gpuInit(lev2::Context* ctx){
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   EASY_BLOCK("assemble-ci");
   auto& ddprops                      = drawdata._properties;
-    auto framerenderer           = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
   lev2::Context* target              = RCFD.GetTarget();
 
   float aspectratio = float(_compcontext->miWidth)/float(_compcontext->miHeight);

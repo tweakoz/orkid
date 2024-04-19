@@ -26,11 +26,14 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+CompositorDrawData::CompositorDrawData(rcfd_ptr_t rcfd){  
+  _RCFD = rcfd ? rcfd : std::make_shared<RenderContextFrameData>(nullptr);
+}
 RenderContextFrameData& CompositorDrawData::RCFD() {
-  return _frameRenderer->framedata();
+  return *_RCFD;
 }
 const RenderContextFrameData& CompositorDrawData::RCFD() const {
-  return _frameRenderer->framedata();
+  return *_RCFD;
 }
 Context* CompositorDrawData::context() const {
   return RCFD().GetTarget();

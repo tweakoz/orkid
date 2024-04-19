@@ -184,8 +184,7 @@ void DeferredContext::gpuInit(Context* target) {
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
   EASY_BLOCK("renderGbuffer");
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto RSI                     = targ->RSI();
@@ -241,8 +240,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
 const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD) {
   /*
   auto CIMPL                   = drawdata._cimpl;
-  FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-  RenderContextFrameData& RCFD = framerenderer.framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto this_buf                = FBI->GetThisBuffer();
@@ -374,8 +372,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   printf("WTF2\n");
 
   /////////////////////////////////////////////////////////////////
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto CIMPL                   = drawdata._cimpl;
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
@@ -433,8 +430,7 @@ void DeferredContext::beginPointLighting(
     lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -469,8 +465,7 @@ void DeferredContext::beginPointLighting(
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewData& VD) {
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto CIMPL                   = drawdata._cimpl;
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
@@ -489,8 +484,7 @@ void DeferredContext::beginSpotLighting(
     lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -526,8 +520,7 @@ void DeferredContext::beginSpotLighting(
 
 void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   _lightingmtl->end(RCFD);
@@ -545,8 +538,7 @@ void DeferredContext::beginShadowedSpotLighting(
     lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
@@ -579,8 +571,7 @@ void DeferredContext::beginShadowedSpotLighting(
 
 void DeferredContext::endShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   _lightingmtl->end(RCFD);
@@ -597,8 +588,7 @@ void DeferredContext::beginSpotDecaling(
     lev2::Texture* cookietexture) {
 
   auto CIMPL                   = drawdata._cimpl;
-  auto framerenderer           = drawdata._frameRenderer;
-  RenderContextFrameData& RCFD = framerenderer->framedata();
+  RenderContextFrameData& RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();

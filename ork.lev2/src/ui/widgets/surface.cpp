@@ -287,16 +287,12 @@ void Surface::Clear() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::BeginSurface(lev2::FrameRenderer& frenderer) {
-  lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                    = FrameData.GetTarget();
+void Surface::BeginSurface(lev2::Context* pTARG) {
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::EndSurface(lev2::FrameRenderer& frenderer) {
-  lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                    = FrameData.GetTarget();
+void Surface::EndSurface(lev2::Context* pTARG) {
 }
 
 /////////////////////////////////////////////////////////////////////////

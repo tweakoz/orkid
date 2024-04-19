@@ -100,8 +100,7 @@ struct VRIMPL {
   void beginAssemble(CompositorDrawData& drawdata) {
     EASY_BLOCK("onodevr-begass");
     auto& ddprops                = drawdata._properties;
-        auto framerenderer      = drawdata._frameRenderer;
-        RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
@@ -183,7 +182,7 @@ struct VRIMPL {
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
     EASY_BLOCK("onodevr-endass");
-    auto CIMPL                   = drawdata._cimpl;
+    auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -229,8 +228,8 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  Context* context                  = drawdata.context();
-  auto fbi                          = context->FBI();
+  Context* context = drawdata.context();
+  auto fbi         = context->FBI();
 
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
@@ -238,8 +237,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       assert(buffer != nullptr);
       auto tex = buffer->texture();
       if (tex) {
-        auto framerenderer      = drawdata._frameRenderer;
-        RenderContextFrameData& framedata = framerenderer->framedata();
+        RenderContextFrameData& framedata = drawdata.RCFD();
 
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...

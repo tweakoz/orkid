@@ -189,8 +189,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
   if (1) {
     // printf( "SceneGraph::_renderIMPL\n");
     context->beginFrame();
-    auto framerenderer = std::make_shared<FrameRenderer>(*RCFD);
-    CompositorDrawData drawdata(framerenderer);
+    CompositorDrawData drawdata(RCFD);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
@@ -338,8 +337,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
-    auto framerenderer = std::make_shared<FrameRenderer>(*rcfd);
-    CompositorDrawData drawdata(framerenderer);
+    CompositorDrawData drawdata(rcfd);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());

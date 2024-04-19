@@ -30,8 +30,8 @@ public:
     return mfClearDepth;
   }
 
-  void BeginSurface(lev2::FrameRenderer& frenderer);
-  void EndSurface(lev2::FrameRenderer& frenderer);
+  void BeginSurface(lev2::Context* ptarg);
+  void EndSurface(lev2::Context* ptarg);
 
   void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
 

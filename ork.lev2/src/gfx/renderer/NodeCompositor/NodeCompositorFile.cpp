@@ -94,8 +94,7 @@ struct IMPL {
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    auto framerenderer = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
@@ -116,9 +115,7 @@ struct IMPL {
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
-    auto CIMPL                   = drawdata._cimpl;
-    auto framerenderer = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -165,10 +162,9 @@ void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-    auto framerenderer = drawdata._frameRenderer;
-  RenderContextFrameData& framedata = framerenderer->framedata();
-  Context* context                  = framedata.GetTarget();
-  auto fbi                          = context->FBI();
+  auto& framedata  = drawdata.RCFD();
+  Context* context = drawdata.context();
+  auto fbi         = context->FBI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

@@ -88,16 +88,16 @@ fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   // vizoffsetmtx : use in visual offset cases such as the heightfield
   //   (todo: elaborate on this subject)
   fmtx4 vmono = isStereoOnePass() ? _stereoCameraMatrices->VMONO() : _cameraMatrices->_vmatrix;
-  auto mvmono = fmtx4::multiply_ltor(vizoffsetmtx,vmono);
+  auto mvmono = fmtx4::multiply_ltor(vizoffsetmtx, vmono);
   fmtx4 imvmono;
   imvmono.inverseOf(mvmono);
   return imvmono.translation();
 }
 ///////////////////////////////////////////////////////////////////////////////
 fvec2 CompositingPassData::nearAndFar() const {
-  auto mtcs = isStereoOnePass() ? _stereoCameraMatrices->_mono : _cameraMatrices;
+  auto mtcs          = isStereoOnePass() ? _stereoCameraMatrices->_mono : _cameraMatrices;
   const auto& camdat = mtcs->_camdat;
-  return fvec2(camdat.mNear,camdat.mFar);
+  return fvec2(camdat.mNear, camdat.mFar);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -117,11 +117,11 @@ const fvec3& CompositingPassData::monoCamZnormal() const {
 
 void CompositingPassData::assignLayers(const std::string& layers) {
   if (layers.length()) {
-    _layernames = SplitString(layers,',');
+    _layernames = SplitString(layers, ',');
   } else {
     _layernames.push_back("All");
   }
-  for(auto item : _layernames)
+  for (auto item : _layernames)
     _layernameset.insert(item);
 }
 

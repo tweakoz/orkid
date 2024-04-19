@@ -68,8 +68,7 @@ struct PbrNodeImpl {
 
     _timer.Start();
     EASY_BLOCK("pbr-_render");
-    auto framerenderer           = drawdata._frameRenderer;
-    RenderContextFrameData& RCFD = framerenderer->framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto pbrcommon               = node->_pbrcommon;
     auto targ                    = RCFD.GetTarget();
     auto CIMPL                   = drawdata._cimpl;

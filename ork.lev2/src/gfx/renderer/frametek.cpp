@@ -31,14 +31,6 @@ template class ork::orklut<ork::PoolString, anyp>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
-FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD)
-    : _framedata(RCFD)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 IRenderTarget::IRenderTarget() {
 }
 
@@ -54,9 +46,9 @@ int RtGroupRenderTarget::width() {
 int RtGroupRenderTarget::height() {
   return _rtgroup->height();
 }
-void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {
+void RtGroupRenderTarget::BeginFrame(Context* pTARG) {
 }
-void RtGroupRenderTarget::EndFrame(FrameRenderer& frenderer) {
+void RtGroupRenderTarget::EndFrame(Context* pTARG) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,14 +62,10 @@ int UiViewportRenderTarget::width() {
 int UiViewportRenderTarget::height() {
   return mpViewport->height();
 }
-void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
+void UiViewportRenderTarget::BeginFrame(Context* pTARG) {
   mpViewport->BeginFrame(pTARG);
 }
-void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
+void UiViewportRenderTarget::EndFrame(Context* pTARG) {
   mpViewport->EndFrame(pTARG);
 }
 
@@ -92,11 +80,11 @@ int UiSurfaceRenderTarget::width() {
 int UiSurfaceRenderTarget::height() {
   return mSurface->height();
 }
-void UiSurfaceRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  mSurface->BeginSurface(frenderer);
+void UiSurfaceRenderTarget::BeginFrame(Context* pTARG) {
+  mSurface->BeginSurface(pTARG);
 }
-void UiSurfaceRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  mSurface->EndSurface(frenderer);
+void UiSurfaceRenderTarget::EndFrame(Context* pTARG) {
+  mSurface->EndSurface(pTARG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

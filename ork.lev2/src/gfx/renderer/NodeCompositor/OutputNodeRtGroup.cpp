@@ -137,6 +137,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
   Context* context                  = drawdata.context();
+  RenderContextFrameData& framedata = drawdata.RCFD();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
   auto output_rtg = impl->_outputRTG.get();
@@ -151,8 +152,6 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
     if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
       auto src_buffer = try_final.value();
       if (src_buffer) {
-        auto framerenderer = drawdata._frameRenderer;
-        RenderContextFrameData& framedata = framerenderer->framedata();
 
         fbi->PushRtGroup(output_rtg);
 

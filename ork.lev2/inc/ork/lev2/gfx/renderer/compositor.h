@@ -200,9 +200,7 @@ struct ViewData {
 
 struct CompositorDrawData {
 
-  CompositorDrawData(framerenderer_ptr_t renderer)
-      : _frameRenderer(renderer) {
-  }
+  CompositorDrawData(rcfd_ptr_t rcfd=nullptr);
 
   Context* context() const;
   RenderContextFrameData& RCFD();
@@ -210,7 +208,7 @@ struct CompositorDrawData {
   ViewData computeViewData() const;
   compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
-  framerenderer_ptr_t _frameRenderer;
+  rcfd_ptr_t _RCFD;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
