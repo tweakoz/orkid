@@ -79,8 +79,7 @@ struct NVMSIMPL {
   void _render(CompositorDrawData& drawdata) {
     printf( "XXX\n");
     //_timer.Start();
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    RenderContextFrameData& RCFD = drawdata.RCFD();
     auto targ                    = RCFD.GetTarget();
     //////////////////////////////////////////////////////
     _context.renderUpdate(_node, drawdata);
@@ -108,10 +107,10 @@ struct NVMSIMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void renderPointLights(CompositorDrawData& drawdata, const ViewData& VD) {
     /////////////////////////////////////////////////////////////////
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    auto CI                      = framerenderer.framedata().GetTarget()->CI();
-    auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
-    auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
+    auto context = drawdata.context();
+    auto CI                      = context->CI();
+    auto FXI                     = context->FXI();
+    auto this_buf                = context->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
     _context.beginPointLighting(_node, drawdata, VD, nullptr);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);

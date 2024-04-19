@@ -7,7 +7,6 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 
 namespace ork { namespace ui {
 

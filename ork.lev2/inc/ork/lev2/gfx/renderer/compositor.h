@@ -8,13 +8,9 @@
 #pragma once
 
 #include <ork/rtti/RTTIX.inl>
-//#include <ork/dataflow/all.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
-//#include <ork/lev2/gfx/renderer/rendercontext.h>
-//#include <ork/lev2/gfx/renderer/irendertarget.h>
 
 namespace ork::lev2 {
 

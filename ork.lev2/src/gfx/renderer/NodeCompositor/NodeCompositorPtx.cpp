@@ -41,9 +41,7 @@ struct PtxImpl {
     }
   }
   void _recompute(CompositorDrawData& drawdata) {
-    lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-    lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-    auto target                             = framedata.GetTarget();
+    auto target                             = drawdata.context();
     auto& templ                             = _node->_template;
     _ptexContext.SetBufferDim(_node->_bufferDim);
     _ptexContext.mTarget = target;
@@ -58,9 +56,7 @@ struct PtxImpl {
   }
 
   void _render(CompositorDrawData& drawdata) {
-    lev2::FrameRenderer& the_renderer  = drawdata.mFrameRenderer;
-    lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-    auto target                        = RCFD.GetTarget();
+    auto target                        = drawdata.context();
     auto fbi                           = target->FBI();
     auto gbi                           = target->GBI();
 

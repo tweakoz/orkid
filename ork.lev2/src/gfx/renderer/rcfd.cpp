@@ -17,7 +17,6 @@
 #include <ork/application/application.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderer.h>

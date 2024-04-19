@@ -8,7 +8,6 @@
 #pragma once
 
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 

@@ -11,7 +11,6 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/compositormaterial.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
