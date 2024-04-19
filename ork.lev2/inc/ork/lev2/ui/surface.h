@@ -30,10 +30,6 @@ public:
     return mfClearDepth;
   }
 
-  void PushFrameTechnique(lev2::FrameTechniqueBase* ftek);
-  void PopFrameTechnique();
-  lev2::FrameTechniqueBase* GetFrameTechnique() const;
-
   void BeginSurface(lev2::FrameRenderer& frenderer);
   void EndSurface(lev2::FrameRenderer& frenderer);
 
@@ -51,7 +47,6 @@ public:
     return _pickbuffer;
   }
 
-  orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
   bool mbClear;
   fcolor3 _clearColor;
   F32 mfClearDepth;

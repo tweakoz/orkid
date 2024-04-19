@@ -23,24 +23,4 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class BasicFrameTechnique : public FrameTechniqueBase {
-public:
-  BasicFrameTechnique();
-
-  virtual void Render(ork::lev2::FrameRenderer& ContextData);
-
-  bool _shouldBeginAndEndFrame;
-};
-
-///////////////////////////////////////////////////////////////////////////
-
-class PickFrameTechnique : public FrameTechniqueBase {
-public:
-  PickFrameTechnique();
-
-  virtual void Render(ork::lev2::FrameRenderer& ContextData);
-};
-
-///////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2

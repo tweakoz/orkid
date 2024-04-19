@@ -287,26 +287,13 @@ void Surface::Clear() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::PushFrameTechnique(lev2::FrameTechniqueBase* ptek) {
-  mpActiveFrameTek.push(ptek);
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void Surface::PopFrameTechnique() {
-  mpActiveFrameTek.pop();
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-lev2::FrameTechniqueBase* Surface::GetFrameTechnique() const {
-  return mpActiveFrameTek.size() ? mpActiveFrameTek.top() : 0;
-}
-
 void Surface::BeginSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
   lev2::Context* pTARG                    = FrameData.GetTarget();
 }
+
+/////////////////////////////////////////////////////////////////////////
+
 void Surface::EndSurface(lev2::FrameRenderer& frenderer) {
   lev2::RenderContextFrameData& FrameData = frenderer.framedata();
   lev2::Context* pTARG                    = FrameData.GetTarget();

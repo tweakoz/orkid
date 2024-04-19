@@ -59,7 +59,6 @@ void CompositingPassData::SetMrtRect(const ViewportRect& rect) {
 void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   this->AddLayer("All");
   this->mbDrawSource = true;
-  this->mpFrameTek   = nullptr;
   this->_cameraName  = "";
   this->_clearColor  = fvec4(0, 0, 0, 0);
   int w              = drawdata._properties["OutputWidth"_crcu].get<int>();
@@ -134,9 +133,6 @@ std::vector<std::string> CompositingPassData::getLayerNames() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingPassData::updateCompositingSize(int w, int h) {
-  if (mpFrameTek)
-    if (auto ftek = dynamic_cast<FrameTechniqueBase*>(mpFrameTek))
-      ftek->update(*this, w, h);
 }
 bool CompositingPassData::isPicking() const {
   return _ispicking;

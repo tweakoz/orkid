@@ -100,32 +100,4 @@ void UiSurfaceRenderTarget::EndFrame(FrameRenderer& frenderer) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-static const int kFINALW = 512;
-static const int kFINALH = 512;
-
-FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
-    : miW(iW)
-    , miH(iH)
-    , mpMrtFinal(0) {
-}
-
-void FrameTechniqueBase::Init(Context* targ) {
-
-  auto fbi                = targ->FBI();
-  DisplayBuffer* parent = fbi->GetThisBuffer();
-  targ                    = parent ? parent->context() : targ;
-  auto clear_color        = fbi->GetClearColor();
-
-  mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, MsaaSamples::MSAA_1X);
-
-  auto buf = mpMrtFinal->createRenderTarget(lev2::EBufferFormat::RGBA8);
-
-  // mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
-  // mpMrtFinal->GetMrt(0)->SetContext( targ );
-
-  DoInit(targ);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

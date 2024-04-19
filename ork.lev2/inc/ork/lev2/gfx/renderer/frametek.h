@@ -21,26 +21,4 @@ struct FrameRenderer {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FrameTechniqueBase {
-public:
-  FrameTechniqueBase(int iW, int iH);
-  virtual ~FrameTechniqueBase() {}
-
-  virtual void Render(FrameRenderer& ContextData) {}
-  virtual RtGroup* GetFinalRenderTarget() const { return mpMrtFinal; }
-  void Init(Context* targ);
-
-  virtual void update(const CompositingPassData& CPD, int itargw, int itargh) {}
-
-protected:
-  int miW;
-  int miH;
-  RtGroup* mpMrtFinal;
-
-private:
-  virtual void DoInit(Context* targ) {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 } // namespace ork::lev2

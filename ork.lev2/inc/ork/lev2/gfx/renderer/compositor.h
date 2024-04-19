@@ -154,7 +154,6 @@ struct CompositingPassData {
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget        = nullptr;
-  lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource                    = true;
   std::string _cameraName;
   ork::fvec4 _clearColor;

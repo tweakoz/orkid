@@ -298,7 +298,6 @@ using instanced_billboard_string_drawable_ptr_t = std::shared_ptr<InstancedBillb
 struct IRenderer;
 struct IRenderable;
 struct FrameRenderer;
-struct FrameTechniqueBase;
 struct IRenderer;
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using defaultrenderer_ptr_t         = std::shared_ptr<IRenderer>;
