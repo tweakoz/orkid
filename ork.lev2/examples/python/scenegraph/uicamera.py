@@ -94,6 +94,8 @@ class UiCamera(object):
         # unhandled type
 
         print(uievent.code,uievent.x,uievent.y)
+        
+    return ui.HandlerResult()
 
   ################################################
 

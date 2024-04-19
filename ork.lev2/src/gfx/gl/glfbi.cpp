@@ -30,7 +30,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
 
 extern int G_MSAASAMPLES;
 
@@ -757,7 +757,8 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
           }
           GL_ERRORCHECK();
           glBindFramebuffer(GL_FRAMEBUFFER, 0);
-          glReadBuffer( previous_readbuffer );
+          if(previous_readbuffer<1000)
+            glReadBuffer( previous_readbuffer );
           GL_ERRORCHECK();
         } else {
           printf("!!!ERR - GetPix BindFBO<%d>\n", fboobj->_fbo);
