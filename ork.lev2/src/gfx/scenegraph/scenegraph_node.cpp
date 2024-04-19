@@ -72,4 +72,15 @@ LightNode::LightNode(std::string named, light_ptr_t light)
 LightNode::~LightNode() {
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+ProbeNode::ProbeNode(std::string named, lightprobe_ptr_t probe)
+    : Node(named)
+    , _probe(probe) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ProbeNode::~ProbeNode() {
+}
 } // namespace ork::lev2::scenegraph

@@ -22,7 +22,9 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::scenegraph {
+///////////////////////////////////////////////////////////////////////////////
 
 struct Layer;
 struct Node;
@@ -30,7 +32,12 @@ struct DrawableNode;
 struct CameraNode;
 struct InstancedDrawableNode;
 struct LightNode;
+struct ProbeNode;
 struct Scene;
+struct Synchro;
+struct SgPickBuffer;
+struct DrawableDataKvPair;
+
 using layer_ptr_t        = std::shared_ptr<Layer>;
 using node_ptr_t         = std::shared_ptr<Node>;
 using node_atomicptr_t   = std::atomic<node_ptr_t>;
@@ -39,6 +46,10 @@ using drawable_node_ptr_t = std::shared_ptr<DrawableNode>;
 using camera_node_ptr_t = std::shared_ptr<CameraNode>;
 using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
 using lightnode_ptr_t    = std::shared_ptr<LightNode>;
+using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
+using synchro_ptr_t = std::shared_ptr<Synchro>;
+using sgpickbuffer_ptr_t = std::shared_ptr<SgPickBuffer>;
+using probenode_ptr_t = std::shared_ptr<ProbeNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -106,12 +117,23 @@ struct LightNode final : public Node {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ProbeNode final : public Node {
+
+  ProbeNode(std::string named, lightprobe_ptr_t probe);
+  ~ProbeNode();
+
+  lightprobe_ptr_t _probe;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct Layer {
 
   using drawablenodevect_t = std::vector<drawable_node_ptr_t>;
   using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
   using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
   using lightnodevect_t = std::vector<lightnode_ptr_t>;
+  using probenodevect_t = std::vector<probenode_ptr_t>;
 
   Layer(Scene* scene, std::string name);
   ~Layer();
@@ -136,6 +158,9 @@ struct Layer {
   lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
   void removeLightNode(lightnode_ptr_t node);
 
+  probenode_ptr_t createProbeNode(std::string named, lightprobe_ptr_t drawable);
+  void removeProbeNode(probenode_ptr_t node);
+
   template <typename T, typename... A> //
   node_ptr_t makeDrawableNodeWithPrimitive(std::string named, A&&... prim_args) { //
     auto drawable = T::makeDrawableAndPrimitive(std::forward<A>(prim_args)...); 
@@ -150,6 +175,7 @@ struct Layer {
   LockedResource<drawablenodevect_t> _drawable_nodes;
   LockedResource<instanced_drawmap_t> _instanced_drawable_map;
   LockedResource<lightnodevect_t> _lightnodes;
+  LockedResource<probenodevect_t> _probenodes;
 
   uint32_t _sortkey = 0;
 };
@@ -176,7 +202,6 @@ struct SgPickBuffer {
   const ork::lev2::Texture* _pickNRMtexture = nullptr;
   const ork::lev2::Texture* _pickUVtexture = nullptr;
 };
-using sgpickbuffer_ptr_t = std::shared_ptr<SgPickBuffer>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -191,7 +216,7 @@ struct DrawableKvPair  : public ork::Object {
   lev2::drawable_ptr_t _drawable;
 };
 
-using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
+///////////////////////////////////////////////////////////////////////////////
 
 struct Synchro {
   Synchro();
@@ -205,7 +230,7 @@ struct Synchro {
   std::atomic<int> _rencount;
 };
 
-using synchro_ptr_t = std::shared_ptr<Synchro>;
+///////////////////////////////////////////////////////////////////////////////
 
 struct Scene {
 

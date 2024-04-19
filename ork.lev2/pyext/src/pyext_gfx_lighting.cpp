@@ -84,14 +84,10 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Light, light_ptr_t>(module_lev2, "Light")
-      .def_property(
+      .def_property_readonly(
           "matrix",                              //
-          [](light_ptr_t light) -> fmtx4_ptr_t { //
-            auto copy = std::make_shared<fmtx4>(light->worldMatrix());
-            return copy;
-          },
-          [](light_ptr_t light, fmtx4_ptr_t mtx) { //
-            light->worldMatrix() = *mtx.get();
+          [](light_ptr_t light) -> fmtx4 { //
+            return light->worldMatrix();
           })
       .def_property(
           "cookieTexture",                         //
@@ -153,6 +149,10 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           [](dynamicspotlight_ptr_t light) -> spotlightdata_ptr_t { //
             return light->_inlineData;
           });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto probe_t = py::class_<LightProbe, lightprobe_ptr_t>(module_lev2, "LightProbe")
+    .def(py::init<>());
+  type_codec->registerStdCodec<lightprobe_ptr_t>(probe_t);
   /////////////////////////////////////////////////////////////////////////////////
   module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {
     computeAmbientOcclusion(numsamples, model, ctx.get());

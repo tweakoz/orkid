@@ -148,8 +148,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto light             = lnode->_light;
                 light->_xformgenerator = [=]() -> fmtx4 { return mtx; };
               })
-          .def("__repr__", [](drawable_node_ptr_t node) { return "lnode<" + node->_name + ">"; });
+          .def("__repr__", [](drawable_node_ptr_t node) { return "lightnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto probenode_type = //
+      py::class_<ProbeNode, Node, probenode_ptr_t>(sgmodule, "ProbeNode").def("__repr__", [](drawable_node_ptr_t node) {
+        return "probenode<" + node->_name + ">";
+      });
+  type_codec->registerStdCodec<probenode_ptr_t>(probenode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
       py::class_<Layer, layer_ptr_t>(sgmodule, "Layer")
@@ -167,9 +173,29 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  drawable_node_ptr_t node) { //
                 layer->addDrawableNode(node);
               })
-          .def("createLightNode", [](layer_ptr_t layer, std::string named, light_ptr_t light) -> node_ptr_t { //
-            return layer->createLightNode(named, light);
-          })
+          ////////////////////////////////
+          .def(
+              "createLightNode",
+              [](layer_ptr_t layer, std::string named, light_ptr_t light) -> lightnode_ptr_t { //
+                return layer->createLightNode(named, light);
+              })
+          .def(
+              "removeLightNode",
+              [](layer_ptr_t layer, lightnode_ptr_t node) { //
+                layer->removeLightNode(node);
+              })
+          ////////////////////////////////
+          .def(
+              "createLightProbeNode",
+              [](layer_ptr_t layer, std::string named, lightprobe_ptr_t probe) -> probenode_ptr_t { //
+                return layer->createProbeNode(named, probe);
+              })
+          .def(
+              "removeLightProbeNode",
+              [](layer_ptr_t layer, probenode_ptr_t probe) { //
+                return layer->removeProbeNode(probe);
+              })
+          ////////////////////////////////
           .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //
@@ -177,6 +203,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  drawable_ptr_t drawable) -> node_ptr_t { //
                 return layer->createDrawableNode(named, drawable);
               })
+          .def(
+              "removeDrawableNode",
+              [](layer_ptr_t layer, drawable_node_ptr_t node) { //
+                layer->removeDrawableNode(node);
+              })
+          ////////////////////////////////
           .def(
               "createDrawableNodeFromData",
               [](layer_ptr_t layer, //
@@ -252,9 +284,6 @@ void pyinit_scenegraph(py::module& module_lev2) {
               }
             });
             return rval;
-          })
-          .def("removeDrawableNode", [](layer_ptr_t layer, drawable_node_ptr_t node) { //
-            layer->removeDrawableNode(node);
           });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });

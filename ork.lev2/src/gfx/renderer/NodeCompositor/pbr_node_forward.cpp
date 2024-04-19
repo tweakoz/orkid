@@ -23,12 +23,11 @@
 
 ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork::lev2{
+namespace ork::lev2 {
 extern appinitdata_ptr_t _ginitdata;
-} // namespace ork::lev2{
+} // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::pbr {
@@ -42,7 +41,6 @@ struct ForwardPbrNodeImpl {
   ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
       , _camname("Camera") { //
-
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
@@ -54,39 +52,37 @@ struct ForwardPbrNodeImpl {
 
       _rtg_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
 
-       auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-      _rtgs_main = std::make_shared<RtgSet>(context,e_msaa,"rtgs-main");
+      auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
+      _rtgs_main  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
       _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
 
-      printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
+      printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
-      //auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
-      //buf1->_debugName = "ForwardRt0";
-      _skybox_material = std::make_shared<PBRMaterial>(context);
+      // auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
+      // buf1->_debugName = "ForwardRt0";
+      _skybox_material           = std::make_shared<PBRMaterial>(context);
       _skybox_material->_variant = "skybox.forward"_crcu;
-      _skybox_fxcache = _skybox_material->pipelineCache();
-      _enumeratedLights = std::make_shared<EnumeratedLights>();
+      _skybox_fxcache            = _skybox_material->pipelineCache();
+      _enumeratedLights          = std::make_shared<EnumeratedLights>();
 
-      if(_ginitdata->_msaa_samples>1){
-        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context,MsaaSamples::MSAA_1X,"rtgs-,main-resolve");
-        _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer",EBufferFormat::RGBA8);
+      if (_ginitdata->_msaa_samples > 1) {
+        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
+        _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer", EBufferFormat::RGBA8);
         //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
-        //auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
-        //dsbuf->_debugName = "MsaaDownsampleBuffer";
+        // auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
+        // dsbuf->_debugName = "MsaaDownsampleBuffer";
         _blit2screenmtl.gpuInit(context, "orkshader://solid");
         _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
         _fxpMVP         = _blit2screenmtl.param("MatMVP");
         _fxpColorMap    = _blit2screenmtl.param("ColorMap");
       }
-
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void _render(ForwardNode* node, CompositorDrawData& drawdata) {
-    EASY_BLOCK("pbr-_render");
+  void _render_xxx(ForwardNode* node, CompositorDrawData& drawdata, const DrawableBuffer* DB, rtgroup_ptr_t rtg_main) {
 
-    uint64_t rtg_key = node->_bufferKey;
-    auto rtg_main = _rtgs_main->fetch(rtg_key);
+    /////////////////////////////////////////////////////////////////////////////////////////
+    RtGroupRenderTarget rt(rtg_main.get());
 
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -96,7 +92,195 @@ struct ForwardPbrNodeImpl {
     auto VD        = drawdata.computeViewData();
     bool is_stereo = VD._isStereo;
 
-    auto context         = RCFD.GetTarget();
+    auto context  = RCFD.GetTarget();
+    auto CIMPL    = drawdata._cimpl;
+    auto FBI      = context->FBI();
+    auto GBI      = context->GBI();
+    auto this_buf = FBI->GetThisBuffer();
+    auto RSI      = context->RSI();
+    auto DWI      = context->DWI();
+    // const auto TOPCPD = CIMPL->topCPD();
+    auto tgt_rect = context->mainSurfaceRectAtOrigin();
+
+    auto CPD = CIMPL->topCPD();
+    FBI->SetAutoClear(false); // explicit clear
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    auto irenderer      = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
+    int newwidth        = ddprops["OutputWidth"_crcu].get<int>();
+    int newheight       = ddprops["OutputHeight"_crcu].get<int>();
+    auto SCENE_MONOCAMS = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+
+    CPD._cameraMatrices = SCENE_MONOCAMS;
+    CPD.assignLayers("depth_prepass,std_forward");
+    CPD._clearColor    = pbrcommon->_clearColor;
+    CPD._irendertarget = &rt;
+    CPD.SetDstRect(tgt_rect);
+    CPD._width  = newwidth;
+    CPD._height = newheight;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // clear
+    ///////////////////////////////////////////////////////////////////////////
+
+    context->debugMarker(FormatString("ForwardPBR::preclear"));
+    rtg_main->_autoclear = false;
+    FBI->PushRtGroup(rtg_main.get());
+    CIMPL->pushCPD(CPD);
+    auto MTXI = context->MTXI();
+    FBI->Clear(pbrcommon->_clearColor, 1.0f);
+
+    /////////////////////////////////////////////////////
+    // Render Skybox first so AA can blend with it
+    /////////////////////////////////////////////////////
+
+    context->debugPushGroup("ForwardPBR::skybox pass");
+    rtg_main->_depthOnly = false;
+
+    RCFD._renderingmodel = "CUSTOM"_crcu;
+    RenderContextInstData RCID(&RCFD);
+    RCID._pipeline_cache = _skybox_fxcache;
+    auto pipeline        = _skybox_fxcache->findPipeline(RCID);
+    pipeline->wrappedDrawCall(RCID, [GBI]() {
+      GBI->render2dQuadEML(
+          fvec4(-1, -1, 2, 2), //
+          fvec4(0, 0, 1, 1),   //
+          fvec4(0, 0, 1, 1),   //
+          0.9999f);            // full screen quad
+    });
+    context->debugPopGroup();
+    FBI->PopRtGroup();
+
+    ///////////////////////////////////////////////////////////////////////////
+    // depth prepass
+    ///////////////////////////////////////////////////////////////////////////
+
+    // printf( "beg depth prepass\n");
+
+    FBI->validateRtGroup(rtg_main);
+
+    context->debugPushGroup("ForwardPBR::depth-pre pass");
+    DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
+    RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+
+    // rtg_main->_depthOnly = true;
+    FBI->PushRtGroup(rtg_main.get());
+
+    irenderer->drawEnqueuedRenderables();
+    FBI->PopRtGroup();
+    context->debugPopGroup();
+
+    FBI->cloneDepthBuffer(rtg_main, _rtg_depth_copy);
+
+    // printf( "end depth prepass\n");
+
+    ///////////////////////////////////////////////////////////////////////////
+    // shadow passes
+    ///////////////////////////////////////////////////////////////////////////
+
+    if (1) {
+      int num_shadow_casters = 0;
+      if (_enumeratedLights) {
+        for (auto light : _enumeratedLights->_alllights) {
+          if (not light->_castsShadows)
+            continue;
+
+          // printf( "beg shadowpass %d\n", num_shadow_casters);
+
+          if (light->_depthRTG == nullptr) {
+            int dim                      = light->_data->_shadowMapSize;
+            light->_depthRTG             = std::make_shared<RtGroup>(context, dim, dim);
+            light->_depthRTG->_depthOnly = true;
+            // light->_depthRTG->addBuffer("ShadowDepth", EBufferFormat::R32F);
+          }
+          if (auto as_spotlight = dynamic_cast<SpotLight*>(light)) {
+            auto topcomp                  = RCFD.topCompositor();
+            CompositingPassData shadowCPD = CPD.clone();
+            CameraMatrices SHADOWCAM;
+            shadowCPD._cameraMatrices           = &SHADOWCAM;
+            SHADOWCAM._pmatrix                  = as_spotlight->mProjectionMatrix;
+            SHADOWCAM._vmatrix                  = as_spotlight->mViewMatrix;
+            SHADOWCAM._vpmatrix                 = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
+            SHADOWCAM._ivpmatrix                = SHADOWCAM._vpmatrix.inverse();
+            SHADOWCAM._ivmatrix                 = SHADOWCAM._vmatrix.inverse();
+            SHADOWCAM._ipmatrix                 = SHADOWCAM._pmatrix.inverse();
+            SHADOWCAM._frustum                  = as_spotlight->mWorldSpaceLightFrustum;
+            SHADOWCAM._explicitProjectionMatrix = true;
+            SHADOWCAM._explicitViewMatrix       = true;
+            SHADOWCAM._aspectRatio              = 1.0f;
+            //      auto monocams   = CPD._cameraMatrices;
+            // CPD._cameraMatrices = & SHADOWCAM;
+
+            topcomp->pushCPD(shadowCPD);
+            FBI->validateRtGroup(light->_depthRTG);
+            DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
+            RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+            FBI->PushRtGroup(light->_depthRTG.get());
+            irenderer->drawEnqueuedRenderables();
+            FBI->PopRtGroup();
+
+            topcomp->popCPD();
+          }
+          // printf( "end shadowpass %d\n", num_shadow_casters);
+          num_shadow_casters++;
+        }
+      }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // main color pass
+    ///////////////////////////////////////////////////////////////////////////
+
+    // printf( "beg color pass\n");
+
+    CPD._cameraMatrices = SCENE_MONOCAMS;
+
+    rtg_main->_depthOnly = false;
+
+    irenderer->resetQueue();
+    auto rtb_depth = _rtg_depth_copy->_depthBuffer;
+    // auto rtb_depth = rtg_main->_depthBuffer;
+    RCFD.setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
+    RCFD.setUserProperty("DEPTH_MAP"_crcu, rtb_depth->_texture);
+
+    FBI->PushRtGroup(rtg_main.get());
+    // printf( "BEG FWD PBR ENQ\n");
+    context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
+    DB->enqueueLayerToRenderQueue("std_forward", irenderer);
+    // printf( "END FWD PBR ENQ\n");
+
+    RCFD._renderingmodel = "FORWARD_PBR"_crcu;
+    context->debugPushGroup("ForwardPBR::color pass");
+    // irenderer->_debugLog = true;
+    irenderer->drawEnqueuedRenderables();
+    framerenderer.renderMisc();
+    context->debugPopGroup();
+    irenderer->resetQueue();
+    FBI->PopRtGroup();
+
+    // printf( "end color pass\n");
+
+    /////////////////////////////////////////////////
+
+    CIMPL->popCPD();
+  }
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  void _render(ForwardNode* node, CompositorDrawData& drawdata) {
+    EASY_BLOCK("pbr-_render");
+
+    uint64_t rtg_key = node->_bufferKey;
+    auto rtg_main    = _rtgs_main->fetch(rtg_key);
+
+    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
+    RenderContextFrameData& RCFD = framerenderer.framedata();
+
+    auto pbrcommon = _node->_pbrcommon;
+    auto& ddprops  = drawdata._properties;
+    auto VD        = drawdata.computeViewData();
+    bool is_stereo = VD._isStereo;
+
+    auto context      = RCFD.GetTarget();
     auto CIMPL        = drawdata._cimpl;
     auto FBI          = context->FBI();
     auto GBI          = context->GBI();
@@ -105,7 +289,6 @@ struct ForwardPbrNodeImpl {
     auto DWI          = context->DWI();
     const auto TOPCPD = CIMPL->topCPD();
     auto tgt_rect     = context->mainSurfaceRectAtOrigin();
-
 
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     int newwidth   = ddprops["OutputWidth"_crcu].get<int>();
@@ -134,180 +317,16 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     rtg_main->_autoclear = false;
     context->debugPushGroup("ForwardPBR::render");
-    RtGroupRenderTarget rt(rtg_main.get());
     {
-      FBI->SetAutoClear(false); // explicit clear
-      /////////////////////////////////////////////////////////////////////////////////////////
-      auto SCENE_MONOCAMS = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
-      //auto SCENE_STEREOCAMS = ddprops["StereoMatrices"_crcu].get<const StereoCameraMatrices*>();
-      /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB             = RCFD.GetDB();
-      auto CPD            = CIMPL->topCPD();
-      CPD.assignLayers("depth_prepass,std_forward");
-      CPD._clearColor     = pbrcommon->_clearColor;
-      CPD._irendertarget  = &rt;
-      CPD._cameraMatrices = SCENE_MONOCAMS;
-      //CPD._stereoCameraMatrices = SCENE_STEREOCAMS;
-      CPD.SetDstRect(tgt_rect);
-      CPD._width = newwidth;
-      CPD._height = newheight;
+      auto DB = RCFD.GetDB();
+
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
 
-        ///////////////////////////////////////////////////////////////////////////
-        // clear
-        ///////////////////////////////////////////////////////////////////////////
+        _render_xxx(node, drawdata, DB, rtg_main);
 
-        context->debugMarker(FormatString("ForwardPBR::preclear"));
-        rtg_main->_autoclear = false;
-        FBI->PushRtGroup(rtg_main.get());
-        CIMPL->pushCPD(CPD);
-        auto MTXI = context->MTXI();
-        FBI->Clear(pbrcommon->_clearColor, 1.0f);
-
-        /////////////////////////////////////////////////////
-        // Render Skybox first so AA can blend with it
-        /////////////////////////////////////////////////////
-
-        context->debugPushGroup("ForwardPBR::skybox pass");
-        rtg_main->_depthOnly = false;
-
-        RCFD._renderingmodel = "CUSTOM"_crcu;
-        RenderContextInstData RCID(&RCFD);
-        RCID._pipeline_cache = _skybox_fxcache;
-        auto pipeline = _skybox_fxcache->findPipeline(RCID);
-        pipeline->wrappedDrawCall(RCID,[GBI](){
-          GBI->render2dQuadEML(fvec4(-1, -1, 2, 2), //
-                               fvec4(0, 0, 1, 1), //
-                               fvec4(0, 0, 1, 1), //
-                               0.9999f); // full screen quad
-        });
-        context->debugPopGroup();
-        FBI->PopRtGroup();
-
-        ///////////////////////////////////////////////////////////////////////////
-        // depth prepass
-        ///////////////////////////////////////////////////////////////////////////
-
-       // printf( "beg depth prepass\n");
-
-        FBI->validateRtGroup(rtg_main);
-
-        context->debugPushGroup("ForwardPBR::depth-pre pass");
-        DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
-        RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
-
-        //rtg_main->_depthOnly = true;
-        FBI->PushRtGroup(rtg_main.get());
-
-        irenderer->drawEnqueuedRenderables();
-        FBI->PopRtGroup();
-        context->debugPopGroup();
-
-        FBI->cloneDepthBuffer(rtg_main, _rtg_depth_copy);
-
-        //printf( "end depth prepass\n");
-
-        ///////////////////////////////////////////////////////////////////////////
-        // shadow passes
-        ///////////////////////////////////////////////////////////////////////////
-
-        if(1){
-          int num_shadow_casters = 0;
-          if(_enumeratedLights){
-            for (auto light :  _enumeratedLights->_alllights ) {
-              if( not light->_castsShadows )
-                continue;
-              
-              context->debugPushGroup(FormatString("ForwardPBR::shadow-depth-pre pass %d", num_shadow_casters));
-
-              //printf( "beg shadowpass %d\n", num_shadow_casters);
-
-              if( light->_depthRTG == nullptr ){
-                int dim = light->_data->_shadowMapSize;
-                light->_depthRTG = std::make_shared<RtGroup>(context, dim, dim );
-                light->_depthRTG->_depthOnly = true;
-                //light->_depthRTG->addBuffer("ShadowDepth", EBufferFormat::R32F);
-              }
-              if( auto as_spotlight = dynamic_cast<SpotLight*>(light) ){
-                auto topcomp = RCFD.topCompositor();
-                CompositingPassData shadowCPD = CPD.clone();
-                CameraMatrices SHADOWCAM;
-                shadowCPD.setStereoOnePass(false);
-                shadowCPD._cameraMatrices = & SHADOWCAM;
-                SHADOWCAM._pmatrix = as_spotlight->mProjectionMatrix;
-                SHADOWCAM._vmatrix = as_spotlight->mViewMatrix;
-                SHADOWCAM._vpmatrix = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
-                SHADOWCAM._ivpmatrix = SHADOWCAM._vpmatrix.inverse();
-                SHADOWCAM._ivmatrix = SHADOWCAM._vmatrix.inverse();
-                SHADOWCAM._ipmatrix = SHADOWCAM._pmatrix.inverse();
-                SHADOWCAM._frustum = as_spotlight->mWorldSpaceLightFrustum;
-                SHADOWCAM._explicitProjectionMatrix = true;
-                SHADOWCAM._explicitViewMatrix = true;
-                SHADOWCAM._aspectRatio = 1.0f;
-                //      auto monocams   = CPD._cameraMatrices;
-                //CPD._cameraMatrices = & SHADOWCAM;
-
-                topcomp->pushCPD(shadowCPD);
-                FBI->validateRtGroup(light->_depthRTG);
-                DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
-                RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
-                FBI->PushRtGroup(light->_depthRTG.get());
-                irenderer->drawEnqueuedRenderables();
-                FBI->PopRtGroup();
-
-                topcomp->popCPD();
-              }
-
-              context->debugPopGroup();
-
-              //printf( "end shadowpass %d\n", num_shadow_casters);
-              num_shadow_casters++;
-              
-            }
-          }
-        }
-
-
-        ///////////////////////////////////////////////////////////////////////////
-        // main color pass
-        ///////////////////////////////////////////////////////////////////////////
-
-        //printf( "beg color pass\n");
-
-        CPD._cameraMatrices = SCENE_MONOCAMS;
-
-        rtg_main->_depthOnly = false;
-
-        irenderer->resetQueue();
-        auto rtb_depth = _rtg_depth_copy->_depthBuffer;
-        //auto rtb_depth = rtg_main->_depthBuffer;
-        RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
-        RCFD.setUserProperty("DEPTH_MAP"_crcu,rtb_depth->_texture);
-        
-        FBI->PushRtGroup(rtg_main.get());
-        //printf( "BEG FWD PBR ENQ\n");
-        context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
-        DB->enqueueLayerToRenderQueue("std_forward", irenderer);
-        //printf( "END FWD PBR ENQ\n");
-
-        RCFD._renderingmodel = "FORWARD_PBR"_crcu;
-        context->debugPushGroup("ForwardPBR::color pass");
-        //irenderer->_debugLog = true;
-        irenderer->drawEnqueuedRenderables();
-        framerenderer.renderMisc();
-        context->debugPopGroup();
-        irenderer->resetQueue();
-        FBI->PopRtGroup();
-
-        //printf( "end color pass\n");
-
-        /////////////////////////////////////////////////
-
-        CIMPL->popCPD();
-
-        if(_rtgs_resolve_msaa){
-          FBI->msaaBlit(rtg_main,_rtgs_resolve_msaa->fetch(rtg_key));
+        if (_rtgs_resolve_msaa) {
+          FBI->msaaBlit(rtg_main, _rtgs_resolve_msaa->fetch(rtg_key));
         }
       }
     }
@@ -330,7 +349,6 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
 
-
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,7 +362,7 @@ ForwardNode::~ForwardNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG,iW,iH);
+  _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG, iW, iH);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::DoRender(CompositorDrawData& drawdata) {
@@ -353,9 +371,9 @@ void ForwardNode::DoRender(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
-  auto fwd_impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
+  auto fwd_impl   = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
   auto rtg_output = fwd_impl->_rtgs_main->fetch(_bufferKey);
-  if(fwd_impl->_rtgs_resolve_msaa){
+  if (fwd_impl->_rtgs_resolve_msaa) {
     rtg_output = fwd_impl->_rtgs_resolve_msaa->fetch(_bufferKey);
   }
   return rtg_output;

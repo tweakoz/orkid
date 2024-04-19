@@ -128,6 +128,42 @@ lightnode_ptr_t Layer::createLightNode(std::string named, light_ptr_t light) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::removeLightNode(lightnode_ptr_t node) {
+  _lightnodes.atomicOp([node](Layer::lightnodevect_t& unlocked) { //
+    auto it = std::remove_if(unlocked.begin(), unlocked.end(), [node](lightnode_ptr_t d) -> bool {
+      bool matched = (node == d);
+      return matched;
+    });
+    if (it != unlocked.end()){
+      unlocked.erase(it);
+    }
+   });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+probenode_ptr_t Layer::createProbeNode(std::string named, lightprobe_ptr_t probe) {
+  probenode_ptr_t rval = std::make_shared<ProbeNode>(named, probe);
+
+  _probenodes.atomicOp([rval](Layer::probenodevect_t& unlocked) { unlocked.push_back(rval); });
+
+  auto lmgr = _scene->_lightManager;
+  lmgr->_lightprobes.push_back(probe);
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::removeProbeNode(probenode_ptr_t node) {
+  _probenodes.atomicOp([node](Layer::probenodevect_t& unlocked) {
+    auto it = std::remove_if(unlocked.begin(), unlocked.end(), [node](probenode_ptr_t d) -> bool {
+      bool matched = (node == d);
+      return matched;
+    });
+    if (it != unlocked.end()){
+      unlocked.erase(it);
+    }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

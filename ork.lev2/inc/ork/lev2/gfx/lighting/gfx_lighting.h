@@ -548,6 +548,7 @@ public:
 
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights
+  lightprobeset_t _lightprobes;
 
   void enumerateInPass(const CompositingPassData& CPD, enumeratedlights_ptr_t out_lights) const;
 
