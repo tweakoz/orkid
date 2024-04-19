@@ -100,9 +100,9 @@ struct VRIMPL {
   void beginAssemble(CompositorDrawData& drawdata) {
     EASY_BLOCK("onodevr-begass");
     auto& ddprops                = drawdata._properties;
-    RenderContextFrameData& RCFD = drawdata.RCFD();
+    auto RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
-    auto DB                      = RCFD.GetDB();
+    auto DB                      = RCFD->GetDB();
     Context* targ                = drawdata.context();
 
     bool use_vr = (orkidvr::device()->_active);
@@ -130,7 +130,7 @@ struct VRIMPL {
           // rootmatrix.dump("yo");
         }
       } else {
-        auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
+        auto vrcamprop = RCFD->getUserProperty("vrcam"_crc);
         if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
           targ->debugMarker("Vr::gotcamera");
           auto vrcam = as_cam.value();
@@ -151,7 +151,7 @@ struct VRIMPL {
     /////////////////////////////////////////////////////////////////////////////
 
     if (use_vr)
-      orkidvr::device()->gpuUpdate(RCFD);
+      orkidvr::device()->gpuUpdate(*RCFD);
 
     ///////////////////////////////////
 
@@ -164,7 +164,7 @@ struct VRIMPL {
     drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
 
     if (use_vr and VRDEV->_supportsStereo) {
-      RCFD.setUserProperty("vrroot"_crc, rootmatrix);
+      RCFD->setUserProperty("vrroot"_crc, rootmatrix);
       _stereomatrices->_left  = VRDEV->_leftcamera;
       _stereomatrices->_right = VRDEV->_rightcamera;
       _stereomatrices->_mono  = VRDEV->_leftcamera;
@@ -237,7 +237,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       assert(buffer != nullptr);
       auto tex = buffer->texture();
       if (tex) {
-        RenderContextFrameData& framedata = drawdata.RCFD();
+        auto framedata = drawdata.RCFD();
 
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
@@ -245,7 +245,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
 
         if (_distorion_lambda) {
-          _distorion_lambda(framedata, tex);
+          _distorion_lambda(*framedata, tex);
         } else {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
           const auto& vrdev = orkidvr::device();

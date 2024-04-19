@@ -90,7 +90,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
 
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
   glock.Lock(0x777);
-  _context->pushRenderContextFrameData(RCFD.get());
+  _context->pushRenderContextFrameData(RCFD);
   ViewportRect tgt_rect(0, 0, PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
   // auto irenderer = _scenevp->GetRenderer();

@@ -226,7 +226,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
           .def("onRender", [](string_drawabledata_ptr_t drw, py::object callback) {
             drw->_onRender = [callback](RenderContextInstData& RCID) {
-              auto RCFD = RCID._RCFD;
+              auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;
@@ -321,7 +321,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; })
           .def("onRender", [](labeled_point_drawabledata_ptr_t drw, py::object callback) {
             drw->_onRender = [callback](RenderContextInstData& RCID) {
-              auto RCFD = RCID._RCFD;
+              auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;

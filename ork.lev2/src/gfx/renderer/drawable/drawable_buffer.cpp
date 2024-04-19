@@ -46,17 +46,17 @@ void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const {
+void DrawableBuffer::invokePreRenderCallbacks(lev2::rcfd_ptr_t RCFD) const {
   EASY_BLOCK("prerender");
   for (auto item : _preRenderCallbacks)
-    item.second(RCFD);
+    item.second(*RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IRenderer* renderer) const {
   lev2::Context* target                         = renderer->GetTarget();
-  const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
+  auto RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 
   if (false == topCPD.isValid()) {

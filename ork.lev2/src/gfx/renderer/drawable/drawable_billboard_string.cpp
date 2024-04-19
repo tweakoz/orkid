@@ -45,7 +45,7 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
     auto context         = RCID.context();
     auto mtxi            = context->MTXI();
     auto fbi             = context->FBI();
-    auto RCFD            = RCID._RCFD;
+    auto RCFD            = RCID.rcfd();
     const auto& CPD      = RCFD->topCPD();
     auto renderable      = (CallbackRenderable*)RCID._irenderable;
     auto data            = renderable->_drawDataA.get<const StringDrawableData*>();
@@ -135,14 +135,14 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
   int CHARUW           = FONTDESC._3d_char_u_width;
   int CHARVH           = FONTDESC._3d_char_v_height;
   int ADVW             = FONTDESC.miAdvanceWidth;
-  auto text_rcid = std::make_shared<RenderContextInstData>();
+  auto text_rcid = std::make_shared<RenderContextInstData>(nullptr);
 
   // todo fix RCID wonkiness
 
   _rendercb = [this, text_rcid, CHARW, CHARH,ADVW](lev2::RenderContextInstData& RCID) {
     auto context                = RCID.context();
     auto mtxi                   = context->MTXI();
-    auto RCFD                   = RCID._RCFD;
+    auto RCFD                   = RCID.rcfd();
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
 
@@ -183,7 +183,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
       fmtx4 IV2 = IVMATRIX;
       IV2.setColumn(3,fvec4(0,0,0,1));
-      text_rcid->_RCFD      = RCFD;
+      text_rcid->_held_rcfd      = RCFD;
       text_rcid->_genMatrix = [&]() -> fmtx4 {
         fmtx4 text_transform;
         if(camrel){
@@ -301,7 +301,7 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable() {
   _rendercb = [this](lev2::RenderContextInstData& RCID) {
     auto context                = RCID.context();
     auto mtxi                   = context->MTXI();
-    auto RCFD                   = RCID._RCFD;
+    auto RCFD                   = RCID.rcfd();
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;

@@ -215,7 +215,7 @@ public:
   ~DrawableBuffer();
 
   void setPreRenderCallback(int key, prerendercallback_t cb);
-  void invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const;
+  void invokePreRenderCallbacks(lev2::rcfd_ptr_t RCFD) const;
 
   ///////////////////////////////////////////////////////
 

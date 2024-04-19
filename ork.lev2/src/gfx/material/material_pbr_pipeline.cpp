@@ -62,15 +62,15 @@ PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
   return [mtl](const RenderContextInstData& RCID, int ipass) {
-    auto context          = RCID._RCFD->GetTarget();
+    auto context          = RCID.rcfd()->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
     auto RSI              = context->RSI();
-    const auto& CPD       = RCID._RCFD->topCPD();
-    const auto& RCFDPROPS = RCID._RCFD->userProperties();
+    const auto& CPD       = RCID.rcfd()->topCPD();
+    const auto& RCFDPROPS = RCID.rcfd()->userProperties();
     bool is_picking       = CPD.isPicking();
     bool is_stereo        = CPD.isStereoOnePass();
-    auto pbrcommon        = RCID._RCFD->_pbrcommon;
+    auto pbrcommon        = RCID.rcfd()->_pbrcommon;
 
     float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
 
@@ -96,7 +96,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
 
     if (stereocams) {
       fmtx4 vrroot;
-      auto vrrootprop = RCID._RCFD->getUserProperty("vrroot"_crc);
+      auto vrrootprop = RCID.rcfd()->getUserProperty("vrroot"_crc);
       if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
         vrroot = as_mtx.value();
       }

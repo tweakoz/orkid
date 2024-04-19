@@ -272,7 +272,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   if (cmipchain_datablock) {
     // logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
   } else {
-    RenderContextFrameData RCFD(targ);
+    auto RCFD = std::make_shared<RenderContextFrameData>(targ);
 
     ////////////////////////////////////
     // count mips
@@ -441,7 +441,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   if (cmipchain_datablock) {
     // logchan_pbrgen->log("filterenv-diff tex<%p> loading precomputed!", rawenvmap);
   } else {
-    RenderContextFrameData RCFD(targ);
+    auto RCFD = std::make_shared<RenderContextFrameData>(targ);
     int w = rawenvmap->_width;
     int h = rawenvmap->_height;
 

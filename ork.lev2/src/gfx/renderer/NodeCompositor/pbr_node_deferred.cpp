@@ -68,9 +68,9 @@ struct PbrNodeImpl {
 
     _timer.Start();
     EASY_BLOCK("pbr-_render");
-    RenderContextFrameData& RCFD = drawdata.RCFD();
+    auto RCFD = drawdata.RCFD();
     auto pbrcommon               = node->_pbrcommon;
-    auto targ                    = RCFD.GetTarget();
+    auto targ                    = RCFD->GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
@@ -78,11 +78,11 @@ struct PbrNodeImpl {
     auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
     /////////////////////////////////////////////////
-    RCFD.setUserProperty("rtg_gbuffer"_crc, rtg_gbuffer);
-    RCFD.setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->GetMrt(0));
-    RCFD.setUserProperty("rtb_accum"_crc, rtg_laccum->GetMrt(0));
-    RCFD._renderingmodel = node->_renderingmodel;
-    RCFD._pbrcommon      = pbrcommon;
+    RCFD->setUserProperty("rtg_gbuffer"_crc, rtg_gbuffer);
+    RCFD->setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->GetMrt(0));
+    RCFD->setUserProperty("rtb_accum"_crc, rtg_laccum->GetMrt(0));
+    RCFD->_renderingmodel = node->_renderingmodel;
+    RCFD->_pbrcommon      = pbrcommon;
     //////////////////////////////////////////////////////
     _context->renderUpdate(node, drawdata);
     auto VD = drawdata.computeViewData();
@@ -130,7 +130,7 @@ struct PbrNodeImpl {
     _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _context->_lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
 
-    int pbr_model = RCFD.getUserProperty("pbr_model"_crc).get<int>();
+    int pbr_model = RCFD->getUserProperty("pbr_model"_crc).get<int>();
 
     fxpipeline_ptr_t baselighting_pipeline = _context->_pipeline_envlighting_model0_mono;
 
@@ -152,7 +152,7 @@ struct PbrNodeImpl {
     // pipeline wrapped (overrides here)
     /////////////////////////
 
-    RenderContextInstData dummy_rcid(&RCFD);
+    RenderContextInstData dummy_rcid(RCFD);
     baselighting_pipeline->wrappedDrawCall(dummy_rcid, [=]() {
       _context->_lightingmtl->bindParamFloat(_context->_parDepthFogDistance, 1.0f / pbrcommon->depthFogDistance());
       _context->_lightingmtl->bindParamFloat(_context->_parDepthFogPower, pbrcommon->depthFogPower());

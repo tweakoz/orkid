@@ -155,7 +155,7 @@ int main(int argc, char** argv, char** envp) {
     auto RCFD = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
     RCFD->pushCompositor(compositorimpl);
     RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    context->pushRenderContextFrameData(RCFD.get());
+    context->pushRenderContextFrameData(RCFD);
     auto fbi = context->FBI(); // FrameBufferInterface
     ///////////////////////////////////////
     // compositor setup

@@ -142,14 +142,12 @@ void FontMan::_endTextBlock(Context* context) {
   auto top_state = _currentTextBlockState;
   if (bdraw) {
     if (stereocams) {
-      RenderContextInstData* RCID = nullptr;
+      rcid_ptr_t RCID;
       if( top_state ){
-        RCID = top_state->_overrideRCID.get();
+        RCID = top_state->_overrideRCID;
       }
       if( nullptr == RCID ){
-        static RenderContextInstData DEFRCID(nullptr);
-        RCID = & DEFRCID;
-        DEFRCID._RCFD = RCFD;
+        RCID = std::make_shared<RenderContextInstData>(RCFD);
         RCID->_genMatrix = [this]() -> fmtx4 {
           fmtx4 text_world;
           text_world.setScale(1.1f);

@@ -75,8 +75,7 @@ struct CpuNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
     //_timer.Start();
-    RenderContextFrameData& RCFD = drawdata.RCFD();
-    auto targ                    = RCFD.GetTarget();
+    auto targ                    = drawdata.context();
     //////////////////////////////////////////////////////
     _context.renderUpdate(_node, drawdata);
     auto VD = drawdata.computeViewData();

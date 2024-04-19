@@ -58,7 +58,7 @@ struct GridRenderImpl {
 
     bool isPickState = context->FBI()->isPickState();
 
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
 
     const auto& CPD  = RCFD->topCPD();
 

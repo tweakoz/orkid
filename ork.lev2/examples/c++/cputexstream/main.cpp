@@ -130,7 +130,7 @@ int main(int argc, char** argv,char** envp) {
 
     txi->initTextureFromData(resources->_texture.get(), tid);
 
-    RenderContextFrameData RCFD(context);
+    auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamCTex(resources->_fxparameterTexture, resources->_texture.get());

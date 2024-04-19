@@ -217,7 +217,7 @@ void GedSkin0::End(Context* pTARG) {
   auto uimatrix = pTARG->MTXI()->uiMatrix(iw, ih);
   ////////////////////////
   // pTARG->IMI()->QueFlush();
-  RenderContextFrameData RCFD(pTARG);
+  auto RCFD = std::make_shared<RenderContextFrameData>(pTARG);
   for (auto itc : mPrimContainers) {
     const PrimContainer* primcontainer = itc.second;
 

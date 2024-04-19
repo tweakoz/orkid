@@ -121,7 +121,7 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
   auto drawable = std::make_shared<CallbackDrawable>(nullptr); 
 
   drawable->setRenderLambda([this](RenderContextInstData& RCID){
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
     auto context                       = RCID.context();
 
     fmtx4 mtx_center;

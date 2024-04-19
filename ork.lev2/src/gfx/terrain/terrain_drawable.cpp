@@ -1045,7 +1045,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 
   _terrainMaterial->_rasterstate.SetCullTest(ECullTest::OFF);
 
-  _terrainMaterial->begin(bpick ? tek_pick : tek_viz, *RCFD);
+  _terrainMaterial->begin(bpick ? tek_pick : tek_viz, RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
   _terrainMaterial->bindParamMatrix(_parMatVPR, MVPR);
@@ -1082,7 +1082,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
     auto& sector = _sector[isector];
     sector._lodX._primitive.renderEML(targ);
   }
-  _terrainMaterial->end(*RCFD);
+  _terrainMaterial->end(RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -43,9 +43,9 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
 
-  void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
-  void begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);
-  void end(const RenderContextFrameData& RCFD);
+  void begin(const FxShaderTechnique* tek, rcfd_ptr_t RCFD);
+  void begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, rcfd_ptr_t RCFD);
+  void end(rcfd_ptr_t RCFD);
   void gpuInit(Context* targ, const AssetPath& assetname);
   void gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext);
 

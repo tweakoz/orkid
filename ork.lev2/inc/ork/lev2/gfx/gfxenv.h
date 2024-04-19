@@ -269,10 +269,10 @@ public:
     mRenderContextInstData = data;
   }
 
-  const RenderContextFrameData* topRenderContextFrameData() const {
+  const rcfd_ptr_t topRenderContextFrameData() const {
     return _rcfdstack.top();
   }
-  void pushRenderContextFrameData(const RenderContextFrameData* rcfd) {
+  void pushRenderContextFrameData(rcfd_ptr_t rcfd) {
     return _rcfdstack.push(rcfd);
   }
   void popRenderContextFrameData() {
@@ -348,7 +348,7 @@ public:
 
   static orkvector<DisplayMode*> mDisplayModes;
 
-  std::stack<const RenderContextFrameData*> _rcfdstack;
+  std::stack<rcfd_ptr_t> _rcfdstack;
 
   void scheduleOnBeginFrame(void_lambda_t l) {
     _onBeginFrameCallbacks.push_back(l);
@@ -382,7 +382,7 @@ private:
 
   virtual void _doResizeMainSurface(int iw, int ih) = 0;
 
-  const RenderContextFrameData* _defaultrcfd = nullptr;
+  rcfd_ptr_t _defaultrcfd = nullptr;
 };
 
 struct ThreadGfxContext : public util::ContextTLS<ThreadGfxContext> {

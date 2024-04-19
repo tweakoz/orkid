@@ -709,7 +709,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
   auto shader = utilshader();
 
-  shader->begin(_tek_blit, *framedata);
+  shader->begin(_tek_blit, framedata);
   shader->_rasterstate.SetBlending(Blending::OFF);
   shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
@@ -719,7 +719,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
   this->popViewport();
   this->popScissor();
-  shader->end(*framedata);
+  shader->end(framedata);
 
   PopRtGroup();
 }
@@ -847,7 +847,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
 
   auto shader = utilshader();
 
-  shader->begin(_tek_downsample2x2, *framedata);
+  shader->begin(_tek_downsample2x2, framedata);
   shader->_rasterstate.SetBlending(Blending::OFF);
   shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
@@ -857,7 +857,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
   DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
   this->popViewport();
   this->popScissor();
-  shader->end(*framedata);
+  shader->end(framedata);
 
   PopRtGroup();
 }

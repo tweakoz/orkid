@@ -250,7 +250,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
     enumeratedlights_constptr_t enumlights) {
-  auto& RCFD     = drawdata.RCFD();
+  auto RCFD     = drawdata.RCFD();
   auto context   = drawdata.context();
   auto& ddprops  = drawdata._properties;
   auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
@@ -283,7 +283,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       FBI->PushRtGroup(irt->_rtgroup);
       context->beginFrame();
       FBI->clearDepth(1.0f);
-      auto DB = RCFD.GetDB();
+      auto DB = RCFD->GetDB();
       if (DB) {
         for (const auto& layer_name : DEPTHRENDERCPD.getLayerNames()) {
           context->debugMarker(FormatString("enqshadowlayer<%s>", layer_name.c_str()));

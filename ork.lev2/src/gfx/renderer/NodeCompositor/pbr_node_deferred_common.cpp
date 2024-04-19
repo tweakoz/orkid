@@ -183,13 +183,13 @@ void DeferredContext::gpuInit(Context* target) {
 
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
   EASY_BLOCK("renderGbuffer");
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto RSI                     = targ->RSI();
-  auto& ddprops                = drawdata._properties;
-  auto irenderer               = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
+  auto CIMPL     = drawdata._cimpl;
+  auto RCFD      = drawdata.RCFD();
+  auto targ      = drawdata.context();
+  auto FBI       = targ->FBI();
+  auto RSI       = targ->RSI();
+  auto& ddprops  = drawdata._properties;
+  auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
 
   ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
@@ -206,7 +206,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   CPD.SetMrtRect(mrt_rect);
   CPD._passID = "defgbuffer1"_crcu;
   ///////////////////////////////////////////////////////////////////////////
-  auto DB = RCFD.GetDB();
+  auto DB = RCFD->GetDB();
   if (DB) {
     ///////////////////////////////////////////////////////////////////////////
     // DrawableBuffer -> RenderQueue enqueue
@@ -240,7 +240,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
 const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD) {
   /*
   auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
+  auto RCFD = drawdata.RCFD();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto this_buf                = FBI->GetThisBuffer();
@@ -372,16 +372,16 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   printf("WTF2\n");
 
   /////////////////////////////////////////////////////////////////
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto CIMPL                   = drawdata._cimpl;
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto this_buf                = FBI->GetThisBuffer();
-  auto RSI                     = targ->RSI();
-  auto DWI                     = targ->DWI();
-  const auto TOPCPD            = CIMPL->topCPD();
-  _accumCPD                    = TOPCPD;
-  _decalCPD                    = TOPCPD;
+  auto RCFD         = drawdata.RCFD();
+  auto CIMPL        = drawdata._cimpl;
+  auto targ         = drawdata.context();
+  auto FBI          = targ->FBI();
+  auto this_buf     = FBI->GetThisBuffer();
+  auto RSI          = targ->RSI();
+  auto DWI          = targ->DWI();
+  const auto TOPCPD = CIMPL->topCPD();
+  _accumCPD         = TOPCPD;
+  _decalCPD         = TOPCPD;
   /////////////////////////////////////////////////////////////////
   auto vprect   = ViewportRect(0, 0, _width, _height);
   auto quadrect = SRect(0, 0, _width, _height);
@@ -429,12 +429,12 @@ void DeferredContext::beginPointLighting(
     const ViewData& VD,
     lev2::Texture* cookietexture) {
 
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
+  auto FXI   = targ->FXI();
+  auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -465,10 +465,10 @@ void DeferredContext::beginPointLighting(
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewData& VD) {
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto CIMPL                   = drawdata._cimpl;
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
+  auto RCFD  = drawdata.RCFD();
+  auto CIMPL = drawdata._cimpl;
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
   _lightingmtl->end(RCFD);
   CIMPL->popCPD();       // _accumCPD
   targ->debugPopGroup(); // Deferred::PointLighting
@@ -483,12 +483,12 @@ void DeferredContext::beginSpotLighting(
     const ViewData& VD,
     lev2::Texture* cookietexture) {
 
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
+  auto FXI   = targ->FXI();
+  auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -519,10 +519,10 @@ void DeferredContext::beginSpotLighting(
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
   _lightingmtl->end(RCFD);
   CIMPL->popCPD();       // _accumCPD
   targ->debugPopGroup(); // Deferred::PointLighting
@@ -537,12 +537,12 @@ void DeferredContext::beginShadowedSpotLighting(
     const ViewData& VD,
     lev2::Texture* cookietexture) {
 
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
+  auto FXI   = targ->FXI();
+  auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -570,10 +570,10 @@ void DeferredContext::beginShadowedSpotLighting(
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::endShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD) {
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
   _lightingmtl->end(RCFD);
   CIMPL->popCPD();       // _accumCPD
   targ->debugPopGroup(); // Deferred::PointLighting
@@ -587,12 +587,12 @@ void DeferredContext::beginSpotDecaling(
     const ViewData& VD,
     lev2::Texture* cookietexture) {
 
-  auto CIMPL                   = drawdata._cimpl;
-  RenderContextFrameData& RCFD = drawdata.RCFD();
-  auto targ                    = drawdata.context();
-  auto FBI                     = targ->FBI();
-  auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  auto CIMPL = drawdata._cimpl;
+  auto RCFD  = drawdata.RCFD();
+  auto targ  = drawdata.context();
+  auto FBI   = targ->FBI();
+  auto FXI   = targ->FXI();
+  auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::SpotDecaling");
   CIMPL->pushCPD(_decalCPD);
   FBI->PushRtGroup(_rtgDecal.get());
@@ -618,7 +618,7 @@ void DeferredContext::beginSpotDecaling(
 
 void DeferredContext::endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD) {
   auto CIMPL = drawdata._cimpl;
-  auto& RCFD = drawdata.RCFD();
+  auto RCFD  = drawdata.RCFD();
   auto targ  = drawdata.context();
   auto FBI   = targ->FBI();
 

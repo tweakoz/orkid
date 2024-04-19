@@ -318,7 +318,7 @@ int main(int argc, char** argv,char** envp) {
     /////////////////////////////////////
     auto render_sdf = [&](lev2::RenderContextInstData& RCID) {
 
-      const auto RCFD = RCID._RCFD;
+      auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
       auto targ = RCFD->GetTarget();
       auto sub = std::dynamic_pointer_cast<SdfSubBase>(_sdfsceneparams->_subobject);
       sub->gpuInit(targ);
@@ -329,7 +329,7 @@ int main(int argc, char** argv,char** envp) {
       auto cammtc     = TOPCPD.cameraMatrices();
 
 
-      material.begin(sub->_tekSDF, *RCFD);
+      material.begin(sub->_tekSDF, RCFD);
       material.bindParamMatrix(sub->_parMatIVP, cammtc->GetIVPMatrix());
 
       float ss_w = float(_width)*(KSUPERSAMPLE+1);
@@ -351,7 +351,7 @@ int main(int argc, char** argv,char** envp) {
       material.bindParamFloat(sub->_parIntensityB, _sdfsceneparams->_intensityb);
 
       appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-      material.end(*RCFD);
+      material.end(RCFD);
     };
     ///////////////////////////////////////
     gpurec->_sdf_drawable->SetRenderCallback(render_sdf);

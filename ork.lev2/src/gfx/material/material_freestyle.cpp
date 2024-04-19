@@ -36,7 +36,7 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
 
       pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
         auto _this       = (FreestyleMaterial*)mtl;
-        auto RCFD        = RCID._RCFD;
+        auto RCFD        = RCID.rcfd();
         auto context     = RCFD->GetTarget();
         auto RSI         = context->RSI();
         RSI->BindRasterState(_this->_rasterstate);
@@ -289,12 +289,12 @@ void FreestyleMaterial::bindParamMatrixArray(const FxShaderParam* par, const fmt
   fxi->BindParamMatrixArray(par, m, len);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
+void FreestyleMaterial::begin(const FxShaderTechnique* tek, rcfd_ptr_t RCFD) {
   OrkAssert(tek != nullptr);
- auto targ = RCFD.GetTarget();
+ auto targ = RCFD->GetTarget();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
-  RenderContextInstData RCID(&RCFD);
+  RenderContextInstData RCID(RCFD);
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
@@ -305,13 +305,13 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
 void FreestyleMaterial::begin(
     const FxShaderTechnique* tekMono,
     const FxShaderTechnique* tekStereo,
-    const RenderContextFrameData& RCFD) {
-  const auto& CPD = RCFD.topCPD();
+    rcfd_ptr_t RCFD) {
+  const auto& CPD = RCFD->topCPD();
   begin(CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
-  auto targ = RCFD.GetTarget();
+void FreestyleMaterial::end(rcfd_ptr_t RCFD) {
+  auto targ = RCFD->GetTarget();
   this->EndPass(targ);
   this->EndBlock(targ);
 }

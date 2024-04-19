@@ -338,8 +338,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamCTex(p.get(), value.get()); })
           .def(
               "begin",
-              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
-          .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
+              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, rcfd_ptr_t rcfd) { m->begin(tek.get(), rcfd); })
+          .def("end", [](freestyle_mtl_ptr_t m, rcfd_ptr_t rcfd) { m->end(rcfd); })
           .def("dump", [](freestyle_mtl_ptr_t m) { m->dump(); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
             return FormatString("FreestyleMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());

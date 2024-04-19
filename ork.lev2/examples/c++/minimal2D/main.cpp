@@ -63,7 +63,7 @@ int main(int argc, char** argv,char** envp) {
 
     fbi->SetClearColor(fvec4(r, g, b, 1));
     context->beginFrame();
-    RenderContextFrameData RCFD(context);
+    auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamVec4(resources->_fxparameterMODC, fvec4::Red());

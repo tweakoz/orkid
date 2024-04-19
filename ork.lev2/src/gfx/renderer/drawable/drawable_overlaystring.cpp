@@ -56,7 +56,7 @@ OverlayStringDrawable::OverlayStringDrawable(const OverlayStringDrawableData* da
   _rendercb = [this](lev2::RenderContextInstData& RCID){
     auto context = RCID.context();
     auto mtxi = context->MTXI();
-    auto RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;

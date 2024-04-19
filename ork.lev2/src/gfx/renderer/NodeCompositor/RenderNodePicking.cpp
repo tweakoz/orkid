@@ -60,10 +60,10 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(PickingCompositingNode* node, CompositorDrawData& drawdata) {
-    RenderContextFrameData& RCFD = drawdata.RCFD();
+    auto RCFD = drawdata.RCFD();
     auto& ddprops                = drawdata._properties;
 
-    auto context      = RCFD.GetTarget();
+    auto context      = RCFD->GetTarget();
     auto CIMPL        = drawdata._cimpl;
     auto FBI          = context->FBI();
     auto this_buf     = FBI->GetThisBuffer();
@@ -85,7 +85,7 @@ struct IMPL {
       // targ->triggerFrameDebugCapture();
       FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB             = RCFD.GetDB();
+      auto DB             = RCFD->GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
@@ -93,13 +93,13 @@ struct IMPL {
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       CPD.assignLayers(_layername);
-      RCFD._renderingmodel = "PICKING"_crcu;
-      auto& userprops      = RCFD.userProperties();
+      RCFD->_renderingmodel = "PICKING"_crcu;
+      auto& userprops      = RCFD->userProperties();
       auto it_pfc          = userprops.find("pixel_fetch_context"_crc);
       if (it_pfc == userprops.end()) {
         auto pfc = std::make_shared<PixelFetchContext>(3);
-        RCFD.setUserProperty("pixel_fetch_context"_crc, pfc);
-        RCFD.setUserProperty("pickbufferMvpMatrix"_crc, std::make_shared<fmtx4>());
+        RCFD->setUserProperty("pixel_fetch_context"_crc, pfc);
+        RCFD->setUserProperty("pickbufferMvpMatrix"_crc, std::make_shared<fmtx4>());
       }
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {

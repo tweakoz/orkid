@@ -310,7 +310,7 @@ void drawHudLines(
 
   auto mtl = hud_material(context);
   auto tek = mtl->technique("vtxcolor");
-  RenderContextFrameData RCFD(context);
+  auto RCFD = std::make_shared<RenderContextFrameData>(context);
   auto vbuf = get_vertexbuffer(context);
   auto mtxi = context->MTXI();
   auto gbi  = context->GBI();

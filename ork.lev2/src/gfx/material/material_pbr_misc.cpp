@@ -41,7 +41,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
   auto basic_lambda  = createBasicStateLambda(this);
   auto skybox_lambda = [this, basic_lambda](const RenderContextInstData& RCID, int ipass) {
     auto mut       = (PBRMaterial*)this;
-    auto RCFD      = RCID._RCFD;
+    auto RCFD      = RCID.rcfd();
     auto context   = RCFD->GetTarget();
     auto FXI       = context->FXI();
     auto MTXI      = context->MTXI();
@@ -88,7 +88,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
   fxpipeline_ptr_t pipeline;
   auto no_cull_stateblock = [this](const RenderContextInstData& RCID, int ipass) {
     auto mut   = (PBRMaterial*)this;
-    auto RCFD    = RCID._RCFD;
+    auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
     auto FXI     = context->FXI();
     auto MTXI    = context->MTXI();

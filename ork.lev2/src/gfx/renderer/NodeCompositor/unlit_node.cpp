@@ -53,8 +53,8 @@ struct IMPL {
   ///////////////////////////////////////
   void _render(UnlitNode* node, CompositorDrawData& drawdata) {
     // float t1 = _profile_timer.SecsSinceStart();
-    RenderContextFrameData& RCFD = drawdata.RCFD();
-    auto targ                    = RCFD.GetTarget();
+    auto RCFD = drawdata.RCFD();
+    auto targ                    = drawdata.context();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
@@ -80,7 +80,7 @@ struct IMPL {
       targ->FBI()->SetAutoClear(true); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB  = RCFD.GetDB();
+      auto DB  = RCFD->GetDB();
       auto CPD = CIMPL->topCPD();
       CPD.assignLayers(_layername);
       CPD._clearColor     = node->_clearColor;
@@ -98,7 +98,7 @@ struct IMPL {
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
         /////////////////////////////////////////////////
-        RCFD._renderingmodel = node->_renderingmodel;
+        RCFD->_renderingmodel = node->_renderingmodel;
         auto MTXI            = targ->MTXI();
         CIMPL->pushCPD(CPD);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");

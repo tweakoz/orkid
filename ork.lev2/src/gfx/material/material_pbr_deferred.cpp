@@ -44,7 +44,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
   ////////////////////////////////////////////////////////////////////////////////////////////
   auto common_lambda = [this](const RenderContextInstData& RCID, int ipass) {
     auto mut = const_cast<PBRMaterial*>(this);
-    auto RCFD       = RCID._RCFD;
+    auto RCFD       = RCID.rcfd();
     auto context    = RCFD->GetTarget();
     auto RSI        = context->RSI();
     const auto& CPD = RCFD->topCPD();
@@ -75,7 +75,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
       pipeline->_technique = tek;
       pipeline->addStateLambda(common_lambda);
       pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-        auto RCFD        = RCID._RCFD;
+        auto RCFD        = RCID.rcfd();
         auto context     = RCFD->GetTarget();
         auto MTXI        = context->MTXI();
         auto FXI         = context->FXI();
@@ -117,7 +117,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
       pipeline->_technique = tek;
       pipeline->addStateLambda(common_lambda);
       pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-        auto RCFD        = RCID._RCFD;
+        auto RCFD        = RCID.rcfd();
         auto context     = RCFD->GetTarget();
         auto FXI         = context->FXI();
         auto MTXI        = context->MTXI();

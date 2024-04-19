@@ -74,7 +74,7 @@ struct ParticlesDrawableInst {
 
     auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto context                       = RCID.context();
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
     const auto& CPD                    = RCFD->topCPD();
     bool isPickState                   = context->FBI()->isPickState();
     if (not _initted) {

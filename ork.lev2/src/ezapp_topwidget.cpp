@@ -85,7 +85,7 @@ void EzTopWidget::enableUiDraw() {
       if(DB)
         rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
       rcfd->_target = context;
-      context->pushRenderContextFrameData(rcfd.get());
+      context->pushRenderContextFrameData(rcfd);
       draw_buffer->_DB        = DB;
       draw_buffer->_RCFD      = rcfd;
       auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);

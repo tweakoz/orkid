@@ -109,7 +109,8 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUI::wrappedDraw(Context* context, void_lambda_t drawcb){
-  RenderContextInstData RCID;
+  auto rcfd = std::make_shared<RenderContextFrameData>(context);
+  RenderContextInstData RCID(rcfd);
   this->BeginBlock(context, RCID);
   this->BeginPass(context, 0);
   drawcb();

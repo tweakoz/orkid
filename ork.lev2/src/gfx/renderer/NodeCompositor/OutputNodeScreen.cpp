@@ -63,10 +63,10 @@ struct SCRIMPL {
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    RenderContextFrameData& RCFD = drawdata.RCFD();
+    auto RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
     const auto& CCTX             = CIMPL->compositingContext();
-    auto DB                      = RCFD.GetDB();
+    auto DB                      = RCFD->GetDB();
     Context* targ                = drawdata.context();
     int w                        = CCTX.miWidth;
     int h                        = CCTX.miHeight;
@@ -165,7 +165,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
       auto tex = buffer->texture();
       if (tex) {
 
-        RenderContextFrameData& framedata = drawdata.RCFD();
+        auto framedata = drawdata.RCFD();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////

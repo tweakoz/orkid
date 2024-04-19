@@ -84,12 +84,12 @@ struct ForwardPbrNodeImpl {
     /////////////////////////////////////////////////////////////////////////////////////////
     RtGroupRenderTarget rt(rtg_main.get());
 
-    RenderContextFrameData& RCFD = drawdata.RCFD();
+    auto RCFD = drawdata.RCFD();
 
     auto pbrcommon = _node->_pbrcommon;
     auto& ddprops  = drawdata._properties;
 
-    auto context = RCFD.GetTarget();
+    auto context = RCFD->GetTarget();
     auto CIMPL = drawdata._cimpl;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -131,8 +131,8 @@ struct ForwardPbrNodeImpl {
     context->debugPushGroup("ForwardPBR::skybox pass");
     rtg_main->_depthOnly = false;
 
-    RCFD._renderingmodel = "CUSTOM"_crcu;
-    RenderContextInstData RCID(&RCFD);
+    RCFD->_renderingmodel = "CUSTOM"_crcu;
+    RenderContextInstData RCID(RCFD);
     RCID._pipeline_cache = _skybox_fxcache;
     auto pipeline        = _skybox_fxcache->findPipeline(RCID);
     pipeline->wrappedDrawCall(RCID, [GBI]() {
@@ -153,7 +153,7 @@ struct ForwardPbrNodeImpl {
 
     context->debugPushGroup("ForwardPBR::depth-pre pass");
     DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
-    RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+    RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
 
     FBI->PushRtGroup(rtg_main.get());
 
@@ -169,8 +169,8 @@ struct ForwardPbrNodeImpl {
 
     if (1) {
       if (_enumeratedLights) {
-        auto topcomp                  = RCFD.topCompositor();
-        RCFD._renderingmodel = "DEPTH_PREPASS"_crcu;
+        auto topcomp                  = RCFD->topCompositor();
+        RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
         int num_shadow_casters = 0;
         for (auto light : _enumeratedLights->_alllights) {
           if (not light->_castsShadows)
@@ -223,14 +223,14 @@ struct ForwardPbrNodeImpl {
 
     irenderer->resetQueue();
 
-    RCFD.setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
-    RCFD.setUserProperty("DEPTH_MAP"_crcu, _rtg_depth_copy->_depthBuffer->_texture);
+    RCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
+    RCFD->setUserProperty("DEPTH_MAP"_crcu, _rtg_depth_copy->_depthBuffer->_texture);
 
     FBI->PushRtGroup(rtg_main.get());
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue("std_forward", irenderer);
 
-    RCFD._renderingmodel = "FORWARD_PBR"_crcu;
+    RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
     context->debugPushGroup("ForwardPBR::color pass");
     // irenderer->_debugLog = true;
     irenderer->drawEnqueuedRenderables();
@@ -249,7 +249,7 @@ struct ForwardPbrNodeImpl {
 
     auto context      = drawdata.context();
     auto CIMPL        = drawdata._cimpl;
-    auto& RCFD        = drawdata.RCFD();
+    auto  RCFD        = drawdata.RCFD();
 
     /////////////////////////////////////////////////
     // enumerate lights / PBR
@@ -282,9 +282,9 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     context->debugPushGroup("ForwardPBR::render");
     {
-      if (auto DB = RCFD.GetDB()) {
+      if (auto DB = RCFD->GetDB()) {
 
-        RCFD._pbrcommon = _node->_pbrcommon;
+        RCFD->_pbrcommon = _node->_pbrcommon;
 
         _render_xxx(node, drawdata, DB, rtg_main);
 

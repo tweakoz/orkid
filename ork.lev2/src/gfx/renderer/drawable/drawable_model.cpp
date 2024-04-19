@@ -295,32 +295,31 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
     nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
   }
   /////////////////////////////////////////////////////////////
-  RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
   auto RCFD = context->topRenderContextFrameData();
-  RCID._RCFD = RCFD;
+  auto RCID = std::make_shared<RenderContextInstData>(RCFD);
   RCID_MD.mMesh    = mesh;
   RCID_MD.mSubMesh = submesh;
   RCID_MD._cluster = this->_cluster;
-  RCID.SetRenderer(renderer);
-  RCID.setRenderable(this);
-  RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
-  RCID._pickID = _pickID;
+  RCID->SetRenderer(renderer);
+  RCID->setRenderable(this);
+  RCID->_pipeline_cache = _submeshinst->_fxpipelinecache;
+  RCID->_pickID = _pickID;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
   //logchan_model->log("renderable<%p> fxlut(%p)", (void*) this, (void*) RCID._fx_instance_lut.get() );
   bool model_is_skinned = model->isSkinned();
-  RCID._isSkinned       = model_is_skinned;
+  RCID->_isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
   RCID_MD.SetModelInst(minst);
 
   auto ObjColor = this->_modColor;
   if (model_is_skinned) {
-    model->RenderSkinned(minst.get(), ObjColor, nmat, context, RCID, RCID_MD);
+    model->RenderSkinned(minst.get(), ObjColor, nmat, context, *RCID, RCID_MD);
   } else {
-    model->RenderRigid(ObjColor, nmat, context, RCID, RCID_MD);
+    model->RenderRigid(ObjColor, nmat, context, *RCID, RCID_MD);
   }
   context->debugPopGroup();
 }
@@ -359,9 +358,8 @@ void SkeletonRenderable::Render(const IRenderer* renderer) const {
     nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
   }
   /////////////////////////////////////////////////////////////
-  RenderContextInstData RCID;
   auto RCFD = context->topRenderContextFrameData();
-  RCID._RCFD = RCFD;
+  RenderContextInstData RCID(RCFD);
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
   //RCID._pipeline_cache = _submeshinst->_fxpipelinecache;

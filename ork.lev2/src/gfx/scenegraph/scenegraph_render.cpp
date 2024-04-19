@@ -164,7 +164,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
 
   _renderer->setContext(context);
 
-  context->pushRenderContextFrameData(RCFD.get());
+  context->pushRenderContextFrameData(RCFD);
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
   auto mtxi = context->MTXI(); // matrix Interface
@@ -240,7 +240,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       context->debugPushGroup("pickhud");
       size_t DIM = 200;
       if (_sgpickbuffer->_pickIDtexture) {
-        pickhudmat->begin(tek_texcolorpik, *RCFD);
+        pickhudmat->begin(tek_texcolorpik, RCFD);
         fxi->BindParamCTex(par_pickidmap, _sgpickbuffer->_pickIDtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
@@ -249,10 +249,10 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
             fvec4(1, 0, -1, 1),    // uvrect2
             0.0f);                 // depth
 
-        pickhudmat->end(*RCFD);
+        pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickPOStexture) {
-        pickhudmat->begin(tek_texcolormod1, *RCFD);
+        pickhudmat->begin(tek_texcolormod1, RCFD);
         fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickPOStexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
@@ -261,10 +261,10 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
             fvec4(1, 0, -1, 1),      // uvrect2
             0.0f);                   // depth
 
-        pickhudmat->end(*RCFD);
+        pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickNRMtexture) {
-        pickhudmat->begin(tek_texcolornrm, *RCFD);
+        pickhudmat->begin(tek_texcolornrm, RCFD);
         fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickNRMtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
@@ -273,10 +273,10 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
             fvec4(1, 0, -1, 1),          // uvrect2
             0.0f);                       // depth
 
-        pickhudmat->end(*RCFD);
+        pickhudmat->end(RCFD);
       }
       if (_sgpickbuffer->_pickUVtexture) {
-        pickhudmat->begin(tek_texcolor, *RCFD);
+        pickhudmat->begin(tek_texcolor, RCFD);
         fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickUVtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
@@ -285,7 +285,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
             fvec4(1, 0, -1, 1),          // uvrect2
             0.0f);                       // depth
 
-        pickhudmat->end(*RCFD);
+        pickhudmat->end(RCFD);
       }
       context->debugPopGroup();
     }
@@ -314,7 +314,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
   rcfd->setUserProperty("time"_crc, _currentTime);
   rcfd->pushCompositor(_compositorImpl);
   _renderer->setContext(context);
-  context->pushRenderContextFrameData(rcfd.get());
+  context->pushRenderContextFrameData(rcfd);
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
   auto mtxi = context->MTXI(); // matrix Interface

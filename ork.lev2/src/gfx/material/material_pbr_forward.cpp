@@ -40,7 +40,7 @@ static logchannel_ptr_t logchan_pbr_fwd = logger()->createChannel("mtlpbrFWD", f
 FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
   auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
-    auto RCFD             = RCID._RCFD;
+    auto RCFD             = RCID.rcfd();
     bool is_depth_prepass = RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu;
     if (is_depth_prepass)
       return;
@@ -189,7 +189,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
   ////////////////////////////////////////////////
   auto rsi_lambda = [this](const RenderContextInstData& RCID, int ipass) {
     auto mut = const_cast<PBRMaterial*>(this);
-    auto RCFD    = RCID._RCFD;
+    auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
     auto RSI     = context->RSI();
     //this->_rasterstate.SetBlending(Blending::ADDITIVE);

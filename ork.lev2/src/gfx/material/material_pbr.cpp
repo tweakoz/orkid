@@ -516,7 +516,7 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
   auto rsi                           = context->RSI();
   auto mtxi                          = context->MTXI();
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = context->topRenderContextFrameData();
+  auto RCFD = context->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
   } else {
@@ -587,7 +587,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   auto fxi                           = context->FXI();
   auto mtxi                          = context->MTXI();
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = context->topRenderContextFrameData();
+  auto RCFD = context->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   const auto& world                  = mtxi->RefMMatrix();
   const auto& drect                  = CPD.GetDstRect();

@@ -71,7 +71,7 @@ MaterialBase::MaterialBase() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
-  _pipeline->_technique = (RCID._RCFD->isStereo())                                        // ?
+  _pipeline->_technique = (RCID.rcfd()->isStereo())                                        // ?
                               ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereoCI) // stereo
                               : (streaks ? _tek_streaks : _tek_sprites);                  // mono
 
@@ -321,7 +321,7 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     // ensure this operation is not stereo
     //  as that will mess up viewport settings
     /////////////////////////////////////////
-    auto& CPD        = (CompositingPassData&)RCID._RCFD->topCPD();
+    auto& CPD        = (CompositingPassData&)RCID.rcfd()->topCPD();
     bool prev_stereo = CPD.isStereoOnePass();
     CPD.setStereoOnePass(false);
     /////////////////////////////////////////

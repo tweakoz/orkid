@@ -50,7 +50,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
           auto mut = const_cast<PBRMaterial*>(this);
-          auto RCFD    = RCID._RCFD;
+          auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
@@ -70,7 +70,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
           auto mut = const_cast<PBRMaterial*>(this);
-          auto RCFD    = RCID._RCFD;
+          auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
@@ -93,7 +93,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
           auto mut = const_cast<PBRMaterial*>(this);
-          auto RCFD    = RCID._RCFD;
+          auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
@@ -113,7 +113,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
           auto mut = const_cast<PBRMaterial*>(this);
-          auto RCFD    = RCID._RCFD;
+          auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
@@ -135,7 +135,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
       pipeline->addStateLambda(createBasicStateLambda(this));
       pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
         auto mut = const_cast<PBRMaterial*>(this);
-        auto RCFD    = RCID._RCFD;
+        auto RCFD    = RCID.rcfd();
         auto context = RCFD->GetTarget();
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();

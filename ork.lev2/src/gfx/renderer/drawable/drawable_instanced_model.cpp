@@ -130,7 +130,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     auto FBI         = context->FBI();
     auto impl        = _impl.getShared<IMDIMPL_MODEL>();
     bool isPick      = FBI->isPickState();
-    bool isStereo    = RCID._RCFD->isStereo();
+    bool isStereo    = RCID.rcfd()->isStereo();
     int pipeline_index = isStereo ? 1 : (isPick ? 2 : 0);
     ////////////////////////////////////////////////////////
     bool updatetex = true; //( (_drawcount++) < 5000);

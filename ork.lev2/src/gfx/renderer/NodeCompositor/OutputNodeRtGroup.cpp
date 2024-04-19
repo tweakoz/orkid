@@ -137,7 +137,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
   Context* context                  = drawdata.context();
-  RenderContextFrameData& framedata = drawdata.RCFD();
+  auto framedata = drawdata.RCFD();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
   auto output_rtg = impl->_outputRTG.get();

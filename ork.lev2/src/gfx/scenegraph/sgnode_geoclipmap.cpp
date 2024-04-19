@@ -108,7 +108,7 @@ struct ClipMapRenderImpl {
 
     bool isPickState = context->FBI()->isPickState();
 
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
 
     bool is_depth_prepass = RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu;
 
