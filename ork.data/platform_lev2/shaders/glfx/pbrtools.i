@@ -98,6 +98,7 @@ uniform_set ub_frg_fwd {
 
   vec4 ModColor;
   vec4 AuxA;
+  vec4 AuxB;
   uint obj_pickID;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;

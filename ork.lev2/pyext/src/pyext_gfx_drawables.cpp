@@ -134,6 +134,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> float { return drw->_intensityB; },
               [](griddrawabledataptr_t drw, float val) { drw->_intensityB = val; })
           .def_property(
+              "intensityC",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityC; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityC = val; })
+          .def_property(
+              "intensityD",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityD; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityD = val; })
+          .def_property(
               "lineWidth",
               [](griddrawabledataptr_t drw) -> float { return drw->_lineWidth; },
               [](griddrawabledataptr_t drw, float val) { drw->_lineWidth = val; })
