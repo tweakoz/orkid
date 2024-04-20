@@ -92,7 +92,7 @@ struct RtGroup final {
     return ViewportRect(0, 0, miW, miH);
   }
   /////////////////////////////////////////
-  static const int kmaxmrts = 4;
+  static const int kmaxmrts = 8;
 
   Context* _parentTarget;
   rtbuffer_ptr_t mMrt[kmaxmrts];
@@ -100,6 +100,8 @@ struct RtGroup final {
   int mNumMrts;
   int miW;
   int miH;
+  bool _cubeMap = false;
+  int _cubeRenderFace = 0;
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svar16_t _impl;

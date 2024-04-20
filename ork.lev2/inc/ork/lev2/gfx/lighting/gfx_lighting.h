@@ -153,10 +153,10 @@ struct Light : public Drawable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum class LightProbeType {
-  REFLECTION,
-  SH_IRRADIANCE,
-  END
+enum class LightProbeType : uint64_t {
+  CrcEnum(REFLECTION),
+  CrcEnum(SH_IRRADIANCE),
+  CrcEnum(END)
 };
 
 struct LightProbe {
@@ -174,6 +174,7 @@ struct LightProbe {
   rtgroup_ptr_t _cubeRenderRTG;
   texture_ptr_t _cubeTexture;
   varmap::varmap_ptr_t _userdata;
+  svar64_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

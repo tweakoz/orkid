@@ -151,7 +151,35 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto probe_t = py::class_<LightProbe, lightprobe_ptr_t>(module_lev2, "LightProbe")
-    .def(py::init<>());
+    .def(py::init<>())
+    .def_property("imageDim",                                //
+          [](lightprobe_ptr_t probe) -> int { //
+            return probe->_dim;
+          },
+          [](lightprobe_ptr_t probe, int dim) { //
+            probe->_dim = dim;
+          })
+          .def_property("worldMatrix",                                //
+          [](lightprobe_ptr_t probe) -> fmtx4 { //
+            return probe->_worldMatrix;
+          },
+          [](lightprobe_ptr_t probe, fmtx4 mtx) { //
+            probe->_worldMatrix = mtx;
+          })
+          .def_property("name",                                //
+          [](lightprobe_ptr_t probe) -> std::string { //
+            return probe->_name;
+          },
+          [](lightprobe_ptr_t probe, std::string name) { //
+            probe->_name = name;
+          })
+          .def_property("type",                                //
+          [](lightprobe_ptr_t probe) -> crcstring_ptr_t { //
+            return std::make_shared<CrcString>(uint64_t(probe->_type));
+          },
+          [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
+            probe->_type = LightProbeType(t->hashed());
+          });
   type_codec->registerStdCodec<lightprobe_ptr_t>(probe_t);
   /////////////////////////////////////////////////////////////////////////////////
   module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {

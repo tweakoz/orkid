@@ -27,6 +27,7 @@ parser = argparse.ArgumentParser(description='scenegraph example')
 ################################################################################
 args = vars(parser.parse_args())
 ################################################################################
+tokens = CrcStringProxy()
 
 class LIGHTING_APP(object):
 
@@ -123,6 +124,10 @@ class LIGHTING_APP(object):
     ##############################################
 
     self.probe = LightProbe()
+    self.probe.type = tokens.REFLECTION
+    self.probe.imageDim = 1024
+    self.probe.worldMatrix = mtx4()
+    self.probe.name = "probe1"
     self.probe_node = self.layer1.createLightProbeNode("probe",self.probe)
 
   ##############################################

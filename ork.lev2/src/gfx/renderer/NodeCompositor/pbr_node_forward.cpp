@@ -59,12 +59,13 @@ struct ForwardPbrNodeImpl {
 
     if (nullptr == _rtgs_main) {
 
-      _rtg_main_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_main_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
 
       auto pbrcommon = _node->_pbrcommon;
 
       EBufferFormat efmt = EBufferFormat::RGBA8;
-      if(pbrcommon->_useFloatColorBuffer ){
+      if (pbrcommon->_useFloatColorBuffer) {
         efmt = EBufferFormat::RGBA32F;
       }
 
@@ -194,6 +195,7 @@ struct ForwardPbrNodeImpl {
     auto FBI     = context->FBI();
     auto CIMPL   = drawdata._cimpl;
     auto RCFD    = drawdata.RCFD();
+    auto topcomp = RCFD->topCompositor();
 
     /////////////////////////////////////////////////
     // enumerate lights / PBR
@@ -255,7 +257,6 @@ struct ForwardPbrNodeImpl {
 
         if (1) {
           if (_enumeratedLights) {
-            auto topcomp           = RCFD->topCompositor();
             RCFD->_renderingmodel  = "DEPTH_PREPASS"_crcu;
             int num_shadow_casters = 0;
             for (auto light : _enumeratedLights->_alllights) {
@@ -300,15 +301,90 @@ struct ForwardPbrNodeImpl {
           }
         }
 
+        /////////////////////////////////////////////////
+        // update reflection probes
+        /////////////////////////////////////////////////
+
+        for (auto probe : _enumeratedLights->_lightprobes) {
+          switch (probe->_type) {
+            case LightProbeType::REFLECTION:
+              if (nullptr == probe->_cubeRenderRTG) {
+                probe->_cubeRenderRTG = std::make_shared<RtGroup>(context, 8, 8);
+                probe->_cubeRenderRTG->_cubeMap = true;
+              }
+
+              int prevW = probe->_cubeRenderRTG->width();
+              int prevH = probe->_cubeRenderRTG->height();
+              if (prevW != probe->_dim or prevH != probe->_dim) {
+                probe->_cubeRenderRTG->Resize(probe->_dim, probe->_dim);
+              }
+
+              fvec3 POSX = probe->_worldMatrix.xNormal();
+              fvec3 POSY = probe->_worldMatrix.yNormal();
+              fvec3 POSZ = probe->_worldMatrix.zNormal();
+
+              fvec3 position = probe->_worldMatrix.translation();
+
+              for( int iface=0; iface<6; iface++ ){
+                CompositingPassData cubemapCPD = CPD.clone();
+                CameraMatrices CUBECAM;
+
+                // compute view matrices from cubeface and probe->_worldMatrix
+                //  face 0 = POSX
+                //  face 1 = NEGX
+                //  face 2 = POSY
+                //  face 3 = NEGY
+                //  face 4 = POSZ
+                //  face 5 = NEGZ
+
+                switch( iface ){
+                  case 0: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
+                  case 1: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
+                  case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ ); break;
+                  case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
+                  case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
+                  case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
+                }
+                // compute projection matrix
+                CUBECAM._pmatrix.perspective(90.0f, 1.0f, 0.01f, 1000.0f);
+
+
+                CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
+                CUBECAM._ivpmatrix                = CUBECAM._vpmatrix.inverse();
+                CUBECAM._ivmatrix                 = CUBECAM._vmatrix.inverse();
+                CUBECAM._ipmatrix                 = CUBECAM._pmatrix.inverse();
+                CUBECAM._frustum.set(CUBECAM._vmatrix,CUBECAM._pmatrix);
+                CUBECAM._explicitProjectionMatrix = true;
+                CUBECAM._explicitViewMatrix       = true;
+                CUBECAM._aspectRatio              = 1.0f;
+
+                auto probe_pass             = std::make_shared<ForwardPass>();
+                probe_pass->_node           = node;
+                probe_pass->_drawdata       = &drawdata;
+                probe_pass->_DB             = DB;
+                probe_pass->_rtg_out        = probe->_cubeRenderRTG;
+                probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+                probe->_cubeRenderRTG->_cubeRenderFace = iface;
+
+                cubemapCPD._cameraMatrices        = &CUBECAM;
+                topcomp->pushCPD(cubemapCPD);
+                _render_xxx(probe_pass);
+                topcomp->popCPD();
+              }
+
+              break;
+          }
+        }
+
         ////////////////////////////
         // main pass
         ////////////////////////////
 
-        auto main_fwd_pass       = std::make_shared<ForwardPass>();
-        main_fwd_pass->_node     = node;
-        main_fwd_pass->_drawdata = &drawdata;
-        main_fwd_pass->_DB       = DB;
-        main_fwd_pass->_rtg_out  = rtg_main;
+        auto main_fwd_pass             = std::make_shared<ForwardPass>();
+        main_fwd_pass->_node           = node;
+        main_fwd_pass->_drawdata       = &drawdata;
+        main_fwd_pass->_DB             = DB;
+        main_fwd_pass->_rtg_out        = rtg_main;
         main_fwd_pass->_rtg_depth_copy = _rtg_main_depth_copy;
 
         _render_xxx(main_fwd_pass);
@@ -335,6 +411,7 @@ struct ForwardPbrNodeImpl {
 
   rtgset_ptr_t _rtgs_main;
   rtgroup_ptr_t _rtg_main_depth_copy;
+  rtgroup_ptr_t _rtg_cube1_depth_copy;
   rtgset_ptr_t _rtgs_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
