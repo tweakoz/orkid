@@ -696,7 +696,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       auto bufferimpl = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
       auto color_glto = bufferimpl->_teximpl.getShared<GLTextureObject>();
 
-      // bind rtgroup->_cubeRenderFace to framebuffer attachment 0
+      /////////////////////////////////////////////////////////////
+      // bind rtgroup->_cubeRenderFace to 
+      // framebuffer color and depth attachment 0
+      /////////////////////////////////////////////////////////////
 
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
       glFramebufferTexture2D( GL_FRAMEBUFFER, 
@@ -704,16 +707,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
                               GL_TEXTURE_CUBE_MAP_POSITIVE_X+rtgroup->_cubeRenderFace, // face
                               color_glto->_textureObject, 
                               0); // mip
-      //glBindTexture(texture_target, color_glto->_textureObject);
+
       glFramebufferTexture2D( GL_FRAMEBUFFER, 
                               GL_DEPTH_ATTACHMENT, 
                               GL_TEXTURE_CUBE_MAP_POSITIVE_X+rtgroup->_cubeRenderFace, 
                               rtg_impl->_standard->_depthTexObject, 
                               0);
-
-      printf( "SetRtg::BindFBO<%d> numattachments<%d> CUBE<%d> TO<%d>\n", int(rtg_impl->_standard->_fbo), inumtargets, int(rtgroup->_cubeMap), color_glto->_textureObject);
-
-
 
     } else {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
