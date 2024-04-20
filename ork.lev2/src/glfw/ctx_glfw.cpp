@@ -1077,6 +1077,7 @@ struct PopupImpl {
       glfwMakeContextCurrent(_glfwPopupWindow);
 
       glFinish();
+
       glfwSwapBuffers(_glfwPopupWindow);
 
       usleep(1000 * 16);

@@ -58,109 +58,114 @@ void EzTopWidget::enableUiDraw() {
   auto update_buffer = std::make_shared<AcquiredUpdateDrawBuffer>();
   auto draw_buffer   = std::make_shared<AcquiredRenderDrawBuffer>();
   /////////////////////////////////////////////////////////////////////
-    ezapp->_mainWindow->_onUpdateInternal = [=](ui::updatedata_ptr_t updata) {
-      auto DB = dbufcontext->acquireForWriteLocked();
-      if (DB) {
-        update_buffer->_DB = DB;
-        DB->Reset();
-        DB->copyCameras(*cameras);
-        //   ezapp->_eztopwidget->onUpdateThreadTick(updata);
-        dbufcontext->releaseFromWriteLocked(DB);
-      }
-    };
-    /////////////////////////////////////////////////////////////////////
-    ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
-      ////////////////////////////////////////////////
-      auto DB = dbufcontext->acquireForReadLocked();
-      ////////////////////////////////////////////////
-      auto context = drwev->GetTarget();
-      auto fbi     = context->FBI();  // FrameBufferInterface
-      auto fxi     = context->FXI();  // FX Interface
-      auto mtxi    = context->MTXI(); // FX Interface
-      fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
-      fbi->Clear(fvec4(1.0, 0.0, 1.0, 1),1);
-      ////////////////////////////////////////////////////
-      rcfd->_name = "EzTopWidget::rcfd";
-      rcfd->pushCompositor(compositorimpl);
-      if(DB)
-        rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-      rcfd->_target = context;
-      context->pushRenderContextFrameData(rcfd);
-      draw_buffer->_DB        = DB;
-      draw_buffer->_RCFD      = rcfd;
-      auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);
-      mutable_drwev->_acqdbuf = draw_buffer;
-      ////////////////////////////////////////////////////
-      lev2::UiViewportRenderTarget rt(nullptr);
-      auto tgtrect        = context->mainSurfaceRectAtOrigin();
-      CPD->_irendertarget = &rt;
-      CPD->SetDstRect(tgtrect);
-      compositorimpl->pushCPD(*CPD);
-      context->beginFrame();
-      mtxi->PushUIMatrix();
-      ezapp->_uicontext->draw(drwev);
-      mtxi->PopUIMatrix();
-      context->endFrame();
-      rcfd->popCompositor();
-      ////////////////////////////////////////////////////
-      if(DB)
-        dbufcontext->releaseFromReadLocked(DB);
-    });  
+  ezapp->_mainWindow->_onUpdateInternal = [=](ui::updatedata_ptr_t updata) {
+    auto DB = dbufcontext->acquireForWriteLocked();
+    if (DB) {
+      update_buffer->_DB = DB;
+      DB->Reset();
+      DB->copyCameras(*cameras);
+      //   ezapp->_eztopwidget->onUpdateThreadTick(updata);
+      dbufcontext->releaseFromWriteLocked(DB);
+    }
+  };
+  /////////////////////////////////////////////////////////////////////
+  ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+    ////////////////////////////////////////////////
+    auto DB = dbufcontext->acquireForReadLocked();
+    ////////////////////////////////////////////////
+    auto context = drwev->GetTarget();
+    auto fbi     = context->FBI();  // FrameBufferInterface
+    auto fxi     = context->FXI();  // FX Interface
+    auto mtxi    = context->MTXI(); // FX Interface
+    fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
+    fbi->Clear(fvec4(1.0, 0.0, 1.0, 1), 1);
+    ////////////////////////////////////////////////////
+    rcfd->_name = "EzTopWidget::rcfd";
+    rcfd->pushCompositor(compositorimpl);
+    if (DB)
+      rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    rcfd->_target = context;
+    context->pushRenderContextFrameData(rcfd);
+    draw_buffer->_DB        = DB;
+    draw_buffer->_RCFD      = rcfd;
+    auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);
+    mutable_drwev->_acqdbuf = draw_buffer;
+    ////////////////////////////////////////////////////
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect        = context->mainSurfaceRectAtOrigin();
+    CPD->_irendertarget = &rt;
+    CPD->SetDstRect(tgtrect);
+    compositorimpl->pushCPD(*CPD);
+    context->beginFrame();
+    mtxi->PushUIMatrix();
+    ezapp->_uicontext->draw(drwev);
+    mtxi->PopUIMatrix();
+
+    if(ezapp->_mainWindow->_onGpuPostFrame){
+      ezapp->_mainWindow->_onGpuPostFrame(context);
+    }
+
+    context->endFrame();
+    rcfd->popCompositor();
+    ////////////////////////////////////////////////////
+    if (DB)
+      dbufcontext->releaseFromReadLocked(DB);
+  });
 }
 /////////////////////////////////////////////////
 void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
-    //////////////////////////////////////////////////////
-    // ensure onUpdateInit called before onGpuInit!
-    //////////////////////////////////////////////////////
-    auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
-    if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
-      return;
-    ///////////////////////////
-    drwev->GetTarget()->makeCurrentContext();
-    ///////////////////////////
-    while (ezapp->_rthreadq->Process()) {
-    }
-    ///////////////////////////
-    if (_mainwin->_onDraw) {
-      _mainwin->_onDraw(drwev);
-      auto ctxbase = drwev->GetTarget()->mCtxBase;
-      drwev->GetTarget()->swapBuffers(ctxbase);
-      ezapp->_render_count.fetch_add(1);
-    }
-    ///////////////////////////
-    double this_time           = _mainwin->_render_timer.SecsSinceStart();
-    _mainwin->_render_prevtime = this_time;
-    if (this_time >= 15.0) {
-      double FPS = _mainwin->_render_state_numiters / this_time;
-      logchan_ezapp->log("FPS<%g>", FPS);
-      _mainwin->_render_state_numiters = 0.0;
-      _mainwin->_render_timer.Start();
-    } else {
-      _mainwin->_render_state_numiters += 1.0;
-    }
-    ///////////////////////////
+  //////////////////////////////////////////////////////
+  // ensure onUpdateInit called before onGpuInit!
+  //////////////////////////////////////////////////////
+  auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+  if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
+    return;
+  ///////////////////////////
+  drwev->GetTarget()->makeCurrentContext();
+  ///////////////////////////
+  while (ezapp->_rthreadq->Process()) {
+  }
+  ///////////////////////////
+  if (_mainwin->_onDraw) {
+    _mainwin->_onDraw(drwev);
+    auto ctxbase = drwev->GetTarget()->mCtxBase;
+    drwev->GetTarget()->swapBuffers(ctxbase);
+    ezapp->_render_count.fetch_add(1);
+  }
+  ///////////////////////////
+  double this_time           = _mainwin->_render_timer.SecsSinceStart();
+  _mainwin->_render_prevtime = this_time;
+  if (this_time >= 15.0) {
+    double FPS = _mainwin->_render_state_numiters / this_time;
+    logchan_ezapp->log("FPS<%g>", FPS);
+    _mainwin->_render_state_numiters = 0.0;
+    _mainwin->_render_timer.Start();
+  } else {
+    _mainwin->_render_state_numiters += 1.0;
+  }
+  ///////////////////////////
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {
-  printf( "EzTopWidget::_doOnResized<%d %d>\n", width(), height() );
-    if (_mainwin->_onResize) {
-      _mainwin->_onResize(width(), height());
-    }
-    _topLayoutGroup->SetSize(width(), height());
+  printf("EzTopWidget::_doOnResized<%d %d>\n", width(), height());
+  if (_mainwin->_onResize) {
+    _mainwin->_onResize(width(), height());
+  }
+  _topLayoutGroup->SetSize(width(), height());
 }
 /////////////////////////////////////////////////
 ui::HandlerResult EzTopWidget::DoOnUiEvent(ui::event_constptr_t ev) {
-    if (_mainwin->_onUiEvent) {
-      printf( "A\n");
-      auto hacked_event      = std::make_shared<ui::Event>();
-      *hacked_event          = *ev;
-      hacked_event->_vpdim.x = width();
-      hacked_event->_vpdim.y = height();
-      return _mainwin->_onUiEvent(hacked_event);
-    } else {
-      printf( "B\n");
-      return ui::HandlerResult();
-    }
+  if (_mainwin->_onUiEvent) {
+    printf("A\n");
+    auto hacked_event      = std::make_shared<ui::Event>();
+    *hacked_event          = *ev;
+    hacked_event->_vpdim.x = width();
+    hacked_event->_vpdim.y = height();
+    return _mainwin->_onUiEvent(hacked_event);
+  } else {
+    printf("B\n");
+    return ui::HandlerResult();
+  }
 }
-    ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2 {
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
