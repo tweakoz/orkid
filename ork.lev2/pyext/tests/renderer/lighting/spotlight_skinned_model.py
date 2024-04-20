@@ -124,7 +124,7 @@ class StereoApp1(object):
     self.ball_model = XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.dds")
 
-    shadow_size = 1024
+    shadow_size = 4096
     shadow_bias = 1e-3
     intens = 350
     self.spotlight1 = MySpotLight(app=self,
@@ -136,7 +136,7 @@ class StereoApp1(object):
                                  bias=shadow_bias,
                                  dim=shadow_size,
                                  fovamp=0,
-                                 fovbase=65,
+                                 fovbase=45,
                                  voffset=16,
                                  vscale=12)
 
@@ -149,7 +149,7 @@ class StereoApp1(object):
                                  bias=shadow_bias,
                                  dim=shadow_size,
                                  fovamp=0,
-                                 fovbase=85,
+                                 fovbase=65,
                                  voffset=17,
                                  vscale=10)
 
@@ -162,7 +162,7 @@ class StereoApp1(object):
                                  bias=shadow_bias,
                                  dim=shadow_size,
                                  fovamp=0,
-                                 fovbase=95,
+                                 fovbase=75,
                                  voffset=20,
                                  vscale=10)
 
