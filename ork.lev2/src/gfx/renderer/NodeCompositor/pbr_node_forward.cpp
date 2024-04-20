@@ -41,6 +41,7 @@ struct ForwardPass {
   const DrawableBuffer* _DB     = nullptr;
   rtgroup_ptr_t _rtg_out;
   rtgroup_ptr_t _rtg_depth_copy;
+  bool _renderingPROBE = false;
 };
 using forward_pass_ptr_t = std::shared_ptr<ForwardPass>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,25 +105,34 @@ struct ForwardPbrNodeImpl {
     auto rtg_out  = fpass->_rtg_out;
 
     /////////////////////////////////////////////////////////////////////////////////////////
+
     RtGroupRenderTarget rt(rtg_out.get());
 
     auto RCFD    = drawdata->RCFD();
     auto context = drawdata->context();
     auto FBI     = context->FBI();
     auto GBI     = context->GBI();
-    auto CIMPL   = drawdata->_cimpl;
-
-    auto pbrcommon = _node->_pbrcommon;
-
-    ///////////////////////////////////////////////////////////////////////////
-
     auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
 
+    auto CIMPL   = drawdata->_cimpl;
     auto CPD = CIMPL->topCPD();
 
-    ////////////////////////////
+    auto pbrcommon = _node->_pbrcommon;
+    bool renderingPROBE = fpass->_renderingPROBE;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // setup global RCFD state for PBR materials
+    ///////////////////////////////////////////////////////////////////////////
+
+    bool have_probes = (_enumeratedLights->_lightprobes.size() > 0);
+
+    RCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
+    RCFD->setUserProperty("renderingPROBE"_crcu, renderingPROBE);
+    RCFD->setUserProperty("havePROBES"_crcu, have_probes);
+
+    ///////////////////////////////////////////////////////////////////////////
     // Render Skybox first so MSAA can blend with it
-    ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
     context->debugPushGroup("ForwardPBR::skybox pass");
 
@@ -146,9 +156,9 @@ struct ForwardPbrNodeImpl {
     context->debugPopGroup();
     FBI->PopRtGroup();
 
-    ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
     // depth prepass
-    ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
     if (pbrcommon->_useDepthPrepass) {
       FBI->validateRtGroup(rtg_out);
@@ -169,13 +179,11 @@ struct ForwardPbrNodeImpl {
       FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
     }
 
-    ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
     // main color pass
-    ////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
     CPD._cameraMatrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
-
-    RCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
 
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
@@ -189,6 +197,8 @@ struct ForwardPbrNodeImpl {
     // irenderer->_debugLog = true;
     rtg_out->_autoclear = false;
     rtg_out->_depthOnly = false;
+    rtg_out->_clearMaskDepth = false; // not clearing anyway ...
+    rtg_out->_clearMaskColor = false; // not clearing anyway ...
     FBI->PushRtGroup(rtg_out.get());
     irenderer->drawEnqueuedRenderables(true);
     context->debugPopGroup();
@@ -383,6 +393,7 @@ struct ForwardPbrNodeImpl {
                 probe_pass->_DB             = DB;
                 probe_pass->_rtg_out        = probe->_cubeRenderRTG;
                 probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+                probe_pass->_renderingPROBE  = true;
                 probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
                 cubemapCPD._cameraMatrices        = &CUBECAM;
@@ -393,6 +404,8 @@ struct ForwardPbrNodeImpl {
                 context->debugPopGroup();
 
               }
+
+              probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
 
               break;
           }
@@ -408,6 +421,7 @@ struct ForwardPbrNodeImpl {
         main_fwd_pass->_DB             = DB;
         main_fwd_pass->_rtg_out        = rtg_main;
         main_fwd_pass->_rtg_depth_copy = _rtg_main_depth_copy;
+        main_fwd_pass->_renderingPROBE  = false;
 
         _render_xxx(main_fwd_pass);
 

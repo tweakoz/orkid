@@ -40,17 +40,33 @@ static logchannel_ptr_t logchan_pbr_fwd = logger()->createChannel("mtlpbrFWD", f
 FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
   auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
+
     auto RCFD             = RCID.rcfd();
+    auto context    = RCFD->GetTarget();
+    auto FXI        = context->FXI();
+    bool is_skinned = RCID._isSkinned;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // retrieve global RCFD state for PBR materials
+    ///////////////////////////////////////////////////////////////////////////
+
+    auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+    bool is_rendering_PROBE = RCFD->userPropertyAs<bool>("renderingPROBE"_crcu);
+    bool have_PROBES = RCFD->userPropertyAs<bool>("havePROBES"_crcu);
+    bool should_bind_probes = (have_PROBES and (not is_rendering_PROBE));
     bool is_depth_prepass = RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // we are not lighting for depth prepass, so NOP
+    ///////////////////////////////////////////////////////////////////////////
+
     if (is_depth_prepass)
       return;
 
-    bool is_skinned = RCID._isSkinned;
-    // printf( "lighting_lambda skinned<%d>\n", int(is_skinned));
+    ///////////////////////////////////////////////////////////////////////////
+    // build lighting UBO
+    ///////////////////////////////////////////////////////////////////////////
 
-    auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-    auto context    = RCFD->GetTarget();
-    auto FXI        = context->FXI();
     // logchan_pbr_fwd->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
     int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
@@ -126,7 +142,22 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // printf( "texlistsize<%d>\n", texlist.size() );
     pl_mapped->unmap();
 
-    if (mtl->_parTexSpotLightsCount) {
+    ///////////////////////////////////////////////////////////////////////////
+    // bind lighting UBO
+    ///////////////////////////////////////////////////////////////////////////
+
+    if (mtl->_parUnTexPointLightsCount)
+      FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
+    if (mtl->_parUnTexPointLightsData) {
+      // printf( "binding lighting UBO\n");
+      FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // bind spotlight cookies
+    ///////////////////////////////////////////////////////////////////////////
+ 
+     if (mtl->_parTexSpotLightsCount) {
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
       if (texlist.size() > 0) {
@@ -154,13 +185,31 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
       }
     }
+    
+    ///////////////////////////////////////////////////////////////////////////
+    // bind light/environment probes
+    ///////////////////////////////////////////////////////////////////////////
 
-    if (mtl->_parUnTexPointLightsCount)
-      FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
-    if (mtl->_parUnTexPointLightsData) {
-      // printf( "binding lighting UBO\n");
-      FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+    if(should_bind_probes){
+      size_t num_probes = enumlights->_lightprobes.size();
+      //printf( "BINDING PROBES!  count<%d>\n", num_probes );
+
+      // technically here we should only bind a set of probes 
+      // that are relevant to the current rendered object
+      // and bind the weight of each probe
+      // for now we will just bind all probes
+
+      auto probe_0 = enumlights->_lightprobes[0];
+
+      FXI->BindParamCTex(mtl->_parProbeReflection, probe_0->_cubeTexture.get() );
+
+
     }
+    else{
+      FXI->BindParamCTex(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
 
     auto modcolor = context->RefModColor();
     FXI->BindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);

@@ -98,6 +98,9 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie6;
   sampler2D light_cookie7;
 
+  samplerCube reflectionPROBE;
+  samplerCube irradiancePROBE;
+
   vec4 ModColor;
   vec4 AuxA;
   vec4 AuxB;

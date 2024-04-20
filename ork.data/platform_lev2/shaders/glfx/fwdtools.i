@@ -105,6 +105,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC;
+
+
+    vec3 probe_REFL = texture(reflectionPROBE, refl).xyz;
+
     // vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     vec3 finallitcolor = saturateV(diffuse + specular);

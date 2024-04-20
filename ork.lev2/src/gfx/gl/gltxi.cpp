@@ -526,11 +526,14 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
   bool is_3d = (tid._d > 1);
+  bool is_cube = tid._initCubeTexture;
 
   ///////////////////////////////////
 
   auto texture_target = is_3d ? GL_TEXTURE_3D : GL_TEXTURE_2D;
-
+  if(is_cube){
+    texture_target = GL_TEXTURE_CUBE_MAP;
+  }
   ///////////////////////////////////
 
   size_t dst_length = tid.computeDstSize();
@@ -734,16 +737,29 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                            (ptex->_depth != tid._d) or  //
                            (ptex->_texFormat != tid._dst_format);
 
-  if (is_3d) {
-    if (size_or_fmt_dirty)
+  if(is_cube){
+    if (size_or_fmt_dirty){ // allocating
+      // init all 6 faces with PBO data
+      for(int i=0; i<6; i++){
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+      }
+    }
+    else{ // non allocating
+      for(int i=0; i<6; i++){
+        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+      }
+    }
+  }
+  else if (is_3d) {
+    if (size_or_fmt_dirty) // allocating
       glTexImage3D(texture_target, 0, internalformat, tid._w, tid._h, tid._d, 0, format, type, nullptr);
-    else
+    else // non allocating
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, format, type, nullptr);
     GL_ERRORCHECK();
   } else {
-    if (size_or_fmt_dirty)
+    if (size_or_fmt_dirty) // allocating
       glTexImage2D(texture_target, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
-    else
+    else // non allocating
       glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
     GL_ERRORCHECK();
   }

@@ -179,6 +179,9 @@ public:
   fxparam_constptr_t _parLightCookie6   = nullptr;
   fxparam_constptr_t _parLightCookie7   = nullptr;
 
+  fxparam_constptr_t _parProbeReflection   = nullptr;
+  fxparam_constptr_t _parProbeIrradiance   = nullptr;
+
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
 
@@ -196,6 +199,8 @@ public:
   texture_ptr_t _texEmissive;
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
+  texture_ptr_t _texBlack;
+  texture_ptr_t _texCubeBlack;
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////

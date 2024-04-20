@@ -58,7 +58,7 @@ TopNode::TopNode(GlSlFxParser* parser)
                           "uimage1D uimage2D uimage3D "
                           "uimageCube uimage2DRect "
 #endif
-                          "sampler2D sampler3D sampler2DShadow "
+                          "sampler2D sampler3D sampler2DShadow samplerCube "
                           "usampler2D usampler3D";
 
   for (auto item : SplitString(typenames, ' '))
