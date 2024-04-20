@@ -112,10 +112,10 @@ class StereoApp1(object):
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.texturepath = "src://effect_textures/white.dds"
-    self.grid_data.modcolor = vec3(1)
+    self.grid_data.modcolor = vec3(2)
     self.grid_data.intensityA = 1.0
     self.grid_data.intensityB = 0.97
-    self.grid_data.intensityC = 0.8
+    self.grid_data.intensityC = 0.9
     self.grid_data.intensityD = 0.85
     self.grid_data.lineWidth = 0.1
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
