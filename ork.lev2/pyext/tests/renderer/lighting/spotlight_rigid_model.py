@@ -99,8 +99,8 @@ class StereoApp1(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V3"
-    self.grid_data.modcolor = vec3(1)
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(.5)
     self.grid_data.intensityA = 1.0*0.3
     self.grid_data.intensityB = 0.97*0.3
     self.grid_data.intensityC = 0.8
