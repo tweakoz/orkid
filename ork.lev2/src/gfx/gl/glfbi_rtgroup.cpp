@@ -50,134 +50,136 @@ static std::string _glFormatToName(GLenum format) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void _handleTextureAttachment(GLint textureID,RtGroup* rtg) {
-    if (textureID == 0) return;  // Early exit if no texture is bound
+void _handleTextureAttachment(GLint textureID, RtGroup* rtg) {
+  if (textureID == 0)
+    return; // Early exit if no texture is bound
 
-    GLint width, height, format;
-    std::string formatName, targetDesc;
+  GLint width, height, format;
+  std::string formatName, targetDesc;
 
-    if (rtg->_cubeMap) {
-        glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
-        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-        targetDesc = "Cubemap";
-    } else { // Assume Texture2D if not cubemap
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-        targetDesc = "2D Texture";
-    }
-    formatName = _glFormatToName(format);
-    logchan_rtgroup->log_continue(
-        "%s, TEXID<%d> (%dx%d, format: 0x%x:%s)", targetDesc.c_str(), textureID, width, height, format, formatName.c_str());
+  if (rtg->_cubeMap) {
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+    glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
+    glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+    targetDesc = "Cubemap";
+  } else { // Assume Texture2D if not cubemap
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+    targetDesc = "2D Texture";
+  }
+  formatName = _glFormatToName(format);
+  logchan_rtgroup->log_continue(
+      "%s, TEXID<%d> (%dx%d, format: 0x%x:%s)", targetDesc.c_str(), textureID, width, height, format, formatName.c_str());
 }
 
-void _handleRenderbufferAttachment(GLint renderbufferID,RtGroup* rtg) {
-    if (renderbufferID == 0) return;  // Early exit if no renderbuffer is bound
+void _handleRenderbufferAttachment(GLint renderbufferID, RtGroup* rtg) {
+  if (renderbufferID == 0)
+    return; // Early exit if no renderbuffer is bound
 
-    // Query size and format
-    GLint width, height, format;
-    glBindRenderbuffer(GL_RENDERBUFFER, renderbufferID);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &width);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &height);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
-    std::string formatName = _glFormatToName(format);  // Assuming _glFormatToName converts GLenum format to a readable string
+  // Query size and format
+  GLint width, height, format;
+  glBindRenderbuffer(GL_RENDERBUFFER, renderbufferID);
+  glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &width);
+  glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &height);
+  glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
+  std::string formatName = _glFormatToName(format); // Assuming _glFormatToName converts GLenum format to a readable string
 
-    logchan_rtgroup->log_continue(
-        "Renderbuffer, RBOID<%d> (%dx%d, format: 0x%x:%s)", renderbufferID, width, height, format, formatName.c_str());
+  logchan_rtgroup->log_continue(
+      "Renderbuffer, RBOID<%d> (%dx%d, format: 0x%x:%s)", renderbufferID, width, height, format, formatName.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _dumpFBOstructure(GLuint fboID, std::string name,RtGroup* rtg) {
-    GLint previousFBO;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previousFBO); // Save the currently bound FBO
+static void _dumpFBOstructure(GLuint fboID, std::string name, RtGroup* rtg) {
+  GLint previousFBO;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previousFBO); // Save the currently bound FBO
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fboID); // Bind the target FBO to query its structure
+  glBindFramebuffer(GL_FRAMEBUFFER, fboID); // Bind the target FBO to query its structure
 
-    logchan_rtgroup->log("FBO Structure name<%s> FBOID<%u>", name.c_str(), fboID);
+  logchan_rtgroup->log("FBO Structure name<%s> FBOID<%u>", name.c_str(), fboID);
 
-    // Query depth attachment
-    GLint depthAttachment = 0;
+  // Query depth attachment
+  GLint depthAttachment = 0;
+  glGetFramebufferAttachmentParameteriv(
+      GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthAttachment);
+
+  if (depthAttachment) {
+    logchan_rtgroup->log_begin("  Depth Attachment: ");
+    if (glIsTexture(depthAttachment)) {
+      // Detect if the attached texture is a cubemap
+      glBindTexture(GL_TEXTURE_2D, depthAttachment); // Temporarily bind to get the target type
+
+      GLint width, height, format;
+      std::string formatName, targetDesc;
+      if (rtg->_cubeMap) {
+        glBindTexture(GL_TEXTURE_CUBE_MAP, depthAttachment);
+        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
+        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+        targetDesc = "Cubemap";
+      } else {
+        glBindTexture(GL_TEXTURE_2D, depthAttachment);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+        targetDesc = "Texture";
+      }
+      formatName = _glFormatToName(format);
+      logchan_rtgroup->log_continue(
+          "%s, TEXID<%d> (%dx%d, format: 0x%x:%s)", targetDesc.c_str(), depthAttachment, width, height, format, formatName.c_str());
+    } else if (glIsRenderbuffer(depthAttachment)) {
+      // query size and format for renderbuffers as usual
+      GLint width, height, format;
+      glBindRenderbuffer(GL_RENDERBUFFER, depthAttachment);
+      glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &width);
+      glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &height);
+      glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
+      std::string formatName = _glFormatToName(format);
+      logchan_rtgroup->log_continue(
+          "Renderbuffer, RBOID<%d> (%dx%d, format: 0x%x:%s)", depthAttachment, width, height, format, formatName.c_str());
+    }
+    logchan_rtgroup->log_continue("\n");
+  }
+
+  // Repeat similar checks and handling for color attachments
+  GLint maxColorAttachments = 0;
+  glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
+
+  for (GLint i = 0; i < maxColorAttachments; ++i) {
+    GLint attachmentType = 0, textureID = 0;
     glGetFramebufferAttachmentParameteriv(
-        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthAttachment);
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentType);
 
-    if (depthAttachment) {
-        logchan_rtgroup->log_begin("  Depth Attachment: ");
-        if (glIsTexture(depthAttachment)) {
-            // Detect if the attached texture is a cubemap
-            glBindTexture(GL_TEXTURE_2D, depthAttachment);  // Temporarily bind to get the target type
+    if (attachmentType == GL_NONE)
+      continue; // Skip unattached points
 
-            GLint width, height, format;
-            std::string formatName, targetDesc;
-            if (rtg->_cubeMap) {
-                glBindTexture(GL_TEXTURE_CUBE_MAP, depthAttachment);
-                glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
-                glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
-                glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-                targetDesc = "Cubemap";
-            } else {
-                glBindTexture(GL_TEXTURE_2D, depthAttachment);
-                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-                targetDesc = "Texture";
-            }
-            formatName = _glFormatToName(format);
-            logchan_rtgroup->log_continue(
-                "%s, TEXID<%d> (%dx%d, format: 0x%x:%s)", targetDesc.c_str(), depthAttachment, width, height, format, formatName.c_str());
-        } else if (glIsRenderbuffer(depthAttachment)) {
-            // query size and format for renderbuffers as usual
-            GLint width, height, format;
-            glBindRenderbuffer(GL_RENDERBUFFER, depthAttachment);
-            glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &width);
-            glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &height);
-            glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &format);
-            std::string formatName = _glFormatToName(format);
-            logchan_rtgroup->log_continue(
-                "Renderbuffer, RBOID<%d> (%dx%d, format: 0x%x:%s)", depthAttachment, width, height, format, formatName.c_str());
-        }
-        logchan_rtgroup->log_continue("\n");
+    logchan_rtgroup->log_begin("  Color Attachment idx<%d> : ", i);
+
+    if (attachmentType == GL_TEXTURE) {
+      glGetFramebufferAttachmentParameteriv(
+          GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &textureID);
+
+      // Handle cubemap and 2D textures appropriately
+      _handleTextureAttachment(textureID, rtg); // Implement this function similar to depth attachment handling
+    } else if (attachmentType == GL_RENDERBUFFER) {
+      // Handle renderbuffer attachment
+      //_handleRenderbufferAttachment(renderbufferID,rtg); // Similar handling to above
     }
 
-    // Repeat similar checks and handling for color attachments
-    GLint maxColorAttachments = 0;
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
+    logchan_rtgroup->log_continue("\n");
+  }
 
-    for (GLint i = 0; i < maxColorAttachments; ++i) {
-        GLint attachmentType = 0, textureID = 0;
-        glGetFramebufferAttachmentParameteriv(
-            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentType);
-
-        if (attachmentType == GL_NONE)
-            continue; // Skip unattached points
-
-        logchan_rtgroup->log_begin("  Color Attachment idx<%d> : ", i);
-
-        if (attachmentType == GL_TEXTURE) {
-            glGetFramebufferAttachmentParameteriv(
-                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &textureID);
-
-            // Handle cubemap and 2D textures appropriately
-            _handleTextureAttachment(textureID,rtg); // Implement this function similar to depth attachment handling
-        } else if (attachmentType == GL_RENDERBUFFER) {
-            // Handle renderbuffer attachment
-            //_handleRenderbufferAttachment(renderbufferID,rtg); // Similar handling to above
-        }
-
-        logchan_rtgroup->log_continue("\n");
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, previousFBO); // Restore the previously bound FBO
+  glBindFramebuffer(GL_FRAMEBUFFER, previousFBO); // Restore the previously bound FBO
 }
 
 // You need to define _handleTextureAttachment and _handleRenderbufferAttachment based on the above examples
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool _checkFboComplete(GLuint fboID, std::string name,RtGroup* rtg) {
+static bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
   bool rval              = false;
   GLuint cache_prior_fbo = 0;
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cache_prior_fbo);
@@ -203,7 +205,7 @@ static bool _checkFboComplete(GLuint fboID, std::string name,RtGroup* rtg) {
   glBindFramebuffer(GL_FRAMEBUFFER, cache_prior_fbo);
 
   if (not rval) {
-    _dumpFBOstructure(fboID, name,rtg);
+    _dumpFBOstructure(fboID, name, rtg);
     OrkAssert(false);
   }
   return rval;
@@ -216,10 +218,10 @@ static void _validateRtGroup(RtGroup* rtg) {
   if (as_impl) {
     auto rtg_impl = as_impl.value();
     if (rtg_impl->_standard) {
-      _checkFboComplete(rtg_impl->_standard->_fbo, rtg->_name + ".std",rtg);
+      _checkFboComplete(rtg_impl->_standard->_fbo, rtg->_name + ".std", rtg);
     }
     if (rtg_impl->_depthonly) {
-      _checkFboComplete(rtg_impl->_depthonly->_fbo, rtg->_name + ".donly",rtg);
+      _checkFboComplete(rtg_impl->_depthonly->_fbo, rtg->_name + ".donly", rtg);
     }
   }
 }
@@ -361,7 +363,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
         ptex->_vars->makeValueForKey<GLuint>("gltexobj") = color_glto->_textureObject;
 
-        mTargetGL.TXI()->ApplySamplingMode(ptex);
+        if (not rtgroup->_cubeMap) {
+          mTargetGL.TXI()->ApplySamplingMode(ptex);
+        }
         //////////////////////////////////////////
         pB->_impl.set<GlRtBufferImpl*>(bufferimpl);
       }
@@ -442,15 +446,17 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     GL_ERRORCHECK();
 
     // printf("RtGroup<%p> initdepth3\n", rtgroup);
-    if(rtgroup->_cubeMap){
+    if (rtgroup->_cubeMap) {
       GLenum faces[6] = {
-          GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-          GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-          GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-      };
+          GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
       for (int i = 0; i < 6; ++i) {
-          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, faces[i], rtg_impl->_standard->_depthTexObject, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, faces[i], rtg_impl->_standard->_depthTexObject, 0);
       }
     } else {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target, rtg_impl->_standard->_depthTexObject, 0);
@@ -469,15 +475,17 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     //////////////////////////////////////////
 
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
-    if(rtgroup->_cubeMap){
+    if (rtgroup->_cubeMap) {
       GLenum faces[6] = {
-          GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-          GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-          GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-      };
+          GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+          GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
       for (int i = 0; i < 6; ++i) {
-          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, faces[i], rtg_impl->_standard->_depthTexObject, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, faces[i], rtg_impl->_standard->_depthTexObject, 0);
       }
     } else {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target, rtg_impl->_standard->_depthTexObject, 0);
@@ -582,7 +590,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         GL_ERRORCHECK();
         void* initialdata = calloc(1, iw * ih * 16);
         if (numsamples == 1) {
-          if(rtgroup->_cubeMap){
+          if (rtgroup->_cubeMap) {
             for (int i = 0; i < 6; ++i) {
               glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
             }
@@ -610,7 +618,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LEVEL, 0);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, nummips - 1);
         GL_ERRORCHECK();
-        mTargetGL.TXI()->ApplySamplingMode(tex);
+        if (not rtgroup->_cubeMap) {
+          mTargetGL.TXI()->ApplySamplingMode(tex);
+        }
         GL_ERRORCHECK();
       } // if (bufferimpl->_init or rtbuffer->mSizeDirty) {
 
@@ -622,15 +632,17 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
       // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", rtgroup, rtbuffer, it, int(glto->_textureObject));
 
-      if(rtgroup->_cubeMap){
+      if (rtgroup->_cubeMap) {
         GLenum faces[6] = {
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-            GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-        };
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+            GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+            GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+            GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
         for (int i = 0; i < 6; ++i) {
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, faces[i], color_glto->_textureObject, 0);
+          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, faces[i], color_glto->_textureObject, 0);
         }
       } else {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, texture_target, color_glto->_textureObject, 0);
@@ -662,15 +674,14 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   //////////////////////////////////////////////////
 
   GLenum buffers[] = {
-    GL_COLOR_ATTACHMENT0, 
-    GL_COLOR_ATTACHMENT1, 
-    GL_COLOR_ATTACHMENT2, 
-    GL_COLOR_ATTACHMENT3,
-    GL_COLOR_ATTACHMENT4,
-    GL_COLOR_ATTACHMENT5,
-    GL_COLOR_ATTACHMENT6,
-    GL_COLOR_ATTACHMENT7
-  };
+      GL_COLOR_ATTACHMENT0,
+      GL_COLOR_ATTACHMENT1,
+      GL_COLOR_ATTACHMENT2,
+      GL_COLOR_ATTACHMENT3,
+      GL_COLOR_ATTACHMENT4,
+      GL_COLOR_ATTACHMENT5,
+      GL_COLOR_ATTACHMENT6,
+      GL_COLOR_ATTACHMENT7};
 
   if (rtgroup->_depthOnly) {
     //_dumpFBOstructure(rtg_impl->_depthonly->_fbo, "UPDIMPL::"+rtgroup->_name + ".DONLY");
@@ -679,30 +690,27 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     glBindTexture(texture_target, rtg_impl->_depthonly->_depthTexObject);
     glDrawBuffers(0, nullptr);
   } else {
-    // printf( "SetRtg::BindFBO<%d> numattachments<%d>\n", int(rtg_impl->_standard->_fbo), inumtargets );
 
-    if(false){ //rtgroup->_cubeMap){
+    if (rtgroup->_cubeMap) {
       //
-      auto bufferimpl         = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
+      auto bufferimpl = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
+      auto color_glto = bufferimpl->_teximpl.getShared<GLTextureObject>();
 
-      auto color_glto = bufferimpl->_teximpl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
+      // bind rtgroup->_cubeRenderFace to framebuffer attachment 0
 
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
-      glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
       glFramebufferTexture2D( GL_FRAMEBUFFER, 
-                              GL_COLOR_ATTACHMENT0 + rtgroup->_cubeRenderFace, 
-                              GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace, 
+                              GL_COLOR_ATTACHMENT0, // attachment point
+                              GL_TEXTURE_CUBE_MAP_POSITIVE_X+rtgroup->_cubeRenderFace, // face
                               color_glto->_textureObject, 
-                              0);
+                              0); // mip
+      glBindTexture(texture_target, color_glto->_textureObject);
 
-      // Set draw buffers based on the number of color attachments
-      GLenum buffers[] = {
-          (GLenum)(GL_COLOR_ATTACHMENT0 + rtgroup->_cubeRenderFace)  // Update this if there are multiple attachments
-      };
-      glDrawBuffers(1, buffers);  // Update based on actual number of active color attachments
-      GL_ERRORCHECK();
-    }
-    else{
+      printf( "SetRtg::BindFBO<%d> numattachments<%d> CUBE<%d> TO<%d>\n", int(rtg_impl->_standard->_fbo), inumtargets, int(rtgroup->_cubeMap), color_glto->_textureObject);
+
+
+
+    } else {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
       glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
     }
@@ -910,7 +918,7 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     auto src_rtg_impl = try_src_rtg_impl.value();
 
-    bool is_complete = _checkFboComplete(src_rtg_impl->_depthonly->_fbo, "clone",src_rtg.get());
+    bool is_complete = _checkFboComplete(src_rtg_impl->_depthonly->_fbo, "clone", src_rtg.get());
 
     //_dumpFBOstructure(src_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::src_donly_fbo");
     //_dumpFBOstructure(dst_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::dst_donly_fbo");

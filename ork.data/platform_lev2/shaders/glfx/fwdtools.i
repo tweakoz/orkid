@@ -113,7 +113,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
     // return vec3(specular);
-    return mix(finallitcolor, skyboxColor, depth_fogval);
+    return finallitcolor;
     // return vec3(spec_env);
 
   } // vec3 environmentLighting(){

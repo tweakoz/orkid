@@ -79,8 +79,8 @@ struct NVMSIMPL {
   void _render(CompositorDrawData& drawdata) {
     printf( "XXX\n");
     //_timer.Start();
-    RenderContextFrameData& RCFD = drawdata.RCFD();
-    auto targ                    = RCFD.GetTarget();
+    auto targ                    = drawdata.context();
+    auto RCFD = drawdata.RCFD();
     //////////////////////////////////////////////////////
     _context.renderUpdate(_node, drawdata);
     auto VD = drawdata.computeViewData();

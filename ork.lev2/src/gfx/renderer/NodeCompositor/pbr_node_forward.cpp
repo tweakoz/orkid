@@ -310,7 +310,11 @@ struct ForwardPbrNodeImpl {
             case LightProbeType::REFLECTION:
               if (nullptr == probe->_cubeRenderRTG) {
                 probe->_cubeRenderRTG = std::make_shared<RtGroup>(context, 8, 8);
+                probe->_cubeRenderRTG->_name = "ReflectionProbeRTG";
+                auto colorbuf = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+                colorbuf->_debugName = "ReflectionProbeColorCubeMap";
                 probe->_cubeRenderRTG->_cubeMap = true;
+                
               }
 
               int prevW = probe->_cubeRenderRTG->width();
@@ -319,11 +323,13 @@ struct ForwardPbrNodeImpl {
                 probe->_cubeRenderRTG->Resize(probe->_dim, probe->_dim);
               }
 
-              fvec3 POSX = probe->_worldMatrix.xNormal();
-              fvec3 POSY = probe->_worldMatrix.yNormal();
-              fvec3 POSZ = probe->_worldMatrix.zNormal();
+              auto CMATRIX = probe->_worldMatrix;
 
-              fvec3 position = probe->_worldMatrix.translation();
+              fvec3 POSX = CMATRIX.xNormal()*-1;
+              fvec3 POSY = CMATRIX.yNormal();
+              fvec3 POSZ = CMATRIX.zNormal()*-1;
+
+              fvec3 position = CMATRIX.translation();
 
               for( int iface=0; iface<6; iface++ ){
 
@@ -332,7 +338,7 @@ struct ForwardPbrNodeImpl {
                 CompositingPassData cubemapCPD = CPD.clone();
                 CameraMatrices CUBECAM;
 
-                // compute view matrices from cubeface and probe->_worldMatrix
+                // compute view matrices from cubeface and CMATRIX
                 //  face 0 = POSX
                 //  face 1 = NEGX
                 //  face 2 = POSY
@@ -341,15 +347,15 @@ struct ForwardPbrNodeImpl {
                 //  face 5 = NEGZ
 
                 switch( iface ){
-                  case 0: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
-                  case 1: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
+                  case 1: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
+                  case 0: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
                   case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ ); break;
                   case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
                   case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
                   case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
                 }
                 // compute projection matrix
-                CUBECAM._pmatrix.perspective(90.0f, 1.0f, 0.01f, 1000.0f);
+                CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
 
 
                 CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;

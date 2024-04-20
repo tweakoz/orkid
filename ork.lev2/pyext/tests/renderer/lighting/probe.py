@@ -64,39 +64,39 @@ class LIGHTING_APP(object):
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
     ###################################
-    frust = dfrustum()
-    frust .set(fmtx4_to_dmtx4(mtx4()),fmtx4_to_dmtx4(mtx4()))
-    frustum_prim = primitives.FrustumPrimitive()
-    frustum_prim.frustum = frust
-    frustum_prim.topColor = dvec4(0.2,1.0,0.2,1)
-    frustum_prim.bottomColor = dvec4(0.5,0.5,0.5,1)
-    frustum_prim.leftColor = dvec4(0.2,0.2,1.0,1)
-    frustum_prim.rightColor = dvec4(1.0,0.2,0.2,1)
-    frustum_prim.nearColor = dvec4(0.0,0.0,0.0,1)
-    frustum_prim.farColor = dvec4(1.0,1.0,1.0,1)
-    self.frustum_prim = frustum_prim
-    self.frustum = frust
-    material = PBRMaterial()
-    material.texColor = Texture.load("src://effect_textures/white.dds")
-    material.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    material.texMtlRuf = Texture.load("src://effect_textures/white.dds")
-    material.metallicFactor = 1
-    material.roughnessFactor = 1
-    material.gpuInit(ctx)
-    self.frustum_material = material
-    ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
-    self.drawable_model = model.createDrawable()
-    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
-    self.modelnode.worldTransform.scale = 1
-    self.modelnode.worldTransform.translation = vec3(0,2,0)
+    for mesh in model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.texColor = Texture.load("src://effect_textures/white.dds")
+        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+        copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+        submesh.material = copy
 
+    class Node:
+      def __init__(self,app,pos,color):
+        self.drawable_model = model.createDrawable()
+        self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
+        self.modelnode.worldTransform.scale = 0.5
+        self.modelnode.worldTransform.translation = pos
+        subinst = self.drawable_model.modelinst.submeshinsts[0]
+        mtl_cloned = subinst.material.clone()
+        mtl_cloned.metallicFactor = float(0)
+        mtl_cloned.roughnessFactor = float(1)
+        mtl_cloned.baseColor = vec4(color,1)
+        subinst.overrideMaterial(mtl_cloned)
+
+
+    self.node_px = Node(self,vec3(5,2,0),vec3(1,0,0))
+    self.node_nx = Node(self,vec3(-5,2,0),vec3(0))
+    self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,1))
+    self.node_nz = Node(self,vec3(0,2,-5),vec3(1))
     ###################################
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(0.1)
+    self.grid_data.modcolor = vec3(1)
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
@@ -126,7 +126,7 @@ class LIGHTING_APP(object):
     self.probe = LightProbe()
     self.probe.type = tokens.REFLECTION
     self.probe.imageDim = 1024
-    self.probe.worldMatrix = mtx4()
+    self.probe.worldMatrix = mtx4.transMatrix(0,3,0)
     self.probe.name = "probe1"
     self.probe_node = self.layer1.createLightProbeNode("probe",self.probe)
 
