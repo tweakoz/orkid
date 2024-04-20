@@ -37,6 +37,8 @@ static std::string _glFormatToName(GLenum format) {
       return "GL_DEPTH_STENCIL";
     case GL_RGBA8:
       return "GL_RGBA8";
+    case GL_RGBA32F:
+      return "GL_RGBA32F";
     case GL_DEPTH_COMPONENT32F:
       return "GL_DEPTH_COMPONENT32F";
     case 0x81a7:

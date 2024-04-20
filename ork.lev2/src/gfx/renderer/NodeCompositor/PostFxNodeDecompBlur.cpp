@@ -46,17 +46,17 @@ struct IMPL {
       _rtg_c          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_d          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_e          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
-      auto buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      auto buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_out");
-      buf        = _rtg_a->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_a->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_a");
-      buf        = _rtg_b->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_b->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_b");
-      buf        = _rtg_c->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_c->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_c");
-      buf        = _rtg_d->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_d->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_d");
-      buf        = _rtg_e->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_e->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_e");
       _material.gpuInit(context);
 

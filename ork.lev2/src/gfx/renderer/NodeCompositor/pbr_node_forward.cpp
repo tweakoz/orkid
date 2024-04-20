@@ -61,9 +61,16 @@ struct ForwardPbrNodeImpl {
 
       _rtg_main_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
 
+      auto pbrcommon = _node->_pbrcommon;
+
+      EBufferFormat efmt = EBufferFormat::RGBA8;
+      if(pbrcommon->_useFloatColorBuffer ){
+        efmt = EBufferFormat::RGBA32F;
+      }
+
       auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
       _rtgs_main  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
-      _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
+      _rtgs_main->addBuffer("ForwardRt0", efmt);
 
       printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -76,7 +83,7 @@ struct ForwardPbrNodeImpl {
 
       if (_ginitdata->_msaa_samples > 1) {
         _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
-        _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer", EBufferFormat::RGBA8);
+        _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer", efmt);
         //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
         // auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
         // dsbuf->_debugName = "MsaaDownsampleBuffer";

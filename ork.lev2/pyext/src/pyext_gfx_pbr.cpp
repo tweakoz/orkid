@@ -87,6 +87,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "useDepthPrepass",
               [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useDepthPrepass; },
               [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useDepthPrepass = v; })
+          .def_property(
+              "useFloatColorBuffer",
+              [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useFloatColorBuffer; },
+              [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useFloatColorBuffer = v; })
           .def("__repr__", [](pbr::commonstuff_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrCommon(%p)", d.get());

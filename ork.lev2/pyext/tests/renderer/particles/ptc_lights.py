@@ -77,6 +77,9 @@ class ParticlesApp(object):
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
     ###################################
     # create particle drawable 
     ###################################

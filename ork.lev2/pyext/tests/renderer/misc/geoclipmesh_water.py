@@ -34,7 +34,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -71,7 +71,7 @@ class WaterApp(object):
 
     postNode = DecompBlurPostFxNode()
     postNode.threshold = 0.99
-    postNode.blurwidth = 8.0
+    postNode.blurwidth = 3.0
     postNode.blurfactor = 0.1
     postNode.amount = 0.2
     postNode.gpuInit(ctx,8,8);
@@ -82,6 +82,9 @@ class WaterApp(object):
     ###################################
 
     self.scene = self.ezapp.createScene(sceneparams)
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]

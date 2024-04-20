@@ -121,6 +121,7 @@ struct CommonStuff : public ork::Object {
   fvec4 _clearColor;
 
   bool _useDepthPrepass = true;
+  bool _useFloatColorBuffer = false;
 
 };
 

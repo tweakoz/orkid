@@ -305,6 +305,11 @@ void CtxGLFW::Show() {
   GLFWmonitor* fullscreen_monitor = nullptr;
   GLFWmonitor* selected_monitor   = nullptr;
 
+  glfwWindowHint(GLFW_RED_BITS, 10);
+  glfwWindowHint(GLFW_GREEN_BITS, 10);
+  glfwWindowHint(GLFW_BLUE_BITS, 10);
+  glfwWindowHint(GLFW_ALPHA_BITS, 2);
+
   if (_orkwindow) {
     _orkwindow->SetDirty(true);
 
@@ -357,6 +362,9 @@ void CtxGLFW::Show() {
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
+      logchan_glfw->log("USING GLFW redbits<%d> ", mode->redBits);
+      logchan_glfw->log("USING GLFW greenbits<%d> ", mode->greenBits);
+      logchan_glfw->log("USING GLFW bluebits<%d> ", mode->blueBits);
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
     }

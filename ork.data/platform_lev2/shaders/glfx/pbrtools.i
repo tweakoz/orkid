@@ -41,6 +41,8 @@ uniform_set ub_frg {
   float MetallicFactor;
   float RoughnessFactor;
   vec3 EyePostion;
+  vec4 AuxA;
+  vec4 AuxB;
 }
 
 uniform_set ub_frg_fwd {
