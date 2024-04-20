@@ -34,6 +34,8 @@ uniform_set ub_frg {
   sampler2D NormalMap;
   sampler2D EmissiveMap;
   sampler2D MtlRufMap;
+  samplerCube reflectionPROBE;
+  samplerCube irradiancePROBE;
   vec4 ModColor;
   uint obj_pickID;
   mat4 v;
@@ -95,8 +97,8 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie3;
   sampler2D light_cookie4;
   sampler2D light_cookie5;
-  sampler2D light_cookie6;
-  sampler2D light_cookie7;
+  //sampler2D light_cookie6;
+  //sampler2D light_cookie7;
 
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;

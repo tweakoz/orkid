@@ -255,6 +255,9 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       } else if (puni->_typeName == "sampler2DShadow") {
         is_sampler = true;
         tex_target = GL_TEXTURE_2D;
+      } else if (puni->_typeName == "samplerCube") {
+        is_sampler = true;
+        tex_target = GL_TEXTURE_CUBE_MAP;
       }
       ///////////////////////////////////////////////////
       if (is_sampler) {

@@ -415,6 +415,8 @@ struct ForwardPbrNodeImpl {
         // main pass
         ////////////////////////////
 
+        context->debugPushGroup("ForwardPBR::MAIN RTG PASS");
+
         auto main_fwd_pass             = std::make_shared<ForwardPass>();
         main_fwd_pass->_node           = node;
         main_fwd_pass->_drawdata       = &drawdata;
@@ -427,13 +429,17 @@ struct ForwardPbrNodeImpl {
 
         CIMPL->popCPD();
 
+        context->debugPopGroup();
+
         ////////////////////////////
         // resolve msaa
         ////////////////////////////
 
         if (_rtgs_resolve_msaa) {
+          context->debugPushGroup("ForwardPBR::MSAA RESOLVE");
           auto FBI = context->FBI();
           FBI->msaaBlit(rtg_main, _rtgs_resolve_msaa->fetch(rtg_key));
+          context->debugPopGroup();
         }
       }
     }

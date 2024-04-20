@@ -178,12 +178,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       if (texlist.size() > 5) {
         FXI->BindParamCTex(mtl->_parLightCookie5, texlist[5]);
       }
-      if (texlist.size() > 6) {
-        FXI->BindParamCTex(mtl->_parLightCookie6, texlist[6]);
-      }
-      if (texlist.size() > 7) {
-        FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
-      }
+      //if (texlist.size() > 6) {
+        //FXI->BindParamCTex(mtl->_parLightCookie6, texlist[6]);
+      //}
+      //if (texlist.size() > 7) {
+        //FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
+      //}
     }
     
     ///////////////////////////////////////////////////////////////////////////
@@ -192,7 +192,6 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     if(should_bind_probes){
       size_t num_probes = enumlights->_lightprobes.size();
-      //printf( "BINDING PROBES!  count<%d>\n", num_probes );
 
       // technically here we should only bind a set of probes 
       // that are relevant to the current rendered object
@@ -200,8 +199,11 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       // for now we will just bind all probes
 
       auto probe_0 = enumlights->_lightprobes[0];
+      auto probe_tex = probe_0->_cubeTexture;
 
-      FXI->BindParamCTex(mtl->_parProbeReflection, probe_0->_cubeTexture.get() );
+      //printf( "BINDING PROBES!  count<%d>\n", num_probes );
+      //printf( "binding probetex<%p>\n", probe_tex.get() );
+      FXI->BindParamCTex(mtl->_parProbeReflection, probe_tex.get() );
 
 
     }

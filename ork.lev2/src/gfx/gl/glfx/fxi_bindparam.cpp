@@ -201,7 +201,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   auto container               = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
-  // printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
+  //printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {
 
     auto pass = container->_activePass;
@@ -222,8 +222,10 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
       auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
       GLenum textgt = pinst->mPrivData.get<GLenum>();
+
       int itexunit  = pass->assignSampler(uniloc);
       GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
+
       glUniform1i(uniloc, itexunit);
       GL_ERRORCHECK();
     }

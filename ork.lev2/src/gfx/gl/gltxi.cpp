@@ -425,6 +425,10 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   if (glto) {
     GLenum tgt = (glto->mTarget != GL_NONE) ? glto->mTarget : GL_TEXTURE_2D;
 
+    if(tgt == GL_TEXTURE_CUBE_MAP){
+      return;
+    }
+
     mTargetGL.makeCurrentContext();
     __FIND_IT.store(1);
     mTargetGL.debugPushGroup("ApplySamplingMode");

@@ -106,8 +106,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC;
 
-
-    vec3 probe_REFL = texture(reflectionPROBE, refl).xyz;
+    vec3 probe_REFL = textureLod(reflectionPROBE, refl,0).xyz;
 
     // vec3 ambient = invF*AmbientLevel;
     /////////////////////////
@@ -117,7 +116,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
     // return vec3(specular);
-    return finallitcolor;
+    return probe_REFL+finallitcolor;
     // return vec3(spec_env);
 
   } // vec3 environmentLighting(){
@@ -138,11 +137,12 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       rval = textureLod(light_cookie4, uv, lod).xyz;
     } else if (index == 5) {
       rval = textureLod(light_cookie5, uv, lod).xyz;
-    } else if (index == 6) {
-      rval = textureLod(light_cookie6, uv, lod).xyz;
-    } else if (index == 7) {
-      rval = textureLod(light_cookie7, uv, lod).xyz;
-    }
+    } 
+    //else if (index == 6) {
+      //rval = textureLod(light_cookie6, uv, lod).xyz;
+    //} else if (index == 7) {
+//      rval = textureLod(light_cookie7, uv, lod).xyz;
+  //  }
     return rval;
   }
 
