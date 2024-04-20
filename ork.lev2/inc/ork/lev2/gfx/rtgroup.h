@@ -105,9 +105,11 @@ struct RtGroup final {
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svar16_t _impl;
-  bool _autoclear  = true;
   fvec4 _clearColor;
   bool _depthOnly = false;
+  bool _autoclear  = true;
+  bool _clearMaskColor = true;
+  bool _clearMaskDepth = true;
   std::string _name;
   bool _pseudoRTG = false;
   rendertarget_rtgroup_ptr_t _rendertarget;

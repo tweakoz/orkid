@@ -704,7 +704,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
                               GL_TEXTURE_CUBE_MAP_POSITIVE_X+rtgroup->_cubeRenderFace, // face
                               color_glto->_textureObject, 
                               0); // mip
-      glBindTexture(texture_target, color_glto->_textureObject);
+      //glBindTexture(texture_target, color_glto->_textureObject);
+      glFramebufferTexture2D( GL_FRAMEBUFFER, 
+                              GL_DEPTH_ATTACHMENT, 
+                              GL_TEXTURE_CUBE_MAP_POSITIVE_X+rtgroup->_cubeRenderFace, 
+                              rtg_impl->_standard->_depthTexObject, 
+                              0);
 
       printf( "SetRtg::BindFBO<%d> numattachments<%d> CUBE<%d> TO<%d>\n", int(rtg_impl->_standard->_fbo), inumtargets, int(rtgroup->_cubeMap), color_glto->_textureObject);
 
@@ -736,16 +741,18 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   // glClearColor( 1.0f,1.0f,0.0f,1.0f );
   GL_ERRORCHECK();
-  GLuint BufferBits = GL_DEPTH_BUFFER_BIT;
-  glClearDepth(1.0f);
-  glDepthRange(0.0, 1.0f);
+  GLuint BufferBits = rtg->_clearMaskDepth ? GL_DEPTH_BUFFER_BIT : 0;
+  if(rtg->_clearMaskDepth){
+    glClearDepth(1.0f);
+  }
   // printf( "clear<%p> depthONLY<%d>\n", rtg, int(rtg->_depthOnly) );
-  if (rtg->GetNumTargets()) {
+  if(rtg->_clearMaskColor and rtg->GetNumTargets() ) {
     BufferBits |= GL_COLOR_BUFFER_BIT;
     const auto& C = rtg->_clearColor;
     glClearColor(C.x, C.y, C.z, C.w);
   }
   glClear(BufferBits);
+  glDepthRange(0.0, 1.0f);
   GL_ERRORCHECK();
 }
 

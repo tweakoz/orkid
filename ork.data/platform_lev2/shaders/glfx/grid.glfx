@@ -282,8 +282,8 @@ libblock lib_frg_grid : lib_gbuf_encode {
     float map_x = 0.5+cos(clamo_x*PI)*0.5;
     float map_z = 0.5+cos(clamo_z*PI)*0.5;
 
-    vec3 tgt_x = mix(vec3(.5,0,0),vec3(1.5,0,0),float(pos.z>0.0));
-    vec3 tgt_z = mix(vec3(0,0,.5),vec3(0,0,1.5),float(pos.x>0.0));
+    vec3 tgt_z = mix(vec3(.5,0,0),vec3(1.5,0,0),float(pos.z>0.0));
+    vec3 tgt_x = mix(vec3(0,0,.5),vec3(0,0,1.5),float(pos.x>0.0));
 
     vec3 lerp_x = mix(vec3(1),tgt_x,map_x);
     vec3 lerp_z = mix(vec3(1),tgt_z,map_z);

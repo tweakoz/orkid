@@ -40,7 +40,7 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::drawEnqueuedRenderables() {
+void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   if (mPerformanceItem)
     mPerformanceItem->Enter();
@@ -55,6 +55,9 @@ void IRenderer::drawEnqueuedRenderables() {
 
   if (renderQueueSize == 0) {
     _target->debugPopGroup();
+    if(reset_after){
+      resetQueue();
+    }
     return;
   }
 
@@ -112,6 +115,9 @@ void IRenderer::drawEnqueuedRenderables() {
     mPerformanceItem->Exit();
 
   _target->debugPopGroup();
+    if(reset_after){
+      resetQueue();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

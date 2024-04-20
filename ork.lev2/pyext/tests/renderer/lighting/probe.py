@@ -88,15 +88,20 @@ class LIGHTING_APP(object):
         subinst.overrideMaterial(mtl_cloned)
 
 
-    self.node_px = Node(self,vec3(5,2,0),vec3(1,0,0))
-    self.node_nx = Node(self,vec3(-5,2,0),vec3(0))
-    self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,1))
-    self.node_nz = Node(self,vec3(0,2,-5),vec3(1))
+    self.node_px = Node(self,vec3(5,2,0),vec3(2,0,0))
+    self.node_nx = Node(self,vec3(-5,2,0),vec3(0,2,0))
+    self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,2))
+    self.node_nz = Node(self,vec3(0,2,-5),vec3(2))
     ###################################
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(1)
+    self.grid_data.modcolor = vec3(2)
+    self.grid_data.intensityA = 1
+    self.grid_data.intensityB = .95
+    self.grid_data.intensityC = 1
+    self.grid_data.intensityD = 1
+    self.grid_data.lineWidth = 0.2
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
@@ -110,16 +115,16 @@ class LIGHTING_APP(object):
     self.spotlight1 = MySpotLight( index=0,
                                    app=self,
                                    model=model,
-                                   frq=0.17,
+                                   frq=0.0,
                                    color=vec3(0,700,1500),
                                    cookie=cookie,
-                                   fovbase=60.0,
-                                   fovamp=20.0,
-                                   voffset=8,
-                                   vscale=6,
+                                   fovbase=25.0,
+                                   fovamp=0.0,
+                                   voffset=16,
+                                   vscale=0,
                                    bias=shadow_bias,
                                    dim=shadow_size,
-                                   radius=6)
+                                   radius=1)
 
     ##############################################
 

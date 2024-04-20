@@ -125,12 +125,17 @@ struct ForwardPbrNodeImpl {
     ////////////////////////////
 
     context->debugPushGroup("ForwardPBR::skybox pass");
+
     rtg_out->_depthOnly = false;
+    rtg_out->_autoclear = true;
+    rtg_out->_clearMaskDepth = true;
+    rtg_out->_clearMaskColor = true;
 
     RCFD->_renderingmodel = "CUSTOM"_crcu;
     RenderContextInstData RCID(RCFD);
     RCID._pipeline_cache = _skybox_fxcache;
     auto pipeline        = _skybox_fxcache->findPipeline(RCID);
+    FBI->PushRtGroup(rtg_out.get());
     pipeline->wrappedDrawCall(RCID, [GBI]() {
       GBI->render2dQuadEML(
           fvec4(-1, -1, 2, 2), //
@@ -151,9 +156,13 @@ struct ForwardPbrNodeImpl {
       DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
       RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
 
+      rtg_out->_autoclear = true;
+      rtg_out->_depthOnly = true;
+      rtg_out->_clearMaskDepth = true;
+      rtg_out->_clearMaskColor = false;
       FBI->PushRtGroup(rtg_out.get());
 
-      irenderer->drawEnqueuedRenderables();
+      irenderer->drawEnqueuedRenderables(true);
       FBI->PopRtGroup();
       context->debugPopGroup();
 
@@ -166,26 +175,25 @@ struct ForwardPbrNodeImpl {
 
     CPD._cameraMatrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
 
-    rtg_out->_depthOnly = false;
-
-    irenderer->resetQueue();
-
     RCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
 
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
     }
 
-    FBI->PushRtGroup(rtg_out.get());
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue("std_forward", irenderer);
 
     RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
     context->debugPushGroup("ForwardPBR::color pass");
     // irenderer->_debugLog = true;
-    irenderer->drawEnqueuedRenderables();
-    irenderer->resetQueue();
+    rtg_out->_autoclear = false;
+    rtg_out->_depthOnly = false;
+    FBI->PushRtGroup(rtg_out.get());
+    irenderer->drawEnqueuedRenderables(true);
     context->debugPopGroup();
+
+    FBI->PopRtGroup();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(ForwardNode* node, CompositorDrawData& drawdata) {
@@ -247,6 +255,7 @@ struct ForwardPbrNodeImpl {
         FBI->SetAutoClear(false); // explicit clear
         FBI->PushRtGroup(rtg_main.get());
         FBI->Clear(_node->_pbrcommon->_clearColor, 1.0f);
+        FBI->PopRtGroup();
 
         CIMPL->pushCPD(CPD);
 
@@ -291,7 +300,7 @@ struct ForwardPbrNodeImpl {
                 topcomp->pushCPD(shadowCPD);
                 FBI->PushRtGroup(light->_depthRTG.get());
 
-                irenderer->drawEnqueuedRenderables();
+                irenderer->drawEnqueuedRenderables(true);
 
                 FBI->PopRtGroup();
                 topcomp->popCPD();
@@ -331,12 +340,14 @@ struct ForwardPbrNodeImpl {
 
               fvec3 position = CMATRIX.translation();
 
+              CompositingPassData cubemapCPD = CPD.clone();
+              CameraMatrices CUBECAM;
+              CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
+
               for( int iface=0; iface<6; iface++ ){
 
-                context->debugPushGroup("ForwardPBR::cubemap pass");
+                context->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>",iface));
 
-                CompositingPassData cubemapCPD = CPD.clone();
-                CameraMatrices CUBECAM;
 
                 // compute view matrices from cubeface and CMATRIX
                 //  face 0 = POSX
@@ -349,13 +360,12 @@ struct ForwardPbrNodeImpl {
                 switch( iface ){
                   case 1: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
                   case 0: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
-                  case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ ); break;
+                  case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ*-1 ); break;
                   case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
                   case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
                   case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
                 }
                 // compute projection matrix
-                CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
 
 
                 CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
@@ -401,7 +411,6 @@ struct ForwardPbrNodeImpl {
 
         _render_xxx(main_fwd_pass);
 
-        FBI->PopRtGroup();
         CIMPL->popCPD();
 
         ////////////////////////////

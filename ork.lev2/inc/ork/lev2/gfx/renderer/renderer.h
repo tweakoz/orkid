@@ -59,7 +59,7 @@ public:
   /// Each Renderer implements this function as a helper for Renderables when composing their sort keys
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void drawEnqueuedRenderables();
+  void drawEnqueuedRenderables(bool reset_after=false);
 
   void SetPerformanceItem(PerformanceItem* perfitem);
 
