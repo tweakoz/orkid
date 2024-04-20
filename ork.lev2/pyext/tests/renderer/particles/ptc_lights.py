@@ -66,8 +66,8 @@ class ParticlesApp(object):
     ###################################
     postNode = DecompBlurPostFxNode()
     postNode.threshold = 0.99
-    postNode.blurwidth = 16.0
-    postNode.blurfactor = 0.1
+    postNode.blurwidth = 8.0
+    postNode.blurfactor = 0.15
     postNode.amount = 0.1
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
