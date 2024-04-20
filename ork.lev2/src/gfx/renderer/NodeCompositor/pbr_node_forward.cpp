@@ -326,6 +326,9 @@ struct ForwardPbrNodeImpl {
               fvec3 position = probe->_worldMatrix.translation();
 
               for( int iface=0; iface<6; iface++ ){
+
+                context->debugPushGroup("ForwardPBR::cubemap pass");
+
                 CompositingPassData cubemapCPD = CPD.clone();
                 CameraMatrices CUBECAM;
 
@@ -370,6 +373,9 @@ struct ForwardPbrNodeImpl {
                 topcomp->pushCPD(cubemapCPD);
                 _render_xxx(probe_pass);
                 topcomp->popCPD();
+
+                context->debugPopGroup();
+
               }
 
               break;
