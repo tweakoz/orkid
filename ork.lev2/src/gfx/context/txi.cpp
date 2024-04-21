@@ -144,7 +144,7 @@ texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h
   tid._h = h;
   tid._src_format = EBufferFormat::RGBA8;
   tid._dst_format = EBufferFormat::RGBA8;
-  tid._autogenmips = false;
+  tid._autogenmips = true;
   //tid._allow_async = false;
   tid._data = (const void*) data;
 

@@ -39,6 +39,8 @@ struct ForwardPass {
   ForwardNode* _node            = nullptr;
   CompositorDrawData* _drawdata = nullptr;
   const DrawableBuffer* _DB     = nullptr;
+  std::string _fwd_pass_layer = "std_forward";
+  std::string _dpp_pass_layer = "depth_prepass";
   rtgroup_ptr_t _rtg_out;
   rtgroup_ptr_t _rtg_depth_copy;
   bool _renderingPROBE = false;
@@ -163,7 +165,7 @@ struct ForwardPbrNodeImpl {
     if (pbrcommon->_useDepthPrepass) {
       FBI->validateRtGroup(rtg_out);
       context->debugPushGroup("ForwardPBR::depth-pre pass");
-      DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
+      DB->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, irenderer);
       RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
 
       rtg_out->_autoclear = true;
@@ -190,7 +192,7 @@ struct ForwardPbrNodeImpl {
     }
 
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
-    DB->enqueueLayerToRenderQueue("std_forward", irenderer);
+    DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
 
     RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
     context->debugPushGroup("ForwardPBR::color pass");
@@ -252,7 +254,7 @@ struct ForwardPbrNodeImpl {
 
         auto CPD            = CIMPL->topCPD();
         CPD._cameraMatrices = drawdata.property("defcammtx"_crcu).get<const CameraMatrices*>();
-        CPD.assignLayers("depth_prepass,std_forward");
+        CPD.assignLayers("depth_prepass,std_forward,probe");
         CPD._clearColor = _node->_pbrcommon->_clearColor;
         RtGroupRenderTarget rt(rtg_main.get());
         CPD._irendertarget = &rt;
@@ -402,6 +404,7 @@ struct ForwardPbrNodeImpl {
                 probe_pass->_rtg_out        = probe->_cubeRenderRTG;
                 probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
                 probe_pass->_renderingPROBE  = true;
+                probe_pass->_fwd_pass_layer = "probe";
                 probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
                 cubemapCPD._cameraMatrices        = &CUBECAM;

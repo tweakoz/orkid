@@ -97,16 +97,19 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     /////////////////////////
     vec3 diffuse = clamp(basecolor * diffuse_light * dialetric * ambocc, 0, 1);
     /////////////////////////
+    // rotate refl by 180 degrees on y to get refl_probe_coord
+    vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
+    vec3 probe_REFL = texture(reflectionPROBE, refl_probe_coord).xyz;
+    /////////////////////////
     float spec_ruf      = pow(roughness, 1.3) * 0.7;
     float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
     refl                = vec3(refl.x, -refl.y, refl.z);
-    vec3 spec_env       = env_equirectangular(refl, MapSpecularEnv, spec_miplevel);
+    vec3 spec_env       = probe_REFL; //env_equirectangular(refl, MapSpecularEnv, spec_miplevel)+probe_REFL;
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC;
 
-    vec3 probe_REFL = texture(reflectionPROBE, refl).xyz;
     //vec3 probe_REFL = vec3(0);
     // vec3 ambient = invF*AmbientLevel;
     /////////////////////////
@@ -116,7 +119,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
     // return vec3(specular);
-    return probe_REFL+finallitcolor;
+    return finallitcolor;
     // return vec3(spec_env);
 
   } // vec3 environmentLighting(){

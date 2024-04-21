@@ -23,7 +23,13 @@ class MySpotLight:
                 bias=1e-3,
                 dim=2048,
                 range=100.0,
-                radius=12):
+                radius=12,
+                layers = None):
+    
+    if layers == None:
+      if hasattr(app,"fwd_layers"):
+        layers = app.fwd_layers
+      
     self.radius = radius
     self.voffset = voffset
     self.vscale = vscale
@@ -32,7 +38,7 @@ class MySpotLight:
     self.fovamp = fovamp
     self.fovbase = fovbase
     self.drawable_model = model.createDrawable()
-    self.modelnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode = app.scene.createDrawableNodeOnLayers(layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 0.25
     self.modelnode.worldTransform.translation = vec3(0)
     self.spot_light = DynamicSpotLight()

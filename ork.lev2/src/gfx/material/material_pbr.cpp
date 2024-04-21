@@ -428,8 +428,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // printf( "_texNormal<%p>\n", _texNormal.get() );
   // printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
-  _texBlack = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 1), 8, 8);
-  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 8, 8);
+  _texBlack = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 1), 32, 32);
+  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 32,32);
 
   if (_texColor == nullptr) {
     auto loadreq         = std::make_shared<asset::LoadRequest>();
