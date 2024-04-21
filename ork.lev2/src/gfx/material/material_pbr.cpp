@@ -76,6 +76,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem(istring);
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
+    mtl->_vars->makeValueForKey<bool>("from_xgm") = true;
     mtl->SetName(AddPooledString(materialname));
     logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
@@ -427,7 +428,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // printf( "_texNormal<%p>\n", _texNormal.get() );
   // printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
-  _texBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 8, 8);
+  _texBlack = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 1), 8, 8);
+  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 8, 8);
 
   if (_texColor == nullptr) {
     auto loadreq         = std::make_shared<asset::LoadRequest>();

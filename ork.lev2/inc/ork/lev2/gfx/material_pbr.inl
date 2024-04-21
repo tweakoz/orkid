@@ -339,6 +339,7 @@ public:
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);
 FxPipeline::statelambda_t createLightingLambda(const PBRMaterial* mtl);
+FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl);
 
 pbrmaterial_ptr_t default3DMaterial(Context* ctx);
 

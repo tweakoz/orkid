@@ -27,21 +27,21 @@ namespace ork::lev2 {
 std::atomic<size_t> GLTextureObject::_glto_count = 0;
 
 GLTextureObject::GLTextureObject(GlTextureInterface* txi)
-    : _txi(txi) 
+    : _txi(txi)
     , _textureObject(0)
     , mFbo(0)
     , mDbo(0)
     , mTarget(GL_NONE) {
   _glto_count.fetch_add(1);
-  //printf( "create glto_count: %zu\n", _glto_count.load() );
+  // printf( "create glto_count: %zu\n", _glto_count.load() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 GLTextureObject::~GLTextureObject() {
   _glto_count.fetch_add(-1);
-  //printf( "destroy glto_count: %zu\n", _glto_count.load() );
-  if(_textureObject!=0){
+  // printf( "destroy glto_count: %zu\n", _glto_count.load() );
+  if (_textureObject != 0) {
     glDeleteTextures(1, &_textureObject);
   }
 }
@@ -61,12 +61,12 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
   gltexobj_ptr_t tex_obj;
 
   if (tex->_impl.isA<gltexobj_ptr_t>()) {
-    tex_obj = tex->_impl.get<gltexobj_ptr_t>();;
-  }
-  else {
-    tex_obj = tex->_impl.makeShared<GLTextureObject>(this);
+    tex_obj = tex->_impl.get<gltexobj_ptr_t>();
+    ;
+  } else {
+    tex_obj       = tex->_impl.makeShared<GLTextureObject>(this);
     tex_obj->_txi = this;
-    
+
     /////////////////////////////////////////////////////////////
     // assign default texture object (0) to start out with
     /////////////////////////////////////////////////////////////
@@ -146,24 +146,27 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
 
   GLuint texID = tex_obj->_textureObject;
 
-  if(0){
-    auto fxi = mTargetGL.FXI();
+  //if (texID != 0) {
+    //_checkTexture(texID, "");
+ // }
+
+  if (0) {
+    auto fxi       = mTargetGL.FXI();
     auto container = fxi->activeShader()->_internalHandle.get<glslfx::rootcontainer_ptr_t>();
-    auto pass = container->_activePass;
+    auto pass      = container->_activePass;
 
     // get texname
     std::string texname = tex->_debugName;
 
-
     printf(
-      "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> tex<%p:%s> \n",
-      pass->_name.c_str(),
-      loc,
-      tex_unit,
-      texID,
-      int(tex_target),
-      tex,
-      texname.c_str());
+        "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> tex<%p:%s> \n",
+        pass->_name.c_str(),
+        loc,
+        tex_unit,
+        texID,
+        int(tex_target),
+        tex,
+        texname.c_str());
   }
 
   GL_ERRORCHECK();
@@ -270,12 +273,12 @@ pboptr_t PboSet::alloc(GlTextureInterface* txi) {
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
 
-      //printf("GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1));
+      // printf("GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1));
 
       // ??? persistent mapped objects
 
-      #if defined(OPENGL_46)
-      if(txi->mTargetGL._SUPPORTS_PERSISTENT_MAP){
+#if defined(OPENGL_46)
+      if (txi->mTargetGL._SUPPORTS_PERSISTENT_MAP) {
         u32 create_flags = GL_MAP_WRITE_BIT;
         create_flags |= GL_MAP_PERSISTENT_BIT;
         create_flags |= GL_MAP_COHERENT_BIT;
@@ -287,13 +290,12 @@ pboptr_t PboSet::alloc(GlTextureInterface* txi) {
         map_flags |= GL_MAP_COHERENT_BIT;
         // map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
         new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
-      }
-      else{
+      } else {
         glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
       }
-      #else
-        glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
-      #endif
+#else
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+#endif
 
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -425,7 +427,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   if (glto) {
     GLenum tgt = (glto->mTarget != GL_NONE) ? glto->mTarget : GL_TEXTURE_2D;
 
-    if(tgt == GL_TEXTURE_CUBE_MAP){
+    if (tgt == GL_TEXTURE_CUBE_MAP) {
       return;
     }
 
@@ -491,51 +493,138 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 #if defined(OPENGL_46)
 
-  void PboItem::copyPersistentMapped(const TextureInitData& tid, size_t length, const void* src_data){
-    auto mapped   = _mapped;
-    size_t pbolen = _length;
-    GL_ERRORCHECK();
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
-    GL_ERRORCHECK();
-    if (tid._truncation_length != 0) {
-      if (tid._truncation_length > pbolen) {
-        logerrchannel()->log(
-            "ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
-            tid._truncation_length,                          //
-            pbolen);
-        OrkAssert(false);
-      }
+void PboItem::copyPersistentMapped(const TextureInitData& tid, size_t length, const void* src_data) {
+  auto mapped   = _mapped;
+  size_t pbolen = _length;
+  GL_ERRORCHECK();
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
+  GL_ERRORCHECK();
+  if (tid._truncation_length != 0) {
+    if (tid._truncation_length > pbolen) {
+      logerrchannel()->log(
+          "ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
+          tid._truncation_length,                          //
+          pbolen);
+      OrkAssert(false);
     }
-    memcpy_fast(mapped, src_data, length);
   }
+  memcpy_fast(mapped, src_data, length);
+}
 
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data){
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
-    GL_ERRORCHECK();
-    u32 map_flags = GL_MAP_WRITE_BIT;
-    map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-    map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-    map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-    void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-    memcpy_fast(mapped, src_data, length);
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-    GL_ERRORCHECK();
-  }
+void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data) {
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
+  GL_ERRORCHECK();
+  u32 map_flags = GL_MAP_WRITE_BIT;
+  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+  memcpy_fast(mapped, src_data, length);
+  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  GL_ERRORCHECK();
+}
+
+bool _checkTexture(GLuint texID, const std::string& name) {
+    if (texID == 0) {
+        std::cout << "Texture ID is zero, which is not a valid texture object for " << name << "." << std::endl;
+        OrkAssert(false);
+        return false;
+    }
+
+    GLint prevBoundTexture;
+    GLint width, height, depth, internalFormat;
+    GLint minFilter, magFilter, wrapS, wrapT, wrapR;
+    bool isTextureValid = false;
+
+    GLenum targets[] = {GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP};
+    GLenum binding_queries[] = {GL_TEXTURE_BINDING_2D, GL_TEXTURE_BINDING_3D, GL_TEXTURE_BINDING_CUBE_MAP};
+    std::string typeNames[] = {"2D", "3D", "Cubemap"};
+
+    for (int i = 0; i < 3; i++) {
+        printf("Checking texture type %d (%s)\n", i, typeNames[i].c_str());
+        GLenum target = targets[i];
+        glGetIntegerv(binding_queries[i], &prevBoundTexture);
+        glBindTexture(target, texID);
+
+        if (glGetError() == GL_NO_ERROR) {
+            GLenum faces[] = {target};
+            int faceCount = 1;
+
+            if (target == GL_TEXTURE_CUBE_MAP) {
+                faceCount = 6;
+                faces[0] = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+                faces[1] = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+                faces[2] = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+                faces[3] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+                faces[4] = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+                faces[5] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+            }
+
+            isTextureValid = true; // Assume valid until proven otherwise
+
+            for (int j = 0; j < faceCount; j++) {
+                GLenum face = faces[j];
+                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_WIDTH, &width);
+                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_HEIGHT, &height);
+                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+
+                if (target == GL_TEXTURE_3D) {
+                    glGetTexLevelParameteriv(target, 0, GL_TEXTURE_DEPTH, &depth);
+                }
+
+                bool dimensionCheck = width > 0 && height > 0 && (target != GL_TEXTURE_3D || depth > 0);
+                bool formatCheck = internalFormat != 0;
+                bool wrappingCheck = true; // Simplified for clarity
+
+                glGetTexParameteriv(target, GL_TEXTURE_MIN_FILTER, &minFilter);
+                glGetTexParameteriv(target, GL_TEXTURE_MAG_FILTER, &magFilter);
+                glGetTexParameteriv(target, GL_TEXTURE_WRAP_S, &wrapS);
+                glGetTexParameteriv(target, GL_TEXTURE_WRAP_T, &wrapT);
+                if (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_3D) {
+                    glGetTexParameteriv(target, GL_TEXTURE_WRAP_R, &wrapR);
+                }
+
+                wrappingCheck = (wrapS != 0 && wrapT != 0) && ((target != GL_TEXTURE_CUBE_MAP && target != GL_TEXTURE_3D) || wrapR != 0);
+
+                if (!(dimensionCheck && formatCheck && wrappingCheck)) {
+                    std::cout << "Texture " << name << " (" << typeNames[i] << ") is invalid on face " << j << std::endl;
+                    std::cout << "Width: " << width << ", Height: " << height << ", Internal Format: " << internalFormat << std::endl;
+                    std::cout << "Min Filter: " << minFilter << ", Mag Filter: " << magFilter << std::endl;
+                    std::cout << "Wrap S: " << wrapS << ", Wrap T: " << wrapT << (target != GL_TEXTURE_2D ? ", Wrap R: " + std::to_string(wrapR) : "") << std::endl;
+                    OrkAssert(false);
+                    isTextureValid = false;
+                    break;
+                }
+            }
+
+            if (isTextureValid) {
+                std::cout << "Texture " << name << " (" << typeNames[i] << ") is valid." << std::endl;
+                glBindTexture(target, prevBoundTexture);
+                return true;
+            }
+        }
+        glBindTexture(target, prevBoundTexture);
+    }
+
+    std::cout << "Texture " << name << " is not a valid 2D, 3D, or Cubemap texture." << std::endl;
+    OrkAssert(false);
+    return false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
-  bool is_3d = (tid._d > 1);
+  bool is_3d   = (tid._d > 1);
   bool is_cube = tid._initCubeTexture;
 
   ///////////////////////////////////
 
   auto texture_target = is_3d ? GL_TEXTURE_3D : GL_TEXTURE_2D;
-  if(is_cube){
+  if (is_cube) {
     texture_target = GL_TEXTURE_CUBE_MAP;
   }
   ///////////////////////////////////
@@ -623,18 +712,16 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     dst_length             = tid._truncation_length;
   }
 
-  
   ///////////////////////////////////
 #if defined(OPENGL_46)
   // OpenGL4.6 - persistent mapped objects
-  if(mTargetGL._SUPPORTS_PERSISTENT_MAP){
-    pboitem->copyPersistentMapped(tid,dst_length,src_buffer);
-  }
-  else{
-    pboitem->copyWithTempMapped(tid,dst_length,src_buffer);
+  if (mTargetGL._SUPPORTS_PERSISTENT_MAP) {
+    pboitem->copyPersistentMapped(tid, dst_length, src_buffer);
+  } else {
+    pboitem->copyWithTempMapped(tid, dst_length, src_buffer);
   }
 #else
-  pboitem->copyWithTempMapped(tid,dst_length,src_buffer);
+  pboitem->copyWithTempMapped(tid, dst_length, src_buffer);
 #endif
   ///////////////////////////////////
 
@@ -656,10 +743,10 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     GL_ERRORCHECK();
     glBindTexture(texture_target, glto->_textureObject);
     GL_ERRORCHECK();
-    //printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->_textureObject));
+    // printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->_textureObject));
   } else { // new texture
-    glto       = ptex->_impl.makeShared<GLTextureObject>(this);
-    
+    glto = ptex->_impl.makeShared<GLTextureObject>(this);
+
     GL_ERRORCHECK();
     glGenTextures(1, &glto->_textureObject);
     glBindTexture(texture_target, glto->_textureObject);
@@ -669,9 +756,9 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
 
     ptex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
-    //printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->_textureObject));
+    // printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->_textureObject));
 
-    //ptex->_impl._assert_on_destroy = true;
+    // ptex->_impl._assert_on_destroy = true;
   }
 
   GL_ERRORCHECK();
@@ -741,20 +828,18 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                            (ptex->_depth != tid._d) or  //
                            (ptex->_texFormat != tid._dst_format);
 
-  if(is_cube){
-    if (size_or_fmt_dirty){ // allocating
+  if (is_cube) {
+    if (size_or_fmt_dirty) { // allocating
       // init all 6 faces with PBO data
-      for(int i=0; i<6; i++){
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+      for (int i = 0; i < 6; i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+      }
+    } else { // non allocating
+      for (int i = 0; i < 6; i++) {
+        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
       }
     }
-    else{ // non allocating
-      for(int i=0; i<6; i++){
-        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
-      }
-    }
-  }
-  else if (is_3d) {
+  } else if (is_3d) {
     if (size_or_fmt_dirty) // allocating
       glTexImage3D(texture_target, 0, internalformat, tid._w, tid._h, tid._d, 0, format, type, nullptr);
     else // non allocating
@@ -815,6 +900,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   glto->mTarget = texture_target;
 
+  //_checkTexture(glto->_textureObject, "");
   ///////////////////////////////////
 
   glBindTexture(texture_target, 0);

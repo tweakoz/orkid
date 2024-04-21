@@ -62,6 +62,7 @@ PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
   return [mtl](const RenderContextInstData& RCID, int ipass) {
+    //printf( "BASICLAMBDA\n");
     auto context          = RCID.rcfd()->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
@@ -167,6 +168,12 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
   }
 
   mtl->_vars->makeValueForKey<bool>("requirePBRparams") = true;
+
+  if( auto as_bool = mtl->_vars->typedValueForKey<bool>("from_xgm") ){
+    //print("hello\n");
+    //OrkBreak();
+  }
+
 
   switch (mtl->_variant) {
     case 0: { 

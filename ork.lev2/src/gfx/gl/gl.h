@@ -622,6 +622,8 @@ public:
   bool mTargetDrawableSizeDirty;
 };
 
+bool _checkTexture(GLuint texID, const std::string& name);
+
 }} // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////

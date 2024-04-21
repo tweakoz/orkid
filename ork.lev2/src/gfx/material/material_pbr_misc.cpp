@@ -106,6 +106,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CV_EMI_RI_NI_MO;
           pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+          pipeline->addStateLambda(createForwardLightingLambda(this));
           pipeline->addStateLambda(createBasicStateLambda(this));
           pipeline->addStateLambda(no_cull_stateblock);
           OrkAssert(pipeline->_technique != nullptr);

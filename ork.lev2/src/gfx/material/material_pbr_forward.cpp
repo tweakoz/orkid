@@ -41,6 +41,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
   auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
 
+    //printf( "LIGHTINGLAMBDA\n");
     auto RCFD             = RCID.rcfd();
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
@@ -53,7 +54,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
     bool is_rendering_PROBE = RCFD->userPropertyAs<bool>("renderingPROBE"_crcu);
     bool have_PROBES = RCFD->userPropertyAs<bool>("havePROBES"_crcu);
-    bool should_bind_probes = (have_PROBES and (not is_rendering_PROBE));
+    bool should_bind_probes = (have_PROBES);
     bool is_depth_prepass = RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -190,7 +191,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // bind light/environment probes
     ///////////////////////////////////////////////////////////////////////////
 
-    if(should_bind_probes){
+    if(should_bind_probes and (not is_rendering_PROBE)){
       size_t num_probes = enumlights->_lightprobes.size();
 
       // technically here we should only bind a set of probes 
@@ -204,11 +205,15 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       //printf( "BINDING PROBES!  count<%d>\n", num_probes );
       //printf( "binding probetex<%p>\n", probe_tex.get() );
       FXI->BindParamCTex(mtl->_parProbeReflection, probe_tex.get() );
+      FXI->BindParamCTex(mtl->_parProbeIrradiance, probe_tex.get() );
 
 
     }
     else{
+      OrkAssert(mtl->_texCubeBlack);
+      //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
       FXI->BindParamCTex(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
+      FXI->BindParamCTex(mtl->_parProbeIrradiance, mtl->_texCubeBlack.get() );
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -251,76 +256,64 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     RSI->BindRasterState(this->_rasterstate);
   };
   /////////////////////////////////////////////////////////////
+  // STEREO
+  /////////////////////////////////////////////////////////////
   if (permu._stereo) {
+    ////////////////////////////// 
+    // SKINNED
+    ////////////////////////////// 
     if (permu._skinned) {
       if (permu._instanced) {
         if (this->_tek_FWD_CT_NM_SK_IN_ST) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_IN_ST;
-          pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-          pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       } else {
         if (this->_tek_FWD_CT_NM_SK_NI_ST) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_ST;
-          pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-          pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       }
 
-    } else {                  // not skinned
+    }
+    ////////////////////////////// 
+    // RIGID
+    ////////////////////////////// 
+    else {                  
       if (permu._instanced) { // instanced
         if (this->_tek_FWD_CT_NM_RI_IN_ST) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_ST;
-          pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-          pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       } else { // not instanced
         if (this->_tek_FWD_CT_NM_RI_NI_ST) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_ST;
-          pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-          pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       }
     }
+    if(pipeline){
+        pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+        pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+        pipeline->addStateLambda(createBasicStateLambda(this));
+        pipeline->addStateLambda(createForwardLightingLambda(this));
+        pipeline->addStateLambda(rsi_lambda);
+    }
   }
-  // FORWARD_PBR::STEREO
   /////////////////////////////////////////////////////////////
   // FORWARD_PBR::MONO
+  /////////////////////////////////////////////////////////////
   else {
     if (permu._skinned) {
       if (permu._instanced) {
         if (this->_tek_FWD_CT_NM_SK_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_IN_MO;
-          pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       } else { // not instanced
         if (this->_tek_FWD_CT_NM_SK_NI_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_MO;
-          pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       }
     } else { // not skinned
@@ -328,21 +321,19 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
-          pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       } else {
         if (this->_tek_FWD_CT_NM_RI_NI_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_MO;
-          pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-          pipeline->addStateLambda(createBasicStateLambda(this));
-          pipeline->addStateLambda(createForwardLightingLambda(this));
-          pipeline->addStateLambda(rsi_lambda);
         }
       }
+    }
+    if(pipeline){
+      pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+      pipeline->addStateLambda(createBasicStateLambda(this));
+      pipeline->addStateLambda(createForwardLightingLambda(this));
+      pipeline->addStateLambda(rsi_lambda);
     }
   }
 
