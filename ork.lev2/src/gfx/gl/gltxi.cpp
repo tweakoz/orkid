@@ -479,14 +479,29 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
   auto glto = ptex->_impl.get<gltexobj_ptr_t>();
-  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  auto gltgt = glto->mTarget;
+  GL_ERRORCHECK();
+
+  switch(gltgt){
+    case GL_TEXTURE_2D:
+    case GL_TEXTURE_CUBE_MAP:
+      break;
+    default:
+      OrkAssert(false);
+  }
+
+  glBindTexture(gltgt, glto->_textureObject);
+  glGenerateMipmap(gltgt);
+  GL_ERRORCHECK();
+  glTexParameterf(gltgt, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(gltgt, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  GL_ERRORCHECK();
   int w = ptex->_width;
   int l = highestPowerOfTwo(w);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, l);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  glTexParameterf(gltgt, GL_TEXTURE_MAX_LEVEL, l);
+  GL_ERRORCHECK();
+  glBindTexture(gltgt, 0);
+  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -627,6 +642,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   if (is_cube) {
     texture_target = GL_TEXTURE_CUBE_MAP;
   }
+  
   ///////////////////////////////////
 
   size_t dst_length = tid.computeDstSize();
@@ -760,6 +776,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     // ptex->_impl._assert_on_destroy = true;
   }
+
+  glto->mTarget = texture_target;
 
   GL_ERRORCHECK();
 

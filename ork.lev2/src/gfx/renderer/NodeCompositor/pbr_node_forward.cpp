@@ -211,6 +211,7 @@ struct ForwardPbrNodeImpl {
 
     auto context = drawdata.context();
     auto FBI     = context->FBI();
+    auto TXI     = context->TXI();
     auto CIMPL   = drawdata._cimpl;
     auto RCFD    = drawdata.RCFD();
     auto topcomp = RCFD->topCompositor();
@@ -352,7 +353,15 @@ struct ForwardPbrNodeImpl {
 
               CompositingPassData cubemapCPD = CPD.clone();
               CameraMatrices CUBECAM;
+              // compute projection matrix
               CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
+
+              // flip y on projection matrix
+              fmtx4 flipy;
+              flipy.setScale(1,-1,1);
+              CUBECAM._pmatrix = flipy * CUBECAM._pmatrix;
+
+
 
               for( int iface=0; iface<6; iface++ ){
 
@@ -375,7 +384,6 @@ struct ForwardPbrNodeImpl {
                   case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
                   case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
                 }
-                // compute projection matrix
 
 
                 CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
@@ -406,7 +414,7 @@ struct ForwardPbrNodeImpl {
               }
 
               probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
-
+              TXI->generateMipMaps(probe->_cubeTexture.get());
               break;
           }
         }

@@ -280,8 +280,8 @@ libblock lib_frg_grid : lib_gbuf_encode {
     float clamo_x = clamp(abs(pos.x) / adjustedWidthX, 0.0, 1.0);
     float clamo_z = clamp(abs(pos.z) / adjustedWidthZ, 0.0, 1.0);
 
-    float map_x = 1.0 - smoothstep(0.5, 1, clamo_x);
-    float map_z = 1.0 - smoothstep(0.5, 1, clamo_z);
+    float map_x = 1.0 - smoothstep(0.5, 1.0, clamo_x);
+    float map_z = 1.0 - smoothstep(0.5, 1.0, clamo_z);
 
     vec3 tgt_x = mix(vec3(.5,0,0),vec3(1.5,0,0),float(pos.x>0.0));
     vec3 tgt_z = mix(vec3(0,0,.5),vec3(0,0,1.5),float(pos.z>0.0));

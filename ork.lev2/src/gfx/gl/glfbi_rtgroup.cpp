@@ -629,7 +629,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       //////////////////////////////////////////
 
       auto color_glto = bufferimpl->_teximpl.get<gltexobj_ptr_t>();
-
+      color_glto->mTarget = texture_target;
       // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", rtgroup, rtbuffer, it, int(glto->_textureObject));
 
       if (rtgroup->_cubeMap) {
@@ -688,6 +688,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     // printf( "SetRtg::BindFBO<%d> depthONLY!!\n", int(rtg_impl->_depthonly->_fbo) );
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
     glBindTexture(texture_target, rtg_impl->_depthonly->_depthTexObject);
+    //color_glto->mTarget = texture_target;
     glDrawBuffers(0, nullptr);
   } else {
 
@@ -695,6 +696,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       //
       auto bufferimpl = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
       auto color_glto = bufferimpl->_teximpl.getShared<GLTextureObject>();
+      color_glto->mTarget = GL_TEXTURE_CUBE_MAP;
 
       /////////////////////////////////////////////////////////////
       // bind rtgroup->_cubeRenderFace to 
@@ -722,6 +724,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     glDrawBuffers(inumtargets, buffers);
     GL_ERRORCHECK();
   }
+
 
   //////////////////////////////////////////
 
