@@ -332,8 +332,21 @@ fragment_interface iface_grid_forward_lit {
     layout(location = 0) vec4 out_clr;
   }
 }
-fragment_shader ps_grid_forward_unlit : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
+///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_unlit_mono : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
   vec4 gout = grid_output(frg_pos.xyz);
+  out_clr   = gout;
+}
+fragment_shader ps_grid_forward_unlit_mono_v2 : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec4 gout = grid_output2(frg_pos.xyz);
+  out_clr   = gout;
+}
+fragment_shader ps_grid_forward_unlit_mono_v3 : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec4 gout = grid_output3(frg_pos.xyz);
+  out_clr   = gout;
+}
+fragment_shader ps_grid_forward_unlit_mono_v4 : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec4 gout = grid_output4(frg_pos.xyz);
   out_clr   = gout;
 }
 ///////////////////////////////////////////////////////////////
@@ -437,7 +450,19 @@ state_block sb_forward_blend : default {
 }
 technique FWD_UNLIT_NI_MO {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit, sb_forward }
+  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono, sb_forward }
+}
+technique FWD_UNLIT_NI_MO_V2 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v2, sb_forward }
+}
+technique FWD_UNLIT_NI_MO_V3 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v3, sb_forward }
+}
+technique FWD_UNLIT_NI_MO_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v4, sb_forward }
 }
 technique FWD_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;
