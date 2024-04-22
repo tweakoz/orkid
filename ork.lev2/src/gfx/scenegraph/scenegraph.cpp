@@ -271,7 +271,10 @@ layer_ptr_t Scene::findLayer(std::string named) {
 
   _layers.atomicOp([&](layer_map_t& unlocked) {
     auto it = unlocked.find(named);
-    OrkAssert(it != unlocked.end());
+    if(it==unlocked.end()){
+      printf( "Layer<%s> not found\n", named.c_str());
+      OrkAssert(false);
+    }
     rval = it->second;
   });
 

@@ -36,7 +36,6 @@ struct GroundPlaneRenderImpl {
         
         _fxcache = _pbrmaterial->pipelineCache();
     }
-
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -112,12 +111,16 @@ struct GroundPlaneRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    auto pipeline = _fxcache->findPipeline(RCID);
-    OrkAssert(pipeline);
+    fxpipeline_ptr_t pipeline = nullptr;
 
     if(_pipeline_color and not is_depth_prepass){
       pipeline = _pipeline_color;
     }
+    else{
+      OrkAssert(_fxcache);
+      pipeline = _fxcache->findPipeline(RCID);
+    }
+    OrkAssert(pipeline);
 
 
     pipeline->wrappedDrawCall(RCID, [&]() {

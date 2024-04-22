@@ -87,7 +87,24 @@ struct ForwardPbrNodeImpl {
       _enumeratedLights          = std::make_shared<EnumeratedLights>();
 
       if (_ginitdata->_msaa_samples > 1) {
-        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
+        switch(_ginitdata->_msaa_samples){
+          case 0:
+          case 1:
+            _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
+            break;
+          case 4:
+            _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_4X, "rtgs-,main-resolve");
+            break;
+          case 9:
+            _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_9X, "rtgs-,main-resolve");
+            break;
+          case 16:
+            _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_16X, "rtgs-,main-resolve");
+            break;
+          default:
+            OrkAssert(false);
+            break;
+        }
         _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer", efmt);
         //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
         // auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);

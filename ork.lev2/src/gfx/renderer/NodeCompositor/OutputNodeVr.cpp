@@ -46,8 +46,16 @@ struct VRIMPL {
       _blit2screenmtl.gpuInit(context, "orkshader://solid");
       _blit2screenmtl._rasterstate.SetCullTest(ECullTest::OFF);
       _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
+      _fxtechnique2x2       = _blit2screenmtl.technique("downsample_2x2");
+      _fxtechnique3x3       = _blit2screenmtl.technique("downsample_3x3");
+      _fxtechnique4x4       = _blit2screenmtl.technique("downsample_4x4");
+      _fxtechnique5x5       = _blit2screenmtl.technique("downsample_5x5");
+      _fxtechnique6x6       = _blit2screenmtl.technique("downsample_6x6");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
       _fxpColorMap    = _blit2screenmtl.param("ColorMap");
+      _msaadownsamplebuffer = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_vrnode->_format);
+      dsbuf->_debugName     = "MsaaDownsampleBuffer";
 
       // printf("A: vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
@@ -195,12 +203,19 @@ struct VRIMPL {
   CameraMatrices* _tmpcameramatrices = nullptr;
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
+  const FxShaderTechnique* _fxtechnique2x2;
+  const FxShaderTechnique* _fxtechnique3x3;
+  const FxShaderTechnique* _fxtechnique4x4;
+  const FxShaderTechnique* _fxtechnique5x5;
+  const FxShaderTechnique* _fxtechnique6x6;
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
+  rtgroup_ptr_t _msaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode()
-    : _supersample(0) {
+    : _supersample(0)
+    , _format(EBufferFormat::RGBA8) {
   _impl = std::make_shared<VRIMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,6 +258,19 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
+
+                /////////////////////////////////////////////////////////////////////////////
+        // be nice and composite to main screen as well...
+        /////////////////////////////////////////////////////////////////////////////
+
+        int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
+
+        auto this_buf = context->FBI()->GetThisBuffer();
+        if (num_msaa_samples != 1) {
+          auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+          context->FBI()->msaaBlit(inp_rtg, impl->_msaadownsamplebuffer);
+          tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
+        }
 
         if (_distorion_lambda) {
           _distorion_lambda(framedata, tex);

@@ -853,46 +853,49 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr_t dst_rtg) {
-
-  // glFinish();
-
-  int width  = src_rtg->miW;
+  // Extract width and height from source RTG
+  int width = src_rtg->miW;
   int height = src_rtg->miH;
+
+  // Determine if source is using MSAA
+  int num_samples = msaaEnumToInt(src_rtg->_msaa_samples);
+  bool isMSAA = num_samples > 1;
+
+  // Destination RTG implementation pointer and texture object
   glrtgroupimpl_ptr_t dst_rtg_impl;
   gltexobj_ptr_t dst_glto;
 
+  // Try to get the existing implementation or create a new one
   if (auto try_dest = dst_rtg->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     dst_rtg_impl = try_dest.value();
-    dst_glto     = dst_rtg->_depthBuffer->_texture->_impl.get<gltexobj_ptr_t>();
+    dst_glto = dst_rtg->_depthBuffer->_texture->_impl.get<gltexobj_ptr_t>();
   } else {
-    // auto dtex = dst->_texture;
-    dst_rtg_impl           = dst_rtg->_impl.makeShared<GlRtGroupImpl>();
-    dst_rtg->_msaa_samples = src_rtg->_msaa_samples;
-    dst_rtg->_name         = "RtgDepthCopy";
-    dst_rtg->_depthOnly    = true;
+    dst_rtg_impl = dst_rtg->_impl.makeShared<GlRtGroupImpl>();
+    dst_rtg->_msaa_samples = MsaaSamples(num_samples);  // Copy MSAA settings from source
+    dst_rtg->_name = "RtgDepthCopy";
+    dst_rtg->_depthOnly = true;
 
-    dst_rtg->_depthBuffer           = dst_rtg->createRenderTarget(EBufferFormat::Z32);
-    auto texture                    = std::make_shared<Texture>();
-    texture->_texFormat             = EBufferFormat::Z32;
-    texture->_debugName             = "RtgDepthCopy";
-    dst_glto                        = texture->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
+    // Create new depth buffer and texture as per MSAA settings
+    dst_rtg->_depthBuffer = dst_rtg->createRenderTarget(EBufferFormat::Z32);
+    auto texture = std::make_shared<Texture>();
+    texture->_texFormat = EBufferFormat::Z32;
+    texture->_debugName = "RtgDepthCopy";
+    dst_glto = texture->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
     dst_rtg->_depthBuffer->_texture = texture;
   }
 
+  // Resize if necessary
   bool need_resize = (dst_rtg->miW != width) || (dst_rtg->miH != height);
-
   if (need_resize) {
-
     dst_rtg->miW = width;
     dst_rtg->miH = height;
-
     auto dest_rtb = dst_rtg->_depthBuffer;
 
-    dest_rtb->_width         = width;
-    dest_rtb->_height        = height;
+    dest_rtb->_width = width;
+    dest_rtb->_height = height;
     dst_rtg_impl->_depthonly = std::make_shared<GlFboObject>();
 
-    auto dest_rtbo      = new GlRtBufferImpl;
+    auto dest_rtbo = new GlRtBufferImpl;
     dest_rtbo->_teximpl = dst_glto;
 
     dest_rtb->_impl.set<GlRtBufferImpl*>(dest_rtbo);
@@ -900,39 +903,35 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     auto src_glto = src_rtg->_depthBuffer->_texture->_impl.get<gltexobj_ptr_t>();
 
-    int num_samples = msaaEnumToInt(src_rtg->_msaa_samples);
-
+    // Handle texture creation based on MSAA
     glGenTextures(1, &dst_glto->_textureObject);
-    glBindTexture(GL_TEXTURE_2D, dst_glto->_textureObject);
-    if (num_samples == 1) {
+    glBindTexture(isMSAA ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, dst_glto->_textureObject);
+    if (!isMSAA) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     } else {
-      glTexImage2DMultisample(GL_TEXTURE_2D, num_samples, GL_DEPTH_COMPONENT32, width, height, GL_TRUE);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, num_samples, GL_DEPTH_COMPONENT32, width, height, GL_TRUE);
     }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    // Setup framebuffer
     GLuint fboCopy;
     glGenFramebuffers(1, &fboCopy);
     glBindFramebuffer(GL_FRAMEBUFFER, fboCopy);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dst_glto->_textureObject, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, isMSAA ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, dst_glto->_textureObject, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     dst_rtg_impl->_depthonly->_fbo = fboCopy;
   }
 
+  // Blit from source to destination
   if (auto try_src_rtg_impl = src_rtg->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
-
     auto src_rtg_impl = try_src_rtg_impl.value();
-
     bool is_complete = _checkFboComplete(src_rtg_impl->_depthonly->_fbo, "clone", src_rtg.get());
 
-    //_dumpFBOstructure(src_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::src_donly_fbo");
-    //_dumpFBOstructure(dst_rtg_impl->_depthonly->_fbo, "DEPTHCLONE::dst_donly_fbo");
-
-    // query current scissor rect
+    // Setup and perform the blit operation
     GLint scissor[4];
     glGetIntegerv(GL_SCISSOR_BOX, scissor);
     glScissor(0, 0, width, height);
