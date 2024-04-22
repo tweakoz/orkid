@@ -25,10 +25,13 @@ sys.path.append(str(thisdir()/".."/"particles"))
 from _ptc_harness import *
 
 ################################################################################
-
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument('--stereo', action='store_true', help='stereo mode')
 ################################################################################
 args = vars(parser.parse_args())
+################################################################################
+stereo = args["stereo"]
+mono = not stereo
 ################################################################################
 tokens = CrcStringProxy()
 
@@ -39,7 +42,13 @@ class LIGHTING_APP(object):
     self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15))
+
+    if stereo:
+      self.cameralut = CameraDataLut()
+      self.vrcamera = CameraData()
+      self.cameralut.addCamera("vrcam",self.vrcamera)
+    else:
+      setupUiCamera(app=self,eye=vec3(0,12,15))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -51,6 +60,10 @@ class LIGHTING_APP(object):
 
   def onGpuInit(self,ctx):
 
+    if stereo:
+      self.vrdev = orkidvr.novr_device()
+      self.vrdev.camera = "vrcam"
+
     params_dict = {
       "SkyboxIntensity": float(1),
       "SpecularIntensity": float(1),
@@ -59,9 +72,13 @@ class LIGHTING_APP(object):
       "DepthFogDistance": float(10000),
       "supersample": "1",
     }
+    if mono:
+      params_dict["preset"] = "ForwardPBR"
+    else:
+      params_dict["preset"] = "FWDPBRVR"
 
     #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
-    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
+    createSceneGraph(app=self,params_dict=params_dict)
     self.render_node = self.scene.compositorrendernode
     self.pbr_common = self.render_node.pbr_common
     self.pbr_common.useFloatColorBuffer = True
@@ -179,7 +196,9 @@ class LIGHTING_APP(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
+    handled = False
+    if mono:
+      handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
@@ -188,11 +207,21 @@ class LIGHTING_APP(object):
 
   def onUpdate(self,updinfo):
     self.lighttime = updinfo.absolutetime
-    
+    if stereo:
+      self.vrdev.FOV = 90
+      self.vrdev.IPD = 0.065
+      self.vrdev.near = 0.1
+      self.vrdev.far = 1e5
+      mtx_hmd = mtx4()
+      mtx_hmd.setColumn(3,vec4(0,5,10,1))
+      self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
+      
     
     
     self.scene.updateScene(self.cameralut) 
     
+
+  ################################################
 
   def onGpuUpdate(self,ctx):
     def genpos(node,frq,offset,radius=5,yscale=2):
