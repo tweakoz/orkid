@@ -139,10 +139,11 @@ struct VRIMPL {
       default:
         OrkAssert(false);
     }
-    _out_width     = VRDEV->_width;
-    _out_width     = VRDEV->_height;
+    _out_width     = VRDEV->_width*2;
+
+    _out_height     = VRDEV->_height;
     _ssaa_width    = _out_width * _multiplier;
-    _ssaa_height   = _ssaa_width * _multiplier;
+    _ssaa_height   = _out_height * _multiplier;
     float aspect = float(_ssaa_width) / float(_ssaa_height);
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
@@ -346,12 +347,12 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           fbi->popViewport();
           fbi->popScissor();
           mtl.end(framedata);
-          drawdata.context()->debugPopGroup();
-          drawdata.context()->debugPopGroup();   
           fbi->PopRtGroup();
 
           tex = downRTG->GetMrt(0)->texture();
-   
+
+          drawdata.context()->debugPopGroup();   
+
         }
 
         if (_distorion_lambda) {

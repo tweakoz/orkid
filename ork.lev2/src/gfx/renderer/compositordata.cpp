@@ -219,6 +219,8 @@ RenderPresetContext CompositingData::presetForwardPBRVR() {
   auto o1 = t1->createOutputNode<VrCompositingNode>();
   auto r1 = t1->createRenderNode<pbr::ForwardNode>();
 
+  o1->setSuperSample(_ginitdata->_ssaa_samples);
+
   r1->_pbrcommon->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = std::make_shared<CompositingScene>();
