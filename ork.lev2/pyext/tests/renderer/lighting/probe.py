@@ -76,11 +76,13 @@ class LIGHTING_APP(object):
 
     ###################################
 
-    #createDefaultStreakSystem(app=self)
-    #self.particlenode.worldTransform.translation = vec3(0,1,0)
-    #self.particlenode.worldTransform.scale = 0.3
-    #self.layer_probe.addDrawableNode(self.particlenode)
-    
+    if False:
+      createDefaultSpriteSystem(app=self)
+      self.particlenode.worldTransform.translation = vec3(0,4,10)
+      self.particlenode.worldTransform.scale = 1/10.0
+      self.layer_probe.addDrawableNode(self.particlenode)
+      self.SPRI.material.colorIntensity = 0.3
+
     ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
@@ -134,8 +136,8 @@ class LIGHTING_APP(object):
     cookie1 = MyCookie("src://effect_textures/L0D.png")
     cookie2 = MyCookie("src://effect_textures/knob2.dds")
     
-    shadow_size = 2048
-    shadow_bias = 1e-4
+    shadow_size = 1024
+    shadow_bias = 1e-3
     if True:
       self.spotlight1 = MySpotLight( index=0,
                                      app=self,
@@ -201,12 +203,14 @@ class LIGHTING_APP(object):
       node.modelnode.worldTransform.translation = vec3(x,y,z)
     
     self.probe.invalidate()
-    #genpos(self.node_px,0.3,0)
-    #genpos(self.node_nx,0.3,math.pi/2)
-    #genpos(self.node_pz,0.3,math.pi)
-    #genpos(self.node_nz,0.3,3*math.pi/2)
-    #genpos(self.node_ctr,0.7,0,radius=0,yscale=2)
-    #self.probe.worldMatrix = mtx4.transMatrix(0,2,0)*self.node_ctr.modelnode.worldTransform.composed
+    frq = 0.1
+    genpos(self.node_px,frq,0)
+    genpos(self.node_nx,frq,math.pi/2)
+    genpos(self.node_pz,frq,math.pi)
+    genpos(self.node_nz,frq,3*math.pi/2)
+    genpos(self.node_ctr,frq*2.1,0,radius=0,yscale=2)
+    self.probe.worldMatrix = mtx4.transMatrix(0,2,0)*self.node_ctr.modelnode.worldTransform.composed
+    #self.probe.worldMatrix = self.node_ctr.modelnode.worldTransform.composed
 
 
     if hasattr(self,'spotlight1'):

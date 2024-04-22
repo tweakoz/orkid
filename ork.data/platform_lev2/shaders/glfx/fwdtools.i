@@ -103,8 +103,8 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     /////////////////////////
     float spec_ruf      = pow(roughness, 1.3) * 0.7;
     float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
-    refl                = vec3(refl.x, -refl.y, refl.z);
-    vec3 spec_env       = env_equirectangular(refl, MapSpecularEnv, spec_miplevel)+probe_REFL;
+    vec3 refl_equi      = vec3(refl.x, -refl.y, refl.z);
+    vec3 spec_env       = env_equirectangular(refl_equi, MapSpecularEnv, spec_miplevel)+probe_REFL;
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
@@ -151,20 +151,51 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
 
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
-    const float inverse_255 = 1.0 / 255.0;
-
+    vec3 wpos = frg_wpos.xyz;
     vec3 TN        = texture(NormalMap, frg_uv0).xyz;
     vec3 N         = TN * 2.0 - vec3(1, 1, 1);
     vec3 normal    = normalize(frg_tbn * N);
     vec3 rufmtlamb = texture(MtlRufMap, frg_uv0).xyz;
     vec3 emission  = texture(EmissiveMap, frg_uv0).xyz;
+    vec3 metalbase = vec3(0.2);
+    float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
+    float roughness = rufmtlamb.y * RoughnessFactor;
+    float dialetric = 1.0 - metallic;
+    vec3 albedo = (modcolor * frg_clr.xyz * texture(ColorMap, frg_uv0).xyz);
+    vec3 basecolor = albedo;
+    vec3 diffcolor = mix(basecolor, vec3(0), metallic);
+    /////////////////////////
+    vec3 edir = normalize(wpos - eyepos);
+    vec3 refl = normalize(reflect(edir, normal));
+    refl.x *= -1.0;
+    /////////////////////////
+    float ambocc       = 1.0;
+    float ambientshade = ambocc * clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
+    vec3 ambient       = AmbientLevel * ambientshade;
+    /////////////////////////
+    float costheta = clamp(dot(normal, edir), 0.01, 0.99);
+    vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;
+    ///////////////////////////
+    // somethings wrong with the brdf output here
+    //   we get speckled black noise
+    //   the following 2 lines and the clamp above on
+    //   costheta are a temporary fix
+    ///////////////////////////
+    // brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
+    brdf = clamp(brdf, vec2(0), vec2(1));
+    /////////////////////////
+    vec3 F0    = mix(metalbase, basecolor, metallic);
+    vec3 G0    = mix(metalbase, basecolor, 1.0 - metallic);
+    vec3 F     = fresnelSchlickRoughness(costheta, F0, roughness);
+    vec3 invF  = (vec3(1) - F);
+    vec3 diffn = normal;
+    /////////////////////////
 
-    vec3 wpos = frg_wpos.xyz;
     PbrData pbd;
     pbd._emissive  = length(TN) < 0.1;
-    pbd._metallic  = rufmtlamb.z * MetallicFactor;
-    pbd._roughness = rufmtlamb.y * RoughnessFactor;
-    pbd._albedo    = (modcolor * frg_clr.xyz * texture(ColorMap, frg_uv0).xyz);
+    pbd._metallic  = metallic;
+    pbd._roughness = roughness;
+    pbd._albedo    = albedo;
     pbd._wpos      = wpos;
     pbd._wnrm      = normal;
     pbd._fogZ      = 0.0;
@@ -226,8 +257,12 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       vec3 light_ndc2       = (light_hpos2.xyz / light_hpos2.w);
       vec2 specular_lightuv = light_ndc2.xy * 0.5 + vec2(0.5);
 
-      bool specular_mask = bool(light_ndc2.x >= -1 && light_ndc2.x < 1) && bool(light_ndc2.y >= -1 && light_ndc2.y < 1) &&
+      bool _specular_mask = bool(light_ndc2.x >= -1 && light_ndc2.x < 1) && bool(light_ndc2.y >= -1 && light_ndc2.y < 1) &&
                            bool(light_ndc2.z >= 0.0 && light_ndc2.z <= 1);
+
+      vec3 specular_mask = vec3(float(_specular_mask));
+
+      //vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
 
       ////////////////////////////////////////////////////////////
 
@@ -287,10 +322,12 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       float Ldist = length(lightdel);
       float NdotL = max(0.0, dot(normal, LN));
 
-      float spec_mix = 1.0 - pow(pbd._roughness, 1.0);
+      float spec_mix = (1.0 - pow(pbd._roughness, 1.0));
+
+
       vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
       vec3 lighttex  = diffuse;
-      lighttex += pbd._albedo * specular_lighttex * NdotL * spec_mix;
+      lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
       //spot_lighting += vec3(specular_lighttex);
        //spot_lighting += pl_c;
