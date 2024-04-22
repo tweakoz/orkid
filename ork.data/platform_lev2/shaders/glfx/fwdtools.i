@@ -104,7 +104,7 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     float spec_ruf      = pow(roughness, 1.3) * 0.7;
     float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
     refl                = vec3(refl.x, -refl.y, refl.z);
-    vec3 spec_env       = probe_REFL; //env_equirectangular(refl, MapSpecularEnv, spec_miplevel)+probe_REFL;
+    vec3 spec_env       = env_equirectangular(refl, MapSpecularEnv, spec_miplevel)+probe_REFL;
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);

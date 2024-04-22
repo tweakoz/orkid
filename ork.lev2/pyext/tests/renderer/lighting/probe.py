@@ -111,7 +111,7 @@ class LIGHTING_APP(object):
     self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,2),ALL_LAYERS)
     self.node_nz = Node(self,vec3(0,2,-5),vec3(2),ALL_LAYERS)
 
-    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),DEPTH_LAYERS+[self.layer_fwd],mtl=1,ruf=.8)
+    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),DEPTH_LAYERS+[self.layer_fwd],mtl=1,ruf=0)
 
     ###################################
 
