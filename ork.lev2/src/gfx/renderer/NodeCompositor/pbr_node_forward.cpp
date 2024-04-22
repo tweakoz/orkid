@@ -254,7 +254,7 @@ struct ForwardPbrNodeImpl {
 
         auto CPD            = CIMPL->topCPD();
         CPD._cameraMatrices = drawdata.property("defcammtx"_crcu).get<const CameraMatrices*>();
-        CPD.assignLayers("depth_prepass,std_forward,probe");
+        CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
         CPD._clearColor = _node->_pbrcommon->_clearColor;
         RtGroupRenderTarget rt(rtg_main.get());
         CPD._irendertarget = &rt;

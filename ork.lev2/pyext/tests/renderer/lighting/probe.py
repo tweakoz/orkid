@@ -21,6 +21,9 @@ from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
 from common.lighting import MySpotLight, MyCookie
 
+sys.path.append(str(thisdir()/".."/"particles"))
+from _ptc_harness import *
+
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
@@ -33,7 +36,7 @@ class LIGHTING_APP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
@@ -52,20 +55,32 @@ class LIGHTING_APP(object):
       "SkyboxIntensity": float(1),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.07),
       "DepthFogDistance": float(10000),
       "supersample": "1",
     }
 
     #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
     self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_dprobe = self.scene.createLayer("depth_probe")
     self.layer_probe = self.scene.createLayer("probe")
     self.layer_fwd = self.layer1
+    DEPTH_LAYERS = [self.layer_donly,self.layer_dprobe]
     FINAL_LAYERS = [self.layer_fwd,self.layer_donly]
     COLOR_LAYERS = [self.layer_fwd,self.layer_probe]
     ALL_LAYERS = [self.layer_fwd,self.layer_probe,self.layer_donly]
 
+    ###################################
+
+    #createDefaultStreakSystem(app=self)
+    #self.particlenode.worldTransform.translation = vec3(0,1,0)
+    #self.particlenode.worldTransform.scale = 0.3
+    #self.layer_probe.addDrawableNode(self.particlenode)
+    
     ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
@@ -96,7 +111,7 @@ class LIGHTING_APP(object):
     self.node_pz = Node(self,vec3(0,2,5),vec3(0,0,2),ALL_LAYERS)
     self.node_nz = Node(self,vec3(0,2,-5),vec3(2),ALL_LAYERS)
 
-    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),ALL_LAYERS,mtl=1,ruf=0)
+    self.node_ctr = Node(self,vec3(0,2,0),vec3(1),DEPTH_LAYERS+[self.layer_fwd],mtl=1,ruf=.8)
 
     ###################################
 
@@ -116,7 +131,8 @@ class LIGHTING_APP(object):
 
     ###################################
 
-    cookie = MyCookie("src://effect_textures/L0D.png")
+    cookie1 = MyCookie("src://effect_textures/L0D.png")
+    cookie2 = MyCookie("src://effect_textures/knob2.dds")
     
     shadow_size = 2048
     shadow_bias = 1e-4
@@ -126,7 +142,7 @@ class LIGHTING_APP(object):
                                      model=model,
                                      frq=0.37,
                                      color=vec3(0,700,1500)*2,
-                                     cookie=cookie,
+                                     cookie=cookie1,
                                      fovbase=50.0,
                                      fovamp=25.0,
                                      voffset=16,
@@ -135,7 +151,20 @@ class LIGHTING_APP(object):
                                      dim=shadow_size,
                                      radius=8,
                                      layers = COLOR_LAYERS)
-
+      self.spotlight2 = MySpotLight( index=0,
+                                     app=self,
+                                     model=model,
+                                     frq=0.47,
+                                     color=vec3(500,0,0),
+                                     cookie=cookie2,
+                                     fovbase=30.0,
+                                     fovamp=35.0,
+                                     voffset=12,
+                                     vscale=8,
+                                     bias=shadow_bias,
+                                     dim=shadow_size,
+                                     radius=4,
+                                     layers = COLOR_LAYERS)
     ##############################################
 
     self.probe = LightProbe()
@@ -181,6 +210,7 @@ class LIGHTING_APP(object):
 
     if hasattr(self,'spotlight1'):
       self.spotlight1.update(self.lighttime)
+      self.spotlight2.update(self.lighttime)
 
 ###############################################################################
 
