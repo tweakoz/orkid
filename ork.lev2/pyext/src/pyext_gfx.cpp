@@ -15,6 +15,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+extern int _g_post_swap_wait_time;
+
 void pyinit_gfx(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +56,9 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
           .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
           .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
+          .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { 
+            _g_post_swap_wait_time = wt;
+          })
           //////////////////////
           // todo move to mtxi when we add it
           //////////////////////

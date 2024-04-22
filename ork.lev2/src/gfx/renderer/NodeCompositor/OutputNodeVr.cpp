@@ -245,7 +245,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
 
         if (_distorion_lambda) {
-          _distorion_lambda(*framedata, tex);
+          _distorion_lambda(framedata, tex);
         } else {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
           const auto& vrdev = orkidvr::device();

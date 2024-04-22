@@ -183,6 +183,7 @@ void Image::downsample(Image& imgout) const {
         xb = _width - 1;
 
       switch (_format) {
+        case EBufferFormat::R8:
         case EBufferFormat::RGB8:
         case EBufferFormat::RGBA8: {
           auto outpixel     = imgout.pixel(x, y);
@@ -201,7 +202,9 @@ void Image::downsample(Image& imgout) const {
           }
           break;
         }
-        case EBufferFormat::R16: {
+        case EBufferFormat::R16: 
+        case EBufferFormat::RGB16: 
+        case EBufferFormat::RGBA16: {
           auto outpixel     = imgout.pixel16(x, y);
           auto inppixelXAYA = pixel16(xa, ya);
           auto inppixelXBYA = pixel16(xb, ya);
@@ -219,6 +222,7 @@ void Image::downsample(Image& imgout) const {
           break;
         }
         default:
+          printf( "UNKNOWN FORMAT<%08x>\n", _format);
           OrkAssert(false);
           break;
       }
