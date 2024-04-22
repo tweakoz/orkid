@@ -200,12 +200,13 @@ class LIGHTING_APP(object):
       y = 4 + math.cos(phase*2.7)*1
       node.modelnode.worldTransform.translation = vec3(x,y,z)
     
-    genpos(self.node_px,0.3,0)
-    genpos(self.node_nx,0.3,math.pi/2)
-    genpos(self.node_pz,0.3,math.pi)
-    genpos(self.node_nz,0.3,3*math.pi/2)
-    genpos(self.node_ctr,0.7,0,radius=0,yscale=2)
-    self.probe.worldMatrix = mtx4.transMatrix(0,2,0)*self.node_ctr.modelnode.worldTransform.composed
+    self.probe.invalidate()
+    #genpos(self.node_px,0.3,0)
+    #genpos(self.node_nx,0.3,math.pi/2)
+    #genpos(self.node_pz,0.3,math.pi)
+    #genpos(self.node_nz,0.3,3*math.pi/2)
+    #genpos(self.node_ctr,0.7,0,radius=0,yscale=2)
+    #self.probe.worldMatrix = mtx4.transMatrix(0,2,0)*self.node_ctr.modelnode.worldTransform.composed
 
 
     if hasattr(self,'spotlight1'):

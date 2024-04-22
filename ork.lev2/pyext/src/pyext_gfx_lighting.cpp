@@ -152,6 +152,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto probe_t = py::class_<LightProbe, lightprobe_ptr_t>(module_lev2, "LightProbe")
     .def(py::init<>())
+    .def("invalidate", [](lightprobe_ptr_t probe) { probe->_dirty=true; })
     .def_property("imageDim",                                //
           [](lightprobe_ptr_t probe) -> int { //
             return probe->_dim;

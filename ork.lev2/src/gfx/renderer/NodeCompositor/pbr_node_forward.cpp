@@ -338,86 +338,88 @@ struct ForwardPbrNodeImpl {
                 probe->_cubeRenderRTG->_cubeMap = true;
                 
               }
-
-              int prevW = probe->_cubeRenderRTG->width();
-              int prevH = probe->_cubeRenderRTG->height();
-              if (prevW != probe->_dim or prevH != probe->_dim) {
-                probe->_cubeRenderRTG->Resize(probe->_dim, probe->_dim);
-              }
-
-              auto CMATRIX = probe->_worldMatrix;
-
-              fvec3 POSX = CMATRIX.xNormal()*-1;
-              fvec3 POSY = CMATRIX.yNormal();
-              fvec3 POSZ = CMATRIX.zNormal()*-1;
-
-              fvec3 position = CMATRIX.translation();
-
-              CompositingPassData cubemapCPD = CPD.clone();
-              CameraMatrices CUBECAM;
-              // compute projection matrix
-              CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
-
-              // flip y on projection matrix
-              fmtx4 flipy;
-              flipy.setScale(1,-1,1);
-              CUBECAM._pmatrix = flipy * CUBECAM._pmatrix;
-
-
-
-              for( int iface=0; iface<6; iface++ ){
-
-                context->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>",iface));
-
-
-                // compute view matrices from cubeface and CMATRIX
-                //  face 0 = POSX
-                //  face 1 = NEGX
-                //  face 2 = POSY
-                //  face 3 = NEGY
-                //  face 4 = POSZ
-                //  face 5 = NEGZ
-
-                switch( iface ){
-                  case 1: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
-                  case 0: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
-                  case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ*-1 ); break;
-                  case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
-                  case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
-                  case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
+              if( probe->_dirty ){
+                int prevW = probe->_cubeRenderRTG->width();
+                int prevH = probe->_cubeRenderRTG->height();
+                if (prevW != probe->_dim or prevH != probe->_dim) {
+                  probe->_cubeRenderRTG->Resize(probe->_dim, probe->_dim);
                 }
 
+                auto CMATRIX = probe->_worldMatrix;
 
-                CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
-                CUBECAM._ivpmatrix                = CUBECAM._vpmatrix.inverse();
-                CUBECAM._ivmatrix                 = CUBECAM._vmatrix.inverse();
-                CUBECAM._ipmatrix                 = CUBECAM._pmatrix.inverse();
-                CUBECAM._frustum.set(CUBECAM._vmatrix,CUBECAM._pmatrix);
-                CUBECAM._explicitProjectionMatrix = true;
-                CUBECAM._explicitViewMatrix       = true;
-                CUBECAM._aspectRatio              = 1.0f;
+                fvec3 POSX = CMATRIX.xNormal()*-1;
+                fvec3 POSY = CMATRIX.yNormal();
+                fvec3 POSZ = CMATRIX.zNormal()*-1;
 
-                auto probe_pass             = std::make_shared<ForwardPass>();
-                probe_pass->_node           = node;
-                probe_pass->_drawdata       = &drawdata;
-                probe_pass->_DB             = DB;
-                probe_pass->_rtg_out        = probe->_cubeRenderRTG;
-                probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
-                probe_pass->_renderingPROBE  = true;
-                probe_pass->_fwd_pass_layer = "probe";
-                probe->_cubeRenderRTG->_cubeRenderFace = iface;
+                fvec3 position = CMATRIX.translation();
 
-                cubemapCPD._cameraMatrices        = &CUBECAM;
-                topcomp->pushCPD(cubemapCPD);
-                _render_xxx(probe_pass);
-                topcomp->popCPD();
+                CompositingPassData cubemapCPD = CPD.clone();
+                CameraMatrices CUBECAM;
+                // compute projection matrix
+                CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
 
-                context->debugPopGroup();
+                // flip y on projection matrix
+                fmtx4 flipy;
+                flipy.setScale(1,-1,1);
+                CUBECAM._pmatrix = flipy * CUBECAM._pmatrix;
 
+
+
+                for( int iface=0; iface<6; iface++ ){
+
+                  context->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>",iface));
+
+
+                  // compute view matrices from cubeface and CMATRIX
+                  //  face 0 = POSX
+                  //  face 1 = NEGX
+                  //  face 2 = POSY
+                  //  face 3 = NEGY
+                  //  face 4 = POSZ
+                  //  face 5 = NEGZ
+
+                  switch( iface ){
+                    case 1: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
+                    case 0: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
+                    case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ*-1 ); break;
+                    case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
+                    case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
+                    case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
+                  }
+
+
+                  CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
+                  CUBECAM._ivpmatrix                = CUBECAM._vpmatrix.inverse();
+                  CUBECAM._ivmatrix                 = CUBECAM._vmatrix.inverse();
+                  CUBECAM._ipmatrix                 = CUBECAM._pmatrix.inverse();
+                  CUBECAM._frustum.set(CUBECAM._vmatrix,CUBECAM._pmatrix);
+                  CUBECAM._explicitProjectionMatrix = true;
+                  CUBECAM._explicitViewMatrix       = true;
+                  CUBECAM._aspectRatio              = 1.0f;
+
+                  auto probe_pass             = std::make_shared<ForwardPass>();
+                  probe_pass->_node           = node;
+                  probe_pass->_drawdata       = &drawdata;
+                  probe_pass->_DB             = DB;
+                  probe_pass->_rtg_out        = probe->_cubeRenderRTG;
+                  probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
+                  probe_pass->_renderingPROBE  = true;
+                  probe_pass->_fwd_pass_layer = "probe";
+                  probe->_cubeRenderRTG->_cubeRenderFace = iface;
+
+                  cubemapCPD._cameraMatrices        = &CUBECAM;
+                  topcomp->pushCPD(cubemapCPD);
+                  _render_xxx(probe_pass);
+                  topcomp->popCPD();
+
+                  context->debugPopGroup();
+
+                }
+
+                probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
+                TXI->generateMipMaps(probe->_cubeTexture.get());
+                probe->_dirty = false;
               }
-
-              probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
-              TXI->generateMipMaps(probe->_cubeTexture.get());
               break;
           }
         }
