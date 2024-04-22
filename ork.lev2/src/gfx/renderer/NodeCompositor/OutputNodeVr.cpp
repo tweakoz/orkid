@@ -53,8 +53,8 @@ struct VRIMPL {
       _fxtechnique6x6       = _blit2screenmtl.technique("downsample_6x6");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
       _fxpColorMap    = _blit2screenmtl.param("ColorMap");
-      _msaadownsamplebuffer = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
-      auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_vrnode->_format);
+      _ssaadownsamplebuffer = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      auto dsbuf            = _ssaadownsamplebuffer->createRenderTarget(_vrnode->_format);
       dsbuf->_debugName     = "MsaaDownsampleBuffer";
 
       // printf("A: vr width<%d> height<%d>\n", width, height);
@@ -116,10 +116,34 @@ struct VRIMPL {
     bool use_vr = (orkidvr::device()->_active);
 
     auto VRDEV = orkidvr::device();
-
-    int width    = VRDEV->_width * 2 * (_vrnode->supersample() + 1);
-    int height   = VRDEV->_height * (_vrnode->supersample() + 1);
-    float aspect = float(width) / float(height);
+    _multiplier = 1;
+    switch (_vrnode->supersample()) {
+      case 0:
+        _multiplier = 1;
+        break;
+      case 1:
+        _multiplier = 2;
+        break;
+      case 2:
+        _multiplier = 3;
+        break;
+      case 3:
+        _multiplier = 4;
+        break;
+      case 4:
+        _multiplier = 5;
+        break;
+      case 5:
+        _multiplier = 6;
+        break;
+      default:
+        OrkAssert(false);
+    }
+    _out_width     = VRDEV->_width;
+    _out_width     = VRDEV->_height;
+    _ssaa_width    = _out_width * _multiplier;
+    _ssaa_height   = _ssaa_width * _multiplier;
+    float aspect = float(_ssaa_width) / float(_ssaa_height);
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
@@ -165,8 +189,8 @@ struct VRIMPL {
 
     // printf( "B: vr width<%d> height<%d>\n", width, height );
 
-    drawdata._properties["OutputWidth"_crcu].set<int>(width);
-    drawdata._properties["OutputHeight"_crcu].set<int>(height);
+    drawdata._properties["OutputWidth"_crcu].set<int>(_ssaa_width);
+    drawdata._properties["OutputHeight"_crcu].set<int>(_ssaa_height);
     bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
     drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
     drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
@@ -210,7 +234,12 @@ struct VRIMPL {
   const FxShaderTechnique* _fxtechnique6x6;
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
-  rtgroup_ptr_t _msaadownsamplebuffer;
+  int _multiplier = 1;
+  int _ssaa_width = 0;
+  int _ssaa_height = 0;
+  int _out_width = 0;
+  int _out_height = 0;
+  rtgroup_ptr_t _ssaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode()
@@ -245,6 +274,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   Context* context = drawdata.context();
   auto fbi         = context->FBI();
+  auto gbi         = context->GBI();
 
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
@@ -263,13 +293,65 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
 
-        int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
+        //int num_ssaa_samples = ssaaEnumToInt(tex->_ssaa_samples);
 
-        auto this_buf = context->FBI()->GetThisBuffer();
-        if (num_msaa_samples != 1) {
-          auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
-          context->FBI()->msaaBlit(inp_rtg, impl->_msaadownsamplebuffer);
-          tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
+        if (impl->_multiplier != 1) {
+
+          // resize ssaadownsamplebuffer
+          auto downRTG = impl->_ssaadownsamplebuffer;
+          if(downRTG->width()!=impl->_out_width || downRTG->height()!=impl->_out_height) {
+            downRTG->Resize(impl->_out_width, impl->_out_height);
+          }
+
+          fbi->PushRtGroup(downRTG.get());
+
+          auto& mtl     = impl->_blit2screenmtl;
+          switch (this->_supersample) {
+            case 0:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<0>");
+              mtl.begin(impl->_fxtechnique1x1, framedata);
+              break;
+            case 1:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<1>");
+              mtl.begin(impl->_fxtechnique2x2, framedata);
+              break;
+            case 2:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<2>");
+              mtl.begin(impl->_fxtechnique3x3, framedata);
+              break;
+            case 3:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<3>");
+              mtl.begin(impl->_fxtechnique4x4, framedata);
+              break;
+            case 4:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<4>");
+              mtl.begin(impl->_fxtechnique5x5, framedata);
+              break;
+            case 5:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<5>");
+              mtl.begin(impl->_fxtechnique6x6, framedata);
+              break;
+            default:
+              OrkAssert(false);
+              break;
+          }
+
+          mtl._rasterstate.SetBlending(Blending::OFF);
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          ViewportRect extents(0, 0, impl->_out_width, impl->_out_height);
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          drawdata.context()->debugPopGroup();
+          drawdata.context()->debugPopGroup();   
+          fbi->PopRtGroup();
+
+          tex = downRTG->GetMrt(0)->texture();
+   
         }
 
         if (_distorion_lambda) {

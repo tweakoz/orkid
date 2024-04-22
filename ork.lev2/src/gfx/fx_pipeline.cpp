@@ -236,7 +236,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_Camera_IVP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPL().inverse());
+            auto m = stereocams->VPL().inverse();
+            FXI->BindParamMatrix(param, m);
           }
           break;
         }
