@@ -332,7 +332,7 @@ fragment_interface iface_grid_forward_lit {
     layout(location = 0) vec4 out_clr;
   }
 }
-fragment_shader ps_grid_forward_unlit : iface_grid_forward_unlit : lib_frg_grid {
+fragment_shader ps_grid_forward_unlit : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
   vec4 gout = grid_output(frg_pos.xyz);
   out_clr   = gout;
 }
