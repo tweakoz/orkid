@@ -83,12 +83,8 @@ class EllipticalParticleSystem(object):
     })
     self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
 
-    self.material2 = particles.TextureMaterial.createShared();
-    self.material2.texture = Texture.load("src://effect_textures/spinner");
-    self.material2.blending = tokens.ADDITIVE
-    self.material2.depthtest = tokens.LEQUALS
-
     self.sprites.material = self.material
+    self.sprites.inputs.Size = 0.1
 
     ##################
     # create particle sg node
@@ -143,7 +139,7 @@ class EllipticalParticleSystem(object):
       GRV.MinDistance = 10
 
       RENDERER = self.sprites.inputs
-      RENDERER.Size = 0.05+self.lerp*0.1
+      RENDERER.Size = 0.1
 
       TRB = self.turbulence.inputs
       TRB.Amount = vec3(100)

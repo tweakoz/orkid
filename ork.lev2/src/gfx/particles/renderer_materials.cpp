@@ -170,8 +170,8 @@ GradientMaterial::GradientMaterial() {
     //////////////////////////////////////////////////////
     //fvec4 color = _gradient->sample(clamped_unitage);
     //////////////////////////////////////////////////////
-    fvec2 uv0(ptc->mfRandom,clamped_unitage);
-    fvec2 uv1(fang, size);
+    fvec2 uv0(fang, size);
+    fvec2 uv1(ptc->mfRandom,clamped_unitage);
     //////////////////////////////////////////////////////
     vw.AddVertex(sprite_vtx_t( //
       ptc->mPosition, //

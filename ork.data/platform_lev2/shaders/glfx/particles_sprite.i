@@ -324,7 +324,7 @@ technique tgradparticle_sprites {
 technique ttexparticle_sprites {
   fxconfig = fxcfg_sprite_default;
   pass p0 {
-    vertex_shader   = vs_sprite_tex;
+    vertex_shader   = vs_sprite;
     geometry_shader = gs_sprite;
     fragment_shader = ps_modtexclr;
     state_block     = sb_default;
