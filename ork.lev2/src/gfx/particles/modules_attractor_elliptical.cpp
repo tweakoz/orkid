@@ -64,6 +64,8 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
 
     _input_inertia   = typedInputNamed<FloatXfPlugTraits>("Inertia");
     _input_dampening = typedInputNamed<FloatXfPlugTraits>("Dampening");
+    _input_scalar    = typedInputNamed<FloatXfPlugTraits>("Scalar");
+    _input_power    = typedInputNamed<FloatXfPlugTraits>("Power");
     _input_orient    = typedInputNamed<QuatXfPlugTraits>("Orientation");
     _input_p1        = typedInputNamed<Vec3XfPlugTraits>("P1");
     _input_p2        = typedInputNamed<Vec3XfPlugTraits>("P2");
@@ -94,6 +96,9 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
     fmtx4 transform_sph_to_wld = createSphericalToEllipticalTransformationMatrix(center, semiMajorAxisDirection, fvec3(a, b, c));
     fmtx4 transform_wld_to_sph = transform_sph_to_wld.inverse();
 
+    float power = _input_power->value();
+    float scalar = _input_scalar->value();
+
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
       BasicParticle* particle = _pool->GetActiveParticle(i);
 
@@ -103,7 +108,7 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
       // Now apply spherical logic in transformed space
       float sph_distanceToCenter = sph_position.magnitude();
 
-      float radius = 1.0f;
+      float radius = scalar;
 
       float sph_distanceToSurface = sph_distanceToCenter - radius;
 
@@ -120,6 +125,7 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
       float wld_distance = wld_delta.magnitude();
 
       float forceMagnitude = 1.0 / (1.0 + wld_distance);
+      forceMagnitude = powf(forceMagnitude,power);
       fvec3 accel          = wld_delta.normalized() * forceMagnitude / finertia;
 
       // Now ensure this direction is correctly applied to the particle's velocity in the original coordinate system.
@@ -132,6 +138,8 @@ struct EllipticalAttractorModuleInst : public ParticleModuleInst {
 
   floatxf_inp_pluginst_ptr_t _input_dampening;
   floatxf_inp_pluginst_ptr_t _input_inertia;
+  floatxf_inp_pluginst_ptr_t _input_scalar;
+  floatxf_inp_pluginst_ptr_t _input_power;
   fvec3xf_inp_pluginst_ptr_t _input_p1;
   fvec3xf_inp_pluginst_ptr_t _input_p2;
   fquatxf_inp_pluginst_ptr_t _input_orient;
@@ -148,6 +156,8 @@ static void _reshapeEllipticalAttractorIOs(dataflow::moduledata_ptr_t data) {
   auto typed = std::dynamic_pointer_cast<EllipticalAttractorModuleData>(data);
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Inertia")->_range   = {-10.0f, 10.0f};
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Dampening")->_range = {0, 1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Scalar")->_range = {0, 100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Power")->_range = {0, 10};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range         = {-1000.0f, 1000.0f};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range         = {-1000.0f, 1000.0f};
   ModuleData::createInputPlug<QuatXfPlugTraits>(data, EPR_UNIFORM, "Orientation");
