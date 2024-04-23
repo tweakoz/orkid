@@ -128,6 +128,10 @@ public:
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
   texture_ptr_t _texture;
+  fxparam_constptr_t _paramColorMap;
+  fxparam_constptr_t _paramGridDim;
+  fxparam_constptr_t _parammodcolor;
+  float _gridDim = 1.0;
 };
 
 using texgridmaterial_ptr_t = std::shared_ptr<TexGridMaterial>;

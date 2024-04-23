@@ -189,8 +189,8 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // override fetcher
     size_t ilast = (icnt - 1);
     get_particle = [=](size_t index) -> const particle::BasicParticle* {
-      // return the_sorter->GetItemAtIndex(ilast-index).second;
-      return the_sorter->GetItemAtIndex(index).second;
+      return the_sorter->GetItemAtIndex(ilast-index).second;
+      //return the_sorter->GetItemAtIndex(index).second;
     };
   }
   //////////////////////////////////////////////////////////////////////////////

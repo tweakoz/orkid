@@ -19,8 +19,8 @@ vertex_interface vface_sprite : uset_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 velocity : BINORMAL;
-    vec2 vtx_rnd_age : TEXCOORD0; // random and age
-    vec2 vtx_ang_size : TEXCOORD1; // size
+    vec2 vtx_ang_size : TEXCOORD0; // size
+    vec2 vtx_rnd_age : TEXCOORD1; // random and age
   }
   outputs {
     vec3 geo_cnrm; // NOT an array
@@ -117,38 +117,7 @@ geometry_shader gs_sprite //
   EmitVertex();
   //EndPrimitive();
 }
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////
-technique tflatparticle_sprites {
-  fxconfig = fxcfg_sprite_default;
-  pass p0 {
-    vertex_shader   = vs_sprite;
-    geometry_shader = gs_sprite;
-    fragment_shader = ps_flat;
-    state_block     = sb_default;
-  }
-}
-technique tgradparticle_sprites {
-  fxconfig = fxcfg_sprite_default;
-  pass p0 {
-    vertex_shader   = vs_sprite;
-    geometry_shader = gs_sprite;
-    fragment_shader = ps_grad;
-    state_block     = sb_default;
-  }
-}
-technique ttexparticle_sprites {
-  fxconfig = fxcfg_sprite_default;
-  pass p0 {
-    vertex_shader   = vs_sprite_tex;
-    geometry_shader = gs_sprite;
-    fragment_shader = ps_modtexclr;
-    state_block     = sb_default;
-  }
-}
+
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -328,6 +297,47 @@ fragment_shader ps_sprite_grad_stereo //
   vec4 cmap = texture(ColorMap, frg_uv.xy);
   out_clr.xyz = gmap.xyz*cmap.xyz;
   out_clr.w = gmap.w*cmap.w;
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+technique tflatparticle_sprites {
+  fxconfig = fxcfg_sprite_default;
+  pass p0 {
+    vertex_shader   = vs_sprite;
+    geometry_shader = gs_sprite;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+technique tgradparticle_sprites {
+  fxconfig = fxcfg_sprite_default;
+  pass p0 {
+    vertex_shader   = vs_sprite;
+    geometry_shader = gs_sprite;
+    fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+technique ttexparticle_sprites {
+  fxconfig = fxcfg_sprite_default;
+  pass p0 {
+    vertex_shader   = vs_sprite_tex;
+    geometry_shader = gs_sprite;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+technique ttexgridparticle_sprites {
+  fxconfig = fxcfg_sprite_default;
+  pass p0 {
+    vertex_shader   = vs_sprite;
+    geometry_shader = gs_sprite;
+    fragment_shader = ps_modtexclr_grid;
+    state_block     = sb_default;
+  }
 }
 ///////////////////////////////////////////////////////////////
 technique tflatparticle_sprites_stereoCI {

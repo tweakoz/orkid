@@ -106,7 +106,23 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_texgrid_type = //
       py::class_<ptc::TexGridMaterial, ptc::MaterialBase, ptc::texgridmaterial_ptr_t>(ptc_module, "TexGridMaterial")
-      .def_static("createShared", []() -> ptc::texgridmaterial_ptr_t { return ptc::TexGridMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::texgridmaterial_ptr_t { return ptc::TexGridMaterial::createShared(); })
+      .def_property("texture", 
+        [](ptc::texgridmaterial_ptr_t  m) -> texture_ptr_t { //
+          return m->_texture;
+        },
+        [](ptc::texgridmaterial_ptr_t  m, texture_ptr_t t) { //
+          return m->_texture = t;
+        }
+        )
+      .def_property("gridDim", 
+        [](ptc::texgridmaterial_ptr_t  m) -> float { //
+          return m->_gridDim;
+        },
+        [](ptc::texgridmaterial_ptr_t  m, float dim) { //
+          return m->_gridDim = dim;
+        }
+        );
   type_codec->registerStdCodec<ptc::texgridmaterial_ptr_t>(mtl_texgrid_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_texvol_type = //
@@ -211,6 +227,14 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       [](ptc::spritemodule_ptr_t r, ptc::basematerial_ptr_t m){
         r->_material = m;
       })      
+      .def_property("depth_sort", 
+        [](ptc::spritemodule_ptr_t  m) -> bool { //
+          return m->_sort;
+        },
+        [](ptc::spritemodule_ptr_t  m, bool sort) { //
+          return m->_sort = sort;
+        }
+        )
       .def_static("createShared", []() -> ptc::spritemodule_ptr_t { return ptc::SpriteRendererData::createShared(); });
   /////////////////////////////////////////////////////////////////////////////
   auto streakmoduledata_type = //

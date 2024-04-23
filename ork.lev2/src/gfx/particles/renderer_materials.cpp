@@ -346,10 +346,6 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void TextureMaterial::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("Texture", &TextureMaterial::GetTextureAccessor, &TextureMaterial::SetTextureAccessor);
-  // ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.class", "ged.factory.assetlist");
-  // ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.assettype", "lev2tex");
-  // ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.assetclass", "lev2tex");
 }
 ///////////////////////////////////////////////////////////////////////////////
 TextureMaterial::TextureMaterial() {
@@ -400,65 +396,70 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void TexGridMaterial::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("Texture", &TexGridMaterial::GetTextureAccessor, &TexGridMaterial::SetTextureAccessor);
-  // ork::reflect::annotatePropertyForEditor<TexGridMaterial>("Texture", "editor.class", "ged.factory.assetlist");
-  // ork::reflect::annotatePropertyForEditor<TexGridMaterial>("Texture", "editor.assettype", "lev2tex");
-  // ork::reflect::annotatePropertyForEditor<TexGridMaterial>("Texture", "editor.assetclass", "lev2tex");
 }
 ///////////////////////////////////////////////////////////////////////////////
 TexGridMaterial::TexGridMaterial() {
-  // ork::lev2::Context* targ = lev2::contextForCurrentThread();
-  //_material               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
-  //_material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
 }
 std::shared_ptr<TexGridMaterial> TexGridMaterial::createShared() {
   return std::make_shared<TexGridMaterial>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TexGridMaterial::update(const RenderContextInstData& RCID) {
-  /*
-      float flastframe = float(miTexCnt - 1);
-      float ftexframe  = anim_frame * flastframe;
-      ftexframe        = (ftexframe < 0.0f) ? 0.0f : (ftexframe >= flastframe) ? flastframe : ftexframe;
-  miTexCnt = 1;           //(miAnimTexDim*miAnimTexDim);
-  mfTexs   = 1.0f / 1.0f; // float(miAnimTexDim);
-  miTexCnt = (miAnimTexDim * miAnimTexDim);
-  mfTexs   = 1.0f / float(miAnimTexDim);
-  uvr0     = fvec2(0.0f, 0.0f);
-  uvr1     = fvec2(mfTexs, 0.0f);
-  uvr2     = fvec2(mfTexs, mfTexs);
-  uvr3     = fvec2(0.0f, mfTexs);
-      float flastframe = float(miTexCnt - 1);
-      float ftexframe  = anim_frame * flastframe;
-      ftexframe        = (ftexframe < 0.0f) ? 0.0f : (ftexframe >= flastframe) ? flastframe : ftexframe;
+  /*if (_texture) {
+    auto context = RCID.context();
+    auto FXI     = context->FXI();
+    FXI->BindParamCTex(_paramColorMap, _texture.get());
+    FXI->BindParamVect4(_parammodcolor, _color);
+  }*/
 
-      bool is_texanim  = (miAnimTexDim > 1);
-
-      fvec2 uv0(fang, fsize);
-      fvec2 uv1 = is_texanim                   //
-                      ? fvec2(ftexframe, 0.0f) //
-                      : fvec2(clamped_unitage, _OUTRANDOM);
-
-if (gtarg && _texture) {
-lev2::TextureAnimationBase* texanim = _texture->GetTexAnim();
-
-if (texanim) {
-  TextureAnimationInst tai(texanim);
-  tai.SetCurrentTime(ftexframe);
-  gtarg->TXI()->UpdateAnimatedTexture(_texture, &tai);
-}
-}*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
-
-  /*_material->SetTexture(_texture);
-  _material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-  _material->_rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _material->_rasterstate.SetZWriteMask(false);
+  auto context = RCID.context();
+  _material    = std::make_shared<FreestyleMaterial>();
+  _material->gpuInit(context, "orkshader://particle");
+  _material->_rasterstate.SetBlending(_blending);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetPointSize(32.0f);*/
+  _material->_rasterstate.SetDepthTest(_depthtest);
+  auto fxparameterM      = _material->param("MatM");
+  auto fxparameterMVP    = _material->param("MatMVP");
+  auto fxparameterIV     = _material->param("MatIV");
+  auto fxparameterIVP    = _material->param("MatIVP");
+  auto fxparameterVP     = _material->param("MatVP");
+  auto fxparameterInvDim = _material->param("Rtg_InvDim");
+  _paramColorMap         = _material->param("ColorMap");
+  _parammodcolor         = _material->param("modcolor");
+  _paramGridDim          = _material->param("GridDim");
+
+  auto pipeline_cache = _material->pipelineCache();
+  _pipeline           = pipeline_cache->findPipeline(RCID);
+  _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+  _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+  _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
+  _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
+  _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
+  _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
+
+  _tek_sprites = _material->technique("ttexgridparticle_sprites");
+  _tek_streaks = _material->technique("ttexparticle_streaks");
+  
+    FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _texture;
+    return rval;
+  };
+  _pipeline->bindParam(_paramColorMap, gen_tex);
+
+    FxPipeline::varval_generator_t gen_clr = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _color;
+    return rval;
+  };
+  _pipeline->bindParam(_parammodcolor, gen_clr);
+
+    FxPipeline::varval_generator_t gen_dim = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _gridDim;
+    return rval;
+  };
+  _pipeline->bindParam(_paramGridDim, gen_dim);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
