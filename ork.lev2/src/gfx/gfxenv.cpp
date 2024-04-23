@@ -82,25 +82,24 @@ int msaaEnumToInt( const MsaaSamples& samples ){
 MsaaSamples intToMsaaEnum( int samples ){
   MsaaSamples rval;
   switch(samples){
+    case 0:
     case 1:
       rval = MsaaSamples::MSAA_1X;
       break;
-    case 4:
+    case 2:
       rval = MsaaSamples::MSAA_4X;
       break;
-    case 8:
-      rval = MsaaSamples::MSAA_8X;
-      break;
-    case 9:
+    case 3:
       rval = MsaaSamples::MSAA_9X;
       break;
-    case 16:
+    case 4:
       rval = MsaaSamples::MSAA_16X;
       break;
-    case 25:
+    case 5:
       rval = MsaaSamples::MSAA_25X;
       break;
     default:
+      printf( "invalid msaa samples<%d>\n", samples );
       OrkAssert(false);
       break;
   }

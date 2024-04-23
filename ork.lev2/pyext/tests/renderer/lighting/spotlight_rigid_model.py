@@ -32,7 +32,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=0)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
