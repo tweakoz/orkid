@@ -68,8 +68,8 @@ class EllipticalParticleSystem(object):
     self.drawable_data.graphdata = self.graphdata
 
     self.material = particles.TexGridMaterial.createShared();
-    self.material.color = vec4(2.0,0.7,.5,0.06)
-    self.material.blending = tokens.ALPHA
+    self.material.color = vec4(2.0,0.7,.5,0.1)
+    self.material.blending = tokens.ALPHA_ADDITIVE
     self.material.depthtest = tokens.OFF
     self.material.texture = Texture.load("lev2://textures/exp2.dds");
     self.material.gridDim = 5
@@ -104,10 +104,10 @@ class EllipticalParticleSystem(object):
       EMI = self.emitter.inputs
       EMI.P1 = vec3(0,f,0)
       EMI.P2 = vec3(0,-f,0)
-      EMI.EmissionVelocity = 2
+      EMI.EmissionVelocity = 5
       EMI.DispersionAngle = 0
-      EMI.LifeSpan = 2
-      EMI.EmissionRate = 1500
+      EMI.LifeSpan = 0.7
+      EMI.EmissionRate = 2500
       EMI.Scalar = 1
       
       GRV = self.gravity.inputs
