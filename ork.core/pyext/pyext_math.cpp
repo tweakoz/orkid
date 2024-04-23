@@ -9,6 +9,7 @@
 #include <ork/math/gradient.h>
 #include <ork/math/multicurve.h>
 #include <ork/math/noiselib.inl>
+#include <ork/math/audiomath.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -127,6 +128,10 @@ void pyinit_math(py::module& module_core) {
   module_core.def("lerp_float", [](float a, float b, float index) -> float { //
     return ::std::lerp(a, b, index);
   });
-}
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("smooth_step", [](float edge0, float edge1, float x) -> float { //
+    return ::ork::audiomath::smoothstep(edge0, edge1, x);
+  });
+  }
 
 } // namespace ork

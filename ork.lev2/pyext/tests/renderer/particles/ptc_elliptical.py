@@ -129,9 +129,9 @@ class EllipticalParticleSystem(object):
 
       ELI = self.elliptical.inputs
       ELI.Scalar = 5+math.pow(self.lerp,2)*15
-      ELI.Power = 0.7
+      ELI.Power = 0.01
       ELI.Inertia = .01
-      ELI.Dampening = 0.993
+      ELI.Dampening = 0.975
       
       GRV = self.gravity.inputs
       GRV.Center = P2+vec3(0,1,0)
@@ -142,7 +142,7 @@ class EllipticalParticleSystem(object):
       RENDERER.Size = 0.05+self.lerp*0.1
 
       TRB = self.turbulence.inputs
-      TRB.Amount = vec3(50)
+      TRB.Amount = vec3(100)
 
 ################################################################################
 
@@ -178,7 +178,7 @@ class ParticlesApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    self.ptc.lerp = math.sin(updinfo.absolutetime*1)*0.5+0.5
+    self.ptc.lerp = smooth_step(0.45,0.55,math.sin(updinfo.absolutetime*1)*0.5+0.5)
     self.ptc.onUpdate(updinfo)
     self.scene.updateScene(self.cameralut) 
     
