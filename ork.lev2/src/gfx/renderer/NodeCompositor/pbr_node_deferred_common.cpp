@@ -43,6 +43,8 @@ DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shader
     _pointlights.push_back(p);
   }
   _lightAccumFormat = EBufferFormat::RGBA16F;
+
+  _vars = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

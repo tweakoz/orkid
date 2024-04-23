@@ -56,9 +56,12 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   mtl->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
                 else if( py::hasattr(inp_value, "__call__")){
-                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> GfxMaterial::varval_t {
+                  auto holdname = FormatString("%s_held",param->_name.c_str());
+                  mtl->_varmap.makeValueForKey<py::object>(holdname,inp_value);
+                  FxPipeline::varval_generator_t L = [mtl,holdname,type_codec]() -> GfxMaterial::varval_t {
                     py::gil_scoped_acquire acquire;
-                    py::object generated = inp_value();
+                    auto held_inp_val = mtl->_varmap.typedValueForKey<py::object>(holdname);
+                    py::object generated = held_inp_val.value()();
                     FxPipeline::varval_t asv = type_codec->decode(generated);
                     return asv;
                   };
@@ -185,9 +188,12 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
                 else if( py::hasattr(inp_value, "__call__")){
-                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> FxPipeline::varval_t {
+                  auto holdname = FormatString("%s_held",param->_name.c_str());
+                  pipeline->_vars->makeValueForKey<py::object>(holdname,inp_value);
+                  FxPipeline::varval_generator_t L = [pipeline,holdname,type_codec]() -> FxPipeline::varval_t {
                     py::gil_scoped_acquire acquire;
-                    py::object generated = inp_value();
+                    auto cb = pipeline->_vars->typedValueForKey<py::object>(holdname);
+                    py::object generated = cb.value()();
                     FxPipeline::varval_t asv = type_codec->decode(generated);
                     return asv;
                   };

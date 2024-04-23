@@ -92,6 +92,7 @@ struct FxPipeline {
   bool _debugBreak = false;
   bool _debugPrint = false;
   std::string _debugName;
+  varmap::varmap_ptr_t _vars;
 
 };
 

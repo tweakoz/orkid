@@ -38,6 +38,7 @@ void DrawableData::describeX(object::ObjectClass* clazz){
 
 DrawableData::DrawableData(){
   _modcolor = fvec4(1,1,1,1);
+  _vars = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

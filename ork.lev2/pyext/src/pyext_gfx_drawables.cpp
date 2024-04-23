@@ -249,12 +249,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
               [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
           .def("onRender", [](string_drawabledata_ptr_t drw, py::object callback) {
-            drw->_onRender = [callback](RenderContextInstData& RCID) {
+            drw->_vars->makeValueForKey<py::object>("_hold_callback") = callback;
+            drw->_onRender = [drw](RenderContextInstData& RCID) {
               auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;
-              callback(int(vpID));
+              auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
+              cb(int(vpID));
             };
           });
   type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
@@ -344,12 +346,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_text_pipeline; },
               [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; })
           .def("onRender", [](labeled_point_drawabledata_ptr_t drw, py::object callback) {
-            drw->_onRender = [callback](RenderContextInstData& RCID) {
+            drw->_vars->makeValueForKey<py::object>("_hold_callback") = callback;
+            drw->_onRender = [drw](RenderContextInstData& RCID) {
               auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;
-              callback(int(vpID));
+              auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
+              cb(int(vpID));
             };
           });
   type_codec->registerStdCodec<labeled_point_drawabledata_ptr_t>(labeledpoint_drawdata_type);

@@ -209,7 +209,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      printf("  find uni<%s> unisiz<%d> unityp<%08x>", nambuf, unisiz, unityp);
+      //printf("  find uni<%s> unisiz<%d> unityp<%08x>", nambuf, unisiz, unityp);
       GL_ERRORCHECK();
 
       str_name = nambuf;
@@ -220,8 +220,8 @@ void Pass::postProc(rootcontainer_ptr_t container) {
         std::string str_size = str_name.substr(its + 1, ite - its - 1);
         is_array             = true;
         str_name             = str_name.substr(0, its);
-        printf(" nnam<%s>", str_name.c_str());
-        printf(" str_size<%s>", str_size.c_str());
+        //printf(" nnam<%s>", str_name.c_str());
+        //printf(" str_size<%s>", str_size.c_str());
       }
     }
 
@@ -263,16 +263,16 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       if (is_sampler) {
         pinst->mPrivData.set<GLenum>(tex_target);
         if (is_array) {
-          printf(" LOCS[");
+          //printf(" LOCS[");
           for (int i = 0; i < unisiz; i++) {
             auto subitemstr = FormatString("%s[%d]", str_name.c_str(), i);
             GLint subuniloc = glGetUniformLocation(_programObjectId, subitemstr.c_str());
             pinst->_locations.push_back(subuniloc);
-            printf(" %d:%d ", i, subuniloc);
+            //printf(" %d:%d ", i, subuniloc);
           }
-          printf("] ");
+          //printf("] ");
         } else {
-          printf(" LOC<%d> ", uniloc);
+          //printf(" LOC<%d> ", uniloc);
           pinst->_locations.push_back(uniloc);
         }
       }
@@ -289,7 +289,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       OrkAssert(it != flatunimap.end());
       // prob a UBO uni
     }
-    printf("\n");
+    //printf("\n");
   }
   double postproc_time = pptimer.SecsSinceStart();
   // printf( "postproctime<%f>\n", postproc_time );

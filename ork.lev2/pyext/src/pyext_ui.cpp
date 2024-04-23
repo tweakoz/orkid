@@ -178,11 +178,13 @@ void pyinit_ui(py::module& module_lev2) {
                 return py::none();
               },
               [](uiwidget_ptr_t widget, py::object callback) { //
-                widget->_evhandler = [callback](ui::event_constptr_t ev) -> ui::HandlerResult {
+                widget->_uservars.makeValueForKey<py::object>("_hold_ev_callback", callback);
+                widget->_evhandler = [widget](ui::event_constptr_t ev) -> ui::HandlerResult {
                   ui::HandlerResult rval;
                   py::gil_scoped_acquire acquire_gil;
-                  if (callback) {
-                    auto pyrval = callback(ev);
+                  auto cb = widget->_uservars.typedValueForKey<py::object>("_hold_ev_callback").value();
+                  if (cb) {
+                    auto pyrval = cb(ev);
                     if (pyrval) {
                       rval = py::cast<ui::HandlerResult>(pyrval);
                     }
@@ -461,9 +463,11 @@ void pyinit_ui(py::module& module_lev2) {
               "onPostRender",
               [](uisurface_ptr_t surface, py::object callback) { //
                 OrkAssert(py::hasattr(callback, "__call__"));
-                surface->_postRenderCallback = [callback]() {
+                surface->_uservars.makeValueForKey<py::object>("_hold_postrender_callback", callback);
+                surface->_postRenderCallback = [surface]() {
                   py::gil_scoped_acquire acquire_gil;
-                  callback();
+                  auto cb = surface->_uservars.typedValueForKey<py::object>("_hold_postrender_callback");
+                  cb.value()();
                 };
               })
           //////////////////////////////////

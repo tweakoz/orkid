@@ -446,8 +446,23 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
       GL_ERRORCHECK();
       glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->_fbo);
       GL_ERRORCHECK();
-      glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
-      GL_ERRORCHECK();
+
+      switch(rtb->mFormat){
+        case EBufferFormat::RGBA8:
+        case EBufferFormat::RGBA16F:
+        case EBufferFormat::RGBA32F:
+          OrkAssert(irt>=0 and irt<8);
+          glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
+          GL_ERRORCHECK();
+          break;
+        case EBufferFormat::Z32:
+          glReadBuffer(GL_COLOR_ATTACHMENT0);
+          GL_ERRORCHECK();
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
     }
   }
   else{

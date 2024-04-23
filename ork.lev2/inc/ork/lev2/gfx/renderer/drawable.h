@@ -362,6 +362,7 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
   virtual void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const {};
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
+  varmap::varmap_ptr_t _vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

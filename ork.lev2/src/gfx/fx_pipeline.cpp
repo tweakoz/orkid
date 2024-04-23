@@ -43,6 +43,7 @@ void FxPipelinePermutationSet::add(fxpipelinepermutation_constptr_t perm){
 /////////////////////////////////////////////////////////////////////////
 FxPipeline::FxPipeline(const FxPipelinePermutation& config)
     : __permutation(config) {
+    _vars = std::make_shared<varmap::VarMap>();
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){

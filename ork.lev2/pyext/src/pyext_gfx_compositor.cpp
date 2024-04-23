@@ -310,9 +310,11 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
         ctx->gpuInit(gfx_ctx.get());
       })
       .def("onGpuInit", [](pbr_deferred_context_ptr_t ctx, py::object callback) { //
-        auto L = [callback](){
+        ctx->_vars->makeValueForKey<py::object>("_hold_callback",callback);
+        auto L = [ctx](){
           py::gil_scoped_acquire acquire;
-          callback();
+          auto cb = ctx->_vars->typedValueForKey<py::object>("_hold_callback");
+          cb.value()();
         };
         ctx->_onGpuInitialized = L;
       });

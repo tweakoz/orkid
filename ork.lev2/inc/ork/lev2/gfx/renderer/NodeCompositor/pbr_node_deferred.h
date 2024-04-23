@@ -181,6 +181,8 @@ struct DeferredContext {
   float _diffuseLevel     = 1.0f;
   float _depthFogPower    = 1.0f;
   float _depthFogDistance = 1.0f;
+
+  varmap::varmap_ptr_t _vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
