@@ -94,10 +94,9 @@ struct IMPL {
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto RCFD = drawdata.RCFD();
     auto CIMPL                   = drawdata._cimpl;
-    auto DB                      = RCFD.GetDB();
+    auto DB                      = RCFD->GetDB();
     Context* targ                = drawdata.context();
     int w                        = targ->mainSurfaceWidth();
     int h                        = targ->mainSurfaceHeight();
@@ -116,9 +115,7 @@ struct IMPL {
     CIMPL->pushCPD(_CPD);
   }
   void endAssemble(CompositorDrawData& drawdata) {
-    auto CIMPL                   = drawdata._cimpl;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -165,10 +162,9 @@ void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* context                  = framedata.GetTarget();
-  auto fbi                          = context->FBI();
+  auto framedata  = drawdata.RCFD();
+  Context* context = drawdata.context();
+  auto fbi         = context->FBI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {

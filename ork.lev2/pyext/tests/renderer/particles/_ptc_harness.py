@@ -189,4 +189,167 @@ def createParticleData( owner,
 
     #owner.particlenode.sortkey = 2;
 
+  #######################################
 
+def gen_sys(scene=None,
+            layer=None,
+            ptc_data=None,
+            ptc_connections=None,
+            grad=None,
+            frq=None,
+            radius=None):
+  ptc = ParticleContainer(scene,layer)
+  createParticleData(ptc,ptc_data,ptc_connections,layer)
+  ptc.POOL.pool_size = 4096 # max number of particles in pool
+  ptc.SPRI.inputs.Size = 0.1
+  ptc.SPRI.inputs.GradientIntensity = 1
+  ptc.SPRI.material = presetMaterial(grad=grad)
+  ptc.EMITN.inputs.EmissionVelocity = 0.1
+  #presetPOOL1(ptc.POOL)
+  presetEMITN1(ptc.EMITN)
+  presetEMITR1(ptc.EMITR)
+  ptc.EMITN.inputs.EmissionRate = 50
+  ptc.EMITR.inputs.EmissionRate = 50
+  ptc.EMITN.inputs.LifeSpan = 30
+  ptc.EMITR.inputs.LifeSpan = 30
+  presetTURB1(ptc.TURB)
+  presetVORT1(ptc.VORT)
+  ptc.VORT.inputs.VortexStrength = 0.0
+  ptc.VORT.inputs.OutwardStrength = 0.0
+  presetGRAV1(ptc.GRAV)
+  ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
+  ptc.TURB.inputs.Amount = vec3(1,1,1)*5
+  ptc.frq = frq
+  ptc.radius = radius
+  ptc.DRAG.inputs.drag = 0.999
+  ptc.drawable_data.emitterIntensity = 8.0
+  ptc.drawable_data.emitterRadius = 1.5
+  return ptc
+
+def gen_psys_set(scene,
+                 layer,
+                 count=32,
+                 frqbase=0.4,
+                 radbase=1.0):
+  ptc_data = {
+    "POOL":particles.Pool,
+    "EMITN":particles.NozzleEmitter,
+    "EMITR":particles.RingEmitter,
+    "GLOB":particles.Globals,
+    #"PNTA":particles.PointAttractor,
+    "GRAV":particles.Gravity,
+    "TURB":particles.Turbulence,
+    "VORT":particles.Vortex,
+    "DRAG":particles.Drag,
+    "LITE":particles.LightRenderer,
+    "SPRI":particles.SpriteRenderer,
+  }
+  ptc_connections = [
+    ("POOL","EMITN"),
+    ("EMITN","EMITR"),
+    ("EMITR","GRAV"),
+    ("GRAV","TURB"),
+    ("TURB","VORT"),
+    ("VORT","DRAG"),
+    ("DRAG","LITE"),
+    ("LITE","SPRI"),
+  ]
+  ptc_systems = []
+  for i in range(count):
+    fi = float(i)/float(count)
+    frq = frqbase + (fi*2)
+    radius = (35 + fi*35)*radbase
+    g = i&7
+    ptc_systems += [gen_sys(scene=scene,
+                            ptc_data=ptc_data,
+                            ptc_connections=ptc_connections,
+                            layer=layer,
+                            grad=presetGRAD(g),
+                            frq=frq,
+                            radius=radius)]
+  return ptc_systems
+
+def update_psys_set(psys_set,time,yval):
+  for item in psys_set:
+    prv_trans = item.particlenode.worldTransform.translation
+    f = - item.frq
+    x = item.radius*math.cos(time*f)
+    y = yval #30+math.sin(time*f)*30
+    z = item.radius*math.sin(time*f)*-1.0
+    new_trans = vec3(x,y,z)    
+    item.particlenode.worldTransform.translation = new_trans  
+    
+    
+def createDefaultStreakSystem(app=None):    
+    ptc_data = {
+      "POOL":particles.Pool,
+      "EMITN":particles.NozzleEmitter,
+      "EMITR":particles.RingEmitter,
+      "GLOB":particles.Globals,
+      "GRAV":particles.Gravity,
+      "TURB":particles.Turbulence,
+      "VORT":particles.Vortex,
+      "STRK":particles.StreakRenderer,
+    }
+    ptc_connections = [
+      ("POOL","EMITN"),
+      ("EMITN","EMITR"),
+      ("EMITR","GRAV"),
+      ("GRAV","TURB"),
+      ("TURB","VORT"),
+      ("VORT","STRK"),
+    ]
+    createParticleData(app,ptc_data,ptc_connections,app.layer1)
+    app.POOL.pool_size = 16384 # max number of particles in pool
+
+    app.STRK.inputs.Length = .1
+    app.STRK.inputs.Width = .01
+    app.STRK.material = presetMaterial()
+    #app.STRK.material = particles.FlatMaterial.createShared()
+    app.EMITN.inputs.EmissionVelocity = 0.1
+    presetPOOL1(app.POOL)
+    presetEMITN1(app.EMITN)
+    presetEMITR1(app.EMITR)
+    presetTURB1(app.TURB)
+    presetVORT1(app.VORT)
+    presetGRAV1(app.GRAV)
+    
+    app.TURB.inputs.Amount = vec3(1,1,1)*5    
+    
+    
+    
+def createDefaultSpriteSystem(app=None):
+    ptc_data = {
+      "POOL":particles.Pool,
+      "EMITN":particles.NozzleEmitter,
+      "EMITR":particles.RingEmitter,
+      "GLOB":particles.Globals,
+      "GRAV":particles.Gravity,
+      "TURB":particles.Turbulence,
+      "VORT":particles.Vortex,
+      "SPRI":particles.SpriteRenderer,
+    }
+    ptc_connections = [
+      ("POOL","EMITN"),
+      ("EMITN","EMITR"),
+      ("EMITR","GRAV"),
+      ("GRAV","TURB"),
+      ("TURB","VORT"),
+      ("VORT","SPRI"),
+    ]
+    createParticleData(app,ptc_data,ptc_connections,app.layer1)
+    app.POOL.pool_size = 16384 # max number of particles in pool
+
+    app.SPRI.inputs.Size = 0.1
+    app.SPRI.inputs.GradientIntensity = 1
+    app.SPRI.material = presetMaterial()
+    #app.SPRI.material = particles.FlatMaterial.createShared()
+    app.EMITN.inputs.EmissionVelocity = 0.1
+    presetPOOL1(app.POOL)
+    presetEMITN1(app.EMITN)
+    presetEMITR1(app.EMITR)
+    presetTURB1(app.TURB)
+    presetVORT1(app.VORT)
+    presetGRAV1(app.GRAV)
+    
+    app.TURB.inputs.Amount = vec3(1,1,1)*5  

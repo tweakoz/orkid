@@ -177,7 +177,7 @@ void StandardCompositorFrame::render() {
 
     /////////////////////////////////////////////
 
-    context->pushRenderContextFrameData(_drawbuffer->_RCFD.get());
+    context->pushRenderContextFrameData(_drawbuffer->_RCFD);
 
     ///////////////////////////////////////
     // compositor setup
@@ -203,10 +203,9 @@ void StandardCompositorFrame::render() {
 
       /////////////////////////////////////////////
 
-      context->pushRenderContextFrameData(_drawbuffer->_RCFD.get());
+      context->pushRenderContextFrameData(_drawbuffer->_RCFD);
 
-      FrameRenderer framerenderer(*_drawbuffer->_RCFD, [&]() {});
-      CompositorDrawData drawdata(framerenderer);
+      CompositorDrawData drawdata(_drawbuffer->_RCFD);
       drawdata._properties["primarycamindex"_crcu].set<int>(0);
       drawdata._properties["cullcamindex"_crcu].set<int>(0);
       drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());

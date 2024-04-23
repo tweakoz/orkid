@@ -44,6 +44,13 @@ void pyinit_math_la_float(py::module& module_core) {
               "scale",
               [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
               [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
+          .def(
+              "lookAt",
+              [](decompxf_ptr_t dcxf, fvec3 eye, fvec3 tgt, fvec3 up) {
+                fmtx4 the_mtx;
+                the_mtx.lookAt(eye, tgt, up);
+                dcxf->decompose(the_mtx);
+              })
           .def_property(
               "directMatrix",
               [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
@@ -52,6 +59,7 @@ void pyinit_math_la_float(py::module& module_core) {
                 dcxf->_usedirectmatrix = true;
               })
           .def_property_readonly("composed", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed(); })
+          .def_property_readonly("composed2", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed2(); })
           .def("__str__", dcxf2str)
           .def("__repr__", dcxf2str);
   dcxf_type.doc() = "Transform (de-composed, or pre-composed : set directMatrix to use pre-composed)";

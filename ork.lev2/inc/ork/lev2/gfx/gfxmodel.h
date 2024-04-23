@@ -375,7 +375,7 @@ struct XgmModel final {
 
   /////////////////////////////////////
 
-  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, const asset::vars_t& vars);
+  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_ptr_t vars);
   static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);

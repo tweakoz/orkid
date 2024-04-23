@@ -92,22 +92,24 @@ struct RtGroup final {
     return ViewportRect(0, 0, miW, miH);
   }
   /////////////////////////////////////////
-  static const int kmaxmrts = 4;
+  static const int kmaxmrts = 8;
 
   Context* _parentTarget;
   rtbuffer_ptr_t mMrt[kmaxmrts];
   rtbuffer_ptr_t _depthBuffer;
-  DisplayBuffer* mDepth;
   int mNumMrts;
   int miW;
   int miH;
+  bool _cubeMap = false;
+  int _cubeRenderFace = 0;
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svar16_t _impl;
-  bool _needsDepth = true;
-  bool _autoclear  = true;
   fvec4 _clearColor;
   bool _depthOnly = false;
+  bool _autoclear  = true;
+  bool _clearMaskColor = true;
+  bool _clearMaskDepth = true;
   std::string _name;
   bool _pseudoRTG = false;
   rendertarget_rtgroup_ptr_t _rendertarget;
@@ -116,7 +118,7 @@ struct RtGroup final {
 
 struct RtgSet {
   
-  RtgSet(Context* ctx, MsaaSamples s, bool do_rendertarget=false);
+  RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget=false);
   rtgroup_ptr_t fetch(uint64_t key);
   void addBuffer(std::string name, EBufferFormat fmt);
 
@@ -131,6 +133,7 @@ struct RtgSet {
   std::vector<BufRec> _bufrecs;
   bool _do_rendertarget;
   bool _autoclear = true;
+  std::string _name;
 
 };
 

@@ -166,7 +166,7 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
 
-  const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
+  auto RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
@@ -227,7 +227,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
     return false;
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
+  auto RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();

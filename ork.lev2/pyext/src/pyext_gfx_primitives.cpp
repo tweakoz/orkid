@@ -116,7 +116,17 @@ void pyinit_primitives(py::module& module_lev2) {
 
           .def("gpuInit", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->gpuInit(context.get()); })
           .def("renderEML", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->renderEML(context.get()); })
-          .def("createNode", createNodeLambdaFromPrimType<primitives::frustum_ptr_t>());
+          .def("createNode", createNodeLambdaFromPrimType<primitives::frustum_ptr_t>())
+          .def("createNodeWithMaterial",[](primitives::frustum_ptr_t prim, //
+                                           std::string named, //
+                                           scenegraph::layer_ptr_t layer, // 
+                                           material_ptr_t material ) -> scenegraph::drawable_node_ptr_t { //
+                auto node                                                 
+                    = prim->createNodeWithMaterial(named, layer, material);
+                node->_userdata->template makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference
+                return node;
+              });
+
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pointsprim_type = //

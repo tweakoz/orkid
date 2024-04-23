@@ -92,6 +92,7 @@ struct FxPipeline {
   bool _debugBreak = false;
   bool _debugPrint = false;
   std::string _debugName;
+  varmap::varmap_ptr_t _vars;
 
 };
 
@@ -119,7 +120,7 @@ template <typename MtlClass>
       auto newcache = std::make_shared<FxPipelineCache>();
       newcache->_impl.set<const MtlClass*>(material);
       newcache->_on_miss = [=](const FxPipelinePermutation& permu) -> fxpipeline_ptr_t {
-        return _createFxPipeline(permu,material);
+        return MtlClass::_createFxPipeline(permu,material);
       };
       rval = newcache;
       _fxcachemap[material] = newcache;

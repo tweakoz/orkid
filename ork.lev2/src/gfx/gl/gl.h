@@ -37,19 +37,20 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(RENDERDOC_API_ENABLED)
-#include <renderdoc_app.h>
+//#include <renderdoc_app.h>
+#undef RENDERDOC_API_ENABLED
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
 #define USE_ORKSL_LANG
 
-#if 0 // defined( _DEBUG )
+#if 1 //defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
     if (iErr != GL_NO_ERROR)                                                                                                       \
       printf("GL_ERROR<%08x>\n", iErr);                                                                                            \
-    OrkAssert(iErr == GL_NO_ERROR);                                                                                                \
+    OrkAssert(iErr == GL_NO_ERROR);    \
   }
 #else
 #define GL_ERRORCHECK()                                                                                                            \
@@ -104,7 +105,6 @@ struct GLTextureObject {
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint _fbo = 0;
-  GLuint _dsbo = 0;
   GLuint _depthTexObject = 0;
   GlFboObject();
 };
@@ -285,6 +285,9 @@ public:
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
+  void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
+
+  void validateRtGroup(rtgroup_ptr_t rtg) final;
 
   //////////////////////////////////////////////
 
@@ -395,7 +398,7 @@ struct GlTextureInterface : public TextureInterface {
   void _returnPBO(pboptr_t pbo);
   GlTextureInterface(ContextGL& tgt);
 
-  void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
+  void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
   bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
 
@@ -618,6 +621,8 @@ public:
 
   bool mTargetDrawableSizeDirty;
 };
+
+bool _checkTexture(GLuint texID, const std::string& name);
 
 }} // namespace ork::lev2
 

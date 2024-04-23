@@ -28,6 +28,7 @@ uniform_set uset_frg {
   sampler3D VolumeMap;
   float ColorFactor;
   float AlphaFactor;
+  float GridDim;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set uset_geo_stereo {
@@ -101,11 +102,13 @@ fragment_shader ps_flat : fface_psys {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grad : fface_psys {
-  float unit_age = frg_uv1.x;
+  float unit_age = frg_uv1.y;
+  vec4 C = frg_clr;
   vec4 gmap = texture(GradientMap, vec2(0.01+unit_age*0.98, 0.0));
   vec4 cmap = texture(ColorMap, frg_uv0.xy);
   out_clr.xyz = (gmap.xyz*cmap.xyz)*ColorFactor;
   out_clr.w = gmap.w*cmap.w*AlphaFactor;
+  //out_clr = vec4(1,1, 0,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modtexclr : fface_psys {
@@ -120,4 +123,29 @@ fragment_shader ps_modtexclr : fface_psys {
   //out_normal_mdl = vec4(0, 0, 5, 0);
   out_clr        = texc;//(1.0-unit_age); // *  * frg_clr;
   out_clr.a      = alp;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modtexclr_grid : fface_psys {
+
+  float unit_age = frg_uv1.x;
+  // select grid cell (0..24) from unit age
+  //  u = [0..4]
+  //  v = [0..4]
+  // inp uv = frg_uv0.xy
+  int igridcell = int(unit_age*((GridDim*GridDim)-1.0));
+  float fgridcell = float(igridcell);
+  float fgridcellu = mod(fgridcell,GridDim);
+  float fgridcellv = floor(fgridcell/GridDim);
+  vec2 _gridUVout = vec2(fgridcellu/GridDim,fgridcellv/GridDim);
+  _gridUVout += frg_uv0.xy/GridDim;
+
+
+
+  vec4 texc      = texture(ColorMap, _gridUVout);
+  float alpha = length(texc.rgb);
+  alpha *= pow(sin(unit_age*3.14159),0.25);
+  texc.w = alpha;
+
+  out_clr        = texc*modcolor;
+  
 }

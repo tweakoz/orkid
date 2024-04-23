@@ -14,7 +14,7 @@ public:
   GroundPlaneDrawableData();
   ~GroundPlaneDrawableData();
 
-  fxpipeline_ptr_t _pipeline;
+  fxpipeline_ptr_t _pipeline_color;
   pbrmaterial_ptr_t _material;
   float _extent = 100.0f;
 };

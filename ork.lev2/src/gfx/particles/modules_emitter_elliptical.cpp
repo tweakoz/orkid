@@ -48,6 +48,11 @@ struct EllipticalEmitterInst : public ParticleModuleInst {
   floatxf_inp_pluginst_ptr_t _input_emissionrate;
   floatxf_inp_pluginst_ptr_t _input_emissionvelocity;
   floatxf_inp_pluginst_ptr_t _input_dispersionangle;
+  floatxf_inp_pluginst_ptr_t _input_scalar;
+  floatxf_inp_pluginst_ptr_t _input_minu;
+  floatxf_inp_pluginst_ptr_t _input_maxu;
+  floatxf_inp_pluginst_ptr_t _input_minv;
+  floatxf_inp_pluginst_ptr_t _input_maxv;
 
   fvec3xf_inp_pluginst_ptr_t _input_p1;
   fvec3xf_inp_pluginst_ptr_t _input_p2;
@@ -84,6 +89,11 @@ void EllipticalEmitterInst::onLink(GraphInst* inst) {
   _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
   _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
+  _input_scalar = typedInputNamed<FloatXfPlugTraits>("Scalar");
+  _input_minu = typedInputNamed<FloatXfPlugTraits>("MinU");
+  _input_maxu = typedInputNamed<FloatXfPlugTraits>("MaxU");
+  _input_minv = typedInputNamed<FloatXfPlugTraits>("MinV");
+  _input_maxv = typedInputNamed<FloatXfPlugTraits>("MaxV");
   _input_p1               = typedInputNamed<Vec3XfPlugTraits>("P1");
   _input_p2               = typedInputNamed<Vec3XfPlugTraits>("P2");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
@@ -176,10 +186,15 @@ void EllipticalEmitterInst::_emit(float fdt) {
     }
   }
 
+  float scalar = _input_scalar->value();
+  float minu = _input_minu->value();
+  float maxu = _input_maxu->value();
+  float minv = _input_minv->value();
+  float maxv = _input_maxv->value();
   for (int ic = 0; ic < icount; ic++) {
     float fi = float(ic) / float(icount);
-    float u  = _randgen.ranged_rand(0.0, 1.0);
-    float v  = _randgen.ranged_rand(0.0, 1.0);
+    float u  = _randgen.ranged_rand(minu, maxu);
+    float v  = _randgen.ranged_rand(minv,maxv);
 
     float theta = u * PI2; // Theta ranges from 0 to 2*PI
     float phi = v * PI2; // Theta ranges from 0 to 2*PI
@@ -188,9 +203,9 @@ void EllipticalEmitterInst::_emit(float fdt) {
     float r = v; // Radius factor (since v is normalized to [0, 1])
 
     // Compute Cartesian coordinates for the point on the ellipsoid
-    float x = sin(theta)*cos(phi);
-    float y = sin(theta)*sin(phi);
-    float z = cos(theta);
+    float x = sin(theta)*cos(phi)*scalar;
+    float y = sin(theta)*sin(phi)*scalar;
+    float z = cos(theta)*scalar;
 
     //
 
@@ -284,6 +299,11 @@ static void _reshapeEllipticalEmitterIOs(dataflow::moduledata_ptr_t data) {
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range     = {0, 1000};
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100, 100};
   ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range  = {0, 1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Scalar")->_range  = {0, 100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinU")->_range  = {0, 1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MaxU")->_range  = {0, 1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinV")->_range  = {0, 1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MaxV")->_range  = {0, 1};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P1")->_range                = {-1000.0f, 1000.0f};
   ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "P2")->_range                = {-1000.0f, 1000.0f};
 }

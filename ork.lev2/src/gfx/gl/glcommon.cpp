@@ -106,10 +106,10 @@ void ContextGL::debugPopGroup() {
 
 void ContextGL::debugMarker(const std::string str) {
   auto mstr = indent(_dbglevel) + str;
-  // printf( "Marker:: %s\n", mstr.c_str() );
+  //printf( "Marker:: %s\n", mstr.c_str() );
 
   GL_ERRORCHECK();
-  glDebugMessageInsert(
+  if(1)glDebugMessageInsert(
       GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, mstr.length(), mstr.c_str());
   GL_ERRORCHECK();
 }

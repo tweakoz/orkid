@@ -76,7 +76,7 @@ struct ImGuiTexturedWindow {
       auto pc = ori + ImVec2(wsiz.x, wsiz.y);
       auto pd = ori + ImVec2(0, wsiz.y);
       ////////////////////////////////////////////////
-      if (auto as_texid = texture->_varmap.typedValueForKey<GLuint>("gltexobj")) {
+      if (auto as_texid = texture->_vars->typedValueForKey<GLuint>("gltexobj")) {
         dlist->AddImageQuad(
           (void*)uint64_t(as_texid.value()), // GL texture handle
           pb,

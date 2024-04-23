@@ -104,7 +104,7 @@ class UiSgQuadViewTestApp(object):
         self.camname = "Camera%d"%index
         #
         self.scenegraph = scenegraph.Scene(sg_params)
-        self.layer = self.scenegraph.createLayer("layer")
+        self.layer = self.scenegraph.createLayer("std_forward")
         self.grid_node = self.layer.createGridNode("grid",parent.grid_data)
         self.grid_node.sortkey = 1
         self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)

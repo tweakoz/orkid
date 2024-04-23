@@ -557,28 +557,41 @@ void GeometryInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
   auto c = backend._container;
   c->addGeometryInterface(_sif);
 }
-#if defined(ENABLE_NVMESH_SHADERS)
+NvTaskInterfaceNode::NvTaskInterfaceNode()
+      : InterfaceNode(0x955A) { // GL_TASK_SHADER_NV
+}
 void NvTaskInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
   _sif->mName          = _name;
   _sif->mInterfaceType = _gltype;
   auto c = backend._container;
+#if defined(ENABLE_NVMESH_SHADERS)
   c->addNvTaskInterface(_sif);
+#endif
+}
+NvMeshInterfaceNode::NvMeshInterfaceNode()
+      : InterfaceNode(0x9559) { //GL_MESH_SHADER_NV
 }
 void NvMeshInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
   _sif->mName          = _name;
   _sif->mInterfaceType = _gltype;
   auto c = backend._container;
+#if defined(ENABLE_NVMESH_SHADERS)
   c->addNvMeshInterface(_sif);
-}
 #endif
-#if defined(ENABLE_COMPUTE_SHADERS)
-void ComputeInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
+}
+
+ComputeInterfaceNode::ComputeInterfaceNode()
+  : InterfaceNode(0x91B9) { //GL_COMPUTE_SHADER
+  }
+
+  void ComputeInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
   _sif->mName          = _name;
   _sif->mInterfaceType = _gltype;
   auto c = backend._container;
+#if defined(ENABLE_COMPUTE_SHADERS)
   c->addComputeInterface(_sif);
-}
 #endif
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

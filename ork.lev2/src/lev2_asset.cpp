@@ -56,6 +56,7 @@ XgmModelLoader::XgmModelLoader()
 ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
   auto absolutepath = loadreq->_asset_path.toAbsolute();
   auto modelasset   = std::make_shared<XgmModelAsset>();
+  modelasset->GetModel()->_asset = modelasset.get();
   logchan_l2asso->log("LoadModelAsset<%s>", absolutepath.c_str());
   bool OK = false;
   if (absolutepath.getExtension() == "xgm" or //
@@ -100,6 +101,13 @@ void XgmModelLoader::initLoadersForUriProto(const std::string& uriproto) {
 void XgmModelAsset::describeX(class_t* clazz) {
   auto loader = std::make_shared<XgmModelLoader>();
   registerLoader<XgmModelAsset>(loader);
+  AssetLoader::registerLoaderForExtension("xgm",loader);
+  AssetLoader::registerLoaderForExtension("obj",loader);
+  AssetLoader::registerLoaderForExtension("gltf",loader);
+  AssetLoader::registerLoaderForExtension("glb",loader);
+  AssetLoader::registerLoaderForExtension("orkemdl",loader);
+  AssetLoader::registerLoaderForExtension("fbx",loader);
+  AssetLoader::registerLoaderForExtension("dae",loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,9 +122,10 @@ StaticTexFileLoader::StaticTexFileLoader()
 
 asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
   auto texture_asset = std::make_shared<TextureAsset>();
-  texture_asset->_varmap               = loadreq->_asset_vars;
-  texture_asset->GetTexture()->_varmap = loadreq->_asset_vars;
-  if (loadreq->_asset_vars.hasKey("postproc")){ //
+  texture_asset->_varmap               = *loadreq->_asset_vars;
+  texture_asset->GetTexture()->_vars   = loadreq->_asset_vars;
+  texture_asset->_load_request          = loadreq;
+  if (loadreq->_asset_vars->hasKey("postproc")){ //
     logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), loadreq->_asset_path.c_str());
   }
   auto context = lev2::contextForCurrentThread();
@@ -164,6 +173,9 @@ TextureAsset::~TextureAsset() {
 
 void TextureAsset::describeX(class_t* clazz) {
   auto loader = std::make_shared<StaticTexFileLoader>();
+  AssetLoader::registerLoaderForExtension("tga",loader);
+  AssetLoader::registerLoaderForExtension("png",loader);
+  AssetLoader::registerLoaderForExtension("dds",loader);
   registerLoader<TextureAsset>(loader);
 }
 

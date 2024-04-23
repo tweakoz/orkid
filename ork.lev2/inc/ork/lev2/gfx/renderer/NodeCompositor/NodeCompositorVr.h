@@ -17,7 +17,7 @@ namespace ork::lev2 {
 ///   implies stereo rendering..
 ///////////////////////////////////////////////////////////////////////////////
 
-using distortion_lambda_t = std::function<void(RenderContextFrameData& RCFD,Texture*lrtexture)>;
+using distortion_lambda_t = std::function<void(rcfd_ptr_t RCFD,Texture*lrtexture)>;
 
 class VrCompositingNode final : public OutputCompositingNode {
   DeclareConcreteX(VrCompositingNode, OutputCompositingNode);
@@ -35,6 +35,8 @@ public:
   void setSuperSample(int ss) {
     _supersample = ss;
   }
+
+  EBufferFormat _format;
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;

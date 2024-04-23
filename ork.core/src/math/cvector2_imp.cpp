@@ -28,6 +28,9 @@ template <> float Vector2<float>::Epsilon() {
 template <> float Vector2<float>::Abs(float fin) {
   return fabs(fin);
 }
+template <> Vector2<float> Vector2<float>::fromScalar(float fin) {
+  return Vector2<float>(fin, fin);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,6 +48,10 @@ template <> double Vector2<double>::Epsilon() {
 }
 template <> double Vector2<double>::Abs(double fin) {
   return fabs(fin);
+}
+
+template <> Vector2<double> Vector2<double>::fromScalar(double fin) {
+  return Vector2<double>(fin, fin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

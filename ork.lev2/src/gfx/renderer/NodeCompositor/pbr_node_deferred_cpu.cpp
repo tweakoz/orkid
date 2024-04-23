@@ -75,9 +75,7 @@ struct CpuNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(CompositorDrawData& drawdata) {
     //_timer.Start();
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto targ                    = RCFD.GetTarget();
+    auto targ                    = drawdata.context();
     //////////////////////////////////////////////////////
     _context.renderUpdate(_node, drawdata);
     auto VD = drawdata.computeViewData();
@@ -94,7 +92,7 @@ struct CpuNodeImpl {
     _context.renderGbuffer(_node, drawdata, VD);
     auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
     targ->debugPushGroup("Deferred::LightAccum");
-    printf( "WTF1\n");
+    printf("WTF1\n");
     _context.renderBaseLighting(_node, drawdata, VD);
     this->renderPointLights(drawdata, VD);
     targ->debugPopGroup(); // "Deferred::LightAccum"
@@ -105,9 +103,9 @@ struct CpuNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void renderPointLights(CompositorDrawData& drawdata, const ViewData& VD) {
     /////////////////////////////////////////////////////////////////
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
-    auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
+    auto context  = drawdata.context();
+    auto FXI      = context->FXI();
+    auto this_buf = context->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
     _context.beginPointLighting(_node, drawdata, VD, nullptr);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
@@ -152,16 +150,16 @@ struct CpuNodeImpl {
                     _pendingtiles[_pendingtilecounter.fetch_add(1)] = tileindex;
                   }
                 } // if( overlapZ )
-              }   // if( overlapY )
-            }     // if( overlapX) {
-          }       // for (size_t lightindex = 0; lightindex < _pointlights.size(); lightindex++) {
+              } // if( overlapY )
+            } // if( overlapX) {
+          } // for (size_t lightindex = 0; lightindex < _pointlights.size(); lightindex++) {
           _lightjobcount--;
         }; // job =
         int jobindex = _lightjobcount++;
         // job();
         opq::concurrentQueue()->enqueue(job);
       } // for (int ix = 0; ix <= _clusterW; ix++) {
-    }   // for (int iy = 0; iy <= _clusterH; iy++) {
+    } // for (int iy = 0; iy <= _clusterH; iy++) {
     /////////////////////////////////////
     // float time_tile_cpb = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
@@ -266,9 +264,9 @@ struct CpuNodeImpl {
       numchunks++;
       /////////////////////////////////////
     } // while (num_pending_tiles) {
-     //float time_tile_out = _timer.SecsSinceStart();
-     //printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
-     printf( "numchunks<%zu>\n", numchunks );
+    // float time_tile_out = _timer.SecsSinceStart();
+    // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
+    printf("numchunks<%zu>\n", numchunks);
     /////////////////////////////////////
     _context.endPointLighting(drawdata, VD);
   }
@@ -316,4 +314,4 @@ rtbuffer_ptr_t DeferredCompositingNode::GetOutput() const {
   return _impl.get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgs_laccum->fetch(_bufferKey)->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::deferrednode
+} // namespace ork::lev2::pbr::deferrednode

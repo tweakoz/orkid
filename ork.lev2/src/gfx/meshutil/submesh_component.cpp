@@ -11,6 +11,7 @@
 
 namespace ork::meshutil {
 static const std::string gnomatch("");
+double _default_quantization = 1000.0;
 
 ////////////////////////////////////////////////////////////////
 
@@ -274,6 +275,10 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 ///////////////////////////////////////////////////////////////////////////////
 
 uint64_t vertex::hash(double quantization) const {
+
+  if(quantization==0.0)
+    quantization = _default_quantization;
+
   boost::Crc64 crc64;
   crc64.init();
   crc64.accumulateItem(miNumWeights);

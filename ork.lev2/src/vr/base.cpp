@@ -34,6 +34,8 @@ void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t r
 Device::Device() {
 
   auto imgr      = lev2::InputManager::instance();
+  _cameraName = "";
+
   _hmdinputgroup = imgr->inputGroup("hmd");
 
   _leftcamera   = new CameraMatrices;

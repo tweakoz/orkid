@@ -412,34 +412,39 @@ void FragmentShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
   _generate2Common(backend);
   backend._container->addFragmentShader(pshader);
 }
-#if defined(ENABLE_NVMESH_SHADERS)
+NvTaskShaderNode::NvTaskShaderNode() {}
 void NvTaskShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
+#if defined(ENABLE_NVMESH_SHADERS)
   auto pshader = new ShaderNvTask();
   backend._statemap["curshader"].set<Shader*>(pshader);
   auto c               = backend._container;
   pshader->_rootcontainer = backend._container;
   _generate2Common(backend);
   backend._container->addNvTaskShader(pshader);
+#endif
 }
+NvMeshShaderNode::NvMeshShaderNode() {}
 void NvMeshShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
+#if defined(ENABLE_NVMESH_SHADERS)
   auto pshader = new ShaderNvMesh();
   backend._statemap["curshader"].set<Shader*>(pshader);
   auto c               = backend._container;
   pshader->_rootcontainer = backend._container;
   _generate2Common(backend);
   backend._container->addNvMeshShader(pshader);
-}
 #endif
+}
 
-#if defined(ENABLE_COMPUTE_SHADERS)
+ComputeShaderNode::ComputeShaderNode() {}
 void ComputeShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
+#if defined(ENABLE_COMPUTE_SHADERS)
   auto pshader = new ComputeShader();
   backend._statemap["curshader"].set<Shader*>(pshader);
   pshader->_rootcontainer = backend._container;
   _generate2Common(backend);
   backend._container->addComputeShader(pshader);
-}
 #endif
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

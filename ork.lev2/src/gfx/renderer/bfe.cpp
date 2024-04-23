@@ -23,47 +23,6 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-BasicFrameTechnique::BasicFrameTechnique()
-    : FrameTechniqueBase(0, 0)
-    , _shouldBeginAndEndFrame(true) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void BasicFrameTechnique::Render(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
-  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
-  // FrameData.SetDstRect( tgt_rect );
-  /*
-  IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
-  if( _shouldBeginAndEndFrame )
-      pTopRenderTarget->BeginFrame( frenderer );
-  {
-      frenderer.renderMisc();
-  }
-  if( _shouldBeginAndEndFrame )
-      pTopRenderTarget->EndFrame( frenderer );
-      */
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-PickFrameTechnique::PickFrameTechnique()
-    : FrameTechniqueBase(0, 0) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PickFrameTechnique::Render(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
-  auto tgt_rect                     = pTARG->mainSurfaceRectAtOrigin();
-  // FrameData.SetDstRect( tgt_rect );
-  {
-    // frenderer.renderMisc();
-  }
-}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

@@ -215,6 +215,8 @@ struct Texture {
   }
 
   //////////////////////////////////////////////////////////
+  asset::loadrequest_ptr_t loadRequest() const;
+  //////////////////////////////////////////////////////////
 
   static void RegisterLoaders(void);
 
@@ -243,7 +245,7 @@ struct Texture {
   Context* _creatingTarget      = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
-  varmap::VarMap _varmap;
+  varmap::varmap_ptr_t _vars;
   const TextureAsset* _asset = nullptr;
   bool _formatSupportsFiltering = true;
   ipctexture_ptr_t _external_memory;

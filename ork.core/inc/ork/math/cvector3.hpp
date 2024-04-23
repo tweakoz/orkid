@@ -411,7 +411,7 @@ template <typename T> void Vector3<T>::setHSV(T h, T s, T v) {
     if (kone <= h)
       h -= kone;
     h *= 6.0f;
-    T i  = T(floor(h));
+    T i  = T(::floor(h));
     T f  = h - i;
     T aa = v * (kone - s);
     T bb = v * (kone - (s * f));
@@ -657,6 +657,21 @@ template <typename T> void Vector3<T>::lerp(const Vector3<T>& from, const Vector
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename T> ork::Vector3<T> ork::Vector3<T>::floor() const {
+  return Vector3<T>(std::floor(this->x), std::floor(this->y), std::floor(this->z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> ork::Vector3<T> ork::Vector3<T>::fract() const {
+  T floor_x = std::floor(this->x);
+  T floor_y = std::floor(this->y);
+  T floor_z = std::floor(this->z);
+  return Vector3<T>(this->x - floor_x, this->y - floor_y, this->z - floor_z);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, const Vector3<T>& N) {
   return T(0);
 }
@@ -669,10 +684,28 @@ template <typename T> Vector3<T> Vector3<T>::quantized(T v) const {
   return rval;
 }
 template <typename T> uint64_t Vector3<T>::hash(T quantization) const{
-  int a = int((this->x * quantization)+0.5)+(1<<19);
-  int b = int((this->y * quantization)+0.5)+(1<<19);
-  int c = int((this->z * quantization)+0.5)+(1<<19);
-  return (uint64_t(a)<<42) | (uint64_t(b)<<21) | uint64_t(c);
+  if(quantization<=T(0)) {
+     const size_t bytes = sizeof(T) * 3; // Total bytes in the vector
+      uint64_t hash = 0xcbf29ce484222325; // FNV-1a initial value
+      uint64_t prime = 0x100000001b3;     // FNV-1a prime
+      
+      uint8_t data[bytes];
+      memcpy(&data[0], &this->x, sizeof(T));
+      memcpy(&data[sizeof(T)], &this->y, sizeof(T));
+      memcpy(&data[2 * sizeof(T)], &this->z, sizeof(T));
+
+      for (size_t i = 0; i < bytes; ++i) {
+          hash ^= data[i];
+          hash *= prime;
+      }
+      return hash;
+  }
+  else{
+    int64_t a = int64_t((this->x * quantization)+0.5)+(1<<19);
+    int64_t b = int64_t((this->y * quantization)+0.5)+(1<<19);
+    int64_t c = int64_t((this->z * quantization)+0.5)+(1<<19);
+    return (uint64_t(a)<<42) | (uint64_t(b)<<21) | uint64_t(c);
+  }
 }
 
 template <typename T> Vector2<T> octahedronWrap(Vector2<T> v) {

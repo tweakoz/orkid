@@ -29,6 +29,7 @@ void TechniqueNode::parse(GlSlFxParser* parser, const ScannerView& view) {
     ////////////////////////////////////////////////////
     // short form vertex/fragment shader pass
     ////////////////////////////////////////////////////
+    auto tekname = this->_name;
     if (vt_tok->text == "vf_pass") {
       OrkAssert(view.token(i + 1)->text == "=");
       OrkAssert(view.token(i + 2)->text == "{");
@@ -37,7 +38,7 @@ void TechniqueNode::parse(GlSlFxParser* parser, const ScannerView& view) {
       OrkAssert(view.token(i + 8)->text == "}");
       auto passnode             = new PassNode(this);
       size_t numpasses          = _passNodes.size();
-      auto passname             = FormatString("p%zu", numpasses);
+      auto passname             = FormatString("%s_p%zu", tekname.c_str(), numpasses);
       passnode->_name           = passname;
       _passNodes[passname]      = passnode;
       passnode->_vertexshader   = view.token(i + 3)->text;
@@ -134,24 +135,36 @@ void PassNode::_generate2(shaderbuilder::BackEnd& backend) const {
   /////////////////////////////////////////////////////////////
   if (_vertexshader != "") {
     auto pshader = c->vertexShader(_vertexshader);
+    if(pshader==nullptr){
+      deco::printf(fvec3::Red(), "vertex shader <%s> not found!\n", _vertexshader.c_str());
+    }
     OrkAssert(pshader != nullptr);
     auto& primvtg         = ppass->_primpipe.make<PrimPipelineVTG>();
     primvtg._vertexShader = pshader;
   }
   if (_tessctrlshader != "") {
     auto pshader = c->tessCtrlShader(_tessctrlshader);
+    if(pshader==nullptr){
+      deco::printf(fvec3::Red(), "tessctrl shader <%s> not found!\n", _vertexshader.c_str());
+    }
     OrkAssert(pshader != nullptr);
     auto& primvtg           = ppass->_primpipe.get<PrimPipelineVTG>();
     primvtg._tessCtrlShader = pshader;
   }
   if (_tessevalshader != "") {
     auto pshader = c->tessEvalShader(_tessevalshader);
+    if(pshader==nullptr){
+      deco::printf(fvec3::Red(), "tesseval shader <%s> not found!\n", _vertexshader.c_str());
+    }
     OrkAssert(pshader != nullptr);
     auto& primvtg           = ppass->_primpipe.get<PrimPipelineVTG>();
     primvtg._tessEvalShader = pshader;
   }
   if (_geometryshader != "") {
     auto pshader = c->geometryShader(_geometryshader);
+    if(pshader==nullptr){
+      deco::printf(fvec3::Red(), "geometry shader <%s> not found!\n", _vertexshader.c_str());
+    }
     OrkAssert(pshader != nullptr);
     auto& primvtg           = ppass->_primpipe.get<PrimPipelineVTG>();
     primvtg._geometryShader = pshader;

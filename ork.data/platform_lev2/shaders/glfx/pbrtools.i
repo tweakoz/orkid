@@ -34,6 +34,8 @@ uniform_set ub_frg {
   sampler2D NormalMap;
   sampler2D EmissiveMap;
   sampler2D MtlRufMap;
+  samplerCube reflectionPROBE;
+  samplerCube irradiancePROBE;
   vec4 ModColor;
   uint obj_pickID;
   mat4 v;
@@ -41,16 +43,20 @@ uniform_set ub_frg {
   float MetallicFactor;
   float RoughnessFactor;
   vec3 EyePostion;
+  vec4 AuxA;
+  vec4 AuxB;
 }
 
 uniform_set ub_frg_fwd {
 
+  mat4 m;
   mat4 vp;
   mat4 v_l;
   mat4 v_r;
   mat4 vp_l;
   mat4 vp_r;
   mat4 inv_vp;
+  mat4 inv_mvp;
   mat4 inv_vp_l;
   mat4 inv_vp_r;
 
@@ -81,9 +87,25 @@ uniform_set ub_frg_fwd {
   float EnvironmentMipScale;
 
   int point_light_count;
-  sampler2D UnTexPointLightsData;
+  int spot_light_count;
+  //sampler2D UnTexPointLightsData;
+
+  //sampler2D light_cookies[8];
+  sampler2D light_cookie0;
+  sampler2D light_cookie1;
+  sampler2D light_cookie2;
+  sampler2D light_cookie3;
+  sampler2D light_cookie4;
+  sampler2D light_cookie5;
+  //sampler2D light_cookie6;
+  //sampler2D light_cookie7;
+
+  samplerCube reflectionPROBE;
+  samplerCube irradiancePROBE;
 
   vec4 ModColor;
+  vec4 AuxA;
+  vec4 AuxB;
   uint obj_pickID;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
@@ -93,8 +115,9 @@ uniform_set ub_frg_fwd {
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
   vec4 _lightcolor[64];
+  vec4 _lightsizbias[64];
   vec4 _lightpos[64];
-  float _lightradius[64];
+  mat4 _shadowmatrix[64];
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces
@@ -441,6 +464,45 @@ vertex_interface iface_vdprepass : ub_vtx {
     float frg_depth;
   }
 }
+vertex_interface iface_vdprepass_stereo : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    layout(secondary_view_offset = 1) int gl_Layer;
+    float frg_depthL;
+    float frg_depthR;
+  }
+}
+vertex_interface iface_vdprepass_skinned : ub_vtx : iface_skintools {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+  }
+  outputs {
+    float frg_depth;
+  }
+}
+vertex_interface iface_vdprepass_skinned_stereo : ub_vtx : iface_skintools {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+  }
+  outputs {
+    float frg_depthL;
+    float frg_depthR;
+  }
+}
+
+fragment_interface iface_fdprepass_stereo : ub_frg_fwd {
+  inputs {
+    float frg_depthL;
+    float frg_depthR;
+  }
+  outputs {
+    // layout(location = 0) vec4 out_color;
+  }
+}
 
 ///////////////////////////////////////////////////////////////
 // Forward Depth Prepass
@@ -449,9 +511,15 @@ vertex_interface iface_vdprepass : ub_vtx {
 vertex_shader vs_forward_depthprepass_mono : iface_vdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  gl_FragDepth = hpos.z / hpos.w;
+  frg_depth = (hpos.z) / (hpos.w);
 }
-vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
+vertex_shader vs_forward_depthprepass_skinned_mono : iface_vdprepass_skinned : skin_tools {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = mvp * skn_pos;
+  gl_Position  = hpos;
+  frg_depth = (hpos.z) / (hpos.w);
+}
+vertex_shader vs_forward_depthprepass_instanced_mono : iface_vdprepass {
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
@@ -465,12 +533,73 @@ vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
   gl_Position        = hpos;
   // gl_FragDepth = hpos.z/hpos.w;
 }
-fragment_shader vs_forward_depthprepass_stereo : iface_fdprepass {
-  vec4 hpos    = mvp * position;
-  gl_Position  = hpos;
-  gl_FragDepth = hpos.z / hpos.w;
+vertex_shader vs_forward_depthprepass_skinned_instanced_mono : iface_vdprepass {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  mat4 instancemtx = mat4(
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 2, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 3, matrix_v), 0));
+  ////////////////////////////////
+  vec4 instanced_pos = (instancemtx * skn_pos);
+  vec4 hpos          = mvp * instanced_pos;
+  gl_Position        = hpos;
+  // gl_FragDepth = hpos.z/hpos.w;
 }
-fragment_shader ps_forward_depthprepass : iface_fdprepass {
+
+
+vertex_shader vs_forward_depthprepass_stereo 
+  : iface_vdprepass_stereo 
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+  vec4 hposL    = mvp_l * position;
+  vec4 hposR    = mvp_r * position;
+  gl_Position                   = hposL;
+  gl_SecondaryPositionNV        = hposR;
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  frg_depthL = hposL.z / hposL.w;
+  frg_depthR = hposR.z / hposR.w;
+}
+vertex_shader vs_forward_depthprepass_skinned_stereo 
+  : iface_vdprepass_skinned_stereo 
+  : skin_tools 
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hposL    = mvp_l * skn_pos;
+  vec4 hposR    = mvp_r * skn_pos;
+  gl_Position                   = hposL;
+  gl_SecondaryPositionNV        = hposR;
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  frg_depthL = hposL.z / hposL.w;
+  frg_depthR = hposR.z / hposR.w;
+}
+vertex_shader vs_forward_depthprepass_instanced_stereo : iface_vdprepass_skinned : skin_tools {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = mvp * skn_pos;
+  gl_Position  = hpos;
+  frg_depth = (hpos.z) / (hpos.w);
+}
+vertex_shader vs_forward_depthprepass_skinned_instanced_stereo : iface_vdprepass_skinned : skin_tools {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 hpos    = mvp * skn_pos;
+  gl_Position  = hpos;
+  frg_depth = (hpos.z) / (hpos.w);
+}
+fragment_shader ps_forward_depthprepass_mono : iface_fdprepass {
+  //gl_FragDepth = frg_depth;
+  gl_FragDepth = gl_FragCoord.z + 1e-6;
+}
+fragment_shader ps_forward_depthprepass_stereo 
+  : iface_fdprepass_stereo
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
 }
 
 ///////////////////////////////////////////////////////////////
@@ -564,7 +693,15 @@ fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_
   out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test_stereo : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo {
+fragment_shader ps_forward_test_stereo 
+  : iface_forward 
+  : lib_math 
+  : lib_brdf 
+  : lib_def 
+  : lib_fwd 
+  : lib_fwd_stereo 
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
   out_color = vec4(forward_lighting_stereo(ModColor.xyz), 1);
 }
 fragment_shader ps_forward_test_instanced_stereo : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo

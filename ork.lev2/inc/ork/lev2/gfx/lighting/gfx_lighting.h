@@ -101,24 +101,9 @@ typedef std::function<fmtx4()> xform_generator_t;
 
 struct Light : public Drawable {
 
-  Light(const LightData* ld)
-      : _data(ld)
-      , mPriority(0.0f)
-      , _dynamic(false)
-  {
-    _xformgenerator = []()->fmtx4{
-      return fmtx4();
-    };
-  }
-
-  Light(xform_generator_t mtx, const LightData* ld = 0)
-      : _data(ld)
-      , _xformgenerator(mtx)
-      , mPriority(0.0f)
-      , _dynamic(false) {
-  }
-  virtual ~Light() {
-  }
+  Light(const LightData* ld);
+  Light(xform_generator_t mtx, const LightData* ld = 0);
+  virtual ~Light();
 
   bool isShadowCaster() const;
   virtual bool IsInFrustum(const Frustum& frustum)              = 0;
@@ -157,7 +142,39 @@ struct Light : public Drawable {
 
   float mPriority;
   int miInFrustumID;
-  bool _dynamic;
+  bool _dynamic = false;
+  bool _castsShadows = false;
+
+  texture_ptr_t _cookieTexture;
+  rtgroup_ptr_t _depthRTG;
+  texture_ptr_t _depthTexture;
+  pbr::irradiancemaps_ptr_t _irradianceCookie;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+enum class LightProbeType : uint64_t {
+  CrcEnum(REFLECTION),
+  CrcEnum(SH_IRRADIANCE),
+  CrcEnum(END)
+};
+
+struct LightProbe {
+
+  LightProbe();
+  ~LightProbe();
+  void resize(int dim);
+
+  LightProbeType _type = LightProbeType::REFLECTION;
+  int _dim = 0;
+  bool _dirty = true;
+  uint64_t _version = 0;
+  std::string _name;
+  fmtx4 _worldMatrix; // +y up, right handed
+  rtgroup_ptr_t _cubeRenderRTG;
+  texture_ptr_t _cubeTexture;
+  varmap::varmap_ptr_t _userdata;
+  svar64_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,11 +233,10 @@ struct DynamicPointLight : public PointLight {
 
   DynamicPointLight();
 
-  PointLightData _inlineData;
+  pointlightdata_ptr_t _inlineData;
 
 };
 
-using dynamicpointlight_ptr_t = std::shared_ptr<DynamicPointLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -239,7 +255,7 @@ public:
 
 struct DirectionalLight : public Light {
 
-  const DirectionalLightData* mDld;
+  const DirectionalLightData* _dldata;
 
 public:
   bool IsInFrustum(const Frustum& frustum) override;
@@ -258,6 +274,16 @@ public:
 
   DirectionalLight(const DirectionalLightData* pld);
   DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld = 0);
+};
+
+using directionallight_ptr_t = std::shared_ptr<DirectionalLight>;
+
+struct DynamicDirectionalLight : public DirectionalLight {
+
+  DynamicDirectionalLight();
+
+  directionallightdata_ptr_t _inlineData;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -357,14 +383,10 @@ public:
     return ELIGHTTYPE_SPOT;
   }
 
-  void set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
+  void lookAt(const fvec3& pos, const fvec3& target, const fvec3& up);
 
-  float GetFovy() const {
-    return _SLD->GetFovy();
-  }
-  float GetRange() const {
-    return _SLD->GetRange();
-  }
+  float getFovy() const;
+  float getRange() const;
 
   RtGroupRenderTarget* rendertarget(Context* ctx);
   fmtx4 shadowMatrix() const;
@@ -375,13 +397,23 @@ public:
 
   RtGroup* _shadowRTG             = nullptr;
   RtGroupRenderTarget* _shadowIRT = nullptr;
-  const SpotLightData* _SLD       = nullptr;
+  const SpotLightData* _spdata       = nullptr;
 
+  float _fovy = 0.0f;
   fmtx4 mProjectionMatrix;
   fmtx4 mViewMatrix;
   Frustum mWorldSpaceLightFrustum;
   int _shadowmapDim;
 };
+
+struct DynamicSpotLight : public SpotLight {
+
+  DynamicSpotLight();
+
+  spotlightdata_ptr_t _inlineData;
+
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -498,6 +530,7 @@ using pointlightlist_t    = std::vector<PointLight*>;
 using spotlightlist_t     = std::vector<SpotLight*>;
 using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
 using tex2spotlightmap_t  = std::map<Texture*, spotlightlist_t>;
+using lightprobeset_t = std::vector<lightprobe_ptr_t>;
 
 struct EnumeratedLights {
   std::vector<Light*> _alllights;
@@ -507,6 +540,7 @@ struct EnumeratedLights {
   tex2spotlightmap_t _tex2spotlightmap;
   tex2spotlightmap_t _tex2shadowedspotlightmap;
   tex2spotlightmap_t _tex2spotdecalmap;
+  lightprobeset_t _lightprobes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -522,6 +556,7 @@ public:
 
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights
+  lightprobeset_t _lightprobes;
 
   void enumerateInPass(const CompositingPassData& CPD, enumeratedlights_ptr_t out_lights) const;
 

@@ -58,6 +58,13 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
             return pyl;
           })
       .def(
+          "createDrawable",         //
+          [](xgmmodel_ptr_t model) -> drawable_ptr_t { //
+            auto drw        = std::make_shared<ModelDrawable>(nullptr);
+            drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
+            return drw;
+          })
+      .def(
           "createNode",         //
           [](xgmmodel_ptr_t model, //
              std::string named,

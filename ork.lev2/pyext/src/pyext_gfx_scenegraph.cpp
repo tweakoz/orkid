@@ -60,7 +60,16 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 node->_enabled = ena;
               })
           .def_property(
-              "pickable",                    //
+              "viewRelative",               //
+              [](node_ptr_t node) -> bool { //
+                return node->_viewRelative;
+              },
+              [](node_ptr_t node, bool ena) { //
+                node->_viewRelative = ena;
+              })
+
+          .def_property(
+              "pickable",                   //
               [](node_ptr_t node) -> bool { //
                 return node->_pickable;
               },
@@ -101,7 +110,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return rval;
               })
           .def(
-              "setInstanceMatrix",                                             //
+              "setInstanceMatrix",                                       //
               [](drawable_node_ptr_t node, int instance, fmtx4 matrix) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
@@ -125,7 +134,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   OrkAssert(false);
                 }
                 return node->_userdata;
-              });
+              })
+          .def("__repr__", [](drawable_node_ptr_t node) { return "dnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<drawable_node_ptr_t>(drawablenode_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
@@ -134,11 +144,18 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(
               "setMatrix",
               [](lightnode_ptr_t lnode, //
-                 fmtx4 mtx) {     //
+                 fmtx4 mtx) {           //
                 auto light             = lnode->_light;
                 light->_xformgenerator = [=]() -> fmtx4 { return mtx; };
-              });
+              })
+          .def("__repr__", [](drawable_node_ptr_t node) { return "lightnode<" + node->_name + ">"; });
   type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto probenode_type = //
+      py::class_<ProbeNode, Node, probenode_ptr_t>(sgmodule, "ProbeNode").def("__repr__", [](drawable_node_ptr_t node) {
+        return "probenode<" + node->_name + ">";
+      });
+  type_codec->registerStdCodec<probenode_ptr_t>(probenode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
       py::class_<Layer, layer_ptr_t>(sgmodule, "Layer")
@@ -152,10 +169,33 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "addDrawableNode",
-              [](layer_ptr_t layer, //
+              [](layer_ptr_t layer,          //
                  drawable_node_ptr_t node) { //
                 layer->addDrawableNode(node);
               })
+          ////////////////////////////////
+          .def(
+              "createLightNode",
+              [](layer_ptr_t layer, std::string named, light_ptr_t light) -> lightnode_ptr_t { //
+                return layer->createLightNode(named, light);
+              })
+          .def(
+              "removeLightNode",
+              [](layer_ptr_t layer, lightnode_ptr_t node) { //
+                layer->removeLightNode(node);
+              })
+          ////////////////////////////////
+          .def(
+              "createLightProbeNode",
+              [](layer_ptr_t layer, std::string named, lightprobe_ptr_t probe) -> probenode_ptr_t { //
+                return layer->createProbeNode(named, probe);
+              })
+          .def(
+              "removeLightProbeNode",
+              [](layer_ptr_t layer, probenode_ptr_t probe) { //
+                return layer->removeProbeNode(probe);
+              })
+          ////////////////////////////////
           .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //
@@ -164,11 +204,17 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
+              "removeDrawableNode",
+              [](layer_ptr_t layer, drawable_node_ptr_t node) { //
+                layer->removeDrawableNode(node);
+              })
+          ////////////////////////////////
+          .def(
               "createDrawableNodeFromData",
               [](layer_ptr_t layer, //
                  std::string named,
                  drawabledata_ptr_t drawable_data) -> node_ptr_t { //
-                 auto drawable = drawable_data->createDrawable();
+                auto drawable = drawable_data->createDrawable();
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -179,7 +225,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                // printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -190,7 +236,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                // printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -198,10 +244,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](layer_ptr_t layer, //
                  std::string named,
                  groundplane_drawabledataptr_t data) -> node_ptr_t { //
-                //if (data->_colortexpath == "")
-                  //data->_colortexpath = "lev2://textures/gridcell_blue.png";
+                // if (data->_colortexpath == "")
+                // data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf("D\n");
+                // printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -229,7 +275,16 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 });
                 auto node = layer->createDrawableNode(named, drawable);
                 return node;
-              });
+              })
+          .def_property_readonly("drawable_nodes", [](layer_ptr_t layer) -> py::list {
+            py::list rval;
+            layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
+              for (auto it : unlocked) {
+                rval.append(it);
+              }
+            });
+            return rval;
+          });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
@@ -239,7 +294,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(py::init<>())
           .def(py::init<varmap::varmap_ptr_t>())
           .def_property_readonly(
-              "lightingmanager",                            //
+              "lightingmanager",                         //
               [](scene_ptr_t SG) -> lightmanager_ptr_t { //
                 return SG->_lightManager;
               })
@@ -274,6 +329,22 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->createLayer(named);
               })
           .def(
+              "createDrawableNodeOnLayers",
+              [](scene_ptr_t SG,
+                 py::list layer_list, //
+                 std::string named,
+                 drawable_ptr_t drawable) -> node_ptr_t { //
+                int layer_count = layer_list.size();
+                OrkAssert(layer_count > 0);
+                layer_ptr_t l0 = layer_list[0].cast<layer_ptr_t>();
+                auto node      = l0->createDrawableNode(named, drawable);
+                for (int i = 1; i < layer_count; i++) {
+                  auto l = layer_list[i].cast<layer_ptr_t>();
+                  l->addDrawableNode(node);
+                }
+                return node;
+              })
+          .def(
               "updateScene",
               [](scene_ptr_t SG, cameradatalut_ptr_t cameralut) { //
                 SG->enqueueToRenderer(cameralut);
@@ -294,28 +365,31 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 OrkAssert(SG != nullptr);
                 OrkAssert(ray != nullptr);
                 SG->_userdata->set<py::object>("pickcallback", callback);
-                SG->pickWithRay(ray,[SG,type_codec](pixelfetchctx_ptr_t pfc){
+                SG->pickWithRay(ray, [SG, type_codec](pixelfetchctx_ptr_t pfc) {
                   py::gil_scoped_acquire acquire_gil;
                   auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
-                  if(try_callback and try_callback.value()){
+                  if (try_callback and try_callback.value()) {
                     try_callback.value()(pfc);
                   }
                 });
               })
-          .def("pickWithScreenCoord", [type_codec](scene_ptr_t SG, 
-                                         cameradata_ptr_t cam, 
-                                         fvec2 scoord,
-                                         py::object callback) { //
-            OrkAssert(SG != nullptr);
-            SG->_userdata->set<py::object>("pickcallback", callback);
-            SG->pickWithScreenCoord(cam, scoord, [SG,type_codec](pixelfetchctx_ptr_t pfc){
-                py::gil_scoped_acquire acquire_gil;
-                auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
-                if(try_callback and try_callback.value()){
-                  try_callback.value()(pfc);
-                }
-            });
-          })
+          .def(
+              "pickWithScreenCoord",
+              [type_codec](
+                  scene_ptr_t SG,
+                  cameradata_ptr_t cam,
+                  fvec2 scoord,
+                  py::object callback) { //
+                OrkAssert(SG != nullptr);
+                SG->_userdata->set<py::object>("pickcallback", callback);
+                SG->pickWithScreenCoord(cam, scoord, [SG, type_codec](pixelfetchctx_ptr_t pfc) {
+                  py::gil_scoped_acquire acquire_gil;
+                  auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
+                  if (try_callback and try_callback.value()) {
+                    try_callback.value()(pfc);
+                  }
+                });
+              })
           .def(
               "enableSynchro",                      //
               [](scene_ptr_t SG) -> synchro_ptr_t { //
@@ -330,14 +404,28 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](scene_ptr_t SG, float time) { //
                 SG->_currentTime = time;
               })
-          .def_property("pickFormat", 
+          .def_property(
+              "pickFormat",
               [](scene_ptr_t SG) -> int { //
                 return SG->_pickFormat;
               },
               [](scene_ptr_t SG, int time) { //
                 SG->_pickFormat = int(time);
               })
-    ;
+          .def_property_readonly(
+              "layers",
+              [](scene_ptr_t SG) -> py::dict { //
+                py::dict rval;
+                SG->_layers.atomicOp([&rval](Scene::layer_map_t& unlocked) {
+                  for (auto it : unlocked) {
+                    auto layer     = it.second;
+                    auto as_pystr  = py::str(layer->_name);
+                    rval[as_pystr] = layer;
+                  }
+                });
+                return rval;
+              });
+  ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
 }
 } // namespace ork::lev2

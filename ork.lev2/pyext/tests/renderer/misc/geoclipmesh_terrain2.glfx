@@ -1,0 +1,194 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+import "orkshader://mathtools.i";
+import "orkshader://pbrtools.i";
+import "orkshader://misctools.i";
+}
+///////////////////////////////////////////////////////////////
+
+uniform_set ub_frgX {
+  float Time;
+  vec3 EyePostion;
+  sampler2D height_map;
+}
+
+///////////////////////////////////////////////////////////////
+vertex_interface vif_my_depthprepass : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_terrain : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec3 frg_mesh_bary;
+    vec3 frg_displacement;
+    vec3 frg_normal;
+    // vec4 frg_mat_weights;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_terrain : ub_frg_fwd_lighting {
+  inputs {
+    vec4 frg_wpos;
+    vec3 frg_mesh_bary;
+    vec3 frg_displacement;
+    vec3 frg_normal;
+    // vec4 frg_mat_weights;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ground_vtx_base : ub_frgX : lib_mmnoise {
+  struct TerrainData {
+    vec4 vfixPos;
+    vec3 meshPos;
+    vec3 meshPos2;
+    vec4 finalPos;
+    vec3 displacement;
+    float radius;
+    vec3 normal;
+  };
+
+
+  /////////////////////////////////////////////////////////
+
+  float computeTerrainFull(vec3 pos) {
+    float h  = textureLod(height_map, pos.xz*1.0e-6,0).r;
+    float displace  = h * 15000.0;
+    return displace;
+  }
+
+  /////////////////////////////////////////////////////////
+
+  TerrainData vs_compute_position(vec3 mesh_pos) {
+    TerrainData TD;
+    mat4 matO2W  = inverse(v) * m;
+    vec4 vfixPos = matO2W * vec4(mesh_pos, 1);
+
+    // Assuming offset is correct and computeTerrainFull function computes the displacement correctly
+    float offset          = 1.0;
+    float displace_center = computeTerrainFull(vfixPos.xyz);
+    float displace_right  = computeTerrainFull(vfixPos.xyz + vec3(offset, 0, 0));
+    float displace_fwd    = computeTerrainFull(vfixPos.xyz + vec3(0, 0, offset));
+
+    // Correctly construct the gradient vectors
+    vec3 dHeight_dx = vec3(offset, displace_right - displace_center, 0); // This vector points in the X direction
+    vec3 dHeight_dz = vec3(0, displace_fwd - displace_center, offset);   // This vector points in the Z direction
+
+    // Correct cross product order to ensure a properly oriented normal
+    // The y-component of the normal vector will not be zero if displacements are correctly computed
+    vec3 N = normalize(cross(dHeight_dz, dHeight_dx));
+
+    // Final position adjustments
+    TD.finalPos     = vec4(vfixPos.x, vfixPos.y + displace_center, vfixPos.z, 1);
+    TD.displacement = vec3(0, displace_center, 0);
+    TD.vfixPos      = vfixPos;
+    TD.meshPos      = mesh_pos;
+    TD.meshPos2     = mesh_pos + TD.displacement;
+    TD.radius       = length(vfixPos.xz);
+    TD.normal       = N;
+
+    return TD;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_ground_mono //
+    : vif_terrain            //
+    : lib_ground_vtx_base {  //
+  vec4 cpos = v * position;
+
+  TerrainData TD = vs_compute_position(position.xyz);
+
+  frg_wpos         = TD.finalPos;
+  frg_mesh_bary    = normal;
+  frg_displacement = vec3(0);
+
+  vec3 wnormal    = normalize(mrot * normal);
+  vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
+  vec3 wtangent   = cross(wbitangent, wnormal);
+
+  // Pass material weights to fragment shader
+  frg_wpos         = TD.finalPos;
+  frg_mesh_bary    = normal;
+  frg_displacement = vec3(0);
+  frg_normal       = TD.normal;
+  gl_Position      = mvp * vec4(TD.meshPos2, 1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_my_forward_depthprepass_mono //
+    : vif_my_depthprepass                     //
+    : lib_ground_vtx_base {                   //
+  TerrainData TD = vs_compute_position(position.xyz);
+  vec4 meshPos   = vec4(TD.meshPos2, 1);
+  vec4 hpos      = mvp * meshPos;
+  gl_Position    = hpos;
+  frg_depth      = (hpos.z) / (hpos.w - 0.05);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ground_stereo               //
+    : iface_vgbuffer_stereo                  //
+    : lib_ground_vtx_base                    //
+    : extension(GL_NV_stereo_view_rendering) //
+    : extension(GL_NV_viewport_array2) {     //
+  gl_Position                   = mvp_l * position;
+  gl_SecondaryPositionNV        = mvp_r * position;
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
+  // Calculate eye delta and fog factor as before
+  vec3 eye_delta     = frg_wpos.xyz - EyePostion;
+  float eye_distance = length(eye_delta);
+  float fog_factor   = eye_distance / (3000.0 + EyePostion.y * 10);
+  float alpha        = clamp(1.0 - fog_factor, 0, 1);
+  alpha              = pow(alpha, 0.25);
+
+  // Calculate normal and lighting as before
+  vec3 dPdu     = dFdx(frg_wpos.xyz);
+  vec3 dPdv     = dFdy(frg_wpos.xyz);
+  vec3 normal   = normalize(cross(dPdu, dPdv));
+  //vec3 normal = normalize(frg_normal);
+
+  vec4 final_color = vec4(normal, alpha); // Apply fog effect via alpha
+
+  out_color = final_color;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_stereo : fif_terrain : ub_frgX {
+  out_color = frg_wpos;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass_mono, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_mono, ps_fwd_ground_mono, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_stereo, ps_fwd_ground_stereo, sb_default }
+}

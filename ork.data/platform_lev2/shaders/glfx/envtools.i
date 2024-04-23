@@ -4,6 +4,20 @@
 
 libblock lib_envmapping {
 
+  vec2 spotlightUV(vec3 dir) {
+      // Placeholder function to calculate UV coordinates
+      // You might need the direction vector transformed to the spotlight's local space
+      float u = 0.5 + atan(dir.y, dir.x) / (2.0 * PI);
+      float v = 0.5 - asin(dir.z) / PI;
+      return vec2(u, v);
+  }
+    vec3 spotlightUV2N(vec2 uv) {
+      float phi = uv.x*PI2-PI;
+      float theta = uv.y * PI;
+      vec3 n = sphericalToNormal(phi,theta);
+      return vec3(n.x,n.z,n.y);
+    }
+
   ////////////////////////////////////////////
   // equirectangular envmap uv from normal
   ////////////////////////////////////////////

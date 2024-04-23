@@ -71,7 +71,7 @@ int main(int argc, char** argv, char** envp) {
     movie->init(init_data->_width,init_data->_height);
   }
 
-  init_data->_ssaa_samples = 9;
+  init_data->_ssaa_samples = 2;
 
   auto ezapp  = OrkEzApp::create(init_data);
   auto ezwin  = ezapp->_mainWindow;
@@ -325,7 +325,7 @@ int main(int argc, char** argv, char** envp) {
         auto texture       = texture_asset->GetTexture();
         int tex_w          = 32;
         int tex_h          = 32;
-        auto texid         = texture->_varmap.typedValueForKey<GLuint>("gltexobj");
+        auto texid         = texture->_vars->typedValueForKey<GLuint>("gltexobj");
 
         ImGui::PushID(i);
         int frame_padding = -1 + i;                               // -1 == uses default padding (style.FramePadding)
@@ -387,7 +387,7 @@ int main(int argc, char** argv, char** envp) {
 
       ////////////////////////////////////////////////
 
-      if (auto as_texid = tex->_varmap.typedValueForKey<GLuint>("gltexobj")) {
+      if (auto as_texid = tex->_vars->typedValueForKey<GLuint>("gltexobj")) {
         win->DrawList->AddImageQuad(
             (void*)as_texid.value(), // GL texture handle
             pb,

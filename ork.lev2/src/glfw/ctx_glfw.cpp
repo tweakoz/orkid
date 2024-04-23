@@ -35,6 +35,8 @@ const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
 const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 #endif
 
+int _g_post_swap_wait_time = 0;
+
 ///////////////////////////////////////////////////////////////////////////////
 static fvec2 gpos;
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,6 +307,11 @@ void CtxGLFW::Show() {
   GLFWmonitor* fullscreen_monitor = nullptr;
   GLFWmonitor* selected_monitor   = nullptr;
 
+  glfwWindowHint(GLFW_RED_BITS, 10);
+  glfwWindowHint(GLFW_GREEN_BITS, 10);
+  glfwWindowHint(GLFW_BLUE_BITS, 10);
+  glfwWindowHint(GLFW_ALPHA_BITS, 2);
+
   if (_orkwindow) {
     _orkwindow->SetDirty(true);
 
@@ -357,6 +364,9 @@ void CtxGLFW::Show() {
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
+      logchan_glfw->log("USING GLFW redbits<%d> ", mode->redBits);
+      logchan_glfw->log("USING GLFW greenbits<%d> ", mode->greenBits);
+      logchan_glfw->log("USING GLFW bluebits<%d> ", mode->blueBits);
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
     }
@@ -450,6 +460,8 @@ void CtxGLFW::Show() {
   _glfwMonitor = selected_monitor;
 
   glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+
+  printf( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -467,7 +479,9 @@ void CtxGLFW::makeCurrent() {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::swapBuffers() {
   glfwSwapBuffers(_glfwWindow);
-  usleep(5000);
+  if(_g_post_swap_wait_time>0){
+    usleep(_g_post_swap_wait_time);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SetAlwaysRun(bool brun) {
@@ -1075,6 +1089,7 @@ struct PopupImpl {
       glfwMakeContextCurrent(_glfwPopupWindow);
 
       glFinish();
+
       glfwSwapBuffers(_glfwPopupWindow);
 
       usleep(1000 * 16);

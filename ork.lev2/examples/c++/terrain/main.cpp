@@ -152,10 +152,10 @@ int main(int argc, char** argv, char** envp) {
  
     renderer.get()->setContext(context);
 
-    RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD.pushCompositor(compositorimpl);
-    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    context->pushRenderContextFrameData(&RCFD);
+    auto RCFD = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
+    RCFD->pushCompositor(compositorimpl);
+    RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    context->pushRenderContextFrameData(RCFD);
     auto fbi = context->FBI(); // FrameBufferInterface
     ///////////////////////////////////////
     // compositor setup
@@ -174,8 +174,7 @@ int main(int argc, char** argv, char** envp) {
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
     context->beginFrame();
-    FrameRenderer framerenderer(RCFD, [&]() {});
-    CompositorDrawData drawdata(framerenderer);
+    CompositorDrawData drawdata(RCFD);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(renderer.get());

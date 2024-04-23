@@ -43,6 +43,7 @@ void FxPipelinePermutationSet::add(fxpipelinepermutation_constptr_t perm){
 /////////////////////////////////////////////////////////////////////////
 FxPipeline::FxPipeline(const FxPipelinePermutation& config)
     : __permutation(config) {
+    _vars = std::make_shared<varmap::VarMap>();
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
@@ -51,6 +52,9 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
+    if(_debugBreak){
+        OrkBreak();
+    }
   int inumpasses = beginBlock(RCID);
   if(_debugPrint){
     printf( "FxPipeline<%p:%s> wrappedDrawCall inumpasses<%d>\n", this, _debugName.c_str(), inumpasses );
@@ -65,24 +69,24 @@ void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_
 }
 ///////////////////////////////////////////////////////////////////////////////
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
-  auto context    = RCID._RCFD->GetTarget();
+  auto context    = RCID.rcfd()->GetTarget();
   auto FXI        = context->FXI();
   return FXI->BeginBlock(_technique, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val){
-  auto context          = RCID._RCFD->GetTarget();
+  auto context          = RCID.rcfd()->GetTarget();
   auto FXI              = context->FXI();
   auto worldmatrix = RCID.worldMatrix();
-  const auto& CPD       = RCID._RCFD->topCPD();
+  const auto& CPD       = RCID.rcfd()->topCPD();
   int W = CPD._width;
   int H = CPD._height;
   auto MTXI             = context->MTXI();
   auto RSI              = context->RSI();
-  const auto& RCFDPROPS = RCID._RCFD->userProperties();
+  const auto& RCFDPROPS = RCID.rcfd()->userProperties();
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();
-  auto pbrcommon = RCID._RCFD->_pbrcommon;
+  auto pbrcommon = RCID.rcfd()->_pbrcommon;
   auto modcolor = context->RefModColor();
 
     ////////////////////////////////////////////////////////////
@@ -154,7 +158,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_TIME"_crcu: {
-          auto RCFD = RCID._RCFD;
+          auto RCFD = RCID.rcfd();
           float time = RCFD->getUserProperty("time"_crc).get<float>();
           FXI->BindParamFloat(param, time);
           break;
@@ -175,8 +179,16 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           FXI->BindParamMatrix(param, worldmatrix);
           break;
         }
+        case "RCFD_DEPTH_MAP"_crcu: {
+          auto RCFD = RCID.rcfd();
+          auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
+          FXI->BindParamCTex(param, depth_tex.get());
+          //OrkAssert(false);
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
+            //printf("monocams<%p>\n", (void*)monocams);  
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
@@ -225,7 +237,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_Camera_IVP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPL().inverse());
+            auto m = stereocams->VPL().inverse();
+            FXI->BindParamMatrix(param, m);
           }
           break;
         }
@@ -267,7 +280,7 @@ void FxPipeline::dump() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
-  auto context          = RCID._RCFD->GetTarget();
+  auto context          = RCID.rcfd()->GetTarget();
   auto FXI              = context->FXI();
 
   if( _debugBreak ){
@@ -313,17 +326,17 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::endPass(const RenderContextInstData& RCID) {
-  auto context = RCID._RCFD->GetTarget();
+  auto context = RCID.rcfd()->GetTarget();
   context->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::endBlock(const RenderContextInstData& RCID) {
-  auto context = RCID._RCFD->GetTarget();
+  auto context = RCID.rcfd()->GetTarget();
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
 fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID) const {
-  auto RCFD       = RCID._RCFD;
+  auto RCFD       = RCID.rcfd();
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
   bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;

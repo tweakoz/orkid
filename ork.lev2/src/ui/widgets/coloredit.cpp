@@ -118,7 +118,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   auto defmtl  = lev2::defaultUIMaterial();
   using vtx_t  = lev2::SVtxV16T16C16;
   auto& VB     = lev2::GfxEnv::GetSharedDynamicV16T16C16();
-  lev2::RenderContextFrameData RCFD(context);
+  auto RCFD = std::make_shared<lev2::RenderContextFrameData>(context);
   auto uiMatrix = mtxi->uiMatrix(_geometry._w, _geometry._h);
 
   if (nullptr == _material) {

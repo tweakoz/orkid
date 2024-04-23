@@ -42,7 +42,7 @@ struct BillboardRenderImpl {
 
     bool isPickState = context->FBI()->isPickState();
 
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
 
     auto mtxi = context->MTXI();
     auto gbi  = context->GBI();

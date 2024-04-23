@@ -10,8 +10,8 @@ public:
 
   virtual int width()                                = 0;
   virtual int height()                                = 0;
-  virtual void BeginFrame(FrameRenderer& frenderer) = 0;
-  virtual void EndFrame(FrameRenderer& frenderer)   = 0;
+  virtual void BeginFrame(Context* pTARG) = 0;
+  virtual void EndFrame(Context* pTARG)   = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,8 +21,8 @@ struct RtGroupRenderTarget : public IRenderTarget {
 
   int width() final;
   int height() final;
-  void BeginFrame(FrameRenderer& frenderer) final;
-  void EndFrame(FrameRenderer& frenderer) final;
+  void BeginFrame(Context* pTARG) final;
+  void EndFrame(Context* pTARG) final;
 
   RtGroup* _rtgroup;
 };
@@ -38,8 +38,8 @@ private:
 
   int width() final;
   int height() final;
-  void BeginFrame(FrameRenderer& frenderer) final;
-  void EndFrame(FrameRenderer& frenderer) final;
+  void BeginFrame(Context* pTARG) final;
+  void EndFrame(Context* pTARG) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,8 @@ private:
 
   int width() final;
   int height() final;
-  void BeginFrame(FrameRenderer& frenderer) final;
-  void EndFrame(FrameRenderer& frenderer) final;
+  void BeginFrame(Context* pTARG) final;
+  void EndFrame(Context* pTARG) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

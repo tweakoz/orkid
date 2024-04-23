@@ -280,7 +280,9 @@ ContextGL::ContextGL()
     , mFbI(*this)
     , mTxI(*this)
     , mDWI(*this)
+#if defined(ENABLE_COMPUTE_SHADERS)
     , mCI(*this)
+#endif
     , mTargetDrawableSizeDirty(true) {
   ContextGL::GLinit();
   FxInit();

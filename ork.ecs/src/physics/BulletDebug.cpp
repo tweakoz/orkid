@@ -212,10 +212,10 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
     // draw with modified RCID (containing _fxcache)
     ///////////////////////////////////////////////
 
-    OrkAssert(_RCID._RCFD!=nullptr);
-    OrkAssert(_RCID._RCFD->_pbrcommon!=nullptr);
-    OrkAssert(RCIDCOPY._RCFD!=nullptr);
-    OrkAssert(RCIDCOPY._RCFD->_pbrcommon!=nullptr);
+    OrkAssert(_RCID.rcfd()!=nullptr);
+    OrkAssert(_RCID.rcfd()->_pbrcommon!=nullptr);
+    OrkAssert(RCIDCOPY.rcfd()!=nullptr);
+    OrkAssert(RCIDCOPY.rcfd()->_pbrcommon!=nullptr);
 
     auto pipeline = _fxcache->findPipeline(RCIDCOPY);
     OrkAssert(pipeline!=nullptr);

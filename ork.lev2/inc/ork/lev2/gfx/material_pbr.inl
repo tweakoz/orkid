@@ -15,6 +15,7 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/file/chunkfile.h>
 #include <ork/file/chunkfile.inl>
+#include <ork/kernel/varmap.inl>
 
 //using namespace boost::filesystem;
 
@@ -48,6 +49,15 @@ class PBRMaterial final : public GfxMaterial {
 
   DeclareConcreteX(PBRMaterial, GfxMaterial);
 
+  static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const PBRMaterial* mtl);
+  fxpipeline_ptr_t _createFxPipelineFWD(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineDEF(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineDPP(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelinePIK(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineUNL(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineSKY(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t _createFxPipelineVTX(const FxPipelinePermutation& permu) const;
+
 public:
   PBRMaterial(Context* targ);
   PBRMaterial();
@@ -61,6 +71,9 @@ public:
 
   pbrmaterial_ptr_t clone() const;
   void addBasicStateLambda(fxpipeline_ptr_t pipe);
+  void addLightingLambda(fxpipeline_ptr_t pipe);
+  void addBasicStateLambda();
+  void addLightingLambda();
 
   ////////////////////////////////////////////
 
@@ -68,8 +81,8 @@ public:
   static FxShaderParamBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ);
-  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ);
-  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ);
+  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
+  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
 
   ////////////////////////////////////////////
 
@@ -156,7 +169,22 @@ public:
   
 
 
+  //fxparam_constptr_t _parLightCookies   = nullptr;
+  fxparam_constptr_t _parLightCookie0   = nullptr;
+  fxparam_constptr_t _parLightCookie1   = nullptr;
+  fxparam_constptr_t _parLightCookie2   = nullptr;
+  fxparam_constptr_t _parLightCookie3   = nullptr;
+  fxparam_constptr_t _parLightCookie4   = nullptr;
+  fxparam_constptr_t _parLightCookie5   = nullptr;
+  //fxparam_constptr_t _parLightCookie6   = nullptr;
+  //fxparam_constptr_t _parLightCookie7   = nullptr;
+
+  fxparam_constptr_t _parProbeReflection   = nullptr;
+  fxparam_constptr_t _parProbeIrradiance   = nullptr;
+
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
+  fxparam_constptr_t _parTexSpotLightsCount   = nullptr;
+
   fxparamblock_constptr_t _parUnTexPointLightsData   = nullptr;
 
   ///////////////////////////////////////////
@@ -171,6 +199,8 @@ public:
   texture_ptr_t _texEmissive;
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
+  texture_ptr_t _texBlack;
+  texture_ptr_t _texCubeBlack;
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////
@@ -215,8 +245,16 @@ public:
   fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_ST = nullptr;
-  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_NI_MO = nullptr;
-  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_NI_ST = nullptr;
+
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_IN_MO = nullptr;
+
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_NI_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_SK_IN_ST = nullptr;
 
   // modcolor
 
@@ -294,8 +332,14 @@ public:
   fvec4 _baseColor;
 
   bool _stereoVtex = false;
-
+  bool _doubleSided = false;
+  
+  varmap::varmap_ptr_t _vars;
 };
+
+FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);
+FxPipeline::statelambda_t createLightingLambda(const PBRMaterial* mtl);
+FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl);
 
 pbrmaterial_ptr_t default3DMaterial(Context* ctx);
 

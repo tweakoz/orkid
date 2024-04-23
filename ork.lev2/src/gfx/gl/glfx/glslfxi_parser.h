@@ -1067,47 +1067,31 @@ struct GeometryInterfaceNode : public InterfaceNode {
   void _generate1(shaderbuilder::BackEnd& backend) const final;
 };
 
-#if defined ENABLE_COMPUTE_SHADERS
 struct ComputeShaderNode : public ShaderNode {
-  explicit ComputeShaderNode()
-      : ShaderNode() {
-  }
+  explicit ComputeShaderNode();
   void _generate2(shaderbuilder::BackEnd& backend) const final;
 };
 struct ComputeInterfaceNode : public InterfaceNode {
-  explicit ComputeInterfaceNode()
-      : InterfaceNode(GL_COMPUTE_SHADER) {
-  }
+  explicit ComputeInterfaceNode();
   void _generate1(shaderbuilder::BackEnd& backend) const final;
 };
-#endif
 
-#if defined ENABLE_NVMESH_SHADERS
 struct NvTaskInterfaceNode : public InterfaceNode {
-  explicit NvTaskInterfaceNode()
-      : InterfaceNode(GL_TASK_SHADER_NV) {
-  }
+  explicit NvTaskInterfaceNode();
   void _generate1(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshInterfaceNode : public InterfaceNode {
-  explicit NvMeshInterfaceNode()
-      : InterfaceNode(GL_MESH_SHADER_NV) {
-  }
+  explicit NvMeshInterfaceNode();
   void _generate1(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvTaskShaderNode : public ShaderNode {
-  explicit NvTaskShaderNode()
-      : ShaderNode() {
-  }
+  explicit NvTaskShaderNode();
   void _generate2(shaderbuilder::BackEnd& backend) const final;
 };
 struct NvMeshShaderNode : public ShaderNode {
-  explicit NvMeshShaderNode()
-      : ShaderNode() {
-  }
+  explicit NvMeshShaderNode();
   void _generate2(shaderbuilder::BackEnd& backend) const final;
 };
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

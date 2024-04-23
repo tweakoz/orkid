@@ -11,6 +11,12 @@
 #include <string>
 #include <map>
 
+namespace ork{
+struct DataBlock;
+using datablock_ptr_t = std::shared_ptr<DataBlock>;
+std::string dblock_to_str(datablock_ptr_t);
+}
+
 namespace ork::varmap {
 
 typedef std::string key_t;
@@ -27,6 +33,14 @@ template <typename val_t> struct TVarMap {
   using str_transformer_t = std::function<std::string(const val_t&)>;
   using str_transformer_map_t = std::unordered_map<ork::TypeId::hashtype_t, str_transformer_t>;
   using map_t = std::map<key_t, value_type>;
+  ///////////////////////////////////////////////////////////////////////////
+  std::shared_ptr<TVarMap> clone() const{
+    auto rval = std::make_shared<TVarMap>();
+    for( const auto& item : _themap ){
+      rval->_themap[item.first] = item.second;
+    }
+    return rval;
+  } 
   ///////////////////////////////////////////////////////////////////////////
   static const val_t& nill() {
     static const val_t noval = nullptr;
@@ -180,10 +194,14 @@ template <typename val_t> struct TVarMap {
       return FormatString("double<%g>", as_double.value());
     } else if (auto as_int = val.template tryAs<int>()) {
       return FormatString("int<%d>", as_int.value());
+    } else if (auto as_uint32_t = val.template tryAs<uint32_t>()) {
+      return FormatString("uint32_t<0x%x>", as_uint32_t.value());
     } else if (auto as_uint64_t = val.template tryAs<uint64_t>()) {
       return FormatString("uint64_t<0x%zx>", as_uint64_t.value());
     } else if (auto as_str = val.template tryAs<std::string>()) {
       return FormatString("str<%s>", as_str.value().c_str());
+    } else if (auto as_dblock = val.template tryAs<datablock_ptr_t>()) {
+      return dblock_to_str(as_dblock.value());
     } else {
       auto orktypeid = val.getOrkTypeId();
       auto it = str_transformer_map().find(orktypeid._hashed);
@@ -208,6 +226,7 @@ template <typename val_t> struct TVarMap {
 };
 using var_t             = svar128_t;
 using VarMap            = TVarMap<var_t>;
+using varmap_t          = TVarMap<var_t>;
 using varmap_ptr_t      = std::shared_ptr<VarMap>;
 using varmap_constptr_t = std::shared_ptr<const VarMap>;
 

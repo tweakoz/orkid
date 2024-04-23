@@ -284,7 +284,7 @@ void ContextGL::initializeLoaderContext() {
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
-  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA32F);
   auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
 

@@ -340,10 +340,10 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
 void Interface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
   auto uniblock  = block->_impl.get<UniformBlock*>();
   auto unibuffer = buffer->_impl.get<UniformBuffer*>();
-  assert(uniblock != nullptr);
-  assert(unibuffer != nullptr);
+  OrkAssert(uniblock != nullptr);
+  OrkAssert(unibuffer != nullptr);
   auto pass = _active_effect->_activePass;
-  assert(pass != nullptr);
+  OrkAssert(pass != nullptr);
   pass->bindUniformBlockBuffer(uniblock, unibuffer);
 }
 

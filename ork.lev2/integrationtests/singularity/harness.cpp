@@ -170,10 +170,10 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
-    RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD.pushCompositor(compositorimpl);
-    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    context->pushRenderContextFrameData(&RCFD);
+    auto RCFD = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
+    RCFD->pushCompositor(compositorimpl);
+    RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    context->pushRenderContextFrameData(RCFD);
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect        = context->mainSurfaceRectAtOrigin();
     CPD->_irendertarget = &rt;
@@ -295,7 +295,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
     ////////////////////////////////////////////////////
     // draw the synth HUD
     ////////////////////////////////////////////////////
-    RenderContextFrameData RCFD(context); // renderer per/frame data
+    auto RCFD = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
     context->beginFrame();
     auto tgtrect = context->mainSurfaceRectAtOrigin();
     auto uimtx   = mtxi->uiMatrix(tgtrect._w, tgtrect._h);

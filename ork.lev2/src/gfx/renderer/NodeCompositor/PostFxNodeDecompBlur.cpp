@@ -46,17 +46,17 @@ struct IMPL {
       _rtg_c          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_d          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
       _rtg_e          = std::make_shared<RtGroup>(context, w, h, lev2::MsaaSamples::MSAA_1X);
-      auto buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      auto buf        = _rtg_out->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_out");
-      buf        = _rtg_a->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_a->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_a");
-      buf        = _rtg_b->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_b->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_b");
-      buf        = _rtg_c->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_c->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_c");
-      buf        = _rtg_d->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_d->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_d");
-      buf        = _rtg_e->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      buf        = _rtg_e->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf->_debugName = FormatString("PostFxNodeDecompBlur::_rtg_e");
       _material.gpuInit(context);
 
@@ -129,20 +129,20 @@ struct IMPL {
             //printf( "smallw<%d> smallh<%d>\n", smallw, smallh );
             _rtg_c->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_c.get());
-            _freestyle_mtl->begin(_tek_maskbright,*framedata);
+            _freestyle_mtl->begin(_tek_maskbright,framedata);
             _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
             _freestyle_mtl->bindParamFloat(_fxpMaskThreshold, _node->_threshold);
             _freestyle_mtl->bindParamCTex(_fxpMrtMap0, _rtg_b->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
-            _freestyle_mtl->end(*framedata);
+            _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
             // blurx
             /////////////////////
             _rtg_d->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_d.get());
-            _freestyle_mtl->begin(_tek_blurx,*framedata);
+            _freestyle_mtl->begin(_tek_blurx,framedata);
             _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth );
@@ -151,14 +151,14 @@ struct IMPL {
             _freestyle_mtl->bindParamCTex(_fxpMrtMap0, _rtg_c->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
-            _freestyle_mtl->end(*framedata);
+            _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
             // blury
             /////////////////////
             _rtg_e->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_e.get());
-            _freestyle_mtl->begin(_tek_blury,*framedata);
+            _freestyle_mtl->begin(_tek_blury,framedata);
             _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth);
@@ -167,7 +167,7 @@ struct IMPL {
             _freestyle_mtl->bindParamCTex(_fxpMrtMap0, _rtg_d->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
-            _freestyle_mtl->end(*framedata);
+            _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
             // final blit
@@ -175,7 +175,7 @@ struct IMPL {
             //printf( "finalw<%d> finalh<%d>\n", finalw, finalh );
             _rtg_out->Resize(finalw,finalh);
             FBI->PushRtGroup(_rtg_out.get());
-            _freestyle_mtl->begin(_tek_join,*framedata);
+            _freestyle_mtl->begin(_tek_join,framedata);
             _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamFloat(_fxpEffectAmount, _node->_amount );
@@ -183,7 +183,7 @@ struct IMPL {
             _freestyle_mtl->bindParamCTex(_fxpMrtMap1, final_rtg->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(finalw,finalh);
-            _freestyle_mtl->end(*framedata);
+            _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
             /////////////////////
             target->endFrame();

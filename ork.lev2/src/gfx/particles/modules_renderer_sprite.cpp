@@ -81,6 +81,11 @@ void SpriteRendererInst::compute(
   _triple_buf->end_push(output_buffer);
 
   auto material = _srd->_material;
+
+  /////////////////////////////////////
+  // compute light color
+  /////////////////////////////////////
+
   auto as_grad = dynamic_cast<GradientMaterial*>(material.get());
   if( true and as_grad ){
     auto avg_color = fvec4(0,0,0,0);
@@ -93,6 +98,8 @@ void SpriteRendererInst::compute(
       avg_color += as_grad->_gradientSamples[index];
       sample_count++;
     }
+
+    avg_color *= as_grad->_gradientColorIntensity;
     //avg_color *= (1.0f/float(sample_count));
     inst->_vars.makeValueForKey<fvec4>("emission_color") = avg_color;
 
@@ -100,6 +107,9 @@ void SpriteRendererInst::compute(
   else{
     inst->_vars.makeValueForKey<fvec4>("emission_color") = material->_averageColor;
   }
+
+  /////////////////////////////////////
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,8 +189,8 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     // override fetcher
     size_t ilast = (icnt - 1);
     get_particle = [=](size_t index) -> const particle::BasicParticle* {
-      // return the_sorter->GetItemAtIndex(ilast-index).second;
-      return the_sorter->GetItemAtIndex(index).second;
+      return the_sorter->GetItemAtIndex(ilast-index).second;
+      //return the_sorter->GetItemAtIndex(index).second;
     };
   }
   //////////////////////////////////////////////////////////////////////////////
@@ -193,7 +203,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   //////////////////////////////////////////////////////////////////////////////
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////
-  if (RCID._RCFD->isStereo()) {
+  if (RCID.rcfd()->isStereo()) {
 #if defined(ENABLE_COMPUTE_SHADERS)
     auto FXI = context->FXI();
     auto CI  = context->CI();
@@ -253,7 +263,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     render_time_1c = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     material->update(RCID);
-    auto pipeline = material->pipeline(RCID, true);
+    auto pipeline = material->pipeline(RCID, false);
     pipeline->wrappedDrawCall(RCID, [&]() {
       context->RSI()->BindRasterState(material->_material->_rasterstate);
       context->GBI()->DrawPrimitiveEML(
@@ -305,9 +315,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       vw.UnLock(context);
 
       auto pipeline = material->pipeline(RCID, false);
-      material->update(RCID);
+        //pipeline->_debugBreak = true;
+        pipeline->_debugPrint = false;
+        material->update(RCID);
       pipeline->wrappedDrawCall(RCID, [&]() {
-        // printf( "YO...\n");
         context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       });

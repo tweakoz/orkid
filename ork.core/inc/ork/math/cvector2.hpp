@@ -161,6 +161,17 @@ template <typename T> void ork::Vector2<T>::lerp(const Vector2<T>& from, const V
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> ork::Vector2<T> ork::Vector2<T>::floor() const {
+  return Vector2<T>(std::floor(this->x), std::floor(this->y));
+}
+template <typename T> ork::Vector2<T> ork::Vector2<T>::fract() const {
+  T floor_x = std::floor(this->x);
+  T floor_y = std::floor(this->y);
+  return Vector2<T>(this->x - floor_x, this->y - floor_y);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 template <> //

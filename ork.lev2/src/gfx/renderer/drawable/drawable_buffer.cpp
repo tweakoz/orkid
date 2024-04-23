@@ -46,17 +46,17 @@ void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const {
+void DrawableBuffer::invokePreRenderCallbacks(lev2::rcfd_ptr_t RCFD) const {
   EASY_BLOCK("prerender");
   for (auto item : _preRenderCallbacks)
-    item.second(RCFD);
+    item.second(*RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IRenderer* renderer) const {
   lev2::Context* target                         = renderer->GetTarget();
-  const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
+  auto RCFD = target->topRenderContextFrameData();
   const auto& topCPD                            = RCFD->topCPD();
 
   if (false == topCPD.isValid()) {
@@ -70,10 +70,10 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue do_all<%d>", int(do_all)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
-  //printf( "rendering <%s> are_multiple_layers_selected<%d> do_all<%d>\n", LayerName.c_str(), int(are_multiple_layers_selected), int(do_all) );
+  //printf( "rendering <%s> do_all<%d>\n", LayerName.c_str(), int(do_all) );
   //////////////////////////////////////////////////////////////////////////////////////////////
-  auto do_layer = [target,renderer,&numdrawables](const lev2::DrawableBufLayer* player){
-      player->_items.atomicOp([player,target,renderer,&numdrawables](const DrawableBufLayer::itemvect_t& unlocked){
+  auto do_layer = [target,renderer,&numdrawables,LayerName](const lev2::DrawableBufLayer* player){
+      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName](const DrawableBufLayer::itemvect_t& unlocked){
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
           auto item = unlocked[id];
@@ -83,6 +83,10 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
             numdrawables++;
             pdrw->enqueueToRenderQueue(item, renderer);
           }
+        }
+        if( renderer->_debugLog ){
+          auto str = FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer<%s> itemcount<%d>", LayerName.c_str(), max_index + 1);
+          printf( "%s\n", str.c_str() );
         }
       }); // player->_items.atomicOp
   };

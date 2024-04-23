@@ -97,23 +97,23 @@ vertex_interface vface_streak : uset_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 velocity : BINORMAL;
-    vec2 lw : TEXCOORD0; // length and width
-    vec2 ra : TEXCOORD1; // random and age
+    vec2 vtx_rnd_age : TEXCOORD0; // random and age
+    vec2 vtx_len_wid : TEXCOORD1; // length and width
   }
   outputs {
     vec3 geo_cnrm; // NOT an array
     vec3 geo_vel; // NOT an array
-    vec2 geo_lw; // NOT an array
-    vec2 geo_ra; // NOT an array
+    vec2 geo_len_wid; // NOT an array
+    vec2 geo_rnd_age; // NOT an array
   }
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_streak : vface_streak {
   gl_Position = position;
-  geo_cnrm = normal;
+  geo_cnrm = vec3(0,1,0);
   geo_vel  = velocity;
-  geo_lw   = lw;
-  geo_ra = ra;
+  geo_rnd_age = vtx_rnd_age;
+  geo_len_wid   = vtx_len_wid;
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_streak //
@@ -124,8 +124,8 @@ geometry_interface gface_streak //
   inputs {
     vec3 geo_cnrm[];
     vec3 geo_vel[];
-    vec2 geo_lw[];
-    vec2 geo_ra[];
+    vec2 geo_len_wid[];
+    vec2 geo_rnd_age[];
   }
 
   outputs {
@@ -142,16 +142,16 @@ libblock lib_streak //
     PtcOutput outp;
     vec3 vel  = geo_vel[0].xyz;
     vec3 cnrm = geo_cnrm[0].xyz;
-    float wid = geo_lw[0].y;
-    float len = geo_lw[0].x;
+    float len = geo_len_wid[0].x;
+    float wid = geo_len_wid[0].y;
 
-    vec3 pos = gl_in[0].gl_Position.xyz;
+    vec3 inp_pos = gl_in[0].gl_Position.xyz;
 
-    vec3 lpos = pos - vel * len;
+    vec3 lpos = inp_pos - vel * len;
     vec3 crs  = wid * normalize(cross(vel, cnrm));
 
-    vec3 p0 = pos + crs;
-    vec3 p1 = pos - crs;
+    vec3 p0 = inp_pos + crs;
+    vec3 p1 = inp_pos - crs;
     vec3 p2 = lpos - crs;
     vec3 p3 = lpos + crs;
 
@@ -170,7 +170,7 @@ geometry_shader gs_streak //
   : uset_vtx { //
   PtcOutput outp = computeStreak(MatMVP);
   gl_Position       = outp.pos0;
-  frg_uv1     = geo_ra[0];
+  frg_uv1     = geo_rnd_age[0];
   frg_clr     = vec4(0,0,0,0);
   frg_uv0     = vec2(0,0);
   EmitVertex();
@@ -434,7 +434,7 @@ technique tflatparticle_streaks_stereoCI {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique tgradparticle_streaks_stereo {
+technique tgradparticle_streaks_stereoCI {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_streak_stereoCI;

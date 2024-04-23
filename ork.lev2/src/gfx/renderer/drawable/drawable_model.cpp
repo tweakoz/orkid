@@ -71,7 +71,7 @@ asset::loadrequest_ptr_t ModelDrawable::bindModelAsset(AssetPath assetpath) {
   return load_req;
 }
 ///////////////////////////////////////////////////////////////////////////////
-asset::loadrequest_ptr_t ModelDrawable::bindModelAsset( AssetPath assetpath, asset::vars_t asset_vars){
+asset::loadrequest_ptr_t ModelDrawable::bindModelAsset( AssetPath assetpath, asset::vars_ptr_t asset_vars){
 
   auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
   load_req->_asset_vars = asset_vars;
@@ -89,7 +89,7 @@ void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
 
   if (_data) {
 
-    auto& asset_vars = load_req->_asset_vars;
+    auto asset_vars = load_req->_asset_vars;
 
     for (auto item : _data->_assetvars) {
 
@@ -98,13 +98,13 @@ void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
 
       std::string v_str;
       if (auto as_str = v.tryAs<std::string>()) {
-        asset_vars.makeValueForKey<std::string>(k, as_str.value());
+        asset_vars->makeValueForKey<std::string>(k, as_str.value());
         v_str = as_str.value();
       } else if (auto as_bool = v.tryAs<bool>()) {
-        asset_vars.makeValueForKey<bool>(k, as_bool.value());
+        asset_vars->makeValueForKey<bool>(k, as_bool.value());
         v_str = as_bool.value() ? "true" : "false";
       } else if (auto as_dbl = v.tryAs<double>()) {
-        asset_vars.makeValueForKey<double>(k, as_dbl.value());
+        asset_vars->makeValueForKey<double>(k, as_dbl.value());
         v_str = FormatString("%f", as_dbl.value());
       } else {
         OrkAssert(false);
@@ -295,32 +295,31 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
     nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
   }
   /////////////////////////////////////////////////////////////
-  RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
   auto RCFD = context->topRenderContextFrameData();
-  RCID._RCFD = RCFD;
+  auto RCID = std::make_shared<RenderContextInstData>(RCFD);
   RCID_MD.mMesh    = mesh;
   RCID_MD.mSubMesh = submesh;
   RCID_MD._cluster = this->_cluster;
-  RCID.SetRenderer(renderer);
-  RCID.setRenderable(this);
-  RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
-  RCID._pickID = _pickID;
+  RCID->SetRenderer(renderer);
+  RCID->setRenderable(this);
+  RCID->_pipeline_cache = _submeshinst->_fxpipelinecache;
+  RCID->_pickID = _pickID;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
   //logchan_model->log("renderable<%p> fxlut(%p)", (void*) this, (void*) RCID._fx_instance_lut.get() );
   bool model_is_skinned = model->isSkinned();
-  RCID._isSkinned       = model_is_skinned;
+  RCID->_isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
   RCID_MD.SetModelInst(minst);
 
   auto ObjColor = this->_modColor;
   if (model_is_skinned) {
-    model->RenderSkinned(minst.get(), ObjColor, nmat, context, RCID, RCID_MD);
+    model->RenderSkinned(minst.get(), ObjColor, nmat, context, *RCID, RCID_MD);
   } else {
-    model->RenderRigid(ObjColor, nmat, context, RCID, RCID_MD);
+    model->RenderRigid(ObjColor, nmat, context, *RCID, RCID_MD);
   }
   context->debugPopGroup();
 }
@@ -359,9 +358,8 @@ void SkeletonRenderable::Render(const IRenderer* renderer) const {
     nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
   }
   /////////////////////////////////////////////////////////////
-  RenderContextInstData RCID;
   auto RCFD = context->topRenderContextFrameData();
-  RCID._RCFD = RCFD;
+  RenderContextInstData RCID(RCFD);
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
   //RCID._pipeline_cache = _submeshinst->_fxpipelinecache;

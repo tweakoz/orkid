@@ -121,7 +121,7 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
   auto drawable = std::make_shared<CallbackDrawable>(nullptr); 
 
   drawable->setRenderLambda([this](RenderContextInstData& RCID){
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
     auto context                       = RCID.context();
 
     fmtx4 mtx_center;
@@ -175,6 +175,8 @@ void UiCamera::CommonPostSetup(void) {
   auto v3up = vec_billboardUp.xyz();
   auto v3rt = vec_billboardRight.xyz();
   auto v3in = v3up.crossWith(v3rt);
+
+  _zdir = v3in*-1.0;
 
   // printf( "CPS: aspect<%g>\n", aspect );
   // printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );

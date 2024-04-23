@@ -209,7 +209,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       ///////////////////////////////
       auto mtl = hud_material(tgt);
       auto tek = mtl->technique("vtxcolor");
-      lev2::RenderContextFrameData RCFD(tgt);
+      auto RCFD = std::make_shared<lev2::RenderContextFrameData>(tgt);
       auto par_mvp  = mtl->param("MatMVP");
       int ichanlaby = _kbasechanlaby;
       for (auto channel : _channelmap) {

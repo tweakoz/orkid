@@ -21,22 +21,26 @@ namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 LoadRequest::LoadRequest() { //
-
+  _asset_vars = std::make_shared<vars_t>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 LoadRequest::LoadRequest(const AssetPath& p) //
   : _asset_path(p) { //
+  _asset_vars = std::make_shared<vars_t>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LoadRequest::LoadRequest(const AssetPath& p,const vars_t& vars) //
+LoadRequest::LoadRequest(const AssetPath& p,vars_ptr_t vars) //
   : _asset_path(p)
   , _asset_vars(vars) { //
 }
 
+void LoadRequest::enqueueAsync(void_lambda_t on_complete) const{
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

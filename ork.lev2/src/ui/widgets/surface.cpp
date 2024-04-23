@@ -7,7 +7,6 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 
 namespace ork { namespace ui {
 
@@ -287,29 +286,12 @@ void Surface::Clear() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::PushFrameTechnique(lev2::FrameTechniqueBase* ptek) {
-  mpActiveFrameTek.push(ptek);
+void Surface::BeginSurface(lev2::Context* pTARG) {
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::PopFrameTechnique() {
-  mpActiveFrameTek.pop();
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-lev2::FrameTechniqueBase* Surface::GetFrameTechnique() const {
-  return mpActiveFrameTek.size() ? mpActiveFrameTek.top() : 0;
-}
-
-void Surface::BeginSurface(lev2::FrameRenderer& frenderer) {
-  lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                    = FrameData.GetTarget();
-}
-void Surface::EndSurface(lev2::FrameRenderer& frenderer) {
-  lev2::RenderContextFrameData& FrameData = frenderer.framedata();
-  lev2::Context* pTARG                    = FrameData.GetTarget();
+void Surface::EndSurface(lev2::Context* pTARG) {
 }
 
 /////////////////////////////////////////////////////////////////////////

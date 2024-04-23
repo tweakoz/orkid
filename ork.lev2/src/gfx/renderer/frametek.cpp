@@ -17,7 +17,6 @@
 #include <ork/application/application.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -31,18 +30,6 @@ template class ork::orklut<ork::PoolString, anyp>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
-FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD, rendermisccb_t cb)
-    : _framedata(RCFD)
-    , _rendermisccb(cb) {
-}
-///////////////////////////////////////////
-void FrameRenderer::renderMisc() {
-  _rendermisccb();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 IRenderTarget::IRenderTarget() {
 }
 
@@ -58,9 +45,9 @@ int RtGroupRenderTarget::width() {
 int RtGroupRenderTarget::height() {
   return _rtgroup->height();
 }
-void RtGroupRenderTarget::BeginFrame(FrameRenderer& frenderer) {
+void RtGroupRenderTarget::BeginFrame(Context* pTARG) {
 }
-void RtGroupRenderTarget::EndFrame(FrameRenderer& frenderer) {
+void RtGroupRenderTarget::EndFrame(Context* pTARG) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,14 +61,10 @@ int UiViewportRenderTarget::width() {
 int UiViewportRenderTarget::height() {
   return mpViewport->height();
 }
-void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
+void UiViewportRenderTarget::BeginFrame(Context* pTARG) {
   mpViewport->BeginFrame(pTARG);
 }
-void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.framedata();
-  Context* pTARG                    = FrameData.GetTarget();
+void UiViewportRenderTarget::EndFrame(Context* pTARG) {
   mpViewport->EndFrame(pTARG);
 }
 
@@ -96,39 +79,11 @@ int UiSurfaceRenderTarget::width() {
 int UiSurfaceRenderTarget::height() {
   return mSurface->height();
 }
-void UiSurfaceRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  mSurface->BeginSurface(frenderer);
+void UiSurfaceRenderTarget::BeginFrame(Context* pTARG) {
+  mSurface->BeginSurface(pTARG);
 }
-void UiSurfaceRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  mSurface->EndSurface(frenderer);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-static const int kFINALW = 512;
-static const int kFINALH = 512;
-
-FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
-    : miW(iW)
-    , miH(iH)
-    , mpMrtFinal(0) {
-}
-
-void FrameTechniqueBase::Init(Context* targ) {
-
-  auto fbi                = targ->FBI();
-  DisplayBuffer* parent = fbi->GetThisBuffer();
-  targ                    = parent ? parent->context() : targ;
-  auto clear_color        = fbi->GetClearColor();
-
-  mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, MsaaSamples::MSAA_1X);
-
-  auto buf = mpMrtFinal->createRenderTarget(lev2::EBufferFormat::RGBA8);
-
-  // mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
-  // mpMrtFinal->GetMrt(0)->SetContext( targ );
-
-  DoInit(targ);
+void UiSurfaceRenderTarget::EndFrame(Context* pTARG) {
+  mSurface->EndSurface(pTARG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

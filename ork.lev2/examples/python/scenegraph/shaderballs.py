@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys
+import math, random, argparse, sys, colorsys
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -18,11 +18,13 @@ from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
+from common.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
+
 
 ################################################################################
 
@@ -33,13 +35,16 @@ envmap = args["envmap"]
 
 class NODE(object):
 
-  def __init__(self,model,layer, index):
+  def __init__(self,model,app, index):
 
     super().__init__()
     self.model = model
-    self.sgnode = model.createNode("node%d"%index,layer)
-    self.modelinst = self.sgnode.user.pyext_retain_modelinst
+    self.drawable_model = model.createDrawable()
+    self.modelinst = self.drawable_model.modelinst
+    self.sgnode = app.scene.createDrawableNodeOnLayers(app.fwd_layers,"model-node-%d"%index,self.drawable_model)
     self.sgnode.worldTransform.scale = 1
+    self.sgnode.worldTransform.translation = vec3(0)
+    #self.sgnode = model.createNode("node%d"%index,layer)
 
 ################################################################################
 
@@ -58,10 +63,10 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(1),
+      "SkyboxIntensity": float(1.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(10000)
     }
 
@@ -73,6 +78,10 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,
                      rendermodel="ForwardPBR",
                      params_dict=params_dict)
+
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.layer1
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
     ###################################
 
@@ -88,7 +97,7 @@ class SceneGraphApp(object):
         submesh.material = copy
 
     for i in range(81):
-      node = NODE(model,self.layer1,i)
+      node = NODE(model,self,i)
 
       x = (i % 9)
       z = int(i/9)
@@ -107,9 +116,13 @@ class SceneGraphApp(object):
       mtl_cloned = subinst.material.clone()
       mtl_cloned.metallicFactor = float(x/8.0)
       mtl_cloned.roughnessFactor = float(z/8.0)
-      r = random.uniform(0,1)
-      g = random.uniform(0,1)
-      b = random.uniform(0,1)
+      h = random.uniform(0,6)
+      s = random.uniform(0,0.7)
+      v = random.uniform(0.1,1)
+      rgb = colorsys.hsv_to_rgb(h,s,v)
+      r = rgb[0]
+      g = rgb[1]
+      b = rgb[2]
       mtl_cloned.baseColor = vec4(r,g,b,1)
       subinst.overrideMaterial(mtl_cloned)
 
@@ -118,9 +131,31 @@ class SceneGraphApp(object):
 
       self.nodes += [node]
 
+    cookie3 = MyCookie("src://effect_textures/knob2.dds")
+    
+    #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
+    #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
+    self.spotlight3 = MySpotLight( index=2,
+                                  app=self,
+                                  model=model,
+                                  frq=0.27,
+                                  color=vec3(500,500,400),
+                                  cookie=cookie3,
+                                  radius=16,
+                                  bias=1e-3,
+                                  dim=2048,
+                                  fovamp=0,
+                                  range=200.0,
+                                  fovbase=65,
+                                  voffset=16,
+                                  vscale=14)
+
     ###################################
 
     self.grid_data = createGridData()
+    self.grid_data.texturepath = "src://effect_textures/white.dds"
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(0.5)
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
@@ -131,9 +166,15 @@ class SceneGraphApp(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
+
+  ################################################
+  def onGpuUpdate(self,ctx):
+    self.spotlight3.update(self.lighttime)
+
   ################################################
 
   def onUpdate(self,updinfo):
+    self.lighttime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################

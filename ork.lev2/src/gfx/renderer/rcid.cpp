@@ -17,7 +17,6 @@
 #include <ork/application/application.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -33,33 +32,38 @@ template class ork::orklut<ork::CrcString, ork::lev2::rendervar_t>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-const RenderContextInstData RenderContextInstData::Default;
+const RenderContextInstData RenderContextInstData::Default(nullptr);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
-    : _RCFD(RCFD) { //
-  if (_RCFD) {
-    mpActiveRenderer = _RCFD->_renderer;
+RenderContextInstData::RenderContextInstData(rcfd_ptr_t RCFD)
+    : _held_rcfd(RCFD) { //
+  if (_held_rcfd) {
+    mpActiveRenderer = _held_rcfd->_renderer;
   }
 
-  _genMatrix = [this]()->fmtx4{
-    return _RCFD->GetTarget()->MTXI()->RefMMatrix();
+  _genMatrix = [this]()->fmtx4 {
+    return _held_rcfd->GetTarget()->MTXI()->RefMMatrix();
   };
 
 }
 
+rcfd_ptr_t RenderContextInstData::rcfd() const {
+  return _held_rcfd;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
 rcid_ptr_t RenderContextInstData::create(rcfd_ptr_t the_rcfd){
-  rcid_ptr_t rcid = std::make_shared<RenderContextInstData>(the_rcfd.get());
-  rcid->_held_rcfd = the_rcfd;
-  return rcid;
+  return std::make_shared<RenderContextInstData>(the_rcfd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Context* RenderContextInstData::context() const {
-  OrkAssert(_RCFD);
-  return _RCFD->GetTarget();
+  OrkAssert(_held_rcfd);
+  return _held_rcfd->GetTarget();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

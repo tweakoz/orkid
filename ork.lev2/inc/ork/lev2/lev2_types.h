@@ -64,6 +64,8 @@ struct IpcTexture;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using image_ptr_t            = std::shared_ptr<Image>;
+using texture_list_t = std::vector<texture_ptr_t>;
+using texture_rawlist_t = std::vector<Texture*>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer
@@ -189,8 +191,11 @@ struct LightManager;
 struct LightManagerData;
 struct Light;
 struct PointLight;
+struct DynamicPointLight;
 struct SpotLight;
+struct DynamicSpotLight;
 struct DirectionalLight;
+struct DynamicDirectionalLight;
 struct AmbientLight;
 struct LightMask;
 struct LightData;
@@ -198,6 +203,8 @@ struct PointLightData;
 struct SpotLightData;
 struct DirectionalLightData;
 struct AmbientLightData;
+struct LightProbe;
+
 //
 using lightdata_ptr_t      = std::shared_ptr<LightData>;
 using lightdata_constptr_t = std::shared_ptr<const LightData>;
@@ -215,11 +222,18 @@ using pointlight_ptr_t      = std::shared_ptr<PointLight>;
 using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
+
+using dynamicspotlight_ptr_t = std::shared_ptr<DynamicSpotLight>;
+using dynamicdirectionallight_ptr_t = std::shared_ptr<DynamicDirectionalLight>;
+using dynamicpointlight_ptr_t = std::shared_ptr<DynamicPointLight>;
+
 using lightinggroup_ptr_t = std::shared_ptr<LightingGroup>;
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;
 using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
 using lightmanagerdata_constptr_t = std::shared_ptr<const LightManagerData>;
 using lightcollector_ptr_t = std::shared_ptr<LightCollector>;
+using lightprobe_ptr_t = std::shared_ptr<LightProbe>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Drawables
 ///////////////////////////////////////////////////////////////////////////////
@@ -283,8 +297,6 @@ using instanced_billboard_string_drawable_ptr_t = std::shared_ptr<InstancedBillb
 
 struct IRenderer;
 struct IRenderable;
-struct FrameRenderer;
-struct FrameTechniqueBase;
 struct IRenderer;
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using defaultrenderer_ptr_t         = std::shared_ptr<IRenderer>;
@@ -434,7 +446,10 @@ class TextureAnimationInst;
 
 namespace pbr {
   struct CommonStuff;
+  struct IrradianceMaps;
   using commonstuff_ptr_t = std::shared_ptr<CommonStuff>;
+  using irradiancemaps_ptr_t = std::shared_ptr<IrradianceMaps>;
+  using irradiancemaps_wkptr_t = std::weak_ptr<IrradianceMaps>;
   namespace deferrednode{
     struct DeferredContext;
   };

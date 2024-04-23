@@ -30,7 +30,48 @@ void pyinit_gfx_material(py::module& module_lev2) {
             fxstring<64> fxs;
             fxs.format("GfxMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
             return fxs.c_str();
-          });
+          })
+          .def(
+              "bindParam",                                                                    //
+              [type_codec](material_ptr_t mtl, //
+                 pyfxparam_ptr_t param, //
+                 py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+                else if( py::isinstance<py::float_>(inp_value) ){
+                  float fvalue = py::cast<float>(inp_value);
+                  mtl->bindParam(param.get(),fvalue);
+                }
+                else if( py::isinstance<fvec2>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec2>(inp_value));
+                }
+                else if( py::isinstance<fvec3>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec3>(inp_value));
+                }
+                else if( py::isinstance<fvec4>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fvec4>(inp_value));
+                }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::hasattr(inp_value, "__call__")){
+                  auto holdname = FormatString("%s_held",param->_name.c_str());
+                  mtl->_varmap.makeValueForKey<py::object>(holdname,inp_value);
+                  FxPipeline::varval_generator_t L = [mtl,holdname,type_codec]() -> GfxMaterial::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    auto held_inp_val = mtl->_varmap.typedValueForKey<py::object>(holdname);
+                    py::object generated = held_inp_val.value()();
+                    FxPipeline::varval_t asv = type_codec->decode(generated);
+                    return asv;
+                  };
+                  mtl->bindParam(param.get(),L);
+                }
+                else{
+                  py::print("Bad Param Type: ", inp_value);
+                  OrkAssert(false);
+                }
+              });
   type_codec->registerStdCodec<material_ptr_t>(material_type);
   /////////////////////////////////////////////////////////////////////////////////
   // materialinst params proxy
@@ -147,9 +188,12 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
                 else if( py::hasattr(inp_value, "__call__")){
-                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> FxPipeline::varval_t {
+                  auto holdname = FormatString("%s_held",param->_name.c_str());
+                  pipeline->_vars->makeValueForKey<py::object>(holdname,inp_value);
+                  FxPipeline::varval_generator_t L = [pipeline,holdname,type_codec]() -> FxPipeline::varval_t {
                     py::gil_scoped_acquire acquire;
-                    py::object generated = inp_value();
+                    auto cb = pipeline->_vars->typedValueForKey<py::object>(holdname);
+                    py::object generated = cb.value()();
                     FxPipeline::varval_t asv = type_codec->decode(generated);
                     return asv;
                   };
@@ -300,132 +344,14 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamCTex(p.get(), value.get()); })
           .def(
               "begin",
-              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
-          .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
+              [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, rcfd_ptr_t rcfd) { m->begin(tek.get(), rcfd); })
+          .def("end", [](freestyle_mtl_ptr_t m, rcfd_ptr_t rcfd) { m->end(rcfd); })
           .def("dump", [](freestyle_mtl_ptr_t m) { m->dump(); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
             return FormatString("FreestyleMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
           });
   type_codec->registerStdCodec<freestyle_mtl_ptr_t>(freestyle_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto pbr_type = //
-      py::class_<PBRMaterial, GfxMaterial, pbrmaterial_ptr_t>(module_lev2, "PBRMaterial")
-          .def(py::init<>())
-          .def("__repr__", [](pbrmaterial_ptr_t m) -> std::string {
-            return FormatString("PBRMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
-          })
-          .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
-            return m->clone();
-          })
-          .def("addBasicStateLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) {
-            m->addBasicStateLambda(pipe);
-          })
-          .def_property_readonly(
-              "fxcache",                                    //
-              [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
-                return m->pipelineCache(); // material
-              })
-          .def_property_readonly(
-              "freestyle",
-              [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t {
-                return m->_as_freestyle;
-              })
-          .def(
-              "gpuInit",
-              [](pbrmaterial_ptr_t m, ctx_t& c) {
-                m->gpuInit(c.get());
-              })
-          .def_property(
-              "metallicFactor",
-              [](pbrmaterial_ptr_t m) -> float { //
-                return m->_metallicFactor;
-              },
-              [](pbrmaterial_ptr_t m, float v) { //
-                m->_metallicFactor = v;
-              })
-          .def_property(
-              "roughnessFactor",
-              [](pbrmaterial_ptr_t m) -> float { //
-                return m->_roughnessFactor;
-              },
-              [](pbrmaterial_ptr_t m, float v) { //
-                m->_roughnessFactor = v;
-              })
-          .def_property(
-              "baseColor",
-              [](pbrmaterial_ptr_t m) -> fvec4 { //
-                return m->_baseColor;
-              },
-              [](pbrmaterial_ptr_t m, fvec4 v) { //
-                m->_baseColor = v;
-              })
-          .def_property(
-              "texColor",
-              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
-                return m->_texColor;
-              },
-              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
-                m->_texColor = v;
-              })
-          .def_property(
-              "texNormal",
-              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
-                return m->_texNormal;
-              },
-              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
-                m->_texNormal = v;
-              })
-          .def_property(
-              "texMtlRuf",
-              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
-                return m->_texMtlRuf;
-              },
-              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
-                m->_texMtlRuf = v;
-              })
-          .def_property(
-              "texEmissive",
-              [](pbrmaterial_ptr_t m) -> texture_ptr_t { //
-                return m->_texEmissive;
-              },
-              [](pbrmaterial_ptr_t m, texture_ptr_t v) { //
-                m->_texEmissive = v;
-              })
-          .def_property_readonly(
-              "colorMapName",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_colorMapName;
-              })
-          .def_property_readonly(
-              "normalMapName",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_normalMapName;
-              })
-          .def_property_readonly(
-              "mtlRufMapName",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_mtlRufMapName;
-              })
-          .def_property_readonly(
-              "amboccMapName",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_amboccMapName;
-              })
-          .def_property_readonly(
-              "emissiveMapName",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_emissiveMapName;
-              })
-          .def_property(
-              "shaderpath",
-              [](pbrmaterial_ptr_t m) -> std::string { //
-                return m->_shaderpath.c_str();
-              },
-              [](pbrmaterial_ptr_t m, std::string p)  { //
-                printf( "PBRMaterial<%p> shaderpath<%s>\n", (void*) m.get(), p.c_str() );
-                m->_shaderpath = p;
-              });
-  type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
+
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2

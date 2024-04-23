@@ -30,7 +30,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
+static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
 
 extern int G_MSAASAMPLES;
 
@@ -446,8 +446,23 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
       GL_ERRORCHECK();
       glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->_fbo);
       GL_ERRORCHECK();
-      glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
-      GL_ERRORCHECK();
+
+      switch(rtb->mFormat){
+        case EBufferFormat::RGBA8:
+        case EBufferFormat::RGBA16F:
+        case EBufferFormat::RGBA32F:
+          OrkAssert(irt>=0 and irt<8);
+          glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
+          GL_ERRORCHECK();
+          break;
+        case EBufferFormat::Z32:
+          glReadBuffer(GL_COLOR_ATTACHMENT0);
+          GL_ERRORCHECK();
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
     }
   }
   else{
@@ -757,7 +772,8 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
           }
           GL_ERRORCHECK();
           glBindFramebuffer(GL_FRAMEBUFFER, 0);
-          glReadBuffer( previous_readbuffer );
+          if(previous_readbuffer<1000)
+            glReadBuffer( previous_readbuffer );
           GL_ERRORCHECK();
         } else {
           printf("!!!ERR - GetPix BindFBO<%d>\n", fboobj->_fbo);

@@ -30,12 +30,8 @@ public:
     return mfClearDepth;
   }
 
-  void PushFrameTechnique(lev2::FrameTechniqueBase* ftek);
-  void PopFrameTechnique();
-  lev2::FrameTechniqueBase* GetFrameTechnique() const;
-
-  void BeginSurface(lev2::FrameRenderer& frenderer);
-  void EndSurface(lev2::FrameRenderer& frenderer);
+  void BeginSurface(lev2::Context* ptarg);
+  void EndSurface(lev2::Context* ptarg);
 
   void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
 
@@ -51,7 +47,6 @@ public:
     return _pickbuffer;
   }
 
-  orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
   bool mbClear;
   fcolor3 _clearColor;
   F32 mfClearDepth;
@@ -60,7 +55,6 @@ public:
   lev2::PickBuffer* _pickbuffer;
 
   void_lambda_t _postRenderCallback;
-
   bool _aspect_from_rtgroup = false;
   bool _decouple_from_ui_size = false;
   int _decoupled_width = 0;

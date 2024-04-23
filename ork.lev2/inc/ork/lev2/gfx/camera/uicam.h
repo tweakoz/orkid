@@ -134,6 +134,8 @@ public:
   ManipHandler _manipHandler;
 
   bool mbInMotion;
+  fvec3 _zdir;
+
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -223,6 +225,8 @@ public: //
   bool _constrainZ = false;
 
   fvec3 _pushNZ, _pushNX, _pushNY;
+  fvec3 _position_offset;
+  
   svar32_t _private;
 
   bool UIEventHandler(ui::event_constptr_t EV) final;

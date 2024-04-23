@@ -41,6 +41,7 @@ struct DecompTransform : public ork::Object {
   
   fmtx4 _directmatrix;
   bool _usedirectmatrix = false;
+  bool _viewRelative = false;
 
 
   void set(fvec3 t, fquat r, float s) { _translation=t; _rotation=r; _uniformScale=s; }

@@ -8,13 +8,9 @@
 #pragma once
 
 #include <ork/rtti/RTTIX.inl>
-//#include <ork/dataflow/all.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
-//#include <ork/lev2/gfx/renderer/rendercontext.h>
-//#include <ork/lev2/gfx/renderer/irendertarget.h>
 
 namespace ork::lev2 {
 
@@ -108,6 +104,8 @@ struct CompositingPassData {
     _var.set<void*>(nullptr);
   }
 
+  CompositingPassData clone() const;
+  
   ////////////////////////////////////////////////////
 
   inline void setSharedCameraMatrices(cameramatrices_ptr_t c){
@@ -152,7 +150,6 @@ struct CompositingPassData {
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget        = nullptr;
-  lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource                    = true;
   std::string _cameraName;
   ork::fvec4 _clearColor;
@@ -199,17 +196,17 @@ struct ViewData {
 
 struct CompositorDrawData {
 
-  CompositorDrawData(lev2::FrameRenderer& renderer)
-      : mFrameRenderer(renderer) {
-  }
+  CompositorDrawData(rcfd_ptr_t rcfd=nullptr);
 
   Context* context() const;
-  RenderContextFrameData& RCFD();
-  const RenderContextFrameData& RCFD() const;
+  rcfd_ptr_t RCFD() const;
+  //const RenderContextFrameData& RCFD() const;
   ViewData computeViewData() const;
+  const svar16_t& property(uint64_t key) const;
+  template <typename T> svar16_t property(uint64_t key) { return _properties[key]; };
   compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
-  lev2::FrameRenderer& mFrameRenderer;
+  rcfd_ptr_t _RCFD;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

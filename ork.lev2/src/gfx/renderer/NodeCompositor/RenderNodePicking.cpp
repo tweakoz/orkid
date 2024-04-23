@@ -53,24 +53,23 @@ struct IMPL {
       buf_wpos->_debugName = "rt0-wpos";
       buf_wnrm->_debugName = "rt0-wnrm";
       buf_uv->_debugName   = "rt0-uv";
-      _rtg->_name = "PickingRtGroup";
+      _rtg->_name          = "PickingRtGroup";
     }
     pTARG->debugPopGroup();
     _initted = true;
   }
   ///////////////////////////////////////
   void _render(PickingCompositingNode* node, CompositorDrawData& drawdata) {
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto RCFD = drawdata.RCFD();
     auto& ddprops                = drawdata._properties;
 
-    auto context                    = RCFD.GetTarget();
-    auto CIMPL                   = drawdata._cimpl;
-    auto FBI                     = context->FBI();
-    auto this_buf                = FBI->GetThisBuffer();
-    auto RSI                     = context->RSI();
-    const auto TOPCPD            = CIMPL->topCPD();
-    auto tgt_rect                = context->mainSurfaceRectAtOrigin();
+    auto context      = RCFD->GetTarget();
+    auto CIMPL        = drawdata._cimpl;
+    auto FBI          = context->FBI();
+    auto this_buf     = FBI->GetThisBuffer();
+    auto RSI          = context->RSI();
+    const auto TOPCPD = CIMPL->topCPD();
+    auto tgt_rect     = context->mainSurfaceRectAtOrigin();
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -83,10 +82,10 @@ struct IMPL {
     context->debugPushGroup("Picking::render");
     RtGroupRenderTarget rt(_rtg.get());
     {
-      //targ->triggerFrameDebugCapture();
+      // targ->triggerFrameDebugCapture();
       FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB             = RCFD.GetDB();
+      auto DB             = RCFD->GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
@@ -94,13 +93,13 @@ struct IMPL {
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       CPD.assignLayers(_layername);
-      RCFD._renderingmodel = "PICKING"_crcu;
-      auto& userprops = RCFD.userProperties();
-      auto it_pfc = userprops.find("pixel_fetch_context"_crc);
-      if(it_pfc == userprops.end()){
+      RCFD->_renderingmodel = "PICKING"_crcu;
+      auto& userprops      = RCFD->userProperties();
+      auto it_pfc          = userprops.find("pixel_fetch_context"_crc);
+      if (it_pfc == userprops.end()) {
         auto pfc = std::make_shared<PixelFetchContext>(3);
-        RCFD.setUserProperty("pixel_fetch_context"_crc, pfc);
-        RCFD.setUserProperty("pickbufferMvpMatrix"_crc, std::make_shared<fmtx4>());
+        RCFD->setUserProperty("pixel_fetch_context"_crc, pfc);
+        RCFD->setUserProperty("pickbufferMvpMatrix"_crc, std::make_shared<fmtx4>());
       }
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
@@ -119,7 +118,7 @@ struct IMPL {
         ///////////////////////////////////////////////////////////////////////////
 
         FBI->PushRtGroup(_rtg.get());
-        FBI->Clear(fvec3(1,1,1), 1.0f);
+        FBI->Clear(fvec3(1, 1, 1), 1.0f);
 
         /////////////////////////////////////////////////
         // render enqueued
@@ -128,7 +127,6 @@ struct IMPL {
         CIMPL->pushCPD(CPD);
         context->debugPushGroup("rnodePicking::drawEnqueuedRenderables");
         irenderer->drawEnqueuedRenderables();
-        framerenderer.renderMisc();
         context->debugPopGroup();
         CIMPL->popCPD();
         FBI->PopRtGroup();

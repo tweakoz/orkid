@@ -52,10 +52,9 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(UnlitNode* node, CompositorDrawData& drawdata) {
-    //float t1 = _profile_timer.SecsSinceStart();
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto targ                    = RCFD.GetTarget();
+    // float t1 = _profile_timer.SecsSinceStart();
+    auto RCFD = drawdata.RCFD();
+    auto targ                    = drawdata.context();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
@@ -70,7 +69,7 @@ struct IMPL {
     if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
     }
-    //float t2 = _profile_timer.SecsSinceStart();
+    // float t2 = _profile_timer.SecsSinceStart();
     //////////////////////////////////////////////////////
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
@@ -81,15 +80,15 @@ struct IMPL {
       targ->FBI()->SetAutoClear(true); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB             = RCFD.GetDB();
-      auto CPD            = CIMPL->topCPD();
+      auto DB  = RCFD->GetDB();
+      auto CPD = CIMPL->topCPD();
       CPD.assignLayers(_layername);
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
-      //float t3 = _profile_timer.SecsSinceStart();
+      // float t3 = _profile_timer.SecsSinceStart();
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
@@ -99,27 +98,26 @@ struct IMPL {
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
         /////////////////////////////////////////////////
-        RCFD._renderingmodel = node->_renderingmodel;
-        auto MTXI = targ->MTXI();
+        RCFD->_renderingmodel = node->_renderingmodel;
+        auto MTXI            = targ->MTXI();
         CIMPL->pushCPD(CPD);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
-        framerenderer.renderMisc();
         targ->debugPopGroup();
         CIMPL->popCPD();
       }
       irenderer->resetQueue();
-      //float t4 = _profile_timer.SecsSinceStart();
-      //printf( "unlitnode t4-t3 %g(mSec)\n", (t2-t1)*1000.0f);
+      // float t4 = _profile_timer.SecsSinceStart();
+      // printf( "unlitnode t4-t3 %g(mSec)\n", (t2-t1)*1000.0f);
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->endFrame();
       targ->FBI()->PopRtGroup();
     }
     targ->debugPopGroup();
-  //float t5 = _profile_timer.SecsSinceStart();
+    // float t5 = _profile_timer.SecsSinceStart();
 
- // printf( "unlitnode t5-t1 %g(mSec)\n", (t5-t1)*1000.0f);
+    // printf( "unlitnode t5-t1 %g(mSec)\n", (t5-t1)*1000.0f);
   }
   ///////////////////////////////////////
   std::string _camname, _layername;
@@ -127,15 +125,14 @@ struct IMPL {
   RtGroup* _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;
   Timer _profile_timer;
-
 };
-} // namespace forwardnode
+} // namespace _unlitnode
 
 ///////////////////////////////////////////////////////////////////////////////
 UnlitNode::UnlitNode() {
-  _impl = std::make_shared<_unlitnode::IMPL>();
+  _impl           = std::make_shared<_unlitnode::IMPL>();
   _renderingmodel = RenderingModel("FORWARD_UNLIT"_crcu);
-  _clearColor = fvec4(0,0,0,1);
+  _clearColor     = fvec4(0, 0, 0, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 UnlitNode::~UnlitNode() {
@@ -154,4 +151,4 @@ rtbuffer_ptr_t UnlitNode::GetOutput() const {
   return _impl.get<std::shared_ptr<_unlitnode::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::compositor {
+} // namespace ork::lev2::compositor

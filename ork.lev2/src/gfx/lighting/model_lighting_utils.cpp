@@ -167,7 +167,7 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   ctx->FBI()->PushRtGroup(pos_buffer.get());
   ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
 
-  RenderContextFrameData RCFD(ctx);
+  auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
   material->_rasterstate.SetCullTest(ECullTest::OFF);
   material->begin(tek_posnrm, RCFD);
   material->bindParamMatrix(fxparameterMVP, fmtx4::Identity());
@@ -234,7 +234,7 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
     camdat.Persp(0.1f, 100.0f, 90.0f);
     auto matrices = camdat.computeMatrices(1.0f);
     auto VP       = matrices.GetVPMatrix();
-    RenderContextFrameData RCFD(ctx);
+    auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
     material->_rasterstate.SetCullTest(ECullTest::OFF);
 
     ctx->beginFrame();

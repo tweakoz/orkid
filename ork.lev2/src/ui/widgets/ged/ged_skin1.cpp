@@ -234,7 +234,7 @@ void GedSkin1::End(Context* pTARG) {
   pTARG->MTXI()->PushUIMatrix(iw, ih);
   pTARG->MTXI()->PushMMatrix(_mMatrix);
   ////////////////////////
-  RenderContextFrameData RCFD(pTARG);
+  auto RCFD = std::make_shared<RenderContextFrameData>(pTARG);
   ////////////////////////
   for (auto itc : mPrimContainers) {
     const PrimContainer* primcontainer = itc.second;

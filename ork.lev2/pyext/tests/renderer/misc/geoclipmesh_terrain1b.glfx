@@ -1,0 +1,297 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+import "orkshader://mathtools.i";
+import "orkshader://pbrtools.i";
+import "orkshader://misctools.i";
+}
+///////////////////////////////////////////////////////////////
+
+uniform_set ub_frgX {
+  float Time;
+  vec3 EyePostion;
+  sampler2D noise_map;
+  vec4 v2;  // = mat2(0.8,-0.6,0.6,0.8);
+  float SCXZ; // scale
+  float SCY; // scale
+  float BIAS_Y;
+}
+
+///////////////////////////////////////////////////////////////
+vertex_interface vif_my_depthprepass : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_depth;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_terrain : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec3 frg_mesh_bary;
+    vec3 frg_displacement;
+    vec3 frg_normal;
+    // vec4 frg_mat_weights;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_terrain : ub_frg_fwd_lighting {
+  inputs {
+    vec4 frg_wpos;
+    vec3 frg_mesh_bary;
+    vec3 frg_displacement;
+    vec3 frg_normal;
+    // vec4 frg_mat_weights;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ground_vtx_base : ub_frgX : lib_pnoise {
+  struct TerrainData {
+    vec4 vfixPos;
+    vec3 meshPos;
+    vec3 meshPos2;
+    vec4 finalPos;
+    vec3 displacement;
+    float radius;
+    vec3 normal;
+  };
+
+  /////////////////////////////////////////////////////////
+  // Base mountain terrain generation
+  /////////////////////////////////////////////////////////
+
+  vec3 tex_noise(vec2 pos2d) {
+    vec2 f  = fract(pos2d);
+    vec2 u  = f * f * (3.0 - 2.0 * f);
+    vec2 du = 6.0 * f * (1.0 - f);
+    ivec2 p = ivec2(floor(pos2d));
+    float a = texelFetch(noise_map, (p + ivec2(0, 0)) & 255, 0).x;
+    float b = texelFetch(noise_map, (p + ivec2(1, 0)) & 255, 0).x;
+    float c = texelFetch(noise_map, (p + ivec2(0, 1)) & 255, 0).x;
+    float d = texelFetch(noise_map, (p + ivec2(1, 1)) & 255, 0).x;
+
+    return vec3(
+        a + (b - a) * u.x + (c - a) * u.y + (a - b - c + d) * u.x * u.y, du * (vec2(b - a, c - a) + (a - b - c + d) * u.yx));
+  }
+
+  float terrain(vec2 pos2d, int num_octaves) {
+
+    vec2 p  = pos2d * SCXZ;
+    float a = 0.0;
+    float b = 1.0;
+    vec2 d  = vec2(0.0);
+    mat2 m2 = mat2(v2.x, v2.y,v2.z, v2.w);
+    for (int i = 0; i < num_octaves; i++) {
+      vec3 n = tex_noise(p);
+      d += n.yz;
+      a += b * n.x / (1.0 + dot(d, d));
+      b *= 0.5;
+      p = m2 * p * 2.0;
+    }
+
+    return SCY * a;
+  }
+
+  vec3 calcNormal(vec2 pos, int numOctaves) {
+    // Standardized epsilon values for normal calculation
+    float step = 1;
+    vec2 eps  = vec2(step, 0.0);
+    vec2 eps2 = vec2(0.0, step);
+    // Using a fixed, small offset to approximate the gradient
+
+    vec2 P2L = pos - eps;
+    vec2 P2R = pos + eps;
+    vec2 P2D = pos - eps2;
+    vec2 P2U = pos + eps2;
+
+    float hL = terrain(P2L, numOctaves);
+    float hR = terrain(P2R, numOctaves);
+    float hD = terrain(P2D, numOctaves);
+    float hU = terrain(P2U, numOctaves);
+    
+    vec3 P3L = vec3(P2L.x, hL, P2L.y);
+    vec3 P3R = vec3(P2R.x, hR, P2R.y);
+    vec3 P3D = vec3(P2D.x, hD, P2D.y);
+    vec3 P3U = vec3(P2U.x, hU, P2U.y);
+
+    vec3 N = normalize(cross(P3R - P3L, P3U - P3D));
+    N.y = sqrt(1.0 - (N.x * N.x + N.z * N.z))*0.7;
+    return normalize(N);
+  }
+  vec4 generateMountain(vec3 position, int numOctaves) {
+    float displacement = terrain(position.xz, 10);
+    vec3 N             = calcNormal(position.xz, 16);
+    return vec4(displacement, N);
+  }
+
+  /////////////////////////////////////////////////////////
+
+  vec4 computeTerrainFull(vec3 pos) {
+    return generateMountain(pos.xyz, 8);
+  }
+
+  /////////////////////////////////////////////////////////
+
+  TerrainData vs_compute_position(vec3 mesh_pos) {
+    TerrainData TD;
+    mat4 matO2W = inverse(v) * m;
+
+    vec4 vfixPos = matO2W * vec4(mesh_pos, 1);
+
+    vec4 mountain     = computeTerrainFull(vfixPos.xyz);
+    vec3 new_mesh_pos = mesh_pos + vec3(0, mountain.x, 0);
+    vec4 fpos         = matO2W * vec4(new_mesh_pos, 1);
+
+    vec3 N = vec3(mountain.y, mountain.z, mountain.w);
+
+    // Final position adjustments
+    TD.finalPos     = vec4(fpos.xyz, 1);
+    TD.displacement = vec3(0, mountain.x, 0);
+    TD.vfixPos      = vfixPos;
+    TD.meshPos      = mesh_pos;
+    TD.meshPos2     = mesh_pos + TD.displacement;
+    TD.radius       = length(vfixPos.xz);
+    TD.normal       = N;
+
+    return TD;
+  }
+}
+
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_ground_mono //
+    : vif_terrain            //
+    : lib_ground_vtx_base {  //
+  vec4 cpos = v * position;
+
+  TerrainData TD = vs_compute_position(position.xyz);
+
+  frg_wpos         = TD.finalPos;
+  frg_mesh_bary    = normal;
+  frg_displacement = vec3(0);
+
+  vec3 wnormal    = normalize(mrot * normal);
+  vec3 wbitangent = normalize(mrot * binormal); // technically binormal is a bitangent
+  vec3 wtangent   = cross(wbitangent, wnormal);
+
+  // Pass material weights to fragment shader
+  frg_wpos         = TD.finalPos;
+  frg_mesh_bary    = normal;
+  frg_displacement = vec3(0);
+  frg_normal       = TD.normal;
+  gl_Position      = mvp * vec4(TD.meshPos2, 1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_my_forward_depthprepass_mono //
+    : vif_my_depthprepass                     //
+    : lib_ground_vtx_base {                   //
+  TerrainData TD = vs_compute_position(position.xyz);
+  vec4 meshPos   = vec4(TD.meshPos2, 1);
+  vec4 hpos      = mvp * meshPos;
+  gl_Position    = hpos;
+  frg_depth      = (hpos.z) / (hpos.w - 0.05);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_ground_stereo               //
+    : iface_vgbuffer_stereo                  //
+    : lib_ground_vtx_base                    //
+    : extension(GL_NV_stereo_view_rendering) //
+    : extension(GL_NV_viewport_array2) {     //
+  gl_Position                   = mvp_l * position;
+  gl_SecondaryPositionNV        = mvp_r * position;
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_mono : fif_terrain : ub_frgX {
+  // Calculate eye delta and fog factor as before
+  vec3 eye_delta     = frg_wpos.xyz - EyePostion;
+  float eye_distance = length(eye_delta);
+  float fog_factor   = eye_distance / (3000.0 + EyePostion.y * 10);
+  float alpha        = clamp(1.0 - fog_factor, 0, 1);
+  alpha              = pow(alpha, 0.25);
+
+  // Calculate normal and lighting as before
+  // vec3 dPdu     = dFdx(frg_wpos.xyz);
+  // vec3 dPdv     = dFdy(frg_wpos.xyz);
+  // vec3 normal   = normalize(cross(dPdu, dPdv));
+  vec3 normal = normalize(frg_normal);
+  float L     = dot(normal, vec3(0, 1, 0));
+  // Calculate material weights
+  float height     = frg_wpos.y;
+  float slope      = 1.0 - abs(dot(normalize(normal.xyz), vec3(0, 1, 0)));
+  slope            = pow(slope * 2, 1.5);
+  vec4 mat_weights = vec4(0.0); // rock, snow, grass weights
+
+  // Determine if the area is steep enough to be considered rock
+  // float rock_weight = clamp(slope - 0.50, 0.0, 1.0); // Adjust 0.20 if needed for steeper slopes
+  float rockThreshold   = 0.3;                        // Adjust this value as needed
+  float rock_weight     = step(rockThreshold, slope); // step function is more appropriate for a hard threshold
+  float inv_rock_weight = 1.0 - rock_weight;
+  // Determine the snow weight based on height, but only in less steep areas
+  float height_ramp   = clamp(height / 700.0, 0.0, 1.0);
+  float sg_height_sel = smoothstep(0.8, 0.9, height_ramp);
+  float dg_height_sel = 1.0 - smoothstep(0.3, 0.4, height_ramp);
+
+  // snow
+
+  float snow_weight   = sg_height_sel;
+  float desert_weight = dg_height_sel;
+
+  float grass_weight = 1.0 - (snow_weight + desert_weight);
+
+  // Define material colors (These can be uniforms or constants)
+  vec3 rock_color   = vec3(0.5, 0.5, 0.55); // Dark gray
+  vec3 snow_color   = vec3(1.0, 1.0, 1.0);  // White
+  vec3 grass_color  = vec3(0.0, 1.0, 0.0);  // Green
+  vec3 desert_color = vec3(1.0, 0.9, 0.7);  // Green
+
+  // Blend material colors based on weights
+  vec3 terrain_color = rock_weight * rock_color + snow_weight * inv_rock_weight * snow_color +
+                       grass_weight * inv_rock_weight * grass_color + desert_weight * inv_rock_weight * desert_color;
+
+  vec3 texC = texture(noise_map, frg_wpos.xz * 0.1).xyz;
+
+  // Apply lighting and fog
+  vec3 C         = (terrain_color * 0.75); // + vec3(0.5, 0.5, 0.5); // Adjust if necessary
+  vec3 lit_color = C * L;                  // Apply basic lighting model
+  // lit_color = vec3(slope);
+  vec4 final_color = vec4(lit_color, alpha); // Apply fog effect via alpha
+  //vec4 final_color = vec4(normal, alpha); // Apply fog effect via alpha
+  //vec4 final_color = vec4(frg_mesh_bary, alpha); // Apply fog effect via alpha
+  //vec4 final_color = vec4(texC, alpha); // Apply fog effect via alpha
+  out_color = final_color;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fwd_ground_stereo : fif_terrain : ub_frgX {
+  out_color = frg_wpos;
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_my_forward_depthprepass_mono, ps_forward_depthprepass_mono, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_mono, ps_fwd_ground_mono, sb_default }
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_ground_stereo, ps_fwd_ground_stereo, sb_default }
+}

@@ -26,14 +26,20 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderContextFrameData& CompositorDrawData::RCFD() {
-  return mFrameRenderer.framedata();
+CompositorDrawData::CompositorDrawData(rcfd_ptr_t rcfd){  
+  _RCFD = rcfd ? rcfd : std::make_shared<RenderContextFrameData>(nullptr);
 }
-const RenderContextFrameData& CompositorDrawData::RCFD() const {
-  return mFrameRenderer.framedata();
+rcfd_ptr_t CompositorDrawData::RCFD() const {
+  return _RCFD;
 }
 Context* CompositorDrawData::context() const {
-  return RCFD().GetTarget();
+  return _RCFD->GetTarget();
+}
+
+const svar16_t& CompositorDrawData::property(uint64_t key) const{
+  const svar16_t NONE;
+  auto it = _properties.find(key);
+  return (it != _properties.end()) ? it->second : NONE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +55,7 @@ ViewData CompositorDrawData::computeViewData() const {
 
   VD._near = nf.x;
   VD._far = nf.y;
-  VD._time = RCFD().getUserProperty("time"_crc).get<float>();
+  VD._time = _RCFD->getUserProperty("time"_crc).get<float>();
 
   if (VD._isStereo) {
     auto L = TOPCPD._stereoCameraMatrices->_left;

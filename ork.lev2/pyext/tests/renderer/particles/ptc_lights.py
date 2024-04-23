@@ -32,7 +32,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=4)
+    self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -66,81 +66,25 @@ class ParticlesApp(object):
     ###################################
     postNode = DecompBlurPostFxNode()
     postNode.threshold = 0.99
-    postNode.blurwidth = 16.0
-    postNode.blurfactor = 0.1
+    postNode.blurwidth = 8.0
+    postNode.blurfactor = 0.15
     postNode.amount = 0.1
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
     #self.post_node = postNode
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
-    self.layer1 = self.scene.createLayer("layer1")
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
     ###################################
     # create particle drawable 
     ###################################
-    ptc_data = {
-      "POOL":particles.Pool,
-      "EMITN":particles.NozzleEmitter,
-      "EMITR":particles.RingEmitter,
-      "GLOB":particles.Globals,
-      #"PNTA":particles.PointAttractor,
-      "GRAV":particles.Gravity,
-      "TURB":particles.Turbulence,
-      "VORT":particles.Vortex,
-      "DRAG":particles.Drag,
-      "LITE":particles.LightRenderer,
-      "SPRI":particles.SpriteRenderer,
-    }
-    ptc_connections = [
-      ("POOL","EMITN"),
-      ("EMITN","EMITR"),
-      ("EMITR","GRAV"),
-      ("GRAV","TURB"),
-      ("TURB","VORT"),
-      ("VORT","DRAG"),
-      ("DRAG","LITE"),
-      ("LITE","SPRI"),
-    ]
-    #######################################
-    def gen_sys(grad,frq,radius):
-      LAYER = self.layer1
-      ptc = ParticleContainer(self.scene,LAYER)
-      createParticleData(ptc,ptc_data,ptc_connections,LAYER)
-      ptc.POOL.pool_size = 4096 # max number of particles in pool
-      ptc.SPRI.inputs.Size = 0.1
-      ptc.SPRI.inputs.GradientIntensity = 1
-      ptc.SPRI.material = presetMaterial(grad=grad)
-      ptc.EMITN.inputs.EmissionVelocity = 0.1
-      #presetPOOL1(ptc.POOL)
-      presetEMITN1(ptc.EMITN)
-      presetEMITR1(ptc.EMITR)
-      ptc.EMITN.inputs.EmissionRate = 50
-      ptc.EMITR.inputs.EmissionRate = 50
-      ptc.EMITN.inputs.LifeSpan = 30
-      ptc.EMITR.inputs.LifeSpan = 30
-      presetTURB1(ptc.TURB)
-      presetVORT1(ptc.VORT)
-      ptc.VORT.inputs.VortexStrength = 0.0
-      ptc.VORT.inputs.OutwardStrength = 0.0
-      presetGRAV1(ptc.GRAV)
-      ptc.particlenode.worldTransform.translation = vec3(50,10,0)    
-      ptc.TURB.inputs.Amount = vec3(1,1,1)*5
-      ptc.frq = frq
-      ptc.radius = radius
-      ptc.DRAG.inputs.drag = 0.999
-      ptc.drawable_data.emitterIntensity = 8.0
-      ptc.drawable_data.emitterRadius = 1.5
-      return ptc
-    #######################################
-    self.ptc_systems = []
-    count = 32
-    for i in range(count):
-      fi = float(i)/float(count)
-      frq = 0.4 + (fi*2)
-      radius = 35 + fi*35
-      g = i&7
-      self.ptc_systems += [gen_sys(presetGRAD(g),frq,radius)]
-    #self.ptc_systems[0].EMITN.inputs.EmissionVelocity = 0.1
+    self.ptc_systems = gen_psys_set(self.scene,
+                                    self.layer_fwd)
     #######################################
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -148,20 +92,22 @@ class ParticlesApp(object):
     gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.8,0.8,1,1)
+    gmtl.baseColor = vec4(0.8,0.8,1.3,1)
+    gmtl.doubleSided = True
     gmtl.gpuInit(ctx)
     gdata = GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
     gdata.extent = 1000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.layer1.createDrawableNode("partgroundicle-node",self.drawable_ground)
+    self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,-5,0)
     #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
-    self.sgnode = self.model.createNode("model-node",self.layer1)
-    self.sgnode.worldTransform.scale = 35
-    self.sgnode.worldTransform.translation = vec3(0,25,0)
+    self.drawable_model = self.model.createDrawable()
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 35
+    self.modelnode.worldTransform.translation = vec3(0,28,0)
     #######################################
 
 

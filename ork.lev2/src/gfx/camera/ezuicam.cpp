@@ -746,9 +746,10 @@ void EzUiCam::updateMatrices(void) {
   float farmul = (near_far_ratio * 0.5f * finvlerpidx + 0.5f / near_far_ratio) * flerpidx;
 
   // Calculate the near and far plane distances
-  float fnear = mfLoc / neardiv;
-  float ffar = mfLoc * farmul;
-
+  //float fnear = mfLoc / neardiv;
+  //float ffar = mfLoc * farmul;
+  float fnear = base_near;
+  float ffar = fnear * near_far_ratio;
   // Enforce minimum and maximum values for near and far plane distances
   if (fnear < near_min) fnear = near_min;
   if (ffar > far_max) ffar = far_max;
@@ -766,19 +767,23 @@ void EzUiCam::updateMatrices(void) {
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).transform(matxf);
   fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).transform(matxf).xyz();
 
+  veye += _position_offset;
+  vtarget += _position_offset;
+
   _camcamdata.Persp(fnear, ffar, _fov);
   _camcamdata.Lookat(veye, vtarget, vup);
 
   // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);
   // printf("mvCenter<%g %g %g>\n", mvCenter.x, mvCenter.y, mvCenter.z);
-  // printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
-  // printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
+   //printf("veye<%g %g %g>\n", veye.x, veye.y, veye.z);
+   //printf("vtarget<%g %g %g>\n", vtarget.x, vtarget.y, vtarget.z);
   // printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
 
   ///////////////////////////////////////////////////////////////
   // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -153,12 +153,17 @@ inline void DirectTypedProp_int(object_ptr_t obj, const reflect::DirectTyped<int
 
   auto anno_min = prop->annotation("editor.range.min");
   auto anno_max = prop->annotation("editor.range.max");
+  auto anno_rng = prop->annotation("editor.range");
 
-  if (auto as_f = anno_min.tryAs<int>()) {
-    range_min = as_f.value();
+  if (auto as_i = anno_min.tryAs<int>()) {
+    range_min = as_i.value();
   }
-  if (auto as_f = anno_max.tryAs<int>()) {
-    range_max = as_f.value();
+  if (auto as_i = anno_max.tryAs<int>()) {
+    range_max = as_i.value();
+  }
+  if( auto as_r = anno_rng.tryAs<int_range>()) {
+    range_min = as_r.value()._min;
+    range_max = as_r.value()._max;
   }
 
   ImGui::SliderInt(name.c_str(), &the_int, range_min, range_max);

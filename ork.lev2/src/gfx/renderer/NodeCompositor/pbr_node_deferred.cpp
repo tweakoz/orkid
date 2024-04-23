@@ -22,7 +22,7 @@
 #include <ork/kernel/datacache.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
-//#include <ork/gfx/image.inl>
+// #include <ork/gfx/image.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
@@ -64,14 +64,13 @@ struct PbrNodeImpl {
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
 
     auto rtg_gbuffer = _context->_rtgs_gbuffer->fetch(node->_bufferKey);
-    auto rtg_laccum = _context->_rtgs_laccum->fetch(node->_bufferKey);
+    auto rtg_laccum  = _context->_rtgs_laccum->fetch(node->_bufferKey);
 
     _timer.Start();
     EASY_BLOCK("pbr-_render");
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto RCFD = drawdata.RCFD();
     auto pbrcommon               = node->_pbrcommon;
-    auto targ                    = RCFD.GetTarget();
+    auto targ                    = RCFD->GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
@@ -79,11 +78,11 @@ struct PbrNodeImpl {
     auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
     /////////////////////////////////////////////////
-    RCFD.setUserProperty("rtg_gbuffer"_crc,rtg_gbuffer);
-    RCFD.setUserProperty("rtb_gbuffer"_crc,rtg_gbuffer->GetMrt(0));
-    RCFD.setUserProperty("rtb_accum"_crc,rtg_laccum->GetMrt(0) );
-    RCFD._renderingmodel = node->_renderingmodel;
-    RCFD._pbrcommon = pbrcommon;
+    RCFD->setUserProperty("rtg_gbuffer"_crc, rtg_gbuffer);
+    RCFD->setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->GetMrt(0));
+    RCFD->setUserProperty("rtb_accum"_crc, rtg_laccum->GetMrt(0));
+    RCFD->_renderingmodel = node->_renderingmodel;
+    RCFD->_pbrcommon      = pbrcommon;
     //////////////////////////////////////////////////////
     _context->renderUpdate(node, drawdata);
     auto VD = drawdata.computeViewData();
@@ -108,7 +107,7 @@ struct PbrNodeImpl {
     _context->_diffuseLevel                   = pbrcommon->diffuseLevel() * pbrcommon->environmentIntensity();
     _context->_depthFogDistance               = pbrcommon->depthFogDistance();
     _context->_depthFogPower                  = pbrcommon->depthFogPower();
-    float skybox_level                       = pbrcommon->skyboxLevel() * pbrcommon->environmentIntensity();
+    float skybox_level                        = pbrcommon->skyboxLevel() * pbrcommon->environmentIntensity();
     CIMPL->pushCPD(_context->_accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(rtg_laccum.get());
@@ -131,11 +130,11 @@ struct PbrNodeImpl {
     _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _context->_lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
 
-    int pbr_model = RCFD.getUserProperty("pbr_model"_crc).get<int>();
+    int pbr_model = RCFD->getUserProperty("pbr_model"_crc).get<int>();
 
     fxpipeline_ptr_t baselighting_pipeline = _context->_pipeline_envlighting_model0_mono;
 
-    switch( pbr_model ){
+    switch (pbr_model) {
       case 1:
         OrkAssert(false);
         break;
@@ -153,85 +152,77 @@ struct PbrNodeImpl {
     // pipeline wrapped (overrides here)
     /////////////////////////
 
-    RenderContextInstData dummy_rcid(&RCFD);
-    baselighting_pipeline->wrappedDrawCall(dummy_rcid,[=](){
+    RenderContextInstData dummy_rcid(RCFD);
+    baselighting_pipeline->wrappedDrawCall(dummy_rcid, [=]() {
+      _context->_lightingmtl->bindParamFloat(_context->_parDepthFogDistance, 1.0f / pbrcommon->depthFogDistance());
+      _context->_lightingmtl->bindParamFloat(_context->_parDepthFogPower, pbrcommon->depthFogPower());
 
-    _context->_lightingmtl->bindParamFloat(_context->_parDepthFogDistance, 1.0f / pbrcommon->depthFogDistance());
-    _context->_lightingmtl->bindParamFloat(_context->_parDepthFogPower, pbrcommon->depthFogPower());
+      /////////////////////////
 
-    /////////////////////////
+      _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
+      _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
+      _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+      _context->_lightingmtl->bindParamCTex(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-    _context->_lightingmtl->bindParamCTex(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+      OrkAssert(_context->brdfIntegrationTexture() != nullptr);
+      _context->_lightingmtl->bindParamCTex(_context->_parMapBrdfIntegration, _context->brdfIntegrationTexture().get());
 
-    OrkAssert(_context->brdfIntegrationTexture() != nullptr);
-    _context->_lightingmtl->bindParamCTex(_context->_parMapBrdfIntegration, _context->brdfIntegrationTexture().get());
+      _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
+      /////////////////////////
+      _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
+      _context->_lightingmtl->bindParamVec3(_context->_parAmbientLevel, pbrcommon->ambientLevel());
+      _context->_lightingmtl->bindParamFloat(_context->_parSpecularLevel, _context->_specularLevel);
+      _context->_lightingmtl->bindParamFloat(_context->_parDiffuseLevel, _context->_diffuseLevel);
+      /////////////////////////
 
-    /////////////////////////
-    _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
-    _context->_lightingmtl->bindParamVec3(_context->_parAmbientLevel, pbrcommon->ambientLevel());
-    _context->_lightingmtl->bindParamFloat(_context->_parSpecularLevel, _context->_specularLevel);
-    _context->_lightingmtl->bindParamFloat(_context->_parDiffuseLevel, _context->_diffuseLevel);
-    /////////////////////////
+      float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
 
-    float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
+      _context->_lightingmtl->bindParamFloat(_context->_parEnvironmentMipBias, pbrcommon->environmentMipBias());
+      _context->_lightingmtl->bindParamFloat(_context->_parEnvironmentMipScale, pbrcommon->environmentMipScale() * num_mips);
+      _context->_lightingmtl->bindParamFloat(_context->_parSpecularMipBias, pbrcommon->_specularMipBias);
+      /////////////////////////
+      _context->_lightingmtl->_rasterstate.SetZWriteMask(false);
+      _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
+      _context->_lightingmtl->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
 
-    _context->_lightingmtl->bindParamFloat(_context->_parEnvironmentMipBias, pbrcommon->environmentMipBias());
-    _context->_lightingmtl->bindParamFloat(_context->_parEnvironmentMipScale, pbrcommon->environmentMipScale()*num_mips);
-    _context->_lightingmtl->bindParamFloat(_context->_parSpecularMipBias, pbrcommon->_specularMipBias );
-    /////////////////////////
-    _context->_lightingmtl->_rasterstate.SetZWriteMask(false);
-    _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    _context->_lightingmtl->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
+      _context->bindViewParams(VD);
 
-    _context->bindViewParams(VD);
+      //////////////////////////////////////////////////////
+      // aux bindings
+      //////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////////
-    // aux bindings
-    //////////////////////////////////////////////////////
-
-    for( auto mapping : _context->_auxbindings ){
-      auto name = mapping.first;
-      auto mappingdata = mapping.second;
-      if( mappingdata->_param == nullptr ){
-        mappingdata->_param = _context->_lightingmtl->param(name);
+      for (auto mapping : _context->_auxbindings) {
+        auto name        = mapping.first;
+        auto mappingdata = mapping.second;
+        if (mappingdata->_param == nullptr) {
+          mappingdata->_param = _context->_lightingmtl->param(name);
+        }
+        OrkAssert(mappingdata->_param != nullptr);
+        auto param = mappingdata->_param;
+        if (auto as_tex = mappingdata->_var.tryAsShared<Texture>()) {
+          _context->_lightingmtl->bindParamCTex(param, as_tex.value().get());
+        } else if (auto as_mtx4 = mappingdata->_var.tryAs<fmtx4>()) {
+          _context->_lightingmtl->bindParamMatrix(param, as_mtx4.value());
+        } else if (auto as_float = mappingdata->_var.tryAs<float>()) {
+          _context->_lightingmtl->bindParamFloat(param, as_float.value());
+        } else if (auto as_double = mappingdata->_var.tryAs<double>()) {
+          _context->_lightingmtl->bindParamFloat(param, as_double.value());
+        } else if (auto as_vec2 = mappingdata->_var.tryAs<fvec2>()) {
+          _context->_lightingmtl->bindParamVec2(param, as_vec2.value());
+        } else if (auto as_vec3 = mappingdata->_var.tryAs<fvec3>()) {
+          _context->_lightingmtl->bindParamVec3(param, as_vec3.value());
+        } else if (auto as_vec4 = mappingdata->_var.tryAs<fvec4>()) {
+          _context->_lightingmtl->bindParamVec4(param, as_vec4.value());
+        }
       }
-      OrkAssert(mappingdata->_param != nullptr);
-      auto param = mappingdata->_param;
-      if( auto as_tex = mappingdata->_var.tryAsShared<Texture>() ){
-        _context->_lightingmtl->bindParamCTex(param, as_tex.value().get() );
-      }
-      else if( auto as_mtx4 = mappingdata->_var.tryAs<fmtx4>() ){
-        _context->_lightingmtl->bindParamMatrix(param, as_mtx4.value() );
-      }
-      else if( auto as_float = mappingdata->_var.tryAs<float>() ){
-        _context->_lightingmtl->bindParamFloat(param, as_float.value() );
-      }
-      else if( auto as_double = mappingdata->_var.tryAs<double>() ){
-        _context->_lightingmtl->bindParamFloat(param, as_double.value() );
-      }
-      else if( auto as_vec2 = mappingdata->_var.tryAs<fvec2>() ){
-        _context->_lightingmtl->bindParamVec2(param, as_vec2.value() );
-      }
-      else if( auto as_vec3 = mappingdata->_var.tryAs<fvec3>() ){
-        _context->_lightingmtl->bindParamVec3(param, as_vec3.value() );
-      }
-      else if( auto as_vec4 = mappingdata->_var.tryAs<fvec4>() ){
-        _context->_lightingmtl->bindParamVec4(param, as_vec4.value() );
-      }
-    }
 
-    //////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////
 
-
-    _context->_lightingmtl->commit();
-    RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
+      _context->_lightingmtl->commit();
+      RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
 
       DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
     });
@@ -252,7 +243,7 @@ struct PbrNodeImpl {
     // end frame
     /////////////////////////////////
 
-    CIMPL->popCPD(); // base lighting
+    CIMPL->popCPD();   // base lighting
     FBI->PopRtGroup(); // deferredRtg
 
     targ->debugPopGroup(); // "Deferred::LightAccum"
@@ -263,7 +254,7 @@ struct PbrNodeImpl {
 
   pbr_deferred_context_ptr_t _context;
   bool _needsinit = true;
-  int _sequence = 0;
+  int _sequence   = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
   enumeratedlights_ptr_t _enumeratedLights;
@@ -273,10 +264,10 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _shader_path = "orkshader://deferred";
+  _shader_path    = "orkshader://deferred";
   _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
-  _pbrcommon = std::make_shared<pbr::CommonStuff>();
+  _pbrcommon      = std::make_shared<pbr::CommonStuff>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,9 +284,9 @@ void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-pbr_deferred_context_ptr_t DeferredCompositingNodePbr::deferredContext(){
+pbr_deferred_context_ptr_t DeferredCompositingNodePbr::deferredContext() {
   auto impl = _impl.get<std::shared_ptr<PbrNodeImpl>>();
-  return impl->_context;  
+  return impl->_context;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t DeferredCompositingNodePbr::GetOutput() const {
@@ -306,10 +297,10 @@ rtgroup_ptr_t DeferredCompositingNodePbr::GetOutputGroup() const {
   auto CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX->_rtgs_laccum->fetch(_bufferKey);
 }
-void DeferredCompositingNodePbr::overrideShader( std::string path ){
-  auto CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
+void DeferredCompositingNodePbr::overrideShader(std::string path) {
+  auto CTX         = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   CTX->_shadername = path;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::deferrednode
+} // namespace ork::lev2::pbr::deferrednode

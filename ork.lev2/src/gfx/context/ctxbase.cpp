@@ -25,7 +25,7 @@ struct CtxBaseProgressPimpl { //
     rasstate.SetDepthTest(EDepthTest::ALWAYS);
     auto txi                                                    = context->TXI();
     _loadingtex                                                 = std::make_shared<Texture>();
-    _loadingtex->_varmap.makeValueForKey<bool>("loadimmediate") = true;
+    _loadingtex->_vars->makeValueForKey<bool>("loadimmediate") = true;
     txi->LoadTexture("data://misc/orkidprogressbg", _loadingtex);
     _material->SetTexture(ETEXDEST_DIFFUSE, _loadingtex.get());
   }
@@ -100,15 +100,15 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
 
       const auto tgtrect = ViewportRect(0, 0, TARGW, TARGH);
       ////////////////////////////////////////////////
-      lev2::RenderContextFrameData RCFD(_target);
-      _target->pushRenderContextFrameData(&RCFD);
+      auto RCFD = std::make_shared<lev2::RenderContextFrameData>(_target);
+      _target->pushRenderContextFrameData(RCFD);
       /////////////////////////////////
       lev2::CompositingPassData TOPCPD;
       TOPCPD.SetDstRect(tgtrect);
       TOPCPD.SetDstRect(tgtrect);
       static CompositingData _gdata;
       static auto _gimpl = _gdata.createImpl();
-      RCFD.pushCompositor(_gimpl);
+      RCFD->pushCompositor(_gimpl);
       _gimpl->pushCPD(TOPCPD);
       /////////////////////////////////
       auto FBI  = _target->FBI();
@@ -181,7 +181,7 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       _target->endFrame();
       _target->popRenderContextFrameData();
       _gimpl->popCPD();
-      RCFD.popCompositor();
+      RCFD->popCompositor();
 
     } else {
       auto pimpl = _pimpl_progress.makeShared<CtxBaseProgressPimpl>(_target);

@@ -1,25 +1,20 @@
 
 libblock lib_mmnoise {
 
-  float octavenoise(sampler3D krntex,
-                    vec3 pos,
-                    vec3 d, 
-                    float time, 
-                    int numoct){
-    float val = 0;
+  float octavenoise(sampler3D krntex, vec3 pos, vec3 d, float time, int numoct) {
+    float val  = 0;
     float freq = 1.0;
-    float amp = 0.25;
-    for( int i=0; i<numoct; i++ ){
-      vec3 uvw = pos*freq;
-      uvw += d*(time*0.1/freq);
-      val += texture(krntex,uvw).x*amp;
+    float amp  = 0.25;
+    for (int i = 0; i < numoct; i++) {
+      vec3 uvw = pos * freq;
+      uvw += d * (time * 0.1 / freq);
+      val += texture(krntex, uvw).x * amp;
       freq *= 0.7;
       amp *= 0.8;
       time *= 0.5;
     }
     return val;
   }
-
 
   //	<https://www.shadertoy.com/view/4dS3Wd>
   //	By Morgan McGuire @morgan3d, http://graphicscodex.com
@@ -145,4 +140,42 @@ libblock lib_cellnoise {
     d1.xy    = min(d1.xy, d1.wz);
     return min(d1.x, d1.y) * (9.0 / 12.0); // return a value scaled to 0.0->1.0
   }
+}
+
+libblock lib_pnoise {
+
+  // inigo's value noise w/ derivatives
+
+float hasha(vec2 p) {
+    // Assuming z is no longer needed. If needed, set a constant value or a new logic for z.
+    return fract(1e4 * sin(17.0 * p.x + 0.1) * (0.1 + abs(sin(p.y * 13.0))));
+}
+
+vec4 noised(vec2 x, float displacementScale, float normalStrength) {
+
+    vec2 i = floor(x);
+    vec2 w = fract(x);
+
+    // Cubic interpolation
+    vec2 u = w * w * (3.0 - 2.0 * w);
+    vec2 du = 6.0 * w * (1.0 - w);
+
+    float a = hasha(i + vec2(0, 0));
+    float b = hasha(i + vec2(1, 0));
+    float c = hasha(i + vec2(0, 1));
+    float d = hasha(i + vec2(1, 1));
+
+    float k0 = a;
+    float k1 = b - a;
+    float k2 = c - a;
+    float k3 = a - b - c + d; // Adjusted for 2D
+
+    float displace = displacementScale * (k0 + k1 * u.x + k2 * u.y + k3 * u.x * u.y);
+    
+    // Amplify the effect on the normals
+    // normalStrength is a new parameter to control how much the normal deviates from 'up'
+    vec3 N = normalize(vec3(normalStrength * du.x * (k1 + k3 * u.y), 1.0, normalStrength * du.y * (k2 + k3 * u.x)));
+
+    return vec4(displace, N.x, N.y, N.z);
+}
 }

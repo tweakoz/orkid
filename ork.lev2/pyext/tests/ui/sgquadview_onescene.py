@@ -113,7 +113,7 @@ class UiSgQuadViewTestApp(object):
 
     self.scenegraph = scenegraph.Scene(sg_params)
     self.grid_data = createGridData()
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_forward")
     self.grid_node = self.layer.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode

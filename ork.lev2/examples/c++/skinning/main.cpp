@@ -187,7 +187,7 @@ int main(int argc, char** argv, char** envp) {
 
       ////////////////////////////////////////////////
 
-      if (auto as_texid = tex->_varmap.typedValueForKey<GLuint>("gltexobj")) {
+      if (auto as_texid = tex->_vars->typedValueForKey<GLuint>("gltexobj")) {
         win->DrawList->AddImageQuad(
             (ImTextureID) (uint64_t) as_texid.value(), // GL texture handle
             pb,

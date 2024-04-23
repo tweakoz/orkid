@@ -20,8 +20,8 @@ struct ParticlesDrawableInst {
     _timer.Start();
 
     _testlight                      = std::make_shared<DynamicPointLight>();
-    _testlight->_inlineData._radius = 10.0f;
-    _testlight->_inlineData.mColor  = fvec3(1, 1, 1);
+    _testlight->_inlineData->_radius = 10.0f;
+    _testlight->_inlineData->mColor  = fvec3(1, 1, 1);
     _testlight->_xformgenerator     = [this]() -> fmtx4 { return _mymatrix; };
   }
   ///////////////////////////////////////////////////////////////
@@ -55,12 +55,12 @@ struct ParticlesDrawableInst {
     _updata->_abstime = abs_time;
     _graphinst->compute(_updata);
 
-    _testlight->_inlineData.mColor  = fvec3(1, 1, 1);
-    _testlight->_inlineData._radius = _data->_emitterRadius;
+    _testlight->_inlineData->mColor  = fvec3(1, 1, 1);
+    _testlight->_inlineData->_radius = _data->_emitterRadius;
 
     if (auto try_avgcolor = _graphinst->_vars.typedValueForKey<fvec4>("emission_color")) {
-      _testlight->_inlineData.mColor     = try_avgcolor.value().xyz();
-      _testlight->_inlineData._intensity = _data->_emitterIntensity;
+      _testlight->_inlineData->mColor     = try_avgcolor.value().xyz();
+      _testlight->_inlineData->_intensity = _data->_emitterIntensity;
     }
   }
   ///////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ struct ParticlesDrawableInst {
 
     auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto context                       = RCID.context();
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
     const auto& CPD                    = RCFD->topCPD();
     bool isPickState                   = context->FBI()->isPickState();
     if (not _initted) {

@@ -156,6 +156,10 @@ public:
     mfFogRange = float(frange);
   };
 
+  using varval_t = varmap::VarMap::value_type;
+
+  void bindParam(fxparam_constptr_t p, varval_t v);
+
   virtual void UpdateMVPMatrix(Context* pTARG) {
   }
   virtual void UpdateMMatrix(Context* pTARG) {
@@ -202,6 +206,9 @@ public:
 
   ork::varmap::VarMap _varmap;
   
+  std::unordered_map<fxparam_constptr_t, varval_t> _bound_params;
+  std::vector<FxPipeline::statelambda_t> _state_lambdas;
+
   //
 
   uint32_t _variant = 0; // crc32 of variant name

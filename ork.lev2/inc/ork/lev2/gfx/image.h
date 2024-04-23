@@ -21,6 +21,7 @@ struct Image;
 
 struct CompressedImage {
 
+  CompressedImage();
   EBufferFormat _format  = EBufferFormat::NONE;
   datablock_ptr_t _data   = nullptr;
   size_t _width          = 0;
@@ -29,7 +30,8 @@ struct CompressedImage {
   size_t _blocked_height = 0;
   size_t _depth          = 1;
   size_t _numcomponents  = 4; // 3 or 4
-  varmap::VarMap _varmap;
+  size_t _bytesPerChannel = 1;
+  varmap::varmap_ptr_t _vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,6 +50,7 @@ struct CompressedImageMipChain {
   size_t _width         = 0;
   size_t _height        = 0;
   size_t _depth         = 1;
+  size_t _bytesPerChannel = 1;
   size_t _numcomponents = 4; // 3 or 4
   varmap::VarMap _varmap;
   miplevels_t _levels;
@@ -57,12 +60,12 @@ struct CompressedImageMipChain {
 
 struct Image {
 
-  void init(size_t w, size_t h, size_t numc);
+  void init(size_t w, size_t h, size_t numc, int bytesperchannel);
   void initFromInMemoryFile(std::string fmtguess, const void* src, size_t srclen);
-  void initWithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer);
+  void initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer);
   void writeToFile(ork::file::Path outpath) const;
   Image clone() const;
-  void convertToRGBA(Image& imgout) const;
+  void convertToRGBA(Image& imgout,bool force_8bc=false) const;
   void downsample(Image& imgout) const;
 
   void compressDefault(CompressedImage& imgout) const;
@@ -73,15 +76,19 @@ struct Image {
   CompressedImageMipChain compressedMipChainBC7() const;
   #endif
 
-  void compressRGBA(CompressedImage& imgout) const;
-  CompressedImageMipChain compressedMipChainRGBA() const;
-  uint8_t* pixel(int x, int y);
-  const uint8_t* pixel(int x, int y) const;
+  void uncompressed(CompressedImage& imgout) const;
+  CompressedImageMipChain uncompressedMipChain() const;
+  uint8_t* pixel8(int x, int y);
+  const uint8_t* pixel8(int x, int y) const;
+  uint16_t* pixel16(int x, int y);
+  const uint16_t* pixel16(int x, int y) const;
   datablock_ptr_t _data  = nullptr;
+  EBufferFormat _format  = EBufferFormat::NONE;
   size_t _width         = 0;
   size_t _height        = 0;
   size_t _depth         = 1;
   size_t _numcomponents = 4; // 3 or 4
+  size_t _bytesPerChannel = 1;
   std::string _debugName;
   varmap::VarMap _varmap;
 };

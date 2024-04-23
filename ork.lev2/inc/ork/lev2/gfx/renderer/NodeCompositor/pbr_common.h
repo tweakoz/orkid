@@ -5,7 +5,6 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
-#include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/compositormaterial.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
@@ -45,6 +44,17 @@ struct PointLight {
     _dst     = fvec3(x, y, z);
     _counter = 256 + rand() & 0xff;
   }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct IrradianceMaps {
+
+  texture_ptr_t _filtenvSpecularMap;
+  texture_ptr_t _filtenvDiffuseMap;
+  texture_ptr_t _brdfIntegrationMap;
+  asset::loadrequest_ptr_t _loadRequest;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,15 +100,14 @@ struct CommonStuff : public ork::Object {
     return _depthFogPower;
   }
 
-  asset::loadrequest_ptr_t requestSkyboxTexture(const AssetPath& texture_path);
+  asset::loadrequest_ptr_t requestAndRefSkyboxTexture(const AssetPath& texture_path);
+  static irradiancemaps_ptr_t requestIrradianceMaps(const AssetPath& texture_path);
 
 
-  texture_ptr_t _filtenvSpecularMap;
-  texture_ptr_t _filtenvDiffuseMap;
+  irradiancemaps_ptr_t _irradianceMaps;
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
-  asset::vars_t _texAssetVarMap;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;
   float _environmentMipScale  = 1.0f;
@@ -110,6 +119,9 @@ struct CommonStuff : public ork::Object {
   float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
   fvec4 _clearColor;
+
+  bool _useDepthPrepass = true;
+  bool _useFloatColorBuffer = false;
 
 };
 

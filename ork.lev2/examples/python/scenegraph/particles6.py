@@ -113,6 +113,8 @@ class ParticlesApp(object):
                    constrainZ=True, 
                    up=vec3(0,1,0))
 
+    self.clerp = 0.0
+    
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
@@ -185,6 +187,22 @@ class ParticlesApp(object):
 
   ################################################
 
+  def onGpuUpdate(self,ctx):
+    C1 = vec3(0)
+    C1.lerp(vec3(1,0,0),vec3(1,.7,0),math.pow(self.clerp,0.5))
+    C2 = vec3(0)
+    C2.lerp(vec3(1,0.7,0),vec3(1,1,1),math.pow(self.clerp,0.5))
+    self.material.gradient.setColorStops({
+      #0.0:vec4(1,1,1,1),
+      0.0:vec4(0,0,0,1),
+      0.2:vec4(0,0,0,1),
+      0.5:vec4(C1,1),
+      0.7:vec4(C2,1),
+      1.0:vec4(0,0,0,1)
+      #1.0:vec4(1,1,1,1)
+    })
+
+
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
     self.counter += updinfo.deltatime
@@ -193,10 +211,12 @@ class ParticlesApp(object):
 
 
     if hasattr(self.ptc_data,"elliptical"):
+      
       T = abstime
       P1 = vec3(0,math.sin(T)+1.0,0)
       P2 = vec3(0,math.sin(T+math.pi)-1.0,0)
       
+      self.clerp = 0.5+math.sin(abstime)*0.5
       
       self.nodeP1.sgnode.worldTransform.translation = P1
       self.nodeP1.sgnode.worldTransform.scale = 0.1

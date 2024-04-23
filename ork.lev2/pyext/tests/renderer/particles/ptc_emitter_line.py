@@ -32,7 +32,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     setupUiCamera( app=self, #
@@ -59,10 +59,41 @@ class ParticlesApp(object):
   def onGpuInit(self,ctx):
 
     ###################################
+    # scene params
+    ###################################
+
+    sceneparams = VarMap() 
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(0.5)
+    sceneparams.SpecularIntensity = float(1.2)
+    sceneparams.DiffuseIntensity = float(1.0)
+    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.DepthFogDistance = float(1e6)
+    #sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+
+    ###################################
+    # post fx node
+    ###################################
+
+    postNode = DecompBlurPostFxNode()
+    postNode.threshold = 0.99
+    postNode.blurwidth = 4
+    postNode.blurfactor = 0.15
+    postNode.amount = 0.5
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToVarMap(sceneparams,"PostFxNode")
+
+    ###################################
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    #createSceneGraph(app=self,rendermodel="ForwardPBR")
+
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
 
     ###################################
     # create particle drawable 
@@ -81,7 +112,7 @@ class ParticlesApp(object):
       ("TURB","GRAV"),
       ("GRAV","STRK"),
     ]
-    createParticleData(self,ptc_data,ptc_connections,self.layer1)
+    createParticleData(self,ptc_data,ptc_connections,self.layer_fwd)
     self.POOL.pool_size = 131072 # max number of particles in pool
 
     gradient = GradientV4()

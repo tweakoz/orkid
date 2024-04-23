@@ -83,19 +83,19 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
   }
   _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
-  ork::lev2::RenderContextFrameData RCFD(_context); //
-  RCFD.pushCompositor(_compimpl);
-  _pfc->mUserData.set<ork::lev2::RenderContextFrameData*>(&RCFD);
+  auto RCFD = std::make_shared<ork::lev2::RenderContextFrameData>(_context); //
+  RCFD->pushCompositor(_compimpl);
+  _pfc->mUserData.set<ork::lev2::RenderContextFrameData*>(RCFD.get());
   ///////////////////////////////////////////////////////////////////////////
 
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
   glock.Lock(0x777);
-  _context->pushRenderContextFrameData(&RCFD);
+  _context->pushRenderContextFrameData(RCFD);
   ViewportRect tgt_rect(0, 0, PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
   // auto irenderer = _scenevp->GetRenderer();
   // irenderer->setContext(_context);
-  RCFD.SetLightManager(nullptr);
+  RCFD->SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
   auto DB = _scene._dbufcontext_SG->acquireForReadLocked();
   if (DB) {
@@ -124,10 +124,10 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     _pfc->beginPickRender();
 
     lev2::UiViewportRenderTarget rt(nullptr);
-    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    RCFD.setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
-    RCFD.setUserProperty("pixel_fetch_context"_crc, _pfc);
-    RCFD.setUserProperty("is_sg_pick"_crcu, true);
+    RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    RCFD->setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
+    RCFD->setUserProperty("pixel_fetch_context"_crc, _pfc);
+    RCFD->setUserProperty("is_sg_pick"_crcu, true);
     lev2::CompositingPassData CPD;
     CPD._debugName = "scenegraph_pick";
     CPD.AddLayer("All");
@@ -135,8 +135,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     CPD._ispicking     = true;
     CPD._irendertarget = &rt;
     ///////////////////////////////////////////////////////////////////////////
-    lev2::FrameRenderer framerenderer(RCFD, [&]() {});
-    lev2::CompositorDrawData drawdata(framerenderer);
+    lev2::CompositorDrawData drawdata(RCFD);
     drawdata._cimpl = _compimpl;
     drawdata._properties["StereoEnable"_crcu].set<bool>(false);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);

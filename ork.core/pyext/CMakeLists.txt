@@ -4,9 +4,9 @@ include (GenerateExportHeader)
 
 list( PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/share/cmake/pybind11 )
 
-message( "ORK_CORE" )
-message( $ENV{OBT_PYTHONHOME} )
-message( ${Python3_INCLUDE_DIRS} )
+#message( "ORK_CORE" )
+#message( $ENV{OBT_PYTHONHOME} )
+#message( ${Python3_INCLUDE_DIRS} )
 
 ###################################
 

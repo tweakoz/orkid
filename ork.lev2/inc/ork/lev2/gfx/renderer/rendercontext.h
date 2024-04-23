@@ -36,7 +36,7 @@ struct RenderContextInstData {
   static const RenderContextInstData Default;
   static rcid_ptr_t create(rcfd_ptr_t the_rcfd);
 
-  RenderContextInstData(const RenderContextFrameData* RCFD = nullptr);
+  RenderContextInstData(rcfd_ptr_t the_rcfd);
 
   //////////////////////////////////////
   // renderer interface
@@ -48,7 +48,7 @@ struct RenderContextInstData {
   void setRenderable(const IRenderable*);
   const XgmMaterialStateInst* GetMaterialInst() const;
   Context* context() const;
-
+  rcfd_ptr_t rcfd() const;
   //////////////////////////////////////
 
   fmtx4 worldMatrix() const;
@@ -77,7 +77,6 @@ struct RenderContextInstData {
 
   fxtechnique_constptr_t _forced_technique = nullptr;
   matrix_lamda_t _genMatrix;
-  const RenderContextFrameData* _RCFD       = nullptr;
   rcfd_ptr_t                    _held_rcfd  = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;

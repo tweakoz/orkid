@@ -215,7 +215,7 @@ public:
   ~DrawableBuffer();
 
   void setPreRenderCallback(int key, prerendercallback_t cb);
-  void invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const;
+  void invokePreRenderCallbacks(lev2::rcfd_ptr_t RCFD) const;
 
   ///////////////////////////////////////////////////////
 
@@ -362,6 +362,7 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
   virtual void _doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const {};
   fvec4 _modcolor;
   rendervar_strmap_t _assetvars;
+  varmap::varmap_ptr_t _vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -402,7 +403,7 @@ struct ModelDrawable : public Drawable {
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
 
   asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
-  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_t asset_vars);
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_ptr_t asset_vars);
   void bindModelAsset(asset::loadrequest_ptr_t loadreq);
   void bindModelAsset(xgmmodelassetptr_t asset);
 

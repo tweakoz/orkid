@@ -40,7 +40,7 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::drawEnqueuedRenderables() {
+void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   if (mPerformanceItem)
     mPerformanceItem->Enter();
@@ -49,10 +49,15 @@ void IRenderer::drawEnqueuedRenderables() {
   size_t renderQueueSize = _unsortedNodes.Size();
   _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
-  //printf( "renderQueueSize<%zu>\n", renderQueueSize);
+  //if(_debugLog){
+    //printf( "renderQueueSize<%zu>\n", renderQueueSize);
+  //}
 
   if (renderQueueSize == 0) {
     _target->debugPopGroup();
+    if(reset_after){
+      resetQueue();
+    }
     return;
   }
 
@@ -63,13 +68,15 @@ void IRenderer::drawEnqueuedRenderables() {
 
   _sortkeys.resize(renderQueueSize);
   for (size_t i = 0; i < renderQueueSize; i++) {
-    int skey = _sortedNodes[i]->_renderable->ComposeSortKey(this);
+    int skey     = _sortedNodes[i]->_renderable->ComposeSortKey(this);
     _sortkeys[i] = skey;
-    // printf( "skey<%d:%d>\n", i, skey );
+    if(false){ //_debugLog){
+      printf( "skey<%d:%d>\n", i, skey );
+    }
   }
 
   ///////////////////////////////////////////////////////
-  //orkprintf( "rqsize<%d>\n", renderQueueSize );
+  // orkprintf( "rqsize<%d>\n", renderQueueSize );
 
   U32& first = (*_sortkeys.begin());
 
@@ -90,7 +97,7 @@ void IRenderer::drawEnqueuedRenderables() {
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
-    //printf( "sorted<%d:%d>\n", i, sorted );
+    // printf( "sorted<%d:%d>\n", i, sorted );
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
@@ -101,13 +108,16 @@ void IRenderer::drawEnqueuedRenderables() {
   float favgrun = fruntot / float(imdlcount);
   ///////////////////////////////////////////////////////
 
-  //resetQueue();
+  // resetQueue();
   ///////////////////////////////////////////////////////
 
   if (mPerformanceItem)
     mPerformanceItem->Exit();
 
   _target->debugPopGroup();
+    if(reset_after){
+      resetQueue();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,6 +125,7 @@ void IRenderer::drawEnqueuedRenderables() {
 void IRenderer::resetQueue(void) {
   _unsortedNodes.Reset();
   _models.clear();
+  _skeletons.clear();
   _callbacks.clear();
 }
 
@@ -126,9 +137,52 @@ void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const
     RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
     RCID.setRenderable(&cbren);
-    context->RefModColor()=cbren._modColor;
+    context->RefModColor() = cbren._modColor;
     cbren.GetRenderCallback()(RCID);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ModelRenderable& IRenderer::enqueueModel() {
+  ModelRenderable& rend = _models.create();
+  enqueueRenderable(&rend);
+  return rend;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SkeletonRenderable& IRenderer::enqueueSkeleton() {
+  SkeletonRenderable& rend = _skeletons.create();
+  enqueueRenderable(&rend);
+  return rend;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CallbackRenderable& IRenderer::enqueueCallback() {
+  CallbackRenderable& rend = _callbacks.create();
+  enqueueRenderable(&rend);
+  return rend;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Each Renderer implements this function as a helper for Renderables when composing their sort keys
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void IRenderer::SetPerformanceItem(PerformanceItem* perfitem) {
+  mPerformanceItem = perfitem;
+}
+
+Context* IRenderer::GetTarget() const {
+  return _target;
+}
+void IRenderer::setContext(Context* ptarg) {
+  _target = ptarg;
+}
+
+void IRenderer::fakeDraw() {
+  resetQueue();
 }
 
 }} // namespace ork::lev2

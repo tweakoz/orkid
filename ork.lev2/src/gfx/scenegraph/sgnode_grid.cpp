@@ -26,16 +26,30 @@ struct GridRenderImpl {
     _colortexture = texasset->GetTexture();
     OrkAssert(_colortexture);
 
+    load_req = std::make_shared<asset::LoadRequest>(_griddata->_normaltexpath);
+    texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(texasset);
+
+    _normaltexture = texasset->GetTexture();
+    OrkAssert(_normaltexture);
+
     _pbrmaterial       = new PBRMaterial();
     _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
     _pbrmaterial->_shaderpath = "orkshader://grid";
     _pbrmaterial->_texColor = _colortexture;
+    _pbrmaterial->_texNormal = _normaltexture;
     _pbrmaterial->gpuInit(ctx);
     _pbrmaterial->_metallicFactor  = 0.0f;
     _pbrmaterial->_roughnessFactor = 1.0f;
     _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
+    _pbrmaterial->_doubleSided = true;
 
     _fxcache = _pbrmaterial->pipelineCache();
+
+    auto as_fstyle = _pbrmaterial->_as_freestyle;
+    _paramAuxA = as_fstyle->param("AuxA");
+    _paramAuxB = as_fstyle->param("AuxB");
+
 
     _initted                   = true;
   }
@@ -49,7 +63,7 @@ struct GridRenderImpl {
 
     bool isPickState = context->FBI()->isPickState();
 
-    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto RCFD = RCID.rcfd();
 
     const auto& CPD  = RCFD->topCPD();
 
@@ -65,8 +79,8 @@ struct GridRenderImpl {
     auto uv_topr  = fvec2(+uvextent, -uvextent);
     auto uv_botr  = fvec2(+uvextent, +uvextent);
     auto uv_botl  = fvec2(-uvextent, +uvextent);
-    auto normal   = fvec3(0, 1, 0);
-    auto binormal = fvec3(1, 0, 1);
+    auto normal   = fvec3(0.5, 0.5, 1);
+    auto binormal = fvec3(0, 0, 1);
 
     auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, 0xffffffff);
     auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, 0xffffffff);
@@ -90,7 +104,7 @@ struct GridRenderImpl {
     auto mtxi = context->MTXI();
     auto gbi  = context->GBI();
     mtxi->PushMMatrix(fmtx4::Identity());
-    fvec4 modcolor = fcolor4::Green();
+    fvec4 modcolor = _griddata->_modcolor;
     if (isPickState) {
       auto pickBuf = context->FBI()->currentPickBuffer();
       //uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)nullptr) : 0;
@@ -100,7 +114,24 @@ struct GridRenderImpl {
 
     auto pipeline = _fxcache->findPipeline(RCID);
     OrkAssert(pipeline);
+
+    
     pipeline->wrappedDrawCall(RCID, [&]() {
+      pipeline->_set_typed_param(RCID,_paramAuxA,
+        fvec4( _griddata->_intensityA,
+               _griddata->_intensityB,
+               _griddata->_intensityC,
+               _griddata->_intensityD));
+      pipeline->_set_typed_param(RCID,_paramAuxB,
+        fvec4( _griddata->_lineWidth,0,0,0)
+        );
+
+      if(_griddata->_shader_suffix == "_V3"){
+         // set additive
+         _pbrmaterial->_rasterstate.SetBlending(Blending::ALPHA);
+          context->RSI()->BindRasterState(_pbrmaterial->_rasterstate, true);
+         
+      }
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
     });
 
@@ -115,7 +146,10 @@ struct GridRenderImpl {
   PBRMaterial* _pbrmaterial;
 
   texture_ptr_t _colortexture;
+  texture_ptr_t _normaltexture;
   fxpipelinecache_constptr_t _fxcache;
+  fxparam_constptr_t _paramAuxA;
+  fxparam_constptr_t _paramAuxB;
   bool _initted = false;
 
 };
@@ -142,6 +176,7 @@ drawable_ptr_t GridDrawableData::createDrawable() const {
 
 GridDrawableData::GridDrawableData() {
   _colortexpath = "lev2://textures/gridcell_grey";
+  _normaltexpath = "src://effect_textures/default_normal.dds";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

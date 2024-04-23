@@ -141,10 +141,10 @@ Context::Context()
 
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();
-  static auto RCFD   = new RenderContextFrameData(this);
+  auto RCFD   = std::make_shared<RenderContextFrameData>(this);
   RCFD->pushCompositor(_gimpl);
   _defaultrcfd       = RCFD;
-  pushRenderContextFrameData(_defaultrcfd);
+  pushRenderContextFrameData(RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

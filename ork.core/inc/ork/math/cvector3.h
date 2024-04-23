@@ -37,6 +37,9 @@ template <typename T> struct Vector3 final
   Vector3();
   explicit Vector3(T _x, T _y, T _z); 
   explicit Vector3(T _a); 
+
+  static Vector3 fromScalar(T _x);
+
   Vector3(const base_t& vec);        
   Vector3(const Vector3& vec);        
   Vector3(const Vector4<T>& vec);
@@ -86,6 +89,9 @@ template <typename T> struct Vector3 final
 
   void lerp(const Vector3& from, const Vector3& to, T par); 
   void serp(const Vector3& PA, const Vector3& PB, const Vector3& PC, const Vector3& PD, T par_x, T par_y); // 2D interp
+
+  Vector3 floor() const;
+  Vector3 fract() const;
 
   void set(T _x, T _y, T _z) {
     this->x = _x;

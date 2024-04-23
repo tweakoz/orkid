@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 
@@ -42,6 +43,12 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   auto cbdrawable_type = //
       py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable");
   type_codec->registerStdCodec<callback_drawable_ptr_t>(cbdrawable_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto mdldrawable_type = py::class_<ModelDrawable,Drawable, model_drawable_ptr_t>(module_lev2, "ModelDrawable")
+                           .def_property_readonly(
+                               "modelinst",
+                               [](model_drawable_ptr_t drw) -> xgmmodelinst_ptr_t { return drw->_modelinst; });
+  type_codec->registerStdCodec<model_drawable_ptr_t>(mdldrawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct InstanceMatricesProxy {
     instanceddrawinstancedata_ptr_t _instancedata;
@@ -115,6 +122,34 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
               [](griddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
           .def_property(
+              "modcolor",
+              [](griddrawabledataptr_t drw) -> fvec3 { return drw->_modcolor; },
+              [](griddrawabledataptr_t drw, fvec3 val) { drw->_modcolor = val; })
+          .def_property(
+              "intensityA",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityA; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityA = val; })
+          .def_property(
+              "intensityB",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityB; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityB = val; })
+          .def_property(
+              "intensityC",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityC; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityC = val; })
+          .def_property(
+              "intensityD",
+              [](griddrawabledataptr_t drw) -> float { return drw->_intensityD; },
+              [](griddrawabledataptr_t drw, float val) { drw->_intensityD = val; })
+          .def_property(
+              "lineWidth",
+              [](griddrawabledataptr_t drw) -> float { return drw->_lineWidth; },
+              [](griddrawabledataptr_t drw, float val) { drw->_lineWidth = val; })
+          .def_property(
+              "modcolor",
+              [](griddrawabledataptr_t drw) -> fvec3 { return drw->_modcolor; },
+              [](griddrawabledataptr_t drw, fvec3 val) { drw->_modcolor = val; })
+          .def_property(
               "extent",
               [](griddrawabledataptr_t drw) -> float { return drw->_extent; },
               [](griddrawabledataptr_t drw, float val) { drw->_extent = val; })
@@ -161,9 +196,34 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](groundplane_drawabledataptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
           .def_property(
               "pipeline",
-              [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline; },
-              [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline = pipe; });
+              [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline_color; },
+              [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline_color = pipe; });
   type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto clipmapdrawdata_type = //
+      py::class_<ClipMapDrawableData, DrawableData, clipmapdrawabledata_ptr_t>(module_lev2, "GeoClipMapDrawable")
+          .def(py::init<>())
+          .def_property(
+              "pbrmaterial",
+              [](clipmapdrawabledata_ptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },
+              [](clipmapdrawabledata_ptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
+          .def_property(
+              "numLevels",
+              [](clipmapdrawabledata_ptr_t drw) -> int { return drw->_levels; },
+              [](clipmapdrawabledata_ptr_t drw, int val) { drw->_levels = val; })
+          .def_property(
+              "ringSize",
+              [](clipmapdrawabledata_ptr_t drw) -> int { return drw->_ringSize; },
+              [](clipmapdrawabledata_ptr_t drw, int val) { drw->_ringSize = val; })
+          .def_property(
+              "baseQuadSize",
+              [](clipmapdrawabledata_ptr_t drw) -> float { return drw->_baseQuadSize; },
+              [](clipmapdrawabledata_ptr_t drw, float val) { drw->_baseQuadSize = val; })
+            .def_property(
+              "circle",
+              [](clipmapdrawabledata_ptr_t drw) -> bool { return drw->_circle; },
+              [](clipmapdrawabledata_ptr_t drw, bool val) { drw->_circle = val; });
+  type_codec->registerStdCodec<clipmapdrawabledata_ptr_t>(clipmapdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //
       py::class_<StringDrawableData, DrawableData, string_drawabledata_ptr_t>(module_lev2, "StringDrawableData")
@@ -189,12 +249,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
               [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
           .def("onRender", [](string_drawabledata_ptr_t drw, py::object callback) {
-            drw->_onRender = [callback](RenderContextInstData& RCID) {
-              auto RCFD = RCID._RCFD;
+            drw->_vars->makeValueForKey<py::object>("_hold_callback") = callback;
+            drw->_onRender = [drw](RenderContextInstData& RCID) {
+              auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;
-              callback(int(vpID));
+              auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
+              cb(int(vpID));
             };
           });
   type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
@@ -284,12 +346,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_text_pipeline; },
               [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; })
           .def("onRender", [](labeled_point_drawabledata_ptr_t drw, py::object callback) {
-            drw->_onRender = [callback](RenderContextInstData& RCID) {
-              auto RCFD = RCID._RCFD;
+            drw->_vars->makeValueForKey<py::object>("_hold_callback") = callback;
+            drw->_onRender = [drw](RenderContextInstData& RCID) {
+              auto RCFD = RCID.rcfd();
               auto DB   = RCFD->GetDB();
               auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
               py::gil_scoped_acquire acquire;
-              callback(int(vpID));
+              auto cb = drw->_vars->typedValueForKey<py::object>("_hold_callback").value();
+              cb(int(vpID));
             };
           });
   type_codec->registerStdCodec<labeled_point_drawabledata_ptr_t>(labeledpoint_drawdata_type);

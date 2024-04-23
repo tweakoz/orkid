@@ -110,6 +110,14 @@ void pyinit_gfx_camera(py::module& module_lev2) {
                 uic->QuatC = quat;
               })
           .def_property(
+              "positionOffset",
+              [](ezuicam_ptr_t uic) -> fvec3 { //
+                return uic->_position_offset;
+              },
+              [](ezuicam_ptr_t uic, fvec3 offs) { //
+                uic->_position_offset = offs;
+              })
+          .def_property(
               "loc",
               [](ezuicam_ptr_t uic) -> fvec3 { //
                 return uic->CamLoc;
@@ -161,6 +169,11 @@ void pyinit_gfx_camera(py::module& module_lev2) {
               },
               [](ezuicam_ptr_t uic, float value) { //
                 uic->_loc_max = value;
+              })
+          .def_property_readonly(
+              "zDir",
+              [](ezuicam_ptr_t uic) -> fvec3 { //
+                return uic->_zdir;
               })
           ;
   type_codec->registerStdCodec<ezuicam_ptr_t>(ezuicam_type);

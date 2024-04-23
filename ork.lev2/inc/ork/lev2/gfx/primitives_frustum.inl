@@ -103,6 +103,33 @@ struct FrustumPrimitive {
     return layer->createDrawableNode(named, drw);
   }
   //////////////////////////////////////////////////////////////////////////////
+  inline scenegraph::drawable_node_ptr_t createNodeWithMaterial(
+      std::string named, //
+      scenegraph::layer_ptr_t layer,
+      material_ptr_t material) {
+    auto drw = std::make_shared<CallbackDrawable>(nullptr);
+
+    //auto permu = std::make_shared<FxPipelinePermutation>();
+    auto fxcache = material->pipelineCache();
+
+
+
+
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      auto material_inst = fxcache->findPipeline(RCID);
+      material_inst->wrappedDrawCall(RCID, //
+                                     [this, context]() { //
+                                        this->renderEML(context); //
+                                    });
+    });
+    auto node = layer->createDrawableNode(named, drw);
+    //node->_userdata->template makeValueForKey<fxpipelinepermutation_ptr_t*>("_permu") = permu;
+    node->_userdata->template makeValueForKey<fxpipelinecache_constptr_t>("_fxcache") = fxcache;
+    //node->_userdata->template makeValueForKey<fxpipeline_ptr_t>("_mtlinst") = material_inst;
+    return node;
+  }
+  //////////////////////////////////////////////////////////////////////////////
   dvec4 _colorTop;
   dvec4 _colorBottom;
   dvec4 _colorNear;
