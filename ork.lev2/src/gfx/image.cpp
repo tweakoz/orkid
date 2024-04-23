@@ -150,11 +150,11 @@ void Image::writeToFile(ork::file::Path outpath) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint8_t* Image::pixel(int x, int y) {
+uint8_t* Image::pixel8(int x, int y) {
   int index = (y * _width + x) * _numcomponents;
   return ((uint8_t*)_data->data()) + index;
 }
-const uint8_t* Image::pixel(int x, int y) const {
+const uint8_t* Image::pixel8(int x, int y) const {
   int index = (y * _width + x) * _numcomponents;
   return ((const uint8_t*)_data->data()) + index;
 }
@@ -186,11 +186,11 @@ void Image::downsample(Image& imgout) const {
         case EBufferFormat::R8:
         case EBufferFormat::RGB8:
         case EBufferFormat::RGBA8: {
-          auto outpixel     = imgout.pixel(x, y);
-          auto inppixelXAYA = pixel(xa, ya);
-          auto inppixelXBYA = pixel(xb, ya);
-          auto inppixelXAYB = pixel(xa, yb);
-          auto inppixelXBYB = pixel(xb, yb);
+          auto outpixel     = imgout.pixel8(x, y);
+          auto inppixelXAYA = pixel8(xa, ya);
+          auto inppixelXBYA = pixel8(xb, ya);
+          auto inppixelXAYB = pixel8(xa, yb);
+          auto inppixelXBYB = pixel8(xb, yb);
           for (size_t c = 0; c < _numcomponents; c++) {
             double xaya  = double(inppixelXAYA[c]);
             double xbya  = double(inppixelXBYA[c]);
@@ -202,8 +202,8 @@ void Image::downsample(Image& imgout) const {
           }
           break;
         }
-        case EBufferFormat::R16: 
-        case EBufferFormat::RGB16: 
+        case EBufferFormat::R16:
+        case EBufferFormat::RGB16:
         case EBufferFormat::RGBA16: {
           auto outpixel     = imgout.pixel16(x, y);
           auto inppixelXAYA = pixel16(xa, ya);
@@ -222,7 +222,7 @@ void Image::downsample(Image& imgout) const {
           break;
         }
         default:
-          printf( "UNKNOWN FORMAT<%08x>\n", _format);
+          printf("UNKNOWN FORMAT<%08x>\n", _format);
           OrkAssert(false);
           break;
       }
@@ -243,7 +243,7 @@ void Image::downsample(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
-  switch(numc){
+  switch (numc) {
     case 1:
       _format = EBufferFormat::R8;
       break;
@@ -273,8 +273,14 @@ void Image::initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::convertToRGBA(Image& imgout) const {
-  imgout.init(_width, _height, 4, _bytesPerChannel);
+void Image::convertToRGBA(Image& imgout, bool force_8bc) const {
+
+  if (force_8bc) {
+    imgout.init(_width, _height, 4, 1);
+  } else {
+    imgout.init(_width, _height, 4, _bytesPerChannel);
+  }
+
   switch (_numcomponents) {
     case 1:
       if (_bytesPerChannel == 1) {
@@ -282,25 +288,39 @@ void Image::convertToRGBA(Image& imgout) const {
         auto out_pixels = (uint8_t*)imgout._data->data();
         for (size_t y = 0; y < imgout._height; y++) {
           for (size_t x = 0; x < imgout._width; x++) {
-            auto inppixel = pixel(x, y);
-            auto outpixel = imgout.pixel(x, y);
-            outpixel[0]   = inppixel[0];
-            outpixel[1]   = inppixel[0];
-            outpixel[2]   = inppixel[0];
-            outpixel[3]   = 0xff;
+            auto inppixels = pixel8(x, y);
+            auto outpixels = imgout.pixel8(x, y);
+            outpixels[0]   = inppixels[0];
+            outpixels[1]   = inppixels[0];
+            outpixels[2]   = inppixels[0];
+            outpixels[3]   = 0xff;
           }
         }
       } else if (_bytesPerChannel == 2) {
         auto inp_pixels = (const uint16_t*)_data->data();
-        auto out_pixels = (uint16_t*)imgout._data->data();
-        for (size_t y = 0; y < imgout._height; y++) {
-          for (size_t x = 0; x < imgout._width; x++) {
-            auto inppixel = pixel16(x, y);
-            auto outpixel = imgout.pixel16(x, y);
-            outpixel[0]   = inppixel[0];
-            outpixel[1]   = inppixel[0];
-            outpixel[2]   = inppixel[0];
-            outpixel[3]   = 0xffff;
+        if (force_8bc) {
+          auto out_pixels = (uint8_t*)imgout._data->data();
+          for (size_t y = 0; y < imgout._height; y++) {
+            for (size_t x = 0; x < imgout._width; x++) {
+              auto inppixels = pixel16(x, y);
+              auto outpixels = imgout.pixel8(x, y);
+              outpixels[0]   = uint8_t(inppixels[0] >> 8);
+              outpixels[1]   = uint8_t(inppixels[0] >> 8);
+              outpixels[2]   = uint8_t(inppixels[0] >> 8);
+              outpixels[3]   = 0xff;
+            }
+          }
+        } else {
+          auto out_pixels = (uint16_t*)imgout._data->data();
+          for (size_t y = 0; y < imgout._height; y++) {
+            for (size_t x = 0; x < imgout._width; x++) {
+              auto inppixels = pixel16(x, y);
+              auto outpixels = imgout.pixel16(x, y);
+              outpixels[0]   = inppixels[0];
+              outpixels[1]   = inppixels[0];
+              outpixels[2]   = inppixels[0];
+              outpixels[3]   = 0xffff;
+            }
           }
         }
       }
@@ -311,25 +331,39 @@ void Image::convertToRGBA(Image& imgout) const {
         auto out_pixels = (uint8_t*)imgout._data->data();
         for (size_t y = 0; y < imgout._height; y++) {
           for (size_t x = 0; x < imgout._width; x++) {
-            auto inppixel = pixel(x, y);
-            auto outpixel = imgout.pixel(x, y);
-            outpixel[0]   = inppixel[0];
-            outpixel[1]   = inppixel[1];
-            outpixel[2]   = inppixel[2];
-            outpixel[3]   = 0xff;
+            auto inppixels = pixel8(x, y);
+            auto outpixels = imgout.pixel8(x, y);
+            outpixels[0]   = inppixels[0];
+            outpixels[1]   = inppixels[1];
+            outpixels[2]   = inppixels[2];
+            outpixels[3]   = 0xff;
           }
         }
       } else if (_bytesPerChannel == 2) {
         auto inp_pixels = (const uint16_t*)_data->data();
-        auto out_pixels = (uint16_t*)imgout._data->data();
-        for (size_t y = 0; y < imgout._height; y++) {
-          for (size_t x = 0; x < imgout._width; x++) {
-            auto inppixel = pixel16(x, y);
-            auto outpixel = imgout.pixel16(x, y);
-            outpixel[0]   = inppixel[0];
-            outpixel[1]   = inppixel[1];
-            outpixel[2]   = inppixel[2];
-            outpixel[3]   = 0xffff;
+        if (force_8bc) {
+          auto out_pixels = (uint8_t*)imgout._data->data();
+          for (size_t y = 0; y < imgout._height; y++) {
+            for (size_t x = 0; x < imgout._width; x++) {
+              auto inppixels = pixel16(x, y);
+              auto outpixels = imgout.pixel8(x, y);
+              outpixels[0]   = uint8_t(inppixels[0] >> 8);
+              outpixels[1]   = uint8_t(inppixels[1] >> 8);
+              outpixels[2]   = uint8_t(inppixels[2] >> 8);
+              outpixels[3]   = 0xff;
+            }
+          }
+        } else {
+          auto out_pixels = (uint16_t*)imgout._data->data();
+          for (size_t y = 0; y < imgout._height; y++) {
+            for (size_t x = 0; x < imgout._width; x++) {
+              auto inppixels = pixel16(x, y);
+              auto outpixels = imgout.pixel16(x, y);
+              outpixels[0]   = inppixels[0];
+              outpixels[1]   = inppixels[1];
+              outpixels[2]   = inppixels[2];
+              outpixels[3]   = 0xffff;
+            }
           }
         }
       }
@@ -340,9 +374,23 @@ void Image::convertToRGBA(Image& imgout) const {
         auto out_pixels = (uint8_t*)imgout._data->data();
         memcpy_fast(out_pixels, inp_pixels, _width * _height * 4);
       } else if (_bytesPerChannel == 2) {
-        auto inp_pixels16 = (const uint16_t*)_data->data();
-        auto out_pixels16 = (uint16_t*)imgout._data->data();
-        memcpy_fast(out_pixels16, inp_pixels16, _width * _height * 4 * 2);
+        if (force_8bc) {
+          auto out_pixels = (uint8_t*)imgout._data->data();
+          for (size_t y = 0; y < imgout._height; y++) {
+            for (size_t x = 0; x < imgout._width; x++) {
+              auto inppixels = pixel16(x, y);
+              auto outpixels = imgout.pixel8(x, y);
+              outpixels[0]   = uint8_t(inppixels[0] >> 8);
+              outpixels[1]   = uint8_t(inppixels[1] >> 8);
+              outpixels[2]   = uint8_t(inppixels[2] >> 8);
+              outpixels[3]   = uint8_t(inppixels[3] >> 8);
+            }
+          }
+        } else {
+          auto inp_pixels16 = (const uint16_t*)_data->data();
+          auto out_pixels16 = (uint16_t*)imgout._data->data();
+          memcpy_fast(out_pixels16, inp_pixels16, _width * _height * 4 * 2);
+        }
       }
       break;
     default:
@@ -406,7 +454,7 @@ void Image::compressBC7(CompressedImage& imgout) const {
   imgout._data = std::make_shared<DataBlock>();
 
   Image src_as_rgba;
-  convertToRGBA(src_as_rgba);
+  convertToRGBA(src_as_rgba, true);
 
   ork::Timer timer;
   timer.Start();
@@ -474,16 +522,22 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
 
 void Image::uncompressed(CompressedImage& imgout) const {
   deco::printf(
-      _image_deco, "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>\n", _debugName.c_str(), _width, _height, _bytesPerChannel, _format);
+      _image_deco,
+      "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>\n",
+      _debugName.c_str(),
+      _width,
+      _height,
+      _bytesPerChannel,
+      _format);
   imgout._format = _format;
   OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
   imgout._height         = _height;
-  imgout._blocked_width  = 0;  
-  imgout._blocked_height = 0; 
+  imgout._blocked_width  = 0;
+  imgout._blocked_height = 0;
   imgout._numcomponents  = _numcomponents;
   imgout._data           = std::make_shared<DataBlock>();
-  size_t data_size = _width * _height * _numcomponents * _bytesPerChannel;
+  size_t data_size       = _width * _height * _numcomponents * _bytesPerChannel;
   ork::Timer timer;
   timer.Start();
   std::atomic<int> pending = 0;
