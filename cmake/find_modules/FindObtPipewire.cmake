@@ -12,13 +12,13 @@ if(NOT OBT_PIPEWIRE_PRAGMA_ONCE)
 
     find_path( ObtPipewireSpaInclude_DIR
             NAMES spa/buffer/buffer.h 
-            HINTS $ENV{OBT_STAGE}/include
+            HINTS $ENV{OBT_STAGE}/include /usr/include
             PATH_SUFFIXES spa spa-0.2
             )
 
     find_path( ObtPipewireInclude_DIR 
             NAMES pipewire/pipewire.h 
-            HINTS $ENV{OBT_STAGE}/include
+            HINTS $ENV{OBT_STAGE}/include /usr/include
             PATH_SUFFIXES pipewire pipewire-0.3
             )
 
