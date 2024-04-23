@@ -54,6 +54,10 @@ class EllipticalParticleSystem(object):
     self.emitter.inputs.LifeSpan = 1
     self.emitter.inputs.EmissionRate = 250
     self.emitter.inputs.EmissionVelocity = 0.1
+    self.emitter.inputs.MinU = 0
+    self.emitter.inputs.MaxU = 1
+    self.emitter.inputs.MinV = 0
+    self.emitter.inputs.MaxV = 1
 
     self.gravity.inputs.G = 0.01
     self.gravity.inputs.Mass = 1

@@ -36,31 +36,44 @@ class EllipticalParticleSystem(object):
     self.emitter    = self.graphdata.create("EMITN",particles.EllipticalEmitter)
     self.globals    = self.graphdata.create("GLOB",particles.Globals)
     self.turbulence = self.graphdata.create("TURB",particles.Turbulence)
+    self.vortex = self.graphdata.create("VORT",particles.Vortex)
+    self.elliptical = self.graphdata.create("SPHR",particles.EllipticalAttractor)
     self.gravity = self.graphdata.create("GRAV",particles.Gravity)
 
     self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
 
-    self.ptc_pool.pool_size = 15000 # max number of particles in pool
+    self.ptc_pool.pool_size = 25000 # max number of particles in pool
 
     # connect modules in a chain configuration
 
     self.graphdata.connect( self.emitter.inputs.pool,    self.ptc_pool.outputs.pool )
     self.graphdata.connect( self.turbulence.inputs.pool, self.emitter.outputs.pool )
-    self.graphdata.connect( self.gravity.inputs.pool,     self.turbulence.outputs.pool )
+    self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
+    self.graphdata.connect( self.elliptical.inputs.pool, self.vortex.outputs.pool )
+    self.graphdata.connect( self.gravity.inputs.pool,    self.elliptical.outputs.pool )
     self.graphdata.connect( self.streaks.inputs.pool,    self.gravity.outputs.pool )
     
-    self.emitter.inputs.LifeSpan = 1
-    self.emitter.inputs.EmissionRate = 250
+    self.emitter.inputs.LifeSpan = 0.5
+    self.emitter.inputs.EmissionRate = 1500
     self.emitter.inputs.EmissionVelocity = 0.1
     self.emitter.inputs.MinU = 0
     self.emitter.inputs.MaxU = 1
     self.emitter.inputs.MinV = 0
     self.emitter.inputs.MaxV = 1
 
+    self.vortex.inputs.VortexStrength = -5
+    self.vortex.inputs.OutwardStrength = -1
+    self.vortex.inputs.Falloff = 0.001
+
     self.gravity.inputs.G = 0.01
     self.gravity.inputs.Mass = 1
     self.gravity.inputs.OthMass = 1
     self.gravity.inputs.MinDistance = 1
+
+    self.elliptical.inputs.Inertia = 1/100.0
+    self.elliptical.inputs.P1 = vec3(0,1,0)
+    self.elliptical.inputs.P2 = vec3(0,-1,.1)
+    self.elliptical.inputs.Dampening = 0.999
 
     self.turbulence.inputs.Amount = vec3(1,1,1)
 
@@ -70,9 +83,12 @@ class EllipticalParticleSystem(object):
     self.material = particles.GradientMaterial.createShared();
     self.material.blending = tokens.ADDITIVE
     self.material.depthtest = tokens.LEQUALS
+    self.material.colorIntensity = 3
     self.material.gradient.setColorStops({
-      0.0:vec4(1,1,0,1)*0.7,
-      1.0:vec4(1,0,0,1)*0.7
+      0.0:vec4(1,1,1,1),
+      0.4:vec4(1,0,1,1),
+      0.7:vec4(.2,.4,1,1),
+      1.0:vec4(0,0,0,1)
     })
     self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
 
@@ -98,31 +114,48 @@ class EllipticalParticleSystem(object):
     #self.material.color = self.color
 
 
-    if hasattr(self,"emitter"):
-      T = abstime
+    if hasattr(self,"elliptical"):
+      T = abstime*0.25
       
-      f = math.sin(T)*2
+      P1 = vec3(0,0,0)
+      P2 = vec3(0,0,0)
       
+           
+      self.elliptical.inputs.P1 = P1
+      self.elliptical.inputs.P2 = P2
+      DY = (P1-P2).normalized()
+      DX = DY.cross(vec3(0,1,1)).normalized()
+      DZ = DX.cross(DY).normalized()
+            
       EMI = self.emitter.inputs
-      EMI.P1 = vec3(0,f,0)
-      EMI.P2 = vec3(0,-f,0)
-      EMI.EmissionVelocity = -3
-      EMI.DispersionAngle = 0
-      EMI.LifeSpan = 0.3
+      EMI.P1 = P1
+      EMI.P2 = P2
+      EMI.EmissionVelocity = 0.0
+      EMI.DispersionAngle = 180
+      EMI.LifeSpan = 3
+      EMI.Scalar = 3
       EMI.EmissionRate = 5000
-      EMI.Scalar = 2
+      EMI.MinV = 0.3+(math.sin(T*4)*0.2)
+      EMI.MaxV = 0.7-(math.sin(T*4)*0.2)
+
+      ELI = self.elliptical.inputs
+      ELI.Scalar = 1
+      ELI.Power = 0.01
+      ELI.Inertia = 111
+      ELI.Dampening = 0.999
       
       GRV = self.gravity.inputs
-      GRV.Center = vec3(0,0,0)
+      GRV.Center = P2+vec3(0,1,0)
       GRV.G = 0
       GRV.MinDistance = 10
 
       RENDERER = self.streaks.inputs
-      RENDERER.Length = .2
-      RENDERER.Width = .1
+      RENDERER.Length = 0.07
+      RENDERER.Width = 0.05
+      #RENDERER.Size = 0.05+self.lerp*0.1
 
       TRB = self.turbulence.inputs
-      TRB.Amount = vec3(10)
+      TRB.Amount = vec3(math.sin(T)*20)
 
 ################################################################################
 
@@ -158,7 +191,7 @@ class ParticlesApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    self.ptc.lerp = smooth_step(0.45,0.55,math.sin(updinfo.absolutetime*1)*0.5+0.5)
+    self.ptc.lerp = smooth_step(0.45,0.55,math.sin(updinfo.absolutetime*0.2)*0.5+0.5)
     self.ptc.onUpdate(updinfo)
     self.scene.updateScene(self.cameralut) 
     
