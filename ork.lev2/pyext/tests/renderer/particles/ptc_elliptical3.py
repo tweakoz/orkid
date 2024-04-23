@@ -42,7 +42,7 @@ class EllipticalParticleSystem(object):
 
     self.streaks       = self.graphdata.create("STRK",particles.StreakRenderer)
 
-    self.ptc_pool.pool_size = 25000 # max number of particles in pool
+    self.ptc_pool.pool_size = 50000 # max number of particles in pool
 
     # connect modules in a chain configuration
 
@@ -54,7 +54,7 @@ class EllipticalParticleSystem(object):
     self.graphdata.connect( self.streaks.inputs.pool,    self.gravity.outputs.pool )
     
     self.emitter.inputs.LifeSpan = 0.5
-    self.emitter.inputs.EmissionRate = 1500
+    self.emitter.inputs.EmissionRate = 10000
     self.emitter.inputs.EmissionVelocity = 0.1
     self.emitter.inputs.MinU = 0
     self.emitter.inputs.MaxU = 1
@@ -83,7 +83,7 @@ class EllipticalParticleSystem(object):
     self.material = particles.GradientMaterial.createShared();
     self.material.blending = tokens.ADDITIVE
     self.material.depthtest = tokens.LEQUALS
-    self.material.colorIntensity = 3
+    self.material.colorIntensity = 1
     self.material.gradient.setColorStops({
       0.0:vec4(1,1,1,1),
       0.4:vec4(1,0,1,1),
@@ -134,7 +134,7 @@ class EllipticalParticleSystem(object):
       EMI.DispersionAngle = 180
       EMI.LifeSpan = 3
       EMI.Scalar = 3
-      EMI.EmissionRate = 5000
+      EMI.EmissionRate = 15000
       EMI.MinV = 0.3+(math.sin(T*4)*0.2)
       EMI.MaxV = 0.7-(math.sin(T*4)*0.2)
 
