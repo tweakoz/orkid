@@ -475,10 +475,6 @@ technique FWD_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono, sb_forward }
 }
-technique FWD_UNLIT_NI_MO_V3 {
-       fxconfig=fxcfg_default;
-       vf_pass={vs_grid_forward_unlit,ps_grid_forward_unlit_v3,sb_forward}
-}
 technique FWD_CT_NM_RI_NI_MO_V2 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v2, sb_forward }
