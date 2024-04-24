@@ -51,17 +51,32 @@
 #endif
 
 namespace ork {
+template <typename T>
+inline std::string demangled_typename() {
+    // This is thread-local and static, hence it's initialized only once per thread
+    thread_local static std::unordered_map<std::string, std::string> cache;
+
+    auto typestr = typeid(T).name();
+
+    // Check if the type name is already in the cache
+    auto it = cache.find(typestr);
+    if (it != cache.end()) {
+        return it->second;
+    }
+
 #if defined(SVAR_DEBUG)
-template <typename T> inline std::string demangled_typename() {
-  auto typestr          = typeid(T).name();
-  int status            = 0;
-  const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
-  auto rval             = std::string(demangled);
-  free((void*)demangled);
-  return rval;
-}
+    int status = 0;
+    const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
+    std::string rval = (status == 0) ? std::string(demangled) : typestr;
+    free((void*)demangled);
+#else
+    std::string rval = "unknown";
 #endif
 
+    // Store the demangled name in the cache before returning
+    cache[typestr] = rval;
+    return rval;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 struct static_variant_base;
@@ -540,6 +555,11 @@ public:
       return descriptor._typestr;
     }
     return std::string();
+  }
+  #else
+  std::string typestr() const {
+    return std::string("unknown");
+  
   }
 #endif
   //////////////////////////////////////////////////////////////
