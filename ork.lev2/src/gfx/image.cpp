@@ -436,7 +436,7 @@ CompressedImageMipChain Image::compressedMipChainDefault() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_ISPC)
+#if (1)//ENABLE_ISPC)
 
 void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "///////////////////////////////////\n");
@@ -469,6 +469,8 @@ void Image::compressBC7(CompressedImage& imgout) const {
   size_t dst_stride = _width;
   for (int y = 0; y < _height; y += 4) {
     pending.fetch_add(1);
+  }
+  for (int y = 0; y < _height; y += 4) {
     opq::concurrentQueue()->enqueue([=, &pending]() {
       bc7_enc_settings settings;
       GetProfile_alpha_basic(&settings);

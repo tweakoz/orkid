@@ -168,6 +168,7 @@ bool DataBlock::_append(const unsigned char* buffer, size_t bufmax) {
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t DataBlock::hash() const {
   XXH64HASH xxh;
+  xxh.init();
   xxh.accumulateString(_name);                      // identifier
   xxh.accumulate(_storage.data(), _storage.size()); // data content
   xxh.finish();

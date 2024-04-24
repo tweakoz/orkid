@@ -4,6 +4,7 @@ namespace ork {
 
   XXH64HASH::XXH64HASH() {
     _state = XXH64_createState();
+    init();
   }
   XXH64HASH::~XXH64HASH() {
     XXH64_freeState(_state);
