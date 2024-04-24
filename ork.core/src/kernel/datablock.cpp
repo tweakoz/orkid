@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/datablock.h>
+#include <ork/kernel/opq.h>
 #include <ork/util/crc.h>
+#include <xxhash.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -165,11 +167,22 @@ bool DataBlock::_append(const unsigned char* buffer, size_t bufmax) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t DataBlock::hash() const {
-  boost::Crc64 hasher;
-  hasher.accumulateString(_name);                      // identifier
-  hasher.accumulate(_storage.data(), _storage.size()); // data content
-  hasher.finish();
-  return hasher.result();
+  if( _storage.size() > (8<<20) ){
+    // parallel hash
+     XXH64_state_t* state = XXH64_createState();
+    XXH64_reset(state, 0);
+    XXH64_update(state, _name.c_str(), _name.size());
+    XXH64_update(state, _storage.data(), _storage.size());
+    uint64_t hash = XXH64_digest(state);
+    return hash;
+  }
+  else{
+    boost::Crc64 hasher;
+    hasher.accumulateString(_name);                      // identifier
+    hasher.accumulate(_storage.data(), _storage.size()); // data content
+    hasher.finish();
+    return hasher.result();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DataBlock::accumlateHash(hasher_t hasher) const {

@@ -56,7 +56,7 @@ ork_std_target_opts(ork_core)
 enable_python_on_target(ork_core)
 target_link_libraries(ork_core LINK_PRIVATE ork_utpp zmq  )
 
-target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem )
+target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem xxhash )
 target_link_libraries(ork_core LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
 
 target_include_directories (ork_core PRIVATE ${INCD} )
