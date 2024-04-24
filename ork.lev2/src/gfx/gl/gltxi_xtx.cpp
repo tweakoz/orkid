@@ -196,6 +196,29 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
             GL_UNSIGNED_BYTE, // datatype
             level._data->data());
         break;
+      case EBufferFormat::RGB16:{
+        if(asset_load_req and asset_load_req->_on_event){
+          auto data = std::make_shared<varmap::VarMap>();
+          data->makeValueForKey<int>("level") = imip;
+          data->makeValueForKey<int>("width") = level._width;
+          data->makeValueForKey<int>("height") = level._height;
+          data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+          data->makeValueForKey<uint32_t>("format") = int(EBufferFormat::RGB16);
+          data->makeValueForKey<std::string>("format_string") = "RGB16";
+          asset_load_req->_on_event("onMipLoad"_crcu,data);
+        }
+        glTexImage2D(         //
+            GL_TEXTURE_2D,    // target
+            imip,             // miplevel
+            GL_RGB16,         // internalformat
+            level._width,     // width
+            level._height,    // height
+            0,                // border
+            GL_RGB,          // format
+            GL_UNSIGNED_SHORT, // datatype
+            level._data->data());
+        break;
+      }
 #if !defined(__APPLE__)
       case EBufferFormat::RGBA_BPTC_UNORM:
         glCompressedTexImage2D( //
