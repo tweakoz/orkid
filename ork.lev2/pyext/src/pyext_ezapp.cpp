@@ -169,8 +169,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   }
                   return res;
                 } catch (std::exception& e) {
-                  std::cerr << e.what();
-                  OrkAssert(false);
+                  printf( "onUiEvent exception (probably HandlerResult)\n" );
+                  //std::cerr << e.what() << std::endl;
+                  //OrkAssert(false);
                 }
                 return ui::HandlerResult();
               });

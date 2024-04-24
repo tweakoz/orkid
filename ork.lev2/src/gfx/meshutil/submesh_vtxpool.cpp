@@ -7,6 +7,7 @@
 
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
+#include <ork/util/xxhash.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace meshutil {
@@ -49,15 +50,16 @@ AnnoMap::~AnnoMap() {
 ///////////////////////////////////////////////////////////////////////////////
 
 U64 annopolyposlut::HashItem(const submesh& tmesh, const Polygon& ply) const {
-  boost::Crc64 crc64;
+  XXH64HASH xxh;
+  xxh.init();
   ply.visitVertices([&](vertex_ptr_t v) {
     int ivi           = v->_poolindex;
     auto vtx = tmesh.vertex(ivi);
-    crc64.accumulateItem(vtx->mPos);
-    crc64.accumulateItem(vtx->mNrm);
+    xxh.accumulateItem(vtx->mPos);
+    xxh.accumulateItem(vtx->mNrm);
   });
-  crc64.finish();
-  return crc64.result();
+  xxh.finish();
+  return xxh.result();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

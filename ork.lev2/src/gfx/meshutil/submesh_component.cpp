@@ -8,6 +8,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
+#include <ork/util/xxhash.inl>
 
 namespace ork::meshutil {
 static const std::string gnomatch("");
@@ -279,35 +280,35 @@ uint64_t vertex::hash(double quantization) const {
   if(quantization==0.0)
     quantization = _default_quantization;
 
-  boost::Crc64 crc64;
-  crc64.init();
-  crc64.accumulateItem(miNumWeights);
-  crc64.accumulateItem(miNumColors);
-  crc64.accumulateItem(miNumUvs);
+  XXH64HASH xxh;
+  xxh.init();
+  xxh.accumulateItem(miNumWeights);
+  xxh.accumulateItem(miNumColors);
+  xxh.accumulateItem(miNumUvs);
   for (int i = 0; i < miNumWeights; i++) {
     int ilen = (int)_jointpaths[i].length();
     if (ilen) {
-      crc64.accumulateString(_jointpaths[i]);
+      xxh.accumulateString(_jointpaths[i]);
     }
-    crc64.accumulateItem(mJointWeights[i]);
+    xxh.accumulateItem(mJointWeights[i]);
   }
   for (int i = 0; i < miNumColors; i++) {
-    crc64.accumulateItem(mCol[i].hash(quantization));
+    xxh.accumulateItem(mCol[i].hash(quantization));
   }
   for (int i = 0; i < miNumUvs; i++) {
     const auto& UV = mUV[i];
-    crc64.accumulateItem(UV.mMapBiNormal.hash(quantization));
-    crc64.accumulateItem(UV.mMapTangent.hash(quantization));
-    crc64.accumulateItem(UV.mMapTexCoord.hash(quantization));
+    xxh.accumulateItem(UV.mMapBiNormal.hash(quantization));
+    xxh.accumulateItem(UV.mMapTangent.hash(quantization));
+    xxh.accumulateItem(UV.mMapTexCoord.hash(quantization));
   }
   uint64_t pos_hash = mPos.hash(quantization);
   uint64_t nrm_hash = mNrm.hash(quantization);
-  crc64.accumulateItem(pos_hash);
-  crc64.accumulateItem(nrm_hash);
+  xxh.accumulateItem(pos_hash);
+  xxh.accumulateItem(nrm_hash);
 
   // printf( "pos<%.*e %.*e %.*e> pos_hash<0x%zx>\n", 10, mPos.x, 10, mPos.y, 10, mPos.z, pos_hash );
-  crc64.finish();
-  return crc64.result();
+  xxh.finish();
+  return xxh.result();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -725,10 +726,11 @@ uint64_t Polygon::hash(void) const {
     my_array.push_back(_vertices[i]->_poolindex);
   }
   bubblesort::doit(my_array.data(), inumv);
-  boost::Crc64 crc64;
-  crc64.accumulate((const void*)my_array.data(), sizeof(int) * inumv);
-  uint64_t ucrc = crc64.result();
-  return ucrc;
+  XXH64HASH xxh;
+  xxh.init();
+  xxh.accumulate((const void*)my_array.data(), sizeof(int) * inumv);
+  xxh.finish();
+  return xxh.result();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

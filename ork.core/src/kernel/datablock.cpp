@@ -8,7 +8,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/opq.h>
 #include <ork/util/crc.h>
-#include <xxhash.h>
+#include <ork/util/xxhash.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -69,7 +69,7 @@ datablock_ptr_t DefaultEncryptionCodec::decrypt(const DataBlock* inp) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 DataBlock::hasher_t DataBlock::createHasher() {
-  return std::make_shared<::boost::Crc64>();
+  return std::make_shared<XXH64HASH>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 DataBlock::DataBlock(const void* buffer, size_t len) {
@@ -167,22 +167,11 @@ bool DataBlock::_append(const unsigned char* buffer, size_t bufmax) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t DataBlock::hash() const {
-  if( _storage.size() > (8<<20) ){
-    // parallel hash
-     XXH64_state_t* state = XXH64_createState();
-    XXH64_reset(state, 0);
-    XXH64_update(state, _name.c_str(), _name.size());
-    XXH64_update(state, _storage.data(), _storage.size());
-    uint64_t hash = XXH64_digest(state);
-    return hash;
-  }
-  else{
-    boost::Crc64 hasher;
-    hasher.accumulateString(_name);                      // identifier
-    hasher.accumulate(_storage.data(), _storage.size()); // data content
-    hasher.finish();
-    return hasher.result();
-  }
+  XXH64HASH xxh;
+  xxh.accumulateString(_name);                      // identifier
+  xxh.accumulate(_storage.data(), _storage.size()); // data content
+  xxh.finish();
+  return xxh.result();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DataBlock::accumlateHash(hasher_t hasher) const {

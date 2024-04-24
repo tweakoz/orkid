@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstdint>
 #include <ork/util/crc64.h>
+#include <ork/util/xxhash.inl>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/fixedstring.h>
 
@@ -41,7 +42,7 @@ encryptioncodec_ptr_t encryptionCodecFactory(uint32_t codecID);
 
 struct DataBlock {
   /////////////////////////////////////////////
-  using hasher_t = ::boost::crc64hasher_ptr_t;
+  using hasher_t = xxh64hasher_ptr_t;
   /////////////////////////////////////////////
   static hasher_t createHasher();
   /////////////////////////////////////////////
