@@ -18,6 +18,11 @@
 
 namespace ork {
 
+template <typename T>
+bool Vector4<T>::isNan() const{
+  return (isnan(this->x) || isnan(this->y) || isnan(this->z) || isnan(this->w));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector4<T> Vector4<T>::saturated() const {

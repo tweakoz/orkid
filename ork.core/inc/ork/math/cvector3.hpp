@@ -18,6 +18,11 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+bool Vector3<T>::isNan() const{
+  return (isnan(this->x) || isnan(this->y) || isnan(this->z));
+}
+
 template <typename T> 
 T Vector3<T>::areaOfTriangle(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c){
   Vector3<T> ab = b - a;

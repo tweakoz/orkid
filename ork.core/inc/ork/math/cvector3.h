@@ -93,6 +93,7 @@ template <typename T> struct Vector3 final
   Vector3 floor() const;
   Vector3 fract() const;
 
+  bool isNan() const;
   void set(T _x, T _y, T _z) {
     this->x = _x;
     this->y = _y;

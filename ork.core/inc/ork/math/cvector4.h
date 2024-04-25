@@ -67,6 +67,8 @@ template <typename T> struct Vector4 final
   void lerp(const Vector4& from, const Vector4& to, T par);
   void serp(const Vector4& PA, const Vector4& PB, const Vector4& PC, const Vector4& PD, T par_x, T par_y);
 
+  bool isNan() const;
+
   void set(T _x, T _y, T _z, T _w) {
     this->x = _x;
     this->y = _y;
