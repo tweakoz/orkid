@@ -57,6 +57,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     ObjVertexPool.push_back(v->mPos);
     ObjNormalPool.push_back(v->mNrm);
     ObjUv0Pool.push_back(v->mUV[0].mMapTexCoord);
+    printf( "out_uv0<%g %g>\n", v->mUV[0].mMapTexCoord.x, v->mUV[0].mMapTexCoord.y );
   });
   ///////////////////////////////////////////////////
   OutMaterial.mColor = fcolor3::White();

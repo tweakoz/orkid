@@ -202,9 +202,10 @@ class BasicUiCamSgApp(object):
     ##############################################
 
     def onUiEvent(self, uievent):
-        handled = self.uicam.uiEventHandler(uievent)
-        if handled:
-            self.camera.copyFrom(self.uicam.cameradata)
+      handled = self.uicam.uiEventHandler(uievent)
+      if handled:
+        self.camera.copyFrom(self.uicam.cameradata)
+      return ui.HandlerResult()
 
     ################################################
 
