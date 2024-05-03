@@ -81,6 +81,7 @@ template <typename T> struct Vector3 final
   inline T length() const {
     return magnitude();
   }
+  bool isNan() const;
   T magnitude() const;                                        
   T magnitudeSquared() const;                                 
   Vector4<T> transform(const Matrix44<T>& matrix) const;    
