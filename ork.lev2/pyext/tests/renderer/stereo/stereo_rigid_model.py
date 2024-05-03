@@ -58,8 +58,6 @@ class StereoApp1(object):
     self.vrdev.camera = "vrcam"
 
     createSceneGraph(app=self,rendermodel="FWDPBRVR")
-    self.vroutnode = self.scene.compositoroutputnode
-    self.vroutnode.flipY = False
 
     model = XgmModel("data://tests/pbr_calib.glb")
 
@@ -98,12 +96,9 @@ class StereoApp1(object):
       vec3(0,10,0), # tgt
       vec3(0,1,0) # up
     )
-
-    self.xf_hmd = Transform()
-    self.xf_hmd.lookAt(vec3(0,10,10),vec3(0,0,0),vec3(0,-1,0))
-
-    mtx_hmd = self.xf_hmd.composed
-    self.vrdev.setPoseMatrix("hmd",mtx_hmd)
+    mtx_hmd = mtx4()
+    mtx_hmd.setColumn(3,vec4(0,10,0,1))
+    self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
     
     ########################################
 

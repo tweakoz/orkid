@@ -113,6 +113,7 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // apply display panel rotation, if any..
   ////////////////////////////////////////
 
+  //printf( "_stereoTileRotationDegreesL<%g>\n", _stereoTileRotationDegreesL );
   rotzL.setRotateZ(_stereoTileRotationDegreesL*DTOR);
   rotzR.setRotateZ(_stereoTileRotationDegreesR*DTOR);
 
