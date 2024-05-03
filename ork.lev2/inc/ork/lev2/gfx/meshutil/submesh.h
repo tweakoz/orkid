@@ -365,6 +365,8 @@ void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool i
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 std::string submeshConvexCheckWindingOrder(const submesh& inpsubmesh);
 
+void submesh_xatlas(const submesh& inpsubmesh, submesh& outsubmesh);
+
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;

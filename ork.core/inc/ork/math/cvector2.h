@@ -60,6 +60,8 @@ template <typename T> struct Vector2 final
   Vector2 floor() const;
   Vector2 fract() const;
 
+  bool isNan() const;
+  
   static Vector2 zero() {
     return Vector2(T(0), T(0));
   }

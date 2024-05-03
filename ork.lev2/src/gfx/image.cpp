@@ -436,7 +436,7 @@ CompressedImageMipChain Image::compressedMipChainDefault() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if (1)//ENABLE_ISPC)
+#if defined(ENABLE_ISPC)
 
 void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "///////////////////////////////////\n");

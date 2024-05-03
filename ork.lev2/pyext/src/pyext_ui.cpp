@@ -152,6 +152,12 @@ void pyinit_ui(py::module& module_lev2) {
               "right",                        //
               [](ui::event_ptr_t ev) -> int { //
                 return int(ev->mbRightButton);
+              })
+              .def_property_readonly("rayN", [](ui::event_ptr_t ev) -> fvec4 { //
+                return ev->mvRayN;
+              })
+              .def_property_readonly("rayF", [](ui::event_ptr_t ev) -> fvec4 { //
+                return ev->mvRayF;
               });
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////

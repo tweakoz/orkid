@@ -13,6 +13,11 @@
 
 #include <glm/gtx/vector_angle.hpp>
 
+template <typename T>
+bool ork::Vector2<T>::isNan() const {
+  return (std::isnan(this->x) || std::isnan(this->y));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
