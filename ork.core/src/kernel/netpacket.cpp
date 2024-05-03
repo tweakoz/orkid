@@ -350,7 +350,10 @@ void Serializer::serialize(msgpacketbase_ref_t msg, const val_t& value) {
 
   auto tname = value.typeName();
   auto it    = _typehandlers.find(tname);
-  OrkAssert(it != _typehandlers.end());
+  if( it == _typehandlers.end() ){
+    printf( "Serializer::serialize type<%s> not found\n", tname );
+    OrkAssert(false);
+  }
   auto serfn = it->second;
   serfn(this, msg, value);
 }
