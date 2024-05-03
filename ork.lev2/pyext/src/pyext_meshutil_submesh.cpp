@@ -196,6 +196,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "xatlas",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                submesh_xatlas(*inpsubmesh,*rval);
+                return rval;
+              })
+          .def(
               "quadulated",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();

@@ -384,7 +384,9 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
       if(mTarget._SUPPORTS_BINARY_PIPELINE){
         GLint binaryLength = 0;
+        GL_ERRORCHECK();
         glGetProgramiv(prgo, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+        GL_ERRORCHECK();
         std::vector<GLubyte> binary_bytes;
         binary_bytes.resize(binaryLength);
         GLenum binaryFormat;
@@ -392,6 +394,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
         header_stream->AddItem<GLenum>(binaryFormat);
         header_stream->AddItem<size_t>(binary_bytes.size());
         shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
+        GL_ERRORCHECK();
 
         ///////////////////////////////////
         // write to datablock cache
@@ -422,6 +425,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
   gatimer.Start();
 
   GLint numattr = 0;
+  GL_ERRORCHECK();
   glGetProgramiv(prgo, GL_ACTIVE_ATTRIBUTES, &numattr);
   GL_ERRORCHECK();
 
