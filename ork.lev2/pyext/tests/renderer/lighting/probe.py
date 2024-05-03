@@ -212,9 +212,10 @@ class LIGHTING_APP(object):
       self.vrdev.IPD = 0.065
       self.vrdev.near = 0.1
       self.vrdev.far = 1e5
-      mtx_hmd = mtx4()
-      mtx_hmd.setColumn(3,vec4(0,5,10,1))
-      self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
+      xf = Transform()
+      xf.lookAt(vec3(0,5,-10),vec3(0,5,0),vec3(0,1,0))
+      mtx_hmd = xf.composed
+      self.vrdev.setPoseMatrix("hmd",mtx_hmd)
       
     
     
