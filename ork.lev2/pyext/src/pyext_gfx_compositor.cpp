@@ -138,6 +138,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             fxstring<64> fxs;
             fxs.format("OutputCompositingNode(%p)", d.get());
             return fxs.c_str();
+          })
+          .def_property("flipY",[](compositoroutnode_ptr_t n) -> bool {
+            return n->_flipY;
+          },
+          [](compositoroutnode_ptr_t n, bool b){
+            n->_flipY = b;
           });
   type_codec->registerStdCodec<compositoroutnode_ptr_t>(outputnode_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -451,12 +457,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def(py::init([]() -> vroutnode_ptr_t { //
             return std::make_shared<VrCompositingNode>();
           }))
-          .def_property("flipY",[](vroutnode_ptr_t n) -> bool {
-            return n->_flipY;
-          },
-          [](vroutnode_ptr_t n, bool b){
-            n->_flipY = b;
-          })
           .def("__repr__", [](vroutnode_ptr_t n) -> std::string {
             fxstring<64> fxs;
             fxs.format("VrCompositingNode(%p)", n.get());

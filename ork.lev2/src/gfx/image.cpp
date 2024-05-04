@@ -463,27 +463,42 @@ void Image::compressBC7(CompressedImage& imgout) const {
   ////////////////////////////////////////
   std::atomic<int> pending = 0;
   // auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "BC7ENC");
+
+  size_t src_len = src_as_rgba._data->length();
+  size_t dst_len = imgout._blocked_width * imgout._blocked_height;
+
   auto src_base     = (uint8_t*)src_as_rgba._data->data();
-  auto dst_base     = (uint8_t*)imgout._data->allocateBlock(imgout._blocked_width * imgout._blocked_height);
-  size_t src_stride = _width * 4;
-  size_t dst_stride = _width;
-  for (int y = 0; y < _height; y += 4) {
+  auto dst_base     = (uint8_t*)imgout._data->allocateBlock(dst_len);
+  auto dst_iter = dst_base;
+  auto src_iter = src_base;
+  size_t src_stride = _width * 4; // 4 BPP
+  size_t dst_stride = _width;     // 1 BPP
+
+  size_t num_rows_per_operation = 4;
+
+  for (int y = 0; y < _height; y += num_rows_per_operation) {
     pending.fetch_add(1);
   }
-  for (int y = 0; y < _height; y += 4) {
+  for (int y = 0; y < _height; y += num_rows_per_operation) {
+    int num_rows_this_operation = std::min(num_rows_per_operation, _height - y);
     opq::concurrentQueue()->enqueue([=, &pending]() {
       bc7_enc_settings settings;
       GetProfile_alpha_basic(&settings);
       rgba_surface surface;
       surface.width  = _width;
-      surface.height = 4;
+      surface.height = num_rows_this_operation;
       surface.stride = src_stride;
-      surface.ptr    = src_base;
-      CompressBlocksBC7(&surface, dst_base, &settings);
+      surface.ptr    = src_iter;
+
+      CompressBlocksBC7(&surface, dst_iter, &settings);
       pending.fetch_add(-1);
     });
-    src_base += src_stride * 4;
-    dst_base += dst_stride * 4;
+    src_iter += src_stride * num_rows_this_operation;
+    dst_iter += dst_stride * num_rows_this_operation;
+    ptrdiff_t src_offset = (src_iter - src_base) / 16;
+    ptrdiff_t dst_offset = (dst_iter - dst_base) / 16;
+    OrkAssert(src_offset<=src_len);
+    OrkAssert(dst_offset<=dst_len);
   }
   while (pending.load() > 0) {
     usleep(1000);

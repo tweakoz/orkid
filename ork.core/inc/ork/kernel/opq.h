@@ -17,6 +17,7 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/atomic.h>
 #include <ork/kernel/mutex.h>
+#include <ork/kernel/timer.h>
 #include <ork/kernel/semaphore.h>
 #include <ork/util/Context.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,8 +194,11 @@ enum OpqThreadState {
   EPOQSTATE_DEAD
 };
 struct OpqThread : public ork::Thread {
+  static std::atomic<int> _gthreadcount;
   OpqThreadData _data;
   std::atomic<int> _state;
+  Timer _timer;
+  float _idleTime = 0.0;
   OpqThread(OperationsQueue* q, int thid);
   ~OpqThread();
   void run() final;
@@ -252,6 +256,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   std::atomic<bool> _goingdown;
   std::atomic<int> _numThreadsRunning;
   std::atomic<int> _numPendingOperations;
+  std::atomic<int> _numCompletedOperations;
   std::string _name;
   std::string _debuginfo;
 

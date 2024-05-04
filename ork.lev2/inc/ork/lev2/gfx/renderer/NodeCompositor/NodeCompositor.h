@@ -36,6 +36,7 @@ public:
   }
   virtual void composite(CompositorDrawData& drawdata) {
   }
+  bool _flipY = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

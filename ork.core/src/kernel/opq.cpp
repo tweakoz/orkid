@@ -14,16 +14,66 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/pch.h>
 #include <ork/util/Context.hpp>
+#include <ork/util/logger.h>
 
 //#define DEBUG_OPQ_CALLSTACK
 ///////////////////////////////////////////////////////////////////////
 template class ork::util::ContextTLS<ork::opq::TrackCurrent>;
 ///////////////////////////////////////////////////////////////////////
 namespace ork::opq {
+static logchannel_ptr_t logchan_opq = logger()->createChannel("OPQ", fvec3(0.4, 0.7, 0.7), true);
 ////////////////////////////////////////////////////////////////////////
-static opq_ptr_t _coordinatorSerialQueue() {
-  static opq_ptr_t _gq = std::make_shared<OperationsQueue>(1, "coordinatorSerialQueue");
-  return _gq;
+static int MAX_THREADS = 0;
+static int MIN_THREADS = 0;
+////////////////////////////////////////////////////////////////////////
+static void _coordinatorThreadStartup() {
+  auto coordinator_thread_impl = [](anyp data){
+    int num_completed = 0;
+    while( OpqThread::_gthreadcount > 0 ){
+      ork::usleep(8<<20);
+      auto cq = concurrentQueue();
+      int nt = cq->_numThreadsRunning;
+      int nc= cq->_numCompletedOperations;
+      int np = cq->_numPendingOperations;
+      logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
+      ///////////////////////////////////////////////////////////
+      // thread creation (if stalled)
+      ///////////////////////////////////////////////////////////
+      if((np>0) and num_completed<=nc){
+        if(nt>=MAX_THREADS){
+          logchan_opq->log( "concurrentQueue stalled, max threads reached" );
+          continue;
+        }
+        logchan_opq->log( "concurrentQueue stalled, adding a new thread" );
+        int numthreads = 0;
+        cq->_threads.atomicOp([&numthreads](OperationsQueue::threadset_t& thset) { numthreads = thset.size(); });
+        auto thread = new OpqThread(cq.get(), numthreads);
+        cq->_threads.atomicOp([=](OperationsQueue::threadset_t& thset) { thset.insert(thread); });
+        thread->start();
+      }
+      ///////////////////////////////////////////////////////////
+      // thread deletion (if idle)
+      ///////////////////////////////////////////////////////////
+      else if(np==0 and (nt>MIN_THREADS)){ 
+        logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
+        OpqThread* thread = nullptr;
+        cq->_threads.atomicOp([=,&thread](OperationsQueue::threadset_t& thset) {
+          if(thset.size()>MIN_THREADS){
+            thread = *thset.begin();
+            thset.erase(thread);
+          }
+        });
+        if(thread){
+          thread->_state.store(EPOQSTATE_OK2KILL);
+          thread->join();
+          delete thread;
+        }
+      }
+      ///////////////////////////////////////////////////////////
+      num_completed = nc;
+    }
+  };
+  static auto coordinator_thread = std::make_shared<Thread>(coordinator_thread_impl, nullptr, "opq_coordinator_thread");
 }
 //////////////////////////////////////////////////////////////////////
 static progress_handler_t g_handler = [](progressdata_ptr_t data) {
@@ -199,13 +249,17 @@ struct OpqDrained : public IOpqSynchrComparison {
   }
 };
 ///////////////////////////////////////////////////////////////////////////
+std::atomic<int> OpqThread::_gthreadcount = 0;
+///////////////////////////////////////////////////////////////////////////
 OpqThread::OpqThread(OperationsQueue* q, int thid) {
   _data._queue    = q;
   _data._threadID = thid;
   _state.store(EPOQSTATE_NEW);
+  _gthreadcount++;
 }
 ///////////////////////////////////////////////////////////////////////////
 OpqThread::~OpqThread() {
+  _gthreadcount--;
 }
 ///////////////////////////////////////////////////////////////////////////
 void OpqThread::run() // virtual
@@ -226,6 +280,8 @@ void OpqThread::run() // virtual
 
   int slindex = 0;
 
+  _timer.Start();
+
   while (EPOQSTATE_OK2KILL != _state.load()) {
     dispersed_sleep(slindex++, 10); // semaphores are slowing us down
     // popq->mSemaphore.wait(); // wait for an op (without spinning)
@@ -234,8 +290,10 @@ void OpqThread::run() // virtual
 
       case EPOQSTATE_RUNNING: {
         bool item_processed = q->Process();
-        if (item_processed)
+        if (item_processed){
+          _timer.Start();
           slindex = 0;
+        }
         break;
       }
       case EPOQSTATE_LOCKED:
@@ -248,6 +306,10 @@ void OpqThread::run() // virtual
         break;
       case EPOQSTATE_OK2KILL:
         break;
+    }
+    icounter++;
+    if( icounter&0xfff){
+      _idleTime = _timer.SecsSinceStart();
     }
   }
 
@@ -293,6 +355,8 @@ void OperationsQueue::_internalEndLock() {
 }
 ///////////////////////////////////////////////////////////////////////////
 bool OperationsQueue::Process() {
+
+  bool item_processed = false;
 
   ///////////////////////////////////////
   // find a group with pending ops
@@ -346,6 +410,10 @@ bool OperationsQueue::Process() {
       });
       if (got_one) {
         the_op.invoke();
+        _numCompletedOperations.fetch_add(1);
+        _numPendingOperations.fetch_add(-1);
+        item_processed = true;
+
         if (the_op.mName.length()) {
           ppnam = the_op.mName.c_str();
         }
@@ -357,7 +425,7 @@ bool OperationsQueue::Process() {
     } // while (keep_going) {
   }   // if (pexecgrp) {
   ///////////////////////////////////////
-  return false;
+  return item_processed;
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::enqueue(const Op& the_op) {
@@ -438,6 +506,7 @@ OperationsQueue::OperationsQueue(int inumthreads, const char* name)
   mGroupCounter         = 0;
   _numThreadsRunning    = 0;
   _numPendingOperations = 0;
+  _numCompletedOperations = 0;
 
   _defaultConcurrencyGroup = createConcurrencyGroup("defconq");
 
@@ -504,6 +573,7 @@ ConcurrencyGroup::ConcurrencyGroup(OperationsQueue& q, const char* pname)
 void ConcurrencyGroup::enqueue(const Op& the_op) {
 
   bool was_enqueued = false;
+  _queue._numPendingOperations.fetch_add(1);
 
   while (false == was_enqueued) {
 
@@ -592,15 +662,12 @@ opq_ptr_t mainSerialQueue() {
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
+  /////////////////////////////////////////////////////////
   int numcores = OldSchool::GetNumCores();
-  int numthreads = (numcores / 2);
+  MIN_THREADS = (numcores/2);
+  MAX_THREADS = (numcores*2);
   /////////////////////////////////////////////////////////
-  // we never want less than 4 threads for IO/BGPROC related tasks
-  /////////////////////////////////////////////////////////
-  if(numthreads<4)
-    numthreads = 4;
-  /////////////////////////////////////////////////////////
-  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(numthreads, "concurrentQueue");
+  static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS, "concurrentQueue");
   return gconcurrentq;
 }
 ///////////////////////////////////////////////////////////////////////
@@ -633,10 +700,10 @@ bool TrackCurrent::is(opq_ptr_t rhs) {
 }
 ///////////////////////////////////////////////////////////////////////
 void init() {
-  _coordinatorSerialQueue();
   concurrentQueue();
   mainSerialQueue();
   updateSerialQueue();
+  _coordinatorThreadStartup();
 }
 ///////////////////////////////////////////////////////////////////////////
 

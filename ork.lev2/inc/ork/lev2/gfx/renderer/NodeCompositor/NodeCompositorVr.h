@@ -37,7 +37,6 @@ public:
   }
 
   EBufferFormat _format;
-  bool _flipY = true;
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
