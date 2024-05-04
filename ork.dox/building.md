@@ -26,7 +26,7 @@ To bootstrap on MacOs Sonoma (14.0)+
   * ```obt.dep.build.py orkid --force --wipe```
 * Build orkid (incremental)
   * ```obt.dep.build.py orkid --incremental```
-* Pre-convert som assets
+* Pre-convert some assets
   * ```ork.asset.process.py```
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
