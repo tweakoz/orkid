@@ -8,20 +8,13 @@ If you want to minimize any pain, right now I would recommend Linux (Ubuntu 22.0
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies.
 
-To bootstrap on MacOs Ventura (13.0)+
+To bootstrap on MacOs Sonoma (14.0)+
 ==================================
 * install / update [homebrew](http://brew.sh)
 * install / update XCode via AppStore.
 * Install Ork Build Tools (OBT)
-  * ```pip3 install --user --upgrade ork.build```
-  * Alternatively you should be able to do this in an python virtualenv if you prefer. Adjust instructions accordingly.
-* You may need to add user python bin to path.
-  * ```export PATH="$PATH:~/Library/Python/3.11/bin"```
-  * now obt.* commands are in your path (obt tab-tab to list them)
-  * you may want to add this to .bashrc
-* Install System Dependencies (Once per machine)
-  * ```obt.osx.installdeps.py``` 
-* Create an ork.build (OBT) *staging* environment/container.
+  * see [OBT installation docs](https://github.com/tweakoz/ork.build/blob/develop/README.md)
+* If you have not done so already, create an ork.build (OBT) *staging* environment/container.
   * ```obt.create.env.py --stagedir ~/.staging-xxx --wipe```
   * This can take a bit, it will be building a container scoped python and a few other deps which are required for consistent OBT operation.
 * Launch the staging environment
@@ -33,6 +26,8 @@ To bootstrap on MacOs Ventura (13.0)+
   * ```obt.dep.build.py orkid --force --wipe```
 * Build orkid (incremental)
   * ```obt.dep.build.py orkid --incremental```
+* Pre-convert some assets
+  * ```ork.asset.process.py```
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
@@ -54,11 +49,7 @@ To bootstrap on Ubuntu22.04 x86/64
 * set python3 as default
   * ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` 
 * Install Ork Build Tools (OBT)
-  * ```pip3 install --user --upgrade ork.build```
-  * Alternatively you should be able to do this in an python virtualenv if you prefer. Adjust instructions accordingly.
-  * now obt.* commands are in your path (obt tab-tab to list them)
-* Install System Dependencies (Once per machine, requires sudo)
-  * ```obt.ix.installdeps.ubuntu_x86_64.py``` 
+  * see [OBT installation docs](https://github.com/tweakoz/ork.build/blob/develop/README.md)
 * Create an ork.build (OBT) *staging* environment/container.
   * ```obt.create.env.py --stagedir ~/.staging-xxx --wipe```
   * This can take a bit, it will be building a container scoped python and a few other deps which are required for consistent OBT operation.
@@ -72,6 +63,8 @@ To bootstrap on Ubuntu22.04 x86/64
   * ```obt.dep.build.py orkid --force --wipe```
 * Build orkid (incremental)
   * ```obt.dep.build.py orkid --incremental```
+* Pre-convert some assets
+  * ```ork.asset.process.py```
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
