@@ -68,6 +68,3 @@ def setup():
   obt.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.glfx:.ini")
 
   ##############################################
-
-  print(deco.yellow("Initialized Orkid Build Enviroment"))
-
