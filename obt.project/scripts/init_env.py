@@ -68,3 +68,10 @@ def setup():
   obt.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.glfx:.ini")
 
   ##############################################
+
+def extend_bashrc():
+  return ["ork.goto.orkid() { cd ${ORKID_WORKSPACE_DIR}; };\n"] \
+       + ["ork.goto.data_root() { cd ${ORKID_WORKSPACE_DIR}/ork.data; };\n"] \
+       + ["ork.goto.data_src() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
+       + ["ork.goto.data_test() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
+       + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"]
