@@ -29,22 +29,25 @@ static int MIN_THREADS = 0;
 static void _coordinatorThreadStartup() {
   auto coordinator_thread_impl = [](anyp data){
     int num_completed = 0;
+    int check_index = 0;
     while( OpqThread::_gthreadcount > 0 ){
-      ork::usleep(8<<20);
+      ork::usleep(1<<20);
       auto cq = concurrentQueue();
       int nt = cq->_numThreadsRunning;
       int nc= cq->_numCompletedOperations;
       int np = cq->_numPendingOperations;
-      logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
+      if(check_index&7==0){
+        logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
+      }
       ///////////////////////////////////////////////////////////
       // thread creation (if stalled)
       ///////////////////////////////////////////////////////////
       if((np>0) and num_completed<=nc){
         if(nt>=MAX_THREADS){
-          logchan_opq->log( "concurrentQueue stalled, max threads reached" );
+          //logchan_opq->log( "concurrentQueue stalled, max threads reached" );
           continue;
         }
-        logchan_opq->log( "concurrentQueue stalled, adding a new thread" );
+        //logchan_opq->log( "concurrentQueue stalled, adding a new thread" );
         int numthreads = 0;
         cq->_threads.atomicOp([&numthreads](OperationsQueue::threadset_t& thset) { numthreads = thset.size(); });
         auto thread = new OpqThread(cq.get(), numthreads);
@@ -55,7 +58,7 @@ static void _coordinatorThreadStartup() {
       // thread deletion (if idle)
       ///////////////////////////////////////////////////////////
       else if(np==0 and (nt>MIN_THREADS)){ 
-        logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
+        //logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
         OpqThread* thread = nullptr;
         cq->_threads.atomicOp([=,&thread](OperationsQueue::threadset_t& thset) {
           if(thset.size()>MIN_THREADS){
@@ -71,6 +74,7 @@ static void _coordinatorThreadStartup() {
       }
       ///////////////////////////////////////////////////////////
       num_completed = nc;
+      check_index++;
     }
   };
   static auto coordinator_thread = std::make_shared<Thread>(coordinator_thread_impl, nullptr, "opq_coordinator_thread");
@@ -666,6 +670,12 @@ opq_ptr_t concurrentQueue() {
   int numcores = OldSchool::GetNumCores();
   MIN_THREADS = (numcores/2);
   MAX_THREADS = (numcores*2);
+  if(MIN_THREADS<4){
+    MIN_THREADS = 4;
+  }
+  if(MAX_THREADS<12){
+    MAX_THREADS = 12;
+  }
   /////////////////////////////////////////////////////////
   static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(MIN_THREADS, "concurrentQueue");
   return gconcurrentq;
