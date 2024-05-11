@@ -36,7 +36,7 @@ static void _coordinatorThreadStartup() {
       int nt = cq->_numThreadsRunning;
       int nc= cq->_numCompletedOperations;
       int np = cq->_numPendingOperations;
-      if(check_index&7==0){
+      if((check_index&7)==0){
         logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
       }
       ///////////////////////////////////////////////////////////

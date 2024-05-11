@@ -422,6 +422,9 @@ void Image::compressDefault(CompressedImage& imgout) const {
   }
 #endif
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 CompressedImageMipChain Image::compressedMipChainDefault() const {
 #if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   return uncompressedMipChain();
