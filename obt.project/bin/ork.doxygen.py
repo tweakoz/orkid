@@ -18,7 +18,7 @@ command.run(["ork.createunionedsource.py"]) # first we definitely need unioned s
 # fix up icon path
 ###########################################################
 
-src_icon_path = path.project_root()/"ork.data"/"dox"/"doxylogo.png"
+src_icon_path = path.Path(os.environ["ORKID_WORKSPACE_DIR"])/"ork.data"/"dox"/"doxylogo.png"
 
 template.template_file(src_doxyfile,
                        {"ICONPATH":src_icon_path},
