@@ -51,31 +51,39 @@
 #endif
 
 namespace ork {
+
+struct DemangleCache {
+  std::unordered_map<std::string, std::string> _impl;
+
+  std::string lookup(const std::string& typestr) {
+    std::string rval;
+    auto it = _impl.find(typestr);
+    if (it != _impl.end()) {
+      rval=it->second;
+    }
+    else{
+    #if defined(SVAR_DEBUG)
+        int status = 0;
+        const char* demangled = abi::__cxa_demangle(typestr.c_str(), 0, 0, &status);
+        rval = (status == 0) ? std::string(demangled) : typestr;
+        free((void*)demangled);
+    #else
+        rval = "unknown";
+    #endif
+
+    }
+    return rval;
+  }
+};
+
+using demangle_cache_ptr_t = std::shared_ptr<DemangleCache>;
+
 template <typename T>
 inline std::string demangled_typename() {
     // This is thread-local and static, hence it's initialized only once per thread
-    thread_local static std::unordered_map<std::string, std::string> cache;
-
+    thread_local static demangle_cache_ptr_t _cache = std::make_shared<DemangleCache>(); 
     auto typestr = typeid(T).name();
-
-    // Check if the type name is already in the cache
-    auto it = cache.find(typestr);
-    if (it != cache.end()) {
-        return it->second;
-    }
-
-#if defined(SVAR_DEBUG)
-    int status = 0;
-    const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
-    std::string rval = (status == 0) ? std::string(demangled) : typestr;
-    free((void*)demangled);
-#else
-    std::string rval = "unknown";
-#endif
-
-    // Store the demangled name in the cache before returning
-    cache[typestr] = rval;
-    return rval;
+    return _cache->lookup(typestr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
