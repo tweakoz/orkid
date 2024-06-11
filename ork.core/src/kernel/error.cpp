@@ -20,6 +20,7 @@
 
 #include <ork/util/Context.hpp>
 #include <ork/kernel/debug.h>
+#include <ork/kernel/string/deco.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +60,7 @@ void OrkAssertFunction(const char *fmtstr, ...)
 	orkprintf( "/////////////////////////////////////////////\n" );
 	orkprintf( "/////////////////////////////////////////////\n" );
 	orkprintf( "/////////////////////////////////////////////\n" );
-	orkprintf("error<%s>\n", fmtstr);
+	orkprintf( "%s\n", fmtstr);
 	orkprintf("crashing....\n");
 	std::string bt = ork::get_backtrace();
 	printf( "BACKTRACE\n%s\n", bt.c_str() );
@@ -82,6 +83,36 @@ void OrkAssertFunction(const char *fmtstr, ...)
 	while(1){} // and as a last resort, ...
 
 	//assert(false);
+}
+
+void _format_and_assert(const char* file, int line, const char* fmtstr, ...) {
+    char formatbuffer[512];
+    char assertbuffer[1024];
+    va_list args;
+    va_start(args, fmtstr);
+    vsnprintf(formatbuffer, sizeof(formatbuffer), fmtstr, args);
+    va_end(args);
+
+    auto a1 = ork::deco::decorate(ork::fvec3(1), "Assertion At:\n  File: ");
+    auto a2 = ork::deco::decorate(ork::fvec3(1), "\n  Line: ");
+    auto a3 = ork::deco::decorate(ork::fvec3(1), "\n  Reason: ");
+    auto a4 = ork::deco::decorate(ork::fvec3(1), "");
+    auto b1 = ork::deco::format(255,192,255, "%s", file );
+    auto b2 = ork::deco::format(255,128,255, "%d", line );
+    auto b3 = ork::deco::format(255,255,0, "%s", formatbuffer );
+
+    snprintf( assertbuffer, 
+              sizeof(assertbuffer), 
+              "%s%s%s%s%s%s%s",
+              a1.c_str(), 
+              b1.c_str(),
+              a2.c_str(), 
+              b2.c_str(), 
+              a3.c_str(), 
+              b3.c_str(), 
+              a4.c_str() );
+
+    OrkAssertFunction(assertbuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
