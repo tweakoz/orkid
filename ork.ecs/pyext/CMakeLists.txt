@@ -30,7 +30,7 @@ target_include_directories (_ecs PRIVATE ${INCD} ${INCD2} ${INCD3} )
 target_link_libraries(_ecs LINK_PUBLIC ork_core ork_lev2 ork_ecs )
 
 #target_link_libraries(_ecs PUBLIC ${PYTHON_LIBRARY_PATH} )
-target_link_options(_ecs PUBLIC -Wl,-rpath )
+#target_link_options(_ecs PUBLIC -Wl,-rpath )
 
 set_target_properties( _ecs
   PROPERTIES
@@ -43,6 +43,8 @@ if( APPLE )
     PROPERTIES
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib"
+      BUILD_WITH_INSTALL_RPATH TRUE
   )
 else()
   target_link_options(_ecs PUBLIC -Wl,--no-undefined )

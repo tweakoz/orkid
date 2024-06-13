@@ -24,7 +24,7 @@ ork_std_target_opts(ork_ecs)
 ###################################
 
 set( libs ork_core ork_lev2 )
-list(APPEND libs OpenImageIO OpenImageIO_Util )
+#list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs BulletCollision BulletDynamics LinearMath )
 list(APPEND libs luajit-5.1 )
 IF(${APPLE})
@@ -35,7 +35,7 @@ ELSEIF(${UNIX})
 ENDIF()
 list(APPEND libs luajit-5.1 )
 
-target_link_libraries(ork_ecs LINK_PUBLIC ${libs})
+target_link_libraries(ork_ecs PRIVATE ${libs})
 
 target_include_directories (ork_ecs PRIVATE ${INCD} )
 target_include_directories (ork_ecs PRIVATE ${SRCD} )
