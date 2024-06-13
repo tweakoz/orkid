@@ -15,8 +15,8 @@ sys.path.append(str(thisdir()/".."/"particles"))
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+from lev2utils.primitives import createGridData
+from lev2utils.scenegraph import createSceneGraph
 
 from _ptc_harness import *
 

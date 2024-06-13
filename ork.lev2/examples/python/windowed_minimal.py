@@ -12,7 +12,7 @@ from orkengine.lev2 import *
 from pathlib import Path
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(this_dir))
-from common.shaders import Shader
+from lev2utils.shaders import Shader
 
 class MyApp(object):
   ###########################

@@ -13,9 +13,9 @@ from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
-from common.cameras import *
-from common.scenegraph import createSceneGraph
-from common.lighting import MySpotLight, MyCookie
+from lev2utils.cameras import *
+from lev2utils.scenegraph import createSceneGraph
+from lev2utils.lighting import MySpotLight, MyCookie
 from signal import signal, SIGINT
 
 tokens = CrcStringProxy()

@@ -8,7 +8,7 @@ args = sys.argv[1:]
 assert(len(args)==2)
 
 cmd_list = [
-  "obt.dep.findtext.py",
+  "obt.dep.replacetext.py",
   "--dep",
   "orkid",
   "--find",

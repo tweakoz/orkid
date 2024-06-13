@@ -13,7 +13,7 @@ from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 lev2_pyexdir.addToSysPath()
-from common.scenegraph import createSceneGraph
+from lev2utils.scenegraph import createSceneGraph
 from _ptc_harness import *
 
 ################################################################################

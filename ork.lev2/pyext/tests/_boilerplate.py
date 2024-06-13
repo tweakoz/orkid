@@ -12,11 +12,11 @@ from orkengine.lev2 import *
 
 l2exdir = (lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
-from common.primitives import createGridData
-from common.cameras import *
-from common.shaders import *
-from common.misc import *
-from common.scenegraph import createSceneGraph
+from lev2utils.primitives import createGridData
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.misc import *
+from lev2utils.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 constants = mathconstants()

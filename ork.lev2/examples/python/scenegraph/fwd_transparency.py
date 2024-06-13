@@ -9,10 +9,10 @@ import math, sys, os
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string)# add parent dir to path
-from common.cameras import setupUiCamera
-from common.shaders import createPipeline
-from common.primitives import createCubePrim, createFrustumPrim, createGridData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import setupUiCamera
+from lev2utils.shaders import createPipeline
+from lev2utils.primitives import createCubePrim, createFrustumPrim, createGridData
+from lev2utils.scenegraph import createSceneGraph
 
 #########################################
 

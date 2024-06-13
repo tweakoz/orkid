@@ -11,10 +11,10 @@ import sys, math, random, signal, numpy, obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData, createCubePrim
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.primitives import createGridData, createCubePrim
+from lev2utils.scenegraph import createSceneGraph
 from PIL import Image
 
 do_offscreen = False 

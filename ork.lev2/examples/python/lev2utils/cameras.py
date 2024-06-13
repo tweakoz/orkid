@@ -1,7 +1,7 @@
 from orkengine.core import *
 from orkengine.lev2 import *
-import random
 
+print("AAA")
 constants = mathconstants()
 
 def setupUiCameraX( near = 0.1,
@@ -36,6 +36,8 @@ def setupUiCameraX( near = 0.1,
   return camera, uicam
 
 ###########################################################3
+
+print("BBB")
 
 def setupUiCamera( app = None,
                    near = 0.1,
@@ -74,6 +76,7 @@ class UiWanderingCameraPanel:
     self.counter = 0
 
   def update(self):
+    import random
     def genpos():
       r = vec3(0)
       r.x = random.uniform(-10,10)
@@ -98,3 +101,5 @@ class UiWanderingCameraPanel:
     self.uicam.updateMatrices()
 
     self.camera.copyFrom( self.uicam.cameradata )
+
+print("CCC")

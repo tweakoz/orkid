@@ -14,11 +14,11 @@ from orkengine.lev2 import *
 ################################################################################
 
 sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.shaders import *
-from common.misc import *
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.misc import *
+from lev2utils.primitives import createGridData
+from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 

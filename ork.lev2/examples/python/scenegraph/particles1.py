@@ -12,9 +12,9 @@ from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.primitives import createParticleData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.primitives import createParticleData
+from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')

@@ -17,7 +17,7 @@ tokens = CrcStringProxy()
 l2exdir = (lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
 
-from common.primitives import createCubePrim
+from lev2utils.primitives import createCubePrim
 
 WIDTH = 2560
 HEIGHT = 1440

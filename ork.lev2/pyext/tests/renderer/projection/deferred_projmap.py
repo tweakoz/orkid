@@ -16,10 +16,10 @@ from PIL import Image
 
 lev2_pyexdir.addToSysPath()
 this_dir = obt.path.directoryOfInvokingModule()
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData, createCubePrim
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.primitives import createGridData, createCubePrim
+from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 

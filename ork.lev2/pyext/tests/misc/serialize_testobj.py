@@ -8,7 +8,7 @@ from orkengine.lev2 import *
 lev2appinit()
 l2exdir = (lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
-from common.primitives import createParticleData
+from lev2utils.primitives import createParticleData
 
 DECO = obt.deco.Deco()
 

@@ -16,6 +16,8 @@ thisdir = path.directoryOfInvokingModule()
 
 sys.path.append(str(thisdir/".."/".."/"ork.lev2"/"examples"/"python")) # add parent dir to path
 
+print("WTF")
+print(sys.argv)
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
@@ -74,12 +76,22 @@ if args["encrypt"]:
 
 from orkengine.core import *
 from orkengine.lev2 import *
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+
+def trace_imports(frame, event, arg):
+    if event == "import":
+        module_name = arg
+        print(f"Importing module: {module_name}")
+    return trace_imports
+
+sys.settrace(trace_imports) 
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.primitives import createGridData
+from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
+
+#assert(False)
 
 class SceneGraphApp(object):
 
@@ -214,4 +226,5 @@ class SceneGraphApp(object):
 
 ###############################################################################
 
+print("XXXX")
 SceneGraphApp().ezapp.mainThreadLoop()

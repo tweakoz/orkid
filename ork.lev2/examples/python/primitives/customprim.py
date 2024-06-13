@@ -22,8 +22,8 @@ from pathlib import Path
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 pyex_dir = (this_dir/"..").resolve()
 sys.path.append(str(pyex_dir))
-from common.shaders import Shader
-from common.submeshes import FrustumQuads
+from lev2utils.shaders import Shader
+from lev2utils.submeshes import FrustumQuads
 #########################################
 os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 ################################################################################

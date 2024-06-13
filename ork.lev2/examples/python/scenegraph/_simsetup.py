@@ -6,10 +6,10 @@ import pyopencl as cl
 mf = cl.mem_flags
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string)
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createCubePrim, createGridData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.primitives import createCubePrim, createGridData
+from lev2utils.scenegraph import createSceneGraph
 ################################################################################
 class InstanceSet(object):
   ########################################################

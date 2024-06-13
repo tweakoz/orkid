@@ -12,8 +12,8 @@ from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 

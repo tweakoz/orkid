@@ -11,7 +11,7 @@ import signal
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
-from common.scenegraph import createSceneGraph
+from lev2utils.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 
