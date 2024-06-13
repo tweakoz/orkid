@@ -51,7 +51,7 @@ public:
   void setAutoSpawn(bool val) { _autospawn=val; }
   bool autoSpawn() const { return _autospawn; }
 
-private:
+public:
   bool _autospawn = true;
   archetype_constptr_t _archetype;
   orklut<ConstString, ConstString> mUserProperties;

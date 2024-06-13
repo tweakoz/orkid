@@ -14,16 +14,41 @@ namespace ork::ecs {
 void pyinit_scene(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneObject,sceneobject_ptr_t>(module_ecs, "SceneObject")
-      .def(
-          "__repr__",
-          [](const sceneobject_ptr_t& sobj) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("ecs::SceneObject(%p)", sobj.get());
-            return fxs.c_str();
-          });
+  auto so_type = py::class_<SceneObject, sceneobject_ptr_t>(module_ecs, "SceneObject")
+                     .def("__repr__", [](const sceneobject_ptr_t& sobj) -> std::string {
+                       fxstring<256> fxs;
+                       fxs.format("ecs::SceneObject(%p)", sobj.get());
+                       return fxs.c_str();
+                     });
+  type_codec->registerStdCodec<sceneobject_ptr_t>(so_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneData,scenedata_ptr_t>(module_ecs, "SceneData")
+  auto sdo_type = py::class_<SceneDagObject, SceneObject, scenedagobject_ptr_t>(module_ecs, "SceneDagObject")
+                      .def("__repr__", [](const scenedagobject_ptr_t& sobj) -> std::string {
+                        fxstring<256> fxs;
+                        fxs.format("ecs::SceneDagObject(%p)", sobj.get());
+                        return fxs.c_str();
+                      });
+  type_codec->registerStdCodec<scenedagobject_ptr_t>(sdo_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sd_type = py::class_<SpawnData, SceneDagObject, spawndata_ptr_t>(module_ecs, "SpawnData")
+                     .def(
+                         "__repr__",
+                         [](const spawndata_ptr_t& sobj) -> std::string {
+                           fxstring<256> fxs;
+                           fxs.format("ecs::SpawnData(%p)", sobj.get());
+                           return fxs.c_str();
+                         })
+                     .def_property(
+                         "archetype",
+                         [](spawndata_ptr_t spawndata) -> archetype_ptr_t { 
+                            return std::const_pointer_cast<Archetype>(spawndata->_archetype); 
+                         },
+                         [](spawndata_ptr_t spawndata, archetype_ptr_t arch) { 
+                          spawndata->_archetype = arch; 
+                         });
+  type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")
       .def(py::init<>())
       .def(
           "__repr__",
@@ -32,20 +57,21 @@ void pyinit_scene(py::module& module_ecs) {
             fxs.format("ecs::SceneData(%p)", scenedata.get());
             return fxs.c_str();
           })
-    .def("addSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) {
-        return scenedata->AddSceneObject(sobj);
-      })
-      .def("addSceneGraphSystem", [](scenedata_ptr_t scenedata) {
-        return scenedata->getTypedSystemData<SceneGraphSystemData>();
-      })
-      .def("createArchetype", [](scenedata_ptr_t scenedata, std::string name) {
-        auto psname = AddPooledString(name.c_str());
-        return scenedata->createSceneObject<Archetype>(psname);
-      })
+      .def("addSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) { return scenedata->AddSceneObject(sobj); })
+      .def("addSceneGraphSystem", [](scenedata_ptr_t scenedata) { return scenedata->getTypedSystemData<SceneGraphSystemData>(); })
+      .def("createSpawnData", [](scenedata_ptr_t scenedata, std::string named ) { //
+        auto psname = AddPooledString(named.c_str());
+        return scenedata->createSceneObject<SpawnData>(psname);
+        })
+      .def(
+          "createArchetype",
+          [](scenedata_ptr_t scenedata, std::string named) {
+            auto psname = AddPooledString(named.c_str());
+            return scenedata->createSceneObject<Archetype>(psname);
+          })
       //
-      .def("createSystem", [](scenedata_ptr_t scenedata, std::string name) {
-        return scenedata->addSystemWithClassName(name);
-      });
+      .def("createSystem", [](scenedata_ptr_t scenedata, std::string name) { return scenedata->addSystemWithClassName(name); });
+
   /////////////////////////////////////////////////////////////////////////////////
 
   /*pyinit_gfx_material(module_lev2);
@@ -71,4 +97,4 @@ void pyinit_scene(py::module& module_ecs) {
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_scene(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::ecs {
+} // namespace ork::ecs

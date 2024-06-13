@@ -53,7 +53,17 @@ void pyinit_simulation(py::module& module_ecs) {
             fxs.format("ecs::Simulation(%p)", sdata.get());
             return fxs.c_str();
           });
-  /////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+  py::class_<SpawnAnonDynamic>(module_ecs, "SpawnAnonDynamic")
+    .def(py::init([](std::string name) {
+      SpawnAnonDynamic rval;
+      rval._edataname = AddPooledString(name.c_str());
+      rval._overridexf = std::make_shared<DecompTransform>();
+      return rval;
+    }))
+    .def_property_readonly("name", [](const SpawnAnonDynamic& self) { return self._edataname; })
+    .def_property_readonly("overridexf", [](const SpawnAnonDynamic& self) { return self._overridexf; });
+    /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_simulation(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs {

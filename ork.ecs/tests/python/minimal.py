@@ -32,7 +32,9 @@ class MinimalSceneGraphApp(object):
     setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
-    self.a1 = self.ecsscene.createArchetype("a1")
+    self.a1 = self.ecsscene.createArchetype("arch1")
+    self.spawnd1 = self.ecsscene.createSpawnData("spawn1")
+    self.spawnd1.archetype = self.a1
     self.comp_sg = self.a1.createComponent("SceneGraphComponent")
     self.comp_phys = self.a1.createComponent("BulletObjectComponent")
 
@@ -59,8 +61,14 @@ class MinimalSceneGraphApp(object):
     self.sys_phys = self.controller.findSystem("BulletSystem")
     print(self.sys_phys)
 
-    self.controller.systemNotify(self.sys_phys,tokens.YO,True)
+    self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
 
+    SAD = ecs.SpawnAnonDynamic("spawn1")
+    SAD.overridexf.translation = vec3(0,0,0)
+    SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+    SAD.overridexf.scale = 1.0
+    
+    self.e1 = self.controller.spawnEntity(SAD)
     #createSceneGraph(app=self,rendermodel="DeferredPBR")
     #pmatrix = fmtx4_to_dmtx4(ctx.perspective(45,1,0.25,3))
     #vmatrix = dmtx4.lookAt(dvec3(0, 0, 0),  # eye

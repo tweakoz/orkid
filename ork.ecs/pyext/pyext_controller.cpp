@@ -51,6 +51,11 @@ void pyinit_controller(py::module& module_ecs) {
         
         ctrl->systemNotify(sys,*evID,decoded);
       })
+      .def("spawnEntity", [type_codec](controller_ptr_t ctrl, //
+                              const SpawnAnonDynamic& sad) -> ent_ref_t {
+        ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
+        return eref;
+      })
       ;
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SystemRef>(module_ecs, "SystemRef")
@@ -59,6 +64,15 @@ void pyinit_controller(py::module& module_ecs) {
             [](const sys_ref_t& sys) -> std::string {
                 fxstring<256> fxs;
                 fxs.format("ecs::SystemRef id(0x%zx)", sys._sysID);
+                return fxs.c_str();
+            });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<EntityRef>(module_ecs, "EntityRef")
+        .def(
+            "__repr__",
+            [](const ent_ref_t& sys) -> std::string {
+                fxstring<256> fxs;
+                fxs.format("ecs::EntityRef id(0x%zx)", sys._entID);
                 return fxs.c_str();
             });
   /////////////////////////////////////////////////////////////////////////////////

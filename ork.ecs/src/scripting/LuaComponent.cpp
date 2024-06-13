@@ -273,12 +273,11 @@ void LuaComponent::_onDeactivate(Simulation* psi) {
 
 void LuaComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
 
-  svar64_t lua_conv_data;
   ScriptVar luaID;
   luaID._encoded = evID;
 
   ScriptVar luadata;
-  luadata._encoded = lua_conv_data;
+  luadata._encoded = data;
 
   auto scm = psi->findSystem<LuaSystem>();
 
