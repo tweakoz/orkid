@@ -26,7 +26,7 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
-class ParticlesApp(object):
+class HSVGAPP(object):
 
   def __init__(self):
     super().__init__()
@@ -110,7 +110,7 @@ class ParticlesApp(object):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     time = updinfo.absolutetime
     h = 0.5+math.sin(time*0.4)*0.5
-    s = 0.5+math.sin(time*0.27)*0.4
+    s = 1.5+math.sin(time*0.27)*1.4
     v = 0.5+math.sin(time*0.3)*0.4
     g = 3.0+math.sin(time*0.5)*2.5
     #print("hsvg:",h,s,v,g)
@@ -137,4 +137,4 @@ def sig_handler(signal_received, frame):
 
 signal(SIGINT, sig_handler)
 
-ParticlesApp().ezapp.mainThreadLoop()
+HSVGAPP().ezapp.mainThreadLoop()
