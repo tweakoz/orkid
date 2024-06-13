@@ -69,7 +69,7 @@ class ParticlesApp(object):
     postNode.gamma = 2.2
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
-    #self.post_node = postNode
+    self.post_node = postNode
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -108,6 +108,16 @@ class ParticlesApp(object):
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    time = updinfo.absolutetime
+    h = 0.5+math.sin(time*0.4)*0.5
+    s = 0.5+math.sin(time*0.27)*0.4
+    v = 0.5+math.sin(time*0.3)*0.4
+    g = 3.0+math.sin(time*0.5)*2.5
+    #print("hsvg:",h,s,v,g)
+    self.post_node.hue = h
+    self.post_node.saturation = s
+    self.post_node.value = v
+    self.post_node.gamma = g
     
   ##############################################
 

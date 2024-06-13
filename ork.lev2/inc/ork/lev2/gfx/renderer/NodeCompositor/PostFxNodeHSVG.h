@@ -21,8 +21,8 @@ public:
 
   float _hue = 0.0f;
   float _saturation = 1.0f;
-  float _value = 1.0;
-  int  _gamma = 1.0;
+  float _value = 1.0f;
+  float _gamma = 1.0f;
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final; // virtual
   void DoRender(CompositorDrawData& drawdata) final;        // virtual
