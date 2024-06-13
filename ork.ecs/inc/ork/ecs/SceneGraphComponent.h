@@ -69,8 +69,8 @@ public:
   void _onUnstage(Simulation* psi) final;
   bool _onActivate(Simulation* psi) final;
   void _onDeactivate(Simulation* psi) final;
-  void _onNotify(Simulation* psi, token_t evID, svar64_t data ) final;
-  void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data) final;
+  void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
+  void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
   ///////////////////////////////
   const SceneGraphComponentData& _SGCD;
 
@@ -159,8 +159,8 @@ struct SceneGraphSystem final : public System {
   void _onUnstage(Simulation* inst) final;
   void _onUpdate(Simulation* inst) final;
   void _onRender(Simulation* psi,ui::drawevent_constptr_t drwev) final;
-  void _onNotify(token_t evID, svar64_t data ) final;
-  void _onRequest(impl::sys_response_ptr_t response, token_t reqID, svar64_t data ) final;
+  void _onNotify(token_t evID, evdata_t data ) final;
+  void _onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data ) final;
   void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) final;
   ///////////////////////////////
   void _rt_process();

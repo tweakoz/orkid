@@ -16,9 +16,10 @@ void pyinit_component(py::module& module_ecs) {
   py::class_<ComponentData,componentdata_ptr_t>(module_ecs, "ComponentData")
       .def(
           "__repr__",
-          [](const componentdata_ptr_t& cdata) -> std::string {
+          [](componentdata_ptr_t cdata) -> std::string {
             fxstring<256> fxs;
-            fxs.format("ecs::ComponentData(%p)", cdata.get());
+            auto clazz = cdata->objectClass();
+            fxs.format("ecs::ComponentData(%p) class<%s>", cdata.get(), clazz->Name().c_str());
             return fxs.c_str();
           });
   /////////////////////////////////////////////////////////////////////////////////

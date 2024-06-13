@@ -521,6 +521,33 @@ float Controller::random(float mmin, float mmax) {
   return mmin + (r * (mmax - mmin));
 }
 
+sys_ref_t Controller::findSystemWithClassName(std::string clazzname) {
+  uint64_t ID = _objectIdCounter.fetch_add(1);
+
+  //////////////////////////////////////////////////////
+  // notify sim to update reference
+  //////////////////////////////////////////////////////
+
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::FIND_SYSTEM;
+  auto& FSYS          = simevent->_payload.make<impl::_FindSystem>();
+
+
+  auto retain_str = std::make_shared<std::string>(clazzname);
+  _retained_strings.push_back(retain_str);
+
+  FSYS._sysref = SystemRef{._sysID = ID};
+  FSYS._syskey = *retain_str;
+
+  _enqueueEvent(simevent);
+
+  //////////////////////////////////////////////////////
+  // return opaque handle
+  //////////////////////////////////////////////////////
+
+  return FSYS._sysref;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs
 ///////////////////////////////////////////////////////////////////////////////

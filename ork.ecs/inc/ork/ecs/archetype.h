@@ -48,6 +48,7 @@ public:
   template <typename T> std::shared_ptr<T> typedComponent();
   template <typename T> std::shared_ptr<const T> typedComponent() const;
   template <typename T> std::shared_ptr<T> addComponent();
+  componentdata_ptr_t addComponentWithClassName(std::string clazzname);
 
   const ComponentDataTable::LutType& componentdata() const {
     return mComponentDatas;

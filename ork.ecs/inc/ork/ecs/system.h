@@ -129,8 +129,8 @@ protected:
   
   void _render(Simulation* psi, ui::drawevent_constptr_t drwev);
   void _renderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
-  void _notify(token_t evID, svar64_t data);
-  void _request(impl::sys_response_ptr_t response, token_t evID, svar64_t data);
+  void _notify(token_t evID, evdata_t data);
+  void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
 
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuExit(Simulation* psi, lev2::Context* ctx);
@@ -149,8 +149,8 @@ protected:
   virtual void _onEndRender() {}
   virtual void _onRender(Simulation* psi, ui::drawevent_constptr_t drwev);
   virtual void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
-  virtual void _onNotify(token_t evID, svar64_t data);
-  virtual void _onRequest(impl::sys_response_ptr_t response, token_t evID, svar64_t data);
+  virtual void _onNotify(token_t evID, evdata_t data);
+  virtual void _onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
 
   const SystemData* _systemData = nullptr;
   Simulation* _simulation       = nullptr;

@@ -21,6 +21,7 @@ void pyinit_component(py::module& module_ecs);
 void pyinit_system(py::module& module_ecs);
 void pyinit_simulation(py::module& module_ecs);
 void pyinit_scenegraph(py::module& module_ecs);
+void pyinit_controller(py::module& module_ecs);
 
 } // namespace ork::ecs
 
@@ -141,7 +142,7 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
 }
 
 PYBIND11_MODULE(_ecs, module_ecs) {
-  // module_ecs.attr("__name__") = "ecs";
+  //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////
@@ -152,6 +153,8 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_system(module_ecs);
   pyinit_simulation(module_ecs);
   pyinit_scenegraph(module_ecs);
+  pyinit_controller(module_ecs);
+  
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
 }

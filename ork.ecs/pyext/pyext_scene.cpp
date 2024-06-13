@@ -32,11 +32,19 @@ void pyinit_scene(py::module& module_ecs) {
             fxs.format("ecs::SceneData(%p)", scenedata.get());
             return fxs.c_str();
           })
-    .def("addSceneObject", [](scenedata_ptr_t& scenedata, sceneobject_ptr_t& sobj) {
+    .def("addSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) {
         return scenedata->AddSceneObject(sobj);
       })
-      .def("addSceneGraphSystem", [](scenedata_ptr_t& scenedata) {
+      .def("addSceneGraphSystem", [](scenedata_ptr_t scenedata) {
         return scenedata->getTypedSystemData<SceneGraphSystemData>();
+      })
+      .def("createArchetype", [](scenedata_ptr_t scenedata, std::string name) {
+        auto psname = AddPooledString(name.c_str());
+        return scenedata->createSceneObject<Archetype>(psname);
+      })
+      //
+      .def("createSystem", [](scenedata_ptr_t scenedata, std::string name) {
+        return scenedata->addSystemWithClassName(name);
       });
   /////////////////////////////////////////////////////////////////////////////////
 

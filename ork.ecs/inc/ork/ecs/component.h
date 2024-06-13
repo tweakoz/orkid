@@ -106,8 +106,8 @@ public:
   bool _activate(Simulation* psi);
   void _deactivate(Simulation* psi);
 
-  void _notify(Simulation* psi, token_t evID, svar64_t data);
-  void _request(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data);
+  void _notify(Simulation* psi, token_t evID, evdata_t data);
+  void _request(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data);
 
 protected:
   Component(const ComponentData* data, Entity* entity);
@@ -121,8 +121,8 @@ protected:
   virtual bool _onActivate(Simulation* psi);
   virtual void _onDeactivate(Simulation* psi);
 
-  virtual void _onNotify(Simulation* psi, token_t evID, svar64_t data );
-  virtual void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data);
+  virtual void _onNotify(Simulation* psi, token_t evID, evdata_t data );
+  virtual void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data);
 
   const ComponentData* mComponentData = nullptr;
   Entity* _entity                     = nullptr;

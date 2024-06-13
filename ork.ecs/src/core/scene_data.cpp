@@ -361,6 +361,24 @@ void SceneData::addSystemData(systemdata_ptr_t pcomp) {
   printf("ADDSYS<%s:%p>\n", classname.c_str(), (void*)pcomp.get());
   _systemDatas[classname] = pcomp;
 }
+
+systemdata_ptr_t SceneData::addSystemWithClassName(std::string clazzname){
+  auto clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass("Ecs" + clazzname + "Data");
+  if(clazz==nullptr){
+    // try appending Data
+    clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass(clazzname + "Data");
+    if( clazz == nullptr ){
+      clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass(clazzname);
+      // try prepending Ecs and appending Data
+    }
+  }
+  OrkAssert(clazz!=nullptr);
+  auto pobj = std::dynamic_pointer_cast<SystemData>(clazz->createShared());
+  _systemDatas[clazzname] = pobj;
+  return pobj;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData* psd)
     : _scenedata(psd) {

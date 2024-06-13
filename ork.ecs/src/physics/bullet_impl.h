@@ -182,8 +182,8 @@ public:
   btRigidBody* _rigidbody = nullptr;
   BulletShapeBaseInst* _shapeinst = nullptr;
 
-  void _onNotify(Simulation* psi, token_t evID, svar64_t data ) final;
-  void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data) final;
+  void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
+  void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
 
   bool _onLink(Simulation* sim) final;
   void _onUnlink(Simulation* sim) final;

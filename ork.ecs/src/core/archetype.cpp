@@ -130,4 +130,20 @@ void Archetype::deleteComponents() {
   mComponentDatas.clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<ComponentData> Archetype::addComponentWithClassName(std::string clazzname){
+  auto clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass("Ecs" + clazzname + "Data");
+  if(clazz==nullptr){
+    // try appending Data
+    clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass(clazzname + "Data");
+    if( clazz == nullptr ){
+      clazz = (ork::object::ObjectClass*) ork::rtti::Class::FindClass(clazzname);
+      // try prepending Ecs and appending Data
+    }
+  }
+  OrkAssert(clazz!=nullptr);
+  auto pobj = std::dynamic_pointer_cast<ComponentData>(clazz->createShared());
+  mComponentDatas.AddSorted(clazz, pobj);
+  return pobj;
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs

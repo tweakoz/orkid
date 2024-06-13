@@ -122,6 +122,7 @@ struct Controller {
 	void despawnEntity(const ent_ref_t& EREF);
   
   template <typename T> sys_ref_t findSystem();
+  sys_ref_t findSystemWithClassName(std::string clazzname);
   template <typename T> comp_ref_t findEntityComponent(ent_ref_t ent);
 
 	void realtimeDelayedOperation(float timestamp,void_lambda_t op);
@@ -185,6 +186,8 @@ private:
 
 	Timer _timer;
 	bool _needsGpuInit = true;
+
+	std::vector<std::shared_ptr<std::string>> _retained_strings;
 
 };
 

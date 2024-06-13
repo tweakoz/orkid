@@ -27,7 +27,7 @@ public:
   void _onUnstage(Simulation* psi) final;
   bool _onActivate(Simulation* psi) final;
   void _onDeactivate(Simulation* psi) final;
-  void _onNotify(Simulation* psi, token_t evID, svar64_t data ) final;
+  void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
 
   const InterpComponentData& mCD;
 

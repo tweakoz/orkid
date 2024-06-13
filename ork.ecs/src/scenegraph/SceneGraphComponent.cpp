@@ -124,7 +124,7 @@ void SceneGraphComponent::_onDeactivate(Simulation* psi) {
   _system->_onDeactivateComponent(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, svar64_t data) {
+void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
   switch (evID.hashed()) {
     case SceneGraphSystem::DestroyNode._hashed: {
 
@@ -182,7 +182,7 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, svar64_t data
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t reqID, svar64_t data) {
+void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t reqID, evdata_t data) {
   switch (reqID.hashed()) {
     case SceneGraphSystem::CreateNode._hashed: {
 
@@ -634,7 +634,7 @@ void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphSystem::_onNotify(token_t evID, svar64_t data) {
+void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
     case UpdateCamera._hashed: {
@@ -685,7 +685,7 @@ void SceneGraphSystem::_onNotify(token_t evID, svar64_t data) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t reqID, svar64_t data) {
+void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data) {
 
   switch (reqID.hashed()) {
     case CreateNode.hashed(): {

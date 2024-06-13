@@ -260,7 +260,7 @@ BulletObjectForceControllerInst* BulletObjectComponent::getForceController(std::
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void BulletObjectComponent::_onNotify(Simulation* psi, token_t evID, svar64_t data ) {
+void BulletObjectComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data ) {
   switch (evID.hashed()) {
     case "SetDirectionalForce"_crcu: {
       const auto& vars = data.get<ScriptTable>()._items;
@@ -282,7 +282,7 @@ void BulletObjectComponent::_onNotify(Simulation* psi, token_t evID, svar64_t da
       break;
   }
 }
-void BulletObjectComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data) {
+void BulletObjectComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) {
   switch (evID.hashed()) {
     case "CreateDirectionalForce"_crcu: {
 

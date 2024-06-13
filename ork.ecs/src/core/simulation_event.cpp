@@ -83,7 +83,13 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
         auto& system_var = it->second;
         the_system       = system_var.get<System*>();
       });
-      the_system->_notify(SEV._eventID,SEV._eventData);
+      if(the_system){
+        printf( "Simulation::_onControllerEvent SYSTEM_EVENT system <%p>\n", (void*) the_system );
+        the_system->_notify(SEV._eventID,SEV._eventData);
+      }
+      else{
+        printf( "Simulation::_onControllerEvent SYSTEM_EVENT system not found\n");
+      }
       break;
     }
     ///////////////////////////////////////////////////////////////
@@ -100,8 +106,13 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
       _systems.atomicOp([&](const SystemLut& unlocked) {
         auto it    = unlocked.find(FEV._syskey);
         bool found = (it != unlocked.end());
-        if (found)
+        if (found){
+          printf( "system ID<%d> for key<%s> found\n", FEV._sysref._sysID, FEV._syskey.data());
           the_system = (it->second);
+        }
+        else{
+          printf( "system ID<%d> for key<%s> not found\n", FEV._sysref._sysID, FEV._syskey.data());
+        }
       });
       _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { //
         unlocked[FEV._sysref._sysID].set<System*>(the_system);                         //

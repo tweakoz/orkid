@@ -18,7 +18,8 @@ void pyinit_system(py::module& module_ecs) {
           "__repr__",
           [](const systemdata_ptr_t& sysdata) -> std::string {
             fxstring<256> fxs;
-            fxs.format("ecs::SystemData(%p)", sysdata.get());
+            auto clazz = sysdata->objectClass();
+            fxs.format("ecs::SystemData(%p) class<%s>", sysdata.get(), clazz->Name().c_str());
             return fxs.c_str();
           });
   /////////////////////////////////////////////////////////////////////////////////

@@ -352,7 +352,7 @@ void pyinit_math_la_t(py::module& module_core, //
             auto str = mtx.dumpcn();
             return str.c_str();
           });
-  type_codec->registerStdCodec<mat3_t>(mtx3_type);
+  type_codec->registerStdCodecBIG<mat3_t>(mtx3_type);
       /////////////////////////////////////////////////////////////////////////////////
   auto mat4_type = //
       py::class_<mat4_t>(module_core, mat4_name.c_str(), pybind11::buffer_protocol(),
@@ -528,7 +528,7 @@ void pyinit_math_la_t(py::module& module_core, //
             auto str = mtx.dump4x3cn();
             return str.c_str();
           });
-  type_codec->registerStdCodec<mat4_t>(mat4_type);
+  type_codec->registerStdCodecBIG<mat4_t>(mat4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ray3_type = //
       py::class_<ray3_t>(module_core, ray3_name.c_str(), pybind11::buffer_protocol())

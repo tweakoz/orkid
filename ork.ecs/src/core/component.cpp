@@ -120,16 +120,16 @@ void Component::_deactivate(Simulation* psi) {
 void Component::_onDeactivate(Simulation* psi) {
 }
 //////////////////////////////////////////////////////////
-void Component::_notify(Simulation* psi, token_t evID, svar64_t data) {
+void Component::_notify(Simulation* psi, token_t evID, evdata_t data) {
   return _onNotify(psi, evID, data);
 }
-void Component::_onNotify(Simulation* psi, token_t evID, svar64_t data) {
+void Component::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
 }
 //////////////////////////////////////////////////////////
-void Component::_request(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data) {
+void Component::_request(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) {
   _onRequest(psi, response, evID, data);
 }
-void Component::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, svar64_t data) {
+void Component::_onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) {
 }
 //////////////////////////////////////////////////////////
 //void Component::_update(Simulation* inst) {

@@ -99,6 +99,7 @@ public:
     return _systemDatas;
   }
   void addSystemData(systemdata_ptr_t pcomp);
+  systemdata_ptr_t addSystemWithClassName(std::string clazzname);
 
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;
 

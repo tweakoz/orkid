@@ -159,12 +159,12 @@ void System::_onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standar
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void System::_onNotify(token_t evID, svar64_t data) {
+void System::_onNotify(token_t evID, evdata_t data) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void System::_onRequest(impl::sys_response_ptr_t response, token_t evID, svar64_t data) {
+void System::_onRequest(impl::sys_response_ptr_t response, token_t evID, evdata_t data) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -235,13 +235,14 @@ void System::_renderWithStandardCompositorFrame(Simulation* psi, lev2::standardc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void System::_notify(token_t evID, svar64_t data) {
+void System::_notify(token_t evID, evdata_t data) {
+  printf( "System::_notify<%08x>\n", evID._hashed );
   _onNotify(evID, data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void System::_request(impl::sys_response_ptr_t response, token_t evID, svar64_t data) {
+void System::_request(impl::sys_response_ptr_t response, token_t evID, evdata_t data) {
   _onRequest(response, evID, data);
 }
 

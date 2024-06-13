@@ -145,6 +145,8 @@ token_t tokenize(const ECSTOK& tok);
 token_t tokenize(const std::string& str);
 std::string detokenize(token_t token);
 
+using evdata_t = svar64_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using scriptwrapper_t = std::shared_ptr<ScriptWrapper>;
@@ -172,6 +174,7 @@ using archetype_constptr_t = std::shared_ptr<const Archetype>;
 using sceneobject_constptr_t = std::shared_ptr<const SceneObject>;
 using cfragmentdata_constptr_t = std::shared_ptr<const ComponentFragmentData>;
 using componentdata_constptr_t = std::shared_ptr<const ComponentData>;
+using componentdata_ptr_t = std::shared_ptr<ComponentData>;
 using systemdata_constptr_t = std::shared_ptr<const SystemData>;
 using dagnodedata_constptr_t = std::shared_ptr<const DagNodeData>;
 using scenedagobject_constptr_t = std::shared_ptr<const SceneDagObject>;

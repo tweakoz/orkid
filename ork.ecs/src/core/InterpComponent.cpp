@@ -119,7 +119,7 @@ void InterpComponent::_onDeactivate(Simulation* psi){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InterpComponent::_onNotify(Simulation* psi, token_t evID, svar64_t data ){
+void InterpComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data ){
   auto system = psi->findSystem<InterpSystem>();
   if (system) {
   	switch(evID._hashed){

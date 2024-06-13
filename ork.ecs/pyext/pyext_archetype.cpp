@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/entity.inl>
+#include <ork/ecs/archetype.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,11 +23,8 @@ void pyinit_archetype(py::module& module_ecs) {
             fxs.format("ecs::Archetype(%p)", (void*) arch.get());
             return fxs.c_str();
           })
-      .def("addSceneGraphComponent", [](archetype_ptr_t& arch) -> sgcd_ptr_t {
-        printf( "creating SGCD1 arch<%p>\n", (void*) arch.get());
-        auto X = arch->addComponent<SceneGraphComponentData>();
-        printf( "creating SGCD2\n");
-        fflush(stdout);
+      .def("createComponent", [](archetype_ptr_t& arch, std::string classname) -> componentdata_ptr_t {
+        auto X = arch->addComponentWithClassName(classname.c_str());
         return X;
       });
   /////////////////////////////////////////////////////////////////////////////////
