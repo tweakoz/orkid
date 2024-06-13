@@ -324,6 +324,7 @@ class RtGroupOutputCompositingNode;
 class RenderCompositingNode;
 class PostCompositingNode;
 class PostFxNodeDecompBlur;
+class PostFxNodeHSVG;
 class LambdaPostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
 struct AcquiredRenderDrawBuffer;
@@ -355,6 +356,7 @@ using acqupdatebuffer_constptr_t = std::shared_ptr<const AcquiredUpdateDrawBuffe
 using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>;
 
 using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
+using postnode_hsvg_ptr_t = std::shared_ptr<PostFxNodeHSVG>;
 using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////

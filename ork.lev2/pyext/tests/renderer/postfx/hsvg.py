@@ -19,8 +19,6 @@ from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 
-from _ptc_harness import *
-
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
 
@@ -32,7 +30,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
+    self.ezapp = OrkEzApp.create(self,ssaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -64,11 +62,11 @@ class ParticlesApp(object):
     ###################################
     # post fx node
     ###################################
-    postNode = PostFxNodeDecompBlur()
-    postNode.threshold = 0.99
-    postNode.blurwidth = 8.0
-    postNode.blurfactor = 0.15
-    postNode.amount = 0.1
+    postNode = PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.2
+    postNode.value = 1.0
+    postNode.gamma = 2.2
     postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
     #self.post_node = postNode
@@ -80,11 +78,6 @@ class ParticlesApp(object):
     self.render_node = self.scene.compositorrendernode
     self.pbr_common = self.render_node.pbr_common
     self.pbr_common.useFloatColorBuffer = True
-    ###################################
-    # create particle drawable 
-    ###################################
-    self.ptc_systems = gen_psys_set(self.scene,
-                                    self.layer_fwd)
     #######################################
     gmtl = PBRMaterial() 
     gmtl.texColor = Texture.load("src://effect_textures/white.dds")
@@ -115,22 +108,6 @@ class ParticlesApp(object):
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-    for item in self.ptc_systems:
-
-      prv_trans = item.particlenode.worldTransform.translation
-      f = - item.frq
-      x = item.radius*math.cos(updinfo.absolutetime*f)
-      y = 30+math.sin(updinfo.absolutetime*f)*30
-      z = item.radius*math.sin(updinfo.absolutetime*f)*-1.0
-      
-      new_trans = vec3(x,y,z)
-
-      #delta_dir = (new_trans-prv_trans).normalized()
-      #item.EMITN.inputs.Offset = new_trans
-      #item.EMITR.inputs.Offset = new_trans
-      #item.PNTA.inputs.position = new_trans
-      
-      item.particlenode.worldTransform.translation = new_trans
     
   ##############################################
 

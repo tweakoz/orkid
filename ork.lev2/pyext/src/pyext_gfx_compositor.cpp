@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -81,7 +82,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<lambda_postnode_ptr_t>(lambdapostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto dcblurpostnode_type = //
-      py::class_<PostFxNodeDecompBlur, PostCompositingNode, decompblur_postnode_ptr_t>(module_lev2, "DecompBlurPostFxNode")
+      py::class_<PostFxNodeDecompBlur, PostCompositingNode, decompblur_postnode_ptr_t>(module_lev2, "PostFxNodeDecompBlur")
           .def(py::init<>())
           .def("gpuInit",[](decompblur_postnode_ptr_t dcnode, ctx_t ctx, int w, int h) {
             dcnode->gpuInit(ctx.get(), w, h);
@@ -129,6 +130,56 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<decompblur_postnode_ptr_t>(dcblurpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dchsvgpostnode_type = //
+      py::class_<PostFxNodeHSVG, PostCompositingNode, postnode_hsvg_ptr_t>(module_lev2, "PostFxNodeHSVG")
+          .def(py::init<>())
+          .def("gpuInit",[](postnode_hsvg_ptr_t dcnode, ctx_t ctx, int w, int h) {
+            dcnode->gpuInit(ctx.get(), w, h);
+          })
+          .def("addToVarMap",[](postnode_hsvg_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
+            OrkAssert(typeid(compositorpostnode_ptr_t)!=typeid(postnode_hsvg_ptr_t));
+            auto as_postnode = std::dynamic_pointer_cast<PostCompositingNode>(dcnode);
+            vm->makeValueForKey<compositorpostnode_ptr_t>(key,as_postnode);
+          })
+          .def_property("hue",
+            [](postnode_hsvg_ptr_t dcnode) -> float {
+              return dcnode->_hue;
+            },
+            [](postnode_hsvg_ptr_t dcnode, float hue){
+              dcnode->_hue = hue;
+            }
+          )
+          .def_property("saturation",
+            [](postnode_hsvg_ptr_t dcnode) -> float {
+              return dcnode->_saturation;
+            },
+            [](postnode_hsvg_ptr_t dcnode, float saturation){
+              dcnode->_saturation = saturation;
+            }
+          )
+          .def_property("value",
+            [](postnode_hsvg_ptr_t dcnode) -> float {
+              return dcnode->_value;
+            },
+            [](postnode_hsvg_ptr_t dcnode, float value){
+              dcnode->_value = value;
+            }
+          )
+          .def_property("gamma",
+            [](postnode_hsvg_ptr_t dcnode) -> float {
+              return dcnode->_gamma;
+            },
+            [](postnode_hsvg_ptr_t dcnode, float gamma){
+              dcnode->_gamma = gamma;
+            }
+          )
+          .def("__repr__", [](postnode_hsvg_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeHSVG(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_hsvg_ptr_t>(dchsvgpostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
