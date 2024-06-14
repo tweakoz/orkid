@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static const bool USE_GIMPACT = true;
-static constexpr bool DEBUG_LOG = true;
+static constexpr bool DEBUG_LOG = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -247,7 +247,7 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
 
   auto sim = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
   auto bulletsys = sim->findSystem<BulletSystem>();
-  //dynaworld->applyGravity();
+  dynaworld->applyGravity();
 
   ////////////////////////////////////////
   // update bullet family components
@@ -257,11 +257,12 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
   auto exp_grav = orkv3tobtv3(exp_grav_ork);
 
   for( BulletObjectComponent* component : bulletsys->_activeComponents ){
-    component->update(sim, timeStep);
     if(component->_rigidbody){
-      printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
-      component->_rigidbody->applyCentralForce(exp_grav);
+      //component->_rigidbody->activate(true);
+      //printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
+      //component->_rigidbody->applyCentralForce(exp_grav);
     }
+    component->update(sim, timeStep);
   }
   
 }

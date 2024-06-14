@@ -282,7 +282,7 @@ ent_ref_t Controller::spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD) {
     IMPL._spawn_rec = SAD._userspawndata;
   }
   else{
-    printf("FIND SAD._edataname<%s>\n", SAD._edataname.c_str());
+    //printf("FIND SAD._edataname<%s>\n", SAD._edataname.c_str());
     IMPL._spawn_rec = _scenedata->findTypedObject<SpawnData>(SAD._edataname);
   }
 

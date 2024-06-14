@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os
+import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
 from orkengine import core, lev2, ecs
@@ -32,41 +32,39 @@ class MinimalSceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self)
+    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    #self.materials = set()
-    setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, eye = vec3(10,10,10)*3, tgt=vec3(0,5,0), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
-    self.a1 = self.ecsscene.createArchetype("BoxArchetype")
-    self.a2 = self.ecsscene.createArchetype("GroundArchetype")
-
-    self.spawn_box = self.ecsscene.createSpawnData("spawn_box")
-    self.spawn_box.archetype = self.a1
-    self.spawn_box.autospawn = False
-
-    self.spawn_gnd = self.ecsscene.createSpawnData("spawn_gnd")
-    self.spawn_gnd.archetype = self.a2
-    self.spawn_gnd.autospawn = True
 
     ##############################################
-    # setup scene graph
+    # setup global physics 
     ##############################################
 
-    self.comp_sgbox = self.a1.createComponent("SceneGraphComponent")
-    self.comp_sg = self.a1.createComponent("SceneGraphComponent")
-    self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
-
-    self.comp_sggnd = self.a2.createComponent("SceneGraphComponent")
+    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys.expGravity = vec3(0,-9.8*2,0)
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = True
+    
+    self.systemdata_phys = systemdata_phys
 
     ##############################################
-    # setup physics For Box
-    ##############################################
+
+  ##############################################
+
+  def createBallData(self,ctx):
+    self.arch_ball = self.ecsscene.createArchetype("BoxArchetype")
+    self.spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
+    self.spawn_ball.archetype = self.arch_ball
+    self.spawn_ball.autospawn = False
+    self.comp_sg = self.arch_ball.createComponent("SceneGraphComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_phys = self.a1.createComponent("BulletObjectComponent")
+    c_phys = self.arch_ball.createComponent("BulletObjectComponent")
 
     c_phys.mass = 1.0
     c_phys.friction = 0.1
@@ -78,85 +76,66 @@ class MinimalSceneGraphApp(object):
     c_phys.disablePhysics = False
     c_phys.shape = sphere
 
-    ##############################################
-    # setup physics For global
-    ##############################################
+    self.comp_phys = c_phys
+
+    #self.cube = prims.createCubePrim(ctx=ctx, size=1.0)
+    #pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+    self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    self.comp_sg.declareNodeOnLayer("cube1",self.ball_drawable,"layer1")
+  ##############################################
+
+  def createGroundData(self,ctx):
+    self.arch_ground = self.ecsscene.createArchetype("GroundArchetype")
+    self.spawn_ground = self.ecsscene.createSpawnData("spawn_ground")
+    self.spawn_ground.archetype = self.arch_ground
+    self.spawn_ground.autospawn = True
 
     ground = ecs.BulletShapePlaneData()
     ground.normal = vec3(0,1,0)
-    ground.position = vec3(0,-6,0)
+    ground.position = vec3(0,0,0)
 
-    ground_phys = self.a2.createComponent("BulletObjectComponent")
+    ground_sgc = self.arch_ground.createComponent("SceneGraphComponent")
+    ground_phys = self.arch_ground.createComponent("BulletObjectComponent")
 
     ground_phys.mass = 0.0
     ground_phys.allowSleeping = True
     ground_phys.isKinematic = False
     ground_phys.disablePhysics = True
     ground_phys.shape = ground
-    
-    ##############################################
-    # setup physics For global
-    ##############################################
 
-    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
-    systemdata_phys.expGravity = vec3(0,-9.8*2,0)
-    systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = True
+    self.grid = prims.createGridData(extent=100)
+    pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
 
-    #down_force = ecs.DirectionalForceData()
-    #down_force.direction = vec3(0,-1,0)
-    #down_force.force = 1.0
-    #systemdata_phys.addGlobalForce("downforce",down_force)
-    
-    
-    self.systemdata_phys = systemdata_phys
-    self.comp_phys = c_phys
-
-    ##############################################
-
-    self.controller = ecs.Controller()
-    self.controller.bindScene(self.ecsscene)
-
-    self.sysd_sg.declareLayer("layer1")
-
-  ##############################################
-
-    print("comp_sg",self.comp_sg)
-    print("comp_phys",self.comp_phys)
-    print("systemdata_phys",self.systemdata_phys)
-    print("sysd_sg",self.sysd_sg)
-    print("controller",self.controller)
+    ground_sgc.declareNodeOnLayer("ground",self.grid,"layer1")
 
   ##############################################
 
   def onGpuInit(self,ctx):
     
-    self.cube = prims.createCubePrim(ctx=ctx, size=1.0)
-    pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
-    self.cube_drawable = self.cube.createDrawableData(pipeline)
-    self.comp_sg.declareNodeOnLayer("cube1",self.cube_drawable,"layer1")
+    self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
+    self.sysd_sg.declareLayer("layer1")
+    
+    self.createBallData(ctx)
+    self.createGroundData(ctx)
+    
+    self.controller = ecs.Controller()
+    self.controller.bindScene(self.ecsscene)
 
+    ##################
+        
     self.controller.createSimulation()
     self.controller.startSimulation()
 
+    ##################
+
     self.sys_phys = self.controller.findSystem("BulletSystem")
     self.sys_sg = self.controller.findSystem("SceneGraphSystem")
-    print(self.sys_phys)
-    print(self.sys_sg)
+
+    ##################
 
     self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
-
-
-
-    for i in range(-5,5):
-      for j in range(-5,5):
-        SAD = ecs.SpawnAnonDynamic("spawn_box")
-        SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-        SAD.overridexf.scale = 1.0
-        SAD.overridexf.translation = vec3(i,15,j)
-        self.e1 = self.controller.spawnEntity(SAD)
+    self.spawncounter = 0
     
   ##############################################
 
@@ -171,6 +150,21 @@ class MinimalSceneGraphApp(object):
   ##############################################
 
   def onUpdate(self,updinfo):
+    ##############################
+    self.systemdata_phys.linGravity = vec3(0,-9.8,0)
+    ##############################
+    i = random.randint(-5,5)
+    j = random.randint(-5,5)
+    prob = random.randint(0,100)
+    if prob < 5 and self.spawncounter < 250:
+      self.spawncounter += 1
+      SAD = ecs.SpawnAnonDynamic("spawn_ball")
+      SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+      SAD.overridexf.scale = 1.0
+      SAD.overridexf.translation = vec3(i,15,j)
+      self.e1 = self.controller.spawnEntity(SAD)
+      
+    ##############################
     self.controller.systemNotify( self.sys_sg,
                                   tokens.UpdateCamera,{
                                     tokens.eye: self.uicam.cameradata.eye,
@@ -181,8 +175,8 @@ class MinimalSceneGraphApp(object):
                                     tokens.fovy: self.uicam.cameradata.fovy
                                   }
                                  )
+    ##############################
     self.controller.updateSimulation()
-    #self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 
   ##############################################
 

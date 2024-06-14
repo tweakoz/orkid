@@ -44,10 +44,22 @@ struct PseudoArgs {
 
 using pseudoargs_ptr_t = std::shared_ptr<PseudoArgs>;
 
-ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
+ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs) {
   auto init_data = std::make_shared<ork::AppInitData>();
   lev2::initModule(init_data);
   ecs::initModule(init_data);
+  ////////////////////////////////////////////////////////////////////
+  if (kwargs) {
+    for (auto item : kwargs) {
+      auto key = py::cast<std::string>(item.first);
+      if (key == "ssaa") {
+       init_data->_ssaa_samples = py::cast<int>(item.second);
+      } else if (key == "fullscreen") {
+        init_data->_fullscreen = py::cast<bool>(item.second);
+      }
+    }
+  }
+  ////////////////////////////////////////////////////////////////////
   auto args = std::make_shared<PseudoArgs>();
   auto rval = ork::lev2::OrkEzApp::create(init_data);
   auto d_ev = std::make_shared<ork::ui::DrawEvent>(nullptr);
