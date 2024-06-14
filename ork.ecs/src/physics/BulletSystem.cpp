@@ -253,11 +253,13 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
   // update bullet family components
   //  at bullet tick rate (independent from scene tick rate)
   ////////////////////////////////////////
-  auto exp_grav = orkv3tobtv3(bulletsys->_systemData._expgravity);
+  auto exp_grav_ork = bulletsys->_systemData._expgravity;
+  auto exp_grav = orkv3tobtv3(exp_grav_ork);
 
   for( BulletObjectComponent* component : bulletsys->_activeComponents ){
     component->update(sim, timeStep);
     if(component->_rigidbody){
+      printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
       component->_rigidbody->applyCentralForce(exp_grav);
     }
   }

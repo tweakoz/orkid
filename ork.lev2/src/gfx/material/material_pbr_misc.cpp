@@ -94,7 +94,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
     auto MTXI    = context->MTXI();
     auto RSI     = context->RSI();
     mut->_rasterstate.SetCullTest(ECullTest::OFF);
-    mut->_rasterstate.SetDepthTest(EDepthTest::OFF);
+    mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
     mut->_rasterstate.SetZWriteMask(true);
     mut->_rasterstate.SetRGBAWriteMask(true, false);
     RSI->BindRasterState(this->_rasterstate);

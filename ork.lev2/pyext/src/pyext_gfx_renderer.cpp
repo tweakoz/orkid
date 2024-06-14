@@ -152,7 +152,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
           })
           .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })
           .def_property_readonly("target", [](cameradata_ptr_t camera) -> fvec3 { return camera->mTarget; })
-          .def_property_readonly("mUp", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })
+          .def_property_readonly("up", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })
           .def_property_readonly("xnormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_xnormal; })
           .def_property_readonly("ynormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_ynormal; })
           .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; })

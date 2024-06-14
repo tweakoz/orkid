@@ -35,7 +35,7 @@ class MinimalSceneGraphApp(object):
     self.ezapp = ecs.createApp(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     #self.materials = set()
-    #setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
     self.a1 = self.ecsscene.createArchetype("BoxArchetype")
@@ -70,7 +70,7 @@ class MinimalSceneGraphApp(object):
 
     c_phys.mass = 1.0
     c_phys.friction = 0.1
-    c_phys.restitution = 0.1
+    c_phys.restitution = 0.45
     c_phys.angularDamping = 0.1
     c_phys.linearDamping = 0.1
     c_phys.allowSleeping = False
@@ -84,35 +84,33 @@ class MinimalSceneGraphApp(object):
 
     ground = ecs.BulletShapePlaneData()
     ground.normal = vec3(0,1,0)
-    ground.position = vec3(0,-10,0)
+    ground.position = vec3(0,-6,0)
 
-    c_phys2 = self.a2.createComponent("BulletObjectComponent")
+    ground_phys = self.a2.createComponent("BulletObjectComponent")
 
-    c_phys2.mass = 0.0
-    c_phys2.friction = 0.1
-    c_phys2.restitution = 0.1
-    c_phys2.angularDamping = 0.1
-    c_phys2.linearDamping = 0.1
-    c_phys2.allowSleeping = True
-    c_phys2.isKinematic = False
-    c_phys2.disablePhysics = True
-    c_phys2.shape = ground
+    ground_phys.mass = 0.0
+    ground_phys.allowSleeping = True
+    ground_phys.isKinematic = False
+    ground_phys.disablePhysics = True
+    ground_phys.shape = ground
     
     ##############################################
     # setup physics For global
     ##############################################
 
-    s_phys = self.ecsscene.createSystem("BulletSystem")
-    s_phys.expgravity = vec3(0,-9.8*1,0)
-    s_phys.debug = True
+    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys.expGravity = vec3(0,-9.8*2,0)
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = True
 
     #down_force = ecs.DirectionalForceData()
     #down_force.direction = vec3(0,-1,0)
     #down_force.force = 1.0
-    #s_phys.addGlobalForce("downforce",down_force)
+    #systemdata_phys.addGlobalForce("downforce",down_force)
     
     
-    self.sysd_phys = s_phys
+    self.systemdata_phys = systemdata_phys
     self.comp_phys = c_phys
 
     ##############################################
@@ -126,7 +124,7 @@ class MinimalSceneGraphApp(object):
 
     print("comp_sg",self.comp_sg)
     print("comp_phys",self.comp_phys)
-    print("sysd_phys",self.sysd_phys)
+    print("systemdata_phys",self.systemdata_phys)
     print("sysd_sg",self.sysd_sg)
     print("controller",self.controller)
 
@@ -149,16 +147,7 @@ class MinimalSceneGraphApp(object):
 
     self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
-    self.controller.systemNotify( self.sys_sg,
-                                  tokens.UpdateCamera,{
-                                    tokens.eye: vec3(0,0,-5),
-                                    tokens.tgt: vec3(0,0,0),
-                                    tokens.up: vec3(0,1,0),
-                                    tokens.near: 0.01,
-                                    tokens.far: 100.0,
-                                    tokens.fovy: math.pi*0.5
-                                  }
-                                 )
+
 
 
     for i in range(-5,5):
@@ -182,12 +171,25 @@ class MinimalSceneGraphApp(object):
   ##############################################
 
   def onUpdate(self,updinfo):
+    self.controller.systemNotify( self.sys_sg,
+                                  tokens.UpdateCamera,{
+                                    tokens.eye: self.uicam.cameradata.eye,
+                                    tokens.tgt: self.uicam.cameradata.target,
+                                    tokens.up: self.uicam.cameradata.up,
+                                    tokens.near: self.uicam.cameradata.near,
+                                    tokens.far: self.uicam.cameradata.far,
+                                    tokens.fovy: self.uicam.cameradata.fovy
+                                  }
+                                 )
     self.controller.updateSimulation()
     #self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 
   ##############################################
 
   def onUiEvent(self,uievent):
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
 
 ###############################################################################

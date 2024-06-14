@@ -115,11 +115,11 @@ void pyinit_physics(py::module& module_ecs) {
                                 return fxs.c_str();
                               })
                           .def_property(
-                              "lingravity",
+                              "linGravity",
                               [](const bulletsysdata_ptr_t& sysdata) -> const fvec3& { return sysdata->_lingravity; },
                               [](bulletsysdata_ptr_t& sysdata, const fvec3& val) { sysdata->_lingravity = val; })
                           .def_property(
-                              "expgravity",
+                              "expGravity",
                               [](const bulletsysdata_ptr_t& sysdata) -> const fvec3& { return sysdata->_expgravity; },
                               [](bulletsysdata_ptr_t& sysdata, const fvec3& val) { sysdata->_expgravity = val; })
                           .def_property(
