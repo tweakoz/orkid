@@ -22,7 +22,7 @@
 
 #include "bullet_impl.h"
 
-ImplementReflectionX(ork::ecs::BulletShapeModelData, "EcsBulletShapeModelData");
+ImplementReflectionX(ork::ecs::BulletShapeMeshData, "EcsBulletShapeMeshData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -30,14 +30,14 @@ namespace ork::ecs {
 static const bool USE_GIMPACT = false;
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void BulletShapeModelData::describeX(object::ObjectClass* clazz) {
-  clazz->floatProperty("Scale", float_range{-1000, 1000}, &BulletShapeModelData::_scale);
-  clazz->directProperty("MeshPath", &BulletShapeModelData::_meshpath);
+void BulletShapeMeshData::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("Scale", float_range{-1000, 1000}, &BulletShapeMeshData::_scale);
+  clazz->directProperty("MeshPath", &BulletShapeMeshData::_meshpath);
 
-  // reflect::RegisterProperty("Model", &BulletShapeModelData::GetModelAccessor, &BulletShapeModelData::SetModelAccessor);
-  // reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.class", "ged.factory.assetlist");
-  // reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assettype", "xgmodel");
-  // reflect::annotatePropertyForEditor<BulletShapeModelData>("Model", "editor.assetclass", "xgmodel");
+  // reflect::RegisterProperty("Model", &BulletShapeMeshData::GetModelAccessor, &BulletShapeMeshData::SetModelAccessor);
+  // reflect::annotatePropertyForEditor<BulletShapeMeshData>("Model", "editor.class", "ged.factory.assetlist");
+  // reflect::annotatePropertyForEditor<BulletShapeMeshData>("Model", "editor.assettype", "xgmodel");
+  // reflect::annotatePropertyForEditor<BulletShapeMeshData>("Model", "editor.assetclass", "xgmodel");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ btSphereShape* meshToSphereShape(meshutil::flatsubmesh_ptr_t mesh, float fscale)
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-BulletShapeModelData::BulletShapeModelData() {
+BulletShapeMeshData::BulletShapeMeshData() {
 
     _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
       auto rval = new BulletShapeBaseInst(this);
@@ -102,7 +102,7 @@ BulletShapeModelData::BulletShapeModelData() {
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-BulletShapeModelData::~BulletShapeModelData() {
+BulletShapeMeshData::~BulletShapeMeshData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -140,7 +140,7 @@ void ClassInit() {
   RegisterClassX(BulletShapeCapsuleData);
   RegisterClassX(BulletShapePlaneData);
   RegisterClassX(BulletShapeSphereData);
-  RegisterClassX(BulletShapeModelData);
+  RegisterClassX(BulletShapeMeshData);
   RegisterClassX(BulletShapeCapsuleData);
   RegisterClassX(BulletShapeTerrainData);
   RegisterClassX(BulletObjectComponentData);

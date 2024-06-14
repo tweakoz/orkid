@@ -34,10 +34,6 @@
 
 ImplementReflectionX(ork::ecs::BulletObjectComponentData, "EcsBulletObjectComponentData");
 ImplementReflectionX(ork::ecs::BulletObjectComponent, "EcsBulletObjectComponent");
-ImplementReflectionX(ork::ecs::BulletShapeBaseData, "EcsBulletShapeBaseData");
-ImplementReflectionX(ork::ecs::BulletShapeCapsuleData, "EcsBulletShapeCapsuleData");
-ImplementReflectionX(ork::ecs::BulletShapePlaneData, "EcsBulletShapePlaneData");
-ImplementReflectionX(ork::ecs::BulletShapeSphereData, "EcsBulletShapeSphereData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -307,101 +303,5 @@ void BulletObjectComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_
   }  
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
-
-void BulletShapeBaseData::describeX(object::ObjectClass* clazz) {
-}
-BulletShapeBaseData::BulletShapeBaseData()
-    : _shapeFactory(nullptr) {
-}
-BulletShapeBaseData::~BulletShapeBaseData() {
-}
-
-BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& data) const {
-  BulletShapeBaseInst* rval = nullptr;
-
-  if (_shapeFactory._createShape) {
-    rval = _shapeFactory._createShape(data);
-
-    if (rval && rval->_collisionShape) {
-      btTransform ident;
-      ident.setIdentity();
-
-      btVector3 bbmin;
-      btVector3 bbmax;
-
-      rval->_collisionShape->getAabb(ident, bbmin, bbmax);
-      rval->mBoundingBox.SetMinMax(btv3toorkv3(bbmin), btv3toorkv3(bbmax));
-    }
-  }
-
-  OrkAssert(rval);
-
-  return rval;
-}
-
-void BulletShapeBaseData::doNotify(const event::Event* event) {
-  // if (auto pgev = dynamic_cast<const ObjectGedEditEvent*>(event)) {
-  // opq::updateSerialQueue()->enqueue([this]() { _shapeFactory._invalidate(this); });
-  //}
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-void BulletShapeCapsuleData::describeX(object::ObjectClass* clazz) {
-  clazz->floatProperty("Extent", float_range{0.1, 1000.0}, &BulletShapeCapsuleData::mfExtent);
-  clazz->floatProperty("Radius", float_range{0.1, 1000.0}, &BulletShapeCapsuleData::mfRadius);
-}
-
-BulletShapeCapsuleData::BulletShapeCapsuleData()
-    : mfRadius(0.10f)
-    , mfExtent(1.0f) {
-  _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
-    auto rval             = new BulletShapeBaseInst(this);
-    rval->_collisionShape = new btCapsuleShapeZ(this->mfRadius, this->mfExtent);
-    return rval;
-  };
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-void BulletShapePlaneData::describeX(object::ObjectClass* clazz) {
-}
-
-BulletShapePlaneData::BulletShapePlaneData() {
-
-  _pos = fvec3(0, 0, 0);
-  _nrm = fvec3(0, 1, 0);
-
-  _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
-    auto rval = new BulletShapeBaseInst(this);
-    auto up   = _nrm.normalized();
-    float distance = _pos.dotWith(up);
-
-    rval->_collisionShape = new btStaticPlaneShape(orkv3tobtv3(up), distance);
-    return rval;
-  };
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-void BulletShapeSphereData::describeX(object::ObjectClass* clazz) {
-  clazz->floatProperty("Radius", float_range{0.1, 1000.0}, &BulletShapeSphereData::_radius);
-}
-
-BulletShapeSphereData::BulletShapeSphereData() {
-  _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
-    auto rval             = new BulletShapeBaseInst(this);
-    rval->_collisionShape = new btSphereShape(this->_radius);
-    return rval;
-  };
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-BulletShapeBaseInst::BulletShapeBaseInst(const BulletShapeBaseData* data) {
-  _shapeData = data;
-  _impl      = nullptr;
-}
 
 } // namespace ork::ecs

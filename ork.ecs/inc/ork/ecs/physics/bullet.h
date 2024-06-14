@@ -39,12 +39,19 @@ struct BulletShapeBaseData;
 struct BulletObjectForceControllerData;
 struct DirectionalForceData;
 struct BulletShapePlaneData;
+struct BulletShapeMeshData;
+struct BulletShapeSphereData;
+struct ShapeFactory;
 
 using shapedata_ptr_t = std::shared_ptr<BulletShapeBaseData>;
 using shapedata_constptr_t = std::shared_ptr<const BulletShapeBaseData>;
 using forcecontrollerdata_ptr_t = std::shared_ptr<BulletObjectForceControllerData>;
 using forcemap_t = std::map<std::string,forcecontrollerdata_ptr_t>;
 using directionalfcdata_ptr_t = std::shared_ptr<DirectionalForceData>;
+using shape_factory_t = ShapeFactory;
+using bulletshapeplanedata_ptr_t = std::shared_ptr<BulletShapePlaneData>;
+using bulletshapespheredata_ptr_t = std::shared_ptr<BulletShapeSphereData>;
+using bulletshapemeshdata_ptr_t = std::shared_ptr<BulletShapeMeshData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -158,10 +165,6 @@ struct ShapeFactory {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef ShapeFactory shape_factory_t;
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct BulletShapeBaseData : public ork::Object {
   DeclareAbstractX(BulletShapeBaseData, ork::Object);
 
@@ -199,7 +202,6 @@ public:
   fvec3 _pos;
   fvec3 _nrm;
 };
-using bulletshapeplanedata_ptr_t = std::shared_ptr<BulletShapePlaneData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -211,15 +213,14 @@ public:
 
   float _radius = 1.0f;
 };
-using bulletshapespheredata_ptr_t = std::shared_ptr<BulletShapeSphereData>;
 ///////////////////////////////////////////////////////////////////////////////
 
-struct BulletShapeModelData : public BulletShapeBaseData {
-  DeclareConcreteX(BulletShapeModelData, BulletShapeBaseData);
+struct BulletShapeMeshData : public BulletShapeBaseData {
+  DeclareConcreteX(BulletShapeMeshData, BulletShapeBaseData);
 
 public:
-  BulletShapeModelData();
-  ~BulletShapeModelData();
+  BulletShapeMeshData();
+  ~BulletShapeMeshData();
 
   //lev2::XgmModelAsset* asset() { return mModelAsset; }
   //void SetModelAccessor(ork::rtti::ICastable* const& mdl);

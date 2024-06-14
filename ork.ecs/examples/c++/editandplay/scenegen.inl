@@ -88,7 +88,7 @@ scenedata_ptr_t generateScene(path_t path){
   else { // mesh based ground
     auto ecs_arch        = scene->createSceneObject<Archetype>("arch_xground"_pool);
     auto ecs_physics_compdata = ecs_arch->addComponent<BulletObjectComponentData>();
-    auto phys_shape = std::make_shared<BulletShapeModelData>();
+    auto phys_shape = std::make_shared<BulletShapeMeshData>();
     ecs_physics_compdata->_shapedata = phys_shape;
     phys_shape->_meshpath = "data://tests/bridge.glb";
     ecs_physics_compdata->_mass = 0.0f;
@@ -187,7 +187,7 @@ scenedata_ptr_t generateScene(path_t path){
     auto ecs_physics_compdata = ecs_arch->addComponent<BulletObjectComponentData>();
 
     if(0){
-      auto phys_shape = std::make_shared<BulletShapeModelData>();
+      auto phys_shape = std::make_shared<BulletShapeMeshData>();
       ecs_physics_compdata->_shapedata = phys_shape;
       phys_shape->_meshpath = "data://tests/pbr1/pbr1.glb";
     }
