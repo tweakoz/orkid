@@ -120,12 +120,12 @@ int main(int argc, char** argv, char** envp) {
   // create our simulation
   //////////////////////////////////////////////////////////
 
-  auto compositordata = std::make_shared<CompositingData>();
-  auto compositorimpl = compositordata->createImpl();
-  auto renderer = std::make_shared<IRenderer>();
-  auto CPD = std::make_shared<CompositingPassData>();
-  CPD->addStandardLayers();
-  compositordata->mbEnable = true;
+  //auto compositordata = std::make_shared<CompositingData>();
+  //auto compositorimpl = compositordata->createImpl();
+  //auto renderer = std::make_shared<IRenderer>();
+  //auto CPD = std::make_shared<CompositingPassData>();
+  //CPD->addStandardLayers();
+  //compositordata->mbEnable = true;
   auto ecs_camera = std::make_shared<CameraData>();
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
@@ -139,8 +139,8 @@ int main(int argc, char** argv, char** envp) {
     //ecs_sg_sysdata->bindToRtGroup(ecs_outgroup);
     ecs_sg_sysdata->bindToCamera(ecs_camera);
 
-    compositordata->presetDeferredPBR();
-    renderer->setContext(ctx);
+    //compositordata->presetDeferredPBR();
+    //renderer->setContext(ctx);
 
 
   });
@@ -238,7 +238,9 @@ int main(int argc, char** argv, char** envp) {
     //  updated from controller->update() in the update thread
     ///////////////////////////////////////////////////////////////////////
 
-    controller->render(drwev);
+    context->beginFrame();
+    controller->renderWithStandardCompositorFrame(sframe_ecs);
+    context->endFrame();
 
     ///////////////////////////////////////////////////////////////////////
     // done with frame

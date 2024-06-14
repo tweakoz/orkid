@@ -70,6 +70,13 @@ struct DataTable;
 struct ScriptWrapper;
 struct LuaContext;
 
+struct BulletSystemData;
+struct BulletObjectComponentData;
+
+///////////////////////////////////////////////////////////////////////////////
+
+using datatable_ptr_t = std::shared_ptr<DataTable>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 enum ESceneDataMode {
@@ -178,6 +185,9 @@ using componentdata_ptr_t = std::shared_ptr<ComponentData>;
 using systemdata_constptr_t = std::shared_ptr<const SystemData>;
 using dagnodedata_constptr_t = std::shared_ptr<const DagNodeData>;
 using scenedagobject_constptr_t = std::shared_ptr<const SceneDagObject>;
+
+using bulletsysdata_ptr_t = std::shared_ptr<BulletSystemData>;
+using bulletcompdata_ptr_t = std::shared_ptr<BulletObjectComponentData>;
 
 using sgcomponentdata_ptr_t = std::shared_ptr<SceneGraphComponentData>;
 

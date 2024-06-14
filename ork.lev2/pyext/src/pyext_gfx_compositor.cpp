@@ -22,6 +22,19 @@ namespace ork::lev2 {
 void pyinit_gfx_compositor(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
 
+  auto scf_type = 
+  py::class_<StandardCompositorFrame,standardcompositorframe_ptr_t>(module_lev2,"StandardCompositorFrame")
+    .def(py::init<>())
+    .def_property("drawEvent",
+      [](standardcompositorframe_ptr_t scf) -> uidrawevent_ptr_t {
+        auto mut = std::const_pointer_cast<::ork::ui::DrawEvent>(scf->_drawEvent);
+        return mut;
+      },
+      [](standardcompositorframe_ptr_t scf, uidrawevent_ptr_t de){
+        scf->_drawEvent = de;
+      }
+    );
+  type_codec->registerStdCodec<standardcompositorframe_ptr_t>(scf_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto compositorpassdata_type = //
       py::class_<CompositingPassData, compositingpassdata_ptr_t>(module_lev2, "CompositingPassData")

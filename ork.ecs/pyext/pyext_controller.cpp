@@ -14,68 +14,87 @@ namespace ork::ecs {
 void pyinit_controller(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Controller,controller_ptr_t>(module_ecs, "Controller")
+  py::class_<Controller, controller_ptr_t>(module_ecs, "Controller")
       .def(py::init<>())
       .def(
           "__repr__",
           [](controller_ptr_t arch) -> std::string {
             fxstring<256> fxs;
-            fxs.format("ecs::Controller(%p)", (void*) arch.get());
+            fxs.format("ecs::Controller(%p)", (void*)arch.get());
             return fxs.c_str();
           })
-     .def("bindScene", [](controller_ptr_t ctrl, scenedata_ptr_t scenedata) {
-         ctrl->bindScene(scenedata);
+      .def("bindScene", [](controller_ptr_t ctrl, scenedata_ptr_t scenedata) { ctrl->bindScene(scenedata); })
+      .def("createSimulation", [](controller_ptr_t ctrl) { ctrl->createSimulation(); })
+      .def("startSimulation", [](controller_ptr_t ctrl) { ctrl->startSimulation(); })
+      .def("stopSimulation", [](controller_ptr_t ctrl) { ctrl->stopSimulation(); })
+      .def("updateSimulation", [](controller_ptr_t ctrl) { ctrl->update(); })
+      ///////////////////////////
+      .def("renderSimulation", [](controller_ptr_t ctrl,uidrawevent_ptr_t drawev) {
+         ctrl->render(drawev);
        })
-    .def( "createSimulation", [](controller_ptr_t ctrl) {
-        ctrl->createSimulation();
-      })
-    .def("startSimulation", [](controller_ptr_t ctrl) {
-        ctrl->startSimulation();
-      })
-      .def("stopSimulation", [](controller_ptr_t ctrl) {
-        ctrl->stopSimulation();
-      })
-      .def("updateSimulation", [](controller_ptr_t ctrl) {
-        ctrl->update();
-      })
       ///////////////////////////
       //
-      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t {
-        return ctrl->findSystemWithClassName(name);
-      })
-      .def("systemNotify", [type_codec](controller_ptr_t ctrl, //
-                              sys_ref_t sys, //
-                              crcstring_ptr_t evID,
-                              py::object evdata) {
-        evdata_t decoded = type_codec->decode64(evdata);
-        
-        ctrl->systemNotify(sys,*evID,decoded);
-      })
-      .def("spawnEntity", [type_codec](controller_ptr_t ctrl, //
-                              const SpawnAnonDynamic& sad) -> ent_ref_t {
-        ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
-        return eref;
-      })
-      ;
+      .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t { return ctrl->findSystemWithClassName(name); })
+      .def(
+          "systemNotify",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              sys_ref_t sys,         //
+              crcstring_ptr_t evID,
+              py::object evdata) {
+            evdata_t decoded = type_codec->decode64(evdata);
+
+            ctrl->systemNotify(sys, *evID, decoded);
+          })
+      .def(
+          "systemRequest",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              sys_ref_t sys,         //
+              crcstring_ptr_t evID,
+              py::object evdata) -> response_ref_t {
+            evdata_t decoded;
+            if (evdata.is_none())
+              decoded = nullptr;
+            else {
+              decoded = type_codec->decode64(evdata);
+            }
+            response_ref_t rval = ctrl->systemRequest(sys, *evID, decoded);
+            return rval;
+          })
+      .def(
+          "spawnEntity",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              const SpawnAnonDynamic& sad) -> ent_ref_t {
+            ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
+            return eref;
+          });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SystemRef>(module_ecs, "SystemRef")
-        .def(
-            "__repr__",
-            [](const sys_ref_t& sys) -> std::string {
-                fxstring<256> fxs;
-                fxs.format("ecs::SystemRef id(0x%zx)", sys._sysID);
-                return fxs.c_str();
-            });
+  py::class_<SystemRef>(module_ecs, "SystemRef").def("__repr__", [](const sys_ref_t& sys) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("ecs::SystemRef id(0x%zx)", sys._sysID);
+    return fxs.c_str();
+  });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<EntityRef>(module_ecs, "EntityRef")
-        .def(
-            "__repr__",
-            [](const ent_ref_t& sys) -> std::string {
-                fxstring<256> fxs;
-                fxs.format("ecs::EntityRef id(0x%zx)", sys._entID);
-                return fxs.c_str();
-            });
+  py::class_<EntityRef>(module_ecs, "EntityRef").def("__repr__", [](const ent_ref_t& sys) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("ecs::EntityRef id(0x%zx)", sys._entID);
+    return fxs.c_str();
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ComponentRef>(module_ecs, "ComponentRef").def("__repr__", [](const comp_ref_t& sys) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("ecs::ComponentRef id(0x%zx)", sys._compID);
+    return fxs.c_str();
+  });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ResponseRef>(module_ecs, "ResponseRef").def("__repr__", [](const response_ref_t& sys) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("ecs::ResponseRef id(0x%zx)", sys._responseID);
+    return fxs.c_str();
+  });
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_archetype(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::ecs {
+} // namespace ork::ecs

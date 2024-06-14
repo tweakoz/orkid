@@ -100,7 +100,7 @@ public:
 
     void bindToRtGroup(lev2::rtgroup_ptr_t rtgroup);
     void bindToCamera(lev2::cameradata_ptr_t camera);
-    
+    void declareLayer(const std::string& layername);
 private:
 
   friend struct SceneGraphSystem;
@@ -118,7 +118,7 @@ private:
   std::vector<lev2::scenegraph::drawabledatakvpair_ptr_t> _staticDrawableDatas;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
   std::vector<oncreatesys_lambda_t> _onCreateSystemOperations;
-
+  std::vector<std::string> _declaredLayers;
 };
 
 using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;

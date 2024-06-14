@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/reflect/properties/registerX.inl>
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,4 +132,18 @@ uint32_t CallbackRenderable::ComposeSortKey(const IRenderer* renderer) const {
   return mSortKey;
 }
 /////////////////////////////////////////////////////////////////////
+drawable_ptr_t CallbackDrawableData::createDrawable() const {
+  auto drw = std::make_shared<CallbackDrawable>(nullptr);
+  drw->mRenderCallback = mRenderCallback;
+  return drw;
+}
+CallbackDrawableData::CallbackDrawableData() {
+}
+void CallbackDrawableData::SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
+  mRenderCallback = cb;
+}
+void CallbackDrawableData::describeX(object::ObjectClass* clazz){
+}
+/////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+ImplementReflectionX(ork::lev2::CallbackDrawableData, "CallbackDrawableData");

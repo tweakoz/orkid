@@ -33,6 +33,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto cbdrawabledata_type = //
+      py::class_<CallbackDrawableData, DrawableData, callback_drawabledata_ptr_t>(module_lev2, "CallbackDrawableData")
+       ;
+  type_codec->registerStdCodec<callback_drawabledata_ptr_t>(cbdrawabledata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto drawable_type = py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable")
                            .def_property(
                                "scenegraph",

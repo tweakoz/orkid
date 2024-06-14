@@ -241,6 +241,8 @@ void BulletObjectComponent::update(Simulation* sim, float time_step) {
         forcecontroller->UpdateForces(this,time_step);
     }
 
+    // apply BulletSystem's expgravity
+  
     //////////////////////////////////////////////////
     // printf( "newpos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetZ() );
   }

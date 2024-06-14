@@ -45,7 +45,15 @@ void pyinit_scene(py::module& module_ecs) {
                          },
                          [](spawndata_ptr_t spawndata, archetype_ptr_t arch) { 
                           spawndata->_archetype = arch; 
-                         });
+                         })
+                         .def_property(
+                          "autospawn",
+                          [](spawndata_ptr_t spawndata) -> bool { 
+                              return spawndata->_autospawn; 
+                          },
+                          [](spawndata_ptr_t spawndata, bool val) { 
+                            spawndata->_autospawn = val; 
+                          });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")

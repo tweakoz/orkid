@@ -9,11 +9,15 @@
 
 import math, sys, os
 from pathlib import Path
+from obt import path as obt_path
 from orkengine import core, lev2, ecs
+
+sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
+sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
+from lev2utils import primitives as prims
 
 print(ork_path.lev2_pylib)
-sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 from lev2utils.cameras import *
 from lev2utils.shaders import *
 from lev2utils.primitives import createFrustumPrim, createGridData
@@ -24,93 +28,134 @@ tokens = core.CrcStringProxy()
 
 class MinimalSceneGraphApp(object):
 
+  ##############################################
+
   def __init__(self):
     super().__init__()
     self.ezapp = ecs.createApp(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
-    setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
+    #self.materials = set()
+    #setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
     self.a1 = self.ecsscene.createArchetype("arch1")
+
     self.spawnd1 = self.ecsscene.createSpawnData("spawn1")
     self.spawnd1.archetype = self.a1
+    self.spawnd1.autospawn = False
+
+    ##############################################
+    # setup scene graph
+    ##############################################
+
     self.comp_sg = self.a1.createComponent("SceneGraphComponent")
-    self.comp_phys = self.a1.createComponent("BulletObjectComponent")
-
-
-    self.sysd_phys = self.ecsscene.createSystem("BulletSystem")
     self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
+
+    ##############################################
+    # setup physics
+    ##############################################
+
+    sphere = ecs.BulletShapeSphereData()
+    sphere.radius = 1.0
+
+    c_phys = self.a1.createComponent("BulletObjectComponent")
+
+    c_phys.mass = 1.0
+    c_phys.friction = 0.5
+    c_phys.restitution = 0.5
+    c_phys.angularDamping = 0.5
+    c_phys.linearDamping = 0.5
+    c_phys.allowSleeping = False
+    c_phys.isKinematic = False
+    c_phys.disablePhysics = False
+    c_phys.shape = sphere
+
+    s_phys = self.ecsscene.createSystem("BulletSystem")
+    s_phys.expgravity = vec3(0,-9.8,0)
+
+    #down_force = ecs.DirectionalForceData()
+    #down_force.direction = vec3(0,-1,0)
+    #down_force.force = 1.0
+    #s_phys.addGlobalForce("downforce",down_force)
+    
+    
+    self.sysd_phys = s_phys
+    self.comp_phys = c_phys
+
+    ##############################################
 
     self.controller = ecs.Controller()
     self.controller.bindScene(self.ecsscene)
+
+    self.sysd_sg.declareLayer("layer1")
+
+  ##############################################
 
     print("comp_sg",self.comp_sg)
     print("comp_phys",self.comp_phys)
     print("sysd_phys",self.sysd_phys)
     print("sysd_sg",self.sysd_sg)
-
     print("controller",self.controller)
+
+  ##############################################
+
+  def onGpuInit(self,ctx):
+    
+    self.cube = prims.createCubePrim(ctx=ctx, size=1.0)
+    pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+    self.cube_drawable = self.cube.createDrawableData(pipeline)
+    self.comp_sg.declareNodeOnLayer("cube1",self.cube_drawable,"layer1")
 
     self.controller.createSimulation()
     self.controller.startSimulation()
 
-
-  def onGpuInit(self,ctx):
-
     self.sys_phys = self.controller.findSystem("BulletSystem")
+    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
     print(self.sys_phys)
+    print(self.sys_sg)
 
     self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
 
-    SAD = ecs.SpawnAnonDynamic("spawn1")
-    SAD.overridexf.translation = vec3(0,0,0)
-    SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-    SAD.overridexf.scale = 1.0
+    self.controller.systemNotify( self.sys_sg,
+                                  tokens.UpdateCamera,
+                                  ecs.DataTable({
+                                    tokens.eye: vec3(0,0,-5),
+                                    tokens.tgt: vec3(0,0,0),
+                                    tokens.up: vec3(0,1,0),
+                                    tokens.near: 0.1,
+                                    tokens.far: 10.0,
+                                    tokens.fovy: math.pi*0.5
+                                  })
+                                 )
+
+
+    for i in range(-5,5):
+      for j in range(-5,5):
+        SAD = ecs.SpawnAnonDynamic("spawn1")
+        SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+        SAD.overridexf.scale = 1.0
+        SAD.overridexf.translation = vec3(i,j,0)
+        self.e1 = self.controller.spawnEntity(SAD)
     
-    self.e1 = self.controller.spawnEntity(SAD)
-    #createSceneGraph(app=self,rendermodel="DeferredPBR")
-    #pmatrix = fmtx4_to_dmtx4(ctx.perspective(45,1,0.25,3))
-    #vmatrix = dmtx4.lookAt(dvec3(0, 0, 0),  # eye
-    #                      dvec3(0, 0, -1), # tgt
-    #                      dvec3(0, 1, 0))  # up
-    #frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
-    #pipeline = createPipeline( app = self,
-    #                           ctx = ctx,
-    #                           techname = "std_mono",
-    #                           rendermodel = "DeferredPBR" )
-    #self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
-    #self.grid_data = createGridData()
-    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    #self.grid_node.sortkey = 1
+  ##############################################
+
+  def onDraw(self,drawevent):
+    self.controller.renderSimulation(drawevent)
+
+  ##############################################
 
   def onGpuExit(self,ctx):
     self.controller.stopSimulation()
 
+  ##############################################
+
   def onUpdate(self,updinfo):
     self.controller.updateSimulation()
-    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
-    x = math.sin(θ)*10
-    z = -math.cos(θ)*10
-    y = 5+math.sin(θ*1.7)*2
-
-    m_world_to_view = mtx4.lookAt(vec3(x, y, z), # eye
-                                  vec3(0, 0, 0),  # tgt
-                                  vec3(0, 1, 0))  # up
-
-    m_view_to_world =  m_world_to_view.inverse
-
-    #self.primnode.worldTransform.directMatrix = m_view_to_world
-
-    ###################################
     #self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
 
 ###############################################################################

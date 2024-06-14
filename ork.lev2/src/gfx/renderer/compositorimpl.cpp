@@ -33,8 +33,6 @@ namespace ork { namespace lev2 {
 
 CompositingImpl::CompositingImpl(const CompositingData& data)
     : _compositingData(data) {
-
-
   // on link ?
   mfTimeAccum       = 0.0f;
   mfLastTime        = 0.0f;

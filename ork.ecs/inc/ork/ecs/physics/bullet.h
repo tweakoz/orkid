@@ -37,10 +37,13 @@ struct BulletSystem;
 struct BulletObjectForceControllerInst;
 struct BulletShapeBaseData;
 struct BulletObjectForceControllerData;
+struct DirectionalForceData;
 
 using shapedata_ptr_t = std::shared_ptr<BulletShapeBaseData>;
 using shapedata_constptr_t = std::shared_ptr<const BulletShapeBaseData>;
 using forcecontrollerdata_ptr_t = std::shared_ptr<BulletObjectForceControllerData>;
+using forcemap_t = std::map<std::string,forcecontrollerdata_ptr_t>;
+using directionalfcdata_ptr_t = std::shared_ptr<DirectionalForceData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -49,7 +52,6 @@ struct BulletObjectComponentData : public ComponentData {
 
 public:
 
-  using forcemap_t = std::map<std::string,forcecontrollerdata_ptr_t>;
 
   BulletObjectComponentData();
   ~BulletObjectComponentData();
@@ -63,7 +65,7 @@ public:
 
   forcemap_t _forcedatas;
 
-  shapedata_constptr_t _shapedata = nullptr;
+  shapedata_ptr_t _shapedata = nullptr;
   float _restitution = 0.5f;
   float _friction = 0.5f;
   float _mass = 1.0f;
@@ -82,7 +84,8 @@ struct BulletSystemData : public SystemData {
   float mfTimeScale = 1.0f;
   float mSimulationRate = 240.0f;
   bool _debug = false;
-  fvec3 _gravity;
+  fvec3 _lingravity;
+  fvec3 _expgravity;
 
 public:
   BulletSystemData();
@@ -90,7 +93,7 @@ public:
   float GetTimeScale() const { return mfTimeScale; }
   bool IsDebug() const { return _debug; }
   float GetSimulationRate() const { return mSimulationRate; }
-  const fvec3& GetGravity() const { return _gravity; }
+  const fvec3& GetGravity() const { return _lingravity; }
 
 protected:
   System* createSystem(Simulation* psi) const final;
@@ -129,7 +132,6 @@ public:
   float _force;
   fvec3 _direction;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShapeCreateData {
@@ -205,7 +207,7 @@ public:
 
   float _radius = 1.0f;
 };
-
+using bulletshapespheredata_ptr_t = std::shared_ptr<BulletShapeSphereData>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletShapeModelData : public BulletShapeBaseData {

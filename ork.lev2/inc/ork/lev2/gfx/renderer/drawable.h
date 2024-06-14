@@ -672,6 +672,17 @@ struct CallbackDrawable : public Drawable {
   RLCBType _renderLambda;
 };
 
+struct CallbackDrawableData : public DrawableData {
+
+  DeclareConcreteX(CallbackDrawableData, DrawableData);
+
+  CallbackDrawableData();
+  drawable_ptr_t createDrawable() const final;
+  void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb);
+  lev2::CallbackRenderable::cbtype_t mRenderCallback;
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 

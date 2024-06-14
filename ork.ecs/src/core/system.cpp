@@ -236,14 +236,15 @@ void System::_renderWithStandardCompositorFrame(Simulation* psi, lev2::standardc
 ///////////////////////////////////////////////////////////////////////////////
 
 void System::_notify(token_t evID, evdata_t data) {
-  printf( "System::_notify<%08x>\n", evID._hashed );
+  //printf( "System::_notify<%08x>\n", evID._hashed );
   _onNotify(evID, data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void System::_request(impl::sys_response_ptr_t response, token_t evID, evdata_t data) {
-  _onRequest(response, evID, data);
+  printf( "System::_request<%08x>\n", evID._hashed );
+  this->_onRequest(response, evID, data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -84,7 +84,7 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
         the_system       = system_var.get<System*>();
       });
       if(the_system){
-        printf( "Simulation::_onControllerEvent SYSTEM_EVENT system <%p>\n", (void*) the_system );
+        //printf( "Simulation::_onControllerEvent SYSTEM_EVENT system <%p>\n", (void*) the_system );
         the_system->_notify(SEV._eventID,SEV._eventData);
       }
       else{
@@ -243,6 +243,8 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
         /////////////////////////////
         // perform the request
         /////////////////////////////
+
+        printf( "proc request the_system<%p> reqid<%zx>\n", (void*) the_system, SRQ._requestID._hashed );
 
         the_system->_request( response, SRQ._requestID, SRQ._eventData );
 

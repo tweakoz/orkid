@@ -57,7 +57,8 @@ void BulletSystemData::describeX(SystemDataClass* clazz) {
     ->annotate<float>("editor.range.min", 0.0f)
     ->annotate<float>("editor.range.max", 50.0f);
 
-  clazz->directProperty("Gravity", &BulletSystemData::_gravity);
+  clazz->directProperty("LinGravity", &BulletSystemData::_lingravity);
+  clazz->directProperty("ExpGravity", &BulletSystemData::_expgravity);
   clazz->directProperty("Debug", &BulletSystemData::_debug);
 
 }
@@ -65,7 +66,7 @@ void BulletSystemData::describeX(SystemDataClass* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletSystemData::BulletSystemData() {
-    _gravity = fvec3(0,-9.8,0);
+    _expgravity = fvec3(0,-9.8,0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -252,11 +253,15 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
   // update bullet family components
   //  at bullet tick rate (independent from scene tick rate)
   ////////////////////////////////////////
+  auto exp_grav = orkv3tobtv3(bulletsys->_systemData._expgravity);
 
   for( BulletObjectComponent* component : bulletsys->_activeComponents ){
     component->update(sim, timeStep);
+    if(component->_rigidbody){
+      component->_rigidbody->applyCentralForce(exp_grav);
+    }
   }
-
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

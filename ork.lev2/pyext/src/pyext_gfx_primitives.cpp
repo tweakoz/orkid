@@ -73,6 +73,12 @@ void pyinit_primitives(py::module& module_lev2) {
 
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
       .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); })
+      .def("createDrawable", [](primitives::CubePrimitive& prim, fxpipeline_ptr_t mtl_inst) -> drawable_ptr_t {
+        return prim.createDrawable(mtl_inst);
+      })
+      .def("createDrawableData", [](primitives::CubePrimitive& prim, fxpipeline_ptr_t mtl_inst) -> callback_drawabledata_ptr_t {
+        return prim.createDrawableData(mtl_inst);
+      })
       .def("createNode", createNodeLambdaFromPrimType<primitives::cube_ptr_t>());
   type_codec->registerStdCodec<primitives::cube_ptr_t>(cubeprim_type);
   /////////////////////////////////////////////////////////////////////////////////

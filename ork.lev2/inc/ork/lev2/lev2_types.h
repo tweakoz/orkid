@@ -264,6 +264,7 @@ struct ModelDrawable;
 struct OverlayStringDrawable;
 struct LabeledPointDrawableData;
 struct LabeledPointDrawable;
+struct CallbackDrawableData;
 //
 using labeled_point_drawabledata_ptr_t = std::shared_ptr<LabeledPointDrawableData>;
 using labeled_point_drawable_ptr_t = std::shared_ptr<LabeledPointDrawable>;
@@ -273,6 +274,7 @@ using billboard_string_drawable_ptr_t = std::shared_ptr<BillboardStringDrawable>
 using billboard_string_drawabledata_ptr_t = std::shared_ptr<BillboardStringDrawableData>;
 using overlay_string_drawabledata_ptr_t = std::shared_ptr<OverlayStringDrawableData>;
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
+using callback_drawabledata_ptr_t       = std::shared_ptr<CallbackDrawableData>;
 using drawable_ptr_t                = std::shared_ptr<Drawable>;
 using drawablecache_ptr_t           = std::shared_ptr<DrawableCache>;
 using drawabledata_ptr_t            = std::shared_ptr<DrawableData>;

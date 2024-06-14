@@ -22,6 +22,8 @@ void pyinit_system(py::module& module_ecs);
 void pyinit_simulation(py::module& module_ecs);
 void pyinit_scenegraph(py::module& module_ecs);
 void pyinit_controller(py::module& module_ecs);
+void pyinit_datatable(py::module& module_ecs);
+void pyinit_physics(py::module& module_ecs);
 
 } // namespace ork::ecs
 
@@ -154,7 +156,9 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   pyinit_simulation(module_ecs);
   pyinit_scenegraph(module_ecs);
   pyinit_controller(module_ecs);
-  
+  pyinit_datatable(module_ecs);
+  pyinit_physics(module_ecs);
+
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
 }
