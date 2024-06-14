@@ -12,6 +12,7 @@ from pathlib import Path
 from obt import path as obt_path
 from orkengine import core, lev2, ecs
 
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
@@ -123,7 +124,9 @@ class MinimalSceneGraphApp(object):
 
     ##################
         
+    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
     self.controller.createSimulation()
+
     self.controller.startSimulation()
 
     ##################
@@ -146,6 +149,7 @@ class MinimalSceneGraphApp(object):
 
   def onGpuExit(self,ctx):
     self.controller.stopSimulation()
+    self.controller.beginWriteTrace
 
   ##############################################
 
