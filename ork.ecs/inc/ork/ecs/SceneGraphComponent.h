@@ -127,6 +127,7 @@ using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;
 struct SceneGraphSystem final : public System {
   DeclareAbstractX(SceneGraphSystem, System);
   ///////////////////////////////
+  static constexpr auto ResizeFromMainSurface = "ResizeFromMainSurface"_ecstok;
   static constexpr auto UpdateCamera = "UpdateCamera"_ecstok;
   DeclareToken(UpdateFramebufferSize);
   DeclareToken(CreateNode);

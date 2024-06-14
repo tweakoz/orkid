@@ -369,11 +369,16 @@ void BulletShapePlaneData::describeX(object::ObjectClass* clazz) {
 }
 
 BulletShapePlaneData::BulletShapePlaneData() {
+
+  _pos = fvec3(0, 0, 0);
+  _nrm = fvec3(0, 1, 0);
+
   _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
     auto rval = new BulletShapeBaseInst(this);
-    auto up   = fvec3(0, 1, 0);
+    auto up   = _nrm.normalized();
+    float distance = _pos.dotWith(up);
 
-    rval->_collisionShape = new btStaticPlaneShape(orkv3tobtv3(up), 0.0f);
+    rval->_collisionShape = new btStaticPlaneShape(orkv3tobtv3(up), distance);
     return rval;
   };
 }

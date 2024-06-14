@@ -7,7 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/controller.h>
-
+#include <ork/ecs/datatable.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
@@ -42,7 +42,23 @@ void pyinit_controller(py::module& module_ecs) {
               sys_ref_t sys,         //
               crcstring_ptr_t evID,
               py::object evdata) {
-            evdata_t decoded = type_codec->decode64(evdata);
+
+            evdata_t decoded;
+            if (py::isinstance<py::dict>(evdata)){
+              auto as_dict = evdata.cast<py::dict>();
+              auto& dtab = decoded.make<DataTable>();
+              DataKey dkey;
+              for (auto item : as_dict) {
+                auto key = py::cast<crcstring_ptr_t>(item.first);
+                auto val = py::reinterpret_borrow<py::object>(item.second);
+                auto var_val = type_codec->decode64(val);
+                dkey._encoded = *key;
+                dtab[dkey] = var_val;
+              }
+            }
+            else{
+              decoded = type_codec->decode64(evdata);
+            }
 
             ctrl->systemNotify(sys, *evID, decoded);
           })

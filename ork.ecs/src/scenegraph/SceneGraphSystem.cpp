@@ -36,6 +36,7 @@ using modeldrawable_ptr_t = std::shared_ptr<lev2::ModelDrawableData>;
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystemData::describeX(SystemDataClass* clazz) {
   tokenize(SceneGraphSystem::UpdateCamera);
+  ImplementToken(ResizeFromMainSurface);
   ImplementToken(UpdateFramebufferSize);
   ImplementToken(CreateNode);
   ImplementToken(DestroyNode);
@@ -170,6 +171,7 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   /////////////////////////////////////////
 
   _scene         = std::make_shared<scenegraph::Scene>(_mergedParams);
+  
   _default_layer = _scene->createLayer("sg_default");
   for( auto item : _SGSD._declaredLayers ){
     _scene->createLayer(item);
@@ -451,6 +453,15 @@ void SceneGraphSystem::_onRender(Simulation* psi, ui::drawevent_constptr_t drwev
 void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
+    case ResizeFromMainSurface._hashed: {
+      auto resize_op    = [=]() {
+        if (_scene) {
+          _scene->_doResizeFromMainSurface = data.get<bool>();
+        }
+      };
+      _renderops.push(resize_op);
+      break;
+    }
     case UpdateCamera._hashed: {
       const auto& table = data.get<DataTable>();
       const auto& eye   = table["eye"_tok].get<fvec3>();

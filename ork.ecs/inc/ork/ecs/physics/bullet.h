@@ -38,6 +38,7 @@ struct BulletObjectForceControllerInst;
 struct BulletShapeBaseData;
 struct BulletObjectForceControllerData;
 struct DirectionalForceData;
+struct BulletShapePlaneData;
 
 using shapedata_ptr_t = std::shared_ptr<BulletShapeBaseData>;
 using shapedata_constptr_t = std::shared_ptr<const BulletShapeBaseData>;
@@ -195,7 +196,10 @@ struct BulletShapePlaneData : public BulletShapeBaseData {
 
 public:
   BulletShapePlaneData();
+  fvec3 _pos;
+  fvec3 _nrm;
 };
+using bulletshapeplanedata_ptr_t = std::shared_ptr<BulletShapePlaneData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

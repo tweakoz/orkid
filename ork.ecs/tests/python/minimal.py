@@ -38,21 +38,29 @@ class MinimalSceneGraphApp(object):
     #setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
-    self.a1 = self.ecsscene.createArchetype("arch1")
+    self.a1 = self.ecsscene.createArchetype("BoxArchetype")
+    self.a2 = self.ecsscene.createArchetype("GroundArchetype")
 
-    self.spawnd1 = self.ecsscene.createSpawnData("spawn1")
-    self.spawnd1.archetype = self.a1
-    self.spawnd1.autospawn = False
+    self.spawn_box = self.ecsscene.createSpawnData("spawn_box")
+    self.spawn_box.archetype = self.a1
+    self.spawn_box.autospawn = False
+
+    self.spawn_gnd = self.ecsscene.createSpawnData("spawn_gnd")
+    self.spawn_gnd.archetype = self.a2
+    self.spawn_gnd.autospawn = True
 
     ##############################################
     # setup scene graph
     ##############################################
 
+    self.comp_sgbox = self.a1.createComponent("SceneGraphComponent")
     self.comp_sg = self.a1.createComponent("SceneGraphComponent")
     self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
 
+    self.comp_sggnd = self.a2.createComponent("SceneGraphComponent")
+
     ##############################################
-    # setup physics
+    # setup physics For Box
     ##############################################
 
     sphere = ecs.BulletShapeSphereData()
@@ -61,17 +69,42 @@ class MinimalSceneGraphApp(object):
     c_phys = self.a1.createComponent("BulletObjectComponent")
 
     c_phys.mass = 1.0
-    c_phys.friction = 0.5
-    c_phys.restitution = 0.5
-    c_phys.angularDamping = 0.5
-    c_phys.linearDamping = 0.5
+    c_phys.friction = 0.1
+    c_phys.restitution = 0.1
+    c_phys.angularDamping = 0.1
+    c_phys.linearDamping = 0.1
     c_phys.allowSleeping = False
     c_phys.isKinematic = False
     c_phys.disablePhysics = False
     c_phys.shape = sphere
 
+    ##############################################
+    # setup physics For global
+    ##############################################
+
+    ground = ecs.BulletShapePlaneData()
+    ground.normal = vec3(0,1,0)
+    ground.position = vec3(0,-10,0)
+
+    c_phys2 = self.a2.createComponent("BulletObjectComponent")
+
+    c_phys2.mass = 0.0
+    c_phys2.friction = 0.1
+    c_phys2.restitution = 0.1
+    c_phys2.angularDamping = 0.1
+    c_phys2.linearDamping = 0.1
+    c_phys2.allowSleeping = True
+    c_phys2.isKinematic = False
+    c_phys2.disablePhysics = True
+    c_phys2.shape = ground
+    
+    ##############################################
+    # setup physics For global
+    ##############################################
+
     s_phys = self.ecsscene.createSystem("BulletSystem")
-    s_phys.expgravity = vec3(0,-9.8,0)
+    s_phys.expgravity = vec3(0,-9.8*1,0)
+    s_phys.debug = True
 
     #down_force = ecs.DirectionalForceData()
     #down_force.direction = vec3(0,-1,0)
@@ -115,26 +148,25 @@ class MinimalSceneGraphApp(object):
     print(self.sys_sg)
 
     self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
-
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
     self.controller.systemNotify( self.sys_sg,
-                                  tokens.UpdateCamera,
-                                  ecs.DataTable({
+                                  tokens.UpdateCamera,{
                                     tokens.eye: vec3(0,0,-5),
                                     tokens.tgt: vec3(0,0,0),
                                     tokens.up: vec3(0,1,0),
-                                    tokens.near: 0.1,
-                                    tokens.far: 10.0,
+                                    tokens.near: 0.01,
+                                    tokens.far: 100.0,
                                     tokens.fovy: math.pi*0.5
-                                  })
+                                  }
                                  )
 
 
     for i in range(-5,5):
       for j in range(-5,5):
-        SAD = ecs.SpawnAnonDynamic("spawn1")
+        SAD = ecs.SpawnAnonDynamic("spawn_box")
         SAD.overridexf.orientation = quat(vec3(0,1,0),0)
         SAD.overridexf.scale = 1.0
-        SAD.overridexf.translation = vec3(i,j,0)
+        SAD.overridexf.translation = vec3(i,15,j)
         self.e1 = self.controller.spawnEntity(SAD)
     
   ##############################################

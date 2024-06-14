@@ -363,6 +363,8 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
     sframe->attachDrawBufContext(_dbufcontext_SG);
     gpuInit(context);
   }
+ 
+ 
   _renderer->setContext(context);
   sframe->compositor = _compositorImpl;
   sframe->renderer   = _renderer;
@@ -381,6 +383,11 @@ void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
 void Scene::renderOnContext(Context* context) {
   // from SceneGraphSystem::_onRender
   auto rcfd = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
+  if(_compositorImpl and _doResizeFromMainSurface){
+    int w = context->mainSurfaceWidth();
+    int h = context->mainSurfaceHeight();
+    _compositorImpl->compositingContext().Resize(w, h);
+  }
   _renderIMPL(context, rcfd);
 }
 

@@ -287,6 +287,7 @@ struct Scene {
   synchro_ptr_t _synchro;
   float _currentTime = 0.0f;
   uint32_t _pickFormat = 0;
+  bool _doResizeFromMainSurface = false;
   using layer_map_t = std::map<std::string, layer_ptr_t>;
 
   LockedResource<layer_map_t> _layers;
