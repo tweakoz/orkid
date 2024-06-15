@@ -1,109 +1,239 @@
 #!/usr/bin/env python3
-################################################################################
-# lev2 sample which renders a scenegraph, optionally in VR mode
-# Copyright 1996-2020, Michael T. Mayers.
-# Distributed under the Boost Software License - Version 1.0 - August 17, 2003
-# see http://www.boost.org/LICENSE_1_0.txt
-################################################################################
-import math, random, argparse
-from orkengine.core import *
-from orkengine import lev2
-from orkengine import ecs
-################################################################################
-parser = argparse.ArgumentParser(description='ecs example')
-################################################################################
-args = vars(parser.parse_args())
-################################################################################
-class EcsApp(object):
-    ################################################
-    def __init__(self):
-        super().__init__()
-        self.sceneparams = VarMap()
-        self.sceneparams.preset = "PBR"
-        self.qtapp = ecs.createApp(self)
-        self.qtapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-        self.updinit = True
-        self.coreapp = self.qtapp.coreapp()
-    ################################################
-    # onUpdateInit (always called before onGpuInit() is complete...)
-    #  technically called at the beginning of ezapp->runloop()
-    ################################################
-    def onUpdateInit(self):
-        ###########################
-        # create drawables
-        ###########################
-        self.terdd = lev2.TerrainDrawableData()
-        self.terdd.rock1 = vec3(1, 1, 1)
-        self.terdd.writeHmapPath("src://terrain/testhmap2_2048.png")
-        self.terdi = lev2.TerrainDrawableInst(self.terdd)
-        self.terdi.worldHeight = 5000.0
-        self.terdi.worldSizeXZ = 8192.0
-        self.terrainDrawable = self.terdi.createCallbackDrawable()
-        ###########################
-        # init ECS
-        ###########################
-        self.scene = ecs.SceneData()
-        print(self.scene)
-        self.sgsystemdata = self.scene.addSceneGraphSystem()
-        self.arch1 = ecs.CompositeArchetype()
-        print(self.arch1)
-        self.sgcd = self.arch1.addSceneGraphComponent()
-        self.scene.addSceneObject(self.arch1)
-        self.sim = ecs.Simulation(self.scene,self.coreapp)
-        print(self.sim)
-        self.sim.onLink( lambda : self.onSimulationLink() )
-        self.sim.start()
-        ##############################################
-    def onSimulationLink(self):
-        ###########################
-        # fetch SceneGraphSystem / default camera / layer
-        ###########################
-        self.sgsysteminst = self.sim.sceneGraphSystem()
-        self.layer = self.sgsysteminst.defaultLayer
-        self.camera = self.sgsysteminst.defaultCamera
-        print(self.layer)
-        print(self.camera)
-        ###########################
-        #  create scenegraph nodes
-        ###########################
-        self.sg_node = self.layer.createDrawableNode("terrain-node", self.terrainDrawable);
-        print(self.sg_node)
-        self.r_lightdata = lev2.PointLightData()
-        self.r_lightdata.color = vec3(1000,0,0)
-        self.r_lightnode = self.r_lightdata.createNode("red-light-node",self.layer)
-    ##############################################
-    def onGpuInit(self,ctx):
-        #self.model = lev2.Model("src://environ/objects/misc/ref/torus.glb")
-        pass
-    ################################################
-    def onUpdate(self,updinfo):
-        ###################################
-        # set camera
-        ###################################
-        θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
-        distance = 10.0
-        height = 300
-        eye = vec3(0,height,-10)+vec3(math.sin(θ), 0, -math.cos(θ)) * distance
-        self.camera.lookAt(eye, # eye
-                           vec3(0, height, 0), # tgt
-                           vec3(0, 1, 0)) # up
-        ###################################
-        # set light
-        ###################################
-        mtx = mtx4()
-        mtx.compose(vec3(0,10,0),quat(),1)
-        self.r_lightnode.setMatrix(mtx)
-        ###################################
-        # update ECS simulation
-        ###################################
-        self.sim.update()
-    ################################################
-    def onDraw(self,drawevent):
-        ###################################
-        # render ECS simulation
-        ###################################
-        self.sim.render(drawevent)
-################################################
-app = EcsApp()
-app.qtapp.exec()
 
+################################################################################
+# lev2 sample which renders a scenegraph to a window
+# Copyright 1996-2023, Michael T. Mayers.
+# Distributed under the MIT License
+# see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+################################################################################
+
+import math, sys, os, random
+from pathlib import Path
+from obt import path as obt_path
+from orkengine import core, lev2, ecs
+
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
+from ork import path as ork_path
+sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
+from lev2utils import primitives as prims
+
+from lev2utils.cameras import *
+from lev2utils.primitives import createFrustumPrim, createGridData
+from lev2utils.scenegraph import createSceneGraph
+
+tokens = core.CrcStringProxy()
+################################################################################
+
+class MinimalSceneGraphApp(object):
+
+  ##############################################
+
+  def __init__(self):
+    super().__init__()
+    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
+    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
+
+    self.ecsscene = ecs.SceneData()
+
+    ##############################################
+    # setup global physics 
+    ##############################################
+
+    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = False
+    
+    self.systemdata_phys = systemdata_phys
+    ##############################################
+    self.player_transform = None
+
+  ##############################################
+
+  def createBallData(self,ctx):
+    self.arch_ball = self.ecsscene.createArchetype("BoxArchetype")
+    self.spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
+    self.spawn_ball.archetype = self.arch_ball
+    self.spawn_ball.autospawn = False
+    self.comp_sg = self.arch_ball.createComponent("SceneGraphComponent")
+
+    sphere = ecs.BulletShapeSphereData()
+    sphere.radius = 1.0
+
+    c_phys = self.arch_ball.createComponent("BulletObjectComponent")
+
+    c_phys.mass = 1.0
+    c_phys.friction = 0.3
+    c_phys.restitution = 0.45
+    c_phys.angularDamping = 0.01
+    c_phys.linearDamping = 0.01
+    c_phys.allowSleeping = False
+    c_phys.isKinematic = False
+    c_phys.disablePhysics = False
+    c_phys.shape = sphere
+
+    self.comp_phys = c_phys
+
+    self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    self.comp_sg.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
+
+  ##############################################
+
+  def createRoomData(self,ctx):
+    self.arch_room = self.ecsscene.createArchetype("RoomArchetype")
+    self.spawn_room = self.ecsscene.createSpawnData("spawn_room")
+    self.spawn_room.archetype = self.arch_room
+    self.spawn_room.autospawn = True
+    self.spawn_room.transform.translation = vec3(0,-10,0)
+    self.spawn_room.transform.scale = 1.0
+
+    #########################
+    # physics for room
+    #########################
+
+    room_sg_component = self.arch_room.createComponent("SceneGraphComponent")
+    room_phys = self.arch_room.createComponent("BulletObjectComponent")
+
+    room_shape = ecs.BulletShapeMeshData()
+    room_shape.meshpath = "data://tests/environ/envtest2.obj"
+    room_shape.scale = vec3(5,8,5)
+    room_shape.translation = vec3(0,0.01,0)
+
+    room_phys.mass = 0.0
+    room_phys.allowSleeping = True
+    room_phys.isKinematic = False
+    room_phys.disablePhysics = True
+    room_phys.shape = room_shape
+
+    #########################
+    # visible mesh for room
+    #########################
+
+    self.room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    
+    room_mesh_transform = Transform()
+    room_mesh_transform.nonUniformScale = vec3(5,8,5)
+    room_mesh_transform.translation = vec3(0,-0.05,0)
+
+    room_node = room_sg_component.declareNodeOnLayer( name = "roomvis",
+                                                      drawable = self.room_drawable,
+                                                      layer = "layer1",
+                                                      transform = room_mesh_transform)
+    
+  ##############################################
+
+  def onGpuInit(self,ctx):
+    
+    ####################
+    # create scenegraph
+    ####################
+
+    self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
+    self.sysd_sg.declareLayer("layer1")
+    self.sysd_sg.declareParams({
+      "SkyboxIntensity": float(2.0),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(2000),
+      "DepthFogPower": float(1.25),
+    })
+
+    ####################
+    # create archetype/entity data
+    ####################
+
+    self.createBallData(ctx)
+    self.createRoomData(ctx)
+    
+    ####################
+    # create ECS controller
+    ####################
+
+    self.controller = ecs.Controller()
+    self.controller.bindScene(self.ecsscene)
+
+    ##################
+    # launch simulation
+    ##################
+        
+    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
+    self.controller.createSimulation()
+    self.controller.startSimulation()
+
+    ##################
+    # retrieve simulation systems
+    ##################
+
+    self.sys_phys = self.controller.findSystem("BulletSystem")
+    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
+
+    ##################
+    # init systems
+    ##################
+
+    self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+    self.spawncounter = 0
+    
+  ##############################################
+
+  def onDraw(self,drawevent):
+    self.controller.renderSimulation(drawevent)
+
+  ##############################################
+
+  def onGpuExit(self,ctx):
+    self.controller.stopSimulation()
+    self.controller.beginWriteTrace
+
+  ##############################################
+
+  def onUpdate(self,updinfo):
+    ##############################
+    self.systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+    ##############################
+    i = random.randint(-5,5)
+    j = random.randint(-5,5)
+    prob = random.randint(0,100)
+    if prob < 5 and self.spawncounter < 250:
+      self.spawncounter += 1
+      SAD = ecs.SpawnAnonDynamic("spawn_ball")
+      SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+      SAD.overridexf.scale = 1.0
+      SAD.overridexf.translation = vec3(i,15,j)
+      self.e1 = self.controller.spawnEntity(SAD)
+      
+    ##############################
+    UIC = self.uicam.cameradata
+   
+    self.controller.systemNotify( self.sys_sg,
+                                  tokens.UpdateCamera,{
+                                    tokens.eye: UIC.eye,
+                                    tokens.tgt: UIC.target,
+                                    tokens.up: UIC.up,
+                                    tokens.near: UIC.near,
+                                    tokens.far: UIC.far,
+                                    tokens.fovy: UIC.fovy
+                                  }
+                                 )
+
+    ##############################
+
+    self.controller.updateSimulation()
+
+  ##############################################
+
+  def onUiEvent(self,uievent):
+
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
+
+    return ui.HandlerResult()
+
+###############################################################################
+
+MinimalSceneGraphApp().ezapp.mainThreadLoop()

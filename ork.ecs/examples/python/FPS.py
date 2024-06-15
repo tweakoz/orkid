@@ -15,19 +15,12 @@ from orkengine import core, lev2, ecs
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
-sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
-from lev2utils import primitives as prims
-
-print(ork_path.lev2_pylib)
 from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.primitives import createFrustumPrim, createGridData
-from lev2utils.scenegraph import createSceneGraph
 
 tokens = core.CrcStringProxy()
 ################################################################################
 
-class MinimalSceneGraphApp(object):
+class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
@@ -37,137 +30,134 @@ class MinimalSceneGraphApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(0,0,0), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
 
-    self.ecsscene = ecs.SceneData()
-
-    ##############################################
-    # setup global physics 
     ##############################################
 
-    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
-    #systemdata_phys.expGravity = vec3(0,-9.8*,0)
-    systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = True
-    
-    self.systemdata_phys = systemdata_phys
-    ##############################################
     self.player_transform = None
 
   ##############################################
 
   def createPlayerData(self,ctx):
-    self.arch_player = self.ecsscene.createArchetype("PlayerArchetype")
-    self.spawn_player = self.ecsscene.createSpawnData("spawn_player")
-    self.spawn_player.archetype = self.arch_player
-    self.spawn_player.autospawn = True
-    self.spawn_player.transform.translation = vec3(0,0,0)
-    self.spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
-    def onSpawn(entity):
-      self.player_transform = entity.transform
-    self.spawn_player.onSpawn(onSpawn)
-    self.comp_sg = self.arch_player.createComponent("SceneGraphComponent")
 
+    self.arch_player = self.ecsscene.createArchetype("PlayerArchetype")
+    c_scenegraph = self.arch_player.createComponent("SceneGraphComponent")
+    c_physics = self.arch_player.createComponent("BulletObjectComponent")
+
+    ######################################
+    # scenegraph setup for player
+    ######################################
+
+    if False: # dont really need in first person mode
+      drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+      viz_xf = Transform() # non uniform scale for sphere (to make it a capsule)
+      viz_xf.nonUniformScale = vec3(1,1,3)
+
+      c_scenegraph.declareNodeOnLayer( name="cube1",
+                                       drawable=drawable,
+                                       layer="layer1",
+                                       transform=viz_xf)
+
+    ######################################
+    # physics setup for player
+    ######################################
+    
     capsule = ecs.BulletShapeCapsuleData()
     capsule.radius = 1.0
     capsule.extent = 3.0
 
-
-    c_phys = self.arch_player.createComponent("BulletObjectComponent")
-
-    c_phys.mass = 10.0
-    c_phys.friction = 0.1
-    c_phys.restitution = 0.0
-    c_phys.angularDamping = 1
-    c_phys.linearDamping = 0.5
-    c_phys.allowSleeping = False
-    c_phys.isKinematic = False
-    c_phys.disablePhysics = False
-    c_phys.angularFactor = vec3(0,1,0)
-    c_phys.shape = capsule
+    c_physics.mass = 10.0
+    c_physics.friction = 0.1
+    c_physics.restitution = 0.0
+    c_physics.angularDamping = 1
+    c_physics.linearDamping = 0.5
+    c_physics.allowSleeping = False
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = False
+    c_physics.angularFactor = vec3(0,1,0)
+    c_physics.shape = capsule
 
     self.playerforce = ecs.DirectionalForceData()
-    c_phys.declareForce("playerforce",self.playerforce)
+    c_physics.declareForce("playerforce",self.playerforce)
     self.playerforce_rot = 0.0
 
-    viz_xf = Transform()
-    viz_xf.nonUniformScale = vec3(1,1,3)
+    ######################################
+    # statically spawned player entity
+    ######################################
 
-    self.player_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    self.comp_sg.declareNodeOnLayer( name="cube1",
-                                     drawable=self.player_drawable,
-                                     layer="layer1",
-                                     transform=viz_xf)
+    spawn_player = self.ecsscene.createSpawnData("spawn_player")
+    spawn_player.archetype = self.arch_player
+    spawn_player.autospawn = True
+    spawn_player.transform.translation = vec3(0,0,0)
+    spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
 
-    self.comp_phys_player = c_phys
+    ######################################
+    # catch the player entity's transform
+    #  invoked on update thread 
+    #    when entity is actually spawned.
+    ######################################
+
+    def onSpawn(entity):
+      self.player_transform = entity.transform
+
+    spawn_player.onSpawn(onSpawn)
 
   ##############################################
 
   def createBallData(self,ctx):
+
     self.arch_ball = self.ecsscene.createArchetype("BoxArchetype")
     self.spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
     self.spawn_ball.archetype = self.arch_ball
     self.spawn_ball.autospawn = False
-    self.comp_sg = self.arch_ball.createComponent("SceneGraphComponent")
+    c_scenegraph = self.arch_ball.createComponent("SceneGraphComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_phys = self.arch_ball.createComponent("BulletObjectComponent")
+    c_physics = self.arch_ball.createComponent("BulletObjectComponent")
 
-    c_phys.mass = 1.0
-    c_phys.friction = 0.3
-    c_phys.restitution = 0.45
-    c_phys.angularDamping = 0.01
-    c_phys.linearDamping = 0.01
-    c_phys.allowSleeping = False
-    c_phys.isKinematic = False
-    c_phys.disablePhysics = False
-    c_phys.shape = sphere
+    c_physics.mass = 1.0
+    c_physics.friction = 0.3
+    c_physics.restitution = 0.45
+    c_physics.angularDamping = 0.01
+    c_physics.linearDamping = 0.01
+    c_physics.allowSleeping = False
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = False
+    c_physics.shape = sphere
 
-    self.comp_phys = c_phys
-
-    #self.cube = prims.createCubePrim(ctx=ctx, size=1.0)
-    #pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
     self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    self.comp_sg.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
+    c_scenegraph.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
+
+  ##############################################
+  # generate the environment
   ##############################################
 
-  def createRoomData(self,ctx):
-    self.arch_room = self.ecsscene.createArchetype("RoomArchetype")
-    self.spawn_room = self.ecsscene.createSpawnData("spawn_room")
-    self.spawn_room.archetype = self.arch_room
-    self.spawn_room.autospawn = True
-    self.spawn_room.transform.translation = vec3(0,-10,0)
-    self.spawn_room.transform.scale = 1.0
+  def createEnvironmentData(self,ctx):
+
+    arch_room = self.ecsscene.createArchetype("RoomArchetype")
+    spawn_room = self.ecsscene.createSpawnData("spawn_room")
+    spawn_room.archetype = arch_room
+    spawn_room.autospawn = True
+    spawn_room.transform.translation = vec3(0,-10,0)
+    spawn_room.transform.scale = 1.0
 
     #########################
     # physics for room
     #########################
 
-    room_sg_component = self.arch_room.createComponent("SceneGraphComponent")
-    room_phys = self.arch_room.createComponent("BulletObjectComponent")
+    c_scenegraph = arch_room.createComponent("SceneGraphComponent")
+    c_physics = arch_room.createComponent("BulletObjectComponent")
 
-    room_shape = ecs.BulletShapeMeshData()
-    room_shape.meshpath = "data://tests/environ/envtest2.obj"
-    room_shape.scale = vec3(5,8,5)
-    room_shape.translation = vec3(0,0.01,0)
+    shape = ecs.BulletShapeMeshData()
+    shape.meshpath = "data://tests/environ/envtest2.obj"
+    shape.scale = vec3(5,8,5)
+    shape.translation = vec3(0,0.01,0)
 
-    room_phys.mass = 0.0
-    room_phys.allowSleeping = True
-    room_phys.isKinematic = False
-    room_phys.disablePhysics = True
-    room_phys.shape = room_shape
-
-    #########################
-    # visible grid for room
-    #########################
-
-    #self.room_grid = prims.createGridData(extent=100)
-    #pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
-
-    #room_sg_component.declareNodeOnLayer( name="ground",
-    #                                      drawable=self.room_grid,
-    #                                      layer="layer1")
+    c_physics.mass = 0.0
+    c_physics.allowSleeping = True
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = True
+    c_physics.shape = shape
 
     #########################
     # visible mesh for room
@@ -179,7 +169,7 @@ class MinimalSceneGraphApp(object):
     room_mesh_transform.nonUniformScale = vec3(5,8,5)
     room_mesh_transform.translation = vec3(0,-0.05,0)
 
-    room_node = room_sg_component.declareNodeOnLayer( name = "roomvis",
+    room_node = c_scenegraph.declareNodeOnLayer( name = "roomvis",
                                                       drawable = self.room_drawable,
                                                       layer = "layer1",
                                                       transform = room_mesh_transform)
@@ -189,12 +179,19 @@ class MinimalSceneGraphApp(object):
   def onGpuInit(self,ctx):
     
     ####################
-    # create scenegraph
+    # create ECS scene
     ####################
-    self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
-    self.sysd_sg.declareLayer("layer1")
-    self.sysd_sg.declareParams({
-      "SkyboxIntensity": float(1.0),
+
+    self.ecsscene = ecs.SceneData()
+
+    ####################
+    # create (graphics) scenegraph system
+    ####################
+
+    self.systemdata_scenegraph = self.ecsscene.createSystem("SceneGraphSystem")
+    self.systemdata_scenegraph.declareLayer("layer1")
+    self.systemdata_scenegraph.declareParams({
+      "SkyboxIntensity": float(2.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -203,11 +200,23 @@ class MinimalSceneGraphApp(object):
     })
 
     ####################
+    # create physics system
+    ####################
+
+    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = False
+    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+
+    self.systemdata_phys = systemdata_phys
+
+    ####################
     # create archetype/entity data
     ####################
 
     self.createBallData(ctx)
-    self.createRoomData(ctx)
+    self.createEnvironmentData(ctx)
     self.createPlayerData(ctx)
     
     ####################
@@ -248,19 +257,24 @@ class MinimalSceneGraphApp(object):
   ##############################################
 
   def onGpuExit(self,ctx):
+
+    # clean up
+
     self.controller.stopSimulation()
     self.controller.beginWriteTrace
 
   ##############################################
 
   def onUpdate(self,updinfo):
+
     ##############################
-    self.systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+    # spawn balls
     ##############################
+
     i = random.randint(-5,5)
     j = random.randint(-5,5)
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 250:
+    if prob < 5 and self.spawncounter < 500:
       self.spawncounter += 1
       SAD = ecs.SpawnAnonDynamic("spawn_ball")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
@@ -269,6 +283,9 @@ class MinimalSceneGraphApp(object):
       self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################
+    # camera update
+    ##############################
+
     UIC = self.uicam.cameradata
     PXF = self.player_transform
     if PXF is not None:
@@ -282,8 +299,6 @@ class MinimalSceneGraphApp(object):
       TGT = EYE + DIR
       UP = vec3(0,1,0)
       
-      
-      
       self.playerforce.direction = MOTION_DIR
 
       self.controller.systemNotify( self.sys_sg,
@@ -296,7 +311,11 @@ class MinimalSceneGraphApp(object):
                                       tokens.fovy: UIC.fovy
                                     }
                                    )
+
     ##############################
+    # tick the simulation
+    ##############################
+
     self.controller.updateSimulation()
 
   ##############################################
@@ -313,13 +332,20 @@ class MinimalSceneGraphApp(object):
 
   def onUiEvent(self,uievent):
 
-    walk_force = 1e3
+    walk_force = 5e3
+
+    ##############################################
+    # camera controls
+    ##############################################
+
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    elif uievent.code == tokens.KEY_UP.hashed:
-      self.playerforce.magnitude = 0.0
-      self.playerforce_rot = 0.0
+
+    ##############################################
+    # motion controls
+    ##############################################
+
     elif uievent.code == tokens.KEY_DOWN.hashed:
       #### JUMP #####
       if uievent.keycode == ord(" "): 
@@ -340,11 +366,13 @@ class MinimalSceneGraphApp(object):
       elif uievent.keycode == ord("D"):
         self.playerforce.magnitude = walk_force
         self.playerforce_rot = math.pi*0.5
-      ########
+    ##############################################
     elif uievent.code == tokens.KEY_UP.hashed:
-      pass
+      if uievent.keycode in [ord("W"),ord("A"),ord("S"),ord("D")]:
+        self.playerforce.magnitude = 0.0
+
     return ui.HandlerResult()
 
 ###############################################################################
 
-MinimalSceneGraphApp().ezapp.mainThreadLoop()
+ECS_FIRST_PERSON_SHOOTER().ezapp.mainThreadLoop()
