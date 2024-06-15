@@ -131,9 +131,8 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 cammat.projectDepthRay(pos2d, rval);
                 return rval;
               })
-          .def("vMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
-              auto matrices = camera->computeMatrices(aspect);
-              return matrices._vmatrix;
+          .def("vMatrix", [](cameradata_ptr_t camera) -> fmtx4 { //
+              return camera->computeViewMatrix();
           })
           .def("pMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
               auto matrices = camera->computeMatrices(aspect);

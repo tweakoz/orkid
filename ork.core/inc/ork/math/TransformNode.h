@@ -48,7 +48,7 @@ struct DecompTransform : public ork::Object {
 
   void set(fvec3 t, fquat r, float s) { _translation=t; _rotation=r; _uniformScale=s; }
   void set(decompxf_const_ptr_t rhs);
-
+  void lookAt( const fvec3& eye, const fvec3& tgt, const fvec3& up );
   fmtx4 composed() const;
   fmtx4 composed2() const;
   void decompose( const fmtx4& inmtx );

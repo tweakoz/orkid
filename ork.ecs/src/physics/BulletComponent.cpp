@@ -266,11 +266,11 @@ void BulletObjectComponent::_onNotify(Simulation* psi, token_t evID, evdata_t da
       auto fc = fc_response->_responseData.get<BulletObjectForceControllerInst*>();
       auto dirfc = dynamic_cast<DirectionalForceInst*>(fc);
 
-      auto it_force = vars.find("Force");
-      dirfc->_force = it_force->second._encoded.get<double>();
+      //auto it_force = vars.find("Force");
+      //dirfc->_force = it_force->second._encoded.get<double>();
 
-      auto it_dir = vars.find("Direction");
-      dirfc->_direction = it_dir->second._encoded.get<fvec3>();
+      //auto it_dir = vars.find("Direction");
+      //dirfc->_direction = it_dir->second._encoded.get<fvec3>();
 
       break;
     }

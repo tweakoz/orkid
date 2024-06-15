@@ -486,6 +486,10 @@ void Simulation::_initializeEntities() {
         auto world = node->_xfnode->_transform;
         pent->setTransform(world);
         mEntities[spawner->GetName()] = pent;
+
+        if(spawner->_onSpawn){
+          spawner->_onSpawn(pent);
+        }
       }
     }
   }

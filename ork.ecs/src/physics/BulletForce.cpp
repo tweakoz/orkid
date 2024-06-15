@@ -322,11 +322,7 @@ DirectionalForceData::CreateForceControllerInst(const BulletObjectComponentData&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DirectionalForceInst::DirectionalForceInst(const DirectionalForceData* data) {
-  if(data){
-    _force = data->_force;
-    _direction = data->_direction;
-  }
+DirectionalForceInst::DirectionalForceInst(const DirectionalForceData* data) : _DFD(data) {
 }
 DirectionalForceInst::~DirectionalForceInst() {
 }
@@ -339,7 +335,8 @@ bool DirectionalForceInst::DoLink(Simulation* psi) {
 void DirectionalForceInst::UpdateForces(BulletObjectComponent* boci, float deltat) {
   const BulletObjectComponentData& BOCD = boci->data();
   btRigidBody* rbody                     = boci->_rigidbody;
-  fvec3 force_amt = _direction * _force;
+
+  fvec3 force_amt = _DFD->_direction * _DFD->_force;
   rbody->applyCentralForce(orkv3tobtv3(force_amt));
   //printf( "apply force<%g %g %g>\n", force_amt.x, force_amt.y, force_amt.z );
   /////////////////////////////

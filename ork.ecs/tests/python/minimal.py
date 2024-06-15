@@ -35,7 +35,7 @@ class MinimalSceneGraphApp(object):
     super().__init__()
     self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    setupUiCamera( app=self, eye = vec3(10,10,10)*3, tgt=vec3(0,5,0), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, eye = vec3(0,0,0), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
 
     self.ecsscene = ecs.SceneData()
 
@@ -44,14 +44,14 @@ class MinimalSceneGraphApp(object):
     ##############################################
 
     systemdata_phys = self.ecsscene.createSystem("BulletSystem")
-    systemdata_phys.expGravity = vec3(0,-9.8*2,0)
+    #systemdata_phys.expGravity = vec3(0,-9.8*,0)
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
     systemdata_phys.debug = True
     
     self.systemdata_phys = systemdata_phys
     ##############################################
-    self.jump = False
+    self.player_transform = None
 
   ##############################################
 
@@ -62,16 +62,20 @@ class MinimalSceneGraphApp(object):
     self.spawn_player.autospawn = True
     self.spawn_player.transform.translation = vec3(0,0,0)
     self.spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
+    def onSpawn(entity):
+      self.player_transform = entity.transform
+    self.spawn_player.onSpawn(onSpawn)
     self.comp_sg = self.arch_player.createComponent("SceneGraphComponent")
 
     capsule = ecs.BulletShapeCapsuleData()
     capsule.radius = 1.0
     capsule.extent = 3.0
 
+
     c_phys = self.arch_player.createComponent("BulletObjectComponent")
 
     c_phys.mass = 10.0
-    c_phys.friction = 1
+    c_phys.friction = 0.1
     c_phys.restitution = 0.0
     c_phys.angularDamping = 1
     c_phys.linearDamping = 0.5
@@ -81,7 +85,9 @@ class MinimalSceneGraphApp(object):
     c_phys.angularFactor = vec3(0,1,0)
     c_phys.shape = capsule
 
-    self.comp_phys_player = c_phys
+    self.playerforce = ecs.DirectionalForceData()
+    c_phys.declareForce("playerforce",self.playerforce)
+    self.playerforce_rot = 0.0
 
     viz_xf = Transform()
     viz_xf.nonUniformScale = vec3(1,1,3)
@@ -91,6 +97,8 @@ class MinimalSceneGraphApp(object):
                                      drawable=self.player_drawable,
                                      layer="layer1",
                                      transform=viz_xf)
+
+    self.comp_phys_player = c_phys
 
   ##############################################
 
@@ -186,7 +194,7 @@ class MinimalSceneGraphApp(object):
     self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
     self.sysd_sg.declareLayer("layer1")
     self.sysd_sg.declareParams({
-      "SkyboxIntensity": float(1.5),
+      "SkyboxIntensity": float(1.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -247,7 +255,7 @@ class MinimalSceneGraphApp(object):
 
   def onUpdate(self,updinfo):
     ##############################
-    self.systemdata_phys.linGravity = vec3(0,-9.8,0)
+    self.systemdata_phys.linGravity = vec3(0,-9.8*3,0)
     ##############################
     i = random.randint(-5,5)
     j = random.randint(-5,5)
@@ -261,16 +269,33 @@ class MinimalSceneGraphApp(object):
       self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################
-    self.controller.systemNotify( self.sys_sg,
-                                  tokens.UpdateCamera,{
-                                    tokens.eye: self.uicam.cameradata.eye,
-                                    tokens.tgt: self.uicam.cameradata.target,
-                                    tokens.up: self.uicam.cameradata.up,
-                                    tokens.near: self.uicam.cameradata.near,
-                                    tokens.far: self.uicam.cameradata.far,
-                                    tokens.fovy: self.uicam.cameradata.fovy
-                                  }
-                                 )
+    UIC = self.uicam.cameradata
+    PXF = self.player_transform
+    if PXF is not None:
+      EYE = PXF.translation
+      ROT = self.playerforce_rot
+      DIR = (UIC.target-UIC.eye).normalized()
+      # rot around Y by ROT
+      MOTION_DIR = vec3(DIR.x,DIR.y,DIR.z)
+      MOTION_DIR.roty(ROT)
+      
+      TGT = EYE + DIR
+      UP = vec3(0,1,0)
+      
+      
+      
+      self.playerforce.direction = MOTION_DIR
+
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdateCamera,{
+                                      tokens.eye: EYE,
+                                      tokens.tgt: TGT,
+                                      tokens.up: UP,
+                                      tokens.near: UIC.near,
+                                      tokens.far: UIC.far,
+                                      tokens.fovy: UIC.fovy
+                                    }
+                                   )
     ##############################
     self.controller.updateSimulation()
 
@@ -287,28 +312,35 @@ class MinimalSceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+
+    walk_force = 1e3
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
+    elif uievent.code == tokens.KEY_UP.hashed:
+      self.playerforce.magnitude = 0.0
+      self.playerforce_rot = 0.0
     elif uievent.code == tokens.KEY_DOWN.hashed:
-      
-      camdir = (self.uicam.cameradata.target-self.uicam.cameradata.eye).normalized(),
-      print(camdir)
-      
-      # get projection of camdir on xz groundplane
-      projdir = vec3(camdir[0].x,0,camdir[0].z).normalized()
-      
-      
+      #### JUMP #####
       if uievent.keycode == ord(" "): 
         self.playerImpulse(vec3(0,80,0)) # JUMP
+      #### FORWARD #####
       elif uievent.keycode == ord("W"):
-        self.playerImpulse(projdir*50.0) # FORWARD
-      #elif uievent.keycode == ord("A"):
-      #  self.playerImpulse(vec3(20,0,0)) # LEFT
+        self.playerforce.magnitude = walk_force
+        self.playerforce_rot = 0.0
+      #### LEFT #####
+      elif uievent.keycode == ord("A"):
+        self.playerforce.magnitude = walk_force
+        self.playerforce_rot = math.pi*1.5
+      #### BACK #####
       elif uievent.keycode == ord("S"):
-        self.playerImpulse(projdir*-50.0) # BACKWARD
-      #elif uievent.keycode == ord("D"):
-      #  self.playerImpulse(vec3(-20,0,0)) # RIGHT
+        self.playerforce.magnitude = walk_force
+        self.playerforce_rot = math.pi
+      #### RIGHT #####
+      elif uievent.keycode == ord("D"):
+        self.playerforce.magnitude = walk_force
+        self.playerforce_rot = math.pi*0.5
+      ########
     elif uievent.code == tokens.KEY_UP.hashed:
       pass
     return ui.HandlerResult()

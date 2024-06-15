@@ -26,6 +26,7 @@ struct CameraData {
   CameraData();
 
   CameraMatrices computeMatrices(float faspect = 1.0f) const;
+  fmtx4 computeViewMatrix() const;
 
   const fvec3& GetEye() const;
   const fvec3& GetTarget() const;

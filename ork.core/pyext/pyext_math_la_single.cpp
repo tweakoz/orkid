@@ -54,9 +54,7 @@ void pyinit_math_la_float(py::module& module_core) {
           .def(
               "lookAt",
               [](decompxf_ptr_t dcxf, fvec3 eye, fvec3 tgt, fvec3 up) {
-                fmtx4 the_mtx;
-                the_mtx.lookAt(eye, tgt, up);
-                dcxf->decompose(the_mtx);
+                dcxf->lookAt(eye, tgt, up);
               })
           .def_property(
               "directMatrix",

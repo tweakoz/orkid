@@ -18,50 +18,55 @@ void pyinit_physics(py::module& module_ecs) {
       py::class_<BulletObjectComponentData, ComponentData, bulletcompdata_ptr_t>(module_ecs, "BulletObjectComponentData")
           .def(
               "__repr__",
-              [](const bulletcompdata_ptr_t& physc) -> std::string {
+              [](bulletcompdata_ptr_t physc) -> std::string {
                 fxstring<256> fxs;
                 fxs.format("ecs::BulletObjectComponentData(%p)", physc.get());
                 return fxs.c_str();
               })
+          .def( "declareForce", []( bulletcompdata_ptr_t physc, //
+                                    std::string name, //
+                                    forcecontrollerdata_ptr_t forcedata ) { //
+            physc->_forcedatas[name] = forcedata;
+          })
           .def_property(
               "mass",
-              [](const bulletcompdata_ptr_t& physc) -> float { return physc->_mass; },
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_mass; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_mass = val; })
           .def_property(
               "friction",
-              [](const bulletcompdata_ptr_t& physc) -> float { return physc->_friction; },
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_friction; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_friction = val; })
           .def_property(
               "restitution",
-              [](const bulletcompdata_ptr_t& physc) -> float { return physc->_restitution; },
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_restitution; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_restitution = val; })
           .def_property(
               "angularDamping",
-              [](const bulletcompdata_ptr_t& physc) -> float { return physc->_angularDamping; },
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_angularDamping; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_angularDamping = val; })
           .def_property(
               "linearDamping",
-              [](const bulletcompdata_ptr_t& physc) -> float { return physc->_linearDamping; },
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_linearDamping; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_linearDamping = val; })
           .def_property(
               "allowSleeping",
-              [](const bulletcompdata_ptr_t& physc) -> bool { return physc->_allowSleeping; },
+              [](bulletcompdata_ptr_t physc) -> bool { return physc->_allowSleeping; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_allowSleeping = val; })
           .def_property(
               "isKinematic",
-              [](const bulletcompdata_ptr_t& physc) -> bool { return physc->_isKinematic; },
+              [](bulletcompdata_ptr_t physc) -> bool { return physc->_isKinematic; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_isKinematic = val; })
           .def_property(
               "disablePhysics",
-              [](const bulletcompdata_ptr_t& physc) -> bool { return physc->_disablePhysics; },
+              [](bulletcompdata_ptr_t physc) -> bool { return physc->_disablePhysics; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_disablePhysics = val; })
           .def_property(
               "shape",
-              [](const bulletcompdata_ptr_t& physc) -> shapedata_ptr_t { return physc->_shapedata; },
+              [](bulletcompdata_ptr_t physc) -> shapedata_ptr_t { return physc->_shapedata; },
               [](bulletcompdata_ptr_t& physc, shapedata_ptr_t val) { physc->_shapedata = val; })
           .def_property(
               "angularFactor",
-              [](const bulletcompdata_ptr_t& physc) -> fvec3 { return physc->_angularFactor; },
+              [](bulletcompdata_ptr_t physc) -> fvec3 { return physc->_angularFactor; },
               [](bulletcompdata_ptr_t& physc, fvec3 val) { physc->_angularFactor = val; });
 
   type_codec->registerStdCodec<bulletcompdata_ptr_t>(bullc_type);
@@ -205,7 +210,7 @@ void pyinit_physics(py::module& module_ecs) {
                 return fxs.c_str();
               })
           .def_property(
-              "force",
+              "magnitude",
               [](const directionalfcdata_ptr_t& fcdata) -> float { return fcdata->_force; },
               [](directionalfcdata_ptr_t& fcdata, float val) { fcdata->_force = val; })
           .def_property(

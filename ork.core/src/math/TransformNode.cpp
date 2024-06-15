@@ -41,6 +41,21 @@ void DecompTransform::set(decompxf_const_ptr_t rhs){
     _rotation = rhs->_rotation;
     _uniformScale = rhs->_uniformScale;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DecompTransform::lookAt( const fvec3& eye, const fvec3& tgt, const fvec3& up ){
+  fvec3 zaxis = (tgt - eye).normalized();
+  fvec3 xaxis = zaxis.crossWith(up).normalized();
+  fvec3 yaxis = xaxis.crossWith(zaxis).normalized();
+  fmtx4 M;
+  M.setColumn( 0, fvec4( xaxis, 0.0f ) );
+  M.setColumn( 1, fvec4( yaxis, 0.0f ) );
+  M.setColumn( 2, fvec4( zaxis, 0.0f ) );
+  _rotation.fromMatrix( M );
+  _translation = eye;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 DecompTransform::composed() const{

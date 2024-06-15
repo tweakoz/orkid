@@ -20,7 +20,10 @@ void pyinit_entity(py::module& module_ecs) {
             fxstring<256> fxs;
             fxs.format("ecs::Entity(%p)", ent.get());
             return fxs.c_str();
-          });
+          })
+          .def_property_readonly("transform", [](pyentity_ptr_t ent) -> decompxf_ptr_t { return ent->transform(); })
+          .def_property_readonly("transformNode", [](pyentity_ptr_t ent) -> xfnode_ptr_t { return ent->transformNode(); });
+
   type_codec->registerRawPtrCodec<pyentity_ptr_t, Entity*>(entity_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_entity(py::module& module_ecs) {

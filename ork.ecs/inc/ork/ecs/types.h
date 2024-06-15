@@ -155,6 +155,8 @@ std::string detokenize(token_t token);
 
 using evdata_t = svar64_t;
 
+using script_cb_t = std::function<void(const evdata_t&)>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using scriptwrapper_t = std::shared_ptr<ScriptWrapper>;

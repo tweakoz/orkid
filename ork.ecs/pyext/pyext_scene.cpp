@@ -38,6 +38,24 @@ void pyinit_scene(py::module& module_ecs) {
                            fxs.format("ecs::SpawnData(%p)", sobj.get());
                            return fxs.c_str();
                          })
+                     .def("onSpawn", [type_codec](spawndata_ptr_t sobj, py::function pyfn) { //
+                        script_cb_t cb = [pyfn,type_codec](const evdata_t& rdata) {
+                          py::gil_scoped_acquire acquire;
+                          printf( "onSpawn::1\n");
+                          auto entity = rdata.get<Entity*>();
+                          printf( "onSpawn::2\n");
+                          auto encoded = type_codec->encode(entity);
+                          printf( "onSpawn::3\n");
+                          pyfn(encoded);
+                        };
+                        sobj->_onSpawn = cb;
+                      },
+                      // docstring
+                      "Set the onSpawn callback for this SpawnData object.\n"
+                      "  The callback will be called when the object is spawned.\n"
+                      "  The callback will be passed an entity pointer.\n"
+                      "  this point should only be accessed from update thread.\n"
+                     )
                      .def_property(
                          "archetype",
                          [](spawndata_ptr_t spawndata) -> archetype_ptr_t { 

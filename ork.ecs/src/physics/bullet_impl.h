@@ -261,8 +261,8 @@ public:
   ~DirectionalForceInst();
   void UpdateForces(BulletObjectComponent* boci, float deltat) final;
   bool DoLink(Simulation* psi) final;
-  float _force = 0.0f;
-  fvec3 _direction;
+
+  const DirectionalForceData* _DFD;
 
 };
 

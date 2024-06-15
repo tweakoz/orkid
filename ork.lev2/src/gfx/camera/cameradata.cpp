@@ -181,6 +181,12 @@ void CameraData::fromPoseMatrix(const fmtx4& posemtx ){
   Lookat(eye,tgt,up);
 }
 ////////////////////////////////////////////////////////////////////////////////
+fmtx4 CameraData::computeViewMatrix() const {
+  fmtx4 vmatrix;
+  vmatrix.lookAt(mEye, mTarget, mUp);
+  return vmatrix;
+}
+////////////////////////////////////////////////////////////////////////////////
 CameraMatrices CameraData::computeMatrices(float faspect) const {
   CameraMatrices rval;
   ///////////////////////////////
