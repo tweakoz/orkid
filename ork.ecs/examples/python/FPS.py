@@ -54,7 +54,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       viz_xf = Transform() # non uniform scale for sphere (to make it a capsule)
       viz_xf.nonUniformScale = vec3(1,1,3)
 
-      c_scenegraph.declareNodeOnLayer( name="cube1",
+      c_scenegraph.declareNodeOnLayer( name="playernode",
                                        drawable=drawable,
                                        layer=LAYERNAME,
                                        transform=viz_xf)
