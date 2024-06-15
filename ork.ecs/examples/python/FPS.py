@@ -33,6 +33,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################################
 
     self.player_transform = None
+    self.spawncounter = 0
 
   ##############################################
 
@@ -245,9 +246,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # init systems
     ##################
 
-    self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
-    self.spawncounter = 0
     
   ##############################################
 
