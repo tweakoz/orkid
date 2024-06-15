@@ -387,6 +387,14 @@ PYBIND11_MODULE(_core, module_core) {
               [](ui::updatedata_ptr_t updata, double val) { //
                 updata->_dt = val;
               })
+          .def_property(
+              "counter",                                //
+              [](ui::updatedata_ptr_t updata) -> int { //
+                return updata->_counter;
+              },
+              [](ui::updatedata_ptr_t updata, int val) { //
+                updata->_counter = val;
+              })
           .def("__repr__", [](ui::updatedata_ptr_t updata) -> std::string {
             return FormatString("updata[abs:%g dt:%g]", updata->_abstime, updata->_dt);
           });

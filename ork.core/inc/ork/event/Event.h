@@ -15,6 +15,7 @@ namespace ork::ui {
   struct UpdateData {
     double _dt      = 0.0;
     double _abstime = 0.0;
+    int _counter = 0;
   };
   using updatedata_ptr_t = std::shared_ptr<UpdateData>;
 

@@ -220,6 +220,7 @@ public:
   float _timescale = 1.0f;
   void_lambda_t _onRunLoopIteration;
   rcfd_ptr_t _overrideRCFD;
+  int _updateCounter = 0;
 };
 
 } // namespace ork::lev2

@@ -307,16 +307,19 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       
       self.playerforce.direction = MOTION_DIR
 
-      self.controller.systemNotify( self.sys_sg,
-                                    tokens.UpdateCamera,{
-                                      tokens.eye: EYE,
-                                      tokens.tgt: TGT,
-                                      tokens.up: UP,
-                                      tokens.near: UIC.near,
-                                      tokens.far: UIC.far,
-                                      tokens.fovy: UIC.fovy
-                                    }
-                                   )
+      # throttle camera updates
+      #  to reduce ecs controller traffic
+      if (updinfo.counter%3)==0:
+        self.controller.systemNotify( self.sys_sg,
+                                      tokens.UpdateCamera,{
+                                        tokens.eye: EYE,
+                                        tokens.tgt: TGT,
+                                        tokens.up: UP,
+                                        tokens.near: UIC.near,
+                                        tokens.far: UIC.far,
+                                        tokens.fovy: UIC.fovy
+                                      }
+                                     )
 
     ##############################
     # tick the simulation

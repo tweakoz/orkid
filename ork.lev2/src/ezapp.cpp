@@ -434,6 +434,7 @@ int OrkEzApp::mainThreadLoop() {
         if (do_update) {
           _update_data->_dt = step;
           _update_data->_abstime += step;
+          _update_data->_counter = _update_count.load();
           /////////////////////////////
           /////////////////////////////
           if (not checkAppState(KAPPSTATEFLAG_JOINED)) {
