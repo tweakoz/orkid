@@ -85,11 +85,11 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # statically spawned player entity
     ######################################
 
-    spawn_player = self.ecsscene.createSpawnData("spawn_player")
-    spawn_player.archetype = arch_player
-    spawn_player.autospawn = True
-    spawn_player.transform.translation = vec3(0,0,0)
-    spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
+    player_spawner = self.ecsscene.createSpawnData("player_spawner")
+    player_spawner.archetype = arch_player
+    player_spawner.autospawn = True
+    player_spawner.transform.translation = vec3(0,0,0)
+    player_spawner.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
 
     ######################################
     # catch the player entity's transform
@@ -100,7 +100,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     def onSpawn(entity):
       self.player_transform = entity.transform
 
-    spawn_player.onSpawn(onSpawn)
+    player_spawner.onSpawn(onSpawn)
     
     self.player_physics_componentdata = c_physics
 
@@ -109,15 +109,12 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   def createBallData(self,ctx):
 
     arch_ball = self.ecsscene.createArchetype("BallArchetype")
-    spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
-    spawn_ball.archetype = arch_ball
-    spawn_ball.autospawn = False
     c_scenegraph = arch_ball.createComponent("SceneGraphComponent")
+    c_physics = arch_ball.createComponent("BulletObjectComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_physics = arch_ball.createComponent("BulletObjectComponent")
 
     c_physics.mass = 1.0
     c_physics.friction = 0.3
@@ -134,6 +131,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                      drawable=ball_drawable,
                                      layer="layer1")
 
+    ball_spawner = self.ecsscene.createSpawnData("ball_spawner")
+    ball_spawner.archetype = arch_ball
+    ball_spawner.autospawn = False
+
   ##############################################
   # generate the environment
   ##############################################
@@ -141,18 +142,13 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   def createEnvironmentData(self,ctx):
 
     arch_room = self.ecsscene.createArchetype("RoomArchetype")
-    spawn_room = self.ecsscene.createSpawnData("spawn_room")
-    spawn_room.archetype = arch_room
-    spawn_room.autospawn = True
-    spawn_room.transform.translation = vec3(0,-10,0)
-    spawn_room.transform.scale = 1.0
+    c_scenegraph = arch_room.createComponent("SceneGraphComponent")
+    c_physics = arch_room.createComponent("BulletObjectComponent")
 
     #########################
     # physics for room
     #########################
 
-    c_scenegraph = arch_room.createComponent("SceneGraphComponent")
-    c_physics = arch_room.createComponent("BulletObjectComponent")
 
     shape = ecs.BulletShapeMeshData()
     shape.meshpath = "data://tests/environ/envtest2.obj"
@@ -180,6 +176,12 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                                       layer = "layer1",
                                                       transform = room_mesh_transform)
     
+    env_spawner = self.ecsscene.createSpawnData("env_spawner")
+    env_spawner.archetype = arch_room
+    env_spawner.autospawn = True
+    env_spawner.transform.translation = vec3(0,-10,0)
+    env_spawner.transform.scale = 1.0
+
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -278,9 +280,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     i = random.randint(-5,5)
     j = random.randint(-5,5)
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 500:
+    if prob < 5 and self.spawncounter < 250:
       self.spawncounter += 1
-      SAD = ecs.SpawnAnonDynamic("spawn_ball")
+      SAD = ecs.SpawnAnonDynamic("ball_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
       SAD.overridexf.scale = 1.0
       SAD.overridexf.translation = vec3(i,15,j)

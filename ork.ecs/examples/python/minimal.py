@@ -35,49 +35,42 @@ class ECS_MINIMAL(object):
   ##############################################
 
   def createBallData(self,ctx):
-    self.arch_ball = self.ecsscene.createArchetype("BoxArchetype")
-    self.spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
-    self.spawn_ball.archetype = self.arch_ball
-    self.spawn_ball.autospawn = False
-    self.comp_sg = self.arch_ball.createComponent("SceneGraphComponent")
+
+    arch_ball = self.ecsscene.createArchetype("BallArchetype")
+    c_scenegraph = arch_ball.createComponent("SceneGraphComponent")
+    c_physics = arch_ball.createComponent("BulletObjectComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_phys = self.arch_ball.createComponent("BulletObjectComponent")
+    c_physics.mass = 1.0
+    c_physics.friction = 0.3
+    c_physics.restitution = 0.45
+    c_physics.angularDamping = 0.01
+    c_physics.linearDamping = 0.01
+    c_physics.allowSleeping = False
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = False
+    c_physics.shape = sphere
 
-    c_phys.mass = 1.0
-    c_phys.friction = 0.3
-    c_phys.restitution = 0.45
-    c_phys.angularDamping = 0.01
-    c_phys.linearDamping = 0.01
-    c_phys.allowSleeping = False
-    c_phys.isKinematic = False
-    c_phys.disablePhysics = False
-    c_phys.shape = sphere
+    drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    c_scenegraph.declareNodeOnLayer( name="cube1",drawable=drawable,layer="layer1")
 
-    self.comp_phys = c_phys
-
-    self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    self.comp_sg.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
+    ball_spawner = self.ecsscene.createSpawnData("ball_spawner")
+    ball_spawner.archetype = arch_ball
+    ball_spawner.autospawn = False
 
   ##############################################
 
   def createEnvironmentData(self,ctx):
 
     arch_env = self.ecsscene.createArchetype("RoomArchetype")
-    spawn_env = self.ecsscene.createSpawnData("spawn_env")
-    spawn_env.archetype = arch_env
-    spawn_env.autospawn = True
-    spawn_env.transform.translation = vec3(0,-10,0)
-    spawn_env.transform.scale = 1.0
+    c_scenegraph = arch_env.createComponent("SceneGraphComponent")
+    c_physics = arch_env.createComponent("BulletObjectComponent")
 
     #########################
     # physics for room
     #########################
-
-    c_scenegraph = arch_env.createComponent("SceneGraphComponent")
-    c_physics = arch_env.createComponent("BulletObjectComponent")
 
     shape = ecs.BulletShapeMeshData()
     shape.meshpath = "data://tests/environ/envtest2.obj"
@@ -104,6 +97,12 @@ class ECS_MINIMAL(object):
                                                  drawable = drawable,
                                                  layer = "layer1",
                                                  transform = mesh_transform)
+    
+    env_spawner = self.ecsscene.createSpawnData("env_spawner")
+    env_spawner.archetype = arch_env
+    env_spawner.autospawn = True
+    env_spawner.transform.translation = vec3(0,-10,0)
+    env_spawner.transform.scale = 1.0
     
   ##############################################
 
@@ -200,7 +199,7 @@ class ECS_MINIMAL(object):
     prob = random.randint(0,100)
     if prob < 5 and self.spawncounter < 250:
       self.spawncounter += 1
-      SAD = ecs.SpawnAnonDynamic("spawn_ball")
+      SAD = ecs.SpawnAnonDynamic("ball_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
       SAD.overridexf.scale = 1.0
       SAD.overridexf.translation = vec3(i,15,j)
