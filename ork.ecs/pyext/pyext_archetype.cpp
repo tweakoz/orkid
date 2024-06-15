@@ -23,7 +23,7 @@ void pyinit_archetype(py::module& module_ecs) {
             fxs.format("ecs::Archetype(%p)", (void*) arch.get());
             return fxs.c_str();
           })
-      .def("createComponent", [](archetype_ptr_t& arch, std::string classname) -> componentdata_ptr_t {
+      .def("declareComponent", [](archetype_ptr_t& arch, std::string classname) -> componentdata_ptr_t {
         auto X = arch->addComponentWithClassName(classname.c_str());
         return X;
       });

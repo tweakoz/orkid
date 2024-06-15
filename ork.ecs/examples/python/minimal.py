@@ -36,9 +36,9 @@ class ECS_MINIMAL(object):
 
   def createBallData(self,ctx):
 
-    arch_ball = self.ecsscene.createArchetype("BallArchetype")
-    c_scenegraph = arch_ball.createComponent("SceneGraphComponent")
-    c_physics = arch_ball.createComponent("BulletObjectComponent")
+    arch_ball = self.ecsscene.declareArchetype("BallArchetype")
+    c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
+    c_physics = arch_ball.declareComponent("BulletObjectComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
@@ -56,7 +56,7 @@ class ECS_MINIMAL(object):
     drawable = ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer="layer1")
 
-    ball_spawner = self.ecsscene.createSpawnData("ball_spawner")
+    ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False
 
@@ -64,9 +64,9 @@ class ECS_MINIMAL(object):
 
   def createEnvironmentData(self,ctx):
 
-    arch_env = self.ecsscene.createArchetype("RoomArchetype")
-    c_scenegraph = arch_env.createComponent("SceneGraphComponent")
-    c_physics = arch_env.createComponent("BulletObjectComponent")
+    arch_env = self.ecsscene.declareArchetype("RoomArchetype")
+    c_scenegraph = arch_env.declareComponent("SceneGraphComponent")
+    c_physics = arch_env.declareComponent("BulletObjectComponent")
 
     #########################
     # physics for room
@@ -98,7 +98,7 @@ class ECS_MINIMAL(object):
                                                  layer = "layer1",
                                                  transform = mesh_transform)
     
-    env_spawner = self.ecsscene.createSpawnData("env_spawner")
+    env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_env
     env_spawner.autospawn = True
     env_spawner.transform.translation = vec3(0,-10,0)
@@ -118,7 +118,7 @@ class ECS_MINIMAL(object):
     # setup global physics 
     ##############################################
 
-    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
     systemdata_phys.debug = False
@@ -128,7 +128,7 @@ class ECS_MINIMAL(object):
     # create scenegraph
     ####################
 
-    systemdata_SG = self.ecsscene.createSystem("SceneGraphSystem")
+    systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer("layer1")
     systemdata_SG.declareParams({
       "SkyboxIntensity": float(2.0),

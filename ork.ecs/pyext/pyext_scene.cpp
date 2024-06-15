@@ -86,18 +86,18 @@ void pyinit_scene(py::module& module_ecs) {
           })
       .def("addSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) { return scenedata->AddSceneObject(sobj); })
       .def("addSceneGraphSystem", [](scenedata_ptr_t scenedata) { return scenedata->getTypedSystemData<SceneGraphSystemData>(); })
-      .def("createSpawnData", [](scenedata_ptr_t scenedata, std::string named ) { //
+      .def("declareSpawner", [](scenedata_ptr_t scenedata, std::string named ) { //
         auto psname = AddPooledString(named.c_str());
         return scenedata->createSceneObject<SpawnData>(psname);
         })
       .def(
-          "createArchetype",
+          "declareArchetype",
           [](scenedata_ptr_t scenedata, std::string named) {
             auto psname = AddPooledString(named.c_str());
             return scenedata->createSceneObject<Archetype>(psname);
           })
       //
-      .def("createSystem", [](scenedata_ptr_t scenedata, std::string name) { return scenedata->addSystemWithClassName(name); });
+      .def("declareSystem", [](scenedata_ptr_t scenedata, std::string name) { return scenedata->addSystemWithClassName(name); });
 
   /////////////////////////////////////////////////////////////////////////////////
 

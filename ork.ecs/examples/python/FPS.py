@@ -40,9 +40,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def createPlayerData(self,ctx):
 
-    arch_player = self.ecsscene.createArchetype("PlayerArchetype")
-    c_scenegraph = arch_player.createComponent("SceneGraphComponent")
-    c_physics = arch_player.createComponent("BulletObjectComponent")
+    arch_player = self.ecsscene.declareArchetype("PlayerArchetype")
+    c_scenegraph = arch_player.declareComponent("SceneGraphComponent")
+    c_physics = arch_player.declareComponent("BulletObjectComponent")
 
     ######################################
     # scenegraph setup for player
@@ -85,7 +85,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # statically spawned player entity
     ######################################
 
-    player_spawner = self.ecsscene.createSpawnData("player_spawner")
+    player_spawner = self.ecsscene.declareSpawner("player_spawner")
     player_spawner.archetype = arch_player
     player_spawner.autospawn = True
     player_spawner.transform.translation = vec3(0,0,0)
@@ -108,9 +108,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def createBallData(self,ctx):
 
-    arch_ball = self.ecsscene.createArchetype("BallArchetype")
-    c_scenegraph = arch_ball.createComponent("SceneGraphComponent")
-    c_physics = arch_ball.createComponent("BulletObjectComponent")
+    arch_ball = self.ecsscene.declareArchetype("BallArchetype")
+    c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
+    c_physics = arch_ball.declareComponent("BulletObjectComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
@@ -131,7 +131,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                      drawable=ball_drawable,
                                      layer="layer1")
 
-    ball_spawner = self.ecsscene.createSpawnData("ball_spawner")
+    ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False
 
@@ -141,9 +141,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def createEnvironmentData(self,ctx):
 
-    arch_room = self.ecsscene.createArchetype("RoomArchetype")
-    c_scenegraph = arch_room.createComponent("SceneGraphComponent")
-    c_physics = arch_room.createComponent("BulletObjectComponent")
+    arch_room = self.ecsscene.declareArchetype("RoomArchetype")
+    c_scenegraph = arch_room.declareComponent("SceneGraphComponent")
+    c_physics = arch_room.declareComponent("BulletObjectComponent")
 
     #########################
     # physics for room
@@ -175,7 +175,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                                  layer = "layer1",
                                                  transform = room_mesh_transform)
     
-    env_spawner = self.ecsscene.createSpawnData("env_spawner")
+    env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_room
     env_spawner.autospawn = True
     env_spawner.transform.translation = vec3(0,-10,0) # pull ground down
@@ -195,7 +195,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # create (graphics) scenegraph system
     ####################
 
-    self.systemdata_scenegraph = self.ecsscene.createSystem("SceneGraphSystem")
+    self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
     self.systemdata_scenegraph.declareLayer("layer1")
     self.systemdata_scenegraph.declareParams({
       "SkyboxIntensity": float(2.0),
@@ -210,7 +210,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # create physics system
     ####################
 
-    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
     systemdata_phys.debug = True
