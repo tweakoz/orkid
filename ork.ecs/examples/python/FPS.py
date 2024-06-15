@@ -276,10 +276,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # spawn balls
     ##############################
 
-    i = random.randint(-5,5)
-    j = random.randint(-5,5)
     prob = random.randint(0,100)
     if prob < 5 and self.spawncounter < 250:
+      i = random.randint(-5,5)
+      j = random.randint(-5,5)
       self.spawncounter += 1
       SAD = ecs.SpawnAnonDynamic("ball_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
@@ -291,24 +291,25 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # camera update
     ##############################
 
-    UIC = self.uicam.cameradata
     PXF = self.player_transform
     if PXF is not None:
-      EYE = PXF.translation
+      UIC = self.uicam.cameradata
       ROT = self.playerforce_rot
       DIR = (UIC.target-UIC.eye).normalized()
       # rot around Y by ROT
       MOTION_DIR = vec3(DIR.x,DIR.y,DIR.z)
       MOTION_DIR.roty(ROT)
-      
-      TGT = EYE + DIR
-      UP = vec3(0,1,0)
-      
+            
       self.playerforce.direction = MOTION_DIR
 
       # throttle camera updates
       #  to reduce ecs controller traffic
       if (updinfo.counter%3)==0:
+
+        EYE = PXF.translation
+        TGT = EYE + DIR
+        UP = vec3(0,1,0)
+
         self.controller.systemNotify( self.sys_sg,
                                       tokens.UpdateCamera,{
                                         tokens.eye: EYE,
