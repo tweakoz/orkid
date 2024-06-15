@@ -127,7 +127,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.shape = sphere
 
     ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="cube1",
+    c_scenegraph.declareNodeOnLayer( name="ballnode",
                                      drawable=ball_drawable,
                                      layer="layer1")
 
@@ -170,7 +170,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     room_mesh_transform.nonUniformScale = vec3(5,8,5)
     room_mesh_transform.translation = vec3(0,-0.05,0)
 
-    room_node = c_scenegraph.declareNodeOnLayer( name = "roomvis",
+    room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
                                                  drawable = room_drawable,
                                                  layer = "layer1",
                                                  transform = room_mesh_transform)

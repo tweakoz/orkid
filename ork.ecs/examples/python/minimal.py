@@ -54,7 +54,7 @@ class ECS_MINIMAL(object):
     c_physics.shape = sphere
 
     drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="cube1",drawable=drawable,layer="layer1")
+    c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer="layer1")
 
     ball_spawner = self.ecsscene.createSpawnData("ball_spawner")
     ball_spawner.archetype = arch_ball
@@ -93,7 +93,7 @@ class ECS_MINIMAL(object):
     mesh_transform.nonUniformScale = vec3(5,8,5)
     mesh_transform.translation = vec3(0,-0.05,0)
 
-    room_node = c_scenegraph.declareNodeOnLayer( name = "env_vis",
+    room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
                                                  drawable = drawable,
                                                  layer = "layer1",
                                                  transform = mesh_transform)
