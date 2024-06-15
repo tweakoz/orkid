@@ -124,8 +124,12 @@ void pyinit_physics(py::module& module_ecs) {
             })
           .def_property(
               "scale",
-              [](const bulletshapemeshdata_ptr_t& shape) -> float { return shape->_scale; },
-              [](bulletshapemeshdata_ptr_t& shape, float val) { shape->_scale = val; });
+              [](const bulletshapemeshdata_ptr_t& shape) -> fvec3 { return shape->_scale; },
+              [](bulletshapemeshdata_ptr_t& shape, fvec3 val) { shape->_scale = val; })
+          .def_property(
+              "translation",
+              [](const bulletshapemeshdata_ptr_t& shape) -> fvec3 { return shape->_translation; },
+              [](bulletshapemeshdata_ptr_t& shape, fvec3 val) { shape->_translation = val; });
   type_codec->registerStdCodec<bulletshapemeshdata_ptr_t>(shapemesh_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bullsys_type = py::class_<BulletSystemData, SystemData, bulletsysdata_ptr_t>(module_ecs, "BulletSystemData")

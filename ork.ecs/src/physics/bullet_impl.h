@@ -42,7 +42,6 @@ btMatrix3x3 orkmtx3tobtbasis(const fmtx3& mtx);
 
 btBoxShape* meshToBoxShape(meshutil::flatsubmesh_ptr_t mesh, float fscale);
 btSphereShape* meshToSphereShape(meshutil::flatsubmesh_ptr_t mesh, float fscale);
-btCompoundShape* meshToBvhTriangleCompoundShape(meshutil::flatsubmesh_ptr_t mesh, decompxf_ptr_t xform);
 //btCompoundShape* meshToCompoundShape(lev2::XgmMesh* xgmmesh, float fscale);
 //btCollisionShape* ClusterToBvhTriangleMeshShape(lev2::xgmcluster_ptr_t xgmcluster, float fscale);
 btCollisionShape* meshToGimpactCompoundShape(meshutil::flatsubmesh_ptr_t mesh, float fscale);

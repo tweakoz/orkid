@@ -31,7 +31,7 @@ static const bool USE_GIMPACT = false;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void BulletShapeMeshData::describeX(object::ObjectClass* clazz) {
-  clazz->floatProperty("Scale", float_range{-1000, 1000}, &BulletShapeMeshData::_scale);
+  clazz->directProperty("Scale", &BulletShapeMeshData::_scale);
   clazz->directProperty("MeshPath", &BulletShapeMeshData::_meshpath);
 
   // reflect::RegisterProperty("Model", &BulletShapeMeshData::GetModelAccessor, &BulletShapeMeshData::SetModelAccessor);
@@ -40,74 +40,9 @@ void BulletShapeMeshData::describeX(object::ObjectClass* clazz) {
   // reflect::annotatePropertyForEditor<BulletShapeMeshData>("Model", "editor.assetclass", "xgmodel");
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
-
-btCompoundShape* meshToBoxShape(::ork::meshutil::flatsubmesh_ptr_t mesh, decompxf_ptr_t xform) {
-  auto aabox   = mesh->_aabox;
-  auto xyz     = aabox.mMin;
-  auto whd     = aabox.size();
-
-  // Assumes center of box is at origin
-  btCompoundShape* compoundShape = new btCompoundShape;
-  //xform->_uniformScale *= 2;
-  auto mtx = xform->composed2();
-  btTransform tr = orkmtx4tobtmtx4(mtx);
-
-  auto box_shape = new btBoxShape(btVector3(whd.x, whd.y, whd.z));
-
-  compoundShape->addChildShape(tr, box_shape);
-
-  return compoundShape;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
-btSphereShape* meshToSphereShape(meshutil::flatsubmesh_ptr_t mesh, float fscale) {
-  auto aabox   = mesh->_aabox;
-  auto xyz     = aabox.mMin;
-  auto whd     = aabox.size();
-  auto sph     = Sphere(aabox);
-  float radius = sph.mRadius;
-  // Assumes center of sphere is at origin
-  return new btSphereShape(radius * fscale);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-BulletShapeMeshData::BulletShapeMeshData() {
-
-    _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
-      auto rval = new BulletShapeBaseInst(this);
-
-      auto abs_path = _meshpath.toAbsolute();
-
-      /////////////////////////////
-      // todo : datablock based caching
-      /////////////////////////////
-
-      if( _flatmesh == nullptr ){
-        lev2::rendervar_strmap_t assetvars;
-        _flatmesh = std::make_shared<meshutil::FlatSubMesh>(abs_path,assetvars);
-      }
-
-      if (_flatmesh and _flatmesh->inumverts) {
-        auto xform = data.mEntity->transform();
-        rval->_collisionShape = meshToBvhTriangleCompoundShape(_flatmesh, xform);
-        //rval->_collisionShape = meshToBoxShape(_flatmesh, xform);
-      } else
-        rval->_collisionShape = new btSphereShape(this->_scale);
-      return rval;
-    };
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-BulletShapeMeshData::~BulletShapeMeshData() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-btTriangleIndexVertexArray* flatSubmeshToTriVertArray(meshutil::flatsubmesh_ptr_t flatsubmesh) {
+btTriangleIndexVertexArray* flatSubmeshToTriVertArray(meshutil::flatsubmesh_ptr_t flatsubmesh,BulletShapeMeshData* data) {
 
   btTriangleIndexVertexArray* indexVertexArrays = new btTriangleIndexVertexArray;
 
@@ -161,13 +96,17 @@ btTriangleIndexVertexArray* flatSubmeshToTriVertArray(meshutil::flatsubmesh_ptr_
   btScalar* pVERTS      = new btScalar[btmesh.m_numVertices * knfloats];
   btmesh.m_vertexBase   = (const unsigned char*)pVERTS;
   btmesh.m_vertexStride = knfloats * sizeof(btScalar);
+
+  fvec3 DSC = data->_scale;
+  fvec3 DTR = data->_translation;
+
   for (int i = 0; i < inumvertices; i++) {
     const auto& src_vtx = vertices[i];
     float fv                                    = src_vtx._uv.y;
     int j                                       = i * knfloats;
-    pVERTS[j + 0]                               = src_vtx._position.x;
-    pVERTS[j + 1]                               = (src_vtx._position.y); 
-    pVERTS[j + 2]                               = src_vtx._position.z;
+    pVERTS[j + 0]                               = src_vtx._position.x*DSC.x+DTR.x;
+    pVERTS[j + 1]                               = src_vtx._position.y*DSC.y+DTR.y; 
+    pVERTS[j + 2]                               = src_vtx._position.z*DSC.z+DTR.z;
     pVERTS[j + 3]                               = src_vtx._normal.x;
     pVERTS[j + 4]                               = src_vtx._normal.y;
     pVERTS[j + 5]                               = src_vtx._normal.z;
@@ -183,8 +122,9 @@ btTriangleIndexVertexArray* flatSubmeshToTriVertArray(meshutil::flatsubmesh_ptr_
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btCollisionShape* flatSubmeshToBvhTriangleMeshShape(meshutil::flatsubmesh_ptr_t flatsubmesh) {
-  btTriangleIndexVertexArray* arrays = flatSubmeshToTriVertArray(flatsubmesh);
+btCollisionShape* flatSubmeshToBvhTriangleMeshShape(meshutil::flatsubmesh_ptr_t flatsubmesh,
+                                                    BulletShapeMeshData* data) {
+  btTriangleIndexVertexArray* arrays = flatSubmeshToTriVertArray(flatsubmesh,data);
 
   btVector3 aabbMin, aabbMax;
   arrays->calculateAabbBruteForce(aabbMin, aabbMax);
@@ -210,15 +150,83 @@ btCollisionShape* flatSubmeshToBvhTriangleMeshShape(meshutil::flatsubmesh_ptr_t 
 ///////////////////////////////////////////////////////////////////////////////
 
 btCompoundShape* meshToBvhTriangleCompoundShape(meshutil::flatsubmesh_ptr_t flatsubmesh, 
-                                                decompxf_ptr_t xform) {
+                                                decompxf_ptr_t xform,
+                                                BulletShapeMeshData* data ) {
   btCompoundShape* compoundShape = new btCompoundShape;
-  btCollisionShape* shape        = flatSubmeshToBvhTriangleMeshShape(flatsubmesh);
+  btCollisionShape* shape        = flatSubmeshToBvhTriangleMeshShape(flatsubmesh,data);
   //xform->_uniformScale *= 2;
   xform = std::make_shared<DecompTransform>();
   auto mtx = xform->composed2();
   btTransform tr = orkmtx4tobtmtx4(mtx);
   compoundShape->addChildShape(tr, shape);
   return compoundShape;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+btCompoundShape* meshToBoxShape(::ork::meshutil::flatsubmesh_ptr_t mesh, decompxf_ptr_t xform) {
+  auto aabox   = mesh->_aabox;
+  auto xyz     = aabox.mMin;
+  auto whd     = aabox.size();
+
+  // Assumes center of box is at origin
+  btCompoundShape* compoundShape = new btCompoundShape;
+  //xform->_uniformScale *= 2;
+  auto mtx = xform->composed2();
+  btTransform tr = orkmtx4tobtmtx4(mtx);
+
+  auto box_shape = new btBoxShape(btVector3(whd.x, whd.y, whd.z));
+
+  compoundShape->addChildShape(tr, box_shape);
+
+  return compoundShape;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+btSphereShape* meshToSphereShape(meshutil::flatsubmesh_ptr_t mesh, float fscale) {
+  auto aabox   = mesh->_aabox;
+  auto xyz     = aabox.mMin;
+  auto whd     = aabox.size();
+  auto sph     = Sphere(aabox);
+  float radius = sph.mRadius;
+  // Assumes center of sphere is at origin
+  return new btSphereShape(radius * fscale);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+BulletShapeMeshData::BulletShapeMeshData() : _scale(1,1,1) {
+
+    _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
+      auto rval = new BulletShapeBaseInst(this);
+
+      auto abs_path = _meshpath.toAbsolute();
+
+      /////////////////////////////
+      // todo : datablock based caching
+      /////////////////////////////
+
+      if( _flatmesh == nullptr ){
+        lev2::rendervar_strmap_t assetvars;
+        _flatmesh = std::make_shared<meshutil::FlatSubMesh>(abs_path,assetvars);
+      }
+
+      if (_flatmesh and _flatmesh->inumverts) {
+        auto xform = data.mEntity->transform();
+        rval->_collisionShape = meshToBvhTriangleCompoundShape(_flatmesh, xform,this);
+        //rval->_collisionShape = meshToBoxShape(_flatmesh, xform);
+      } else {
+        float scale = _scale.magnitude();
+        rval->_collisionShape = new btSphereShape(scale);
+      }
+      return rval;
+    };
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+BulletShapeMeshData::~BulletShapeMeshData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

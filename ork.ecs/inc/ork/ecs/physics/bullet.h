@@ -227,7 +227,8 @@ public:
   //void GetModelAccessor(ork::rtti::ICastable*& mdl) const;
 
   AssetPath _meshpath;
-  float _scale = 1.0f;
+  fvec3 _scale;
+  fvec3 _translation;
 
   mutable meshutil::flatsubmesh_ptr_t _flatmesh;
 };

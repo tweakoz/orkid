@@ -33,7 +33,7 @@ class MinimalSceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=1,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(10,10,10)*3, tgt=vec3(0,5,0), constrainZ=True, up=vec3(0,1,0))
 
@@ -68,10 +68,10 @@ class MinimalSceneGraphApp(object):
     c_phys = self.arch_ball.createComponent("BulletObjectComponent")
 
     c_phys.mass = 1.0
-    c_phys.friction = 0.1
+    c_phys.friction = 0.3
     c_phys.restitution = 0.45
-    c_phys.angularDamping = 0.1
-    c_phys.linearDamping = 0.1
+    c_phys.angularDamping = 0.01
+    c_phys.linearDamping = 0.01
     c_phys.allowSleeping = False
     c_phys.isKinematic = False
     c_phys.disablePhysics = False
@@ -98,6 +98,8 @@ class MinimalSceneGraphApp(object):
     #ground.position = vec3(0,0,0)
     ground = ecs.BulletShapeMeshData()
     ground.meshpath = "data://tests/environ/envtest2.obj"
+    ground.scale = vec3(5,8,5)
+    ground.translation = vec3(0,0.01,0)
 
     ground_sgc = self.arch_ground.createComponent("SceneGraphComponent")
     ground_phys = self.arch_ground.createComponent("BulletObjectComponent")
