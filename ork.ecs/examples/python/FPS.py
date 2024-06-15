@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ################################################################################
-# lev2 sample which renders a scenegraph to a window
+# ECS (Entity/Component/System) sample for a simple FPS like experience
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
@@ -17,6 +17,7 @@ sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add pare
 from ork import path as ork_path
 from lev2utils.cameras import *
 
+################################################################################
 tokens = core.CrcStringProxy()
 ################################################################################
 

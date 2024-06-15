@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ################################################################################
-# lev2 sample which renders a scenegraph to a window
+# ECS (Entity/Component/System) minimal sample 
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
@@ -16,16 +16,13 @@ this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
-from lev2utils import primitives as prims
-
 from lev2utils.cameras import *
-from lev2utils.primitives import createFrustumPrim, createGridData
-from lev2utils.scenegraph import createSceneGraph
 
+################################################################################
 tokens = core.CrcStringProxy()
 ################################################################################
 
-class MinimalSceneGraphApp(object):
+class ECS_MINIMAL(object):
 
   ##############################################
 
@@ -34,21 +31,6 @@ class MinimalSceneGraphApp(object):
     self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
-
-    self.ecsscene = ecs.SceneData()
-
-    ##############################################
-    # setup global physics 
-    ##############################################
-
-    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
-    systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = False
-    
-    self.systemdata_phys = systemdata_phys
-    ##############################################
-    self.player_transform = None
 
   ##############################################
 
@@ -81,58 +63,75 @@ class MinimalSceneGraphApp(object):
 
   ##############################################
 
-  def createRoomData(self,ctx):
-    self.arch_room = self.ecsscene.createArchetype("RoomArchetype")
-    self.spawn_room = self.ecsscene.createSpawnData("spawn_room")
-    self.spawn_room.archetype = self.arch_room
-    self.spawn_room.autospawn = True
-    self.spawn_room.transform.translation = vec3(0,-10,0)
-    self.spawn_room.transform.scale = 1.0
+  def createEnvironmentData(self,ctx):
+
+    arch_env = self.ecsscene.createArchetype("RoomArchetype")
+    spawn_env = self.ecsscene.createSpawnData("spawn_env")
+    spawn_env.archetype = arch_env
+    spawn_env.autospawn = True
+    spawn_env.transform.translation = vec3(0,-10,0)
+    spawn_env.transform.scale = 1.0
 
     #########################
     # physics for room
     #########################
 
-    room_sg_component = self.arch_room.createComponent("SceneGraphComponent")
-    room_phys = self.arch_room.createComponent("BulletObjectComponent")
+    c_scenegraph = arch_env.createComponent("SceneGraphComponent")
+    c_physics = arch_env.createComponent("BulletObjectComponent")
 
-    room_shape = ecs.BulletShapeMeshData()
-    room_shape.meshpath = "data://tests/environ/envtest2.obj"
-    room_shape.scale = vec3(5,8,5)
-    room_shape.translation = vec3(0,0.01,0)
+    shape = ecs.BulletShapeMeshData()
+    shape.meshpath = "data://tests/environ/envtest2.obj"
+    shape.scale = vec3(5,8,5)
+    shape.translation = vec3(0,0.01,0)
 
-    room_phys.mass = 0.0
-    room_phys.allowSleeping = True
-    room_phys.isKinematic = False
-    room_phys.disablePhysics = True
-    room_phys.shape = room_shape
+    c_physics.mass = 0.0
+    c_physics.allowSleeping = True
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = True
+    c_physics.shape = shape
 
     #########################
     # visible mesh for room
     #########################
 
-    self.room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
     
-    room_mesh_transform = Transform()
-    room_mesh_transform.nonUniformScale = vec3(5,8,5)
-    room_mesh_transform.translation = vec3(0,-0.05,0)
+    mesh_transform = Transform()
+    mesh_transform.nonUniformScale = vec3(5,8,5)
+    mesh_transform.translation = vec3(0,-0.05,0)
 
-    room_node = room_sg_component.declareNodeOnLayer( name = "roomvis",
-                                                      drawable = self.room_drawable,
-                                                      layer = "layer1",
-                                                      transform = room_mesh_transform)
+    room_node = c_scenegraph.declareNodeOnLayer( name = "env_vis",
+                                                 drawable = drawable,
+                                                 layer = "layer1",
+                                                 transform = mesh_transform)
     
   ##############################################
 
   def onGpuInit(self,ctx):
     
     ####################
+    # create ECS scene
+    ####################
+
+    self.ecsscene = ecs.SceneData()
+
+    ##############################################
+    # setup global physics 
+    ##############################################
+
+    systemdata_phys = self.ecsscene.createSystem("BulletSystem")
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = False
+    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+
+    ####################
     # create scenegraph
     ####################
 
-    self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
-    self.sysd_sg.declareLayer("layer1")
-    self.sysd_sg.declareParams({
+    systemdata_SG = self.ecsscene.createSystem("SceneGraphSystem")
+    systemdata_SG.declareLayer("layer1")
+    systemdata_SG.declareParams({
       "SkyboxIntensity": float(2.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
@@ -146,7 +145,7 @@ class MinimalSceneGraphApp(object):
     ####################
 
     self.createBallData(ctx)
-    self.createRoomData(ctx)
+    self.createEnvironmentData(ctx)
     
     ####################
     # create ECS controller
@@ -174,7 +173,6 @@ class MinimalSceneGraphApp(object):
     # init systems
     ##################
 
-    self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
     self.spawncounter = 0
     
@@ -192,9 +190,11 @@ class MinimalSceneGraphApp(object):
   ##############################################
 
   def onUpdate(self,updinfo):
+
     ##############################
-    self.systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+    # spawn balls
     ##############################
+
     i = random.randint(-5,5)
     j = random.randint(-5,5)
     prob = random.randint(0,100)
@@ -207,6 +207,9 @@ class MinimalSceneGraphApp(object):
       self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################
+    # camera update
+    ##############################
+
     UIC = self.uicam.cameradata
    
     self.controller.systemNotify( self.sys_sg,
@@ -220,6 +223,8 @@ class MinimalSceneGraphApp(object):
                                   }
                                  )
 
+    ##############################
+    # tick the simulation
     ##############################
 
     self.controller.updateSimulation()
@@ -236,4 +241,4 @@ class MinimalSceneGraphApp(object):
 
 ###############################################################################
 
-MinimalSceneGraphApp().ezapp.mainThreadLoop()
+ECS_MINIMAL().ezapp.mainThreadLoop()
