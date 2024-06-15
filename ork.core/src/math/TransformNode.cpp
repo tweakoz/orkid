@@ -60,6 +60,9 @@ fmtx4 DecompTransform::composed() const{
       rval.compose(_translation,_rotation,_uniformScale);
     }
   }
+  if(_parent){
+    rval = fmtx4::multiply_ltor(rval,_parent->composed());
+  }
   return rval;
 }
 
@@ -78,6 +81,9 @@ fmtx4 DecompTransform::composed2() const{
     else{
       rval.compose2(_translation,_rotation,_uniformScale);
     }
+  }
+  if(_parent){
+    rval = fmtx4::multiply_ltor(rval,_parent->composed2());
   }
   return rval;
 }

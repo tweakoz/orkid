@@ -58,9 +58,13 @@ void pyinit_physics(py::module& module_ecs) {
           .def_property(
               "shape",
               [](const bulletcompdata_ptr_t& physc) -> shapedata_ptr_t { return physc->_shapedata; },
-              [](bulletcompdata_ptr_t& physc, shapedata_ptr_t val) { physc->_shapedata = val; });
+              [](bulletcompdata_ptr_t& physc, shapedata_ptr_t val) { physc->_shapedata = val; })
+          .def_property(
+              "angularFactor",
+              [](const bulletcompdata_ptr_t& physc) -> fvec3 { return physc->_angularFactor; },
+              [](bulletcompdata_ptr_t& physc, fvec3 val) { physc->_angularFactor = val; });
 
-  type_codec->registerStdCodec<bulletsysdata_ptr_t>(bullc_type);
+  type_codec->registerStdCodec<bulletcompdata_ptr_t>(bullc_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapebase_type = py::class_<BulletShapeBaseData, ork::Object, shapedata_ptr_t>(module_ecs, "BulletShapeBaseData")
                             .def("__repr__", [](const shapedata_ptr_t& shape) -> std::string {
@@ -85,6 +89,26 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapespheredata_ptr_t& shape) -> float { return shape->_radius; },
               [](bulletshapespheredata_ptr_t& shape, float val) { shape->_radius = val; });
   type_codec->registerStdCodec<bulletshapespheredata_ptr_t>(shapesphere_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto shapecapsule_type =
+      py::class_<BulletShapeCapsuleData, BulletShapeBaseData, bulletshapecapsuledata_ptr_t>(module_ecs, "BulletShapeCapsuleData")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](const bulletshapecapsuledata_ptr_t& shape) -> std::string {
+                fxstring<256> fxs;
+                fxs.format("ecs::BulletShapeCapsuleData(%p)", shape.get());
+                return fxs.c_str();
+              })
+          .def_property(
+              "radius",
+              [](const bulletshapecapsuledata_ptr_t& shape) -> float { return shape->mfRadius; },
+              [](bulletshapecapsuledata_ptr_t& shape, float val) { shape->mfRadius = val; })
+          .def_property(
+              "extent",
+              [](const bulletshapecapsuledata_ptr_t& shape) -> float { return shape->mfExtent; },
+              [](bulletshapecapsuledata_ptr_t& shape, float val) { shape->mfExtent = val; });
+  type_codec->registerStdCodec<bulletshapecapsuledata_ptr_t>(shapecapsule_type);
     /////////////////////////////////////////////////////////////////////////////////
   auto shapeplane_type =
       py::class_<BulletShapePlaneData, BulletShapeBaseData, bulletshapeplanedata_ptr_t>(module_ecs, "BulletShapePlaneData")

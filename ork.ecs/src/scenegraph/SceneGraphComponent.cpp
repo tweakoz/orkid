@@ -105,10 +105,8 @@ void_lambda_t SceneGraphComponent::_genTransformOperation(){
       if (node) {
         auto ovxf        = NITEM.second->_data->_xfoverride;
         if (ovxf) {
-          auto composite_xf               = std::make_shared<DecompTransform>();
-          composite_xf->_usedirectmatrix  = true;
-          composite_xf->_directmatrix     = ent_composed * ovxf->composed();
-          node->_dqxfdata._worldTransform = composite_xf;
+          ovxf->_parent = ent_xf->_transform;
+          node->_dqxfdata._worldTransform = ovxf;
         } else {
           node->_dqxfdata._worldTransform = ent_xf->_transform;
         }

@@ -13,17 +13,17 @@ namespace ork::ecs {
 void pyinit_scenegraph(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneGraphComponentData, ComponentData, sgcd_ptr_t>(module_ecs, "SceneGraphComponentData")
+  py::class_<SceneGraphComponentData, ComponentData, sgcomponentdata_ptr_t>(module_ecs, "SceneGraphComponentData")
       .def(
           "__repr__",
-          [](const sgcd_ptr_t& sgcd) -> std::string {
+          [](const sgcomponentdata_ptr_t& sgcd) -> std::string {
             fxstring<256> fxs;
             fxs.format("ecs::SceneGraphComponentData(%p)", sgcd.get());
             return fxs.c_str();
           })
       .def(
           "declareNodeOnLayer",
-          [](sgcd_ptr_t sgcd, py::kwargs kwargs) { //
+          [](sgcomponentdata_ptr_t sgcd, py::kwargs kwargs) { //
             decompxf_ptr_t xf = nullptr;
             std::string nodename;
             lev2::drawabledata_ptr_t d;
@@ -52,24 +52,24 @@ void pyinit_scenegraph(py::module& module_ecs) {
         transform (decompxf_ptr_t, optional): The transformation to be applied. Defaults to None.
      )doc");
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneGraphSystemData, SystemData, sgsys_ptr_t>(module_ecs, "SceneGraphSystemData")
+  py::class_<SceneGraphSystemData, SystemData, sgsystemdata_ptr_t>(module_ecs, "SceneGraphSystemData")
       .def(
           "__repr__",
-          [](const sgsys_ptr_t& sgsys) -> std::string {
+          [](sgsystemdata_ptr_t sgsys) -> std::string {
             fxstring<256> fxs;
             fxs.format("ecs::SceneGraphSystemData(%p)", sgsys.get());
             return fxs.c_str();
           })
       .def(
           "declareLayer",
-          [](const sgsys_ptr_t& sgsys, std::string name) { sgsys->declareLayer(name); },
+          [](sgsystemdata_ptr_t sgsys, std::string name) { sgsys->declareLayer(name); },
           R"doc(
         Declares a layer into the SceneGraphsSystems' scenegraph.
 
         Parameters:
         name (str): The name of the layer.
      )doc")
-     .def("declareParams", [type_codec](const sgsys_ptr_t& sgsys, py::dict param_dict) {
+     .def("declareParams", [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {
         for (auto& [key, value] : param_dict) {
           auto key_str = key.cast<std::string>();
           auto val_obj = py::reinterpret_borrow<py::object>(value);
@@ -82,7 +82,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
       py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
           .def(
               "__repr__",
-              [](const pysgsystem_ptr_t& sgsys) -> std::string {
+              [](pysgsystem_ptr_t sgsys) -> std::string {
                 fxstring<256> fxs;
                 fxs.format("ecs::SceneGraphSystem(%p)", sgsys.get());
                 return fxs.c_str();

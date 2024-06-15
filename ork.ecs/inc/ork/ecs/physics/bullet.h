@@ -41,6 +41,7 @@ struct DirectionalForceData;
 struct BulletShapePlaneData;
 struct BulletShapeMeshData;
 struct BulletShapeSphereData;
+struct BulletShapeCapsuleData;
 struct ShapeFactory;
 
 using shapedata_ptr_t = std::shared_ptr<BulletShapeBaseData>;
@@ -51,8 +52,9 @@ using directionalfcdata_ptr_t = std::shared_ptr<DirectionalForceData>;
 using shape_factory_t = ShapeFactory;
 using bulletshapeplanedata_ptr_t = std::shared_ptr<BulletShapePlaneData>;
 using bulletshapespheredata_ptr_t = std::shared_ptr<BulletShapeSphereData>;
+using bulletshapecapsuledata_ptr_t = std::shared_ptr<BulletShapeCapsuleData>;
 using bulletshapemeshdata_ptr_t = std::shared_ptr<BulletShapeMeshData>;
-
+using bulletobjectcomponentdata_ptr_t = std::shared_ptr<BulletObjectComponentData>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletObjectComponentData : public ComponentData {
@@ -82,6 +84,7 @@ public:
   bool _allowSleeping = true;
   bool _isKinematic = false;
   bool _disablePhysics = false;
+  fvec3 _angularFactor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

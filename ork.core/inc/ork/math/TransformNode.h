@@ -34,6 +34,7 @@ struct DecompTransform : public ork::Object {
   DecompTransform();
   ~DecompTransform();
 
+  decompxf_ptr_t _parent;
   fvec3 _translation;
   fquat _rotation;
   float _uniformScale = 1.0f;

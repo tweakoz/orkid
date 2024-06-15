@@ -230,6 +230,8 @@ public:
   void _onBeginRender() final;
   void _onEndRender() final;
 
+  void _onNotify(token_t evID, evdata_t data) final;
+
   //void beginRenderFrame(const Simulation* psi) final;
   //void endRenderFrame(const Simulation* psi) final;
 
@@ -249,7 +251,7 @@ public:
   float mfAvgDtCtr;
   SceneGraphSystem* _sgsystem = nullptr;
   float _fdtaccum = 0.0f;
-
+  std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
 };
 

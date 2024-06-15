@@ -226,7 +226,6 @@ void BulletObjectComponent::update(Simulation* sim, float time_step) {
     _rigidbody->setRestitution(mBOCD._restitution);
     _rigidbody->setFriction(mBOCD._friction);
     _rigidbody->setDamping(mBOCD._linearDamping, mBOCD._angularDamping);
-
     //////////////////////////////////////////////////
     // apply forces
     //////////////////////////////////////////////////

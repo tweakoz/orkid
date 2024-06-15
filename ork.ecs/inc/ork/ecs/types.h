@@ -61,6 +61,7 @@ struct DagComponent;
 struct SceneComposer;
 
 struct SceneGraphComponentData;
+struct SceneGraphSystemData;
 
 struct EntRef;
 
@@ -193,6 +194,8 @@ using sgcomponentdata_ptr_t = std::shared_ptr<SceneGraphComponentData>;
 
 using controller_ptr_t = std::shared_ptr<Controller>;
 using simulation_ptr_t = std::shared_ptr<Simulation>;
+
+using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;
 
 struct SpawnNamedDynamic {
   PoolString _edataname;

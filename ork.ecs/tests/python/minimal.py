@@ -50,8 +50,47 @@ class MinimalSceneGraphApp(object):
     systemdata_phys.debug = True
     
     self.systemdata_phys = systemdata_phys
-
     ##############################################
+    self.jump = False
+
+  ##############################################
+
+  def createPlayerData(self,ctx):
+    self.arch_player = self.ecsscene.createArchetype("PlayerArchetype")
+    self.spawn_player = self.ecsscene.createSpawnData("spawn_player")
+    self.spawn_player.archetype = self.arch_player
+    self.spawn_player.autospawn = True
+    self.spawn_player.transform.translation = vec3(0,0,0)
+    self.spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
+    self.comp_sg = self.arch_player.createComponent("SceneGraphComponent")
+
+    capsule = ecs.BulletShapeCapsuleData()
+    capsule.radius = 1.0
+    capsule.extent = 3.0
+
+    c_phys = self.arch_player.createComponent("BulletObjectComponent")
+
+    c_phys.mass = 10.0
+    c_phys.friction = 1
+    c_phys.restitution = 0.0
+    c_phys.angularDamping = 1
+    c_phys.linearDamping = 0.5
+    c_phys.allowSleeping = False
+    c_phys.isKinematic = False
+    c_phys.disablePhysics = False
+    c_phys.angularFactor = vec3(0,1,0)
+    c_phys.shape = capsule
+
+    self.comp_phys_player = c_phys
+
+    viz_xf = Transform()
+    viz_xf.nonUniformScale = vec3(1,1,3)
+
+    self.player_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    self.comp_sg.declareNodeOnLayer( name="cube1",
+                                     drawable=self.player_drawable,
+                                     layer="layer1",
+                                     transform=viz_xf)
 
   ##############################################
 
@@ -141,34 +180,52 @@ class MinimalSceneGraphApp(object):
 
   def onGpuInit(self,ctx):
     
+    ####################
+    # create scenegraph
+    ####################
     self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
     self.sysd_sg.declareLayer("layer1")
     self.sysd_sg.declareParams({
-      "SkyboxIntensity": float(2.5),
+      "SkyboxIntensity": float(1.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
     })
+
+    ####################
+    # create archetype/entity data
+    ####################
+
     self.createBallData(ctx)
     self.createRoomData(ctx)
+    self.createPlayerData(ctx)
     
+    ####################
+    # create ECS controller
+    ####################
+
     self.controller = ecs.Controller()
     self.controller.bindScene(self.ecsscene)
 
     ##################
+    # launch simulation
+    ##################
         
     #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
     self.controller.createSimulation()
-
     self.controller.startSimulation()
 
+    ##################
+    # retrieve simulation systems
     ##################
 
     self.sys_phys = self.controller.findSystem("BulletSystem")
     self.sys_sg = self.controller.findSystem("SceneGraphSystem")
 
+    ##################
+    # init systems
     ##################
 
     self.controller.systemNotify(self.sys_phys,tokens.YO,vec3(0,0,0))
@@ -219,10 +276,41 @@ class MinimalSceneGraphApp(object):
 
   ##############################################
 
+  def playerImpulse(self,impulse):
+    self.controller.systemNotify( self.sys_phys,
+                                  tokens.IMPULSE,
+                                  {
+                                    tokens.component: self.comp_phys_player,
+                                    tokens.impulse: impulse
+                                  })
+
+  ##############################################
+
   def onUiEvent(self,uievent):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
+    elif uievent.code == tokens.KEY_DOWN.hashed:
+      
+      camdir = (self.uicam.cameradata.target-self.uicam.cameradata.eye).normalized(),
+      print(camdir)
+      
+      # get projection of camdir on xz groundplane
+      projdir = vec3(camdir[0].x,0,camdir[0].z).normalized()
+      
+      
+      if uievent.keycode == ord(" "): 
+        self.playerImpulse(vec3(0,80,0)) # JUMP
+      elif uievent.keycode == ord("W"):
+        self.playerImpulse(projdir*50.0) # FORWARD
+      #elif uievent.keycode == ord("A"):
+      #  self.playerImpulse(vec3(20,0,0)) # LEFT
+      elif uievent.keycode == ord("S"):
+        self.playerImpulse(projdir*-50.0) # BACKWARD
+      #elif uievent.keycode == ord("D"):
+      #  self.playerImpulse(vec3(-20,0,0)) # RIGHT
+    elif uievent.code == tokens.KEY_UP.hashed:
+      pass
     return ui.HandlerResult()
 
 ###############################################################################

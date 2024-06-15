@@ -17,11 +17,13 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 
+#include <ork/ecs/component.h>
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/simulation.inl>
 #include <ork/ecs/physics/bullet.h>
 #include <ork/util/logger.h>
+#include <ork/ecs/datatable.h>
 
 #include "bullet_impl.h"
 
@@ -154,6 +156,9 @@ void BulletSystem::_onUnstageComponent(BulletObjectComponent* component){
 void BulletSystem::_onActivateComponent(BulletObjectComponent* component){
     auto entity = component->GetEntity();
 
+    auto compdata = & component->mBOCD;
+    _lastcomponentfordata[compdata] = component;
+
     const BulletSystemData& world_data = this->GetWorldData();
     const auto& CDATA = component->data();
 
@@ -202,6 +207,11 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component){
             logchan_bull->log("BulletObjectComponent<%p> rigid_body<%p>", (void*) component, (void*)rigid_body);
           }
           component->_rigidbody          = rigid_body;
+
+          if( component->mBOCD._angularFactor.magnitude() > 0.1f ){
+            rigid_body->setAngularFactor( orkv3tobtv3(component->mBOCD._angularFactor) );
+          }
+
         }
       }
 
@@ -423,6 +433,27 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     if(is_debug)
       _debugger->endSimFrame(this);
+  }
+}
+
+void BulletSystem::_onNotify(token_t evID, evdata_t data) {
+
+  switch (evID.hashed()) {
+    case "IMPULSE"_crcu: {
+      const auto& table = data.get<DataTable>();
+      auto compdata   = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();
+      printf( "compdata<%p>\n", compdata.get() );
+      auto it = _lastcomponentfordata.find(compdata.get());
+      if(it!=_lastcomponentfordata.end()){
+        auto component = it->second;
+        auto rigid_body = component->_rigidbody;
+        auto impulse_val = table["impulse"_tok].get<fvec3>();
+        rigid_body->applyCentralImpulse(orkv3tobtv3(impulse_val));
+      }
+      break;
+    }
+    default:
+      break;
   }
 }
 
