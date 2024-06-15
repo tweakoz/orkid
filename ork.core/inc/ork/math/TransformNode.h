@@ -37,12 +37,13 @@ struct DecompTransform : public ork::Object {
   fvec3 _translation;
   fquat _rotation;
   float _uniformScale = 1.0f;
+  fvec3 _nonUniformScale;
   std::atomic<int> _state;
   
   fmtx4 _directmatrix;
   bool _usedirectmatrix = false;
   bool _viewRelative = false;
-
+  bool _useNonUniformScale = false;
 
   void set(fvec3 t, fquat r, float s) { _translation=t; _rotation=r; _uniformScale=s; }
   void set(decompxf_const_ptr_t rhs);

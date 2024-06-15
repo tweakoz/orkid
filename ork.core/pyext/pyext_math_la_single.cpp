@@ -44,6 +44,13 @@ void pyinit_math_la_float(py::module& module_core) {
               "scale",
               [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
               [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
+          .def_property(
+              "nonUniformScale",
+              [](decompxf_const_ptr_t dcxf) -> fvec3 { return dcxf->_nonUniformScale; },
+              [](decompxf_ptr_t dcxf, fvec3 sc) { //
+                dcxf->_useNonUniformScale = true;
+                dcxf->_nonUniformScale = sc;
+              })
           .def(
               "lookAt",
               [](decompxf_ptr_t dcxf, fvec3 eye, fvec3 tgt, fvec3 up) {

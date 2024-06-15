@@ -66,7 +66,7 @@ scenedata_ptr_t generateScene(path_t path){
     auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_grid"_pool);
     auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
     auto ecs_griddata = std::make_shared<GridDrawableData>();
-    ecs_sg_compdata->createNodeOnLayer("gridnode", ecs_griddata, "sg_default");
+    ecs_sg_compdata->declareNodeOnLayer("gridnode", ecs_griddata, "sg_default");
     ecs_spawner->SetArchetype(ecs_arch);
     ecs_spawner->transform()->_translation = fvec3(0,-0.01,0);
   }
@@ -106,7 +106,7 @@ scenedata_ptr_t generateScene(path_t path){
     auto modeldata = std::make_shared<ModelDrawableData>("data://tests/sponza/sponza2.glb");
     auto ecs_arch        = scene->createSceneObject<Archetype>("arch_sponza"_pool);
     auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-    ecs_sg_compdata->createNodeOnLayer("modelnode", modeldata, "sg_default");
+    ecs_sg_compdata->declareNodeOnLayer("modelnode", modeldata, "sg_default");
     auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_sponza"_pool);
     ecs_spawner->SetArchetype(ecs_arch);
     ecs_spawner->transform()->_translation = fvec3(0,-0.01,0);
@@ -157,7 +157,7 @@ scenedata_ptr_t generateScene(path_t path){
           light_info->_lightdata->SetColor(fvec3::White() * intensity);
           light_info->_archetype        = scene->createSceneObject<Archetype>(arch_name);
           light_info->_sgcompdata = light_info->_archetype->addComponent<SceneGraphComponentData>();
-          light_info->_sgcompdata->createNodeOnLayer("lightnode", light_info->_lightdata, "sg_default");
+          light_info->_sgcompdata->declareNodeOnLayer("lightnode", light_info->_lightdata, "sg_default");
 
           _lightinfos[hash] = light_info;
         }
@@ -183,7 +183,7 @@ scenedata_ptr_t generateScene(path_t path){
 	  auto modeldata = std::make_shared<ModelDrawableData>("data://tests/pbr1/pbr1.glb");
 	  auto ecs_arch        = scene->createSceneObject<Archetype>("arch_ball"_pool);
   	auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-  	ecs_sg_compdata->createNodeOnLayer("modelnode", modeldata, "sg_default");
+  	ecs_sg_compdata->declareNodeOnLayer("modelnode", modeldata, "sg_default");
     auto ecs_physics_compdata = ecs_arch->addComponent<BulletObjectComponentData>();
 
     if(0){
@@ -216,7 +216,7 @@ scenedata_ptr_t generateScene(path_t path){
 	  auto modeldata = std::make_shared<ModelDrawableData>("data://tests/bridge.glb");
 	  auto ecs_arch        = scene->createSceneObject<Archetype>("arch_terrain"_pool);
   	auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-  	ecs_sg_compdata->createNodeOnLayer("modelnode", modeldata, "sg_default");
+  	ecs_sg_compdata->declareNodeOnLayer("modelnode", modeldata, "sg_default");
   	auto ecs_lua_compdata = ecs_arch->addComponent<LuaComponentData>();
   	ecs_lua_compdata->SetPath("demo://shinyball.lua");
   	auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_terrain"_pool);
@@ -232,7 +232,7 @@ scenedata_ptr_t generateScene(path_t path){
     pointlight->_falloff = 10;
     auto ecs_arch        = scene->createSceneObject<Archetype>("arch_light"_pool);
     auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-    ecs_sg_compdata->createNodeOnLayer("lightnode", pointlight, "sg_default");
+    ecs_sg_compdata->declareNodeOnLayer("lightnode", pointlight, "sg_default");
     auto ecs_lua_compdata = ecs_arch->addComponent<LuaComponentData>();
     ecs_lua_compdata->SetPath("demo://shinyball.lua");
     auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_light"_pool);

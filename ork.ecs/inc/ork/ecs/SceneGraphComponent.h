@@ -28,6 +28,7 @@ public:
   lev2::drawabledata_ptr_t _drawabledata;
   std::string _layername;
   std::string _nodename;
+  decompxf_ptr_t _xfoverride;
 };
 
 using sgnodeitemdata_ptr_t = std::shared_ptr<SceneGraphNodeItemData>;
@@ -43,7 +44,10 @@ public:
   static object::ObjectClass* componentClass();
   void DoRegisterWithScene(SceneComposer& sc) const final;
 
-  void createNodeOnLayer(std::string nodename, lev2::drawabledata_ptr_t d, std::string l);
+  void declareNodeOnLayer( std::string nodename, //
+                           lev2::drawabledata_ptr_t d, //
+                           std::string l, //
+                           decompxf_ptr_t xf = nullptr);
 
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
 
@@ -54,8 +58,10 @@ struct SceneGraphNodeItem {
   lev2::drawable_ptr_t _drawable;
   lev2::scenegraph::node_ptr_t _sgnode;
   std::string _nodename;
+  sgnodeitemdata_ptr_t _data;
 };
 using sgnodeitem_ptr_t = std::shared_ptr<SceneGraphNodeItem>;
+
 struct SceneGraphComponent : public Component {
   DeclareAbstractX(SceneGraphComponent, Component);
 public:
@@ -71,6 +77,8 @@ public:
   void _onDeactivate(Simulation* psi) final;
   void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
   void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
+  ///////////////////////////////
+  void_lambda_t _genTransformOperation();
   ///////////////////////////////
   const SceneGraphComponentData& _SGCD;
 

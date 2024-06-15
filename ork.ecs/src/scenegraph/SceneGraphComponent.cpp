@@ -49,12 +49,16 @@ SceneGraphComponentData::SceneGraphComponentData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphComponentData::createNodeOnLayer(std::string nodename, lev2::drawabledata_ptr_t d, std::string l) {
+void SceneGraphComponentData::declareNodeOnLayer( std::string nodename, //
+                                                  lev2::drawabledata_ptr_t d, //
+                                                  std::string l, //
+                                                  decompxf_ptr_t xf ) { //
 
   auto nid             = std::make_shared<SceneGraphNodeItemData>();
   nid->_nodename       = nodename;
   nid->_drawabledata   = d;
   nid->_layername      = l;
+  nid->_xfoverride     = xf;
   _nodedatas[nodename] = nid;
 }
 
@@ -85,6 +89,32 @@ SceneGraphComponent::SceneGraphComponent(const SceneGraphComponentData& data, ec
   _currentXF = std::make_shared<TransformNode>();
 }
 SceneGraphComponent::~SceneGraphComponent() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void_lambda_t SceneGraphComponent::_genTransformOperation(){
+  return [=]() {
+    auto ent     = this->GetEntity();
+    auto init_xf = ent->data()->_dagnode->_xfnode;
+    auto ent_xf  = ent->GetDagNode()->_xfnode;
+    ent_xf->_transform->set(init_xf->_transform);
+    this->_currentXF = ent_xf;
+    auto ent_composed = ent_xf->_transform->composed();
+    for (auto NITEM : this->_nodeitems) {
+      auto node          = NITEM.second->_sgnode;
+      if (node) {
+        auto ovxf        = NITEM.second->_data->_xfoverride;
+        if (ovxf) {
+          auto composite_xf               = std::make_shared<DecompTransform>();
+          composite_xf->_usedirectmatrix  = true;
+          composite_xf->_directmatrix     = ent_composed * ovxf->composed();
+          node->_dqxfdata._worldTransform = composite_xf;
+        } else {
+          node->_dqxfdata._worldTransform = ent_xf->_transform;
+        }
+      }
+    }
+  };
 }
 
 /////////////////////////////////////////////////////////////////////////////////

@@ -49,7 +49,7 @@ struct Resources {
     auto ecs_arch        = _scenedata->createSceneObject<Archetype>("a1"_pool);
     _sgsysdata           = _scenedata->getTypedSystemData<SceneGraphSystemData>();
     auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-    ecs_sg_compdata->createNodeOnLayer("modelnode", _modeldata, "sg_default");
+    ecs_sg_compdata->declareNodeOnLayer("modelnode", _modeldata, "sg_default");
 
     auto ecs_lua_compdata = ecs_arch->addComponent<LuaComponentData>();
     ecs_lua_compdata->SetPath("demo://shinyball.lua");

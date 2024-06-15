@@ -50,16 +50,35 @@ fmtx4 DecompTransform::composed() const{
     rval = _directmatrix;
   }
   else{
-    rval.compose(_translation,_rotation,_uniformScale);
+    if(_useNonUniformScale){
+      float x = _nonUniformScale.x;
+      float y = _nonUniformScale.y;
+      float z = _nonUniformScale.z;
+      rval.compose(_translation,_rotation,x,y,z);
+    }
+    else{
+      rval.compose(_translation,_rotation,_uniformScale);
+    }
   }
   return rval;
 }
 
 fmtx4 DecompTransform::composed2() const{
   fmtx4 rval;
-  rval.compose2(_translation,_rotation,_uniformScale);
-  //auto mtxstr = rval.dump4x3cn();
-  //printf( " xfval<%s> t<%g %g %g> r<%g %g %g %g> s<%g> \n", mtxstr.c_str(), _translation.x, _translation.y, _translation.z, _rotation.x, _rotation.y, _rotation.z, _rotation.w, _uniformScale );
+  if(_usedirectmatrix){
+    rval = _directmatrix;
+  }
+  else{
+    if(_useNonUniformScale){
+      float x = _nonUniformScale.x;
+      float y = _nonUniformScale.y;
+      float z = _nonUniformScale.z;
+      rval.compose2(_translation,_rotation,x,y,z);
+    }
+    else{
+      rval.compose2(_translation,_rotation,_uniformScale);
+    }
+  }
   return rval;
 }
 

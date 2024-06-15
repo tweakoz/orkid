@@ -25,7 +25,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_sgsys = logger()->createChannel("ecs.sgcomp",fvec3(0.9,0.7,0));
+static logchannel_ptr_t logchan_sgsys = logger()->createChannel("ecs.sgcomp", fvec3(0.9, 0.7, 0));
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
@@ -64,7 +64,7 @@ void SceneGraphSystemData::setInternalSceneParam(const varmap::key_t& key, const
   _internalParams->setValueForKey(key, val);
 }
 
-void SceneGraphSystemData::declareLayer(const std::string& layername){
+void SceneGraphSystemData::declareLayer(const std::string& layername) {
   _declaredLayers.push_back(layername);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,14 +124,13 @@ SceneGraphSystem::SceneGraphSystem(const SceneGraphSystemData& data, ork::ecs::S
   } else {
     _camera = std::make_shared<CameraData>();
   }
-  _camlut = std::make_shared<CameraDataLut>();
+  _camlut                = std::make_shared<CameraDataLut>();
   (*_camlut)["spawncam"] = _camera;
-  _drwcache = std::make_shared<DrawableCache>();
+  _drwcache              = std::make_shared<DrawableCache>();
 
   for (auto item : data._onCreateSystemOperations) {
     item(this);
   }
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -139,7 +138,7 @@ SceneGraphSystem::~SceneGraphSystem() {
 
   // defer destruction of the scene to the rendering thread
   //  by stashing it in the simulation for later destruction
-  
+
   _simulation->_stashRenderThreadDestructable(_scene);
 }
 
@@ -170,10 +169,10 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 
   /////////////////////////////////////////
 
-  _scene         = std::make_shared<scenegraph::Scene>(_mergedParams);
-  
+  _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+
   _default_layer = _scene->createLayer("sg_default");
-  for( auto item : _SGSD._declaredLayers ){
+  for (auto item : _SGSD._declaredLayers) {
     _scene->createLayer(item);
   }
 
@@ -218,13 +217,12 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
-  //printf("sgsys stage component<%p>\n", (void*) component);
+  // printf("sgsys stage component<%p>\n", (void*) component);
   this->_components.atomicOp([component](SceneGraphSystem::component_set_t& unlocked) { //
     unlocked.insert(component);                                                         //
   });
   //////////////////////////////
   auto setdrw_op = [=]() {
-
     auto& COMPDATA = component->_SGCD;
     for (auto NID_item : COMPDATA._nodedatas) {
       auto NID     = NID_item.second;
@@ -234,7 +232,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
       bool was_found = it_drw != component->_nodeitems.end();
 
       if (not was_found) {
-        auto layer    = _scene->findLayer(NID->_layername);
+        auto layer = _scene->findLayer(NID->_layername);
         /////////////////////////////////////////////////
         // light ?
         /////////////////////////////////////////////////
@@ -248,53 +246,54 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           nitem->_nodename                      = NID->_nodename;
           component->_nodeitems[NID->_nodename] = nitem;
 
-          auto ent           = component->GetEntity();
-          l->_xformgenerator = [=]() -> fmtx4 {
-            fmtx4 rval;
-            auto node = nitem->_sgnode;
-            if (node) {
-              auto xform = ent->transform();
-              rval       = xform->composed();
-            }
-            return rval;
-          };
+          auto ent = component->GetEntity();
+          if (NID->_xfoverride) {
+            auto static_matrix = NID->_xfoverride->composed();
+            l->_xformgenerator = [=]() -> fmtx4 {
+              fmtx4 rval;
+              auto node = nitem->_sgnode;
+              if (node) {
+                auto xform = ent->transform();
+                rval       = xform->composed() * static_matrix;
+                OrkAssert(false);
+              }
+              return rval;
+            };
+            OrkAssert(false);
+          } else {
+            l->_xformgenerator = [=]() -> fmtx4 {
+              fmtx4 rval;
+              auto node = nitem->_sgnode;
+              if (node) {
+                auto xform = ent->transform();
+                rval       = xform->composed();
+              }
+              return rval;
+            };
+          }
 
-        /////////////////////////////////////////////////
-        // drawable ?
-        /////////////////////////////////////////////////
+          /////////////////////////////////////////////////
+          // drawable ?
+          /////////////////////////////////////////////////
         } else {
 
           auto nitem                            = std::make_shared<SceneGraphNodeItem>();
           nitem->_drawable                      = _drwcache->fetch(drwdata);
           nitem->_nodename                      = NID->_nodename;
+          nitem->_data                          = NID;
           component->_nodeitems[NID->_nodename] = nitem;
 
-          if(auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)){
+          if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
             nitem->_sgnode = layer->createInstancedDrawableNode(NID->_nodename, as_instanced);
-          }
-          else{
+          } else {
             nitem->_sgnode = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
           }
-
-
         }
       }
     }
   };
   //////////////////////////////
-  auto setxform_op = [=]() {
-    auto ent              = component->GetEntity();
-    auto init_xf          = ent->data()->_dagnode->_xfnode;
-    auto ent_xf           = ent->GetDagNode()->_xfnode;
-    ent_xf->_transform->set(init_xf->_transform);
-    component->_currentXF = ent_xf;
-    for (auto NITEM : component->_nodeitems) {
-      auto node = NITEM.second->_sgnode;
-      if (node) {
-        node->_dqxfdata._worldTransform = ent_xf->_transform;
-      }
-    }
-  };
+  auto setxform_op = component->_genTransformOperation();
   //////////////////////////////
   _renderops.push(setdrw_op);
   _renderops.push(setxform_op);
@@ -336,33 +335,7 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onActivateComponent(SceneGraphComponent* component) {
   // printf("sgsys activate component<%p>\n", (void*) component);
-  auto setxform_op = [=]() {
-    auto entity           = component->GetEntity();
-    auto init_xf          = entity->data()->_dagnode->_xfnode;
-    auto ent_xf           = entity->GetDagNode()->_xfnode;
-    auto ov_xf            = entity->_override_initial_xf;
-    component->_currentXF = ent_xf;
-    for (auto NITEM : component->_nodeitems) {
-      auto node = NITEM.second->_sgnode;
-      // printf("sgsys activate node<%p>\n", (void*) node.get());
-      if (node) {
-        //////////////////////////////////////////
-        // init mutable xform data from const data
-        //////////////////////////////////////////
-        //(*ent_xf->_transform) = (*init_xf->_transform);
-        // if(ov_xf){
-        //(*ent_xf->_transform) = (*ov_xf);
-        //}
-        node->_dqxfdata._worldTransform = ent_xf->_transform;
-        //////////////////////////////////////////
-        // auto mtx    = ent_xf->_transform->composed();
-        // auto mtxstr = mtx.dump4x3cn();
-        // printf("_onActivateComponent set node to ent_xf<%p>\n", (void*) ent_xf.get());
-        // printf(" value<%s>\n", mtxstr.c_str());
-        //////////////////////////////////////////
-      }
-    }
-  };
+  auto setxform_op = component->_genTransformOperation();
   _renderops.push(setxform_op);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -415,7 +388,7 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 }
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
-  //logchan_sgsys->log("SceneGraphSystem<%p>::update", this );
+  // logchan_sgsys->log("SceneGraphSystem<%p>::update", this );
   if (_scene) {
     _scene->enqueueToRenderer(_camlut);
   }
@@ -454,7 +427,7 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
     case ResizeFromMainSurface._hashed: {
-      auto resize_op    = [=]() {
+      auto resize_op = [=]() {
         if (_scene) {
           _scene->_doResizeFromMainSurface = data.get<bool>();
         }
@@ -511,7 +484,7 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data) {
-  printf( "SGSYS REQ<%08x>\n", reqID._hashed);
+  printf("SGSYS REQ<%08x>\n", reqID._hashed);
   switch (reqID.hashed()) {
     case CreateNode.hashed(): {
 
@@ -546,8 +519,8 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
       break;
     }
     case "onCreateScenegraph"_tok._hashed: {
-      printf( "onCreateScenegraph <%p>\n", (void*) _scene.get());
-      //response->_responseData.set<scenegraph::scene_ptr_t>(_scene);
+      printf("onCreateScenegraph <%p>\n", (void*)_scene.get());
+      // response->_responseData.set<scenegraph::scene_ptr_t>(_scene);
       break;
     }
     default:
@@ -556,7 +529,7 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::ecs {
+} // namespace ork::ecs
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::ecs::SceneGraphSystemData, "SceneGraphSystemData");
 ImplementReflectionX(ork::ecs::SceneGraphSystem, "SceneGraphSystem");

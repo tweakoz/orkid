@@ -33,7 +33,7 @@ class MinimalSceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=1,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(10,10,10)*3, tgt=vec3(0,5,0), constrainZ=True, up=vec3(0,1,0))
 
@@ -82,48 +82,77 @@ class MinimalSceneGraphApp(object):
     #self.cube = prims.createCubePrim(ctx=ctx, size=1.0)
     #pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
     self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    self.comp_sg.declareNodeOnLayer("cube1",self.ball_drawable,"layer1")
+    self.comp_sg.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
   ##############################################
 
-  def createGroundData(self,ctx):
-    self.arch_ground = self.ecsscene.createArchetype("GroundArchetype")
-    self.spawn_ground = self.ecsscene.createSpawnData("spawn_ground")
-    self.spawn_ground.archetype = self.arch_ground
-    self.spawn_ground.autospawn = True
-    self.spawn_ground.transform.translation = vec3(0,-10,0)
-    self.spawn_ground.transform.scale = 1.0
+  def createRoomData(self,ctx):
+    self.arch_room = self.ecsscene.createArchetype("RoomArchetype")
+    self.spawn_room = self.ecsscene.createSpawnData("spawn_room")
+    self.spawn_room.archetype = self.arch_room
+    self.spawn_room.autospawn = True
+    self.spawn_room.transform.translation = vec3(0,-10,0)
+    self.spawn_room.transform.scale = 1.0
 
-    #ground = ecs.BulletShapePlaneData()
-    #ground.normal = vec3(0,1,0)
-    #ground.position = vec3(0,0,0)
-    ground = ecs.BulletShapeMeshData()
-    ground.meshpath = "data://tests/environ/envtest2.obj"
-    ground.scale = vec3(5,8,5)
-    ground.translation = vec3(0,0.01,0)
+    #########################
+    # physics for room
+    #########################
 
-    ground_sgc = self.arch_ground.createComponent("SceneGraphComponent")
-    ground_phys = self.arch_ground.createComponent("BulletObjectComponent")
+    room_sg_component = self.arch_room.createComponent("SceneGraphComponent")
+    room_phys = self.arch_room.createComponent("BulletObjectComponent")
 
-    ground_phys.mass = 0.0
-    ground_phys.allowSleeping = True
-    ground_phys.isKinematic = False
-    ground_phys.disablePhysics = True
-    ground_phys.shape = ground
+    room_shape = ecs.BulletShapeMeshData()
+    room_shape.meshpath = "data://tests/environ/envtest2.obj"
+    room_shape.scale = vec3(5,8,5)
+    room_shape.translation = vec3(0,0.01,0)
 
-    self.grid = prims.createGridData(extent=100)
-    pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+    room_phys.mass = 0.0
+    room_phys.allowSleeping = True
+    room_phys.isKinematic = False
+    room_phys.disablePhysics = True
+    room_phys.shape = room_shape
 
-    ground_sgc.declareNodeOnLayer("ground",self.grid,"layer1")
+    #########################
+    # visible grid for room
+    #########################
 
+    #self.room_grid = prims.createGridData(extent=100)
+    #pipeline = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+
+    #room_sg_component.declareNodeOnLayer( name="ground",
+    #                                      drawable=self.room_grid,
+    #                                      layer="layer1")
+
+    #########################
+    # visible mesh for room
+    #########################
+
+    self.room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    
+    room_mesh_transform = Transform()
+    room_mesh_transform.nonUniformScale = vec3(5,8,5)
+    room_mesh_transform.translation = vec3(0,-0.05,0)
+
+    room_node = room_sg_component.declareNodeOnLayer( name = "roomvis",
+                                                      drawable = self.room_drawable,
+                                                      layer = "layer1",
+                                                      transform = room_mesh_transform)
+    
   ##############################################
 
   def onGpuInit(self,ctx):
     
     self.sysd_sg = self.ecsscene.createSystem("SceneGraphSystem")
     self.sysd_sg.declareLayer("layer1")
-    
+    self.sysd_sg.declareParams({
+      "SkyboxIntensity": float(2.5),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(2000),
+      "DepthFogPower": float(1.25),
+    })
     self.createBallData(ctx)
-    self.createGroundData(ctx)
+    self.createRoomData(ctx)
     
     self.controller = ecs.Controller()
     self.controller.bindScene(self.ecsscene)
