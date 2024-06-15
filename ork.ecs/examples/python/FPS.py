@@ -100,6 +100,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       self.player_transform = entity.transform
 
     spawn_player.onSpawn(onSpawn)
+    
+    self.player_physics_componentdata = c_physics
 
   ##############################################
 
@@ -325,7 +327,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.controller.systemNotify( self.sys_phys,
                                   tokens.IMPULSE,
                                   {
-                                    tokens.component: self.comp_phys_player,
+                                    tokens.component: self.player_physics_componentdata,
                                     tokens.impulse: impulse
                                   })
 
@@ -350,7 +352,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     elif uievent.code == tokens.KEY_DOWN.hashed:
       #### JUMP #####
       if uievent.keycode == ord(" "): 
-        self.playerImpulse(vec3(0,80,0)) # JUMP
+        self.playerImpulse(vec3(0,500,0)) # JUMP
       #### FORWARD #####
       elif uievent.keycode == ord("W"):
         self.playerforce.magnitude = walk_force
