@@ -39,9 +39,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def createPlayerData(self,ctx):
 
-    self.arch_player = self.ecsscene.createArchetype("PlayerArchetype")
-    c_scenegraph = self.arch_player.createComponent("SceneGraphComponent")
-    c_physics = self.arch_player.createComponent("BulletObjectComponent")
+    arch_player = self.ecsscene.createArchetype("PlayerArchetype")
+    c_scenegraph = arch_player.createComponent("SceneGraphComponent")
+    c_physics = arch_player.createComponent("BulletObjectComponent")
 
     ######################################
     # scenegraph setup for player
@@ -85,7 +85,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ######################################
 
     spawn_player = self.ecsscene.createSpawnData("spawn_player")
-    spawn_player.archetype = self.arch_player
+    spawn_player.archetype = arch_player
     spawn_player.autospawn = True
     spawn_player.transform.translation = vec3(0,0,0)
     spawn_player.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
@@ -105,16 +105,16 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def createBallData(self,ctx):
 
-    self.arch_ball = self.ecsscene.createArchetype("BoxArchetype")
-    self.spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
-    self.spawn_ball.archetype = self.arch_ball
-    self.spawn_ball.autospawn = False
-    c_scenegraph = self.arch_ball.createComponent("SceneGraphComponent")
+    arch_ball = self.ecsscene.createArchetype("BallArchetype")
+    spawn_ball = self.ecsscene.createSpawnData("spawn_ball")
+    spawn_ball.archetype = arch_ball
+    spawn_ball.autospawn = False
+    c_scenegraph = arch_ball.createComponent("SceneGraphComponent")
 
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_physics = self.arch_ball.createComponent("BulletObjectComponent")
+    c_physics = arch_ball.createComponent("BulletObjectComponent")
 
     c_physics.mass = 1.0
     c_physics.friction = 0.3
@@ -126,8 +126,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.disablePhysics = False
     c_physics.shape = sphere
 
-    self.ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="cube1",drawable=self.ball_drawable,layer="layer1")
+    ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    c_scenegraph.declareNodeOnLayer( name="cube1",
+                                     drawable=ball_drawable,
+                                     layer="layer1")
 
   ##############################################
   # generate the environment
@@ -164,14 +166,14 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # visible mesh for room
     #########################
 
-    self.room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
     
     room_mesh_transform = Transform()
     room_mesh_transform.nonUniformScale = vec3(5,8,5)
     room_mesh_transform.translation = vec3(0,-0.05,0)
 
     room_node = c_scenegraph.declareNodeOnLayer( name = "roomvis",
-                                                      drawable = self.room_drawable,
+                                                      drawable = room_drawable,
                                                       layer = "layer1",
                                                       transform = room_mesh_transform)
     
