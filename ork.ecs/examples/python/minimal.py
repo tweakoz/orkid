@@ -20,6 +20,7 @@ from lev2utils.cameras import *
 
 ################################################################################
 tokens = core.CrcStringProxy()
+LAYERNAME = "std_deferred"
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -54,7 +55,7 @@ class ECS_MINIMAL(object):
     c_physics.shape = sphere
 
     drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer="layer1")
+    c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer=LAYERNAME)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
@@ -95,7 +96,7 @@ class ECS_MINIMAL(object):
 
     room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
                                                  drawable = drawable,
-                                                 layer = "layer1",
+                                                 layer = LAYERNAME,
                                                  transform = mesh_transform)
     
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
@@ -129,7 +130,7 @@ class ECS_MINIMAL(object):
     ####################
 
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
-    systemdata_SG.declareLayer("layer1")
+    systemdata_SG.declareLayer(LAYERNAME)
     systemdata_SG.declareParams({
       "SkyboxIntensity": float(2.0),
       "SpecularIntensity": float(1),

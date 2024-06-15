@@ -19,6 +19,7 @@ from lev2utils.cameras import *
 
 ################################################################################
 tokens = core.CrcStringProxy()
+LAYERNAME = "std_deferred"
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -55,7 +56,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
       c_scenegraph.declareNodeOnLayer( name="cube1",
                                        drawable=drawable,
-                                       layer="layer1",
+                                       layer=LAYERNAME,
                                        transform=viz_xf)
 
     ######################################
@@ -129,7 +130,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="ballnode",
                                      drawable=ball_drawable,
-                                     layer="layer1")
+                                     layer=LAYERNAME)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
@@ -172,7 +173,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
                                                  drawable = room_drawable,
-                                                 layer = "layer1",
+                                                 layer = LAYERNAME,
                                                  transform = room_mesh_transform)
     
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
@@ -196,7 +197,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ####################
 
     self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
-    self.systemdata_scenegraph.declareLayer("layer1")
+    self.systemdata_scenegraph.declareLayer(LAYERNAME)
     self.systemdata_scenegraph.declareParams({
       "SkyboxIntensity": float(2.0),
       "SpecularIntensity": float(1),
