@@ -149,11 +149,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # physics for room
     #########################
 
-
     shape = ecs.BulletShapeMeshData()
     shape.meshpath = "data://tests/environ/envtest2.obj"
     shape.scale = vec3(5,8,5)
-    shape.translation = vec3(0,0.01,0)
+    shape.translation = vec3(0,0.01,0) # offset to avoid z-fighting of physics debugger
 
     c_physics.mass = 0.0
     c_physics.allowSleeping = True
@@ -172,14 +171,14 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     room_mesh_transform.translation = vec3(0,-0.05,0)
 
     room_node = c_scenegraph.declareNodeOnLayer( name = "roomvis",
-                                                      drawable = room_drawable,
-                                                      layer = "layer1",
-                                                      transform = room_mesh_transform)
+                                                 drawable = room_drawable,
+                                                 layer = "layer1",
+                                                 transform = room_mesh_transform)
     
     env_spawner = self.ecsscene.createSpawnData("env_spawner")
     env_spawner.archetype = arch_room
     env_spawner.autospawn = True
-    env_spawner.transform.translation = vec3(0,-10,0)
+    env_spawner.transform.translation = vec3(0,-10,0) # pull ground down
     env_spawner.transform.scale = 1.0
 
   ##############################################
@@ -214,7 +213,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     systemdata_phys = self.ecsscene.createSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = False
+    systemdata_phys.debug = True
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
     self.systemdata_phys = systemdata_phys
