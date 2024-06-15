@@ -53,7 +53,8 @@ void pyinit_scene(py::module& module_ecs) {
                           },
                           [](spawndata_ptr_t spawndata, bool val) { 
                             spawndata->_autospawn = val; 
-                          });
+                          })
+                          .def_property_readonly("transform", [](spawndata_ptr_t spawndata) -> decompxf_ptr_t { return spawndata->transform(); });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")

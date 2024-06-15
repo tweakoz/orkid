@@ -93,7 +93,7 @@ void pyinit_physics(py::module& module_ecs) {
               "__repr__",
               [](const bulletshapeplanedata_ptr_t& shape) -> std::string {
                 fxstring<256> fxs;
-                fxs.format("ecs::BulletShapeSphereData(%p)", shape.get());
+                fxs.format("ecs::BulletShapePlaneData(%p)", shape.get());
                 return fxs.c_str();
               })
           .def_property(
@@ -105,6 +105,28 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapeplanedata_ptr_t& shape) -> fvec3 { return shape->_pos; },
               [](bulletshapeplanedata_ptr_t& shape, fvec3 val) { shape->_pos = val; });
   type_codec->registerStdCodec<bulletshapeplanedata_ptr_t>(shapeplane_type);
+    /////////////////////////////////////////////////////////////////////////////////
+  auto shapemesh_type =
+      py::class_<BulletShapeMeshData, BulletShapeBaseData, bulletshapemeshdata_ptr_t>(module_ecs, "BulletShapeMeshData")
+          .def(py::init<>())
+          .def(
+              "__repr__",
+              [](const bulletshapemeshdata_ptr_t& shape) -> std::string {
+                fxstring<256> fxs;
+                fxs.format("ecs::BulletShapeMeshData(%p)", shape.get());
+                return fxs.c_str();
+              })
+          .def_property(
+              "meshpath",
+              [](const bulletshapemeshdata_ptr_t& shape) -> std::string { return shape->_meshpath.c_str(); },
+              [](bulletshapemeshdata_ptr_t& shape, std::string val) { //
+                shape->_meshpath = val;
+            })
+          .def_property(
+              "scale",
+              [](const bulletshapemeshdata_ptr_t& shape) -> float { return shape->_scale; },
+              [](bulletshapemeshdata_ptr_t& shape, float val) { shape->_scale = val; });
+  type_codec->registerStdCodec<bulletshapemeshdata_ptr_t>(shapemesh_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bullsys_type = py::class_<BulletSystemData, SystemData, bulletsysdata_ptr_t>(module_ecs, "BulletSystemData")
                           .def(
