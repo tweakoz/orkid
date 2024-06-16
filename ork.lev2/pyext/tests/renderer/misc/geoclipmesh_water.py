@@ -69,7 +69,7 @@ class WaterApp(object):
     # post fx node
     ###################################
 
-    postNode = DecompBlurPostFxNode()
+    postNode = PostFxNodeDecompBlur()
     postNode.threshold = 0.99
     postNode.blurwidth = 3.0
     postNode.blurfactor = 0.1
