@@ -10,7 +10,7 @@
 
  3. Clear separation of external (stimulus) and internal processes, even from separate threads.
 
- 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). The developer could also play back a pre-recorded stimuli stream with a modified scene - so long as the addressed objects are still present. This feature came into existence due to my experience at working on OpenGL command stream capture and playback, and an extreme frustration with fixing simulation related bugs in MMORPG's for which stimulus game from game servers and local UX - which would make reproduction extremely difficult.
+ 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). The developer could also play back a pre-recorded stimuli stream with a modified scene - so long as the addressed objects are still present. This feature came into existence due to my experience at working on OpenGL command stream capture and playback (for the purposes of graphics debugging, profiling, and other tooling), and an extreme frustration with fixing simulation related bugs in MMORPG's for which stimulus game from game servers and local UX - which would make reproduction extremely difficult.
  
  5. SceneGraph Component/System wraps lev2 rendering. ECS simulation occurs on update thread, and data is passed to rendering thread via this SceneGraph system.
  
