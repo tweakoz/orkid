@@ -37,7 +37,7 @@ A. The Data aspect. Document objects that one would edit or serialize/deserializ
 
 * ComponentData - initialization data for a specific *component* of an *entity*. ComponentData's themselves have a subordinate set of component specific data objects related to the domain of the component - eg physics data, audio data, visualization data, etc..
 
-* SpawnData - a named and placed spawner that can spawn an entity of a specific archetype. Can either statically spawn on simulation startup or dynamically later as the simulation progresses. Can also provide overrides for ComponentData.
+* SpawnData - a named and placed spawner that can spawn an entity of a specific archetype. Can either statically spawn (autospawn) on simulation startup or dynamically later as the simulation progresses. Can also provide overrides for ComponentData.
 
 * SystemData - initialization data for specific systems 
 
