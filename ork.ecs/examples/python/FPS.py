@@ -179,7 +179,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.mass = 0.0
     c_physics.allowSleeping = True
     c_physics.isKinematic = False
-    c_physics.disablePhysics = True
+    c_physics.disablePhysics = False
     c_physics.shape = shape
     c_physics.groupAssign = GROUP_ENV
     c_physics.groupCollidesWith = GROUP_ALL
@@ -309,7 +309,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
       SAD.overridexf.scale = 1.0
       SAD.overridexf.translation = vec3(i,15,j)
-      self.e1 = self.controller.spawnEntity(SAD)
+      self.controller.spawnEntity(SAD)
       
     ##############################
     # camera update
@@ -325,7 +325,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       MOTION_DIR.roty(ROT)
             
       self.playerforce.direction = MOTION_DIR
-
+      #print( "dir<%s> amp<%s>" % (MOTION_DIR,self.playerforce.magnitude))
       # throttle camera updates
       #  to reduce ecs controller traffic
       if (updinfo.counter%3)==0:

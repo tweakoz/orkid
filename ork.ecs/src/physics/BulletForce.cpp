@@ -338,6 +338,7 @@ void DirectionalForceInst::UpdateForces(BulletObjectComponent* boci, float delta
 
   fvec3 force_amt = _DFD->_direction * _DFD->_force;
   rbody->applyCentralForce(orkv3tobtv3(force_amt));
+  
   //printf( "apply force<%g %g %g>\n", force_amt.x, force_amt.y, force_amt.z );
   /////////////////////////////
   /////////////////////////////
