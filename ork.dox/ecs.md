@@ -68,8 +68,8 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 The simulation and subobjects are subject to a strict lifecycle (states), these include:
 
 * Initialized - the object has been initialized.
-* Composed - the object (and all siblings) have been initialized.
-* Linked - the object and all siblings or peers have had the opportunity to be made aware of one another.
+* Composed - the object (and all siblings/children) have been initialized.
+* Linked - the object and all siblings/children have had the opportunity to be made aware of one another and connect.
 * Staged - the object is ready for presentation (eg - visible)
 * Activated - the object is dynamically mutating as part of the running simulation.
 
