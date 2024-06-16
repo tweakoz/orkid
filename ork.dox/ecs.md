@@ -53,6 +53,9 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * System - An addressable state mutator responsible for the simulation of a specific aspect of the whole of the simulation. eg. physics, scripting, scenegraph, etc.. Systems can also have subordinate objects related to the domain of the system and *not* associated with a specific entity - these are *system-scoped* as opposed to *entity-scoped*. 
 
+* Reference Objects - the controller interacts with entities, components, sub-components, systems and sub-systems via opaque handles called *ref objects*, eg ent_ref_t, component_ref_t, system_ref_t, etc... - this is done instead of using direct pointers so that all interactions are serialized through the command queue - this is important for the tracing functionality and also helps maintain thread safety.
+
+* Scripting Systems - Lua and the upcoming Python Scripting component/systems are able to interact with the simulation using direct pointers since they run only on the update thread and are therefore synchronized with the simulation.
 
 ![ECS Architecture:1](EcsArchitectureDiagram.png)
 
