@@ -10,13 +10,13 @@
 
  3. Clear separation of external (stimulus) and internal processes, even from separate threads.
 
- 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). THe developer could also play back a pre-recorded stimuli stream with a modified scene - so long as the addressed objects are still present.
+ 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). The developer could also play back a pre-recorded stimuli stream with a modified scene - so long as the addressed objects are still present. This feature came into existence due to my experience at working on OpenGL command stream capture and playback (for the purposes of graphics debugging, profiling, and other tooling), and an extreme frustration with fixing simulation related bugs in MMORPG's for which stimulus came from game servers and local UX - which would make reproduction extremely difficult, and a manually laborous process.
  
  5. SceneGraph Component/System wraps lev2 rendering. ECS simulation occurs on update thread, and data is passed to rendering thread via this SceneGraph system.
  
  6. Lua Component/System allows for lua driven behaviors
  
- 7. Bullet Physics Componont/System allows for physics driven behaviors
+ 7. Bullet Physics Component/System allows for physics driven behaviors
 
  8. Included ImGui based Editor.
  
@@ -29,7 +29,9 @@
 
 The ECS is split into a few dimensions:
 
-A. The Data aspect. Document objects that one would edit or serialize/deserialize:
+A. The Data aspect. Document objects that one would edit, serialize/deserialize, or generate procedurally:
+
+* From the perspective of the simulation, all Data aspect objects are immutable.
 
 * The Scene - the root ECS "document". It is a representation of the starting conditions of a simulation, containing a set of *Archetypes* (aka Prefabs), a set of *SpawnData* and a set of *SystemData*.
 
@@ -37,15 +39,15 @@ A. The Data aspect. Document objects that one would edit or serialize/deserializ
 
 * ComponentData - initialization data for a specific *component* of an *entity*. ComponentData's themselves have a subordinate set of component specific data objects related to the domain of the component - eg physics data, audio data, visualization data, etc..
 
-* SpawnData - a named and placed spawner that can spawn an entity of a specific archetype. Can either statically spawn on simulation startup or dynamically later as the simulation progresses. Can also provide overrides for ComponentData.
+* SpawnData - a named and placed spawner that can spawn an entity of a specific archetype. Can either statically spawn (autospawn) on simulation startup or dynamically later as the simulation progresses. Can also provide overrides for ComponentData.
 
 * SystemData - initialization data for specific systems 
 
 B. The Simulation aspect. Mutable objects that evolve over time as part of a simulation.
 
-* The Controller - The "frontend" of the simulation. The developer tends to interact with this. The controller can start, stop, restart, pause, and send stimuli to the simulation. The controller can also "trace" all simulation bound stimuli to JSON, and replay traced JSON allowing the developer to debug simulations deterministically even when stimuli originated from non deterministic sources. All stimuli goes from controller to simulation through serialization into a command queue.
+* The Controller - The "frontend" of the simulation. The developer tends to interact with this, and interact with it in the *controller thread* , this can be the main thread , a "network" thread, or pretty much any thread except the *update thread*, though it is recommended to only message the controller from 1 thread - though technically it should be OK submitting controller commands from multiple threads so long as the serialized stream makes sense. The controller can start, stop, restart, pause, and send stimuli to the simulation. The controller can also "trace" all simulation bound stimuli to JSON, and replay traced JSON allowing the developer to debug simulations deterministically even when stimuli originated from non deterministic sources. All stimuli from controller to simulation is synchronized across threads through serialization into a command queue.
 
-* The Simulation - The root level simulation object. Contains a set of *Entities* and *Systems*. Entities contain *Components*, and Systems reference entity components and are responsible for the "updating" of state.
+* The Simulation - The root level simulation object. Contains a set of *Entities* and *Systems*. Entities contain *Components*, and Systems reference entity components and are responsible for the "updating" of state, updating always occurs in the *update* thread.
 
 * Entity - An addressable  molecule of state with an assigned set of components in the simulation. 
 
@@ -53,6 +55,9 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * System - An addressable state mutator responsible for the simulation of a specific aspect of the whole of the simulation. eg. physics, scripting, scenegraph, etc.. Systems can also have subordinate objects related to the domain of the system and *not* associated with a specific entity - these are *system-scoped* as opposed to *entity-scoped*. 
 
+* Reference Objects - the controller interacts with entities, components, sub-components, systems and sub-systems via opaque handles called *ref objects*, eg ent_ref_t, component_ref_t, system_ref_t, etc... - this is done instead of using direct pointers so that all interactions are serialized through the command queue - this is important for the tracing functionality and also helps maintain thread safety.
+
+* Scripting Systems - Lua and the upcoming Python Scripting component/systems are able to interact with the simulation using direct pointers since they run only on the update thread and are therefore synchronized with the simulation. To help enforce determinism, all IO, threads and other sources of non-determinism are disabled or hidden in the internal scripting contexts. pseudo-random numbers should be retrieved from the simulation itself (since given the same controller stimulus, the results should be deterministic). 
 
 ![ECS Architecture:1](EcsArchitectureDiagram.png)
 
@@ -63,8 +68,8 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 The simulation and subobjects are subject to a strict lifecycle (states), these include:
 
 * Initialized - the object has been initialized.
-* Composed - the object (and all siblings) have been initialized.
-* Linked - the object and all siblings or peers have had the opportunity to be made aware of one another.
+* Composed - the object (and all siblings/children) have been initialized.
+* Linked - the object and all siblings/children have had the opportunity to be made aware of one another and connect.
 * Staged - the object is ready for presentation (eg - visible)
 * Activated - the object is dynamically mutating as part of the running simulation.
 
