@@ -232,7 +232,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
     self.systemdata_scenegraph.declareLayer(LAYERNAME)
     self.systemdata_scenegraph.declareParams({
-      "SkyboxIntensity": float(1.5),
+      "SkyboxIntensity": float(2.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
