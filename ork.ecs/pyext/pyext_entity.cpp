@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
+
 void pyinit_entity(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,8 @@ void pyinit_entity(py::module& module_ecs) {
             return fxs.c_str();
           })
           .def_property_readonly("transform", [](pyentity_ptr_t ent) -> decompxf_ptr_t { return ent->transform(); })
-          .def_property_readonly("transformNode", [](pyentity_ptr_t ent) -> xfnode_ptr_t { return ent->transformNode(); });
+          .def_property_readonly("transformNode", [](pyentity_ptr_t ent) -> xfnode_ptr_t { return ent->transformNode(); })
+          .def_property_readonly("spawner", [](pyentity_ptr_t ent) -> spawndata_constptr_t { return ent->data(); });
 
   type_codec->registerRawPtrCodec<pyentity_ptr_t, Entity*>(entity_type);
   /////////////////////////////////////////////////////////////////////////////////

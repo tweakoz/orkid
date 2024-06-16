@@ -34,7 +34,7 @@ void pyinit_scene(py::module& module_ecs) {
   auto sd_type = py::class_<SpawnData, SceneDagObject, spawndata_ptr_t>(module_ecs, "SpawnData")
                      .def(
                          "__repr__",
-                         [](const spawndata_ptr_t& sobj) -> std::string {
+                         [](const spawndata_constptr_t& sobj) -> std::string {
                            fxstring<256> fxs;
                            fxs.format("ecs::SpawnData(%p)", sobj.get());
                            return fxs.c_str();
@@ -55,7 +55,7 @@ void pyinit_scene(py::module& module_ecs) {
                      )
                      .def_property(
                          "archetype",
-                         [](spawndata_ptr_t spawndata) -> archetype_ptr_t { 
+                         [](spawndata_constptr_t spawndata) -> archetype_ptr_t { 
                             return std::const_pointer_cast<Archetype>(spawndata->_archetype); 
                          },
                          [](spawndata_ptr_t spawndata, archetype_ptr_t arch) { 
@@ -63,13 +63,13 @@ void pyinit_scene(py::module& module_ecs) {
                          })
                          .def_property(
                           "autospawn",
-                          [](spawndata_ptr_t spawndata) -> bool { 
+                          [](spawndata_constptr_t spawndata) -> bool { 
                               return spawndata->_autospawn; 
                           },
                           [](spawndata_ptr_t spawndata, bool val) { 
                             spawndata->_autospawn = val; 
                           })
-                          .def_property_readonly("transform", [](spawndata_ptr_t spawndata) -> decompxf_ptr_t { return spawndata->transform(); });
+                          .def_property_readonly("transform", [](spawndata_constptr_t spawndata) -> decompxf_const_ptr_t { return spawndata->transform(); });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")

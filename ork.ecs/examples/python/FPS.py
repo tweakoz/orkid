@@ -95,15 +95,16 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     if False:
       def onCollision(table):
-        pa = table[tokens.pointA]
-        pb = table[tokens.pointB]
-        nB = table[tokens.normalOnB]
-        ga = table[tokens.groupA]
-        gb = table[tokens.groupB]
-        ball_and_player =  (ga == GROUP_PLAYER and gb == GROUP_BALL)
-        ball_and_player |= (ga == GROUP_BALL and gb == GROUP_PLAYER)
-        if ball_and_player:
-          print("COLLISION: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
+        ea = table[tokens.entityA]
+        eb = table[tokens.entityB]
+        if ea.spawner.archetype == arch_player: # A is player
+          ga = table[tokens.groupA]
+          gb = table[tokens.groupB]
+          if (gb == GROUP_BALL):
+            pa = table[tokens.pointA]
+            pb = table[tokens.pointB]
+            nB = table[tokens.normalOnB]
+            print("COLLISION: pa<%s> pb<%s> nb<%s>" % (pa,pb,nB) )
       c_physics.onCollision( onCollision )
 
     self.playerforce = ecs.DirectionalForceData()
