@@ -348,7 +348,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
   float fpuy = (fuy * 2.0f) - 1.0f;
   fvec2 vpc = EV->xfToVpUnitCoord(fvec2(evx,evy));
   //float frad = sqrtf((vpc.x * vpc.x) + (vpc.y * vpc.y));
-
+  //printf( "evx<%d> evy<%d> fux<%g> fuy<%g> fpux<%g> fpuy<%g>\n", evx, evy, fux, fuy, fpux, fpuy);
   fvec2 pos2D(fpux, fpuy);
 
   int state    = 0;
@@ -521,7 +521,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       float dx = float(evx - _begin_evx);
       float dy = float(evy - _begin_evy);
-
+      float pdx = dx;
+      float pdy = dy;
       // input  1 . 10 . 100
       // output .1  10 . 1000
 
@@ -593,7 +594,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(fvec4(_pushNX, -dy));
             QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
-            //printf( "dy <%g> dx <%g> dz <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+            //printf( "dx <%g> dy <%g> pdx<%g> pdy<%g>\n", dx, dy, pdx, pdy  );
 
             if(_constrainZ){
               QuatElevation = QuatElevation.multiply(QuatX);

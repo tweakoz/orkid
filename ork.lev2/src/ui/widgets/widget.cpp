@@ -258,6 +258,9 @@ HandlerResult Widget::DoOnUiEvent(event_constptr_t Ev) {
 }
 ///////////////////////////////////////////////////////////
 bool Widget::IsEventInside(event_constptr_t Ev) const {
+  if(not _clipEvents){
+    return true;
+  }
   int rx = Ev->miX;
   int ry = Ev->miY;
   int ix = 0;

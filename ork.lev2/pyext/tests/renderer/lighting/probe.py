@@ -39,7 +39,7 @@ class LIGHTING_APP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1)
+    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1, fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
 

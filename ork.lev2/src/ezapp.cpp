@@ -242,11 +242,17 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     //////////////////////////////////////
     //////////////////////////////////////
     _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
+    if(initdata->_disableMouseCursor){
+      _eztopwidget->_clipEvents = false;
+    }
     _eztopwidget->_uicontext           = _uicontext.get();
     _mainWindow->_appwin->_rootWidget = _eztopwidget;
     _eztopwidget->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _eztopwidget->_topLayoutGroup;
+    if(initdata->_disableMouseCursor){
+      _topLayoutGroup->_clipEvents = false;
+    }
     /////////////////////////////////////////////
     _updq     = ork::opq::updateSerialQueue();
     _conq     = ork::opq::concurrentQueue();

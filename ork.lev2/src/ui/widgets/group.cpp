@@ -111,7 +111,7 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   //
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
-    if (0) {
+    if (1) {
       printf("Group<%s>::doRouteUiEvent ch<%s> inside<%d>\n", _name.c_str(), child->_name.c_str(), int(inside));
     }
     if (inside) {

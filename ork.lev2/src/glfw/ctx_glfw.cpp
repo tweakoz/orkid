@@ -34,6 +34,7 @@ const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
 #else
 const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 #endif
+bool _mouseCursorDisabled = false;
 
 int _g_post_swap_wait_time = 0;
 
@@ -48,6 +49,8 @@ void CtxGLFW::hideMouseCursor() {
 }
 void CtxGLFW::disableMouseCursor() {
   glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+  _mouseCursorDisabled = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -252,6 +255,8 @@ void fillEventCursor(
   uiev->miScreenWidth = w;
   uiev->miScreenHeight = h;
 
+  //printf("CURSOR x<%d> y<%d> unitx<%g> unity<%g>\n", uiev->miX, uiev->miY, unitX, unitY);
+
   if (monitor) {
     int winX, winY;                         // window position
     glfwGetWindowPos(window, &winX, &winY); // get window position
@@ -423,7 +428,6 @@ void CtxGLFW::Show() {
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
-      // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
       glfwFocusWindow(_glfwWindow);
     }
@@ -855,8 +859,8 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
-  //printf( "_width<%d> _height<%d>\n", _width, _height);
   fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
+  //printf( "xoffset<%d> yoffset<%d>\n", xoffset, yoffset);
   if (this->_buttonState == 0) {
     uiev->_eventcode = ui::EventCode::MOVE; //
     _fire_ui_event();
