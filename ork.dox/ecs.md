@@ -55,7 +55,7 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * Reference Objects - the controller interacts with entities, components, sub-components, systems and sub-systems via opaque handles called *ref objects*, eg ent_ref_t, component_ref_t, system_ref_t, etc... - this is done instead of using direct pointers so that all interactions are serialized through the command queue - this is important for the tracing functionality and also helps maintain thread safety.
 
-* Scripting Systems - Lua and the upcoming Python Scripting component/systems are able to interact with the simulation using direct pointers since they run only on the update thread and are therefore synchronized with the simulation.
+* Scripting Systems - Lua and the upcoming Python Scripting component/systems are able to interact with the simulation using direct pointers since they run only on the update thread and are therefore synchronized with the simulation. To help enforce determinism, all IO, threads and other sources are disabled or hidden in the internal scripting contexts.
 
 ![ECS Architecture:1](EcsArchitectureDiagram.png)
 
