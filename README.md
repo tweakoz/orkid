@@ -22,6 +22,9 @@ Early Orkid was used for a a few games by Santa Cruz Games. It was used as both 
  
 Software Development Information
 ========
+Installation via PyPi (in progress, not working yet...)
+
+```pip3 install orkid```
 
 [How to build](ork.dox/building.md)
 
