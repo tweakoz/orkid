@@ -176,10 +176,12 @@ class ECS_MINIMAL(object):
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
     self.spawncounter = 0
     
-  ##############################################
+    ##################
+    # install rendercallback on ezapp
+    #  (so the ezapp will render the ecs scene from C++)
+    ##################
 
-  def onDraw(self,drawevent):
-    self.controller.renderSimulation(drawevent)
+    self.controller.installRenderCallbackOnEzApp(self.ezapp)
 
   ##############################################
 
