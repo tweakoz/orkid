@@ -134,6 +134,7 @@ public:
   ManipHandler _manipHandler;
 
   bool mbInMotion;
+  bool _rotOnMove = false;
   fvec3 _zdir;
 
 

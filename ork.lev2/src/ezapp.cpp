@@ -17,6 +17,10 @@
 
 using namespace std::string_literals;
 
+namespace ork::lev2{
+  extern appinitdata_ptr_t _ginitdata;
+}
+
 namespace ork::lev2::editor::imgui {
 void initModule(appinitdata_ptr_t initdata) {
   initdata->_imgui = true;
@@ -480,6 +484,11 @@ int OrkEzApp::mainThreadLoop() {
   ///////////////////////////////
 
   glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
+
+    if( _ginitdata->_disableMouseCursor ){
+      auto ctxbase = context->GetCtxBase();
+      ctxbase->disableMouseCursor();
+    }
 
     if(_initdata->_audio){
       auto the_dev = AudioDevice::instance();

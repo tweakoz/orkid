@@ -32,7 +32,7 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
+    self.ezapp = OrkEzApp.create(self,ssaa=0, fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -64,14 +64,22 @@ class ParticlesApp(object):
     ###################################
     # post fx node
     ###################################
-    postNode = PostFxNodeDecompBlur()
-    postNode.threshold = 0.99
-    postNode.blurwidth = 8.0
-    postNode.blurfactor = 0.15
-    postNode.amount = 0.1
-    postNode.gpuInit(ctx,8,8);
+    if False:
+      postNode = PostFxNodeHSVG()
+      postNode.gpuInit(ctx,8,8);
+      postNode.hue = 0.0
+      postNode.saturation = 0.5
+      postNode.value = 2
+      postNode.gamma = 0.7
+    else:
+      postNode = PostFxNodeDecompBlur()
+      postNode.threshold = 0.99
+      postNode.blurwidth = 8.0
+      postNode.blurfactor = 0.15
+      postNode.amount = 0.1
+      postNode.gpuInit(ctx,8,8);
     postNode.addToVarMap(sceneparams,"PostFxNode")
-    #self.post_node = postNode
+    self.post_node = postNode
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")

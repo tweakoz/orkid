@@ -175,6 +175,12 @@ void pyinit_gfx_camera(py::module& module_lev2) {
               [](ezuicam_ptr_t uic) -> fvec3 { //
                 return uic->_zdir;
               })
+              .def_property("rotOnMove", [](ezuicam_ptr_t uic) -> bool { //
+                return uic->_rotOnMove;
+              },
+              [](ezuicam_ptr_t uic, bool value) { //
+                uic->_rotOnMove = value;
+              })
           ;
   type_codec->registerStdCodec<ezuicam_ptr_t>(ezuicam_type);
   /////////////////////////////////////////////////////////////////////////////

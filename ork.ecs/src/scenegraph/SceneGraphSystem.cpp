@@ -207,11 +207,11 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 
   /////////////////////////////////////////
 
-  auto resize_op = [=]() {
-    auto& compositor_ctx = _scene->_compositorImpl->compositingContext();
-    compositor_ctx.Resize(1280, 720);
-  };
-  _renderops.push(resize_op);
+  //auto resize_op = [=]() {
+    //auto& compositor_ctx = _scene->_compositorImpl->compositingContext();
+    //compositor_ctx.Resize(1280, 720);
+  //};
+  //_renderops.push(resize_op);
 
   /////////////////////////////////////////
 }

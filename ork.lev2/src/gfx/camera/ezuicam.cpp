@@ -504,6 +504,14 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
     case EventCode::MOVE:
     case EventCode::DRAG: {
 
+      if(_rotOnMove){
+        if(mbInMotion==false){
+          mbInMotion = true;
+          on_begin();
+        }
+        mDoRotate = true;
+      }
+
       //meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
       //////////////////////////////////////////////////

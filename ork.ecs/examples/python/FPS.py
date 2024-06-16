@@ -32,14 +32,21 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
+
+    self.ezapp = ecs.createApp( self,
+                                ssaa=0,
+                                fullscreen=True,
+                                disableMouseCursor=True)
+
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(0,0,0), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
+    self.uicam.rotOnMove = True 
 
     ##############################################
 
     self.player_transform = None
     self.spawncounter = 0
+    self.framecounter = 0
 
   ##############################################
 
@@ -278,7 +285,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # init systems
     ##################
 
-    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
 
     #SAD = ecs.SpawnAnonDynamic("player_spawner")
     #SAD.overridexf.orientation = quat(vec3(1,0,0),math.pi*0.5)
@@ -289,7 +295,11 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   ##############################################
 
   def onDraw(self,drawevent):
+
     self.controller.renderSimulation(drawevent)
+
+    self.framecounter = self.framecounter+1
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
 
   ##############################################
 
@@ -309,7 +319,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################
 
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 500:
+    if prob < 5 and self.spawncounter < 200:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       self.spawncounter += 1

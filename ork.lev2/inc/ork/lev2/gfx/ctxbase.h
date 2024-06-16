@@ -57,6 +57,7 @@ class CTXBASE : public ork::Object {
 public:
 
   virtual void disableMouseCursor() {}
+  virtual void hideMouseCursor() {}
 
   bool isGlobal() const;
 
@@ -93,7 +94,6 @@ public:
 
   std::stack<RefreshPolicyItem> _policyStack;
 
-  Context* _target;
   Window* _orkwindow;
   ui::event_ptr_t _uievent;
   bool _needsInitialize;
@@ -105,6 +105,7 @@ public:
   object::autoslot_ptr_t _slotRepaint;
 
   protected:
+    Context* _target;
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);
     CTXBASE(Window* pwin);
     virtual ~CTXBASE();

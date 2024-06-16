@@ -56,6 +56,8 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
        init_data->_ssaa_samples = py::cast<int>(item.second);
       } else if (key == "fullscreen") {
         init_data->_fullscreen = py::cast<bool>(item.second);
+      } else if (key == "disableMouseCursor") {
+        init_data->_disableMouseCursor = py::cast<bool>(item.second);
       }
     }
   }

@@ -85,6 +85,7 @@ struct AppInitData{
   int _swap_interval = 0;
   bool _update_rendersync = false;
   bool _allowHIDPI = false;
+  bool _disableMouseCursor = false;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::vector<void_lambda_t> _preinitoperations;
