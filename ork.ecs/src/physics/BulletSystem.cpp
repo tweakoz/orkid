@@ -29,7 +29,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const bool USE_GIMPACT = true;
+static const bool USE_GIMPACT   = true;
 static constexpr bool DEBUG_LOG = false;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,8 +41,7 @@ ImplementReflectionX(ork::ecs::BulletSystem, "EcsBulletSystem");
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-
-static logchannel_ptr_t logchan_bull = logger()->createChannel("ecs.bulletphy",fvec3(.8,1,.3));
+static logchannel_ptr_t logchan_bull = logger()->createChannel("ecs.bulletphy", fvec3(.8, 1, .3));
 
 void bulletDebugEnqueueToLayer(ork::lev2::drawablebufitem_constptr_t cdb);
 void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
@@ -50,25 +49,24 @@ void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystemData::describeX(SystemDataClass* clazz) {
-  
+
   clazz->directProperty("SimulationRate", &BulletSystemData::mSimulationRate)
-    ->annotate<float>("editor.range.min", 60.0f)
-    ->annotate<float>("editor.range.max", 2400.0f);
+      ->annotate<float>("editor.range.min", 60.0f)
+      ->annotate<float>("editor.range.max", 2400.0f);
 
   clazz->directProperty("TimeScale", &BulletSystemData::mfTimeScale)
-    ->annotate<float>("editor.range.min", 0.0f)
-    ->annotate<float>("editor.range.max", 50.0f);
+      ->annotate<float>("editor.range.min", 0.0f)
+      ->annotate<float>("editor.range.max", 50.0f);
 
   clazz->directProperty("LinGravity", &BulletSystemData::_lingravity);
   clazz->directProperty("ExpGravity", &BulletSystemData::_expgravity);
   clazz->directProperty("Debug", &BulletSystemData::_debug);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletSystemData::BulletSystemData() {
-    _expgravity = fvec3(0,-9.8,0);
+  _expgravity = fvec3(0, -9.8, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,7 +78,6 @@ System* BulletSystemData::createSystem(Simulation* pinst) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::describeX(object::ObjectClass* clazz) {
-
 }
 
 BulletSystem::BulletSystem(const BulletSystemData& data, Simulation* psi)
@@ -116,7 +113,7 @@ BulletSystem::~BulletSystem() {
   if (mBroadPhase)
     delete mBroadPhase;
 
-  if(_debugger){
+  if (_debugger) {
     delete _debugger;
   }
   OrkHeapCheck();
@@ -130,107 +127,111 @@ btDynamicsWorld* BulletSystem::BulletWorld() { //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onLinkComponent(BulletObjectComponent* component){
+void BulletSystem::_onLinkComponent(BulletObjectComponent* component) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onUnlinkComponent(BulletObjectComponent* component){
-
+void BulletSystem::_onUnlinkComponent(BulletObjectComponent* component) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onStageComponent(BulletObjectComponent* component){
-
+void BulletSystem::_onStageComponent(BulletObjectComponent* component) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onUnstageComponent(BulletObjectComponent* component){
-
+void BulletSystem::_onUnstageComponent(BulletObjectComponent* component) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onActivateComponent(BulletObjectComponent* component){
-    auto entity = component->GetEntity();
+void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
+  auto entity = component->GetEntity();
 
-    auto compdata = & component->mBOCD;
-    _lastcomponentfordata[compdata] = component;
+  auto compdata                   = &component->mBOCD;
+  _lastcomponentfordata[compdata] = component;
 
-    const BulletSystemData& world_data = this->GetWorldData();
-    const auto& CDATA = component->data();
+  const BulletSystemData& world_data = this->GetWorldData();
+  const auto& CDATA                  = component->data();
 
-    btVector3 grav                     = orkv3tobtv3(world_data.GetGravity());
+  btVector3 grav = orkv3tobtv3(world_data.GetGravity());
 
-    if (btDynamicsWorld* world = this->GetDynamicsWorld()) {
-      auto shapedata = component->data()._shapedata;
+  if (btDynamicsWorld* world = this->GetDynamicsWorld()) {
+    auto shapedata = component->data()._shapedata;
 
-      if(DEBUG_LOG){
-        logchan_bull->log("BulletObjectComponent<%p> shapedata<%p>", (void*)this, (void*)shapedata.get());
-      }
-
-      // printf( "SHAPEDATA<%p>\n", shapedata );
-      if (shapedata) {
-        ShapeCreateData shape_create_data;
-        shape_create_data.mEntity = entity;
-        shape_create_data.mWorld  = this;
-        shape_create_data.mObject = component;
-
-        auto shapeinst = shapedata->CreateShape(shape_create_data);
-        component->_shapeinst = shapeinst;
-
-        btCollisionShape* pshape = shapeinst->_collisionShape;
-
-        if (pshape) {
-          //_simulation->debugBanner(255, 128, 0, "BulletObjectComponent<%p> pshape<%p>\n", (void*)this, (void*)pshape);
-          ////////////////////////////////
-          // Initial Transform
-          ////////////////////////////////
-          auto xform = shape_create_data.mEntity->transform();
-          auto P = xform->_translation;
-          //printf( "INITIAL<%g %g %g>\n", P.x, P.y, P.z );
-          fmtx4 mtx  = xform->composed();
-          btTransform btTrans = orkmtx4tobtmtx4(mtx);
-          ////////////////////////////////
-          auto rigid_body = this->AddLocalRigidBody(shape_create_data.mEntity, CDATA._mass, btTrans, pshape);
-          rigid_body->setGravity(grav);
-          bool ballowsleep = CDATA._allowSleeping;
-          if (CDATA._isKinematic) {
-            rigid_body->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-            ballowsleep = false;
-          }
-          rigid_body->setActivationState(ballowsleep ? WANTS_DEACTIVATION : DISABLE_DEACTIVATION);
-          rigid_body->activate();
-          if(DEBUG_LOG){
-            logchan_bull->log("BulletObjectComponent<%p> rigid_body<%p>", (void*) component, (void*)rigid_body);
-          }
-          component->_rigidbody          = rigid_body;
-
-          if( component->mBOCD._angularFactor.magnitude() > 0.1f ){
-            rigid_body->setAngularFactor( orkv3tobtv3(component->mBOCD._angularFactor) );
-          }
-
-        }
-      }
-
-      auto& forces = component->_forces;
-
-      for (auto it : forces) {
-        auto forcecontroller = it.second;
-        if (forcecontroller) {
-          forcecontroller->DoLink(_simulation);
-        }
-      }
-
+    if (DEBUG_LOG) {
+      logchan_bull->log("BulletObjectComponent<%p> shapedata<%p>", (void*)this, (void*)shapedata.get());
     }
+
+    // printf( "SHAPEDATA<%p>\n", shapedata );
+    if (shapedata) {
+      ShapeCreateData shape_create_data;
+      shape_create_data.mEntity = entity;
+      shape_create_data.mWorld  = this;
+      shape_create_data.mObject = component;
+
+      auto shapeinst        = shapedata->CreateShape(shape_create_data);
+      component->_shapeinst = shapeinst;
+
+      btCollisionShape* pshape = shapeinst->_collisionShape;
+
+      if (pshape) {
+        //_simulation->debugBanner(255, 128, 0, "BulletObjectComponent<%p> pshape<%p>\n", (void*)this, (void*)pshape);
+        ////////////////////////////////
+        // Initial Transform
+        ////////////////////////////////
+        auto xform = shape_create_data.mEntity->transform();
+        auto P     = xform->_translation;
+        // printf( "INITIAL<%g %g %g>\n", P.x, P.y, P.z );
+        fmtx4 mtx           = xform->composed();
+        btTransform btTrans = orkmtx4tobtmtx4(mtx);
+        ////////////////////////////////
+        auto rigid_body = this->AddLocalRigidBody(shape_create_data.mEntity, CDATA._mass, btTrans, pshape);
+
+        if(CDATA._collisionCallback!=nullptr){
+          auto collision_tester = std::make_shared<OrkContactResultCallback>(rigid_body);
+          collision_tester->_onContact = CDATA._collisionCallback;
+          component->_collisionCallback = collision_tester;
+          collision_tester->_system = this;
+          _collisionCallbacks.insert(collision_tester);
+        }
+
+        rigid_body->setGravity(grav);
+        bool ballowsleep = CDATA._allowSleeping;
+        if (CDATA._isKinematic) {
+          rigid_body->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+          ballowsleep = false;
+        }
+        rigid_body->setActivationState(ballowsleep ? WANTS_DEACTIVATION : DISABLE_DEACTIVATION);
+        rigid_body->activate();
+        if (DEBUG_LOG) {
+          logchan_bull->log("BulletObjectComponent<%p> rigid_body<%p>", (void*)component, (void*)rigid_body);
+        }
+        component->_rigidbody = rigid_body;
+
+        if (component->mBOCD._angularFactor.magnitude() > 0.1f) {
+          rigid_body->setAngularFactor(orkv3tobtv3(component->mBOCD._angularFactor));
+        }
+      }
+    }
+
+    auto& forces = component->_forces;
+
+    for (auto it : forces) {
+      auto forcecontroller = it.second;
+      if (forcecontroller) {
+        forcecontroller->DoLink(_simulation);
+      }
+    }
+  }
   _activeComponents.insert(component);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component){
+void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component) {
   auto it = _activeComponents.find(component);
 
   const BulletSystemData& world_data = this->GetWorldData();
@@ -250,12 +251,12 @@ void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component){
 ///////////////////////////////////////////////////////////////////////////////
 
 static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar timeStep) {
-   //printf( "BulletSystemInternalTickCallback( ) timeStep<%f>\n", timeStep );
+  // printf( "BulletSystemInternalTickCallback( ) timeStep<%f>\n", timeStep );
   OrkAssert(world);
 
   btDiscreteDynamicsWorld* dynaworld = (btDiscreteDynamicsWorld*)world;
 
-  auto sim = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
+  auto sim       = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
   auto bulletsys = sim->findSystem<BulletSystem>();
   dynaworld->applyGravity();
 
@@ -264,23 +265,25 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
   //  at bullet tick rate (independent from scene tick rate)
   ////////////////////////////////////////
   auto exp_grav_ork = bulletsys->_systemData._expgravity;
-  auto exp_grav = orkv3tobtv3(exp_grav_ork);
+  auto exp_grav     = orkv3tobtv3(exp_grav_ork);
 
-  for( BulletObjectComponent* component : bulletsys->_activeComponents ){
-    if(component->_rigidbody){
-      //component->_rigidbody->activate(true);
-      //printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
-      //component->_rigidbody->applyCentralForce(exp_grav);
+  for (BulletObjectComponent* component : bulletsys->_activeComponents) {
+    if (component->_rigidbody) {
+      // component->_rigidbody->activate(true);
+      // printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
+      // component->_rigidbody->applyCentralForce(exp_grav);
     }
     component->update(sim, timeStep);
   }
-  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 btRigidBody*
-BulletSystem::AddLocalRigidBody(Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape) {
+BulletSystem::AddLocalRigidBody( Entity* pent, //
+                                 btScalar mass, //
+                                 const btTransform& startTransform, // 
+                                 btCollisionShape* shape) { //
   OrkAssert(pent);
 
   // rigidbody is dynamic if and only if mass is non zero, otherwise static
@@ -303,15 +306,56 @@ BulletSystem::AddLocalRigidBody(Entity* pent, btScalar mass, const btTransform& 
 
   mDynamicsWorld->addRigidBody(body);
 
-  auto G = _systemData.GetGravity();
+  auto G  = _systemData.GetGravity();
   auto GB = orkv3tobtv3(G);
 
-  //float Gsquared = _systemData.GetGravity().magnitudeSquared();
+  // float Gsquared = _systemData.GetGravity().magnitudeSquared();
 
-  //printf( "G<%g %g %g>\n", G.x, G.y, G.z );
+  // printf( "G<%g %g %g>\n", G.x, G.y, G.z );
 
-  //body->setGravity(GB);
+  // body->setGravity(GB);
+
   return body;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+OrkContactResultCallback::OrkContactResultCallback(btRigidBody* body) //
+    : monitoredBody(body) {                                           //
+}
+
+btScalar OrkContactResultCallback::addSingleResult(
+    btManifoldPoint& cp,
+    const btCollisionObjectWrapper* colObj0Wrap,
+    int partId0,
+    int index0,
+    const btCollisionObjectWrapper* colObj1Wrap,
+    int partId1,
+    int index1) {
+  btRigidBody* body0 = (btRigidBody*)colObj0Wrap->getCollisionObject();
+  btRigidBody* body1 = (btRigidBody*)colObj1Wrap->getCollisionObject();
+
+  if (body0 == monitoredBody || body1 == monitoredBody) {
+    const btVector3& ptA       = cp.getPositionWorldOnA();
+    const btVector3& ptB       = cp.getPositionWorldOnB();
+    const btVector3& normalOnB = cp.m_normalWorldOnB;
+
+    if(_onContact){
+      auto invocation = std::make_shared<deferred_script_invokation>();
+
+      invocation->_cb = _onContact;
+
+      auto& datatable = invocation->_data.make<DataTable>();
+      datatable["pointA"_tok] = btv3toorkv3(ptA);
+      datatable["pointB"_tok] = btv3toorkv3(ptB);
+      datatable["normalOnB"_tok] = btv3toorkv3(normalOnB);
+
+      auto sim = _system->simulation();
+      sim->_enqueueDeferredInvokation(invocation);
+    }
+  }
+
+  return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -351,11 +395,11 @@ void BulletSystem::InitWorld() {
   mDynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, _simulation);
   mDynamicsWorld->setDebugDrawer(_debugger);
-  //auto G = orkv3tobtv3(_systemData.GetGravity());
-  //mDynamicsWorld->setGravity(G);
+  // auto G = orkv3tobtv3(_systemData.GetGravity());
+  // mDynamicsWorld->setGravity(G);
 
-  if(DEBUG_LOG){
-    logchan_bull->log("BulletSystem<%p> mDynamicsWorld<%p>", (void*)this, (void*) mDynamicsWorld );
+  if (DEBUG_LOG) {
+    logchan_bull->log("BulletSystem<%p> mDynamicsWorld<%p>", (void*)this, (void*)mDynamicsWorld);
   }
 }
 
@@ -363,13 +407,12 @@ void BulletSystem::InitWorld() {
 
 bool BulletSystem::_onLink(Simulation* psi) {
 
-  auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
+  auto drw       = std::make_shared<lev2::CallbackDrawable>(nullptr);
   _debugDrawable = drw;
 
   drw->setEnqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   drw->SetRenderCallback(bulletDebugRender);
   drw->_sortkey = (0x3fffffff);
-
 
   auto pdata       = new BulletDebugDrawDBData(_debugger);
   pdata->_debugger = _debugger;
@@ -377,18 +420,18 @@ bool BulletSystem::_onLink(Simulation* psi) {
   _debugDrawable->_name = "bulletphysdebugger";
 
   _sgsystem = psi->findSystem<SceneGraphSystem>();
-  OrkAssert(_sgsystem!=nullptr);
+  OrkAssert(_sgsystem != nullptr);
 
-  _sgsystem->_addStaticDrawable("Default",_debugDrawable);
+  _sgsystem->_addStaticDrawable("Default", _debugDrawable);
 
   return true;
 }
 
 void BulletSystem::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
-  _debugger->_onGpuInit(psi,ctx);
+  _debugger->_onGpuInit(psi, ctx);
 }
 void BulletSystem::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
-  _debugger->_onGpuExit(psi,ctx);
+  _debugger->_onGpuExit(psi, ctx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -414,13 +457,13 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     float ffts = 1.0f / frate;
 
-    //printf("frate<%g> fdts<%g> fps<%g> mMaxSubSteps<%d>\n", frate, fdts, fps, mMaxSubSteps );
+    // printf("frate<%g> fdts<%g> fps<%g> mMaxSubSteps<%d>\n", frate, fdts, fps, mMaxSubSteps );
 
     bool is_debug = _systemData.IsDebug();
 
     _debugger->SetDebug(is_debug);
 
-    if(is_debug)
+    if (is_debug)
       _debugger->beginSimFrame(this);
 
     if (mMaxSubSteps > 0) {
@@ -429,9 +472,17 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       int b = mMaxSubSteps;
       int m = std::min(a, b); // ? a : b; // ork::min()
       mNumSubStepsTaken += m;
+    
+      for(auto callback : _collisionCallbacks ){
+        auto body = callback->monitoredBody;
+        mDynamicsWorld->contactTest(body, *callback);
+      }
+
+
+
     }
 
-    if(is_debug)
+    if (is_debug)
       _debugger->endSimFrame(this);
   }
 }
@@ -441,12 +492,12 @@ void BulletSystem::_onNotify(token_t evID, evdata_t data) {
   switch (evID.hashed()) {
     case "IMPULSE"_crcu: {
       const auto& table = data.get<DataTable>();
-      auto compdata   = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();
-      printf( "compdata<%p>\n", compdata.get() );
+      auto compdata     = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();
+      printf("compdata<%p>\n", compdata.get());
       auto it = _lastcomponentfordata.find(compdata.get());
-      if(it!=_lastcomponentfordata.end()){
-        auto component = it->second;
-        auto rigid_body = component->_rigidbody;
+      if (it != _lastcomponentfordata.end()) {
+        auto component   = it->second;
+        auto rigid_body  = component->_rigidbody;
         auto impulse_val = table["impulse"_tok].get<fvec3>();
         rigid_body->applyCentralImpulse(orkv3tobtv3(impulse_val));
       }

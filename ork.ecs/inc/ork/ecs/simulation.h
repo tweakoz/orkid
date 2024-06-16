@@ -134,6 +134,8 @@ struct Simulation {
 
   void _stashRenderThreadDestructable(svar64_t var);
 
+  void _enqueueDeferredInvokation(deferred_script_invokation_ptr_t i);
+  
 private:
 
   void _resetClock();
@@ -260,6 +262,8 @@ private:
   LockedResource<SystemLut> _systems;
   SystemLut _updsyslutcopy;
   mutable SystemLut _rensyslutcopy;
+
+  std::vector<deferred_script_invokation_ptr_t> _deferred_invokations;
 
   void_lambda_t _onLink;
 

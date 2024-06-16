@@ -84,6 +84,7 @@ public:
   bool _allowSleeping = true;
   bool _isKinematic = false;
   bool _disablePhysics = false;
+  script_cb_t _collisionCallback;
   fvec3 _angularFactor;
 };
 

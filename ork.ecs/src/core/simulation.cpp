@@ -350,6 +350,10 @@ float Simulation::desiredFrameRate() const {
   return frame_rate;
 }
 
+void Simulation::_enqueueDeferredInvokation(deferred_script_invokation_ptr_t i){
+  _deferred_invokations.push_back(i);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::addSystem(systemkey_t key, System* system) {

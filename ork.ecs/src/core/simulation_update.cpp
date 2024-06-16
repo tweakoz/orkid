@@ -22,7 +22,7 @@
 
 namespace ork::ecs {
 
-static logchannel_ptr_t logchan_simupdate = logger()->createChannel("ecs-simupdate",fvec3(0.9,0.9,0));
+static logchannel_ptr_t logchan_simupdate = logger()->createChannel("ecs-simupdate", fvec3(0.9, 0.9, 0));
 
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::_computeDeltaTime() {
@@ -64,7 +64,7 @@ float Simulation::_computeDeltaTime() {
   switch (_currentSimulationMode) {
     case ork::ecs::ESimulationMode::NEW:
     case ork::ecs::ESimulationMode::READY:
-    case ork::ecs::ESimulationMode::EDIT:{
+    case ork::ecs::ESimulationMode::EDIT: {
       mPrevDeltaTime = fdelta;
       mLastGameTime  = mGameTime;
       mGameTime += mDeltaTime;
@@ -110,13 +110,13 @@ void Simulation::_update_SIMSTATE() {
 
   switch (_currentSimulationMode) {
     case ork::ecs::ESimulationMode::PAUSE: {
-      logchan_simupdate->log( "sim<%p> _update_SIMSTATE::PAUSE", (void*) this );
+      logchan_simupdate->log("sim<%p> _update_SIMSTATE::PAUSE", (void*)this);
       ork::lev2::InputManager::instance()->poll();
       break;
     }
     case ork::ecs::ESimulationMode::ACTIVE: {
 
-      //logchan_simupdate->log( "sim<%p> _update_SIMSTATE::ACTIVE", (void*) this );
+      // logchan_simupdate->log( "sim<%p> _update_SIMSTATE::ACTIVE", (void*) this );
 
       ork::PerfMarkerPush("ork.simulation.update.begin");
 
@@ -151,7 +151,6 @@ void Simulation::_update_SIMSTATE() {
       mDeltaTimeAccum = fdelta;
       step            = fdelta;
 
-
       while (mDeltaTimeAccum >= step) {
         mDeltaTimeAccum -= step;
         ork::lev2::InputManager::instance()->poll();
@@ -162,7 +161,6 @@ void Simulation::_update_SIMSTATE() {
         _serviceActivateQueue();
 
         mEntityUpdateCount += mActiveEntities.size();
-  
       }
 
       mDeltaTime = step;
@@ -176,16 +174,26 @@ void Simulation::_update_SIMSTATE() {
       for (auto sys : _updsyslutcopy)
         sys.second->_update(this);
 
+      ///////////////////////////////
+      // deferred invokables
+      ///////////////////////////////
+
+      for (auto item : _deferred_invokations) {
+        item->_cb(item->_data);
+      }
+      _deferred_invokations.clear();
+
+      ///////////////////////////////
+
       ork::PerfMarkerPush("ork.simulation.update.end");
 
       ///////////////////////////////
       break;
     }
     default:
-      logchan_simupdate->log( "sim<%p> _update_SIMSTATE::???", (void*) this );
+      logchan_simupdate->log("sim<%p> _update_SIMSTATE::???", (void*)this);
       break;
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -211,7 +219,7 @@ void Simulation::_serviceActivateQueue() {
   mEntityActivateQueue.clear();
 
   for (const EntityActivationQueueItem& item : copy_of_activate_queue) {
-    ecs::Entity* pent            = item._entity;
+    ecs::Entity* pent = item._entity;
     OrkAssert(pent);
     if (auto parch = pent->data()->GetArchetype()) {
       parch->linkEntity(this, pent);
@@ -222,4 +230,4 @@ void Simulation::_serviceActivateQueue() {
   }
 }
 
-} //namespace ork::ecs {
+} // namespace ork::ecs

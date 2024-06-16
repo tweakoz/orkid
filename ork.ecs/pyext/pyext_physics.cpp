@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/physics/bullet.h>
+#include <ork/ecs/datatable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,6 +61,16 @@ void pyinit_physics(py::module& module_ecs) {
               "disablePhysics",
               [](bulletcompdata_ptr_t physc) -> bool { return physc->_disablePhysics; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_disablePhysics = val; })
+          .def(
+              "onCollision",
+              [type_codec](bulletcompdata_ptr_t physc, py::function pyfn) { //
+                physc->_collisionCallback = [=](const evdata_t&result){
+                    auto& as_table = result.get<DataTable>();
+                    auto encoded = type_codec->encode(as_table);
+                    py::gil_scoped_acquire acquire;
+                    //pyfn(encoded);
+                };
+                })
           .def_property(
               "shape",
               [](bulletcompdata_ptr_t physc) -> shapedata_ptr_t { return physc->_shapedata; },

@@ -156,6 +156,12 @@ std::string detokenize(token_t token);
 using evdata_t = svar64_t;
 
 using script_cb_t = std::function<void(const evdata_t&)>;
+struct deferred_script_invokation {
+  script_cb_t _cb;
+  evdata_t _data;
+};
+
+using deferred_script_invokation_ptr_t = std::shared_ptr<deferred_script_invokation>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

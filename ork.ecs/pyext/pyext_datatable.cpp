@@ -89,6 +89,12 @@ void pyinit_datatable(py::module& module_ecs) {
         dkey._encoded = (*key);           
         dtab[dkey] = var_val;
       })
+      .def("__getitem__", [type_codec](DataTable& dtab, crcstring_ptr_t key) -> py::object {
+        DataKey dkey;
+        dkey._encoded = (*key);
+        auto var_val = dtab[dkey];
+        return py::none();//type_codec->encode(var_val);
+      })
       .def(
           "__setitem__",
           [type_codec](DataTable& dtab, py::object key, py::object val) {
@@ -114,7 +120,25 @@ void pyinit_datatable(py::module& module_ecs) {
             fxstring<256> fxs;
             fxs.format("DataTable(%p)", & dtab );
             return fxs.c_str();
-          });
+          })
+      .def("dump", [type_codec](const DataTable& dtab) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("{\n", & dtab );
+        for (auto item : dtab._items) {
+          const auto& k = item._key;
+          const auto& v = item._val;
+          //auto conv_k = type_codec->encode(k._encoded);
+          //auto conv_v = type_codec->encode(v._encoded);
+          //auto pystr_k = k.get<crcstring_ptr_t>();
+          //auto pystr_v = py::str(conv_v);
+          //auto k_cstr = pystr_k.cast<std::string>().c_str();
+          //auto v_cstr = pystr_v.cast<std::string>().c_str();
+          //auto v_cstr = v.typestr();
+          //fxs.format("  \"%s\": %s,\n", k_cstr, v_cstr);
+        }
+        fxs.format("}\n");
+        return fxs.c_str();
+      });
   type_codec->registerStdCodec<DataTable>(d_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_entity(py::module& module_ecs) {

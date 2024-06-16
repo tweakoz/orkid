@@ -77,6 +77,15 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.disablePhysics = False
     c_physics.angularFactor = vec3(0,1,0)
     c_physics.shape = capsule
+    
+    def onCollision(table):
+      print("collision")
+      #pa = table[tokens.pointA]
+      #pb = table[tokens.pointB]
+      #nB = table[tokens.normalOnB]
+      #print("player collision: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
+
+    c_physics.onCollision( onCollision )
 
     self.playerforce = ecs.DirectionalForceData()
     c_physics.declareForce("playerforce",self.playerforce)

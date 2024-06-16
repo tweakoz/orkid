@@ -162,6 +162,27 @@ struct BulletShapeBaseInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class OrkContactResultCallback : public btCollisionWorld::ContactResultCallback {
+public:
+    BulletSystem* _system;
+    btRigidBody* monitoredBody;
+    script_cb_t _onContact;
+
+    OrkContactResultCallback(btRigidBody* body);
+
+    btScalar addSingleResult(btManifoldPoint& cp,
+                             const btCollisionObjectWrapper* colObj0Wrap,
+                             int partId0,
+                             int index0,
+                             const btCollisionObjectWrapper* colObj1Wrap,
+                             int partId1,
+                             int index1) final;
+};
+
+using orkcontactcallback_ptr_t = std::shared_ptr<OrkContactResultCallback>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct BulletObjectComponent : public Component {
   DeclareAbstractX(BulletObjectComponent, Component);
 
@@ -180,6 +201,7 @@ public:
 
   btRigidBody* _rigidbody = nullptr;
   BulletShapeBaseInst* _shapeinst = nullptr;
+  orkcontactcallback_ptr_t _collisionCallback;
 
   void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
   void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
@@ -191,6 +213,7 @@ public:
   bool _onActivate(Simulation* sim) final;
   void _onDeactivate(Simulation* sim) final;
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -253,7 +276,9 @@ public:
   float _fdtaccum = 0.0f;
   std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
+  std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
 };
+
 
 class DirectionalForceInst final : public BulletObjectForceControllerInst {
 public:
