@@ -19,6 +19,7 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/datatable.h>
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -488,7 +489,11 @@ void Simulation::_initializeEntities() {
         mEntities[spawner->GetName()] = pent;
 
         if(spawner->_onSpawn){
-          spawner->_onSpawn(pent);
+          auto invocation = std::make_shared<deferred_script_invokation>();
+          invocation->_cb = spawner->_onSpawn;
+          auto& datatable = invocation->_data.make<DataTable>();
+          datatable["entity"_tok] = pent;
+          this->_enqueueDeferredInvokation(invocation);
         }
       }
     }

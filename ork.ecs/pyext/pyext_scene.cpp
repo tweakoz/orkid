@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/datatable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -41,11 +42,7 @@ void pyinit_scene(py::module& module_ecs) {
                      .def("onSpawn", [type_codec](spawndata_ptr_t sobj, py::function pyfn) { //
                         script_cb_t cb = [pyfn,type_codec](const evdata_t& rdata) {
                           py::gil_scoped_acquire acquire;
-                          printf( "onSpawn::1\n");
-                          auto entity = rdata.get<Entity*>();
-                          printf( "onSpawn::2\n");
-                          auto encoded = type_codec->encode(entity);
-                          printf( "onSpawn::3\n");
+                          auto encoded = type_codec->encode64(rdata);
                           pyfn(encoded);
                         };
                         sobj->_onSpawn = cb;

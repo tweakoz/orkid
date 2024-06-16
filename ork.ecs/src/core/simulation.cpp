@@ -18,6 +18,7 @@
 #include <ork/ecs/scene.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
+#include <ork/ecs/datatable.h>
 #include <ork/ecs/scene.inl>
 #include <ork/util/logger.h>
 
@@ -277,6 +278,15 @@ Entity* Simulation::_spawnNamedDynamicEntity(spawndata_constptr_t spawn_rec, Poo
   //debugBanner(255, 0, 0, "_spawnNamedDynamicEntity<%s:%p>\n", name.c_str(), (void*) newent );
   this->enqueueActivateDynamicEntity(qi);
   mEntities[name] = newent;
+
+  if(spawn_rec->_onSpawn){
+    auto invocation = std::make_shared<deferred_script_invokation>();
+    invocation->_cb = spawn_rec->_onSpawn;
+    auto& datatable = invocation->_data.make<DataTable>();
+    datatable["entity"_tok] = newent;
+    this->_enqueueDeferredInvokation(invocation);
+  }
+
   return newent;
 }
 ///////////////////////////////////////////////////////////////////////////////

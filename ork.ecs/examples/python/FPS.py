@@ -73,8 +73,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     c_physics.mass = 10.0
     c_physics.friction = 0.1
-    c_physics.restitution = 0.0
-    c_physics.angularDamping = 1
+    c_physics.restitution = 0.01
+    c_physics.angularDamping = 0.5
     c_physics.linearDamping = 0.5
     c_physics.allowSleeping = False
     c_physics.isKinematic = False
@@ -84,18 +84,19 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.groupAssign = GROUP_PLAYER
     c_physics.groupCollidesWith = GROUP_BALL|GROUP_ENV
 
-    def onCollision(table):
-      pa = table[tokens.pointA]
-      pb = table[tokens.pointB]
-      nB = table[tokens.normalOnB]
-      ga = table[tokens.groupA]
-      gb = table[tokens.groupB]
-      ball_and_player =  (ga == GROUP_PLAYER and gb == GROUP_BALL)
-      ball_and_player |= (ga == GROUP_BALL and gb == GROUP_PLAYER)
-      if ball_and_player:
-        print("COLLISION: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
 
-    c_physics.onCollision( onCollision )
+    if False:
+      def onCollision(table):
+        pa = table[tokens.pointA]
+        pb = table[tokens.pointB]
+        nB = table[tokens.normalOnB]
+        ga = table[tokens.groupA]
+        gb = table[tokens.groupB]
+        ball_and_player =  (ga == GROUP_PLAYER and gb == GROUP_BALL)
+        ball_and_player |= (ga == GROUP_BALL and gb == GROUP_PLAYER)
+        if ball_and_player:
+          print("COLLISION: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
+      c_physics.onCollision( onCollision )
 
     self.playerforce = ecs.DirectionalForceData()
     c_physics.declareForce("playerforce",self.playerforce)
@@ -108,7 +109,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     player_spawner = self.ecsscene.declareSpawner("player_spawner")
     player_spawner.archetype = arch_player
     player_spawner.autospawn = True
-    player_spawner.transform.translation = vec3(0,0,0)
+    player_spawner.transform.translation = vec3(0,5,-35)
     player_spawner.transform.orientation = quat(vec3(1,0,0),math.pi*0.5)
 
     ######################################
@@ -117,7 +118,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     #    when entity is actually spawned.
     ######################################
 
-    def onSpawn(entity):
+    def onSpawn(table):
+      entity = table[tokens.entity]
       self.player_transform = entity.transform
 
     player_spawner.onSpawn(onSpawn)
@@ -222,7 +224,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
     self.systemdata_scenegraph.declareLayer(LAYERNAME)
     self.systemdata_scenegraph.declareParams({
-      "SkyboxIntensity": float(2.0),
+      "SkyboxIntensity": float(1.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -237,7 +239,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = True
+    systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
     self.systemdata_phys = systemdata_phys
@@ -277,6 +279,12 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##################
 
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+
+    #SAD = ecs.SpawnAnonDynamic("player_spawner")
+    #SAD.overridexf.orientation = quat(vec3(1,0,0),math.pi*0.5)
+    #SAD.overridexf.scale = 1.0
+    #SAD.overridexf.translation = vec3(0,5,-25)
+    #self.controller.spawnEntity(SAD)
     
   ##############################################
 
@@ -301,7 +309,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################
 
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 250:
+    if prob < 5 and self.spawncounter < 500:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       self.spawncounter += 1
@@ -325,15 +333,16 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       MOTION_DIR.roty(ROT)
             
       self.playerforce.direction = MOTION_DIR
-      #print( "dir<%s> amp<%s>" % (MOTION_DIR,self.playerforce.magnitude))
+
       # throttle camera updates
       #  to reduce ecs controller traffic
       if (updinfo.counter%3)==0:
 
-        EYE = PXF.translation
+        OFFSET = vec3(0,0.5,0)
+        EYE = PXF.translation+OFFSET
         TGT = EYE + DIR
         UP = vec3(0,1,0)
-
+        
         self.controller.systemNotify( self.sys_sg,
                                       tokens.UpdateCamera,{
                                         tokens.eye: EYE,
@@ -365,7 +374,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def onUiEvent(self,uievent):
 
-    walk_force = 5e3
+    walk_force = 3e2
 
     ##############################################
     # camera controls

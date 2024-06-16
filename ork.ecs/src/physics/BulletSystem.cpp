@@ -256,30 +256,11 @@ void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar timeStep) {
-  // printf( "BulletSystemInternalTickCallback( ) timeStep<%f>\n", timeStep );
   OrkAssert(world);
-
   btDiscreteDynamicsWorld* dynaworld = (btDiscreteDynamicsWorld*)world;
-
   auto sim       = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
   auto bulletsys = sim->findSystem<BulletSystem>();
   dynaworld->applyGravity();
-
-  ////////////////////////////////////////
-  // update bullet family components
-  //  at bullet tick rate (independent from scene tick rate)
-  ////////////////////////////////////////
-  auto exp_grav_ork = bulletsys->_systemData._expgravity;
-  auto exp_grav     = orkv3tobtv3(exp_grav_ork);
-
-  for (BulletObjectComponent* component : bulletsys->_activeComponents) {
-    if (component->_rigidbody) {
-      // component->_rigidbody->activate(true);
-      // printf( "apply expgrav<%g %g %g>\n", exp_grav_ork.x, exp_grav_ork.y, exp_grav_ork.z );
-      // component->_rigidbody->applyCentralForce(exp_grav);
-    }
-    component->update(sim, timeStep);
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,6 +462,9 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       _debugger->beginSimFrame(this);
 
     if (mMaxSubSteps > 0) {
+      for (BulletObjectComponent* component : _activeComponents) {
+        component->update(_simulation, dt);
+      }
 
       int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
       int b = mMaxSubSteps;
