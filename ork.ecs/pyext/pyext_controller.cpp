@@ -36,6 +36,10 @@ void pyinit_controller(py::module& module_ecs) {
          ctrl->render(drawev);
        })
       ///////////////////////////
+      .def("installRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         ctrl->installRenderCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
       //
       .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t { return ctrl->findSystemWithClassName(name); })
       .def(

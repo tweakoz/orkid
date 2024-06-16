@@ -15,6 +15,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/lev2_types.h>
+#include <ork/lev2/ezapp.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -112,6 +113,7 @@ struct Controller {
 	void updateExit();
 	void render(ui::drawevent_constptr_t drwev);
 	void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
+	void installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
 	///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +147,7 @@ struct Controller {
   void forceRetain(const svar64_t& item);
 
 	using id2obj_map_t = std::unordered_map<uint64_t,svar64_t>;
+
 
 private:
 	

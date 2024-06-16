@@ -44,6 +44,13 @@ void Controller::forceRetain(const svar64_t& item){
   _forceRetained.push_back(item);
 }
 
+void Controller::installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
+  ezapp->onDraw([this](ui::drawevent_constptr_t drwev){
+    this->render(drwev);
+  });
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::beginWriteTrace(file::Path outpath){

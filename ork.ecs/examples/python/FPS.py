@@ -24,6 +24,7 @@ GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
+NUM_BALLS = 400
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -285,21 +286,20 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # init systems
     ##################
 
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
 
     #SAD = ecs.SpawnAnonDynamic("player_spawner")
     #SAD.overridexf.orientation = quat(vec3(1,0,0),math.pi*0.5)
     #SAD.overridexf.scale = 1.0
     #SAD.overridexf.translation = vec3(0,5,-25)
     #self.controller.spawnEntity(SAD)
-    
-  ##############################################
 
-  def onDraw(self,drawevent):
+    ##################
+    # install rendercallback on ezapp
+    #  (so the ezapp will render the ecs scene from C++)
+    ##################
 
-    self.controller.renderSimulation(drawevent)
-
-    self.framecounter = self.framecounter+1
-    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+    self.controller.installRenderCallbackOnEzApp(self.ezapp)
 
   ##############################################
 
@@ -319,7 +319,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################
 
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 200:
+    if prob < 5 and self.spawncounter < NUM_BALLS:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       self.spawncounter += 1
