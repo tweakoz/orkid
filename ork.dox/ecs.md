@@ -29,7 +29,7 @@
 
 The ECS is split into a few dimensions:
 
-A. The Data aspect. Document objects that one would edit or serialize/deserialize:
+A. The Data aspect. Document objects that one would edit, serialize/deserialize, or generate procedurally:
 
 * The Scene - the root ECS "document". It is a representation of the starting conditions of a simulation, containing a set of *Archetypes* (aka Prefabs), a set of *SpawnData* and a set of *SystemData*.
 
