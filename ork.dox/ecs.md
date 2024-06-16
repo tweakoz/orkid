@@ -43,9 +43,9 @@ A. The Data aspect. Document objects that one would edit or serialize/deserializ
 
 B. The Simulation aspect. Mutable objects that evolve over time as part of a simulation.
 
-* The Controller - The "frontend" of the simulation. The developer tends to interact with this. The controller can start, stop, restart, pause, and send stimuli to the simulation. The controller can also "trace" all simulation bound stimuli to JSON, and replay traced JSON allowing the developer to debug simulations deterministically even when stimuli originated from non deterministic sources. All stimuli goes from controller to simulation through serialization into a command queue.
+* The Controller - The "frontend" of the simulation. The developer tends to interact with this, and interact with it in the *main or "network"* thread. The controller can start, stop, restart, pause, and send stimuli to the simulation. The controller can also "trace" all simulation bound stimuli to JSON, and replay traced JSON allowing the developer to debug simulations deterministically even when stimuli originated from non deterministic sources. All stimuli goes from controller to simulation through serialization into a command queue.
 
-* The Simulation - The root level simulation object. Contains a set of *Entities* and *Systems*. Entities contain *Components*, and Systems reference entity components and are responsible for the "updating" of state.
+* The Simulation - The root level simulation object. Contains a set of *Entities* and *Systems*. Entities contain *Components*, and Systems reference entity components and are responsible for the "updating" of state, updating always occurs in the *update* thread.
 
 * Entity - An addressable  molecule of state with an assigned set of components in the simulation. 
 
