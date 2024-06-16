@@ -175,15 +175,6 @@ void Simulation::_update_SIMSTATE() {
         sys.second->_update(this);
 
       ///////////////////////////////
-      // deferred invokables
-      ///////////////////////////////
-
-      for (auto item : _deferred_invokations) {
-        item->_cb(item->_data);
-      }
-      _deferred_invokations.clear();
-
-      ///////////////////////////////
 
       ork::PerfMarkerPush("ork.simulation.update.end");
 

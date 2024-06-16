@@ -42,6 +42,7 @@ struct ORK_API TypeCodec {
   //////////////////////////////////
   static std::shared_ptr<TypeCodec> instance();
   pybind11::object encode(const varval_t& val) const;
+  pybind11::object encode64(const svar64_t& val) const;
   varval_t decode(const pybind11::object& val) const;
   svar64_t decode64(const pybind11::object& val) const;
   void registerCodec(

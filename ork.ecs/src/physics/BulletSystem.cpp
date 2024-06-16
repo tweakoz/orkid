@@ -188,8 +188,13 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         fmtx4 mtx           = xform->composed();
         btTransform btTrans = orkmtx4tobtmtx4(mtx);
         ////////////////////////////////
-        auto rigid_body = this->AddLocalRigidBody(shape_create_data.mEntity, CDATA._mass, btTrans, pshape);
-
+        auto rigid_body = this->AddLocalRigidBody( shape_create_data.mEntity, 
+                                                   CDATA._mass, 
+                                                   btTrans, 
+                                                   pshape, 
+                                                   CDATA._groupAssign,
+                                                   CDATA._groupCollidesWith);
+        
         if(CDATA._collisionCallback!=nullptr){
           auto collision_tester = std::make_shared<OrkContactResultCallback>(rigid_body);
           collision_tester->_onContact = CDATA._collisionCallback;
@@ -283,7 +288,8 @@ btRigidBody*
 BulletSystem::AddLocalRigidBody( Entity* pent, //
                                  btScalar mass, //
                                  const btTransform& startTransform, // 
-                                 btCollisionShape* shape) { //
+                                 btCollisionShape* shape,
+                                 uint32_t group_assign,uint32_t groups_collides_with ) { //
   OrkAssert(pent);
 
   // rigidbody is dynamic if and only if mass is non zero, otherwise static
@@ -304,7 +310,7 @@ BulletSystem::AddLocalRigidBody( Entity* pent, //
   // body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
   body->setUserPointer(pent);
 
-  mDynamicsWorld->addRigidBody(body);
+  mDynamicsWorld->addRigidBody(body,group_assign,groups_collides_with);
 
   auto G  = _systemData.GetGravity();
   auto GB = orkv3tobtv3(G);
@@ -336,19 +342,27 @@ btScalar OrkContactResultCallback::addSingleResult(
   btRigidBody* body1 = (btRigidBody*)colObj1Wrap->getCollisionObject();
 
   if (body0 == monitoredBody || body1 == monitoredBody) {
-    const btVector3& ptA       = cp.getPositionWorldOnA();
-    const btVector3& ptB       = cp.getPositionWorldOnB();
-    const btVector3& normalOnB = cp.m_normalWorldOnB;
 
     if(_onContact){
+      const btCollisionObject* colObj0 = colObj0Wrap->getCollisionObject();
+      const btCollisionObject* colObj1 = colObj1Wrap->getCollisionObject();
+       
+      const btVector3& ptA       = cp.getPositionWorldOnA();
+      const btVector3& ptB       = cp.getPositionWorldOnB();
+      const btVector3& normalOnB = cp.m_normalWorldOnB;
+      int group0 = colObj0->getBroadphaseHandle()->m_collisionFilterGroup;
+      int group1 = colObj1->getBroadphaseHandle()->m_collisionFilterGroup;
+
       auto invocation = std::make_shared<deferred_script_invokation>();
 
       invocation->_cb = _onContact;
 
       auto& datatable = invocation->_data.make<DataTable>();
+      datatable["groupA"_tok] = group0;
+      datatable["groupB"_tok] = group1;
       datatable["pointA"_tok] = btv3toorkv3(ptA);
       datatable["pointB"_tok] = btv3toorkv3(ptB);
-      datatable["normalOnB"_tok] = btv3toorkv3(normalOnB);
+      datatable["normalOnB"_tok] = btv3toorkv3(normalOnB).normalized();
 
       auto sim = _system->simulation();
       sim->_enqueueDeferredInvokation(invocation);

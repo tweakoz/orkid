@@ -135,7 +135,8 @@ struct Simulation {
   void _stashRenderThreadDestructable(svar64_t var);
 
   void _enqueueDeferredInvokation(deferred_script_invokation_ptr_t i);
-  
+  std::vector<deferred_script_invokation_ptr_t> dequeueDeferredInvokations();
+
 private:
 
   void _resetClock();

@@ -353,7 +353,11 @@ float Simulation::desiredFrameRate() const {
 void Simulation::_enqueueDeferredInvokation(deferred_script_invokation_ptr_t i){
   _deferred_invokations.push_back(i);
 }
-
+std::vector<deferred_script_invokation_ptr_t> Simulation::dequeueDeferredInvokations(){
+  auto copy = _deferred_invokations;
+  _deferred_invokations.clear();
+  return copy;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::addSystem(systemkey_t key, System* system) {

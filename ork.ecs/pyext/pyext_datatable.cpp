@@ -93,7 +93,7 @@ void pyinit_datatable(py::module& module_ecs) {
         DataKey dkey;
         dkey._encoded = (*key);
         auto var_val = dtab[dkey];
-        return py::none();//type_codec->encode(var_val);
+        return type_codec->encode64(var_val);
       })
       .def(
           "__setitem__",

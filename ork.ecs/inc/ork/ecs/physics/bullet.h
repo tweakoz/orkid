@@ -84,6 +84,8 @@ public:
   bool _allowSleeping = true;
   bool _isKinematic = false;
   bool _disablePhysics = false;
+  uint32_t _groupAssign = 0;
+  uint32_t _groupCollidesWith = 0;
   script_cb_t _collisionCallback;
   fvec3 _angularFactor;
 };

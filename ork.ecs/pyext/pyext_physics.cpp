@@ -24,11 +24,13 @@ void pyinit_physics(py::module& module_ecs) {
                 fxs.format("ecs::BulletObjectComponentData(%p)", physc.get());
                 return fxs.c_str();
               })
-          .def( "declareForce", []( bulletcompdata_ptr_t physc, //
-                                    std::string name, //
-                                    forcecontrollerdata_ptr_t forcedata ) { //
-            physc->_forcedatas[name] = forcedata;
-          })
+          .def(
+              "declareForce",
+              [](bulletcompdata_ptr_t physc,            //
+                 std::string name,                      //
+                 forcecontrollerdata_ptr_t forcedata) { //
+                physc->_forcedatas[name] = forcedata;
+              })
           .def_property(
               "mass",
               [](bulletcompdata_ptr_t physc) -> float { return physc->_mass; },
@@ -64,13 +66,21 @@ void pyinit_physics(py::module& module_ecs) {
           .def(
               "onCollision",
               [type_codec](bulletcompdata_ptr_t physc, py::function pyfn) { //
-                physc->_collisionCallback = [=](const evdata_t&result){
-                    auto& as_table = result.get<DataTable>();
-                    auto encoded = type_codec->encode(as_table);
-                    py::gil_scoped_acquire acquire;
-                    //pyfn(encoded);
+                physc->_collisionCallback = [=](const evdata_t& result) {
+                  auto& as_table = result.get<DataTable>();
+                  auto encoded   = type_codec->encode64(as_table);
+                  py::gil_scoped_acquire acquire;
+                  pyfn(encoded);
                 };
-                })
+              })
+          .def_property(
+              "groupAssign",
+              [](bulletcompdata_ptr_t physc) -> uint32_t { return physc->_groupAssign; },
+              [](bulletcompdata_ptr_t& physc, uint32_t val) { physc->_groupAssign = val; })
+          .def_property(
+              "groupCollidesWith",
+              [](bulletcompdata_ptr_t physc) -> uint32_t { return physc->_groupCollidesWith; },
+              [](bulletcompdata_ptr_t& physc, uint32_t val) { physc->_groupCollidesWith = val; })
           .def_property(
               "shape",
               [](bulletcompdata_ptr_t physc) -> shapedata_ptr_t { return physc->_shapedata; },
@@ -125,7 +135,7 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapecapsuledata_ptr_t& shape) -> float { return shape->mfExtent; },
               [](bulletshapecapsuledata_ptr_t& shape, float val) { shape->mfExtent = val; });
   type_codec->registerStdCodec<bulletshapecapsuledata_ptr_t>(shapecapsule_type);
-    /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto shapeplane_type =
       py::class_<BulletShapePlaneData, BulletShapeBaseData, bulletshapeplanedata_ptr_t>(module_ecs, "BulletShapePlaneData")
           .def(py::init<>())
@@ -145,7 +155,7 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapeplanedata_ptr_t& shape) -> fvec3 { return shape->_pos; },
               [](bulletshapeplanedata_ptr_t& shape, fvec3 val) { shape->_pos = val; });
   type_codec->registerStdCodec<bulletshapeplanedata_ptr_t>(shapeplane_type);
-    /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto shapemesh_type =
       py::class_<BulletShapeMeshData, BulletShapeBaseData, bulletshapemeshdata_ptr_t>(module_ecs, "BulletShapeMeshData")
           .def(py::init<>())
@@ -161,7 +171,7 @@ void pyinit_physics(py::module& module_ecs) {
               [](const bulletshapemeshdata_ptr_t& shape) -> std::string { return shape->_meshpath.c_str(); },
               [](bulletshapemeshdata_ptr_t& shape, std::string val) { //
                 shape->_meshpath = val;
-            })
+              })
           .def_property(
               "scale",
               [](const bulletshapemeshdata_ptr_t& shape) -> fvec3 { return shape->_scale; },

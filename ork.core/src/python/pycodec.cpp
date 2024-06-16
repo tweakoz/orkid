@@ -34,6 +34,7 @@ struct PyCodecImpl {
   varval_t decode(const py::object& val) const;
   svar64_t decode64(const py::object& val) const;
   py::object encode(const varval_t& val) const;
+  py::object encode64(const svar64_t& val) const;
   std::unordered_map<ork::TypeId::hashtype_t, PyCodecItem> _codecs_by_orktype;
   std::unordered_map<ork::TypeId::hashtype_t, PyCodecItem64> _codecs64_by_orktype;
 };
@@ -46,6 +47,47 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
   auto orktypeid = val.getOrkTypeId();
   auto it        = _codecs_by_orktype.find(orktypeid._hashed);
   if (it != _codecs_by_orktype.end()) {
+    auto& codec = it->second;
+    codec._encoder(val, rval);
+  } else {
+    // try primitives
+    if (auto as_bool = val.tryAs<bool>()) {
+      return py::bool_(as_bool.value());
+    } else if (auto as_float = val.tryAs<float>()) {
+      return py::float_(as_float.value());
+    } else if (auto as_double = val.tryAs<double>()) {
+      return py::float_(as_double.value());
+    } else if (auto as_int = val.tryAs<int>()) {
+      return py::int_(as_int.value());
+    } else if (auto as_uint32_t = val.tryAs<uint32_t>()) {
+      return py::int_(as_uint32_t.value());
+    } else if (auto as_uint64_t = val.tryAs<uint64_t>()) {
+      return py::int_(as_uint64_t.value());
+    } else if (auto as_str = val.tryAs<std::string>()) {
+      return py::str(as_str.value());
+    } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
+      return py::none();
+    } else if (auto as_reflcodec = val.tryAs<refl_codec_adapter_ptr_t>()) {
+      return as_reflcodec.value()->encode();
+    } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
+      return py::none();
+    } else {
+      printf( "UNKNOWNTYPE<%s>\n", val.typeName() );
+      OrkAssert(false);
+      throw std::runtime_error("pycodec-encode: unregistered type");
+    }
+  }
+  return rval;
+}
+////////////////////////////////////////////////////////////////////////////////
+py::object PyCodecImpl::encode64(const svar64_t& val) const {
+  py::object rval;
+  if (not val.isSet()) {
+    return py::none();
+  }
+  auto orktypeid = val.getOrkTypeId();
+  auto it        = _codecs64_by_orktype.find(orktypeid._hashed);
+  if (it != _codecs64_by_orktype.end()) {
     auto& codec = it->second;
     codec._encoder(val, rval);
   } else {
@@ -232,6 +274,10 @@ void TypeCodec::registerCodec64(
 //////////////////////////////////
 py::object TypeCodec::encode(const varval_t& val) const {
   return _impl.get<PyCodecImpl>().encode(val);
+}
+//////////////////////////////////
+py::object TypeCodec::encode64(const svar64_t& val) const {
+  return _impl.get<PyCodecImpl>().encode64(val);
 }
 //////////////////////////////////
 varval_t TypeCodec::decode(const py::object& val) const {

@@ -508,10 +508,19 @@ void Controller::stopSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::update() {
-  //logchan_controller->log( "update");
-  _simulation.atomicOp([](simulation_ptr_t& unlocked){
+
+  std::vector<deferred_script_invokation_ptr_t> _invokations;
+
+  _simulation.atomicOp([&_invokations](simulation_ptr_t& unlocked){
     unlocked->_update();
+    _invokations = unlocked->dequeueDeferredInvokations();
   });
+
+  // deferred script invokations
+  
+  for (auto item : _invokations) {
+    item->_cb(item->_data);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

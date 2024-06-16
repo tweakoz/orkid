@@ -227,7 +227,7 @@ public:
   BulletSystem(const BulletSystemData& data, Simulation* psi);
   ~BulletSystem();
 
-  btRigidBody* AddLocalRigidBody(Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+  btRigidBody* AddLocalRigidBody(Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape, uint32_t group_assign,uint32_t groups_collides_with);
   btDiscreteDynamicsWorld* GetDynamicsWorld() const { return mDynamicsWorld; }
   void InitWorld();
   PhysicsDebugger* Debugger() { return _debugger; }

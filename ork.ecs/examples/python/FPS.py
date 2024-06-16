@@ -20,6 +20,10 @@ from lev2utils.cameras import *
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
+GROUP_PLAYER = 1
+GROUP_BALL = 2
+GROUP_ENV = 4
+GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -77,13 +81,19 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.disablePhysics = False
     c_physics.angularFactor = vec3(0,1,0)
     c_physics.shape = capsule
-    
+    c_physics.groupAssign = GROUP_PLAYER
+    c_physics.groupCollidesWith = GROUP_BALL|GROUP_ENV
+
     def onCollision(table):
-      print("collision")
-      #pa = table[tokens.pointA]
-      #pb = table[tokens.pointB]
-      #nB = table[tokens.normalOnB]
-      #print("player collision: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
+      pa = table[tokens.pointA]
+      pb = table[tokens.pointB]
+      nB = table[tokens.normalOnB]
+      ga = table[tokens.groupA]
+      gb = table[tokens.groupB]
+      ball_and_player =  (ga == GROUP_PLAYER and gb == GROUP_BALL)
+      ball_and_player |= (ga == GROUP_BALL and gb == GROUP_PLAYER)
+      if ball_and_player:
+        print("COLLISION: pa<%s> pb<%s> nb<%s> " % (pa,pb,nB) )
 
     c_physics.onCollision( onCollision )
 
@@ -135,6 +145,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.isKinematic = False
     c_physics.disablePhysics = False
     c_physics.shape = sphere
+    c_physics.groupAssign = GROUP_BALL
+    c_physics.groupCollidesWith = GROUP_ALL
 
     ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="ballnode",
@@ -169,6 +181,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.isKinematic = False
     c_physics.disablePhysics = True
     c_physics.shape = shape
+    c_physics.groupAssign = GROUP_ENV
+    c_physics.groupCollidesWith = GROUP_ALL
 
     #########################
     # visible mesh for room
