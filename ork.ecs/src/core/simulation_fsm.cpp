@@ -457,7 +457,7 @@ void Simulation::_initializeEntities() {
 
         auto arch = spawner->GetArchetype();
 
-        int entref = _controller->_objectIdCounter.fetch_add(1);
+        uint64_t entref = _controller->_objectIdCounter.fetch_add(1);
 
         ork::ecs::Entity* pent = new ork::ecs::Entity(spawner, this,entref);
         _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[entref].set<Entity*>(pent); });

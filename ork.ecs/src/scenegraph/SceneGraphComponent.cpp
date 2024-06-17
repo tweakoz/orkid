@@ -25,7 +25,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_sgcomp = logger()->createChannel("ecs.sgcomp",fvec3(0.9,0.7,0));
+static logchannel_ptr_t logchan_sgcomp = logger()->createChannel("ecs.sgcomp", fvec3(0.9, 0.7, 0));
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
@@ -49,10 +49,11 @@ SceneGraphComponentData::SceneGraphComponentData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphComponentData::declareNodeOnLayer( std::string nodename, //
-                                                  lev2::drawabledata_ptr_t d, //
-                                                  std::string l, //
-                                                  decompxf_ptr_t xf ) { //
+void SceneGraphComponentData::declareNodeOnLayer(
+    std::string nodename,       //
+    lev2::drawabledata_ptr_t d, //
+    std::string l,              //
+    decompxf_ptr_t xf) {        //
 
   auto nid             = std::make_shared<SceneGraphNodeItemData>();
   nid->_nodename       = nodename;
@@ -92,20 +93,20 @@ SceneGraphComponent::~SceneGraphComponent() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void_lambda_t SceneGraphComponent::_genTransformOperation(){
+void_lambda_t SceneGraphComponent::_genTransformOperation() {
   return [=]() {
     auto ent     = this->GetEntity();
     auto init_xf = ent->data()->_dagnode->_xfnode;
     auto ent_xf  = ent->GetDagNode()->_xfnode;
     ent_xf->_transform->set(init_xf->_transform);
-    this->_currentXF = ent_xf;
+    this->_currentXF  = ent_xf;
     auto ent_composed = ent_xf->_transform->composed();
     for (auto NITEM : this->_nodeitems) {
-      auto node          = NITEM.second->_sgnode;
+      auto node = NITEM.second->_sgnode;
       if (node) {
-        auto ovxf        = NITEM.second->_data->_xfoverride;
+        auto ovxf = NITEM.second->_data->_xfoverride;
         if (ovxf) {
-          ovxf->_parent = ent_xf->_transform;
+          ovxf->_parent                   = ent_xf->_transform;
           node->_dqxfdata._worldTransform = ovxf;
         } else {
           node->_dqxfdata._worldTransform = ent_xf->_transform;
@@ -166,11 +167,16 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data
       break;
     }
     case SceneGraphSystem::ChangeModColor._hashed: {
+      auto modcolor         = data.get<fvec4>();
       auto change_operation = [=]() {
-        auto modcolor = data.get<fvec4>();
-        // if (auto as_drwnode = dynamic_pointer_cast<scenegraph::DrawableNode>(_sgnode)) {
-        // as_drwnode->_modcolor = modcolor;
-        // }
+        for (auto item : _nodeitems) {
+          auto node_item = item.second;
+          auto drw       = node_item->_drawable;
+          auto node      = node_item->_sgnode;
+          if (auto as_drwnode = dynamic_pointer_cast<scenegraph::DrawableNode>(node)) {
+            as_drwnode->_modcolor = modcolor;
+          }
+        }
       };
       _system->_renderops.push(change_operation);
       break;
@@ -186,19 +192,17 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data
 
           if (auto as_bb = dynamic_pointer_cast<BillboardStringDrawable>(drw)) {
             as_bb->_currentString = name;
-          }
-          else if(auto as_bbi = dynamic_pointer_cast<InstancedBillboardStringDrawable>(drw) ){
+          } else if (auto as_bbi = dynamic_pointer_cast<InstancedBillboardStringDrawable>(drw)) {
 
-            auto instanced_node =  dynamic_pointer_cast<scenegraph::InstancedDrawableNode>(node);
-            size_t iid = instanced_node->_instanced_drawable_id;
-            auto instance_data = as_bbi->_instancedata;
+            auto instanced_node = dynamic_pointer_cast<scenegraph::InstancedDrawableNode>(node);
+            size_t iid          = instanced_node->_instanced_drawable_id;
+            auto instance_data  = as_bbi->_instancedata;
             instance_data->_miscdata[iid].set<std::string>(name);
-            instance_data->_modcolors[iid] = fvec4(1,1,1,1);
-            instance_data->_pickids[iid] = 0;
+            instance_data->_modcolors[iid] = fvec4(1, 1, 1, 1);
+            instance_data->_pickids[iid]   = 0;
 
-            //printf( "setname<%s>\n", name.c_str() );
+            // printf( "setname<%s>\n", name.c_str() );
           }
-
         }
       };
       _system->_renderops.push(change_operation);
@@ -226,9 +230,9 @@ void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t 
         // create scenegraph node
         ///////////////////////////////
 
-        auto layer          = _system->_default_layer;
-        auto sgnode         = layer->createDrawableNode(nodename, drawable);
-        auto xform          = _entity->transform();
+        auto layer           = _system->_default_layer;
+        auto sgnode          = layer->createDrawableNode(nodename, drawable);
+        auto xform           = _entity->transform();
         xform->_uniformScale = scale;
 
         auto nitem       = std::make_shared<SceneGraphNodeItem>();

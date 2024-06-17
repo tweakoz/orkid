@@ -106,6 +106,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
             drawable_layer->_name.c_str());
       }
       n->_drawable->_pickable = n->_pickable;
+      n->_dqxfdata._modcolor = n->_modcolor;
+      n->_dqxfdata._use_modcolor = true;
+      //printf( "modcolor<%g %g %g %g>\n", n->_modcolor.x, n->_modcolor.y, n->_modcolor.z, n->_modcolor.w );
       if (n->_viewRelative) {
         n->_dqxfdata._worldTransform->_viewRelative = true;
       }

@@ -158,6 +158,14 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("magsquared", &vec3_t::magnitudeSquared)
           .def("lerp", &vec3_t::lerp)
           .def("serp", &vec3_t::serp)
+          .def("random", [](vec3_t& v){
+            int x = (rand()&0xffff);
+            int y = (rand()&0xffff);
+            int z = (rand()&0xffff);
+            v.x = float(x)/65536.0f;
+            v.y = float(x)/65536.0f;
+            v.z = float(x)/65536.0f;
+          })
           .def("reflect", &vec3_t::reflect)
           .def("saturated", &vec3_t::saturated)
           .def("clamped", &vec3_t::clamped)

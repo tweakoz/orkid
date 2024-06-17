@@ -24,7 +24,7 @@ GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
-NUM_BALLS = 400
+NUM_BALLS = 250
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -58,20 +58,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics = arch_player.declareComponent("BulletObjectComponent")
 
     ######################################
-    # scenegraph setup for player
-    ######################################
-
-    if False: # dont really need in first person mode
-      drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-      viz_xf = Transform() # non uniform scale for sphere (to make it a capsule)
-      viz_xf.nonUniformScale = vec3(1,1,3)
-
-      c_scenegraph.declareNodeOnLayer( name="playernode",
-                                       drawable=drawable,
-                                       layer=LAYERNAME,
-                                       transform=viz_xf)
-
-    ######################################
     # physics setup for player
     ######################################
     
@@ -92,8 +78,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.groupAssign = GROUP_PLAYER
     c_physics.groupCollidesWith = GROUP_BALL|GROUP_ENV
 
-
-    if False:
+    self.cache_comp = dict()
+    
+    if True:
       def onCollision(table):
         ea = table[tokens.entityA]
         eb = table[tokens.entityB]
@@ -101,10 +88,18 @@ class ECS_FIRST_PERSON_SHOOTER(object):
           ga = table[tokens.groupA]
           gb = table[tokens.groupB]
           if (gb == GROUP_BALL):
-            pa = table[tokens.pointA]
-            pb = table[tokens.pointB]
-            nB = table[tokens.normalOnB]
-            print("COLLISION: pa<%s> pb<%s> nb<%s>" % (pa,pb,nB) )
+            erB = table[tokens.entrefB]
+            sgcomp = self.controller.findComponent(erB,"SceneGraphComponent")
+            hsv = vec3()
+            hsv.x = random.uniform(0,1)
+            hsv.y = 1.0
+            hsv.z = 1.0
+            rgb = hsv.hsv2rgb()
+            self.controller.componentNotify(sgcomp,tokens.ChangeModColor,vec4(rgb,1))
+            #pa = table[tokens.pointA]
+            #pb = table[tokens.pointB]
+            #nB = table[tokens.normalOnB]
+            #print("COLLISION: pa<%s> pb<%s> nb<%s>" % (pa,pb,nB) )
       c_physics.onCollision( onCollision )
 
     self.playerforce = ecs.DirectionalForceData()
@@ -289,12 +284,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
 
-    #SAD = ecs.SpawnAnonDynamic("player_spawner")
-    #SAD.overridexf.orientation = quat(vec3(1,0,0),math.pi*0.5)
-    #SAD.overridexf.scale = 1.0
-    #SAD.overridexf.translation = vec3(0,5,-25)
-    #self.controller.spawnEntity(SAD)
-
     ##################
     # install rendercallback on ezapp
     #  (so the ezapp will render the ecs scene from C++)
@@ -304,10 +293,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
-  def onGpuExit(self,ctx):
-
-    # clean up
-
+  def onGpuExit(self,ctx): # clean up
     self.controller.stopSimulation()
     self.controller.beginWriteTrace
 

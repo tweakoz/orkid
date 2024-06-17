@@ -14,7 +14,7 @@ namespace ork::ecs {
 void pyinit_controller(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Controller, controller_ptr_t>(module_ecs, "Controller")
+  auto ctrl_type = py::class_<Controller, controller_ptr_t>(module_ecs, "Controller")
       .def(py::init<>())
       .def(
           "__repr__",
@@ -40,6 +40,34 @@ void pyinit_controller(py::module& module_ecs) {
          ctrl->installRenderCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
+      .def(
+          "componentNotify",
+          [type_codec](
+              controller_ptr_t ctrl, //
+              comp_ref_t comp,         //
+              crcstring_ptr_t evID,
+              py::object evdata) {
+
+            evdata_t decoded;
+            if (py::isinstance<py::dict>(evdata)){
+              auto as_dict = evdata.cast<py::dict>();
+              auto& dtab = decoded.make<DataTable>();
+              DataKey dkey;
+              for (auto item : as_dict) {
+                auto key = py::cast<crcstring_ptr_t>(item.first);
+                auto val = py::reinterpret_borrow<py::object>(item.second);
+                auto var_val = type_codec->decode64(val);
+                dkey._encoded = *key;
+                dtab[dkey] = var_val;
+              }
+            }
+            else{
+              decoded = type_codec->decode64(evdata);
+            }
+
+            ctrl->componentNotify(comp, *evID, decoded);
+          })
+                ///////////////////////////
       //
       .def("findSystem", [](controller_ptr_t ctrl, std::string name) -> sys_ref_t { return ctrl->findSystemWithClassName(name); })
       .def(
@@ -92,31 +120,42 @@ void pyinit_controller(py::module& module_ecs) {
               const SpawnAnonDynamic& sad) -> ent_ref_t {
             ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
             return eref;
-          });
+          })
+      .def("findComponent", [](controller_ptr_t ctrl, ent_ref_t eref, std::string name) -> comp_ref_t { //
+        return ctrl->findComponentWithClassName(eref,name); //
+      });
+  type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SystemRef>(module_ecs, "SystemRef").def("__repr__", [](const sys_ref_t& sys) -> std::string {
+  auto sref_t = py::class_<SystemRef>(module_ecs, "SystemRef").def("__repr__", [](const sys_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::SystemRef id(0x%zx)", sys._sysID);
     return fxs.c_str();
   });
+  type_codec->registerStdCodec<SystemRef>(sref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<EntityRef>(module_ecs, "EntityRef").def("__repr__", [](const ent_ref_t& sys) -> std::string {
+  auto eref_t = py::class_<EntityRef>(module_ecs, "EntityRef").def("__repr__", [](const ent_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::EntityRef id(0x%zx)", sys._entID);
     return fxs.c_str();
+  })
+  .def_property_readonly("id",[](ent_ref_t eref) -> uint64_t {
+    return eref._entID;
   });
+  type_codec->registerStdCodec<EntityRef>(eref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ComponentRef>(module_ecs, "ComponentRef").def("__repr__", [](const comp_ref_t& sys) -> std::string {
+  auto cref_t = py::class_<ComponentRef>(module_ecs, "ComponentRef").def("__repr__", [](const comp_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::ComponentRef id(0x%zx)", sys._compID);
     return fxs.c_str();
   });
+  type_codec->registerStdCodec<ComponentRef>(cref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ResponseRef>(module_ecs, "ResponseRef").def("__repr__", [](const response_ref_t& sys) -> std::string {
+  auto rref_t = py::class_<ResponseRef>(module_ecs, "ResponseRef").def("__repr__", [](const response_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::ResponseRef id(0x%zx)", sys._responseID);
     return fxs.c_str();
   });
+  type_codec->registerStdCodec<ResponseRef>(rref_t);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_archetype(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

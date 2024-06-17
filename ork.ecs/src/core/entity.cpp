@@ -113,7 +113,7 @@ Component* Entity::GetComponentByClassName(std::string classname) {
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-Entity::Entity(spawndata_constptr_t edata, Simulation* inst, int entref)
+Entity::Entity(spawndata_constptr_t edata, Simulation* inst, uint64_t entref)
     : _entref(entref)
     , _entdata(edata)
     , mSimulation(inst)

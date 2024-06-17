@@ -120,7 +120,7 @@ public:
 
   ////////////////////////////////////////////////////////////////
 
-  Entity(spawndata_constptr_t edata, Simulation* inst, int entref);
+  Entity(spawndata_constptr_t edata, Simulation* inst, uint64_t entref);
   ~Entity();
 
   ////////////////////////////////////////////////////////////////
@@ -138,7 +138,7 @@ public:
   _rendermtxprovider_t _renderMtxProvider = nullptr;
   decompxf_ptr_t _override_initial_xf = nullptr;
 
-  int _entref = -1;
+  uint64_t _entref = 0xffffffffffff;
 
 private:
   //void notify(const ComponentEvent& e);

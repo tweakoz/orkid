@@ -126,6 +126,7 @@ struct Controller {
   template <typename T> sys_ref_t findSystem();
   sys_ref_t findSystemWithClassName(std::string clazzname);
   template <typename T> comp_ref_t findEntityComponent(ent_ref_t ent);
+  comp_ref_t findComponentWithClassName(ent_ref_t entity, std::string clazzname);
 
 	void realtimeDelayedOperation(float timestamp,void_lambda_t op);
 	void presimDelayedOperation(float timestamp,void_lambda_t op);
@@ -191,6 +192,8 @@ private:
 	bool _needsGpuInit = true;
 
 	std::vector<std::shared_ptr<std::string>> _retained_strings;
+	
+	std::unordered_map<uint64_t,comp_ref_t> _component_cache;
 
 };
 

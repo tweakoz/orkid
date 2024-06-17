@@ -4,7 +4,7 @@ from setuptools.command.install import install
 import os, sys
 import stat
 
-version = "0.0.0"
+version = "0.0.1"
 
 if "OBT_STAGE" in os.environ:
   print( "ERROR: do not run setup.py in a staging environment")
@@ -31,11 +31,12 @@ def package_files(directory):
 #########################################
 
 module_files = package_files('ork.data') 
+dox_files = package_files('ork.dox') 
 #example_files = package_files('examples')
 #test_files = package_files('tests')
 #binpub_files = [f[1][0] for f in package_files("bin_pub")]
 #binpriv_files = package_files('bin_priv')
-data_files = module_files# + example_files + test_files + binpriv_files
+data_files = dox_files #module_files# + example_files + test_files + binpriv_files
 
 #########################################
 

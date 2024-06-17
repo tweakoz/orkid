@@ -339,8 +339,14 @@ btScalar OrkContactResultCallback::addSingleResult(
       invocation->_cb = _onContact;
 
       auto& datatable = invocation->_data.make<DataTable>();
-      datatable["entityA"_tok] = (Entity*) body0->getUserPointer();
-      datatable["entityB"_tok] = (Entity*) body1->getUserPointer();;
+      auto entA = (Entity*) body0->getUserPointer();
+      auto entB = (Entity*) body1->getUserPointer();
+      EntityRef erefA = {entA->_entref};
+      EntityRef erefB = {entB->_entref};
+      datatable["entityA"_tok] = entA;
+      datatable["entityB"_tok] = entB;
+      datatable["entrefA"_tok] = erefA;
+      datatable["entrefB"_tok] = erefB;
       datatable["groupA"_tok] = group0;
       datatable["groupB"_tok] = group1;
       datatable["pointA"_tok] = btv3toorkv3(ptA);

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/opq.h>
+#include <ork/rtti/Class.h>
 #include <ork/ecs/scene.h>
 #include <ork/ecs/simulation.h>
 #include <ork/ecs/controller.h>
@@ -562,6 +563,46 @@ sys_ref_t Controller::findSystemWithClassName(std::string clazzname) {
   //////////////////////////////////////////////////////
 
   return FSYS._sysref;
+}
+
+comp_ref_t Controller::findComponentWithClassName(ent_ref_t ent, std::string clazzname) {
+
+  boost::Crc64 crc;
+  crc.init();
+  crc.accumulateItem<uint64_t>(ent._entID);
+  crc.accumulateString(clazzname);
+  crc.finish();
+  uint64_t cache_key = crc.result();
+
+  auto it = _component_cache.find(cache_key);
+  if(it!=_component_cache.end()){
+    return it->second;
+  }
+  uint64_t ID = _objectIdCounter.fetch_add(1);
+
+  //////////////////////////////////////////////////////
+  // notify sim to update reference
+  //////////////////////////////////////////////////////
+
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::FIND_COMPONENT;
+  auto& FCOMP          = simevent->_payload.make<impl::_FindComponent>();
+
+  auto clazz = ::ork::rtti::Class::FindClass(clazzname);
+
+  FCOMP._entref = ent;
+  FCOMP._compclazz = clazz;
+  FCOMP._compref = ComponentRef({._compID=ID});
+
+  _enqueueEvent(simevent);
+
+  //////////////////////////////////////////////////////
+  // write to cache and return opaque handle
+  //////////////////////////////////////////////////////
+
+  _component_cache[cache_key] = FCOMP._compref;
+
+  return FCOMP._compref;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

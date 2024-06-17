@@ -221,7 +221,12 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         renderable._pickID = _pickID;
         renderable._submeshinst = submeshinst;
         renderable._cluster = cluster;
-        renderable.SetModColor(_modcolor);
+        if(item->mXfData._use_modcolor){
+          renderable.SetModColor(item->mXfData._modcolor);
+        }
+        else{
+          renderable.SetModColor(_modcolor);
+        }
         renderable.SetMatrix(matw);
         // renderable.SetLightMask(lmask);
         renderable._scale = _scale;
