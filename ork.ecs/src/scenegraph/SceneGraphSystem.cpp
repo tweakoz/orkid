@@ -286,7 +286,9 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
             nitem->_sgnode = layer->createInstancedDrawableNode(NID->_nodename, as_instanced);
           } else {
-            nitem->_sgnode = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+            auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+            node->_modcolor = NID->_modcolor;
+            nitem->_sgnode = node;
           }
         }
       }

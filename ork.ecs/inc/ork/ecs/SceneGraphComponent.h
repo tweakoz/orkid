@@ -22,6 +22,16 @@ struct SceneGraphSystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct NodeDef{
+  NodeDef();
+  std::string _nodename;
+  lev2::drawabledata_ptr_t _drawabledata;
+  std::string _layername;
+  decompxf_ptr_t _transform;
+  fvec4 _modcolor;
+};
+using nodedef_ptr_t = std::shared_ptr<NodeDef>;
+
 struct SceneGraphNodeItemData : public ork::Object {
   DeclareConcreteX(SceneGraphNodeItemData, ork::Object);
 public:
@@ -29,9 +39,12 @@ public:
   std::string _layername;
   std::string _nodename;
   decompxf_ptr_t _xfoverride;
+  fvec4 _modcolor;
 };
 
 using sgnodeitemdata_ptr_t = std::shared_ptr<SceneGraphNodeItemData>;
+
+
 
 struct SceneGraphComponentData : public ComponentData {
   DeclareConcreteX(SceneGraphComponentData, ComponentData);
@@ -44,10 +57,11 @@ public:
   static object::ObjectClass* componentClass();
   void DoRegisterWithScene(SceneComposer& sc) const final;
 
-  void declareNodeOnLayer( std::string nodename, //
-                           lev2::drawabledata_ptr_t d, //
-                           std::string l, //
-                           decompxf_ptr_t xf = nullptr);
+  void declareNodeOnLayer( nodedef_ptr_t ndef );
+                           //std::string nodename, //
+                           //lev2::drawabledata_ptr_t d, //
+                           //std::string l, //
+                           //decompxf_ptr_t xf = nullptr);
 
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
 

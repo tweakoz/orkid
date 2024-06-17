@@ -30,7 +30,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def("createDrawable", [](drawabledata_ptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
           .def("createSGDrawable", [](drawabledata_ptr_t data, scenegraph::scene_ptr_t SG) -> drawable_ptr_t {
             return data->createSGDrawable(SG);
-          });
+          })
+          .def_property("modcolor", 
+            [](drawabledata_ptr_t data) -> fvec4 { return data->_modcolor; },
+            [](drawabledata_ptr_t data, fvec4 c)  { data->_modcolor = c; }
+          );
   type_codec->registerStdCodec<drawabledata_ptr_t>(drawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawabledata_type = //

@@ -68,7 +68,11 @@ int main(int argc, char** argv, char** envp) {
 
   auto ecs_arch        = scene->createSceneObject<Archetype>("a1"_pool);
   auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
-  ecs_sg_compdata->declareNodeOnLayer("modelnode", modeldata, "sg_default");
+  auto ndef = std::make_shared<NodeDef>();
+  ndef->_nodename = "modelnode";
+  ndef->_drawabledata = modeldata;
+  ndef->_layername = "sg_default";
+  ecs_sg_compdata->declareNodeOnLayer(ndef);
 
   auto ecs_lua_compdata = ecs_arch->addComponent<LuaComponentData>();
   ecs_lua_compdata->SetPath(this_dir / "shinyball.lua");

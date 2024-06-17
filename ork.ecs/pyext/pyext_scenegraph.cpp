@@ -13,6 +13,37 @@ namespace ork::ecs {
 void pyinit_scenegraph(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto nd_type = py::class_<NodeDef, nodedef_ptr_t>(module_ecs, "NodeDef")
+                     .def(
+                         "__repr__",
+                         [](nodedef_ptr_t ndef) -> std::string {
+                           fxstring<256> fxs;
+                           fxs.format("ecs::NodeDef(%p)", ndef.get());
+                           return fxs.c_str();
+                         })
+                     .def_property(
+                         "nodename",
+                         [](nodedef_ptr_t ndef) -> std::string { return ndef->_nodename; },
+                         [](nodedef_ptr_t ndef, std::string val) { ndef->_nodename = val; })
+                     .def_property(
+                         "layername",
+                         [](nodedef_ptr_t ndef) -> std::string { return ndef->_layername; },
+                         [](nodedef_ptr_t ndef, std::string val) { ndef->_layername = val; })
+                     .def_property(
+                         "drawabledata",
+                         [](nodedef_ptr_t ndef) -> lev2::drawabledata_ptr_t { return ndef->_drawabledata; },
+                         [](nodedef_ptr_t ndef, lev2::drawabledata_ptr_t val) { ndef->_drawabledata = val; })
+                     .def_property(
+                         "transform",
+                         [](nodedef_ptr_t ndef) -> decompxf_ptr_t { return ndef->_transform; },
+                         [](nodedef_ptr_t ndef, decompxf_ptr_t val) { ndef->_transform = val; })
+                     .def_property(
+                         "modcolor",
+                         [](nodedef_ptr_t ndef) -> fvec4 { return ndef->_modcolor; },
+                         [](nodedef_ptr_t ndef, fvec4 val) { ndef->_modcolor = val; });
+  type_codec->registerStdCodec<nodedef_ptr_t>(nd_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneGraphComponentData, ComponentData, sgcomponentdata_ptr_t>(module_ecs, "SceneGraphComponentData")
       .def(
           "__repr__",
@@ -24,23 +55,24 @@ void pyinit_scenegraph(py::module& module_ecs) {
       .def(
           "declareNodeOnLayer",
           [](sgcomponentdata_ptr_t sgcd, py::kwargs kwargs) { //
-            decompxf_ptr_t xf = nullptr;
-            std::string nodename;
-            lev2::drawabledata_ptr_t d;
-            std::string l;
+            auto ndef = std::make_shared<NodeDef>();
+
             if (kwargs.contains("name")) {
-              nodename = kwargs["name"].cast<std::string>();
+              ndef->_nodename = kwargs["name"].cast<std::string>();
             }
             if (kwargs.contains("drawable")) {
-              d = kwargs["drawable"].cast<lev2::drawabledata_ptr_t>();
+              ndef->_drawabledata = kwargs["drawable"].cast<lev2::drawabledata_ptr_t>();
             }
             if (kwargs.contains("layer")) {
-              l = kwargs["layer"].cast<std::string>();
+              ndef->_layername = kwargs["layer"].cast<std::string>();
             }
             if (kwargs.contains("transform")) {
-              xf = kwargs["transform"].cast<decompxf_ptr_t>();
+              ndef->_transform = kwargs["transform"].cast<decompxf_ptr_t>();
             }
-            sgcd->declareNodeOnLayer(nodename, d, l, xf);
+            if (kwargs.contains("modcolor")) {
+              ndef->_modcolor = kwargs["modcolor"].cast<fvec4>();
+            }
+            sgcd->declareNodeOnLayer(ndef);
           },
           R"doc(
         Declares a node on a specified layer.
@@ -69,14 +101,14 @@ void pyinit_scenegraph(py::module& module_ecs) {
         Parameters:
         name (str): The name of the layer.
      )doc")
-     .def("declareParams", [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {
+      .def("declareParams", [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {
         for (auto& [key, value] : param_dict) {
-          auto key_str = key.cast<std::string>();
-          auto val_obj = py::reinterpret_borrow<py::object>(value);
+          auto key_str     = key.cast<std::string>();
+          auto val_obj     = py::reinterpret_borrow<py::object>(value);
           auto val_decoded = type_codec->decode(val_obj);
-          sgsys->setInternalSceneParam(key_str,val_decoded);
+          sgsys->setInternalSceneParam(key_str, val_decoded);
         }
-     });
+      });
   /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
       py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")

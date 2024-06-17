@@ -496,7 +496,7 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 void BulletSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
-    case "IMPULSE"_crcu: {
+    case "IMPULSE_ON_COMPONENT_DATA"_crcu: {
       const auto& table = data.get<DataTable>();
       auto compdata     = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();
       printf("compdata<%p>\n", compdata.get());
@@ -507,6 +507,17 @@ void BulletSystem::_onNotify(token_t evID, evdata_t data) {
         auto impulse_val = table["impulse"_tok].get<fvec3>();
         rigid_body->applyCentralImpulse(orkv3tobtv3(impulse_val));
       }
+      break;
+    }
+    case "IMPULSE_ON_COMPONENT"_crcu: {
+      const auto& table = data.get<DataTable>();
+      auto compref     = table["component"_tok].get<comp_ref_t>();
+      auto component = simulation()->_findComponentFromRef(compref);
+      auto as_physics = dynamic_cast<BulletObjectComponent*>(component);
+      auto rigid_body  = as_physics->_rigidbody;
+      auto impulse_val = table["impulse"_tok].get<fvec3>();
+      //printf( "physc<%p> rbody<%p>\n", (void*) as_physics, (void*) rigid_body );
+      rigid_body->applyCentralImpulse(orkv3tobtv3(impulse_val));
       break;
     }
     default:

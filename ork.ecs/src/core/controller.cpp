@@ -589,7 +589,7 @@ comp_ref_t Controller::findComponentWithClassName(ent_ref_t ent, std::string cla
   auto& FCOMP          = simevent->_payload.make<impl::_FindComponent>();
 
   auto clazz = ::ork::rtti::Class::FindClass(clazzname);
-
+  printf( "find class<%s> -> %p\n", clazzname.c_str(), (void*) clazz );
   FCOMP._entref = ent;
   FCOMP._compclazz = clazz;
   FCOMP._compref = ComponentRef({._compID=ID});

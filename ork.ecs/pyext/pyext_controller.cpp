@@ -123,7 +123,15 @@ void pyinit_controller(py::module& module_ecs) {
           })
       .def("findComponent", [](controller_ptr_t ctrl, ent_ref_t eref, std::string name) -> comp_ref_t { //
         return ctrl->findComponentWithClassName(eref,name); //
+      })
+      .def("realtimeDelayedOperation", [](controller_ptr_t ctrl, float delay, py::function fn) { //
+        auto L = [fn](){
+          py::gil_scoped_acquire acquire;
+          fn();
+        };
+        ctrl->realtimeDelayedOperation(delay,L);
       });
+        
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sref_t = py::class_<SystemRef>(module_ecs, "SystemRef").def("__repr__", [](const sys_ref_t& sys) -> std::string {
@@ -156,6 +164,7 @@ void pyinit_controller(py::module& module_ecs) {
     return fxs.c_str();
   });
   type_codec->registerStdCodec<ResponseRef>(rref_t);
+
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_archetype(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

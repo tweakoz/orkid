@@ -25,6 +25,7 @@ GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
 NUM_BALLS = 250
+OFFSET = vec3(0,0.5,0)
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -78,7 +79,16 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.groupAssign = GROUP_PLAYER
     c_physics.groupCollidesWith = GROUP_BALL|GROUP_ENV
 
-    self.cache_comp = dict()
+    self.ball_state = dict()
+    
+   
+    def incrBallState(id):
+      state = 0
+      if id in self.ball_state.keys():
+        state = self.ball_state[id]+1
+      self.ball_state[id] = state
+      return state
+    
     
     if True:
       def onCollision(table):
@@ -90,10 +100,11 @@ class ECS_FIRST_PERSON_SHOOTER(object):
           if (gb == GROUP_BALL):
             erB = table[tokens.entrefB]
             sgcomp = self.controller.findComponent(erB,"SceneGraphComponent")
+            state = incrBallState(erB.id)
             hsv = vec3()
-            hsv.x = random.uniform(0,1)
+            hsv.x = float(state)*0.1
             hsv.y = 1.0
-            hsv.z = 1.0
+            hsv.z = 0.5
             rgb = hsv.hsv2rgb()
             self.controller.componentNotify(sgcomp,tokens.ChangeModColor,vec4(rgb,1))
             #pa = table[tokens.pointA]
@@ -163,6 +174,41 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False
 
+  ##############################################
+
+  def createProjectileData(self,ctx):
+
+    arch_ball = self.ecsscene.declareArchetype("ProjectileArchetype")
+    c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
+    c_physics = arch_ball.declareComponent("BulletObjectComponent")
+
+    sphere = ecs.BulletShapeSphereData()
+    sphere.radius = 0.5
+
+
+    c_physics.mass = 5.0
+    c_physics.friction = 0.3
+    c_physics.restitution = 0.45
+    c_physics.angularDamping = 0.01
+    c_physics.linearDamping = 0.01
+    c_physics.allowSleeping = False
+    c_physics.isKinematic = False
+    c_physics.disablePhysics = False
+    c_physics.shape = sphere
+    c_physics.groupAssign = GROUP_BALL
+    c_physics.groupCollidesWith = GROUP_ALL
+
+    ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    c_scenegraph.declareNodeOnLayer( name="projnode",
+                                     drawable=ball_drawable,
+                                     layer=LAYERNAME,
+                                     modcolor = vec4(0,0,1,0))
+
+    proj_spawner = self.ecsscene.declareSpawner("proj_spawner")
+    proj_spawner.archetype = arch_ball
+    proj_spawner.transform.scale = 0.5
+    proj_spawner.autospawn = False
+    
   ##############################################
   # generate the environment
   ##############################################
@@ -255,6 +301,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.createBallData(ctx)
     self.createEnvironmentData(ctx)
     self.createPlayerData(ctx)
+    self.createProjectileData(ctx)
     
     ####################
     # create ECS controller
@@ -335,7 +382,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       #  to reduce ecs controller traffic
       if (updinfo.counter%3)==0:
 
-        OFFSET = vec3(0,0.5,0)
         EYE = PXF.translation+OFFSET
         TGT = EYE + DIR
         UP = vec3(0,1,0)
@@ -361,12 +407,39 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   def playerImpulse(self,impulse):
     self.controller.systemNotify( self.sys_phys,
-                                  tokens.IMPULSE,
+                                  tokens.IMPULSE_ON_COMPONENT_DATA,
                                   {
                                     tokens.component: self.player_physics_componentdata,
                                     tokens.impulse: impulse
                                   })
 
+  ##############################################
+
+  def fireProjectile(self):
+    PXF = self.player_transform
+    if PXF is not None:
+      EYE = PXF.translation+OFFSET
+      UIC = self.uicam.cameradata
+      ROT = self.playerforce_rot
+      DIR = (UIC.target-UIC.eye).normalized()
+
+      SAD = ecs.SpawnAnonDynamic("proj_spawner")
+      SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+      SAD.overridexf.scale = 1.0
+      SAD.overridexf.translation = EYE+DIR*5.0
+      ent = self.controller.spawnEntity(SAD)
+      c_physics = self.controller.findComponent(ent,"EcsBulletObjectComponent")
+      
+      def LAUNCH_OP():
+        self.controller.systemNotify( self.sys_phys,
+                                      tokens.IMPULSE_ON_COMPONENT,
+                                      {
+                                        tokens.component: c_physics,
+                                        tokens.impulse: DIR*350.0
+                                      })
+    
+      self.controller.realtimeDelayedOperation(0.1,LAUNCH_OP)
+      
   ##############################################
 
   def onUiEvent(self,uievent):
@@ -405,6 +478,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       elif uievent.keycode == ord("D"):
         self.playerforce.magnitude = walk_force
         self.playerforce_rot = math.pi*0.5
+      #### FIRE #####
+      elif uievent.keycode == ord("F"):
+        self.fireProjectile()
     ##############################################
     elif uievent.code == tokens.KEY_UP.hashed:
       if uievent.keycode in [ord("W"),ord("A"),ord("S"),ord("D")]:

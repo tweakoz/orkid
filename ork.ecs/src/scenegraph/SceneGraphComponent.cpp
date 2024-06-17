@@ -33,6 +33,12 @@ using namespace ork::reflect;
 using namespace ork::lev2;
 using modeldrawable_ptr_t = std::shared_ptr<lev2::ModelDrawableData>;
 ///////////////////////////////////////////////////////////////////////////////
+
+NodeDef::NodeDef(){
+  _modcolor = fvec4(1,1,1,1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("NodeName", &SceneGraphNodeItemData::_nodename);
   clazz->directProperty("LayerName", &SceneGraphNodeItemData::_layername);
@@ -49,18 +55,16 @@ SceneGraphComponentData::SceneGraphComponentData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphComponentData::declareNodeOnLayer(
-    std::string nodename,       //
-    lev2::drawabledata_ptr_t d, //
-    std::string l,              //
-    decompxf_ptr_t xf) {        //
+void SceneGraphComponentData::declareNodeOnLayer( nodedef_ptr_t ndef ) {
 
   auto nid             = std::make_shared<SceneGraphNodeItemData>();
-  nid->_nodename       = nodename;
-  nid->_drawabledata   = d;
-  nid->_layername      = l;
-  nid->_xfoverride     = xf;
-  _nodedatas[nodename] = nid;
+  nid->_nodename       = ndef->_nodename;
+  nid->_drawabledata   = ndef->_drawabledata;
+  nid->_layername      = ndef->_layername;
+  nid->_xfoverride     = ndef->_transform;
+  nid->_modcolor       = ndef->_modcolor;
+
+  _nodedatas[ndef->_nodename] = nid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
