@@ -198,12 +198,12 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data
             as_bb->_currentString = name;
           } else if (auto as_bbi = dynamic_pointer_cast<InstancedBillboardStringDrawable>(drw)) {
 
-            auto instanced_node = dynamic_pointer_cast<scenegraph::InstancedDrawableNode>(node);
+            /*auto instanced_node = dynamic_pointer_cast<scenegraph::InstancedDrawableNode>(node);
             size_t iid          = instanced_node->_instanced_drawable_id;
             auto instance_data  = as_bbi->_instancedata;
             instance_data->_miscdata[iid].set<std::string>(name);
             instance_data->_modcolors[iid] = fvec4(1, 1, 1, 1);
-            instance_data->_pickids[iid]   = 0;
+            instance_data->_pickids[iid]   = 0;*/
 
             // printf( "setname<%s>\n", name.c_str() );
           }

@@ -35,6 +35,7 @@ drawable_ptr_t InstancedModelDrawableData::createDrawable() const {
   drw->_data = this;
   drw->bindModelAsset(_assetpath);
   drw->_modcolor = _modcolor;
+  drw->resize(_maxinstances);
   return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -53,7 +53,10 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
       py::class_<InstancedModelDrawableData, DrawableData, instancedmodeldrawabledata_ptr_t>(module_lev2, "InstancedModelDrawableData")
       .def(py::init<>([](std::string modelpath) -> instancedmodeldrawabledata_ptr_t {
         return std::make_shared<InstancedModelDrawableData>(modelpath);
-      }));
+      }))
+      .def("resize",[](instancedmodeldrawabledata_ptr_t d, size_t count){
+        d->resize(count);
+      });
   type_codec->registerStdCodec<instancedmodeldrawabledata_ptr_t>(instmdldrawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto drawable_type = py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable")
@@ -72,6 +75,13 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                                "modelinst",
                                [](model_drawable_ptr_t drw) -> xgmmodelinst_ptr_t { return drw->_modelinst; });
   type_codec->registerStdCodec<model_drawable_ptr_t>(mdldrawable_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto instdrawable_type = py::class_<InstancedDrawable,Drawable, instanced_drawable_ptr_t>(module_lev2, "InstancedDrawable")
+                           .def_property(
+                               "instance_data",
+                               [](instanced_drawable_ptr_t drw) -> instanceddrawinstancedata_ptr_t { return drw->_instancedata; },
+                               [](instanced_drawable_ptr_t drw, instanceddrawinstancedata_ptr_t idata) { drw->_instancedata = idata; });
+  type_codec->registerStdCodec<instanced_drawable_ptr_t>(instdrawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct InstanceMatricesProxy {
     instanceddrawinstancedata_ptr_t _instancedata;

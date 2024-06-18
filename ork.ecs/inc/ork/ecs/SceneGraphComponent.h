@@ -58,10 +58,6 @@ public:
   void DoRegisterWithScene(SceneComposer& sc) const final;
 
   void declareNodeOnLayer( nodedef_ptr_t ndef );
-                           //std::string nodename, //
-                           //lev2::drawabledata_ptr_t d, //
-                           //std::string l, //
-                           //decompxf_ptr_t xf = nullptr);
 
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
 
@@ -98,8 +94,6 @@ public:
 
   std::map<std::string,sgnodeitem_ptr_t> _nodeitems;
 
-  //lev2::drawable_ptr_t _drawable;
-  //lev2::scenegraph::node_ptr_t _sgnode;
   xfnode_ptr_t _currentXF;
   SceneGraphSystem* _system = nullptr;
 };
@@ -123,6 +117,9 @@ public:
     void bindToRtGroup(lev2::rtgroup_ptr_t rtgroup);
     void bindToCamera(lev2::cameradata_ptr_t camera);
     void declareLayer(const std::string& layername);
+
+    void declareNodeOnLayer( nodedef_ptr_t ndef );
+
 private:
 
   friend struct SceneGraphSystem;
@@ -141,6 +138,8 @@ private:
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
   std::vector<oncreatesys_lambda_t> _onCreateSystemOperations;
   std::vector<std::string> _declaredLayers;
+
+  std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
 };
 
 using sgsystemdata_ptr_t = std::shared_ptr<SceneGraphSystemData>;
@@ -185,6 +184,9 @@ struct SceneGraphSystem final : public System {
   void _onNotify(token_t evID, evdata_t data ) final;
   void _onRequest(impl::sys_response_ptr_t response, token_t reqID, evdata_t data ) final;
   void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) final;
+
+  void _instantiateDeclaredNodes();
+  
   ///////////////////////////////
   void _rt_process();
   ///////////////////////////////
@@ -194,6 +196,7 @@ struct SceneGraphSystem final : public System {
   lev2::cameradatalut_ptr_t _camlut;
   lev2::drawablecache_ptr_t _drwcache;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
+  std::map<std::string,sgnodeitem_ptr_t> _nodeitems;
   ///////////////////////////////
   varmap::varmap_ptr_t _mergedParams;
   ///////////////////////////////

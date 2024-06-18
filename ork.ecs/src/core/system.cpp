@@ -90,6 +90,8 @@ System::~System(){};
 
 void System::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
 }
+void System::_onGpuLink(Simulation* psi, lev2::Context* ctx) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

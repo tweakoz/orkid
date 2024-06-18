@@ -30,7 +30,7 @@ struct Layer;
 struct Node;
 struct DrawableNode;
 struct CameraNode;
-struct InstancedDrawableNode;
+//struct InstancedDrawableNode;
 struct LightNode;
 struct ProbeNode;
 struct Scene;
@@ -44,7 +44,7 @@ using node_atomicptr_t   = std::atomic<node_ptr_t>;
 using scene_ptr_t        = std::shared_ptr<Scene>;
 using drawable_node_ptr_t = std::shared_ptr<DrawableNode>;
 using camera_node_ptr_t = std::shared_ptr<CameraNode>;
-using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
+//using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
 using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
 using synchro_ptr_t = std::shared_ptr<Synchro>;
@@ -96,14 +96,14 @@ struct CameraeNode final : public Node {
 //  that is part of another instancing group
 ///////////////////////////////////////////////////////////////////////////////
 
-struct InstancedDrawableNode final : public Node {
+/*struct InstancedDrawableNode final : public Node {
 
   InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
   ~InstancedDrawableNode();
 
   instanced_drawable_ptr_t _shared_drawable;
   size_t _instanced_drawable_id = 0;
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,8 +130,8 @@ struct ProbeNode final : public Node {
 struct Layer {
 
   using drawablenodevect_t = std::vector<drawable_node_ptr_t>;
-  using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
-  using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
+  //using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
+  //using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
   using lightnodevect_t = std::vector<lightnode_ptr_t>;
   using probenodevect_t = std::vector<probenode_ptr_t>;
 
@@ -150,8 +150,8 @@ struct Layer {
       create an instanced node and assign as an instance in parent_drawable
   */
 
-  instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t parent_drawable);
-  void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
+  //instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t parent_drawable);
+  //void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
 
   //! create/remove drawable nodes
 
@@ -173,7 +173,7 @@ struct Layer {
   std::string _name;
 
   LockedResource<drawablenodevect_t> _drawable_nodes;
-  LockedResource<instanced_drawmap_t> _instanced_drawable_map;
+  //LockedResource<instanced_drawmap_t> _instanced_drawable_map;
   LockedResource<lightnodevect_t> _lightnodes;
   LockedResource<probenodevect_t> _probenodes;
 

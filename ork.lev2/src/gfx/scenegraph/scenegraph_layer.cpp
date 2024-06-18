@@ -76,44 +76,6 @@ void Layer::removeDrawableNode(drawable_node_ptr_t node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-instanced_drawable_node_ptr_t Layer::createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable) {
-  instanced_drawable_node_ptr_t rval = std::make_shared<InstancedDrawableNode>(named, drawable);
-  size_t count                       = 0;
-  _instanced_drawable_map.atomicOp([rval, drawable, &count](Layer::instanced_drawmap_t& unlocked) { //
-    auto& vect                   = unlocked[drawable];
-    rval->_instanced_drawable_id = vect.size();
-    vect.push_back(rval);
-    count = rval->_instanced_drawable_id + 1;
-  });
-  drawable->_instancedata->resize(count);
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Layer::removeInstancedDrawableNode(instanced_drawable_node_ptr_t node) {
-
-  _instanced_drawable_map.atomicOp([node](Layer::instanced_drawmap_t& unlocked) {
-    auto drawable = node->_shared_drawable;
-
-    auto it_d = unlocked.find(drawable);
-    OrkAssert(it_d != unlocked.end());
-
-    auto& vect = it_d->second;
-
-    if (vect.size() > 1) {
-      auto it  = vect.begin() + node->_instanced_drawable_id;
-      auto rit = vect.rbegin();
-      *it      = *rit;
-      vect.erase(rit.base());
-    } else {
-      vect.clear();
-    }
-  });
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 lightnode_ptr_t Layer::createLightNode(std::string named, light_ptr_t light) {
   lightnode_ptr_t rval = std::make_shared<LightNode>(named, light);
 

@@ -74,22 +74,6 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
       }
     });
 
-    ////////////////////////////////////////////////////////////////////////////
-
-    l->_instanced_drawable_map.atomicOp([drawable_layer, this](const Layer::instanced_drawmap_t& unlocked) {
-      for (const auto& map_item : unlocked) {
-        instanced_drawable_ptr_t drawable = map_item.first;
-        if (drawable) {
-          const Layer::instanced_drawablenodevect_t& instances_vect = map_item.second;
-          size_t instances_count                                    = instances_vect.size();
-          drawable->resize(instances_count);
-          if (RENDER_DEBUG_LOG) {
-            logchan_sgrender->log("enqueue instanced-drawable<%s> instances_count<%zu>", drawable->_name.c_str(), instances_count);
-          }
-        }
-      }
-    });
-
   } // for (auto l : layers) {
 
   ////////////////////////////////////////////////////////////////////////////

@@ -232,6 +232,7 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
     }
   }
   _activeComponents.insert(component);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -432,6 +433,21 @@ bool BulletSystem::_onLink(Simulation* psi) {
 
 void BulletSystem::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
   _debugger->_onGpuInit(psi, ctx);
+}
+void BulletSystem::_onGpuLink(Simulation* psi, lev2::Context* ctx) {
+
+  for( auto component : _activeComponents ) {
+    auto iname = component->mBOCD._instanceNodeName;
+    if( iname != "" ){
+      auto ent = component->GetEntity();
+      OrkAssert(ent!=nullptr);
+      auto sgsys = simulation()->findSystem<SceneGraphSystem>();
+      OrkAssert(sgsys!=nullptr);
+      auto itnode = sgsys->_nodeitems.find(iname);
+      OrkAssert(itnode!=sgsys->_nodeitems.end());
+      
+    }
+  }
 }
 void BulletSystem::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
   _debugger->_onGpuExit(psi, ctx);

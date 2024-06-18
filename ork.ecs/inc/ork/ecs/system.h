@@ -133,6 +133,7 @@ protected:
   void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
 
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);
+  virtual void _onGpuLink(Simulation* psi, lev2::Context* ctx);
   virtual void _onGpuExit(Simulation* psi, lev2::Context* ctx);
   virtual void _onUpdate(Simulation* inst);
 

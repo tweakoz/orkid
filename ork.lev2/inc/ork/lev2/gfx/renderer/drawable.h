@@ -389,7 +389,9 @@ struct InstancedModelDrawableData : public DrawableData {
   }
   InstancedModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
+  void resize(size_t count) { _maxinstances=count; }
   AssetPath _assetpath;
+  size_t _maxinstances = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

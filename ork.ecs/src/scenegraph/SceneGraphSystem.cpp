@@ -67,6 +67,20 @@ void SceneGraphSystemData::setInternalSceneParam(const varmap::key_t& key, const
 void SceneGraphSystemData::declareLayer(const std::string& layername) {
   _declaredLayers.push_back(layername);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphSystemData::declareNodeOnLayer( nodedef_ptr_t ndef ){
+  auto nid             = std::make_shared<SceneGraphNodeItemData>();
+  nid->_nodename       = ndef->_nodename;
+  nid->_drawabledata   = ndef->_drawabledata;
+  nid->_layername      = ndef->_layername;
+  nid->_xfoverride     = ndef->_transform;
+  nid->_modcolor       = ndef->_modcolor;
+
+  _nodedatas[ndef->_nodename] = nid;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystemData::addStaticDrawableData(std::string layername, lev2::drawabledata_ptr_t drwdata) {
@@ -153,6 +167,47 @@ void SceneGraphSystem::_addStaticDrawable(std::string layername, lev2::drawable_
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphSystem::_instantiateDeclaredNodes(){
+  for (auto NID_item : _SGSD._nodedatas) {
+    auto NID = NID_item.second;
+    if (NID->_drawabledata) {
+      auto drwdata = NID->_drawabledata;
+      auto layer = _scene->findLayer(NID->_layername);
+      auto nitem                            = std::make_shared<SceneGraphNodeItem>();
+      nitem->_drawable                      = _drwcache->fetch(drwdata);
+      nitem->_nodename                      = NID->_nodename;
+      nitem->_data                          = NID;
+      _nodeitems[NID->_nodename] = nitem;
+
+      if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
+        auto node = layer->createDrawableNode(NID->_nodename, as_instanced);
+        nitem->_sgnode = node;
+        size_t count = as_instanced->_count;
+        auto idata = as_instanced->_instancedata;
+        for( size_t i=0; i<count; i++ ){
+
+          int ix = rand()&0xffff;
+          int iz = rand()&0xffff;
+          float fx = (float(ix)/32768.0f-1.0f)*100.0f;
+          float fz = (float(iz)/32768.0f-1.0f)*100.0f;
+          fvec3 pos(fx,0,fz);
+
+          idata->_worldmatrices[i].setColumn(3,pos);
+          idata->_modcolors[i] = fvec4(1,1,1,1);
+          idata->_pickids[i] = 0;
+          //printf( "init instanced<%d>\n", i );
+        }
+      } else {
+        auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+        node->_modcolor = NID->_modcolor;
+        nitem->_sgnode = node;
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // final
 
   /////////////////////////////////////////
@@ -182,6 +237,8 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     _scene->_staticDrawables.push_back(item);
   }
 
+  _instantiateDeclaredNodes();
+  
   _scene->_dbufcontext_SG = sim->dbufcontext();
 
   _scene->gpuInit(ctx);
@@ -200,18 +257,16 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
       }
     }
   }
+  for (auto NID_item : _SGSD._nodedatas) {
+    auto NID = NID_item.second;
+    if (NID->_drawabledata) {
+      _drwcache->fetch(NID->_drawabledata);
+    }
+  }
 
   for (auto DRWDATA : _SGSD._drawdatas_prefetchlist) {
     _drwcache->fetch(DRWDATA);
   }
-
-  /////////////////////////////////////////
-
-  //auto resize_op = [=]() {
-    //auto& compositor_ctx = _scene->_compositorImpl->compositingContext();
-    //compositor_ctx.Resize(1280, 720);
-  //};
-  //_renderops.push(resize_op);
 
   /////////////////////////////////////////
 }
@@ -284,7 +339,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           component->_nodeitems[NID->_nodename] = nitem;
 
           if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
-            nitem->_sgnode = layer->createInstancedDrawableNode(NID->_nodename, as_instanced);
+            nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
           } else {
             auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
             node->_modcolor = NID->_modcolor;
@@ -374,7 +429,7 @@ void SceneGraphSystem::_onUnLink(Simulation* psi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneGraphSystem::_onStage(Simulation* psi) {
-  return true;
+    return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onUnstage(Simulation* psi) {
@@ -383,6 +438,7 @@ void SceneGraphSystem::_onUnstage(Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneGraphSystem::_onActivate(Simulation* psi) // final
 {
+
   return true;
 }
 void SceneGraphSystem::_onDeactivate(Simulation* inst) // final

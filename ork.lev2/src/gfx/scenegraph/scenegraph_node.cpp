@@ -50,18 +50,6 @@ DrawableNode::~DrawableNode() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InstancedDrawableNode::InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable)
-    : Node(named)
-    , _shared_drawable(drawable) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-InstancedDrawableNode::~InstancedDrawableNode() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 LightNode::LightNode(std::string named, light_ptr_t light)
     : Node(named)
     , _light(light) {

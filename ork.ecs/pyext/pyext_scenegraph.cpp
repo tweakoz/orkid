@@ -75,7 +75,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
             sgcd->declareNodeOnLayer(ndef);
           },
           R"doc(
-        Declares a node on a specified layer.
+        Declares a node on a specified layer (scoped to component).
 
         Parameters:
         name (str): The name of the node.
@@ -108,8 +108,39 @@ void pyinit_scenegraph(py::module& module_ecs) {
           auto val_decoded = type_codec->decode(val_obj);
           sgsys->setInternalSceneParam(key_str, val_decoded);
         }
-      });
-  /////////////////////////////////////////////////////////////////////////////////
+      })
+      .def(
+          "declareNodeOnLayer",
+          [](sgsystemdata_ptr_t sgsys, py::kwargs kwargs) { //
+            auto ndef = std::make_shared<NodeDef>();
+
+            if (kwargs.contains("name")) {
+              ndef->_nodename = kwargs["name"].cast<std::string>();
+            }
+            if (kwargs.contains("drawable")) {
+              ndef->_drawabledata = kwargs["drawable"].cast<lev2::drawabledata_ptr_t>();
+            }
+            if (kwargs.contains("layer")) {
+              ndef->_layername = kwargs["layer"].cast<std::string>();
+            }
+            if (kwargs.contains("transform")) {
+              ndef->_transform = kwargs["transform"].cast<decompxf_ptr_t>();
+            }
+            if (kwargs.contains("modcolor")) {
+              ndef->_modcolor = kwargs["modcolor"].cast<fvec4>();
+            }
+            sgsys->declareNodeOnLayer(ndef);
+          },
+          R"doc(
+        Declares a node on a specified layer (scoped to system).
+
+        Parameters:
+        name (str): The name of the node.
+        drawable (lev2::drawabledata_ptr_t): The drawable data associated with the node.
+        layer (str): The name of the layer.
+        transform (decompxf_ptr_t, optional): The transformation to be applied. Defaults to None.
+     )doc");
+      /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
       py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
           .def(

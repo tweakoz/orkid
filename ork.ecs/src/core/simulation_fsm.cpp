@@ -220,8 +220,12 @@ void Simulation::_buildStateMachine() {
       SystemLut render_systems;
       _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
 
-      for (auto sys : render_systems)
+      for (auto sys : render_systems){
         sys.second->_onGpuInit(this, _currentdrwev->_target);
+      }
+      for (auto sys : render_systems){
+        sys.second->_onGpuLink(this, _currentdrwev->_target);
+      }
 
       auto LOCKS2 = lev2::GfxEnv::dumpLocks();
 

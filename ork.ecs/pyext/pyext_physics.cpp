@@ -88,7 +88,11 @@ void pyinit_physics(py::module& module_ecs) {
           .def_property(
               "angularFactor",
               [](bulletcompdata_ptr_t physc) -> fvec3 { return physc->_angularFactor; },
-              [](bulletcompdata_ptr_t& physc, fvec3 val) { physc->_angularFactor = val; });
+              [](bulletcompdata_ptr_t& physc, fvec3 val) { physc->_angularFactor = val; })
+          .def_property(
+              "instanceNodeName",
+              [](bulletcompdata_ptr_t physc) -> std::string { return physc->_instanceNodeName; },
+              [](bulletcompdata_ptr_t& physc, std::string val) { physc->_instanceNodeName = val; });
 
   type_codec->registerStdCodec<bulletcompdata_ptr_t>(bullc_type);
   /////////////////////////////////////////////////////////////////////////////////

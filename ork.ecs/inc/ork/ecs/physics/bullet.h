@@ -88,6 +88,7 @@ public:
   uint32_t _groupCollidesWith = 0xffffffff;
   script_cb_t _collisionCallback;
   fvec3 _angularFactor;
+  std::string _instanceNodeName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
