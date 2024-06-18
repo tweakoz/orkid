@@ -60,6 +60,7 @@ public:
   void declareNodeOnLayer( nodedef_ptr_t ndef );
 
   std::map<std::string,sgnodeitemdata_ptr_t> _nodedatas;
+  lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 
 };
 
@@ -91,7 +92,7 @@ public:
   void_lambda_t _genTransformOperation();
   ///////////////////////////////
   const SceneGraphComponentData& _SGCD;
-
+  ::ork::lev2::scenegraph::node_instance_ptr_t _INSTANCE;
   std::map<std::string,sgnodeitem_ptr_t> _nodeitems;
 
   xfnode_ptr_t _currentXF;

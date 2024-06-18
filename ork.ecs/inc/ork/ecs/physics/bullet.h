@@ -89,6 +89,7 @@ public:
   script_cb_t _collisionCallback;
   fvec3 _angularFactor;
   std::string _instanceNodeName;
+  lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

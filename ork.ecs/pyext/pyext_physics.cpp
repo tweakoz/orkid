@@ -92,7 +92,12 @@ void pyinit_physics(py::module& module_ecs) {
           .def_property(
               "instanceNodeName",
               [](bulletcompdata_ptr_t physc) -> std::string { return physc->_instanceNodeName; },
-              [](bulletcompdata_ptr_t& physc, std::string val) { physc->_instanceNodeName = val; });
+              [](bulletcompdata_ptr_t& physc, std::string val) { physc->_instanceNodeName = val; })
+      .def(
+          "declareNodeInstance",
+          [](bulletcompdata_ptr_t physc, ::ork::lev2::scenegraph::node_instance_data_ptr_t nid) { //
+            physc->_INSTANCEDATA = nid;
+          });
 
   type_codec->registerStdCodec<bulletcompdata_ptr_t>(bullc_type);
   /////////////////////////////////////////////////////////////////////////////////

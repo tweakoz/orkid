@@ -138,11 +138,34 @@ void BulletSystem::_onUnlinkComponent(BulletObjectComponent* component) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onStageComponent(BulletObjectComponent* component) {
+  auto entity = component->GetEntity();
+  auto compdata = &component->mBOCD;
+  if(compdata->_INSTANCEDATA){
+    auto sgcomp = entity->typedComponent<SceneGraphComponent>();
+    if(sgcomp and (sgcomp->_SGCD._INSTANCEDATA == compdata->_INSTANCEDATA)) {
+      
+      auto groupname = compdata->_INSTANCEDATA->_groupname;
+
+      sgcomp->_INSTANCE = std::make_shared<::ork::lev2::scenegraph::NodeInstance>();
+      sgcomp->_INSTANCE->_groupname = groupname;
+      sgcomp->_INSTANCE->_instance_index = 0;
+      auto sgsys = simulation()->findSystem<SceneGraphSystem>();
+      // TODO : defer until nodes created ?
+      auto it = sgsys->_nodeitems.find(groupname);
+      OrkAssert(it!=sgsys->_nodeitems.end());
+    // alloc instance
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onUnstageComponent(BulletObjectComponent* component) {
+  auto entity = component->GetEntity();
+  auto sgcomp = entity->typedComponent<SceneGraphComponent>();
+  if(sgcomp->_INSTANCE){
+    // free instance
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

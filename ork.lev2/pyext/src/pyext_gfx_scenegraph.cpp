@@ -427,5 +427,17 @@ void pyinit_scenegraph(py::module& module_lev2) {
               });
   ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto instance_type = py::class_<NodeInstanceData, node_instance_data_ptr_t>(sgmodule, "NodeInstanceData")
+                           .def(py::init<>([](std::string name) -> node_instance_data_ptr_t { //
+                              auto nid =  std::make_shared<NodeInstanceData>(); 
+                              nid->_groupname = name;
+                              return nid;
+                            }))
+                           .def_property(
+                               "groupName",
+                               [](node_instance_data_ptr_t drw) -> std::string { return drw->_groupname; },
+                               [](node_instance_data_ptr_t drw, std::string idata) { drw->_groupname = idata; });
+  type_codec->registerStdCodec<node_instance_data_ptr_t>(instance_type);
 }
 } // namespace ork::lev2

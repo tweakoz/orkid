@@ -180,6 +180,17 @@ struct Layer {
   uint32_t _sortkey = 0;
 };
 
+struct NodeInstanceData  {
+  std::string _groupname;
+};
+struct NodeInstance {
+  std::string _groupname;
+  int _instance_index = 0;
+};
+
+using node_instance_data_ptr_t = std::shared_ptr<NodeInstanceData>;
+using node_instance_ptr_t = std::shared_ptr<NodeInstance>;
+
 ///////////////////////////////////////////////////////////////////////////
 struct SgPickBuffer {
 

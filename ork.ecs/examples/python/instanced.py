@@ -22,7 +22,7 @@ from lev2utils.cameras import *
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
 NUM_BALLS = 2500
-BALLS_NODE_NAME = "balls-node"
+BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -55,10 +55,16 @@ class ECS_MINIMAL(object):
     c_physics.isKinematic = False
     c_physics.disablePhysics = False
     c_physics.shape = sphere
-    c_physics.instanceNodeName = BALLS_NODE_NAME
 
-    #drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    #c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer=LAYERNAME)
+    ############################
+    # connect to instancing tech
+    ############################
+
+    nid = lev2.scenegraph.NodeInstanceData(BALLS_NODE_NAME)
+    c_physics.declareNodeInstance(nid)
+    c_scenegraph.declareNodeInstance(nid)
+
+    ############################
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball

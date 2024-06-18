@@ -82,7 +82,12 @@ void pyinit_scenegraph(py::module& module_ecs) {
         drawable (lev2::drawabledata_ptr_t): The drawable data associated with the node.
         layer (str): The name of the layer.
         transform (decompxf_ptr_t, optional): The transformation to be applied. Defaults to None.
-     )doc");
+     )doc")
+      .def(
+          "declareNodeInstance",
+          [](sgcomponentdata_ptr_t sgcd, ::ork::lev2::scenegraph::node_instance_data_ptr_t nid) { //
+            sgcd->_INSTANCEDATA = nid;
+          });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SceneGraphSystemData, SystemData, sgsystemdata_ptr_t>(module_ecs, "SceneGraphSystemData")
       .def(
@@ -101,14 +106,16 @@ void pyinit_scenegraph(py::module& module_ecs) {
         Parameters:
         name (str): The name of the layer.
      )doc")
-      .def("declareParams", [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {
-        for (auto& [key, value] : param_dict) {
-          auto key_str     = key.cast<std::string>();
-          auto val_obj     = py::reinterpret_borrow<py::object>(value);
-          auto val_decoded = type_codec->decode(val_obj);
-          sgsys->setInternalSceneParam(key_str, val_decoded);
-        }
-      })
+      .def(
+          "declareParams",
+          [type_codec](sgsystemdata_ptr_t sgsys, py::dict param_dict) {
+            for (auto& [key, value] : param_dict) {
+              auto key_str     = key.cast<std::string>();
+              auto val_obj     = py::reinterpret_borrow<py::object>(value);
+              auto val_decoded = type_codec->decode(val_obj);
+              sgsys->setInternalSceneParam(key_str, val_decoded);
+            }
+          })
       .def(
           "declareNodeOnLayer",
           [](sgsystemdata_ptr_t sgsys, py::kwargs kwargs) { //
@@ -140,7 +147,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
         layer (str): The name of the layer.
         transform (decompxf_ptr_t, optional): The transformation to be applied. Defaults to None.
      )doc");
-      /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
       py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
           .def(

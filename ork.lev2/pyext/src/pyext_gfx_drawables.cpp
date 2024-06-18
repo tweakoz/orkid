@@ -76,12 +76,12 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                                [](model_drawable_ptr_t drw) -> xgmmodelinst_ptr_t { return drw->_modelinst; });
   type_codec->registerStdCodec<model_drawable_ptr_t>(mdldrawable_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto instdrawable_type = py::class_<InstancedDrawable,Drawable, instanced_drawable_ptr_t>(module_lev2, "InstancedDrawable")
+  auto instanced_drawable_type = py::class_<InstancedDrawable,Drawable, instanced_drawable_ptr_t>(module_lev2, "InstancedDrawable")
                            .def_property(
                                "instance_data",
                                [](instanced_drawable_ptr_t drw) -> instanceddrawinstancedata_ptr_t { return drw->_instancedata; },
                                [](instanced_drawable_ptr_t drw, instanceddrawinstancedata_ptr_t idata) { drw->_instancedata = idata; });
-  type_codec->registerStdCodec<instanced_drawable_ptr_t>(instdrawable_type);
+  type_codec->registerStdCodec<instanced_drawable_ptr_t>(instanced_drawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct InstanceMatricesProxy {
     instanceddrawinstancedata_ptr_t _instancedata;
