@@ -101,7 +101,7 @@ struct InstancedDrawableNode final : public Node {
   InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
   ~InstancedDrawableNode();
 
-  instanced_drawable_ptr_t _drawable;
+  instanced_drawable_ptr_t _shared_drawable;
   size_t _instanced_drawable_id = 0;
 };
 

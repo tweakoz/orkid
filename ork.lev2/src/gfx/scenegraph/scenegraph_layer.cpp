@@ -94,7 +94,7 @@ instanced_drawable_node_ptr_t Layer::createInstancedDrawableNode(std::string nam
 void Layer::removeInstancedDrawableNode(instanced_drawable_node_ptr_t node) {
 
   _instanced_drawable_map.atomicOp([node](Layer::instanced_drawmap_t& unlocked) {
-    auto drawable = node->_drawable;
+    auto drawable = node->_shared_drawable;
 
     auto it_d = unlocked.find(drawable);
     OrkAssert(it_d != unlocked.end());

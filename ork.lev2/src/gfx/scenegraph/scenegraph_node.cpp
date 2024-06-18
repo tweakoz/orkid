@@ -52,7 +52,7 @@ DrawableNode::~DrawableNode() {
 
 InstancedDrawableNode::InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable)
     : Node(named)
-    , _drawable(drawable) {
+    , _shared_drawable(drawable) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

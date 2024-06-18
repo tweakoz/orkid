@@ -49,6 +49,13 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
       }));
   type_codec->registerStdCodec<modeldrawabledata_ptr_t>(mdldrawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto instmdldrawabledata_type = //
+      py::class_<InstancedModelDrawableData, DrawableData, instancedmodeldrawabledata_ptr_t>(module_lev2, "InstancedModelDrawableData")
+      .def(py::init<>([](std::string modelpath) -> instancedmodeldrawabledata_ptr_t {
+        return std::make_shared<InstancedModelDrawableData>(modelpath);
+      }));
+  type_codec->registerStdCodec<instancedmodeldrawabledata_ptr_t>(instmdldrawabledata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto drawable_type = py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable")
                            .def_property(
                                "scenegraph",
