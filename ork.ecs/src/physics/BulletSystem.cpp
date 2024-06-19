@@ -128,14 +128,14 @@ btDynamicsWorld* BulletSystem::BulletWorld() { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onLinkComponent(BulletObjectComponent* component) {
-  auto entity = component->GetEntity();
-  auto compdata = &component->mBOCD;
+  auto entity       = component->GetEntity();
+  auto compdata     = &component->mBOCD;
   auto instancedata = compdata->_INSTANCEDATA;
-  if(instancedata){
+  if (instancedata) {
     auto sgcomp = entity->typedComponent<SceneGraphComponent>();
     // if both SG and physics instancedatas are the same
     //  then both components are referencing to the same instance
-    if(sgcomp and (sgcomp->_SGCD._INSTANCEDATA == instancedata)) {
+    if (sgcomp and (sgcomp->_SGCD._INSTANCEDATA == instancedata)) {
       component->_mySGcomponentForInstancing = sgcomp;
     }
   }
@@ -156,7 +156,7 @@ void BulletSystem::_onStageComponent(BulletObjectComponent* component) {
 void BulletSystem::_onUnstageComponent(BulletObjectComponent* component) {
   auto entity = component->GetEntity();
   auto sgcomp = entity->typedComponent<SceneGraphComponent>();
-  if(sgcomp->_INSTANCE){
+  if (sgcomp->_INSTANCE) {
     // free instance
   }
 }
@@ -164,8 +164,8 @@ void BulletSystem::_onUnstageComponent(BulletObjectComponent* component) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
-  auto entity = component->GetEntity();
-
+  auto entity                     = component->GetEntity();
+  btRigidBody* rigid_body         = nullptr;
   auto compdata                   = &component->mBOCD;
   _lastcomponentfordata[compdata] = component;
 
@@ -204,18 +204,14 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         fmtx4 mtx           = xform->composed();
         btTransform btTrans = orkmtx4tobtmtx4(mtx);
         ////////////////////////////////
-        auto rigid_body = this->AddLocalRigidBody( shape_create_data.mEntity, 
-                                                   CDATA._mass, 
-                                                   btTrans, 
-                                                   pshape, 
-                                                   CDATA._groupAssign,
-                                                   CDATA._groupCollidesWith);
-        
-        if(CDATA._collisionCallback!=nullptr){
-          auto collision_tester = std::make_shared<OrkContactResultCallback>(rigid_body);
-          collision_tester->_onContact = CDATA._collisionCallback;
+        rigid_body = this->AddLocalRigidBody(
+            shape_create_data.mEntity, CDATA._mass, btTrans, pshape, CDATA._groupAssign, CDATA._groupCollidesWith);
+
+        if (CDATA._collisionCallback != nullptr) {
+          auto collision_tester         = std::make_shared<OrkContactResultCallback>(rigid_body);
+          collision_tester->_onContact  = CDATA._collisionCallback;
           component->_collisionCallback = collision_tester;
-          collision_tester->_system = this;
+          collision_tester->_system     = this;
           _collisionCallbacks.insert(collision_tester);
         }
 
@@ -250,17 +246,28 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
   _activeComponents.insert(component);
 
   // instance tracking (WIP)
-  if( component->_mySGcomponentForInstancing ){
-    // at this point this entity's SG component should be staged
-    // and therefore SG component's _INSTANCE should be already created
-    auto instance = component->_mySGcomponentForInstancing->_INSTANCE;
-    //OrkAssert(instance);
-    // and it's instanceID should also already be set..
-    //int instanceID = instance->_instance_index;
-    //printf( "PHYSICS INSTANCEID<%d>\n", instanceID );
-    //OrkAssert(instanceID>=0);
-  }
+  if (component->_mySGcomponentForInstancing) {
+    component->_mySGcomponentForInstancing->_onInstanceCreated = [=]() {
+      // at this point this entity's SG component should be staged
+      // and therefore SG component's _INSTANCE should be already created
+      auto instance = component->_mySGcomponentForInstancing->_INSTANCE;
+      // printf( "bsys sgc<%p> instance<%p>\n", (void*) component->_mySGcomponentForInstancing, (void*) instance.get() );
+      OrkAssert(instance);
+      // and it's instanceID should also already be set..
+      component->_sginstance_id = instance->_instance_index;
+      // printf( "PHYSICS INSTANCEID<%d>\n", component->_sginstance_id );
+      OrkAssert(component->_sginstance_id >= 0);
 
+      auto idata = instance->_idata;
+
+      auto applicator          = std::make_shared<InstanceApplicator>();
+      applicator->_transform   = entity->transform();
+      applicator->_instance_id = component->_sginstance_id;
+      applicator->_idata       = idata;
+
+      _applicators.push_back(applicator);
+    };
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -287,19 +294,20 @@ void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component) {
 static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar timeStep) {
   OrkAssert(world);
   btDiscreteDynamicsWorld* dynaworld = (btDiscreteDynamicsWorld*)world;
-  auto sim       = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
-  auto bulletsys = sim->findSystem<BulletSystem>();
+  auto sim                           = reinterpret_cast<Simulation*>(world->getWorldUserInfo());
+  auto bulletsys                     = sim->findSystem<BulletSystem>();
   dynaworld->applyGravity();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btRigidBody*
-BulletSystem::AddLocalRigidBody( Entity* pent, //
-                                 btScalar mass, //
-                                 const btTransform& startTransform, // 
-                                 btCollisionShape* shape,
-                                 uint32_t group_assign,uint32_t groups_collides_with ) { //
+btRigidBody* BulletSystem::AddLocalRigidBody(
+    Entity* pent,                      //
+    btScalar mass,                     //
+    const btTransform& startTransform, //
+    btCollisionShape* shape,
+    uint32_t group_assign,
+    uint32_t groups_collides_with) { //
   OrkAssert(pent);
 
   // rigidbody is dynamic if and only if mass is non zero, otherwise static
@@ -318,9 +326,8 @@ BulletSystem::AddLocalRigidBody( Entity* pent, //
   body->setRestitution(1.0f);
   body->setFriction(1.0f);
   // body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
-  body->setUserPointer(pent);
 
-  mDynamicsWorld->addRigidBody(body,group_assign,groups_collides_with);
+  mDynamicsWorld->addRigidBody(body, group_assign, groups_collides_with);
 
   auto G  = _systemData.GetGravity();
   auto GB = orkv3tobtv3(G);
@@ -353,33 +360,33 @@ btScalar OrkContactResultCallback::addSingleResult(
 
   if (body0 == monitoredBody || body1 == monitoredBody) {
 
-    if(_onContact){
+    if (_onContact) {
       const btCollisionObject* colObj0 = colObj0Wrap->getCollisionObject();
       const btCollisionObject* colObj1 = colObj1Wrap->getCollisionObject();
-       
+
       const btVector3& ptA       = cp.getPositionWorldOnA();
       const btVector3& ptB       = cp.getPositionWorldOnB();
       const btVector3& normalOnB = cp.m_normalWorldOnB;
-      int group0 = colObj0->getBroadphaseHandle()->m_collisionFilterGroup;
-      int group1 = colObj1->getBroadphaseHandle()->m_collisionFilterGroup;
+      int group0                 = colObj0->getBroadphaseHandle()->m_collisionFilterGroup;
+      int group1                 = colObj1->getBroadphaseHandle()->m_collisionFilterGroup;
 
       auto invocation = std::make_shared<deferred_script_invokation>();
 
       invocation->_cb = _onContact;
 
-      auto& datatable = invocation->_data.make<DataTable>();
-      auto entA = (Entity*) body0->getUserPointer();
-      auto entB = (Entity*) body1->getUserPointer();
-      EntityRef erefA = {entA->_entref};
-      EntityRef erefB = {entB->_entref};
-      datatable["entityA"_tok] = entA;
-      datatable["entityB"_tok] = entB;
-      datatable["entrefA"_tok] = erefA;
-      datatable["entrefB"_tok] = erefB;
-      datatable["groupA"_tok] = group0;
-      datatable["groupB"_tok] = group1;
-      datatable["pointA"_tok] = btv3toorkv3(ptA);
-      datatable["pointB"_tok] = btv3toorkv3(ptB);
+      auto& datatable            = invocation->_data.make<DataTable>();
+      auto entA                  = (Entity*)body0->getUserPointer();
+      auto entB                  = (Entity*)body1->getUserPointer();
+      EntityRef erefA            = {entA->_entref};
+      EntityRef erefB            = {entB->_entref};
+      datatable["entityA"_tok]   = entA;
+      datatable["entityB"_tok]   = entB;
+      datatable["entrefA"_tok]   = erefA;
+      datatable["entrefB"_tok]   = erefB;
+      datatable["groupA"_tok]    = group0;
+      datatable["groupB"_tok]    = group1;
+      datatable["pointA"_tok]    = btv3toorkv3(ptA);
+      datatable["pointB"_tok]    = btv3toorkv3(ptB);
       datatable["normalOnB"_tok] = btv3toorkv3(normalOnB).normalized();
 
       auto sim = _system->simulation();
@@ -464,16 +471,15 @@ void BulletSystem::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
 }
 void BulletSystem::_onGpuLink(Simulation* psi, lev2::Context* ctx) {
 
-  for( auto component : _activeComponents ) {
+  for (auto component : _activeComponents) {
     auto iname = component->mBOCD._instanceNodeName;
-    if( iname != "" ){
+    if (iname != "") {
       auto ent = component->GetEntity();
-      OrkAssert(ent!=nullptr);
+      OrkAssert(ent != nullptr);
       auto sgsys = simulation()->findSystem<SceneGraphSystem>();
-      OrkAssert(sgsys!=nullptr);
+      OrkAssert(sgsys != nullptr);
       auto itnode = sgsys->_nodeitems.find(iname);
-      OrkAssert(itnode!=sgsys->_nodeitems.end());
-      
+      OrkAssert(itnode != sgsys->_nodeitems.end());
     }
   }
 }
@@ -522,19 +528,22 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       int b = mMaxSubSteps;
       int m = std::min(a, b); // ? a : b; // ork::min()
       mNumSubStepsTaken += m;
-    
-      for(auto callback : _collisionCallbacks ){
+
+      for (auto callback : _collisionCallbacks) {
         auto body = callback->monitoredBody;
         mDynamicsWorld->contactTest(body, *callback);
       }
-
-
-
     }
 
     if (is_debug)
       _debugger->endSimFrame(this);
   }
+  if (true)
+    for (auto a : _applicators) {
+      auto out_xform                             = a->_transform;
+      auto c                                     = out_xform->composed();
+      a->_idata->_worldmatrices[a->_instance_id] = c;
+    }
 }
 
 void BulletSystem::_onNotify(token_t evID, evdata_t data) {
@@ -555,12 +564,12 @@ void BulletSystem::_onNotify(token_t evID, evdata_t data) {
     }
     case "IMPULSE_ON_COMPONENT"_crcu: {
       const auto& table = data.get<DataTable>();
-      auto compref     = table["component"_tok].get<comp_ref_t>();
-      auto component = simulation()->_findComponentFromRef(compref);
-      auto as_physics = dynamic_cast<BulletObjectComponent*>(component);
-      auto rigid_body  = as_physics->_rigidbody;
-      auto impulse_val = table["impulse"_tok].get<fvec3>();
-      //printf( "physc<%p> rbody<%p>\n", (void*) as_physics, (void*) rigid_body );
+      auto compref      = table["component"_tok].get<comp_ref_t>();
+      auto component    = simulation()->_findComponentFromRef(compref);
+      auto as_physics   = dynamic_cast<BulletObjectComponent*>(component);
+      auto rigid_body   = as_physics->_rigidbody;
+      auto impulse_val  = table["impulse"_tok].get<fvec3>();
+      // printf( "physc<%p> rbody<%p>\n", (void*) as_physics, (void*) rigid_body );
       rigid_body->applyCentralImpulse(orkv3tobtv3(impulse_val));
       break;
     }

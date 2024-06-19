@@ -97,6 +97,7 @@ public:
 
   xfnode_ptr_t _currentXF;
   SceneGraphSystem* _system = nullptr;
+  void_lambda_t _onInstanceCreated;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

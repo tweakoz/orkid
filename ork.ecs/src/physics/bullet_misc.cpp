@@ -120,6 +120,10 @@ void EntMotionState::setWorldTransform(const btTransform& transform) {
     out_xform->_rotation = rotation;
     
     mTransform = transform;
+
+    if(_postApply){
+      _postApply();
+    }
   }
 }
 

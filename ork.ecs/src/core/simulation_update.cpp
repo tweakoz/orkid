@@ -213,7 +213,6 @@ void Simulation::_serviceActivateQueue() {
     ecs::Entity* pent = item._entity;
     OrkAssert(pent);
     if (auto parch = pent->data()->GetArchetype()) {
-      parch->linkEntity(this, pent);
       parch->stageEntity(this, pent);
       parch->activateEntity(this, pent);
     }

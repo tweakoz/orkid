@@ -128,12 +128,12 @@ public:
   EntMotionState(const btTransform& initialpos, Entity* entity);
 
   virtual void getWorldTransform(btTransform& transform) const;
-
   virtual void setWorldTransform(const btTransform& transform);
 
-protected:
   Entity* mEntity;
   btTransform mTransform;
+  void_lambda_t _postApply;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ public:
   BulletShapeBaseInst* _shapeinst = nullptr;
   orkcontactcallback_ptr_t _collisionCallback;
   SceneGraphComponent* _mySGcomponentForInstancing = nullptr;
-
+  int _sginstance_id = -1;
   void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
   void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
 
@@ -217,6 +217,13 @@ public:
 
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct InstanceApplicator{
+  decompxf_ptr_t _transform = nullptr;
+  int _instance_id = -1;
+  lev2::instanceddrawinstancedata_ptr_t _idata;
+};
+using instance_applicator_ptr_t = std::shared_ptr<InstanceApplicator>;
 
 struct BulletSystem : public System {
   DeclareAbstractX(BulletSystem, System);
@@ -279,6 +286,7 @@ public:
   std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
   std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
+  std::vector<instance_applicator_ptr_t> _applicators;
 };
 
 

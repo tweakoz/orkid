@@ -21,11 +21,11 @@ from lev2utils.cameras import *
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 2500
+NUM_BALLS = 1200
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
-class ECS_MINIMAL(object):
+class ECS_INSTANCED(object):
 
   ##############################################
 
@@ -232,7 +232,7 @@ class ECS_MINIMAL(object):
     i = random.randint(-5,5)
     j = random.randint(-5,5)
     prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < NUM_BALLS:
+    if prob < 40 and self.spawncounter < NUM_BALLS:
       self.spawncounter += 1
       SAD = ecs.SpawnAnonDynamic("ball_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)
@@ -275,4 +275,4 @@ class ECS_MINIMAL(object):
 
 ###############################################################################
 
-ECS_MINIMAL().ezapp.mainThreadLoop()
+ECS_INSTANCED().ezapp.mainThreadLoop()

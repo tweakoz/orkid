@@ -88,9 +88,11 @@ void Archetype::unlinkEntity(ork::ecs::Simulation* psi, ork::ecs::Entity* pent) 
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::stageEntity(ork::ecs::Simulation* psi, ork::ecs::Entity* pent) const {
+    //printf( "stage ent<%p>\n", pent );
     const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
       Component* inst = (*it).second;
+      //printf( "stage comp<%p>\n", inst );
       inst->_stage(psi);
     }
 }
@@ -104,6 +106,7 @@ void Archetype::unstageEntity(ork::ecs::Simulation* psi, ork::ecs::Entity* pent)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::activateEntity(Simulation* psi, Entity* pent) const {
+  //printf( "activate ent<%p>\n", pent );
   deactivateEntity(psi, pent);
 
     //const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
@@ -114,11 +117,13 @@ void Archetype::activateEntity(Simulation* psi, Entity* pent) const {
   auto& comp_table = pent->GetComponents();
   for (auto item : comp_table.GetComponents()) {
     auto comp = item.second;
+    //printf( "activate comp<%p>\n", comp );
     comp->_activate(psi);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::deactivateEntity(Simulation* psi, Entity* pent) const {
+  //printf( "deactivate ent<%p>\n", pent );
     const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
       Component* inst = (*it).second;

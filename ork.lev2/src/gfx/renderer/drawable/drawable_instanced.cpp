@@ -20,17 +20,24 @@ namespace ork::lev2 {
 
 void InstancedDrawableInstanceData::resize(size_t count) {
 
-  size_t max_inst = InstancedModelDrawable::k_max_instances;
+  size_t GPU_SIZE = InstancedModelDrawable::k_max_instances;
+  OrkAssert(count<=GPU_SIZE);
 
-  _worldmatrices.resize(max_inst);
-  _miscdata.resize(max_inst);
-  _pickids.resize(max_inst);
-  _modcolors.resize(max_inst);
+  _worldmatrices.resize(GPU_SIZE);
+  _miscdata.resize(GPU_SIZE);
+  _pickids.resize(GPU_SIZE);
+  _modcolors.resize(GPU_SIZE);
   _count = count;
   _instancePool.clear();
-  for (size_t i = 0; i < max_inst; i++) {
+  for (size_t i = 0; i < GPU_SIZE; i++) {
     _pickids[i]   = i;
     _modcolors[i] = fvec4(1, 1, 1, 1);
+    _worldmatrices[i].setColumn(0,fvec4(0,0,0,0));
+    _worldmatrices[i].setColumn(1,fvec4(0,0,0,0));
+    _worldmatrices[i].setColumn(2,fvec4(0,0,0,0));
+    _worldmatrices[i].setColumn(3,fvec4(0,0,0,1));
+  }
+  for (size_t i = 0; i < count; i++) {
     _instancePool.insert(i);
   }
 }

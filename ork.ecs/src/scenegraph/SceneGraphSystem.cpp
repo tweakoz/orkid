@@ -70,13 +70,13 @@ void SceneGraphSystemData::declareLayer(const std::string& layername) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphSystemData::declareNodeOnLayer( nodedef_ptr_t ndef ){
-  auto nid             = std::make_shared<SceneGraphNodeItemData>();
-  nid->_nodename       = ndef->_nodename;
-  nid->_drawabledata   = ndef->_drawabledata;
-  nid->_layername      = ndef->_layername;
-  nid->_xfoverride     = ndef->_transform;
-  nid->_modcolor       = ndef->_modcolor;
+void SceneGraphSystemData::declareNodeOnLayer(nodedef_ptr_t ndef) {
+  auto nid           = std::make_shared<SceneGraphNodeItemData>();
+  nid->_nodename     = ndef->_nodename;
+  nid->_drawabledata = ndef->_drawabledata;
+  nid->_layername    = ndef->_layername;
+  nid->_xfoverride   = ndef->_transform;
+  nid->_modcolor     = ndef->_modcolor;
 
   _nodedatas[ndef->_nodename] = nid;
 }
@@ -167,42 +167,42 @@ void SceneGraphSystem::_addStaticDrawable(std::string layername, lev2::drawable_
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphSystem::_instantiateDeclaredNodes(){
+void SceneGraphSystem::_instantiateDeclaredNodes() {
   for (auto NID_item : _SGSD._nodedatas) {
     auto NID = NID_item.second;
     if (NID->_drawabledata) {
-      auto drwdata = NID->_drawabledata;
-      auto layer = _scene->findLayer(NID->_layername);
-      auto nitem                            = std::make_shared<SceneGraphNodeItem>();
-      nitem->_nodename                      = NID->_nodename;
-      nitem->_data                          = NID;
+      auto drwdata               = NID->_drawabledata;
+      auto layer                 = _scene->findLayer(NID->_layername);
+      auto nitem                 = std::make_shared<SceneGraphNodeItem>();
+      nitem->_nodename           = NID->_nodename;
+      nitem->_data               = NID;
       _nodeitems[NID->_nodename] = nitem;
 
-      auto on_gpu_init = [=](){
-        nitem->_drawable                      = _drwcache->fetch(drwdata);
+      auto on_gpu_init = [=]() {
+        nitem->_drawable = _drwcache->fetch(drwdata);
 
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
-          auto node = layer->createDrawableNode(NID->_nodename, as_instanced);
+          auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
           nitem->_sgnode = node;
-          size_t count = as_instanced->_count;
-          auto idata = as_instanced->_instancedata;
-          for( size_t i=0; i<count; i++ ){
+          size_t count   = as_instanced->_count;
+          auto idata     = as_instanced->_instancedata;
+          for (size_t i = 0; i < count; i++) {
 
-            int ix = rand()&0xffff;
-            int iz = rand()&0xffff;
-            float fx = (float(ix)/32768.0f-1.0f)*100.0f;
-            float fz = (float(iz)/32768.0f-1.0f)*100.0f;
-            fvec3 pos(fx,0,fz);
+            int ix   = rand() & 0xffff;
+            int iz   = rand() & 0xffff;
+            float fx = (float(ix) / 32768.0f - 1.0f) * 100.0f;
+            float fz = (float(iz) / 32768.0f - 1.0f) * 100.0f;
+            fvec3 pos(fx, 0, fz);
 
-            idata->_worldmatrices[i].setColumn(3,pos);
-            idata->_modcolors[i] = fvec4(1,1,1,1);
-            idata->_pickids[i] = 0;
+            idata->_worldmatrices[i].setColumn(3, pos);
+            idata->_modcolors[i] = fvec4(1, 1, 1, 1);
+            idata->_pickids[i]   = 0;
             //printf( "init instanced<%d>\n", i );
           }
         } else {
-          auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+          auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
           node->_modcolor = NID->_modcolor;
-          nitem->_sgnode = node;
+          nitem->_sgnode  = node;
         }
       };
 
@@ -213,16 +213,14 @@ void SceneGraphSystem::_instantiateDeclaredNodes(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneGraphSystem::enqueueOnGpuInit(void_lambda_t L){
-  _onGpuInitOpQueue.atomicOp([L](std::vector<void_lambda_t>& unlocked){
-    unlocked.push_back(L);
-  });
+void SceneGraphSystem::enqueueOnGpuInit(void_lambda_t L) {
+  _onGpuInitOpQueue.atomicOp([L](std::vector<void_lambda_t>& unlocked) { unlocked.push_back(L); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // final
-  
+
   _scene->_dbufcontext_SG = sim->dbufcontext();
 
   _scene->gpuInit(ctx);
@@ -254,8 +252,8 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 
   /////////////////////////////////////////
 
-  _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked){
-    for( auto item : unlocked ){
+  _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked) {
+    for (auto item : unlocked) {
       item();
     }
     unlocked.clear();
@@ -265,7 +263,7 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
-  // printf("sgsys stage component<%p>\n", (void*) component);
+  //printf("sgsys stage component<%p>\n", (void*) component);
   this->_components.atomicOp([component](SceneGraphSystem::component_set_t& unlocked) { //
     unlocked.insert(component);                                                         //
   });
@@ -333,33 +331,37 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
 
           if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
             nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
-            OrkAssert(false); 
+            OrkAssert(false);
             // we should not hit this, because the instanced drawable
             //  should be @ system scope, not component scope
 
           } else {
-            auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+            auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
             node->_modcolor = NID->_modcolor;
-            nitem->_sgnode = node;
+            nitem->_sgnode  = node;
           }
         }
       }
     }
     // now check for INSTANCE's
-    if(COMPDATA._INSTANCEDATA){
-      auto instance = std::make_shared<lev2::scenegraph::NodeInstance>();
+    if (COMPDATA._INSTANCEDATA) {
+      auto instance        = std::make_shared<lev2::scenegraph::NodeInstance>();
       instance->_groupname = COMPDATA._INSTANCEDATA->_groupname;
       // TODO : defer until nodes created ?
       auto it = _nodeitems.find(instance->_groupname);
-      OrkAssert(it!=_nodeitems.end());
+      OrkAssert(it != _nodeitems.end());
       sgnodeitem_ptr_t groupitem = it->second;
-      auto group_drawable = std::dynamic_pointer_cast<lev2::InstancedDrawable>(groupitem->_drawable);
-      instance->_idrawable = group_drawable; 
-      auto idata = group_drawable->_instancedata;
-      instance->_idata = idata;
-      int ID = idata->allocInstance();
-      instance->_instance_index = ID;
-      component->_INSTANCE = instance;
+      auto group_drawable        = std::dynamic_pointer_cast<lev2::InstancedDrawable>(groupitem->_drawable);
+      instance->_idrawable       = group_drawable;
+      auto idata                 = group_drawable->_instancedata;
+      instance->_idata           = idata;
+      int ID                     = idata->allocInstance();
+      instance->_instance_index  = ID;
+      component->_INSTANCE       = instance;
+      //printf( "sgc<%p> instanced sg pseudonode id<%d>\n", this, ID );
+      if(component->_onInstanceCreated){
+        component->_onInstanceCreated();
+      }
     }
   };
   //////////////////////////////
@@ -403,11 +405,11 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
       }
     }
     //////////////////////////////////
-    // now remove instances... 
+    // now remove instances...
     //////////////////////////////////
-    if(component->_INSTANCE){
+    if (component->_INSTANCE) {
       int index = component->_INSTANCE->_instance_index;
-      OrkAssert(index>=0);
+      OrkAssert(index >= 0);
       component->_INSTANCE->_idata->freeInstance(index);
       OrkAssert(false); // remove instance
     }
@@ -480,8 +482,8 @@ bool SceneGraphSystem::_onStage(Simulation* psi) {
   for (auto item : _staticDrawables) {
     _scene->_staticDrawables.push_back(item);
   }
-    _instantiateDeclaredNodes();
-    return true;
+  _instantiateDeclaredNodes();
+  return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onUnstage(Simulation* psi) {
