@@ -76,18 +76,25 @@ class ECS_MINIMAL(object):
     self.createBallData()
     self.createEnvironmentData()
 
-    self.controller = ecs.Controller()
-    self.controller.installRenderCallbackOnEzApp(self.ezapp)
     
   ##############################################
 
   def ecsLaunch(self):
 
-    ####################
-    # create ECS controller
-    ####################
+    ##################
+    # create / bind controller
+    ##################
 
+    self.controller = ecs.Controller()
     self.controller.bindScene(self.ecsscene)
+
+    ##################
+    # install rendercallback on ezapp
+    #  This is so the ezapp will render the ecs scene from C++,
+    #   without the need for the c++ to call into python on the render thread
+    ##################
+
+    self.controller.installRenderCallbackOnEzApp(self.ezapp)
 
     ##################
     # launch simulation
@@ -113,12 +120,6 @@ class ECS_MINIMAL(object):
     self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
     self.spawncounter = 0
     
-    ##################
-    # install rendercallback on ezapp
-    #  (so the ezapp will render the ecs scene from C++)
-    ##################
-
-
   ##############################################
 
   def createBallData(self):

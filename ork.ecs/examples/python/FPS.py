@@ -49,10 +49,97 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.player_transform = None
     self.spawncounter = 0
     self.framecounter = 0
+    
+    self.ecsInit()
 
   ##############################################
 
-  def createPlayerData(self,ctx):
+  def ecsInit(self):
+    ####################
+    # create ECS scene
+    ####################
+
+    self.ecsscene = ecs.SceneData()
+
+    ####################
+    # create (graphics) scenegraph system
+    ####################
+
+    self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
+    self.systemdata_scenegraph.declareLayer(LAYERNAME)
+    self.systemdata_scenegraph.declareParams({
+      "SkyboxIntensity": float(2.5),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(2000),
+      "DepthFogPower": float(1.25),
+    })
+
+    ####################
+    # create physics system
+    ####################
+
+    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = True
+    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+
+    self.systemdata_phys = systemdata_phys
+
+    ####################
+    # create archetype/entity data
+    ####################
+
+    self.createBallData()
+    self.createEnvironmentData()
+    self.createPlayerData()
+    self.createProjectileData()
+
+  ##############################################
+
+  def ecsLaunch(self):
+
+    ##################
+    # create / bind controller
+    ##################
+
+    self.controller = ecs.Controller()
+    self.controller.bindScene(self.ecsscene)
+
+    ##################
+    # install rendercallback on ezapp
+    #  This is so the ezapp will render the ecs scene from C++,
+    #   without the need for the c++ to call into python on the render thread
+    ##################
+
+    self.controller.installRenderCallbackOnEzApp(self.ezapp)
+
+    ##################
+    # create / launch simulation
+    ##################
+        
+    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
+    self.controller.createSimulation()
+    self.controller.startSimulation()
+
+    ##################
+    # retrieve simulation systems
+    ##################
+
+    self.sys_phys = self.controller.findSystem("BulletSystem")
+    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
+
+    ##################
+    # init systems
+    ##################
+
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+
+  ##############################################
+
+  def createPlayerData(self):
 
     arch_player = self.ecsscene.declareArchetype("PlayerArchetype")
     c_scenegraph = arch_player.declareComponent("SceneGraphComponent")
@@ -143,7 +230,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
-  def createBallData(self,ctx):
+  def createBallData(self):
 
     arch_ball = self.ecsscene.declareArchetype("BallArchetype")
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
@@ -176,7 +263,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
   ##############################################
 
-  def createProjectileData(self,ctx):
+  def createProjectileData(self):
 
     arch_ball = self.ecsscene.declareArchetype("ProjectileArchetype")
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
@@ -213,7 +300,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   # generate the environment
   ##############################################
 
-  def createEnvironmentData(self,ctx):
+  def createEnvironmentData(self):
 
     arch_room = self.ecsscene.declareArchetype("RoomArchetype")
     c_scenegraph = arch_room.declareComponent("SceneGraphComponent")
@@ -260,83 +347,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    
-    ####################
-    # create ECS scene
-    ####################
-
-    self.ecsscene = ecs.SceneData()
-
-    ####################
-    # create (graphics) scenegraph system
-    ####################
-
-    self.systemdata_scenegraph = self.ecsscene.declareSystem("SceneGraphSystem")
-    self.systemdata_scenegraph.declareLayer(LAYERNAME)
-    self.systemdata_scenegraph.declareParams({
-      "SkyboxIntensity": float(2.5),
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
-      "DepthFogDistance": float(2000),
-      "DepthFogPower": float(1.25),
-    })
-
-    ####################
-    # create physics system
-    ####################
-
-    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
-    systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = True
-    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
-
-    self.systemdata_phys = systemdata_phys
-
-    ####################
-    # create archetype/entity data
-    ####################
-
-    self.createBallData(ctx)
-    self.createEnvironmentData(ctx)
-    self.createPlayerData(ctx)
-    self.createProjectileData(ctx)
-    
-    ####################
-    # create ECS controller
-    ####################
-
-    self.controller = ecs.Controller()
-    self.controller.bindScene(self.ecsscene)
-
-    ##################
-    # launch simulation
-    ##################
-        
-    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
-    self.controller.createSimulation()
-    self.controller.startSimulation()
-
-    ##################
-    # retrieve simulation systems
-    ##################
-
-    self.sys_phys = self.controller.findSystem("BulletSystem")
-    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
-
-    ##################
-    # init systems
-    ##################
-
-    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
-
-    ##################
-    # install rendercallback on ezapp
-    #  (so the ezapp will render the ecs scene from C++)
-    ##################
-
-    self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.ecsLaunch()
 
   ##############################################
 
