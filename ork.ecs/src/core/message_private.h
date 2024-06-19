@@ -32,6 +32,12 @@ struct _Despawn {
   ent_ref_t _entref;
 };
 
+struct _TransportBarrier {
+  ESimulationTransport _waitForState = ESimulationTransport::NONE;
+};
+
+using transportbarrier_ptr_t = std::shared_ptr<_TransportBarrier>;
+
 struct _EntBarrier {
   ent_ref_t _entref;
 };

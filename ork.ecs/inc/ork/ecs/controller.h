@@ -34,6 +34,7 @@ struct Controller {
 	  CrcEnum(FIND_COMPONENT),
 	  CrcEnum(DESPAWN),
 	  CrcEnum(ENTITY_BARRIER),
+	  CrcEnum(TRANSPORT_BARRIER),
 	};
 
 	enum struct RequestID : crc_enum_t {

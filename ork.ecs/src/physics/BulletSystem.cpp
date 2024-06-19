@@ -128,6 +128,17 @@ btDynamicsWorld* BulletSystem::BulletWorld() { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onLinkComponent(BulletObjectComponent* component) {
+  auto entity = component->GetEntity();
+  auto compdata = &component->mBOCD;
+  auto instancedata = compdata->_INSTANCEDATA;
+  if(instancedata){
+    auto sgcomp = entity->typedComponent<SceneGraphComponent>();
+    // if both SG and physics instancedatas are the same
+    //  then both components are referencing to the same instance
+    if(sgcomp and (sgcomp->_SGCD._INSTANCEDATA == instancedata)) {
+      component->_mySGcomponentForInstancing = sgcomp;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,24 +149,6 @@ void BulletSystem::_onUnlinkComponent(BulletObjectComponent* component) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onStageComponent(BulletObjectComponent* component) {
-  auto entity = component->GetEntity();
-  auto compdata = &component->mBOCD;
-  if(compdata->_INSTANCEDATA){
-    auto sgcomp = entity->typedComponent<SceneGraphComponent>();
-    if(sgcomp and (sgcomp->_SGCD._INSTANCEDATA == compdata->_INSTANCEDATA)) {
-      
-      auto groupname = compdata->_INSTANCEDATA->_groupname;
-
-      sgcomp->_INSTANCE = std::make_shared<::ork::lev2::scenegraph::NodeInstance>();
-      sgcomp->_INSTANCE->_groupname = groupname;
-      sgcomp->_INSTANCE->_instance_index = 0;
-      auto sgsys = simulation()->findSystem<SceneGraphSystem>();
-      // TODO : defer until nodes created ?
-      auto it = sgsys->_nodeitems.find(groupname);
-      OrkAssert(it!=sgsys->_nodeitems.end());
-    // alloc instance
-    }
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -255,6 +248,18 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
     }
   }
   _activeComponents.insert(component);
+
+  // instance tracking (WIP)
+  if( component->_mySGcomponentForInstancing ){
+    // at this point this entity's SG component should be staged
+    // and therefore SG component's _INSTANCE should be already created
+    auto instance = component->_mySGcomponentForInstancing->_INSTANCE;
+    //OrkAssert(instance);
+    // and it's instanceID should also already be set..
+    //int instanceID = instance->_instance_index;
+    //printf( "PHYSICS INSTANCEID<%d>\n", instanceID );
+    //OrkAssert(instanceID>=0);
+  }
 
 }
 

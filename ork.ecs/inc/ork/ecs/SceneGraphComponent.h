@@ -187,6 +187,7 @@ struct SceneGraphSystem final : public System {
   void _onRenderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe) final;
 
   void _instantiateDeclaredNodes();
+  void enqueueOnGpuInit(void_lambda_t l);
   
   ///////////////////////////////
   void _rt_process();
@@ -197,6 +198,8 @@ struct SceneGraphSystem final : public System {
   lev2::cameradatalut_ptr_t _camlut;
   lev2::drawablecache_ptr_t _drwcache;
   std::vector<lev2::scenegraph::DrawableKvPair> _staticDrawables;
+  LockedResource<std::vector<void_lambda_t>> _onGpuInitOpQueue;
+
   std::map<std::string,sgnodeitem_ptr_t> _nodeitems;
   ///////////////////////////////
   varmap::varmap_ptr_t _mergedParams;

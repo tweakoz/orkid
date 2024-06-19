@@ -13,8 +13,12 @@
 #include <ork/ecs/entity.h>
 #include <ork/kernel/orklut.hpp>
 #include "message_private.h"
+#include <ork/util/logger.h>
 
 namespace ork::ecs {
+
+static logchannel_ptr_t logchan_event_OK = logger()->createChannel("ecs.controller",fvec3(0.7,0.7,0));
+static logchannel_ptr_t logchan_event_ERR = logger()->createChannel("ecs.controller.ERR",fvec3(1,0,0));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,25 +44,26 @@ void Simulation::_serviceEventQueues() {
   //////////////////////////////////////////////////////////
   // process events
   //////////////////////////////////////////////////////////
+  if( not in_barrier ) {
+    for (const auto& e : _current_events) {
+      bool do_continue = true;
+      if( auto as_ev = e.tryAs<Controller::event_ptr_t>() ){
+        if(_controller->_tracewriter)
+          _controller->_tracewriter->_traceEvent(*as_ev.value());
 
-  for (const auto& e : _current_events) {
-    bool do_continue = true;
-    if( auto as_ev = e.tryAs<Controller::event_ptr_t>() ){
-      if(_controller->_tracewriter)
-        _controller->_tracewriter->_traceEvent(*as_ev.value());
-
-      do_continue = _onControllerEvent(*(as_ev.value()));
+        do_continue = _onControllerEvent(*(as_ev.value()));
+      }
+      else if( auto as_req = e.tryAs<Controller::request_ptr_t>() ){
+        if(_controller->_tracewriter)
+          _controller->_tracewriter->_traceRequest(*as_req.value());
+        do_continue = _onControllerRequest(*(as_req.value()));
+      }
+      else{
+        OrkAssert(false);
+      }
+      if(not do_continue)
+        return;
     }
-    else if( auto as_req = e.tryAs<Controller::request_ptr_t>() ){
-      if(_controller->_tracewriter)
-        _controller->_tracewriter->_traceRequest(*as_req.value());
-      do_continue = _onControllerRequest(*(as_req.value()));
-    }
-    else{
-      OrkAssert(false);
-    }
-    if(not do_continue)
-      return;
   }
 
   //////////////////////////////////////////////////////////
@@ -72,6 +77,10 @@ void Simulation::_onSimulationRequest(impl::sim_response_ptr_t response, token_t
 ///////////////////////////////////////////////////////////////////////////////
 bool Simulation::_onControllerEvent(const Controller::Event& event) {
   switch (event._eventID) {
+    ///////////////////////////////////////////////////////////////
+    case Controller::EventID::TRANSPORT_BARRIER: {
+      break;
+    };
     ///////////////////////////////////////////////////////////////
     case Controller::EventID::SYSTEM_EVENT: {
       const auto& SEV = event._payload.get<impl::_SystemEvent>();
@@ -88,7 +97,7 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
         the_system->_notify(SEV._eventID,SEV._eventData);
       }
       else{
-        printf( "Simulation::_onControllerEvent SYSTEM_EVENT system not found\n");
+        logchan_event_ERR->log( "Simulation::_onControllerEvent SYSTEM_EVENT system not found\n");
       }
       break;
     }
@@ -111,7 +120,7 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
           the_system = (it->second);
         }
         else{
-          printf( "system ID<%d> for key<%s> not found\n", FEV._sysref._sysID, FEV._syskey.data());
+          logchan_event_ERR->log( "system ID<%d> for key<%s> not found\n", FEV._sysref._sysID, FEV._syskey.data());
         }
       });
       _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { //
@@ -244,7 +253,7 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
         // perform the request
         /////////////////////////////
 
-        printf( "proc request the_system<%p> reqid<%zx>\n", (void*) the_system, SRQ._requestID._hashed );
+        logchan_event_OK->log( "proc request the_system<%p> reqid<%zx>\n", (void*) the_system, SRQ._requestID._hashed );
 
         the_system->_request( response, SRQ._requestID, SRQ._eventData );
 

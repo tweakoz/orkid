@@ -94,7 +94,20 @@ enum class ESimulationMode : uint64_t {
   ACTIVE,   // single stepping
   PAUSE,      // paused
   TERMINATED,  // terminated
+  NONE,
 };
+
+enum class ESimulationTransport : uint64_t {
+  NEW = 0,    
+  INITIALIZED,
+  COMPOSED,
+  LINKED,
+  STAGED,
+  ACTIVATED,
+  TERMINATED,
+  NONE,
+};
+
 /*
 enum EUpdateState {
   EUPD_STOPPED,

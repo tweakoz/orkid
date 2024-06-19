@@ -213,14 +213,22 @@ bool Controller::_pollEvents(Simulation* unlocked_sim, evq_t& out_events){
             if( ent == nullptr ){
               in_barrier = true;
               events_finished = true;
-              return;
+              return in_barrier;
             }
             else{
               //OrkAssert(false);
             }
 
           }
-
+          else if(auto as_barrier = payload.tryAs<impl::transportbarrier_ptr_t>() ){
+            auto desired_state = as_barrier.value()->_waitForState;
+            // barrier condition exists so long as
+            //  the actual transport state does not match the desired transport state
+            in_barrier = ( desired_state != unlocked_sim->_transportState );
+            if(in_barrier){
+              return true;              
+            }
+          }
         }
 
         ////////////////////////////////////
@@ -489,17 +497,29 @@ void Controller::createSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::startSimulation() {
-  _timer.Start();
-  logchan_controller->log( "STARTING SIMULATION");
-  _simulation.atomicOp([](simulation_ptr_t& unlocked){
-    unlocked->SetSimulationMode(ESimulationMode::ACTIVE);
-    unlocked->_serviceEventQueues();
-  });
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  auto op = [this](){
+    _timer.Start();
+    logchan_controller->log( "STARTING SIMULATION");
+    _simulation.atomicOp([](simulation_ptr_t& unlocked){
+      unlocked->SetSimulationMode(ESimulationMode::ACTIVE);
+      unlocked->_serviceEventQueues();
+    });
+  };
+  opq::updateSerialQueue()->enqueue(op);
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::TRANSPORT_BARRIER;
+  auto TEV = std::make_shared<impl::_TransportBarrier>();
+  TEV->_waitForState = ESimulationTransport::ACTIVATED;
+  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
+  _enqueueEvent(simevent);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::stopSimulation() {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
   logchan_controller->log( "STOPPING SIMULATION");
   _delopq.atomicOp([=](delayed_opq_t& unlocked){
       unlocked.clear();
@@ -511,6 +531,12 @@ void Controller::stopSimulation() {
     unlocked->SetSimulationMode(ESimulationMode::EDIT);
     unlocked->_serviceEventQueues();
   });
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::TRANSPORT_BARRIER;
+  auto TEV = std::make_shared<impl::_TransportBarrier>();
+  TEV->_waitForState = ESimulationTransport::TERMINATED;
+  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
+  _enqueueEvent(simevent);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

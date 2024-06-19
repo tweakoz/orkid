@@ -381,21 +381,6 @@ struct ModelDrawableData : public DrawableData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct InstancedModelDrawableData : public DrawableData {
-
-  DeclareConcreteX(InstancedModelDrawableData, DrawableData);
-
-  InstancedModelDrawableData() {
-  }
-  InstancedModelDrawableData(AssetPath path);
-  drawable_ptr_t createDrawable() const final;
-  void resize(size_t count) { _maxinstances=count; }
-  AssetPath _assetpath;
-  size_t _maxinstances = 0;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct ModelDrawable : public Drawable {
 
   ModelDrawable(DrawableOwner* owner = NULL);
@@ -423,6 +408,21 @@ struct ModelDrawable : public Drawable {
   fvec3 _offset;
   fquat _orientation;
 
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct InstancedModelDrawableData : public DrawableData {
+
+  DeclareConcreteX(InstancedModelDrawableData, DrawableData);
+
+  InstancedModelDrawableData() {
+  }
+  InstancedModelDrawableData(AssetPath path);
+  drawable_ptr_t createDrawable() const final;
+  void resize(size_t count) { _maxinstances=count; }
+  AssetPath _assetpath;
+  size_t _maxinstances = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -471,10 +471,15 @@ struct InstancedModelDrawable final : public InstancedDrawable {
 
 struct InstancedDrawableInstanceData {
   void resize(size_t count);
+  int allocInstance();
+  void freeInstance(int index);
+
+
   std::vector<fmtx4> _worldmatrices;
   std::vector<fvec4> _modcolors;
   std::vector<uint64_t> _pickids;
   std::vector<svar64_t> _miscdata;
+  std::unordered_set<int> _instancePool;
   size_t _count = 0;
 };
 

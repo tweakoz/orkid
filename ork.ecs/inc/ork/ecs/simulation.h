@@ -225,6 +225,7 @@ private:
   //Application* mApplication = nullptr;
 
   ESimulationMode _currentSimulationMode = ESimulationMode::NEW;
+  ESimulationTransport _transportState = ESimulationTransport::NEW;
 
   float mGameTime       = 0.0f; // current game clock time (stops on pause)
   float mDeltaTime      = 0.0f; // time since last update (0 on pause)

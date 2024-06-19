@@ -32,10 +32,96 @@ class ECS_MINIMAL(object):
     self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
+    self.ecsInit()
+    
+  ##############################################
+
+  def ecsInit(self):
+
+    ####################
+    # create ECS scene
+    ####################
+
+    self.ecsscene = ecs.SceneData()
+
+    ##############################################
+    # setup global physics 
+    ##############################################
+
+    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
+    systemdata_phys.timeScale = 1.0
+    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.debug = False
+    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+
+    ####################
+    # create scenegraph
+    ####################
+
+    systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
+    systemdata_SG.declareLayer(LAYERNAME)
+    systemdata_SG.declareParams({
+      "SkyboxIntensity": float(2.0),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
+      "DepthFogDistance": float(2000),
+      "DepthFogPower": float(1.25),
+    })
+
+    ####################
+    # create archetype/entity data
+    ####################
+
+    self.createBallData()
+    self.createEnvironmentData()
+
+    self.controller = ecs.Controller()
+    self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    
+  ##############################################
+
+  def ecsLaunch(self):
+
+    ####################
+    # create ECS controller
+    ####################
+
+    self.controller.bindScene(self.ecsscene)
+
+    ##################
+    # launch simulation
+    ##################
+        
+    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
+    self.controller.createSimulation()
+    self.controller.startSimulation()
+
+    ##################
+    # retrieve simulation systems
+    ##################
+
+    self.sys_phys = self.controller.findSystem("BulletSystem")
+    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
+
+    print(self.sys_sg)
+
+    ##################
+    # init systems
+    ##################
+
+    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+    self.spawncounter = 0
+    
+    ##################
+    # install rendercallback on ezapp
+    #  (so the ezapp will render the ecs scene from C++)
+    ##################
+
 
   ##############################################
 
-  def createBallData(self,ctx):
+  def createBallData(self):
 
     arch_ball = self.ecsscene.declareArchetype("BallArchetype")
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
@@ -63,7 +149,7 @@ class ECS_MINIMAL(object):
 
   ##############################################
 
-  def createEnvironmentData(self,ctx):
+  def createEnvironmentData(self):
 
     arch_env = self.ecsscene.declareArchetype("RoomArchetype")
     c_scenegraph = arch_env.declareComponent("SceneGraphComponent")
@@ -108,105 +194,33 @@ class ECS_MINIMAL(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    
-    ####################
-    # create ECS scene
-    ####################
-
-    self.ecsscene = ecs.SceneData()
-
-    ##############################################
-    # setup global physics 
-    ##############################################
-
-    systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
-    systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = False
-    systemdata_phys.linGravity = vec3(0,-9.8*3,0)
-
-    ####################
-    # create scenegraph
-    ####################
-
-    systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
-    systemdata_SG.declareLayer(LAYERNAME)
-    systemdata_SG.declareParams({
-      "SkyboxIntensity": float(2.0),
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
-      "DepthFogDistance": float(2000),
-      "DepthFogPower": float(1.25),
-    })
-
-    ####################
-    # create archetype/entity data
-    ####################
-
-    self.createBallData(ctx)
-    self.createEnvironmentData(ctx)
-    
-    ####################
-    # create ECS controller
-    ####################
-
-    self.controller = ecs.Controller()
-    self.controller.bindScene(self.ecsscene)
-
-    ##################
-    # launch simulation
-    ##################
-        
-    #self.controller.beginWriteTrace(str(obt_path.temp()/"ecstrace.json"));
-    self.controller.createSimulation()
-    self.controller.startSimulation()
-
-    ##################
-    # retrieve simulation systems
-    ##################
-
-    self.sys_phys = self.controller.findSystem("BulletSystem")
-    self.sys_sg = self.controller.findSystem("SceneGraphSystem")
-
-    ##################
-    # init systems
-    ##################
-
-    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
-    self.spawncounter = 0
-    
-    ##################
-    # install rendercallback on ezapp
-    #  (so the ezapp will render the ecs scene from C++)
-    ##################
-
-    self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.ecsLaunch()
 
   ##############################################
 
   def onGpuExit(self,ctx):
     self.controller.stopSimulation()
-    self.controller.beginWriteTrace
 
   ##############################################
 
   def onUpdate(self,updinfo):
 
+
     ##############################
     # spawn balls
     ##############################
 
-    i = random.randint(-5,5)
-    j = random.randint(-5,5)
-    prob = random.randint(0,100)
-    if prob < 5 and self.spawncounter < 250:
-      self.spawncounter += 1
-      SAD = ecs.SpawnAnonDynamic("ball_spawner")
-      SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-      SAD.overridexf.scale = 1.0
-      SAD.overridexf.translation = vec3(i,15,j)
-      self.e1 = self.controller.spawnEntity(SAD)
+    if True:
+      i = random.randint(-5,5)
+      j = random.randint(-5,5)
+      prob = random.randint(0,100)
+      if prob < 5 and self.spawncounter < 250:
+        self.spawncounter += 1
+        SAD = ecs.SpawnAnonDynamic("ball_spawner")
+        SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+        SAD.overridexf.scale = 1.0
+        SAD.overridexf.translation = vec3(i,15,j)
+        self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################
     # camera update
@@ -214,16 +228,17 @@ class ECS_MINIMAL(object):
 
     UIC = self.uicam.cameradata
    
-    self.controller.systemNotify( self.sys_sg,
-                                  tokens.UpdateCamera,{
-                                    tokens.eye: UIC.eye,
-                                    tokens.tgt: UIC.target,
-                                    tokens.up: UIC.up,
-                                    tokens.near: UIC.near,
-                                    tokens.far: UIC.far,
-                                    tokens.fovy: UIC.fovy
-                                  }
-                                 )
+    if True:
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdateCamera,{
+                                      tokens.eye: UIC.eye,
+                                      tokens.tgt: UIC.target,
+                                      tokens.up: UIC.up,
+                                      tokens.near: UIC.near,
+                                      tokens.far: UIC.far,
+                                      tokens.fovy: UIC.fovy
+                                    }
+                                   )
 
     ##############################
     # tick the simulation

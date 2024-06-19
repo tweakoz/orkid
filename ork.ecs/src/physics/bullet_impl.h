@@ -202,6 +202,7 @@ public:
   btRigidBody* _rigidbody = nullptr;
   BulletShapeBaseInst* _shapeinst = nullptr;
   orkcontactcallback_ptr_t _collisionCallback;
+  SceneGraphComponent* _mySGcomponentForInstancing = nullptr;
 
   void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
   void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;

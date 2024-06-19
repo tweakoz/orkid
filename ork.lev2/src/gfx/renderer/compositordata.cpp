@@ -18,6 +18,7 @@
 #include <ork/application/application.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
@@ -102,10 +103,6 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
     selected_output_node = screennode;
   }
 
-  auto pbr_common = r1->_pbrcommon;
-
-  pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
-
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
@@ -117,6 +114,13 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   rval._nodetek    = t1;
   rval._outputnode = selected_output_node;
   rval._rendernode = r1;
+
+  auto op = [=](){
+    auto pbr_common = r1->_pbrcommon;
+    pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
+  };
+  opq::mainSerialQueue()->enqueue(op);
+
 
   return rval;
 }

@@ -373,12 +373,14 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_initialize() {
   _initializeEntities();
+  _transportState = ESimulationTransport::INITIALIZED;
   logchan_simfsm->log("Simulation<%p> _initialized", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_compose() {
   _composeSystems();
   _composeEntities();
+  _transportState = ESimulationTransport::COMPOSED;
   logchan_simfsm->log("Simulation<%p> _composed", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -387,6 +389,7 @@ void Simulation::_link() {
   _linkEntities();
   if (_onLink)
     _onLink();
+  _transportState = ESimulationTransport::LINKED;
   logchan_simfsm->log("Simulation<%p> _linked", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -395,17 +398,20 @@ void Simulation::_stage() {
   _stageEntities();
   _resetClock();
   _serviceDeactivateQueue();
+  _transportState = ESimulationTransport::STAGED;
   logchan_simfsm->log("Simulation<%p> _staged", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_activate() {
   _activateSystems();
   _activateEntities();
+  _transportState = ESimulationTransport::ACTIVATED;
   logchan_simfsm->log("Simulation<%p> _activated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_uninitialize() {
   _uninitializeEntities();
+  _transportState = ESimulationTransport::TERMINATED;
   logchan_simfsm->log("Simulation<%p> _uninitialized", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////

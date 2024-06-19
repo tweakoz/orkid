@@ -57,22 +57,6 @@ drawable_ptr_t DrawableCache::fetch(drawabledata_ptr_t data){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InstancedDrawableInstanceData::resize(size_t count) {
-
-  size_t max_inst = InstancedModelDrawable::k_max_instances;
-
-  _worldmatrices.resize(max_inst);
-  _miscdata.resize(max_inst);
-  _pickids.resize(max_inst);
-  _modcolors.resize(max_inst);
-  _count = count;
-  for (size_t i = 0; i < max_inst; i++) {
-    _pickids[i]   = i;
-    _modcolors[i] = fvec4(1, 1, 1, 1);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-
 DrawQueueXfData::DrawQueueXfData() {
   _worldTransform = std::make_shared<DecompTransform>();
 }

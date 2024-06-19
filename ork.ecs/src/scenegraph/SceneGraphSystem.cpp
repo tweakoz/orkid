@@ -174,70 +174,54 @@ void SceneGraphSystem::_instantiateDeclaredNodes(){
       auto drwdata = NID->_drawabledata;
       auto layer = _scene->findLayer(NID->_layername);
       auto nitem                            = std::make_shared<SceneGraphNodeItem>();
-      nitem->_drawable                      = _drwcache->fetch(drwdata);
       nitem->_nodename                      = NID->_nodename;
       nitem->_data                          = NID;
       _nodeitems[NID->_nodename] = nitem;
 
-      if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
-        auto node = layer->createDrawableNode(NID->_nodename, as_instanced);
-        nitem->_sgnode = node;
-        size_t count = as_instanced->_count;
-        auto idata = as_instanced->_instancedata;
-        for( size_t i=0; i<count; i++ ){
+      auto on_gpu_init = [=](){
+        nitem->_drawable                      = _drwcache->fetch(drwdata);
 
-          int ix = rand()&0xffff;
-          int iz = rand()&0xffff;
-          float fx = (float(ix)/32768.0f-1.0f)*100.0f;
-          float fz = (float(iz)/32768.0f-1.0f)*100.0f;
-          fvec3 pos(fx,0,fz);
+        if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
+          auto node = layer->createDrawableNode(NID->_nodename, as_instanced);
+          nitem->_sgnode = node;
+          size_t count = as_instanced->_count;
+          auto idata = as_instanced->_instancedata;
+          for( size_t i=0; i<count; i++ ){
 
-          idata->_worldmatrices[i].setColumn(3,pos);
-          idata->_modcolors[i] = fvec4(1,1,1,1);
-          idata->_pickids[i] = 0;
-          //printf( "init instanced<%d>\n", i );
+            int ix = rand()&0xffff;
+            int iz = rand()&0xffff;
+            float fx = (float(ix)/32768.0f-1.0f)*100.0f;
+            float fz = (float(iz)/32768.0f-1.0f)*100.0f;
+            fvec3 pos(fx,0,fz);
+
+            idata->_worldmatrices[i].setColumn(3,pos);
+            idata->_modcolors[i] = fvec4(1,1,1,1);
+            idata->_pickids[i] = 0;
+            //printf( "init instanced<%d>\n", i );
+          }
+        } else {
+          auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+          node->_modcolor = NID->_modcolor;
+          nitem->_sgnode = node;
         }
-      } else {
-        auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
-        node->_modcolor = NID->_modcolor;
-        nitem->_sgnode = node;
-      }
+      };
+
+      this->enqueueOnGpuInit(on_gpu_init);
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SceneGraphSystem::enqueueOnGpuInit(void_lambda_t L){
+  _onGpuInitOpQueue.atomicOp([L](std::vector<void_lambda_t>& unlocked){
+    unlocked.push_back(L);
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // final
-
-  /////////////////////////////////////////
-  // copy in user params
-  /////////////////////////////////////////
-
-  _mergedParams->mergeVars(*_SGSD._internalParams);
-
-  for (auto item : _SGSD._userParams) {
-    auto k = item.first;
-    auto v = item.second;
-    _mergedParams->setValueForKey(k, v);
-  }
-
-  /////////////////////////////////////////
-
-  _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
-
-  _default_layer = _scene->createLayer("sg_default");
-  for (auto item : _SGSD._declaredLayers) {
-    _scene->createLayer(item);
-  }
-
-  _scene->_staticDrawables = _SGSD._staticDrawables;
-
-  for (auto item : _staticDrawables) {
-    _scene->_staticDrawables.push_back(item);
-  }
-
-  _instantiateDeclaredNodes();
   
   _scene->_dbufcontext_SG = sim->dbufcontext();
 
@@ -267,6 +251,15 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
   for (auto DRWDATA : _SGSD._drawdatas_prefetchlist) {
     _drwcache->fetch(DRWDATA);
   }
+
+  /////////////////////////////////////////
+
+  _onGpuInitOpQueue.atomicOp([](std::vector<void_lambda_t>& unlocked){
+    for( auto item : unlocked ){
+      item();
+    }
+    unlocked.clear();
+  });
 
   /////////////////////////////////////////
 }
@@ -340,6 +333,10 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
 
           if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
             nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
+            OrkAssert(false); 
+            // we should not hit this, because the instanced drawable
+            //  should be @ system scope, not component scope
+
           } else {
             auto node = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
             node->_modcolor = NID->_modcolor;
@@ -347,6 +344,22 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           }
         }
       }
+    }
+    // now check for INSTANCE's
+    if(COMPDATA._INSTANCEDATA){
+      auto instance = std::make_shared<lev2::scenegraph::NodeInstance>();
+      instance->_groupname = COMPDATA._INSTANCEDATA->_groupname;
+      // TODO : defer until nodes created ?
+      auto it = _nodeitems.find(instance->_groupname);
+      OrkAssert(it!=_nodeitems.end());
+      sgnodeitem_ptr_t groupitem = it->second;
+      auto group_drawable = std::dynamic_pointer_cast<lev2::InstancedDrawable>(groupitem->_drawable);
+      instance->_idrawable = group_drawable; 
+      auto idata = group_drawable->_instancedata;
+      instance->_idata = idata;
+      int ID = idata->allocInstance();
+      instance->_instance_index = ID;
+      component->_INSTANCE = instance;
     }
   };
   //////////////////////////////
@@ -370,6 +383,9 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
   // remove from scenegraph
   ///////////////////////////////
   auto remove_operation = [=]() {
+    //////////////////////////////////
+    // first remove nodes
+    //////////////////////////////////
     for (auto NITEM : component->_nodeitems) {
       auto sgnode = NITEM.second->_sgnode;
 
@@ -385,6 +401,15 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
           OrkAssert(false);
         }
       }
+    }
+    //////////////////////////////////
+    // now remove instances... 
+    //////////////////////////////////
+    if(component->_INSTANCE){
+      int index = component->_INSTANCE->_instance_index;
+      OrkAssert(index>=0);
+      component->_INSTANCE->_idata->freeInstance(index);
+      OrkAssert(false); // remove instance
     }
   };
   _renderops.push(remove_operation);
@@ -429,6 +454,33 @@ void SceneGraphSystem::_onUnLink(Simulation* psi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneGraphSystem::_onStage(Simulation* psi) {
+  /////////////////////////////////////////
+  // copy in user params
+  /////////////////////////////////////////
+
+  _mergedParams->mergeVars(*_SGSD._internalParams);
+
+  for (auto item : _SGSD._userParams) {
+    auto k = item.first;
+    auto v = item.second;
+    _mergedParams->setValueForKey(k, v);
+  }
+
+  /////////////////////////////////////////
+
+  _scene = std::make_shared<scenegraph::Scene>(_mergedParams);
+
+  _default_layer = _scene->createLayer("sg_default");
+  for (auto item : _SGSD._declaredLayers) {
+    _scene->createLayer(item);
+  }
+
+  _scene->_staticDrawables = _SGSD._staticDrawables;
+
+  for (auto item : _staticDrawables) {
+    _scene->_staticDrawables.push_back(item);
+  }
+    _instantiateDeclaredNodes();
     return true;
 }
 ///////////////////////////////////////////////////////////////////////////////

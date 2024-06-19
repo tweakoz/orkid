@@ -17,10 +17,45 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-InstancedDrawable::InstancedDrawable() 
-  : Drawable() {
+
+void InstancedDrawableInstanceData::resize(size_t count) {
+
+  size_t max_inst = InstancedModelDrawable::k_max_instances;
+
+  _worldmatrices.resize(max_inst);
+  _miscdata.resize(max_inst);
+  _pickids.resize(max_inst);
+  _modcolors.resize(max_inst);
+  _count = count;
+  _instancePool.clear();
+  for (size_t i = 0; i < max_inst; i++) {
+    _pickids[i]   = i;
+    _modcolors[i] = fvec4(1, 1, 1, 1);
+    _instancePool.insert(i);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+int InstancedDrawableInstanceData::allocInstance() {
+  OrkAssert(_instancePool.size()>0);
+  auto it = _instancePool.begin();
+  int ID = *it;
+  _instancePool.erase(ID);
+  return ID;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void InstancedDrawableInstanceData::freeInstance(int instance_id) {
+  _instancePool.insert(instance_id);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+InstancedDrawable::InstancedDrawable()
+    : Drawable() {
   _instancedata = std::make_shared<InstancedDrawableInstanceData>();
-  _drawcount = 0;
+  _drawcount    = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedDrawable::resize(size_t count) {
@@ -29,14 +64,16 @@ void InstancedDrawable::resize(size_t count) {
   _count = count;
 }
 ///////////////////////////////////////////////////////////////////////////////
-drawablebufitem_ptr_t InstancedDrawable::enqueueOnLayer( const DrawQueueXfData& xfdata, //
-                                                          DrawableBufLayer& buffer) const {
-  auto instances_copy = std::make_shared<InstancedDrawableInstanceData>();
-  *instances_copy = *_instancedata;
+drawablebufitem_ptr_t InstancedDrawable::enqueueOnLayer(
+    const DrawQueueXfData& xfdata, //
+    DrawableBufLayer& buffer) const {
+  auto instances_copy            = std::make_shared<InstancedDrawableInstanceData>();
+  *instances_copy                = *_instancedata;
   drawablebufitem_ptr_t dbufitem = Drawable::enqueueOnLayer(xfdata, buffer);
   dbufitem->_usermap["rtthread_instance_data"_crcu].set<instanceddrawinstancedata_ptr_t>(instances_copy);
-  //printf( "_instancedata.count<%zu>\n", _instancedata->_count );
+  // printf( "_instancedata.count<%zu>\n", _instancedata->_count );
   return dbufitem;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2 {
+} // namespace ork::lev2

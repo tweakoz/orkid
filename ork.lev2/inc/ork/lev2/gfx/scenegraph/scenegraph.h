@@ -184,8 +184,11 @@ struct NodeInstanceData  {
   std::string _groupname;
 };
 struct NodeInstance {
+
   std::string _groupname;
-  int _instance_index = 0;
+  instanced_drawable_ptr_t _idrawable;
+  instanceddrawinstancedata_ptr_t _idata;
+  int _instance_index = -1;
 };
 
 using node_instance_data_ptr_t = std::shared_ptr<NodeInstanceData>;

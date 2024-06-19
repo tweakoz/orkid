@@ -289,7 +289,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
     systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = False
+    systemdata_phys.debug = True
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
     self.systemdata_phys = systemdata_phys
