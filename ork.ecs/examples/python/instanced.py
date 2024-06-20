@@ -21,7 +21,7 @@ from lev2utils.cameras import *
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 1200
+NUM_BALLS = 3500
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -52,7 +52,7 @@ class ECS_INSTANCED(object):
 
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.simulationRate = 60.0
     systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
@@ -142,7 +142,7 @@ class ECS_INSTANCED(object):
     c_physics.restitution = 0.45
     c_physics.angularDamping = 0.01
     c_physics.linearDamping = 0.01
-    c_physics.allowSleeping = False
+    c_physics.allowSleeping = True
     c_physics.isKinematic = False
     c_physics.disablePhysics = False
     c_physics.shape = sphere

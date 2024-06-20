@@ -500,7 +500,6 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 }
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
-  // logchan_sgsys->log("SceneGraphSystem<%p>::update", this );
   if (_scene) {
     _scene->enqueueToRenderer(_camlut);
   }

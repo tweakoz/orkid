@@ -172,17 +172,23 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data
     }
     case SceneGraphSystem::ChangeModColor._hashed: {
       auto modcolor         = data.get<fvec4>();
-      auto change_operation = [=]() {
-        for (auto item : _nodeitems) {
-          auto node_item = item.second;
-          auto drw       = node_item->_drawable;
-          auto node      = node_item->_sgnode;
-          if (auto as_drwnode = dynamic_pointer_cast<scenegraph::DrawableNode>(node)) {
-            as_drwnode->_modcolor = modcolor;
+      if(_INSTANCE){
+        int iid = _INSTANCE->_instance_index;
+        _INSTANCE->_idata->_modcolors[iid] = modcolor;
+      }
+      else{
+        auto change_operation = [=]() {
+          for (auto item : _nodeitems) {
+            auto node_item = item.second;
+            auto drw       = node_item->_drawable;
+            auto node      = node_item->_sgnode;
+            if (auto as_drwnode = dynamic_pointer_cast<scenegraph::DrawableNode>(node)) {
+              as_drwnode->_modcolor = modcolor;
+            }
           }
-        }
-      };
-      _system->_renderops.push(change_operation);
+        };
+        _system->_renderops.push(change_operation);
+      }
       break;
     }
     case "SETNAME"_crcu: {

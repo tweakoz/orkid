@@ -24,8 +24,9 @@ GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
-NUM_BALLS = 1000
+NUM_BALLS = 2500
 OFFSET = vec3(0,0.5,0)
+SIMRATE = 60.0
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -38,7 +39,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     self.ezapp = ecs.createApp( self,
                                 ssaa=0,
-                                fullscreen=True,
+                                fullscreen=False,
                                 disableMouseCursor=True)
 
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
@@ -85,7 +86,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
+    systemdata_phys.simulationRate = SIMRATE
     systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
@@ -203,10 +204,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
             hsv.z = 0.5
             rgb = hsv.hsv2rgb()
             self.controller.componentNotify(sgcomp,tokens.ChangeModColor,vec4(rgb,1))
-            #pa = table[tokens.pointA]
-            #pb = table[tokens.pointB]
-            #nB = table[tokens.normalOnB]
-            #print("COLLISION: pa<%s> pb<%s> nb<%s>" % (pa,pb,nB) )
       c_physics.onCollision( onCollision )
 
     self.playerforce = ecs.DirectionalForceData()
@@ -381,7 +378,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ##############################
 
     prob = random.randint(0,100)
-    if prob < 30 and self.spawncounter < NUM_BALLS:
+    if prob < 50 and self.spawncounter < NUM_BALLS:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       self.spawncounter += 1

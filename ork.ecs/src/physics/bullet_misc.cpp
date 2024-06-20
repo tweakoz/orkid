@@ -110,20 +110,27 @@ void EntMotionState::getWorldTransform(btTransform& transform) const {
 }
 
 void EntMotionState::setWorldTransform(const btTransform& transform) {
+
   if (mEntity) {
 
     ork::fvec3 position = btv3toorkv3(transform.getOrigin());
     ork::fquat rotation = btqtoorkq(transform.getRotation());
 
-    auto out_xform = mEntity->transform();
-    out_xform->_translation = position;
-    out_xform->_rotation = rotation;
-    
-    mTransform = transform;
+    if (_idata) {
 
-    if(_postApply){
-      _postApply();
+      fmtx4 c;
+      c.compose(position, rotation);
+      _idata->_worldmatrices[_instance_id] = c;
+
+    } else {
+
+      auto out_xform          = mEntity->transform();
+      out_xform->_translation = position;
+      out_xform->_rotation    = rotation;
+      mTransform = transform;
+
     }
+    // compute 4x4 matrix from btTransform
   }
 }
 

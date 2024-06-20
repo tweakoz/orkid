@@ -251,21 +251,13 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
       // at this point this entity's SG component should be staged
       // and therefore SG component's _INSTANCE should be already created
       auto instance = component->_mySGcomponentForInstancing->_INSTANCE;
-      // printf( "bsys sgc<%p> instance<%p>\n", (void*) component->_mySGcomponentForInstancing, (void*) instance.get() );
       OrkAssert(instance);
-      // and it's instanceID should also already be set..
       component->_sginstance_id = instance->_instance_index;
-      // printf( "PHYSICS INSTANCEID<%d>\n", component->_sginstance_id );
       OrkAssert(component->_sginstance_id >= 0);
-
       auto idata = instance->_idata;
-
-      auto applicator          = std::make_shared<InstanceApplicator>();
-      applicator->_transform   = entity->transform();
-      applicator->_instance_id = component->_sginstance_id;
-      applicator->_idata       = idata;
-
-      _applicators.push_back(applicator);
+      auto entmotionstate = (EntMotionState*) component->_rigidbody->getMotionState();
+      entmotionstate->_instance_id = component->_sginstance_id;
+      entmotionstate->_idata       = idata;
     };
   }
 }
@@ -538,12 +530,6 @@ void BulletSystem::_onUpdate(Simulation* inst) {
     if (is_debug)
       _debugger->endSimFrame(this);
   }
-  if (true)
-    for (auto a : _applicators) {
-      auto out_xform                             = a->_transform;
-      auto c                                     = out_xform->composed();
-      a->_idata->_worldmatrices[a->_instance_id] = c;
-    }
 }
 
 void BulletSystem::_onNotify(token_t evID, evdata_t data) {

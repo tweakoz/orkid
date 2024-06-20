@@ -223,6 +223,8 @@ template <typename T> struct Matrix44 final
   void compose2(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
   void compose2(const Vector3<T>& pos, const Quaternion<T>& rot, const T& ScaleX, const T& ScaleY, const T& ScaleZ);
 
+  void compose(const Vector3<T>& pos, const Quaternion<T>& rot);
+
   static Matrix44<T> composeFrom(const Vector3<T>& pos, const Quaternion<T>& rot, const Vector3<T>& scale);
 
   ///////////////////////////////////////////////////////////////////////////////

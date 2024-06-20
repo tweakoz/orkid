@@ -132,7 +132,9 @@ public:
 
   Entity* mEntity;
   btTransform mTransform;
-  void_lambda_t _postApply;
+
+  int _instance_id = -1;
+  lev2::instanceddrawinstancedata_ptr_t _idata;
 
 };
 
@@ -218,13 +220,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct InstanceApplicator{
-  decompxf_ptr_t _transform = nullptr;
-  int _instance_id = -1;
-  lev2::instanceddrawinstancedata_ptr_t _idata;
-};
-using instance_applicator_ptr_t = std::shared_ptr<InstanceApplicator>;
-
 struct BulletSystem : public System {
   DeclareAbstractX(BulletSystem, System);
 
@@ -286,7 +281,7 @@ public:
   std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
   std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
-  std::vector<instance_applicator_ptr_t> _applicators;
+  //std::vector<instance_applicator_ptr_t> _applicators;
 };
 
 
