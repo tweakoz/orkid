@@ -22,7 +22,7 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 1500
+NUM_BALLS = 2500
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -32,7 +32,7 @@ class ECS_MINIMAL(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
@@ -53,8 +53,8 @@ class ECS_MINIMAL(object):
 
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 240.0
-    systemdata_phys.debug = True
+    systemdata_phys.simulationRate = 60.0
+    systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
     ####################
@@ -181,34 +181,46 @@ class ECS_MINIMAL(object):
     exh = 10
 
     # box bottom
-    submesh.addQuad(dvec3(-ex,0,-ex), 
-                    dvec3(ex,0,-ex),
+    submesh.addQuad(
+                    dvec3(-ex,0,ex),
                     dvec3(ex,0,ex),
-                    dvec3(-ex,0,ex))
+                    dvec3(ex,0,-ex),
+                    dvec3(-ex,0,-ex), 
+                    )
 
     #box left side
-    submesh.addQuad(dvec3(-ex,0,-ex), 
-                    dvec3(-ex,0,ex),
+    submesh.addQuad(
+                    dvec3(-ex,exh,-ex),
                     dvec3(-ex,exh,ex),
-                    dvec3(-ex,exh,-ex))
+                    dvec3(-ex,0,ex),
+                    dvec3(-ex,0,-ex),
+                    dvec4(1,0,0,1) 
+                    )
 
     #box right side
     submesh.addQuad(dvec3(ex,0,-ex),
                     dvec3(ex,0,ex),
                     dvec3(ex,exh,ex),
-                    dvec3(ex,exh,-ex))
+                    dvec3(ex,exh,-ex),
+                    dvec4(1,0,0,1) 
+                    )
 
     #box front side
-    submesh.addQuad(dvec3(-ex,0,ex),
-                    dvec3(ex,0,ex),
+    submesh.addQuad(
+                    dvec3(-ex,exh,ex),
                     dvec3(ex,exh,ex),
-                    dvec3(-ex,exh,ex))
+                    dvec3(ex,0,ex),
+                    dvec3(-ex,0,ex),
+                    dvec4(0,0,1,1)                     
+                    )
     
     #box back side
     submesh.addQuad(dvec3(-ex,0,-ex),
                     dvec3(ex,0,-ex),
                     dvec3(ex,exh,-ex),
-                    dvec3(-ex,exh,-ex))
+                    dvec3(-ex,exh,-ex),
+                    dvec4(0,0,1,1) 
+                    )
        
     shape = ecs.BulletShapeMeshData()
     shape.submesh = submesh
@@ -227,8 +239,10 @@ class ECS_MINIMAL(object):
     
     self.room_SGCOMP = c_scenegraph
     self.room_submesh = submesh
-    #drawable = RigidPrimitiveDrawableData("data://tests/environ/roomtest.glb")
     
+    #########################
+    # spawner
+    #########################
     
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_env
@@ -240,14 +254,17 @@ class ECS_MINIMAL(object):
 
   def onGpuInit(self,ctx):
     
-    pipeline = createPipeline( app = self,
-                               ctx = ctx,
-                               rendermodel = "DeferredPBR" )
-   
-    
+    #########################
+    # need a graphics context
+    #  to create room visuals
+    #########################
+
     rprimdata = RigidPrimitiveDrawableData()
     rprimdata.primitive = RigidPrimitive(self.room_submesh,ctx)
-    rprimdata.pipeline = pipeline
+    rprimdata.pipeline = createPipeline( app = self,
+                                         ctx = ctx,
+                                         rendermodel = "DeferredPBR",
+                                         techname="std_mono_deferred")
 
     mesh_transform = Transform()
     mesh_transform.scale = 1.0
@@ -257,6 +274,11 @@ class ECS_MINIMAL(object):
                                                      drawable = rprimdata,
                                                      layer = LAYERNAME,
                                                      transform = mesh_transform)
+
+    #########################
+    # boot up the ECS
+    #########################
+
     self.ecsLaunch()
 
   ##############################################
