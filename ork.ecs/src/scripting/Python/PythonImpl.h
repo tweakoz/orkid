@@ -15,6 +15,10 @@
 #include <ork/ecs/pysys/PythonComponent.h>
 //#include "LuaBindings.h"
 
+#include <Python.h>
+#include <pybind11/embed.h> // everything needed for embedding
+#include <pybind11/pybind11.h>
+
 namespace ork::ecs::pysys {
 
 typedef ork::FixedString<256> script_funcname_t;
@@ -96,14 +100,24 @@ private:
 } // namespace ork::ecs {
 
 namespace ork::ecs::pysys {
+
+struct GlobalState;
+using globalstate_ptr_t = std::shared_ptr<GlobalState>;
+
 struct PythonContext {
+  
   PythonContext(Simulation* psi, PythonSystem* system);
   ~PythonContext();
   //lua_State* mLuaState = nullptr;
   Simulation* mSimulation = nullptr;
   PythonSystem* _python_system = nullptr;
+  PyThreadState* _subInterpreter = nullptr;
 
   std::unordered_map<uint64_t,scriptwrapper_t> _tokwrappers;
+
+  void bindSubInterpreter();
+  void unbindSubInterpreter();
+
 };
 
 struct ScriptObject {

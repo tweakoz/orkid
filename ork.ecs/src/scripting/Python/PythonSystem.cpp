@@ -64,29 +64,33 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     : ork::ecs::System(&data, pinst) {
     //, mScriptRef(LUA_NOREF) {
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
-  auto luasys = new pysys::PythonContext(pinst, this);
-  mPythonManager.set<pysys::PythonContext*>(luasys);
+  auto pyctx = new pysys::PythonContext(pinst, this);
+  mPythonManager.set<pysys::PythonContext*>(pyctx);
+
+  pyctx->bindSubInterpreter();
+  //pybind11::scoped_interpreter guard{};
+  //pyctx->unbindSubInterpreter();
 
   ///////////////////////////////////////////////
 
   auto AppendPath = [&](const char* pth) {
     /*
-    lua_getglobal(luasys->mLuaState, "package");
-    lua_getfield(luasys->mLuaState, -1, "path");
+    lua_getglobal(pyctx->mLuaState, "package");
+    lua_getfield(pyctx->mLuaState, -1, "path");
 
     //logchan_pysys->log("PythonSystem AppendPath pth<%s>", pth );
 
-    auto orig_path = lua_tostring(luasys->mLuaState, -1);
+    auto orig_path = lua_tostring(pyctx->mLuaState, -1);
 
     //logchan_pysys->log("PythonSystem AppendPath orig_path<%s>", orig_path );
 
     fxstring<1024> lua_path;
     lua_path.format("%s;%s", orig_path, pth);
 
-    lua_pop(luasys->mLuaState, 1);
-    lua_pushstring(luasys->mLuaState, lua_path.c_str());
-    lua_setfield(luasys->mLuaState, -2, "path");
-    lua_pop(luasys->mLuaState, 1);
+    lua_pop(pyctx->mLuaState, 1);
+    lua_pushstring(pyctx->mLuaState, lua_path.c_str());
+    lua_setfield(pyctx->mLuaState, -2, "path");
+    lua_pop(pyctx->mLuaState, 1);
 
     logchan_pysys->log("PythonSystem AppendPath lua_path<%s>", lua_path.c_str() );
     */
@@ -133,6 +137,10 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
     auto as_context = mPythonManager.get<pysys::PythonContext*>();
     OrkAssert(as_context);
+
+    as_context->bindSubInterpreter();
+    pybind11::scoped_interpreter guard{};
+    as_context->unbindSubInterpreter();
 
     //int ret = luaL_loadstring(as_context->mLuaState, mScriptText.c_str());
 
