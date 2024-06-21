@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/util/movie.inl>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/profiling.inl>
 
 using namespace std::string_literals;
 
@@ -393,6 +394,10 @@ filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::P
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
 
+  EASY_PROFILER_ENABLE;
+  EASY_MAIN_THREAD;
+  profiler::startListen();
+
   if(not _mainWindow)
     return -1;
 
@@ -424,6 +429,8 @@ int OrkEzApp::mainThreadLoop() {
     ////////////////////////////////////////
 
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+
+      EASY_BLOCK("UpdateIteration" );
       double this_time = _update_timer.SecsSinceStart()*_timescale;
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;

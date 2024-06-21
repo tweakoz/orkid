@@ -26,6 +26,7 @@
 #include <ork/ecs/datatable.h>
 
 #include "bullet_impl.h"
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -491,6 +492,7 @@ void BulletSystem::_onEndRender() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletSystem::_onUpdate(Simulation* inst) {
+  EASY_BLOCK("BulletSystem::_onUpdate", profiler::colors::Cyan);
   if (mDynamicsWorld) {
     float dt = inst->deltaTime();
     _fdtaccum += dt;

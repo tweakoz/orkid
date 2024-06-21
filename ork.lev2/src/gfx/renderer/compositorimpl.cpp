@@ -106,7 +106,7 @@ void CompositingImpl::gpuInit(lev2::Context* ctx){
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
-  EASY_BLOCK("assemble-ci");
+  EASY_BLOCK("assemble-ci", profiler::colors::Red);
   auto& ddprops                      = drawdata._properties;
     auto RCFD = drawdata.RCFD();
   lev2::Context* target              = RCFD->GetTarget();

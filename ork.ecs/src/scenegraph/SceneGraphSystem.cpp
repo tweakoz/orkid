@@ -21,6 +21,7 @@
 
 #include "../core/message_private.h"
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -264,8 +265,9 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
   //printf("sgsys stage component<%p>\n", (void*) component);
-  this->_components.atomicOp([component](SceneGraphSystem::component_set_t& unlocked) { //
-    unlocked.insert(component);                                                         //
+  this->_components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) { //
+    unlocked.insert(component); 
+    _numComponents = unlocked.size();                                                        //
   });
   //////////////////////////////
   auto setdrw_op = [=]() {
@@ -376,10 +378,11 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
   ///////////////////////////////
   // untrack component
   ///////////////////////////////
-  _components.atomicOp([component](SceneGraphSystem::component_set_t& unlocked) {
+  _components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) {
     auto it = unlocked.find(component);
     OrkAssert(it != unlocked.end());
     unlocked.erase(it);
+    _numComponents = unlocked.size();                                                        //
   });
   ///////////////////////////////
   // remove from scenegraph
@@ -500,7 +503,10 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 }
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
+  EASY_BLOCK("SceneGraphSystem::_onUpdate", 0xffa02020);
   if (_scene) {
+
+    EASY_VALUE("NC", _numComponents);
     _scene->enqueueToRenderer(_camlut);
   }
 }

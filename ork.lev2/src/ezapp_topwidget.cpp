@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 
 using namespace std::string_literals;
 
@@ -127,9 +128,14 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   ///////////////////////////
   if (_mainwin->_onDraw) {
+    EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
     _mainwin->_onDraw(drwev);
     auto ctxbase = drwev->GetTarget()->mCtxBase;
+    EASY_END_BLOCK;
+
+    EASY_BLOCK("EzTopWidget swap", 0xffc04000);
     drwev->GetTarget()->swapBuffers(ctxbase);
+    EASY_END_BLOCK;
     ezapp->_render_count.fetch_add(1);
   }
   ///////////////////////////

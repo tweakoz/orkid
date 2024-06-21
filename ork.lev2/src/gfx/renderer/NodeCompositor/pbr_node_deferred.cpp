@@ -67,7 +67,7 @@ struct PbrNodeImpl {
     auto rtg_laccum  = _context->_rtgs_laccum->fetch(node->_bufferKey);
 
     _timer.Start();
-    EASY_BLOCK("pbr-_render");
+    EASY_BLOCK("PbrNodeImpl::_render", profiler::colors::Red);
     auto RCFD = drawdata.RCFD();
     auto pbrcommon               = node->_pbrcommon;
     auto targ                    = RCFD->GetTarget();
@@ -279,7 +279,6 @@ void DeferredCompositingNodePbr::doGpuInit(lev2::Context* pTARG, int iW, int iH)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
-  EASY_BLOCK("pbr-DoRender");
   auto impl = _impl.get<std::shared_ptr<PbrNodeImpl>>();
   impl->_render(this, drawdata);
 }

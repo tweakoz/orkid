@@ -21,6 +21,7 @@
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
@@ -538,6 +539,8 @@ int CtxGLFW::runloop() {
   }
 
   while (_runstate == 1) {
+
+    EASY_BLOCK("render", profiler::colors::Red);
 
     //////////////////////////////
     // poll UI/windowing system events

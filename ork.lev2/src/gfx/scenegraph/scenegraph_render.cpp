@@ -8,6 +8,7 @@
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -24,6 +25,8 @@ static logchannel_ptr_t logchan_sgrender = logger()->createChannel("SGRENDER", f
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_enqueue) {
+
+  EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
 
   if (_synchro) {
     bool OK = _synchro->beginUpdate();

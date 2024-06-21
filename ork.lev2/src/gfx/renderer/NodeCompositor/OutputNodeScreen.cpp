@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/profiling.inl>
 
 ImplementReflectionX(ork::lev2::ScreenOutputCompositingNode, "ScreenOutputCompositingNode");
 
@@ -151,6 +152,7 @@ void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
   _impl.get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
+  EASY_BLOCK("ScreenOutputCompositingNode::composite", profiler::colors::Red);
   drawdata.context()->debugPushGroup("ScreenOutputCompositingNode::composite");
   auto impl = _impl.get<std::shared_ptr<SCRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////

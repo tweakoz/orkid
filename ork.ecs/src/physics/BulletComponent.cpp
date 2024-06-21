@@ -28,7 +28,7 @@
 #include <ork/ecs/physics/bullet.h>
 #include "bullet_impl.h"
 #include "../core/message_private.h"
-#include "../scripting/LuaBindings.h"
+//#include "../scripting/Lua/LuaBindings.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -260,11 +260,11 @@ BulletObjectForceControllerInst* BulletObjectComponent::getForceController(std::
 void BulletObjectComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data ) {
   switch (evID.hashed()) {
     case "SetDirectionalForce"_crcu: {
-      const auto& vars = data.get<ScriptTable>()._items;
-      auto it_fc = vars.find("ForceController");
-      auto fc_response = it_fc->second._encoded.get<impl::comp_response_ptr_t>();
-      auto fc = fc_response->_responseData.get<BulletObjectForceControllerInst*>();
-      auto dirfc = dynamic_cast<DirectionalForceInst*>(fc);
+      //const auto& vars = data.get<ScriptTable>()._items;
+      //auto it_fc = vars.find("ForceController");
+      //auto fc_response = it_fc->second._encoded.get<impl::comp_response_ptr_t>();
+      //auto fc = fc_response->_responseData.get<BulletObjectForceControllerInst*>();
+      //auto dirfc = dynamic_cast<DirectionalForceInst*>(fc);
 
       //auto it_force = vars.find("Force");
       //dirfc->_force = it_force->second._encoded.get<double>();
@@ -283,17 +283,17 @@ void BulletObjectComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_
   switch (evID.hashed()) {
     case "CreateDirectionalForce"_crcu: {
 
-      const auto& vars = data.get<ScriptTable>()._items;
-      auto it_name = vars.find("name");
-      auto name = it_name->second._encoded.get<std::string>();
+      //const auto& vars = data.get<ScriptTable>()._items;
+      //auto it_name = vars.find("name");
+      //auto name = it_name->second._encoded.get<std::string>();
       //printf( "GOT NAME<%s>\n", name.c_str() );
 
-      auto new_force = new DirectionalForceInst();
+      //auto new_force = new DirectionalForceInst();
 
 
-      _forces[name] = new_force;
+      //_forces[name] = new_force;
 
-      response->_responseData.set<BulletObjectForceControllerInst*>(new_force);
+      //response->_responseData.set<BulletObjectForceControllerInst*>(new_force);
       break;
     }
     default:

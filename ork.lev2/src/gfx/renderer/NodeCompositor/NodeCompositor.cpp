@@ -66,7 +66,7 @@ void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
-  EASY_BLOCK("assemble-ctek");
+  EASY_BLOCK("assemble-ctek", profiler::colors::Red);
   bool rval = false;
   drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
   if (_outputNode and _renderNode) {

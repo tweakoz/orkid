@@ -12,5 +12,6 @@
 
 #include <easy/profiler.h>
 #include <easy/reader.h>
+#include <easy/arbitrary_value.h>
 
 #pragma GCC diagnostic pop

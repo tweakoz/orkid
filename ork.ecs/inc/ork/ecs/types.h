@@ -74,6 +74,11 @@ struct LuaContext;
 struct BulletSystemData;
 struct BulletObjectComponentData;
 
+struct PythonComponentData;
+struct PythonSystemData;
+struct PythonComponent;
+struct PythonSystem;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using datatable_ptr_t = std::shared_ptr<DataTable>;
@@ -212,6 +217,9 @@ using bulletsysdata_ptr_t = std::shared_ptr<BulletSystemData>;
 using bulletcompdata_ptr_t = std::shared_ptr<BulletObjectComponentData>;
 
 using sgcomponentdata_ptr_t = std::shared_ptr<SceneGraphComponentData>;
+
+using pysysdata_ptr_t = std::shared_ptr<PythonSystemData>;
+using pycompdata_ptr_t = std::shared_ptr<PythonComponentData>;
 
 using controller_ptr_t = std::shared_ptr<Controller>;
 using simulation_ptr_t = std::shared_ptr<Simulation>;

@@ -28,7 +28,7 @@
 #include <ork/ecs/physics/bullet.h>
 #include "bullet_impl.h"
 #include "../core/message_private.h"
-#include "../scripting/LuaBindings.h"
+//#include "../scripting/LuaBindings.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 

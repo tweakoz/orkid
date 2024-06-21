@@ -184,7 +184,7 @@ void DeferredContext::gpuInit(Context* target) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
-  EASY_BLOCK("renderGbuffer");
+  EASY_BLOCK("renderGbuffer", profiler::colors::Red);
   auto CIMPL     = drawdata._cimpl;
   auto RCFD      = drawdata.RCFD();
   auto targ      = drawdata.context();
@@ -371,7 +371,7 @@ void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTe
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderBaseLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
-  printf("WTF2\n");
+  EASY_BLOCK("renderBaseLighting", profiler::colors::Red);
 
   /////////////////////////////////////////////////////////////////
   auto RCFD         = drawdata.RCFD();

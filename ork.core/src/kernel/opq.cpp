@@ -15,6 +15,7 @@
 #include <ork/pch.h>
 #include <ork/util/Context.hpp>
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 
 //#define DEBUG_OPQ_CALLSTACK
 ///////////////////////////////////////////////////////////////////////
@@ -287,6 +288,7 @@ void OpqThread::run() // virtual
   _timer.Start();
 
   while (EPOQSTATE_OK2KILL != _state.load()) {
+
     dispersed_sleep(slindex++, 10); // semaphores are slowing us down
     // popq->mSemaphore.wait(); // wait for an op (without spinning)
 
@@ -413,6 +415,7 @@ bool OperationsQueue::Process() {
         }
       });
       if (got_one) {
+        EASY_BLOCK("opq", profiler::colors::Magenta);
         the_op.invoke();
         _numCompletedOperations.fetch_add(1);
         _numPendingOperations.fetch_add(-1);

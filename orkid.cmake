@@ -184,9 +184,11 @@ function(ork_std_target_set_defs the_target)
 
   set( def_list "" )
 
+  list(APPEND def_list -DBUILD_WITH_EASY_PROFILER)
+
   IF(${BUILDING_ORKID})
     list(APPEND def_list -DBUILDING_ORKID)
-  ELSE()
+    ELSE()
     list(APPEND def_list -DUSING_ORKID)
   ENDIF()
 
@@ -379,6 +381,9 @@ function(ork_std_target_opts_linker the_target)
 
   target_link_libraries(${the_target} LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
 
+  target_link_libraries(${the_target} LINK_PUBLIC easy_profiler )
+
+  
   endfunction()
 
 #############################################################################################################

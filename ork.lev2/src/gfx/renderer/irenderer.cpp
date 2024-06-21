@@ -14,6 +14,7 @@
 
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/timer.h>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -41,6 +42,8 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::drawEnqueuedRenderables(bool reset_after) {
+
+  EASY_FUNCTION("IRenderer::drawEnqueuedRenderables");
 
   if (mPerformanceItem)
     mPerformanceItem->Enter();

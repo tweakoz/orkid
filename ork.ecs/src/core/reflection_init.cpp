@@ -28,11 +28,14 @@
 #include <ork/ecs/SceneGraphComponent.h>
 #include <ork/ecs/component.inl>
 
+#include <ork/ecs/pysys/PythonComponent.h>
+#include "../scripting/Python/PythonImpl.h"
+
 #include <ork/ecs/physics/bullet.h>
 #include "../physics/bullet_impl.h"
 
 #include "InterpComponent_impl.h"
-#include "../scripting/LuaImpl.h"
+#include "../scripting/Lua/LuaImpl.h"
 
 
 //#define ENABLE_REFL_REGISTRATION
@@ -130,6 +133,10 @@ void ClassInit() {
   RegisterClassX(LuaComponent);
   RegisterClassX(LuaSystemData);
 
+  RegisterClassX(PythonComponentData);
+  RegisterClassX(PythonSystemData);
+  RegisterClassX(PythonComponent);
+
   RegisterClassX(SceneGraphComponentData);
   RegisterClassX(SceneGraphSystemData);
   RegisterClassX(SceneGraphComponent);
@@ -151,6 +158,7 @@ void ClassInit() {
   RegisterClassX(BulletSystem);
 
   RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
+  RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
   RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update

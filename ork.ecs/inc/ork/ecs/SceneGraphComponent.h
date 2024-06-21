@@ -207,6 +207,7 @@ struct SceneGraphSystem final : public System {
   ///////////////////////////////
   using component_set_t = std::unordered_set<SceneGraphComponent*>;
   LockedResource<component_set_t> _components;
+  int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
   MpMcBoundedQueue<void_lambda_t,4096> _renderops;
 };
