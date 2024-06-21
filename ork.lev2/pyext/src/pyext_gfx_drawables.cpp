@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -456,6 +457,63 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](overlay_string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
   type_codec->registerStdCodec<overlay_string_drawabledata_ptr_t>(overlay_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto rprimddata_t = py::class_<meshutil::RigidPrimitiveDrawableData, lev2::DrawableData, meshutil::rigidprimitive_drawdata_ptr_t>(
+                          module_lev2, "RigidPrimitiveDrawableData")
+                          .def(py::init<>())
+                          .def_property(
+                              "pipeline",
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd) { return dd->_pipeline; },
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd, fxpipeline_ptr_t pipeline) { dd->_pipeline = pipeline; })
+                          .def_property(
+                              "primitive",
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd) { return dd->_primitive; },
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd, meshutil::rigidprimitive_ptr_t prim) { dd->_primitive = prim; });
+  type_codec->registerStdCodec<meshutil::rigidprimitive_drawdata_ptr_t>(rprimddata_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto rprimbase_t = py::class_<meshutil::RigidPrimitiveBase, meshutil::rigidprimitive_ptr_t>(module_lev2, "RigidPrimitiveBase")
+                         .def(
+                             "createNode",
+                             [](meshutil::rigidprimitive_ptr_t prim,                                      //
+                                std::string named,                                              //
+                                scenegraph::layer_ptr_t layer,                                  //
+                                fxpipeline_ptr_t pipeline) -> scenegraph::drawable_node_ptr_t { //
+                               auto node                                                        //
+                                   = prim->createNode(named, layer, pipeline);
+                               // node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
+                               return node;
+                             })
+                         .def(
+                             "createDrawable",
+                             [](meshutil::rigidprimitive_ptr_t prim,                                    //
+                                fxpipeline_ptr_t pipeline) -> lev2::callback_drawable_ptr_t { //
+                               auto drw = prim->createDrawable(pipeline);
+                               return drw;
+                             })
+                         .def(
+                             "createDrawableData",
+                             [](meshutil::rigidprimitive_ptr_t prim,                                    //
+                                fxpipeline_ptr_t pipeline) -> meshutil::rigidprimitive_drawdata_ptr_t { //
+                               auto drwdata        = std::make_shared<meshutil::RigidPrimitiveDrawableData>();
+                               drwdata->_pipeline  = pipeline;
+                               drwdata->_primitive = prim;
+                               return drwdata;
+                             });
+  type_codec->registerStdCodec<meshutil::rigidprimitive_ptr_t>(rprimbase_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  using rigidprim_t      = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
+  using rigidprim_ptr_t = std::shared_ptr<rigidprim_t>;
+  py::class_<rigidprim_t, meshutil::RigidPrimitiveBase, rigidprim_ptr_t>(module_lev2, "RigidPrimitive")
+      .def(py::init<>())
+      .def(py::init([](meshutil::submesh_ptr_t submesh, ctx_t context) {
+        auto prim = std::make_shared<rigidprim_t>();
+        prim->fromSubMesh(*submesh, context.get());
+        return prim;
+      }))
+      .def(
+          "fromSubMesh",
+          [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
+      .def("renderEML", [](rigidprim_ptr_t prim, ctx_t context) { prim->renderEML(context.get()); });
+    /////////////////////////////////////////////////////////////////////////////////
 }
 
 } // namespace ork::lev2

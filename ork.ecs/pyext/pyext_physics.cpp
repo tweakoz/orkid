@@ -182,6 +182,12 @@ void pyinit_physics(py::module& module_ecs) {
                 shape->_meshpath = val;
               })
           .def_property(
+              "submesh",
+              [](const bulletshapemeshdata_ptr_t& shape) -> meshutil::submesh_ptr_t { return shape->_submesh; },
+              [](bulletshapemeshdata_ptr_t& shape, meshutil::submesh_ptr_t val) { //
+                shape->_submesh = val;
+              })
+          .def_property(
               "scale",
               [](const bulletshapemeshdata_ptr_t& shape) -> fvec3 { return shape->_scale; },
               [](bulletshapemeshdata_ptr_t& shape, fvec3 val) { shape->_scale = val; })

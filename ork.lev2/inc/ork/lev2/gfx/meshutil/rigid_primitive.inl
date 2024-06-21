@@ -34,15 +34,10 @@ struct XgmClusterizerStd;
 ///////////////////////////////////////////////////////////////////////////////
 /// RigidPrimitive SubMesh Primitive with V12N12B12T8C4 vertex format
 ///////////////////////////////////////////////////////////////////////////////
-template <typename vtx_t> struct RigidPrimitive {
 
-  using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
-  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
-  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
-  using vtxbuf_list_t = std::vector<vtxbuf_t>;
-  using idxbuf_ptr_t  = std::shared_ptr<idxbuf_t>;
-
-  ////////////////////////
+struct RigidPrimitiveBase {
+  using idxbuf_t     = lev2::StaticIndexBuffer<uint16_t>;
+  using idxbuf_ptr_t = std::shared_ptr<idxbuf_t>;
 
   struct PrimitiveGroup {
     idxbuf_ptr_t _idxbuffer;
@@ -51,6 +46,46 @@ template <typename vtx_t> struct RigidPrimitive {
 
   using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
   using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
+
+  virtual lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) = 0;
+  inline lev2::scenegraph::drawable_node_ptr_t createNode(
+      std::string named, //
+      lev2::scenegraph::layer_ptr_t layer,
+      lev2::fxpipeline_ptr_t pipeline) {
+    auto drw = createDrawable(pipeline);
+    return layer->createDrawableNode(named, drw);
+  }
+
+  lev2::fxpipeline_ptr_t _pipeline;
+};
+
+using rigidprimitive_ptr_t = std::shared_ptr<RigidPrimitiveBase>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RigidPrimitiveDrawableData : public lev2::DrawableData {
+
+  RigidPrimitiveDrawableData();
+  lev2::drawable_ptr_t createDrawable() const final;
+  rigidprimitive_ptr_t _primitive;
+  lev2::fxpipeline_ptr_t _pipeline;
+};
+
+using rigidprimitive_drawdata_ptr_t = std::shared_ptr<RigidPrimitiveDrawableData>;
+
+inline RigidPrimitiveDrawableData::RigidPrimitiveDrawableData() {
+}
+inline lev2::drawable_ptr_t RigidPrimitiveDrawableData::createDrawable() const {
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
+
+  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
+  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
+  using vtxbuf_list_t = std::vector<vtxbuf_t>;
 
   ////////////////////////
 
@@ -97,17 +132,7 @@ template <typename vtx_t> struct RigidPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline lev2::scenegraph::drawable_node_ptr_t createNode(
-      std::string named, //
-      lev2::scenegraph::layer_ptr_t layer,
-      lev2::fxpipeline_ptr_t pipeline) {
-    auto drw = createDrawable(pipeline);
-    return layer->createDrawableNode(named, drw);
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  inline lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) {
+  lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) final {
 
     OrkAssert(pipeline != nullptr);
     OrkAssert(pipeline->_technique != nullptr);
@@ -128,7 +153,6 @@ template <typename vtx_t> struct RigidPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  lev2::fxpipeline_ptr_t _pipeline;
   cluster_ptr_list_t _gpuClusters;
 };
 ///////////////////////////////////////////////////////////////////////////////

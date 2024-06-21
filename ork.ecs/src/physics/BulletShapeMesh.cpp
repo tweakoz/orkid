@@ -208,8 +208,13 @@ BulletShapeMeshData::BulletShapeMeshData() : _scale(1,1,1) {
       /////////////////////////////
 
       if( _flatmesh == nullptr ){
-        lev2::rendervar_strmap_t assetvars;
-        _flatmesh = std::make_shared<meshutil::FlatSubMesh>(abs_path,assetvars);
+        if(_submesh){
+          _flatmesh = std::make_shared<meshutil::FlatSubMesh>(*_submesh);
+        }
+        else{
+          lev2::rendervar_strmap_t assetvars;
+          _flatmesh = std::make_shared<meshutil::FlatSubMesh>(abs_path,assetvars);
+        }
       }
 
       if (_flatmesh and _flatmesh->inumverts) {

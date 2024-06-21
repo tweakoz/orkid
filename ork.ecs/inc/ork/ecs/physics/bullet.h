@@ -239,6 +239,7 @@ public:
   fvec3 _translation;
 
   mutable meshutil::flatsubmesh_ptr_t _flatmesh;
+  mutable meshutil::submesh_ptr_t _submesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

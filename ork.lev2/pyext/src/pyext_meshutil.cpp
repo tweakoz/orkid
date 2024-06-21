@@ -29,10 +29,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil);
 void pyinit_meshutil_component(py::module& module_meshutil);
 
 using namespace meshutil;
-using rigidprim_t = RigidPrimitive<SVtxV12N12B12T8C4>;
 void pyinit_meshutil(py::module& module_lev2) {
   auto module_meshutil = module_lev2.def_submodule("meshutil", "Mesh operations");
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec      = python::TypeCodec::instance();
   //////////////////////////////////////////////////////////////////////////////
   module_meshutil.def("submeshFromNumPy", [](py::kwargs kwargs) -> submesh_ptr_t {
     if (kwargs) {
@@ -74,61 +73,46 @@ void pyinit_meshutil(py::module& module_lev2) {
       return nullptr;
     } // namespace ork::lev2
   });
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rigidprim_t>(module_meshutil, "RigidPrimitive")
-      .def(py::init<>())
-      .def(py::init([](submesh_ptr_t submesh, ctx_t context) {
-        auto prim = std::unique_ptr<rigidprim_t>(new rigidprim_t);
-        prim->fromSubMesh(*submesh, context.get());
-        return prim;
-      }))
-      .def("createNode", [](rigidprim_t& prim, //
-                            std::string named, //
-                            scenegraph::layer_ptr_t layer, //
-                            fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { // 
-            auto node                                                 //
-                = prim.createNode(named, layer, mtl_inst);
-            //node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
-            return node;
-      })
-      .def("fromSubMesh", [](rigidprim_t& prim, submesh_ptr_t submesh, ctx_t context) { prim.fromSubMesh(*submesh, context.get()); })
-      .def("renderEML", [](rigidprim_t& prim, ctx_t context) { prim.renderEML(context.get()); });
-  /////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
   auto mesh_type = py::class_<Mesh, mesh_ptr_t>(module_meshutil, "Mesh") //
-      .def(py::init<>())
-      .def_property_readonly(
-          "polygroups",                              //
-          [](mesh_ptr_t the_mesh) -> submesh_lut_t { //
-            return the_mesh->_submeshesByPolyGroup;
-          })
-      .def_property_readonly(
-          "submesh_list",                              //
-          [](mesh_ptr_t the_mesh) -> py::list { //
-            py::list rval;
-            for( auto item : the_mesh->_submeshesByPolyGroup ){
-                auto subm = item.second;
-                rval.append(subm);
-            }
-            return rval;
-          })
-      .def("readFromWavefrontObj", [](mesh_ptr_t the_mesh, std::string pth) { //
-        the_mesh->ReadFromWavefrontObj(pth);
-      })
-      .def("readFromXGM", [](mesh_ptr_t the_mesh, std::string pth) { //
-        the_mesh->ReadFromXGM(pth);
-      })
-      .def("readFromAssimp", [](mesh_ptr_t the_mesh, std::string pth) { //
-        the_mesh->readFromAssimp(file::Path(pth));
-      });
+                       .def(py::init<>())
+                       .def_property_readonly(
+                           "polygroups",                              //
+                           [](mesh_ptr_t the_mesh) -> submesh_lut_t { //
+                             return the_mesh->_submeshesByPolyGroup;
+                           })
+                       .def_property_readonly(
+                           "submesh_list",                       //
+                           [](mesh_ptr_t the_mesh) -> py::list { //
+                             py::list rval;
+                             for (auto item : the_mesh->_submeshesByPolyGroup) {
+                               auto subm = item.second;
+                               rval.append(subm);
+                             }
+                             return rval;
+                           })
+                       .def(
+                           "readFromWavefrontObj",
+                           [](mesh_ptr_t the_mesh, std::string pth) { //
+                             the_mesh->ReadFromWavefrontObj(pth);
+                           })
+                       .def(
+                           "readFromXGM",
+                           [](mesh_ptr_t the_mesh, std::string pth) { //
+                             the_mesh->ReadFromXGM(pth);
+                           })
+                       .def("readFromAssimp", [](mesh_ptr_t the_mesh, std::string pth) { //
+                         the_mesh->readFromAssimp(file::Path(pth));
+                       });
 
   type_codec->registerStdCodec<mesh_ptr_t>(mesh_type);
 
-    pyinit_meshutil_submesh(module_meshutil);
-    pyinit_meshutil_component(module_meshutil);
+  pyinit_meshutil_submesh(module_meshutil);
+  pyinit_meshutil_component(module_meshutil);
 
-    #if defined(ENABLE_IGL)
-    pyinit_meshutil_igl(module_meshutil);
-    #endif
+#if defined(ENABLE_IGL)
+  pyinit_meshutil_igl(module_meshutil);
+#endif
 
   //////////////////////////////////////////////////////////////////////////////
 } // void pyinit_meshutil(py::module& module_lev2) {
