@@ -17,6 +17,7 @@ sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add pare
 from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 from lev2utils.cameras import *
+from lev2utils.shaders import createPipeline
 
 ################################################################################
 tokens = core.CrcStringProxy()
@@ -223,17 +224,11 @@ class ECS_MINIMAL(object):
     #########################
     # visible mesh for room
     #########################
-    rprimdata = RigidPrimitiveDrawableData()
+    
+    self.room_SGCOMP = c_scenegraph
+    self.room_submesh = submesh
     #drawable = RigidPrimitiveDrawableData("data://tests/environ/roomtest.glb")
     
-    mesh_transform = Transform()
-    mesh_transform.nonUniformScale = vec3(5,8,5)
-    mesh_transform.translation = vec3(0,-0.05,0)
-
-    #room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
-    #                                             drawable = rprimdata,
-    #                                             layer = LAYERNAME,
-    #                                             transform = mesh_transform)
     
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_env
@@ -244,6 +239,24 @@ class ECS_MINIMAL(object):
   ##############################################
 
   def onGpuInit(self,ctx):
+    
+    pipeline = createPipeline( app = self,
+                               ctx = ctx,
+                               rendermodel = "DeferredPBR" )
+   
+    
+    rprimdata = RigidPrimitiveDrawableData()
+    rprimdata.primitive = RigidPrimitive(self.room_submesh,ctx)
+    rprimdata.pipeline = pipeline
+
+    mesh_transform = Transform()
+    mesh_transform.scale = 1.0
+    mesh_transform.translation = vec3(0,-0.05,0)
+
+    room_node = self.room_SGCOMP.declareNodeOnLayer( name = "envnode",
+                                                     drawable = rprimdata,
+                                                     layer = LAYERNAME,
+                                                     transform = mesh_transform)
     self.ecsLaunch()
 
   ##############################################

@@ -76,7 +76,7 @@ using rigidprimitive_drawdata_ptr_t = std::shared_ptr<RigidPrimitiveDrawableData
 inline RigidPrimitiveDrawableData::RigidPrimitiveDrawableData() {
 }
 inline lev2::drawable_ptr_t RigidPrimitiveDrawableData::createDrawable() const {
-  return nullptr;
+  return _primitive->createDrawable(_pipeline);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
