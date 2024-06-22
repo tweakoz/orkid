@@ -311,6 +311,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return res_smoothed;
               })
           .def(
+              "withVertexColorsFromNormals",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t res_faced = std::make_shared<submesh>();
+                submeshWithVertexColorsFromNormals(*inpsubmesh, *res_faced);
+                return res_faced;
+              })
+          .def(
               "withTextureBasis",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t res_basis = std::make_shared<submesh>();

@@ -11,6 +11,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx
 {
+  mat4        m;
 	mat4        mvp;
 	mat4        mvpL;
 	mat4        mvpR;
@@ -124,6 +125,54 @@ fragment_shader ps_deferred_fragclr
   : lib_gbuf_encode {
   out_gbuf = packGbuffer(frg_clr.xyz,vec3(0,0,0),vec3(0,0,1),1,1);
 }
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vwire {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec3 bary : BINORMAL;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+    vec3 frg_pos;
+    vec3 frg_bary;
+  }
+}
+fragment_interface iface_wire_deferred
+	: ub_frg
+{
+    inputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+    vec3 frg_bary;
+	}
+	outputs {
+		layout(location = 0) uvec4 out_gbuf;
+	}
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_wnormal_pseudo : iface_vwire : ub_vtx {
+  vec4 hpos  = mvp * position;
+  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
+  ///////////////////////////
+  frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
+  frg_pos     = (m * position).xyz;
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
+  frg_bary    = bary;
+  gl_Position = hpos;
+  ///////////////////////////
+}
+fragment_shader ps_deferred_pseudowire
+  : iface_wire_deferred
+//	: iface_wire_deferred
+  : lib_gbuf_encode {
+  out_gbuf = packGbuffer(frg_bary.xyz,vec3(0,0,0),vec3(0,0,1),1,1);
+}
 
 ///////////////////////////////////////////////////////////////
 state_block sb_m1 : sb_default
@@ -168,6 +217,15 @@ technique std_mono_deferred_lit
   pass p0
   { vertex_shader=vs_vtxcolor_mono;
     fragment_shader=ps_deferred_fragclr;
+    state_block=sb_m1;
+  }
+}
+technique std_mono_deferred_pseudowire
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_wnormal_pseudo;
+    fragment_shader=ps_deferred_pseudowire;
     state_block=sb_m1;
   }
 }

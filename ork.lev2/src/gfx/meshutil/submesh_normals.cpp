@@ -256,6 +256,26 @@ void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& ou
   // outsubmesh = smoothed;
 }
 
+void submeshWithVertexColorsFromNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
+
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
+    dvec3 N = p->computeNormal();
+    std::vector<vertex_ptr_t> out_polygon;
+    p->visitVertices([&](vertex_ptr_t inp_v0) {
+      auto copy_v0 = *inp_v0;
+      N = dvec3(0.5)+N*0.5;
+      copy_v0.mCol[0] = fvec4(N.x, N.y, N.z, 1.0f);
+      copy_v0.miNumColors = 1;
+      auto out_v   = outsubmesh.mergeVertex(copy_v0);
+      out_polygon.push_back(out_v);
+    });
+    outsubmesh.mergePoly(out_polygon);
+  });
+
+
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

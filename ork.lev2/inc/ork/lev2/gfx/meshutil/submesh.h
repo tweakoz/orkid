@@ -349,6 +349,7 @@ void submeshPrune(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsmesh);
 
+void submeshWithVertexColorsFromNormals(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithFaceNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh);
 void submeshWithSmoothNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians);

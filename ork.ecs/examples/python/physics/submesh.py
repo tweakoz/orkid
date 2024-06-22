@@ -11,12 +11,14 @@ import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
 from orkengine import core, lev2, ecs
+import trimesh
 
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 from lev2utils.cameras import *
+from lev2utils.submeshes import *
 from lev2utils.shaders import createPipeline
 
 ################################################################################
@@ -184,52 +186,24 @@ class ECS_MINIMAL(object):
     # physics for room
     #########################
 
-    submesh = meshutil.SubMesh()
-    ex = 40
-    exh = 10
+    submesh=fullBoxQuads(40,10)
 
-    # box bottom
-    submesh.addQuad(
-                    dvec3(-ex,0,ex),
-                    dvec3(ex,0,ex),
-                    dvec3(ex,0,-ex),
-                    dvec3(-ex,0,-ex), 
-                    )
+    for i in range(0,3):
+      tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
+      evw = 10+i*10
+      evh = 9
+      y = 5+i*5
+      submesh2=fullBoxQuads(evw,evh)
+      tmesh2 = submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1))
 
-    #box left side
-    submesh.addQuad(
-                    dvec3(-ex,exh,-ex),
-                    dvec3(-ex,exh,ex),
-                    dvec3(-ex,0,ex),
-                    dvec3(-ex,0,-ex),
-                    dvec4(1,0,0,1) 
-                    )
+      boolean_out = tmesh.difference(tmesh2)
 
-    #box right side
-    submesh.addQuad(dvec3(ex,0,-ex),
-                    dvec3(ex,0,ex),
-                    dvec3(ex,exh,ex),
-                    dvec3(ex,exh,-ex),
-                    dvec4(1,0,0,1) 
-                    )
+      
+      submesh = trimeshToSubmesh(boolean_out)
+      submesh = submesh.withFaceNormals()
+      submesh = submesh.withVertexColorsFromNormals()
+      submesh = submesh.withBarycentricUVs()
 
-    #box front side
-    submesh.addQuad(
-                    dvec3(-ex,exh,ex),
-                    dvec3(ex,exh,ex),
-                    dvec3(ex,0,ex),
-                    dvec3(-ex,0,ex),
-                    dvec4(0,0,1,1)                     
-                    )
-    
-    #box back side
-    submesh.addQuad(dvec3(-ex,0,-ex),
-                    dvec3(ex,0,-ex),
-                    dvec3(ex,exh,-ex),
-                    dvec3(-ex,exh,-ex),
-                    dvec4(0,0,1,1) 
-                    )
-       
     shape = ecs.BulletShapeMeshData()
     shape.submesh = submesh
     shape.scale = vec3(1)
@@ -272,7 +246,7 @@ class ECS_MINIMAL(object):
     rprimdata.pipeline = createPipeline( app = self,
                                          ctx = ctx,
                                          rendermodel = "DeferredPBR",
-                                         techname="std_mono_deferred_lit")
+                                         techname="std_mono_deferred_pseudowire")
 
     mesh_transform = Transform()
     mesh_transform.scale = 1.0
@@ -305,20 +279,19 @@ class ECS_MINIMAL(object):
     if True:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
-      prob = random.randint(0,100)
-      if prob < 70 and self.spawncounter < NUM_BALLS:
+      prob = random.uniform(0,1)
+      if prob>0.5 and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
-        SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-        SAD.overridexf.scale = 1.0
+        #SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+        #SAD.overridexf.scale = 1.0
         SAD.overridexf.translation = vec3(i,15,j)
         h = random.uniform(0,1)
-        s = 1 #random.uniform(0,1)
         v = random.uniform(.25,2)
-        rgb = vec3(h,s,v).hsv2rgb()
+        rgb = vec3(h,1,v).hsv2rgb()
         SAD.table = ecs.DataTable()
         SAD.table[tokens.modcolor] = vec4(rgb,1)
-        self.e1 = self.controller.spawnEntity(SAD)
+        self.controller.spawnEntity(SAD)
       
     ##############################
     # camera update
