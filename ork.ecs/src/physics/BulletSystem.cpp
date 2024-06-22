@@ -367,7 +367,7 @@ btScalar OrkContactResultCallback::addSingleResult(
 
       invocation->_cb = _onContact;
 
-      auto& datatable            = invocation->_data.make<DataTable>();
+      auto& datatable            = *invocation->_data.makeShared<DataTable>();
       auto entA                  = (Entity*)body0->getUserPointer();
       auto entB                  = (Entity*)body1->getUserPointer();
       EntityRef erefA            = {entA->_entref};
@@ -538,7 +538,7 @@ void BulletSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
     case "IMPULSE_ON_COMPONENT_DATA"_crcu: {
-      const auto& table = data.get<DataTable>();
+      const auto& table = *data.getShared<DataTable>();
       auto compdata     = table["component"_tok].get<bulletobjectcomponentdata_ptr_t>();
       printf("compdata<%p>\n", compdata.get());
       auto it = _lastcomponentfordata.find(compdata.get());
@@ -551,7 +551,7 @@ void BulletSystem::_onNotify(token_t evID, evdata_t data) {
       break;
     }
     case "IMPULSE_ON_COMPONENT"_crcu: {
-      const auto& table = data.get<DataTable>();
+      const auto& table = *data.getShared<DataTable>();
       auto compref      = table["component"_tok].get<comp_ref_t>();
       auto component    = simulation()->_findComponentFromRef(compref);
       auto as_physics   = dynamic_cast<BulletObjectComponent*>(component);

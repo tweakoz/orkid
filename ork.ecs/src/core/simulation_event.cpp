@@ -218,7 +218,7 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
         const auto& SAD  = as_SAD.value();
         const auto& SREC = SAD._spawn_rec;
         uint64_t objID   = SAD._entref._entID;
-        auto entity      = _spawnAnonDynamicEntity(SREC,objID,SAD._SAD._overridexf);
+        auto entity      = _spawnAnonDynamicEntity(SREC,objID,SAD._SAD->_overridexf);
         _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[objID].set<Entity*>(entity); });
         fflush(stdout);
       }

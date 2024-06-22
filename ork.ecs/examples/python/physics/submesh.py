@@ -22,7 +22,7 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 2500
+NUM_BALLS = 1500
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -64,7 +64,7 @@ class ECS_MINIMAL(object):
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
     systemdata_SG.declareParams({
-      "SkyboxIntensity": float(2.0),
+      "SkyboxIntensity": float(3.0),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -145,7 +145,7 @@ class ECS_MINIMAL(object):
     c_physics.restitution = 0.45
     c_physics.angularDamping = 0.01
     c_physics.linearDamping = 0.01
-    c_physics.allowSleeping = False
+    c_physics.allowSleeping = True
     c_physics.isKinematic = False
     c_physics.disablePhysics = False
     c_physics.shape = sphere
@@ -160,9 +160,17 @@ class ECS_MINIMAL(object):
 
     ############################
 
+    def onSpawn(table):
+      entref = table[tokens.entref]
+      #self.controller.entBarrier(entref)
+      sgcomp = self.controller.findComponent(entref,"SceneGraphComponent")
+
+    ############################
+
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False
+    ball_spawner.onSpawn(onSpawn)
 
   ##############################################
 
@@ -264,7 +272,7 @@ class ECS_MINIMAL(object):
     rprimdata.pipeline = createPipeline( app = self,
                                          ctx = ctx,
                                          rendermodel = "DeferredPBR",
-                                         techname="std_mono_deferred")
+                                         techname="std_mono_deferred_lit")
 
     mesh_transform = Transform()
     mesh_transform.scale = 1.0
@@ -290,7 +298,6 @@ class ECS_MINIMAL(object):
 
   def onUpdate(self,updinfo):
 
-
     ##############################
     # spawn balls
     ##############################
@@ -299,12 +306,18 @@ class ECS_MINIMAL(object):
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       prob = random.randint(0,100)
-      if prob < 50 and self.spawncounter < NUM_BALLS:
+      if prob < 70 and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
         SAD.overridexf.orientation = quat(vec3(0,1,0),0)
         SAD.overridexf.scale = 1.0
         SAD.overridexf.translation = vec3(i,15,j)
+        h = random.uniform(0,1)
+        s = 1 #random.uniform(0,1)
+        v = random.uniform(.5,1)
+        rgb = vec3(h,s,v).hsv2rgb()
+        SAD.table = ecs.DataTable()
+        SAD.table[tokens.NodeColor] = rgb
         self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################

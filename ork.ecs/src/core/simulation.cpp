@@ -282,8 +282,10 @@ Entity* Simulation::_spawnNamedDynamicEntity(spawndata_constptr_t spawn_rec, Poo
   if(spawn_rec->_onSpawn){
     auto invocation = std::make_shared<deferred_script_invokation>();
     invocation->_cb = spawn_rec->_onSpawn;
-    auto& datatable = invocation->_data.make<DataTable>();
+    auto& datatable = *invocation->_data.makeShared<DataTable>();
+    EntityRef eref            = {newent->_entref};
     datatable["entity"_tok] = newent;
+    datatable["entref"_tok] = eref;
     this->_enqueueDeferredInvokation(invocation);
   }
 

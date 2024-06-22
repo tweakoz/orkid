@@ -23,7 +23,7 @@ struct _SpawnNamedDynamic {
 };
 
 struct _SpawnAnonDynamic {
-	SpawnAnonDynamic _SAD;
+	sad_ptr_t _SAD;
   spawndata_constptr_t _spawn_rec;
   ent_ref_t _entref;
 };

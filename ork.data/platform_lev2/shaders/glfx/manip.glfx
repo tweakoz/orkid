@@ -119,6 +119,11 @@ fragment_shader ps_deferred_emissive_fragclr
   : lib_gbuf_encode {
 	out_gbuf = packGbuffer_unlit(frg_clr.xyz);
 }
+fragment_shader ps_deferred_fragclr
+  : iface_pbr_deferred
+  : lib_gbuf_encode {
+  out_gbuf = packGbuffer(frg_clr.xyz,vec3(0,0,0),vec3(0,0,1),1,1);
+}
 
 ///////////////////////////////////////////////////////////////
 state_block sb_m1 : sb_default
@@ -154,6 +159,15 @@ technique std_mono_deferred
   pass p0
   { vertex_shader=vs_vtxcolor_mono;
     fragment_shader=ps_deferred_emissive_fragclr;
+    state_block=sb_m1;
+  }
+}
+technique std_mono_deferred_lit
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_deferred_fragclr;
     state_block=sb_m1;
   }
 }

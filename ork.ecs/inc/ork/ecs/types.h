@@ -234,9 +234,10 @@ struct SpawnAnonDynamic {
   PoolString _edataname;
   spawndata_ptr_t _userspawndata;
   decompxf_ptr_t _overridexf;
+  datatable_ptr_t _table;
 };
 
-using sad_ptr_t = std::shared_ptr<SpawnAnonDynamic>();
+using sad_ptr_t = std::shared_ptr<SpawnAnonDynamic>;
 
 struct ScriptWrapper {
   svar64_t _value;

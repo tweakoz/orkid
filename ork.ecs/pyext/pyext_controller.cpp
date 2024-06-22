@@ -40,6 +40,10 @@ void pyinit_controller(py::module& module_ecs) {
          ctrl->installRenderCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
+      .def("entBarrier", [](controller_ptr_t ctrl, ent_ref_t eref){
+        ctrl->entBarrier(eref);
+      })
+      ///////////////////////////
       .def(
           "componentNotify",
           [type_codec](
@@ -51,14 +55,14 @@ void pyinit_controller(py::module& module_ecs) {
             evdata_t decoded;
             if (py::isinstance<py::dict>(evdata)){
               auto as_dict = evdata.cast<py::dict>();
-              auto& dtab = decoded.make<DataTable>();
+              auto dtab = decoded.makeShared<DataTable>();
               DataKey dkey;
               for (auto item : as_dict) {
                 auto key = py::cast<crcstring_ptr_t>(item.first);
                 auto val = py::reinterpret_borrow<py::object>(item.second);
                 auto var_val = type_codec->decode64(val);
                 dkey._encoded = *key;
-                dtab[dkey] = var_val;
+                (*dtab)[dkey] = var_val;
               }
             }
             else{
@@ -81,14 +85,14 @@ void pyinit_controller(py::module& module_ecs) {
             evdata_t decoded;
             if (py::isinstance<py::dict>(evdata)){
               auto as_dict = evdata.cast<py::dict>();
-              auto& dtab = decoded.make<DataTable>();
+              auto dtab = decoded.makeShared<DataTable>();
               DataKey dkey;
               for (auto item : as_dict) {
                 auto key = py::cast<crcstring_ptr_t>(item.first);
                 auto val = py::reinterpret_borrow<py::object>(item.second);
                 auto var_val = type_codec->decode64(val);
                 dkey._encoded = *key;
-                dtab[dkey] = var_val;
+                (*dtab)[dkey] = var_val;
               }
             }
             else{
@@ -117,7 +121,7 @@ void pyinit_controller(py::module& module_ecs) {
           "spawnEntity",
           [type_codec](
               controller_ptr_t ctrl, //
-              const SpawnAnonDynamic& sad) -> ent_ref_t {
+              sad_ptr_t sad) -> ent_ref_t {
             ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
             return eref;
           })

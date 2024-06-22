@@ -54,7 +54,8 @@ struct PseudoClientImpl {
 
         // delayed operations occur on update thread
 
-        SpawnAnonDynamic SAD{._edataname = "e1"_pool}; // by anon we mean "unnamed"
+        auto SAD = std::make_shared<SpawnAnonDynamic>();
+        SAD->_edataname = "e1"_pool; // by anon we mean "unnamed"
         auto ent = _controller->spawnAnonDynamicEntity(SAD);
         auto luacomp = _controller->findEntityComponent<LuaComponentData>(ent);
 

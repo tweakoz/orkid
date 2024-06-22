@@ -198,7 +198,7 @@ std::string Controller::TraceWriter::_traceVar128(const svar160_t& var){
 		}
 
 		rval = FormatString("\"SpawnAnonDynamic\":{\"edata\": \"%s\", \"entID\": %zu, \"SREC\": %s  }", //
-			                  value._SAD._edataname.c_str(), //
+			                  value._SAD->_edataname.c_str(), //
 			                  value._entref._entID, //
 			                  payload_srec.c_str() //
 			                  );

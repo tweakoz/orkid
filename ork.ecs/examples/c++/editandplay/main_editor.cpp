@@ -220,11 +220,12 @@ int main(int argc, char** argv, char** envp) {
 
     //printf( "spawn_timer<%g>\n", spawn_timer );
     if( (transport_mode==0) and (spawn_timer>4.0) ){
-      SpawnAnonDynamic SAD{._edataname = "ent_ball"_pool}; // by anon we mean "unnamed"
+      auto SAD = std::make_shared<SpawnAnonDynamic>();
+      SAD->_edataname = "ent_ball"_pool; // by anon we mean "unnamed"
       float x = controller->random(-1,1);
       float z = controller->random(-1,1);
-      SAD._overridexf = std::make_shared<DecompTransform>();
-      SAD._overridexf->set(fvec3(x,10,z),fquat(),1);
+      SAD->_overridexf = std::make_shared<DecompTransform>();
+      SAD->_overridexf->set(fvec3(x,10,z),fquat(),1);
       auto ent     = controller->spawnAnonDynamicEntity(SAD);
       spawn_timer = 0.0;
     }

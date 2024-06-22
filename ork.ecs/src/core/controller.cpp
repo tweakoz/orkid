@@ -284,7 +284,7 @@ ent_ref_t Controller::spawnNamedDynamicEntity(const SpawnNamedDynamic& SND) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent_ref_t Controller::spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD) {
+ent_ref_t Controller::spawnAnonDynamicEntity(sad_ptr_t SAD) {
   auto req = std::make_shared<Request>();
 
   req->_requestID = RequestID::SPAWN_DYNAMIC_ANON;
@@ -294,12 +294,12 @@ ent_ref_t Controller::spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD) {
   auto& IMPL      = req->_payload.make<impl::_SpawnAnonDynamic>();
   IMPL._SAD       = SAD;
 
-  if( SAD._userspawndata ){
-    IMPL._spawn_rec = SAD._userspawndata;
+  if( SAD->_userspawndata ){
+    IMPL._spawn_rec = SAD->_userspawndata;
   }
   else{
-    //printf("FIND SAD._edataname<%s>\n", SAD._edataname.c_str());
-    IMPL._spawn_rec = _scenedata->findTypedObject<SpawnData>(SAD._edataname);
+    //printf("FIND SAD->_edataname<%s>\n", SAD->_edataname.c_str());
+    IMPL._spawn_rec = _scenedata->findTypedObject<SpawnData>(SAD->_edataname);
   }
 
   OrkAssert(IMPL._spawn_rec);
@@ -615,7 +615,7 @@ comp_ref_t Controller::findComponentWithClassName(ent_ref_t ent, std::string cla
   auto& FCOMP          = simevent->_payload.make<impl::_FindComponent>();
 
   auto clazz = ::ork::rtti::Class::FindClass(clazzname);
-  printf( "find class<%s> -> %p\n", clazzname.c_str(), (void*) clazz );
+  //printf( "find class<%s> -> %p\n", clazzname.c_str(), (void*) clazz );
   FCOMP._entref = ent;
   FCOMP._compclazz = clazz;
   FCOMP._compref = ComponentRef({._compID=ID});

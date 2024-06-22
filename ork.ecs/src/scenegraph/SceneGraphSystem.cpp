@@ -553,7 +553,7 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       break;
     }
     case UpdateCamera._hashed: {
-      const auto& table = data.get<DataTable>();
+      const auto& table = *data.getShared<DataTable>();
       const auto& eye   = table["eye"_tok].get<fvec3>();
       const auto& tgt   = table["tgt"_tok].get<fvec3>();
       const auto& up    = table["up"_tok].get<fvec3>();
@@ -565,7 +565,7 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       break;
     }
     case UpdateFramebufferSize._hashed: {
-      const auto& table = data.get<DataTable>();
+      const auto& table = *data.getShared<DataTable>();
       int w             = table["width"_tok].get<int>();
       int h             = table["height"_tok].get<int>();
       auto resize_op    = [=]() {
@@ -609,7 +609,7 @@ void SceneGraphSystem::_onRequest(impl::sys_response_ptr_t response, token_t req
       // fetch drawabledata / drawable
       ///////////////////////////////
 
-      const auto& table = data.get<DataTable>();
+      const auto& table = *data.getShared<DataTable>();
       auto mdata        = table["modeldata"_tok].get<modeldrawable_ptr_t>();
 
       ///////////////////////////////

@@ -250,7 +250,7 @@ struct ReaderImpl {
         out_SAD._spawn_rec = spawnrec;
 
         const auto& edataname   = EVENTTYPE["edata"];
-        out_SAD._SAD._edataname = AddPooledString(edataname.GetString());
+        out_SAD._SAD->_edataname = AddPooledString(edataname.GetString());
 
         enqueueItem(timestamp, out_item);
       }
@@ -308,7 +308,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
         OrkAssert(objID == value._entref._entID);
         auto& IMPL      = req->_payload.make<impl::_SpawnAnonDynamic>();
         IMPL._SAD       = value._SAD;
-        IMPL._spawn_rec = _controller->_scenedata->findTypedObject<SpawnData>(value._SAD._edataname);
+        IMPL._spawn_rec = _controller->_scenedata->findTypedObject<SpawnData>(value._SAD->_edataname);
         OrkAssert(IMPL._spawn_rec);
         ent_ref_t eref;
         IMPL._entref._entID = objID;

@@ -121,7 +121,7 @@ struct Controller {
 
 	void update();
   ent_ref_t spawnNamedDynamicEntity(const SpawnNamedDynamic& SND);
-  ent_ref_t spawnAnonDynamicEntity(const SpawnAnonDynamic& SAD);
+  ent_ref_t spawnAnonDynamicEntity(sad_ptr_t SAD);
 	void despawnEntity(const ent_ref_t& EREF);
   
   template <typename T> sys_ref_t findSystem();
