@@ -10,6 +10,7 @@
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectObjectVector.inl>
+#include <ork/math/CVector4.h>
 
 #include <ork/ecs/ecs.h>
 #include <ork/ecs/system.h>
@@ -361,6 +362,17 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
       instance->_instance_index  = ID;
       component->_INSTANCE       = instance;
       //printf( "sgc<%p> instanced sg pseudonode id<%d>\n", this, ID );
+      if(instance){
+        auto ent = component->GetEntity();
+        auto sad = ent->_spawnanondata;
+        if(sad){
+          auto modcolor = (*sad->_table)["modcolor"_tok];
+          //.get<fvec4>();
+          if(auto as_v4 = modcolor.tryAs<fvec4>()){
+            idata->_modcolors[ID] = as_v4.value();
+          }
+        }
+      }
       if(component->_onInstanceCreated){
         component->_onInstanceCreated();
       }

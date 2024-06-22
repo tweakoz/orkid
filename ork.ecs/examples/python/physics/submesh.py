@@ -317,7 +317,7 @@ class ECS_MINIMAL(object):
         v = random.uniform(.5,1)
         rgb = vec3(h,s,v).hsv2rgb()
         SAD.table = ecs.DataTable()
-        SAD.table[tokens.NodeColor] = rgb
+        SAD.table[tokens.modcolor] = vec4(rgb,1)
         self.e1 = self.controller.spawnEntity(SAD)
       
     ##############################

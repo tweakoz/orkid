@@ -22,6 +22,8 @@
 #include <ork/ecs/scene.inl>
 #include <ork/util/logger.h>
 
+#include "message_private.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template class ork::orklut<const ork::object::ObjectClass*, ork::ecs::System*>;
@@ -254,14 +256,23 @@ bool Simulation::IsEntityActive(Entity* pent) const {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-Entity* Simulation::_spawnAnonDynamicEntity(spawndata_constptr_t spawn_rec, int entref,decompxf_ptr_t ovxf) {
+Entity* Simulation::_spawnAnonDynamicEntity(const impl::_SpawnAnonDynamic& SAD) {
+  //spawndata_constptr_t spawn_rec, int entref,decompxf_ptr_t ovxf
   auto name   = genDynamicEntityName();
-  auto newent = _spawnNamedDynamicEntity(spawn_rec, name,entref,ovxf);
+  auto newent = _spawnNamedDynamicEntity(SAD, name);
   return newent;
 }
 
-Entity* Simulation::_spawnNamedDynamicEntity(spawndata_constptr_t spawn_rec, PoolString name, int entref,decompxf_ptr_t ovxf) {
+Entity* Simulation::_spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD, PoolString name) {
+  auto spawn_rec = SAD._spawn_rec;
+  int entref = SAD._entref._entID;
+  decompxf_ptr_t ovxf = nullptr;
+  if(SAD._SAD){
+    ovxf = SAD._SAD->_overridexf;
+  }
   auto newent = new Entity(spawn_rec, this,entref);
+  newent->_spawnanondata = SAD._SAD;
+
   /////////////////////////////////////
   // per spawn override of intial transform ?
   /////////////////////////////////////

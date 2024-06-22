@@ -97,8 +97,8 @@ struct Simulation {
 
   //////////////////////////////////////////////////////////
 
-  Entity* _spawnNamedDynamicEntity(spawndata_constptr_t spawn_rec, PoolString name, int entref,decompxf_ptr_t ovxf=nullptr);
-  Entity* _spawnAnonDynamicEntity(spawndata_constptr_t spawn_rec, int entref, decompxf_ptr_t ovxf=nullptr);
+  Entity* _spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD, PoolString name);
+  Entity* _spawnAnonDynamicEntity(const impl::_SpawnAnonDynamic& SAD);
 
   //////////////////////////////////////////////////////////
 

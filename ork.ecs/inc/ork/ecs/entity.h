@@ -140,10 +140,11 @@ public:
 
   uint64_t _entref = 0xffffffffffff;
 
-private:
+//private:
   //void notify(const ComponentEvent& e);
 
   spawndata_constptr_t _entdata;
+  sad_ptr_t _spawnanondata;
   dagnodedata_ptr_t _dagnode;
   Simulation* mSimulation = nullptr;
 
