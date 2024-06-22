@@ -22,7 +22,7 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 1500
+NUM_BALLS = 2500
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -314,7 +314,7 @@ class ECS_MINIMAL(object):
         SAD.overridexf.translation = vec3(i,15,j)
         h = random.uniform(0,1)
         s = 1 #random.uniform(0,1)
-        v = random.uniform(.5,1)
+        v = random.uniform(.25,2)
         rgb = vec3(h,s,v).hsv2rgb()
         SAD.table = ecs.DataTable()
         SAD.table[tokens.modcolor] = vec4(rgb,1)
