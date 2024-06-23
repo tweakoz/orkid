@@ -24,7 +24,7 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 2500
+NUM_BALLS = 3500
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -34,7 +34,7 @@ class ECS_MINIMAL(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=True)
+    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
@@ -74,7 +74,7 @@ class ECS_MINIMAL(object):
       "DepthFogPower": float(1.25),
     })
 
-    drawable = InstancedModelDrawableData("data://tests/pbr_calib.glb")
+    drawable = InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
     drawable.resize(NUM_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
@@ -186,13 +186,13 @@ class ECS_MINIMAL(object):
     # physics for room
     #########################
 
-    submesh=fullBoxQuads(40,10)
+    submesh=fullBoxQuads(40,20)
 
-    for i in range(0,3):
+    for i in range(0,4):
       tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
       evw = 10+i*10
-      evh = 9
-      y = 5+i*5
+      evh = 12
+      y = 5+i*6
       submesh2=fullBoxQuads(evw,evh)
       tmesh2 = submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1))
 
@@ -280,7 +280,7 @@ class ECS_MINIMAL(object):
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       prob = random.uniform(0,1)
-      if prob>0.5 and self.spawncounter < NUM_BALLS:
+      if prob>0.75 and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
         #SAD.overridexf.orientation = quat(vec3(0,1,0),0)

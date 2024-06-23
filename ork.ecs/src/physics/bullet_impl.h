@@ -22,6 +22,7 @@
 
 #include <ork/ecs/physics/bullet.h>
 #include <ork/ecs/SceneGraphComponent.h>
+#include <ork/util/fast_set.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -219,14 +220,6 @@ public:
   void _onDeactivate(Simulation* sim) final;
 };
 
-struct fast_set{
-
-  std::unordered_map<BulletObjectComponent*,size_t> _uset;
-  std::vector<BulletObjectComponent*> _linear;
-  void insert(BulletObjectComponent* v);
-  void remove(BulletObjectComponent* v);
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletSystem : public System {
@@ -289,9 +282,9 @@ public:
   float _fdtaccum = 0.0f;
   std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
-  fast_set _updateForceComponents;
-  fast_set _updateKinematicComponents;
-  fast_set _updateDynamicComponents;
+  fast_set<BulletObjectComponent*> _updateForceComponents;
+  fast_set<BulletObjectComponent*> _updateKinematicComponents;
+  fast_set<BulletObjectComponent*> _updateDynamicComponents;
   std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
   //std::vector<instance_applicator_ptr_t> _applicators;
 };

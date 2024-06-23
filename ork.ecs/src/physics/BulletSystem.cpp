@@ -564,25 +564,6 @@ void BulletSystem::_onUpdate(Simulation* inst) {
   }
 }
 
-void fast_set::insert(BulletObjectComponent* v){
-  size_t index = _linear.size();
-  _linear.push_back(v);
-  _uset[v] = index;
-}
-
-void fast_set::remove(BulletObjectComponent* v){
-  auto it = _uset.find(v);
-  if(it!=_uset.end()){
-    size_t index = it->second;
-    _uset.erase(it);
-    size_t count = _linear.size();
-    if(index<=(count-1)){
-      _linear[index] = _linear[count-1];
-    }
-    _linear.pop_back();
-  }
-}
-
 void BulletSystem::_onNotify(token_t evID, evdata_t data) {
 
   switch (evID.hashed()) {
