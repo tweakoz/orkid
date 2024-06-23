@@ -24,7 +24,7 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 5000
+NUM_BALLS = 2500
 RATE = 0.5
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
@@ -190,8 +190,8 @@ class ECS_MINIMAL(object):
     submesh2=fullBoxQuads(20,20)
     q1 = quat(vec3(1,0,0),math.pi*0.25)
     q2 = quat(vec3(0,1,0),math.pi*0.5)
-    tmeshx = submeshToTrimesh(submesh2,vec3(0,15,0),q1,vec3(1))
-    tmeshz = submeshToTrimesh(submesh2,vec3(0,15,0),q1*q2,vec3(1))
+    tmeshx = submeshToTrimesh(submesh2,vec3(0,25,0),q1,vec3(1))
+    tmeshz = submeshToTrimesh(submesh2,vec3(0,20,0),q1*q2,vec3(1))
 
 
 
