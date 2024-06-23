@@ -164,6 +164,14 @@ bool BulletObjectComponent::_onActivate(Simulation* sim) {
   //sim->debugBanner(255, 128, 0, "BulletObjectComponent<%p> _onActivate\n", (void*)this);
   auto bulletsys = sim->findSystem<BulletSystem>();
   bulletsys->_onActivateComponent(this);
+  //////////////////////////////////////////////////
+  // update dynamic rigid body params
+  //////////////////////////////////////////////////
+  if(_rigidbody){
+    _rigidbody->setRestitution(mBOCD._restitution);
+    _rigidbody->setFriction(mBOCD._friction);
+    _rigidbody->setDamping(mBOCD._linearDamping, mBOCD._angularDamping);
+  }
   return true;
 }
 
@@ -182,64 +190,48 @@ void BulletObjectComponent::_onDeactivate(Simulation* sim) {
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void BulletObjectComponent::update(Simulation* sim, float time_step) {
+void BulletObjectComponent::updateDynamic(Simulation* sim, float time_step) {
 
-  if (mBOCD._disablePhysics)
-    return;
+  //////////////////////////////////////////////////
+  // copy motion state to entity transform
+  //////////////////////////////////////////////////
 
-  if (_rigidbody) {
-    //////////////////////////////////////////////////
-    // copy motion state to entity transform
-    //////////////////////////////////////////////////
+  auto ecs_xform = GetEntity()->transform();
 
-    auto ecs_xform = GetEntity()->transform();
+  const btMotionState* motionState = _rigidbody->getMotionState();
+  btTransform xf;
+  motionState->getWorldTransform(xf);
 
-    if (mBOCD._isKinematic) {
-      btMotionState* motionState = _rigidbody->getMotionState();
-      auto ork_mtx               = ecs_xform->composed();
-      btTransform xf             = orkmtx4tobtmtx4(ork_mtx);
-      motionState->setWorldTransform(xf);
-      //sim->debugBanner(255, 128, 0, "BulletObjectComponent<%p> iskin\n", (void*)this);
-    } else {
-      const btMotionState* motionState = _rigidbody->getMotionState();
-      btTransform xf;
-      motionState->getWorldTransform(xf);
+  ork::fvec3 position = btv3toorkv3(xf.getOrigin());
+  ork::fquat rotation = btqtoorkq(xf.getRotation());
 
-      ork::fvec3 position = btv3toorkv3(xf.getOrigin());
-      ork::fquat rotation = btqtoorkq(xf.getRotation());
+  ecs_xform->_translation = position;
+  ecs_xform->_rotation = rotation;
 
-      ecs_xform->_translation = position;
-      ecs_xform->_rotation = rotation;
+  // apply BulletSystem's expgravity
 
-      //auto mtx    = ecs_xform->composed();
-      //auto mtxstr = mtx.dump4x3cn();
-      //printf(" bulletcomp::update value<%s>\n", mtxstr.c_str());
+}
 
-      //sim->debugBanner(
-          //255, 128, 0, "BulletObjectComponent<%p> newpos<%f %f %f>\n", (void*)this, position.x, position.y, position.z);
-    }
+///////////////////////////////////////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////
-    // update dynamic rigid body params
-    //////////////////////////////////////////////////
+void BulletObjectComponent::updateKinematic(Simulation* sim, float time_step){
+  auto ecs_xform = GetEntity()->transform();
+  btMotionState* motionState = _rigidbody->getMotionState();
+  auto ork_mtx               = ecs_xform->composed();
+  btTransform xf             = orkmtx4tobtmtx4(ork_mtx);
+  motionState->setWorldTransform(xf);
+}
 
-    _rigidbody->setRestitution(mBOCD._restitution);
-    _rigidbody->setFriction(mBOCD._friction);
-    _rigidbody->setDamping(mBOCD._linearDamping, mBOCD._angularDamping);
-    //////////////////////////////////////////////////
-    // apply forces
-    //////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 
-    for (auto item : _forces) {
-      auto forcecontroller = item.second;
-      if (forcecontroller)
-        forcecontroller->UpdateForces(this,time_step);
-    }
-
-    // apply BulletSystem's expgravity
-  
-    //////////////////////////////////////////////////
-    // printf( "newpos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetZ() );
+void BulletObjectComponent::updateForces(Simulation* sim, float time_step){
+  //////////////////////////////////////////////////
+  // apply forces
+  //////////////////////////////////////////////////
+  for (auto item : _forces) {
+    auto forcecontroller = item.second;
+    if (forcecontroller)
+      forcecontroller->UpdateForces(this,time_step);
   }
 }
 

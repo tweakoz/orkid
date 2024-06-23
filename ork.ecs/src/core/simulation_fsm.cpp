@@ -501,7 +501,7 @@ void Simulation::_initializeEntities() {
         if(spawner->_onSpawn){
           auto invocation = std::make_shared<deferred_script_invokation>();
           invocation->_cb = spawner->_onSpawn;
-          auto& datatable = invocation->_data.make<DataTable>();
+          auto& datatable = *invocation->_data.makeShared<DataTable>();
           EntityRef eref            = {pent->_entref};
           datatable["entity"_tok] = pent;
           datatable["entref"_tok] = eref;

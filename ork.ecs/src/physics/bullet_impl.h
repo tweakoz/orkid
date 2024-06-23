@@ -196,7 +196,9 @@ public:
 
   BulletObjectForceControllerInst* getForceController(std::string named) const;
 
-  void update(Simulation* sim, float time_step);
+  void updateDynamic(Simulation* sim, float time_step);
+  void updateForces(Simulation* sim, float time_step);
+  void updateKinematic(Simulation* sim, float time_step);
 
   const BulletObjectComponentData& mBOCD;
   orkmap<std::string, BulletObjectForceControllerInst*> _forces;
@@ -217,6 +219,13 @@ public:
   void _onDeactivate(Simulation* sim) final;
 };
 
+struct fast_set{
+
+  std::unordered_map<BulletObjectComponent*,size_t> _uset;
+  std::vector<BulletObjectComponent*> _linear;
+  void insert(BulletObjectComponent* v);
+  void remove(BulletObjectComponent* v);
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -280,6 +289,9 @@ public:
   float _fdtaccum = 0.0f;
   std::unordered_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
   std::unordered_set<BulletObjectComponent*> _activeComponents;
+  fast_set _updateForceComponents;
+  fast_set _updateKinematicComponents;
+  fast_set _updateDynamicComponents;
   std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
   //std::vector<instance_applicator_ptr_t> _applicators;
 };

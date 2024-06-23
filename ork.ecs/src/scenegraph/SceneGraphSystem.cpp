@@ -365,7 +365,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
       if(instance){
         auto ent = component->GetEntity();
         auto sad = ent->_spawnanondata;
-        if(sad){
+        if(sad and sad->_table){
           auto modcolor = (*sad->_table)["modcolor"_tok];
           //.get<fvec4>();
           if(auto as_v4 = modcolor.tryAs<fvec4>()){

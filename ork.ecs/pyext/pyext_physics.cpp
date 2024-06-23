@@ -67,7 +67,7 @@ void pyinit_physics(py::module& module_ecs) {
               "onCollision",
               [type_codec](bulletcompdata_ptr_t physc, py::function pyfn) { //
                 physc->_collisionCallback = [=](const evdata_t& result) {
-                  auto& as_table = result.get<DataTable>();
+                  auto as_table = result.getShared<DataTable>();
                   auto encoded   = type_codec->encode64(as_table);
                   py::gil_scoped_acquire acquire;
                   pyfn(encoded);

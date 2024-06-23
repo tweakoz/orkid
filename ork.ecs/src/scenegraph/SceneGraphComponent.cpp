@@ -229,7 +229,7 @@ void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t 
     case SceneGraphSystem::CreateNode._hashed: {
 
       auto makenode_op = [=]() {
-        const auto& table = data.get<DataTable>();
+        const auto& table = *data.getShared<DataTable>();
         const auto& mdata = table["modeldata"_tok].get<modeldrawable_ptr_t>();
         float scale       = table["uniformScale"_tok].get<float>();
         auto nodename     = table["nodeName"_tok].get<std::string>();

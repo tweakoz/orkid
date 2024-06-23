@@ -175,6 +175,8 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
 
   btVector3 grav = orkv3tobtv3(world_data.GetGravity());
 
+  bool wants_update = true;
+
   if (btDynamicsWorld* world = this->GetDynamicsWorld()) {
     auto shapedata = component->data()._shapedata;
 
@@ -246,6 +248,22 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
   }
   _activeComponents.insert(component);
 
+  if (CDATA._disablePhysics)
+    wants_update = false;
+  if (not component->_rigidbody)
+    wants_update = false;
+
+  if (wants_update) {
+    if (component->_forces.size() > 0) {
+      _updateForceComponents.insert(component);
+    }
+    if (CDATA._isKinematic) {
+      _updateKinematicComponents.insert(component);
+    } else {
+      _updateDynamicComponents.insert(component);
+    }
+  }
+
   // instance tracking (WIP)
   if (component->_mySGcomponentForInstancing) {
     component->_mySGcomponentForInstancing->_onInstanceCreated = [=]() {
@@ -255,8 +273,8 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
       OrkAssert(instance);
       component->_sginstance_id = instance->_instance_index;
       OrkAssert(component->_sginstance_id >= 0);
-      auto idata = instance->_idata;
-      auto entmotionstate = (EntMotionState*) component->_rigidbody->getMotionState();
+      auto idata                   = instance->_idata;
+      auto entmotionstate          = (EntMotionState*)component->_rigidbody->getMotionState();
       entmotionstate->_instance_id = component->_sginstance_id;
       entmotionstate->_idata       = idata;
     };
@@ -280,6 +298,11 @@ void BulletSystem::_onDeactivateComponent(BulletObjectComponent* component) {
   }
 
   _activeComponents.erase(it);
+
+  _updateForceComponents.remove(component);
+  _updateKinematicComponents.remove(component);
+  _updateDynamicComponents.remove(component);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -514,8 +537,15 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       _debugger->beginSimFrame(this);
 
     if (mMaxSubSteps > 0) {
-      for (BulletObjectComponent* component : _activeComponents) {
-        component->update(_simulation, dt);
+
+      for (BulletObjectComponent* component : _updateKinematicComponents._linear) {
+        component->updateKinematic(_simulation, dt);
+      }
+      for (BulletObjectComponent* component : _updateDynamicComponents._linear) {
+        component->updateDynamic(_simulation, dt);
+      }
+      for (BulletObjectComponent* component : _updateForceComponents._linear) {
+        component->updateForces(_simulation, dt);
       }
 
       int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
@@ -531,6 +561,25 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     if (is_debug)
       _debugger->endSimFrame(this);
+  }
+}
+
+void fast_set::insert(BulletObjectComponent* v){
+  size_t index = _linear.size();
+  _linear.push_back(v);
+  _uset[v] = index;
+}
+
+void fast_set::remove(BulletObjectComponent* v){
+  auto it = _uset.find(v);
+  if(it!=_uset.end()){
+    size_t index = it->second;
+    _uset.erase(it);
+    size_t count = _linear.size();
+    if(index<=(count-1)){
+      _linear[index] = _linear[count-1];
+    }
+    _linear.pop_back();
   }
 }
 
