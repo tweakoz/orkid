@@ -171,7 +171,7 @@ fragment_shader ps_deferred_pseudowire
   : iface_wire_deferred
 //	: iface_wire_deferred
   : lib_gbuf_encode {
-  out_gbuf = packGbuffer(frg_bary.xyz,vec3(0,0,0),vec3(0,0,1),1,1);
+  out_gbuf = packGbuffer((frg_bary.xyz+vec3(7))*0.125,vec3(0,0,0),vec3(0,0,1),1,1);
 }
 
 ///////////////////////////////////////////////////////////////

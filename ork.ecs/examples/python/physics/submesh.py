@@ -24,7 +24,8 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 3500
+NUM_BALLS = 5000
+RATE = 0.5
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -186,7 +187,20 @@ class ECS_MINIMAL(object):
     # physics for room
     #########################
 
+    submesh2=fullBoxQuads(20,20)
+    q1 = quat(vec3(1,0,0),math.pi*0.25)
+    q2 = quat(vec3(0,1,0),math.pi*0.5)
+    tmeshx = submeshToTrimesh(submesh2,vec3(0,15,0),q1,vec3(1))
+    tmeshz = submeshToTrimesh(submesh2,vec3(0,15,0),q1*q2,vec3(1))
+
+
+
     submesh=fullBoxQuads(40,20)
+    tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
+
+    boolean_out = tmesh.difference(tmeshx)
+    boolean_out = boolean_out.difference(tmeshz)
+    submesh = trimeshToSubmesh(boolean_out)
 
     for i in range(0,4):
       tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
@@ -246,7 +260,7 @@ class ECS_MINIMAL(object):
     rprimdata.pipeline = createPipeline( app = self,
                                          ctx = ctx,
                                          rendermodel = "DeferredPBR",
-                                         techname="std_mono_deferred_pseudowire")
+                                         techname="std_mono_deferred_lit")
 
     mesh_transform = Transform()
     mesh_transform.scale = 1.0
@@ -277,10 +291,11 @@ class ECS_MINIMAL(object):
     ##############################
 
     if True:
-      i = random.randint(-5,5)
-      j = random.randint(-5,5)
+      extent = 10
+      i = random.randint(-extent,extent)
+      j = random.randint(-extent,extent)
       prob = random.uniform(0,1)
-      if prob>0.75 and self.spawncounter < NUM_BALLS:
+      if prob<RATE and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
         #SAD.overridexf.orientation = quat(vec3(0,1,0),0)

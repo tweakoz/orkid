@@ -538,25 +538,35 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     if (mMaxSubSteps > 0) {
 
+      EASY_BLOCK("kinematic", profiler::colors::Cyan);
       for (BulletObjectComponent* component : _updateKinematicComponents._linear) {
         component->updateKinematic(_simulation, dt);
       }
+      EASY_END_BLOCK;
+      EASY_BLOCK("dynamic", profiler::colors::Cyan);
       for (BulletObjectComponent* component : _updateDynamicComponents._linear) {
         component->updateDynamic(_simulation, dt);
       }
+      EASY_END_BLOCK;
+      EASY_BLOCK("forces", profiler::colors::Cyan);
       for (BulletObjectComponent* component : _updateForceComponents._linear) {
         component->updateForces(_simulation, dt);
       }
+      EASY_END_BLOCK;
 
+      EASY_BLOCK("simulation", profiler::colors::Cyan);
       int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
       int b = mMaxSubSteps;
       int m = std::min(a, b); // ? a : b; // ork::min()
       mNumSubStepsTaken += m;
+      EASY_END_BLOCK;
 
+      EASY_BLOCK("collisions", profiler::colors::Cyan);
       for (auto callback : _collisionCallbacks) {
         auto body = callback->monitoredBody;
         mDynamicsWorld->contactTest(body, *callback);
       }
+      EASY_END_BLOCK;
     }
 
     if (is_debug)
