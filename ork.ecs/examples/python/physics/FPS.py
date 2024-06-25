@@ -370,6 +370,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.controller.beginWriteTrace
 
   ##############################################
+  def onUpdateInit(self):
+    self.controller.updateInit()
+  def onUpdateExit(self):
+    self.controller.updateExit()
 
   def onUpdate(self,updinfo):
 
@@ -421,12 +425,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                         tokens.fovy: UIC.fovy
                                       }
                                      )
-
-    ##############################
-    # tick the simulation
-    ##############################
-
-    self.controller.updateSimulation()
 
   ##############################################
 

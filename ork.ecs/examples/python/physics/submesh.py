@@ -284,6 +284,13 @@ class ECS_MINIMAL(object):
 
   ##############################################
 
+  def onUpdateInit(self):
+    self.controller.updateInit()
+  def onUpdateExit(self):
+    self.controller.updateExit()
+
+  ##############################################
+
   def onUpdate(self,updinfo):
 
     ##############################
@@ -325,12 +332,6 @@ class ECS_MINIMAL(object):
                                       tokens.fovy: UIC.fovy
                                     }
                                    )
-
-    ##############################
-    # tick the simulation
-    ##############################
-
-    self.controller.updateSimulation()
 
   ##############################################
 

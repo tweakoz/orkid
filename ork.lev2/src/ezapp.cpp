@@ -376,6 +376,7 @@ void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
 void OrkEzApp::onUpdate(EzMainWin::onupdate_t cb) {
   if(_mainWindow)
     _mainWindow->_onUpdate = cb;
+  _app_on_update = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
@@ -384,8 +385,9 @@ void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
-  if(_mainWindow)
+  if(_mainWindow){
     _mainWindow->_onUpdateExit = cb;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {

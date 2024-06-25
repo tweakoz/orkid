@@ -143,6 +143,7 @@ public:
   static OrkEzAppBase* _staticapp;
   std::atomic<int> _update_count;
   std::atomic<int> _render_count;
+  ui::update_fn_t _app_on_update;
 };
 ////////////////////////////////////////////////////////////////////////////////
 struct OrkEzApp : public OrkEzAppBase {

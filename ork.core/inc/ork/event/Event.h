@@ -18,7 +18,7 @@ namespace ork::ui {
     int _counter = 0;
   };
   using updatedata_ptr_t = std::shared_ptr<UpdateData>;
-
+  using update_fn_t = std::function<void(updatedata_ptr_t)>;
 }
 
 namespace ork { namespace event {

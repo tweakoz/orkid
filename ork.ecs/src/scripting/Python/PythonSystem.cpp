@@ -24,7 +24,7 @@
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/simulation.inl>
 
-//#include "LuaIntf/LuaIntf.h"
+// #include "LuaIntf/LuaIntf.h"
 #include "PythonImpl.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
-static logchannel_ptr_t logchan_pysys = logger()->createChannel("ecs.pysys",fvec3(0.9,0.6,0.0));
+static logchannel_ptr_t logchan_pysys = logger()->createChannel("ecs.pysys", fvec3(0.9, 0.6, 0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,17 +62,17 @@ System* PythonSystemData::createSystem(ork::ecs::Simulation* pinst) const {
 
 PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst)
     : ork::ecs::System(&data, pinst) {
-    //, mScriptRef(LUA_NOREF) {
+  //, mScriptRef(LUA_NOREF) {
 
   _onSystemUpdate = data._onSystemUpdate;
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
-  auto pyctx = new pysys::PythonContext(pinst, this);
-  mPythonManager.set<pysys::PythonContext*>(pyctx);
+  //auto pyctx = new pysys::PythonContext(pinst, this);
+  //mPythonManager.set<pysys::PythonContext*>(pyctx);
 
-  pyctx->bindSubInterpreter();
-  //pybind11::scoped_interpreter guard{};
-  //pyctx->unbindSubInterpreter();
+  //pyctx->bindSubInterpreter();
+  // pybind11::scoped_interpreter guard{};
+  // pyctx->unbindSubInterpreter();
 
   ///////////////////////////////////////////////
 
@@ -105,10 +105,10 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
   std::string orkdirstr;
   genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
-  OrkAssert(orkdirstr!="");
+  OrkAssert(orkdirstr != "");
   auto orkidWorkspaceDir = file::Path(orkdirstr);
-  auto searchpath = (orkidWorkspaceDir/"ork.data"/"src"/"scripts");
-  auto abssrchpath = searchpath.toAbsolute();
+  auto searchpath        = (orkidWorkspaceDir / "ork.data" / "src" / "scripts");
+  auto abssrchpath       = searchpath.toAbsolute();
   OrkAssert(abssrchpath.doesPathExist());
 
   if (abssrchpath.doesPathExist()) {
@@ -117,7 +117,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     AppendPath(lua_path.c_str());
   }
 
-  //logchan_pysys->log("PythonSystem LUA_PATH <%s>", abssrchpath.c_str() );
+  // logchan_pysys->log("PythonSystem LUA_PATH <%s>", abssrchpath.c_str() );
 
   ///////////////////////////////////////////////
   // find & init scene file
@@ -138,18 +138,18 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     // printf( "%s\n", scripttext);
     free(scripttext);
 
-    auto as_context = mPythonManager.get<pysys::PythonContext*>();
-    OrkAssert(as_context);
+    //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+    //OrkAssert(as_context);
 
-    as_context->bindSubInterpreter();
-    pybind11::scoped_interpreter guard{};
-    as_context->unbindSubInterpreter();
+    //as_context->bindSubInterpreter();
+    //pybind11::scoped_interpreter guard{};
+    //as_context->unbindSubInterpreter();
 
-    //int ret = luaL_loadstring(as_context->mLuaState, mScriptText.c_str());
+    // int ret = luaL_loadstring(as_context->mLuaState, mScriptText.c_str());
 
-    //mScriptRef = luaL_ref(as_context->mLuaState, LUA_REGISTRYINDEX);
-    //logchan_pysys->log( "mScriptRef<%d>", mScriptRef );
-    //  lua_pop(as_context->mLuaState, 1); // dont call, just reference
+    // mScriptRef = luaL_ref(as_context->mLuaState, LUA_REGISTRYINDEX);
+    // logchan_pysys->log( "mScriptRef<%d>", mScriptRef );
+    //   lua_pop(as_context->mLuaState, 1); // dont call, just reference
 
     // LuaProtectedCallByRef( as_context->mLuaState, mScriptRef );
 
@@ -172,17 +172,17 @@ PythonSystem::~PythonSystem() {
   //////////////////////////////
   // delete lua context
   //////////////////////////////
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  delete as_context;
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
+  //delete as_context;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onActivateComponent(PythonComponent* component) {
 
-  auto as_context = this->getManager().get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  //auto as_context = this->getManager().get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
   /*
   auto L = as_context->mLuaState;
 
@@ -237,10 +237,10 @@ void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
 
 bool PythonSystem::_onLink(Simulation* psi) // final
 {
-  logchan_pysys->log( "_onLink() ");
+  logchan_pysys->log("_onLink() ");
   // printf("PythonSystem::DoLink()\n");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
   // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneLink");
 
   return true;
@@ -250,10 +250,10 @@ bool PythonSystem::_onLink(Simulation* psi) // final
 
 void PythonSystem::_onUnLink(Simulation* psi) // final
 {
-  logchan_pysys->log( "_onUnLink() ");
+  logchan_pysys->log("_onUnLink() ");
   // printf("PythonSystem::DoUnLink()\n");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
   // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneUnLink");
 }
 
@@ -261,9 +261,9 @@ void PythonSystem::_onUnLink(Simulation* psi) // final
 
 bool PythonSystem::_onActivate(Simulation* psi) // final
 {
-  logchan_pysys->log( "_onActivate() ");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  logchan_pysys->log("_onActivate() ");
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
   // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneStart");
   return true;
 }
@@ -272,40 +272,47 @@ bool PythonSystem::_onActivate(Simulation* psi) // final
 
 void PythonSystem::_onDeactivate(Simulation* inst) // final
 {
-  logchan_pysys->log( "_onDeactivate() ");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  logchan_pysys->log("_onDeactivate() ");
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+ // OrkAssert(as_context);
   // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneStop");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PythonSystem::_onStage(Simulation* inst) {
-  logchan_pysys->log( "_onStage() ");
+  logchan_pysys->log("_onStage() ");
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onUnstage(Simulation* inst) {
-  logchan_pysys->log( "_onUnstage() ");
+  logchan_pysys->log("_onUnstage() ");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onUpdate(Simulation* psi) // final
 {
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
+  //auto as_context = mPythonManager.get<pysys::PythonContext*>();
+  //OrkAssert(as_context);
 
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
 
-  if(_onSystemUpdate){
+  if (_onSystemUpdate) {
+    /*
+    as_context->bindSubInterpreter();
     auto controller = psi->controller();
-      _onSystemUpdate(nullptr);
-    //controller->_simulation.atomicOp([this](simulation_ptr_t& unlocked){
-    //});
+    as_context->eval(
+        "print('Hello')\n"
+        "print('world!');"
+        );
+    //_onSystemUpdate(nullptr);
+    // controller->_simulation.atomicOp([this](simulation_ptr_t& unlocked){
+    // });
+    as_context->unbindSubInterpreter();*/
   }
   /*
 
@@ -451,4 +458,4 @@ ScriptObject* PythonSystem::FlyweightScriptObject(const ork::file::Path& pth) {
 }
 */
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::ecs {
+} // namespace ork::ecs

@@ -27,8 +27,14 @@ void pyinit_controller(py::module& module_ecs) {
       .def("createSimulation", [](controller_ptr_t ctrl) { ctrl->createSimulation(); })
       .def("startSimulation", [](controller_ptr_t ctrl) { ctrl->startSimulation(); })
       .def("stopSimulation", [](controller_ptr_t ctrl) { ctrl->stopSimulation(); })
+      .def("updateInit", [](controller_ptr_t ctrl) { //
+        ctrl->updateInit(); //
+      })
+      .def("updateExit", [](controller_ptr_t ctrl) { //
+        ctrl->updateExit(); //
+      })
       .def("updateSimulation", [](controller_ptr_t ctrl) { //
-        //py::gil_scoped_release release; //
+        // GIL released
         ctrl->update(); //
         })
       .def("beginWriteTrace", [](controller_ptr_t ctrl, std::string outpath) { //

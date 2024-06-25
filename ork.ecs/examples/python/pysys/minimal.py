@@ -152,6 +152,12 @@ class PYSYS_MINIMAL(object):
     self.controller.stopSimulation()
 
   ##############################################
+  def onUpdateInit(self):
+    self.controller.updateInit()
+  ##############################################
+  def onUpdateExit(self):
+    self.controller.updateExit()
+  ##############################################
 
   def onUpdate(self,updinfo):
 
@@ -189,12 +195,8 @@ class PYSYS_MINIMAL(object):
                                     }
                                    )
 
-    ##############################
-    # tick the simulation
-    ##############################
-
-    self.controller.updateSimulation()
-
+    # ecs controller will automatically be updated after returning here...
+    
   ##############################################
 
   def onUiEvent(self,uievent):

@@ -113,6 +113,22 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
     });
   }
   ////////////////////////////////////////////////////////////////////
+  if (py::hasattr(appinstance, "onUpdateExit")) {
+    auto updfn //
+        = py::cast<py::function>(appinstance.attr("onUpdateExit"));
+    rval->_vars->makeValueForKey<py::function>("updateexitfn") = updfn;
+    rval->onUpdateExit([=]() { //
+      py::gil_scoped_acquire acquire;
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("updateexitfn");
+      try {
+        pyfn.value()();
+      } catch (std::exception& e) {
+        std::cerr << e.what();
+        OrkAssert(false);
+      }
+    });
+  }
+  ////////////////////////////////////////////////////////////////////
   if (py::hasattr(appinstance, "onUiEvent")) {
     auto uievfn //
         = py::cast<py::function>(appinstance.attr("onUiEvent"));

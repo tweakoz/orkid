@@ -101,44 +101,5 @@ public:
 
 namespace ork::ecs::pysys {
 
-struct GlobalState;
-using globalstate_ptr_t = std::shared_ptr<GlobalState>;
-
-struct PythonContext {
-  
-  PythonContext(Simulation* psi, PythonSystem* system);
-  ~PythonContext();
-  //lua_State* mLuaState = nullptr;
-  Simulation* mSimulation = nullptr;
-  PythonSystem* _python_system = nullptr;
-  PyThreadState* _subInterpreter = nullptr;
-
-  std::unordered_map<uint64_t,scriptwrapper_t> _tokwrappers;
-
-  void bindSubInterpreter();
-  void unbindSubInterpreter();
-
-};
-
-struct ScriptObject {
-  ScriptObject();
-  ~ScriptObject();
-
-  std::string mScriptPath;
-  std::string mScriptText;
-  std::string mMD5Digest;
-  //int mOnEntInitialize       = LUA_NOREF;
-  //int mOnEntUninitialize       = LUA_NOREF;
-  //int mOnEntLink       = LUA_NOREF;
-  //int mOnEntUnlink       = LUA_NOREF;
-  //int mOnEntStage      = LUA_NOREF;
-  //int mOnEntUnstage    = LUA_NOREF;
-  //int mOnEntActivate   = LUA_NOREF;
-  //int mOnEntDeactivate = LUA_NOREF;
-  //int mOnEntUpdate     = LUA_NOREF;
-  //int mOnNotify        = LUA_NOREF;
-  //int mModTabRef       = LUA_NOREF;
-  //int mScriptRef       = LUA_NOREF;
-};
 
 } // namespace ork::ecs::pysys {

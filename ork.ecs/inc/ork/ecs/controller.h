@@ -16,6 +16,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/lev2/lev2_types.h>
 #include <ork/lev2/ezapp.h>
+#include <ork/python/context.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -111,6 +112,7 @@ struct Controller {
 	void bindScene(scenedata_ptr_t scene);
 	void gpuInit(lev2::Context* ctx);
 	void gpuExit(lev2::Context* ctx);
+	void updateInit();
 	void updateExit();
 	void render(ui::drawevent_constptr_t drwev);
 	void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
@@ -120,6 +122,7 @@ struct Controller {
 	///////////////////////////////////////////////////////////////////////////////
 
 	void update();
+	void executeDeferredInvokations();
   ent_ref_t spawnNamedDynamicEntity(const SpawnNamedDynamic& SND);
   ent_ref_t spawnAnonDynamicEntity(sad_ptr_t SAD);
 	void despawnEntity(const ent_ref_t& EREF);
@@ -152,11 +155,16 @@ struct Controller {
 
 	LockedResource<simulation_ptr_t> _simulation;
 
+	python::subcontext_ptr_t _subpycontext;
+
 private:
 	
 	friend struct Simulation;
 	friend struct TraceReader;
 	friend struct LuaContext;
+	std::vector<deferred_script_invokation_ptr_t> _deferred_script_invokations;
+
+	void _enqueueTransaction(xact_ptr_t xact);
 
 	void _enqueueEvent(event_ptr_t event);
 	void _enqueueRequest(request_ptr_t request);
