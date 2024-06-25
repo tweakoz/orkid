@@ -10,7 +10,7 @@
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectObjectVector.inl>
-#include <ork/math/CVector4.h>
+#include <ork/math/cvector4.h>
 
 #include <ork/ecs/ecs.h>
 #include <ork/ecs/system.h>
