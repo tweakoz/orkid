@@ -21,6 +21,8 @@ from lev2utils.cameras import *
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
+NUM_BALLS = 3
+SPAWN_RATE = 0.1
 ################################################################################
 
 class PYSYS_MINIMAL(object):
@@ -36,6 +38,11 @@ class PYSYS_MINIMAL(object):
     
   ##############################################
 
+  def onPythonSystemUpdate(self,x):
+    assert(False)
+
+  ##############################################
+
   def ecsInit(self):
 
     ####################
@@ -48,11 +55,11 @@ class PYSYS_MINIMAL(object):
     # setup global physics 
     ##############################################
 
-    systemdata_phys = self.ecsscene.declareSystem("PythonSystem")
-    #systemdata_phys.timeScale = 1.0
-    #systemdata_phys.simulationRate = 240.0
-    #systemdata_phys.debug = False
-    #systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+    systemdata_python = self.ecsscene.declareSystem("PythonSystem")
+    systemdata_python.onSystemUpdate( lambda x: self.onPythonSystemUpdate(x) )
+    #systemdata_python.simulationRate = 240.0
+    #systemdata_python.debug = False
+    #systemdata_python.linGravity = vec3(0,-9.8*3,0)
 
     ####################
     # create scenegraph
@@ -127,19 +134,6 @@ class PYSYS_MINIMAL(object):
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
     c_python = arch_ball.declareComponent("PythonComponent")
 
-    sphere = ecs.BulletShapeSphereData()
-    sphere.radius = 1.0
-
-    #c_python.mass = 1.0
-    #c_python.friction = 0.3
-    #c_python.restitution = 0.45
-    #c_python.angularDamping = 0.01
-    #c_python.linearDamping = 0.01
-    #c_python.allowSleeping = False
-    #c_python.isKinematic = False
-    #c_python.disablePhysics = False
-    #c_python.shape = sphere
-
     drawable = ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer=LAYERNAME)
 
@@ -161,7 +155,6 @@ class PYSYS_MINIMAL(object):
 
   def onUpdate(self,updinfo):
 
-
     ##############################
     # spawn balls
     ##############################
@@ -169,8 +162,8 @@ class PYSYS_MINIMAL(object):
     if True:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
-      prob = random.randint(0,100)
-      if prob < 5 and self.spawncounter < 2:
+      prob = random.uniform(0,1)
+      if prob < SPAWN_RATE and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
         SAD.overridexf.orientation = quat(vec3(0,1,0),0)

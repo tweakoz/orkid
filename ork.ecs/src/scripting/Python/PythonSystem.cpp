@@ -63,6 +63,9 @@ System* PythonSystemData::createSystem(ork::ecs::Simulation* pinst) const {
 PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst)
     : ork::ecs::System(&data, pinst) {
     //, mScriptRef(LUA_NOREF) {
+
+  _onSystemUpdate = data._onSystemUpdate;
+
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
   auto pyctx = new pysys::PythonContext(pinst, this);
   mPythonManager.set<pysys::PythonContext*>(pyctx);
@@ -297,6 +300,13 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
 
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
+
+  if(_onSystemUpdate){
+    auto controller = psi->controller();
+      _onSystemUpdate(nullptr);
+    //controller->_simulation.atomicOp([this](simulation_ptr_t& unlocked){
+    //});
+  }
   /*
 
   auto lstate = as_context->mLuaState;

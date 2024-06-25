@@ -150,6 +150,7 @@ struct Controller {
 
 	using id2obj_map_t = std::unordered_map<uint64_t,svar64_t>;
 
+	LockedResource<simulation_ptr_t> _simulation;
 
 private:
 	
@@ -178,7 +179,6 @@ private:
 	LockedResource<TokMap> _tokmaps;
 	scenedata_constptr_t _scenedata;
 	
-	LockedResource<simulation_ptr_t> _simulation;
 
 	LockedResource<evq_t> _eventQueue;
 

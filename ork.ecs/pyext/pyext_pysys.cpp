@@ -29,10 +29,20 @@ void pyinit_pysys(py::module& module_ecs) {
   auto pysys_type = py::class_<PythonSystemData, SystemData, pysysdata_ptr_t>(module_ecs, "PythonSystemData")
                           .def(
                               "__repr__",
-                              [](const pysysdata_ptr_t& sysdata) -> std::string {
+                              [](pysysdata_ptr_t sysdata) -> std::string {
                                 fxstring<256> fxs;
                                 fxs.format("ecs::PythonSystemData(%p)", sysdata.get());
                                 return fxs.c_str();
+                              })
+                          .def(
+                              "onSystemUpdate",
+                              [=](pysysdata_ptr_t sysdata, py::function pyfn) { //
+                                auto L = [=](simulation_ptr_t sim){
+                                  auto encoded   = type_codec->encode64(sim);
+                                  py::gil_scoped_acquire acquire;
+                                  pyfn(encoded);
+                                };
+                                sysdata->_onSystemUpdate = L; 
                               });
   type_codec->registerStdCodec<pysysdata_ptr_t>(pysys_type);
   /////////////////////////////////////////////////////////////////////////////////

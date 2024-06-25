@@ -47,7 +47,7 @@ public:
   PythonSystemData();
   ///////////////////////////////////////////////////////
 
-private:
+  system_update_lambda_t _onSystemUpdate;
   ork::ecs::System* createSystem(ork::ecs::Simulation* pinst) const final;
 };
 

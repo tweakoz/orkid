@@ -95,6 +95,8 @@ constexpr ECSTOK operator ""_ecstok(const char* s, size_t len) {
     return ECSTOK(s,len);
 }
 
+using system_update_lambda_t = std::function<void(simulation_ptr_t)>;
+
 struct System : public ork::Object {
 
   DeclareAbstractX(System,ork::Object);

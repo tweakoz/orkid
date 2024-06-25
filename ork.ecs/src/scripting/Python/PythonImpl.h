@@ -73,8 +73,6 @@ public:
 
   pysys::ScriptObject* FlyweightScriptObject(const ork::file::Path& key);
 
-private:
-
   friend struct PythonComponent;
   
   ~PythonSystem();
@@ -94,6 +92,8 @@ private:
   std::string mScriptText;
   std::map<ork::file::Path, pysys::ScriptObject*> mScriptObjects;
   std::unordered_set<PythonComponent*> _activeComponents;
+  system_update_lambda_t _onSystemUpdate;
+
   //int mScriptRef;
 };
 

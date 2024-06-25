@@ -15,7 +15,7 @@ namespace ork::ecs {
 void pyinit_simulation(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Simulation, simulation_ptr_t>(module_ecs, "Simulation")
+  auto sim_type = py::class_<Simulation, simulation_ptr_t>(module_ecs, "Simulation")
       //.def(py::init([](scenedata_ptr_t scene, pyapplication_ptr_t app){
       // return std::make_shared<Simulation>(scene,app.get());
       //}))
@@ -52,6 +52,7 @@ void pyinit_simulation(py::module& module_ecs) {
         fxs.format("ecs::Simulation(%p)", sdata.get());
         return fxs.c_str();
       });
+  type_codec->registerStdCodec<simulation_ptr_t>(sim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sad_type = py::class_<SpawnAnonDynamic, sad_ptr_t>(module_ecs, "SpawnAnonDynamic")
                     .def(py::init([](std::string name) -> sad_ptr_t {

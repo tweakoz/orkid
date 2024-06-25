@@ -137,6 +137,8 @@ struct Simulation {
   void _enqueueDeferredInvokation(deferred_script_invokation_ptr_t i);
   std::vector<deferred_script_invokation_ptr_t> dequeueDeferredInvokations();
 
+  Controller* controller() const { return _controller; }
+
 private:
 
   void _resetClock();
