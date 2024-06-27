@@ -28,6 +28,7 @@ public:
   void DoRender(CompositorDrawData& drawdata) final;        // virtual
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
+  lev2::rtgroup_ptr_t GetOutputGroup() const final;
   svar256_t _impl;
 
 };

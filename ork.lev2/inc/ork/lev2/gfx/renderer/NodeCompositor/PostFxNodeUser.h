@@ -23,6 +23,8 @@ public:
   void DoRender(CompositorDrawData& drawdata) final;        // virtual
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
+  lev2::rtgroup_ptr_t GetOutputGroup() const final;
+
   svar256_t _impl;
   //fxpipeline_ptr_t _pipeline;
   std::unordered_map<std::string, FxPipeline::varval_t> _bindings;

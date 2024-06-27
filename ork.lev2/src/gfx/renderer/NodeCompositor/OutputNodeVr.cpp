@@ -361,7 +361,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
           const auto& vrdev = orkidvr::device();
           auto& mtl         = impl->_blit2screenmtl;
-          auto inp_rtg      = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+          auto inp_rtg      = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
           auto this_buf     = context->FBI()->GetThisBuffer();
           // fbi->PushRtGroup(nullptr);//impl->_rtg);
           // vrdev->__composite(context, tex);

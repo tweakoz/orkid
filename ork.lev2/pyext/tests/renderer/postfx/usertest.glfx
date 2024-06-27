@@ -65,7 +65,7 @@ vertex_shader vs_usertest : iface_vtx {
 fragment_shader ps_usertest : iface_frg {
   vec2 uv = mod(frg_uv.xy + vec2(time,time),1);
   vec4 inprgb = texture(MrtMap0, uv);
-  out_clr   = vec4(inprgb.xyz*10.0, 1.0);
+  out_clr   = vec4(uv.xy, 0, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 // techniques

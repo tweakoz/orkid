@@ -226,7 +226,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           drawdata.context()->debugPopGroup();
           drawdata.context()->debugPopGroup();
         } else {
-          auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+          auto inp_rtg = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
           context->FBI()->msaaBlit(inp_rtg, impl->_msaadownsamplebuffer);
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;

@@ -53,6 +53,7 @@ struct IMPL {
       printf( "assigning technique<%s> for PostFxNodeUser\n", _node->_technique_name.c_str() );
       _technique = _freestyle_mtl->technique(_node->_technique_name);
       OrkAssert(_technique != nullptr);
+      _fxpInputMap    = _freestyle_mtl->param("MrtMap0");
       
     }
   }
@@ -105,6 +106,7 @@ struct IMPL {
               auto p = _freestyle_mtl->param(item.first);
               _freestyle_mtl->bindParam(p, item.second);
             }
+            _freestyle_mtl->bindParamCTex(_fxpInputMap, tex);
             rquad(inputw,inputh);
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();
@@ -123,15 +125,7 @@ struct IMPL {
   PostFxNodeUser* _node = nullptr;
   rtgroup_ptr_t _rtg_out;
   const FxShaderTechnique* _technique = nullptr;
-  /*
-  const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpInputMap;
-  const FxShaderParam* _fxpHue;
-  const FxShaderParam* _fxpSaturation;
-  const FxShaderParam* _fxpValue;
-  const FxShaderParam* _fxpGamma;
-  const FxShaderParam* _fxpImageW;
-  const FxShaderParam* _fxpImageH;*/
 
   fxpipeline_ptr_t _pipeline;
 };
@@ -157,6 +151,11 @@ void PostFxNodeUser::DoRender(CompositorDrawData& drawdata) // virtual
 rtbuffer_ptr_t PostFxNodeUser::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
   return (impl->_rtg_out) ? impl->_rtg_out->GetMrt(0) : nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+rtgroup_ptr_t PostFxNodeUser::GetOutputGroup() const {
+  auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
+  return (impl->_rtg_out) ? impl->_rtg_out : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

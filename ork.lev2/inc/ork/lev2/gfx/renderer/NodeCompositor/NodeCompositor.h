@@ -83,6 +83,9 @@ public:
   virtual lev2::rtbuffer_ptr_t GetOutput() const {
     return nullptr;
   }
+  virtual lev2::rtgroup_ptr_t GetOutputGroup() const {
+    return nullptr;
+  }
 
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
@@ -102,6 +105,8 @@ public:
   void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
   lev2::rtbuffer_ptr_t GetOutput() const final;
+  lev2::rtgroup_ptr_t GetOutputGroup() const final;
+
 private:
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata)        final;
@@ -128,6 +133,9 @@ private:
   void SetNodeB(ork::rtti::ICastable* const& val);
   lev2::rtbuffer_ptr_t GetOutput() const override {
     return _output;
+  }
+  lev2::rtgroup_ptr_t GetOutputGroup() const final {
+    return _rtg;
   }
 
   PostCompositingNode* mSubA = nullptr;

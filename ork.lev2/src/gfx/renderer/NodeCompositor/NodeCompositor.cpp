@@ -77,25 +77,21 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     rtgroup_ptr_t render_outg = _renderNode ? _renderNode->GetOutputGroup() : nullptr;
     RtBuffer* render_out      = _renderNode ? _renderNode->GetOutput().get() : nullptr;
-    ////////////////////////////////////////////////////////////////////////////
+
     drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
     drawdata._properties["render_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
     ////////////////////////////////////////////////////////////////////////////
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
-    ////////////////////////////////////////////////////////////////////////////
-    RtBuffer* final_out       = render_out;
-    if(1)for( auto pfxnode : _postEffectNodes ){
+    for( auto pfxnode : _postEffectNodes ){
       drawdata._properties["postfx_in"_crcu].set<RtBuffer*>(render_out);
-      RtBuffer* postfx_out      = pfxnode ? pfxnode->GetOutput().get() : nullptr;
-      drawdata._properties["postfx_out"_crcu].set<RtBuffer*>(postfx_out);
       pfxnode->Render(drawdata);
-      render_out = postfx_out;
-      final_out = postfx_out;
+      render_outg = pfxnode->GetOutputGroup();
+      render_out      = pfxnode->GetOutput().get();
     }
-    ////////////////////////////////////////////////////////////////////////////
-    drawdata._properties["final_out"_crcu].set<RtBuffer*>(final_out);
+    drawdata._properties["final_out"_crcu].set<RtBuffer*>(render_out);
+    drawdata._properties["final_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
   }
   drawdata.context()->debugPopGroup();
   return rval;
@@ -165,6 +161,9 @@ void LambdaPostCompositingNode::Render(CompositorDrawData& drawdata) {
   OrkAssert(false);
 }
 lev2::rtbuffer_ptr_t LambdaPostCompositingNode::GetOutput() const {
+  return nullptr;
+}
+lev2::rtgroup_ptr_t LambdaPostCompositingNode::GetOutputGroup() const {
   return nullptr;
 }
 void LambdaPostCompositingNode::doGpuInit(lev2::Context* pTARG, int w, int h) {

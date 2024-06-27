@@ -91,7 +91,7 @@ struct IMPL {
     FBI->SetAutoClear(false);
     //////////////////////////////////////////////////////
 
-    if (auto try_final = drawdata._properties["render_outgroup"_crcu].tryAs<rtgroup_ptr_t>()) {
+    if (auto try_final = drawdata._properties["final_outgroup"_crcu].tryAs<rtgroup_ptr_t>()) {
       auto buf0 = try_final.value()->GetMrt(0);
       if (buf0) {
         assert(buf0 != nullptr);
@@ -240,6 +240,11 @@ void PostFxNodeDecompBlur::DoRender(CompositorDrawData& drawdata) // virtual
 rtbuffer_ptr_t PostFxNodeDecompBlur::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<decomp_blur::IMPL>>();
   return (impl->_rtg_out) ? impl->_rtg_out->GetMrt(0) : nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+rtgroup_ptr_t PostFxNodeDecompBlur::GetOutputGroup() const {
+  auto impl = _impl.get<std::shared_ptr<decomp_blur::IMPL>>();
+  return (impl->_rtg_out) ? impl->_rtg_out : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
