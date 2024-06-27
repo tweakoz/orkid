@@ -119,6 +119,7 @@ class Panel:
     #################################################
 
     if index==1:
+      self.deftex = Texture.load("src://effect_textures/white.dds")
       self.deferred_ctx = self.render_node.context
       self.depthtex_binding = self.deferred_ctx.createAuxBinding("MapShadowDepth")
       self.projtex_binding = self.deferred_ctx.createAuxBinding("ProjectionTexture")
@@ -126,6 +127,8 @@ class Panel:
       self.projcam_eye = self.deferred_ctx.createAuxBinding("ProjectionEyePostion")
       self.nearfar_binding = self.deferred_ctx.createAuxBinding("NearFar")
       self.deferred_ctx.lightAccumFormat = tokens.RGBA32F
+      self.projtex_binding.texture = self.deftex
+      self.depthtex_binding.texture = self.deftex
 
     #################################################
     # both scenes will render the same content

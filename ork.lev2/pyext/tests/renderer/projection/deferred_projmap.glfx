@@ -17,6 +17,7 @@ uniform_set ub_frg {
   mat4 IVPArray[2];
   mat4 VArray[2];
   mat4 PArray[2];
+
   usampler2D MapGBuffer;
   sampler2D MapDepthCluster;
   sampler2D MapDepth;
@@ -154,6 +155,7 @@ fragment_shader ps_environment //
     if(prj_uv.x<0 || prj_uv.x>1 || prj_uv.y<0 || prj_uv.y>1){
       out_color = vec3(1,0,0);
     }
+
   }
   colorOUT = vec4(out_color, 1);
 }
