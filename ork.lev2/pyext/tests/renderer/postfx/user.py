@@ -63,15 +63,25 @@ class HSVGAPP(object):
     ###################################
     # post fx node
     ###################################
-    postNode = PostFxNodeUser()
-    postNode.shader_path = str(this_dir / "usertest.glfx")
-    postNode.technique = "postfx_usertest"
-    postNode.params.mvp = mtx4()
-    postNode.params.modcolor = vec4(1,0,0,1)
-    postNode.params.time = 0.0
-    postNode.gpuInit(ctx,8,8);
-    postNode.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node = postNode
+    postNode1 = PostFxNodeUser()
+    postNode1.shader_path = str(this_dir / "usertest.glfx")
+    postNode1.technique = "postfx_usertest1"
+    postNode1.params.mvp = mtx4()
+    postNode1.params.modcolor = vec4(1,0,0,1)
+    postNode1.params.time = 0.0
+    postNode1.gpuInit(ctx,8,8);
+    postNode1.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node1 = postNode1
+    ###################################
+    # post fx node
+    ###################################
+    postNode2 = PostFxNodeUser()
+    postNode2.shader_path = str(this_dir / "usertest.glfx")
+    postNode2.technique = "postfx_usertest2"
+    postNode2.params.mvp = mtx4()
+    postNode2.gpuInit(ctx,8,8);
+    postNode2.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node2 = postNode2
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -111,7 +121,7 @@ class HSVGAPP(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     time = updinfo.absolutetime
-    self.post_node.params.time = time*0.1
+    self.post_node1.params.time = time*0.1
     
   ##############################################
 

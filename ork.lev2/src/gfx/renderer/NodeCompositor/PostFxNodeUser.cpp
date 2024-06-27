@@ -69,6 +69,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
     FBI->SetAutoClear(false);
     //////////////////////////////////////////////////////
+    target->debugPushGroup("PostFxNodeUser::render");
 
     if (auto try_input = drawdata._properties["postfx_in"_crcu].tryAs<rtgroup_ptr_t>()) {
       auto buf0 = try_input.value()->GetMrt(0);
@@ -88,7 +89,6 @@ struct IMPL {
             FBI->popScissor();
           };
 
-          target->debugPushGroup("PostFxNodeUser::render"); { //
 
             auto input_rtg = try_input.value();
             int inputw = input_rtg->width();
@@ -112,11 +112,11 @@ struct IMPL {
             FBI->PopRtGroup();
             /////////////////////
             target->endFrame();
-          }
-          target->debugPopGroup();
+
         }
       }
     }
+    target->debugPopGroup();
     topcomp->topCPD()._stereo1pass = was_stereo;
   }
   ///////////////////////////////////////

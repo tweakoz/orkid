@@ -62,19 +62,39 @@ vertex_shader vs_usertest : iface_vtx {
   frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_usertest : iface_frg {
-  vec2 uv = mod(frg_uv.xy + vec2(time,time),1);
-  vec4 inprgb = texture(MrtMap0, uv);
-  out_clr   = vec4(uv.xy, 0, 1.0);
+fragment_shader ps_usertest1 : iface_frg {
+  // uv displace radially based on time
+  vec2 disp_uv = frg_uv-vec2(0.5,0.5);
+  float radius = length(disp_uv);
+  float angle = atan(disp_uv.y, disp_uv.x);
+  float displacement_amount = 0.01;
+  float new_radius = radius + sin(time*10.0+angle*10.0)*displacement_amount;
+  vec2 new_uv = vec2(cos(angle)*new_radius, sin(angle)*new_radius)+vec2(0.5,0.5);
+
+  vec4 inprgb = texture(MrtMap0, new_uv);
+  out_clr   = vec4(inprgb.xyz, 1.0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_usertest2 : iface_frg {
+  vec4 inprgb = texture(MrtMap0, frg_uv);
+  out_clr   = vec4(mod(inprgb.xyz*10,1), 1.0);
 }
 ///////////////////////////////////////////////////////////////
 // techniques
 ///////////////////////////////////////////////////////////////
-technique postfx_usertest {
+technique postfx_usertest1 {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_usertest;
-    fragment_shader = ps_usertest;
+    fragment_shader = ps_usertest1;
+    state_block     = sb_default;
+  }
+}
+technique postfx_usertest2 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_usertest;
+    fragment_shader = ps_usertest2;
     state_block     = sb_default;
   }
 }
