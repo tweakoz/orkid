@@ -172,12 +172,13 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
 
-        int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
-
+        int num_msaa_samples = 1;//msaaEnumToInt(tex->_msaa_samples);
+        printf("msaa<%d>\n", num_msaa_samples);
         if (num_msaa_samples == 1) {
           drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
+        printf("ssaa<%d>\n", _supersample);
           switch (this->_supersample) {
             case 0:
               drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<0>");
@@ -189,6 +190,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
             case 2:
               drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<2>");
+              printf("begin 3x3\n");
               mtl.begin(impl->_fxtechnique3x3, framedata);
               break;
             case 3:

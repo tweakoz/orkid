@@ -242,6 +242,15 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     }
     // OrkAssert(false);
   }
+  if (params->hasKey("ssaa")) {
+    auto& ssaa = params->valueForKey("ssaa");
+    if( auto as_ssaa = ssaa.tryAs<int>() ){
+      if( auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())){
+        as_scrnode->setSuperSample(as_ssaa.value());
+      }
+    }
+    // OrkAssert(false);
+  }
 
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());

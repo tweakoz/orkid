@@ -16,6 +16,7 @@
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
@@ -654,7 +655,13 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisgviewport_ptr_t sgview) -> std::string { //
                 return sgview->_cameraname;
               },
-              [](uisgviewport_ptr_t sgview, std::string camname) { return sgview->_cameraname = camname; });
+              [](uisgviewport_ptr_t sgview, std::string camname) { return sgview->_cameraname = camname; })
+          //////////////////////////////////
+          .def_property_readonly(
+              "outputnode",
+              [](uisgviewport_ptr_t sgview) -> lev2::compositoroutnode_rtgroup_ptr_t { //
+                return sgview->_outputnode;
+              });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);

@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeUser.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -603,6 +604,26 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);
+/////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto rtgoutnode_type = //
+      py::class_<RtGroupOutputCompositingNode, OutputCompositingNode, compositoroutnode_rtgroup_ptr_t>(module_lev2, "RtGroupOutputCompositingNode")
+          .def(py::init([]() -> compositoroutnode_rtgroup_ptr_t { //
+            return std::make_shared<RtGroupOutputCompositingNode>();
+          }))
+          .def_property("supersample", //
+            [](compositoroutnode_rtgroup_ptr_t self) -> int {
+              return self->_supersample;
+            },
+            [](compositoroutnode_rtgroup_ptr_t self, int ss) {
+              self->_supersample = ss;
+            })
+          .def("__repr__", [](compositoroutnode_rtgroup_ptr_t i) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("RtGroupOutputCompositingNode(%p)", i.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<compositoroutnode_rtgroup_ptr_t>(rtgoutnode_type);
 
 
   /////////////////////////////////////////////////////////////////////////////////

@@ -87,7 +87,7 @@ class Panel:
 
       comp_tek = NodeCompositingTechnique()
       comp_tek.renderNode = DeferredPbrRenderNode()
-      comp_tek.outputNode = ScreenOutputNode()
+      #comp_tek.outputNode = ScreenOutputNode()
       comp_tek.renderNode.overrideShader(str(this_dir/"deferred_projmap.glfx"))
       self.comp_tek = comp_tek
 
@@ -282,6 +282,7 @@ class UiSgQuadViewTestApp(object):
 
     panel_0 = self.panels[0]
     panel_1 = self.panels[1]
+    #print(panel_0.viewport)
 
     #####################
     # fetch from panel 0
@@ -299,6 +300,8 @@ class UiSgQuadViewTestApp(object):
     #####################
 
     if light_accum_buffer_0!=None:
+      self.griditems[0].widget.outputnode.supersample = 2
+      self.griditems[1].widget.outputnode.supersample = 2
       #
       gbuffer0 = deferred_context.gbuffer
       zbuffer0 = gbuffer0.depth_buffer
