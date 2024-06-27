@@ -78,7 +78,7 @@ class ParticlesApp(object):
       postNode.blurfactor = 0.15
       postNode.amount = 0.1
       postNode.gpuInit(ctx,8,8);
-    postNode.addToVarMap(sceneparams,"PostFxNode")
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)

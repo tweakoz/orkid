@@ -77,11 +77,11 @@ class ParticlesApp(object):
 
     postNode = PostFxNodeDecompBlur()
     postNode.threshold = 0.99
-    postNode.blurwidth = 4
+    postNode.blurwidth = 8
     postNode.blurfactor = 0.15
     postNode.amount = 0.5
     postNode.gpuInit(ctx,8,8);
-    postNode.addToVarMap(sceneparams,"PostFxNode")
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
 
     ###################################
     # create scenegraph

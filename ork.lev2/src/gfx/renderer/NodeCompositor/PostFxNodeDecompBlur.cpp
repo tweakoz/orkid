@@ -91,7 +91,7 @@ struct IMPL {
     FBI->SetAutoClear(false);
     //////////////////////////////////////////////////////
 
-    if (auto try_final = drawdata._properties["final_outgroup"_crcu].tryAs<rtgroup_ptr_t>()) {
+    if (auto try_final = drawdata._properties["postfx_in"_crcu].tryAs<rtgroup_ptr_t>()) {
       auto buf0 = try_final.value()->GetMrt(0);
       if (buf0) {
         assert(buf0 != nullptr);

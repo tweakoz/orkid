@@ -127,7 +127,7 @@ class TERRAINAPP(object):
     postNode.blurfactor = 0.1
     postNode.amount = 0.4
     postNode.gpuInit(ctx,8,8);
-    postNode.addToVarMap(sceneparams,"PostFxNode")
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
 
     ###################################
     # create scene
