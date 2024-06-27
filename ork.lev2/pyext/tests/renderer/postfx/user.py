@@ -91,23 +91,6 @@ class HSVGAPP(object):
     self.pbr_common = self.render_node.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     #######################################
-    gmtl = PBRMaterial() 
-    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
-    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
-    gmtl.metallicFactor = 1
-    gmtl.roughnessFactor = 1
-    gmtl.baseColor = vec4(0.8,0.8,1.3,1)
-    gmtl.doubleSided = True
-    gmtl.gpuInit(ctx)
-    gdata = GroundPlaneDrawableData()
-    gdata.pbrmaterial = gmtl
-    gdata.extent = 1000.0
-    self.gdata = gdata
-    self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
-    self.groundnode.worldTransform.translation = vec3(0,-5,0)
-    #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
