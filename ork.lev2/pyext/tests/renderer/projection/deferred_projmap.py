@@ -59,7 +59,8 @@ class Panel:
     griditem = parent.griditems[index]        
     self.cameralut = CameraDataLut()
     self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
-                                              near = 0.01,
+                                              fov_deg = 60,
+                                              near = 0.03,
                                               far = 100.0,
                                               eye = vec3(0,5,20),
                                               tgt = vec3(0,5,0),
@@ -261,7 +262,7 @@ class UiSgQuadViewTestApp(object):
     ##########################################################################
 
     #self.grid_data = createGridData()
-    #self.grid_node = self.panels[1].layer.createGridNode("grid",self.grid_data)
+    #self.grid_node = self.panels[0].layer.createGridNode("grid",self.grid_data)
     #self.grid_node.sortkey = 1
 
     #self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
@@ -282,7 +283,31 @@ class UiSgQuadViewTestApp(object):
 
     panel_0 = self.panels[0]
     panel_1 = self.panels[1]
-    #print(panel_0.viewport)
+
+    #####################
+    # compute camera frustum pixel length data
+    #####################
+    
+    camdata0 = panel_0.camera
+    w0 = self.griditems[0].widget
+    #print(w0.aspect,w0.width,w0.height)
+    vmatrix = camdata0.vMatrix()
+    pmatrix = camdata0.pMatrix(w0.aspect)
+    # generate frustum from view and projection matrices
+    camfrustum = frustum(vmatrix,pmatrix)
+    # compute pixel length vectors for near plane (using frustum corners)
+    near_horiz = camfrustum.nearCorners[1] - camfrustum.nearCorners[0]
+    near_verti = camfrustum.nearCorners[2] - camfrustum.nearCorners[1]
+    upp_horiz = near_horiz * (float(1)/float(w0.width))
+    upp_verti = near_verti * (float(1)/float(w0.height))
+    #print(near_horiz, near_verti)
+    #print(upp_horiz, upp_verti)
+    
+    # get pixel length vectors given a position in world space and a viewport
+    pxeyezn = camdata0.pixelLengthVectors( camdata0.eye+(camdata0.znormal*-.1), # position at which to measure
+                                           vec2(w0.width,w0.height)) # viewport
+    
+    #print(pxeyezn)
 
     #####################
     # fetch from panel 0

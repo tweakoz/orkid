@@ -232,6 +232,11 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget) -> int { //
                 return widget->height();
               })
+          .def_property_readonly(
+              "aspect",
+              [](uiwidget_ptr_t widget) -> float { //
+                return float(widget->width())/float(widget->height());
+              })
           .def(
               "setPos",
               [](uiwidget_ptr_t widget, int x, int y) { //

@@ -650,6 +650,20 @@ void pyinit_math_la_t(py::module& module_core, //
           .def_property_readonly("rightPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_rightPlane; })
           .def_property_readonly("topPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_topPlane; })
           .def_property_readonly("bottomPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_bottomPlane; })
+          .def_property_readonly("nearCorners", [](frustum_ptr_t instance) -> py::list { //
+              py::list rval;
+              for( int i=0; i<4; i++ ){
+                rval.append(instance->mNearCorners[i]);
+              }
+              return rval;
+            })
+          .def_property_readonly("farCorners", [](frustum_ptr_t instance) -> py::list { //
+              py::list rval;
+              for( int i=0; i<4; i++ ){
+                rval.append(instance->mFarCorners[i]);
+              }
+              return rval;
+            })
           .def("contains", [](frustum_ptr_t instance, const vec3_t& point) -> bool { return instance->contains(point); });
   type_codec->registerStdCodec<frustum_ptr_t>(frustum_type);
   }
