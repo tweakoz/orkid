@@ -115,12 +115,13 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   rval._outputnode = selected_output_node;
   rval._rendernode = r1;
 
-  auto op = [=](){
-    auto pbr_common = r1->_pbrcommon;
-    pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
-  };
-  opq::mainSerialQueue()->enqueue(op);
-
+  if(_defaultBG){
+    auto op = [=](){
+      auto pbr_common = r1->_pbrcommon;
+      pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
+    };
+    opq::mainSerialQueue()->enqueue(op);
+  }
 
   return rval;
 }

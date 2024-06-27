@@ -164,7 +164,6 @@ class SkinningApp(object):
     sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"
-
     self.scenegraph = self.ezapp.createScene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
 

@@ -146,6 +146,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   }
 
   pbr::commonstuff_ptr_t pbrcommon;
+  if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
+    _compositorData->_defaultBG = false;
+  }
 
   if (preset == "Unlit") {
     _compositorPreset = _compositorData->presetUnlit(outRTG);
@@ -195,6 +198,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
+      printf("texture_path<%s>\n", texture_path.c_str());
       pbrcommon->requestAndRefSkyboxTexture(texture_path);
     }
 

@@ -254,6 +254,7 @@ public:
   mutable std::string _activeItem;
   mutable bool mToggle = true;
   bool mbEnable        = true;
+  bool _defaultBG = true;
 
   int _defaultW = 100;
   int _defaultH = 100;

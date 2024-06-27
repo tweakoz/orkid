@@ -125,6 +125,13 @@ class SkinningApp(object):
 
   ################################################
 
+  def onGpuPreFrame(self,context):
+    pass
+  def onGpuPostFrame(self,context):
+    pass
+
+  ################################################
+
   def onGpuUpdate(self,context):
     self.localpose.bindPose()
     self.anim_inst.currentFrame = self.frame_index
@@ -134,6 +141,7 @@ class SkinningApp(object):
     self.localpose.concatenate()
     self.worldpose.fromLocalPose(self.localpose,mtx4())
     self.frame_index += 0.1
+
   ################################################
 
   def onUpdate(self,updinfo):
