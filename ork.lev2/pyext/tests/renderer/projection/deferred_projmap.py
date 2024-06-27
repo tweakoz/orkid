@@ -59,7 +59,7 @@ class Panel:
     griditem = parent.griditems[index]        
     self.cameralut = CameraDataLut()
     self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
-                                              fov_deg = 60,
+                                              fov_deg = 90,
                                               near = 0.03,
                                               far = 100.0,
                                               eye = vec3(0,5,20),
@@ -298,16 +298,22 @@ class UiSgQuadViewTestApp(object):
     # compute pixel length vectors for near plane (using frustum corners)
     near_horiz = camfrustum.nearCorners[1] - camfrustum.nearCorners[0]
     near_verti = camfrustum.nearCorners[2] - camfrustum.nearCorners[1]
-    upp_horiz = near_horiz * (float(1)/float(w0.width))
-    upp_verti = near_verti * (float(1)/float(w0.height))
+    upp_horiz = near_horiz * (float(1)/float(w0.width)) # units per pixel
+    upp_verti = near_verti * (float(1)/float(w0.height)) # units per pixel
     #print(near_horiz, near_verti)
+    #print(upp_horiz, upp_verti)
+
+    far_horiz = camfrustum.farCorners[1] - camfrustum.farCorners[0]
+    far_verti = camfrustum.farCorners[2] - camfrustum.farCorners[1]
+    upp_horiz = far_horiz * (float(1)/float(w0.width)) # units per pixel
+    upp_verti = far_verti * (float(1)/float(w0.height)) # units per pixel
     #print(upp_horiz, upp_verti)
     
     # get pixel length vectors given a position in world space and a viewport
-    pxeyezn = camdata0.pixelLengthVectors( camdata0.eye+(camdata0.znormal*-.1), # position at which to measure
+    pxeyezn = camdata0.pixelLengthVectors( camdata0.eye+(camdata0.znormal*-10), # position at which to measure
                                            vec2(w0.width,w0.height)) # viewport
     
-    #print(pxeyezn)
+    print(pxeyezn)
 
     #####################
     # fetch from panel 0
