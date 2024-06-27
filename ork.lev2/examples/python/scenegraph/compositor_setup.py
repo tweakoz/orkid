@@ -65,7 +65,7 @@ class CompositorSetupApp(object):
     pbr_common.skyboxLevel = .5
     pbr_common.depthFogDistance = 100
     pbr_common.depthFogPower = 1
-    comp_tek.renderNode.overrideShader("ork_lev2://examples/python/common/compositorsetup.glfx")
+    comp_tek.renderNode.overrideShader("ork_lev2://examples/python/lev2utils/compositorsetup.glfx")
 
     print(comp_sceneitem)
     print(comp_tek)
