@@ -64,28 +64,41 @@ class LIGHTING_APP(object):
       self.vrdev = orkidvr.novr_device()
       self.vrdev.camera = "vrcam"
 
-    params_dict = {
-      "SkyboxIntensity": float(1),
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.07),
-      "DepthFogDistance": float(10000),
-      "supersample": "1",
-    }
-    if mono:
-      params_dict["preset"] = "ForwardPBR"
-    else:
-      params_dict["preset"] = "FWDPBRVR"
+    sceneparams = VarMap() 
 
-    #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
-    createSceneGraph(app=self,params_dict=params_dict)
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
-    self.pbr_common.useFloatColorBuffer = True
+    
+    sceneparams.SkyboxIntensity = float(1)
+    sceneparams.SpecularIntensity = float(1)
+    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0.07)
+    sceneparams.DepthFogDistance = float(10000)
+    sceneparams.supersample = 1
+
+    if mono:
+      sceneparams.preset = "ForwardPBR"
+    else:
+      sceneparams.preset = "FWDPBRVR"
+
+    ###################################
+    postNode1 = PostFxNodeHSVG()
+    postNode1.gpuInit(ctx,8,8);
+    postNode1.addToSceneVars(sceneparams,"PostFxChain")
+    postNode1.saturation = 0.75
+    postNode1.gamma = 1.2
+    self.post_node1 = postNode1
+    ###################################
+
+    self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_dprobe = self.scene.createLayer("depth_probe")
     self.layer_probe = self.scene.createLayer("probe")
-    self.layer_fwd = self.layer1
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.layer_all = self.scene.createLayer("All")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
+
     DEPTH_LAYERS = [self.layer_donly,self.layer_dprobe]
     FINAL_LAYERS = [self.layer_fwd,self.layer_donly]
     COLOR_LAYERS = [self.layer_fwd,self.layer_probe]
@@ -153,7 +166,7 @@ class LIGHTING_APP(object):
     cookie1 = MyCookie("src://effect_textures/L0D.png")
     cookie2 = MyCookie("src://effect_textures/knob2.dds")
     
-    shadow_size = 1024
+    shadow_size = 2048
     shadow_bias = 1e-3
     if True:
       self.spotlight1 = MySpotLight( index=0,
@@ -191,7 +204,7 @@ class LIGHTING_APP(object):
     self.probe.imageDim = 1024
     self.probe.worldMatrix = mtx4.transMatrix(0,4,0)
     self.probe.name = "probe1"
-    self.probe_node = self.layer1.createLightProbeNode("probe",self.probe)
+    self.probe_node = self.layer_all.createLightProbeNode("probe",self.probe)
 
   ##############################################
 
