@@ -559,12 +559,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def_property_readonly("pbr_common", [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
             return node->_pbrcommon;
           })
-          //.def_property_readonly("context", [](fwdpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
-            //return node->deferredContext();
-          //})
-          //.def("overrideShader", [](fwdpbrnode_ptr_t node, std::string shaderpath)  { //
-            //return node->overrideShader(shaderpath);
-          //})
           .def("__repr__", [](fwdpbrnode_ptr_t node) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrForwardNode(%p)", node.get());

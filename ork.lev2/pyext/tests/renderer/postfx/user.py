@@ -53,7 +53,7 @@ class HSVGAPP(object):
     # create scenegraph
     ###################################
     sceneparams = VarMap() 
-    sceneparams.preset = "ForwardPBR"
+    sceneparams.preset = "DeferredPBR"
     sceneparams.SkyboxIntensity = float(1)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
@@ -63,25 +63,35 @@ class HSVGAPP(object):
     ###################################
     # post fx node
     ###################################
-    postNode0 = PostFxNodeUser()
-    postNode0.shader_path = str(this_dir / "usertest.glfx")
-    postNode0.technique = "postfx_usertest0"
-    postNode0.params.mvp = mtx4()
-    postNode0.params.modcolor = vec4(1,0,0,1)
-    postNode0.params.time = 0.0
-    postNode0.gpuInit(ctx,8,8);
-    postNode0.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node0 = postNode0
+    pfx_radial = PostFxNodeUser()
+    pfx_radial.shader_path = str(this_dir / "usertest.glfx")
+    pfx_radial.technique = "tek_radial_distort"
+    pfx_radial.params.mvp = mtx4()
+    pfx_radial.params.modcolor = vec4(1,0,0,1)
+    pfx_radial.params.time = 0.0
+    pfx_radial.gpuInit(ctx,8,8);
+    pfx_radial.addToSceneVars(sceneparams,"PostFxChain")
+    self.pfx_radial = pfx_radial
     ###################################
     # post fx node
     ###################################
-    postNode1 = PostFxNodeUser()
-    postNode1.shader_path = str(this_dir / "usertest.glfx")
-    postNode1.technique = "postfx_usertest1"
-    postNode1.params.mvp = mtx4()
-    postNode1.gpuInit(ctx,8,8);
-    postNode1.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node1 = postNode1
+    pfx_feedback = PostFxNodeUser()
+    pfx_feedback.shader_path = str(this_dir / "usertest.glfx")
+    pfx_feedback.technique = "tek_feedback"
+    pfx_feedback.params.mvp = mtx4()
+    pfx_feedback.gpuInit(ctx,8,8);
+    pfx_feedback.addToSceneVars(sceneparams,"PostFxChain")
+    self.pfx_feedback = pfx_feedback
+    ###################################
+    # post fx node
+    ###################################
+    pfx_swapchannels = PostFxNodeUser()
+    pfx_swapchannels.shader_path = str(this_dir / "usertest.glfx")
+    pfx_swapchannels.technique = "tek_swapchannels"
+    pfx_swapchannels.params.mvp = mtx4()
+    pfx_swapchannels.gpuInit(ctx,8,8);
+    pfx_swapchannels.addToSceneVars(sceneparams,"PostFxChain")
+    self.pfx_swapchannels = pfx_swapchannels
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -100,14 +110,22 @@ class HSVGAPP(object):
   ################################################
 
   def onGpuPreFrame(self,ctx):
-    self.post_node0.params.FeedbackMap = self.scene.compositorpostnode(1).outputBuffer.texture
+    self.pfx_feedback.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
+    self.pfx_radial.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
+    rendernode = self.scene.compositorrendernode
+    deferred_context = rendernode.context
+    gbuffer_group = deferred_context.gbuffer
+    if gbuffer_group is not None:
+      gbuffer = gbuffer_group.mrt_buffer(0)
+      if gbuffer.texture is not None:
+        self.pfx_radial.params.GBufferMap = gbuffer.texture
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     time = updinfo.absolutetime
-    self.post_node0.params.time = time*1
+    self.pfx_radial.params.time = time*1
     
   ##############################################
 

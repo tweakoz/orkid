@@ -1,7 +1,8 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default {}
+fxconfig fxcfg_default {
+}
 ///////////////////////////////////////////////////////////////
 // Uniforms
 ///////////////////////////////////////////////////////////////
@@ -18,6 +19,7 @@ uniform_set ub_frg {
 
   sampler2D MrtMap0;
   sampler2D FeedbackMap;
+  usampler2D GBufferMap;
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -57,42 +59,62 @@ vertex_shader vs_usertest : iface_vtx {
   frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_usertest0 : iface_frg {
+fragment_shader ps_radial : iface_frg {
   // uv displace radially based on time
   vec2 disp_uv = frg_uv-vec2(0.5,0.5);
   float radius = length(disp_uv);
   float angle = atan(disp_uv.y, disp_uv.x);
-  float displacement_amount = 0.001;
-  float new_radius = radius + sin(time*radius*20)*displacement_amount;
+  float displacement_amount = 0.02;
+  float new_radius = radius + sin(time*radius*10)*displacement_amount;
   vec2 new_uv = vec2(cos(angle)*new_radius, sin(angle)*new_radius)+vec2(0.5,0.5);
 
   vec3 inprgb = texture(MrtMap0, new_uv).xyz;
 
-  vec3 inpfb = texture(FeedbackMap, new_uv).xyz;
+  // TODO - sample gbuffer for something cool..
+  //uvec4 gbuf = textureLod(GBufferMap, new_uv,0);
+  //const float inverse_255 = 1.0/255.0;
+  //const float inverse_nrm = 1.0/32767.5;
+  //float nx = float((gbuf.r>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits 
+  //float ny = float((gbuf.b>>16)&0xffffu)*inverse_nrm-1.0; // 32 bits 
+  //float nz = float((gbuf.a)&0xffffu)*inverse_nrm-1.0;;  // 16 bits
 
-  out_clr   = vec4(inprgb*0.1+inpfb*0.9, 1.0);
+  out_clr   = vec4(inprgb, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_usertest1 : iface_frg {
+fragment_shader ps_feedback : iface_frg {
+  vec3 inprgb = texture(MrtMap0, frg_uv).xyz;
+  vec3 inpfb = texture(FeedbackMap, frg_uv).xyz;
+  out_clr   = vec4(inprgb*0.05+inpfb*0.95, 1.0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_swapchannels : iface_frg {
   vec3 inprgb = texture(MrtMap0, frg_uv).xyz;
   out_clr   = vec4(inprgb.zyx, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 // techniques
 ///////////////////////////////////////////////////////////////
-technique postfx_usertest0 {
+technique tek_radial_distort {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_usertest;
-    fragment_shader = ps_usertest0;
+    fragment_shader = ps_radial;
     state_block     = sb_default;
   }
 }
-technique postfx_usertest1 {
+technique tek_feedback {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_usertest;
-    fragment_shader = ps_usertest1;
+    fragment_shader = ps_feedback;
+    state_block     = sb_default;
+  }
+}
+technique tek_swapchannels {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_usertest;
+    fragment_shader = ps_swapchannels;
     state_block     = sb_default;
   }
 }
