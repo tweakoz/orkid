@@ -107,11 +107,23 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onGpuPreFrame")) {
+              auto gpupreframefn //
+                  = py::cast<py::function>(appinstance.attr("onGpuPreFrame"));
+              rval->_vars->makeValueForKey<py::function>("gpupreframefn") = gpupreframefn;
+              rval->onGpuPreFrame([=](Context* ctx) { //
+                ctx->makeCurrentContext();
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupreframefn");
+                pyfn.value()(ctx_t(ctx));
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuPostFrame")) {
               auto gpupostframefn //
                   = py::cast<py::function>(appinstance.attr("onGpuPostFrame"));
               rval->_vars->makeValueForKey<py::function>("gpupostframefn") = gpupostframefn;
-              rval->onGpuUpdate([=](Context* ctx) { //
+              rval->onGpuPostFrame([=](Context* ctx) { //
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("gpupostframefn");

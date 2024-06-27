@@ -356,7 +356,12 @@ void OrkEzApp::onGpuUpdate(EzMainWin::ongpuupdate_t cb) {
     _mainWindow->_onGpuUpdate = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onGpuPostFrame(EzMainWin::ongpuupdate_t cb) {
+void OrkEzApp::onGpuPreFrame(EzMainWin::ongpupreframe_t cb) {
+  if(_mainWindow)
+    _mainWindow->_onGpuPreFrame = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onGpuPostFrame(EzMainWin::ongpupostframe_t cb) {
   if(_mainWindow)
     _mainWindow->_onGpuPostFrame = cb;
 }
@@ -525,6 +530,11 @@ int OrkEzApp::mainThreadLoop() {
   glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuUpdate) {
       _mainWindow->_onGpuUpdate(context);
+    }
+  };
+  glfw_ctx->_onGpuPreFrame = [this](lev2::Context* context) {
+    if (_mainWindow->_onGpuPreFrame) {
+      _mainWindow->_onGpuPreFrame(context);
     }
   };
   glfw_ctx->_onGpuPostFrame = [this](lev2::Context* context) {

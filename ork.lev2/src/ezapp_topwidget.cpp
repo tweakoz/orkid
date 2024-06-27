@@ -78,6 +78,7 @@ void EzTopWidget::enableUiDraw() {
     auto fbi     = context->FBI();  // FrameBufferInterface
     auto fxi     = context->FXI();  // FX Interface
     auto mtxi    = context->MTXI(); // FX Interface
+    ////////////////////////////////////////////////////
     fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
     fbi->Clear(fvec4(1.0, 0.0, 1.0, 1), 1);
     ////////////////////////////////////////////////////
@@ -91,6 +92,10 @@ void EzTopWidget::enableUiDraw() {
     draw_buffer->_RCFD      = rcfd;
     auto mutable_drwev      = std::const_pointer_cast<ui::DrawEvent>(drwev);
     mutable_drwev->_acqdbuf = draw_buffer;
+    ////////////////////////////////////////////////////
+    if(ezapp->_mainWindow->_onGpuPreFrame){
+      ezapp->_mainWindow->_onGpuPreFrame(context);
+    }
     ////////////////////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect        = context->mainSurfaceRectAtOrigin();

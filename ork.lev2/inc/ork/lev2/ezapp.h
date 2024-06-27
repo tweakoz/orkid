@@ -59,6 +59,7 @@ public:
 
   typedef std::function<void(Context* ctx)> ongpuinit_t;
   typedef std::function<void(Context* ctx)> ongpuupdate_t;
+  typedef std::function<void(Context* ctx)> ongpupreframe_t;
   typedef std::function<void(Context* ctx)> ongpupostframe_t;
   typedef std::function<void(Context* ctx)> ongpuexit_t;
   typedef std::function<void(ui::updatedata_ptr_t upd)> onupdate_t;
@@ -100,6 +101,7 @@ public:
   onuieventcb_t _onUiEvent                  = nullptr;
   ongpuinit_t _onGpuInit                    = nullptr;
   ongpuupdate_t _onGpuUpdate                = nullptr;
+  ongpupreframe_t _onGpuPreFrame            = nullptr;
   ongpupostframe_t _onGpuPostFrame          = nullptr;
   ongpuexit_t _onGpuExit                    = nullptr;
   onupdate_t _onUpdate                      = nullptr;
@@ -164,6 +166,7 @@ public:
   void onResize(EzMainWin::onresizecb_t cb);
   void onGpuInit(EzMainWin::ongpuinit_t cb);
   void onGpuUpdate(EzMainWin::ongpuupdate_t cb);
+  void onGpuPreFrame(EzMainWin::ongpupreframe_t cb);
   void onGpuPostFrame(EzMainWin::ongpupostframe_t cb);
   void onGpuExit(EzMainWin::ongpuexit_t cb);
   void onUiEvent(EzMainWin::onuieventcb_t cb);

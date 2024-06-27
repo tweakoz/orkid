@@ -314,6 +314,16 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->_outputNode;
               })
           .def_property_readonly(
+              "compositorpostnodecount",                         //
+              [](scene_ptr_t SG) -> size_t { //
+                return SG->getPostNodeCount();
+              })
+          .def(
+              "compositorpostnode",                         //
+              [](scene_ptr_t SG, size_t index) { //
+                return SG->getPostNode(index);
+              })
+          .def_property_readonly(
               "compositorrendernode",                            //
               [](scene_ptr_t SG) -> compositorrendernode_ptr_t { //
                 return SG->_renderNode;

@@ -98,6 +98,14 @@ class HSVGAPP(object):
     self.modelnode.worldTransform.translation = vec3(0,28,0)
     #######################################
 
+  ################################################
+
+  def onGpuPreFrame(self,ctx):
+    pn1 = self.scene.compositorpostnode(0)
+    rt_group = pn1.outputGroup 
+    rt_buffer = pn1.outputBuffer
+    rt_texture = rt_buffer.texture
+    print("onGpuPreFrame",pn1,rt_group,rt_buffer,rt_texture)
 
   ################################################
 

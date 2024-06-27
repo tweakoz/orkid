@@ -67,6 +67,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
               rnode->_layers = l;
             }
           )
+          .def_property_readonly("outputGroup", [](compositorrendernode_ptr_t rnode) -> rtgroup_ptr_t { //
+            return rnode->GetOutputGroup();
+          })
+          .def_property_readonly("outputBuffer", [](compositorrendernode_ptr_t rnode) -> rtbuffer_ptr_t { //
+            return rnode->GetOutput();
+          })
           .def("__repr__", [](compositorrendernode_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("RenderCompositingNode(%p)", d.get());
@@ -82,6 +88,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             fxstring<64> fxs;
             fxs.format("PostCompositingNode(%p)", d.get());
             return fxs.c_str();
+          })
+          .def_property_readonly("outputGroup", [](compositorpostnode_ptr_t d) -> rtgroup_ptr_t {
+            return d->GetOutputGroup();
+          })
+          .def_property_readonly("outputBuffer", [](compositorpostnode_ptr_t d) -> rtbuffer_ptr_t {
+            return d->GetOutput();
           })
           .def("addToSceneVars",[](compositorpostnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
             vm->reifyValueForKey<postfx_node_chain_t>(key).push_back(dcnode);
@@ -346,12 +358,9 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           [](nodecompositortechnique_ptr_t ntek, compositoroutnode_ptr_t t){
             ntek->_outputNode = t;
           })
-          /*.def_property("postNode",[](nodecompositortechnique_ptr_t ntek) -> compositorpostnode_ptr_t {
-              return ntek->_postfxNode;
-          },
-          [](nodecompositortechnique_ptr_t ntek, compositorpostnode_ptr_t t){
-            ntek->_postfxNode = t;
-          })*/
+          .def_property_readonly("postEffectNodes", [](nodecompositortechnique_ptr_t ntek) -> std::vector<compositorpostnode_ptr_t> {
+            return ntek->_postEffectNodes;
+          })
           .def("__repr__", [](nodecompositortechnique_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("NodeCompositingTechnique(%p)", d.get());
@@ -528,12 +537,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           })
           .def_property_readonly("context", [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
             return node->deferredContext();
-          })
-          .def_property_readonly("outputbuffer", [](defpbrnode_ptr_t rnode) -> rtbuffer_ptr_t { //
-            return rnode->GetOutput();
-          })
-          .def_property_readonly("outputgroup", [](defpbrnode_ptr_t rnode) -> rtgroup_ptr_t { //
-            return rnode->GetOutputGroup();
           })
           .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
             return node->overrideShader(shaderpath);

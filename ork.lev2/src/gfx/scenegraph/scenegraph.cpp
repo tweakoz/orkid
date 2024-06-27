@@ -282,6 +282,18 @@ layer_ptr_t Scene::findLayer(std::string named) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+compositorpostnode_ptr_t Scene::getPostNode( size_t index ) const {
+  return _compositorTechnique->_postEffectNodes[index];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+size_t Scene::getPostNodeCount() const {
+  return _compositorTechnique->_postEffectNodes.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::scenegraph
 
 ImplementReflectionX(ork::lev2::scenegraph::Node, "scenegraph::Node");

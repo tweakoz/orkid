@@ -280,6 +280,8 @@ struct Scene {
   template <typename T> std::shared_ptr<T> tryOutputNodeAs() {
     return std::dynamic_pointer_cast<T>(_outputNode);
   }
+  compositorpostnode_ptr_t getPostNode( size_t index ) const;
+  size_t getPostNodeCount() const;
 
   void enablePickHud();
 
