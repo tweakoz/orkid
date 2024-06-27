@@ -63,25 +63,25 @@ class HSVGAPP(object):
     ###################################
     # post fx node
     ###################################
+    postNode0 = PostFxNodeUser()
+    postNode0.shader_path = str(this_dir / "usertest.glfx")
+    postNode0.technique = "postfx_usertest0"
+    postNode0.params.mvp = mtx4()
+    postNode0.params.modcolor = vec4(1,0,0,1)
+    postNode0.params.time = 0.0
+    postNode0.gpuInit(ctx,8,8);
+    postNode0.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node0 = postNode0
+    ###################################
+    # post fx node
+    ###################################
     postNode1 = PostFxNodeUser()
     postNode1.shader_path = str(this_dir / "usertest.glfx")
     postNode1.technique = "postfx_usertest1"
     postNode1.params.mvp = mtx4()
-    postNode1.params.modcolor = vec4(1,0,0,1)
-    postNode1.params.time = 0.0
     postNode1.gpuInit(ctx,8,8);
     postNode1.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node1 = postNode1
-    ###################################
-    # post fx node
-    ###################################
-    postNode2 = PostFxNodeUser()
-    postNode2.shader_path = str(this_dir / "usertest.glfx")
-    postNode2.technique = "postfx_usertest2"
-    postNode2.params.mvp = mtx4()
-    postNode2.gpuInit(ctx,8,8);
-    postNode2.addToSceneVars(sceneparams,"PostFxChain")
-    self.post_node2 = postNode2
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -96,23 +96,18 @@ class HSVGAPP(object):
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
-    #######################################
 
   ################################################
 
   def onGpuPreFrame(self,ctx):
-    pn1 = self.scene.compositorpostnode(0)
-    rt_group = pn1.outputGroup 
-    rt_buffer = pn1.outputBuffer
-    rt_texture = rt_buffer.texture
-    print("onGpuPreFrame",pn1,rt_group,rt_buffer,rt_texture)
+    self.post_node0.params.FeedbackMap = self.scene.compositorpostnode(1).outputBuffer.texture
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     time = updinfo.absolutetime
-    self.post_node1.params.time = time*0.1
+    self.post_node0.params.time = time*1
     
   ##############################################
 

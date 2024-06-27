@@ -106,6 +106,7 @@ void EzTopWidget::enableUiDraw() {
     mtxi->PushUIMatrix();
     ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
+    OrkAssert(false);
 
     if(ezapp->_mainWindow->_onGpuPostFrame){
       ezapp->_mainWindow->_onGpuPostFrame(context);

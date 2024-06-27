@@ -562,8 +562,16 @@ int CtxGLFW::runloop() {
     if (_onGpuUpdate) {
       _onGpuUpdate(_target);
     }
+
+    if (_onGpuPreFrame) {
+      _onGpuPreFrame(_target);
+    }
     
     SlotRepaint();
+
+    if (_onGpuPostFrame) {
+      _onGpuPostFrame(_target);
+    }
 
     //////////////////////////////
     // check for closed window
