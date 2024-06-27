@@ -87,6 +87,10 @@ template <typename val_t> struct TVarMap {
     return _themap[key].template make<T>(std::forward<A>(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
+  template <typename T, typename... A> inline T& reifyValueForKey(const key_t& key) {
+    return _themap[key].template reifyAs<T>();
+  }
+  ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline std::shared_ptr<T> makeSharedForKey(const key_t& key, A&&... args) {
     return _themap[key].template makeShared<T>(std::forward<A>(args)...);
   }

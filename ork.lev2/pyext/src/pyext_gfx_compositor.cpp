@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeDecompBlur.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeUser.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -81,6 +82,9 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             fxstring<64> fxs;
             fxs.format("PostCompositingNode(%p)", d.get());
             return fxs.c_str();
+          })
+          .def("addToSceneVars",[](compositorpostnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
+            vm->reifyValueForKey<postfx_node_chain_t>(key).push_back(dcnode);
           });
   type_codec->registerStdCodec<compositorpostnode_ptr_t>(postnode_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -99,11 +103,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def(py::init<>())
           .def("gpuInit",[](decompblur_postnode_ptr_t dcnode, ctx_t ctx, int w, int h) {
             dcnode->gpuInit(ctx.get(), w, h);
-          })
-          .def("addToVarMap",[](decompblur_postnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
-            OrkAssert(typeid(compositorpostnode_ptr_t)!=typeid(decompblur_postnode_ptr_t));
-            auto as_postnode = std::dynamic_pointer_cast<PostCompositingNode>(dcnode);
-            vm->makeValueForKey<compositorpostnode_ptr_t>(key,as_postnode);
           })
           .def_property("threshold",
             [](decompblur_postnode_ptr_t dcnode) -> float {
@@ -150,11 +149,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def("gpuInit",[](postnode_hsvg_ptr_t dcnode, ctx_t ctx, int w, int h) {
             dcnode->gpuInit(ctx.get(), w, h);
           })
-          .def("addToVarMap",[](postnode_hsvg_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
-            OrkAssert(typeid(compositorpostnode_ptr_t)!=typeid(postnode_hsvg_ptr_t));
-            auto as_postnode = std::dynamic_pointer_cast<PostCompositingNode>(dcnode);
-            vm->makeValueForKey<compositorpostnode_ptr_t>(key,as_postnode);
-          })
           .def_property("hue",
             [](postnode_hsvg_ptr_t dcnode) -> float {
               return dcnode->_hue;
@@ -193,6 +187,91 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<postnode_hsvg_ptr_t>(dchsvgpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // materialinst params proxy
+  /////////////////////////////////////////////////////////////////////////////////
+  struct usernode_param_proxy {
+    postnode_user_ptr_t _usernode;
+  };
+  using usernode_param_proxy_ptr_t = std::shared_ptr<usernode_param_proxy>;
+  auto usernode_params_type   =                                                               //
+      py::class_<usernode_param_proxy, usernode_param_proxy_ptr_t>(module_lev2, "UserNodeParamsProxy") //
+          .def(
+              "__repr__",
+              [](usernode_param_proxy_ptr_t proxy) -> std::string {
+                std::string output;
+                output += FormatString("UserNodeParamsProxy<%p>{\n", proxy.get());
+                for (auto item : proxy->_usernode->_bindings) {
+                  const auto& k = item.first;
+                  const auto& v = item.second;
+                  auto vstr     = v.typestr();
+                  output += FormatString("  binding(%s): valtype(%s),\n", k.c_str(), vstr.c_str());
+                }
+                output += "}\n";
+                return output.c_str();
+              })
+          .def(
+              "__setattr__",                                                                  //
+              [type_codec](usernode_param_proxy_ptr_t proxy, py::object key, py::object val) { //
+                auto var_key = type_codec->decode(key);
+                auto var_val = type_codec->decode(val);
+                if (auto as_str = var_key.tryAs<std::string>()) {
+                  proxy->_usernode->_bindings[as_str.value()] = var_val;
+                } else {
+                  OrkAssert(false);
+                }
+              })
+          .def(
+              "__getattr__",                                                                //
+              [type_codec](usernode_param_proxy_ptr_t proxy, py::object key) -> py::object { //
+                auto var_key = type_codec->decode(key);
+                if (auto as_str = var_key.tryAs<std::string>()) {
+                  auto it = proxy->_usernode->_bindings.find(as_str.value());
+                  if (it != proxy->_usernode->_bindings.end()) {
+                    auto var_val = it->second;
+                    return type_codec->encode(var_val);
+                  }
+                } else {
+                  OrkAssert(false);
+                }
+                return py::none();
+              });
+
+  type_codec->registerStdCodec<usernode_param_proxy_ptr_t>(usernode_params_type);
+    /////////////////////////////////////////////////////////////////////////////////
+  auto dcuserpostnode_type = //
+      py::class_<PostFxNodeUser, PostCompositingNode, postnode_user_ptr_t>(module_lev2, "PostFxNodeUser")
+          .def(py::init<>())
+          .def("gpuInit",[](postnode_user_ptr_t dcnode, ctx_t ctx, int w, int h) {
+            dcnode->gpuInit(ctx.get(), w, h);
+          })
+          .def_property("shader_path", //
+            [](postnode_user_ptr_t dcnode) -> std::string {
+              return dcnode->_shader_path;
+            },
+            [](postnode_user_ptr_t dcnode, std::string shaderpath) {
+              dcnode->_shader_path = shaderpath;
+            })
+            .def_property("technique", //
+            [](postnode_user_ptr_t dcnode) -> std::string {
+              return dcnode->_technique_name;
+            },
+            [](postnode_user_ptr_t dcnode, std::string technique) {
+              dcnode->_technique_name = technique;
+            })
+          .def_property_readonly(
+              "params",                                                                    //
+              [type_codec](postnode_user_ptr_t dcnode) -> usernode_param_proxy_ptr_t { //
+                auto proxy = std::make_shared<usernode_param_proxy>();
+                proxy->_usernode = dcnode;
+                return proxy;
+              })
+              .def("__repr__", [](postnode_user_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PostFxNodeUSER(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<postnode_user_ptr_t>(dcuserpostnode_type);  
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -267,12 +346,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           [](nodecompositortechnique_ptr_t ntek, compositoroutnode_ptr_t t){
             ntek->_outputNode = t;
           })
-          .def_property("postNode",[](nodecompositortechnique_ptr_t ntek) -> compositorpostnode_ptr_t {
+          /*.def_property("postNode",[](nodecompositortechnique_ptr_t ntek) -> compositorpostnode_ptr_t {
               return ntek->_postfxNode;
           },
           [](nodecompositortechnique_ptr_t ntek, compositorpostnode_ptr_t t){
             ntek->_postfxNode = t;
-          })
+          })*/
           .def("__repr__", [](nodecompositortechnique_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("NodeCompositingTechnique(%p)", d.get());

@@ -18,6 +18,7 @@ from lev2utils.scenegraph import createSceneGraph
 from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
+this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
@@ -62,11 +63,12 @@ class HSVGAPP(object):
     ###################################
     # post fx node
     ###################################
-    postNode = PostFxNodeHSVG()
-    postNode.hue = 0.0
-    postNode.saturation = 0.2
-    postNode.value = 1.0
-    postNode.gamma = 2.2
+    postNode = PostFxNodeUser()
+    postNode.shader_path = str(this_dir / "usertest.glfx")
+    postNode.technique = "postfx_usertest"
+    postNode.params.mvp = mtx4()
+    postNode.params.modcolor = vec4(1,0,0,1)
+    postNode.params.time = 0.0
     postNode.gpuInit(ctx,8,8);
     postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
@@ -109,15 +111,7 @@ class HSVGAPP(object):
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     time = updinfo.absolutetime
-    h = 0.5+math.sin(time*0.4)*0.5
-    s = 1.5+math.sin(time*0.27)*1.4
-    v = 0.5+math.sin(time*0.3)*0.4
-    g = 3.0+math.sin(time*0.5)*2.5
-    #print("hsvg:",h,s,v,g)
-    self.post_node.hue = h
-    self.post_node.saturation = s
-    self.post_node.value = v
-    self.post_node.gamma = g
+    self.post_node.params.time = time*0.1
     
   ##############################################
 

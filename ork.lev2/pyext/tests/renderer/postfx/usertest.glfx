@@ -1,0 +1,80 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {}
+///////////////////////////////////////////////////////////////
+// Uniforms
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx {
+  mat4 mvp;
+  vec4 modcolor;
+  float time;
+}
+uniform_set ub_frg {
+  float time;
+  int image_width;
+  int image_height;
+  float EffectAmount;
+
+  sampler2D MrtMap0;
+  sampler2D MrtMap1;
+  sampler2D MrtMap2;
+  sampler2D MrtMap3;
+  sampler2D AuxMap0;
+  sampler2D AuxMap1;
+  sampler2D NoiseMap;
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_frg : ub_frg {
+  inputs { vec2 frg_uv; }
+  //
+  outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+// Shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_usertest : iface_vtx {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_usertest : iface_frg {
+  vec2 uv = mod(frg_uv.xy + vec2(time,time),1);
+  vec4 inprgb = texture(MrtMap0, uv);
+  out_clr   = vec4(inprgb.xyz*10.0, 1.0);
+}
+///////////////////////////////////////////////////////////////
+// techniques
+///////////////////////////////////////////////////////////////
+technique postfx_usertest {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_usertest;
+    fragment_shader = ps_usertest;
+    state_block     = sb_default;
+  }
+}

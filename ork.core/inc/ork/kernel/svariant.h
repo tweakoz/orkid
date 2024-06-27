@@ -470,6 +470,21 @@ public:
   //////////////////////////////////////////////////////////////
   // construct a T and return by reference
   //////////////////////////////////////////////////////////////
+  template <typename T, typename... A> T& reifyAs() {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    auto pval = (T*)&_buffer[0];
+    if(not isA<T>()){
+      _destroy();
+      new (pval) T();
+      _mtinfo = &typeid(T);
+      assignDescriptor<T>();
+    }
+    assert(typeid(T) == *_mtinfo);
+    return *pval;
+  }
+  //////////////////////////////////////////////////////////////
+  // construct a T and return by reference
+  //////////////////////////////////////////////////////////////
   template <typename T, typename... A> T& make(A&&... args) {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
     _destroy();

@@ -327,6 +327,7 @@ class RenderCompositingNode;
 class PostCompositingNode;
 class PostFxNodeDecompBlur;
 class PostFxNodeHSVG;
+class PostFxNodeUser;
 class LambdaPostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
 struct AcquiredRenderDrawBuffer;
@@ -359,7 +360,10 @@ using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>
 
 using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
 using postnode_hsvg_ptr_t = std::shared_ptr<PostFxNodeHSVG>;
+using postnode_user_ptr_t = std::shared_ptr<PostFxNodeUser>;
 using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
+
+using postfx_node_chain_t = std::vector<compositorpostnode_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // XgmModel

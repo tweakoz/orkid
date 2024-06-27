@@ -21,6 +21,8 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, const FreestyleMaterial* mtl);
 
+  using varval_t = varmap::VarMap::value_type;
+
   FreestyleMaterial();
   ~FreestyleMaterial();
 
@@ -62,6 +64,9 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   void commit();
   void bindTechnique(const FxShaderTechnique* tek);
+
+  void bindParam(fxparam_constptr_t par, const varval_t& value);
+
   void bindParamInt(fxparam_constptr_t par, int value);
   void bindParamFloat(fxparam_constptr_t par, float value);
   void bindParamFloatArray(fxparam_constptr_t par, const float* value, size_t len);

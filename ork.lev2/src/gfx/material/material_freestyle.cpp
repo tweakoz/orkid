@@ -191,6 +191,184 @@ void FreestyleMaterial::bindTechnique(const FxShaderTechnique* tek) {
   _selectedTEK = tek;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& val) {
+    auto FXI = _initialTarget->FXI();
+
+
+    if (auto as_mtx4 = val.tryAs<fmtx4>()) {
+      FXI->BindParamMatrix(param, as_mtx4.value());
+    } else if (auto as_mtx4ptr = val.tryAs<fmtx4_ptr_t>()) {
+      FXI->BindParamMatrix(param, *as_mtx4ptr.value().get());
+    } else if (auto as_texture = val.tryAs<Texture*>()) {
+      auto texture = as_texture.value();
+      FXI->BindParamCTex(param, texture);
+    } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
+      auto texture = as_texture.value();
+      FXI->BindParamCTex(param, texture.get());
+    }
+    else if (auto as_float_ = val.tryAs<float>()) {
+      FXI->BindParamFloat(param, as_float_.value());
+    } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
+      FXI->BindParamVect4(param, as_fvec4_.value());
+    } else if (auto as_fvec3 = val.tryAs<fvec3>()) {
+      FXI->BindParamVect3(param, as_fvec3.value());
+    } else if (auto as_fvec2 = val.tryAs<fvec2>()) {
+      FXI->BindParamVect2(param, as_fvec2.value());
+    } else if (auto as_fmtx3 = val.tryAs<fmtx3>()) {
+      FXI->BindParamMatrix(param, as_fmtx3.value());
+    } else if (auto as_instancedata_ = val.tryAs<instanceddrawinstancedata_ptr_t>()) {
+      OrkAssert(false);
+    } else if (auto as_fquat = val.tryAs<fquat_ptr_t>()) {
+      const auto& Q = *as_fquat.value().get();
+      fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
+      FXI->BindParamVect4(param, as_vec4);
+    } else if (auto as_fplane3 = val.tryAs<fplane3_ptr_t>()) {
+      const auto& P = *as_fplane3.value().get();
+      fvec4 as_vec4(P.n, P.d);
+      FXI->BindParamVect4(param, as_vec4);
+    } 
+    ///////////////////////////////////////////////////////////////////
+    /*else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
+      const auto& crcstr = *as_crcstr.value().get();
+
+      auto stereocams = CPD._stereoCameraMatrices;
+      auto monocams   = CPD._cameraMatrices;
+
+      switch (crcstr.hashed()) {
+
+        case "RCID_PickID"_crcu: {
+          auto itpfc = RCFDPROPS.find("pixel_fetch_context"_crc);
+          OrkAssert(itpfc != RCFDPROPS.end());
+          auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
+          auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
+          //printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
+          FXI->BindParamU32(param, as_u32);
+          break;
+        }
+        case "RCFD_Camera_Pick"_crcu: {
+          auto it = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
+          OrkAssert(it != RCFDPROPS.end());
+          auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
+          const fmtx4& MVP = *(as_mtx4p.get());
+          //MVP.dump("pickbufferMvpMatrix");
+          FXI->BindParamMatrix(param, MVP);
+          break;
+        }
+        case "RCFD_TIME"_crcu: {
+          auto RCFD = RCID.rcfd();
+          float time = RCFD->getUserProperty("time"_crc).get<float>();
+          FXI->BindParamFloat(param, time);
+          break;
+        }
+        case "CPD_Rtg_Dim"_crcu: {
+          FXI->BindParamVect2(param, fvec2(W,H));
+          break;
+        }
+        case "CPD_Rtg_InvDim"_crcu: {
+          FXI->BindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
+          break;
+        }
+        case "RCFD_MODCOLOR"_crcu: {
+          FXI->BindParamVect4(param, modcolor);
+          break;
+        }
+        case "RCFD_M"_crcu: {
+          FXI->BindParamMatrix(param, worldmatrix);
+          break;
+        }
+        case "RCFD_DEPTH_MAP"_crcu: {
+          auto RCFD = RCID.rcfd();
+          auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
+          FXI->BindParamCTex(param, depth_tex.get());
+          //OrkAssert(false);
+          break;
+        }
+        case "RCFD_Camera_MVP_Mono"_crcu: {
+          if (monocams) {
+            //printf("monocams<%p>\n", (void*)monocams);  
+            FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_VP_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->VPMONO());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_IV_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->GetIVMatrix());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_IVP_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_VP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPL());
+          }
+          break;
+        }
+        case "RCFD_Camera_VP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPR());
+          }
+          break;
+        }
+        case "RCFD_Camera_IVP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            auto m = stereocams->VPL().inverse();
+            FXI->BindParamMatrix(param, m);
+          }
+          break;
+        }
+        case "RCFD_Camera_IVP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPR().inverse());
+          }
+          break;
+        }
+        case "RCFD_Camera_MVP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+          }
+          break;
+        }
+        case "RCFD_Camera_MVP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->MVPR(worldmatrix));
+          }
+          break;
+        }
+        case "RCFD_Model_Rot"_crcu: {
+          auto rotmtx = worldmatrix.rotMatrix33();
+          FXI->BindParamMatrix(param, rotmtx);
+          break;
+        }
+        default:
+          OrkAssert(false);
+          break;
+      }
+    }*/
+ }
+///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamInt(const FxShaderParam* par, int value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();

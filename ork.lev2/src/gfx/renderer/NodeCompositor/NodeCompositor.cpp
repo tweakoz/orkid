@@ -46,7 +46,6 @@ void NodeCompositingTechnique::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::NodeCompositingTechnique()
     : _renderNode(nullptr)
-    , _postfxNode(nullptr)
     , _outputNode(nullptr) {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,8 +56,9 @@ void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
   pTARG->debugPushGroup("NodeCompositingTechnique::init");
   if (_renderNode)
     _renderNode->gpuInit(pTARG, w, h);
-  if (_postfxNode)
-    _postfxNode->gpuInit(pTARG, w, h);
+  for( auto pfxnode : _postEffectNodes ){
+    pfxnode->gpuInit(pTARG, w, h);
+  }
   if (_outputNode)
     _outputNode->gpuInit(pTARG, w, h);
 
@@ -77,21 +77,25 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     rtgroup_ptr_t render_outg = _renderNode ? _renderNode->GetOutputGroup() : nullptr;
     RtBuffer* render_out      = _renderNode ? _renderNode->GetOutput().get() : nullptr;
-    RtBuffer* postfx_out      = _postfxNode ? _postfxNode->GetOutput().get() : nullptr;
-    RtBuffer* final_out       = postfx_out ? postfx_out : render_out;
+    ////////////////////////////////////////////////////////////////////////////
     drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
     drawdata._properties["render_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
-    // todo - techinically only the 'root' postfx node should get input
-    //  from the render out... we need to isolate the root node somehow..
-    drawdata._properties["postfx_out"_crcu].set<RtBuffer*>(postfx_out);
-    drawdata._properties["final_out"_crcu].set<RtBuffer*>(final_out);
     ////////////////////////////////////////////////////////////////////////////
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
-    if (_postfxNode) {
-      _postfxNode->Render(drawdata);
+    ////////////////////////////////////////////////////////////////////////////
+    RtBuffer* final_out       = render_out;
+    if(1)for( auto pfxnode : _postEffectNodes ){
+      drawdata._properties["postfx_in"_crcu].set<RtBuffer*>(render_out);
+      RtBuffer* postfx_out      = pfxnode ? pfxnode->GetOutput().get() : nullptr;
+      drawdata._properties["postfx_out"_crcu].set<RtBuffer*>(postfx_out);
+      pfxnode->Render(drawdata);
+      render_out = postfx_out;
+      final_out = postfx_out;
     }
+    ////////////////////////////////////////////////////////////////////////////
+    drawdata._properties["final_out"_crcu].set<RtBuffer*>(final_out);
   }
   drawdata.context()->debugPopGroup();
   return rval;

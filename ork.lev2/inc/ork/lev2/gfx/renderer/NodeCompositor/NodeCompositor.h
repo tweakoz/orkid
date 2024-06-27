@@ -164,7 +164,7 @@ public:
   }
   template <typename T, typename... A> std::shared_ptr<T> createPostFxNode(A&&... args) {
     auto rval = std::make_shared<T>(std::forward<A>(args)...);
-    _postfxNode = rval;
+    _postEffectNodes.push_back(rval);
     return rval;
   }
   template <typename T, typename... A> std::shared_ptr<T> createOutputNode(A&&... args) {
@@ -187,7 +187,7 @@ public:
 
   ork::ObjectMap mBufferMap;
   compositorrendernode_ptr_t _renderNode;
-  compositorpostnode_ptr_t _postfxNode;
+  postfx_node_chain_t _postEffectNodes;
   compositoroutnode_ptr_t _outputNode;
 };
 
