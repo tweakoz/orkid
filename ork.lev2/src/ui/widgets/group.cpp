@@ -111,7 +111,7 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   //
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
-    if (1) {
+    if (0) {
       printf("Group<%s>::doRouteUiEvent ch<%s> inside<%d>\n", _name.c_str(), child->_name.c_str(), int(inside));
     }
     if (inside) {
@@ -275,11 +275,11 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
       auto g1 = GUIDES_UNDER_MOUSE.first;
       auto g2 = GUIDES_UNDER_MOUSE.second;
-      printf( "g1<%p> g2<%p>\n", g1.get(), g2.get() );
+      //printf( "g1<%p> g2<%p>\n", g1.get(), g2.get() );
       if(g1 and g2){
         auto w1 = g1->_layout->_widget->_name;
         auto w2 = g1->_layout->_widget->_name;
-        printf( "w1<%s> w2<%s>\n", w1.c_str(), w2.c_str() );
+        //printf( "w1<%s> w2<%s>\n", w1.c_str(), w2.c_str() );
       }
       lastx = ev->miX;
       lasty = ev->miY;
