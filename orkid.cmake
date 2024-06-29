@@ -373,6 +373,7 @@ function(ork_std_target_opts_linker the_target)
     target_link_libraries(${the_target} LINK_PRIVATE
           "-framework AppKit"
           "-framework IOKit"
+          "-framework Accelerate"
     )
     target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
   ELSEIF(${UNIX})

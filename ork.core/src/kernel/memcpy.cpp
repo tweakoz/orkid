@@ -9,12 +9,88 @@
 #include <memory.h>
 #include <atomic>
 #include <ork/kernel/opq.h>
+#include <cstddef>
+
+#if defined(__APPLE__)
+#include <Accelerate/Accelerate.h>
+#endif
 
 #if defined(ORK_ARCHITECTURE_ARM_64)
+#include <arm_neon.h>
 namespace ork {
+inline void _memcpy_neon(void* dest, const void* src, size_t n) { // arm neon
+    uint8_t* d = static_cast<uint8_t*>(dest);
+    const uint8_t* s = static_cast<const uint8_t*>(src);
+    size_t i = 0;
+
+    for (; i + 15 < n; i += 16) {
+        vst1q_u8(d + i, vld1q_u8(s + i));
+    }
+    for (; i < n; ++i) {
+        d[i] = s[i];
+    }
+}
+
+inline void _memcpy_cache_optimized(void* dest, const void* src, size_t n) {
+    constexpr size_t cache_line_size = 64;
+    uint8_t* d = static_cast<uint8_t*>(dest);
+    const uint8_t* s = static_cast<const uint8_t*>(src);
+    
+    size_t i = 0;
+    for (; i + cache_line_size <= n; i += cache_line_size) {
+        __builtin_prefetch(s + i + cache_line_size);
+        __builtin_prefetch(d + i + cache_line_size);
+        std::copy_n(s + i, cache_line_size, d + i);
+    }
+    std::copy_n(s + i, n - i, d + i);
+}
+
+inline void _memcpy_prefetch(void* dest, const void* src, size_t n) {
+    uint8_t* d = static_cast<uint8_t*>(dest);
+    const uint8_t* s = static_cast<const uint8_t*>(src);
+
+    size_t i = 0;
+    for (; i + 64 <= n; i += 64) {
+        __builtin_prefetch(s + i + 64);
+        std::copy_n(s + i, 64, d + i);
+    }
+    for (; i < n; ++i) {
+        d[i] = s[i];
+    }
+}
+
+inline void _memcpy_asm(void* dest, const void* src, size_t n) {
+    asm volatile (
+        "mov x0, %[src] \n"
+        "mov x1, %[dest] \n"
+        "mov x2, %[n] \n"
+        "1: \n"
+        "ldr q0, [x0], #16 \n"
+        "subs x2, x2, #16 \n"
+        "str q0, [x1], #16 \n"
+        "bhi 1b \n"
+        :
+        : [dest] "r" (dest), [src] "r" (src), [n] "r" (n)
+        : "x0", "x1", "x2", "memory"
+    );
+}
+
+#if defined(__APPLE__)
+
+inline void _memcpy_accel(void* dest, const void* src, size_t n) { // accelerate
+    vDSP_mmov((const float*)src, (float*)dest, n / sizeof(float), 1, n / sizeof(float), n / sizeof(float));
+}
+
+void memcpy_fast(void* dest, const void* src, size_t length) {
+  _memcpy_accel(dest, src, length);
+}
+
+
+#else
 void memcpy_fast(void* dest, const void* src, size_t length) {
   ::memcpy(dest, src, length);
 }
+#endif
 } // namespace ork
 #elif defined(ORK_ARCHITECTURE_X86_64)
 #include <immintrin.h>
