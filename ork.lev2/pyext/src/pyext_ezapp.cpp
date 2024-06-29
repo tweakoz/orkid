@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/profiling.inl>
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,7 +175,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
               rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
+                EASY_BLOCK("pyezapp::evh1", profiler::colors::Red);
                 py::gil_scoped_acquire acquire;
+                EASY_END_BLOCK;
+                EASY_BLOCK("pyezapp::evh2", profiler::colors::Red);
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
                 try {
                   auto res = pyfn.value()(ev).cast<ui::HandlerResult>();
@@ -206,6 +210,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_property_readonly(
           "mainwin",
           [](orkezapp_ptr_t app) -> ezmainwin_ptr_t { return app->_mainWindow; })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly(
+          "shouldUpdateThrottleOnGPU",
+          [](orkezapp_ptr_t app) -> bool { //
+          return app->shouldUpdateThrottleOnGPU();
+      })
       ///////////////////////////////////////////////////////
       .def_property_readonly("topWidget", [](orkezapp_ptr_t ezapp) -> eztopwidget_ptr_t { //
         return ezapp->_eztopwidget;

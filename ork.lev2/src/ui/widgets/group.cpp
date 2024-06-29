@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/profiling.inl>
 
 namespace ork { namespace ui {
 /////////////////////////////////////////////////////////////////////////
@@ -144,6 +145,7 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     return doRouteUiEvent(ev);
   };
   _evhandler = [this](ui::event_constptr_t ev) -> ui::HandlerResult { //
+    EASY_BLOCK("LayoutGroup::evh1", profiler::colors::Red);
     ui::HandlerResult result;
     bool was_handled = false;
     switch (ev->_eventcode) {

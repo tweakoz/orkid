@@ -24,9 +24,9 @@ GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
-NUM_BALLS = 3500
+NUM_BALLS = 1000
 OFFSET = vec3(0,0.5,0)
-SIMRATE = 60.0
+SIMRATE = 30
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -50,7 +50,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     self.player_transform = None
     self.spawncounter = 0
-    self.framecounter = 0
+    self.gpuframecounter = 0
+    self.gpuframecounterUP = 0
     
     self.ecsInit()
 
@@ -405,7 +406,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
       # throttle camera updates
       #  to reduce ecs controller traffic
-      if (updinfo.counter%3)==0:
+      if self.ezapp.shouldUpdateThrottleOnGPU:
 
         EYE = PXF.translation+OFFSET
         TGT = EYE + DIR

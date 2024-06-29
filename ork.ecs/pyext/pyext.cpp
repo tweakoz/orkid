@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/ui/event.h>
 #include <ork/ecs/ecs.h>
+#include <ork/profiling.inl>
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,6 +119,7 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
         = py::cast<py::function>(appinstance.attr("onUiEvent"));
     rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
     rval->onUiEvent([=](ork::ui::event_constptr_t ev) -> ui::HandlerResult { //
+      EASY_BLOCK("ecsapp::onUiEvent");
       py::gil_scoped_acquire acquire;
       auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
       try {

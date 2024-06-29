@@ -17,6 +17,7 @@
 #include <ork/util/logger.h>
 
 #include <ork/kernel/memcpy.inl>
+#include <ork/profiling.inl>
 
 #include "gl.h"
 
@@ -247,6 +248,7 @@ void GlTextureInterface::TexManInit(void) {
 
 PboSet::PboSet(size_t size)
     : _size(size) {
+      printf( "New PboSet size<%zu>\n", size );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -262,7 +264,13 @@ PboSet::~PboSet() {
 static std::atomic<int> ipbocount = 0;
 pboptr_t PboSet::alloc(GlTextureInterface* txi) {
   if (_pbos.empty()) {
-    for (int i = 0; i < 4; i++) {
+
+    #if defined(__APPLE__)
+    constexpr int num_pbos_per_set = 2;
+    #else
+    constexpr int num_pbos_per_set = 4;
+    #endif
+    for (int i = 0; i < num_pbos_per_set; i++) {
       auto new_pbo = std::make_shared<PboItem>();
 
       new_pbo->_length = _size;
@@ -532,15 +540,21 @@ void PboItem::copyPersistentMapped(const TextureInitData& tid, size_t length, co
 
 void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data) {
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
-  GL_ERRORCHECK();
-  u32 map_flags = GL_MAP_WRITE_BIT;
-  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-  memcpy_fast(mapped, src_data, length);
-  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-  GL_ERRORCHECK();
+  if(0){
+    glBufferData(GL_PIXEL_UNPACK_BUFFER,_length,src_data,GL_DYNAMIC_DRAW); // orphan ?
+  }
+  else{
+    glBufferData(GL_PIXEL_UNPACK_BUFFER,_length,nullptr,GL_STREAM_DRAW); // orphan ?
+    GL_ERRORCHECK();
+    u32 map_flags = GL_MAP_WRITE_BIT;
+    map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+    map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+    map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+    void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+    memcpy_fast(mapped, src_data, length);
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    GL_ERRORCHECK();
+  }
 }
 
 bool _checkTexture(GLuint texID, const std::string& name) {
@@ -635,6 +649,7 @@ bool _checkTexture(GLuint texID, const std::string& name) {
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
   bool is_3d   = (tid._d > 1);
   bool is_cube = tid._initCubeTexture;
+    EASY_BLOCK("gltxi::itfd:1", profiler::colors::Red);
 
   ///////////////////////////////////
 
@@ -715,6 +730,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         break;
     }
   }
+  EASY_END_BLOCK;
+    EASY_BLOCK("gltxi::itfd:2", profiler::colors::Red);
 
   if (tid._truncation_length != 0) {
     OrkAssert(src_buffer == tid._data);
@@ -727,6 +744,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     tid._truncation_length = (tid._truncation_length & 0xfffffff80);
     dst_length             = tid._truncation_length;
   }
+  EASY_END_BLOCK;
+    EASY_BLOCK("gltxi::itfd:3", profiler::colors::Red);
 
   ///////////////////////////////////
 #if defined(OPENGL_46)
@@ -740,6 +759,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   pboitem->copyWithTempMapped(tid, dst_length, src_buffer);
 #endif
   ///////////////////////////////////
+  EASY_END_BLOCK;
 
   /*printf(
       "UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> dst_length<%zu> pbo<%d> mem<%p>\n",
@@ -751,6 +771,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       mapped);*/
 
   ///////////////////////////////////
+    EASY_BLOCK("gltxi::itfd:4", profiler::colors::Red);
 
   gltexobj_ptr_t glto;
 
@@ -780,6 +801,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   glto->mTarget = texture_target;
 
   GL_ERRORCHECK();
+  EASY_END_BLOCK;
+    EASY_BLOCK("gltxi::itfd:5", profiler::colors::Red);
 
   ///////////////////////////////////
   GLenum internalformat, format, type;
@@ -864,12 +887,15 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, format, type, nullptr);
     GL_ERRORCHECK();
   } else {
+      if(0) printf( "pboitem<%d> size_or_fmt_dirty<%d> w<%d> h<%d>\n", int(pboitem->_handle), int(size_or_fmt_dirty), tid._w, tid._h );
     if (size_or_fmt_dirty) // allocating
       glTexImage2D(texture_target, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
     else // non allocating
       glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
     GL_ERRORCHECK();
   }
+  EASY_END_BLOCK;
+    EASY_BLOCK("gltxi::itfd:6", profiler::colors::Red);
 
   ///////////////////////////////////
   GL_ERRORCHECK();

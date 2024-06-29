@@ -173,12 +173,12 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
 
         int num_msaa_samples = 1;//msaaEnumToInt(tex->_msaa_samples);
-        printf("msaa<%d>\n", num_msaa_samples);
+        //printf("msaa<%d>\n", num_msaa_samples);
         if (num_msaa_samples == 1) {
           drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
-        printf("ssaa<%d>\n", _supersample);
+        //printf("ssaa<%d>\n", _supersample);
           switch (this->_supersample) {
             case 0:
               drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<0>");

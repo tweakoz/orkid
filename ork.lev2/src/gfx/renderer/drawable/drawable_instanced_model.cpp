@@ -16,6 +16,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/profiling.inl>
 
 ImplementReflectionX(ork::lev2::InstancedModelDrawableData, "InstancedModelDrawableData");
 
@@ -124,6 +125,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
 
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this,dbufitem](lev2::RenderContextInstData& RCID) { //
+    EASY_BLOCK("gfxmodel::RINST1", profiler::colors::Red);
     auto context     = RCID.context();
     auto GBI         = context->GBI();
     auto TXI         = context->TXI();
@@ -154,6 +156,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     if(updatetex)
       TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
     ////////////////////////////////////////////////////////
+  EASY_END_BLOCK;
+    EASY_BLOCK("gfxmodel::RINST2", profiler::colors::Red);
+    ////////////////////////////////////////////////////////
     texdata._w    = k_texture_dimension_x; // 16 bytes per instance
     texdata._h    = ((_count+4095)>>12)&0xfff;
     texdata._data = (const void*)instances_copy->_modcolors.data();
@@ -173,9 +178,11 @@ void InstancedModelDrawable::enqueueToRenderQueue(
 
     _instanceIdTex->TexSamplingMode().PresetPointAndClamp();
     TXI->ApplySamplingMode(_instanceIdTex.get());
+  EASY_END_BLOCK;
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////
+    EASY_BLOCK("gfxmodel::RINST3", profiler::colors::Red);
     RCID._isInstanced = true;
     for (auto& sub : impl->_submeshes) {
       auto xgmsub = sub._xgmsubmesh;

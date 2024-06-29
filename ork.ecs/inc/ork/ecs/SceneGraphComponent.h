@@ -209,7 +209,7 @@ struct SceneGraphSystem final : public System {
   LockedResource<component_set_t> _components;
   int _numComponents = 0;
   const SceneGraphSystemData& _SGSD;
-  MpMcBoundedQueue<void_lambda_t,4096> _renderops;
+  MpMcBoundedQueue<void_lambda_t,65536> _renderops;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

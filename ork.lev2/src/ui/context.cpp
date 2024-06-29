@@ -1,5 +1,6 @@
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/profiling.inl>
 /////////////////////////////////////////////////////////////////////////
 namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
@@ -26,6 +27,7 @@ void Context::tick(updatedata_ptr_t updata){
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
+  EASY_BLOCK("uictx::handleEvent", profiler::colors::Red);
   OrkAssert(_top);
   HandlerResult rval;
   double curtime = _uitimer.SecsSinceStart();
@@ -71,29 +73,37 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     }
     /////////////////////////////////
     case EventCode::MOVE: {
+      EASY_BLOCK("uictx::evc::MOVE", profiler::colors::Red);
       _evdragtarget = nullptr;
       auto target   = _top->routeUiEvent(ev);
       if (target != _mousefocuswidget) {
         if (_mousefocuswidget) {
           if (target) {
             //////////////////////////
+            EASY_BLOCK("uictx::evc::MOVEH1", profiler::colors::Red);
             rval = target->OnUiEvent(ev);
+            EASY_END_BLOCK;
             //////////////////////////
             // synthesize MOUSE_LEAVE event
             //////////////////////////
+            EASY_BLOCK("uictx::evc::MOVEH2", profiler::colors::Red);
             *_tempevent            = *ev;
             _tempevent->_eventcode = EventCode::MOUSE_LEAVE;
             target->OnUiEvent(_tempevent);
+            EASY_END_BLOCK;
             //////////////////////////
             // synthesize MOUSE_ENTER event
             //////////////////////////
+            EASY_BLOCK("uictx::evc::MOVEH3", profiler::colors::Red);
             *_tempevent            = *ev;
             _tempevent->_eventcode = EventCode::MOUSE_ENTER;
             target->OnUiEvent(_tempevent);
+            EASY_END_BLOCK;
           }
         }
         _mousefocuswidget = target;
       }
+      EASY_BLOCK("uictx::evc::MOVEH4", profiler::colors::Red);
       if (target)
         rval = target->OnUiEvent(ev);
       break;

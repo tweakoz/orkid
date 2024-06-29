@@ -43,7 +43,7 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 
 void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
-  EASY_FUNCTION("IRenderer::drawEnqueuedRenderables");
+  EASY_BLOCK("IRenderer::DER1", profiler::colors::Red);
 
   if (mPerformanceItem)
     mPerformanceItem->Enter();
@@ -66,7 +66,8 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   ///////////////////////////////////////////////////////
   _sortkeys.clear();
-
+  EASY_END_BLOCK;
+  EASY_BLOCK("IRenderer::DER2", profiler::colors::Red);
   _unsortedNodes.exportRenderableNodes(_sortedNodes);
 
   _sortkeys.resize(renderQueueSize);
@@ -77,9 +78,11 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
       printf( "skey<%d:%d>\n", i, skey );
     }
   }
+  EASY_END_BLOCK;
 
   ///////////////////////////////////////////////////////
   // orkprintf( "rqsize<%d>\n", renderQueueSize );
+  EASY_BLOCK("IRenderer::DER3", profiler::colors::Red);
 
   U32& first = (*_sortkeys.begin());
 
@@ -90,13 +93,22 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   int imdlcount = 0;
 
   float fruntot = 0.0f;
+  EASY_END_BLOCK;
 
   ///////////////////////////////////////////////////////
+
+  EASY_BLOCK("IRenderer::DER4", profiler::colors::Red);
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = _sortkeys[i];
     _target->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>", i, sorted));
   }
+
+  EASY_END_BLOCK;
+
+  EASY_BLOCK("IRenderer::DER5", profiler::colors::Red);
+
+  //printf("renderQueueSize<%zu>\n", renderQueueSize);
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
@@ -110,12 +122,19 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   float favgrun = fruntot / float(imdlcount);
   ///////////////////////////////////////////////////////
+  EASY_END_BLOCK;
 
   // resetQueue();
   ///////////////////////////////////////////////////////
 
+  EASY_BLOCK("IRenderer::DER6", profiler::colors::Red);
+
   if (mPerformanceItem)
     mPerformanceItem->Exit();
+
+  EASY_END_BLOCK;
+
+  EASY_BLOCK("IRenderer::DER7", profiler::colors::Red);
 
   _target->debugPopGroup();
     if(reset_after){

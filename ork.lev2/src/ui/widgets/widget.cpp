@@ -8,6 +8,7 @@
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/profiling.inl>
 ///////////////////////////////////////////////////////////
 ImplementReflectionX(ork::ui::Widget, "ui::Widget");
 ///////////////////////////////////////////////////////////
@@ -67,6 +68,7 @@ HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////
 Widget* Widget::routeUiEvent(event_constptr_t ev) {
+  EASY_BLOCK("uictx::RUIEV", profiler::colors::Red);
   auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
                        : doRouteUiEvent(ev);
   return ret;
@@ -85,18 +87,23 @@ bool Widget::hasMouseFocus() const {
 }
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
+  EASY_BLOCK("Widget::OUIEV1", profiler::colors::Red);
   ev->mFilteredEvent.Reset();
+  EASY_END_BLOCK;
   // printf("Widget<%p>::OnUiEvent _evhandlerset<%d>\n", this, int(_evhandler!=nullptr));
 
   if (_eventfilterstack.size()) {
+    EASY_BLOCK("Widget::OUIEV2", profiler::colors::Red);
     auto top = _eventfilterstack.top();
     top->Filter(ev);
     if (ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
       return HandlerResult();
   }
   if (_evhandler) {
+    EASY_BLOCK("Widget::OUIEV3", profiler::colors::Red);
     return _evhandler(ev);
   }
+  EASY_BLOCK("Widget::OUIEV4", profiler::colors::Red);
   return DoOnUiEvent(ev);
 }
 ///////////////////////////////////////////////////////////

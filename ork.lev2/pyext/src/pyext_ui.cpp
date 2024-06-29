@@ -17,6 +17,7 @@
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
+#include <ork/profiling.inl>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
@@ -188,7 +189,10 @@ void pyinit_ui(py::module& module_lev2) {
                 widget->_uservars.makeValueForKey<py::object>("_hold_ev_callback", callback);
                 widget->_evhandler = [widget](ui::event_constptr_t ev) -> ui::HandlerResult {
                   ui::HandlerResult rval;
+                  EASY_BLOCK("pyui::evh1", profiler::colors::Red);
                   py::gil_scoped_acquire acquire_gil;
+                  EASY_END_BLOCK;
+                  EASY_BLOCK("pyui::evh2", profiler::colors::Red);
                   auto cb = widget->_uservars.typedValueForKey<py::object>("_hold_ev_callback").value();
                   if (cb) {
                     auto pyrval = cb(ev);

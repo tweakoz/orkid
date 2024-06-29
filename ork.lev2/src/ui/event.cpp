@@ -1,6 +1,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/context.h>
+#include <ork/profiling.inl>
 
 namespace ork::ui {
 HandlerResult Event::sendToContext(event_constptr_t ev) {

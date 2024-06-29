@@ -129,19 +129,24 @@ void Scene::enablePickHud() {
 }
 
 void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
+  //OrkBreak();
+    EASY_BLOCK("sg::Scene::_renderIMPL", profiler::colors::Red);
 
   if (_dogpuinit) {
     gpuInit(context);
   }
 
   if (_synchro) {
+    EASY_BLOCK("sg::Scene::_renderIMPL::synchro", profiler::colors::Red);
     bool OK = _synchro->beginRender();
     if (not OK) {
       return;
     }
   }
 
+    EASY_BLOCK("sg::Scene::_renderIMPL::acquiredb", profiler::colors::Red);
   auto DB = _dbufcontext_SG->acquireForReadLocked();
+EASY_END_BLOCK;
 
   RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
   RCFD->setUserProperty("time"_crc, _currentTime);
@@ -177,6 +182,8 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
   fbi->setViewport(tgtrect);
   fbi->setScissor(tgtrect);
   if (1) {
+    EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
+
     // printf( "SceneGraph::_renderIMPL\n");
     context->beginFrame();
     CompositorDrawData drawdata(RCFD);

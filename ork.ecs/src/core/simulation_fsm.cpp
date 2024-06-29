@@ -21,6 +21,7 @@
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/datatable.h>
 #include <ork/util/logger.h>
+#include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -243,6 +244,7 @@ void Simulation::_buildStateMachine() {
   };
   //
   ren_sim_state->_onupdate = [this]() {
+    EASY_BLOCK("ecs::sim::fsm_render", profiler::colors::Red);
     auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
 
     if (auto as_sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>()) {
@@ -259,16 +261,24 @@ void Simulation::_buildStateMachine() {
       }
     } else {
       OrkAssert(_currentdrwev);
+      EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
       SystemLut render_systems;
       _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
+      EASY_END_BLOCK;
+      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
       for (auto sys : render_systems) {
         sys.second->_beginRender();
       }
+      EASY_END_BLOCK;
+      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
       for (auto sys : render_systems)
         sys.second->_render(this, _currentdrwev);
+      EASY_END_BLOCK;
+      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
       for (auto sys : render_systems) {
         sys.second->_endRender();
       }
+      EASY_END_BLOCK;
     }
   };
 

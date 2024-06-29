@@ -374,6 +374,7 @@ void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
   _eztopwidget->_topLayoutGroup->_evhandler = cb;
+  //OrkBreak();
   if(_mainWindow)
     _mainWindow->_onUiEvent                  = cb;
 }
@@ -397,6 +398,12 @@ filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::P
   return FileEnv::createContextForUriBase(uriproto, basepath);
 }
 ///////////////////////////////////////////////////////////////////////////////
+bool OrkEzApp::shouldUpdateThrottleOnGPU(){
+    bool current = _gpuFrameCounterUP == _gpuFrameCounter;
+    _gpuFrameCounterUP = _gpuFrameCounter;
+    return not current;
+}
+///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
 
   EASY_PROFILER_ENABLE;
@@ -408,6 +415,9 @@ int OrkEzApp::mainThreadLoop() {
 
   auto glfw_ctx = _mainWindow->_ctqt;
 
+  glfw_ctx->_gpu_misc_updates.push_back([this](lev2::Context* context) {
+    this->_gpuFrameCounter++;
+  });
   ///////////////////////////////
   // update thread implementation
   ///////////////////////////////

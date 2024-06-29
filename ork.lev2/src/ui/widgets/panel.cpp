@@ -8,6 +8,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/profiling.inl>
 
 namespace ork { namespace ui {
 
@@ -223,7 +224,10 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   //////////////////////////////
   int ilocx = 0;
   int ilocy = 0;
+  EASY_BLOCK("uictx::Panel::DOUIEV::R2L", profiler::colors::Red);
   RootToLocal(evx, evy, ilocx, ilocy);
+  EASY_END_BLOCK;
+  EASY_BLOCK("uictx::Panel::DOUIEV::2", profiler::colors::Red);
   //////////////////////////////
   const auto& filtev = Ev->mFilteredEvent;
   switch (filtev._eventcode) {

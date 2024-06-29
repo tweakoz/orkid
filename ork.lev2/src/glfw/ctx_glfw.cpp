@@ -540,7 +540,7 @@ int CtxGLFW::runloop() {
 
   while (_runstate == 1) {
 
-    EASY_BLOCK("render", profiler::colors::Red);
+    EASY_BLOCK("ctx_glfw::render::pollev", profiler::colors::Red);
 
     //////////////////////////////
     // poll UI/windowing system events
@@ -548,30 +548,52 @@ int CtxGLFW::runloop() {
 
     // glfwWaitEvents();
     glfwPollEvents();
+    
+    EASY_END_BLOCK;
 
     //////////////////////////////
     // run main thread app logic
     //////////////////////////////
 
+    EASY_BLOCK("ctx_glfw::render::rli", profiler::colors::Red);
+
     _onRunLoopIteration();
+
+    EASY_END_BLOCK;
 
     //////////////////////////////
     // redraw ?
     //////////////////////////////
 
+    EASY_BLOCK("ctx_glfw::render::gpuu", profiler::colors::Red);
+
     if (_onGpuUpdate) {
       _onGpuUpdate(_target);
     }
 
+    EASY_END_BLOCK;
+
+    EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
+
     if (_onGpuPreFrame) {
       _onGpuPreFrame(_target);
     }
-    
-    SlotRepaint();
 
+    EASY_END_BLOCK;
+
+    for( auto fn : _gpu_misc_updates ){
+      fn(_target);
+    }
+
+    EASY_BLOCK("ctx_glfw::render::repaint", profiler::colors::Red);
+    SlotRepaint();
+    EASY_END_BLOCK;
+
+    EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
     if (_onGpuPostFrame) {
       _onGpuPostFrame(_target);
     }
+    EASY_END_BLOCK;
 
     //////////////////////////////
     // check for closed window
@@ -796,6 +818,7 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   // ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
 
   ////////////////////////
+  opq::mainSerialQueue()->enqueue( [=](){
 
   auto uiev = this->uievent();
 
@@ -826,6 +849,7 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
                          : ork::ui::EventCode::RELEASE;
 
   _fire_ui_event();
+  });
 
   /////////////////////////
 }
@@ -844,17 +868,22 @@ void CtxGLFW::_on_callback_refresh() {
   gictr++;
 }
 void CtxGLFW::_on_callback_winresized(int w, int h) {
-  this->onResize(w, h);
-  auto uiev = this->uievent();
-  uiev->_eventcode  = ui::EventCode::RESIZED;
-  uiev->miScreenWidth = w;
-  uiev->miScreenHeight = h;
-  _fire_ui_event();
+  opq::mainSerialQueue()->enqueue( [=](){
+    this->onResize(w, h);
+    auto uiev = this->uievent();
+    uiev->_eventcode  = ui::EventCode::RESIZED;
+    uiev->miScreenWidth = w;
+    uiev->miScreenHeight = h;
+    _fire_ui_event();
+  });
 }
 void CtxGLFW::_on_callback_fbresized(int w, int h) {
+  opq::mainSerialQueue()->enqueue( [=](){
   this->onResize(w, h);
+  });
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
+  opq::mainSerialQueue()->enqueue( [=](){
   auto uiev = this->uievent();
   if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
     const char* clipboardText = glfwGetClipboardString(_glfwWindow);
@@ -867,24 +896,29 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
   }
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
+  });
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
-  auto uiev = this->uievent();
-  fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
-  //printf( "xoffset<%d> yoffset<%d>\n", xoffset, yoffset);
-  if (this->_buttonState == 0) {
-    uiev->_eventcode = ui::EventCode::MOVE; //
-    _fire_ui_event();
-  } else {
-    uiev->_eventcode = ui::EventCode::DRAG; //
-    _fire_ui_event();
-  }
+  EASY_BLOCK("ctx_glfw::render::OCC", profiler::colors::Red);
+  opq::mainSerialQueue()->enqueue( [=](){
+    auto uiev = this->uievent();
+    fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
+    //printf( "xoffset<%d> yoffset<%d>\n", xoffset, yoffset);
+    if (this->_buttonState == 0) {
+      uiev->_eventcode = ui::EventCode::MOVE; //
+      _fire_ui_event();
+    } else {
+      uiev->_eventcode = ui::EventCode::DRAG; //
+      _fire_ui_event();
+    }
+  });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_enterleave(int entered) {
   // printf("_glfw_callback_enterleave<%p> entered<%d>", window, entered);
 
   // ImGui_ImplGlfw_CursorEnterCallback(window, entered);
+  opq::mainSerialQueue()->enqueue( [=](){
 
   bool was_entered = bool(entered);
 
@@ -904,18 +938,24 @@ void CtxGLFW::_on_callback_enterleave(int entered) {
     }
   }
   _fire_ui_event();
+  });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_fire_ui_event() {
+  EASY_BLOCK("ctx_glfw::render::FUE", profiler::colors::Red);
   auto uiev        = this->uievent();
   auto gfxwin      = uiev->mpGfxWin;
   auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev->_uicontext = root ? root->_uicontext : nullptr;
-  if (root) {
-    uiev->setvpDim(root);
-    ui::Event::sendToContext(uiev);
-    //_pushTimer.Start();
-  }
+  auto op = [=]() {
+    if (root) {
+      uiev->setvpDim(root);
+      ui::Event::sendToContext(uiev);
+      //_pushTimer.Start();
+    }
+  };
+  op();
+  //opq::mainSerialQueue()->enqueue(op);
   // this->SlotRepaint(); // refresh UI after button event
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -110,11 +110,15 @@ struct CtxGLFW : public CTXBASE {
   ui::event_ptr_t _uievent;
   void_lambda_t _onRunLoopIteration;
   appinitdata_ptr_t _appinitdata;
-  std::function<void(Context*)> _onGpuInit;
-  std::function<void(Context*)> _onGpuUpdate;
-  std::function<void(Context*)> _onGpuPreFrame;
-  std::function<void(Context*)> _onGpuPostFrame;
-  std::function<void(Context*)> _onGpuExit;
+
+  using gpuupdfn_t = std::function<void(Context*)>;
+  gpuupdfn_t _onGpuInit;
+  gpuupdfn_t _onGpuUpdate;
+  gpuupdfn_t _onGpuPreFrame;
+  gpuupdfn_t _onGpuPostFrame;
+  gpuupdfn_t _onGpuExit;
+  std::vector<gpuupdfn_t> _gpu_misc_updates;
+
   GLFWmonitor* _glfwMonitor = nullptr;
   eventsink_glfw_ptr_t _eventSINK;
 };

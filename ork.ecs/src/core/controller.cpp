@@ -113,6 +113,7 @@ void Controller::updateExit() {
 void Controller::render(ui::drawevent_constptr_t drwev) {
   if(_needsGpuInit){
     gpuInit(drwev->_target);
+      _needsGpuInit = false;
   }
   auto sim = _simulation._unprotected_ref();
   if(sim){
