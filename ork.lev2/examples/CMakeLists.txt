@@ -1,3 +1,4 @@
+add_subdirectory (c++/bufperftest)
 add_subdirectory (c++/cputexstream)
 add_subdirectory (c++/minimal2D)
 add_subdirectory (c++/minimal3D)
