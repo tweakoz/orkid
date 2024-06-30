@@ -302,7 +302,9 @@ vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
 ///////////////////////////////////////////////////////////////
 // vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_rigid_gbuffer_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
+vertex_shader vs_rigid_gbuffer_instanced //
+  : iface_vgbuffer_instanced //
+  : lib_pbr_vtx_instanced { //
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
@@ -317,9 +319,11 @@ vertex_shader vs_rigid_gbuffer_instanced : iface_vgbuffer_instanced : lib_pbr_vt
   gl_Position = mvp * instanced_pos;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_rigid_gbuffer_instanced_stereo : extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2)
-    : iface_vgbuffer_stereo_instanced : lib_pbr_vtx_instanced {
+vertex_shader vs_rigid_gbuffer_instanced_stereo //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+  : iface_vgbuffer_stereo_instanced //
+  : lib_pbr_vtx_instanced { //
   ////////////////////////////////
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;

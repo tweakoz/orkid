@@ -81,6 +81,8 @@ public:
   float _mass = 1.0f;
   float _angularDamping = 0.5f;
   float _linearDamping = 0.5f;
+  float _sleepThresholdLinear = 0.8f;
+  float _sleepThresholdAngular = 1.0f;
   bool _allowSleeping = true;
   bool _isKinematic = false;
   bool _disablePhysics = false;

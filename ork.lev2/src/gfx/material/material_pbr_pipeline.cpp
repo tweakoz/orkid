@@ -277,6 +277,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
     pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
     pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
+
     pipeline->_material             = (GfxMaterial*)mtl;
 
     for (auto l : mtl->_state_lambdas) {

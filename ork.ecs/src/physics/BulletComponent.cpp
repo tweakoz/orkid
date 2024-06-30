@@ -171,6 +171,7 @@ bool BulletObjectComponent::_onActivate(Simulation* sim) {
     _rigidbody->setRestitution(mBOCD._restitution);
     _rigidbody->setFriction(mBOCD._friction);
     _rigidbody->setDamping(mBOCD._linearDamping, mBOCD._angularDamping);
+    _rigidbody->setSleepingThresholds(mBOCD._sleepThresholdLinear, mBOCD._sleepThresholdAngular);
   }
   return true;
 }

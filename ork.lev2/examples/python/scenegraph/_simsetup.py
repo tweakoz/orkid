@@ -52,7 +52,7 @@ class InstanceSet(object):
       as_mtx4.compose(pos,quat(),sca)
       self.instancematrices[i]=as_mtx4
   ################################################
-  def clupdate(self):
+  def clupdate(self,dt):
     current = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.instancematrices)
     deltarot = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.delta_rots)
     deltatra = cl.Buffer(self.clkernel.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=self.delta_tras)

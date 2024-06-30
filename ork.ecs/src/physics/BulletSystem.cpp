@@ -169,7 +169,7 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
   btRigidBody* rigid_body         = nullptr;
   auto compdata                   = &component->mBOCD;
   _lastcomponentfordata[compdata] = component;
-
+  component->_birthtime           = _simulation->gameTime();
   const BulletSystemData& world_data = this->GetWorldData();
   const auto& CDATA                  = component->data();
 
@@ -207,8 +207,20 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
         fmtx4 mtx           = xform->composed();
         btTransform btTrans = orkmtx4tobtmtx4(mtx);
         ////////////////////////////////
+        float mass = CDATA._mass;
+        if(entity->_spawnanondata){
+          auto spawndata = entity->_spawnanondata;
+          auto table = spawndata->_table;
+          if(table){
+            auto massprop = (*table)["mass"_crcu];
+            if(auto as_float = massprop.tryAs<float>()){
+              mass = as_float.value();
+            }
+          }
+        }
+        ////////////////////////////////
         rigid_body = this->AddLocalRigidBody(
-            shape_create_data.mEntity, CDATA._mass, btTrans, pshape, CDATA._groupAssign, CDATA._groupCollidesWith);
+            shape_create_data.mEntity, mass, btTrans, pshape, CDATA._groupAssign, CDATA._groupCollidesWith);
 
         if (CDATA._collisionCallback != nullptr) {
           auto collision_tester         = std::make_shared<OrkContactResultCallback>(rigid_body);
@@ -261,6 +273,7 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component) {
       _updateKinematicComponents.insert(component);
     } else {
       _updateDynamicComponents.insert(component);
+      _updateCheckComponents.insert(component);
     }
   }
 
@@ -421,8 +434,8 @@ void BulletSystem::InitWorld() {
   cinfo.m_persistentManifoldPool = 0;
   cinfo.m_collisionAlgorithmPool = 0;
 
-  cinfo.m_defaultMaxPersistentManifoldPoolSize = 4096;
-  cinfo.m_defaultMaxCollisionAlgorithmPoolSize = 4096;
+  cinfo.m_defaultMaxPersistentManifoldPoolSize = 16384;
+  cinfo.m_defaultMaxCollisionAlgorithmPoolSize = 16384;
   // cinfo.m_defaultStackAllocatorSize = 64<<20; // 2MB
 
   // collision configuration contains default setup for memory, collision setup
@@ -447,7 +460,10 @@ void BulletSystem::InitWorld() {
   mBroadPhase = broadphase;
 
   mDynamicsWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadPhase, mSolver, mBtConfig);
-  mDynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
+  //mDynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
+  mDynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_CACHE_FRIENDLY;
+  mDynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_SIMD;
+  mDynamicsWorld->getSolverInfo().m_numIterations = 30;
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, _simulation);
   mDynamicsWorld->setDebugDrawer(_debugger);
   // auto G = orkv3tobtv3(_systemData.GetGravity());
@@ -518,6 +534,7 @@ void BulletSystem::_onUpdate(Simulation* inst) {
   EASY_BLOCK("BulletSystem::_onUpdate", profiler::colors::Cyan);
   if (mDynamicsWorld) {
     float dt = inst->deltaTime();
+    float gt = inst->gameTime();
     _fdtaccum += dt;
 
     float fps = 1.0f / _fdtaccum;
@@ -553,6 +570,81 @@ void BulletSystem::_onUpdate(Simulation* inst) {
         component->updateForces(_simulation, dt);
       }
       EASY_END_BLOCK;
+
+      /////////////////////////////////////////
+      // initial sleep at 10 seconds of age
+      /////////////////////////////////////////
+
+      size_t count = _updateCheckComponents._linear.size();
+      if (count) {
+        _deactivation_queue.clear();
+        size_t num_to_check = 500;       
+        size_t num = (count<num_to_check) ? count : num_to_check;
+        for( size_t i=0; i<num; i++ ){
+          size_t rand_item = rand() % count;
+          auto comp = _updateCheckComponents._linear[rand_item];
+          auto motstate = (EntMotionState*)comp->_rigidbody->getMotionState();
+          double energy = motstate->_energy.length();
+          //printf( "energy<%g>\n", energy);
+          float age = gt - comp->_birthtime;
+          if(energy<1 and age>15.0){
+            //printf("locking rbody<%p> energy<%g>\n", (void*)comp->_rigidbody, motstate->_energy.length());
+            auto rbody = comp->_rigidbody;
+            auto prev_state = rbody->getActivationState();
+            auto prev_flags = rbody->getCollisionFlags();
+             rbody->setActivationState(prev_state|ISLAND_SLEEPING|DISABLE_DEACTIVATION);
+            rbody->setCollisionFlags(prev_flags | btCollisionObject::CF_KINEMATIC_OBJECT);
+            mDynamicsWorld->removeRigidBody(rbody);
+
+            btScalar mass = 0.0; // Set mass to 0 for a static object
+            btVector3 localInertia(0, 0, 0); // No inertia for static objects
+
+            rbody->setMassProps(mass, localInertia);
+            rbody->updateInertiaTensor();
+
+            mDynamicsWorld->addRigidBody(rbody);
+            _deactivation_queue.insert(comp);
+            motstate->_permadeactived = true;
+            auto ent = comp->GetEntity();
+            auto sgcomp = ent->typedComponent<SceneGraphComponent>();
+            sgcomp->_onNotify(inst,"ChangeModColor"_crcu,fvec4(1,1,1,1));
+          }
+        }
+      }
+      /////////////////////////////////////////
+      for( auto comp : _deactivation_queue ){
+        _updateCheckComponents.remove(comp);
+        _updateForceComponents.remove(comp);
+        _sleptDynamicComponents.insert(comp);
+      }
+      _deactivation_queue.clear();
+      /////////////////////////////////////////
+      // permanent sleep at 30 seconds of age
+      /////////////////////////////////////////
+      count = _sleptDynamicComponents._linear.size();
+      size_t num_to_check = 100;       
+      size_t num = (count<num_to_check) ? count : num_to_check;
+      for( size_t i=0; i<num; i++ ){
+        size_t rand_item = rand() % count;
+        auto comp = _sleptDynamicComponents._linear[rand_item];
+        auto motstate = (EntMotionState*)comp->_rigidbody->getMotionState();
+        motstate->_counter++;
+        float age = gt - comp->_birthtime;
+        if( age>40.0f){
+          _deactivation_queue.insert(comp);
+        }
+      }
+      /////////////////////////////////////////
+      for( auto comp : _deactivation_queue ){
+        _sleptDynamicComponents.remove(comp);
+          auto rbody = comp->_rigidbody;
+          //printf("removing rbody<%p> \n", (void*)rbody);
+          auto ent = comp->GetEntity();
+          auto sgcomp = ent->typedComponent<SceneGraphComponent>();
+          sgcomp->_onNotify(inst,"ChangeModColor"_crcu,fvec4(0,0,0,1));
+          //mDynamicsWorld->removeRigidBody(rbody);
+      }
+      /////////////////////////////////////////
 
       EASY_BLOCK("simulation", profiler::colors::Cyan);
       int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);

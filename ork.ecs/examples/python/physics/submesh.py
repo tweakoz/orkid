@@ -24,8 +24,13 @@ from lev2utils.shaders import createPipeline
 ################################################################################
 tokens = core.CrcStringProxy()
 LAYERNAME = "std_deferred"
-NUM_BALLS = 2500
-RATE = 0.5
+NUM_BALLS = 8000
+RATE = 0.7
+SIMRATE = 60
+GROUP_STATIC = 1
+GROUP_BALL = 2
+GROUP_ENV = 4
+GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
 ################################################################################
 
@@ -35,10 +40,11 @@ class ECS_MINIMAL(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=1,fullscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
+    self.ents = list()
     
   ##############################################
 
@@ -56,7 +62,7 @@ class ECS_MINIMAL(object):
 
     systemdata_phys = self.ecsscene.declareSystem("BulletSystem")
     systemdata_phys.timeScale = 1.0
-    systemdata_phys.simulationRate = 60.0
+    systemdata_phys.simulationRate = SIMRATE
     systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
 
@@ -143,15 +149,19 @@ class ECS_MINIMAL(object):
     sphere = ecs.BulletShapeSphereData()
     sphere.radius = 1.0
 
-    c_physics.mass = 1.0
-    c_physics.friction = 0.3
-    c_physics.restitution = 0.45
-    c_physics.angularDamping = 0.01
-    c_physics.linearDamping = 0.01
+    c_physics.mass = 10.0
+    c_physics.friction = 0.1
+    c_physics.restitution = 0.1
+    c_physics.angularDamping = 0.1
+    c_physics.linearDamping = 0.1
+    c_physics.sleepThresholdLinear = 10
+    c_physics.sleepThresholdAngular = 10
     c_physics.allowSleeping = True
     c_physics.isKinematic = False
     c_physics.disablePhysics = False
     c_physics.shape = sphere
+    #c_physics.groupAssign = GROUP_BALL
+    #c_physics.groupCollidesWith = GROUP_ALL
 
     ############################
     # connect to instancing tech
@@ -228,6 +238,8 @@ class ECS_MINIMAL(object):
     c_physics.isKinematic = False
     c_physics.disablePhysics = True
     c_physics.shape = shape
+    #c_physics.groupAssign = GROUP_ENV
+    #c_physics.groupCollidesWith = GROUP_BALL|GROUP_STATIC
 
     #########################
     # visible mesh for room
@@ -243,7 +255,7 @@ class ECS_MINIMAL(object):
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_env
     env_spawner.autospawn = True
-    env_spawner.transform.translation = vec3(0,-10,0)
+    env_spawner.transform.translation = vec3(0,-15,0)
     env_spawner.transform.scale = 1.0
     
   ##############################################
@@ -297,16 +309,28 @@ class ECS_MINIMAL(object):
       prob = random.uniform(0,1)
       if prob<RATE and self.spawncounter < NUM_BALLS:
         self.spawncounter += 1
+        fi = float(self.spawncounter)/float(NUM_BALLS)
+        ifi = 1.0-fi
         SAD = ecs.SpawnAnonDynamic("ball_spawner")
         #SAD.overridexf.orientation = quat(vec3(0,1,0),0)
         #SAD.overridexf.scale = 1.0
-        SAD.overridexf.translation = vec3(i,15,j)
+        SAD.overridexf.translation = vec3(i,20,j)
         h = random.uniform(0,1)
         v = random.uniform(.25,2)
         rgb = vec3(h,1,v).hsv2rgb()
         SAD.table = ecs.DataTable()
         SAD.table[tokens.modcolor] = vec4(rgb,1)
-        self.controller.spawnEntity(SAD)
+        mass = 10.0 * pow(ifi,3)
+        SAD.table[tokens.mass] = mass
+        self.ents += [self.controller.spawnEntity(SAD)]
+      num_ents = len(self.ents)
+      #if num_ents>0:
+      #  rand_ent = random.randint(0,num_ents-1)
+      #  entref = self.ents[rand_ent]
+      #  bcomp = self.controller.findComponent(entref,"BulletObjectComponent")
+      #  print(bcomp)
+        #if sgcomp is not None:
+        #  sgcomp.node.transform.translation.y += 0.1
       
     ##############################
     # camera update

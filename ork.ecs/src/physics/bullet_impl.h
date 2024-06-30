@@ -133,6 +133,10 @@ public:
 
   Entity* mEntity;
   btTransform mTransform;
+  dvec3 _energy;
+  dvec3 _prevpos;
+  int _counter = 0;
+  bool _permadeactived = false;
 
   int _instance_id = -1;
   lev2::instanceddrawinstancedata_ptr_t _idata;
@@ -208,6 +212,7 @@ public:
   BulletShapeBaseInst* _shapeinst = nullptr;
   orkcontactcallback_ptr_t _collisionCallback;
   SceneGraphComponent* _mySGcomponentForInstancing = nullptr;
+  float _birthtime = 0.0;
   int _sginstance_id = -1;
   void _onNotify(Simulation* psi, token_t evID, evdata_t data ) final;
   void _onRequest(Simulation* psi, impl::comp_response_ptr_t response, token_t evID, evdata_t data) final;
@@ -285,8 +290,10 @@ public:
   fast_set<BulletObjectComponent*> _updateForceComponents;
   fast_set<BulletObjectComponent*> _updateKinematicComponents;
   fast_set<BulletObjectComponent*> _updateDynamicComponents;
+  fast_set<BulletObjectComponent*> _updateCheckComponents;
+  fast_set<BulletObjectComponent*> _sleptDynamicComponents;
   std::unordered_set<orkcontactcallback_ptr_t> _collisionCallbacks;
-  //std::vector<instance_applicator_ptr_t> _applicators;
+  std::unordered_set<BulletObjectComponent*> _deactivation_queue;
 };
 
 

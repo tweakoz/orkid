@@ -111,6 +111,8 @@ void EntMotionState::getWorldTransform(btTransform& transform) const {
 
 void EntMotionState::setWorldTransform(const btTransform& transform) {
 
+  _counter++;
+  
   if (mEntity) {
 
     ork::fvec3 position = btv3toorkv3(transform.getOrigin());
@@ -121,7 +123,11 @@ void EntMotionState::setWorldTransform(const btTransform& transform) {
       fmtx4 c;
       c.compose(position, rotation);
       _idata->_worldmatrices[_instance_id] = c;
-
+      auto dpos = ork::fvec3_to_dvec3(position);
+      auto delta = (dpos-_prevpos).absolute();
+      _energy += delta;
+      _energy = _energy * 0.99;
+      _prevpos = dpos;
     } else {
 
       auto out_xform          = mEntity->transform();

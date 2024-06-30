@@ -40,7 +40,7 @@ class instance_set_class(_simsetup.InstanceSet):
   # update matrices with OpenCL
   ########################################################
   def update(self,deltatime):
-    self.clupdate()
+    self.clupdate(deltatime)
     ############################################
     #assert(False)
 ################################################################################

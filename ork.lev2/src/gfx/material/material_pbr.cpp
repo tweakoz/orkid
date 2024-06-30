@@ -376,6 +376,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
+  _paramInstanceBlock  = fxi->parameterBlock(_shader, "ub_instancing");
 
   _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
 

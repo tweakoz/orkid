@@ -52,6 +52,14 @@ void pyinit_physics(py::module& module_ecs) {
               [](bulletcompdata_ptr_t physc) -> float { return physc->_linearDamping; },
               [](bulletcompdata_ptr_t& physc, float val) { physc->_linearDamping = val; })
           .def_property(
+              "sleepThresholdLinear",
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_sleepThresholdLinear; },
+              [](bulletcompdata_ptr_t& physc, float val) { physc->_sleepThresholdLinear = val; })
+          .def_property(
+              "sleepThresholdAngular",
+              [](bulletcompdata_ptr_t physc) -> float { return physc->_sleepThresholdAngular; },
+              [](bulletcompdata_ptr_t& physc, float val) { physc->_sleepThresholdAngular = val; })
+          .def_property(
               "allowSleeping",
               [](bulletcompdata_ptr_t physc) -> bool { return physc->_allowSleeping; },
               [](bulletcompdata_ptr_t& physc, bool val) { physc->_allowSleeping = val; })

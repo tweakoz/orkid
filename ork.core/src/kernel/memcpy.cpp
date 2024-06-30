@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <atomic>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/thread.h>
 #include <cstddef>
 
 #if defined(__APPLE__)
@@ -81,8 +82,109 @@ inline void _memcpy_accel(void* dest, const void* src, size_t n) { // accelerate
     vDSP_mmov((const float*)src, (float*)dest, n / sizeof(float), 1, n / sizeof(float), n / sizeof(float));
 }
 
+struct AsyncCopyOperation{
+  AsyncCopyOperation(int n) : _async_counter(n) {}
+  void finish(){
+    while (_async_counter.load()) {
+      ork::usleep(0);
+      //std::this_thread::yield();
+    }
+  }
+  std::atomic<int> _async_counter;
+};
+using async_copy_op_ptr_t = std::shared_ptr<AsyncCopyOperation>;
+
+struct copy_rec {
+    async_copy_op_ptr_t _async_op = nullptr;
+    void* _dest = nullptr;
+    const void* _src = nullptr;
+    size_t _n = 0;
+};
+
+
+using mpmc_queue_t = ork::MpMcBoundedQueue<copy_rec,4096>;
+
+struct ParallelMemoryCopier {
+
+  static constexpr size_t NUM_THREADS = 3;
+  mpmc_queue_t _mem_op_q;
+  std::vector<thread_ptr_t> _threads;
+  std::atomic<int> _run_state = -1;
+  //////////////////////////////////
+  void enqueue(copy_rec op) {
+    _mem_op_q.push(op);
+  }
+  //////////////////////////////////
+  static void _thread_impl(ParallelMemoryCopier* pmc) {
+
+    while (pmc->_run_state<1) {
+      copy_rec op;
+      if (pmc->_mem_op_q.try_pop(op)) {
+        memcpy(op._dest, op._src, op._n);
+        op._async_op->_async_counter.fetch_add(-1);
+      }
+      else{
+        std::this_thread::yield();
+        //::usleep(0);
+      }
+    }
+    pmc->_run_state++;
+  }
+  //////////////////////////////////
+  ParallelMemoryCopier(){
+    _run_state = 0;
+    auto L = [this](anyp data) {
+      ork::SetCurrentThreadName("ParallelMemoryCopier");
+      _thread_impl(this);
+    };
+    for (int i = 0; i < NUM_THREADS; ++i) {
+      thread_ptr_t thr = std::make_shared<Thread>();
+      thr->start(L);
+      _threads.push_back(thr);
+    }
+  }
+  //////////////////////////////////
+  ~ParallelMemoryCopier(){
+    _run_state = 1;
+    for (auto thr : _threads) {
+      thr->join();
+    }
+  }
+  //////////////////////////////////
+};
+using pmemcpy_ptr_t = std::shared_ptr<ParallelMemoryCopier>;
+
+static pmemcpy_ptr_t _gmemopq = std::make_shared<ParallelMemoryCopier>();
+
 void memcpy_fast(void* dest, const void* src, size_t length) {
-  _memcpy_accel(dest, src, length);
+  if(length>(8<<20)){
+    size_t part_size = 4<<20;
+    // split into N parts
+    size_t num_parts = (length + part_size - 1) / part_size;
+    copy_rec crec;
+    async_copy_op_ptr_t aop = std::make_shared<AsyncCopyOperation>(num_parts-1);
+    for (size_t i = 0; i < num_parts; ++i) {
+      size_t offset = i * part_size;
+      size_t this_part_size = (i == num_parts - 1) ? length - offset : part_size;
+      auto doff = (uint8_t*) dest + offset;
+      auto soff = (uint8_t*) src + offset;
+      if(i==(num_parts-1)){
+        memcpy(doff, soff, this_part_size);
+      }
+      else{
+        crec._async_op = aop;
+        crec._dest = doff;
+        crec._src = soff;
+        crec._n = this_part_size;
+        _gmemopq->enqueue(crec);
+      }
+    }
+    aop->finish();
+  }
+  else{
+    memcpy(dest, src, length);
+    //_memcpy_accel(dest, src, length);
+  }
 }
 
 

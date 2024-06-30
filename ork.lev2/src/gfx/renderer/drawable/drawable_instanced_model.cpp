@@ -86,7 +86,7 @@ void InstancedModelDrawable::gpuInit(Context* ctx) const {
   _instanceMatrixTex = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
   _instanceColorTex  = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
   _instanceIdTex     = Texture::createBlank(1024, 128, EBufferFormat::RGBA16UI);
-
+  
   _instanceMatrixTex->_debugName = "_instanceMatrixTex";
   _instanceColorTex->_debugName  = "_instanceColorTex";
   _instanceIdTex->_debugName     = "_instanceIdTex";

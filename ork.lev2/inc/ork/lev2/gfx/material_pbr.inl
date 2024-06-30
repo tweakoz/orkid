@@ -192,6 +192,7 @@ public:
   fxparam_constptr_t _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
   fxparam_constptr_t _paramInstanceIdMap     = nullptr; // 1k*1k texture containing instance pickids
   fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
+  const FxShaderParamBlock* _paramInstanceBlock = nullptr;
   ///////////////////////////////////////////
   texture_ptr_t _texColor;
   texture_ptr_t _texNormal;
