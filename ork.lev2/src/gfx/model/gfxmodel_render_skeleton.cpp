@@ -196,6 +196,7 @@ void XgmModel::RenderSkeleton(
         //bonelength = 0.2;
         BONECOLOR = fvec3(1, 0, 0);
       }
+      bonelength *= _skeleton->_visbonescale;
       float bl2 = bonelength * 0.1f;
       auto add_triangle = [&](fvec3 posa,
                               fvec3 cola, //

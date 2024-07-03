@@ -333,7 +333,15 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                       rval.append(jp->_numVerticesInfluenced);
                                     }
                                    return rval;
-                                 });
+                                 })
+                             .def_property(
+                                 "visualBoneScale",                                    //
+                                 [](xgmskeleton_ptr_t self) -> float { //
+                                   return self->_visbonescale;
+                                 },
+                                  [](xgmskeleton_ptr_t self, float f) { //
+                                    self->_visbonescale = f;
+                                  });
   type_codec->registerStdCodec<xgmskeleton_ptr_t>(animskel_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   struct LocalMatrixInterface {

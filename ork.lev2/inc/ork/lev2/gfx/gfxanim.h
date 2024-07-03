@@ -633,6 +633,7 @@ struct XgmSkeleton {
 
   std::string msSkelName;
 
+  float _visbonescale = 1.0f;
   fvec4 mBoundMin;
   fvec4 mBoundMax;
   fmtx4 mBindShapeMatrix;

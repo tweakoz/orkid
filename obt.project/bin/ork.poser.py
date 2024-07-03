@@ -26,6 +26,7 @@ parser.add_argument("-m", "--model", type=str, required=False, default="data://t
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
+parser.add_argument("-b", "--bonescale", type=float, default=1.0, help='bone scalar')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 
 ################################################################################
@@ -37,6 +38,7 @@ lightintens = args["lightintensity"]
 camdist = args["camdist"]
 envmap = args["envmap"]
 ssaa = args["ssaa"]
+bonescale = args["bonescale"]
 
 ################################################################################
 # make sure env vars are set before importing the engine...
@@ -51,10 +53,10 @@ os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
 from orkengine.core import *
 from orkengine.lev2 import *
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.shaders import *
+from lev2utils.primitives import createGridData
+from lev2utils.scenegraph import createSceneGraph
 tokens = CrcStringProxy()
 
 ################################################################################
@@ -117,6 +119,7 @@ class SceneGraphApp(object):
         jname = self.skeleton.jointName(i)
         self.joints_with_infs[jname] = infcount
     #print(self.joints_with_infs)
+    self.skeleton.visualBoneScale = bonescale
     parents_not_infs = set()
     for jname in self.joints_with_infs.keys():
       ji = self.skeleton.jointIndex(jname)
@@ -190,13 +193,13 @@ class SceneGraphApp(object):
         handled = True
     if uievent.code == tokens.KEY_DOWN.hashed:
       ##############################
-      if uievent.keycode == 32:
+      if uievent.keycode == ord(" "):
         self.localpose.bindPose()
         self.localpose.blendPoses()
         self.localpose.concatenate()
         handled = True
       ##############################
-      elif uievent.keycode == 66:
+      elif uievent.keycode == ord("B"):
         numbones = self.skeleton.numBones
         numjoints = self.skeleton.numJoints
         for i in range(0,numbones):
@@ -213,6 +216,11 @@ class SceneGraphApp(object):
           jname = jname.split("/")[-1]
           print("joint<%d:%s>"%(i,jname))
 
+      ##############################
+      elif uievent.keycode == ord("-"):
+        self.skeleton.visualBoneScale *= 0.9
+      elif uievent.keycode == ord("="):
+        self.skeleton.visualBoneScale *= 1.1        
       ##############################
       elif uievent.keycode == ord("A") or uievent.keycode == ord("S"):
         self.descendants = []
