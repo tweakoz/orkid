@@ -190,7 +190,6 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
             case 2:
               drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<2>");
-              printf("begin 3x3\n");
               mtl.begin(impl->_fxtechnique3x3, framedata);
               break;
             case 3:

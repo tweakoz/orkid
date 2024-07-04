@@ -34,15 +34,13 @@ void pyinit_pysys(py::module& module_ecs) {
                                 fxs.format("ecs::PythonSystemData(%p)", sysdata.get());
                                 return fxs.c_str();
                               })
-                          .def(
-                              "onSystemUpdate",
-                              [=](pysysdata_ptr_t sysdata, py::function pyfn) { //
-                                auto L = [=](simulation_ptr_t sim){
-                                  auto encoded   = type_codec->encode64(sim);
-                                  py::gil_scoped_acquire acquire;
-                                  pyfn(encoded);
-                                };
-                                sysdata->_onSystemUpdate = L; 
+                          .def_property(
+                              "systemUpdateScript",
+                              [=](pysysdata_ptr_t sysdata) -> std::string { //
+                                return sysdata->_sceneScriptPath.c_str(); 
+                              },
+                              [=](pysysdata_ptr_t sysdata, std::string path) { //
+                                sysdata->_sceneScriptPath = path; 
                               });
   type_codec->registerStdCodec<pysysdata_ptr_t>(pysys_type);
   /////////////////////////////////////////////////////////////////////////////////

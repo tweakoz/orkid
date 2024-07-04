@@ -87,9 +87,9 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
         = py::cast<py::function>(appinstance.attr("onUpdate"));
     rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
     rval->onUpdate([=](ork::ui::updatedata_ptr_t updata) { //
-      py::gil_scoped_acquire acquire;
       auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
       try {
+        py::gil_scoped_acquire acquire;
         pyfn.value()(updata);
       } catch (std::exception& e) {
         std::cerr << e.what();

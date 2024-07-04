@@ -45,8 +45,12 @@ static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ecs.pyctx",fvec
 struct GlobalState{
 
   GlobalState(){
-    Py_Initialize();
-    _globalInterpreter = PyThreadState_Get();
+    //Py_Initialize();
+
+    {
+      pybind11::gil_scoped_acquire acquire;
+      _globalInterpreter = PyThreadState_Get();
+    }
     _mainInterpreter = Py_NewInterpreter();
     logchan_pyctx->log("global python _mainInterpreter<%p>\n", (void*) _mainInterpreter );
   }
@@ -60,9 +64,11 @@ globalstate_ptr_t getGlobalState() {
 }
 
 PythonContext::PythonContext(Simulation* psi, PythonSystem* system){
+  _mainInterpreter = getGlobalState()->_mainInterpreter;
   _subInterpreter = Py_NewInterpreter();
+    PyEval_ReleaseThread(_subInterpreter);
     logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*) _subInterpreter );
-  PyThreadState_Swap(_subInterpreter);
+  //PyThreadState_Swap(_subInterpreter);
     logchan_pyctx->log("pyctx<%p> 1...\n", this );
    //pybind11::initialize_interpreter();
     //logchan_pyctx->log("pyctx<%p> created...\n", this );
@@ -82,13 +88,31 @@ PythonContext::~PythonContext(){
 
 void PythonContext::bindSubInterpreter(){
     logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this );
-  PyThreadState_Swap(_subInterpreter);
+    
+PyGILState_STATE parentGILState = PyGILState_Ensure();
+
+  // Save the current thread state and swap to subinterpreter
+  _saveInterpreter = PyThreadState_Swap(_subInterpreter);
+
+  // Release the GIL for the parent interpreter
+  PyEval_ReleaseThread(_saveInterpreter);
+
+  // Acquire the GIL for the subinterpreter
+  PyEval_AcquireThread(_subInterpreter);
     logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this );
 }
 void PythonContext::unbindSubInterpreter(){
     logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this );
-  PyThreadState_Swap(getGlobalState()->_mainInterpreter);
-    logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this );
+PyEval_ReleaseThread(_subInterpreter);
+
+  // Restore the saved thread state if there was one
+  if (_saveInterpreter) {
+    PyEval_AcquireThread(_saveInterpreter);
+    PyThreadState_Swap(_saveInterpreter);
+    logchan_pyctx->log("pyctx<%p> unbound subinterpreter, restored interpreter: %p\n", this, (void*)_saveInterpreter);
+    _saveInterpreter = nullptr;
+      }
+          logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this );
 }
 
 ScriptObject::ScriptObject() {

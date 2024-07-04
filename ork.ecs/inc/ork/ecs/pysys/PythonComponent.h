@@ -47,7 +47,7 @@ public:
   PythonSystemData();
   ///////////////////////////////////////////////////////
 
-  system_update_lambda_t _onSystemUpdate;
+  file::Path _sceneScriptPath;
   ork::ecs::System* createSystem(ork::ecs::Simulation* pinst) const final;
 };
 

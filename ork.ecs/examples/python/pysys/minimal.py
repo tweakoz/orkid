@@ -38,11 +38,6 @@ class PYSYS_MINIMAL(object):
     
   ##############################################
 
-  def onPythonSystemUpdate(self,x):
-    assert(False)
-
-  ##############################################
-
   def ecsInit(self):
 
     ####################
@@ -56,7 +51,7 @@ class PYSYS_MINIMAL(object):
     ##############################################
 
     systemdata_python = self.ecsscene.declareSystem("PythonSystem")
-    systemdata_python.onSystemUpdate( lambda x: self.onPythonSystemUpdate(x) )
+    systemdata_python.systemUpdateScript = str(this_dir/"system_update.py")
     #systemdata_python.simulationRate = 240.0
     #systemdata_python.debug = False
     #systemdata_python.linGravity = vec3(0,-9.8*3,0)

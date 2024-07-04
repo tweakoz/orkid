@@ -87,12 +87,19 @@ public:
   void _onUnstage(Simulation* inst) override;
   bool _onActivate(Simulation* psi) override;
   void _onDeactivate(Simulation* inst) override;
+  void __pcall(pybind11::object);
 
   anyp mPythonManager;
   std::string mScriptText;
   std::map<ork::file::Path, pysys::ScriptObject*> mScriptObjects;
   std::unordered_set<PythonComponent*> _activeComponents;
   system_update_lambda_t _onSystemUpdate;
+  pybind11::object _systemScript;
+  pybind11::object _pymethodOnSystemUpdate;
+  pybind11::object _pymethodOnSystemInit;
+  pybind11::object _pymethodOnSystemLink;
+  pybind11::object _pymethodOnSystemActivate;
+  pybind11::object _pymethodOnSystemStage;
 
   //int mScriptRef;
 };
@@ -112,6 +119,8 @@ struct PythonContext {
   Simulation* mSimulation = nullptr;
   PythonSystem* _python_system = nullptr;
   PyThreadState* _subInterpreter = nullptr;
+  PyThreadState* _mainInterpreter = nullptr;
+  PyThreadState* _saveInterpreter = nullptr;
 
   std::unordered_map<uint64_t,scriptwrapper_t> _tokwrappers;
 
