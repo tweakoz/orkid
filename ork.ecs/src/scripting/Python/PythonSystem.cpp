@@ -146,6 +146,15 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       _systemScript.attr("__file__") = abspath;
       pybind11::dict globals         = _systemScript.attr("__dict__");
       globals["__file__"]            = abspath;
+
+      pybind11::module_ sys = pybind11::module_::import("sys");
+      pybind11::list original_sys_path = sys.attr("path");
+      pybind11::module_ math = pybind11::module_::import("math");
+      globals["math"] = math;
+      pybind11::module_ ecssim = pybind11::module_::import("orkengine.ecssim");
+      globals["ECS"] = ecssim;
+      sys.attr("path") = pybind11::list();
+
       if (1) {
         pybind11::exec(mScriptText.c_str(), globals, globals);
       } else {
