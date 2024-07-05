@@ -174,6 +174,10 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       // from orkengine.core import CrcString
       pybind11::module_ core = pybind11::module_::import("orkengine.core");
       globals["core"]        = core; // core.attr("CrcString");
+
+      pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
+      globals["CL"]        = OPENCL; // core.attr("CrcString");
+
       // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
 
       // auto module_core = py::module::create_extension_module(
