@@ -259,43 +259,25 @@ Context::~Context() {
 static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ork.pyctx", fvec3(0.9, 0.6, 0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct GlobalState {
-
-  GlobalState() {
-    // Py_Initialize();
-
-    {
-      pybind11::gil_scoped_acquire acquire;
-      _globalInterpreter = PyThreadState_Get();
-    }
-    _mainInterpreter = Py_NewInterpreter();
-    logchan_pyctx->log("global python _mainInterpreter<%p>\n", (void*)_mainInterpreter);
+/*
+GlobalState::GlobalState() {
+  {
+    pybind11::gil_scoped_acquire acquire;
+    _globalInterpreter = PyThreadState_Get();
   }
-  PyThreadState* _mainInterpreter   = nullptr;
-  PyThreadState* _globalInterpreter = nullptr;
-};
-
-using globalstate_ptr_t = std::shared_ptr<GlobalState>;
+  _mainInterpreter = Py_NewInterpreter();
+  logchan_pyctx->log("global python _mainInterpreter<%p>\n", (void*)_mainInterpreter);
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
-globalstate_ptr_t getGlobalState() {
-  static globalstate_ptr_t gstate = std::make_shared<GlobalState>();
-  return gstate;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-Context2::Context2() {
-  _mainInterpreter = getGlobalState()->_mainInterpreter;
+Context2::Context2(globalstate_ptr_t gstate) {
+	_gstate = gstate;
+  _mainInterpreter = _gstate->_mainInterpreter;
   _subInterpreter  = Py_NewInterpreter();
   PyEval_ReleaseThread(_subInterpreter);
   logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
-  // PyThreadState_Swap(_subInterpreter);
   logchan_pyctx->log("pyctx<%p> 1...\n", this);
-  // pybind11::initialize_interpreter();
-  // logchan_pyctx->log("pyctx<%p> created...\n", this );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,7 +290,7 @@ Context2::~Context2() {
   logchan_pyctx->log("~pyctx<%p> end<%p>\n", this, (void*)_subInterpreter);
   Py_EndInterpreter(_subInterpreter);
   logchan_pyctx->log("~pyctx<%p> renable main\n", this);
-  PyThreadState_Swap(getGlobalState()->_mainInterpreter);
+  PyThreadState_Swap(_gstate->_mainInterpreter);
   // Py_Finalize();
 }
 

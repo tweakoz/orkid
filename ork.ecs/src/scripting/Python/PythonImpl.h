@@ -19,6 +19,7 @@
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/pybind11.h>
 #include <ork/python/pycodec.h>
+#include <ork/python/context.h>
 
 namespace ork::ecs::pysys {
 
@@ -37,8 +38,14 @@ namespace ork::ecs {
 
 namespace pysys {
 
-struct GlobalState;
-using globalstate_ptr_t = std::shared_ptr<GlobalState>;
+struct EcsGlobalState{
+  EcsGlobalState();
+  PyThreadState* _mainInterpreter = nullptr;
+  PyThreadState* _globalInterpreter = nullptr;
+};
+
+using GSTATE = ::ork::python::GlobalState;
+using gstate_ptr_t = std::shared_ptr<GSTATE>;
 
 struct PythonContext;
 using pythoncontext_ptr_t = std::shared_ptr<PythonContext>;
@@ -129,7 +136,9 @@ public:
       OrkAssert(false);
     }
   }
-  pysys::pythoncontext_ptr_t _pythonContext;
+  //using pyctx_t = pysys::PythonContext;
+  using pyctx_t = ::ork::python::Context2;
+  std::shared_ptr<pyctx_t> _pythonContext;
   std::string mScriptText;
   std::map<ork::file::Path, pysys::ScriptObject*> mScriptObjects;
   std::unordered_set<PythonComponent*> _activeComponents;
@@ -148,24 +157,6 @@ public:
 } // namespace ork::ecs {
 
 namespace ork::ecs::pysys {
-
-struct PythonContext {
-  
-  PythonContext(Simulation* psi, PythonSystem* system);
-  ~PythonContext();
-  //lua_State* mLuaState = nullptr;
-  Simulation* mSimulation = nullptr;
-  PythonSystem* _python_system = nullptr;
-  PyThreadState* _subInterpreter = nullptr;
-  PyThreadState* _mainInterpreter = nullptr;
-  PyThreadState* _saveInterpreter = nullptr;
-
-  std::unordered_map<uint64_t,scriptwrapper_t> _tokwrappers;
-
-  void bindSubInterpreter();
-  void unbindSubInterpreter();
-
-};
 
 struct ScriptObject {
   ScriptObject();

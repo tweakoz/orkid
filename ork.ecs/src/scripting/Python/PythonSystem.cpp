@@ -80,6 +80,11 @@ System* PythonSystemData::createSystem(ork::ecs::Simulation* pinst) const {
   return new PythonSystem(*this, pinst);
 }
 
+std::shared_ptr<pysys::EcsGlobalState> getGlobalState() {
+  static auto gstate = std::make_shared<pysys::EcsGlobalState>();
+  return gstate;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst)
@@ -89,7 +94,11 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   //_onSystemUpdate = data._onSystemUpdate;
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
-  _pythonContext = std::make_shared<pysys::PythonContext>(pinst, this);
+  auto ecsgstate = getGlobalState();
+  auto gstate = std::make_shared<::ork::python::GlobalState>();
+  gstate->_mainInterpreter = ecsgstate->_mainInterpreter;
+  gstate->_globalInterpreter = ecsgstate->_globalInterpreter;
+  _pythonContext = std::make_shared<pyctx_t>(gstate);
 
   // pybind11::scoped_interpreter guard{};
 

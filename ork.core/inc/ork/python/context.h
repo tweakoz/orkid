@@ -32,9 +32,19 @@ Context& context();
 
 bool isPythonEnabled();
 
+struct GlobalState {
+
+  //GlobalState();
+
+  PyThreadState* _mainInterpreter   = nullptr;
+  PyThreadState* _globalInterpreter = nullptr;
+};
+
+using globalstate_ptr_t = std::shared_ptr<GlobalState>;
+
 struct Context2 {
   
-  Context2();
+  Context2(globalstate_ptr_t ptr);
   ~Context2();
 
   PyThreadState* _subInterpreter = nullptr;
@@ -43,6 +53,7 @@ struct Context2 {
 
   void bindSubInterpreter();
   void unbindSubInterpreter();
+	globalstate_ptr_t _gstate;
 
 };
 
