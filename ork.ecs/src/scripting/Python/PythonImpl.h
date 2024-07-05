@@ -13,11 +13,12 @@
 #include <ork/ecs/component.h>
 #include <ork/ecs/system.h>
 #include <ork/ecs/pysys/PythonComponent.h>
-//#include "LuaBindings.h"
+#include <ork/util/logger.h>
 
 #include <Python.h>
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/pybind11.h>
+#include <ork/python/pycodec.h>
 
 namespace ork::ecs::pysys {
 
@@ -27,8 +28,22 @@ struct ScriptObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+namespace ork::ecssim {
+  extern ::ork::python::typecodec_ptr_t simonly_codec_instance();
+}
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
+
+namespace pysys {
+
+struct GlobalState;
+using globalstate_ptr_t = std::shared_ptr<GlobalState>;
+
+struct PythonContext;
+using pythoncontext_ptr_t = std::shared_ptr<PythonContext>;
+
+}
 
 struct PythonComponent : public ecs::Component {
   DeclareAbstractX(PythonComponent, ecs::Component);
@@ -67,10 +82,6 @@ public:
 
   PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst);
 
-  anyp getManager() {
-    return mPythonManager;
-  }
-
   pysys::ScriptObject* FlyweightScriptObject(const ork::file::Path& key);
 
   friend struct PythonComponent;
@@ -80,16 +91,45 @@ public:
   void _onActivateComponent(PythonComponent* component);
   void _onDeactivateComponent(PythonComponent* component);
 
-  bool _onLink(Simulation* psi) override;
-  void _onUnLink(Simulation* psi) override;
-  void _onUpdate(Simulation* inst) override;
-  bool _onStage(Simulation* psi) override;
-  void _onUnstage(Simulation* inst) override;
-  bool _onActivate(Simulation* psi) override;
-  void _onDeactivate(Simulation* inst) override;
-  void __pcall(pybind11::object);
+  bool _onLink(Simulation* psi) final;
+  void _onUnLink(Simulation* psi) final;
+  void _onUpdate(Simulation* inst) final;
+  bool _onStage(Simulation* psi) final;
+  void _onUnstage(Simulation* inst) final;
+  bool _onActivate(Simulation* psi) final;
+  void _onDeactivate(Simulation* inst) final;
+  void _onNotify(token_t evID, evdata_t data) final;
 
-  anyp mPythonManager;
+  template <typename Arg>
+  auto process_arg(Arg&& arg) {
+      //auto type_codec = ecssim::simonly_codec_instance();
+        auto type_codec = ork::python::TypeCodec::instance();
+
+      return type_codec->encode(std::forward<Arg>(arg));
+  }
+
+  template <typename... A> void __pcallargs(logchannel_ptr_t lchan, pybind11::object fn_object,A&&... args){
+    try {
+
+        auto process_args = [&](auto&&... processed_args) {
+            fn_object(std::forward<decltype(processed_args)>(processed_args)...);
+        };
+
+        // Process each argument and expand them
+        process_args(process_arg(std::forward<A>(args))...);
+
+      //fn_object( args );
+    } catch (pybind11::error_already_set& e) {
+      lchan->log("Error executing Python script:\n");
+      e.restore();
+      PyErr_Print();
+      OrkAssert(false);
+    } catch (const std::exception& e) {
+      lchan->log("Error executing Python script: %s\n", e.what());
+      OrkAssert(false);
+    }
+  }
+  pysys::pythoncontext_ptr_t _pythonContext;
   std::string mScriptText;
   std::map<ork::file::Path, pysys::ScriptObject*> mScriptObjects;
   std::unordered_set<PythonComponent*> _activeComponents;
@@ -100,6 +140,7 @@ public:
   pybind11::object _pymethodOnSystemLink;
   pybind11::object _pymethodOnSystemActivate;
   pybind11::object _pymethodOnSystemStage;
+  pybind11::object _pymethodOnSystemNotify;
 
   //int mScriptRef;
 };
@@ -107,9 +148,6 @@ public:
 } // namespace ork::ecs {
 
 namespace ork::ecs::pysys {
-
-struct GlobalState;
-using globalstate_ptr_t = std::shared_ptr<GlobalState>;
 
 struct PythonContext {
   

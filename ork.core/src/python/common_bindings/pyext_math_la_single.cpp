@@ -5,13 +5,12 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pyext.h"
+//#include "pyext.h"
 #include "pyext_math_la.inl"
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-void pyinit_math_la_float(py::module& module_core) {
-  pyinit_math_la_t<float>(module_core, "");
-  auto type_codec = python::TypeCodec::instance();
+namespace ork::python {
+void init_math_la_float(py::module& module_core,python::typecodec_ptr_t type_codec) {
+  pyinit_math_la_t<float>(module_core, "", type_codec);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto dcxf2str = [](const DecompTransform& dcxf) -> std::string {

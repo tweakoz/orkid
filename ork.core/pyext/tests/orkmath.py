@@ -80,7 +80,7 @@ def do_frustum_check(fov_degrees = 0.0,
   # 
   pmatrix = mtx4.perspective(fov_radians,aspect,near,far)
   pmatrix.dump("pmtx")
-  frus = Frustum(mtx4(),pmatrix)
+  frus = frustum(mtx4(),pmatrix)
 
 
   #print("frustum.xnormal: ",frus.xNormal)

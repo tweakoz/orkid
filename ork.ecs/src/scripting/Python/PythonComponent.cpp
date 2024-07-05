@@ -87,8 +87,6 @@ PythonComponent::PythonComponent(const PythonComponentData& data, ecs::Entity* p
 void PythonComponent::_onUninitialize(ork::ecs::Simulation* psi) {
   if (mScriptObject) {
     auto scm      = psi->findSystem<PythonSystem>();
-    auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
-    OrkAssert(as_ctx);
     /*
     auto L                = as_ctx->mPythonState;
     PythonIntf::PythonState lua = L;
@@ -120,9 +118,6 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
     logerrchannel()->log( "PythonComponent::_onLink: scm is nullptr!!!!" );
     return false;
   }
-
-  auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
-  OrkAssert(as_ctx);
   /*
   auto L                = as_ctx->mPythonState;
   PythonIntf::PythonState lua = L;
@@ -148,7 +143,7 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
   }
 
   if (mScriptObject) {
-    auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
+    auto as_ctx = scm->_pythonContext.getShared<PythonContext>();
     OrkAssert(as_ctx);
     auto L                = as_ctx->mPythonState;
     PythonIntf::PythonState lua = L;
@@ -174,8 +169,7 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
 void PythonComponent::_onUnlink(ork::ecs::Simulation* psi) {
   if (mScriptObject) {
     auto scm      = psi->findSystem<PythonSystem>();
-    auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
-    OrkAssert(as_ctx);
+
     /*
     auto L                = as_ctx->mPythonState;
     PythonIntf::PythonState lua = L;
@@ -198,8 +192,6 @@ bool PythonComponent::_onStage(ork::ecs::Simulation* sim) {
   logchan_pysyscomp->log("PythonComponent::_onStage: mScriptObject<%p>", mScriptObject);
   if (mScriptObject) {
     auto scm      = sim->findSystem<PythonSystem>();
-    auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
-    OrkAssert(as_ctx);
     /*
     auto L                = as_ctx->mPythonState;
     PythonIntf::PythonState lua = L;
@@ -221,8 +213,6 @@ bool PythonComponent::_onStage(ork::ecs::Simulation* sim) {
 void PythonComponent::_onUnstage(ork::ecs::Simulation* psi) {
   if (mScriptObject) {
     auto scm      = psi->findSystem<PythonSystem>();
-    auto as_ctx = scm->getManager().get<pysys::PythonContext*>();
-    OrkAssert(as_ctx);
     /*
     auto L                = as_ctx->mPythonState;
     PythonIntf::PythonState lua = L;
@@ -278,7 +268,7 @@ void PythonComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
     //printf("  _onNotify<%p>\n", mScriptObject->mOnNotify);
 
     if (mScriptObject->mOnNotify >= 0) {
-      auto asluactx = scm->getManager().get<pysys::PythonContext*>();
+      auto asluactx = scm->_pythonContext.getShared<PythonContext>();
       OrkAssert(asluactx);
       auto L   = asluactx->mPythonState;
       auto ent = this->GetEntity();

@@ -24,8 +24,30 @@
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/simulation.inl>
 
-// #include "LuaIntf/LuaIntf.h"
 #include "PythonImpl.h"
+
+namespace py = pybind11;
+using namespace pybind11::literals;
+
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::python {
+void init_crcstring(py::module& module_core, python::typecodec_ptr_t type_codec);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::ecssim {
+
+using namespace ::ork::python;
+
+typecodec_ptr_t simonly_codec_instance() { // static
+  struct TypeCodecFactory : public TypeCodec {
+    TypeCodecFactory()
+        : TypeCodec(){};
+  };
+  static auto _instance = std::make_shared<TypeCodecFactory>();
+  return _instance;
+}
+} // namespace ork::ecssim
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,8 +89,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   //_onSystemUpdate = data._onSystemUpdate;
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
-  auto pyctx = new pysys::PythonContext(pinst, this);
-  mPythonManager.set<pysys::PythonContext*>(pyctx);
+  _pythonContext = std::make_shared<pysys::PythonContext>(pinst, this);
 
   // pybind11::scoped_interpreter guard{};
 
@@ -76,22 +97,22 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
   auto AppendPath = [&](const char* pth) {
     /*
-    lua_getglobal(pyctx->mLuaState, "package");
-    lua_getfield(pyctx->mLuaState, -1, "path");
+    lua_getglobal(_pythonContext->mLuaState, "package");
+    lua_getfield(_pythonContext->mLuaState, -1, "path");
 
     //logchan_pysys->log("PythonSystem AppendPath pth<%s>", pth );
 
-    auto orig_path = lua_tostring(pyctx->mLuaState, -1);
+    auto orig_path = lua_tostring(_pythonContext->mLuaState, -1);
 
     //logchan_pysys->log("PythonSystem AppendPath orig_path<%s>", orig_path );
 
     fxstring<1024> lua_path;
     lua_path.format("%s;%s", orig_path, pth);
 
-    lua_pop(pyctx->mLuaState, 1);
-    lua_pushstring(pyctx->mLuaState, lua_path.c_str());
-    lua_setfield(pyctx->mLuaState, -2, "path");
-    lua_pop(pyctx->mLuaState, 1);
+    lua_pop(_pythonContext->mLuaState, 1);
+    lua_pushstring(_pythonContext->mLuaState, lua_path.c_str());
+    lua_setfield(_pythonContext->mLuaState, -2, "path");
+    lua_pop(_pythonContext->mLuaState, 1);
 
     logchan_pysys->log("PythonSystem AppendPath lua_path<%s>", lua_path.c_str() );
     */
@@ -125,7 +146,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   auto path      = data._sceneScriptPath;
   auto abspath   = path.toAbsolute();
 
-  pyctx->bindSubInterpreter();
+  _pythonContext->bindSubInterpreter();
   if (abspath.doesPathExist()) {
     File scriptfile(abspath, EFM_READ);
     size_t filesize = 0;
@@ -137,9 +158,6 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     // printf( "%s\n", scripttext);
     free(scripttext);
 
-    auto as_context = mPythonManager.get<pysys::PythonContext*>();
-    OrkAssert(as_context);
-
     try {
       // Execute the script in the subinterpreter context and capture the module
       _systemScript                  = pybind11::module_::import("__main__");
@@ -147,12 +165,20 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       pybind11::dict globals         = _systemScript.attr("__dict__");
       globals["__file__"]            = abspath;
 
-      pybind11::module_ sys = pybind11::module_::import("sys");
+      pybind11::module_ sys            = pybind11::module_::import("sys");
       pybind11::list original_sys_path = sys.attr("path");
-      pybind11::module_ math = pybind11::module_::import("math");
-      globals["math"] = math;
-      pybind11::module_ ecssim = pybind11::module_::import("orkengine.ecssim");
-      globals["ECS"] = ecssim;
+      pybind11::module_ math           = pybind11::module_::import("math");
+      globals["math"]                  = math;
+      pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
+      globals["ECS"]                   = ecssim;
+      // from orkengine.core import CrcString
+      pybind11::module_ core = pybind11::module_::import("orkengine.core");
+      globals["core"]        = core; // core.attr("CrcString");
+      // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
+
+      // auto module_core = py::module::create_extension_module(
+      //"core", nullptr, new py::module_::module_def );
+      //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
       sys.attr("path") = pybind11::list();
 
       if (1) {
@@ -182,10 +208,12 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       if (globals.contains("onSystemStage")) {
         _pymethodOnSystemStage = globals["onSystemStage"];
       }
-
+      if (globals.contains("onSystemNotify")) {
+        _pymethodOnSystemNotify = globals["onSystemNotify"];
+      }
 
       if (_pymethodOnSystemInit) {
-        _pymethodOnSystemInit();
+        __pcallargs(logchan_pysys, _pymethodOnSystemInit, pinst);
       }
 
     } catch (pybind11::error_already_set& e) {
@@ -198,25 +226,8 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       OrkAssert(false);
     }
   }
-  pyctx->unbindSubInterpreter();
+  _pythonContext->unbindSubInterpreter();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PythonSystem::__pcall(pybind11::object call){
-  try {
-    call();
-  } catch (pybind11::error_already_set& e) {
-    logchan_pysys->log("Error executing Python script:\n");
-    e.restore();
-    PyErr_Print();
-    OrkAssert(false);
-  } catch (const std::exception& e) {
-    logchan_pysys->log("Error executing Python script: %s\n", e.what());
-    OrkAssert(false);
-  }
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -229,25 +240,14 @@ PythonSystem::~PythonSystem() {
     auto so = item.second;
     delete so;
   }
-
-  //////////////////////////////
-  // delete lua context
-  //////////////////////////////
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  delete as_context;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onActivateComponent(PythonComponent* component) {
 
-  auto as_context = this->getManager().get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-
-
   /*
-  auto L = as_context->mLuaState;
+  auto L = _pythonContext->mLuaState;
 
   auto ent  = component->GetEntity();
   auto name = ent->name().c_str();
@@ -272,9 +272,8 @@ void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
   auto it = _activeComponents.find(component);
   _activeComponents.erase(component);
   /*
-  auto as_context = this->getManager().get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  auto L = as_context->mLuaState;
+
+  auto L = _pythonContext->mLuaState;
 
   if (component->mScriptObject->mOnEntDeactivate >= 0) {
 
@@ -302,13 +301,11 @@ bool PythonSystem::_onLink(Simulation* psi) // final
 {
   logchan_pysys->log("_onLink() ");
   // printf("PythonSystem::DoLink()\n");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneLink");
+  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
   if (_pymethodOnSystemLink) {
-    as_context->bindSubInterpreter();
-    __pcall(_pymethodOnSystemLink);
-    as_context->unbindSubInterpreter();
+    _pythonContext->bindSubInterpreter();
+    __pcallargs(logchan_pysys, _pymethodOnSystemLink, psi);
+    _pythonContext->unbindSubInterpreter();
   }
 
   return true;
@@ -320,9 +317,7 @@ void PythonSystem::_onUnLink(Simulation* psi) // final
 {
   logchan_pysys->log("_onUnLink() ");
   // printf("PythonSystem::DoUnLink()\n");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneUnLink");
+  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneUnLink");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,59 +325,65 @@ void PythonSystem::_onUnLink(Simulation* psi) // final
 bool PythonSystem::_onActivate(Simulation* psi) // final
 {
   logchan_pysys->log("_onActivate() ");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneStart");
+  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStart");
   if (_pymethodOnSystemActivate) {
-    as_context->bindSubInterpreter();
-    __pcall(_pymethodOnSystemActivate);
-    as_context->unbindSubInterpreter();
+    _pythonContext->bindSubInterpreter();
+    __pcallargs(logchan_pysys, _pymethodOnSystemActivate, psi);
+    _pythonContext->unbindSubInterpreter();
   }
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PythonSystem::_onDeactivate(Simulation* inst) // final
+void PythonSystem::_onDeactivate(Simulation* psi) // final
 {
   logchan_pysys->log("_onDeactivate() ");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneStop");
+  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStop");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PythonSystem::_onStage(Simulation* inst) {
+bool PythonSystem::_onStage(Simulation* psi) {
   logchan_pysys->log("_onStage() ");
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
   if (_pymethodOnSystemStage) {
-    as_context->bindSubInterpreter();
-    __pcall(_pymethodOnSystemStage);
-    as_context->unbindSubInterpreter();
+    _pythonContext->bindSubInterpreter();
+    __pcallargs(logchan_pysys, _pymethodOnSystemStage, psi);
+    _pythonContext->unbindSubInterpreter();
   }
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PythonSystem::_onUnstage(Simulation* inst) {
+void PythonSystem::_onUnstage(Simulation* psi) {
   logchan_pysys->log("_onUnstage() ");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PythonSystem::_onNotify(token_t evID, evdata_t data) {
+  bool has_notify = bool(_pymethodOnSystemNotify);
+  if (has_notify) {
+    // logchan_pysys->log("_onNotify() %d", int(has_notify));
+    auto evIDcrc = std::make_shared<CrcString>();
+    (*evIDcrc)   = evID;
+    //_pythonContext->bindSubInterpreter();
+    auto table = data.getShared<DataTable>();
+    __pcallargs(logchan_pysys, _pymethodOnSystemNotify, simulation(), evIDcrc, table);
+    //_pythonContext->unbindSubInterpreter();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onUpdate(Simulation* psi) // final
 {
-  auto as_context = mPythonManager.get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
 
   if (_pymethodOnSystemUpdate) {
-    __pcall(_pymethodOnSystemUpdate);
+    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate, psi);
   }
 
   if (_onSystemUpdate) {
@@ -393,19 +394,18 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
   }
   /*
 
-  auto lstate = as_context->mLuaState;
+  auto lstate = _pythonContext->mLuaState;
 
   //logchan_pysys->log( "_onUpdate() ");
 
-  // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
+  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
 
   if (kUSEEXECTABUPDATE) {
-    // luabind::object o(as_context->mLuaState, dt );
-    // LuaProtectedCallByName( as_context->mLuaState, mScriptRef, "UpdateSceneEntities",ldt);
+    // luabind::object o(_pythonContext->mLuaState, dt );
+    // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "UpdateSceneEntities",ldt);
   } else {
-    auto as_context = this->getManager().get<pysys::PythonContext*>();
-    OrkAssert(as_context);
-    auto L = as_context->mLuaState;
+
+    auto L = _pythonContext->mLuaState;
     for (auto c : _activeComponents) {
       if (c->mScriptObject) {
         if (c->mScriptObject->mOnEntUpdate >= 0) {
@@ -433,9 +433,8 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
 /*
 ScriptObject* PythonSystem::FlyweightScriptObject(const ork::file::Path& pth) {
   auto abspath  = pth.toAbsolute();
-  auto as_context = getManager().get<pysys::PythonContext*>();
-  OrkAssert(as_context);
-  auto luast = as_context->mLuaState;
+
+  auto luast = _pythonContext->mLuaState;
 
   ScriptObject* rval = nullptr;
 

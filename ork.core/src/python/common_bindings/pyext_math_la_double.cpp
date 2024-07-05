@@ -5,12 +5,13 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pyext.h"
+//#include "pyext.h"
+#include "pyext_math_la.inl"
+
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-///////////////////////////////////////////////////////////////////////////////
-void pyinit_math_plane(py::module& module_core) {
-  auto type_codec = python::TypeCodec::instance();
+namespace ork::python {
+void init_math_la_double(py::module& module_core,python::typecodec_ptr_t type_codec) {
+  pyinit_math_la_t<double>(module_core, "d", type_codec);
 }
 ///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace ork

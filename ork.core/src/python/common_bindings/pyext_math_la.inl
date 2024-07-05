@@ -5,15 +5,28 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pyext.h"
-#include <iostream>
+//#include "pyext.h"
+#include <ork/python/pycodec.h>
+#include <ork/math/cvector2.h>
+#include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
+#include <ork/math/cmatrix3.h>
+#include <ork/math/cmatrix4.h>
+#include <ork/math/quaternion.h>
+#include <ork/math/frustum.h>
+#include <ork/math/TransformNode.h>
+#include <ork/util/crc.h>
+
+namespace py = pybind11;
+using namespace pybind11::literals;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
+namespace ork::python {
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
 void pyinit_math_la_t(py::module& module_core, //
-                      std::string pfx ) { //
+                      std::string pfx,
+                     python::typecodec_ptr_t type_codec ) { //
 
   using vec2_t = Vector2<T>;
   using vec3_t = Vector3<T>;
@@ -35,8 +48,6 @@ void pyinit_math_la_t(py::module& module_core, //
   auto plane_name = pfx+"plane";
   auto frustum_name = pfx+"frustum";
 
-
-  auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto vec2_type = //
       py::class_<vec2_t>(module_core, vec2_name.c_str(), pybind11::buffer_protocol())

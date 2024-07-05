@@ -111,6 +111,7 @@ class PYSYS_MINIMAL(object):
 
     self.sys_phys = self.controller.findSystem("PythonSystem")
     self.sys_sg = self.controller.findSystem("SceneGraphSystem")###
+    self.sys_python = self.controller.findSystem("PythonSystem")###
 
     print(self.sys_sg)
 
@@ -181,6 +182,14 @@ class PYSYS_MINIMAL(object):
                                       tokens.near: UIC.near,
                                       tokens.far: UIC.far,
                                       tokens.fovy: UIC.fovy
+                                    }
+                                   )
+
+    if True:
+      self.controller.systemNotify( self.sys_python,
+                                    tokens.Function1,{
+                                      tokens.hello: "world",
+                                      tokens.v3: vec3(0,1,0)
                                     }
                                    )
 

@@ -50,4 +50,7 @@ using pyentity_ptr_t     = ork::python::unmanaged_ptr<Entity>;
 using pysystem_ptr_t     = ork::python::unmanaged_ptr<System>;
 using pysgsystem_ptr_t   = ork::python::unmanaged_ptr<SceneGraphSystem>;
 
+using namespace ::ork::python;
+extern typecodec_ptr_t simonly_codec_instance();
+
 } // namespace ork::lev2

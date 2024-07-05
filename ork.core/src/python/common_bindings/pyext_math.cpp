@@ -5,19 +5,23 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pyext.h"
+#include <ork/math/cvector4.h>
+#include <ork/math/cmatrix4.h>
 #include <ork/math/gradient.h>
 #include <ork/math/multicurve.h>
 #include <ork/math/noiselib.inl>
 #include <ork/math/audiomath.h>
+#include <ork/python/pycodec.h>
+#include "pyext_math_la.inl"
+
+namespace py = pybind11;
+using namespace pybind11::literals;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-void pyinit_math_plane(py::module& module_core);
-void pyinit_math_la_float(py::module& module_core);
-void pyinit_math_la_double(py::module& module_core);
-void pyinit_math(py::module& module_core) {
-  auto type_codec = python::TypeCodec::instance();
+namespace ork::python {
+void init_math_la_float(py::module& module_core,python::typecodec_ptr_t type_codec);
+void init_math_la_double(py::module& module_core,python::typecodec_ptr_t type_codec);
+void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;
@@ -36,9 +40,8 @@ void pyinit_math(py::module& module_core) {
               });
   type_codec->registerStdCodec<mathconstantsproxy_ptr_t>(mathconstantsproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
-  pyinit_math_plane(module_core);
-  pyinit_math_la_float(module_core);
-  pyinit_math_la_double(module_core);
+  init_math_la_float(module_core,type_codec);
+  init_math_la_double(module_core,type_codec);
   /////////////////////////////////////////////////////////////////////////////////
     auto curve_type = //
       py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D")
