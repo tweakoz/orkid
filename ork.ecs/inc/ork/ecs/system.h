@@ -108,6 +108,10 @@ public:
     return _simulation;
   }
 
+  inline const SystemData* sysdata() const { return _systemData; }
+
+  void _notify(token_t evID, evdata_t data);
+
 protected:
   friend Controller;
   friend Simulation;
@@ -131,7 +135,6 @@ protected:
   
   void _render(Simulation* psi, ui::drawevent_constptr_t drwev);
   void _renderWithStandardCompositorFrame(Simulation* psi, lev2::standardcompositorframe_ptr_t sframe);
-  void _notify(token_t evID, evdata_t data);
   void _request(impl::sys_response_ptr_t response, token_t evID, evdata_t data);
 
   virtual void _onGpuInit(Simulation* psi, lev2::Context* ctx);

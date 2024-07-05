@@ -32,4 +32,21 @@ Context& context();
 
 bool isPythonEnabled();
 
-}
+struct Context2 {
+  
+  Context2();
+  ~Context2();
+
+  PyThreadState* _subInterpreter = nullptr;
+  PyThreadState* _mainInterpreter = nullptr;
+  PyThreadState* _saveInterpreter = nullptr;
+
+  void bindSubInterpreter();
+  void unbindSubInterpreter();
+
+};
+
+using context2_ptr_t = std::shared_ptr<Context2>;
+
+} // namespace ork::python
+

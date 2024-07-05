@@ -451,6 +451,18 @@ System* Simulation::_findSystemFromRef(sys_ref_t ref) {
   return the_system;
 }
 ///////////////////////////////////////////////////////////////////////////////
+System* Simulation::_findSystemFromName(const std::string& name){
+  System* the_system = nullptr;
+
+  _systems.atomicOp([name, &the_system](SystemLut& unlocked) {
+      auto it = unlocked.find(name);
+      if(it != unlocked.end()){
+        the_system = it->second;
+      }
+  });
+  return the_system;
+}
+///////////////////////////////////////////////////////////////////////////////
 impl::sys_response_ptr_t Simulation::_findSystemResponseFromRef(response_ref_t ref){
   impl::sys_response_ptr_t the_response;
   uint64_t respid     = ref._responseID;
@@ -461,6 +473,7 @@ impl::sys_response_ptr_t Simulation::_findSystemResponseFromRef(response_ref_t r
   });
   return the_response;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 impl::comp_response_ptr_t Simulation::_findComponentResponseFromRef(response_ref_t ref){
   impl::comp_response_ptr_t the_response;

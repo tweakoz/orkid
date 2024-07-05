@@ -171,20 +171,8 @@ class PYSYS_MINIMAL(object):
     # camera update
     ##############################
 
-    UIC = self.uicam.cameradata
+    #UIC = self.uicam.cameradata
    
-    if True:
-      self.controller.systemNotify( self.sys_sg,
-                                    tokens.UpdateCamera,{
-                                      tokens.eye: UIC.eye,
-                                      tokens.tgt: UIC.target,
-                                      tokens.up: UIC.up,
-                                      tokens.near: UIC.near,
-                                      tokens.far: UIC.far,
-                                      tokens.fovy: UIC.fovy
-                                    }
-                                   )
-
     if True:
       self.controller.systemNotify( self.sys_python,
                                     tokens.Function1,{

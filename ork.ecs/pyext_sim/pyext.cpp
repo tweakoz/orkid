@@ -21,14 +21,16 @@ namespace python {
 
 namespace ork::ecssim {
 
-void register_simulation(py::module& module_ecssim);
+void register_simulation(py::module& module_ecssim,python::typecodec_ptr_t type_codec);
+void register_system(py::module& module_ecssim,python::typecodec_ptr_t type_codec);
 
 } // namespace ork::ecs
 
 ////////////////////////////////////////////////////////////////////////////////
 
 PYBIND11_MODULE(_ecssim, module_ecssim) {
-  auto type_codec = ork::ecssim::simonly_codec_instance();
+  //auto type_codec = ork::ecssim::simonly_codec_instance();
+  auto type_codec = ork::python::TypeCodec::instance();
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   module_ecssim.doc() = "Orkid Ecs Internal (Simulation only) Library";
@@ -36,7 +38,8 @@ PYBIND11_MODULE(_ecssim, module_ecssim) {
   //pyinit_entity(module_ecs);
   //pyinit_component(module_ecs);
   //pyinit_system(module_ecs);
-  ::ork::ecssim::register_simulation(module_ecssim);
+  ::ork::ecssim::register_simulation(module_ecssim,type_codec);
+  ::ork::ecssim::register_system(module_ecssim,type_codec);
   //::ork::python::init_math(module_ecssim, type_codec);
 
 

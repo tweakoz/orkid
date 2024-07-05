@@ -168,16 +168,16 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       pybind11::module_ sys            = pybind11::module_::import("sys");
       pybind11::list original_sys_path = sys.attr("path");
       pybind11::module_ math           = pybind11::module_::import("math");
-      globals["math"]                  = math;
+      globals["MATH"]                  = math;
       pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
       globals["ECS"]                   = ecssim;
       // from orkengine.core import CrcString
       pybind11::module_ core = pybind11::module_::import("orkengine.core");
-      globals["core"]        = core; // core.attr("CrcString");
-
+      globals["CORE"]        = core; 
+      
       pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
-      globals["CL"]        = OPENCL; // core.attr("CrcString");
-
+      globals["CL"]        = OPENCL;
+      
       // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
 
       // auto module_core = py::module::create_extension_module(

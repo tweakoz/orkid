@@ -123,6 +123,7 @@ struct Simulation {
   Entity* _findEntityFromRef(ent_ref_t ref);
   Component* _findComponentFromRef(comp_ref_t ref);
   System* _findSystemFromRef(sys_ref_t ref);
+  System* _findSystemFromName(const std::string& name);
   impl::sys_response_ptr_t _findSystemResponseFromRef(response_ref_t ref);
   impl::comp_response_ptr_t _findComponentResponseFromRef(response_ref_t ref);
 

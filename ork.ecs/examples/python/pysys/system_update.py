@@ -2,13 +2,13 @@
 
 print( "imported system_update.py" )
 ###############################################################################
-print("x %g"%math.sin(0))
+print("x %g"%MATH.sin(0))
 print("ECS<%s>"%dir(ECS))
 
-tokens = core.CrcStringProxy()
+tokens = CORE.CrcStringProxy()
 
 def grab_core_objects(list_of_classnames):
-  return [getattr(core, x) for x in list_of_classnames]
+  return [getattr(CORE, x) for x in list_of_classnames]
 
 vec2, vec3, vec4, quat, mtx4 = grab_core_objects(["vec2","vec3","vec4","quat","mtx4"])
 
@@ -38,6 +38,7 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   print("onSystemLink<%s>"%simulation)
+  the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
 
 ###############################################################################
 
@@ -55,8 +56,8 @@ def onSystemNotify(simulation, evID, table):
   the_sys.notif_count += 1
   if evID.hashed == tokens.Function1.hashed:
     hello = table[tokens.hello]
-    v3 = table[tokens.v3]
-    v3b = vec3(1,0,1)
+    #v3 = table[tokens.v3]
+    #v3b = vec3(1,0,1)
     #print(v3)
     #print("notifcount<%d>"%(the_sys.notif_count))
     return
@@ -67,5 +68,16 @@ def onSystemNotify(simulation, evID, table):
 ###############################################################################
 
 def onSystemUpdate(simulation):
-  pass
+  dt = simulation.deltaTime
+  gt = simulation.gameTime
+  #print(the_sys.sys_sg)
+  if False:
+    the_sys.sys_sg.notify( "UpdateCamera",{
+                           tokens.eye: vec3(0,0,1),
+                           tokens.tgt: vec3(0,0,0),
+                           tokens.up: vec3(0,1,0),
+                           tokens.near: 0.1,
+                           tokens.fovy: 60.0
+  })
+
   #print("onSystemUpdate<%s>"%simulation)
