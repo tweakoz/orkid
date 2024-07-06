@@ -90,7 +90,9 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
       auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
       try {
         py::gil_scoped_acquire acquire;
-        pyfn.value()(updata);
+        auto type_codec = python::TypeCodec::instance();
+        auto encoded = type_codec->encode64(updata);
+        pyfn.value()(encoded);
       } catch (std::exception& e) {
         std::cerr << e.what();
         OrkAssert(false);
@@ -143,7 +145,9 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
       auto mydrev     = rval->_vars->typedValueForKey<drawevent_ptr_t>("drawev");
       *mydrev.value() = *drwev;
       try {
-        pyfn.value()(drwev);
+        auto type_codec = python::TypeCodec::instance();
+        auto encoded = type_codec->encode64(mydrev);
+        pyfn.value()(encoded);
       } catch (std::exception& e) {
         std::cerr << e.what();
         OrkAssert(false);
