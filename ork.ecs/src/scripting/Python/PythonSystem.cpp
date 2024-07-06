@@ -178,21 +178,20 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       pybind11::list original_sys_path = sys.attr("path");
       pybind11::module_ math           = pybind11::module_::import("math");
       globals["MATH"]                  = math;
-      pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
-      globals["ECS"]                   = ecssim;
+      //pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
+      //globals["ECS"]                   = ecssim;
       // from orkengine.core import CrcString
-      pybind11::module_ core = pybind11::module_::import("orkengine.core");
-      globals["CORE"]        = core; 
-      
-      pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
-      globals["CL"]        = OPENCL;
+      //pybind11::module_ core = pybind11::module_::import("orkengine.core");
+      //globals["CORE"]        = core; 
+      //pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
+      //globals["CL"]        = OPENCL;
       
       // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
 
       // auto module_core = py::module::create_extension_module(
       //"core", nullptr, new py::module_::module_def );
       //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
-      sys.attr("path") = pybind11::list();
+      //sys.attr("path") = pybind11::list();
 
       if (1) {
         pybind11::exec(mScriptText.c_str(), globals, globals);

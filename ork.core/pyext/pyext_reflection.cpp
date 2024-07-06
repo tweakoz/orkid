@@ -31,13 +31,13 @@ using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 void pyinit_reflection(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
+    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class", py::module_local()) //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
         return clazz->Name().c_str();
       });
   type_codec->registerStdCodec<class_pyptr_t>(class_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-    auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable") //
+    auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable", py::module_local()) //
       .def_property_readonly("clazz", [](rtti::castable_ptr_t castable) -> class_pyptr_t {
         return castable->GetClass(); 
       });
@@ -132,7 +132,7 @@ void pyinit_reflection(py::module& module_core) {
   };
   using propsproxy_ptr_t = std::shared_ptr<PropertiesProxy>;
   auto propsproxy_type   =                                                        //
-      py::class_<PropertiesProxy, propsproxy_ptr_t>(module_core, "PropertiesProxy") //
+      py::class_<PropertiesProxy, propsproxy_ptr_t>(module_core, "PropertiesProxy", py::module_local()) //
           .def(
               "__getattr__",                                                           //
               [](propsproxy_ptr_t proxy, const std::string& key) -> py::object { //
@@ -202,7 +202,8 @@ void pyinit_reflection(py::module& module_core) {
           });
   type_codec->registerStdCodec<propsproxy_ptr_t>(propsproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object")
+  if (!py::hasattr(module_core, "Object")) {
+    auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object")
     .def_static("deserializeJson", [](std::string json) -> object_ptr_t {
         reflect::serdes::JsonDeserializer deser(json.c_str());
         object_ptr_t instance_out;
@@ -222,16 +223,17 @@ void pyinit_reflection(py::module& module_core) {
       return boost::uuids::to_string(obj->_uuid);
     });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
+  }
   /////////////////////////////////////////////////////////////////////////////////
   using hotkey_ptr_t = std::shared_ptr<HotKey>;
   auto hkey_type =                                                              //
-      py::class_<HotKey,Object,hotkey_ptr_t>(module_core, "HotKey") //
+      py::class_<HotKey,Object,hotkey_ptr_t>(module_core, "HotKey", py::module_local()) //
           .def(py::init<>());
   type_codec->registerStdCodec<hotkey_ptr_t>(hkey_type);
   /////////////////////////////////////////////////////////////////////////////////
   using hotkeyconfig_ptr_t = std::shared_ptr<HotKeyConfiguration>;
   auto hkeycfg_type =                                                              //
-      py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration") //
+      py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration", py::module_local()) //
           .def(py::init<>())
           .def("createHotKey", [](HotKeyConfiguration& hkc, std::string actionname) -> hotkey_ptr_t {
             auto hk = std::make_shared<HotKey>();

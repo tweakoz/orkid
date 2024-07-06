@@ -1,16 +1,12 @@
-
+import math
+#from orkengine.core import CrcStringProxy, vec2, vec3, vec4, quat, fmtx4
+#from orkengine.ecssim import *
 
 print( "imported system_update.py" )
 ###############################################################################
-print("x %g"%MATH.sin(0))
-print("ECS<%s>"%dir(ECS))
+print("x %g"%math.sin(0))
 
-tokens = CORE.CrcStringProxy()
-
-def grab_core_objects(list_of_classnames):
-  return [getattr(CORE, x) for x in list_of_classnames]
-
-vec2, vec3, vec4, quat, mtx4 = grab_core_objects(["vec2","vec3","vec4","quat","mtx4"])
+tokens = CrcStringProxy()
 
 ###############################################################################
 # not until numpy supports sub-interpreters...
@@ -71,8 +67,8 @@ def onSystemUpdate(simulation):
   dt = simulation.deltaTime
   gt = simulation.gameTime
   #print(the_sys.sys_sg)
-  if False:
-    the_sys.sys_sg.notify( "UpdateCamera",{
+  if True:
+    the_sys.sys_sg.notify( tokens.UpdateCamera,{
                            tokens.eye: vec3(0,0,1),
                            tokens.tgt: vec3(0,0,0),
                            tokens.up: vec3(0,1,0),

@@ -160,8 +160,14 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
   return rval;
 }
 
+void import_orkengine_core_into(py::module_ &m) {
+    py::module_ module_a = py::module_::import("orkengine.core");
+    m.attr("__dict__").attr("update")(module_a.attr("__dict__"));
+}
+
 PYBIND11_MODULE(_ecs, module_ecs) {
   //module_ecs.attr("__name__") = "ecs";
+  import_orkengine_core_into(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////

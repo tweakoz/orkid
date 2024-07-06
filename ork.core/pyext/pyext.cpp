@@ -134,7 +134,8 @@ static PoolString _addpoolstring(std::string str) {
 
 void pyinit_reflection(py::module& module_core);
 
-PYBIND11_MODULE(_core, module_core) {
+//PYBIND11_MODULE(_core, module_core) {
+void _core_init_classes(py::module& module_core) {
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
@@ -152,7 +153,7 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using coreapp_ptr_t   = std::shared_ptr<CorePythonApplication>;
-  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application")
+  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application", py::module_local())
                               .def("__repr__", [](coreapp_ptr_t app) -> std::string {
                                 fxstring<256> fxs;
                                 fxs.format("OrkPyCoreApp(%p)", (void*)app.get());
@@ -160,14 +161,14 @@ PYBIND11_MODULE(_core, module_core) {
                               });
   type_codec->registerStdCodec<coreapp_ptr_t>(application_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<PoolString>(module_core, "PoolString") //
+  py::class_<PoolString>(module_core, "PoolString", py::module_local()) //
       .def("__repr__", [](const PoolString& s) -> std::string {
         fxstring<512> fxs;
         fxs.format("PoolString(%s)", s.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<file::Path>(module_core, "Path")
+  py::class_<file::Path>(module_core, "Path", py::module_local())
       .def(py::init<std::string>())
       .def_property_readonly(
           "normalized",
@@ -232,7 +233,7 @@ PYBIND11_MODULE(_core, module_core) {
   };
   /////////////////////////////////////////////////////////////////////////////////
   auto varmaptype_t =                                                         //
-      py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap") //
+      py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap", py::module_local()) //
           .def(py::init<>())
           .def(py::init([](py::dict dict) -> varmap::varmap_ptr_t {
             auto vmap = std::make_shared<varmap::VarMap>();
@@ -312,7 +313,7 @@ PYBIND11_MODULE(_core, module_core) {
   type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto updata_type =                                                              //
-      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_core, "UpdateData") //
+      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_core, "UpdateData", py::module_local()) //
           .def(py::init<>())
           .def_property(
               "absolutetime",                             //
@@ -354,5 +355,35 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.attr("lev2_pyexdir") = l2pedir;
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {
+
+int _core_exec_module(PyObject *m) {
+    try {
+        py::module_ mod = py::reinterpret_borrow<py::module_>(m);
+        _core_init_classes(mod);
+    } catch (const std::exception &e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return -1;
+    }
+    return 0;
+}
+static PyModuleDef_Slot _core_slots[] = {
+    {Py_mod_exec, (void*)_core_exec_module},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {0, nullptr}
+};
+static struct PyModuleDef orkengine_core_module = {
+    PyModuleDef_HEAD_INIT,
+    "_core",
+    nullptr,  // module documentation, may be NULL 
+    0,       // size of per-interpreter state of the module, or -1 if the module keeps state in global variables. 
+    nullptr,  // _core_methods
+    _core_slots,  // _core_slots
+    nullptr,  // _core_traverse
+    nullptr,  // _core_clear
+    nullptr   // _core_free
+};
+extern "C" PyObject* PyInit__core() {
+  return PyModuleDef_Init(&orkengine_core_module);
+}
 
 } // namespace ork

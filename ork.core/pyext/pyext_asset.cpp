@@ -80,10 +80,12 @@ void pyinit_asset(py::module& module_core) {
     return loadreq;
   });
   /////////////////////////////////////////////////////////////////////////////////
-  auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
-  type_codec->registerStdCodec<asset_ptr_t>(aset_type);
+  if (!py::hasattr(amodule, "Asset")) {
+    auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
+    type_codec->registerStdCodec<asset_ptr_t>(aset_type);
+  }
   /////////////////////////////////////////////////////////////////////////////////
-  auto lreq_type = py::class_<LoadRequest,loadrequest_ptr_t>(amodule, "LoadRequest")
+  auto lreq_type = py::class_<LoadRequest,loadrequest_ptr_t>(amodule, "LoadRequest", py::module_local())
   .def("waitForCompletion", &LoadRequest::waitForCompletion)
   .def_property_readonly("assetPath", [](loadrequest_ptr_t lreq) -> std::string { return lreq->_asset_path.c_str(); });
   type_codec->registerStdCodec<loadrequest_ptr_t>(lreq_type);

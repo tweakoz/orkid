@@ -18,7 +18,7 @@ void pyinit_datablock(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")
+  auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock", py::module_local())
                          .def(py::init<>())
                          .def(
                              "readByte",
@@ -124,7 +124,7 @@ void pyinit_datablock(py::module& module_core) {
   type_codec->registerStdCodec<datablock_ptr_t>(dblock_type);
   /////////////////////////////////////////////////////////////////////////////////
   using dblockistream_ptr_t = std::shared_ptr<DataBlockInputStream>;
-  auto dblockistream_type   = py::class_<DataBlockInputStream, dblockistream_ptr_t>(module_core, "DataBlockInputStream");
+  auto dblockistream_type   = py::class_<DataBlockInputStream, dblockistream_ptr_t>(module_core, "DataBlockInputStream", py::module_local());
   dblockistream_type.def(py::init<>([](datablock_ptr_t dblock) -> dblockistream_ptr_t { //
     return std::make_shared<DataBlockInputStream>(dblock);
   }));
@@ -158,7 +158,7 @@ void pyinit_datablock(py::module& module_core) {
   });
   /////////////////////////////////////////////////////////////////////////////////
   auto dblockcache_type =
-      py::class_<DataBlockCache>(module_core, "DataBlockCache")
+      py::class_<DataBlockCache>(module_core, "DataBlockCache", py::module_local())
           .def_static(
               "cachePathForKey",
               [](uint64_t key) -> std::string {

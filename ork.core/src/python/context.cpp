@@ -274,7 +274,12 @@ GlobalState::GlobalState() {
 Context2::Context2(globalstate_ptr_t gstate) {
 	_gstate = gstate;
   _mainInterpreter = _gstate->_mainInterpreter;
-  _subInterpreter  = Py_NewInterpreter();
+   PyInterpreterConfig pyconfig;
+   memset(&pyconfig, 0, sizeof(PyInterpreterConfig));
+pyconfig.gil = PyInterpreterConfig_OWN_GIL;
+pyconfig. check_multi_interp_extensions = 1;
+  auto status = Py_NewInterpreterFromConfig(&_subInterpreter, &pyconfig);
+    OrkAssert(PyStatus_IsError(status)==0);
   PyEval_ReleaseThread(_subInterpreter);
   logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
   logchan_pyctx->log("pyctx<%p> 1...\n", this);

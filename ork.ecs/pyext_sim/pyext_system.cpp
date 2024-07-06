@@ -24,7 +24,7 @@ void register_system(py::module& module_ecssim,python::typecodec_ptr_t type_code
             fxs.format("ecssim::System(%p) class<%s>", system.get(), clazz->Name().c_str());
             return fxs.c_str();
           })
-          .def("notify", [type_codec](pysystem_ptr_t system, std::string eventname, py::object evdata) {
+          .def("notify", [type_codec](pysystem_ptr_t system, crcstring_ptr_t eventID, py::object evdata) {
             evdata_t decoded;
             if (py::isinstance<py::dict>(evdata)){
               auto as_dict = evdata.cast<py::dict>();
@@ -41,8 +41,8 @@ void register_system(py::module& module_ecssim,python::typecodec_ptr_t type_code
             else{
               decoded = type_codec->decode64(evdata);
             }
-            auto event = std::make_shared<CrcString>(eventname.c_str());
-            system->_notify(*event, decoded);
+            //auto event = std::make_shared<CrcString>(eventname.c_str());
+            system->_notify(*eventID, decoded);
           });
   type_codec->registerRawPtrCodec<pysystem_ptr_t,System*>(system_type);
 } // void pyinit_system(py::module& module_ecssim) {

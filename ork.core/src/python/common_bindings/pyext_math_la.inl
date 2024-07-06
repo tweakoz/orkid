@@ -50,7 +50,7 @@ void pyinit_math_la_t(py::module& module_core, //
 
   /////////////////////////////////////////////////////////////////////////////////
   auto vec2_type = //
-      py::class_<vec2_t>(module_core, vec2_name.c_str(), pybind11::buffer_protocol())
+      py::class_<vec2_t>(module_core, vec2_name.c_str(), pybind11::buffer_protocol(), py::module_local())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](vec2_t& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer

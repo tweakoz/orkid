@@ -129,9 +129,14 @@ static file::Path lev2exdir() {
 
 namespace ork {
 
+void import_orkengine_core_into(py::module_ &m) {
+    py::module_ module_a = py::module_::import("orkengine.core");
+    m.attr("__dict__").attr("update")(module_a.attr("__dict__"));
+}
+
 PYBIND11_MODULE(_lev2, module_lev2) {
   // module_lev2.attr("__name__") = "lev2";
-
+  import_orkengine_core_into(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
   module_lev2.doc() = "Orkid Lev2 Library (graphics,audio,vr,input,etc..)";
   //////////////////////////////////////////////////////////////////////////////

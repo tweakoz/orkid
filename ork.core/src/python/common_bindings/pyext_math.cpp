@@ -26,7 +26,7 @@ void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;
   auto mathconstantsproxy_type   =                                                           //
-      py::class_<MathConstantsProxy, mathconstantsproxy_ptr_t>(module_core, "mathconstants") //
+      py::class_<MathConstantsProxy, mathconstantsproxy_ptr_t>(module_core, "mathconstants", py::module_local()) //
           .def(py::init<>())
           .def(
               "__getattr__",                                                                       //
@@ -44,7 +44,7 @@ void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
   init_math_la_double(module_core,type_codec);
   /////////////////////////////////////////////////////////////////////////////////
     auto curve_type = //
-      py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D")
+      py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D", py::module_local())
       .def(py::init<>())
       .def("splitSegment", [](multicurve1d_ptr_t self, int iseg) -> void { //
         self->SplitSegment(iseg);
@@ -81,7 +81,7 @@ void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
   type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto gradient_type = //
-      py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4")
+      py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4", py::module_local())
         .def(py::init<>())
         .def("addColorStop", [](gradient_fvec4_ptr_t self, float flerp, const fvec4& data) -> void { //
           self->addDataPoint(flerp, data);
@@ -103,7 +103,7 @@ void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
   type_codec->registerStdCodec<gradient_fvec4_ptr_t>(gradient_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto u32vec4_type = //
-      py::class_<u32vec4,u32vec4_ptr_t>(module_core, "u32vec4")
+      py::class_<u32vec4,u32vec4_ptr_t>(module_core, "u32vec4", py::module_local())
         .def(py::init<>())
         .def("__repr__", [](u32vec4_ptr_t value) -> std::string { //
           return FormatString("u32vec4<0x%08x 0x%08x 0x%08x 0x%08x>", value->x, value->y, value->z, value->w);
