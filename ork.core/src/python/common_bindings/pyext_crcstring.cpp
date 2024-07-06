@@ -6,7 +6,7 @@ namespace ork::python {
 void init_crcstring(py::module& module_core, python::typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
-      py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString", py::module_local()) //
+      py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
           .def(py::init<>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }))
           .def_property_readonly(
               "hashed",

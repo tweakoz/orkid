@@ -15,7 +15,7 @@ namespace ork::ecs {
 void pyinit_archetype(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Archetype,SceneObject,archetype_ptr_t>(module_ecs, "Archetype")
+  py::class_<Archetype,SceneObject,archetype_ptr_t>(module_ecs, "Archetype", py::module_local())
       .def(
           "__repr__",
           [](const archetype_ptr_t& arch) -> std::string {

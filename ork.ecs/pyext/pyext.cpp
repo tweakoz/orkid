@@ -164,10 +164,15 @@ void import_orkengine_core_into(py::module_ &m) {
     py::module_ module_a = py::module_::import("orkengine.core");
     m.attr("__dict__").attr("update")(module_a.attr("__dict__"));
 }
+void import_orkengine_lev2_into(py::module_ &m) {
+    py::module_ module_a = py::module_::import("orkengine.lev2");
+    m.attr("__dict__").attr("update")(module_a.attr("__dict__"));
+}
 
-PYBIND11_MODULE(_ecs, module_ecs) {
+void _ecs_init_classes(py::module_ &module_ecs) {
   //module_ecs.attr("__name__") = "ecs";
   import_orkengine_core_into(module_ecs);
+  import_orkengine_lev2_into(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////
@@ -185,3 +190,34 @@ PYBIND11_MODULE(_ecs, module_ecs) {
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.def("createApp", &ecsappcreate);
 }
+
+int _ecs_exec_module(PyObject *m) {
+    try {
+        py::module_ mod = py::reinterpret_borrow<py::module_>(m);
+        _ecs_init_classes(mod);
+    } catch (const std::exception &e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return -1;
+    }
+    return 0;
+}
+static PyModuleDef_Slot _ecs_slots[] = {
+    {Py_mod_exec, (void*)_ecs_exec_module},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {0, nullptr}
+};
+static struct PyModuleDef orkengine_ecs_module = {
+    PyModuleDef_HEAD_INIT,
+    "_ecs",
+    nullptr,  // module documentation, may be NULL 
+    0,       // size of per-interpreter state of the module, or -1 if the module keeps state in global variables. 
+    nullptr,  // _core_methods
+    _ecs_slots,  // _ecs_slots
+    nullptr,  // _core_traverse
+    nullptr,  // _core_clear
+    nullptr   // _core_free
+};
+extern "C" PyObject* PyInit__ecs() {
+  return PyModuleDef_Init(&orkengine_ecs_module);
+}
+

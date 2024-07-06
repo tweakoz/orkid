@@ -13,7 +13,7 @@ namespace ork::ecs {
 void pyinit_scenegraph(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto nd_type = py::class_<NodeDef, nodedef_ptr_t>(module_ecs, "NodeDef")
+  auto nd_type = py::class_<NodeDef, nodedef_ptr_t>(module_ecs, "NodeDef", py::module_local())
                      .def(
                          "__repr__",
                          [](nodedef_ptr_t ndef) -> std::string {
@@ -44,7 +44,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
   type_codec->registerStdCodec<nodedef_ptr_t>(nd_type);
 
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneGraphComponentData, ComponentData, sgcomponentdata_ptr_t>(module_ecs, "SceneGraphComponentData")
+  py::class_<SceneGraphComponentData, ComponentData, sgcomponentdata_ptr_t>(module_ecs, "SceneGraphComponentData", py::module_local())
       .def(
           "__repr__",
           [](const sgcomponentdata_ptr_t& sgcd) -> std::string {
@@ -89,7 +89,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
             sgcd->_INSTANCEDATA = nid;
           });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneGraphSystemData, SystemData, sgsystemdata_ptr_t>(module_ecs, "SceneGraphSystemData")
+  py::class_<SceneGraphSystemData, SystemData, sgsystemdata_ptr_t>(module_ecs, "SceneGraphSystemData", py::module_local())
       .def(
           "__repr__",
           [](sgsystemdata_ptr_t sgsys) -> std::string {
@@ -149,7 +149,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
      )doc");
   /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
-      py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
+      py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem", py::module_local())
           .def(
               "__repr__",
               [](pysgsystem_ptr_t sgsys) -> std::string {

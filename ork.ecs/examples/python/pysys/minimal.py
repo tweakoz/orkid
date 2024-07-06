@@ -114,12 +114,14 @@ class PYSYS_MINIMAL(object):
     self.sys_python = self.controller.findSystem("PythonSystem")###
 
     print(self.sys_sg)
-
+    print(tokens.ResizeFromMainSurface)
+    
     ##################
     # init systems
     ##################
 
-    self.controller.systemNotify( self.sys_sg,tokens.ResizeFromMainSurface,True)
+
+    self.controller.systemNotify( self.sys_sg, tokens.ResizeFromMainSurface, True)
     self.spawncounter = 0
     
   ##############################################

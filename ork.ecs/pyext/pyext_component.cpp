@@ -13,7 +13,7 @@ namespace ork::ecs {
 void pyinit_component(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ComponentData,componentdata_ptr_t>(module_ecs, "ComponentData")
+  py::class_<ComponentData,componentdata_ptr_t>(module_ecs, "ComponentData", py::module_local())
       .def(
           "__repr__",
           [](componentdata_ptr_t cdata) -> std::string {
