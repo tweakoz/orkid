@@ -6,7 +6,7 @@ print( "imported system_update.py" )
 ###############################################################################
 print("x %g"%math.sin(0))
 
-tokens = CORE.CrcStringProxy()
+#tokens = CORE.CrcStringProxy()
 
 ###############################################################################
 # not until numpy supports sub-interpreters...
@@ -34,7 +34,7 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   print("onSystemLink<%s>"%simulation)
-  the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
+  #the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
 
 ###############################################################################
 
@@ -67,7 +67,7 @@ def onSystemUpdate(simulation):
   dt = simulation.deltaTime
   gt = simulation.gameTime
   #print(the_sys.sys_sg)
-  if True:
+  if False:
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
                            tokens.eye: vec3(0,0,1),
                            tokens.tgt: vec3(0,0,0),

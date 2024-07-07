@@ -175,7 +175,7 @@ class PYSYS_MINIMAL(object):
 
     #UIC = self.uicam.cameradata
    
-    if True:
+    if False:
       self.controller.systemNotify( self.sys_python,
                                     tokens.Function1,{
                                       tokens.hello: "world",

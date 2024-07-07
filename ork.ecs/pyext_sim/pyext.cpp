@@ -10,6 +10,9 @@
 #include <ork/ecs/ecs.h>
 #include <ork/profiling.inl>
 #include <iostream>
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -21,14 +24,14 @@ namespace python {
 
 namespace ork::ecssim {
 
-void register_simulation(py::module& module_ecssim,python::typecodec_ptr_t type_codec);
-void register_system(py::module& module_ecssim,python::typecodec_ptr_t type_codec);
+void register_simulation(nb::module_& module_ecssim,python::typecodec_ptr_t type_codec);
+void register_system(nb::module_& module_ecssim,python::typecodec_ptr_t type_codec);
 
 } // namespace ork::ecs
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void _ecssim_init_classes(py::module_ &module_ecssim) {
+void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //auto type_codec = ork::ecssim::simonly_codec_instance();
   auto type_codec = ork::python::TypeCodec::instance();
   auto try_marker = type_codec->getProperty<bool>("_marker_ecssim");
@@ -39,7 +42,7 @@ void _ecssim_init_classes(py::module_ &module_ecssim) {
 
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
-  module_ecssim.doc() = "Orkid Ecs Internal (Simulation only) Library";
+  //module_ecssim.doc() = "Orkid Ecs Internal (Simulation only) Library";
   //////////////////////////////////////////////////////////////////////////////
   //pyinit_entity(module_ecs);
   //pyinit_component(module_ecs);
@@ -53,10 +56,33 @@ void _ecssim_init_classes(py::module_ &module_ecssim) {
   //////////////////////////////////////////////////////////////////////////////
 }
 ////////////////////////////////////////////////////////////////////////////////
+/*NB_MODULE(_ecssim, m){
+  _ecssim_init_classes(m);
+}*/
+#define NBX_MODULE(name, variable)                                              \
+    static PyModuleDef NB_CONCAT(nanobind_module_def_, name);                  \
+    [[maybe_unused]] static void NB_CONCAT(nanobind_init_,                     \
+                                           name)(::nanobind::module_ &);       \
+    NB_MODULE_IMPL(name) {                                                     \
+        nanobind::detail::init(NB_DOMAIN_STR);                                 \
+        nanobind::module_ m =                                                  \
+            nanobind::steal<nanobind::module_>(nanobind::detail::module_new(   \
+                NB_TOSTRING(name), &NB_CONCAT(nanobind_module_def_, name)));   \
+        try {                                                                  \
+            NB_CONCAT(nanobind_init_, name)(m);                                \
+            return m.release().ptr();                                          \
+        } catch (const std::exception &e) {                                    \
+            PyErr_SetString(PyExc_ImportError, e.what());                      \
+            return nullptr;                                                    \
+        }                                                                      \
+    }                                                                          \
+    void NB_CONCAT(nanobind_init_, name)(::nanobind::module_ & (variable))
 
+////////////////////////////////////////////////////////////////////////////////
 int _ecssim_exec_module(PyObject *m) {
     try {
-        py::module_ mod = py::reinterpret_borrow<py::module_>(m);
+        nb::detail::init(NB_DOMAIN_STR);                                 \
+        nb::module_ mod = nb::borrow<nb::module_>(m);
         _ecssim_init_classes(mod);
     } catch (const std::exception &e) {
         PyErr_SetString(PyExc_RuntimeError, e.what());

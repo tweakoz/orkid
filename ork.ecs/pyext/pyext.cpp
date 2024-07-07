@@ -92,7 +92,7 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
         py::gil_scoped_acquire acquire;
         auto type_codec = python::TypeCodec::instance();
         auto encoded = type_codec->encode64(updata);
-        pyfn.value()(encoded);
+        pyfn.value()(updata);
       } catch (std::exception& e) {
         std::cerr << e.what();
         OrkAssert(false);
