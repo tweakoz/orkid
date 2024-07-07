@@ -16,7 +16,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_xgmmodel(py::module& module_lev2) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto model_type_t = py::class_<XgmModel, xgmmodel_ptr_t>(module_lev2, "XgmModel") //
       .def(py::init([](const std::string& model_path) -> xgmmodel_ptr_t {

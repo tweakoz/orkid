@@ -18,7 +18,7 @@ namespace ork::lev2 {
 extern int _g_post_swap_wait_time;
 
 void pyinit_gfx(py::module& module_lev2) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto refresh_policy_type = //
       py::enum_<ERefreshPolicy>(module_lev2, "RefreshPolicy")

@@ -29,7 +29,7 @@ namespace ork {
 using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_reflection(py::module& module_core) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
     auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {

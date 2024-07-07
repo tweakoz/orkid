@@ -13,7 +13,7 @@
 
 namespace ork::ecs {
 void pyinit_physics(py::module& module_ecs) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto bullc_type =
       py::class_<BulletObjectComponentData, ComponentData, bulletcompdata_ptr_t>(module_ecs, "BulletObjectComponentData")

@@ -29,7 +29,7 @@ template <typename T> std::function<scenegraph::drawable_node_ptr_t (T,std::stri
 }
 
 void pyinit_primitives(py::module& module_lev2) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto primitives = module_lev2.def_submodule("primitives", "BuiltIn Primitives");
   /////////////////////////////////////////////////////////////////////////////////

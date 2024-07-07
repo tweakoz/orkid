@@ -110,7 +110,7 @@ public:
   template <typename Arg>
   auto process_arg(Arg&& arg) {
       //auto type_codec = ecssim::simonly_codec_instance();
-        auto type_codec = ork::python::TypeCodec::instance();
+        auto type_codec = ork::python::typecodec_t::instance();
 
       return type_codec->encode(std::forward<Arg>(arg));
   }

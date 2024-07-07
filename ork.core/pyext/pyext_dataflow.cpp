@@ -15,7 +15,7 @@ using namespace dataflow;
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_dataflow(py::module& module_core) {
   auto dfgmodule  = module_core.def_submodule("dataflow", "core dataflow operations");
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////
   struct input_proxy {
     dgmoduledata_ptr_t _module;

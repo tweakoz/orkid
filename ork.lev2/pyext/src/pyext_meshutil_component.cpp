@@ -12,7 +12,7 @@
 namespace ork::lev2 {
 using namespace meshutil;
 void pyinit_meshutil_component(py::module& module_meshutil) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
   auto vtxpool_type = py::class_<vertexpool,vertexpool_ptr_t>(module_meshutil, "VertexPool") //

@@ -11,7 +11,7 @@
 
 namespace ork::ecs {
 void pyinit_scenegraph(py::module& module_ecs) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto nd_type = py::class_<NodeDef, nodedef_ptr_t>(module_ecs, "NodeDef")
                      .def(

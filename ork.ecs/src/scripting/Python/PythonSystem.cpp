@@ -40,7 +40,7 @@ namespace ork::ecssim {
 using namespace ::ork::python;
 
 typecodec_ptr_t simonly_codec_instance() { // static
-  struct TypeCodecFactory : public TypeCodec {
+  struct TypeCodecFactory : public typecodec_t {
     TypeCodecFactory()
         : TypeCodec(){};
   };

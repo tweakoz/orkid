@@ -66,19 +66,9 @@ struct ObjectArrayCodecAdapter : public ReflectionCodecAdapter {
   using arrayprop_t = reflect::IObjectArray;
   ObjectArrayCodecAdapter(object_ptr_t obj, //
                           arrayprop_t* prop, //
-                          typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object encode() final {
-    pybind11::list pylist;
-    size_t count = _property->count(_object);
-    for (size_t i = 0; i < count; i++) {
-      object_ptr_t sub_object = _property->accessObject(_object, i);
-      pylist.append(_codec->encode(sub_object));
-    }
-    return std::move(pylist);
-  }
+                          typecodec_ptr_t codec);
+  pybind11::object encode() final;
+
   arrayprop_t* _property = nullptr;
 };
 
@@ -88,25 +78,8 @@ struct ObjectMapCodecAdapter : public ReflectionCodecAdapter {
   using mapprop_t = reflect::IObjectMap;
   ObjectMapCodecAdapter(object_ptr_t obj, //
                        mapprop_t* prop, //
-                       typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object encode() final {
-    pybind11::list pylist;
-    auto as_kvarray = _property->enumerateElements(_object);
-    size_t count = as_kvarray.size();
-    for (size_t i = 0; i < count; i++) {
-      const auto& kvpair = as_kvarray[i];
-      const auto& key = kvpair.first;
-      const auto& val = kvpair.second;
-      varmap::var_t asv;
-      OrkAssert(false); // not implemented yet..
-      //object_ptr_t sub_object = _property->accessObject(_object, i);
-      //pylist.append(_codec->encode(sub_object));
-    }
-    return std::move(pylist);
-  }
+                       typecodec_ptr_t codec);
+  pybind11::object encode() final ;
   mapprop_t* _property = nullptr;
 };
 
@@ -116,22 +89,8 @@ struct SDObjectMapCodecAdapter : public ReflectionCodecAdapter {
   using mapprop_t = reflect::ITypedMap<std::string,object_ptr_t>;
   SDObjectMapCodecAdapter(object_ptr_t obj, //
                           mapprop_t* prop, //
-                          typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object encode() final {
-    pybind11::dict pydict;
-    size_t count = _property->elementCount(_object);
-    for (size_t i = 0; i < count; i++) {
-      std::string key;
-      object_ptr_t sub_object;
-      _property->GetKey(_object,i,key);
-      _property->GetVal(_object,key,sub_object);
-      pydict[pybind11::str(key)] = _codec->encode(sub_object);
-    }
-    return std::move(pydict);
-  }
+                          typecodec_ptr_t codec);
+  pybind11::object encode() final;
   mapprop_t* _property = nullptr;
 };
 

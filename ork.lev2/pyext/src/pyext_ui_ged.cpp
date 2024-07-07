@@ -20,7 +20,7 @@ using namespace ged;
 ///////////////////////////////////////////////////////////////////////////////
 
 void pyinit_ui_ged(py::module& module_ui) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto objmodel_type = //
       py::class_<ObjModel, objectmodel_ptr_t>(module_ui, "ObjModel")

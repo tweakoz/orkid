@@ -13,7 +13,7 @@
 
 namespace ork::ecs {
 void pyinit_archetype(py::module& module_ecs) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Archetype,SceneObject,archetype_ptr_t>(module_ecs, "Archetype")
       .def(

@@ -16,7 +16,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_pbr(py::module& module_lev2) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
   auto irrmap_type =

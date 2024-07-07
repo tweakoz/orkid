@@ -31,7 +31,7 @@ void pyinit_meshutil_component(py::module& module_meshutil);
 using namespace meshutil;
 void pyinit_meshutil(py::module& module_lev2) {
   auto module_meshutil = module_lev2.def_submodule("meshutil", "Mesh operations");
-  auto type_codec      = python::TypeCodec::instance();
+  auto type_codec      = python::typecodec_t::instance();
   //////////////////////////////////////////////////////////////////////////////
   module_meshutil.def("submeshFromNumPy", [](py::kwargs kwargs) -> submesh_ptr_t {
     if (kwargs) {

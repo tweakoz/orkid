@@ -33,7 +33,7 @@ void register_system(nb::module_& module_ecssim,python::typecodec_ptr_t type_cod
 
 void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //auto type_codec = ork::ecssim::simonly_codec_instance();
-  auto type_codec = ork::python::TypeCodec::instance();
+  auto type_codec = ork::python::typecodec_t::instance();
 
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////

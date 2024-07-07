@@ -16,7 +16,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_renderer(py::module& module_lev2) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
   auto rcfd_type_t = py::class_<RenderContextFrameData, rcfd_ptr_t>(

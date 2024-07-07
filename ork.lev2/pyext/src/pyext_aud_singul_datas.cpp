@@ -33,7 +33,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 void pyinit_aud_singularity_datas(py::module& singmodule) {
-  auto type_codec = python::TypeCodec::instance();
+  auto type_codec = python::typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   singmodule.def("defaultSpectralSize", []() -> int { //
     return int(kDEFAULT_SPECTRALSIZE);
