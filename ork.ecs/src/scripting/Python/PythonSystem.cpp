@@ -176,23 +176,23 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
       pybind11::module_ sys            = pybind11::module_::import("sys");
       pybind11::list original_sys_path = sys.attr("path");
-      pybind11::module_ math           = pybind11::module_::import("math");
-      globals["MATH"]                  = math;
-      pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
-      globals["ECS"]                   = ecssim;
+      //pybind11::module_ math           = pybind11::module_::import("math");
+      //globals["MATH"]                  = math;
+      //pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
+      //globals["ECS"]                   = ecssim;
       // from orkengine.core import CrcString
-      pybind11::module_ core = pybind11::module_::import("orkengine.core");
-      globals["CORE"]        = core; 
+      //pybind11::module_ core = pybind11::module_::import("orkengine.core");
+      //globals["CORE"]        = core; 
       
-      pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
-      globals["CL"]        = OPENCL;
+      //pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
+      //globals["CL"]        = OPENCL;
       
       // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
 
       // auto module_core = py::module::create_extension_module(
       //"core", nullptr, new py::module_::module_def );
       //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
-      sys.attr("path") = pybind11::list();
+      //sys.attr("path") = pybind11::list();
 
       if (1) {
         pybind11::exec(mScriptText.c_str(), globals, globals);
@@ -226,7 +226,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       }
 
       if (_pymethodOnSystemInit) {
-        __pcallargs(logchan_pysys, _pymethodOnSystemInit, pinst);
+        ////__pcallargs(logchan_pysys, _pymethodOnSystemInit, pinst);
       }
 
     } catch (pybind11::error_already_set& e) {
@@ -317,7 +317,7 @@ bool PythonSystem::_onLink(Simulation* psi) // final
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
   if (_pymethodOnSystemLink) {
     _pythonContext->bindSubInterpreter();
-    __pcallargs(logchan_pysys, _pymethodOnSystemLink, psi);
+    //__pcallargs(logchan_pysys, _pymethodOnSystemLink, psi);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -341,7 +341,7 @@ bool PythonSystem::_onActivate(Simulation* psi) // final
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStart");
   if (_pymethodOnSystemActivate) {
     _pythonContext->bindSubInterpreter();
-    __pcallargs(logchan_pysys, _pymethodOnSystemActivate, psi);
+    //__pcallargs(logchan_pysys, _pymethodOnSystemActivate, psi);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -361,7 +361,7 @@ bool PythonSystem::_onStage(Simulation* psi) {
   logchan_pysys->log("_onStage() ");
   if (_pymethodOnSystemStage) {
     _pythonContext->bindSubInterpreter();
-    __pcallargs(logchan_pysys, _pymethodOnSystemStage, psi);
+    //__pcallargs(logchan_pysys, _pymethodOnSystemStage, psi);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -383,7 +383,7 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
     (*evIDcrc)   = evID;
     //_pythonContext->bindSubInterpreter();
     auto table = data.getShared<DataTable>();
-    __pcallargs(logchan_pysys, _pymethodOnSystemNotify, simulation(), evIDcrc, table);
+    //__pcallargs(logchan_pysys, _pymethodOnSystemNotify, simulation(), evIDcrc, table);
     //_pythonContext->unbindSubInterpreter();
   }
 }
@@ -396,7 +396,7 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
   double gt = psi->gameTime();
 
   if (_pymethodOnSystemUpdate) {
-    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate, psi);
+    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate);
   }
 
   if (_onSystemUpdate) {

@@ -2,15 +2,15 @@
 
 print( "imported system_update.py" )
 ###############################################################################
-print("x %g"%MATH.sin(0))
-print("ECS<%s>"%dir(ECS))
+#print("x %g"%MATH.sin(0))
+#print("ECS<%s>"%dir(ECS))
 
-tokens = CORE.CrcStringProxy()
+#tokens = CORE.CrcStringProxy()
 
-def grab_core_objects(list_of_classnames):
-  return [getattr(CORE, x) for x in list_of_classnames]
+#def grab_core_objects(list_of_classnames):
+#  return [getattr(CORE, x) for x in list_of_classnames]
 
-vec2, vec3, vec4, quat, mtx4 = grab_core_objects(["vec2","vec3","vec4","quat","mtx4"])
+#vec2, vec3, vec4, quat, mtx4 = grab_core_objects(["vec2","vec3","vec4","quat","mtx4"])
 
 ###############################################################################
 # not until numpy supports sub-interpreters...
@@ -38,7 +38,7 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   print("onSystemLink<%s>"%simulation)
-  the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
+  #the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
 
 ###############################################################################
 
@@ -67,9 +67,10 @@ def onSystemNotify(simulation, evID, table):
 
 ###############################################################################
 
-def onSystemUpdate(simulation):
-  dt = simulation.deltaTime
-  gt = simulation.gameTime
+def onSystemUpdate():
+  print("onSystemUpdate")
+  #dt = simulation.deltaTime
+  #gt = simulation.gameTime
   #print(the_sys.sys_sg)
   if False:
     the_sys.sys_sg.notify( "UpdateCamera",{
