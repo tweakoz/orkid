@@ -18,7 +18,7 @@ namespace ork::ecs {
 void pyinit_datatable(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
 /////////////////////////////////////////////////////////////////////////////////
-  auto d_type = py::class_<DataTable,datatable_ptr_t>(module_ecs, "DataTable", py::module_local())
+  auto d_type = py::class_<DataTable,datatable_ptr_t>(module_ecs, "DataTable")
       .def(py::init<>())
       .def(py::init<>([type_codec](py::dict dict) -> datatable_ptr_t {
         auto dtab = std::make_shared<DataTable>();

@@ -14,7 +14,7 @@ namespace ork::ecs {
 void pyinit_entity(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto entity_type = py::class_<pyentity_ptr_t>(module_ecs, "Entity", py::module_local())
+  auto entity_type = py::class_<pyentity_ptr_t>(module_ecs, "Entity")
       .def(
           "__repr__",
           [](const pyentity_ptr_t& ent) -> std::string {

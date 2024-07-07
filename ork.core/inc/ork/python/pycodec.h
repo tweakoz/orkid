@@ -11,6 +11,7 @@
 #include <ork/python/context.h>
 #include <ork/python/wraprawpointer.inl>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/mutex.h>
 #include <iostream>
 
 namespace ork::python {
@@ -22,20 +23,22 @@ using encoderfn_t = std::function<void(const varval_t& inpval, pybind11::object&
 using decoderfn64_t = std::function<void(const pybind11::object& inpval, svar64_t& outval)>;
 using encoderfn64_t = std::function<void(const svar64_t& inpval, pybind11::object& outval)>;
 
-# define OrkPyAssert( x ) { if( (x) == 0 ) { \
-   char buffer[1024]; \
-   snprintf( buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x ); \
-   try { \
-        py::object traceback = py::module::import("traceback");\
-        py::object formatted_stack = traceback.attr("format_stack")();\
-        for (const auto& frame : formatted_stack) {\
-            std::cout << py::str(frame);\
-        }\
-    } catch (const py::error_already_set& e) {\
-        std::cerr << "Failed to print Python call stack: " << e.what() << std::endl;\
-    }\
-   OrkAssertFunction(&buffer[0]);  \
-   } \
+#define OrkPyAssert(x)                                                                                                             \
+  {                                                                                                                                \
+    if ((x) == 0) {                                                                                                                \
+      char buffer[1024];                                                                                                           \
+      snprintf(buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x);    \
+      try {                                                                                                                        \
+        py::object traceback       = py::module::import("traceback");                                                              \
+        py::object formatted_stack = traceback.attr("format_stack")();                                                             \
+        for (const auto& frame : formatted_stack) {                                                                                \
+          std::cout << py::str(frame);                                                                                             \
+        }                                                                                                                          \
+      } catch (const py::error_already_set& e) {                                                                                   \
+        std::cerr << "Failed to print Python call stack: " << e.what() << std::endl;                                               \
+      }                                                                                                                            \
+      OrkAssertFunction(&buffer[0]);                                                                                               \
+    }                                                                                                                              \
   }
 
 struct ORK_API TypeCodec {
@@ -135,7 +138,7 @@ struct ORK_API TypeCodec {
     return rval;
   }
   //////////////////////////////////
-  std::vector<varval_t> decodeList(pybind11::list py_args){
+  std::vector<varval_t> decodeList(pybind11::list py_args) {
     std::vector<varval_t> decoded_list;
     for (auto list_item : py_args) {
       auto item_val = pybind11::cast<pybind11::object>(list_item);
@@ -145,9 +148,24 @@ struct ORK_API TypeCodec {
     return decoded_list;
   }
   //////////////////////////////////
+  template <typename T> void setProperty(std::string key, const T& value) {
+    _props.atomicOp([key, value](varmap::VarMap& unlocked) { //
+      unlocked.makeValueForKey<T>(key) = value; //
+      });
+  }
+  template <typename T> attempt_cast_const<T> getProperty(std::string key) const {
+    attempt_cast_const<T> rval(nullptr);
+    _props.atomicOp([key, &rval](const varmap::VarMap& unlocked) { //
+      auto attempt = unlocked.typedValueForKey<T>(key); //
+      rval._data = attempt._data; //
+      });
+    return rval;
+  }
+  //////////////////////////////////
 protected:
   TypeCodec();
   svar128_t _impl;
+  LockedResource<varmap::VarMap> _props;
 };
 
 using typecodec_ptr_t = std::shared_ptr<TypeCodec>;

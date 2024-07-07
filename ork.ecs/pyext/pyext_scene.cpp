@@ -14,7 +14,7 @@ namespace ork::ecs {
 void pyinit_scene(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto so_type = py::class_<SceneObject, sceneobject_ptr_t>(module_ecs, "SceneObject", py::module_local())
+  auto so_type = py::class_<SceneObject, sceneobject_ptr_t>(module_ecs, "SceneObject")
                      .def("__repr__", [](const sceneobject_ptr_t& sobj) -> std::string {
                        fxstring<256> fxs;
                        fxs.format("ecs::SceneObject(%p)", sobj.get());
@@ -22,7 +22,7 @@ void pyinit_scene(py::module& module_ecs) {
                      });
   type_codec->registerStdCodec<sceneobject_ptr_t>(so_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sdo_type = py::class_<SceneDagObject, SceneObject, scenedagobject_ptr_t>(module_ecs, "SceneDagObject", py::module_local())
+  auto sdo_type = py::class_<SceneDagObject, SceneObject, scenedagobject_ptr_t>(module_ecs, "SceneDagObject")
                       .def("__repr__", [](const scenedagobject_ptr_t& sobj) -> std::string {
                         fxstring<256> fxs;
                         fxs.format("ecs::SceneDagObject(%p)", sobj.get());
@@ -30,7 +30,7 @@ void pyinit_scene(py::module& module_ecs) {
                       });
   type_codec->registerStdCodec<scenedagobject_ptr_t>(sdo_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sd_type = py::class_<SpawnData, SceneDagObject, spawndata_ptr_t>(module_ecs, "SpawnData", py::module_local())
+  auto sd_type = py::class_<SpawnData, SceneDagObject, spawndata_ptr_t>(module_ecs, "SpawnData")
                      .def(
                          "__repr__",
                          [](const spawndata_constptr_t& sobj) -> std::string {
@@ -71,7 +71,7 @@ void pyinit_scene(py::module& module_ecs) {
                           .def_property_readonly("transform", [](spawndata_constptr_t spawndata) -> decompxf_const_ptr_t { return spawndata->transform(); });
   type_codec->registerStdCodec<spawndata_ptr_t>(sd_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData", py::module_local())
+  py::class_<SceneData, scenedata_ptr_t>(module_ecs, "SceneData")
       .def(py::init<>())
       .def(
           "__repr__",

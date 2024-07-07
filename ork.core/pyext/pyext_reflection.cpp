@@ -31,13 +31,13 @@ using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 void pyinit_reflection(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class", py::module_local()) //
+    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
         return clazz->Name().c_str();
       });
   type_codec->registerStdCodec<class_pyptr_t>(class_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-    auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable", py::module_local()) //
+    auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable") //
       .def_property_readonly("clazz", [](rtti::castable_ptr_t castable) -> class_pyptr_t {
         return castable->GetClass(); 
       });
@@ -132,7 +132,7 @@ void pyinit_reflection(py::module& module_core) {
   };
   using propsproxy_ptr_t = std::shared_ptr<PropertiesProxy>;
   auto propsproxy_type   =                                                        //
-      py::class_<PropertiesProxy, propsproxy_ptr_t>(module_core, "PropertiesProxy", py::module_local()) //
+      py::class_<PropertiesProxy, propsproxy_ptr_t>(module_core, "PropertiesProxy") //
           .def(
               "__getattr__",                                                           //
               [](propsproxy_ptr_t proxy, const std::string& key) -> py::object { //
@@ -227,13 +227,13 @@ void pyinit_reflection(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   using hotkey_ptr_t = std::shared_ptr<HotKey>;
   auto hkey_type =                                                              //
-      py::class_<HotKey,Object,hotkey_ptr_t>(module_core, "HotKey", py::module_local()) //
+      py::class_<HotKey,Object,hotkey_ptr_t>(module_core, "HotKey") //
           .def(py::init<>());
   type_codec->registerStdCodec<hotkey_ptr_t>(hkey_type);
   /////////////////////////////////////////////////////////////////////////////////
   using hotkeyconfig_ptr_t = std::shared_ptr<HotKeyConfiguration>;
   auto hkeycfg_type =                                                              //
-      py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration", py::module_local()) //
+      py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration") //
           .def(py::init<>())
           .def("createHotKey", [](HotKeyConfiguration& hkc, std::string actionname) -> hotkey_ptr_t {
             auto hk = std::make_shared<HotKey>();

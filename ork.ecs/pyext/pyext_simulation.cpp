@@ -15,7 +15,7 @@ namespace ork::ecs {
 void pyinit_simulation(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto sim_type = py::class_<Simulation, simulation_ptr_t>(module_ecs, "Simulation", py::module_local())
+  auto sim_type = py::class_<Simulation, simulation_ptr_t>(module_ecs, "Simulation")
       //.def(py::init([](scenedata_ptr_t scene, pyapplication_ptr_t app){
       // return std::make_shared<Simulation>(scene,app.get());
       //}))

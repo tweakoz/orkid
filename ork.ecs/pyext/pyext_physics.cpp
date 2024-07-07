@@ -16,7 +16,7 @@ void pyinit_physics(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto bullc_type =
-      py::class_<BulletObjectComponentData, ComponentData, bulletcompdata_ptr_t>(module_ecs, "BulletObjectComponentData", py::module_local())
+      py::class_<BulletObjectComponentData, ComponentData, bulletcompdata_ptr_t>(module_ecs, "BulletObjectComponentData")
           .def(
               "__repr__",
               [](bulletcompdata_ptr_t physc) -> std::string {
@@ -109,7 +109,7 @@ void pyinit_physics(py::module& module_ecs) {
 
   type_codec->registerStdCodec<bulletcompdata_ptr_t>(bullc_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto shapebase_type = py::class_<BulletShapeBaseData, ork::Object, shapedata_ptr_t>(module_ecs, "BulletShapeBaseData", py::module_local())
+  auto shapebase_type = py::class_<BulletShapeBaseData, ork::Object, shapedata_ptr_t>(module_ecs, "BulletShapeBaseData")
                             .def("__repr__", [](const shapedata_ptr_t& shape) -> std::string {
                               fxstring<256> fxs;
                               fxs.format("ecs::BulletShapeBaseData(%p)", shape.get());
@@ -118,7 +118,7 @@ void pyinit_physics(py::module& module_ecs) {
   type_codec->registerStdCodec<shapedata_ptr_t>(shapebase_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapesphere_type =
-      py::class_<BulletShapeSphereData, BulletShapeBaseData, bulletshapespheredata_ptr_t>(module_ecs, "BulletShapeSphereData", py::module_local())
+      py::class_<BulletShapeSphereData, BulletShapeBaseData, bulletshapespheredata_ptr_t>(module_ecs, "BulletShapeSphereData")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -134,7 +134,7 @@ void pyinit_physics(py::module& module_ecs) {
   type_codec->registerStdCodec<bulletshapespheredata_ptr_t>(shapesphere_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapecapsule_type =
-      py::class_<BulletShapeCapsuleData, BulletShapeBaseData, bulletshapecapsuledata_ptr_t>(module_ecs, "BulletShapeCapsuleData", py::module_local())
+      py::class_<BulletShapeCapsuleData, BulletShapeBaseData, bulletshapecapsuledata_ptr_t>(module_ecs, "BulletShapeCapsuleData")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -154,7 +154,7 @@ void pyinit_physics(py::module& module_ecs) {
   type_codec->registerStdCodec<bulletshapecapsuledata_ptr_t>(shapecapsule_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapeplane_type =
-      py::class_<BulletShapePlaneData, BulletShapeBaseData, bulletshapeplanedata_ptr_t>(module_ecs, "BulletShapePlaneData", py::module_local())
+      py::class_<BulletShapePlaneData, BulletShapeBaseData, bulletshapeplanedata_ptr_t>(module_ecs, "BulletShapePlaneData")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -174,7 +174,7 @@ void pyinit_physics(py::module& module_ecs) {
   type_codec->registerStdCodec<bulletshapeplanedata_ptr_t>(shapeplane_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto shapemesh_type =
-      py::class_<BulletShapeMeshData, BulletShapeBaseData, bulletshapemeshdata_ptr_t>(module_ecs, "BulletShapeMeshData", py::module_local())
+      py::class_<BulletShapeMeshData, BulletShapeBaseData, bulletshapemeshdata_ptr_t>(module_ecs, "BulletShapeMeshData")
           .def(py::init<>())
           .def(
               "__repr__",
@@ -205,7 +205,7 @@ void pyinit_physics(py::module& module_ecs) {
               [](bulletshapemeshdata_ptr_t& shape, fvec3 val) { shape->_translation = val; });
   type_codec->registerStdCodec<bulletshapemeshdata_ptr_t>(shapemesh_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto bullsys_type = py::class_<BulletSystemData, SystemData, bulletsysdata_ptr_t>(module_ecs, "BulletSystemData", py::module_local())
+  auto bullsys_type = py::class_<BulletSystemData, SystemData, bulletsysdata_ptr_t>(module_ecs, "BulletSystemData")
                           .def(
                               "__repr__",
                               [](const bulletsysdata_ptr_t& sysdata) -> std::string {
@@ -244,7 +244,7 @@ void pyinit_physics(py::module& module_ecs) {
                          });
   /////////////////////////////////////////////////////////////////////////////////
   auto bulldfc_type =
-      py::class_<DirectionalForceData, BulletObjectForceControllerData, directionalfcdata_ptr_t>(module_ecs, "DirectionalForceData", py::module_local())
+      py::class_<DirectionalForceData, BulletObjectForceControllerData, directionalfcdata_ptr_t>(module_ecs, "DirectionalForceData")
           .def(py::init<>())
           .def(
               "__repr__",

@@ -28,7 +28,7 @@ void init_math_la_float(py::module& module_core,python::typecodec_ptr_t type_cod
   };
   //
   auto dcxf_type = //
-      py::class_<DecompTransform, decompxf_ptr_t>(module_core, "Transform", py::module_local())
+      py::class_<DecompTransform, decompxf_ptr_t>(module_core, "Transform")
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def_property(

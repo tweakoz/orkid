@@ -14,7 +14,7 @@ namespace ork::ecs {
 void pyinit_controller(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto ctrl_type = py::class_<Controller, controller_ptr_t>(module_ecs, "Controller", py::module_local())
+  auto ctrl_type = py::class_<Controller, controller_ptr_t>(module_ecs, "Controller")
       .def(py::init<>())
       .def(
           "__repr__",
@@ -142,7 +142,7 @@ void pyinit_controller(py::module& module_ecs) {
         
   type_codec->registerStdCodec<controller_ptr_t>(ctrl_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sref_t = py::class_<SystemRef>(module_ecs, "SystemRef", py::module_local())//
+  auto sref_t = py::class_<SystemRef>(module_ecs, "SystemRef")//
   .def("__repr__", [](const sys_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::SystemRef id(0x%zx)", sys._sysID);
@@ -150,7 +150,7 @@ void pyinit_controller(py::module& module_ecs) {
   });
   type_codec->registerStdCodec<SystemRef>(sref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto eref_t = py::class_<EntityRef>(module_ecs, "EntityRef", py::module_local())//
+  auto eref_t = py::class_<EntityRef>(module_ecs, "EntityRef")//
   .def("__repr__", [](const ent_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::EntityRef id(0x%zx)", sys._entID);
@@ -161,7 +161,7 @@ void pyinit_controller(py::module& module_ecs) {
   });
   type_codec->registerStdCodec<EntityRef>(eref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto cref_t = py::class_<ComponentRef>(module_ecs, "ComponentRef", py::module_local())//
+  auto cref_t = py::class_<ComponentRef>(module_ecs, "ComponentRef")//
   .def("__repr__", [](const comp_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::ComponentRef id(0x%zx)", sys._compID);
@@ -169,7 +169,7 @@ void pyinit_controller(py::module& module_ecs) {
   });
   type_codec->registerStdCodec<ComponentRef>(cref_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto rref_t = py::class_<ResponseRef>(module_ecs, "ResponseRef", py::module_local())//
+  auto rref_t = py::class_<ResponseRef>(module_ecs, "ResponseRef")//
   .def("__repr__", [](const response_ref_t& sys) -> std::string {
     fxstring<256> fxs;
     fxs.format("ecs::ResponseRef id(0x%zx)", sys._responseID);

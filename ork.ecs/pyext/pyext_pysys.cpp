@@ -16,7 +16,7 @@ void pyinit_pysys(py::module& module_ecs) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto pyc_type =
-      py::class_<PythonComponentData, ComponentData, pycompdata_ptr_t>(module_ecs, "PythonComponentData", py::module_local())
+      py::class_<PythonComponentData, ComponentData, pycompdata_ptr_t>(module_ecs, "PythonComponentData")
           .def(
               "__repr__",
               [](pycompdata_ptr_t physc) -> std::string {
@@ -26,7 +26,7 @@ void pyinit_pysys(py::module& module_ecs) {
               });
   type_codec->registerStdCodec<pycompdata_ptr_t>(pyc_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto pysys_type = py::class_<PythonSystemData, SystemData, pysysdata_ptr_t>(module_ecs, "PythonSystemData", py::module_local())
+  auto pysys_type = py::class_<PythonSystemData, SystemData, pysysdata_ptr_t>(module_ecs, "PythonSystemData")
                           .def(
                               "__repr__",
                               [](pysysdata_ptr_t sysdata) -> std::string {

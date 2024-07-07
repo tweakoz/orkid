@@ -136,6 +136,13 @@ void pyinit_reflection(py::module& module_core);
 
 //PYBIND11_MODULE(_core, module_core) {
 void _core_init_classes(py::module& module_core) {
+  auto type_codec = python::TypeCodec::instance();
+  auto try_marker = type_codec->getProperty<bool>("_marker_core");
+  if (try_marker) {
+    return;
+  }
+  type_codec->setProperty<bool>("_marker_core", true);
+
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
@@ -149,11 +156,10 @@ void _core_init_classes(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
-  auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using coreapp_ptr_t   = std::shared_ptr<CorePythonApplication>;
-  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application", py::module_local())
+  auto application_type = py::class_<CorePythonApplication, coreapp_ptr_t>(module_core, "Application")
                               .def("__repr__", [](coreapp_ptr_t app) -> std::string {
                                 fxstring<256> fxs;
                                 fxs.format("OrkPyCoreApp(%p)", (void*)app.get());
@@ -161,14 +167,14 @@ void _core_init_classes(py::module& module_core) {
                               });
   type_codec->registerStdCodec<coreapp_ptr_t>(application_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<PoolString>(module_core, "PoolString", py::module_local()) //
+  py::class_<PoolString>(module_core, "PoolString") //
       .def("__repr__", [](const PoolString& s) -> std::string {
         fxstring<512> fxs;
         fxs.format("PoolString(%s)", s.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<file::Path>(module_core, "Path", py::module_local())
+  py::class_<file::Path>(module_core, "Path")
       .def(py::init<std::string>())
       .def_property_readonly(
           "normalized",
@@ -233,7 +239,7 @@ void _core_init_classes(py::module& module_core) {
   };
   /////////////////////////////////////////////////////////////////////////////////
   auto varmaptype_t =                                                         //
-      py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap", py::module_local()) //
+      py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap") //
           .def(py::init<>())
           .def(py::init([](py::dict dict) -> varmap::varmap_ptr_t {
             auto vmap = std::make_shared<varmap::VarMap>();
@@ -313,7 +319,7 @@ void _core_init_classes(py::module& module_core) {
   type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto updata_type =                                                              //
-      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_core, "UpdateData", py::module_local()) //
+      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_core, "UpdateData") //
           .def(py::init<>())
           .def_property(
               "absolutetime",                             //

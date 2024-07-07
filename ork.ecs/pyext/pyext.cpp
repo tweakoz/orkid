@@ -174,9 +174,17 @@ void import_orkengine_lev2_into(py::module_ &m) {
 }
 
 void _ecs_init_classes(py::module_ &module_ecs) {
+  auto type_codec = python::TypeCodec::instance();
+  auto try_marker = type_codec->getProperty<bool>("_marker_ecs");
+  if (try_marker) {
+    return;
+  }
+  type_codec->setProperty<bool>("_marker_ecs", true);
+
+
   //module_ecs.attr("__name__") = "ecs";
-  import_orkengine_core_into(module_ecs);
-  import_orkengine_lev2_into(module_ecs);
+  //import_orkengine_core_into(module_ecs);
+  //import_orkengine_lev2_into(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////
