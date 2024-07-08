@@ -37,14 +37,24 @@ namespace ork::python {
 
 using varval_t = varmap::var_t;
 
+template <typename ADAPTER> struct ORK_API TypeCodec;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct pybind11adapter {
+
+  using codec_t       = TypeCodec<pybind11adapter>;
+  using codec_ptr_t   = std::shared_ptr<codec_t>;
+
+  using module_t      = pybind11::module_;
   using object_t      = pybind11::object;
   using handle_t      = pybind11::handle;
   using kwargs_t      = pybind11::kwargs;
   using kw_arg_pair_t = std::pair<std::string, object_t>;
   using list_t        = pybind11::list;
+  using str_t         = pybind11::str;
+  using float_t         = pybind11::float_;
+  using int_t         = pybind11::int_;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -66,6 +76,10 @@ struct pybind11adapter {
   template <typename T> static void cast_to_v64(const object_t& inpval, svar64_t& outval);
   template <typename T> static object_t cast_var_to_py(const varval_t& var);
   template <typename T> static object_t cast_v64_to_py(const svar64_t& v64);
+  template <typename T> static bool isinstance(const object_t& inpval);
+
+  template <typename... Args>
+  static auto init(Args&&... args);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

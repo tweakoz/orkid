@@ -22,40 +22,47 @@ namespace ork::python {
 
 ////////////////////////////////////////////////////////////////
 
-template <typename T> 
-T pybind11adapter::cast2ork(const object_t& obj) {
-    return obj.cast<T>();
+template <typename T> T pybind11adapter::cast2ork(const object_t& obj) {
+  return obj.cast<T>();
 }
-    //////////////////////////////////
-  template <typename T> pybind11::object pybind11adapter::handle2object(const T& obj) {
-    return pybind11::cast<object_t>(obj);
-  }
-  template <typename T> pybind11::object pybind11adapter::cast_to_pyobject(const T& obj) {
-    return pybind11::cast<object_t>(obj);
-  }
-  template <typename T> pybind11::object pybind11adapter::cast_to_pyhandle(const T& obj) {
-    return pybind11::cast<handle_t>(obj);
-  }
-  template <typename T> void pybind11adapter::cast_to_var(const pybind11::object& inpval, varval_t& outval) {
-    auto ork_val = cast2ork<T>(inpval);
-    outval.set<T>(ork_val);
-  }
-  template <typename T> void  pybind11adapter::cast_to_v64(const pybind11::object& inpval, svar64_t& outval) {
-    auto ork_val = cast2ork<T>(inpval);
-    outval.set<T>(ork_val);
-  }
+//////////////////////////////////
+template <typename T> pybind11::object pybind11adapter::handle2object(const T& obj) {
+  return pybind11::cast<object_t>(obj);
+}
+template <typename T> pybind11::object pybind11adapter::cast_to_pyobject(const T& obj) {
+  return pybind11::cast<object_t>(obj);
+}
+template <typename T> pybind11::object pybind11adapter::cast_to_pyhandle(const T& obj) {
+  return pybind11::cast<handle_t>(obj);
+}
+template <typename T> void pybind11adapter::cast_to_var(const pybind11::object& inpval, varval_t& outval) {
+  auto ork_val = cast2ork<T>(inpval);
+  outval.set<T>(ork_val);
+}
+template <typename T> void pybind11adapter::cast_to_v64(const pybind11::object& inpval, svar64_t& outval) {
+  auto ork_val = cast2ork<T>(inpval);
+  outval.set<T>(ork_val);
+}
 
-  template <typename T> pybind11::object pybind11adapter::cast_var_to_py(const varval_t& var) {
-    return pybind11::cast(var.get<T>());
-  }
-  template <typename T> pybind11::object pybind11adapter::cast_v64_to_py(const svar64_t& v64) {
-    return pybind11::cast(v64.get<T>());
-  }
+template <typename T> pybind11::object pybind11adapter::cast_var_to_py(const varval_t& var) {
+  return pybind11::cast(var.get<T>());
+}
+template <typename T> pybind11::object pybind11adapter::cast_v64_to_py(const svar64_t& v64) {
+  return pybind11::cast(v64.get<T>());
+}
+template <typename T> bool pybind11adapter::isinstance(const object_t& obj) {
+  return pybind11::isinstance<T>(obj);
+}
+
+template <typename... Args> auto pybind11adapter::init(Args&&... args) {
+  return pybind11::init(std::forward<Args>(args)...);
+}
 ////////////////////////////////////////////////////////////////
 
 struct ReflectionCodecAdapter {
-  inline ReflectionCodecAdapter(object_ptr_t obj, //
-                         pb11_typecodec_ptr_t codec)
+  inline ReflectionCodecAdapter(
+      object_ptr_t obj, //
+      pb11_typecodec_ptr_t codec)
       : _object(obj)
       , _codec(codec) {
   }
@@ -69,12 +76,13 @@ struct ReflectionCodecAdapter {
 ////////////////////////////////////////////////////////////////
 
 template <typename T, typename PT> struct TypedArrayCodecAdapter : public ReflectionCodecAdapter {
-  using typedprop_t = reflect::ITyped<T>;
+  using typedprop_t  = reflect::ITyped<T>;
   using pythontype_t = PT;
-  using arrayprop_t = reflect::ITypedArray<T>;
-  TypedArrayCodecAdapter(object_ptr_t obj, //
-                         arrayprop_t* prop, //
-                         pb11_typecodec_ptr_t codec) //
+  using arrayprop_t  = reflect::ITypedArray<T>;
+  TypedArrayCodecAdapter(
+      object_ptr_t obj,           //
+      arrayprop_t* prop,          //
+      pb11_typecodec_ptr_t codec) //
       : ReflectionCodecAdapter(obj, codec)
       , _property(prop) {
   }
@@ -95,9 +103,10 @@ template <typename T, typename PT> struct TypedArrayCodecAdapter : public Reflec
 
 struct ObjectArrayCodecAdapter : public ReflectionCodecAdapter {
   using arrayprop_t = reflect::IObjectArray;
-  ObjectArrayCodecAdapter(object_ptr_t obj, //
-                          arrayprop_t* prop, //
-                          pb11_typecodec_ptr_t codec);
+  ObjectArrayCodecAdapter(
+      object_ptr_t obj,  //
+      arrayprop_t* prop, //
+      pb11_typecodec_ptr_t codec);
   pybind11::object encode() final;
 
   arrayprop_t* _property = nullptr;
@@ -107,20 +116,22 @@ struct ObjectArrayCodecAdapter : public ReflectionCodecAdapter {
 
 struct ObjectMapCodecAdapter : public ReflectionCodecAdapter {
   using mapprop_t = reflect::IObjectMap;
-  ObjectMapCodecAdapter(object_ptr_t obj, //
-                       mapprop_t* prop, //
-                       pb11_typecodec_ptr_t codec);
-  pybind11::object encode() final ;
+  ObjectMapCodecAdapter(
+      object_ptr_t obj, //
+      mapprop_t* prop,  //
+      pb11_typecodec_ptr_t codec);
+  pybind11::object encode() final;
   mapprop_t* _property = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////
 
 struct SDObjectMapCodecAdapter : public ReflectionCodecAdapter {
-  using mapprop_t = reflect::ITypedMap<std::string,object_ptr_t>;
-  SDObjectMapCodecAdapter(object_ptr_t obj, //
-                          mapprop_t* prop, //
-                          pb11_typecodec_ptr_t codec);
+  using mapprop_t = reflect::ITypedMap<std::string, object_ptr_t>;
+  SDObjectMapCodecAdapter(
+      object_ptr_t obj, //
+      mapprop_t* prop,  //
+      pb11_typecodec_ptr_t codec);
   pybind11::object encode() final;
   mapprop_t* _property = nullptr;
 };
@@ -128,9 +139,9 @@ struct SDObjectMapCodecAdapter : public ReflectionCodecAdapter {
 ////////////////////////////////////////////////////////////////
 using refl_codec_adapter_ptr_t = std::shared_ptr<ReflectionCodecAdapter>;
 ////////////////////////////////////////////////////////////////
-using IntArrayPropertyAdapter= TypedArrayCodecAdapter<int, pybind11::int_>;
+using IntArrayPropertyAdapter   = TypedArrayCodecAdapter<int, pybind11::int_>;
 using FloatArrayPropertyAdapter = TypedArrayCodecAdapter<float, pybind11::float_>;
 ////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
-} //namespace ork::python {
+} // namespace ork::python
