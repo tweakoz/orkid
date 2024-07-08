@@ -18,14 +18,14 @@ namespace nb = nanobind;
 
 namespace ork {
 namespace python {
-  void init_math(py::module& module_ecssim,python::typecodec_ptr_t type_codec);
+  void init_math(py::module& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
 }
 }
 
 namespace ork::ecssim {
 
-void register_simulation(nb::module_& module_ecssim,python::typecodec_ptr_t type_codec);
-void register_system(nb::module_& module_ecssim,python::typecodec_ptr_t type_codec);
+void register_simulation(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
+void register_system(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
 
 } // namespace ork::ecs
 
@@ -33,7 +33,7 @@ void register_system(nb::module_& module_ecssim,python::typecodec_ptr_t type_cod
 
 void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //auto type_codec = ork::ecssim::simonly_codec_instance();
-  auto type_codec = ork::python::typecodec_t::instance();
+  auto type_codec = ork::python::pb11_typecodec_t::instance();
 
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////

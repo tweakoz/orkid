@@ -16,7 +16,7 @@ namespace nb = nanobind;
 
 namespace ork::ecssim {
 using sim_raw_ptr_t = ::ork::ecs::Simulation*;
-void register_simulation(nb::module_& module_ecssim,python::typecodec_ptr_t type_codec) {
+void register_simulation(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto sim_type = nb::class_<::ork::ecs::Simulation>(module_ecssim, "Simulation")
       ////////////////////////////////////////////////////////////////////

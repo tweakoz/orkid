@@ -12,7 +12,7 @@
 namespace ork::ecs {
 
 void pyinit_entity(py::module& module_ecs) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto entity_type = py::class_<pyentity_ptr_t>(module_ecs, "Entity")
       .def(

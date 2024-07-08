@@ -26,7 +26,7 @@ namespace ork::audio::singularity {
 using namespace ork::lev2;
 
 void pyinit_aud_singularity_ui(py::module& singmodule) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto scopesource_type = //
       py::class_<ScopeSource, scopesource_ptr_t>(singmodule, "ScopeSource")

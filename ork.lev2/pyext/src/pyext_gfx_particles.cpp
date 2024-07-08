@@ -20,7 +20,7 @@ namespace ptc = particle;
 
 void pyinit_gfx_particles(py::module& module_lev2) {
   auto ptc_module  = module_lev2.def_submodule("particles", "lev2 dataflow particles");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_base_type = //

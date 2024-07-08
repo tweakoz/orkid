@@ -163,7 +163,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   ::ork::audio::singularity::pyinit_aud_singularity(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   using namespace lev2::ged;
   auto gedto_type =                                                              //
       py::class_<TestObject,Object,testobject_ptr_t>(module_lev2, "GedTestObject") //

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/lev2/gfx/gfxenv.h>

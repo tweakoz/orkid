@@ -15,7 +15,7 @@ using namespace asset;
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_asset(py::module& module_core) {
   auto amodule  = module_core.def_submodule("asset", "core asset operations");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   amodule.def("enqueueLoad", [type_codec](py::kwargs _kwargs) -> loadrequest_ptr_t {
 

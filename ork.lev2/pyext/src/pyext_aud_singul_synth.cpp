@@ -29,7 +29,7 @@ using prginst_rawptr_t = ork::python::unmanaged_ptr<programInst>;
 
 void pyinit_aud_singularity_synth(py::module& singmodule) {
   /////////////////////////////////////////////////////////////////////////////////
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto auddev_t = py::class_<AudioDevice, audiodevice_ptr_t>(singmodule, "device") //
                       .def_static("instance", []() -> audiodevice_ptr_t {          //

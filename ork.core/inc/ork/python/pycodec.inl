@@ -7,99 +7,112 @@
 
 #pragma once
 
-#include <ork/python/pycodec.h>
-#include <ork/reflect/serialize/JsonDeserializer.h>
-#include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/object/Object.h>
-#include <ork/reflect/properties/ITyped.h>
-#include <ork/reflect/properties/ITypedArray.h>
-#include <ork/reflect/properties/ITypedMap.h>
-#include <ork/reflect/properties/IObjectArray.h>
-#include <ork/reflect/properties/IObject.h>
-#include <ork/reflect/properties/IObjectMap.h>
+#include "pycodec_pybind11.inl"
+#include "pycodec_nanobind.inl"
 
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
+///////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////
+template <typename ADAPTER> template <typename ORKTYPE> void TypeCodec<ADAPTER>::registerStdCodec(const ADAPTER::object_t& pytype) {
+  this->registerCodec(
+      pytype, //
+      TypeId::of<ORKTYPE>(),
+      [](const varval_t& inpval, ADAPTER::object_t& outval) { // encoder
+        outval = ADAPTER::template cast_var_to_py<ORKTYPE>(inpval);
+      },
+      [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
+        ADAPTER::template cast_to_var<ORKTYPE>(inpval, outval);
+      });
+  this->registerCodec64(
+      pytype, //
+      TypeId::of<ORKTYPE>(),
+      [](const svar64_t& inpval, ADAPTER::object_t& outval) { // encoder
+        outval = ADAPTER::template cast_v64_to_py<ORKTYPE>(inpval);
+      },
+      [](const ADAPTER::object_t& inpval, svar64_t& outval) { // decoder
+        ADAPTER::template cast_to_v64<ORKTYPE>(inpval, outval);
+      });
+}
 
-struct ReflectionCodecAdapter {
-  inline ReflectionCodecAdapter(object_ptr_t obj, //
-                         typecodec_ptr_t codec)
-      : _object(obj)
-      , _codec(codec) {
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ADAPTER>
+template <typename ORKTYPE>
+void TypeCodec<ADAPTER>::registerStdCodecBIG(const ADAPTER::object_t& pytype) {
+  this->registerCodec(
+      pytype, //
+      TypeId::of<ORKTYPE>(),
+      [](const varval_t& inpval, ADAPTER::object_t& outval) { // encoder
+        outval = ADAPTER::template cast_var_to_py<ORKTYPE>(inpval);
+      },
+      [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
+        ADAPTER::template cast_to_var<ORKTYPE>(inpval, outval);
+      });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ADAPTER>
+template <typename PYREPR, typename ORKTYPE> //
+void TypeCodec<ADAPTER>::registerRawPtrCodec(const ADAPTER::object_t& pytype) {
+  this->registerCodec(
+      pytype, //
+      TypeId::of<ORKTYPE>(),
+      [](const varval_t& inpval, ADAPTER::object_t& outval) { // encoder
+        auto rawval = inpval.get<ORKTYPE>();
+        auto pyrepr = PYREPR(rawval);
+        // auto h = ADAPTER::template cast_to_pyobject(pyrepr);
+        auto h = pybind11::cast(pyrepr);
+        outval = h; // ADAPTER::cast_to_pyobject(h);
+      },
+      [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
+        auto intermediate_val = inpval.template cast<PYREPR>();
+        auto ptr_val          = intermediate_val.get();
+        outval.set<ORKTYPE>(ptr_val);
+      });
+  this->registerCodec64(
+      pytype, //
+      TypeId::of<ORKTYPE>(),
+      [](const svar64_t& inpval, ADAPTER::object_t& outval) { // encoder
+        auto rawval = inpval.get<ORKTYPE>();
+        auto pyrepr = PYREPR(rawval);
+        // auto h = ADAPTER::template cast_to_pyobject<PYREPR>(pyrepr);
+        auto h = pybind11::cast(pyrepr);
+        outval = h; // ADAPTER::cast_to_pyobject(h);
+      },
+      [](const ADAPTER::object_t& inpval, svar64_t& outval) { // decoder
+        auto intermediate_val = inpval.template cast<PYREPR>();
+        auto ptr_val          = intermediate_val.get();
+        outval.set<ORKTYPE>(ptr_val);
+      });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ADAPTER> varmap::VarMap TypeCodec<ADAPTER>::decode_kwargs(ADAPTER::kwargs_t kwargs) { //
+  auto from_py = ADAPTER::decodeKwArgs(kwargs);
+  varmap::VarMap rval;
+  for (auto item : from_py) {
+    auto key = item.first;
+    auto obj = item.second;
+    auto val = this->decode(obj);
+    rval.setValueForKey(key, val);
   }
-  inline virtual ~ReflectionCodecAdapter() {
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ADAPTER> std::vector<varval_t> TypeCodec<ADAPTER>::decodeList(ADAPTER::list_t py_args) {
+  auto as_objlist = ADAPTER::decodeList(py_args);
+  std::vector<varval_t> decoded_list;
+  for (auto list_item : as_objlist) {
+    varval_t val = this->decode(list_item);
+    decoded_list.push_back(val);
   }
-  virtual pybind11::object encode() = 0;
-  object_ptr_t _object;
-  typecodec_ptr_t _codec;
-};
+  return decoded_list;
+}
 
-////////////////////////////////////////////////////////////////
-
-template <typename T, typename PT> struct TypedArrayCodecAdapter : public ReflectionCodecAdapter {
-  using typedprop_t = reflect::ITyped<T>;
-  using pythontype_t = PT;
-  using arrayprop_t = reflect::ITypedArray<T>;
-  TypedArrayCodecAdapter(object_ptr_t obj, //
-                         arrayprop_t* prop, //
-                         typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object encode() final {
-    pybind11::list pylist;
-    size_t count = _property->count(_object);
-    for (size_t i = 0; i < count; i++) {
-      T value;
-      _property->get(value, _object, i);
-      pylist.append(pythontype_t(value));
-    }
-    return std::move(pylist);
-  }
-  arrayprop_t* _property = nullptr;
-};
-
-////////////////////////////////////////////////////////////////
-
-struct ObjectArrayCodecAdapter : public ReflectionCodecAdapter {
-  using arrayprop_t = reflect::IObjectArray;
-  ObjectArrayCodecAdapter(object_ptr_t obj, //
-                          arrayprop_t* prop, //
-                          typecodec_ptr_t codec);
-  pybind11::object encode() final;
-
-  arrayprop_t* _property = nullptr;
-};
-
-////////////////////////////////////////////////////////////////
-
-struct ObjectMapCodecAdapter : public ReflectionCodecAdapter {
-  using mapprop_t = reflect::IObjectMap;
-  ObjectMapCodecAdapter(object_ptr_t obj, //
-                       mapprop_t* prop, //
-                       typecodec_ptr_t codec);
-  pybind11::object encode() final ;
-  mapprop_t* _property = nullptr;
-};
-
-////////////////////////////////////////////////////////////////
-
-struct SDObjectMapCodecAdapter : public ReflectionCodecAdapter {
-  using mapprop_t = reflect::ITypedMap<std::string,object_ptr_t>;
-  SDObjectMapCodecAdapter(object_ptr_t obj, //
-                          mapprop_t* prop, //
-                          typecodec_ptr_t codec);
-  pybind11::object encode() final;
-  mapprop_t* _property = nullptr;
-};
-
-////////////////////////////////////////////////////////////////
-using refl_codec_adapter_ptr_t = std::shared_ptr<ReflectionCodecAdapter>;
-////////////////////////////////////////////////////////////////
-using IntArrayPropertyAdapter= TypedArrayCodecAdapter<int, pybind11::int_>;
-using FloatArrayPropertyAdapter = TypedArrayCodecAdapter<float, pybind11::float_>;
-////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////
-} //namespace ork::python {
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::python

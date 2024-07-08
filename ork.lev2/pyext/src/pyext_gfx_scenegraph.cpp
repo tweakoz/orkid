@@ -10,7 +10,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ using namespace scenegraph;
 
 void pyinit_scenegraph(py::module& module_lev2) {
   auto sgmodule   = module_lev2.def_submodule("scenegraph", "SceneGraph operations");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto synchro_type = //
       py::class_<Synchro, synchro_ptr_t>(sgmodule, "Synchro");

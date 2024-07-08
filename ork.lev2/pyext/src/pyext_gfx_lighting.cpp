@@ -16,7 +16,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_lighting(py::module& module_lev2) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto lmd_type_t = py::class_<LightManagerData, lightmanagerdata_ptr_t>(module_lev2, "LightManagerData");
   type_codec->registerStdCodec<lightmanagerdata_ptr_t>(lmd_type_t);

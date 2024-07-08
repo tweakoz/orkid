@@ -15,7 +15,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_xgmanim(py::module& module_lev2) {
-  auto type_codec                  = python::typecodec_t::instance();
+  auto type_codec                  = python::pb11_typecodec_t::instance();
   module_lev2.attr("animMaxBones") = kmaxbones;
   /////////////////////////////////////////////////////////////////////////////////
   auto dcmtx_type_t = py::class_<DecompMatrix>(module_lev2, "DecompMatrix") //

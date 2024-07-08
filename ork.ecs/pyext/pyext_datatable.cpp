@@ -16,7 +16,7 @@ namespace ork::ecs {
 
 
 void pyinit_datatable(py::module& module_ecs) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
 /////////////////////////////////////////////////////////////////////////////////
   auto d_type = py::class_<DataTable,datatable_ptr_t>(module_ecs, "DataTable")
       .def(py::init<>())

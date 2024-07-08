@@ -13,7 +13,7 @@
 
 namespace ork::ecs {
 void pyinit_simulation(py::module& module_ecs) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto sim_type = py::class_<Simulation, simulation_ptr_t>(module_ecs, "Simulation")
       //.def(py::init([](scenedata_ptr_t scene, pyapplication_ptr_t app){

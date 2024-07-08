@@ -27,7 +27,7 @@ void pyinit_ui_layout(py::module& module_ui);
 
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   uimodule.def(
       "popupOpenDialog",

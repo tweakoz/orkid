@@ -17,7 +17,7 @@ namespace ork::lev2 {
 
 void pyinit_editor(py::module& module_lev2) {
   using namespace editor;
-  auto type_codec                  = python::typecodec_t::instance();
+  auto type_codec                  = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto ed_type_t = py::class_<Editor, editor_ptr_t>(module_lev2, "Editor") //
                          .def(py::init([]() -> editor_ptr_t {

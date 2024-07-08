@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -51,6 +51,6 @@ using pysystem_ptr_t     = ork::python::unmanaged_ptr<System>;
 using pysgsystem_ptr_t   = ork::python::unmanaged_ptr<SceneGraphSystem>;
 
 using namespace ::ork::python;
-extern typecodec_ptr_t simonly_codec_instance();
+extern pb11_typecodec_ptr_t simonly_codec_instance();
 
 } // namespace ork::lev2

@@ -27,8 +27,8 @@ struct CorePythonApplication {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 namespace python {
-  void init_math(py::module& module_core,python::typecodec_ptr_t type_codec);
-  void init_crcstring(py::module& module_core,python::typecodec_ptr_t type_codec);
+  void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
+  void init_crcstring(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 }
 
 void pyinit_dataflow(py::module& module_core);
@@ -148,7 +148,7 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using coreapp_ptr_t   = std::shared_ptr<CorePythonApplication>;

@@ -31,7 +31,7 @@ using namespace pybind11::literals;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
-void init_crcstring(py::module& module_core, python::typecodec_ptr_t type_codec);
+void init_crcstring(py::module& module_core, python::pb11_typecodec_ptr_t type_codec);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,8 +39,8 @@ namespace ork::ecssim {
 
 using namespace ::ork::python;
 
-typecodec_ptr_t simonly_codec_instance() { // static
-  struct TypeCodecFactory : public typecodec_t {
+pb11_typecodec_ptr_t simonly_codec_instance() { // static
+  struct TypeCodecFactory : public pb11_typecodec_t {
     TypeCodecFactory()
         : TypeCodec(){};
   };

@@ -30,7 +30,7 @@ struct ScriptObject;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecssim {
-  extern ::ork::python::typecodec_ptr_t simonly_codec_instance();
+  extern ::ork::python::pb11_typecodec_ptr_t simonly_codec_instance();
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +110,7 @@ public:
   template <typename Arg>
   auto process_arg(Arg&& arg) {
       //auto type_codec = ecssim::simonly_codec_instance();
-        auto type_codec = ork::python::typecodec_t::instance();
+        auto type_codec = ork::python::pb11_typecodec_t::instance();
 
       return type_codec->encode(std::forward<Arg>(arg));
   }

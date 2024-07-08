@@ -14,7 +14,7 @@ namespace ork::lev2 {
 
 void pyinit_vr(py::module& module_lev2) {
   auto vrmodule   = module_lev2.def_submodule("orkidvr", "vr operations");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   vrmodule.def("novr_device", [type_codec]() -> orkidvr::device_ptr_t { //
       return orkidvr::novr::novr_device();
   });

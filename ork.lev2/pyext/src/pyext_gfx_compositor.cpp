@@ -22,7 +22,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_compositor(py::module& module_lev2) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
 
   auto scf_type = 
   py::class_<StandardCompositorFrame,standardcompositorframe_ptr_t>(module_lev2,"StandardCompositorFrame")

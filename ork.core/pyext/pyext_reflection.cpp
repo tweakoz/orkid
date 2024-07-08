@@ -29,7 +29,7 @@ namespace ork {
 using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_reflection(py::module& module_core) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
     auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
@@ -44,7 +44,7 @@ void pyinit_reflection(py::module& module_core) {
   type_codec->registerStdCodec<rtti::castable_ptr_t>(icastable_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   struct PropertiesProxy {
-    PropertiesProxy(object_ptr_t obj,typecodec_ptr_t codec)
+    PropertiesProxy(object_ptr_t obj,pb11_typecodec_ptr_t codec)
         : _object(obj)
         , _codec(codec) {
     }
@@ -128,7 +128,7 @@ void pyinit_reflection(py::module& module_core) {
       return py::none();
     }
     object_ptr_t _object;
-    ork::python::typecodec_ptr_t _codec;
+    ork::python::pb11_typecodec_ptr_t _codec;
   };
   using propsproxy_ptr_t = std::shared_ptr<PropertiesProxy>;
   auto propsproxy_type   =                                                        //

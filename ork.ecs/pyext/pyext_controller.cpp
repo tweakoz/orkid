@@ -12,7 +12,7 @@
 
 namespace ork::ecs {
 void pyinit_controller(py::module& module_ecs) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto ctrl_type = py::class_<Controller, controller_ptr_t>(module_ecs, "Controller")
       .def(py::init<>())

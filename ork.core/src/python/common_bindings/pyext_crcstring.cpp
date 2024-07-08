@@ -3,7 +3,7 @@ namespace py = pybind11;
 using namespace pybind11::literals;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
-void init_crcstring(py::module& module_core, python::typecodec_ptr_t type_codec) {
+void init_crcstring(py::module& module_core, python::pb11_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
       py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //

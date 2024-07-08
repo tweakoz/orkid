@@ -23,7 +23,7 @@ namespace ork::lev2 {
 
 namespace dflow = dataflow;
 void pyinit_gfx_drawables(py::module& module_lev2) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
   auto drawabledata_type = //

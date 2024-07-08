@@ -26,7 +26,7 @@ void on_midi_input_message(double deltatime, midi::message_t* message, void* use
 
 void pyinit_midi(py::module& module_lev2) {
   auto midi_module   = module_lev2.def_submodule("midi", "MIDI operations");
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   static int unused; // the capsule needs something to reference
   py::capsule cleanup(&unused, [](PyObject *) { 
     std::cout << "Cleanup!" << std::endl;

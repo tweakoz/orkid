@@ -11,7 +11,7 @@
 #include <ork/math/multicurve.h>
 #include <ork/math/noiselib.inl>
 #include <ork/math/audiomath.h>
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include "pyext_math_la.inl"
 
 namespace py = pybind11;
@@ -19,9 +19,9 @@ using namespace pybind11::literals;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
-void init_math_la_float(py::module& module_core,python::typecodec_ptr_t type_codec);
-void init_math_la_double(py::module& module_core,python::typecodec_ptr_t type_codec);
-void init_math(py::module& module_core,python::typecodec_ptr_t type_codec) {
+void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
+void init_math_la_double(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
+void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;

@@ -17,7 +17,7 @@
 namespace ork::lev2 {
 
 void pyinit_gfx_qtez(py::module& module_lev2) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto ezappcontext_type = //
       py::class_<EzAppContext, ezappctx_ptr_t>(module_lev2, "EzAppContext");

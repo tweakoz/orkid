@@ -15,7 +15,7 @@
 namespace ork {
 
 void pyinit_datablock(py::module& module_core) {
-  auto type_codec = python::typecodec_t::instance();
+  auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
   auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")

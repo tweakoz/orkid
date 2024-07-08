@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 //#include "pyext.h"
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
@@ -26,7 +26,7 @@ namespace ork::python {
 template <typename T>
 void pyinit_math_la_t(py::module& module_core, //
                       std::string pfx,
-                     python::typecodec_ptr_t type_codec ) { //
+                     python::pb11_typecodec_ptr_t type_codec ) { //
 
   using vec2_t = Vector2<T>;
   using vec3_t = Vector3<T>;

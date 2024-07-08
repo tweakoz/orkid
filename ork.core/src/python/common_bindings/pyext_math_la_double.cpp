@@ -10,7 +10,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {
-void init_math_la_double(py::module& module_core,python::typecodec_ptr_t type_codec) {
+void init_math_la_double(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) {
   pyinit_math_la_t<double>(module_core, "d", type_codec);
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -38,7 +38,9 @@ struct PyCodecImpl {
   std::unordered_map<ork::TypeId::hashtype_t, PyCodecItem> _codecs_by_orktype;
   std::unordered_map<ork::TypeId::hashtype_t, PyCodecItem64> _codecs64_by_orktype;
 };
-////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
 py::object PyCodecImpl::encode(const varval_t& val) const {
   py::object rval;
   if (not val.isSet()) {
@@ -72,14 +74,16 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {
-      printf( "UNKNOWNTYPE<%s>\n", val.typeName() );
+      printf("UNKNOWNTYPE<%s>\n", val.typeName());
       OrkAssert(false);
       throw std::runtime_error("pycodec-encode: unregistered type");
     }
   }
   return rval;
 }
-////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
 py::object PyCodecImpl::encode64(const svar64_t& val) const {
   py::object rval;
   if (not val.isSet()) {
@@ -113,14 +117,16 @@ py::object PyCodecImpl::encode64(const svar64_t& val) const {
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {
-      printf( "UNKNOWNTYPE<%s>\n", val.typeName() );
+      printf("UNKNOWNTYPE<%s>\n", val.typeName());
       OrkAssert(false);
       throw std::runtime_error("pycodec-encode: unregistered type");
     }
   }
   return rval;
 }
-////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
 varval_t PyCodecImpl::decode(const py::object& val) const {
   varval_t rval;
   auto type = val.get_type();
@@ -137,7 +143,9 @@ varval_t PyCodecImpl::decode(const py::object& val) const {
   OrkAssert(false); // unknown type!
   return rval;
 }
-////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
 svar64_t PyCodecImpl::decode64(const py::object& val) const {
   svar64_t rval;
   auto type = val.get_type();
@@ -155,29 +163,34 @@ svar64_t PyCodecImpl::decode64(const py::object& val) const {
   return rval;
 }
 
-//////////////////////////////////
-template <> 
-py::object typecodec_t::encode(const varval_t& val) const {
+///////////////////////////////////////////////////////////////////////////////
+
+template <> py::object pb11_typecodec_t::encode(const varval_t& val) const {
   return _impl.get<PyCodecImpl>().encode(val);
 }
-//////////////////////////////////
-template <> 
-py::object typecodec_t::encode64(const svar64_t& val) const {
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <> py::object pb11_typecodec_t::encode64(const svar64_t& val) const {
   return _impl.get<PyCodecImpl>().encode64(val);
 }
-//////////////////////////////////
-template <> 
-varval_t typecodec_t::decode(const py::object& val) const {
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <> varval_t pb11_typecodec_t::decode(const py::object& val) const {
   return _impl.get<PyCodecImpl>().decode(val);
 }
-//////////////////////////////////
-template <> 
-svar64_t typecodec_t::decode64(const py::object& val) const {
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <> svar64_t pb11_typecodec_t::decode64(const py::object& val) const {
   return _impl.get<PyCodecImpl>().decode64(val);
 }
-//////////////////////////////////
-template <> 
-void typecodec_t::registerCodec(
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <>
+void pb11_typecodec_t::registerCodec(
     const pybind11::object& pytype, //
     const ork::TypeId& orktypeid,
     encoderfn_t efn,
@@ -188,9 +201,11 @@ void typecodec_t::registerCodec(
   item._encoder = efn;
   item._decoder = dfn;
 }
-//////////////////////////////////
-template <> 
-void typecodec_t::registerCodec64(
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <>
+void pb11_typecodec_t::registerCodec64(
     const pybind11::object& pytype, //
     const ork::TypeId& orktypeid,
     encoderfn64_t efn,
@@ -202,71 +217,90 @@ void typecodec_t::registerCodec64(
   item._decoder = dfn;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
-ObjectArrayCodecAdapter::ObjectArrayCodecAdapter(object_ptr_t obj, //
-                          arrayprop_t* prop, //
-                          typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object ObjectArrayCodecAdapter::encode() {
-    pybind11::list pylist;
-    size_t count = _property->count(_object);
-    for (size_t i = 0; i < count; i++) {
-      object_ptr_t sub_object = _property->accessObject(_object, i);
-      pylist.append(_codec->encode(sub_object));
-    }
-    return std::move(pylist);
-  }
-  ObjectMapCodecAdapter::ObjectMapCodecAdapter(object_ptr_t obj, //
-                       mapprop_t* prop, //
-                       typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object ObjectMapCodecAdapter::encode() {
-    pybind11::list pylist;
-    auto as_kvarray = _property->enumerateElements(_object);
-    size_t count = as_kvarray.size();
-    for (size_t i = 0; i < count; i++) {
-      const auto& kvpair = as_kvarray[i];
-      const auto& key = kvpair.first;
-      const auto& val = kvpair.second;
-      varmap::var_t asv;
-      OrkAssert(false); // not implemented yet..
-      //object_ptr_t sub_object = _property->accessObject(_object, i);
-      //pylist.append(_codec->encode(sub_object));
-    }
-    return std::move(pylist);
-  }
-  SDObjectMapCodecAdapter::SDObjectMapCodecAdapter(object_ptr_t obj, //
-                          mapprop_t* prop, //
-                          typecodec_ptr_t codec) //
-      : ReflectionCodecAdapter(obj, codec)
-      , _property(prop) {
-  }
-  pybind11::object SDObjectMapCodecAdapter::encode() {
-    pybind11::dict pydict;
-    size_t count = _property->elementCount(_object);
-    for (size_t i = 0; i < count; i++) {
-      std::string key;
-      object_ptr_t sub_object;
-      _property->GetKey(_object,i,key);
-      _property->GetVal(_object,key,sub_object);
-      pydict[pybind11::str(key)] = _codec->encode(sub_object);
-    }
-    return std::move(pydict);
-  }
+ObjectArrayCodecAdapter::ObjectArrayCodecAdapter(
+    object_ptr_t obj,           //
+    arrayprop_t* prop,          //
+    pb11_typecodec_ptr_t codec) //
+    : ReflectionCodecAdapter(obj, codec)
+    , _property(prop) {
+}
 
-////////////////////////////////////////////////////////////////////////////////
-template<> 
-typecodec_t::TypeCodec() {
+///////////////////////////////////////////////////////////////////////////////
+
+pybind11::object ObjectArrayCodecAdapter::encode() {
+  pybind11::list pylist;
+  size_t count = _property->count(_object);
+  for (size_t i = 0; i < count; i++) {
+    object_ptr_t sub_object = _property->accessObject(_object, i);
+    pylist.append(_codec->encode(sub_object));
+  }
+  return std::move(pylist);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ObjectMapCodecAdapter::ObjectMapCodecAdapter(
+    object_ptr_t obj,           //
+    mapprop_t* prop,            //
+    pb11_typecodec_ptr_t codec) //
+    : ReflectionCodecAdapter(obj, codec)
+    , _property(prop) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+pybind11::object ObjectMapCodecAdapter::encode() {
+  pybind11::list pylist;
+  auto as_kvarray = _property->enumerateElements(_object);
+  size_t count    = as_kvarray.size();
+  for (size_t i = 0; i < count; i++) {
+    const auto& kvpair = as_kvarray[i];
+    const auto& key    = kvpair.first;
+    const auto& val    = kvpair.second;
+    varmap::var_t asv;
+    OrkAssert(false); // not implemented yet..
+    // object_ptr_t sub_object = _property->accessObject(_object, i);
+    // pylist.append(_codec->encode(sub_object));
+  }
+  return std::move(pylist);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SDObjectMapCodecAdapter::SDObjectMapCodecAdapter(
+    object_ptr_t obj,           //
+    mapprop_t* prop,            //
+    pb11_typecodec_ptr_t codec) //
+    : ReflectionCodecAdapter(obj, codec)
+    , _property(prop) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+pybind11::object SDObjectMapCodecAdapter::encode() {
+  pybind11::dict pydict;
+  size_t count = _property->elementCount(_object);
+  for (size_t i = 0; i < count; i++) {
+    std::string key;
+    object_ptr_t sub_object;
+    _property->GetKey(_object, i, key);
+    _property->GetVal(_object, key, sub_object);
+    pydict[pybind11::str(key)] = _codec->encode(sub_object);
+  }
+  return std::move(pydict);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <> pb11_typecodec_t::TypeCodec() {
   _impl.make<PyCodecImpl>();
   /////////////////////////////////////////////////
   // builtin decoders
   /////////////////////////////////////////////////
   auto builtins   = py::module::import("builtins");
-  auto bool_type   = builtins.attr("bool");
+  auto bool_type  = builtins.attr("bool");
   auto int_type   = builtins.attr("int");
   auto float_type = builtins.attr("float");
   auto str_type   = builtins.attr("str");
@@ -350,11 +384,12 @@ typecodec_t::TypeCodec() {
       [](const py::object& inpval, svar64_t& outval) { // decoder
         outval.set<std::string>(inpval.cast<std::string>());
       });
-  }
-  //////////////////////////////////
-template <> 
-std::shared_ptr<typecodec_t> typecodec_t::instance() { // static
-  struct TypeCodecFactory : public typecodec_t {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <> std::shared_ptr<pb11_typecodec_t> pb11_typecodec_t::instance() { // static
+  struct TypeCodecFactory : public pb11_typecodec_t {
     TypeCodecFactory()
         : TypeCodec(){};
   };
@@ -362,5 +397,30 @@ std::shared_ptr<typecodec_t> typecodec_t::instance() { // static
   return _instance;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
+std::vector<pybind11adapter::kw_arg_pair_t> pybind11adapter::decodeKwArgs(kwargs_t py_args) {
+  std::vector<pybind11adapter::kw_arg_pair_t> kw_args;
+  if (py_args) {
+    for (auto item : py_args) {
+      auto key = pybind11::cast<std::string>(item.first);
+      auto obj = pybind11::cast<pybind11::object>(item.second);
+      kw_args.push_back(std::make_pair(key, obj));
+      // auto val = this->decode(obj);
+      // rval.setValueForKey(key, val);
+    }
+  }
+  return kw_args;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<pybind11::object> pybind11adapter::decodeList(list_t py_args) {
+  std::vector<pybind11::object> obj_list;
+  for (auto list_item : py_args) {
+    auto as_obj = pybind11::cast<pybind11::object>(list_item);
+    obj_list.push_back(as_obj);
+  }
+  return obj_list;
+}
 } // namespace ork::python
