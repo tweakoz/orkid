@@ -19,12 +19,12 @@
       char buffer[1024];                                                                                                           \
       snprintf(buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x);    \
       try {                                                                                                                        \
-        py::object traceback       = py::module::import("traceback");                                                              \
-        py::object formatted_stack = traceback.attr("format_stack")();                                                             \
+        pyb11::object traceback       = pyb11::module::import("traceback");                                                        \
+        pyb11::object formatted_stack = traceback.attr("format_stack")();                                                          \
         for (const auto& frame : formatted_stack) {                                                                                \
-          std::cout << py::str(frame);                                                                                             \
+          std::cout << pyb11::str(frame);                                                                                          \
         }                                                                                                                          \
-      } catch (const py::error_already_set& e) {                                                                                   \
+      } catch (const pyb11::error_already_set& e) {                                                                                \
         std::cerr << "Failed to print Python call stack: " << e.what() << std::endl;                                               \
       }                                                                                                                            \
       OrkAssertFunction(&buffer[0]);                                                                                               \
@@ -41,20 +41,23 @@ template <typename ADAPTER> struct ORK_API TypeCodec;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace pyb11    = pybind11;
+namespace pyb11det = pybind11::detail;
+
 struct pybind11adapter {
 
-  using codec_t       = TypeCodec<pybind11adapter>;
-  using codec_ptr_t   = std::shared_ptr<codec_t>;
+  using codec_t     = TypeCodec<pybind11adapter>;
+  using codec_ptr_t = std::shared_ptr<codec_t>;
 
-  using module_t      = pybind11::module_;
-  using object_t      = pybind11::object;
-  using handle_t      = pybind11::handle;
-  using kwargs_t      = pybind11::kwargs;
+  using module_t      = pyb11::module_;
+  using object_t      = pyb11::object;
+  using handle_t      = pyb11::handle;
+  using kwargs_t      = pyb11::kwargs;
   using kw_arg_pair_t = std::pair<std::string, object_t>;
-  using list_t        = pybind11::list;
-  using str_t         = pybind11::str;
-  using float_t         = pybind11::float_;
-  using int_t         = pybind11::int_;
+  using list_t        = pyb11::list;
+  using str_t         = pyb11::str;
+  using float_t       = pyb11::float_;
+  using int_t         = pyb11::int_;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -78,8 +81,71 @@ struct pybind11adapter {
   template <typename T> static object_t cast_v64_to_py(const svar64_t& v64);
   template <typename T> static bool isinstance(const object_t& inpval);
 
-  template <typename... Args>
-  static auto init(Args&&... args);
+  template <typename... Args> static auto init(Args&&... args);
+
+  //////////////////////////////////
+
+  template <typename type_, typename... options>           //
+  class _clazz : public pyb11::class_<type_, options...> { //
+
+  using Base = pyb11::class_<type_, options...>;
+
+  public:
+    //
+    template <typename... Extra>
+    _clazz(handle_t scope, const char* name, const Extra&... extra)
+        : Base(scope, name, extra...) {
+    }
+    //
+    template <typename Func> _clazz& method(Func&& f) {
+      Base::def(f);
+      return *this;
+    }
+    //
+    template <typename Func> _clazz& method(const char* name_, Func&& f) {
+      auto& ref =  Base::def(name_, f);
+      return *this;
+    }
+    //
+    template <typename Func, typename... Extra> _clazz& method(const char* name_, Func&& f, const Extra&... extra) {
+      auto& ref =  Base::def(name_, f, extra...);
+      return *this;
+    }
+    //
+    template <typename Func> _clazz& prop_ro(const char* name_, Func&& f) {
+      auto& ref =  Base::def_property_readonly(name_, f);
+      return *this;
+    }
+    //
+  /*
+    template <typename Func> _clazz& constructor(Func&& f) {
+      auto& ref =  Base::def(f);
+      return *this;
+    }*/
+    /*
+template <typename... Args, typename... Extra>
+    _clazz &constructor(const pyb11det::initimpl::constructor<Args...> &init, const Extra &...extra) {
+      return *this;
+    }*/
+    template <typename... Args, typename... Extra>
+    _clazz &construct(pyb11det::initimpl::factory<Args...> &&init, const Extra &...extra) {
+        //auto& ref = Base::def(pyb11::init(std::move(init)), extra...); 
+        std::move(init).execute(*this, extra...);
+        return *this;
+    }
+  /*
+    template <typename... Args, typename... Extra>
+    _clazz &constructor(const pyb11det::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
+      return *this;
+    }*/
+  };
+
+  //////////////////////////////////
+
+  template <typename type_, typename... options, typename... Extra>
+  static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
+    return _clazz<type_, options...>(scope, name, extra...);
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

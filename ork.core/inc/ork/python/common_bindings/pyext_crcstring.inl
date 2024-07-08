@@ -14,45 +14,44 @@ template <typename ADAPTER>
 inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename ADAPTER::codec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
-      pybind11::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
-          .def(ADAPTER::template init<>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }))
-          .def_property_readonly(
+      ADAPTER::template clazz<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
+          .method("__repr__", [](crcstring_ptr_t s) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("CrcString(0x%zx:%zu)", s->hashed(), s->hashed());
+            return fxs.c_str();
+          })
+          .prop_ro(
               "hashed",
               [](crcstring_ptr_t s) -> uint64_t { //
                 return s->hashed();
               })
-          .def_property_readonly(
+          .prop_ro(
               "hashedi",
               [](crcstring_ptr_t s) -> int { //
                 return int(s->hashed());
               })
-          .def("__repr__", [](crcstring_ptr_t s) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("CrcString(0x%zx:%zu)", s->hashed(), s->hashed());
-            return fxs.c_str();
-          });
+          .construct(ADAPTER::template init<>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }));
   type_codec->template registerStdCodec<crcstring_ptr_t>(crcstr_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct CrcStringProxy {};
   using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;
   auto crcstrproxy_type   =                                                        //
-      pybind11::class_<CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
-          .def(ADAPTER::template init<>())
-          .def(
+      ADAPTER::template clazz<CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
+          .method(
               "__getattr__",                                                           //
               [](crcstrproxy_ptr_t proxy, const std::string& key) -> crcstring_ptr_t { //
                 return std::make_shared<CrcString>(key.c_str());
-              });
+              })
+          .def(ADAPTER::template init<>());
   type_codec->template registerStdCodec<crcstrproxy_ptr_t>(crcstrproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
   using crc64_ctx_t     = boost::Crc64;
   using crc64_ctx_ptr_t = std::shared_ptr<crc64_ctx_t>;
   auto crc64_type       =                                                   //
-      pybind11::class_<crc64_ctx_t, crc64_ctx_ptr_t>(module_core, "Crc64Context") //
-          .def(ADAPTER::template init<>())
-          .def("begin", [](crc64_ctx_ptr_t ctx) { ctx->init(); })
-          .def("finish", [](crc64_ctx_ptr_t ctx) { ctx->finish(); })
-          .def(
+      ADAPTER::template clazz<crc64_ctx_t, crc64_ctx_ptr_t>(module_core, "Crc64Context") //
+          .method("begin", [](crc64_ctx_ptr_t ctx) { ctx->init(); })
+          .method("finish", [](crc64_ctx_ptr_t ctx) { ctx->finish(); })
+          .method(
               "accum",
               [](crc64_ctx_ptr_t ctx, ADAPTER::object_t value) {
                 if (ADAPTER::template isinstance<typename ADAPTER::str_t>(value)) {
@@ -71,7 +70,8 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
                   OrkAssert(false);
                 }
               })
-          .def_property_readonly("result", [](crc64_ctx_ptr_t ctx) -> uint64_t { return ctx->result(); });
+          .prop_ro("result", [](crc64_ctx_ptr_t ctx) -> uint64_t { return ctx->result(); })
+          .def(ADAPTER::template init<>());
   type_codec->template registerStdCodec<crc64_ctx_ptr_t>(crc64_type);
 }
 } // namespace ork::python
