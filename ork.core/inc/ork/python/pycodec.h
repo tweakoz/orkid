@@ -122,11 +122,11 @@ struct pybind11adapter {
       auto& ref =  Base::def(f);
       return *this;
     }*/
-    /*
-template <typename... Args, typename... Extra>
-    _clazz &constructor(const pyb11det::initimpl::constructor<Args...> &init, const Extra &...extra) {
+template <typename... Extra>
+    _clazz &construct(const pyb11det::initimpl::constructor<> &init, const Extra &...extra) {
+        std::move(init).execute(*this, extra...);
       return *this;
-    }*/
+    }
     template <typename... Args, typename... Extra>
     _clazz &construct(pyb11det::initimpl::factory<Args...> &&init, const Extra &...extra) {
         //auto& ref = Base::def(pyb11::init(std::move(init)), extra...); 
@@ -147,6 +147,20 @@ template <typename... Args, typename... Extra>
     return _clazz<type_, options...>(scope, name, extra...);
   }
 };
+
+  template <typename adapter, typename type_, typename... options, typename... Extra>
+  auto clazz(typename adapter::module_t& scope, const char* name, const Extra&... extra) {
+    return adapter:: template clazz<type_, options...>(scope, name, extra...);
+  }
+
+  template <typename adapter, typename... Extra>
+  auto initor(const typename adapter::initimpl::template constructor<> &init, const Extra &...extra) {
+    return adapter::template init<>();
+  }
+  template <typename adapter, typename... Extra>
+  auto initor(const Extra &...extra) {
+    return adapter::template init<>();
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 

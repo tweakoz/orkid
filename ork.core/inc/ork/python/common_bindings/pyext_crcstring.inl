@@ -14,7 +14,8 @@ template <typename ADAPTER>
 inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename ADAPTER::codec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
-      ADAPTER::template clazz<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
+      clazz<ADAPTER,CrcString, crcstring_ptr_t>(module_core, "CrcString") //
+          .construct(initor<ADAPTER>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }))
           .method("__repr__", [](crcstring_ptr_t s) -> std::string {
             fxstring<64> fxs;
             fxs.format("CrcString(0x%zx:%zu)", s->hashed(), s->hashed());
@@ -29,26 +30,26 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
               "hashedi",
               [](crcstring_ptr_t s) -> int { //
                 return int(s->hashed());
-              })
-          .construct(ADAPTER::template init<>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }));
+              });
   type_codec->template registerStdCodec<crcstring_ptr_t>(crcstr_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct CrcStringProxy {};
   using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;
   auto crcstrproxy_type   =                                                        //
-      ADAPTER::template clazz<CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
+      clazz<ADAPTER,CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
+          .construct(initor<ADAPTER>())
           .method(
               "__getattr__",                                                           //
               [](crcstrproxy_ptr_t proxy, const std::string& key) -> crcstring_ptr_t { //
                 return std::make_shared<CrcString>(key.c_str());
-              })
-          .def(ADAPTER::template init<>());
+              });
   type_codec->template registerStdCodec<crcstrproxy_ptr_t>(crcstrproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
   using crc64_ctx_t     = boost::Crc64;
   using crc64_ctx_ptr_t = std::shared_ptr<crc64_ctx_t>;
   auto crc64_type       =                                                   //
-      ADAPTER::template clazz<crc64_ctx_t, crc64_ctx_ptr_t>(module_core, "Crc64Context") //
+      clazz<ADAPTER,crc64_ctx_t, crc64_ctx_ptr_t>(module_core, "Crc64Context") //
+          .construct(initor<ADAPTER>())
           .method("begin", [](crc64_ctx_ptr_t ctx) { ctx->init(); })
           .method("finish", [](crc64_ctx_ptr_t ctx) { ctx->finish(); })
           .method(
@@ -70,8 +71,7 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
                   OrkAssert(false);
                 }
               })
-          .prop_ro("result", [](crc64_ctx_ptr_t ctx) -> uint64_t { return ctx->result(); })
-          .def(ADAPTER::template init<>());
+          .prop_ro("result", [](crc64_ctx_ptr_t ctx) -> uint64_t { return ctx->result(); });
   type_codec->template registerStdCodec<crc64_ctx_ptr_t>(crc64_type);
 }
 } // namespace ork::python
