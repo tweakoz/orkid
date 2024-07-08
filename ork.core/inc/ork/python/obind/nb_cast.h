@@ -508,7 +508,7 @@ T cast_impl(handle h) {
         !is_ref ||
             is_base_caster_v<Caster> ||
             std::is_same_v<const char *, T>,
-        "nanobind::cast(): cannot return a reference to a temporary.");
+        "obind::cast(): cannot return a reference to a temporary.");
 
     Caster caster;
     bool rv;
@@ -545,7 +545,7 @@ bool try_cast_impl(handle h, T &out) noexcept {
         !is_ref ||
             is_base_caster_v<Caster> ||
             std::is_same_v<const char *, T>,
-        "nanobind::try_cast(): cannot return a reference to a temporary.");
+        "obind::try_cast(): cannot return a reference to a temporary.");
 
     Caster caster;
     bool rv;

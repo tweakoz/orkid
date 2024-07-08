@@ -84,7 +84,7 @@ void nb_func_dealloc(PyObject *self) {
         // Delete from registered function list
         size_t n_deleted = internals->funcs.erase(self);
         check(n_deleted == 1,
-              "nanobind::detail::nb_func_dealloc(\"%s\"): function not found!",
+              "obind::detail::nb_func_dealloc(\"%s\"): function not found!",
               ((f->flags & (uint32_t) func_flags::has_name) ? f->name
                                                             : "<anonymous>"));
         for (size_t i = 0; i < size; ++i) {
@@ -157,7 +157,7 @@ static bool set_builtin_exception_status(builtin_exception &e) {
         case exception_type::attribute_error: o = PyExc_AttributeError; break;
         case exception_type::next_overload: return false;
         default:
-            check(false, "nanobind::detail::set_builtin_exception_status(): "
+            check(false, "obind::detail::set_builtin_exception_status(): "
                          "invalid exception type!");
     }
 
@@ -168,7 +168,7 @@ static bool set_builtin_exception_status(builtin_exception &e) {
 void *malloc_check(size_t size) {
     void *ptr = malloc(size);
     if (!ptr)
-        fail("nanobind: malloc() failed!");
+        fail("obind: malloc() failed!");
     return ptr;
 }
 
@@ -180,7 +180,7 @@ char *strdup_check(const char *s) {
         result = strdup(s);
     #endif
     if (!result)
-        fail("nanobind: strdup() failed!");
+        fail("obind: strdup() failed!");
     return result;
 }
 
@@ -209,7 +209,7 @@ PyObject *nb_func_new(const void *in_) noexcept {
 
     char *name_cstr;
     if (has_signature) {
-        name_cstr = extract_name("nanobind::detail::nb_func_new", "def ", f->name);
+        name_cstr = extract_name("obind::detail::nb_func_new", "def ", f->name);
         has_name = *name_cstr != '\0';
     } else {
         name_cstr = strdup_check(has_name ? f->name : "");
@@ -290,7 +290,7 @@ PyObject *nb_func_new(const void *in_) noexcept {
 
         size_t n_deleted = internals->funcs.erase(func_prev);
         check(n_deleted == 1,
-              "nanobind::detail::nb_func_new(): internal update failed (1)!");
+              "obind::detail::nb_func_new(): internal update failed (1)!");
 
         Py_CLEAR(func_prev);
     }
@@ -303,7 +303,7 @@ PyObject *nb_func_new(const void *in_) noexcept {
     // Register the function
     auto [it, success] = internals->funcs.try_emplace(func, nullptr);
     check(success,
-          "nanobind::detail::nb_func_new(): internal update failed (2)!");
+          "obind::detail::nb_func_new(): internal update failed (2)!");
 
     func_data *fc = nb_func_data(func) + to_copy;
     memcpy(fc, f, sizeof(func_data_prelim<0>));
@@ -479,7 +479,7 @@ static NB_NOINLINE void nb_func_convert_cpp_exception() noexcept {
     }
 
     PyErr_SetString(PyExc_SystemError,
-                    "nanobind::detail::nb_func_error_except(): exception "
+                    "obind::detail::nb_func_error_except(): exception "
                     "could not be translated!");
 }
 
@@ -506,7 +506,7 @@ static PyObject *nb_func_vectorcall_complex(PyObject *self,
        'max_nargs' value is fine since it is specified by the bindings) */
     if (nkwargs_in > 1024) {
         PyErr_SetString(PyExc_TypeError,
-                        "nanobind::detail::nb_func_vectorcall(): too many (> "
+                        "obind::detail::nb_func_vectorcall(): too many (> "
                         "1024) keyword arguments.");
         return nullptr;
     }
@@ -1122,7 +1122,7 @@ static uint32_t nb_func_render_signature(const func_data *f,
     }
 
     check(arg_index == f->nargs && !*descr_type,
-          "nanobind::detail::nb_func_render_signature(%s): arguments inconsistent.",
+          "obind::detail::nb_func_render_signature(%s): arguments inconsistent.",
           f->name);
 
     return n_default_args;
@@ -1341,7 +1341,7 @@ NB_NOINLINE char *type_name(const std::type_info *t) {
     strexc(name, "struct ");
     strexc(name, "enum ");
 #endif
-    strexc(name, "nanobind::");
+    strexc(name, "obind::");
     return name;
 }
 

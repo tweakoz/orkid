@@ -35,7 +35,7 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
     using SparseMap = Eigen::Map<T>;
 
     static_assert(std::is_same_v<T, Eigen::SparseMatrix<Scalar, T::Options, StorageIndex>>,
-                  "nanobind: Eigen sparse caster only implemented for matrices");
+                  "obind: Eigen sparse caster only implemented for matrices");
 
     static constexpr bool RowMajor = T::IsRowMajor;
 
@@ -102,7 +102,7 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
     static handle from_cpp(const T &v, rv_policy policy, cleanup_list *) noexcept {
         if (!v.isCompressed()) {
             PyErr_SetString(PyExc_ValueError,
-                            "nanobind: unable to return an Eigen sparse matrix that is not in a compressed format. "
+                            "obind: unable to return an Eigen sparse matrix that is not in a compressed format. "
                             "Please call `.makeCompressed()` before returning the value on the C++ end.");
             return handle();
         }

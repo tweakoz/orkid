@@ -240,7 +240,7 @@ static void internals_cleanup() {
 
     if (!internals->inst_c2p.empty()) {
         if (print_leak_warnings) {
-            fprintf(stderr, "nanobind: leaked %zu instances!\n",
+            fprintf(stderr, "obind: leaked %zu instances!\n",
                     internals->inst_c2p.size());
             #if !defined(Py_LIMITED_API)
                 for (auto [k, v]: internals->inst_c2p) {
@@ -254,7 +254,7 @@ static void internals_cleanup() {
 
     if (!internals->keep_alive.empty()) {
         if (print_leak_warnings) {
-            fprintf(stderr, "nanobind: leaked %zu keep_alive records!\n",
+            fprintf(stderr, "obind: leaked %zu keep_alive records!\n",
                     internals->keep_alive.size());
         }
         leak = true;
@@ -269,7 +269,7 @@ static void internals_cleanup() {
     if (!internals->type_c2p_slow.empty() ||
         !internals->type_c2p_fast.empty()) {
         if (print_leak_warnings) {
-            fprintf(stderr, "nanobind: leaked %zu types!\n",
+            fprintf(stderr, "obind: leaked %zu types!\n",
                     internals->type_c2p_slow.size());
             int ctr = 0;
             for (const auto &kv : internals->type_c2p_slow) {
@@ -285,7 +285,7 @@ static void internals_cleanup() {
 
     if (!internals->funcs.empty()) {
         if (print_leak_warnings) {
-            fprintf(stderr, "nanobind: leaked %zu functions!\n",
+            fprintf(stderr, "obind: leaked %zu functions!\n",
                     internals->funcs.size());
             int ctr = 0;
             for (auto [f, p] : internals->funcs) {
@@ -312,7 +312,7 @@ static void internals_cleanup() {
         nb_meta_cache = nullptr;
     } else {
         if (print_leak_warnings) {
-            fprintf(stderr, "nanobind: this is likely caused by a reference "
+            fprintf(stderr, "obind: this is likely caused by a reference "
                             "counting issue in the binding code.\n");
         }
 
@@ -334,18 +334,18 @@ NB_NOINLINE void init(const char *name) {
 #else
     PyObject *dict = PyInterpreterState_GetDict(PyInterpreterState_Get());
 #endif
-    check(dict, "nanobind::detail::init(): could not access internals dictionary!");
+    check(dict, "obind::detail::init(): could not access internals dictionary!");
 
     PyObject *key = PyUnicode_FromFormat("__nb_internals_%s_%s__",
                                          NB_INTERNALS_ID, name ? name : "");
-    check(key, "nanobind::detail::init(): could not create dictionary key!");
+    check(key, "obind::detail::init(): could not create dictionary key!");
 
     PyObject *capsule = PyDict_GetItem(dict, key);
     if (capsule) {
         Py_DECREF(key);
         internals = (nb_internals *) PyCapsule_GetPointer(capsule, "nb_internals");
         check(internals,
-              "nanobind::detail::internals_fetch(): capsule pointer is NULL!");
+              "obind::detail::internals_fetch(): capsule pointer is NULL!");
         nb_meta_cache = internals->nb_meta;
         is_alive_ptr = internals->is_alive_ptr;
         return;
@@ -367,7 +367,7 @@ NB_NOINLINE void init(const char *name) {
 
     check(p->nb_module && p->nb_meta && p->nb_type_dict && p->nb_func &&
               p->nb_method && p->nb_bound_method,
-          "nanobind::detail::init(): initialization failed!");
+          "obind::detail::init(): initialization failed!");
 
 #if PY_VERSION_HEX < 0x03090000
     p->nb_func->tp_flags |= NB_HAVE_VECTORCALL;
@@ -442,7 +442,7 @@ NB_NOINLINE void init(const char *name) {
     capsule = PyCapsule_New(p, "nb_internals", nullptr);
     int rv = PyDict_SetItem(dict, key, capsule);
     check(!rv && capsule,
-          "nanobind::detail::init(): capsule creation failed!");
+          "obind::detail::init(): capsule creation failed!");
     Py_DECREF(capsule);
     Py_DECREF(key);
     internals = p;
@@ -453,7 +453,7 @@ NB_NOINLINE void fail_unspecified() noexcept {
     #if defined(NB_COMPACT_ASSERTION_MESSAGE)
         fail(NB_COMPACT_ASSERTION_MESSAGE);
     #else
-        fail("nanobind: encountered an unrecoverable error condition. Recompile "
+        fail("obind: encountered an unrecoverable error condition. Recompile "
              "using the 'Debug' or 'RelWithDebInfo' modes to obtain further "
              "information about this problem.");
     #endif

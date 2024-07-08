@@ -523,7 +523,7 @@ ndarray_handle *ndarray_import(PyObject *o, const ndarray_req *req,
     // Mark the dltensor capsule as "consumed"
     if (PyCapsule_SetName(capsule.ptr(), "used_dltensor") ||
         PyCapsule_SetDestructor(capsule.ptr(), nullptr))
-        check(false, "nanobind::detail::ndarray_import(): could not mark "
+        check(false, "obind::detail::ndarray_import(): could not mark "
                      "dltensor capsule as consumed!");
 
     return result.release();
@@ -652,7 +652,7 @@ PyObject *ndarray_wrap(ndarray_handle *th, ndarray_framework framework,
             if (cleanup && cleanup->self() != th->owner) {
                 if (th->owner) {
                     PyErr_SetString(PyExc_RuntimeError,
-                                    "nanobind::detail::ndarray_wrap(): "
+                                    "obind::detail::ndarray_wrap(): "
                                     "reference_internal policy cannot be "
                                     "applied (ndarray already has an owner)");
                     return nullptr;
@@ -701,7 +701,7 @@ PyObject *ndarray_wrap(ndarray_handle *th, ndarray_framework framework,
                 .ptr();
         } catch (const std::exception &e) {
             PyErr_Format(PyExc_RuntimeError,
-                         "nanobind::detail::ndarray_wrap(): could not "
+                         "obind::detail::ndarray_wrap(): could not "
                          "convert ndarray to NumPy array: %s", e.what());
             return nullptr;
         }
@@ -726,12 +726,12 @@ PyObject *ndarray_wrap(ndarray_handle *th, ndarray_framework framework,
                 break;
 
             default:
-                check(false, "nanobind::detail::ndarray_wrap(): unknown "
+                check(false, "obind::detail::ndarray_wrap(): unknown "
                              "framework specified!");
         }
     } catch (const std::exception &e) {
         PyErr_Format(PyExc_RuntimeError,
-                     "nanobind::detail::ndarray_wrap(): could not import ndarray "
+                     "obind::detail::ndarray_wrap(): could not import ndarray "
                      "framework: %s", e.what());
         return nullptr;
     }
@@ -751,7 +751,7 @@ PyObject *ndarray_wrap(ndarray_handle *th, ndarray_framework framework,
             o = package.attr("from_dlpack")(o);
         } catch (const std::exception &e) {
             PyErr_Format(PyExc_RuntimeError,
-                         "nanobind::detail::ndarray_wrap(): could not "
+                         "obind::detail::ndarray_wrap(): could not "
                          "import ndarray: %s", e.what());
             return nullptr;
         }
@@ -762,7 +762,7 @@ PyObject *ndarray_wrap(ndarray_handle *th, ndarray_framework framework,
             o = o.attr("copy")();
         } catch (std::exception &e) {
             PyErr_Format(PyExc_RuntimeError,
-                         "nanobind::detail::ndarray_wrap(): copy failed: %s",
+                         "obind::detail::ndarray_wrap(): copy failed: %s",
                          e.what());
             return nullptr;
         }

@@ -109,7 +109,7 @@ template <size_t N> using ndim = typename detail::ndim_shape<std::make_index_seq
 template <typename T> constexpr dlpack::dtype dtype() {
     static_assert(
         detail::is_ndarray_scalar_v<T>,
-        "nanobind::dtype<T>: T must be a floating point or integer variable!"
+        "obind::dtype<T>: T must be a floating point or integer variable!"
     );
 
     dlpack::dtype result;

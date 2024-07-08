@@ -23,7 +23,7 @@ NAMESPACE_END(detail)
 python_error::python_error() {
     m_value = PyErr_GetRaisedException();
     check(m_value,
-          "nanobind::python_error::python_error(): error indicator unset!");
+          "obind::python_error::python_error(): error indicator unset!");
 }
 
 python_error::~python_error() {
@@ -57,7 +57,7 @@ python_error::python_error(python_error &&e) noexcept
 
 void python_error::restore() noexcept {
     check(m_value,
-          "nanobind::python_error::restore(): error was already restored!");
+          "obind::python_error::restore(): error was already restored!");
 
     PyErr_SetRaisedException(m_value);
     m_value = nullptr;
@@ -68,7 +68,7 @@ void python_error::restore() noexcept {
 python_error::python_error() {
     PyErr_Fetch(&m_type, &m_value, &m_traceback);
     check(m_type,
-          "nanobind::python_error::python_error(): error indicator unset!");
+          "obind::python_error::python_error(): error indicator unset!");
 }
 
 python_error::~python_error() {
@@ -107,7 +107,7 @@ python_error::python_error(python_error &&e) noexcept
 
 void python_error::restore() noexcept {
     check(m_type,
-          "nanobind::python_error::restore(): error was already restored!");
+          "obind::python_error::restore(): error was already restored!");
 
     PyErr_Restore(m_type, m_value, m_traceback);
     m_type = m_value = m_traceback = nullptr;
@@ -131,7 +131,7 @@ const char *python_error::what() const noexcept {
 #if PY_VERSION_HEX < 0x030C0000
     PyErr_NormalizeException(&m_type, &m_value, &m_traceback);
     check(m_type,
-          "nanobind::python_error::what(): PyErr_NormalizeException() failed!");
+          "obind::python_error::what(): PyErr_NormalizeException() failed!");
 
     if (m_traceback) {
         if (PyException_SetTraceback(m_value, m_traceback) < 0)
@@ -231,17 +231,17 @@ NB_CORE PyObject *exception_new(PyObject *scope, const char *name,
         modname = getattr(scope, "__module__", handle());
 
     if (!modname.is_valid())
-        raise("nanobind::detail::exception_new(): could not determine module "
+        raise("obind::detail::exception_new(): could not determine module "
               "name!");
 
     str combined =
         steal<str>(PyUnicode_FromFormat("%U.%s", modname.ptr(), name));
 
     object result = steal(PyErr_NewException(combined.c_str(), base, nullptr));
-    check(result, "nanobind::detail::exception_new(): creation failed!");
+    check(result, "obind::detail::exception_new(): creation failed!");
 
     if (hasattr(scope, name))
-        raise("nanobind::detail::exception_new(): an object of the same name "
+        raise("obind::detail::exception_new(): an object of the same name "
               "already exists!");
 
     setattr(scope, name, result);
@@ -274,7 +274,7 @@ static void chain_error_v(handle type, const char *fmt, va_list args) noexcept {
     PyErr_FormatV(type.ptr(), fmt, args);
 #else
     PyObject *exc_str = PyUnicode_FromFormatV(fmt, args);
-    check(exc_str, "nanobind::detail::raise_from(): PyUnicode_FromFormatV() failed!");
+    check(exc_str, "obind::detail::raise_from(): PyUnicode_FromFormatV() failed!");
     PyErr_SetObject(type.ptr(), exc_str);
     Py_DECREF(exc_str);
 #endif

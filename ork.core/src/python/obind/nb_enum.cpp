@@ -19,7 +19,7 @@ PyObject *enum_create(enum_init_data *ed) noexcept {
     // Update hash table that maps from std::type_info to Python type
     auto [it, success] = internals->type_c2p_slow.try_emplace(ed->type, nullptr);
     if (!success) {
-        PyErr_WarnFormat(PyExc_RuntimeWarning, 1, "nanobind: type '%s' was already registered!\n", ed->name);
+        PyErr_WarnFormat(PyExc_RuntimeWarning, 1, "obind: type '%s' was already registered!\n", ed->name);
         PyObject *tp = (PyObject *) it->second->type_py;
         Py_INCREF(tp);
         return tp;

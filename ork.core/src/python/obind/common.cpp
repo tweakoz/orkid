@@ -89,17 +89,17 @@ PyObject *capsule_new(const void *ptr, const char *name,
 
     PyObject *c = PyCapsule_New((void *) ptr, name, capsule_cleanup);
 
-    check(c, "nanobind::detail::capsule_new(): allocation failed!");
+    check(c, "obind::detail::capsule_new(): allocation failed!");
 
     int rv = PyCapsule_SetContext(c, (void *) cleanup);
-    check(rv == 0, "nanobind::detail::capsule_new(): could not set context!");
+    check(rv == 0, "obind::detail::capsule_new(): could not set context!");
 
     return c;
 }
 
 void raise_python_error() {
     check(PyErr_Occurred(),
-          "nanobind::detail::raise_python_error() called without "
+          "obind::detail::raise_python_error() called without "
           "an error condition!");
     throw python_error();
 }
@@ -128,7 +128,7 @@ void cleanup_list::release() noexcept {
 void cleanup_list::expand() noexcept {
     uint32_t new_capacity = m_capacity * 2;
     PyObject **new_data = (PyObject **) malloc(new_capacity * sizeof(PyObject *));
-    check(new_data, "nanobind::detail::cleanup_list::expand(): out of memory!");
+    check(new_data, "obind::detail::cleanup_list::expand(): out of memory!");
     memcpy(new_data, m_data, m_size * sizeof(PyObject *));
     if (m_capacity != Small)
         free(m_data);
@@ -143,7 +143,7 @@ PyObject *module_new(const char *name, PyModuleDef *def) noexcept {
     def->m_name = name;
     def->m_size = -1;
     PyObject *m = PyModule_Create(def);
-    check(m, "nanobind::detail::module_new(): allocation failed!");
+    check(m, "obind::detail::module_new(): allocation failed!");
     return m;
 }
 
@@ -332,7 +332,7 @@ end:
         if (cast_error)
             raise_cast_error();
         else if (gil_error)
-            raise("nanobind::detail::obj_vectorcall(): PyGILState_Check() failure.");
+            raise("obind::detail::obj_vectorcall(): PyGILState_Check() failure.");
         else
             raise_python_error();
     }
@@ -545,14 +545,14 @@ PyObject *str_from_obj(PyObject *o) {
 PyObject *str_from_cstr(const char *str) {
     PyObject *result = PyUnicode_FromString(str);
     if (!result)
-        raise("nanobind::detail::str_from_cstr(): conversion error!");
+        raise("obind::detail::str_from_cstr(): conversion error!");
     return result;
 }
 
 PyObject *str_from_cstr_and_size(const char *str, size_t size) {
     PyObject *result = PyUnicode_FromStringAndSize(str, (Py_ssize_t) size);
     if (!result)
-        raise("nanobind::detail::str_from_cstr_and_size(): conversion error!");
+        raise("obind::detail::str_from_cstr_and_size(): conversion error!");
     return result;
 }
 
@@ -1048,7 +1048,7 @@ void incref_checked(PyObject *o) noexcept {
         return;
 #if !defined(Py_LIMITED_API)
     if (!PyGILState_Check())
-        fail("nanobind::detail::incref_check(): attempted to change the "
+        fail("obind::detail::incref_check(): attempted to change the "
              "reference count of a Python object while the GIL was not held.");
 #endif
     Py_INCREF(o);
@@ -1059,7 +1059,7 @@ void decref_checked(PyObject *o) noexcept {
         return;
 #if !defined(Py_LIMITED_API)
     if (!PyGILState_Check())
-        fail("nanobind::detail::decref_check(): attempted to change the "
+        fail("obind::detail::decref_check(): attempted to change the "
              "reference count of a Python object while the GIL was not held.");
 #endif
     Py_DECREF(o);

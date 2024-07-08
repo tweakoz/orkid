@@ -392,7 +392,7 @@ namespace detail {
             if (!do_wrap) {
                 // We already defined the wrapper, so this zero-arg overload
                 // would be unreachable. Raise an error rather than hiding it.
-                raise("nanobind: %s must define its zero-argument __new__ "
+                raise("obind: %s must define its zero-argument __new__ "
                       "before any other overloads", type_name(cls).c_str());
             }
         }
@@ -462,7 +462,7 @@ public:
     static_assert(alignof(Alias) < (1 << 8), "Instance alignment is too big!");
     static_assert(
         sizeof...(Ts) == !std::is_same_v<Base, T> + !std::is_same_v<Alias, T>,
-        "nanobind::class_<> was invoked with extra arguments that could not be handled");
+        "obind::class_<> was invoked with extra arguments that could not be handled");
 
     static_assert(
         detail::is_base_caster_v<detail::make_caster<Type>>,
@@ -697,7 +697,7 @@ public:
 
 template <typename T> class enum_ : public object {
 public:
-    static_assert(std::is_enum_v<T>, "nanobind::enum_<> requires an enumeration type!");
+    static_assert(std::is_enum_v<T>, "obind::enum_<> requires an enumeration type!");
 
     using Base = class_<T>;
     using Underlying = std::underlying_type_t<T>;

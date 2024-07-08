@@ -18,7 +18,7 @@ void trampoline_new(void **data, size_t size, void *ptr) noexcept {
     nb_ptr_map &inst_c2p = internals->inst_c2p;
     nb_ptr_map::iterator it = inst_c2p.find(ptr);
     check(it != inst_c2p.end() && (((uintptr_t) it->second) & 1) == 0,
-          "nanobind::detail::trampoline_new(): unique instance not found!");
+          "obind::detail::trampoline_new(): unique instance not found!");
 
     data[0] = it->second;
     memset(data + 1, 0, sizeof(void *) * 2 * size);
@@ -139,7 +139,7 @@ fail:
     type_data *td = nb_type_data(Py_TYPE((PyObject *) data[0]));
     PyGILState_Release(state);
 
-    raise("nanobind::detail::get_trampoline('%s::%s()'): %s!",
+    raise("obind::detail::get_trampoline('%s::%s()'): %s!",
           td->name, name, error);
 }
 
@@ -158,7 +158,7 @@ void trampoline_enter(void **data, size_t size, const char *name, bool pure, tic
             t->prev = nullptr;
             PyGILState_Release(t->state);
             if (pure)
-                raise("nanobind::detail::get_trampoline('%s()'): tried to call "
+                raise("obind::detail::get_trampoline('%s()'): tried to call "
                       "a pure virtual function!", name);
             return;
         }
