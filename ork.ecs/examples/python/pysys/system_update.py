@@ -8,6 +8,7 @@ from orkengine.ecssim import *
 
 tokens = CrcStringProxy()
 
+print(tokens)
 print(tokens.hello)
 assert(False)
 #def grab_core_objects(list_of_classnames):
