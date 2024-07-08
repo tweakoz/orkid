@@ -1,12 +1,15 @@
 
 
 print( "imported system_update.py" )
+from orkengine.ecssim import *
 ###############################################################################
 #print("x %g"%MATH.sin(0))
 #print("ECS<%s>"%dir(ECS))
 
-#tokens = CORE.CrcStringProxy()
+tokens = CrcStringProxy()
 
+print(tokens.hello)
+assert(False)
 #def grab_core_objects(list_of_classnames):
 #  return [getattr(CORE, x) for x in list_of_classnames]
 

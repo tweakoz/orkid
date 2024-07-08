@@ -13,6 +13,9 @@
 #include <ork/kernel/varmap.inl>
 #include <iostream>
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/detail/traits.h>
+
 #define OrkPyAssert(x)                                                                                                             \
   {                                                                                                                                \
     if ((x) == 0) {                                                                                                                \
@@ -65,7 +68,7 @@ struct pybind11adapter {
   using decoderfn64_t = std::function<void(const object_t& inpval, svar64_t& outval)>;
   using encoderfn64_t = std::function<void(const svar64_t& inpval, object_t& outval)>;
 
-  template <typename T> static T cast2ork(const object_t& obj);
+  template <typename T> static T _cast2ork(const object_t& obj);
 
   //////////////////////////////////
   static std::vector<kw_arg_pair_t> decodeKwArgs(kwargs_t py_args);
@@ -88,7 +91,7 @@ struct pybind11adapter {
   template <typename type_, typename... options>           //
   class _clazz : public pyb11::class_<type_, options...> { //
 
-  using Base = pyb11::class_<type_, options...>;
+    using Base = pyb11::class_<type_, options...>;
 
   public:
     //
@@ -103,41 +106,40 @@ struct pybind11adapter {
     }
     //
     template <typename Func> _clazz& method(const char* name_, Func&& f) {
-      auto& ref =  Base::def(name_, f);
+      auto& ref = Base::def(name_, f);
       return *this;
     }
     //
     template <typename Func, typename... Extra> _clazz& method(const char* name_, Func&& f, const Extra&... extra) {
-      auto& ref =  Base::def(name_, f, extra...);
+      auto& ref = Base::def(name_, f, extra...);
       return *this;
     }
     //
-    template <typename Func> _clazz& prop_ro(const char* name_, Func&& f) {
-      auto& ref =  Base::def_property_readonly(name_, f);
+    template <typename Func,typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
+      auto& ref = Base::def_property_readonly(name_, f, extra...);
       return *this;
     }
     //
-  /*
-    template <typename Func> _clazz& constructor(Func&& f) {
-      auto& ref =  Base::def(f);
-      return *this;
-    }*/
-template <typename... Extra>
-    _clazz &construct(const pyb11det::initimpl::constructor<> &init, const Extra &...extra) {
-        std::move(init).execute(*this, extra...);
-      return *this;
-    }
-    template <typename... Args, typename... Extra>
-    _clazz &construct(pyb11det::initimpl::factory<Args...> &&init, const Extra &...extra) {
-        //auto& ref = Base::def(pyb11::init(std::move(init)), extra...); 
-        std::move(init).execute(*this, extra...);
+    /*
+      template <typename Func> _clazz& constructor(Func&& f) {
+        auto& ref =  Base::def(f);
         return *this;
-    }
-  /*
-    template <typename... Args, typename... Extra>
-    _clazz &constructor(const pyb11det::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
+      }*/
+    template <typename... Extra> _clazz& construct(const pyb11det::initimpl::constructor<>& init, const Extra&... extra) {
+      std::move(init).execute(*this, extra...);
       return *this;
-    }*/
+    }
+    template <typename... Args, typename... Extra>
+    _clazz& construct(pyb11det::initimpl::factory<Args...>&& init, const Extra&... extra) {
+      // auto& ref = Base::def(pyb11::init(std::move(init)), extra...);
+      std::move(init).execute(*this, extra...);
+      return *this;
+    }
+    /*
+      template <typename... Args, typename... Extra>
+      _clazz &constructor(const pyb11det::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
+        return *this;
+      }*/
   };
 
   //////////////////////////////////
@@ -148,23 +150,109 @@ template <typename... Extra>
   }
 };
 
-  template <typename adapter, typename type_, typename... options, typename... Extra>
-  auto clazz(typename adapter::module_t& scope, const char* name, const Extra&... extra) {
-    return adapter:: template clazz<type_, options...>(scope, name, extra...);
-  }
-
-  template <typename adapter, typename... Extra>
-  auto initor(const typename adapter::initimpl::template constructor<> &init, const Extra &...extra) {
-    return adapter::template init<>();
-  }
-  template <typename adapter, typename... Extra>
-  auto initor(const Extra &...extra) {
-    return adapter::template init<>();
-  }
-
 ///////////////////////////////////////////////////////////////////////////////
 
-struct nanobindadapter {};
+struct nanobindadapter {
+
+  using codec_t     = TypeCodec<nanobindadapter>;
+  using codec_ptr_t = std::shared_ptr<codec_t>;
+
+  using module_t      = nanobind::module_;
+  using object_t      = nanobind::object;
+  using handle_t      = nanobind::handle;
+  using kwargs_t      = nanobind::kwargs;
+  using kw_arg_pair_t = std::pair<std::string, object_t>;
+  using list_t        = nanobind::list;
+  using str_t         = nanobind::str;
+  using float_t       = nanobind::float_;
+  using int_t         = nanobind::int_;
+
+  using varval_t      = varmap::var_t;
+  using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
+  using encoderfn_t   = std::function<void(const varval_t& inpval, object_t& outval)>;
+  using decoderfn64_t = std::function<void(const object_t& inpval, svar64_t& outval)>;
+  using encoderfn64_t = std::function<void(const svar64_t& inpval, object_t& outval)>;
+
+  template <typename T> static T _cast2ork(const object_t& obj);
+
+  //////////////////////////////////
+  static std::vector<kw_arg_pair_t> decodeKwArgs(kwargs_t py_args);
+  static std::vector<object_t> decodeList(list_t py_args);
+  //////////////////////////////////
+
+  template <typename T> static object_t handle2object(const T& obj);
+  template <typename T> static object_t cast_to_pyobject(const T& obj);
+  template <typename T> static object_t cast_to_pyhandle(const T& obj);
+  template <typename T> static void cast_to_var(const object_t& inpval, varval_t& outval);
+  template <typename T> static void cast_to_v64(const object_t& inpval, svar64_t& outval);
+  template <typename T> static object_t cast_var_to_py(const varval_t& var);
+  template <typename T> static object_t cast_v64_to_py(const svar64_t& v64);
+  template <typename T> static bool isinstance(const object_t& inpval);
+
+  template <typename... Args> static auto init(Args&&... args);
+
+  //////////////////////////////////
+
+  template <typename type_>           //
+  class _clazz : public nanobind::class_<type_> { //
+
+    using Base = nanobind::class_<type_>;
+
+  public:
+    //
+    template <typename... Extra>
+    _clazz(handle_t scope, const char* name, const Extra&... extra)
+        : Base(scope, name, extra...) {
+    }
+    //
+    template <typename Func> _clazz& method(Func&& f) {
+      Base::def(f);
+      return *this;
+    }
+    //
+    template <typename Func> _clazz& method(const char* name_, Func&& f) {
+      auto& ref = Base::def(name_, f);
+      return *this;
+    }
+    //
+    template <typename Func, typename... Extra> _clazz& method(const char* name_, Func&& f, const Extra&... extra) {
+      auto& ref = Base::def(name_, f, extra...);
+      return *this;
+    }
+    //
+    template <typename Func,typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
+      auto& ref = Base::def_prop_ro(name_, f, extra...);
+      return *this;
+    }
+    //
+    /*
+      template <typename Func> _clazz& constructor(Func&& f) {
+        auto& ref =  Base::def(f);
+        return *this;
+      }*/
+    template <typename... Extra> _clazz& construct(const nanobind::init<>& init, const Extra&... extra) {
+      Base::def(std::move(init), extra...);
+      return *this;
+    }
+    template <typename... Args, typename... Extra>
+    _clazz& construct(nanobind::init<Args...>&& init, const Extra&... extra) {
+      Base::def(std::move(init), extra...);
+      return *this;
+    }
+    /*
+      template <typename... Args, typename... Extra>
+      _clazz &constructor(const nanobind::detail::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
+        return *this;
+      }*/
+  };
+
+  //////////////////////////////////
+
+  template <typename type_, typename... options, typename... Extra>
+  static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
+    return _clazz<type_>(scope, name, extra...);
+  }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

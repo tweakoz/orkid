@@ -8,16 +8,46 @@
 #pragma once
 
 #include <ork/python/pycodec.h>
-#include <ork/reflect/serialize/JsonDeserializer.h>
-#include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/object/Object.h>
-#include <ork/reflect/properties/ITyped.h>
-#include <ork/reflect/properties/ITypedArray.h>
-#include <ork/reflect/properties/ITypedMap.h>
-#include <ork/reflect/properties/IObjectArray.h>
-#include <ork/reflect/properties/IObject.h>
-#include <ork/reflect/properties/IObjectMap.h>
 
 namespace ork::python {
 
-} //namespace ork::python {
+////////////////////////////////////////////////////////////////
+
+template <typename T> T nanobindadapter::_cast2ork(const object_t& obj) {
+  return nanobind::cast<T>(obj);
+}
+//////////////////////////////////
+template <typename T> nanobind::object nanobindadapter::handle2object(const T& obj) {
+  return nanobind::cast<object_t>(obj);
+}
+template <typename T> nanobind::object nanobindadapter::cast_to_pyobject(const T& obj) {
+  return nanobind::cast<object_t>(obj);
+}
+template <typename T> nanobind::object nanobindadapter::cast_to_pyhandle(const T& obj) {
+  return nanobind::cast<handle_t>(obj);
+}
+template <typename T> void nanobindadapter::cast_to_var(const nanobind::object& inpval, varval_t& outval) {
+  auto ork_val = _cast2ork<T>(inpval);
+  outval.set<T>(ork_val);
+}
+template <typename T> void nanobindadapter::cast_to_v64(const nanobind::object& inpval, svar64_t& outval) {
+  auto ork_val = _cast2ork<T>(inpval);
+  outval.set<T>(ork_val);
+}
+
+template <typename T> nanobind::object nanobindadapter::cast_var_to_py(const varval_t& var) {
+  return nanobind::cast(var.get<T>());
+}
+template <typename T> nanobind::object nanobindadapter::cast_v64_to_py(const svar64_t& v64) {
+  return nanobind::cast(v64.get<T>());
+}
+template <typename T> bool nanobindadapter::isinstance(const object_t& obj) {
+  return nanobind::isinstance<T>(obj);
+}
+
+template <typename... Args> auto nanobindadapter::init(Args&&... args) {
+  return nanobind::init(std::forward<Args>(args)...);
+}
+
+////////////////////////////////////////////////////////////////
+} // namespace ork::python

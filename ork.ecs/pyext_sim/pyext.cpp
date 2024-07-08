@@ -10,7 +10,8 @@
 #include <ork/ecs/ecs.h>
 #include <ork/profiling.inl>
 #include <iostream>
-#include <nanobind/nanobind.h>
+#include <ork/python/pycodec.inl>
+#include <ork/python/common_bindings/pyext_crcstring.inl>
 
 namespace nb = nanobind;
 
@@ -31,10 +32,14 @@ void register_system(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t typ
 
 ////////////////////////////////////////////////////////////////////////////////
 
+using adapter_t = ::ork::python::nanobindadapter;
+
 void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //auto type_codec = ork::ecssim::simonly_codec_instance();
   auto type_codec = ork::python::pb11_typecodec_t::instance();
+  auto type_codec_nb = ork::python::TypeCodec<adapter_t>::instance();
 
+  ork::python::_init_crcstring<adapter_t>(module_ecssim, type_codec_nb);
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   //module_ecssim.doc() = "Orkid Ecs Internal (Simulation only) Library";

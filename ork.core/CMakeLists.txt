@@ -58,7 +58,11 @@ target_link_libraries(ork_core LINK_PRIVATE ork_utpp zmq  )
 
 target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem xxhash )
 target_link_libraries(ork_core LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
+target_link_libraries(ork_core PRIVATE nanobind )
 
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(nanobind CONFIG REQUIRED)
+nanobind_build_library(nanobind SHARED)
 target_include_directories (ork_core PRIVATE ${INCD} )
 
 install(TARGETS ork_core LIBRARY DESTINATION $ENV{OBT_SUBSPACE_LIB_DIR} )

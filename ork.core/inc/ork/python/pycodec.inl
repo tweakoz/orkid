@@ -115,4 +115,36 @@ template <typename ADAPTER> std::vector<varval_t> TypeCodec<ADAPTER>::decodeList
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename adapter, typename type_, typename... options, typename... Extra>
+auto clazz(typename adapter::module_t& scope, const char* name, const Extra&... extra) {
+  return adapter::template clazz<type_, options...>(scope, name, extra...);
+}
+
+template <typename adapter, typename... Extra>
+auto initor(const typename adapter::initimpl::template constructor<>& init, const Extra&... extra) {
+  return adapter::template init<>();
+}
+template <typename adapter, typename... Extra> auto initor(const Extra&... extra) {
+  return adapter::template init<>();
+}
+
+template <typename adapter, typename T> bool is_instance(const typename adapter::object_t& inpval) {
+  return adapter::template isinstance<T>(inpval);
+}
+template <typename adapter> inline bool is_instance_pystr(const typename adapter::object_t& inpval) {
+  return adapter::template isinstance<typename adapter::str_t>(inpval);
+}
+template <typename adapter> inline bool is_instance_pyint(const typename adapter::object_t& inpval) {
+  return adapter::template isinstance<typename adapter::int_t>(inpval);
+}
+template <typename adapter> inline bool is_instance_pyfloat(const typename adapter::object_t& inpval) {
+  return adapter::template isinstance<typename adapter::float_t>(inpval);
+}
+
+template <typename adapter, typename T> T cast2ork(const typename adapter::object_t& obj) {
+  return adapter::template _cast2ork<T>(obj);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::python

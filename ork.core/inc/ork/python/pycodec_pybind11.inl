@@ -22,7 +22,7 @@ namespace ork::python {
 
 ////////////////////////////////////////////////////////////////
 
-template <typename T> T pybind11adapter::cast2ork(const object_t& obj) {
+template <typename T> T pybind11adapter::_cast2ork(const object_t& obj) {
   return obj.cast<T>();
 }
 //////////////////////////////////
@@ -36,11 +36,11 @@ template <typename T> pybind11::object pybind11adapter::cast_to_pyhandle(const T
   return pybind11::cast<handle_t>(obj);
 }
 template <typename T> void pybind11adapter::cast_to_var(const pybind11::object& inpval, varval_t& outval) {
-  auto ork_val = cast2ork<T>(inpval);
+  auto ork_val = _cast2ork<T>(inpval);
   outval.set<T>(ork_val);
 }
 template <typename T> void pybind11adapter::cast_to_v64(const pybind11::object& inpval, svar64_t& outval) {
-  auto ork_val = cast2ork<T>(inpval);
+  auto ork_val = _cast2ork<T>(inpval);
   outval.set<T>(ork_val);
 }
 
