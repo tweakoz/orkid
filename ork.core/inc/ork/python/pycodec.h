@@ -15,6 +15,14 @@
 
 #include <ork/python/obind/nanobind.h>
 #include <ork/python/obind/stl/detail/traits.h>
+#include <ork/python/obind/nanobind.h>
+#include <ork/python/obind/trampoline.h>
+#include <ork/python/obind/operators.h>
+#include <ork/python/obind/stl/optional.h>
+#include <ork/python/obind/stl/string.h>
+#include <ork/python/obind/stl/pair.h>
+#include <ork/python/obind/stl/shared_ptr.h>
+#include <ork/python/obind/stl/tuple.h>
 
 #define OrkPyAssert(x)                                                                                                             \
   {                                                                                                                                \
@@ -135,12 +143,19 @@ struct pybind11adapter {
       std::move(init).execute(*this, extra...);
       return *this;
     }
+
+
     /*
       template <typename... Args, typename... Extra>
       _clazz &constructor(const pyb11det::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
         return *this;
       }*/
   };
+
+  template <typename... Args>
+  static auto _cast(Args&&... args) -> decltype(pybind11::cast(std::forward<Args>(args)...)) {
+      return pybind11::cast(std::forward<Args>(args)...);
+  }
 
   //////////////////////////////////
 
@@ -153,6 +168,8 @@ struct pybind11adapter {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct nanobindadapter {
+
+  //namespace binder_ns = obind;
 
   using codec_t     = TypeCodec<nanobindadapter>;
   using codec_ptr_t = std::shared_ptr<codec_t>;
@@ -193,10 +210,10 @@ struct nanobindadapter {
 
   //////////////////////////////////
 
-  template <typename type_>           //
-  class _clazz : public obind::class_<type_> { //
+  template <typename type_, typename... options>
+  class _clazz : public obind::class_<type_, options...> {
 
-    using Base = obind::class_<type_>;
+    using Base = obind::class_<type_, options...>;
 
   public:
     //
@@ -207,11 +224,6 @@ struct nanobindadapter {
     //
     template <typename Func> _clazz& method(Func&& f) {
       Base::def(f);
-      return *this;
-    }
-    //
-    template <typename Func> _clazz& method(const char* name_, Func&& f) {
-      auto& ref = Base::def(name_, f);
       return *this;
     }
     //
@@ -239,24 +251,28 @@ struct nanobindadapter {
       Base::def(std::move(init), extra...);
       return *this;
     }
-    /*
-      template <typename... Args, typename... Extra>
-      _clazz &constructor(const obind::detail::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
-        return *this;
-      }*/
+
+
+    template <typename... Args>
+    static auto _cast(Args&&... args) -> decltype(obind::cast(std::forward<Args>(args)...)) {
+        return obind::cast(std::forward<Args>(args)...);
+    }
+
   };
 
   //////////////////////////////////
 
   template <typename type_, typename... options, typename... Extra>
   static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
-    return _clazz<type_>(scope, name, extra...);
+    return _clazz<type_,options...>(scope, name, extra...);
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename ADAPTER> struct ORK_API TypeCodec {
+
+  //namespace binder_ns = ADAPTER::binder_ns;
 
   //////////////////////////////////
 

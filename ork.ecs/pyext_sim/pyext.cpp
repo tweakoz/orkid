@@ -47,8 +47,8 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //pyinit_entity(module_ecs);
   //pyinit_component(module_ecs);
   //pyinit_system(module_ecs);
-  ::ork::ecssim::register_simulation(module_ecssim,type_codec);
-  ::ork::ecssim::register_system(module_ecssim,type_codec);
+  //::ork::ecssim::register_simulation(module_ecssim,type_codec);
+  //::ork::ecssim::register_system(module_ecssim,type_codec);
   //::ork::python::init_math(module_ecssim, type_codec);
 
 
@@ -81,7 +81,7 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
 ////////////////////////////////////////////////////////////////////////////////
 int _ecssim_exec_module(PyObject *m) {
     try {
-        nb::detail::init(NB_DOMAIN_STR);                                 \
+        nb::detail::init(NB_DOMAIN_STR);                                 
         nb::module_ mod = nb::borrow<nb::module_>(m);
         _ecssim_init_classes(mod);
     } catch (const std::exception &e) {

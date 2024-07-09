@@ -10,6 +10,9 @@ tokens = CrcStringProxy()
 
 print(tokens)
 print(tokens.hello)
+
+#print(dir(tokens))
+#print(tokens.hello)
 assert(False)
 #def grab_core_objects(list_of_classnames):
 #  return [getattr(CORE, x) for x in list_of_classnames]

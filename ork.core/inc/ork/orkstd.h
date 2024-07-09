@@ -30,7 +30,7 @@ void _format_and_assert(const char* file, int line, const char* fmtstr, ...);
 #endif
 #endif
 
-#define OrkBreak() raise(SIGTRAP)
+#define OrkBreak() ::raise(SIGTRAP)
 
 #if (defined(_DEBUG) || ! defined(_XBOX)) && ! defined(RETAIL)
 

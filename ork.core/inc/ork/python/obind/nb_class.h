@@ -7,6 +7,22 @@
     BSD-style license that can be found in the LICENSE file.
 */
 
+#include <ork/kernel/svariant.h>
+
+namespace ork {
+template <typename... T>
+inline std::string demangled_typename2() {
+    // This is thread-local and static, hence it's initialized only once per thread
+    thread_local static demangle_cache_ptr_t _cache = std::make_shared<DemangleCache>(); 
+    std::vector<std::string> type_names = { _cache->lookup(typeid(T).name())... };
+    std::string rval;
+    for( auto item : type_names ){
+        rval += item + ":";
+    }
+    return rval;
+}
+
+}
 NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
@@ -450,6 +466,14 @@ namespace detail {
     template <typename T> std::nullptr_t filter_setter(const for_getter<T> &) { return nullptr; }
 }
 
+
+template <typename T, typename... Ts>
+struct is_first_shared_ptr : std::false_type {};
+
+template <typename T, typename U, typename... Ts>
+struct is_first_shared_ptr<T, std::shared_ptr<U>, Ts...> : std::is_same<T, U> {};
+
+
 template <typename T, typename... Ts>
 class class_ : public object {
 public:
@@ -460,8 +484,10 @@ public:
 
     static_assert(sizeof(Alias) < (1 << 24), "Instance size is too big!");
     static_assert(alignof(Alias) < (1 << 8), "Instance alignment is too big!");
+    
     static_assert(
-        sizeof...(Ts) == !std::is_same_v<Base, T> + !std::is_same_v<Alias, T>,
+        is_first_shared_ptr<T, Ts...>::value || //
+        (sizeof...(Ts) == !std::is_same_v<Base, T> + !std::is_same_v<Alias, T>), //
         "obind::class_<> was invoked with extra arguments that could not be handled");
 
     static_assert(
@@ -542,6 +568,12 @@ public:
 
     template <typename Func, typename... Extra>
     NB_INLINE class_ &def(const char *name_, Func &&f, const Extra &... extra) {
+
+        auto func_t = ork::demangled_typename2<Func>();
+        auto extr_t = ork::demangled_typename2<Extra...>();
+        printf("def::1 name<%s> signature: func_t:%s\n", name_, func_t.c_str() );
+        printf("def::1 name<%s> signature: extr_t:%s\n", name_, extr_t.c_str() );
+
         cpp_function_def<T>((detail::forward_t<Func>) f, scope(*this),
                             name(name_), is_method(), extra...);
         return *this;
@@ -549,18 +581,35 @@ public:
 
     template <typename... Args, typename... Extra>
     NB_INLINE class_ &def(init<Args...> &&arg, const Extra &... extra) {
+
+        auto args_t = ork::demangled_typename2<Args...>();
+        auto extr_t = ork::demangled_typename2<Extra...>();
+        printf("def::2 signature: args_t:%s\n", args_t.c_str() );
+        printf("def::2 signature: extr_t:%s\n", extr_t.c_str() );
+
         arg.execute(*this, extra...);
         return *this;
     }
 
     template <typename Arg, typename... Extra>
     NB_INLINE class_ &def(init_implicit<Arg> &&arg, const Extra &... extra) {
+        auto arg_t = ork::demangled_typename2<Arg>();
+        auto extr_t = ork::demangled_typename2<Extra...>();
+        printf("def::3 signature: arg_t:%s\n", arg_t.c_str() );
+        printf("def::3 signature: extr_t:%s\n", extr_t.c_str() );
+
         arg.execute(*this, extra...);
         return *this;
     }
 
     template <typename Func, typename... Extra>
     NB_INLINE class_ &def(new_<Func> &&arg, const Extra &... extra) {
+
+        auto func_t = ork::demangled_typename2<Func>();
+        auto extr_t = ork::demangled_typename2<Extra...>();
+        printf("def::4 signature: func_t:%s\n", func_t.c_str() );
+        printf("def::4 signature: extr_t:%s\n", extr_t.c_str() );
+
         arg.execute(*this, extra...);
         return *this;
     }
@@ -581,11 +630,15 @@ public:
                                   Setter &&setter, const Extra &...extra) {
         object get_p, set_p;
 
-        if constexpr (!std::is_same_v<Getter, std::nullptr_t>)
+        if constexpr (!std::is_same_v<Getter, std::nullptr_t>){
+            // getter signature -> string
+            auto sig = ::ork::demangled_typename<Getter>();
+            printf("Getter signature: %s\n", sig.c_str() );
             get_p = cpp_function<T>((detail::forward_t<Getter>) getter,
                                     is_method(), is_getter(),
                                     rv_policy::reference_internal,
                                     detail::filter_getter(extra)...);
+        }
 
         if constexpr (!std::is_same_v<Setter, std::nullptr_t>)
             set_p = cpp_function<T>((detail::forward_t<Setter>) setter,

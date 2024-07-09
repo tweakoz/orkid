@@ -17,6 +17,8 @@
 #include <string_view>
 #include <functional>
 #include "hash.h"
+#include <ork/orkstd.h>
+#include <ork/kernel/svariant.h>
 
 #if TSL_RH_VERSION_MAJOR != 1 || TSL_RH_VERSION_MINOR < 3
 #  error nanobind depends on tsl::robin_map, in particular version >= 1.3.0, <2.0.0

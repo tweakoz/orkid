@@ -14,6 +14,11 @@
 namespace ork::python {
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename ADAPTER, typename... Args>
+auto __cast(Args&&... args) -> decltype(ADAPTER::template _cast(std::forward<Args>(args)...)) {
+    return ADAPTER::template _cast(std::forward<Args>(args)...);
+}
+
 template <typename ADAPTER> template <typename ORKTYPE> void TypeCodec<ADAPTER>::registerStdCodec(const ADAPTER::object_t& pytype) {
   this->registerCodec(
       pytype, //
@@ -63,7 +68,7 @@ void TypeCodec<ADAPTER>::registerRawPtrCodec(const ADAPTER::object_t& pytype) {
         auto rawval = inpval.get<ORKTYPE>();
         auto pyrepr = PYREPR(rawval);
         // auto h = ADAPTER::template cast_to_pyobject(pyrepr);
-        auto h = pybind11::cast(pyrepr);
+        auto h = __cast<ADAPTER>(pyrepr);
         outval = h; // ADAPTER::cast_to_pyobject(h);
       },
       [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
@@ -78,7 +83,7 @@ void TypeCodec<ADAPTER>::registerRawPtrCodec(const ADAPTER::object_t& pytype) {
         auto rawval = inpval.get<ORKTYPE>();
         auto pyrepr = PYREPR(rawval);
         // auto h = ADAPTER::template cast_to_pyobject<PYREPR>(pyrepr);
-        auto h = pybind11::cast(pyrepr);
+        auto h = __cast<ADAPTER>(pyrepr);
         outval = h; // ADAPTER::cast_to_pyobject(h);
       },
       [](const ADAPTER::object_t& inpval, svar64_t& outval) { // decoder

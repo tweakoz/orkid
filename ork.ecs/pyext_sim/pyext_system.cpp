@@ -10,15 +10,6 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/datatable.h>
 
-#include <ork/python/obind/nanobind.h>
-#include <ork/python/obind/trampoline.h>
-#include <ork/python/obind/operators.h>
-#include <ork/python/obind/stl/optional.h>
-#include <ork/python/obind/stl/string.h>
-#include <ork/python/obind/stl/pair.h>
-#include <ork/python/obind/stl/shared_ptr.h>
-#include <ork/python/obind/stl/tuple.h>
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace nb = obind;
 
