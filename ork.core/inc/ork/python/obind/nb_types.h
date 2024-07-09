@@ -9,14 +9,14 @@
 
 NAMESPACE_BEGIN(NB_NAMESPACE)
 
-/// Macro defining functions/constructors for nanobind::handle subclasses
+/// Macro defining functions/constructors for obind::handle subclasses
 #define NB_OBJECT(Type, Parent, Str, Check)                                    \
 public:                                                                        \
-    static constexpr auto Name = ::nanobind::detail::const_name(Str);          \
-    NB_INLINE Type(handle h, ::nanobind::detail::borrow_t)                     \
-        : Parent(h, ::nanobind::detail::borrow_t{}) { }                        \
-    NB_INLINE Type(handle h, ::nanobind::detail::steal_t)                      \
-        : Parent(h, ::nanobind::detail::steal_t{}) { }                         \
+    static constexpr auto Name = ::obind::detail::const_name(Str);          \
+    NB_INLINE Type(handle h, ::obind::detail::borrow_t)                     \
+        : Parent(h, ::obind::detail::borrow_t{}) { }                        \
+    NB_INLINE Type(handle h, ::obind::detail::steal_t)                      \
+        : Parent(h, ::obind::detail::steal_t{}) { }                         \
     NB_INLINE static bool check_(handle h) {                                   \
         return Check(h.ptr());                                                 \
     }
@@ -383,7 +383,7 @@ class int_ : public object {
     explicit operator T() const {
         detail::type_caster<T> tc;
         if (!tc.from_python(m_ptr, 0, nullptr))
-            throw std::out_of_range("Conversion of nanobind::int_ failed");
+            throw std::out_of_range("Conversion of obind::int_ failed");
         return tc.value;
     }
 };
@@ -627,7 +627,7 @@ inline void print(handle value, handle end = handle(), handle file = handle()) {
 }
 
 inline void print(const char *str, handle end = handle(), handle file = handle()) {
-    print(nanobind::str(str), end, file);
+    print(obind::str(str), end, file);
 }
 
 inline object none() { return borrow(Py_None); }
@@ -724,7 +724,7 @@ public:
     static bool check_(handle h) {
         return PyType_Check(h.ptr()) &&
                PyType_IsSubtype((PyTypeObject *) h.ptr(),
-                                (PyTypeObject *) nanobind::type<T>().ptr());
+                                (PyTypeObject *) obind::type<T>().ptr());
     }
 };
 

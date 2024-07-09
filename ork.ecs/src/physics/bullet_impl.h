@@ -285,15 +285,15 @@ public:
   float mfAvgDtCtr;
   SceneGraphSystem* _sgsystem = nullptr;
   float _fdtaccum = 0.0f;
-  tsl::robin_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
-  tsl::robin_set<BulletObjectComponent*> _activeComponents;
+  tsl::robin_pg_map<const BulletObjectComponentData*,BulletObjectComponent*> _lastcomponentfordata;
+  tsl::robin_pg_set<BulletObjectComponent*> _activeComponents;
   fast_set<BulletObjectComponent*> _updateForceComponents;
   fast_set<BulletObjectComponent*> _updateKinematicComponents;
   fast_set<BulletObjectComponent*> _updateDynamicComponents;
   fast_set<BulletObjectComponent*> _updateCheckComponents;
   fast_set<BulletObjectComponent*> _sleptDynamicComponents;
   tsl::robin_set<orkcontactcallback_ptr_t> _collisionCallbacks;
-  tsl::robin_set<BulletObjectComponent*> _deactivation_queue;
+  tsl::robin_pg_set<BulletObjectComponent*> _deactivation_queue;
 };
 
 

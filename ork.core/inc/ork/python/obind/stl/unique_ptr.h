@@ -63,7 +63,7 @@ struct type_caster<std::unique_ptr<T, Deleter>> {
     static_assert(IsDefaultDeleter || IsNanobindDeleter,
                   "Binding std::unique_ptr<T, Deleter> requires that "
                   "'Deleter' is either 'std::default_delete<T>' or "
-                  "'nanobind::deleter<T>'");
+                  "'obind::deleter<T>'");
 
     static constexpr auto Name = Caster::Name;
     template <typename T_> using Cast = Value;

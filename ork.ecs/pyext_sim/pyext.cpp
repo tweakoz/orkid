@@ -13,7 +13,7 @@
 #include <ork/python/pycodec.inl>
 #include <ork/python/common_bindings/pyext_crcstring.inl>
 
-namespace nb = nanobind;
+namespace nb = obind;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,11 +62,11 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
 #define NBX_MODULE(name, variable)                                              \
     static PyModuleDef NB_CONCAT(nanobind_module_def_, name);                  \
     [[maybe_unused]] static void NB_CONCAT(nanobind_init_,                     \
-                                           name)(::nanobind::module_ &);       \
+                                           name)(::obind::module_ &);       \
     NB_MODULE_IMPL(name) {                                                     \
-        nanobind::detail::init(NB_DOMAIN_STR);                                 \
-        nanobind::module_ m =                                                  \
-            nanobind::steal<nanobind::module_>(nanobind::detail::module_new(   \
+        obind::detail::init(NB_DOMAIN_STR);                                 \
+        obind::module_ m =                                                  \
+            obind::steal<obind::module_>(obind::detail::module_new(   \
                 NB_TOSTRING(name), &NB_CONCAT(nanobind_module_def_, name)));   \
         try {                                                                  \
             NB_CONCAT(nanobind_init_, name)(m);                                \
@@ -76,7 +76,7 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
             return nullptr;                                                    \
         }                                                                      \
     }                                                                          \
-    void NB_CONCAT(nanobind_init_, name)(::nanobind::module_ & (variable))
+    void NB_CONCAT(nanobind_init_, name)(::obind::module_ & (variable))
 
 ////////////////////////////////////////////////////////////////////////////////
 int _ecssim_exec_module(PyObject *m) {

@@ -8,11 +8,11 @@
 #include "pyext.h"
 #include <ork/ecs/simulation.inl>
 #include <ork/ecs/datatable.h>
-#include <nanobind/nanobind.h>
+
 /////////////////////////////////////////////////////////////////////////////////
 
 
-namespace nb = nanobind;
+namespace nb = obind;
 
 namespace ork::ecssim {
 using sim_raw_ptr_t = ::ork::ecs::Simulation*;

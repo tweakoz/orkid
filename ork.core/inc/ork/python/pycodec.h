@@ -13,8 +13,8 @@
 #include <ork/kernel/varmap.inl>
 #include <iostream>
 
-#include <nanobind/nanobind.h>
-#include <nanobind/stl/detail/traits.h>
+#include <ork/python/obind/nanobind.h>
+#include <ork/python/obind/stl/detail/traits.h>
 
 #define OrkPyAssert(x)                                                                                                             \
   {                                                                                                                                \
@@ -157,15 +157,15 @@ struct nanobindadapter {
   using codec_t     = TypeCodec<nanobindadapter>;
   using codec_ptr_t = std::shared_ptr<codec_t>;
 
-  using module_t      = nanobind::module_;
-  using object_t      = nanobind::object;
-  using handle_t      = nanobind::handle;
-  using kwargs_t      = nanobind::kwargs;
+  using module_t      = obind::module_;
+  using object_t      = obind::object;
+  using handle_t      = obind::handle;
+  using kwargs_t      = obind::kwargs;
   using kw_arg_pair_t = std::pair<std::string, object_t>;
-  using list_t        = nanobind::list;
-  using str_t         = nanobind::str;
-  using float_t       = nanobind::float_;
-  using int_t         = nanobind::int_;
+  using list_t        = obind::list;
+  using str_t         = obind::str;
+  using float_t       = obind::float_;
+  using int_t         = obind::int_;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -194,9 +194,9 @@ struct nanobindadapter {
   //////////////////////////////////
 
   template <typename type_>           //
-  class _clazz : public nanobind::class_<type_> { //
+  class _clazz : public obind::class_<type_> { //
 
-    using Base = nanobind::class_<type_>;
+    using Base = obind::class_<type_>;
 
   public:
     //
@@ -230,18 +230,18 @@ struct nanobindadapter {
         auto& ref =  Base::def(f);
         return *this;
       }*/
-    template <typename... Extra> _clazz& construct(const nanobind::init<>& init, const Extra&... extra) {
+    template <typename... Extra> _clazz& construct(const obind::init<>& init, const Extra&... extra) {
       Base::def(std::move(init), extra...);
       return *this;
     }
     template <typename... Args, typename... Extra>
-    _clazz& construct(nanobind::init<Args...>&& init, const Extra&... extra) {
+    _clazz& construct(obind::init<Args...>&& init, const Extra&... extra) {
       Base::def(std::move(init), extra...);
       return *this;
     }
     /*
       template <typename... Args, typename... Extra>
-      _clazz &constructor(const nanobind::detail::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
+      _clazz &constructor(const obind::detail::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
         return *this;
       }*/
   };

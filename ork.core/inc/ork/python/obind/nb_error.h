@@ -86,7 +86,7 @@ private:
     mutable char *m_what = nullptr;
 };
 
-/// Thrown by nanobind::cast when casting fails
+/// Thrown by obind::cast when casting fails
 using cast_error = std::bad_cast;
 
 enum class exception_type {

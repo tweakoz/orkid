@@ -12,8 +12,8 @@
 #include <ork/python/pycodec.inl>
 #include <iostream>
 
-namespace py = nanobind;
-using namespace nanobind::literals;
+namespace py = obind;
+using namespace obind::literals;
 using codec_t = ork::python::nanobindadapter::codec_t;
 
 namespace ork::python {

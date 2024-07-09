@@ -158,12 +158,12 @@ template <typename T>
 constexpr bool has_shared_from_this_v =
     decltype(has_shared_from_this_impl((T *) nullptr))::value;
 
-/// Base of all type casters for traditional bindings created via nanobind::class_<>
+/// Base of all type casters for traditional bindings created via obind::class_<>
 struct type_caster_base_tag {
     static constexpr bool IsClass = true;
 };
 
-/// Check if a type caster represents traditional bindings created via nanobind::class_<>
+/// Check if a type caster represents traditional bindings created via obind::class_<>
 template <typename Caster>
 constexpr bool is_base_caster_v = std::is_base_of_v<type_caster_base_tag, Caster>;
 

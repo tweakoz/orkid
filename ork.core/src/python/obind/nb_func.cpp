@@ -187,7 +187,7 @@ char *strdup_check(const char *s) {
 /**
  * \brief Wrap a C++ function into a Python function object
  *
- * This is an implementation detail of nanobind::cpp_function.
+ * This is an implementation detail of obind::cpp_function.
  */
 PyObject *nb_func_new(const void *in_) noexcept {
     func_data_prelim<0> *f = (func_data_prelim<0> *) in_;
@@ -324,7 +324,7 @@ PyObject *nb_func_new(const void *in_) noexcept {
 
     if (is_implicit) {
         check(fc->flags & (uint32_t) func_flags::is_constructor,
-              "nb::detail::nb_func_new(\"%s\"): nanobind::is_implicit() "
+              "nb::detail::nb_func_new(\"%s\"): obind::is_implicit() "
               "should only be specified for constructors.",
               name_cstr);
         check(f->nargs == 2,

@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include <nanobind/ndarray.h>
-#include <nanobind/eigen/dense.h>
+#include <ork/python/obind/ndarray.h>
+#include <ork/python/obind/eigen/dense.h>
 #include <Eigen/SparseCore>
 
 #include <memory>
@@ -131,9 +131,9 @@ template <typename T> struct type_caster<T, enable_if_t<is_eigen_sparse_matrix_v
         StorageIndexNDArray inner_indices(src->innerIndexPtr(), 1, data_shape, owner);
 
         try {
-            return matrix_type(nanobind::make_tuple(
+            return matrix_type(obind::make_tuple(
                                    std::move(data), std::move(inner_indices), std::move(outer_indices)),
-                               nanobind::make_tuple(rows, cols))
+                               obind::make_tuple(rows, cols))
                 .release();
         } catch (python_error &e) {
             e.restore();

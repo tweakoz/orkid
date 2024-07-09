@@ -55,9 +55,9 @@ struct dtype {
 
 struct dltensor {
     void *data = nullptr;
-    nanobind::dlpack::device device;
+    obind::dlpack::device device;
     int32_t ndim = 0;
-    nanobind::dlpack::dtype dtype;
+    obind::dlpack::dtype dtype;
     int64_t *shape = nullptr;
     int64_t *strides = nullptr;
     uint64_t byte_offset = 0;
@@ -68,7 +68,7 @@ NAMESPACE_END(dlpack)
 template <ssize_t... Is> struct shape {
     static_assert(
         ((Is >= 0 || Is == -1) && ...),
-        "The arguments to nanobind::shape must either be positive or equal to -1"
+        "The arguments to obind::shape must either be positive or equal to -1"
     );
     static constexpr size_t size = sizeof...(Is);
 };
@@ -345,7 +345,7 @@ private:
 
     template <size_t... I1, ssize_t... I2>
     ndarray_view(Scalar *data, const int64_t *shape, const int64_t *strides,
-                 std::index_sequence<I1...>, nanobind::shape<I2...>)
+                 std::index_sequence<I1...>, obind::shape<I2...>)
         : m_data(data) {
 
         /* Initialize shape/strides with compile-time knowledge if
@@ -392,7 +392,7 @@ public:
             const size_t *shape,
             handle owner,
             const int64_t *strides = nullptr,
-            dlpack::dtype dtype = nanobind::dtype<Scalar>(),
+            dlpack::dtype dtype = obind::dtype<Scalar>(),
             int32_t device_type = device::cpu::value,
             int32_t device_id = 0) {
         m_handle = detail::ndarray_create(
@@ -405,7 +405,7 @@ public:
             std::initializer_list<size_t> shape,
             handle owner,
             std::initializer_list<int64_t> strides = { },
-            dlpack::dtype dtype = nanobind::dtype<Scalar>(),
+            dlpack::dtype dtype = obind::dtype<Scalar>(),
             int32_t device_type = device::cpu::value,
             int32_t device_id = 0) {
 

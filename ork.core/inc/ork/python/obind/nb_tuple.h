@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
 /**
- * \brief nanobind::tuple<...>: a tiny recursive tuple class
+ * \brief obind::tuple<...>: a tiny recursive tuple class
  *
  * std::tuple<...> is one of those STL types that just seems unnecessarily
  * complex for typical usage. It pulls in a large amount of headers (22K LOC,
@@ -69,10 +69,10 @@ NAMESPACE_END(NB_NAMESPACE)
 
 // Support for C++17 structured bindings
 template <typename... Ts>
-struct std::tuple_size<nanobind::detail::tuple<Ts...>>
+struct std::tuple_size<obind::detail::tuple<Ts...>>
     : std::integral_constant<size_t, sizeof...(Ts)> { };
 
 template <size_t I, typename... Ts>
-struct std::tuple_element<I, nanobind::detail::tuple<Ts...>> {
-    using type = typename nanobind::detail::tuple<Ts...>::template type<I>;
+struct std::tuple_element<I, obind::detail::tuple<Ts...>> {
+    using type = typename obind::detail::tuple<Ts...>::template type<I>;
 };

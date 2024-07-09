@@ -290,7 +290,7 @@ template <typename F, typename... Ts>
 NB_INLINE void func_extra_apply(F &, call_guard<Ts...>, size_t &) {}
 
 template <typename F, size_t Nurse, size_t Patient>
-NB_INLINE void func_extra_apply(F &f, nanobind::keep_alive<Nurse, Patient>, size_t &) {
+NB_INLINE void func_extra_apply(F &f, obind::keep_alive<Nurse, Patient>, size_t &) {
     f.flags |= (uint32_t) func_flags::has_keep_alive;
 }
 
@@ -303,14 +303,14 @@ template <typename T, typename... Ts> struct func_extra_info<T, Ts...>
     : func_extra_info<Ts...> { };
 
 template <typename... Cs, typename... Ts>
-struct func_extra_info<nanobind::call_guard<Cs...>, Ts...> : func_extra_info<Ts...> {
+struct func_extra_info<obind::call_guard<Cs...>, Ts...> : func_extra_info<Ts...> {
     static_assert(std::is_same_v<typename func_extra_info<Ts...>::call_guard, void>,
                   "call_guard<> can only be specified once!");
-    using call_guard = nanobind::call_guard<Cs...>;
+    using call_guard = obind::call_guard<Cs...>;
 };
 
 template <size_t Nurse, size_t Patient, typename... Ts>
-struct func_extra_info<nanobind::keep_alive<Nurse, Patient>, Ts...> : func_extra_info<Ts...> {
+struct func_extra_info<obind::keep_alive<Nurse, Patient>, Ts...> : func_extra_info<Ts...> {
     static constexpr bool keep_alive = true;
 };
 
@@ -320,7 +320,7 @@ NB_INLINE void process_keep_alive(PyObject **, PyObject *, T *) { }
 template <size_t Nurse, size_t Patient>
 NB_INLINE void
 process_keep_alive(PyObject **args, PyObject *result,
-                   nanobind::keep_alive<Nurse, Patient> *) {
+                   obind::keep_alive<Nurse, Patient> *) {
     keep_alive(Nurse   == 0 ? result : args[Nurse - 1],
                Patient == 0 ? result : args[Patient - 1]);
 }

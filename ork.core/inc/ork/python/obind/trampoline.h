@@ -49,21 +49,21 @@ struct ticket {
 #define NB_TRAMPOLINE(base, size)                                              \
     using NBBase = base;                                                       \
     using NBBase::NBBase;                                                      \
-    nanobind::detail::trampoline<size> nb_trampoline{ this }
+    obind::detail::trampoline<size> nb_trampoline{ this }
 
 #define NB_OVERRIDE_NAME(name, func, ...)                                      \
     using nb_ret_type = decltype(NBBase::func(__VA_ARGS__));                   \
-    nanobind::detail::ticket nb_ticket(nb_trampoline, name, false);            \
+    obind::detail::ticket nb_ticket(nb_trampoline, name, false);            \
     if (nb_ticket.key.is_valid()) {                                                       \
-        return nanobind::cast<nb_ret_type>(                                    \
+        return obind::cast<nb_ret_type>(                                    \
             nb_trampoline.base().attr(nb_ticket.key)(__VA_ARGS__));            \
     } else                                                                     \
         return NBBase::func(__VA_ARGS__)
 
 #define NB_OVERRIDE_PURE_NAME(name, func, ...)                                 \
     using nb_ret_type = decltype(NBBase::func(__VA_ARGS__));                   \
-    nanobind::detail::ticket nb_ticket(nb_trampoline, name, true);             \
-    return nanobind::cast<nb_ret_type>(                                        \
+    obind::detail::ticket nb_ticket(nb_trampoline, name, true);             \
+    return obind::cast<nb_ret_type>(                                        \
         nb_trampoline.base().attr(nb_ticket.key)(__VA_ARGS__))
 
 #define NB_OVERRIDE(func, ...)                                                 \

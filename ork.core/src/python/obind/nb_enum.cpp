@@ -47,7 +47,7 @@ PyObject *enum_create(enum_init_data *ed) noexcept {
 
     object enum_mod = module_::import_("enum"),
            factory = enum_mod.attr(factory_name),
-           result = factory(name, nanobind::tuple(),
+           result = factory(name, obind::tuple(),
                             arg("module") = modname,
                             arg("qualname") = qualname);
 

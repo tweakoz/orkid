@@ -7,7 +7,6 @@ include (GenerateExportHeader)
 find_package (Python COMPONENTS Interpreter Development)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 #find_package( pybind11 REQUIRED )
-find_package(nanobind CONFIG REQUIRED)
 
 ###################################
 
@@ -21,15 +20,14 @@ set( INCD3 $ENV{ORKID_WORKSPACE_DIR}/ork.ecs/inc )
 ###################################
 file(GLOB sources ${SRCD}/*.cpp)
 
-nanobind_add_module(_ecssim ${sources})
-#add_library( _ecssim SHARED ${sources} )
+add_library( _ecssim SHARED ${sources} )
 
 ork_std_target_opts(_ecssim)
 
 target_include_directories (_ecssim PRIVATE ${INCD} ${INCD2} ${INCD3} )
 
 
-target_link_libraries(_ecssim LINK_PUBLIC ork_core ork_lev2 ork_ecs )
+target_link_libraries(_ecssim LINK_PRIVATE ork_core ork_lev2 ork_ecs )
 
 #target_link_libraries(_ecssim PUBLIC ${PYTHON_LIBRARY_PATH} )
 #target_link_options(_ecssim PUBLIC -Wl,-rpath )

@@ -9,6 +9,10 @@
 
 #pragma once
 
+#define NB_SHARED
+#define NB_BUILD
+#define NB_DOMAIN ork
+
 #define NB_STRINGIFY(x) #x
 #define NB_TOSTRING(x) NB_STRINGIFY(x)
 #define NB_CONCAT(first, second) first##second
@@ -41,7 +45,7 @@
 #endif
 
 #if defined(__GNUC__) && !defined(_WIN32)
-#  define NB_NAMESPACE nanobind __attribute__((visibility("hidden")))
+#  define NB_NAMESPACE obind __attribute__((visibility("hidden")))
 #else
 #  define NB_NAMESPACE obind
 #endif
@@ -176,11 +180,11 @@
 #define NB_MODULE(name, variable)                                              \
     static PyModuleDef NB_CONCAT(nanobind_module_def_, name);                  \
     [[maybe_unused]] static void NB_CONCAT(nanobind_init_,                     \
-                                           name)(::nanobind::module_ &);       \
+                                           name)(::obind::module_ &);       \
     NB_MODULE_IMPL(name) {                                                     \
-        nanobind::detail::init(NB_DOMAIN_STR);                                 \
-        nanobind::module_ m =                                                  \
-            nanobind::steal<nanobind::module_>(nanobind::detail::module_new(   \
+        obind::detail::init(NB_DOMAIN_STR);                                 \
+        obind::module_ m =                                                  \
+            obind::steal<obind::module_>(obind::detail::module_new(   \
                 NB_TOSTRING(name), &NB_CONCAT(nanobind_module_def_, name)));   \
         try {                                                                  \
             NB_CONCAT(nanobind_init_, name)(m);                                \
@@ -190,5 +194,5 @@
             return nullptr;                                                    \
         }                                                                      \
     }                                                                          \
-    void NB_CONCAT(nanobind_init_, name)(::nanobind::module_ & (variable))
+    void NB_CONCAT(nanobind_init_, name)(::obind::module_ & (variable))
 

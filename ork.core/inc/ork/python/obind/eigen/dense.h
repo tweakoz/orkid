@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <nanobind/ndarray.h>
+#include <ork/python/obind/ndarray.h>
 #include <Eigen/Core>
 
 static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 1),

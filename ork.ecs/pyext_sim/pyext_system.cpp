@@ -10,17 +10,17 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/datatable.h>
 
-#include <nanobind/nanobind.h>
-#include <nanobind/trampoline.h>
-#include <nanobind/operators.h>
-#include <nanobind/stl/optional.h>
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/pair.h>
-#include <nanobind/stl/shared_ptr.h>
-#include <nanobind/stl/tuple.h>
+#include <ork/python/obind/nanobind.h>
+#include <ork/python/obind/trampoline.h>
+#include <ork/python/obind/operators.h>
+#include <ork/python/obind/stl/optional.h>
+#include <ork/python/obind/stl/string.h>
+#include <ork/python/obind/stl/pair.h>
+#include <ork/python/obind/stl/shared_ptr.h>
+#include <ork/python/obind/stl/tuple.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace nb = nanobind;
+namespace nb = obind;
 
 namespace ork::ecssim {
 void register_system(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec) {

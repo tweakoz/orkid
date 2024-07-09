@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
 template <typename Impl> class accessor : public api<accessor<Impl>> {
-    template <typename T> friend void nanobind::del(accessor<T> &);
-    template <typename T> friend void nanobind::del(accessor<T> &&);
+    template <typename T> friend void obind::del(accessor<T> &);
+    template <typename T> friend void obind::del(accessor<T> &&);
 public:
     static constexpr auto Name = const_name("object");
 

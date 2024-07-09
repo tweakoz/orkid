@@ -122,7 +122,7 @@ private:
 // Registar a type caster for ``ref<T>`` if nanobind was previously #included
 #if defined(NB_VERSION_MAJOR)
 NAMESPACE_BEGIN(detail)
-template <typename T> struct type_caster<nanobind::ref<T>> {
+template <typename T> struct type_caster<obind::ref<T>> {
     using Caster = make_caster<T>;
     static constexpr bool IsClass = true;
     NB_TYPE_CASTER(ref<T>, Caster::Name)

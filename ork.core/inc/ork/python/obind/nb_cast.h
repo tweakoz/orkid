@@ -25,7 +25,7 @@
     Value value;
 
 #define NB_MAKE_OPAQUE(...)                                                    \
-    namespace nanobind::detail {                                               \
+    namespace obind::detail {                                               \
     template <> class type_caster<__VA_ARGS__>                                 \
         : public type_caster_base<__VA_ARGS__> { }; }
 
@@ -82,7 +82,7 @@ using movable_cast_t =
 
 /// This version is more careful about what the caller actually requested and
 /// only moves when this was explicitly requested. It is the default for the
-/// base type caster (i.e., types bound via ``nanobind::class_<..>``)
+/// base type caster (i.e., types bound via ``obind::class_<..>``)
 template <typename T>
 using precise_cast_t =
     std::conditional_t<is_pointer_v<T>, intrinsic_t<T> *,
@@ -341,7 +341,7 @@ template <typename T> struct typed_name {
         static constexpr auto Name = detail::const_name(name); \
     };
 
-NB_TYPED_NAME_PYTHON38(nanobind::tuple, NB_TYPING_TUPLE)
+NB_TYPED_NAME_PYTHON38(obind::tuple, NB_TYPING_TUPLE)
 NB_TYPED_NAME_PYTHON38(list, NB_TYPING_LIST)
 NB_TYPED_NAME_PYTHON38(set, NB_TYPING_SET)
 NB_TYPED_NAME_PYTHON38(dict, NB_TYPING_DICT)
@@ -375,7 +375,7 @@ struct type_caster<T, enable_if_t<std::is_base_of_v<detail::api_tag, T> && !T::n
 public:
     NB_TYPE_CASTER(T, T::Name)
 
-    type_caster() : value(nullptr, ::nanobind::detail::steal_t()) { }
+    type_caster() : value(nullptr, ::obind::detail::steal_t()) { }
 
     bool from_python(handle src, uint8_t, cleanup_list *) noexcept {
         if (!isinstance<T>(src))
@@ -637,19 +637,19 @@ detail::accessor<Impl>& detail::accessor<Impl>::operator=(T &&value) {
 }
 
 template <typename T> void list::append(T &&value) {
-    object o = nanobind::cast((detail::forward_t<T>) value);
+    object o = obind::cast((detail::forward_t<T>) value);
     if (PyList_Append(m_ptr, o.ptr()))
         raise_python_error();
 }
 
 template <typename T> void list::insert(Py_ssize_t index, T &&value) {
-    object o = nanobind::cast((detail::forward_t<T>) value);
+    object o = obind::cast((detail::forward_t<T>) value);
     if (PyList_Insert(m_ptr, index, o.ptr()))
         raise_python_error();
 }
 
 template <typename T> bool dict::contains(T&& key) const {
-    object o = nanobind::cast((detail::forward_t<T>) key);
+    object o = obind::cast((detail::forward_t<T>) key);
     int rv = PyDict_Contains(m_ptr, o.ptr());
     if (rv == -1)
         raise_python_error();
@@ -657,7 +657,7 @@ template <typename T> bool dict::contains(T&& key) const {
 }
 
 template <typename T> bool set::contains(T&& key) const {
-    object o = nanobind::cast((detail::forward_t<T>) key);
+    object o = obind::cast((detail::forward_t<T>) key);
     int rv = PySet_Contains(m_ptr, o.ptr());
     if (rv == -1)
         raise_python_error();
@@ -665,14 +665,14 @@ template <typename T> bool set::contains(T&& key) const {
 }
 
 template <typename T> void set::add(T&& key) {
-    object o = nanobind::cast((detail::forward_t<T>) key);
+    object o = obind::cast((detail::forward_t<T>) key);
     int rv = PySet_Add(m_ptr, o.ptr());
     if (rv == -1)
         raise_python_error();
 }
 
 template <typename T> bool set::discard(T &&value) {
-    object o = nanobind::cast((detail::forward_t<T>) value);
+    object o = obind::cast((detail::forward_t<T>) value);
     int rv = PySet_Discard(m_ptr, o.ptr());
     if (rv < 0)
         raise_python_error();
@@ -680,7 +680,7 @@ template <typename T> bool set::discard(T &&value) {
 }
 
 template <typename T> bool mapping::contains(T&& key) const {
-    object o = nanobind::cast((detail::forward_t<T>) key);
+    object o = obind::cast((detail::forward_t<T>) key);
     int rv = PyMapping_HasKey(m_ptr, o.ptr());
     if (rv == -1)
         raise_python_error();
