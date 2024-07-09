@@ -540,7 +540,7 @@ void submesh::copy(
     bool preserve_colors,            //
     bool preserve_texcoords) const { //
 
-  std::unordered_map<int, int> vtx_map;
+  tsl::robin_map<int, int> vtx_map;
 
   // copy vertices
 

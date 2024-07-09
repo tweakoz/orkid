@@ -470,7 +470,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                               [](meshutil::rigidprimitive_drawdata_ptr_t dd, meshutil::rigidprimitive_ptr_t prim) { dd->_primitive = prim; });
   type_codec->registerStdCodec<meshutil::rigidprimitive_drawdata_ptr_t>(rprimddata_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto rprimbase_t = py::class_<meshutil::RigidPrimitiveBase, meshutil::rigidprimitive_ptr_t>(module_lev2, "RigidPrimitiveBase")
+  auto rprimbase_t = py::class_<meshutil::RigidPrimitiveBase, meshutil::rigidprimitive_ptr_t>(module_lev2, "meshutil::RigidPrimitiveBase")
                          .def(
                              "createNode",
                              [](meshutil::rigidprimitive_ptr_t prim,                                      //

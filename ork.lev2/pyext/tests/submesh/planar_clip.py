@@ -88,7 +88,7 @@ class Fragments:
 
     # original submesh primitive
 
-    self.ori_prim = meshutil.RigidPrimitive(self.ori_submesh,context)
+    self.ori_prim = RigidPrimitive(self.ori_submesh,context)
     self.ori_sgnode = self.ori_prim.createNode("ori",layer,pipeline)
     self.ori_sgnode.enabled = False
 
@@ -141,10 +141,10 @@ class Fragments:
     ##################################
 
     if initial:
-      self.prim_front = meshutil.RigidPrimitive(self.front,self.context)
+      self.prim_front = RigidPrimitive(self.front,self.context)
       self.prim_node_front = self.prim_front.createNode("front",self.layer,self.pipeline)
       self.prim_node_front.enabled = True
-      self.prim_back = meshutil.RigidPrimitive(self.back ,self.context)
+      self.prim_back = RigidPrimitive(self.back ,self.context)
       self.prim_node_back = self.prim_back.createNode("back",self.layer,self.pipeline)
       self.prim_node_back.enabled = True
     else: # TODO - update existing primitive

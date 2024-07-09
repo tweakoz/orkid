@@ -11,6 +11,7 @@
 #include <ork/kernel/svariant.h>
 #include <ork/kernel/string/PoolString.h>
 #include <unordered_map>
+#include <ork/util/tsl/robin_map.h>
 
 namespace ork {
   struct DecompTransform;
@@ -159,8 +160,8 @@ constexpr CrcString operator"" _tok(const char* s, size_t len) {
 
 using token_t = CrcString;
 
-using str2tok_map_t = std::unordered_map<std::string,uint64_t>;
-using tok2str_map_t = std::unordered_map<uint64_t,std::string>;
+using str2tok_map_t = tsl::robin_map<std::string,uint64_t>;
+using tok2str_map_t = tsl::robin_map<uint64_t,std::string>;
 struct TokMap {
   str2tok_map_t _str2tok_map;
   tok2str_map_t _tok2str_map;

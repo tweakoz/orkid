@@ -2,12 +2,14 @@
 
 #include <vector>
 #include <unordered_map>
+#include <ork/util/tsl/robin_map.h>
+#include <ork/util/tsl/robin_set.h>
 
 namespace ork {
 
 template <typename T>
 struct fast_set {
-  std::unordered_map<T, size_t> _uset;
+  tsl::robin_map<T, size_t> _uset;
   std::vector<T> _linear;
 
   void insert(T v);

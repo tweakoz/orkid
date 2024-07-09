@@ -37,7 +37,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.submesh1 = stripSubmesh(self.frusmesh1)
-    self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
+    self.prim1 = RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
     self.sgnode1.sortkey = 2;
@@ -49,7 +49,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     self.submesh2 = stripSubmesh(self.frusmesh2)
-    self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
+    self.prim2 = RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
     self.sgnode2.sortkey = 2;
@@ -61,7 +61,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum3.set(self.fvmtx3,self.fpmtx3)
     self.frusmesh3 = meshutil.SubMesh.createFromFrustum(self.frustum3,projective_rect_uv=True)
     self.submesh3 = stripSubmesh(self.frusmesh3)
-    self.prim3 = meshutil.RigidPrimitive(self.frusmesh3,ctx)
+    self.prim3 = RigidPrimitive(self.frusmesh3,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,self.pseudowire_pipe)
     self.sgnode3.enabled = True
     self.sgnode3.sortkey = 3;
@@ -73,14 +73,14 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum4.set(self.fvmtx4,self.fpmtx4)
     self.frusmesh4 = meshutil.SubMesh.createFromFrustum(self.frustum4,projective_rect_uv=True)
     self.submesh4 = stripSubmesh(self.frusmesh4)
-    self.prim4 = meshutil.RigidPrimitive(self.frusmesh4,ctx)
+    self.prim4 = RigidPrimitive(self.frusmesh4,ctx)
     self.sgnode4 = self.prim4.createNode("m4",self.layer1,self.pseudowire_pipe)
     self.sgnode4.enabled = True
     self.sgnode4.sortkey = 4;
     self.sgnode4.modcolor = vec4(0,1,0,1)
     ##############################
     self.barysub_isect = meshutil.SubMesh().withBarycentricUVs()
-    self.prim_isect = meshutil.RigidPrimitive(self.barysub_isect,ctx)
+    self.prim_isect = RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim_isect.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
     ##############################

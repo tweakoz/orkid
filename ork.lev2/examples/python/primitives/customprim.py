@@ -55,7 +55,7 @@ inp_submesh = FrustumQuads()
 ###################################
 tsubmesh = inp_submesh.triangulate()
 tsubmesh.writeWavefrontObj("customprim.obj")
-prim = meshutil.RigidPrimitive(tsubmesh,ctx)
+prim = RigidPrimitive(tsubmesh,ctx)
 ###################################
 # rtg setup
 ###################################

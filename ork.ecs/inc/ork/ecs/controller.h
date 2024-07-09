@@ -148,7 +148,7 @@ struct Controller {
 
   void forceRetain(const svar64_t& item);
 
-	using id2obj_map_t = std::unordered_map<uint64_t,svar64_t>;
+	using id2obj_map_t = tsl::robin_map<uint64_t,svar64_t>;
 
 	LockedResource<simulation_ptr_t> _simulation;
 
@@ -194,7 +194,7 @@ private:
 
 	std::vector<std::shared_ptr<std::string>> _retained_strings;
 	
-	std::unordered_map<uint64_t,comp_ref_t> _component_cache;
+	tsl::robin_map<uint64_t,comp_ref_t> _component_cache;
 
 };
 

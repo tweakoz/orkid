@@ -44,7 +44,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,
                                                         projective_rect_uv = True)
     self.submesh1 = stripSubMesh(self.frusmesh1)
-    self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
+    self.prim1 = RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
     self.sgnode1.sortkey = 2;
@@ -52,7 +52,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.submesh_dynamic = stripSubMesh(self.submesh1)
     self.barysub_isect = self.submesh_dynamic.withBarycentricUVs()
-    self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
+    self.prim3 = RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
   ##############################################

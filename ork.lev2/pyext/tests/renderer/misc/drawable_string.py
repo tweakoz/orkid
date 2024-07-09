@@ -104,7 +104,7 @@ class UiSgQuadViewTestApp(object):
     mesh = meshutil.Mesh()
     mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
     submesh = mesh.submesh_list[0]
-    submesh_prim = meshutil.RigidPrimitive(submesh,ctx)
+    submesh_prim = RigidPrimitive(submesh,ctx)
     pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
 
     self.stringdrawable = StringDrawableData()

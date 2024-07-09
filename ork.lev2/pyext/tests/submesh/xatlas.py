@@ -134,7 +134,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     self.barysubmesh = atlased.withBarycentricUVs()
 
-    self.union_prim = meshutil.RigidPrimitive(self.barysubmesh,ctx)
+    self.union_prim = RigidPrimitive(self.barysubmesh,ctx)
     self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
     self.union_sgnode.enabled = True
     

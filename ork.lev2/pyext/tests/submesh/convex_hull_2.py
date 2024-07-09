@@ -53,7 +53,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     submesh_isect = meshutil.SubMesh()
     self.barysub_isect = submesh_isect.withBarycentricUVs()
-    self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
+    self.prim3 = RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
     ##############################

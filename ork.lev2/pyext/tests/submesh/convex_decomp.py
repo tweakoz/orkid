@@ -75,7 +75,7 @@ class ConvexDecomp:
 
     # original submesh primitive
 
-    self.ori_prim = meshutil.RigidPrimitive(self.ori_submesh,context)
+    self.ori_prim = RigidPrimitive(self.ori_submesh,context)
     self.ori_sgnode = self.ori_prim.createNode("ori",layer,pipeline)
     self.ori_sgnode.enabled = False
 
@@ -100,7 +100,7 @@ class ConvexDecomp:
     self.normals = []
     for item in self.convex_hulls:
       bary = item.withBarycentricUVs()
-      prim = meshutil.RigidPrimitive(bary,self.context)
+      prim = RigidPrimitive(bary,self.context)
       prim_node = prim.createNode("%s"%bary,self.layer,self.pipeline)
       self.barys += [bary]
       self.prims += [prim]

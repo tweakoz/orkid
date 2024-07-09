@@ -56,7 +56,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     cub_orkmesh.readFromWavefrontObj(cub_path)
     cub_submesh = stripSubmesh(cub_orkmesh.submesh_list[0])
     self.cube_submesh = cub_submesh
-    self.bary_prim = meshutil.RigidPrimitive(cub_submesh,ctx)
+    self.bary_prim = RigidPrimitive(cub_submesh,ctx)
     self.bary_sgnode = self.bary_prim.createNode("bevel",self.layer1,pbr_pipeline)
     self.bary_sgnode.enabled = True
 

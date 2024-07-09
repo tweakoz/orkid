@@ -9,7 +9,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <unordered_set>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/math/line.h>
 #include <ork/lev2/lev2_asset.h>
@@ -130,8 +129,6 @@ struct ProbeNode final : public Node {
 struct Layer {
 
   using drawablenodevect_t = std::vector<drawable_node_ptr_t>;
-  //using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
-  //using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
   using lightnodevect_t = std::vector<lightnode_ptr_t>;
   using probenodevect_t = std::vector<probenode_ptr_t>;
 

@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <ork/util/tsl/robin_map.h>
 #include <ork/lev2/config.h>
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
@@ -34,7 +35,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 using vertex_void_visitor_t = std::function<void(vertex_ptr_t)>;
 using const_vertex_void_visitor_t = std::function<void(vertex_const_ptr_t)>;
-using edge_map_t = std::unordered_map<uint64_t, edge_ptr_t>;
+using edge_map_t = tsl::robin_map<uint64_t, edge_ptr_t>;
 //
 using poly_index_set_t = orkset<int>;
 //
@@ -97,7 +98,7 @@ struct unique_set {
     _the_map.clear();
   }
 
-  std::unordered_map<uint64_t,ptr_t> _the_map;
+  tsl::robin_map<uint64_t,ptr_t> _the_map;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -229,7 +230,7 @@ struct vertexpool {
 
   static const vertexpool EmptyPool;
 
-  std::unordered_map<uint64_t, vertex_ptr_t> _vtxmap;
+  tsl::robin_map<uint64_t, vertex_ptr_t> _vtxmap;
   orkvector<vertex_ptr_t> _orderedVertices;
 };
 
@@ -330,7 +331,7 @@ using merged_polyconst_set_t = unique_set<const MergedPolygon>;
 
 struct PolyGroup {
   std::vector<island_ptr_t> splitByIsland() const;
-  std::unordered_map<uint64_t,polygroup_ptr_t> splitByPlane() const;
+  tsl::robin_map<uint64_t,polygroup_ptr_t> splitByPlane() const;
   std::unordered_set<merged_poly_const_ptr_t> _polys;
   dvec3 averageNormal() const;
   submesh* submesh() const;
@@ -381,7 +382,7 @@ struct EdgeChainLinker {
 
   std::vector<edge_chain_ptr_t> _edge_chains;
   std::vector<edge_loop_ptr_t> _edge_loops;
-  std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
+  tsl::robin_map<vertex_ptr_t, int> _vtxrefcounts;
   std::string _name;
 };
 
@@ -468,20 +469,20 @@ struct DefaultConnectivity : public IConnectivity{
   varmap::VarMap& varmapForPolygon(merged_poly_const_ptr_t p);
 
   vertexpool_ptr_t _vtxpool;
-  std::unordered_map<uint64_t, merged_poly_ptr_t> _polymap;
-  std::unordered_map<vertex_ptr_t, poly_set_t> _polys_by_vertex;
+  tsl::robin_map<uint64_t, merged_poly_ptr_t> _polymap;
+  tsl::robin_map<vertex_ptr_t, poly_set_t> _polys_by_vertex;
   orkvector<merged_poly_ptr_t> _orderedPolys;
-  std::unordered_map<int,int> _polyTypeCounter;
-  std::unordered_map<uint64_t,varmap::VarMap> _halfedge_varmap;
-  std::unordered_map<uint64_t,varmap::VarMap> _vertex_varmap;
-  std::unordered_map<merged_poly_const_ptr_t,varmap::VarMap> _poly_varmap;
+  tsl::robin_map<int,int> _polyTypeCounter;
+  tsl::robin_map<uint64_t,varmap::VarMap> _halfedge_varmap;
+  tsl::robin_map<uint64_t,varmap::VarMap> _vertex_varmap;
+  tsl::robin_map<merged_poly_const_ptr_t,varmap::VarMap> _poly_varmap;
 
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
   bool _enable_zero_area_check = true;
 
-  std::unordered_map<merged_poly_const_ptr_t, halfedge_vect_t> _halfedges_by_poly;
-  std::unordered_map<uint64_t, halfedge_ptr_t> _halfedge_map;
+  tsl::robin_map<merged_poly_const_ptr_t, halfedge_vect_t> _halfedges_by_poly;
+  tsl::robin_map<uint64_t, halfedge_ptr_t> _halfedge_map;
 
 };
 

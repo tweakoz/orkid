@@ -186,7 +186,7 @@ void DefaultConnectivity::removePoly(merged_poly_ptr_t ply) {
     _centerOfPolysCount--;
     auto it_x = _polys_by_vertex.find(v);
     if (it_x != _polys_by_vertex.end()) {
-      auto& polyset = it_x->second;
+      poly_set_t polyset = it_x->second;
       polyset.remove(ply);
     }
   });
@@ -227,7 +227,7 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   int inumv      = import_verts.size();
 
   if(inumv<3){
-    logchan_connectivity->log("Mesh::mergePoly() removing poly : numv<%d> numinputv<%d>", inumv, num_inp_verts);
+    //logchan_connectivity->log("Mesh::mergePoly() removing poly : numv<%d> numinputv<%d>", inumv, num_inp_verts);
     return nullptr;
   }
 
