@@ -2,7 +2,7 @@
 # (simulation/update)-thread private python simulation system
 ################################################################################
 import math, time
-import numpy as np
+#import numpy as np
 from orkengine.ecssim import *
 tokens = CrcStringProxy()
 ###############################################################################
@@ -103,4 +103,4 @@ def onSystemUpdate(simulation):
        tokens.fovy: 90.0*(3.14159/180.0),
     })
     
-    time.sleep(0.01)
+    #time.sleep(0.1)
