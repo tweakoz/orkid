@@ -47,7 +47,6 @@ using namespace ork::ecs;
 namespace ork::ecs {
 
 using pyentity_ptr_t     = ork::python::unmanaged_ptr<Entity>;
-using pysystem_ptr_t     = ork::python::unmanaged_ptr<System>;
 using pysgsystem_ptr_t   = ork::python::unmanaged_ptr<SceneGraphSystem>;
 
 } // namespace ork::lev2

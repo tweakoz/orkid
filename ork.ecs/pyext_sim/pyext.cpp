@@ -13,7 +13,14 @@
 #include <ork/python/pycodec.inl>
 #include <ork/python/common_bindings/pyext_crcstring.inl>
 
+///////////////////////////////////////////////////////////////////////////////
+
 namespace nb = obind;
+namespace py = obind;
+using namespace obind::literals;
+using adapter_t = ork::python::nanobindadapter;
+
+#include <ork/python/common_bindings/pyext_math_la.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,19 +34,14 @@ namespace ork::ecssim {
 
 void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
 void register_system(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
-
-} // namespace ork::ecs
-
-////////////////////////////////////////////////////////////////////////////////
-
-using adapter_t = ::ork::python::nanobindadapter;
+void register_datatable(typename py::module_& module, typename nanobindadapter::codec_ptr_t type_codec);
 
 void _ecssim_init_classes(nb::module_ &module_ecssim) {
-  //auto type_codec = ork::ecssim::simonly_codec_instance();
-  //auto type_codec = ork::python::pb11_typecodec_t::instance();
+
   auto type_codec_nb = ork::python::TypeCodec<adapter_t>::instance();
 
   ork::python::_init_crcstring<adapter_t>(module_ecssim, type_codec_nb);
+  ork::python::pyinit_math_la_t_vec<float>(module_ecssim, "", type_codec_nb);
   //module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   //module_ecssim.doc() = "Orkid Ecs Internal (Simulation only) Library";
@@ -47,8 +49,9 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //pyinit_entity(module_ecs);
   //pyinit_component(module_ecs);
   //pyinit_system(module_ecs);
-  ::ork::ecssim::register_simulation(module_ecssim,type_codec_nb);
-  ::ork::ecssim::register_system(module_ecssim,type_codec_nb);
+  register_datatable(module_ecssim,type_codec_nb);
+  register_simulation(module_ecssim,type_codec_nb);
+  register_system(module_ecssim,type_codec_nb);
   //::ork::python::init_math(module_ecssim, type_codec);
 
 
@@ -56,13 +59,15 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //////////////////////////////////////////////////////////////////////////////
 }
 
+} // namespace ork::ecssim
+
 ////////////////////////////////////////////////////////////////////////////////
 int _ecssim_exec_module(PyObject *m) {
     printf( "begin _ecssim_exec_module\n");
     try {
         nb::detail::init(NB_DOMAIN_STR);                                 
         nb::module_ mod = nb::borrow<nb::module_>(m);
-        _ecssim_init_classes(mod);
+        ork::ecssim::_ecssim_init_classes(mod);
     } catch (const std::exception &e) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return -1;
@@ -88,7 +93,6 @@ static struct PyModuleDef orkengine_ecssim_module = {
 };
 extern "C" PyObject* PyInit__ecssim() {
   printf( "initializing _ecssim\n");
-  enablePyCrash();
   return PyModuleDef_Init(&orkengine_ecssim_module);
 }
 

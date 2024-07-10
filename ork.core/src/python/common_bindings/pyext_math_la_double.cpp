@@ -6,7 +6,14 @@
 ////////////////////////////////////////////////////////////////
 
 //#include "pyext.h"
-#include "pyext_math_la.inl"
+#include <ork/python/pycodec.inl>
+
+namespace py = pybind11;
+using namespace pybind11::literals;
+using adapter_t = ork::python::pybind11adapter;
+
+#include <ork/python/common_bindings/pyext_math_la.inl>
+
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::python {

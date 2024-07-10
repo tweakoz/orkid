@@ -34,7 +34,9 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
         return simptr->gameTime();
       })
       .def("findSystemByName", [](pysim_ptr_t simptr, const std::string& name) -> pysystem_ptr_t {
-        return simptr->_findSystemFromName(name.c_str());
+        auto sys = simptr->_findSystemFromName(name.c_str());
+        auto wrapped = pysystem_ptr_t(sys);
+        return wrapped;
       });
   //ype_codec->registerRawPtrCodec<sim_raw_ptr_t, Simulation*>(sim_type);
   type_codec->registerStdCodec<pysim_ptr_t>(sim_type);

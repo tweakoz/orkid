@@ -31,7 +31,7 @@ class PYSYS_MINIMAL(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
@@ -155,7 +155,7 @@ class PYSYS_MINIMAL(object):
     # spawn balls
     ##############################
 
-    if True:
+    if False:
       i = random.randint(-5,5)
       j = random.randint(-5,5)
       prob = random.uniform(0,1)
@@ -173,7 +173,7 @@ class PYSYS_MINIMAL(object):
 
     #UIC = self.uicam.cameradata
    
-    if True:
+    if False:
       self.controller.systemNotify( self.sys_python,
                                     tokens.Function1,{
                                       tokens.hello: "world",

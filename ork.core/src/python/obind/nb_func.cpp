@@ -775,10 +775,6 @@ static PyObject *nb_func_vectorcall_simple(PyObject *self,
                                            PyObject *const *args_in,
                                            size_t nargsf,
                                            PyObject *kwargs_in) noexcept {
-
-    static int _gcounter = 0;
-    _gcounter++;
-    printf("nb_func_vectorcall_simple: %d\n", _gcounter);
     
     uint8_t args_flags[NB_MAXARGS_SIMPLE];
     func_data *fr = nb_func_data(self);
@@ -824,22 +820,7 @@ static PyObject *nb_func_vectorcall_simple(PyObject *self,
 
             try {
                 // Found a suitable overload, let's try calling it
-                if(false) { //_gcounter == 2) {
-                    //OrkBreak();
-                    // print out all arg types
-                    for (size_t i = 0; i < nargs_in; ++i) {
-                        auto name = steal<str>(nb_inst_name(args_in[i]));
-                        // find type object from 
-                        PyTypeObject* typeo = (PyTypeObject*)Py_TYPE(args_in[i]);
-                        uint64_t flags = typeo->tp_flags;
-                        PyObject* the_module = PyType_GetModule(typeo);
-                        str module_name = the_module //
-                                         ? steal<str>(PyObject_GetAttrString(the_module, "__name__")) //
-                                         : str("built-in");
 
-                        printf("arg %d: %s : %p module<%s>\n", i, name.c_str(), typeo, module_name.c_str());
-                    }
-                }
                 result = f->impl((void *) f->capture, (PyObject **) args_in,
                                  args_flags, (rv_policy) (f->flags & 0b111),
                                  &cleanup);

@@ -28,6 +28,7 @@ class MySystem:
   def __init__(self):
     self.D = dict 
     self.notif_count = 0
+    self.timeaccum = 0.0
 
 the_sys = MySystem()
 
@@ -41,7 +42,7 @@ def onSystemInit(simulation):
 
 def onSystemLink(simulation):
   print("onSystemLink<%s>"%simulation)
-  #the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
+  the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
 
 ###############################################################################
 
@@ -63,25 +64,42 @@ def onSystemNotify(simulation, evID, table):
     #v3b = vec3(1,0,1)
     #print(v3)
     #print("notifcount<%d>"%(the_sys.notif_count))
-    return
   else:
     print("onSystemNotify<%s:%s>"%(evID,table))
     assert(False)
+  if (the_sys.notif_count%500)==0:
+    print("onSystemNotify notifcount: %s"%the_sys.notif_count)
 
 ###############################################################################
 
 def onSystemUpdate(simulation):
+
+  ###############
+  # query time
+  ###############
+
   dt = simulation.deltaTime
   gt = simulation.gameTime
-  print("onSystemUpdate %s %s"%(dt,gt))
-  #print(the_sys.sys_sg)
-  if False:
-    the_sys.sys_sg.notify( "UpdateCamera",{
-                           tokens.eye: vec3(0,0,1),
-                           tokens.tgt: vec3(0,0,0),
-                           tokens.up: vec3(0,1,0),
-                           tokens.near: 0.1,
-                           tokens.fovy: 60.0
-  })
 
-  #print("onSystemUpdate<%s>"%simulation)
+  ###############
+  # update camera
+  ###############
+
+  the_sys.timeaccum += dt
+  
+  if the_sys.timeaccum>(1.0/120.0):
+
+    the_sys.timeaccum = 0.0
+
+    phase = gt * 0.1
+    eye = vec3(0,0,0)
+    tgt = vec3(math.sin(phase),0,-math.cos(phase))*10.0
+
+    the_sys.sys_sg.notify( tokens.UpdateCamera,{
+       tokens.eye: eye,
+       tokens.tgt: tgt,
+       tokens.up: vec3(0,1,0),
+       tokens.near: 0.1,
+       tokens.far: 1000.0,
+       tokens.fovy: 90.0*(3.14159/180.0),
+    })

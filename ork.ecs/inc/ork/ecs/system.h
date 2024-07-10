@@ -14,6 +14,7 @@
 #include <ork/object/Object.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/lev2/lev2_types.h>
+#include <ork/python/wraprawpointer.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -162,6 +163,8 @@ protected:
   Simulation* _simulation       = nullptr;
   bool _started                 = false;
 };
+
+using pysystem_ptr_t = ork::python::unmanaged_ptr<System>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs

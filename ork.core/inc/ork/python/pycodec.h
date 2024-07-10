@@ -23,6 +23,7 @@
 #include <ork/python/obind/stl/pair.h>
 #include <ork/python/obind/stl/shared_ptr.h>
 #include <ork/python/obind/stl/tuple.h>
+#include <ork/python/obind/ndarray.h>
 #include <ork/python/obind/eval.h>
 
 #define OrkPyAssert(x)                                                                                                             \
@@ -126,6 +127,10 @@ struct pybind11adapter {
     //
     template <typename Func,typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
       auto& ref = Base::def_property_readonly(name_, f, extra...);
+      return *this;
+    }
+    template <typename Getter,typename Setter,typename... Extra> _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
+      auto& ref = Base::def_property(name_, g, s, extra...);
       return *this;
     }
     //
@@ -237,6 +242,10 @@ struct nanobindadapter {
       auto& ref = Base::def_prop_ro(name_, f, extra...);
       return *this;
     }
+    template <typename Getter,typename Setter,typename... Extra> _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
+      auto& ref = Base::def_prop_rw(name_, g, s, extra...);
+      return *this;
+    }
     //
     /*
       template <typename Func> _clazz& constructor(Func&& f) {
@@ -267,6 +276,11 @@ struct nanobindadapter {
   static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
     return _clazz<type_,options...>(scope, name, extra...);
   }
+    template <typename... Args>
+    static auto _borrow(Args&&... args) -> decltype(obind::borrow(std::forward<Args>(args)...)) {
+        return obind::borrow(std::forward<Args>(args)...);
+    }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -334,5 +348,9 @@ using pb11_typecodec_ptr_t = std::shared_ptr<pb11_typecodec_t>;
 
 using obind_typecodec_t     = TypeCodec<nanobindadapter>;
 using obind_typecodec_ptr_t = std::shared_ptr<obind_typecodec_t>;
+
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace ork::python

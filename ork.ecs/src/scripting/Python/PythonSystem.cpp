@@ -213,7 +213,8 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       }
 
       if (_pymethodOnSystemInit) {
-        ////__pcallargs(logchan_pysys, _pymethodOnSystemInit, pinst);
+        auto wrapped = pysim_ptr_t(pinst);
+        __pcallargs(logchan_pysys, _pymethodOnSystemInit, wrapped);
       }
 
     /*} catch (py::error_already_set& e) {
@@ -376,7 +377,7 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
     //_pythonContext->bindSubInterpreter();
     auto table = data.getShared<DataTable>();
     auto wrapped = pysim_ptr_t(simulation());
-    //__pcallargs(logchan_pysys, _pymethodOnSystemNotify, wrapped, evIDcrc, table);
+    __pcallargs(logchan_pysys, _pymethodOnSystemNotify, wrapped, evIDcrc, table);
     //_pythonContext->unbindSubInterpreter();
   }
 }

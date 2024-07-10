@@ -46,9 +46,8 @@ using namespace ork::ecs;
 
 namespace ork::ecssim {
 
-using pyentity_ptr_t     = ork::python::unmanaged_ptr<Entity>;
-using pysystem_ptr_t     = ork::python::unmanaged_ptr<System>;
-using pysgsystem_ptr_t   = ork::python::unmanaged_ptr<SceneGraphSystem>;
+//using pyentity_ptr_t     = ork::python::unmanaged_ptr<Entity>;
+//using pysgsystem_ptr_t   = ork::python::unmanaged_ptr<SceneGraphSystem>;
 
 using namespace ::ork::python;
 extern pb11_typecodec_ptr_t simonly_codec_instance();

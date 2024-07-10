@@ -18,6 +18,10 @@ template <typename ADAPTER, typename... Args>
 auto __cast(Args&&... args) -> decltype(ADAPTER::template _cast(std::forward<Args>(args)...)) {
     return ADAPTER::template _cast(std::forward<Args>(args)...);
 }
+template <typename ADAPTER, typename... Args>
+auto __borrow(Args&&... args) -> decltype(ADAPTER::template _borrow(std::forward<Args>(args)...)) {
+    return ADAPTER::template _borrow(std::forward<Args>(args)...);
+}
 
 template <typename ADAPTER> template <typename ORKTYPE> void TypeCodec<ADAPTER>::registerStdCodec(const ADAPTER::object_t& pytype) {
   this->registerCodec(
@@ -126,9 +130,9 @@ auto clazz(typename adapter::module_t& scope, const char* name, const Extra&... 
   return adapter::template clazz<type_, options...>(scope, name, extra...);
 }
 
-template <typename adapter, typename... Extra>
+template <typename adapter, typename... Args, typename... Extra>
 auto initor(const typename adapter::initimpl::template constructor<>& init, const Extra&... extra) {
-  return adapter::template init<>();
+  return adapter::template init<Args...>();
 }
 template <typename adapter, typename... Extra> auto initor(const Extra&... extra) {
   return adapter::template init<>();
@@ -153,3 +157,26 @@ template <typename adapter, typename T> T cast2ork(const typename adapter::objec
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::python
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace pybind11 {
+template <typename type_, typename... options, typename... Extra>
+auto clazzz(module_& scope, const char* name, const Extra&... extra) {
+  return ork::python::pybind11adapter::template clazz<type_, options...>(scope, name, extra...);
+}
+template <typename type_, typename... options, typename... Extra>
+auto clazz_bufp(module_& scope, const char* name, const Extra&... extra) {
+  return ork::python::pybind11adapter::template clazz<type_, options...>(scope, name, pybind11::buffer_protocol(), extra...);
+}
+}
+namespace obind {
+template <typename type_, typename... options, typename... Extra>
+auto clazzz(module_& scope, const char* name, const Extra&... extra) {
+  return ork::python::nanobindadapter::template clazz<type_, options...>(scope, name, extra...);
+}
+template <typename type_, typename... options, typename... Extra>
+auto clazz_bufp(module_& scope, const char* name, const Extra&... extra) {
+  return ork::python::nanobindadapter::template clazz<type_, options...>(scope, name, extra...);
+}
+}
