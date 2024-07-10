@@ -149,6 +149,11 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   auto path      = data._sceneScriptPath;
   auto abspath   = path.toAbsolute();
 
+  // todo figure out how to remove GIL
+  // the update thread should not need
+  // the primary interpreter GIL at all...
+  pybind11::gil_scoped_acquire acq;
+
   _pythonContext->bindSubInterpreter();
   if (abspath.doesPathExist()) {
     File scriptfile(abspath, EFM_READ);
@@ -302,6 +307,10 @@ void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
 
 bool PythonSystem::_onLink(Simulation* psi) // final
 {
+  // todo figure out how to remove GIL
+  // the update thread should not need
+  // the primary interpreter GIL at all...
+  pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onLink() ");
   // printf("PythonSystem::DoLink()\n");
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
@@ -328,6 +337,10 @@ void PythonSystem::_onUnLink(Simulation* psi) // final
 
 bool PythonSystem::_onActivate(Simulation* psi) // final
 {
+  // todo figure out how to remove GIL
+  // the update thread should not need
+  // the primary interpreter GIL at all...
+  pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onActivate() ");
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStart");
   if (_pymethodOnSystemActivate) {
@@ -350,6 +363,10 @@ void PythonSystem::_onDeactivate(Simulation* psi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PythonSystem::_onStage(Simulation* psi) {
+  // todo figure out how to remove GIL
+  // the update thread should not need
+  // the primary interpreter GIL at all...
+  pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onStage() ");
   if (_pymethodOnSystemStage) {
     _pythonContext->bindSubInterpreter();
@@ -386,6 +403,11 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
 
 void PythonSystem::_onUpdate(Simulation* psi) // final
 {
+  // todo figure out how to remove GIL
+  // the update thread should not need
+  // the primary interpreter GIL at all...
+  pybind11::gil_scoped_acquire acq;
+
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
 
