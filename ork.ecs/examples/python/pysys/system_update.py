@@ -18,6 +18,7 @@ class MySystem:
   def __init__(self):
     self.notif_count = 0
     self.timeaccum = 0.0
+    self.upd_counter = 0
 
 the_sys = MySystem()
 
@@ -63,6 +64,8 @@ def onSystemNotify(simulation, evID, table):
 
 def onSystemUpdate(simulation):
 
+  the_sys.upd_counter += 1
+
   ###############
   # query time
   ###############
@@ -84,9 +87,12 @@ def onSystemUpdate(simulation):
     eye = vec3(0,0,0)
     tgt = vec3(math.sin(phase),0,-math.cos(phase))*10.0
 
-    as_np = np.array(tgt.as_buffer)
+    #as_np = np.array(tgt.as_buffer)
     #print(as_np.shape)
     #print(as_np)
+    #print(tgt)
+    
+    print(float(the_sys.upd_counter)/gt)
     
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,

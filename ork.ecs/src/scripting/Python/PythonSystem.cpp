@@ -152,9 +152,9 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
-  pybind11::gil_scoped_acquire acq;
+  //pybind11::gil_scoped_acquire acq;
 
-  _pythonContext->bindSubInterpreter();
+  _pythonContext->bindSubInterpreter(false,false);
   if (abspath.doesPathExist()) {
     File scriptfile(abspath, EFM_READ);
     size_t filesize = 0;
@@ -310,12 +310,12 @@ bool PythonSystem::_onLink(Simulation* psi) // final
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
-  pybind11::gil_scoped_acquire acq;
+  //pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onLink() ");
   // printf("PythonSystem::DoLink()\n");
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
   if (_pymethodOnSystemLink) {
-    _pythonContext->bindSubInterpreter();
+    _pythonContext->bindSubInterpreter(false,false);
     auto wrapped = pysim_ptr_t(psi);
     __pcallargs(logchan_pysys, _pymethodOnSystemLink, wrapped);
     _pythonContext->unbindSubInterpreter();
@@ -340,11 +340,11 @@ bool PythonSystem::_onActivate(Simulation* psi) // final
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
-  pybind11::gil_scoped_acquire acq;
+  //pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onActivate() ");
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStart");
   if (_pymethodOnSystemActivate) {
-    _pythonContext->bindSubInterpreter();
+    _pythonContext->bindSubInterpreter(false,false);
     auto wrapped = pysim_ptr_t(psi);
      __pcallargs(logchan_pysys, _pymethodOnSystemActivate, wrapped);
     _pythonContext->unbindSubInterpreter();
@@ -366,10 +366,10 @@ bool PythonSystem::_onStage(Simulation* psi) {
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
-  pybind11::gil_scoped_acquire acq;
+  //pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onStage() ");
   if (_pymethodOnSystemStage) {
-    _pythonContext->bindSubInterpreter();
+    _pythonContext->bindSubInterpreter(false,false);
     auto wrapped = pysim_ptr_t(psi);
     __pcallargs(logchan_pysys, _pymethodOnSystemStage, wrapped);
     _pythonContext->unbindSubInterpreter();
@@ -391,11 +391,11 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
     // logchan_pysys->log("_onNotify() %d", int(has_notify));
     auto evIDcrc = std::make_shared<CrcString>();
     (*evIDcrc)   = evID;
-    //_pythonContext->bindSubInterpreter();
+    _pythonContext->bindSubInterpreter(false,false);
     auto table = data.getShared<DataTable>();
     auto wrapped = pysim_ptr_t(simulation());
     __pcallargs(logchan_pysys, _pymethodOnSystemNotify, wrapped, evIDcrc, table);
-    //_pythonContext->unbindSubInterpreter();
+    _pythonContext->unbindSubInterpreter();
   }
 }
 
@@ -406,19 +406,21 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
-  pybind11::gil_scoped_acquire acq;
+  //pybind11::gil_scoped_acquire acq;
 
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
 
   if (_pymethodOnSystemUpdate) {
     auto wrapped = pysim_ptr_t(psi);
+    _pythonContext->bindSubInterpreter(false,false);
     __pcallargs(logchan_pysys, _pymethodOnSystemUpdate, wrapped);
+    _pythonContext->unbindSubInterpreter();
   }
 
   if (_onSystemUpdate) {
-    auto controller = psi->controller();
-    _onSystemUpdate(nullptr);
+    //auto controller = psi->controller();
+    //_onSystemUpdate(nullptr);
     // controller->_simulation.atomicOp([this](simulation_ptr_t& unlocked){
     // });
   }

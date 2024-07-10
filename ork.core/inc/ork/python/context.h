@@ -51,7 +51,7 @@ struct Context2 {
   PyThreadState* _mainInterpreter = nullptr;
   PyThreadState* _saveInterpreter = nullptr;
 
-  void bindSubInterpreter();
+  void bindSubInterpreter(bool ensure,bool save);
   void unbindSubInterpreter();
 	globalstate_ptr_t _gstate;
 

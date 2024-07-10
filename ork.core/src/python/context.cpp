@@ -296,36 +296,43 @@ Context2::~Context2() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context2::bindSubInterpreter() {
-  logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
+void Context2::bindSubInterpreter(bool ensure,bool save) {
+  //logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
 
-  PyGILState_STATE parentGILState = PyGILState_Ensure();
+  if(ensure){
 
-  // Save the current thread state and swap to subinterpreter
-  _saveInterpreter = PyThreadState_Swap(_subInterpreter);
+    PyGILState_STATE parentGILState = PyGILState_Ensure();
+  }
 
-  // Release the GIL for the parent interpreter
-  PyEval_ReleaseThread(_saveInterpreter);
+  if(save){
+    // Save the current thread state and swap to subinterpreter
+    _saveInterpreter = PyThreadState_Swap(_subInterpreter);
+
+    // Release the GIL for the parent interpreter
+    if(_saveInterpreter){
+      PyEval_ReleaseThread(_saveInterpreter);
+    }
+  }
 
   // Acquire the GIL for the subinterpreter
   PyEval_AcquireThread(_subInterpreter);
-  logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
+  //logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::unbindSubInterpreter() {
-  logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this);
+  //logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this);
   PyEval_ReleaseThread(_subInterpreter);
 
   // Restore the saved thread state if there was one
   if (_saveInterpreter) {
     PyEval_AcquireThread(_saveInterpreter);
     PyThreadState_Swap(_saveInterpreter);
-    logchan_pyctx->log("pyctx<%p> unbound subinterpreter, restored interpreter: %p\n", this, (void*)_saveInterpreter);
+    //logchan_pyctx->log("pyctx<%p> unbound subinterpreter, restored interpreter: %p\n", this, (void*)_saveInterpreter);
     _saveInterpreter = nullptr;
   }
-  logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this);
+  //logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
