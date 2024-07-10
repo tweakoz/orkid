@@ -11,6 +11,7 @@
 #include <ork/math/TransformNode.h>
 #include <ork/util/fsm.h>
 #include <ork/kernel/future.hpp>
+#include <ork/python/wraprawpointer.inl>
 
 #include "types.h"
 #include "controller.h"
@@ -310,6 +311,8 @@ private:
   //////////////////////////////////////////////////////////
 
 };
+
+using pysim_ptr_t = ork::python::unmanaged_ptr<Simulation>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -23,6 +23,7 @@
 #include <ork/python/obind/stl/pair.h>
 #include <ork/python/obind/stl/shared_ptr.h>
 #include <ork/python/obind/stl/tuple.h>
+#include <ork/python/obind/eval.h>
 
 #define OrkPyAssert(x)                                                                                                             \
   {                                                                                                                                \
@@ -330,5 +331,8 @@ protected:
 
 using pb11_typecodec_t     = TypeCodec<pybind11adapter>;
 using pb11_typecodec_ptr_t = std::shared_ptr<pb11_typecodec_t>;
+
+using obind_typecodec_t     = TypeCodec<nanobindadapter>;
+using obind_typecodec_ptr_t = std::shared_ptr<obind_typecodec_t>;
 
 } // namespace ork::python

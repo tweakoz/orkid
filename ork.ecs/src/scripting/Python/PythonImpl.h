@@ -16,8 +16,6 @@
 #include <ork/util/logger.h>
 
 #include <Python.h>
-#include <pybind11/embed.h> // everything needed for embedding
-#include <pybind11/pybind11.h>
 #include <ork/python/pycodec.h>
 #include <ork/python/context.h>
 
@@ -110,12 +108,12 @@ public:
   template <typename Arg>
   auto process_arg(Arg&& arg) {
       //auto type_codec = ecssim::simonly_codec_instance();
-        auto type_codec = ork::python::pb11_typecodec_t::instance();
+        auto type_codec = ork::python::obind_typecodec_t::instance();
 
       return type_codec->encode(std::forward<Arg>(arg));
   }
 
-  template <typename... A> void __pcallargs(logchannel_ptr_t lchan, pybind11::object fn_object,A&&... args){
+  template <typename... A> void __pcallargs(logchannel_ptr_t lchan, obind::object fn_object,A&&... args){
     try {
 
         auto process_args = [&](auto&&... processed_args) {
@@ -126,11 +124,11 @@ public:
         process_args(process_arg(std::forward<A>(args))...);
 
       //fn_object( args );
-    } catch (pybind11::error_already_set& e) {
+    /*} catch (obind::error_already_set& e) {
       lchan->log("Error executing Python script:\n");
       e.restore();
       PyErr_Print();
-      OrkAssert(false);
+      OrkAssert(false);*/
     } catch (const std::exception& e) {
       lchan->log("Error executing Python script: %s\n", e.what());
       OrkAssert(false);
@@ -143,13 +141,13 @@ public:
   std::map<ork::file::Path, pysys::ScriptObject*> mScriptObjects;
   std::unordered_set<PythonComponent*> _activeComponents;
   system_update_lambda_t _onSystemUpdate;
-  pybind11::object _systemScript;
-  pybind11::object _pymethodOnSystemUpdate;
-  pybind11::object _pymethodOnSystemInit;
-  pybind11::object _pymethodOnSystemLink;
-  pybind11::object _pymethodOnSystemActivate;
-  pybind11::object _pymethodOnSystemStage;
-  pybind11::object _pymethodOnSystemNotify;
+  obind::object _systemScript;
+  obind::object _pymethodOnSystemUpdate;
+  obind::object _pymethodOnSystemInit;
+  obind::object _pymethodOnSystemLink;
+  obind::object _pymethodOnSystemActivate;
+  obind::object _pymethodOnSystemStage;
+  obind::object _pymethodOnSystemNotify;
 
   //int mScriptRef;
 };

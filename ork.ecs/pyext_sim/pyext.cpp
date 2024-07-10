@@ -19,14 +19,14 @@ namespace nb = obind;
 
 namespace ork {
 namespace python {
-  void init_math(py::module& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
+  void init_math(py::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
 }
 }
 
 namespace ork::ecssim {
 
-void register_simulation(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
-void register_system(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec);
+void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
+void register_system(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
 
 } // namespace ork::ecs
 
@@ -36,7 +36,7 @@ using adapter_t = ::ork::python::nanobindadapter;
 
 void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //auto type_codec = ork::ecssim::simonly_codec_instance();
-  auto type_codec = ork::python::pb11_typecodec_t::instance();
+  //auto type_codec = ork::python::pb11_typecodec_t::instance();
   auto type_codec_nb = ork::python::TypeCodec<adapter_t>::instance();
 
   ork::python::_init_crcstring<adapter_t>(module_ecssim, type_codec_nb);
@@ -47,39 +47,18 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
   //pyinit_entity(module_ecs);
   //pyinit_component(module_ecs);
   //pyinit_system(module_ecs);
-  //::ork::ecssim::register_simulation(module_ecssim,type_codec);
-  //::ork::ecssim::register_system(module_ecssim,type_codec);
+  ::ork::ecssim::register_simulation(module_ecssim,type_codec_nb);
+  ::ork::ecssim::register_system(module_ecssim,type_codec_nb);
   //::ork::python::init_math(module_ecssim, type_codec);
 
 
   //pyinit_pysys(module_ecs);
   //////////////////////////////////////////////////////////////////////////////
 }
-////////////////////////////////////////////////////////////////////////////////
-/*NB_MODULE(_ecssim, m){
-  _ecssim_init_classes(m);
-}*/
-#define NBX_MODULE(name, variable)                                              \
-    static PyModuleDef NB_CONCAT(nanobind_module_def_, name);                  \
-    [[maybe_unused]] static void NB_CONCAT(nanobind_init_,                     \
-                                           name)(::obind::module_ &);       \
-    NB_MODULE_IMPL(name) {                                                     \
-        obind::detail::init(NB_DOMAIN_STR);                                 \
-        obind::module_ m =                                                  \
-            obind::steal<obind::module_>(obind::detail::module_new(   \
-                NB_TOSTRING(name), &NB_CONCAT(nanobind_module_def_, name)));   \
-        try {                                                                  \
-            NB_CONCAT(nanobind_init_, name)(m);                                \
-            return m.release().ptr();                                          \
-        } catch (const std::exception &e) {                                    \
-            PyErr_SetString(PyExc_ImportError, e.what());                      \
-            return nullptr;                                                    \
-        }                                                                      \
-    }                                                                          \
-    void NB_CONCAT(nanobind_init_, name)(::obind::module_ & (variable))
 
 ////////////////////////////////////////////////////////////////////////////////
 int _ecssim_exec_module(PyObject *m) {
+    printf( "begin _ecssim_exec_module\n");
     try {
         nb::detail::init(NB_DOMAIN_STR);                                 
         nb::module_ mod = nb::borrow<nb::module_>(m);
@@ -88,6 +67,7 @@ int _ecssim_exec_module(PyObject *m) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         return -1;
     }
+    printf( "end _ecssim_exec_module\n");
     return 0;
 }
 static PyModuleDef_Slot _ecssim_slots[] = {
@@ -107,6 +87,8 @@ static struct PyModuleDef orkengine_ecssim_module = {
     nullptr   // _core_free
 };
 extern "C" PyObject* PyInit__ecssim() {
+  printf( "initializing _ecssim\n");
+  enablePyCrash();
   return PyModuleDef_Init(&orkengine_ecssim_module);
 }
 

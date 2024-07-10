@@ -25,6 +25,9 @@
 #define NB_VERSION_MINOR 0
 #define NB_VERSION_PATCH 0
 
+#include <ork/orkstd.h>
+#include <ork/kernel/svariant.h>
+
 // Core C++ headers that nanobind depends on
 #include <cstdint>
 #include <exception>

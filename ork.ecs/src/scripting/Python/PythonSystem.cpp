@@ -26,13 +26,9 @@
 
 #include "PythonImpl.h"
 
-namespace py = pybind11;
-using namespace pybind11::literals;
+namespace py = obind;
+using namespace obind::literals;
 
-///////////////////////////////////////////////////////////////////////////////
-namespace ork::python {
-void init_crcstring(py::module& module_core, python::pb11_typecodec_ptr_t type_codec);
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecssim {
@@ -99,8 +95,6 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   gstate->_mainInterpreter = ecsgstate->_mainInterpreter;
   gstate->_globalInterpreter = ecsgstate->_globalInterpreter;
   _pythonContext = std::make_shared<pyctx_t>(gstate);
-
-  // pybind11::scoped_interpreter guard{};
 
   ///////////////////////////////////////////////
 
@@ -169,22 +163,24 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
     try {
       // Execute the script in the subinterpreter context and capture the module
-      _systemScript                  = pybind11::module_::import("__main__");
-      _systemScript.attr("__file__") = abspath;
-      pybind11::dict globals         = _systemScript.attr("__dict__");
-      globals["__file__"]            = abspath;
+      py::object scope = py::module_::import_("__main__").attr("__dict__");
+      auto globals = py::cast<py::dict>(scope);
+      //_systemScript                  = py::module_::import_("__main__");
+      //_systemScript.attr("__file__") = std::string(abspath.c_str());
+      //auto globals         = py::cast<py::dict>(_systemScript.attr("__dict__"));
+      //globals["__file__"]            = std::string(abspath.c_str());
 
-      pybind11::module_ sys            = pybind11::module_::import("sys");
-      pybind11::list original_sys_path = sys.attr("path");
-      //pybind11::module_ math           = pybind11::module_::import("math");
+      //py::module_ sys            = py::module_::import_("sys");
+      //py::list original_sys_path = sys.attr("path");
+      //py::module_ math           = py::module_::import("math");
       //globals["MATH"]                  = math;
-      //pybind11::module_ ecssim         = pybind11::module_::import("orkengine.ecssim");
+      //py::module_ ecssim         = py::module_::import("orkengine.ecssim");
       //globals["ECS"]                   = ecssim;
       // from orkengine.core import CrcString
-      //pybind11::module_ core = pybind11::module_::import("orkengine.core");
+      //py::module_ core = py::module_::import("orkengine.core");
       //globals["CORE"]        = core; 
       
-      //pybind11::module_ OPENCL = pybind11::module_::import("pyopencl");
+      //py::module_ OPENCL = py::module_::import("pyopencl");
       //globals["CL"]        = OPENCL;
       
       // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
@@ -192,18 +188,9 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       // auto module_core = py::module::create_extension_module(
       //"core", nullptr, new py::module_::module_def );
       //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
-      //sys.attr("path") = pybind11::list();
+      //sys.attr("path") = py::list();
 
-      if (1) {
-        pybind11::exec(mScriptText.c_str(), globals, globals);
-      } else {
-
-        pybind11::object compile = pybind11::module_::import("builtins").attr("compile");
-        pybind11::object code    = compile(mScriptText, (std::string)abspath.c_str(), "exec");
-
-        // Execute the compiled code object
-        pybind11::exec(code, globals, globals);
-      }
+      py::exec(py::str(mScriptText.c_str()), scope);
 
       // find global onSystemUpdate() and assign to _pymethodOnSystemUpdate
       if (globals.contains("onSystemUpdate")) {
@@ -229,13 +216,15 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
         ////__pcallargs(logchan_pysys, _pymethodOnSystemInit, pinst);
       }
 
-    } catch (pybind11::error_already_set& e) {
+    /*} catch (py::error_already_set& e) {
       logchan_pysys->log("Error executing Python script: %s\n", abspath.c_str());
       e.restore();
       PyErr_Print();
-      OrkAssert(false);
+      OrkAssert(false);*/
     } catch (const std::exception& e) {
       logchan_pysys->log("Error executing Python script: %s\n", e.what());
+      //e.restore();
+      PyErr_Print();
       OrkAssert(false);
     }
   }
@@ -317,7 +306,8 @@ bool PythonSystem::_onLink(Simulation* psi) // final
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
   if (_pymethodOnSystemLink) {
     _pythonContext->bindSubInterpreter();
-    //__pcallargs(logchan_pysys, _pymethodOnSystemLink, psi);
+    auto wrapped = pysim_ptr_t(psi);
+    __pcallargs(logchan_pysys, _pymethodOnSystemLink, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -341,7 +331,8 @@ bool PythonSystem::_onActivate(Simulation* psi) // final
   // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneStart");
   if (_pymethodOnSystemActivate) {
     _pythonContext->bindSubInterpreter();
-    //__pcallargs(logchan_pysys, _pymethodOnSystemActivate, psi);
+    auto wrapped = pysim_ptr_t(psi);
+     __pcallargs(logchan_pysys, _pymethodOnSystemActivate, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -361,7 +352,8 @@ bool PythonSystem::_onStage(Simulation* psi) {
   logchan_pysys->log("_onStage() ");
   if (_pymethodOnSystemStage) {
     _pythonContext->bindSubInterpreter();
-    //__pcallargs(logchan_pysys, _pymethodOnSystemStage, psi);
+    auto wrapped = pysim_ptr_t(psi);
+    __pcallargs(logchan_pysys, _pymethodOnSystemStage, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -383,7 +375,8 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
     (*evIDcrc)   = evID;
     //_pythonContext->bindSubInterpreter();
     auto table = data.getShared<DataTable>();
-    //__pcallargs(logchan_pysys, _pymethodOnSystemNotify, simulation(), evIDcrc, table);
+    auto wrapped = pysim_ptr_t(simulation());
+    //__pcallargs(logchan_pysys, _pymethodOnSystemNotify, wrapped, evIDcrc, table);
     //_pythonContext->unbindSubInterpreter();
   }
 }
@@ -396,7 +389,8 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
   double gt = psi->gameTime();
 
   if (_pymethodOnSystemUpdate) {
-    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate);
+    auto wrapped = pysim_ptr_t(psi);
+    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate, wrapped);
   }
 
   if (_onSystemUpdate) {

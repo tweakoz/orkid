@@ -824,7 +824,7 @@ static PyObject *nb_func_vectorcall_simple(PyObject *self,
 
             try {
                 // Found a suitable overload, let's try calling it
-                if(_gcounter == 2) {
+                if(false) { //_gcounter == 2) {
                     //OrkBreak();
                     // print out all arg types
                     for (size_t i = 0; i < nargs_in; ++i) {

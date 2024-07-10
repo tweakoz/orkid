@@ -35,7 +35,11 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
               });
   type_codec->template registerStdCodec<crcstring_ptr_t>(crcstr_type);
   /////////////////////////////////////////////////////////////////////////////////
-  struct CrcStringProxy {};
+  struct CrcStringProxy {
+    CrcStringProxy(){
+      printf("new CrcStringProxy::CrcStringProxy()\n");
+    }
+  };
   using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;
   auto crcstrproxy_type   =                                                            //
       clazz<ADAPTER, CrcStringProxy, crcstrproxy_ptr_t>(module_core, "CrcStringProxy") //
@@ -46,6 +50,9 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
                 if(key.find("__")!=std::string::npos){
                   return type_codec->encode(nullptr);
                 }
+                  if(key=="xxx"){
+                      printf( "xxx\n");
+                  }
                 auto crc = std::make_shared<CrcString>(key.c_str());
                 return type_codec->encode(crc);
               });

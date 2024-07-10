@@ -1,23 +1,19 @@
 
 
-print( "imported system_update.py" )
+print( "executing system_update.py" )
+
+import sys, math
+print(sys.path)
+print("importing ecssim")
+
+#import orkengine.ecssim 
 from orkengine.ecssim import *
+
 ###############################################################################
 #print("x %g"%MATH.sin(0))
 #print("ECS<%s>"%dir(ECS))
 
 tokens = CrcStringProxy()
-
-print(tokens)
-print(tokens.hello)
-
-#print(dir(tokens))
-#print(tokens.hello)
-assert(False)
-#def grab_core_objects(list_of_classnames):
-#  return [getattr(CORE, x) for x in list_of_classnames]
-
-#vec2, vec3, vec4, quat, mtx4 = grab_core_objects(["vec2","vec3","vec4","quat","mtx4"])
 
 ###############################################################################
 # not until numpy supports sub-interpreters...
@@ -74,10 +70,10 @@ def onSystemNotify(simulation, evID, table):
 
 ###############################################################################
 
-def onSystemUpdate():
-  print("onSystemUpdate")
-  #dt = simulation.deltaTime
-  #gt = simulation.gameTime
+def onSystemUpdate(simulation):
+  dt = simulation.deltaTime
+  gt = simulation.gameTime
+  print("onSystemUpdate %s %s"%(dt,gt))
   #print(the_sys.sys_sg)
   if False:
     the_sys.sys_sg.notify( "UpdateCamera",{

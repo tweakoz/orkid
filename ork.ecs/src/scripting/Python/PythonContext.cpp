@@ -44,7 +44,7 @@ static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ecs.pyctx",fvec
 
 EcsGlobalState::EcsGlobalState() {
   {
-    pybind11::gil_scoped_acquire acquire;
+    obind::gil_scoped_acquire acquire;
     _globalInterpreter = PyThreadState_Get();
   }
   _mainInterpreter = Py_NewInterpreter();

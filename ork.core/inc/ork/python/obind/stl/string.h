@@ -16,9 +16,16 @@ NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
 template <> struct type_caster<std::string> {
+    
     NB_TYPE_CASTER(std::string, const_name("str"))
 
+    type_caster() {
+        printf( "create std::string type_caster\n" );
+    }
+
     bool from_python(handle src, uint8_t, cleanup_list *) noexcept {
+
+
         Py_ssize_t size;
         const char *str = PyUnicode_AsUTF8AndSize(src.ptr(), &size);
         if (!str) {

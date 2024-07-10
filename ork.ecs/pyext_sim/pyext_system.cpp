@@ -14,7 +14,7 @@
 namespace nb = obind;
 
 namespace ork::ecssim {
-void register_system(nb::module_& module_ecssim,python::pb11_typecodec_ptr_t type_codec) {
+void register_system(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto system_type = nb::class_<pysystem_ptr_t>(module_ecssim, "SystemX")
       .def(

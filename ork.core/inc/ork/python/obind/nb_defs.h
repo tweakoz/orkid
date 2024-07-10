@@ -11,7 +11,7 @@
 
 #define NB_SHARED
 #define NB_BUILD
-#define NB_DOMAIN ork
+#define NB_DOMAIN nanobuild
 
 #define NB_STRINGIFY(x) #x
 #define NB_TOSTRING(x) NB_STRINGIFY(x)

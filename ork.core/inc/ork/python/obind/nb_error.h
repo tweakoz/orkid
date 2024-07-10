@@ -135,6 +135,7 @@ class exception : public object {
     exception(handle scope, const char *name, handle base = PyExc_Exception)
         : object(detail::exception_new(scope.ptr(), name, base.ptr()),
                  detail::steal_t()) {
+                    OrkBreak();
         detail::register_exception_translator(
             [](const std::exception_ptr &p, void *payload) {
                 try {

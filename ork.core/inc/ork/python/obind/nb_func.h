@@ -174,6 +174,9 @@ NB_INLINE PyObject *func_create(Func &&func, Return (*)(Args...),
         };
     }
 
+    // f.impl generated @ binding creation time
+    //  typename... Args derived from binding signature
+    
     f.impl = [](void *p, PyObject **args, uint8_t *args_flags, rv_policy policy,
                 cleanup_list *cleanup) NB_INLINE_LAMBDA -> PyObject * {
         (void) p; (void) args; (void) args_flags; (void) policy; (void) cleanup;
@@ -184,7 +187,8 @@ NB_INLINE PyObject *func_create(Func &&func, Return (*)(Args...),
         else
             cap = (capture *) ((void **) p)[0];
 
-        tuple<make_caster<Args>...> in;
+        tuple<make_caster<Args>...> in; // signature baked at binding creation time...
+        
         (void) in;
 
         if constexpr (Info::keep_alive) {

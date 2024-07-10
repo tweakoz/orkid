@@ -24,11 +24,12 @@ function(orkid_find_python)
 
   set(CMAKE_FIND_DEBUG_MODE OFF)
   set(PYTHON_EXECUTABLE $ENV{OBT_PYTHONHOME}/bin/python3)
-  set(PYTHON_LIBRARY $ENV{OBT_PYTHONHOME}/lib/libpython3.9d.so)
+  set(PYTHON_LIBRARY $ENV{OBT_PYTHONHOME}/lib/libpython3.12.dylib)
+  set(PYTHON_LIBRARY $ENV{OBT_PYTHONHOME}/lib/libpython3.12.so)
 
   set(Python3_FIND_STRATEGY "LOCATION")
   set(Python3_ROOT_DIR $ENV{OBT_PYTHONHOME} )
-  set(Python3_FIND_VIRTUALENV ONLY)
+  #set(Python3_FIND_VIRTUALENV ONLY)
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
   find_package(pybind11 REQUIRED)

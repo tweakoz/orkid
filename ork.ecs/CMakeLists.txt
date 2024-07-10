@@ -16,6 +16,8 @@ file(GLOB_RECURSE src_ecs ${SRCD}/*.cpp)
 #set( orksrcs ${src_event} ${src_luaintf} ${src_ecs} )
 set( orksrcs ${src_ecs} )
 
+#find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+
 ###################################
 
 add_library (ork_ecs SHARED ${orksrcs})
@@ -35,7 +37,12 @@ ELSEIF(${UNIX})
 ENDIF()
 list(APPEND libs luajit-5.1 )
 
-target_link_libraries(ork_ecs PRIVATE ${libs})
+message( WTF )
+message( ${Python3_LIBRARIES} )
+
+enable_python_on_target(ork_ecs)
+
+target_link_libraries(ork_ecs PRIVATE ${libs} )
 
 target_include_directories (ork_ecs PRIVATE ${INCD} )
 target_include_directories (ork_ecs PRIVATE ${SRCD} )
@@ -45,7 +52,6 @@ target_include_directories (ork_ecs PRIVATE ${LEV2INCD} )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/luajit-2.1 )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
-
 ###################################
 
 
