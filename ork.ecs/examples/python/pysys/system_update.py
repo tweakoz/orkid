@@ -1,7 +1,7 @@
 ###############################################################################
 # (simulation/update)-thread private python simulation system
 ################################################################################
-import math
+import math, time
 import numpy as np
 from orkengine.ecssim import *
 tokens = CrcStringProxy()
@@ -79,7 +79,7 @@ def onSystemUpdate(simulation):
 
   the_sys.timeaccum += dt
   
-  if the_sys.timeaccum>(1.0/120.0):
+  if True: #the_sys.timeaccum>(1.0/120.0):
 
     the_sys.timeaccum = 0.0
 
@@ -92,7 +92,7 @@ def onSystemUpdate(simulation):
     #print(as_np)
     #print(tgt)
     
-    print(float(the_sys.upd_counter)/gt)
+    #print(float(the_sys.upd_counter)/gt)
     
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,
@@ -102,3 +102,5 @@ def onSystemUpdate(simulation):
        tokens.far: 1000.0,
        tokens.fovy: 90.0*(3.14159/180.0),
     })
+    
+    time.sleep(0.01)

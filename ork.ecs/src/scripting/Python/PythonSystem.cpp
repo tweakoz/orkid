@@ -23,6 +23,7 @@
 #include <ork/ecs/entity.inl>
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/simulation.inl>
+#include <ork/profiling.inl>
 
 #include "PythonImpl.h"
 
@@ -403,6 +404,7 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
 
 void PythonSystem::_onUpdate(Simulation* psi) // final
 {
+  EASY_BLOCK("PythonSystem::_onUpdate");
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
