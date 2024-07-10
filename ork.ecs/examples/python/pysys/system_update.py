@@ -1,20 +1,9 @@
-
-
-print( "executing system_update.py" )
-
-import sys, math
-print(sys.path)
-print("importing ecssim")
-
-#import orkengine.ecssim 
-from orkengine.ecssim import *
-
 ###############################################################################
-#print("x %g"%MATH.sin(0))
-#print("ECS<%s>"%dir(ECS))
-
+# (simulation/update)-thread private python simulation system
+################################################################################
+import math
+from orkengine.ecssim import *
 tokens = CrcStringProxy()
-
 ###############################################################################
 # not until numpy supports sub-interpreters...
 #platform = CL.get_platforms()
@@ -26,7 +15,6 @@ tokens = CrcStringProxy()
 
 class MySystem:
   def __init__(self):
-    self.D = dict 
     self.notif_count = 0
     self.timeaccum = 0.0
 

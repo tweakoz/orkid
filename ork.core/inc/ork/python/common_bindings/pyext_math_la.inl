@@ -21,43 +21,41 @@
 namespace ork::python {
 ///////////////////////////////////////////////////////////////////////////////
 
-
 template <typename T>
 void pyinit_math_la_t_vec(
     adapter_t::module_t& module_core, //
     std::string pfx,
     adapter_t::codec_ptr_t type_codec) { //
 
-using vec2_t        = Vector2<T>;
-using vec3_t        = Vector3<T>;
-using vec4_t        = Vector4<T>;
-using quat_t        = Quaternion<T>;
-using mat3_t        = Matrix33<T>;
-using mat4_t        = Matrix44<T>;
-using ray3_t        = Ray3<T>;
-using plane_t       = Plane<T>;
-using frustum_t     = TFrustum<T>;
-using frustum_ptr_t = std::shared_ptr<frustum_t>;
+  using vec2_t        = Vector2<T>;
+  using vec3_t        = Vector3<T>;
+  using vec4_t        = Vector4<T>;
+  using quat_t        = Quaternion<T>;
+  using mat3_t        = Matrix33<T>;
+  using mat4_t        = Matrix44<T>;
+  using ray3_t        = Ray3<T>;
+  using plane_t       = Plane<T>;
+  using frustum_t     = TFrustum<T>;
+  using frustum_ptr_t = std::shared_ptr<frustum_t>;
 
   auto vec2_name = pfx + "vec2";
   auto vec3_name = pfx + "vec3";
   auto vec4_name = pfx + "vec4";
 
   /////////////////////////////////////////////////////////////////////////////////
+  BufferDescription bdesc_vec2;
+  bdesc_vec2.scalar_size    = sizeof(T);
+  bdesc_vec2.num_dimensions = 1;
+  bdesc_vec2.shape          = {2};
+  bdesc_vec2.strides        = {sizeof(T)};
+  /////////////////////////////////////////////////////////////////////////////////
   auto vec2_type = //
       py::clazz_bufp<vec2_t>(module_core, vec2_name.c_str())
-          /*
           //////////////////////////////////////////////////////////////////////////
-          .def_buffer([](vec2_t& vec) -> pybind11::buffer_info {
+          .as_buffer([bdesc_vec2](vec2_t& vec) -> adapter_t::buffer_handle_t {
             auto data = vec.asArray(); // Pointer to buffer
-            return pybind11::buffer_info(
-                data,      // Pointer to buffer
-                sizeof(T), // Size of one scalar
-                pybind11::format_descriptor<T>::format(),
-                1,            // Number of dimensions
-                {2},          // Buffer dimensions
-                {sizeof(T)}); // Strides (in bytes) for each index
-          })*/
+            return adapter_t::gen_buffer<vec2_t, T>(bdesc_vec2, data);
+          })
           //////////////////////////////////////////////////////////////////////////
           .prop_ro(
               "fract",
@@ -106,20 +104,18 @@ using frustum_ptr_t = std::shared_ptr<frustum_t>;
           });
   type_codec->registerStdCodec<vec2_t>(vec2_type);
   /////////////////////////////////////////////////////////////////////////////////
+  BufferDescription bdesc_vec3;
+  bdesc_vec3.scalar_size    = sizeof(T);
+  bdesc_vec3.num_dimensions = 1;
+  bdesc_vec3.shape          = {3};
+  bdesc_vec3.strides        = {sizeof(T)};
+  /////////////////////////////////////////////////////////////////////////////////
   auto vec3_type = //
       py::clazz_bufp<vec3_t>(module_core, vec3_name.c_str())
-          //////////////////////////////////////////////////////////////////////////
-          /*.def_buffer([](vec3_t& vec) -> pybind11::buffer_info {
+          .as_buffer([bdesc_vec3](vec3_t& vec) -> adapter_t::buffer_handle_t {
             auto data = vec.asArray(); // Pointer to buffer
-            return pybind11::buffer_info(
-                data,      // Pointer to buffer
-                sizeof(T), // Size of one scalar
-                pybind11::format_descriptor<T>::format(),
-                1,            // Number of dimensions
-                {3},          // Buffer dimensions
-                {sizeof(T)}); // Strides (in bytes) for each index
+            return adapter_t::gen_buffer<vec3_t, T>(bdesc_vec3, data);
           })
-          */
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
               "x",
@@ -216,19 +212,18 @@ using frustum_ptr_t = std::shared_ptr<frustum_t>;
           });
   type_codec->registerStdCodec<vec3_t>(vec3_type);
   /////////////////////////////////////////////////////////////////////////////////
+  BufferDescription bdesc_vec4;
+  bdesc_vec4.scalar_size    = sizeof(T);
+  bdesc_vec4.num_dimensions = 1;
+  bdesc_vec4.shape          = {4};
+  bdesc_vec4.strides        = {sizeof(T)};
+  /////////////////////////////////////////////////////////////////////////////////
   auto vec4_type = //
       py::clazz_bufp<vec4_t>(module_core, vec4_name.c_str())
-          //////////////////////////////////////////////////////////////////////////
-          /*.def_buffer([](vec4_t& vec) -> pybind11::buffer_info {
+          .as_buffer([bdesc_vec4](vec4_t& vec) -> adapter_t::buffer_handle_t {
             auto data = vec.asArray(); // Pointer to buffer
-            return pybind11::buffer_info(
-                data,      // Pointer to buffer
-                sizeof(T), // Size of one scalar
-                pybind11::format_descriptor<T>::format(),
-                1,            // Number of dimensions
-                {4},          // Buffer dimensions
-                {sizeof(T)}); // Strides (in bytes) for each index
-          })*/
+            return adapter_t::gen_buffer<vec4_t, T>(bdesc_vec4, data);
+          })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
               "x", [](const vec4_t& vec) -> T { return vec.x; }, [](vec4_t& vec, T val) { return vec.x = val; } //
@@ -297,16 +292,16 @@ void pyinit_math_la_t(
     std::string pfx,
     adapter_t::codec_ptr_t type_codec) { //
 
-using vec2_t        = Vector2<T>;
-using vec3_t        = Vector3<T>;
-using vec4_t        = Vector4<T>;
-using quat_t        = Quaternion<T>;
-using mat3_t        = Matrix33<T>;
-using mat4_t        = Matrix44<T>;
-using ray3_t        = Ray3<T>;
-using plane_t       = Plane<T>;
-using frustum_t     = TFrustum<T>;
-using frustum_ptr_t = std::shared_ptr<frustum_t>;
+  using vec2_t        = Vector2<T>;
+  using vec3_t        = Vector3<T>;
+  using vec4_t        = Vector4<T>;
+  using quat_t        = Quaternion<T>;
+  using mat3_t        = Matrix33<T>;
+  using mat4_t        = Matrix44<T>;
+  using ray3_t        = Ray3<T>;
+  using plane_t       = Plane<T>;
+  using frustum_t     = TFrustum<T>;
+  using frustum_ptr_t = std::shared_ptr<frustum_t>;
 
   auto quat_name    = pfx + "quat";
   auto mat3_name    = pfx + "mtx3";

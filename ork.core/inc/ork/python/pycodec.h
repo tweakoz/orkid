@@ -54,6 +54,15 @@ template <typename ADAPTER> struct ORK_API TypeCodec;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct BufferDescription {
+  int scalar_size    = 0;
+  int num_dimensions = 0;
+  std::vector<int> shape;
+  std::vector<int> strides;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 namespace pyb11    = pybind11;
 namespace pyb11det = pybind11::detail;
 
@@ -62,15 +71,16 @@ struct pybind11adapter {
   using codec_t     = TypeCodec<pybind11adapter>;
   using codec_ptr_t = std::shared_ptr<codec_t>;
 
-  using module_t      = pyb11::module_;
-  using object_t      = pyb11::object;
-  using handle_t      = pyb11::handle;
-  using kwargs_t      = pyb11::kwargs;
-  using kw_arg_pair_t = std::pair<std::string, object_t>;
-  using list_t        = pyb11::list;
-  using str_t         = pyb11::str;
-  using float_t       = pyb11::float_;
-  using int_t         = pyb11::int_;
+  using module_t        = pyb11::module_;
+  using object_t        = pyb11::object;
+  using handle_t        = pyb11::handle;
+  using kwargs_t        = pyb11::kwargs;
+  using kw_arg_pair_t   = std::pair<std::string, object_t>;
+  using list_t          = pyb11::list;
+  using str_t           = pyb11::str;
+  using float_t         = pyb11::float_;
+  using int_t           = pyb11::int_;
+  using buffer_handle_t = pyb11::buffer_info;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -125,11 +135,12 @@ struct pybind11adapter {
       return *this;
     }
     //
-    template <typename Func,typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
+    template <typename Func, typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
       auto& ref = Base::def_property_readonly(name_, f, extra...);
       return *this;
     }
-    template <typename Getter,typename Setter,typename... Extra> _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
+    template <typename Getter, typename Setter, typename... Extra>
+    _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
       auto& ref = Base::def_property(name_, g, s, extra...);
       return *this;
     }
@@ -150,6 +161,10 @@ struct pybind11adapter {
       return *this;
     }
 
+    template <typename Func, typename... Extra> _clazz& as_buffer(Func&& f, const Extra&... extra) {
+
+      return *this;
+    }
 
     /*
       template <typename... Args, typename... Extra>
@@ -158,9 +173,8 @@ struct pybind11adapter {
       }*/
   };
 
-  template <typename... Args>
-  static auto _cast(Args&&... args) -> decltype(pybind11::cast(std::forward<Args>(args)...)) {
-      return pybind11::cast(std::forward<Args>(args)...);
+  template <typename... Args> static auto _cast(Args&&... args) -> decltype(pybind11::cast(std::forward<Args>(args)...)) {
+    return pybind11::cast(std::forward<Args>(args)...);
   }
 
   //////////////////////////////////
@@ -169,13 +183,26 @@ struct pybind11adapter {
   static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
     return _clazz<type_, options...>(scope, name, extra...);
   }
+
+  template <typename obj_t, typename elem_t> //
+  static buffer_handle_t gen_buffer(const BufferDescription& desc, elem_t* data) {
+    return pybind11::buffer_info(
+        data,             // Pointer to buffer
+        desc.scalar_size, // Size of one scalar
+        pybind11::format_descriptor<elem_t>::format(),
+        desc.num_dimensions, // Number of dimensions
+        desc.shape,          // Buffer dimensions
+        desc.strides);       // Strides (in bytes) for each index
+  }
+
+  //////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct nanobindadapter {
 
-  //namespace binder_ns = obind;
+  // namespace binder_ns = obind;
 
   using codec_t     = TypeCodec<nanobindadapter>;
   using codec_ptr_t = std::shared_ptr<codec_t>;
@@ -189,6 +216,8 @@ struct nanobindadapter {
   using str_t         = obind::str;
   using float_t       = obind::float_;
   using int_t         = obind::int_;
+
+  using buffer_handle_t = int;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -216,8 +245,7 @@ struct nanobindadapter {
 
   //////////////////////////////////
 
-  template <typename type_, typename... options>
-  class _clazz : public obind::class_<type_, options...> {
+  template <typename type_, typename... options> class _clazz : public obind::class_<type_, options...> {
 
     using Base = obind::class_<type_, options...>;
 
@@ -238,11 +266,12 @@ struct nanobindadapter {
       return *this;
     }
     //
-    template <typename Func,typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
+    template <typename Func, typename... Extra> _clazz& prop_ro(const char* name_, Func&& f, const Extra&... extra) {
       auto& ref = Base::def_prop_ro(name_, f, extra...);
       return *this;
     }
-    template <typename Getter,typename Setter,typename... Extra> _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
+    template <typename Getter, typename Setter, typename... Extra>
+    _clazz& prop_rw(const char* name_, Getter&& g, Setter&& s, const Extra&... extra) {
       auto& ref = Base::def_prop_rw(name_, g, s, extra...);
       return *this;
     }
@@ -256,38 +285,50 @@ struct nanobindadapter {
       Base::def(std::move(init), extra...);
       return *this;
     }
-    template <typename... Args, typename... Extra>
-    _clazz& construct(obind::init<Args...>&& init, const Extra&... extra) {
+    template <typename... Args, typename... Extra> _clazz& construct(obind::init<Args...>&& init, const Extra&... extra) {
       Base::def(std::move(init), extra...);
       return *this;
     }
 
-
-    template <typename... Args>
-    static auto _cast(Args&&... args) -> decltype(obind::cast(std::forward<Args>(args)...)) {
-        return obind::cast(std::forward<Args>(args)...);
+    template <typename Func> _clazz& as_buffer(Func&& f) {
+      // Base::def(f);
+      return *this;
     }
+    template <typename Func, typename... Extra> _clazz& as_buffer(Func&& f, const Extra&... extra) {
 
+      return *this;
+    }
   };
 
   //////////////////////////////////
 
   template <typename type_, typename... options, typename... Extra>
   static auto clazz(module_t& scope, const char* name, const Extra&... extra) {
-    return _clazz<type_,options...>(scope, name, extra...);
+    return _clazz<type_, options...>(scope, name, extra...);
   }
-    template <typename... Args>
-    static auto _borrow(Args&&... args) -> decltype(obind::borrow(std::forward<Args>(args)...)) {
-        return obind::borrow(std::forward<Args>(args)...);
-    }
+  template <typename... Args> static auto _borrow(Args&&... args) -> decltype(obind::borrow(std::forward<Args>(args)...)) {
+    return obind::borrow(std::forward<Args>(args)...);
+  }
 
+  template <typename obj_t, typename elem_t> //
+  static buffer_handle_t gen_buffer(const BufferDescription& desc, elem_t* data) {
+    return buffer_handle_t();
+    /*return pybind11::buffer_info(
+        data,      // Pointer to buffer
+        desc.scalar_size, // Size of one scalar
+        pybind11::format_descriptor<elem_t>::format(),
+        desc.num_dimensions,            // Number of dimensions
+        desc.shape,          // Buffer dimensions
+        desc.strides; // Strides (in bytes) for each index
+    );*/
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename ADAPTER> struct ORK_API TypeCodec {
 
-  //namespace binder_ns = ADAPTER::binder_ns;
+  // namespace binder_ns = ADAPTER::binder_ns;
 
   //////////////////////////////////
 
@@ -349,8 +390,6 @@ using pb11_typecodec_ptr_t = std::shared_ptr<pb11_typecodec_t>;
 using obind_typecodec_t     = TypeCodec<nanobindadapter>;
 using obind_typecodec_ptr_t = std::shared_ptr<obind_typecodec_t>;
 
-
 ///////////////////////////////////////////////////////////////////////////////
-
 
 } // namespace ork::python
