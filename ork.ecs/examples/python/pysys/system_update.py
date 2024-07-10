@@ -86,7 +86,7 @@ def onSystemUpdate(simulation):
 
     as_np = np.array(tgt.as_buffer)
     #print(as_np.shape)
-    print(as_np)
+    #print(as_np)
     
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,

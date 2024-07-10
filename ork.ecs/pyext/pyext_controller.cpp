@@ -44,6 +44,11 @@ void pyinit_controller(py::module& module_ecs) {
          ctrl->installRenderCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
+      .def("installUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         py::gil_scoped_release release; //
+         ctrl->installUpdateCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
       .def("entBarrier", [](controller_ptr_t ctrl, ent_ref_t eref){
         ctrl->entBarrier(eref);
       })

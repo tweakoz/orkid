@@ -18,6 +18,7 @@
 
 #include "message_private.h"
 #include <ork/util/logger.h>
+#include <ork/python/pycodec.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
@@ -48,6 +49,15 @@ void Controller::forceRetain(const svar64_t& item){
 void Controller::installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
   ezapp->onDraw([this](ui::drawevent_constptr_t drwev){
     this->render(drwev);
+  });
+}
+void Controller::installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
+  ezapp->onUpdate([this](ui::updatedata_ptr_t update){
+    // todo figure out how to remove GIL
+    // the update thread should not need
+    // the primary interpreter GIL at all...
+    pybind11::gil_scoped_acquire acq;
+    this->update();
   });
 }
 

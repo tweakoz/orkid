@@ -96,6 +96,7 @@ class PYSYS_MINIMAL(object):
     ##################
 
     self.controller.installRenderCallbackOnEzApp(self.ezapp)
+    self.controller.installUpdateCallbackOnEzApp(self.ezapp)
 
     ##################
     # launch simulation
@@ -146,50 +147,6 @@ class PYSYS_MINIMAL(object):
 
   def onGpuExit(self,ctx):
     self.controller.stopSimulation()
-
-  ##############################################
-
-  def onUpdate(self,updinfo):
-
-    #a = vec3(0,1,0)
-    #npa = np.array(a)
-    #print(npa)
-    
-    ##############################
-    # spawn balls
-    ##############################
-
-    if False:
-      i = random.randint(-5,5)
-      j = random.randint(-5,5)
-      prob = random.uniform(0,1)
-      if prob < SPAWN_RATE and self.spawncounter < NUM_BALLS:
-        self.spawncounter += 1
-        SAD = ecs.SpawnAnonDynamic("ball_spawner")
-        SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-        SAD.overridexf.scale = 1.0
-        SAD.overridexf.translation = vec3(i,15,j)
-        self.e1 = self.controller.spawnEntity(SAD)
-      
-    ##############################
-    # camera update
-    ##############################
-
-    #UIC = self.uicam.cameradata
-   
-    if False:
-      self.controller.systemNotify( self.sys_python,
-                                    tokens.Function1,{
-                                      tokens.hello: "world",
-                                      tokens.v3: vec3(0,1,0)
-                                    }
-                                   )
-
-    ##############################
-    # tick the simulation
-    ##############################
-
-    self.controller.updateSimulation()
 
   ##############################################
 
