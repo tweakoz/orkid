@@ -32,21 +32,21 @@ void pyinit_pysys(py::module& module_ecs);
 ////////////////////////////////////////////////////////////////////////////////
 
 using drawevent_ptr_t = std::shared_ptr<ui::DrawEvent>;
-using ctx_t               = ork::python::unmanaged_ptr<lev2::Context>;
+using ctx_t           = ork::python::unmanaged_ptr<lev2::Context>;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wwritable-strings"
 
 struct PseudoArgs {
-    int _argc = 1;
-    char* _argv[1] = {"wtf"};
+  int _argc      = 1;
+  char* _argv[1] = {"wtf"};
 };
 
 #pragma GCC diagnostic pop
 
 using pseudoargs_ptr_t = std::shared_ptr<PseudoArgs>;
 
-ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs) {
+ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs) {
   auto init_data = std::make_shared<ork::AppInitData>();
   lev2::initModule(init_data);
   ecs::initModule(init_data);
@@ -55,7 +55,7 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
     for (auto item : kwargs) {
       auto key = py::cast<std::string>(item.first);
       if (key == "ssaa") {
-       init_data->_ssaa_samples = py::cast<int>(item.second);
+        init_data->_ssaa_samples = py::cast<int>(item.second);
       } else if (key == "fullscreen") {
         init_data->_fullscreen = py::cast<bool>(item.second);
       } else if (key == "disableMouseCursor") {
@@ -64,11 +64,11 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
     }
   }
   ////////////////////////////////////////////////////////////////////
-  auto args = std::make_shared<PseudoArgs>();
-  auto rval = ork::lev2::OrkEzApp::create(init_data);
-  auto d_ev = std::make_shared<ork::ui::DrawEvent>(nullptr);
+  auto args                                               = std::make_shared<PseudoArgs>();
+  auto rval                                               = ork::lev2::OrkEzApp::create(init_data);
+  auto d_ev                                               = std::make_shared<ork::ui::DrawEvent>(nullptr);
   rval->_vars->makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
-  rval->_vars->makeValueForKey<pseudoargs_ptr_t>("args") = args;
+  rval->_vars->makeValueForKey<pseudoargs_ptr_t>("args")  = args;
   ////////////////////////////////////////////////////////////////////
   if (py::hasattr(appinstance, "onGpuInit")) {
     auto gpuinitfn //
@@ -91,6 +91,11 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
       try {
         py::gil_scoped_acquire acquire;
         pyfn.value()(updata);
+      } catch (py::error_already_set& e) {
+        printf( "\n\npython exception in onUpdate\n\n");
+        e.restore();
+        PyErr_Print();
+        OrkAssert(false);
       } catch (std::exception& e) {
         std::cerr << e.what();
         OrkAssert(false);
@@ -149,19 +154,19 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance,py::kwargs kwargs)
         OrkAssert(false);
       }
     });
-  }/* else {
-    auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));
-    rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
-      ork::opq::mainSerialQueue()->Process();
-      auto context = drwev->GetTarget();
-      scene->renderOnContext(context);
-    });
-  }*/
+  } /* else {
+     auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));
+     rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
+       ork::opq::mainSerialQueue()->Process();
+       auto context = drwev->GetTarget();
+       scene->renderOnContext(context);
+     });
+   }*/
   return rval;
 }
 
 PYBIND11_MODULE(_ecs, module_ecs) {
-  //module_ecs.attr("__name__") = "ecs";
+  // module_ecs.attr("__name__") = "ecs";
   //////////////////////////////////////////////////////////////////////////////
   module_ecs.doc() = "Orkid Ecs Library (scene/actor composition, simulation)";
   //////////////////////////////////////////////////////////////////////////////

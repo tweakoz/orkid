@@ -55,11 +55,13 @@ template <typename ADAPTER> struct ORK_API TypeCodec;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BufferDescription {
-  int scalar_size    = 0;
-  int num_dimensions = 0;
-  std::vector<int> shape;
-  std::vector<int> strides;
+  size_t scalar_size    = 0;
+  size_t num_dimensions = 0;
+  std::vector<size_t> shape;
+  std::vector<int64_t> strides;
 };
+
+using bufferdesc_ptr_t = std::shared_ptr<BufferDescription>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,15 +164,10 @@ struct pybind11adapter {
     }
 
     template <typename Func, typename... Extra> _clazz& as_buffer(Func&& f, const Extra&... extra) {
-
+      Base::def_buffer(f, extra...);
       return *this;
     }
 
-    /*
-      template <typename... Args, typename... Extra>
-      _clazz &constructor(const pyb11det::initimpl::alias_constructor<Args...> &init, const Extra &...extra) {
-        return *this;
-      }*/
   };
 
   template <typename... Args> static auto _cast(Args&&... args) -> decltype(pybind11::cast(std::forward<Args>(args)...)) {
@@ -184,15 +181,23 @@ struct pybind11adapter {
     return _clazz<type_, options...>(scope, name, extra...);
   }
 
-  template <typename obj_t, typename elem_t> //
-  static buffer_handle_t gen_buffer(const BufferDescription& desc, elem_t* data) {
+  template <typename elem_t> //
+  static buffer_handle_t gen_buffer(bufferdesc_ptr_t desc, elem_t* data) {
+    std::vector<ssize_t> shape;
+    for(auto item : desc->shape) {
+      shape.push_back(item);
+    }
+    std::vector<ssize_t> strides;
+    for(auto item : desc->strides) {
+      strides.push_back(item);
+    }
     return pybind11::buffer_info(
         data,             // Pointer to buffer
-        desc.scalar_size, // Size of one scalar
+        desc->scalar_size, // Size of one scalar
         pybind11::format_descriptor<elem_t>::format(),
-        desc.num_dimensions, // Number of dimensions
-        desc.shape,          // Buffer dimensions
-        desc.strides);       // Strides (in bytes) for each index
+        desc->num_dimensions, // Number of dimensions
+        shape,          // Buffer dimensions
+        strides);       // Strides (in bytes) for each index
   }
 
   //////////////////////////////////
@@ -217,7 +222,7 @@ struct nanobindadapter {
   using float_t       = obind::float_;
   using int_t         = obind::int_;
 
-  using buffer_handle_t = int;
+  using buffer_handle_t = obind::ndarray<>;
 
   using varval_t      = varmap::var_t;
   using decoderfn_t   = std::function<void(const object_t& inpval, varval_t& outval)>;
@@ -290,12 +295,8 @@ struct nanobindadapter {
       return *this;
     }
 
-    template <typename Func> _clazz& as_buffer(Func&& f) {
-      // Base::def(f);
-      return *this;
-    }
     template <typename Func, typename... Extra> _clazz& as_buffer(Func&& f, const Extra&... extra) {
-
+      prop_ro("as_buffer", f, extra...);
       return *this;
     }
   };
@@ -310,17 +311,26 @@ struct nanobindadapter {
     return obind::borrow(std::forward<Args>(args)...);
   }
 
-  template <typename obj_t, typename elem_t> //
-  static buffer_handle_t gen_buffer(const BufferDescription& desc, elem_t* data) {
-    return buffer_handle_t();
-    /*return pybind11::buffer_info(
-        data,      // Pointer to buffer
-        desc.scalar_size, // Size of one scalar
-        pybind11::format_descriptor<elem_t>::format(),
-        desc.num_dimensions,            // Number of dimensions
-        desc.shape,          // Buffer dimensions
-        desc.strides; // Strides (in bytes) for each index
-    );*/
+  template <typename elem_t> //
+  static buffer_handle_t _create_ndarray(bufferdesc_ptr_t desc, elem_t* data) {
+      // Assuming DescType is a structure that contains the scalar size, number of dimensions, shape, and strides
+      obind::dlpack::dtype data_type;
+      data_type.code = (uint8_t) obind::dlpack::dtype_code::Float;
+      data_type.bits = sizeof(elem_t) * 8;
+      data_type.lanes = 1;
+      return buffer_handle_t(
+          data, 
+          desc->num_dimensions,        // Number of dimensions
+          desc->shape.data(),          // Shape array
+          handle_t(),
+          desc->strides.data(),        // Strides array
+          data_type                   // data type
+      );
+  }
+
+  template <typename elem_t> //
+  static buffer_handle_t gen_buffer(bufferdesc_ptr_t desc, elem_t* data) {
+    return _create_ndarray<elem_t>(desc,data);
   }
 };
 

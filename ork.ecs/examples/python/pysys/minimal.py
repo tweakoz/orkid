@@ -11,7 +11,7 @@ import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
 from orkengine import core, lev2, ecs
-
+import numpy as np
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
@@ -151,6 +151,10 @@ class PYSYS_MINIMAL(object):
 
   def onUpdate(self,updinfo):
 
+    #a = vec3(0,1,0)
+    #npa = np.array(a)
+    #print(npa)
+    
     ##############################
     # spawn balls
     ##############################

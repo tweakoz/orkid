@@ -2,6 +2,7 @@
 # (simulation/update)-thread private python simulation system
 ################################################################################
 import math
+import numpy as np
 from orkengine.ecssim import *
 tokens = CrcStringProxy()
 ###############################################################################
@@ -83,6 +84,10 @@ def onSystemUpdate(simulation):
     eye = vec3(0,0,0)
     tgt = vec3(math.sin(phase),0,-math.cos(phase))*10.0
 
+    as_np = np.array(tgt.as_buffer)
+    #print(as_np.shape)
+    print(as_np)
+    
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,
        tokens.tgt: tgt,

@@ -43,18 +43,17 @@ void pyinit_math_la_t_vec(
   auto vec4_name = pfx + "vec4";
 
   /////////////////////////////////////////////////////////////////////////////////
-  BufferDescription bdesc_vec2;
-  bdesc_vec2.scalar_size    = sizeof(T);
-  bdesc_vec2.num_dimensions = 1;
-  bdesc_vec2.shape          = {2};
-  bdesc_vec2.strides        = {sizeof(T)};
+  auto bdesc_vec2 = std::make_shared<BufferDescription>();
+  bdesc_vec2->scalar_size    = sizeof(T);
+  bdesc_vec2->num_dimensions = 1;
+  bdesc_vec2->shape          = {2};
+  bdesc_vec2->strides        = {sizeof(T)};
   /////////////////////////////////////////////////////////////////////////////////
   auto vec2_type = //
       py::clazz_bufp<vec2_t>(module_core, vec2_name.c_str())
           //////////////////////////////////////////////////////////////////////////
           .as_buffer([bdesc_vec2](vec2_t& vec) -> adapter_t::buffer_handle_t {
-            auto data = vec.asArray(); // Pointer to buffer
-            return adapter_t::gen_buffer<vec2_t, T>(bdesc_vec2, data);
+            return adapter_t::gen_buffer<T>(bdesc_vec2, vec.asArray());
           })
           //////////////////////////////////////////////////////////////////////////
           .prop_ro(
@@ -104,17 +103,16 @@ void pyinit_math_la_t_vec(
           });
   type_codec->registerStdCodec<vec2_t>(vec2_type);
   /////////////////////////////////////////////////////////////////////////////////
-  BufferDescription bdesc_vec3;
-  bdesc_vec3.scalar_size    = sizeof(T);
-  bdesc_vec3.num_dimensions = 1;
-  bdesc_vec3.shape          = {3};
-  bdesc_vec3.strides        = {sizeof(T)};
+  static auto bdesc_vec3 = std::make_shared<BufferDescription>();
+  bdesc_vec3->scalar_size    = sizeof(T);
+  bdesc_vec3->num_dimensions = 1;
+  bdesc_vec3->shape          = {3};
+  bdesc_vec3->strides        = {sizeof(T)};
   /////////////////////////////////////////////////////////////////////////////////
   auto vec3_type = //
       py::clazz_bufp<vec3_t>(module_core, vec3_name.c_str())
-          .as_buffer([bdesc_vec3](vec3_t& vec) -> adapter_t::buffer_handle_t {
-            auto data = vec.asArray(); // Pointer to buffer
-            return adapter_t::gen_buffer<vec3_t, T>(bdesc_vec3, data);
+          .as_buffer([](vec3_t& vec) -> adapter_t::buffer_handle_t {
+            return adapter_t::gen_buffer<T>(bdesc_vec3, vec.asArray());
           })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
@@ -212,17 +210,16 @@ void pyinit_math_la_t_vec(
           });
   type_codec->registerStdCodec<vec3_t>(vec3_type);
   /////////////////////////////////////////////////////////////////////////////////
-  BufferDescription bdesc_vec4;
-  bdesc_vec4.scalar_size    = sizeof(T);
-  bdesc_vec4.num_dimensions = 1;
-  bdesc_vec4.shape          = {4};
-  bdesc_vec4.strides        = {sizeof(T)};
+  auto bdesc_vec4 = std::make_shared<BufferDescription>();
+  bdesc_vec4->scalar_size    = sizeof(T);
+  bdesc_vec4->num_dimensions = 1;
+  bdesc_vec4->shape          = {4};
+  bdesc_vec4->strides        = {sizeof(T)};
   /////////////////////////////////////////////////////////////////////////////////
   auto vec4_type = //
       py::clazz_bufp<vec4_t>(module_core, vec4_name.c_str())
           .as_buffer([bdesc_vec4](vec4_t& vec) -> adapter_t::buffer_handle_t {
-            auto data = vec.asArray(); // Pointer to buffer
-            return adapter_t::gen_buffer<vec4_t, T>(bdesc_vec4, data);
+            return adapter_t::gen_buffer<T>(bdesc_vec4, vec.asArray());
           })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
