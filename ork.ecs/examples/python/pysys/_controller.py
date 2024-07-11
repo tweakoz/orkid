@@ -77,6 +77,7 @@ class MYCONTROLLER:
 
     self.controller = ecs.Controller()
     self.controller.bindScene(self.ecsscene)
+    self.ezapp.vars.controller = self.controller
 
     ##################
     # install rendercallback on ezapp
@@ -122,7 +123,7 @@ class MYCONTROLLER:
   ##############################################
 
   def onUpdateExit(self):
-    self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
+    self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
     self.controller.stopSimulation()
     self.run_state = 2
     #self.run_thread.join()
@@ -133,7 +134,7 @@ class MYCONTROLLER:
 
   def onGpuExit(self,ctx):
     self.controller.gpuExit(ctx)
-    self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
+    self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
 
   ##############################################
 

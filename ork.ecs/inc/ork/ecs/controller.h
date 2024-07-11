@@ -156,6 +156,7 @@ struct Controller {
 
 	LockedResource<simulation_ptr_t> _simulation;
 
+	void_lambda_t _onSimulationExit;
 private:
 	
 	friend struct Simulation;

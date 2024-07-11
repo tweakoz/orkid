@@ -108,19 +108,21 @@ void Controller::gpuExit(lev2::Context* ctx) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::updateExit() {
-  //this->stopSimulation();
-  _delopq.atomicOp([=](delayed_opq_t& unlocked){
-      unlocked.clear();
-  });
-  _eventQueue.atomicOp([&](Controller::evq_t& unlocked) {
-      unlocked.clear();
-  });
-  _simulation.atomicOp([](simulation_ptr_t& unlocked){
-    unlocked->_serviceEventQueues();
-  });
-  _simulation.atomicOp([](simulation_ptr_t& unlocked){
-    unlocked->updateExit();
-  });
+  auto op = [this]{
+    _delopq.atomicOp([=](delayed_opq_t& unlocked){
+        unlocked.clear();
+    });
+    _eventQueue.atomicOp([&](Controller::evq_t& unlocked) {
+        unlocked.clear();
+    });
+    _simulation.atomicOp([](simulation_ptr_t& unlocked){
+      unlocked->_serviceEventQueues();
+    });
+    _simulation.atomicOp([](simulation_ptr_t& unlocked){
+      unlocked->updateExit();
+    });
+  };
+  _onSimulationExit = op;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -535,7 +537,7 @@ void Controller::startSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::stopSimulation() {
-  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  //ork::opq::assertOnQueue2(opq::mainSerialQueue());
   logchan_controller->log( "STOPPING SIMULATION");
   _delopq.atomicOp([=](delayed_opq_t& unlocked){
       unlocked.clear();
@@ -556,24 +558,7 @@ void Controller::stopSimulation() {
 }
 void Controller::endSimulation() {
   updateExit();
-  /*ork::opq::assertOnQueue2(opq::mainSerialQueue());
-  logchan_controller->log( "TERMINATING SIMULATION");
-  _delopq.atomicOp([=](delayed_opq_t& unlocked){
-      unlocked.clear();
-  });
-  _eventQueue.atomicOp([&](Controller::evq_t& unlocked) {
-      unlocked.clear();
-  });
-  _simulation.atomicOp([](simulation_ptr_t& unlocked){
-    unlocked->SetSimulationMode(ESimulationMode::TERMINATED);
-    unlocked->_serviceEventQueues();
-  });
-  auto simevent = std::make_shared<Event>();
-  simevent->_eventID   = EventID::TRANSPORT_BARRIER;
-  auto TEV = std::make_shared<impl::_TransportBarrier>();
-  TEV->_waitForState = ESimulationTransport::TERMINATED;
-  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
-  _enqueueEvent(simevent);}*/
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

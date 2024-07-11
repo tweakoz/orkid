@@ -36,11 +36,11 @@ namespace ork::ecs {
 
 namespace pysys {
 
-struct EcsGlobalState{
+/*struct EcsGlobalState{
   EcsGlobalState();
   PyThreadState* _mainInterpreter = nullptr;
   PyThreadState* _globalInterpreter = nullptr;
-};
+};*/
 
 using GSTATE = ::ork::python::GlobalState;
 using gstate_ptr_t = std::shared_ptr<GSTATE>;

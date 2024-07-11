@@ -51,6 +51,8 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
   lev2::initModule(init_data);
   ecs::initModule(init_data);
   ////////////////////////////////////////////////////////////////////
+  ::ork::python::GlobalState::instance();
+  ////////////////////////////////////////////////////////////////////
   if (kwargs) {
     for (auto item : kwargs) {
       auto key = py::cast<std::string>(item.first);
@@ -140,6 +142,13 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
       auto pyfn = rval->_vars->typedValueForKey<py::function>("updateexitfn");
       try {
         pyfn.value()();
+        auto ctrl = rval->_vars->typedValueForKey<ork::ecs::controller_ptr_t>("controller");
+        if(ctrl) {
+          if(ctrl.value()->_onSimulationExit){
+            py::gil_scoped_release rel;
+            ctrl.value()->_onSimulationExit();
+          }
+        }
       } catch (std::exception& e) {
         std::cerr << e.what();
         OrkAssert(false);

@@ -322,6 +322,8 @@ void OrkEzApp::joinUpdate() {
     _updateThread.join();
      printf( "OrkEzApp<%p> joinUpdate:3\n", this );
     DrawQueue::ClearAndSyncWriters();
+     printf( "OrkEzApp<%p> joinUpdate:4\n", this );
+
   }
   ////////////////////////////////////////////////
 }
@@ -511,6 +513,8 @@ int OrkEzApp::mainThreadLoop() {
       printf( "running _onUpdateExit\n");
       _mainWindow->_onUpdateExit();
     }
+
+    printf( "update_thread exited.....\n");
   };
 
   ///////////////////////////////

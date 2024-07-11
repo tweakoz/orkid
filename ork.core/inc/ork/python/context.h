@@ -32,33 +32,41 @@ Context& context();
 
 bool isPythonEnabled();
 
-PyThreadState* fetchPyThreadState(PyInterpreterState* interp);
 PyInterpreterState* fetchPyInterpreterState(PyThreadState* tstate);
-bool ensureGILonInterpreterForThisThread(PyInterpreterState* interp);
-bool releaseGILonInterpreterForThisThread(PyInterpreterState* interp);
-bool hasGILonInterpreterForThisThread(PyInterpreterState* interp);
-void deleteInterpreter(PyInterpreterState* interp_to_delete, PyInterpreterState* interp_next );
+bool ensureGILonInterpreterForThisThread(PyThreadState* interp);
+bool releaseGILonInterpreterForThisThread(PyThreadState* interp);
+bool hasGILonInterpreterForThisThread(PyThreadState* interp);
+void deleteInterpreter(PyThreadState* interp_to_delete, PyInterpreterState* interp_next );
+
+struct GlobalState;
+using globalstate_ptr_t = std::shared_ptr<GlobalState>;
 
 struct GlobalState {
 
+  GlobalState();
   PyInterpreterState* _mainInterpreter   = nullptr;
+  PyThreadState* _mainInterpreterMainThreadState = nullptr;
+
+  static globalstate_ptr_t instance();
 };
 
-using globalstate_ptr_t = std::shared_ptr<GlobalState>;
 
 struct Context2 {
   
-  Context2(globalstate_ptr_t ptr);
+  Context2();
   ~Context2();
 
   PyInterpreterState* _subInterpreter = nullptr;
+  PyThreadState* _subPrimaryThreadState = nullptr;
+  PyThreadState* _mainInterpreterMyThreadState = nullptr;
+
+
   PyInterpreterState* _mainInterpreter = nullptr;
-  PyInterpreterState* _saveInterpreter = nullptr;
+  PyThreadState* _saveInterpreter = nullptr;
 
-  void bindSubInterpreter(bool ensure,bool save);
+  void bindSubInterpreter();
   void unbindSubInterpreter();
-	globalstate_ptr_t _gstate;
-
+  bool _subGILheld = false;
 };
 
 using context2_ptr_t = std::shared_ptr<Context2>;

@@ -42,16 +42,6 @@ using namespace ork::reflect;
 
 static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ecs.pyctx",fvec3(0.9,0.6,0.0));
 
-EcsGlobalState::EcsGlobalState() {
-  {
-    obind::gil_scoped_acquire acquire;
-    _globalInterpreter = PyThreadState_Get();
-  }
-  _mainInterpreter = Py_NewInterpreter();
-  logchan_pyctx->log("global python _mainInterpreter<%p>\n", (void*) _mainInterpreter );
-  
-}
-
 ScriptObject::ScriptObject() {
     //: mScriptRef(LUA_NOREF) {
   // printf("new ScriptObject<%p>\n", this);

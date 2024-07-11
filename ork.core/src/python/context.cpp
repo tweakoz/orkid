@@ -29,6 +29,24 @@
 
 namespace ork::python {
 
+///////////////////////////////////////////////////////////////////////////////
+
+GlobalState::GlobalState() {
+  PyGILState_STATE gstate         = PyGILState_Ensure();
+  _mainInterpreterMainThreadState = PyThreadState_Get();
+  _mainInterpreter                = PyInterpreterState_Main();
+  PyGILState_Release(gstate);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+globalstate_ptr_t GlobalState::instance() {
+  static auto gstate = std::make_shared<GlobalState>();
+  return gstate;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 static PyCompilerFlags orkpy_cf;
 void init_bindings();
 bool gPythonEnabled = true;
@@ -259,132 +277,130 @@ Context::~Context() {
 static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ork.pyctx", fvec3(0.9, 0.6, 0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | Function                     | Description                               | Read State        | Write State       | GIL Access
+// | State Location              |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_Get()          | Retrieves the current thread state        | Current thread    | None              | R
+// (specific)| Current thread (TLS)        | | (Python 2.1)                 |                                           | state | |
+// |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_New()          | Creates a new thread state for the        | Specified         | New thread state  | R
+// (specific)| Specified interpreter       | | (Python 2.1)                 | specified interpreter                     |
+// interpreter state |                   |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_Swap()         | Switches the current thread state         | None              | Current thread    | RW
+// (specific)| Global (TLS)               | | (Python 2.1)                 |                                           | | state |
+// |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyEval_RestoreThread()       | Restores the thread state and acquires    | None              | Current thread    | RW
+// (specific)| Specified interpreter      | | (Python 2.1)                 | the GIL                                   | | state,
+// GIL        |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyEval_SaveThread()          | Releases the GIL and saves the current    | Current thread    | None              | RW
+// (specific)| Specified interpreter      | | (Python 2.1)                 | thread state                              | state, GIL
+// |                   |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | Py_EndInterpreter()          | Ends the specified interpreter            | Specified         | Specified         | R
+// (specific)| Specified interpreter      | | (Python 2.1)                 |                                           | interpreter
+// state | interpreter state,|             |                             | |                              | |                   |
+// Thread states     |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_New()     | Creates a new interpreter state           | None              | New interpreter   | R (global)
+// | Global                      | | (Python 2.1)                 |                                           |                   |
+// state             |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_Delete()  | Deletes the specified interpreter state   | Specified         | Specified         | R (global)
+// | Specified interpreter      | | (Python 2.1)                 |                                           | interpreter state |
+// interpreter state |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_Head()    | Returns the first interpreter state in    | None              | None              | - | Global |
+// | (Python 2.1)                 | the list of all interpreters              |                   |                   | | |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_Next()    | Returns the next interpreter state in the | None              | None              | - | Global |
+// | (Python 2.1)                 | list of all interpreters                  |                   |                   | | |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_Clear()        | Clears the thread state                   | Current thread    | Current thread    | R
+// (specific)| Current thread (TLS)       | | (Python 2.1)                 |                                           | state |
+// state             |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_Delete()       | Deletes the thread state                  | Current thread    | Current thread    | R
+// (specific)| Current thread (TLS)       | | (Python 2.1)                 |                                           | state |
+// state             |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyGILState_Ensure()          | Ensures the current thread holds the GIL  | Current GIL state | Current thread    | RW (global)
+// | Global                      | | (Python 2.3)                 |                                           |                   |
+// state, GIL        |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyGILState_Release()         | Releases the GIL acquired by              | Current GIL state | Current thread    | RW (global)
+// | Global                      | | (Python 2.3)                 | PyGILState_Ensure                         |                   |
+// state, GIL        |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_Main()    | Returns the main interpreter state        | None              | None              | - | Global |
+// | (Python 2.5)                 |                                           |                   |                   | | |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyGILState_Check()           | Checks if the current thread holds the    | Current GIL state | None              | - | Global |
+// | (Python 2.7)                 | GIL                                       |                   |                   | | |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_DeleteCurrent()| Deletes the current thread state          | Current thread    | Current thread    | R
+// (specific)| Current thread (TLS)       | | (Python 3.7)                 |                                           | state |
+// state             |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyInterpreterState_Get()     | Retrieves the current interpreter state   | Current interpreter| None              | R
+// (specific)| Current thread (TLS)       | | (Python 3.7)                 |                                           | state | |
+// |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_SetAsyncExc()  | Asynchronously raises an exception in the | None              | Current thread    | - | Current
+// thread (TLS)       | | (Python 3.7)                 | thread                                    | state             | | | |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | _PyInterpreterState_Lock()   | Locks the interpreter state               | Specified         | Specified         | RW (global)
+// | Specified interpreter       | | (Python 3.9)                 |                                           | interpreter state |
+// interpreter state |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | _PyInterpreterState_Unlock() | Unlocks the interpreter state             | Specified         | Specified         | RW (global)
+// | Specified interpreter       | | (Python 3.9)                 |                                           | interpreter state |
+// interpreter state |             |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_GetDict()      | Returns the current thread state's        | Current thread    | None              | R
+// (specific)| Current thread (TLS)       | | (Python 3.12)                | dictionary                                | state | |
+// |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+// | PyThreadState_GetInterpreter()| Returns the interpreter for the current  | Current thread    | None              | R
+// (specific)| Current thread (TLS)       | | (Python 3.12)                 | thread state                             | state | |
+// |                             |
+// +------------------------------+-------------------------------------------+-------------------+-------------------+-------------+-----------------------------+
+///////////////////////////////////////////////////////////////////////////////
 
-
-PyThreadState* fetchPyThreadState(PyInterpreterState* interp) {
-// Manually manage the GIL to ensure it is held
-    PyThreadState* tstate = PyGILState_GetThisThreadState();
-    if (tstate == nullptr || tstate->interp != interp) {
-        PyGILState_STATE gstate = PyGILState_Ensure();
-        
-        tstate = PyThreadState_Get();
-        if (tstate == nullptr || tstate->interp != interp) {
-            // Create a new thread state for the specified interpreter
-            tstate = PyThreadState_New(interp);
-            PyThreadState_Swap(tstate);
-        }
-        
-        PyGILState_Release(gstate);
-    }
-    return tstate;
-    }
 PyInterpreterState* fetchPyInterpreterState(PyThreadState* tstate) {
-  return tstate->interp;
-}
-
-bool ensureGILonInterpreterForThisThread(PyInterpreterState* interp) {
-  // check current states and achieve GIL acquisition
-  //   regardless of current state...
-  //   this means check current state and act accordingly...
-  // ensure other thread and interpreter state is untouched !
-
-  bool was_acquired = false;
-
-  // Fetch the current thread state for the specified interpreter
-  PyThreadState* currentThreadState = fetchPyThreadState(interp);
-
-  // Check if the current interpreter is the desired one
-  if (currentThreadState->interp != interp) {
-    // Swap to the thread state for the desired interpreter and acquire the GIL
-    PyThreadState* newThreadState = PyThreadState_New(interp);
-    PyThreadState_Swap(newThreadState);
-    PyEval_AcquireThread(newThreadState);
-    was_acquired = true;
-  } else {
-    // The GIL is already acquired for the desired interpreter
-    PyEval_AcquireThread(currentThreadState);
-    was_acquired = true;
-  }
-
-  return was_acquired;
-}
-bool releaseGILonInterpreterForThisThread(PyInterpreterState* interp) {
-  // check current states and release GIL acquisition
-  //   regardless of current state...
-  //   this means check current state and act accordingly...
-  // ensure other thread and interpreter state is untouched !
-  // Fetch the current thread state for the specified interpreter
-
-  bool was_released = false;
-
-  PyThreadState* currentThreadState = fetchPyThreadState(interp);
-
-  // Check if the current interpreter is the desired one
-  if (currentThreadState->interp == interp) {
-    // Release the GIL for the desired interpreter
-    PyEval_ReleaseThread(currentThreadState);
-    was_released = true;
-  }
-
-  return was_released;
-}
-bool hasGILonInterpreterForThisThread(PyInterpreterState* interp) {
-  // check current states and succeed regardless of current state...
-  // ensure all thread and interpreter state is untouched !
-
-  bool has_gil = false;
-
-  // Fetch the current thread state for the specified interpreter
-  PyThreadState* currentThreadState = fetchPyThreadState(interp);
-
-  // Check if the current thread state is associated with the given interpreter
-  if (currentThreadState->interp == interp) {
-    has_gil = (PyGILState_Check() == PyGILState_LOCKED);
-  }
-
-  return has_gil;
-}
-
-void deleteInterpreter(PyInterpreterState* interp_to_delete, PyInterpreterState* interp_next ) {
-  // delete interp_to_delete
-  //  after it is deleted, ensure interp_next is active on this thread with GIL acquired
-
-    // Ensure the GIL is acquired for the interpreter to delete
-    ensureGILonInterpreterForThisThread(interp_to_delete);
-
-    // Fetch the thread state for the interpreter to delete
-    PyThreadState* tstate_to_delete = fetchPyThreadState(interp_to_delete);
-
-    // Delete the interpreter
-    PyInterpreterState_Clear(interp_to_delete);
-    PyInterpreterState_Delete(interp_to_delete);
-    //Py_EndInterpreter(tstate_to_delete);
-
-    ensureGILonInterpreterForThisThread(interp_next);
+  return PyThreadState_GetInterpreter(tstate);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Context2::Context2(globalstate_ptr_t gstate) {
+Context2::Context2() {
 
   // created on update thread
   // for now until deletion the update thread will
   //  only run _subInterpreter
   //  and main thread will run _mainInterpreter
 
-  _gstate          = gstate;
-  _mainInterpreter = _gstate->_mainInterpreter;
+  auto gstate      = GlobalState::instance();
+  _mainInterpreter = gstate->_mainInterpreter;
+
+  _mainInterpreterMyThreadState = PyThreadState_New(_mainInterpreter);
+  PyGILState_STATE gil_state    = PyGILState_Ensure();
 
   PyInterpreterConfig pyconfig;
   memset(&pyconfig, 0, sizeof(PyInterpreterConfig));
   pyconfig.gil                           = PyInterpreterConfig_OWN_GIL;
   pyconfig.check_multi_interp_extensions = 1;
-  PyThreadState* subts = nullptr;
-  auto status                            = Py_NewInterpreterFromConfig(&subts, &pyconfig);
+  auto status                            = Py_NewInterpreterFromConfig(&_subPrimaryThreadState, &pyconfig);
   OrkAssert(PyStatus_IsError(status) == 0);
-  _subInterpreter = fetchPyInterpreterState(subts);
 
-  PyEval_ReleaseThread(subts);
+  _subGILheld = true; // Py_NewInterpreterFromConfig releases parent GIL and acquires new GIL
+
+  _subInterpreter = fetchPyInterpreterState(_subPrimaryThreadState);
+
   logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
   logchan_pyctx->log("pyctx<%p> 1...\n", this);
 }
@@ -397,73 +413,37 @@ Context2::~Context2() {
   //  assume _subInterpreter is active on this thread
   //  and _mainInterpreter is active on main thread
   //  exit this method with _mainInterpreter bound to this thread
+  auto gstate = GlobalState::instance();
+
+  PyGILState_STATE gil_state = PyGILState_Ensure();
 
   logchan_pyctx->log("pyctx<%p> ~Context2\n", this);
+  PyThreadState_Swap(_subPrimaryThreadState);
+  _subPrimaryThreadState->cframe->current_frame = nullptr;
+  Py_EndInterpreter(_subPrimaryThreadState);
 
-  // Ensure the GIL is acquired for the subinterpreter
-  ensureGILonInterpreterForThisThread(_subInterpreter);
+  PyThreadState_Swap(_mainInterpreterMyThreadState);
 
-  // Delete the subinterpreter
-  deleteInterpreter(_subInterpreter, _mainInterpreter);
-
-  // Fetch the current thread state for the main interpreter
-  PyThreadState* currentThreadState = fetchPyThreadState(_mainInterpreter);
-
-  // Ensure the GIL is acquired for the main interpreter
-  ensureGILonInterpreterForThisThread(_mainInterpreter);
-
-  // Release the GIL
-  // PyGILState_Release(parentGILState);
-
+  PyGILState_Release(gil_state);
   logchan_pyctx->log("pyctx<%p> ~Context2 done\n", this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context2::bindSubInterpreter(bool ensure, bool save) {
+void Context2::bindSubInterpreter() {
   // logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
-
-  auto tstate = fetchPyThreadState(_subInterpreter);
-
-
-  if (save) {
-    // Save the current thread state and swap to subinterpreter
-    auto prev_ts = PyThreadState_Swap(tstate);
-    _saveInterpreter = prev_ts->interp;
-
-    // Release the GIL for the parent interpreter
-    if (prev_ts) {
-      PyEval_ReleaseThread(prev_ts);
-    }
+  _saveInterpreter = PyThreadState_Get();
+  if (_saveInterpreter != _subPrimaryThreadState) {
+    PyThreadState_Swap(_subPrimaryThreadState);
   }
 
-  if (ensure) {
-    // Ensure the GIL is acquired for the subinterpreter
-    //ensureGILonInterpreterForThisThread(_subInterpreter);
-  }
-
-
-  // Acquire the GIL for the subinterpreter
-  bool was_acq = ensureGILonInterpreterForThisThread(_subInterpreter);
-  //PyEval_AcquireThread(tstate);
-  // logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
+  //  logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::unbindSubInterpreter() {
-  // logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this);
-  auto sub_tstate = fetchPyThreadState(_subInterpreter);
-  //PyEval_ReleaseThread(sub_tstate);
-
-  bool was_released = releaseGILonInterpreterForThisThread(_subInterpreter);
-
-  // Restore the saved thread state if there was one
-  if (_saveInterpreter) {
-    bool was_acq = ensureGILonInterpreterForThisThread(_saveInterpreter);
-    _saveInterpreter = nullptr;
-  }
-  // logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this);
+  PyThreadState_Swap(_saveInterpreter);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
