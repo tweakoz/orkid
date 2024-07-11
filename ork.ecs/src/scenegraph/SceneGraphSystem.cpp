@@ -269,8 +269,6 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
   // initialize transform
   //////////////////////////////
   auto ent = component->GetEntity();
-  auto init_xf          = ent->data()->_dagnode->_xfnode;
-  ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
   //////////////////////////////
   //printf("sgsys stage component<%p>\n", (void*) component);
   this->_components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) { //
@@ -420,7 +418,10 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
         if (as_lightnode) {
           _default_layer->removeLightNode(as_lightnode);
         } else if (as_drawablenode) {
-          _default_layer->removeDrawableNode(as_drawablenode);
+            for( auto l : as_drawablenode->_layers ){
+                l->removeDrawableNode(as_drawablenode);
+            }
+            as_drawablenode->_layers.clear();
         } else {
           OrkAssert(false);
         }
@@ -440,7 +441,7 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onActivateComponent(SceneGraphComponent* component) {
-  // printf("sgsys activate component<%p>\n", (void*) component);
+  //printf("sgsys activate component<%p>\n", (void*) component);
   auto setxform_op = component->_genTransformOperation();
   _renderops.push(setxform_op);
 }

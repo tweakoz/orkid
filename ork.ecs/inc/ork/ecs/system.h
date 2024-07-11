@@ -14,7 +14,6 @@
 #include <ork/object/Object.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/lev2/lev2_types.h>
-#include <ork/python/wraprawpointer.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {

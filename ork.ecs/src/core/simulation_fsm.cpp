@@ -507,6 +507,8 @@ void Simulation::_initializeEntities() {
 
         auto node  = spawner->_dagnode;
         auto world = node->_xfnode->_transform;
+        //auto init_xf          = pent->data()->_dagnode->_xfnode;
+        //ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
         pent->setTransform(world);
         mEntities[spawner->GetName()] = pent;
 

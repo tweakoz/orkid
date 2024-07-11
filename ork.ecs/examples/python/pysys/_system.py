@@ -19,6 +19,8 @@ class MySystem:
     self.notif_count = 0
     self.timeaccum = 0.0
     self.upd_counter = 0
+    self.cdict = dict()
+    self.pdict = dict()
 
 the_sys = MySystem()
 
@@ -46,13 +48,42 @@ def onSystemStage(simulation):
 
 ###############################################################################
 
+def onComponentActivate(component):
+  ent = component.entity
+  eid = ent.id
+  sgc = ent.findComponentByName("SceneGraphComponent")
+  the_sys.cdict[eid] = sgc
+  #print("onComponentActivate eid %s"%e)
+
+def onComponentDeactivate(component):
+  eid = component.entity.id
+  del the_sys.cdict[eid]
+  if eid in the_sys.pdict:
+    del the_sys.pdict[eid]
+  #print("onComponentDeactivate eid %s"%e)
+
+###############################################################################
+
 def onSystemNotify(simulation, evID, table):
   the_sys.notif_count += 1
-  if evID.hashed == tokens.Function1.hashed:
-    hello = table[tokens.hello]
-    #v3 = table[tokens.v3]
-    #v3b = vec3(1,0,1)
-    #print(v3)
+  if evID.hashed == tokens.SET_TARGET.hashed:
+    ent = table[tokens.ent]
+    pos = table[tokens.pos]
+    if ent.id in the_sys.cdict:
+      c = the_sys.cdict[ent.id]
+      
+      #print("ent<%s> c<%s> NEWPOS<%s>"%(ent.id,c,pos))
+      # change color
+      r = 0.5 + (0.5*math.sin(the_sys.notif_count))
+      g = 0.5 + (0.5*math.sin(the_sys.notif_count))
+      b = 0.5 + (0.5*math.sin(the_sys.notif_count))
+      rgb = vec4(r,g,b,1)
+      
+      c.notify( tokens.ChangeModColor, rgb )
+      
+      the_sys.pdict[ent.id] = pos
+      
+      #c.pos = pos
     #print("notifcount<%d>"%(the_sys.notif_count))
   else:
     print("onSystemNotify<%s:%s>"%(evID,table))
@@ -103,4 +134,11 @@ def onSystemUpdate(simulation):
        tokens.fovy: 90.0*(3.14159/180.0),
     })
     
+    for item in the_sys.pdict.items():
+      eid = item[0]
+      pos = item[1]
+      sgc = the_sys.cdict[eid] 
+      ent = sgc.entity
+      ent.translation = ent.translation*0.99 + pos*0.01
+      
     #time.sleep(0.1)

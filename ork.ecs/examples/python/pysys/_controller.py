@@ -16,7 +16,7 @@ sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 tokens = CrcStringProxy()
 ################################################################################
 LAYERNAME = "std_deferred"
-NUM_BALLS = 3
+NUM_BALLS = 100
 SPAWN_RATE = 0.1
 ################################################################################
 
@@ -100,7 +100,6 @@ class MYCONTROLLER:
     # retrieve simulation systems
     ##################
 
-    self.sys_phys = self.controller.findSystem("PythonSystem")
     self.sys_sg = self.controller.findSystem("SceneGraphSystem")###
     self.sys_python = self.controller.findSystem("PythonSystem")###
 
@@ -126,7 +125,7 @@ class MYCONTROLLER:
     self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
     self.controller.stopSimulation()
     self.run_state = 2
-    #self.run_thread.join()
+    self.run_thread.join
     self.run_thread = None
     self.controller.terminateSimulation()
 
@@ -142,23 +141,28 @@ class MYCONTROLLER:
 
     arch_ball = self.ecsscene.declareArchetype("BallArchetype")
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
-    #c_python = arch_ball.declareComponent("PythonComponent")
+    c_python = arch_ball.declareComponent("PythonComponent")
 
     drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="ballnode",drawable=drawable,layer=LAYERNAME)
+    c_scenegraph.declareNodeOnLayer( name="ballnode",
+                                     drawable=drawable,
+                                     layer=LAYERNAME)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False  
     ball_spawner.transform.scale = 1.0
+    def onSpawn(table):
+      entity = table[tokens.entity]
+      print(entity)
+    #ball_spawner.onSpawn(onSpawn)
     self.ball_spawner = ball_spawner
-    
+
   ##############################################
 
   def run_loop(self):
-    self.run_state = 0
-    time.sleep(1)
-    print("run_loop begin")
+
+    self.run_state = 0 # signal that we are not yet running
 
     SAD = ecs.SpawnAnonDynamic("ball_spawner")
     SAD.overridexf.orientation = quat(vec3(0,1,0),0)
@@ -166,27 +170,69 @@ class MYCONTROLLER:
 
     all_entities = dict()
 
-    self.run_state = 1
-    while(self.run_state==1):
+    self.run_state = 1        # signal that we are running
+    while(self.run_state==1): # run loop
 
-      time.sleep(0.1)
+      time.sleep(0.003)
 
       prob = random.randint(0,100)
 
-      if prob < 50:
+      if prob < 90:
 
+        count = len(all_entities)
+
+        ##########################################
+        # dont let too many balls accumulate
+        # grab a random entity from all_entities
+        ##########################################
+
+        if count >= NUM_BALLS:
+
+          index = random.choice(list(all_entities.keys()))
+          if all_entities[index] is None:
+              continue
+
+          ent = all_entities[index]
+          
+          ##########################################
+          # despawn it
+          ##########################################
+
+          del all_entities[ent.id]
+          self.controller.despawnEntity(ent)
+
+        count = len(all_entities)
+        
+        if count < NUM_BALLS:
+
+          i = random.randint(-15,15)
+          j = random.randint(-15,15)
+          k = random.randint(-15,15)
+          pos = vec3(i,j,k)
+
+          SAD.overridexf.translation = pos
+          e = self.controller.spawnEntity(SAD)
+          all_entities[e.id] = e
+
+        ##########################################
+        # set new target for 1 entity
+        ##########################################
+
+        index = random.choice(list(all_entities.keys()))
+        ent = all_entities[index]
         i = random.randint(-15,15)
         j = random.randint(-15,15)
         k = random.randint(-15,15)
         pos = vec3(i,j,k)
+        
+        self.controller.systemNotify( self.sys_python,
+                                      tokens.SET_TARGET,
+                                      {
+                                        tokens.ent: ent,
+                                        tokens.pos: pos
+                                      })
+        #c = ent.getComponent("PythonComponent")
 
-        SAD.overridexf.translation = pos
-        e = self.controller.spawnEntity(SAD)
-        all_entities[e.id] = e
 
-        count = len(all_entities)
-        print("spawned ent<%d> @ %s (count: %d)" % (e.id,pos,count))
-
-    print("run_loop done")
-    self.run_state=3
+    self.run_state=3 # signal that we are done
     

@@ -277,11 +277,11 @@ Entity* Simulation::_spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD,
   // per spawn override of intial transform ?
   /////////////////////////////////////
   if(ovxf){
-    newent->_override_initial_xf = ovxf;
-    newent->setTransform(ovxf);
-    fvec3 pos = ovxf->_translation;
-    printf( "using override xf pos<%g %g %g>\n", pos.x, pos.y, pos.z );
-
+    auto newxf = std::make_shared<DecompTransform>();
+    newxf->set(ovxf);
+    fvec3 pos = newxf->_translation;
+    //printf( "using override xf<%p> pos<%g %g %g>\n", newxf.get(), pos.x, pos.y, pos.z );
+    newent->setTransform(newxf);
   }
   /////////////////////////////////////
   auto arch   = spawn_rec->GetArchetype();

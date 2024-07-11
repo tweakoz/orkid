@@ -26,11 +26,16 @@ using adapter_t = ork::python::nanobindadapter;
 
 namespace ork::ecssim {
 
-void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
-void register_system(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec);
-void register_datatable(typename py::module_& module, typename nanobindadapter::codec_ptr_t type_codec);
+using codec_ptr_t = typename ork::python::obind_typecodec_ptr_t;
+using module_t = typename py::module_;
 
-void _ecssim_init_classes(nb::module_ &module_ecssim) {
+void register_simulation(module_t& module_ecssim,codec_ptr_t type_codec);
+void register_system(module_t& module_ecssim,codec_ptr_t type_codec);
+void register_datatable(module_t& module, codec_ptr_t type_codec);
+void register_entity(module_t& module, codec_ptr_t type_codec);
+void register_component(module_t& module, codec_ptr_t type_codec);
+
+void _ecssim_init_classes(module_t &module_ecssim) {
 
   auto type_codec_nb = ork::python::TypeCodec<adapter_t>::instance();
 
@@ -39,6 +44,8 @@ void _ecssim_init_classes(nb::module_ &module_ecssim) {
   register_datatable(module_ecssim,type_codec_nb);
   register_simulation(module_ecssim,type_codec_nb);
   register_system(module_ecssim,type_codec_nb);
+  register_entity(module_ecssim,type_codec_nb);
+  register_component(module_ecssim,type_codec_nb);
 }
 
 } // namespace ork::ecssim

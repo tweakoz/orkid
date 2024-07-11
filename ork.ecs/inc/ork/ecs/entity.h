@@ -136,7 +136,6 @@ public:
   PoolString name() const;
 
   _rendermtxprovider_t _renderMtxProvider = nullptr;
-  decompxf_ptr_t _override_initial_xf = nullptr;
 
   uint64_t _entref = 0xffffffffffff;
 
@@ -165,6 +164,8 @@ public:
   virtual void DeComposeEntData(SpawnData* pentdata) const       = 0;
   virtual Entity* ComposeEntity(const SpawnData* pentdata) const = 0;
 };
+
+using pyentity_ptr_t = ork::python::unmanaged_ptr<Entity>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

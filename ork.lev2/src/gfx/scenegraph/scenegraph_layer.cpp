@@ -43,7 +43,12 @@ Layer::~Layer() {
 drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
   drawable_node_ptr_t rval = std::make_shared<DrawableNode>(named, drawable);
   drawable->_sgnode        = rval;
-  _drawable_nodes.atomicOp([rval](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(rval); });
+  _drawable_nodes.atomicOp([rval, this](Layer::drawablenodevect_t& unlocked) { //
+    rval->_layers.insert(this);
+    unlocked.push_back(rval);
+    int count = unlocked.size();
+    // printf( "create drawable count<%d>\n", count );
+  });
   if (DEBUG_LOG) {
     logchan_sglayer->log(
         "createDrawableNode layer<%s> named<%s> drawable<%p> node<%p>", //
@@ -59,18 +64,33 @@ drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::addDrawableNode(drawable_node_ptr_t node) {
-  _drawable_nodes.atomicOp([node](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(node); });
+  _drawable_nodes.atomicOp([node, this](Layer::drawablenodevect_t& unlocked) { //
+    int count = unlocked.size();
+    // printf( "add drawable count<%d>\n", count );
+
+    node->_layers.insert(this);
+    unlocked.push_back(node);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Layer::removeDrawableNode(drawable_node_ptr_t node) {
+  // printf( "remove node<%p>\n", node.get() );
   _drawable_nodes.atomicOp([node](Layer::drawablenodevect_t& unlocked) {
-    auto it = std::remove_if(unlocked.begin(), unlocked.end(), [node](drawable_node_ptr_t d) -> bool {
-      bool matched = (node == d);
-      return matched;
-    });
-    unlocked.erase(it);
+    auto it = std::find(unlocked.begin(), unlocked.end(), node);
+    if (it != unlocked.end()) {
+      if (unlocked.size() > 1) {
+        int index = (it - unlocked.begin());
+        // swap last with this one
+        // printf( "rem index<%d> size<%d>\n", index, int(unlocked.size()) );
+        unlocked[index] = unlocked.back();
+        unlocked.pop_back();
+      } else {
+        unlocked.clear();
+        // printf( "last cleared\n" );
+      }
+    }
   });
 }
 
@@ -95,10 +115,10 @@ void Layer::removeLightNode(lightnode_ptr_t node) {
       bool matched = (node == d);
       return matched;
     });
-    if (it != unlocked.end()){
+    if (it != unlocked.end()) {
       unlocked.erase(it);
     }
-   });
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +142,7 @@ void Layer::removeProbeNode(probenode_ptr_t node) {
       bool matched = (node == d);
       return matched;
     });
-    if (it != unlocked.end()){
+    if (it != unlocked.end()) {
       unlocked.erase(it);
     }
   });

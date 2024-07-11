@@ -208,6 +208,12 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
       if (globals.contains("onSystemNotify")) {
         _pymethodOnSystemNotify = globals["onSystemNotify"];
       }
+      if (globals.contains("onComponentActivate")) {
+        _pymethodOnComponentActivate = globals["onComponentActivate"];
+      }
+      if (globals.contains("onComponentDeactivate")) {
+        _pymethodOnComponentDeactivate = globals["onComponentDeactivate"];
+      }
 
       if (_pymethodOnSystemInit) {
         auto wrapped = pysim_ptr_t(pinst);
@@ -248,53 +254,28 @@ PythonSystem::~PythonSystem() {
 
 void PythonSystem::_onActivateComponent(PythonComponent* component) {
 
-  /*
-  auto L = _pythonContext->mLuaState;
-
-  auto ent  = component->GetEntity();
-  auto name = ent->name().c_str();
-
-  // printf("Starting PythonComponent<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
-  // printf("start ScriptObject<%p:%s>\n", mScriptObject, mScriptObject->mScriptPath.c_str());
-
-  if (component->mScriptObject->mOnEntActivate >= 0) {
-    LuaIntf::LuaState lua = L;
-    lua.getRef(component->mScriptObject->mOnEntActivate);
-    assert(lua.isFunction(LUA_STACKINDEX_TOP));
-    lua.push(component->_luaentity);
-    // printf( "CALL mOnEntStart\n");
-    int iret = lua.pcall(1, 0, 0);
-    OrkAssert(iret == 0);
+  if (_pymethodOnComponentActivate) {
+    _pythonContext->bindSubInterpreter();
+    auto wrapped = pycomponent_ptr_t(component);
+     __pcallargs(logchan_pysys, _pymethodOnComponentActivate, wrapped);
+    _pythonContext->unbindSubInterpreter();
   }
-  */
+
   _activeComponents.insert(component);
 }
 void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
 
+  if (_pymethodOnComponentDeactivate) {
+    _pythonContext->bindSubInterpreter();
+    auto wrapped = pycomponent_ptr_t(component);
+     __pcallargs(logchan_pysys, _pymethodOnComponentDeactivate, wrapped);
+    _pythonContext->unbindSubInterpreter();
+  }
+
+
   auto it = _activeComponents.find(component);
   _activeComponents.erase(component);
-  /*
 
-  auto L = _pythonContext->mLuaState;
-
-  if (component->mScriptObject->mOnEntDeactivate >= 0) {
-
-    auto ent  = component->GetEntity();
-    auto name = ent->name().c_str();
-
-    // printf("Activating PythonComponent<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name);
-    // printf("activate ScriptObject<%p:%s>\n", mScriptObject, mScriptObject->mScriptPath.c_str());
-    // printf("mOnEntActivate<%d>\n", mScriptObject->mOnEntActivate);
-
-    LuaIntf::LuaState lua = L;
-    lua.getRef(component->mScriptObject->mOnEntDeactivate);
-    assert(lua.isFunction(LUA_STACKINDEX_TOP));
-    lua.push(component->_luaentity);
-    // printf( "CALL mOnEntActivate\n");
-    int iret = lua.pcall(1, 0, 0);
-    OrkAssert(iret == 0);
-  }
-  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////

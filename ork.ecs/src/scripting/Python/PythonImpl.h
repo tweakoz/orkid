@@ -149,6 +149,9 @@ public:
   obind::object _pymethodOnSystemStage;
   obind::object _pymethodOnSystemNotify;
 
+  obind::object _pymethodOnComponentActivate;
+  obind::object _pymethodOnComponentDeactivate;
+
   //int mScriptRef;
 };
 

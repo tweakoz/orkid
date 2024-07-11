@@ -87,19 +87,6 @@ PythonComponent::PythonComponent(const PythonComponentData& data, ecs::Entity* p
 void PythonComponent::_onUninitialize(ork::ecs::Simulation* psi) {
   if (mScriptObject) {
     auto scm      = psi->findSystem<PythonSystem>();
-    /*
-    auto L                = as_ctx->mPythonState;
-    PythonIntf::PythonState lua = L;
-    auto ent              = this->GetEntity();
-    if (mScriptObject->mOnEntUninitialize >= 0) {
-      lua.getRef(mScriptObject->mOnEntUninitialize);
-      assert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      // printf( "CALL mOnEntUninitialize\n");
-      int iret = lua.pcall(1, 0, 0);
-      OrkAssert(iret == 0);
-    }
-    */
   }
 }
 
@@ -112,55 +99,13 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
 
   auto path = mCD.GetPath();
 
-  logchan_pysyscomp->log( "PythonComponent::_onLink: scm<%p> path<%s>", scm, path.toAbsolute().c_str() );
+  //logchan_pysyscomp->log( "PythonComponent::_onLink: scm<%p> path<%s>", scm, path.toAbsolute().c_str() );
   
   if (nullptr == scm){
     logerrchannel()->log( "PythonComponent::_onLink: scm is nullptr!!!!" );
     return false;
   }
-  /*
-  auto L                = as_ctx->mPythonState;
-  PythonIntf::PythonState lua = L;
 
-  if (scm) {
-    mScriptObject = scm->FlyweightScriptObject(path);
-
-    if (mScriptObject) {
-      auto ent = this->GetEntity();
-
-      _luaentity        = PythonIntf::PythonRef::createTable(L);
-      _luaentity["ent"] = ent;
-
-      if (mScriptObject->mOnEntInitialize >= 0) {
-        lua.getRef(mScriptObject->mOnEntInitialize);
-        assert(lua.isFunction(LUA_STACKINDEX_TOP));
-        lua.push(_luaentity);
-        // printf( "CALL mOnEntInitialize\n");
-        int iret = lua.pcall(1, 0, 0);
-        OrkAssert(iret == 0);
-      }
-    }
-  }
-
-  if (mScriptObject) {
-    auto as_ctx = scm->_pythonContext.getShared<PythonContext>();
-    OrkAssert(as_ctx);
-    auto L                = as_ctx->mPythonState;
-    PythonIntf::PythonState lua = L;
-    auto ent              = this->GetEntity();
-    if (mScriptObject->mOnEntLink >= 0) {
-      lua.getRef(mScriptObject->mOnEntLink);
-      assert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      int iret = lua.pcall(1, 0, 0);
-      if (iret != 0) {
-        logchan_pysyscomp->log("PCALL-ERROR: PythonComponent::_onLink: scm<%p> path<%s>", scm, path.toAbsolute().c_str());
-        // printf( "CALL mOnEntLink\n");
-      }
-      OrkAssert(iret == 0);
-    }
-  }
-  */
   return true;
 }
 
@@ -169,42 +114,15 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
 void PythonComponent::_onUnlink(ork::ecs::Simulation* psi) {
   if (mScriptObject) {
     auto scm      = psi->findSystem<PythonSystem>();
-
-    /*
-    auto L                = as_ctx->mPythonState;
-    PythonIntf::PythonState lua = L;
-    auto ent              = this->GetEntity();
-    if (mScriptObject->mOnEntUnlink >= 0) {
-      lua.getRef(mScriptObject->mOnEntUnlink);
-      assert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      // printf( "CALL mOnEntUnlink\n");
-      int iret = lua.pcall(1, 0, 0);
-      OrkAssert(iret == 0);
-    }
-    */
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PythonComponent::_onStage(ork::ecs::Simulation* sim) {
-  logchan_pysyscomp->log("PythonComponent::_onStage: mScriptObject<%p>", mScriptObject);
+  //logchan_pysyscomp->log("PythonComponent::_onStage: mScriptObject<%p>", mScriptObject);
   if (mScriptObject) {
     auto scm      = sim->findSystem<PythonSystem>();
-    /*
-    auto L                = as_ctx->mPythonState;
-    PythonIntf::PythonState lua = L;
-    auto ent              = this->GetEntity();
-    if (mScriptObject->mOnEntStage >= 0) {
-      lua.getRef(mScriptObject->mOnEntStage);
-      assert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      // printf( "CALL mOnEntStage\n");
-      int iret = lua.pcall(1, 0, 0);
-      OrkAssert(iret == 0);
-    }
-    */
   }
   return true;
 }
@@ -232,7 +150,7 @@ void PythonComponent::_onUnstage(ork::ecs::Simulation* psi) {
 
 bool PythonComponent::_onActivate(Simulation* psi) {
   auto scm = psi->findSystem<PythonSystem>();
-  if (scm && mScriptObject) {
+  if (scm) {
     scm->_onActivateComponent(this);
   }
   return true;
@@ -241,9 +159,9 @@ bool PythonComponent::_onActivate(Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonComponent::_onDeactivate(Simulation* psi) {
-
+  //printf("PythonComponent::_onDeactivate\n");
   auto scm = psi->findSystem<PythonSystem>();
-  if (scm && mScriptObject) {
+  if (scm ) {
     scm->_onDeactivateComponent(this);
   }
 }
@@ -252,37 +170,7 @@ void PythonComponent::_onDeactivate(Simulation* psi) {
 
 void PythonComponent::_onNotify(Simulation* psi, token_t evID, evdata_t data) {
 
-  /*
-  ScriptVar luaID;
-  luaID._encoded = evID;
 
-  ScriptVar luadata;
-  luadata._encoded = data;
-
-  auto scm = psi->findSystem<PythonSystem>();
-
-  //printf("PythonComponent<%p> scm<%p> mScriptObject<%p>\n", this, scm, (void*)mScriptObject);
-
-  if (scm && mScriptObject) {
-
-    //printf("  _onNotify<%p>\n", mScriptObject->mOnNotify);
-
-    if (mScriptObject->mOnNotify >= 0) {
-      auto asluactx = scm->_pythonContext.getShared<PythonContext>();
-      OrkAssert(asluactx);
-      auto L   = asluactx->mPythonState;
-      auto ent = this->GetEntity();
-
-      PythonIntf::PythonState lua = L;
-      lua.getRef(mScriptObject->mOnNotify);
-      OrkAssert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      luaID.pushToPython(L);
-      luadata.pushToPython(L);
-      int iret = lua.pcall(3, 0, 0);
-      OrkAssert(iret == 0);
-    }
-  }*/
 }
 
 }

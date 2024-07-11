@@ -118,6 +118,7 @@ void Component::_deactivate(Simulation* psi) {
   }
 }
 void Component::_onDeactivate(Simulation* psi) {
+    printf( "wtf\n");
 }
 //////////////////////////////////////////////////////////
 void Component::_notify(Simulation* psi, token_t evID, evdata_t data) {

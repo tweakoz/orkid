@@ -12,6 +12,7 @@
 #include <ork/kernel/string/PoolString.h>
 #include <unordered_map>
 #include <ork/util/tsl/robin_map.h>
+#include <ork/python/wraprawpointer.inl>
 
 namespace ork {
   struct DecompTransform;

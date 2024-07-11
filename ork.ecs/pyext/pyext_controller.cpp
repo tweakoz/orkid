@@ -151,6 +151,9 @@ void pyinit_controller(py::module& module_ecs) {
             ent_ref_t eref = ctrl->spawnAnonDynamicEntity(sad);
             return eref;
           })
+          .def("despawnEntity", [](controller_ptr_t ctrl, ent_ref_t eref) { //
+            ctrl->despawnEntity(eref);
+          })
       .def("findComponent", [](controller_ptr_t ctrl, ent_ref_t eref, std::string name) -> comp_ref_t { //
         return ctrl->findComponentWithClassName(eref,name); //
       })

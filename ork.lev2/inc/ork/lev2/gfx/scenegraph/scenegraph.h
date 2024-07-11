@@ -66,6 +66,7 @@ public:
   bool _enabled = true;
   bool _pickable = true;
   bool _viewRelative = false;
+  std::unordered_set<Layer*> _layers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

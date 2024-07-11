@@ -143,6 +143,8 @@ void Entity::_deleteComponents(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::setTransform(decompxf_ptr_t xf) {
+  auto pos = xf->_translation;
+  //printf( "ent<%p> setxf<%p> pos<%g %g %g>\n", this, xf.get(), pos.x, pos.y, pos.z );
   _dagnode->_xfnode->_transform = xf;
 }
 void Entity::setTransform(const fvec3& pos, const fquat& rot, float uscale) {

@@ -130,6 +130,8 @@ protected:
   bool mbValid                        = false;
 };
 
+using pycomponent_ptr_t = ork::python::unmanaged_ptr<Component>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::ecs
