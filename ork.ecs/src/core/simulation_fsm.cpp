@@ -260,25 +260,27 @@ void Simulation::_buildStateMachine() {
         sys.second->_endRender();
       }
     } else {
-      OrkAssert(_currentdrwev);
-      EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
-      SystemLut render_systems;
-      _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
-      EASY_END_BLOCK;
-      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-      for (auto sys : render_systems) {
-        sys.second->_beginRender();
-      }
-      EASY_END_BLOCK;
-      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-      for (auto sys : render_systems)
-        sys.second->_render(this, _currentdrwev);
-      EASY_END_BLOCK;
-      EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-      for (auto sys : render_systems) {
-        sys.second->_endRender();
-      }
-      EASY_END_BLOCK;
+        if(_currentdrwev){
+            OrkAssert(_currentdrwev);
+            EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
+            SystemLut render_systems;
+            _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
+            EASY_END_BLOCK;
+            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+            for (auto sys : render_systems) {
+                sys.second->_beginRender();
+            }
+            EASY_END_BLOCK;
+            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+            for (auto sys : render_systems)
+                sys.second->_render(this, _currentdrwev);
+            EASY_END_BLOCK;
+            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+            for (auto sys : render_systems) {
+                sys.second->_endRender();
+            }
+            EASY_END_BLOCK;
+        }
     }
   };
 
@@ -681,11 +683,13 @@ void Simulation::_deactivateEntities() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   for (orkmap<ork::PoolString, ork::ecs::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
     ork::ecs::Entity* pent = it->second;
-    auto edata             = pent->data();
-    OrkAssert(pent);
-    if (edata->GetArchetype()) {
-      edata->GetArchetype()->deactivateEntity(this, pent);
-    }
+      if(pent){
+          auto edata             = pent->data();
+          OrkAssert(pent);
+          if (edata->GetArchetype()) {
+              edata->GetArchetype()->deactivateEntity(this, pent);
+          }
+      }
   }
 }
 ///////////////////////////////////////////////////////////////////////////

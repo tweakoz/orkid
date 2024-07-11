@@ -82,6 +82,18 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
     });
   }
   ////////////////////////////////////////////////////////////////////
+  if (py::hasattr(appinstance, "onGpuExit")) {
+    auto gpuexitfn //
+        = py::cast<py::function>(appinstance.attr("onGpuExit"));
+    rval->_vars->makeValueForKey<py::function>("gpuexitfn") = gpuexitfn;
+    rval->onGpuExit([=](lev2::Context* ctx) { //
+      ctx->makeCurrentContext();
+      py::gil_scoped_acquire acquire;
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuexitfn");
+      pyfn.value()(ctx_t(ctx));
+    });
+  }
+  ////////////////////////////////////////////////////////////////////
   if (py::hasattr(appinstance, "onUpdate")) {
     auto updfn //
         = py::cast<py::function>(appinstance.attr("onUpdate"));
@@ -110,6 +122,22 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
     rval->onUpdateInit([=]() { //
       py::gil_scoped_acquire acquire;
       auto pyfn = rval->_vars->typedValueForKey<py::function>("updateinitfn");
+      try {
+        pyfn.value()();
+      } catch (std::exception& e) {
+        std::cerr << e.what();
+        OrkAssert(false);
+      }
+    });
+  }
+  ////////////////////////////////////////////////////////////////////
+  if (py::hasattr(appinstance, "onUpdateExit")) {
+    auto updfn //
+        = py::cast<py::function>(appinstance.attr("onUpdateExit"));
+    rval->_vars->makeValueForKey<py::function>("updateexitfn") = updfn;
+    rval->onUpdateExit([=]() { //
+      py::gil_scoped_acquire acquire;
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("updateexitfn");
       try {
         pyfn.value()();
       } catch (std::exception& e) {

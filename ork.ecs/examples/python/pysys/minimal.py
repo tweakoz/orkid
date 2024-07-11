@@ -29,8 +29,15 @@ class PYSYS_MINIMAL(object):
 
   ##############################################
 
+  def onUpdateExit(self):
+    print( "onUpdateExit")
+    self.controller.onUpdateExit()
+
+  ##############################################
+
   def onGpuExit(self,ctx):
-    self.controller.terminate()
+    print( "onGpuExit")
+    self.controller.onGpuExit(ctx)
 
 ###############################################################################
 

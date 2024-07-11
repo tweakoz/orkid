@@ -57,6 +57,15 @@ void Controller::installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
   });
 }
 
+void Controller::uninstallRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
+  ezapp->onDraw([](ui::drawevent_constptr_t drwev){
+  });
+}
+void Controller::uninstallUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp){
+  ezapp->onUpdate([this](ui::updatedata_ptr_t update){
+  });
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -544,6 +553,27 @@ void Controller::stopSimulation() {
   TEV->_waitForState = ESimulationTransport::TERMINATED;
   simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
   _enqueueEvent(simevent);
+}
+void Controller::endSimulation() {
+  updateExit();
+  /*ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  logchan_controller->log( "TERMINATING SIMULATION");
+  _delopq.atomicOp([=](delayed_opq_t& unlocked){
+      unlocked.clear();
+  });
+  _eventQueue.atomicOp([&](Controller::evq_t& unlocked) {
+      unlocked.clear();
+  });
+  _simulation.atomicOp([](simulation_ptr_t& unlocked){
+    unlocked->SetSimulationMode(ESimulationMode::TERMINATED);
+    unlocked->_serviceEventQueues();
+  });
+  auto simevent = std::make_shared<Event>();
+  simevent->_eventID   = EventID::TRANSPORT_BARRIER;
+  auto TEV = std::make_shared<impl::_TransportBarrier>();
+  TEV->_waitForState = ESimulationTransport::TERMINATED;
+  simevent->_payload.make<impl::transportbarrier_ptr_t>(TEV);
+  _enqueueEvent(simevent);}*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////

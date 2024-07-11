@@ -24,16 +24,10 @@ class MYCONTROLLER:
 
   def __init__(self,ezapp):
     self.ezapp = ezapp
-    self.keep_running = True
+    self.run_state = 0
     cameras.setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
     self.ecsLaunch()
-
-  ##############################################
-
-  def terminate(self):
-    print("terminating")
-    self.ecsStop()
 
   ##############################################
 
@@ -127,10 +121,19 @@ class MYCONTROLLER:
     
   ##############################################
 
-  def ecsStop(self):
-    self.keep_running = False
+  def onUpdateExit(self):
+    self.controller.uninstallRenderCallbackOnEzApp(self.ezapp)
     self.controller.stopSimulation()
-    self.run_thread.join()
+    self.run_state = 2
+    #self.run_thread.join()
+    self.run_thread = None
+    self.controller.terminateSimulation()
+
+  ##############################################
+
+  def onGpuExit(self,ctx):
+    self.controller.gpuExit(ctx)
+    self.controller.uninstallUpdateCallbackOnEzApp(self.ezapp)
 
   ##############################################
 
@@ -152,6 +155,7 @@ class MYCONTROLLER:
   ##############################################
 
   def run_loop(self):
+    self.run_state = 0
     time.sleep(1)
     print("run_loop begin")
 
@@ -161,7 +165,8 @@ class MYCONTROLLER:
 
     all_entities = dict()
 
-    while(self.keep_running):
+    self.run_state = 1
+    while(self.run_state==1):
 
       time.sleep(0.1)
 
@@ -182,4 +187,5 @@ class MYCONTROLLER:
         print("spawned ent<%d> @ %s (count: %d)" % (e.id,pos,count))
 
     print("run_loop done")
+    self.run_state=3
     

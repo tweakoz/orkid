@@ -93,8 +93,8 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
   auto ecsgstate = getGlobalState();
   auto gstate = std::make_shared<::ork::python::GlobalState>();
-  gstate->_mainInterpreter = ecsgstate->_mainInterpreter;
-  gstate->_globalInterpreter = ecsgstate->_globalInterpreter;
+  gstate->_mainInterpreter = ecsgstate->_mainInterpreter->interp;
+  //gstate->_globalInterpreter = ecsgstate->_globalInterpreter->interp;
   _pythonContext = std::make_shared<pyctx_t>(gstate);
 
   ///////////////////////////////////////////////
@@ -241,6 +241,8 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 ///////////////////////////////////////////////////////////////////////////////
 
 PythonSystem::~PythonSystem() {
+
+  printf( "PythonSystem::~PythonSystem()\n");
   //////////////////////////////
   // delete flyweighted scriptobjects
   //////////////////////////////

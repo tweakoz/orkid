@@ -32,7 +32,8 @@ void initModule(appinitdata_ptr_t initdata);
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 static constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
-static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
+static constexpr uint64_t KAPPSTATEFLAG_JOINING    = 1 << 1;
+static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 2;
 ////////////////////////////////////////////////////////////////////////////////
 
 struct EzAppContext {

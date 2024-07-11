@@ -259,32 +259,132 @@ Context::~Context() {
 static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ork.pyctx", fvec3(0.9, 0.6, 0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-GlobalState::GlobalState() {
-  {
-    pybind11::gil_scoped_acquire acquire;
-    _globalInterpreter = PyThreadState_Get();
+
+
+PyThreadState* fetchPyThreadState(PyInterpreterState* interp) {
+// Manually manage the GIL to ensure it is held
+    PyThreadState* tstate = PyGILState_GetThisThreadState();
+    if (tstate == nullptr || tstate->interp != interp) {
+        PyGILState_STATE gstate = PyGILState_Ensure();
+        
+        tstate = PyThreadState_Get();
+        if (tstate == nullptr || tstate->interp != interp) {
+            // Create a new thread state for the specified interpreter
+            tstate = PyThreadState_New(interp);
+            PyThreadState_Swap(tstate);
+        }
+        
+        PyGILState_Release(gstate);
+    }
+    return tstate;
+    }
+PyInterpreterState* fetchPyInterpreterState(PyThreadState* tstate) {
+  return tstate->interp;
+}
+
+bool ensureGILonInterpreterForThisThread(PyInterpreterState* interp) {
+  // check current states and achieve GIL acquisition
+  //   regardless of current state...
+  //   this means check current state and act accordingly...
+  // ensure other thread and interpreter state is untouched !
+
+  bool was_acquired = false;
+
+  // Fetch the current thread state for the specified interpreter
+  PyThreadState* currentThreadState = fetchPyThreadState(interp);
+
+  // Check if the current interpreter is the desired one
+  if (currentThreadState->interp != interp) {
+    // Swap to the thread state for the desired interpreter and acquire the GIL
+    PyThreadState* newThreadState = PyThreadState_New(interp);
+    PyThreadState_Swap(newThreadState);
+    PyEval_AcquireThread(newThreadState);
+    was_acquired = true;
+  } else {
+    // The GIL is already acquired for the desired interpreter
+    PyEval_AcquireThread(currentThreadState);
+    was_acquired = true;
   }
-  _mainInterpreter = Py_NewInterpreter();
-  logchan_pyctx->log("global python _mainInterpreter<%p>\n", (void*)_mainInterpreter);
-}*/
+
+  return was_acquired;
+}
+bool releaseGILonInterpreterForThisThread(PyInterpreterState* interp) {
+  // check current states and release GIL acquisition
+  //   regardless of current state...
+  //   this means check current state and act accordingly...
+  // ensure other thread and interpreter state is untouched !
+  // Fetch the current thread state for the specified interpreter
+
+  bool was_released = false;
+
+  PyThreadState* currentThreadState = fetchPyThreadState(interp);
+
+  // Check if the current interpreter is the desired one
+  if (currentThreadState->interp == interp) {
+    // Release the GIL for the desired interpreter
+    PyEval_ReleaseThread(currentThreadState);
+    was_released = true;
+  }
+
+  return was_released;
+}
+bool hasGILonInterpreterForThisThread(PyInterpreterState* interp) {
+  // check current states and succeed regardless of current state...
+  // ensure all thread and interpreter state is untouched !
+
+  bool has_gil = false;
+
+  // Fetch the current thread state for the specified interpreter
+  PyThreadState* currentThreadState = fetchPyThreadState(interp);
+
+  // Check if the current thread state is associated with the given interpreter
+  if (currentThreadState->interp == interp) {
+    has_gil = (PyGILState_Check() == PyGILState_LOCKED);
+  }
+
+  return has_gil;
+}
+
+void deleteInterpreter(PyInterpreterState* interp_to_delete, PyInterpreterState* interp_next ) {
+  // delete interp_to_delete
+  //  after it is deleted, ensure interp_next is active on this thread with GIL acquired
+
+    // Ensure the GIL is acquired for the interpreter to delete
+    ensureGILonInterpreterForThisThread(interp_to_delete);
+
+    // Fetch the thread state for the interpreter to delete
+    PyThreadState* tstate_to_delete = fetchPyThreadState(interp_to_delete);
+
+    // Delete the interpreter
+    PyInterpreterState_Clear(interp_to_delete);
+    PyInterpreterState_Delete(interp_to_delete);
+    //Py_EndInterpreter(tstate_to_delete);
+
+    ensureGILonInterpreterForThisThread(interp_next);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Context2::Context2(globalstate_ptr_t gstate) {
-	_gstate = gstate;
-  _mainInterpreter = _gstate->_mainInterpreter;
 
-  //_subInterpreter  = Py_NewInterpreter();
+  // created on update thread
+  // for now until deletion the update thread will
+  //  only run _subInterpreter
+  //  and main thread will run _mainInterpreter
+
+  _gstate          = gstate;
+  _mainInterpreter = _gstate->_mainInterpreter;
 
   PyInterpreterConfig pyconfig;
   memset(&pyconfig, 0, sizeof(PyInterpreterConfig));
-  pyconfig.gil = PyInterpreterConfig_OWN_GIL;
-  pyconfig. check_multi_interp_extensions = 1;
-  auto status = Py_NewInterpreterFromConfig(&_subInterpreter, &pyconfig);
-  OrkAssert(PyStatus_IsError(status)==0);
+  pyconfig.gil                           = PyInterpreterConfig_OWN_GIL;
+  pyconfig.check_multi_interp_extensions = 1;
+  PyThreadState* subts = nullptr;
+  auto status                            = Py_NewInterpreterFromConfig(&subts, &pyconfig);
+  OrkAssert(PyStatus_IsError(status) == 0);
+  _subInterpreter = fetchPyInterpreterState(subts);
 
-  PyEval_ReleaseThread(_subInterpreter);
+  PyEval_ReleaseThread(subts);
   logchan_pyctx->log("pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
   logchan_pyctx->log("pyctx<%p> 1...\n", this);
 }
@@ -292,56 +392,78 @@ Context2::Context2(globalstate_ptr_t gstate) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Context2::~Context2() {
-  logchan_pyctx->log("~pyctx<%p> _subInterpreter<%p>\n", this, (void*)_subInterpreter);
-  PyThreadState_Swap(_subInterpreter);
-  logchan_pyctx->log("~pyctx<%p> finalize<%p>\n", this, (void*)_subInterpreter);
-  pybind11::finalize_interpreter();
-  logchan_pyctx->log("~pyctx<%p> end<%p>\n", this, (void*)_subInterpreter);
-  Py_EndInterpreter(_subInterpreter);
-  logchan_pyctx->log("~pyctx<%p> renable main\n", this);
-  PyThreadState_Swap(_gstate->_mainInterpreter);
-  // Py_Finalize();
+
+  // destroy _subInterpreter  on update thread
+  //  assume _subInterpreter is active on this thread
+  //  and _mainInterpreter is active on main thread
+  //  exit this method with _mainInterpreter bound to this thread
+
+  logchan_pyctx->log("pyctx<%p> ~Context2\n", this);
+
+  // Ensure the GIL is acquired for the subinterpreter
+  ensureGILonInterpreterForThisThread(_subInterpreter);
+
+  // Delete the subinterpreter
+  deleteInterpreter(_subInterpreter, _mainInterpreter);
+
+  // Fetch the current thread state for the main interpreter
+  PyThreadState* currentThreadState = fetchPyThreadState(_mainInterpreter);
+
+  // Ensure the GIL is acquired for the main interpreter
+  ensureGILonInterpreterForThisThread(_mainInterpreter);
+
+  // Release the GIL
+  // PyGILState_Release(parentGILState);
+
+  logchan_pyctx->log("pyctx<%p> ~Context2 done\n", this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context2::bindSubInterpreter(bool ensure,bool save) {
-  //logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
+void Context2::bindSubInterpreter(bool ensure, bool save) {
+  // logchan_pyctx->log("pyctx<%p> binding subinterpreter\n", this);
 
-  if(ensure){
+  auto tstate = fetchPyThreadState(_subInterpreter);
 
-    PyGILState_STATE parentGILState = PyGILState_Ensure();
-  }
 
-  if(save){
+  if (save) {
     // Save the current thread state and swap to subinterpreter
-    _saveInterpreter = PyThreadState_Swap(_subInterpreter);
+    auto prev_ts = PyThreadState_Swap(tstate);
+    _saveInterpreter = prev_ts->interp;
 
     // Release the GIL for the parent interpreter
-    if(_saveInterpreter){
-      PyEval_ReleaseThread(_saveInterpreter);
+    if (prev_ts) {
+      PyEval_ReleaseThread(prev_ts);
     }
   }
 
+  if (ensure) {
+    // Ensure the GIL is acquired for the subinterpreter
+    //ensureGILonInterpreterForThisThread(_subInterpreter);
+  }
+
+
   // Acquire the GIL for the subinterpreter
-  PyEval_AcquireThread(_subInterpreter);
-  //logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
+  bool was_acq = ensureGILonInterpreterForThisThread(_subInterpreter);
+  //PyEval_AcquireThread(tstate);
+  // logchan_pyctx->log("pyctx<%p> bound subinterpreter...\n", this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context2::unbindSubInterpreter() {
-  //logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this);
-  PyEval_ReleaseThread(_subInterpreter);
+  // logchan_pyctx->log("pyctx<%p> unbinding subinterpreter\n", this);
+  auto sub_tstate = fetchPyThreadState(_subInterpreter);
+  //PyEval_ReleaseThread(sub_tstate);
+
+  bool was_released = releaseGILonInterpreterForThisThread(_subInterpreter);
 
   // Restore the saved thread state if there was one
   if (_saveInterpreter) {
-    PyEval_AcquireThread(_saveInterpreter);
-    PyThreadState_Swap(_saveInterpreter);
-    //logchan_pyctx->log("pyctx<%p> unbound subinterpreter, restored interpreter: %p\n", this, (void*)_saveInterpreter);
+    bool was_acq = ensureGILonInterpreterForThisThread(_saveInterpreter);
     _saveInterpreter = nullptr;
   }
-  //logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this);
+  // logchan_pyctx->log("pyctx<%p> unbound subinterpreter...\n", this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 

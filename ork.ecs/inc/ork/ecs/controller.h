@@ -108,6 +108,7 @@ struct Controller {
 	void createSimulation();
 	void startSimulation();
 	void stopSimulation();
+	void endSimulation();
 	void bindScene(scenedata_ptr_t scene);
 	void gpuInit(lev2::Context* ctx);
 	void gpuExit(lev2::Context* ctx);
@@ -116,6 +117,8 @@ struct Controller {
 	void renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe);
 	void installRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 	void installUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
+	void uninstallRenderCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
+	void uninstallUpdateCallbackOnEzApp(lev2::orkezapp_ptr_t ezapp);
 
 	scenedata_constptr_t scenedata() const { return _scenedata; }
 	///////////////////////////////////////////////////////////////////////////////

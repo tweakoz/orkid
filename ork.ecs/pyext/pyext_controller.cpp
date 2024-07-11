@@ -9,6 +9,8 @@
 #include <ork/ecs/controller.h>
 #include <ork/ecs/datatable.h>
 ///////////////////////////////////////////////////////////////////////////////
+using ctx_t               = ork::python::unmanaged_ptr<::ork::lev2::Context>;
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::ecs {
 void pyinit_controller(py::module& module_ecs) {
@@ -23,10 +25,13 @@ void pyinit_controller(py::module& module_ecs) {
             fxs.format("ecs::Controller(%p)", (void*)arch.get());
             return fxs.c_str();
           })
+      .def("gpuInit", [](controller_ptr_t ctrl, ctx_t ctx) { ctrl->gpuInit(ctx.get()); })
+      .def("gpuExit", [](controller_ptr_t ctrl, ctx_t ctx) { ctrl->gpuExit(ctx.get()); })
       .def("bindScene", [](controller_ptr_t ctrl, scenedata_ptr_t scenedata) { ctrl->bindScene(scenedata); })
       .def("createSimulation", [](controller_ptr_t ctrl) { ctrl->createSimulation(); })
       .def("startSimulation", [](controller_ptr_t ctrl) { ctrl->startSimulation(); })
       .def("stopSimulation", [](controller_ptr_t ctrl) { ctrl->stopSimulation(); })
+      .def("terminateSimulation", [](controller_ptr_t ctrl) { ctrl->endSimulation(); })
       .def("updateSimulation", [](controller_ptr_t ctrl) { //
         //py::gil_scoped_release release; //
         ctrl->update(); //
@@ -47,6 +52,16 @@ void pyinit_controller(py::module& module_ecs) {
       .def("installUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
          py::gil_scoped_release release; //
          ctrl->installUpdateCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
+      .def("uninstallRenderCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         py::gil_scoped_release release; //
+         ctrl->uninstallRenderCallbackOnEzApp(ezapp);
+       })
+      ///////////////////////////
+      .def("uninstallUpdateCallbackOnEzApp", [](controller_ptr_t ctrl,lev2::orkezapp_ptr_t ezapp) {
+         py::gil_scoped_release release; //
+         ctrl->uninstallUpdateCallbackOnEzApp(ezapp);
        })
       ///////////////////////////
       .def("entBarrier", [](controller_ptr_t ctrl, ent_ref_t eref){

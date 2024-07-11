@@ -307,25 +307,27 @@ OrkEzApp::~OrkEzApp() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void OrkEzApp::joinUpdate() {
-  uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
+  uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
-  bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINED);
+  bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
-    // printf( "OrkEzApp<%p> joinUpdate\n", this );
+     printf( "OrkEzApp<%p> joinUpdate:1\n", this );
     while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
+     printf( "OrkEzApp<%p> joinUpdate:2\n", this );
     _updq->drain();
     _updateThread.join();
+     printf( "OrkEzApp<%p> joinUpdate:3\n", this );
     DrawQueue::ClearAndSyncWriters();
   }
   ////////////////////////////////////////////////
 }
 
 bool OrkEzApp::isExiting() const {
-  return checkAppState(KAPPSTATEFLAG_JOINED);
+  return checkAppState(KAPPSTATEFLAG_JOINING);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -367,8 +369,9 @@ void OrkEzApp::onGpuPostFrame(EzMainWin::ongpupostframe_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
-  if(_mainWindow)
+  if(_mainWindow){
     _mainWindow->_onGpuExit = cb;
+  }
   _moviecontext = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -443,7 +446,7 @@ int OrkEzApp::mainThreadLoop() {
 
     ////////////////////////////////////////
 
-    while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+    while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
       EASY_BLOCK("UpdateIteration" );
       double this_time = _update_timer.SecsSinceStart()*_timescale;
@@ -469,7 +472,7 @@ int OrkEzApp::mainThreadLoop() {
           _update_data->_counter = _update_count.load();
           /////////////////////////////
           /////////////////////////////
-          if (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+          if (not checkAppState(KAPPSTATEFLAG_JOINING)) {
             if(_mainWindow->_onUpdateInternal){
               _mainWindow->_onUpdateInternal(_update_data);
             }
@@ -497,11 +500,15 @@ int OrkEzApp::mainThreadLoop() {
       opq::updateSerialQueue()->Process();
       ork::usleep(100);
       sched_yield();
-    } // while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+    } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
-    _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
+    printf( "update_thread_impl loop exiting\n");
+
+    _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
+    _appstate.fetch_and(~KAPPSTATEFLAG_UPDRUNNING);
 
     if (_mainWindow->_onUpdateExit) {
+      printf( "running _onUpdateExit\n");
       _mainWindow->_onUpdateExit();
     }
   };
