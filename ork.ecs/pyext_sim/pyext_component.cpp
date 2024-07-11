@@ -1,12 +1,13 @@
 #include "pyext.h"
 #include <ork/ecs/datatable.h>
+#include <ork/ecs/pysys/PythonComponent.h>
 
 namespace ork::ecssim {
 
 void register_component(typename py::module_& module, typename nanobindadapter::codec_ptr_t type_codec) {
   using namespace ::ork::python;
   /////////////////////////////////////////////////////////////////////////////////
-  auto comp_t = clazz<nanobindadapter, pycomponent_ptr_t>(module, "Component")
+  auto comp_t = clazz<nanobindadapter, pycomponent_ptr_t>(module, "SimComponent")
                     .prop_ro(
                         "entity",
                         [](pycomponent_ptr_t comp) -> pyentity_ptr_t {
@@ -22,9 +23,10 @@ void register_component(typename py::module_& module, typename nanobindadapter::
                         })
                     .def(
                         "notify",
-                        [type_codec](pycomponent_ptr_t comp,
-                           crcstring_ptr_t eventID, //
-                           py::object evdata) {
+                        [type_codec](
+                            pycomponent_ptr_t comp,
+                            crcstring_ptr_t eventID, //
+                            py::object evdata) {
                           evdata_t decoded;
                           if (py::isinstance<py::dict>(evdata)) {
                             auto as_dict = py::cast<py::dict>(evdata);
@@ -44,5 +46,11 @@ void register_component(typename py::module_& module, typename nanobindadapter::
                           comp->_notify(comp->sceneInst(), *eventID, decoded);
                         });
   type_codec->registerStdCodec<pycomponent_ptr_t>(comp_t);
+  /// component array
+  auto comparray_t =
+      clazz<nanobindadapter, ComponentArray, pycomponentarray_ptr_t>(module, "SimComponentArray")
+          .prop_ro("size", [](pycomponentarray_ptr_t carr) -> size_t { return carr->size(); })
+          .def("__getitem__", [](pycomponentarray_ptr_t carr, int idx) -> pycomponent_ptr_t { return carr->get(idx); });
+  type_codec->registerStdCodec<pycomponentarray_ptr_t>(comparray_t);
 };
 } // namespace ork::ecssim

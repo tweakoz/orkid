@@ -19,6 +19,7 @@
 #include "componenttable.h"
 #include "componenttable.h"
 #include "sceneobject.h"
+#include <ork/kernel/varmap.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -153,6 +154,7 @@ public:
   ComponentTable mComponentTable;
 
   PoolString _name;
+  varmap::varmap_ptr_t _varmap;
 
 };
 

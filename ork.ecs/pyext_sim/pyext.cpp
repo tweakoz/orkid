@@ -11,7 +11,6 @@
 #include <ork/profiling.inl>
 #include <iostream>
 #include <ork/python/pycodec.inl>
-#include <ork/python/common_bindings/pyext_crcstring.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -21,6 +20,8 @@ using namespace obind::literals;
 using adapter_t = ork::python::nanobindadapter;
 
 #include <ork/python/common_bindings/pyext_math_la.inl>
+#include <ork/python/common_bindings/pyext_crcstring.inl>
+#include <ork/python/common_bindings/pyext_varmap.inl>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +41,7 @@ void _ecssim_init_classes(module_t &module_ecssim) {
   auto type_codec_nb = ork::python::TypeCodec<adapter_t>::instance();
 
   ork::python::_init_crcstring<adapter_t>(module_ecssim, type_codec_nb);
+  ork::python::_init_varmap<adapter_t>(module_ecssim, type_codec_nb);
   ork::python::pyinit_math_la_t_vec<float>(module_ecssim, "", type_codec_nb);
   register_datatable(module_ecssim,type_codec_nb);
   register_simulation(module_ecssim,type_codec_nb);

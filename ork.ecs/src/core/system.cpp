@@ -80,6 +80,8 @@ System::System(const SystemData* scd, Simulation* pinst)
     : _systemData(scd)
     , _simulation(pinst)
     , _started(false) {
+    
+    _varmap = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

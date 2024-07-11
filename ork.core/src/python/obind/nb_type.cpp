@@ -851,8 +851,8 @@ PyObject *nb_type_new(const type_init_data *t) noexcept {
          has_shared_from_this  = t->flags & (uint32_t) type_flags::has_shared_from_this,
          has_signature         = t->flags & (uint32_t) type_flags::has_signature;
 
-    printf( "///////////////////////////////////////\n");
-    printf( "///////////////////////////////////////\n");
+    //printf( "///////////////////////////////////////\n");
+    //printf( "///////////////////////////////////////\n");
 
     const char *t_name = t->name;
     if (has_signature)
@@ -1104,7 +1104,7 @@ PyObject *nb_type_new(const type_init_data *t) noexcept {
     if (t->scope != nullptr)
         setattr(t->scope, t_name, result);
 
-    printf( "modname<%s> name<%s> set qualname<%s>\n", modname.ptr(), name.ptr(), qualname.c_str() );
+    //printf( "modname<%s> name<%s> set qualname<%s>\n", modname.ptr(), name.ptr(), qualname.c_str() );
     setattr(result, "__qualname__", qualname.ptr());
 
     if (modname.is_valid())
@@ -1114,7 +1114,7 @@ PyObject *nb_type_new(const type_init_data *t) noexcept {
     internals->type_c2p_slow[t->type] = to;
 
     if (has_signature) {
-        printf( "  sig<%s>\n", t->name );
+        //printf( "  sig<%s>\n", t->name );
         setattr(result, "__nb_signature__", str(t->name));
         free((char *) t_name);
     }
@@ -1124,8 +1124,8 @@ PyObject *nb_type_new(const type_init_data *t) noexcept {
         setattr(result, "__orig_bases__", make_tuple(handle(t->base_py)));
 #endif
 
-    printf( "///////////////////////////\n");
-    printf( "///////////////////////////\n");
+    //printf( "///////////////////////////\n");
+    //printf( "///////////////////////////\n");
 
     return result;
 }

@@ -81,40 +81,14 @@ System* PythonSystemData::createSystem(ork::ecs::Simulation* pinst) const {
 
 PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst)
     : ork::ecs::System(&data, pinst) {
-  //, mScriptRef(LUA_NOREF) {
-
-  //_onSystemUpdate = data._onSystemUpdate;
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
   _pythonContext = std::make_shared<pyctx_t>();
 
-  ///////////////////////////////////////////////
-
-  auto AppendPath = [&](const char* pth) {
-    /*
-    lua_getglobal(_pythonContext->mLuaState, "package");
-    lua_getfield(_pythonContext->mLuaState, -1, "path");
-
-    //logchan_pysys->log("PythonSystem AppendPath pth<%s>", pth );
-
-    auto orig_path = lua_tostring(_pythonContext->mLuaState, -1);
-
-    //logchan_pysys->log("PythonSystem AppendPath orig_path<%s>", orig_path );
-
-    fxstring<1024> lua_path;
-    lua_path.format("%s;%s", orig_path, pth);
-
-    lua_pop(_pythonContext->mLuaState, 1);
-    lua_pushstring(_pythonContext->mLuaState, lua_path.c_str());
-    lua_setfield(_pythonContext->mLuaState, -2, "path");
-    lua_pop(_pythonContext->mLuaState, 1);
-
-    logchan_pysys->log("PythonSystem AppendPath lua_path<%s>", lua_path.c_str() );
-    */
-  };
+  _varmap->makeSharedForKey<ComponentArray>("components",_activeComponents._linear);
 
   ///////////////////////////////////////////////
-  // Set Lua Search Path
+  // Set Python Search Path
   ///////////////////////////////////////////////
 
   std::string orkdirstr;
@@ -126,9 +100,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   OrkAssert(abssrchpath.doesPathExist());
 
   if (abssrchpath.doesPathExist()) {
-    fxstring<1024> lua_path;
-    lua_path.format("%s/?.lua", abssrchpath.c_str());
-    AppendPath(lua_path.c_str());
+
   }
 
   // logchan_pysys->log("PythonSystem LUA_PATH <%s>", abssrchpath.c_str() );
@@ -217,7 +189,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 
       if (_pymethodOnSystemInit) {
         auto wrapped = pysim_ptr_t(pinst);
-        __pcallargs(logchan_pysys, _pymethodOnSystemInit, wrapped);
+        __pcallargs(_pymethodOnSystemInit, wrapped);
       }
 
     /*} catch (py::error_already_set& e) {
@@ -233,6 +205,8 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
     }
   }
   _pythonContext->unbindSubInterpreter();
+
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -240,14 +214,6 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
 PythonSystem::~PythonSystem() {
 
   printf( "PythonSystem::~PythonSystem()\n");
-  //////////////////////////////
-  // delete flyweighted scriptobjects
-  //////////////////////////////
-
-  for (auto item : mScriptObjects) {
-    auto so = item.second;
-    delete so;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,7 +223,7 @@ void PythonSystem::_onActivateComponent(PythonComponent* component) {
   if (_pymethodOnComponentActivate) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pycomponent_ptr_t(component);
-     __pcallargs(logchan_pysys, _pymethodOnComponentActivate, wrapped);
+     __pcallargs(_pymethodOnComponentActivate, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -268,13 +234,12 @@ void PythonSystem::_onDeactivateComponent(PythonComponent* component) {
   if (_pymethodOnComponentDeactivate) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pycomponent_ptr_t(component);
-     __pcallargs(logchan_pysys, _pymethodOnComponentDeactivate, wrapped);
+     __pcallargs(_pymethodOnComponentDeactivate, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
 
 
-  auto it = _activeComponents.find(component);
-  _activeComponents.erase(component);
+  _activeComponents.remove(component);
 
 }
 
@@ -287,12 +252,10 @@ bool PythonSystem::_onLink(Simulation* psi) // final
   // the primary interpreter GIL at all...
   //pybind11::gil_scoped_acquire acq;
   logchan_pysys->log("_onLink() ");
-  // printf("PythonSystem::DoLink()\n");
-  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneLink");
   if (_pymethodOnSystemLink) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pysim_ptr_t(psi);
-    __pcallargs(logchan_pysys, _pymethodOnSystemLink, wrapped);
+    __pcallargs(_pymethodOnSystemLink, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -304,8 +267,6 @@ bool PythonSystem::_onLink(Simulation* psi) // final
 void PythonSystem::_onUnLink(Simulation* psi) // final
 {
   logchan_pysys->log("_onUnLink() ");
-  // printf("PythonSystem::DoUnLink()\n");
-  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneUnLink");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -321,7 +282,7 @@ bool PythonSystem::_onActivate(Simulation* psi) // final
   if (_pymethodOnSystemActivate) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pysim_ptr_t(psi);
-     __pcallargs(logchan_pysys, _pymethodOnSystemActivate, wrapped);
+     __pcallargs(_pymethodOnSystemActivate, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -346,7 +307,7 @@ bool PythonSystem::_onStage(Simulation* psi) {
   if (_pymethodOnSystemStage) {
     _pythonContext->bindSubInterpreter();
     auto wrapped = pysim_ptr_t(psi);
-    __pcallargs(logchan_pysys, _pymethodOnSystemStage, wrapped);
+    __pcallargs(_pymethodOnSystemStage, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
   return true;
@@ -369,7 +330,7 @@ void PythonSystem::_onNotify(token_t evID, evdata_t data) {
     _pythonContext->bindSubInterpreter();
     auto table = data.getShared<DataTable>();
     auto wrapped = pysim_ptr_t(simulation());
-    __pcallargs(logchan_pysys, _pymethodOnSystemNotify, wrapped, evIDcrc, table);
+    __pcallargs(_pymethodOnSystemNotify, wrapped, evIDcrc, table);
     _pythonContext->unbindSubInterpreter();
   }
 }
@@ -390,7 +351,7 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
   if (_pymethodOnSystemUpdate) {
     auto wrapped = pysim_ptr_t(psi);
     _pythonContext->bindSubInterpreter();
-    __pcallargs(logchan_pysys, _pymethodOnSystemUpdate, wrapped);
+    __pcallargs(_pymethodOnSystemUpdate, wrapped);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -400,146 +361,7 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
     // controller->_simulation.atomicOp([this](simulation_ptr_t& unlocked){
     // });
   }
-  /*
-
-  auto lstate = _pythonContext->mLuaState;
-
-  //logchan_pysys->log( "_onUpdate() ");
-
-  // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
-
-  if (kUSEEXECTABUPDATE) {
-    // luabind::object o(_pythonContext->mLuaState, dt );
-    // LuaProtectedCallByName( _pythonContext->mLuaState, mScriptRef, "UpdateSceneEntities",ldt);
-  } else {
-
-    auto L = _pythonContext->mLuaState;
-    for (auto c : _activeComponents) {
-      if (c->mScriptObject) {
-        if (c->mScriptObject->mOnEntUpdate >= 0) {
-          auto ent              = c->GetEntity();
-          LuaIntf::LuaState lua = L;
-          lua.getRef(c->mScriptObject->mOnEntUpdate);
-          OrkAssert(lua.isFunction(LUA_STACKINDEX_TOP));
-          lua.push(c->_luaentity);
-          lua.push(dt);
-          //printf( "CALL mOnEntUpdate c<%p> dt<%g>\n", c, dt);
-          int iret = lua.pcall(2, 0, 0);
-          OrkAssert(iret == 0);
-        }
-      }
-    }
-  }
-  */
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// FlyweightScriptObject - load every script file only once
-//  share across different entity instances
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-ScriptObject* PythonSystem::FlyweightScriptObject(const ork::file::Path& pth) {
-  auto abspath  = pth.toAbsolute();
-
-  auto luast = _pythonContext->mLuaState;
-
-  ScriptObject* rval = nullptr;
-
-  //printf("##### FlyweightScriptObject %s\n", abspath.c_str());
-
-  auto it = mScriptObjects.find(pth);
-  if (it == mScriptObjects.end()) {
-    if (abspath.doesPathExist()) {
-      rval = new ScriptObject;
-
-      //////////////////////////////////////////
-      // load script text
-      //////////////////////////////////////////
-
-      File scriptfile(abspath, EFM_READ);
-      size_t filesize = 0;
-      scriptfile.GetLength(filesize);
-      char* scripttext = (char*)malloc(filesize + 1);
-      scriptfile.Read(scripttext, filesize);
-      scripttext[filesize] = 0;
-      rval->mScriptText    = scripttext;
-      rval->mScriptPath    = abspath.c_str();
-
-      //////////////////////////////////////////
-      // prefix global method names to scope them
-      //////////////////////////////////////////
-
-      int script_index = mScriptObjects.size();
-      script_funcname_t postfix;
-      postfix.format("_%04x", script_index);
-
-      // printf( "\n%s\n", rval->mScriptText.c_str() );
-
-      //////////////////////////////////////////
-      // load chunk into lua and reference it
-      //////////////////////////////////////////
-
-      // int ret = luaL_loadstring(luast,rval->mScriptText.c_str());
-      auto script_text = rval->mScriptText.c_str();
-      auto script_len  = rval->mScriptText.length();
-      int ret          = luaL_loadbuffer(luast, script_text, script_len, pth.c_str());
-
-      rval->mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
-
-      assert(rval->mScriptRef != LUA_NOREF);
-      lua_rawgeti(luast, LUA_REGISTRYINDEX, rval->mScriptRef);
-      // execute it
-      // printf( "CALL mScriptRef\n");
-      ret = lua_pcall(luast, 0, 1, 0);
-      // printf( "CALL mScriptRef ret<%d>\n", ret);
-      if (ret) {
-        printf("\n%s\n", rval->mScriptText.c_str());
-        printf("LUAERRCODE<%d>\n", ret);
-        printf("LUAERR<%s>\n", lua_tostring(luast, -1));
-        assert(false);
-      }
-      ///////////////////////////////
-      // if you get a crash in the following lua ref
-      //  make sure the script is returning a function table!
-      ///////////////////////////////
-      rval->mModTabRef = luaL_ref(luast, LUA_REGISTRYINDEX);
-      // printf( "rval->mModTabRef<%d>\n", rval->mModTabRef);
-      ///////////////////////////////
-      auto getMethodRef = [luast, rval](const char* methodname) -> int {
-        lua_rawgeti(luast, LUA_REGISTRYINDEX, rval->mModTabRef);
-        lua_pushstring(luast, methodname);
-        lua_gettable(luast, -2);
-        // assert(lua_type(luast, -1) == LUA_TFUNCTION);
-        int rval = luaL_ref(luast, LUA_REGISTRYINDEX);
-        // printf("getMethodRef<%s> rval<%d>\n", methodname, rval);
-        return rval;
-      };
-
-      rval->mOnEntInitialize   = getMethodRef("OnEntityInitialize");
-      rval->mOnEntUninitialize = getMethodRef("OnEntityUninitialize");
-      rval->mOnEntLink         = getMethodRef("OnEntityLink");
-      rval->mOnEntUnlink       = getMethodRef("OnEntitiyUnlink");
-      rval->mOnEntStage        = getMethodRef("OnEntityStage");
-      rval->mOnEntUnstage      = getMethodRef("OnEntityUnstage");
-      rval->mOnEntActivate     = getMethodRef("OnEntityActivate");
-      rval->mOnEntDeactivate   = getMethodRef("OnEntityDeactivate");
-      rval->mOnEntUpdate       = getMethodRef("OnEntityUpdate");
-      rval->mOnNotify          = getMethodRef("OnNotify");
-
-      //////////////////////////////////////////
-      // flyweight it
-      //////////////////////////////////////////
-
-      mScriptObjects[pth] = rval;
-    }
-
-  } else {
-    rval = it->second;
-  }
-
-  return rval;
-}
-*/
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ecs

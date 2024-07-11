@@ -18,9 +18,8 @@ class MySystem:
   def __init__(self):
     self.notif_count = 0
     self.timeaccum = 0.0
+    self.gametime = 0.0
     self.upd_counter = 0
-    self.cdict = dict()
-    self.pdict = dict()
 
 the_sys = MySystem()
 
@@ -35,6 +34,8 @@ def onSystemInit(simulation):
 def onSystemLink(simulation):
   print("onSystemLink<%s>"%simulation)
   the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
+  the_sys.sys_py = simulation.findSystemByName("PythonSystem")
+  the_sys.python_components = the_sys.sys_py.vars.components
 
 ###############################################################################
 
@@ -52,14 +53,14 @@ def onComponentActivate(component):
   ent = component.entity
   eid = ent.id
   sgc = ent.findComponentByName("SceneGraphComponent")
-  the_sys.cdict[eid] = sgc
+  ent.vars.sgc = sgc
+  ent.vars.incept = the_sys.gametime
+  ent.vars.target_pos = vec3(0)
+
   #print("onComponentActivate eid %s"%e)
 
 def onComponentDeactivate(component):
   eid = component.entity.id
-  del the_sys.cdict[eid]
-  if eid in the_sys.pdict:
-    del the_sys.pdict[eid]
   #print("onComponentDeactivate eid %s"%e)
 
 ###############################################################################
@@ -67,24 +68,9 @@ def onComponentDeactivate(component):
 def onSystemNotify(simulation, evID, table):
   the_sys.notif_count += 1
   if evID.hashed == tokens.SET_TARGET.hashed:
-    ent = table[tokens.ent]
-    pos = table[tokens.pos]
-    if ent.id in the_sys.cdict:
-      c = the_sys.cdict[ent.id]
-      
-      #print("ent<%s> c<%s> NEWPOS<%s>"%(ent.id,c,pos))
-      # change color
-      r = 0.5 + (0.5*math.sin(the_sys.notif_count))
-      g = 0.5 + (0.5*math.sin(the_sys.notif_count))
-      b = 0.5 + (0.5*math.sin(the_sys.notif_count))
-      rgb = vec4(r,g,b,1)
-      
-      c.notify( tokens.ChangeModColor, rgb )
-      
-      the_sys.pdict[ent.id] = pos
-      
-      #c.pos = pos
-    #print("notifcount<%d>"%(the_sys.notif_count))
+    entID = table[tokens.ent]
+    ent = simulation.entityByID(entID)
+    ent.vars.target_pos = table[tokens.pos]
   else:
     print("onSystemNotify<%s:%s>"%(evID,table))
     assert(False)
@@ -104,13 +90,14 @@ def onSystemUpdate(simulation):
   dt = simulation.deltaTime
   gt = simulation.gameTime
 
+  the_sys.gametime = gt
   ###############
   # update camera
   ###############
 
   the_sys.timeaccum += dt
   
-  if True: #the_sys.timeaccum>(1.0/120.0):
+  if the_sys.timeaccum>(1.0/120.0):
 
     the_sys.timeaccum = 0.0
 
@@ -133,12 +120,21 @@ def onSystemUpdate(simulation):
        tokens.far: 1000.0,
        tokens.fovy: 90.0*(3.14159/180.0),
     })
-    
-    for item in the_sys.pdict.items():
-      eid = item[0]
-      pos = item[1]
-      sgc = the_sys.cdict[eid] 
-      ent = sgc.entity
-      ent.translation = ent.translation*0.99 + pos*0.01
+
+    num_components = the_sys.python_components.size
+    for index in range(0,num_components):
+      comp = the_sys.python_components[index]
+      ent = comp.entity
+      sgc = ent.vars.sgc
+      incept = ent.vars.incept
+      target_pos = ent.vars.target_pos
+      ent.translation = ent.translation*0.999 + target_pos*0.001
+      # change color
+      age = the_sys.gametime - incept
+      r = 0.5 + (0.5*math.sin(age*3.0))
+      g = 0.5 + (0.5*math.sin(age*5.0))
+      b = 0.5 + (0.5*math.sin(age*7.0))
+      rgb = vec4(r,g,b,1)
+      sgc.notify( tokens.ChangeModColor, rgb )
       
     #time.sleep(0.1)

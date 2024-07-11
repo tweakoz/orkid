@@ -78,16 +78,12 @@ void PythonComponent::describeX(ObjectClass* clazz) {
 
 PythonComponent::PythonComponent(const PythonComponentData& data, ecs::Entity* pent)
     : ork::ecs::Component(&data, pent)
-    , mCD(data)
-    , mScriptObject(nullptr) {
+    , mCD(data){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonComponent::_onUninitialize(ork::ecs::Simulation* psi) {
-  if (mScriptObject) {
-    auto scm      = psi->findSystem<PythonSystem>();
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,39 +108,16 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonComponent::_onUnlink(ork::ecs::Simulation* psi) {
-  if (mScriptObject) {
-    auto scm      = psi->findSystem<PythonSystem>();
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PythonComponent::_onStage(ork::ecs::Simulation* sim) {
-  //logchan_pysyscomp->log("PythonComponent::_onStage: mScriptObject<%p>", mScriptObject);
-  if (mScriptObject) {
-    auto scm      = sim->findSystem<PythonSystem>();
-  }
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonComponent::_onUnstage(ork::ecs::Simulation* psi) {
-  if (mScriptObject) {
-    auto scm      = psi->findSystem<PythonSystem>();
-    /*
-    auto L                = as_ctx->mPythonState;
-    PythonIntf::PythonState lua = L;
-    auto ent              = this->GetEntity();
-    if (mScriptObject->mOnEntUnstage >= 0) {
-      lua.getRef(mScriptObject->mOnEntUnstage);
-      assert(lua.isFunction(LUA_STACKINDEX_TOP));
-      lua.push(_luaentity);
-      // printf( "CALL mOnEntUnstage\n");
-      int iret = lua.pcall(1, 0, 0);
-      OrkAssert(iret == 0);
-    }
-    */
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -159,7 +132,6 @@ bool PythonComponent::_onActivate(Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonComponent::_onDeactivate(Simulation* psi) {
-  //printf("PythonComponent::_onDeactivate\n");
   auto scm = psi->findSystem<PythonSystem>();
   if (scm ) {
     scm->_onDeactivateComponent(this);

@@ -15,6 +15,7 @@
 namespace nb = obind;
 
 namespace ork::ecssim {
+using eref_ptr_t = std::shared_ptr<EntityRef>;
 void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec) {
   /////////////////////////////////////////////////////////////////////////////////
   auto sim_type = nb::class_<pysim_ptr_t>(module_ecssim, "Simulation")
@@ -36,6 +37,11 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
       .def("findSystemByName", [](pysim_ptr_t simptr, const std::string& name) -> pysystem_ptr_t {
         auto sys = simptr->_findSystemFromName(name.c_str());
         auto wrapped = pysystem_ptr_t(sys);
+        return wrapped;
+      })
+      .def("entityByID", [](pysim_ptr_t simptr, EntityRef eref) -> pyentity_ptr_t {
+        auto ent = simptr->_findEntityFromRef(eref);
+        auto wrapped = pyentity_ptr_t(ent);
         return wrapped;
       });
   //ype_codec->registerRawPtrCodec<sim_raw_ptr_t, Simulation*>(sim_type);

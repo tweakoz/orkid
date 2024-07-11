@@ -111,7 +111,8 @@ public:
   inline const SystemData* sysdata() const { return _systemData; }
 
   void _notify(token_t evID, evdata_t data);
-
+  varmap::varmap_ptr_t varmap() { return _varmap; }
+  
 protected:
   friend Controller;
   friend Simulation;
@@ -161,6 +162,7 @@ protected:
   const SystemData* _systemData = nullptr;
   Simulation* _simulation       = nullptr;
   bool _started                 = false;
+  varmap::varmap_ptr_t _varmap;
 };
 
 using pysystem_ptr_t = ork::python::unmanaged_ptr<System>;

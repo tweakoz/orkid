@@ -571,8 +571,8 @@ public:
 
         auto func_t = ork::demangled_typename2<Func>();
         auto extr_t = ork::demangled_typename2<Extra...>();
-        printf("def::1 name<%s> signature: func_t:%s\n", name_, func_t.c_str() );
-        printf("def::1 name<%s> signature: extr_t:%s\n", name_, extr_t.c_str() );
+        //printf("def::1 name<%s> signature: func_t:%s\n", name_, func_t.c_str() );
+        //printf("def::1 name<%s> signature: extr_t:%s\n", name_, extr_t.c_str() );
 
         cpp_function_def<T>((detail::forward_t<Func>) f, scope(*this),
                             name(name_), is_method(), extra...);
@@ -584,8 +584,8 @@ public:
 
         auto args_t = ork::demangled_typename2<Args...>();
         auto extr_t = ork::demangled_typename2<Extra...>();
-        printf("def::2 signature: args_t:%s\n", args_t.c_str() );
-        printf("def::2 signature: extr_t:%s\n", extr_t.c_str() );
+        //printf("def::2 signature: args_t:%s\n", args_t.c_str() );
+        //printf("def::2 signature: extr_t:%s\n", extr_t.c_str() );
 
         arg.execute(*this, extra...);
         return *this;
@@ -595,8 +595,8 @@ public:
     NB_INLINE class_ &def(init_implicit<Arg> &&arg, const Extra &... extra) {
         auto arg_t = ork::demangled_typename2<Arg>();
         auto extr_t = ork::demangled_typename2<Extra...>();
-        printf("def::3 signature: arg_t:%s\n", arg_t.c_str() );
-        printf("def::3 signature: extr_t:%s\n", extr_t.c_str() );
+        //printf("def::3 signature: arg_t:%s\n", arg_t.c_str() );
+        //printf("def::3 signature: extr_t:%s\n", extr_t.c_str() );
 
         arg.execute(*this, extra...);
         return *this;
@@ -607,8 +607,8 @@ public:
 
         auto func_t = ork::demangled_typename2<Func>();
         auto extr_t = ork::demangled_typename2<Extra...>();
-        printf("def::4 signature: func_t:%s\n", func_t.c_str() );
-        printf("def::4 signature: extr_t:%s\n", extr_t.c_str() );
+       // printf("def::4 signature: func_t:%s\n", func_t.c_str() );
+       // printf("def::4 signature: extr_t:%s\n", extr_t.c_str() );
 
         arg.execute(*this, extra...);
         return *this;
@@ -633,7 +633,7 @@ public:
         if constexpr (!std::is_same_v<Getter, std::nullptr_t>){
             // getter signature -> string
             auto sig = ::ork::demangled_typename<Getter>();
-            printf("Getter signature: %s\n", sig.c_str() );
+            //printf("Getter signature: %s\n", sig.c_str() );
             get_p = cpp_function<T>((detail::forward_t<Getter>) getter,
                                     is_method(), is_getter(),
                                     rv_policy::reference_internal,

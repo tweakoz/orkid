@@ -42,28 +42,6 @@ using namespace ork::reflect;
 
 static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ecs.pyctx",fvec3(0.9,0.6,0.0));
 
-ScriptObject::ScriptObject() {
-    //: mScriptRef(LUA_NOREF) {
-  // printf("new ScriptObject<%p>\n", this);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ScriptObject::~ScriptObject() {
-  // printf("deleting ScriptObject<%p>\n", this);
-  /*
-  mOnEntInitialize   = LUA_NOREF;
-  mOnEntUninitialize = LUA_NOREF;
-  mOnEntLink         = LUA_NOREF;
-  mOnEntActivate     = LUA_NOREF;
-  mOnEntDeactivate   = LUA_NOREF;
-  mOnEntStage        = LUA_NOREF;
-  mOnEntUnstage      = LUA_NOREF;
-  mOnEntUpdate       = LUA_NOREF;
-  mModTabRef         = LUA_NOREF;
-  mScriptRef         = LUA_NOREF;
-  */
-}
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
