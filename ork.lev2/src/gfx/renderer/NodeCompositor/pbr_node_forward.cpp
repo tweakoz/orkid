@@ -38,7 +38,7 @@ void ForwardNode::describeX(class_t* c) {
 struct ForwardPass {
   ForwardNode* _node            = nullptr;
   CompositorDrawData* _drawdata = nullptr;
-  const DrawableBuffer* _DB     = nullptr;
+  const DrawQueue* _DB     = nullptr;
   std::string _fwd_pass_layer = "std_forward";
   std::string _dpp_pass_layer = "depth_prepass";
   bool _stereo = false;

@@ -142,7 +142,7 @@ struct impl {
     context->PopModColor();
     mtxi->PopMMatrix();
   }
-  static void enqueueOnLayerCallback(DrawableBufItem& cdb) {
+  static void enqueueOnLayerCallback(DrawQueueItem& cdb) {
     // AssertOnOpQ2( updateSerialQueue() );
   }
 }; // namespace ent

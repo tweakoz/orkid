@@ -93,7 +93,7 @@ void InstancedModelDrawable::gpuInit(Context* ctx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
-    drawablebufitem_constptr_t dbufitem, //
+    drawqueueitem_constptr_t dbufitem, //
     lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   ////////////////////////////////////////////////////////////////////

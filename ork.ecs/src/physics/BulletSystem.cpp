@@ -44,7 +44,7 @@ namespace ork::ecs {
 
 static logchannel_ptr_t logchan_bull = logger()->createChannel("ecs.bulletphy", fvec3(.8, 1, .3));
 
-void bulletDebugEnqueueToLayer(ork::lev2::drawablebufitem_constptr_t cdb);
+void bulletDebugEnqueueToLayer(ork::lev2::drawqueueitem_constptr_t cdb);
 void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -90,7 +90,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  auto dbufcontext = std::make_shared<DrawBufContext>();
+  auto dbufcontext = std::make_shared<DrawQueueContext>();
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = dbufcontext->acquireForWriteLocked();

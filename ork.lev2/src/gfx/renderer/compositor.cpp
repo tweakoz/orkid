@@ -95,11 +95,11 @@ void PickingCompositorTechnique::composite(CompositorDrawData& drawdata) {
 ///////////////////////////////////////////////////////////////////////////////
 StandardCompositorFrame::StandardCompositorFrame(uidrawevent_constptr_t drawEvent)
     : _drawEvent(drawEvent) {
-  _dbufcontextSFRAME = std::make_shared<DrawBufContext>();
+  _dbufcontextSFRAME = std::make_shared<DrawQueueContext>();
   _dbufcontextSFRAME->_name = "DBC.StandardCompositorFrame";
 
-  _updatebuffer = std::make_shared<AcquiredUpdateDrawBuffer>();
-  _drawbuffer = std::make_shared<AcquiredRenderDrawBuffer>();
+  _updatebuffer = std::make_shared<AcquiredDrawQueueForUpdate>();
+  _drawbuffer = std::make_shared<AcquiredDrawQueueForRendering>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::pushEmptyUpdateDrawBuf(){
@@ -108,12 +108,12 @@ void StandardCompositorFrame::pushEmptyUpdateDrawBuf(){
   _dbufcontextSFRAME->releaseFromWriteLocked(DB);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
+void StandardCompositorFrame::withAcquiredDrawQueueForUpdate(
     int debugcode,   //
     bool rendersync, //
     acqupdatebuffer_lambda_t l) {
 
-  DrawableBuffer* DB = nullptr;
+  DrawQueue* DB = nullptr;
 
   while (nullptr == DB) {
     DB = _dbufcontextSFRAME->acquireForWriteLocked();
@@ -130,20 +130,20 @@ void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StandardCompositorFrame::_updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf) {
+void StandardCompositorFrame::_updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf) {
   _dbufcontextSFRAME->releaseFromWriteLocked(dbuf);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StandardCompositorFrame::_updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf) {
+void StandardCompositorFrame::_updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf) {
   _dbufcontextSFRAME->releaseFromWriteLocked(dbuf);
 }
 ///////////////////////////////////////////////////////////////////////////////
-const DrawableBuffer* StandardCompositorFrame::_tryAcquireDrawBuffer() {
+const DrawQueue* StandardCompositorFrame::_tryAcquireDrawBuffer() {
   return _dbufcontextSFRAME->acquireForReadLocked();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::render() {
-  const DrawableBuffer* DB = nullptr;
+  const DrawQueue* DB = nullptr;
 
   while (nullptr == DB) {
     DB = _dbufcontextSFRAME->acquireForReadLocked();
@@ -210,7 +210,7 @@ void StandardCompositorFrame::render() {
       drawdata._properties["cullcamindex"_crcu].set<int>(0);
       drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());
       drawdata._properties["simrunning"_crcu].set<bool>(true);
-      drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(_drawbuffer->_DB);
+      drawdata._properties["DB"_crcu].set<const DrawQueue*>(_drawbuffer->_DB);
       drawdata._cimpl = this->compositor;
       this->compositor->assemble(drawdata);
       this->compositor->composite(drawdata);
@@ -252,7 +252,7 @@ void StandardCompositorFrame::render() {
   }
 }
 
-void StandardCompositorFrame::attachDrawBufContext(dbufcontext_ptr_t dbc){
+void StandardCompositorFrame::attachDrawQueueContext(dbufcontext_ptr_t dbc){
   _dbufcontextSFRAME = dbc;
 }
 

@@ -94,15 +94,15 @@ void Simulation::_buildStateMachine() {
     //////////////////////////
     if (_updateThreadSM->currentState() == _updateReadySimState) {
       logchan_simfsm->log(" .. from ready mode");
-      lev2::DrawableBuffer::BeginClearAndSyncReaders();
+      lev2::DrawQueue::BeginClearAndSyncReaders();
       _stage();
-      lev2::DrawableBuffer::EndClearAndSyncReaders();
+      lev2::DrawQueue::EndClearAndSyncReaders();
     } else if (_updateThreadSM->currentState() == _updateActiveSimState) {
       logchan_simfsm->log(" .. from active mode");
-      lev2::DrawableBuffer::BeginClearAndSyncReaders();
+      lev2::DrawQueue::BeginClearAndSyncReaders();
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
       _deactivate();
-      lev2::DrawableBuffer::EndClearAndSyncReaders();
+      lev2::DrawQueue::EndClearAndSyncReaders();
     } else {
       OrkAssert(false);
     }
@@ -211,7 +211,7 @@ void Simulation::_buildStateMachine() {
 
       auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
       if( auto sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>() ){
-        sframe.value()->attachDrawBufContext(_dbufctxSIM);
+        sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }
 
       lev2::GfxEnv::onLocksDone([=]() {                     //

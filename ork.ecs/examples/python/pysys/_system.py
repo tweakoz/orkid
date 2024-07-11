@@ -2,11 +2,11 @@
 # (simulation/update)-thread private python simulation system
 ################################################################################
 import math, time
-#import numpy as np
 from orkengine.ecssim import *
 tokens = CrcStringProxy()
 ###############################################################################
 # not until numpy supports sub-interpreters...
+#import numpy as np
 #platform = CL.get_platforms()
 #my_gpu_devices = platform[0].get_devices(device_type=CL.device_type.GPU)
 #cl_ctx = CL.Context(devices=my_gpu_devices)
@@ -84,8 +84,8 @@ def onSystemUpdate(simulation):
     the_sys.timeaccum = 0.0
 
     phase = gt * 0.1
-    eye = vec3(0,0,0)
-    tgt = vec3(math.sin(phase),0,-math.cos(phase))*10.0
+    tgt = vec3(0,0,0)
+    eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
 
     #as_np = np.array(tgt.as_buffer)
     #print(as_np.shape)

@@ -220,7 +220,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   ork::Timer timer;
   timer.Start();
-  auto dbufcontext = std::make_shared<DrawBufContext>();
+  auto dbufcontext = std::make_shared<DrawQueueContext>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;

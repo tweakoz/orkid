@@ -381,7 +381,7 @@ int main(int argc, char** argv,char** envp) {
     DB->Reset();
     DB->copyCameras(*gpurec->_camlut);
     auto layer = DB->MergeLayer("Default");
-    DrawQueueXfData ident;
+    DrawQueueTransferData ident;
     gpurec->_sdf_drawable->enqueueOnLayer(ident, *layer);
     ////////////////////////////////////////
     sframe->_dbufcontextSFRAME->releaseFromWriteLocked(DB);

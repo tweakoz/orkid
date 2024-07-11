@@ -129,7 +129,7 @@ int main(int argc, char** argv, char** envp) {
     // update -> renderer
     //////////////////////////////////////////
 
-    sframe->withAcquiredUpdateDrawBuffer(
+    sframe->withAcquiredDrawQueueForUpdate(
       0,
       initdata->_update_rendersync,
       [cameras](acqupdatebuffer_constptr_t udb){

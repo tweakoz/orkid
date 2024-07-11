@@ -100,11 +100,11 @@ SceneGraphComponent::~SceneGraphComponent() {
 void_lambda_t SceneGraphComponent::_genTransformOperation() {
   return [=]() {
     auto ent     = this->GetEntity();
-    auto init_xf = ent->data()->_dagnode->_xfnode;
+    //auto init_xf = ent->data()->_dagnode->_xfnode;
     auto ent_xf  = ent->GetDagNode()->_xfnode;
-    ent_xf->_transform->set(init_xf->_transform);
+    //ent_xf->_transform->set(init_xf->_transform);
     this->_currentXF  = ent_xf;
-    auto ent_composed = ent_xf->_transform->composed();
+    //auto ent_composed = ent_xf->_transform->composed();
     for (auto NITEM : this->_nodeitems) {
       auto node = NITEM.second->_sgnode;
       if (node) {
@@ -112,7 +112,11 @@ void_lambda_t SceneGraphComponent::_genTransformOperation() {
         if (ovxf) {
           ovxf->_parent                   = ent_xf->_transform;
           node->_dqxfdata._worldTransform = ovxf;
+          auto pos = ovxf->_translation;
+          printf( "sgc ovxfpos<%g %g %g>\n", pos.x, pos.y, pos.z);
         } else {
+          auto pos = ent_xf->_transform->_translation;
+          printf( "sgc exfpos<%g %g %g> xfn<%s>\n", pos.x, pos.y, pos.z, ent_xf->_name.c_str() );
           node->_dqxfdata._worldTransform = ent_xf->_transform;
         }
       }

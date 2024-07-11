@@ -127,6 +127,7 @@ Entity::Entity(spawndata_constptr_t edata, Simulation* inst, uint64_t entref)
 
   _dagnode             = std::make_shared<DagNodeData>(_entdata.get());
   (*_dagnode->_xfnode) = (*_entdata->_dagnode->_xfnode);
+  _dagnode->_xfnode->_name = FormatString("entity%zu", entref );
 }
 ///////////////////////////////////////////////////////////////////////////////
 PoolString Entity::name() const {

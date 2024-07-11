@@ -83,7 +83,7 @@ void VrSystem::DoUpdate(Simulation* psim) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
+void VrSystem::enqueueDrawables(lev2::DrawQueue& buffer) {
   if (_vrstate != 0) {
     //////////////////////////////////////////////////
     // copy vr matrix from updthread to renderthread

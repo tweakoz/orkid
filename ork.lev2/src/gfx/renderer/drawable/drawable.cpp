@@ -24,7 +24,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/reflect/properties/registerX.inl>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableContainer, "DrawableContainer");
 
 ImplementReflectionX(ork::lev2::DrawableData, "DrawableData");
 
@@ -57,19 +57,19 @@ drawable_ptr_t DrawableCache::fetch(drawabledata_ptr_t data){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawQueueXfData::DrawQueueXfData() {
+DrawQueueTransferData::DrawQueueTransferData() {
   _worldTransform = std::make_shared<DecompTransform>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Drawable::enqueueToRenderQueue(
-      drawablebufitem_constptr_t item,
+      drawqueueitem_constptr_t item,
       lev2::IRenderer* prenderer) const{
 
 }
 
-drawablebufitem_ptr_t Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
+drawqueueitem_ptr_t Drawable::enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const {
   auto item = buffer.enqueueDrawable(xfdata, this);
   item->_onrenderable = this->_onrenderable;
   return item;
@@ -89,37 +89,37 @@ Drawable::~Drawable() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableOwner::Describe() {
+void DrawableContainer::Describe() {
 }
-DrawableOwner::DrawableOwner() {
+DrawableContainer::DrawableContainer() {
 }
-DrawableOwner::~DrawableOwner() {
+DrawableContainer::~DrawableContainer() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DrawableOwner::_addDrawable(const std::string& layername, drawable_ptr_t pdrw) {
-  DrawableVector* pldrawables = GetDrawables(layername);
+void DrawableContainer::_addDrawable(const std::string& layername, drawable_ptr_t pdrw) {
+  drawable_vect_ptr_t pldrawables = _getDrawables(layername);
   if (nullptr == pldrawables) {
-    pldrawables = new DrawableVector;
-    mLayerMap.AddSorted(layername, pldrawables);
+    pldrawables = std::make_shared<drawable_vect_t>();
+    _layerMap[layername] = pldrawables;
   }
   pldrawables->push_back(pdrw);
 }
 ///////////////////////////////////////////////////////////////////////////////
-DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const std::string& layer) {
-  DrawableVector* pldrawables = 0;
+DrawableContainer::drawable_vect_ptr_t DrawableContainer::_getDrawables(const std::string& layer) {
+  drawable_vect_ptr_t pldrawables = 0;
 
-  LayerMap::const_iterator itL = mLayerMap.find(layer);
-  if (itL != mLayerMap.end()) {
+  auto itL = _layerMap.find(layer);
+  if (itL != _layerMap.end()) {
     pldrawables = itL->second;
   }
   return pldrawables;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const std::string& layer) const {
-  const DrawableVector* pldrawables = 0;
+const DrawableContainer::drawable_vect_ptr_t DrawableContainer::_getDrawables(const std::string& layer) const {
+  drawable_vect_ptr_t pldrawables = 0;
 
-  LayerMap::const_iterator itL = mLayerMap.find(layer);
-  if (itL != mLayerMap.end()) {
+  auto itL = _layerMap.find(layer);
+  if (itL != _layerMap.end()) {
     pldrawables = itL->second;
   }
   return pldrawables;

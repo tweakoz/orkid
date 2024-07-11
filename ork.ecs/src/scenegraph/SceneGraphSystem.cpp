@@ -265,6 +265,13 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
+  //////////////////////////////
+  // initialize transform
+  //////////////////////////////
+  auto ent = component->GetEntity();
+  auto init_xf          = ent->data()->_dagnode->_xfnode;
+  ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
+  //////////////////////////////
   //printf("sgsys stage component<%p>\n", (void*) component);
   this->_components.atomicOp([this,component](SceneGraphSystem::component_set_t& unlocked) { //
     unlocked.insert(component); 

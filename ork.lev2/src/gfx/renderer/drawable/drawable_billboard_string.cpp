@@ -79,10 +79,10 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
 StringDrawable::~StringDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+void StringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix    = item->mXfData._worldTransform->composed();
+  auto worldmatrix    = item->_dqxferdata._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
@@ -105,10 +105,10 @@ drawable_ptr_t BillboardStringDrawableData::createDrawable() const {
   return std::make_shared<BillboardStringDrawable>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+void BillboardStringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix    = item->mXfData._worldTransform->composed();
+  auto worldmatrix    = item->_dqxferdata._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
@@ -352,10 +352,10 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable() {
 InstancedBillboardStringDrawable::~InstancedBillboardStringDrawable() {
 }
 /////////////////////////////////////////////////////////////////////
-void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  // auto worldmatrix = item->mXfData._worldTransform->composed();
+  // auto worldmatrix = item->_dqxferdata._worldTransform->composed();
   // cb_renderable.SetMatrix(worldmatrix);
   cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);

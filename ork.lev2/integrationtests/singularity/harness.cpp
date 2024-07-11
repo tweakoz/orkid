@@ -144,7 +144,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-    auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+    auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawQueueContext>("dbufcontext");
     ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = dbufcontext->acquireForWriteLocked();

@@ -135,7 +135,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
   int primarycamindex = ddprops["primarycamindex"_crcu].get<int>();
   int cullcamindex    = ddprops["cullcamindex"_crcu].get<int>();
-  auto DB             = ddprops["DB"_crcu].get<const DrawableBuffer*>();
+  auto DB             = ddprops["DB"_crcu].get<const DrawQueue*>();
 
   /////////////////////////////////////////////////////////////////////////////
   // default camera selection

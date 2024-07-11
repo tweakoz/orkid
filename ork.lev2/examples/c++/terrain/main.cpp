@@ -116,7 +116,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   // onUpdateInit (always called after onGpuInit() is complete...)
   //////////////////////////////////////////////////////////
-  auto dbufcontext = std::make_shared<DrawBufContext>();
+  auto dbufcontext = std::make_shared<DrawQueueContext>();
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
@@ -136,7 +136,7 @@ int main(int argc, char** argv, char** envp) {
     DB->Reset();
     DB->copyCameras(*cameras);
     auto layer = DB->MergeLayer("Default");
-    DrawQueueXfData _terrainXform;
+    DrawQueueTransferData _terrainXform;
     _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
     dbufcontext->releaseFromWriteLocked(DB);
   });
@@ -179,7 +179,7 @@ int main(int argc, char** argv, char** envp) {
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
     drawdata._cimpl = compositorimpl;
     compositorimpl->assemble(drawdata);
     compositorimpl->composite(drawdata);

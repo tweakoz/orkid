@@ -59,7 +59,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
   auto cameras  = ezapp->_vars->makeSharedForKey<CameraDataLut>("cameras");
   auto camdata  = ezapp->_vars->makeSharedForKey<CameraData>("camdata");
-  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawQueueContext>("dbufcontext");
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;

@@ -362,7 +362,7 @@ struct QuartzComposerDrawable
 		}
 		PopIdentity();
 	}
-	static void BufferCB(ork::ent::DrawableBufItem&cdb)
+	static void BufferCB(ork::ent::DrawQueueItem&cdb)
 	{
 
 	}

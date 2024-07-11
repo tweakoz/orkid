@@ -39,7 +39,7 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
 
 void SceneGraphViewport::forkDB(){
 
-  _override_acqdbuf = std::make_shared<lev2::AcquiredRenderDrawBuffer>();
+  _override_acqdbuf = std::make_shared<lev2::AcquiredDrawQueueForRendering>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   if(_scenegraph){
 
     ////////////////////////////////////////////////////
-    // in this case we already have a AcquiredRenderDrawBuffer!
+    // in this case we already have a AcquiredDrawQueueForRendering!
     //  provided by ezapp_topwidget enableUiDraw()
     ////////////////////////////////////////////////////
 
@@ -57,7 +57,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     if(_override_acqdbuf){
       auto DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
-      auto WDB = (lev2::DrawableBuffer*) DB;
+      auto WDB = (lev2::DrawQueue*) DB;
       WDB->setUserProperty("vpID"_crcu,_userID);
       auto RCFD = drwev->_acqdbuf->_RCFD;
       _override_acqdbuf->_RCFD = RCFD;
@@ -80,7 +80,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     
     comptek->_outputNode = _outputnode;
     
-    _scenegraph->_renderWithAcquiredRenderDrawBuffer(acqbuf);
+    _scenegraph->_renderWithAcquiredDrawQueueForRendering(acqbuf);
 
     comptek->_outputNode = orig_onode;
 

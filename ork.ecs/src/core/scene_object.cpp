@@ -92,6 +92,7 @@ void SceneDagObject::describeX(SceneObjectClass* clazz) {
 SceneDagObject::SceneDagObject()
     : _parentName(AddPooledString("scene")) {
   _dagnode = std::make_shared<DagNodeData>(this);
+  _dagnode->_xfnode->_name = "SceneDagObject";
 }
 SceneDagObject::~SceneDagObject() {
 }

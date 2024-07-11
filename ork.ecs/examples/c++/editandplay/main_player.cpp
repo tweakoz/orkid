@@ -254,7 +254,7 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////////////////////////////////////
 
     if(movie){
-      //sframe_top->onPostCompositorRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+      //sframe_top->onPostCompositorRender = [&](const AcquiredDrawQueueForRendering& rdb) {
 
         //auto rtbuf_accum = rdb._RCFD.getUserProperty("rtb_accum"_crc).get<rtbuffer_ptr_t>();
         auto fbi = context->FBI();

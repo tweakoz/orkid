@@ -23,7 +23,7 @@ EzTopWidget::EzTopWidget(EzMainWin* mainwin)
   _geometry._w = 1;
   _geometry._h = 1;
   _initstate.store(0);
-  lev2::DrawableBuffer::ClearAndSyncWriters();
+  lev2::DrawQueue::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();
   _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
 }
@@ -41,7 +41,7 @@ void EzTopWidget::enableUiDraw() {
   auto lightmgr    = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", lmd);
   auto compdata    = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
   auto CPD         = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
-  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawQueueContext>("dbufcontext");
   auto cameras     = ezapp->_vars->makeSharedForKey<CameraDataLut>("cameras");
   auto camdata     = ezapp->_vars->makeSharedForKey<CameraData>("camdata");
   auto rcfd        = ezapp->_vars->makeSharedForKey<RenderContextFrameData>("RCFD");
@@ -56,8 +56,8 @@ void EzTopWidget::enableUiDraw() {
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   /////////////////////////////////////////////////////////////////////
-  auto update_buffer = std::make_shared<AcquiredUpdateDrawBuffer>();
-  auto draw_buffer   = std::make_shared<AcquiredRenderDrawBuffer>();
+  auto update_buffer = std::make_shared<AcquiredDrawQueueForUpdate>();
+  auto draw_buffer   = std::make_shared<AcquiredDrawQueueForRendering>();
   /////////////////////////////////////////////////////////////////////
   ezapp->_mainWindow->_onUpdateInternal = [=](ui::updatedata_ptr_t updata) {
     auto DB = dbufcontext->acquireForWriteLocked();

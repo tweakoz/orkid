@@ -48,7 +48,7 @@ int main(int argc, char** argv, char** envp) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  auto dbufcontext = std::make_shared<DrawBufContext>();
+  auto dbufcontext = std::make_shared<DrawQueueContext>();
   auto sframe      = std::make_shared<StandardCompositorFrame>();
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////

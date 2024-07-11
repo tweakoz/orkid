@@ -88,7 +88,7 @@ public:
       , mpRendererModule(0)
       , mpDrawable(0)
       , mpMIRD(0)
-      , mDB(ork::lev2::DrawableBuffer::kmaxbuffers + 1) {
+      , mDB(ork::lev2::DrawQueue::kmaxbuffers + 1) {
   }
   ~ModItemBufferData() {
   }
@@ -99,14 +99,14 @@ public:
   ModItemRenderData* mpMIRD;
 
   ModItemBufferDataDB& GetDB(size_t idx) {
-    if (idx > ork::lev2::DrawableBuffer::kmaxbuffers)
-      idx = ork::lev2::DrawableBuffer::kmaxbuffers;
+    if (idx > ork::lev2::DrawQueue::kmaxbuffers)
+      idx = ork::lev2::DrawQueue::kmaxbuffers;
 
     return mDB[idx];
   }
   const ModItemBufferDataDB& GetDB(size_t idx) const {
-    if (idx > ork::lev2::DrawableBuffer::kmaxbuffers)
-      idx = ork::lev2::DrawableBuffer::kmaxbuffers;
+    if (idx > ork::lev2::DrawQueue::kmaxbuffers)
+      idx = ork::lev2::DrawQueue::kmaxbuffers;
 
     return mDB[idx];
   }
@@ -134,7 +134,7 @@ struct ModItemRenderData {
   ~ModItemRenderData() {
     mEntity = 0;
   }
-  static void enqueueOnLayerCallback(lev2::DrawableBufItem& cdb) {
+  static void enqueueOnLayerCallback(lev2::DrawQueueItem& cdb) {
     ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
     ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
@@ -150,7 +150,7 @@ struct ModItemRenderData {
 
     ModItemBufferDataDB& db = mibd.GetDB(ibufindex);
     {
-      cdb.mUserData1        = lev2::DrawableBufItem::var_t(&db);
+      cdb.mUserData1        = lev2::DrawQueueItem::var_t(&db);
       ModularSystem& System = *pmird->mpSystem;
       db.mfTimeElapsed      = System.GetElapsed();
 

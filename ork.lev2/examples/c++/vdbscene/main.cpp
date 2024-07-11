@@ -514,7 +514,7 @@ int main(int argc, char** argv, char** envp) {
       //printf( "timeU<%g> DBI<%d>\n", abstime, DB->miBufferIndex );
 
       auto layer = DB->MergeLayer("Default");
-      DrawQueueXfData ident;
+      DrawQueueTransferData ident;
       gpurec->_sdf_drawable->enqueueOnLayer(ident, *layer);
       gpurec->_instanced_drawable->enqueueOnLayer(ident, *layer);
       qtwin->_releaseAcquireUpdateBuffer(DB);
@@ -538,7 +538,7 @@ int main(int argc, char** argv, char** envp) {
     //   (typically post-compositor)
     //////////////////////////////////////////////////////////////////
 
-    sframe.onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+    sframe.onImguiRender = [&](const AcquiredDrawQueueForRendering& rdb) {
 
       ImGuiStyle& style = ImGui::GetStyle();
       style.WindowRounding = 5.3f;
@@ -585,7 +585,7 @@ int main(int argc, char** argv, char** envp) {
     // capture to disk...
     //////////////////////////////////////////////////////////////////
     if(movie){
-      sframe.onPostCompositorRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+      sframe.onPostCompositorRender = [&](const AcquiredDrawQueueForRendering& rdb) {
 
         //auto rtbuf_accum = rdb._RCFD.getUserProperty("rtb_accum"_crc).get<rtbuffer_ptr_t>();
         auto ctx = rdb._RCFD->GetTarget();

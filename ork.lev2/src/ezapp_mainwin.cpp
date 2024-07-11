@@ -23,63 +23,63 @@ void EzMainWin::enqueueWindowResize(int w, int h){
   _ctqt->enqueueWindowResize(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawableBuffer* dbuf) {
+void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawQueue* dbuf) {
   // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromWriteLocked(dbuf);
+  // DrawQueue::releaseFromWriteLocked(dbuf);
   //}
   // else{
-  // DrawableBuffer::releaseFromWrite(dbuf);
+  // DrawQueue::releaseFromWrite(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer* dbuf) {
+void EzMainWin::_updateEnqueueUnlockedAndReleaseFrame(DrawQueue* dbuf) {
   // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromWriteLocked(dbuf);
+  // DrawQueue::releaseFromWriteLocked(dbuf);
   //}
   // else{
-  // DrawableBuffer::releaseFromWrite(dbuf);
+  // DrawQueue::releaseFromWrite(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
-const DrawableBuffer* EzMainWin::_tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent) {
+const DrawQueue* EzMainWin::_tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent) {
   //_curframecontext = drawEvent->GetTarget();
 
   // if(_app._initdata->_update_rendersync){
-  // return DrawableBuffer::acquireForReadLocked();
+  // return DrawQueue::acquireForReadLocked();
   //}
   // else {
-  // return DrawableBuffer::acquireForRead(7);
+  // return DrawQueue::acquireForRead(7);
   //
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-DrawableBuffer* EzMainWin::_tryAcquireUpdateBuffer() {
-  DrawableBuffer* rval = nullptr;
+DrawQueue* EzMainWin::_tryAcquireUpdateBuffer() {
+  DrawQueue* rval = nullptr;
   // if(_app._initdata->_update_rendersync){
-  // rval = DrawableBuffer::acquireForWriteLocked();
+  // rval = DrawQueue::acquireForWriteLocked();
   //}
   // else {
-  // rval = DrawableBuffer::acquireForWrite(7);
+  // rval = DrawQueue::acquireForWrite(7);
   //}
   // rval->Reset();
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_releaseAcquireUpdateBuffer(DrawableBuffer*db){
+void EzMainWin::_releaseAcquireUpdateBuffer(DrawQueue*db){
   // if(_app._initdata->_update_rendersync){
-  //    DrawableBuffer::releaseFromWriteLocked(db);
+  //    DrawQueue::releaseFromWriteLocked(db);
   //}
   // else {
-  // DrawableBuffer::releaseFromWrite(db);
+  // DrawQueue::releaseFromWrite(db);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_beginFrame(const DrawableBuffer* dbuf) {
+void EzMainWin::_beginFrame(const DrawQueue* dbuf) {
   auto try_ctx = dbuf->getUserProperty("CONTEXT"_crcu);
   _curframecontext->beginFrame();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_endFrame(const DrawableBuffer* dbuf) {
+void EzMainWin::_endFrame(const DrawQueue* dbuf) {
   if (_update_rendersync) {
     // auto do_rlock = dbuf->getUserProperty("RENDERLOCK"_crcu);
     // if (auto as_lock = do_rlock.tryAs<atom_rlock_ptr_t>()) {
@@ -88,25 +88,25 @@ void EzMainWin::_endFrame(const DrawableBuffer* dbuf) {
   }
   _curframecontext->endFrame();
   // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromReadLocked(dbuf);
+  // DrawQueue::releaseFromReadLocked(dbuf);
   //}
   // else{
-  // DrawableBuffer::releaseFromRead(dbuf);
+  // DrawQueue::releaseFromRead(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::withAcquiredUpdateDrawBuffer(int debugcode, std::function<void(const AcquiredUpdateDrawBuffer&)> l) {
-  DrawableBuffer* DB = nullptr;
+void EzMainWin::withAcquiredDrawQueueForUpdate(int debugcode, std::function<void(const AcquiredDrawQueueForUpdate&)> l) {
+  DrawQueue* DB = nullptr;
 
   if (_update_rendersync) {
-    // DB = DrawableBuffer::acquireForWriteLocked();
+    // DB = DrawQueue::acquireForWriteLocked();
   } else {
-    // DB = DrawableBuffer::acquireForWrite(debugcode);
+    // DB = DrawQueue::acquireForWrite(debugcode);
   }
 
   if (DB) {
     DB->Reset();
-    AcquiredUpdateDrawBuffer udb;
+    AcquiredDrawQueueForUpdate udb;
     udb._DB = DB;
     l(udb);
     if (_update_rendersync)

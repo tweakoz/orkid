@@ -74,17 +74,17 @@ public:
   EzMainWin(OrkEzApp& app);
   ~EzMainWin();
 
-  void _updateEnqueueLockedAndReleaseFrame(DrawableBuffer*dbuf);
-  void _updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer*dbuf);
+  void _updateEnqueueLockedAndReleaseFrame(DrawQueue*dbuf);
+  void _updateEnqueueUnlockedAndReleaseFrame(DrawQueue*dbuf);
 
-  const DrawableBuffer* _tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent);
-  DrawableBuffer* _tryAcquireUpdateBuffer();
-  void _releaseAcquireUpdateBuffer(DrawableBuffer*);
+  const DrawQueue* _tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent);
+  DrawQueue* _tryAcquireUpdateBuffer();
+  void _releaseAcquireUpdateBuffer(DrawQueue*);
 
-  void _beginFrame(const DrawableBuffer*dbuf);
-  void _endFrame(const DrawableBuffer*dbuf);
+  void _beginFrame(const DrawQueue*dbuf);
+  void _endFrame(const DrawQueue*dbuf);
 
-  void withAcquiredUpdateDrawBuffer(int debugcode,std::function<void(const AcquiredUpdateDrawBuffer& udb)> l);
+  void withAcquiredDrawQueueForUpdate(int debugcode,std::function<void(const AcquiredDrawQueueForUpdate& udb)> l);
   //void withStandardCompositorFrameRender(ui::drawevent_constptr_t drawEvent, StandardCompositorFrame& sframe);
 
 
@@ -133,7 +133,7 @@ struct EzTopWidget : public ui::Group {
 ////////////////////////////////////////////////////////////////////////////////
 struct StdDraw {
   const RenderContextFrameData* RCFD;
-  const DrawableBuffer* DB;
+  const DrawQueue* DB;
 };
 ////////////////////////////////////////////////////////////////////////////////
 struct OrkEzAppBase {

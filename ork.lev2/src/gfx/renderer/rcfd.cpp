@@ -83,9 +83,9 @@ rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const DrawableBuffer* RenderContextFrameData::GetDB() const {
+const DrawQueue* RenderContextFrameData::GetDB() const {
   lev2::rendervar_t pvdb   = getUserProperty("DB"_crc);
-  const DrawableBuffer* DB = pvdb.get<const DrawableBuffer*>();
+  const DrawQueue* DB = pvdb.get<const DrawQueue*>();
   return DB;
 }
 

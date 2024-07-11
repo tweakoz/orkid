@@ -65,7 +65,7 @@ public:
   void DoUnLink(Simulation* psi) final;
 
   bool enabled() const;
-  void enqueueDrawables(lev2::DrawableBuffer& buffer) final;
+  void enqueueDrawables(lev2::DrawQueue& buffer) final;
 
 private:
   const VrSystemData& _vrSystemData;

@@ -71,12 +71,12 @@ void InstancedDrawable::resize(size_t count) {
   _count = count;
 }
 ///////////////////////////////////////////////////////////////////////////////
-drawablebufitem_ptr_t InstancedDrawable::enqueueOnLayer(
-    const DrawQueueXfData& xfdata, //
-    DrawableBufLayer& buffer) const {
+drawqueueitem_ptr_t InstancedDrawable::enqueueOnLayer(
+    const DrawQueueTransferData& xfdata, //
+    DrawQueueLayer& buffer) const {
   auto instances_copy            = std::make_shared<InstancedDrawableInstanceData>();
   *instances_copy                = *_instancedata;
-  drawablebufitem_ptr_t dbufitem = Drawable::enqueueOnLayer(xfdata, buffer);
+  drawqueueitem_ptr_t dbufitem = Drawable::enqueueOnLayer(xfdata, buffer);
   dbufitem->_usermap["rtthread_instance_data"_crcu].set<instanceddrawinstancedata_ptr_t>(instances_copy);
   // printf( "_instancedata.count<%zu>\n", _instancedata->_count );
   return dbufitem;

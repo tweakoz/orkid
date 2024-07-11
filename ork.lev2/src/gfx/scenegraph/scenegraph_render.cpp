@@ -86,11 +86,13 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
       auto& drawable_layer = item._layer;
       auto n               = item._drwnode;
       if (RENDER_DEBUG_LOG) {
-
+        fvec3 pos = n->_dqxfdata._worldTransform->_translation;
+        
         logchan_sgrender->log(
-            "enqueue drawable<%s> on layer<%s>", //
+            "enqueue drawable<%s> on layer<%s> pos<%g %g %g>", //
             (void*)n->_drawable->_name.c_str(),  //
-            drawable_layer->_name.c_str());
+            drawable_layer->_name.c_str(),
+            pos.x, pos.y, pos.z );
       }
       n->_drawable->_pickable = n->_pickable;
       n->_dqxfdata._modcolor = n->_modcolor;
@@ -108,7 +110,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
     for (auto item : _staticDrawables) {
       auto drawable_layer = DB->MergeLayer(item._layername);
       auto drawable       = item._drawable;
-      DrawQueueXfData xfd;
+      DrawQueueTransferData xfd;
       if (RENDER_DEBUG_LOG) {
         logchan_sgrender->log("enqueue static-drawable<%s>", (void*)drawable->_name.c_str());
       }
@@ -191,7 +193,7 @@ EASY_END_BLOCK;
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
     drawdata._cimpl = _compositorImpl;
     _compositorImpl->assemble(drawdata);
     _compositorImpl->composite(drawdata);
@@ -300,7 +302,7 @@ EASY_END_BLOCK;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf) {
+void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf) {
   auto DB      = acqbuf->_DB;
   auto rcfd    = acqbuf->_RCFD;
   auto context = rcfd->context();
@@ -330,7 +332,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
   // Draw!
   ///////////////////////////////////////
   if (1) {
-    // printf( "SceneGraph::_renderWithAcquiredRenderDrawBuffer\n");
+    // printf( "SceneGraph::_renderWithAcquiredDrawQueueForRendering\n");
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
@@ -339,7 +341,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
     drawdata._cimpl = _compositorImpl;
     _compositorImpl->assemble(drawdata);
     _compositorImpl->composite(drawdata);
@@ -357,7 +359,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe) {
   auto context = sframe->_drawEvent->GetTarget();
   if (_dogpuinit) {
-    sframe->attachDrawBufContext(_dbufcontext_SG);
+    sframe->attachDrawQueueContext(_dbufcontext_SG);
     gpuInit(context);
   }
  

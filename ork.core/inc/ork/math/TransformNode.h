@@ -74,6 +74,7 @@ public:
 
   xfnode_const_ptr_t _parent;
   decompxf_ptr_t _transform;
+  std::string _name;
 
 };
 

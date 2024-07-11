@@ -51,7 +51,7 @@ BulletDebugDrawDBData::~BulletDebugDrawDBData(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void bulletDebugEnqueueToLayer(ork::lev2::drawablebufitem_constptr_t cdb) {
+void bulletDebugEnqueueToLayer(ork::lev2::drawqueueitem_constptr_t cdb) {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   auto drawable = cdb->_drawable;
   auto pdata = drawable->mDataA.get<BulletDebugDrawDBData*>();

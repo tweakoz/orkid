@@ -256,7 +256,7 @@ public:
 
   void _onUpdate(Simulation* inst) final;
   bool _onLink(Simulation* psi) final;
-  //void enqueueDrawables(lev2::DrawableBuffer& buffer) final;
+  //void enqueueDrawables(lev2::DrawQueue& buffer) final;
   void _onGpuInit(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuLink(Simulation* psi, lev2::Context* ctx) final;
   void _onGpuExit(Simulation* psi, lev2::Context* ctx) final;
@@ -277,7 +277,7 @@ public:
   btSequentialImpulseConstraintSolver* mSolver;
   const BulletSystemData& _systemData;
   std::string _dbgdrawlayername;
-  lev2::DrawQueueXfData _dbgdrawXF;
+  lev2::DrawQueueTransferData _dbgdrawXF;
   PhysicsDebugger* _debugger = nullptr;
   int mMaxSubSteps;
   int mNumSubStepsTaken;

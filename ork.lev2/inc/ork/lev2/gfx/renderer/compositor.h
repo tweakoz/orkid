@@ -340,14 +340,14 @@ template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique( std:
 struct StandardCompositorFrame {
 
   StandardCompositorFrame(uidrawevent_constptr_t drawEvent = nullptr);
-  void withAcquiredUpdateDrawBuffer(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
-  void _updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
-  void _updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
+  void withAcquiredDrawQueueForUpdate(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
+  void _updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf);
+  void _updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf);
   
-  void attachDrawBufContext(dbufcontext_ptr_t dbc);
+  void attachDrawQueueContext(dbufcontext_ptr_t dbc);
 
   void render();
-  const DrawableBuffer* _tryAcquireDrawBuffer();
+  const DrawQueue* _tryAcquireDrawBuffer();
   void pushEmptyUpdateDrawBuf();
 
   rcfd_ptr_t _RCFD;

@@ -108,7 +108,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _params = params;
 
-  _dbufcontext_SG        = std::make_shared<DrawBufContext>();
+  _dbufcontext_SG        = std::make_shared<DrawQueueContext>();
   _dbufcontext_SG->_name = "DBC.SceneGraph";
 
   if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {

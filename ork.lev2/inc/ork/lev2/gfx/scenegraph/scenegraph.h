@@ -61,7 +61,7 @@ public:
   //virtual ~Node();
 
   std::string _name;
-  DrawQueueXfData _dqxfdata;
+  DrawQueueTransferData _dqxfdata;
   varmap::varmap_ptr_t _userdata;
   bool _enabled = true;
   bool _pickable = true;
@@ -255,15 +255,15 @@ struct Scene {
   layer_ptr_t createLayer(std::string named);
   layer_ptr_t findLayer(std::string named);
 
-  using on_enqueue_fn_t = std::function<void(DrawableBuffer* DB)>;
+  using on_enqueue_fn_t = std::function<void(DrawQueue* DB)>;
 
-  void enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue=[](DrawableBuffer* DB){});
+  void enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue=[](DrawQueue* DB){});
   void renderOnContext(Context* ctx);
   void renderOnContext(Context* ctx,rcfd_ptr_t RCFD);
   void renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe);
 
   void _renderIMPL(Context* ctx,rcfd_ptr_t RCFD);
-  void _renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf);
+  void _renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf);
 
   void gpuInit(Context* ctx);
   void gpuExit(Context* ctx);
@@ -310,7 +310,7 @@ struct Scene {
   Context* _boundContext = nullptr;
 
   struct DrawItem{
-    ork::lev2::DrawableBufLayer * _layer;
+    ork::lev2::DrawQueueLayer * _layer;
     drawable_node_ptr_t _drwnode;
   };
 

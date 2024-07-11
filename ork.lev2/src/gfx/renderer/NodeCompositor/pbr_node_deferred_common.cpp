@@ -211,7 +211,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   auto DB = RCFD->GetDB();
   if (DB) {
     ///////////////////////////////////////////////////////////////////////////
-    // DrawableBuffer -> RenderQueue enqueue
+    // DrawQueue -> RenderQueue enqueue
     ///////////////////////////////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
       // printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());

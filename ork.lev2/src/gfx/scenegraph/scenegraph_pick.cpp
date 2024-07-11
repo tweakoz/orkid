@@ -142,7 +142,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_scene._renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
     ///////////////////////////////////////////////////////////////////////////
     // draw the pickbuffer
     ///////////////////////////////////////////////////////////////////////////

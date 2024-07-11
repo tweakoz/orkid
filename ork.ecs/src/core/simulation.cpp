@@ -41,7 +41,7 @@ using namespace ::ork::rtti;
 Simulation::Simulation(Controller* c)
     : _controller(c) {
 
-  _dbufctxSIM = std::make_shared<lev2::DrawBufContext>();
+  _dbufctxSIM = std::make_shared<lev2::DrawQueueContext>();
   _dbufctxSIM->_name = "DBC.Simulation";
 
   ///////////////////////////////////////////////////////////
@@ -279,6 +279,9 @@ Entity* Simulation::_spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD,
   if(ovxf){
     newent->_override_initial_xf = ovxf;
     newent->setTransform(ovxf);
+    fvec3 pos = ovxf->_translation;
+    printf( "using override xf pos<%g %g %g>\n", pos.x, pos.y, pos.z );
+
   }
   /////////////////////////////////////
   auto arch   = spawn_rec->GetArchetype();

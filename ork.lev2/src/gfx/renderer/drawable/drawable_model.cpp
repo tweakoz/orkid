@@ -46,7 +46,7 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-ModelDrawable::ModelDrawable(DrawableOwner* pent) {
+ModelDrawable::ModelDrawable(DrawableContainer* pent) {
 }
 /////////////////////////////////////////////////////////////////////
 ModelDrawable::~ModelDrawable() {
@@ -131,7 +131,7 @@ void ModelDrawable::bindModel(xgmmodel_ptr_t model) {
   bindModelInst(modelinst);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+void ModelDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto RCFD                   = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD          = RCFD->topCPD();
@@ -140,7 +140,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 
   // TODO - resolve frustum in case of stereo camera
 
-  const ork::fmtx4 matw         = item->mXfData._worldTransform->composed();
+  const ork::fmtx4 matw         = item->_dqxferdata._worldTransform->composed();
   bool isPickState              = RCFD->_renderingmodel._modelID == "PICKING"_crcu;
   bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = _offset + Model->boundingCenter();
@@ -221,8 +221,8 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         renderable._pickID = _pickID;
         renderable._submeshinst = submeshinst;
         renderable._cluster = cluster;
-        if(item->mXfData._use_modcolor){
-          renderable.SetModColor(item->mXfData._modcolor);
+        if(item->_dqxferdata._use_modcolor){
+          renderable.SetModColor(item->_dqxferdata._modcolor);
         }
         else{
           renderable.SetModColor(_modcolor);

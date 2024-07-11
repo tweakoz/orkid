@@ -14,7 +14,7 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
+CallbackDrawable::CallbackDrawable(DrawableContainer* pent)
     : Drawable()
     , mDataDestroyer(nullptr)
     , mRenderCallback(nullptr)
@@ -51,7 +51,7 @@ void CallbackDrawable::setRenderLambda(RLCBType cb) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-drawablebufitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
+drawqueueitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   auto item = buffer.enqueueDrawable(xfdata, this);
   if (_enqueueOnLayerCallback) {
@@ -63,10 +63,10 @@ drawablebufitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xf
   return item;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
-  const auto& DQDATA = item->mXfData;
+  const auto& DQDATA = item->_dqxferdata;
 
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
   auto matrix                   = DQDATA._worldTransform->composed();

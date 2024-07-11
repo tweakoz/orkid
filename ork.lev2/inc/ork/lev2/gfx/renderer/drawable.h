@@ -18,6 +18,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTI.h>
+#include <ork/util/tsl/robin_map.h>
 //#include <ork/util/triple_buffer.h>
 
 #include <ork/lev2/gfx/camera/cameradata.h>
@@ -45,32 +46,41 @@ namespace scenegraph{
 using onrenderable_fn_t = std::function<void(IRenderable*)>;
 using on_render_rcid_t = std::function<void(lev2::RenderContextInstData& RCID)>;
 
-struct DrawableOwner : public ork::Object {
-  typedef orkvector<drawable_ptr_t> DrawableVector;
-  typedef orklut<std::string, DrawableVector*> LayerMap;
+struct DrawableContainer : public ork::Object {
+  using drawable_vect_t = orkvector<drawable_ptr_t> ;
+  using drawable_vect_ptr_t = std::shared_ptr<drawable_vect_t> ;
+  using layermap_t = tsl::robin_map<std::string, drawable_vect_ptr_t> ;
 
-  DrawableOwner();
-  ~DrawableOwner();
+  DrawableContainer();
+  ~DrawableContainer();
 
   void _addDrawable(const std::string& layername, drawable_ptr_t pdrw);
 
-  DrawableVector* GetDrawables(const std::string& layer);
-  const DrawableVector* GetDrawables(const std::string& layer) const;
+  drawable_vect_ptr_t _getDrawables(const std::string& layer);
+  const drawable_vect_ptr_t _getDrawables(const std::string& layer) const;
 
-  const LayerMap& GetLayers() const {
-    return mLayerMap;
+  const layermap_t& getLayers() const {
+    return _layerMap;
   }
 
-  LayerMap mLayerMap;
+  layermap_t _layerMap;
 
 private:
-  RttiDeclareAbstract(DrawableOwner, ork::Object);
+  RttiDeclareAbstract(DrawableContainer, ork::Object);
 };
 
 ///////////////////////////////////////////////////////////////////////////
+// DrawQueueTransferData
+//  - data which is copied to the 
+//     drawqueue from update-thread -> render-thread.
+//     after copied, the update side data is safe for mutation. 
+//  - contains:
+//     transform
+//     modcolor
+///////////////////////////////////////////////////////////////////////////
 
-struct DrawQueueXfData {
-  DrawQueueXfData();
+struct DrawQueueTransferData {
+  DrawQueueTransferData();
   decompxf_ptr_t _worldTransform;
   fvec4 _modcolor;
   bool _use_modcolor = false;
@@ -78,19 +88,19 @@ struct DrawQueueXfData {
 
 ///////////////////////////////////////////////////////////////////////////
 
-struct DrawableBufItem {
+struct DrawQueueItem {
 public:
   typedef ork::lev2::IRenderable::var_t var_t;
 
   using usermap_t = std::unordered_map<uint32_t, rendervar_t>;
 
-  DrawableBufItem();
-  ~DrawableBufItem();
+  DrawQueueItem();
+  ~DrawQueueItem();
 
   void terminate();
 
   const Drawable* _drawable;
-  DrawQueueXfData mXfData;
+  DrawQueueTransferData _dqxferdata;
   int _bufferIndex;
   int _serialno = 0;
   int _sortkey = 0;
@@ -108,10 +118,12 @@ struct LayerData { /// deprecated (this struct does not do much...)
 };
 
 ///////////////////////////////////////////////////////////////////////////
+// DrawQueueLayer
+///////////////////////////////////////////////////////////////////////////
 
-struct DrawableBufLayer {
+struct DrawQueueLayer {
 
-  using itemvect_t = std::vector<drawablebufitem_constptr_t>;
+  using itemvect_t = std::vector<drawqueueitem_constptr_t>;
 
   std::string _name;
   LockedResource<itemvect_t> _items;
@@ -122,30 +134,34 @@ struct DrawableBufLayer {
   bool HasData() const {
     return (_itemIndex != -1);
   }
-  void Reset(const DrawableBuffer& dB);
-  drawablebufitem_ptr_t enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d);
+  void Reset(const DrawQueue& dB);
+  drawqueueitem_ptr_t enqueueDrawable(const DrawQueueTransferData& xfdata, const Drawable* d);
 
-  DrawableBufLayer();
-  ~DrawableBufLayer();
+  DrawQueueLayer();
+  ~DrawQueueLayer();
 
 }; // ~ 100K
 
 ///////////////////////////////////////////////////////////////////////////
+// DrawQueue - multi-buffered queue of drawables
+//  used for transferring drawables from update-thread to render-thread
+//  contains a frames worth of drawables organized into layers of drawqueueitems
+///////////////////////////////////////////////////////////////////////////
 
 typedef std::function<void(lev2::RenderContextFrameData& RCFD)> prerendercallback_t;
 
-struct DrawableBuffer {
+struct DrawQueue {
 public:
   using usermap_t   = orklut<CrcString, rendervar_t>;
 
   static std::atomic<int> _gate;
 
   static const int kmaxlayers = 8;
-  typedef ork::fixedlut<std::string, DrawableBufLayer*, kmaxlayers> LayerLut;
+  typedef ork::fixedlut<std::string, DrawQueueLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
   LockedResource<cameradatalut_ptr_t> _cameraDataLUT;
-  DrawableBufLayer mRawLayers[kmaxlayers];
+  DrawQueueLayer mRawLayers[kmaxlayers];
   LayerLut mLayerLut;
   orkset<std::string> mLayers;
   CallbackLut_t _preRenderCallbacks;
@@ -211,8 +227,8 @@ public:
   void copyCameras(const CameraDataLut& cameras);
   void Reset();
   void terminate();
-  DrawableBuffer(int ibidx);
-  ~DrawableBuffer();
+  DrawQueue(int ibidx);
+  ~DrawQueue();
 
   void setPreRenderCallback(int key, prerendercallback_t cb);
   void invokePreRenderCallbacks(lev2::rcfd_ptr_t RCFD) const;
@@ -231,25 +247,28 @@ public:
   cameradata_constptr_t cameraData(int icam) const;
   cameradata_constptr_t cameraData(const std::string& named) const;
 
-  DrawableBufLayer* MergeLayer(const std::string& layername);
+  DrawQueueLayer* MergeLayer(const std::string& layername);
 
   void enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IRenderer* renderer) const;
 
 }; // ~1MiB
 
 ///////////////////////////////////////////////////////////////////////////
+// DrawQueueContext
+//  - a context for managing a multi-buffered drawqueue
+///////////////////////////////////////////////////////////////////////////
 
-struct DrawBufContext {
+struct DrawQueueContext {
 
-  DrawBufContext();
-  ~DrawBufContext();
+  DrawQueueContext();
+  ~DrawQueueContext();
 
-  DrawableBuffer* acquireForWriteLocked();
-  void releaseFromWriteLocked(DrawableBuffer* db);
-  const DrawableBuffer* acquireForReadLocked();
-  void releaseFromReadLocked(const DrawableBuffer* db);
+  DrawQueue* acquireForWriteLocked();
+  void releaseFromWriteLocked(DrawQueue* db);
+  const DrawQueue* acquireForReadLocked();
+  void releaseFromReadLocked(const DrawQueue* db);
 
-  using tbuf_t     = concurrent_triple_buffer<DrawableBuffer>;
+  using tbuf_t     = concurrent_triple_buffer<DrawQueue>;
   using tbuf_ptr_t = std::shared_ptr<tbuf_t>;
 
   tbuf_ptr_t _triple;
@@ -259,20 +278,20 @@ struct DrawBufContext {
   ork::semaphore _rendersync_sema;
   ork::semaphore _rendersync_sema2;
   int _rendersync_counter = 0;
-  std::shared_ptr<DrawableBuffer> _lockeddrawablebuffer;
+  std::shared_ptr<DrawQueue> _lockeddrawablebuffer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct AcquiredUpdateDrawBuffer{
-  DrawableBuffer* _DB = nullptr;
+struct AcquiredDrawQueueForUpdate{
+  DrawQueue* _DB = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct AcquiredRenderDrawBuffer{
-  AcquiredRenderDrawBuffer( rcfd_ptr_t rcfd=nullptr );
-  const DrawableBuffer* _DB;
+struct AcquiredDrawQueueForRendering{
+  AcquiredDrawQueueForRendering( rcfd_ptr_t rcfd=nullptr );
+  const DrawQueue* _DB;
   rcfd_ptr_t _RCFD;
 };
 
@@ -285,9 +304,9 @@ struct Drawable {
   Drawable();
   virtual ~Drawable();
 
-  virtual void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* prenderer) const;
+  virtual void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* prenderer) const;
 
-  virtual drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const;
+  virtual drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const;
 
   void SetUserDataA(var_t data) {
     mDataA = data;
@@ -383,11 +402,11 @@ struct ModelDrawableData : public DrawableData {
 
 struct ModelDrawable : public Drawable {
 
-  ModelDrawable(DrawableOwner* owner = NULL);
+  ModelDrawable(DrawableContainer* owner = NULL);
   ~ModelDrawable();
 
   void bindModelInst(xgmmodelinst_ptr_t pModelInst); 
-  void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t, lev2::IRenderer* renderer) const final;
 
   asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
   asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_ptr_t asset_vars);
@@ -435,7 +454,7 @@ struct InstancedDrawable : public Drawable {
   bool isInstanced() const final {
     return true;
   }
-  drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
+  drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const final;
 
   static constexpr size_t k_texture_dimension_x = 4096;
   static constexpr size_t k_texture_dimension_y = 256;
@@ -455,7 +474,7 @@ struct InstancedModelDrawable final : public InstancedDrawable {
 
   InstancedModelDrawable();
   ~InstancedModelDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   void bindModelAsset(AssetPath assetpath);
   void bindModel(xgmmodel_ptr_t model);
   void gpuInit(Context* ctx) const;
@@ -520,7 +539,7 @@ struct LabeledPointDrawableData : public DrawableData {
 struct LabeledPointDrawable : public Drawable {
   LabeledPointDrawable(const LabeledPointDrawableData* data);
   ~LabeledPointDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   const LabeledPointDrawableData* _data = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -563,7 +582,7 @@ struct StringDrawable final : public Drawable {
 
   StringDrawable(const StringDrawableData* data);
   ~StringDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   const StringDrawableData* _data = nullptr;
 };
 
@@ -573,7 +592,7 @@ struct BillboardStringDrawable final : public Drawable {
 
   BillboardStringDrawable(const BillboardStringDrawableData* data);
   ~BillboardStringDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
 
   const BillboardStringDrawableData* _data = nullptr;
 
@@ -608,7 +627,7 @@ struct OverlayStringDrawable final : public Drawable {
 
   OverlayStringDrawable(const OverlayStringDrawableData* data);
   ~OverlayStringDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   const OverlayStringDrawableData* _data;
   std::string _font;
   std::string _currentString;
@@ -623,7 +642,7 @@ struct InstancedBillboardStringDrawable final : public InstancedDrawable {
 
   InstancedBillboardStringDrawable();
   ~InstancedBillboardStringDrawable();
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
   // std::string _currentString;
   const InstancedBillboardStringDrawableData* _data = nullptr;
   fvec3 _offset;
@@ -648,10 +667,10 @@ public:
 struct CallbackDrawable : public Drawable {
 
   using RLCBType      = std::function<void(RenderContextInstData& RCID)>;
-  using Q2LCBType     = void(drawablebufitem_constptr_t cdb);
-  using Q2LLambdaType = std::function<void(drawablebufitem_constptr_t)>;
+  using Q2LCBType     = void(drawqueueitem_constptr_t cdb);
+  using Q2LLambdaType = std::function<void(drawqueueitem_constptr_t)>;
 
-  CallbackDrawable(DrawableOwner* owner);
+  CallbackDrawable(DrawableContainer* owner);
   ~CallbackDrawable();
 
   void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) {
@@ -669,8 +688,8 @@ struct CallbackDrawable : public Drawable {
   void setEnqueueOnLayerLambda(Q2LLambdaType cb) {
     _enqueueOnLayerLambda = cb;
   }
-  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const final;
-  drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const final;
+  drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const final;
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;

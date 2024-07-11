@@ -91,7 +91,7 @@ struct IMPL {
       // float t3 = _profile_timer.SecsSinceStart();
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
-        // DrawableBuffer -> RenderQueue enqueue
+        // DrawQueue -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
         for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("Forward::renderEnqueuedScene::layer<%s>", layer_name.c_str()));

@@ -129,7 +129,7 @@ struct RenderContextFrameData {
     return getUserProperty(prop).get<T>();
   }
 
-  const DrawableBuffer* GetDB() const;
+  const DrawQueue* GetDB() const;
 
   const CompositingPassData& topCPD() const;
   bool hasCPD() const;

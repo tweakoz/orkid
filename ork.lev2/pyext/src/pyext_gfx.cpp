@@ -466,7 +466,7 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
   /////////////////////////////////////////////////////////////////////////////////
   auto dbufcontext_type = //
-      py::class_<DrawBufContext, dbufcontext_ptr_t>(module_lev2, "DrawBufContext");
+      py::class_<DrawQueueContext, dbufcontext_ptr_t>(module_lev2, "DrawQueueContext");
   type_codec->registerStdCodec<dbufcontext_ptr_t>(dbufcontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto gpuev_t = py::class_<GpuEvent, gpuevent_ptr_t>(module_lev2, "GpuEvent")

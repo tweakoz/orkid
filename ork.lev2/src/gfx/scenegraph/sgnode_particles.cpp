@@ -155,7 +155,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   impl->_graphinst = graphinst;
 
   auto rval                   = std::make_shared<CallbackDrawable>(nullptr);
-  rval->_enqueueOnLayerLambda = [impl](drawablebufitem_constptr_t cdb) { impl->_update(); };
+  rval->_enqueueOnLayerLambda = [impl](drawqueueitem_constptr_t cdb) { impl->_update(); };
   rval->SetRenderCallback(ParticlesDrawableInst::renderParticles);
   rval->SetUserDataA(impl);
   ptcl_context->_drawable = rval;

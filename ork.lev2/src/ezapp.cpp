@@ -300,7 +300,7 @@ OrkEzApp::~OrkEzApp() {
   // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
   // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
   // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
-  DrawableBuffer::terminateAll();
+  DrawQueue::terminateAll();
   __priv_gapp.store(nullptr);
 }
 
@@ -319,7 +319,7 @@ void OrkEzApp::joinUpdate() {
     }
     _updq->drain();
     _updateThread.join();
-    DrawableBuffer::ClearAndSyncWriters();
+    DrawQueue::ClearAndSyncWriters();
   }
   ////////////////////////////////////////////////
 }
