@@ -16,7 +16,7 @@ sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 tokens = CrcStringProxy()
 ################################################################################
 LAYERNAME = "std_deferred"
-NUM_BALLS = 100
+NUM_BALLS = 1000
 SPAWN_RATE = 0.1
 ################################################################################
 
@@ -205,9 +205,9 @@ class MYCONTROLLER:
         
         if count < NUM_BALLS:
 
-          i = random.randint(-15,15)
-          j = random.randint(-15,15)
-          k = random.randint(-15,15)
+          i = random.randint(-25,25)
+          j = random.randint(-25,25)
+          k = random.randint(-25,25)
           pos = vec3(i,j,k)
 
           SAD.overridexf.translation = pos
@@ -232,7 +232,7 @@ class MYCONTROLLER:
                                         tokens.pos: pos
                                       })
         #c = ent.getComponent("PythonComponent")
-
+        #print(count)
 
     self.run_state=3 # signal that we are done
     
