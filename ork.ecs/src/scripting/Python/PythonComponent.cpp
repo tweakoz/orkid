@@ -101,6 +101,15 @@ bool PythonComponent::_onLink(ork::ecs::Simulation* sim) {
     logerrchannel()->log( "PythonComponent::_onLink: scm is nullptr!!!!" );
     return false;
   }
+  auto instancedata = mCD._INSTANCEDATA;
+  if (instancedata) {
+    auto sgcomp = ent->typedComponent<SceneGraphComponent>();
+    // if both SG and physics instancedatas are the same
+    //  then both components are referencing to the same instance
+    if (sgcomp and (sgcomp->_SGCD._INSTANCEDATA == instancedata)) {
+      this->_mySGcomponentForInstancing = sgcomp;
+    }
+  }
 
   return true;
 }

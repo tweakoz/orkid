@@ -17,6 +17,8 @@
 #include <ork/python/context.h>
 #include <ork/util/fast_set.inl>
 
+#include <ork/ecs/SceneGraphComponent.h>
+
 namespace ork { namespace ecs {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,6 +41,7 @@ public:
   void DoRegisterWithScene(ork::ecs::SceneComposer& sc) const final;
 
   file::Path mScriptPath;
+  lev2::scenegraph::node_instance_data_ptr_t _INSTANCEDATA;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,6 +79,10 @@ public:
   const PythonComponentData& mCD;
 
   any<64> mPythonData;
+  lev2::instanceddrawinstancedata_ptr_t _idata;
+  SceneGraphComponent* _mySGcomponentForInstancing = nullptr;
+  int _sginstance_id = -1;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

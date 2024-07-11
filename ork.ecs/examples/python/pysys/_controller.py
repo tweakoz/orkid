@@ -1,4 +1,4 @@
-import os, sys, threading, time, random
+import os, sys, threading, time, random, math
 from pathlib import Path
 from obt import path as obt_path
 
@@ -16,7 +16,8 @@ sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 tokens = CrcStringProxy()
 ################################################################################
 LAYERNAME = "std_deferred"
-NUM_BALLS = 1000
+BALLS_NODE_NAME = "balls"
+NUM_BALLS = 4000
 SPAWN_RATE = 0.1
 ################################################################################
 
@@ -61,6 +62,13 @@ class MYCONTROLLER:
       "DepthFogPower": float(1.25),
     })
 
+    drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
+    drawable.resize(NUM_BALLS)
+    systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
+                                      drawable=drawable,
+                                      layer=LAYERNAME)
+
+    self.instance_drawable = drawable
     ####################
     # create archetype/entity data
     ####################
@@ -143,19 +151,21 @@ class MYCONTROLLER:
     c_scenegraph = arch_ball.declareComponent("SceneGraphComponent")
     c_python = arch_ball.declareComponent("PythonComponent")
 
-    drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
-    c_scenegraph.declareNodeOnLayer( name="ballnode",
-                                     drawable=drawable,
-                                     layer=LAYERNAME)
+
+    #drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
+    #c_scenegraph.declareNodeOnLayer( name="ballnode",
+    #                                 drawable=drawable,
+    #                                 layer=LAYERNAME)
+
+
+    nid = lev2.scenegraph.NodeInstanceData(BALLS_NODE_NAME)
+    c_python.declareNodeInstance(nid)
+    c_scenegraph.declareNodeInstance(nid)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
     ball_spawner.autospawn = False  
     ball_spawner.transform.scale = 1.0
-    def onSpawn(table):
-      entity = table[tokens.entity]
-      print(entity)
-    #ball_spawner.onSpawn(onSpawn)
     self.ball_spawner = ball_spawner
 
   ##############################################
@@ -171,13 +181,14 @@ class MYCONTROLLER:
     all_entities = dict()
 
     self.run_state = 1        # signal that we are running
+    phase = 0.0
     while(self.run_state==1): # run loop
 
       time.sleep(0.003)
 
       prob = random.randint(0,100)
 
-      if prob < 90:
+      if prob < 99:
 
         count = len(all_entities)
 
@@ -186,7 +197,7 @@ class MYCONTROLLER:
         # grab a random entity from all_entities
         ##########################################
 
-        if count >= NUM_BALLS:
+        if False and count >= NUM_BALLS:
 
           index = random.choice(list(all_entities.keys()))
           if all_entities[index] is None:
@@ -205,9 +216,9 @@ class MYCONTROLLER:
         
         if count < NUM_BALLS:
 
-          i = random.randint(-25,25)
-          j = random.randint(-25,25)
-          k = random.randint(-25,25)
+          i = random.randint(-100,100)
+          j = random.randint(-100,100)
+          k = random.randint(-100,100)
           pos = vec3(i,j,k)
 
           SAD.overridexf.translation = pos
@@ -220,19 +231,32 @@ class MYCONTROLLER:
 
         index = random.choice(list(all_entities.keys()))
         ent = all_entities[index]
-        i = random.randint(-15,15)
-        j = random.randint(-15,15)
-        k = random.randint(-15,15)
+        i = random.randint(-30,30)
+        j = random.randint(-30,30)
+        k = random.randint(-30,30)
         pos = vec3(i,j,k)
         
         self.controller.systemNotify( self.sys_python,
-                                      tokens.SET_TARGET,
-                                      {
+                                      tokens.SET_TARGET,{
                                         tokens.ent: ent,
                                         tokens.pos: pos
                                       })
         #c = ent.getComponent("PythonComponent")
         #print(count)
+      if False:      
+        phase += 0.001
+        tgt = vec3(0,0,0)
+        eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
+
+        self.controller.systemNotify( self.sys_sg,
+                                      tokens.UpdateCamera,{
+                                      tokens.eye: eye,
+                                      tokens.tgt: tgt,
+                                      tokens.up: vec3(0,1,0),
+                                      tokens.near: 0.1,
+                                      tokens.far: 1000.0,
+                                      tokens.fovy: 90.0*(3.14159/180.0),
+        })
 
     self.run_state=3 # signal that we are done
     

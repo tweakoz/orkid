@@ -101,17 +101,27 @@ def onSystemUpdate(simulation):
 
     the_sys.timeaccum = 0.0
 
+    num_components = the_sys.python_components.size
+    for index in range(0,num_components):
+      comp = the_sys.python_components[index]
+      ent = comp.entity
+      sgc = ent.vars.sgc
+      incept = ent.vars.incept
+      target_pos = ent.vars.target_pos
+      ent.translation = ent.translation*0.9995 + target_pos*0.0005
+      # change color
+      age = the_sys.gametime - incept
+      r = 0.5 + (0.5*math.sin(age*3.0))
+      g = 0.5 + (0.5*math.sin(age*5.0))
+      b = 0.5 + (0.5*math.sin(age*7.0))
+      rgb = vec4(r,g,b,1)
+      sgc.notify( tokens.ChangeModColor, rgb )
+
+  if True:      
     phase = gt * 0.1
     tgt = vec3(0,0,0)
     eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
 
-    #as_np = np.array(tgt.as_buffer)
-    #print(as_np.shape)
-    #print(as_np)
-    #print(tgt)
-    
-    #print(float(the_sys.upd_counter)/gt)
-    
     the_sys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,
        tokens.tgt: tgt,
@@ -120,21 +130,5 @@ def onSystemUpdate(simulation):
        tokens.far: 1000.0,
        tokens.fovy: 90.0*(3.14159/180.0),
     })
-
-    num_components = the_sys.python_components.size
-    for index in range(0,num_components):
-      comp = the_sys.python_components[index]
-      ent = comp.entity
-      sgc = ent.vars.sgc
-      incept = ent.vars.incept
-      target_pos = ent.vars.target_pos
-      ent.translation = ent.translation*0.999 + target_pos*0.001
-      # change color
-      age = the_sys.gametime - incept
-      r = 0.5 + (0.5*math.sin(age*3.0))
-      g = 0.5 + (0.5*math.sin(age*5.0))
-      b = 0.5 + (0.5*math.sin(age*7.0))
-      rgb = vec4(r,g,b,1)
-      sgc.notify( tokens.ChangeModColor, rgb )
-      
-    #time.sleep(0.1)
+  
+  #time.sleep(0.1)

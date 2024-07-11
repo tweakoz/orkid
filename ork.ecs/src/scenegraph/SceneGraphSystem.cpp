@@ -434,7 +434,7 @@ void SceneGraphSystem::_onUnstageComponent(SceneGraphComponent* component) {
       int index = component->_INSTANCE->_instance_index;
       OrkAssert(index >= 0);
       component->_INSTANCE->_idata->freeInstance(index);
-      OrkAssert(false); // remove instance
+      //OrkAssert(false); // remove instance
     }
   };
   _renderops.push(remove_operation);

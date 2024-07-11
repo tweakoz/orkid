@@ -19,11 +19,16 @@ void pyinit_pysys(py::module& module_ecs) {
       py::class_<PythonComponentData, ComponentData, pycompdata_ptr_t>(module_ecs, "PythonComponentData")
           .def(
               "__repr__",
-              [](pycompdata_ptr_t physc) -> std::string {
+              [](pycompdata_ptr_t pycdata) -> std::string {
                 fxstring<256> fxs;
-                fxs.format("ecs::PythonComponentData(%p)", physc.get());
+                fxs.format("ecs::PythonComponentData(%p)", pycdata.get());
                 return fxs.c_str();
-              });
+              })
+      .def(
+          "declareNodeInstance",
+          [](pycompdata_ptr_t pycdata, ::ork::lev2::scenegraph::node_instance_data_ptr_t nid) { //
+            pycdata->_INSTANCEDATA = nid;
+          });
   type_codec->registerStdCodec<pycompdata_ptr_t>(pyc_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pysys_type = py::class_<PythonSystemData, SystemData, pysysdata_ptr_t>(module_ecs, "PythonSystemData")
