@@ -184,7 +184,7 @@ class MYCONTROLLER:
     phase = 0.0
     while(self.run_state==1): # run loop
 
-      time.sleep(0.003)
+      time.sleep(0.001)
 
       prob = random.randint(0,100)
 

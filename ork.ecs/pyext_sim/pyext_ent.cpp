@@ -25,6 +25,16 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
                          auto trans          = ent->transform();
                          trans->_translation = pos;
                        })
+                   .prop_rw(
+                       "orientation",
+                       [](pyentity_ptr_t ent) -> fquat {
+                         auto trans = ent->transform();
+                         return trans->_rotation;
+                       },
+                       [](pyentity_ptr_t ent, const fquat& rot) {
+                         auto trans          = ent->transform();
+                         trans->_rotation = rot;
+                       })
                    .def(
                        "findComponentByName",
                        [](pyentity_ptr_t ent, const std::string& classname) -> pycomponent_ptr_t {

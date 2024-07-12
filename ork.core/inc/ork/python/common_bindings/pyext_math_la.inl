@@ -281,48 +281,43 @@ void pyinit_math_la_t_vec(
 
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void pyinit_math_la_t(
+void pyinit_math_la_t_quat(
     adapter_t::module_t& module_core, //
     std::string pfx,
     adapter_t::codec_ptr_t type_codec) { //
 
-  using vec2_t        = Vector2<T>;
   using vec3_t        = Vector3<T>;
   using vec4_t        = Vector4<T>;
-  using quat_t        = Quaternion<T>;
   using mat3_t        = Matrix33<T>;
   using mat4_t        = Matrix44<T>;
-  using ray3_t        = Ray3<T>;
-  using plane_t       = Plane<T>;
-  using frustum_t     = TFrustum<T>;
-  using frustum_ptr_t = std::shared_ptr<frustum_t>;
-
+  using quat_t        = Quaternion<T>;
   auto quat_name    = pfx + "quat";
-  auto mat3_name    = pfx + "mtx3";
-  auto mat4_name    = pfx + "mtx4";
-  auto ray3_name    = pfx + "ray3";
-  auto plane_name   = pfx + "plane";
-  auto frustum_name = pfx + "frustum";
-
-  pyinit_math_la_t_vec<T>(module_core, pfx, type_codec);
 
   /////////////////////////////////////////////////////////////////////////////////
+  auto bdesc_quat = std::make_shared<BufferDescription>();
+  bdesc_quat->scalar_size    = sizeof(T);
+  bdesc_quat->num_dimensions = 1;
+  bdesc_quat->shape          = {4};
+  bdesc_quat->strides        = {sizeof(T)};
+  /////////////////////////////////////////////////////////////////////////////////
   auto quat_type = //
-      py::class_<quat_t>(module_core, quat_name.c_str(), pybind11::buffer_protocol())
+      py::clazz_bufp<quat_t>(module_core, quat_name.c_str())
+      //py::class_<quat_t>(module_core, quat_name.c_str())
           //////////////////////////////////////////////////////////////////////////
-          .def_buffer([](quat_t& quat) -> pybind11::buffer_info {
-            auto data = quat.asArray(); // Pointer to buffer
-            return pybind11::buffer_info(
-                data,      // Pointer to buffer
-                sizeof(T), // Size of one scalar
-                pybind11::format_descriptor<T>::format(),
-                1,            // Number of dimensions
-                {4},          // Buffer dimensions
-                {sizeof(T)}); // Strides (in bytes) for each index
+          .as_buffer([bdesc_quat](quat_t& q) -> adapter_t::buffer_handle_t {
+            return adapter_t::gen_buffer<T>(bdesc_quat, q.asArray());
           })
+          //////////////////////////////////////////////////////////////////////////
+          .prop_rw(
+              "x", [](const quat_t& quat) -> T { return quat.x; }, [](quat_t& quat, T val) { return quat.x = val; })
+          .prop_rw(
+              "y", [](const quat_t& quat) -> T { return quat.y; }, [](quat_t& quat, T val) { return quat.y = val; })
+          .prop_rw(
+              "z", [](const quat_t& quat) -> T { return quat.z; }, [](quat_t& quat, T val) { return quat.z = val; })
+          .prop_rw(
+              "w", [](const quat_t& quat) -> T { return quat.w; }, [](quat_t& quat, T val) { return quat.w = val; })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<T, T, T, T>())
@@ -346,14 +341,6 @@ void pyinit_math_la_t(
           .def("negate", &quat_t::negate)
           .def("normalize", &quat_t::normalizeInPlace)
           .def(py::self * py::self)
-          .def_property(
-              "x", [](const quat_t& quat) -> T { return quat.x; }, [](quat_t& quat, T val) { return quat.x = val; })
-          .def_property(
-              "y", [](const quat_t& quat) -> T { return quat.y; }, [](quat_t& quat, T val) { return quat.y = val; })
-          .def_property(
-              "z", [](const quat_t& quat) -> T { return quat.z; }, [](quat_t& quat, T val) { return quat.z = val; })
-          .def_property(
-              "w", [](const quat_t& quat) -> T { return quat.w; }, [](quat_t& quat, T val) { return quat.w = val; })
           .def(
               "__str__",
               [](const quat_t& v) -> std::string {
@@ -367,6 +354,39 @@ void pyinit_math_la_t(
             return fxs.c_str();
           });
   type_codec->registerStdCodec<quat_t>(quat_type);
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+void pyinit_math_la_t(
+    adapter_t::module_t& module_core, //
+    std::string pfx,
+    adapter_t::codec_ptr_t type_codec) { //
+
+  using vec2_t        = Vector2<T>;
+  using vec3_t        = Vector3<T>;
+  using vec4_t        = Vector4<T>;
+  using quat_t        = Quaternion<T>;
+  using mat3_t        = Matrix33<T>;
+  using mat4_t        = Matrix44<T>;
+  using ray3_t        = Ray3<T>;
+  using plane_t       = Plane<T>;
+  using frustum_t     = TFrustum<T>;
+  using frustum_ptr_t = std::shared_ptr<frustum_t>;
+
+  auto mat3_name    = pfx + "mtx3";
+  auto mat4_name    = pfx + "mtx4";
+  auto ray3_name    = pfx + "ray3";
+  auto plane_name   = pfx + "plane";
+  auto frustum_name = pfx + "frustum";
+
+  /////////////////////////////////////////////////////////////////////////////////
+
+  pyinit_math_la_t_vec<T>(module_core, pfx, type_codec);
+  pyinit_math_la_t_quat<T>(module_core, pfx, type_codec);
+
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
       py::class_<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())

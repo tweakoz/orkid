@@ -1,7 +1,7 @@
 ###############################################################################
 # (simulation/update)-thread private python simulation system
 ################################################################################
-import math, time
+import math, time, random
 from orkengine.ecssim import *
 tokens = CrcStringProxy()
 ###############################################################################
@@ -20,6 +20,7 @@ class MySystem:
     self.timeaccum = 0.0
     self.gametime = 0.0
     self.upd_counter = 0
+    self.ent_counter = 0
 
 the_sys = MySystem()
 
@@ -56,7 +57,16 @@ def onComponentActivate(component):
   ent.vars.sgc = sgc
   ent.vars.incept = the_sys.gametime
   ent.vars.target_pos = vec3(0)
-
+  i = random.randint(-100,100)
+  j = random.randint(-100,100)
+  k = random.randint(-100,100)
+  i = float(i)/100.0
+  j = float(j)/100.0
+  k = float(k)/100.0
+  axis = vec3(i,j,k).normalized()
+  angle = random.randint(-1,1)*3.14159/180.0
+  ent.vars.dr = quat(axis,angle)
+  ent.vars.r = quat()
   #print("onComponentActivate eid %s"%e)
 
 def onComponentDeactivate(component):
@@ -108,7 +118,10 @@ def onSystemUpdate(simulation):
       sgc = ent.vars.sgc
       incept = ent.vars.incept
       target_pos = ent.vars.target_pos
+
       ent.translation = ent.translation*0.9995 + target_pos*0.0005
+      ent.orientation = ent.orientation * ent.vars.dr
+ 
       # change color
       age = the_sys.gametime - incept
       r = 0.5 + (0.5*math.sin(age*3.0))
@@ -117,8 +130,13 @@ def onSystemUpdate(simulation):
       rgb = vec4(r,g,b,1)
       sgc.notify( tokens.ChangeModColor, rgb )
 
+    the_sys.ent_counter += num_components
+    if (the_sys.upd_counter&0xff)==0:
+      ents_per_sec = the_sys.ent_counter / the_sys.gametime
+      print("ents_per_sec<%s>"%ents_per_sec)
+      
   if True:      
-    phase = gt * 0.1
+    phase = gt * 0.01
     tgt = vec3(0,0,0)
     eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
 
