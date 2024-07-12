@@ -28,12 +28,13 @@ the_sys = MySystem()
 ###############################################################################
 
 def onSystemInit(simulation):
-  print("onSystemInit<%s>"%simulation)
+  pass
+  #print("onSystemInit<%s>"%simulation)
 
 ###############################################################################
 
 def onSystemLink(simulation):
-  print("onSystemLink<%s>"%simulation)
+  #print("onSystemLink<%s>"%simulation)
   the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
   the_sys.sys_py = simulation.findSystemByName("PythonSystem")
   the_sys.python_components = the_sys.sys_py.vars.components
@@ -41,12 +42,14 @@ def onSystemLink(simulation):
 ###############################################################################
 
 def onSystemActivate(simulation):
-  print("onSystemActivate<%s>"%simulation)
+  #print("onSystemActivate<%s>"%simulation)
+  pass
 
 ###############################################################################
 
 def onSystemStage(simulation):
-  print("onSystemStage<%s>"%simulation)
+  #print("onSystemStage<%s>"%simulation)
+  pass
 
 ###############################################################################
 
@@ -81,11 +84,18 @@ def onSystemNotify(simulation, evID, table):
     entID = table[tokens.ent]
     ent = simulation.entityByID(entID)
     ent.vars.target_pos = table[tokens.pos]
+  elif evID.hashed == tokens.PRINT_CAMERA.hashed:
+    phase = the_sys.gametime * 0.01
+    tgt = vec3(0,0,0)
+    eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
+    print("\n###################")
+    print("eye<%s>"%eye)
+    print("tgt<%s>"%tgt)
+    print("###################\n")
   else:
-    print("onSystemNotify<%s:%s>"%(evID,table))
-    assert(False)
-  if (the_sys.notif_count%500)==0:
-    print("onSystemNotify notifcount: %s"%the_sys.notif_count)
+    print("unknown onSystemNotify<%s:%s>"%(evID,table))
+  #if (the_sys.notif_count%500)==0:
+  #  print("onSystemNotify notifcount: %s"%the_sys.notif_count)
 
 ###############################################################################
 
@@ -133,7 +143,7 @@ def onSystemUpdate(simulation):
     the_sys.ent_counter += num_components
     if (the_sys.upd_counter&0xff)==0:
       ents_per_sec = the_sys.ent_counter / the_sys.gametime
-      print("ents_per_sec<%s>"%ents_per_sec)
+      #print("ents_per_sec<%s>"%ents_per_sec)
       
   if True:      
     phase = gt * 0.01

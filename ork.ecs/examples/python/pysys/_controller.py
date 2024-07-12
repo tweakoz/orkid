@@ -1,6 +1,10 @@
-import os, sys, threading, time, random, math
+import os, sys, threading, time, random, math, code
 from pathlib import Path
 from obt import path as obt_path
+
+from IPython import embed
+from IPython.terminal.embed import InteractiveShellEmbed
+from traitlets.config import Config
 
 from orkengine.core import vec3, quat, CrcStringProxy
 import orkengine.lev2 as lev2
@@ -18,17 +22,20 @@ tokens = CrcStringProxy()
 LAYERNAME = "std_deferred"
 BALLS_NODE_NAME = "balls"
 NUM_BALLS = 4000
+MAX_BALLS = 5000
 SPAWN_RATE = 0.1
 ################################################################################
 
 class MYCONTROLLER:
 
-  def __init__(self,ezapp):
-    self.ezapp = ezapp
+  def __init__(self,main_app):
+    self.main_app = main_app
+    self.ezapp = main_app.ezapp
     self.run_state = 0
     cameras.setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
     self.ecsLaunch()
+    self.all_entities = dict()
 
   ##############################################
 
@@ -63,7 +70,7 @@ class MYCONTROLLER:
     })
 
     drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
-    drawable.resize(NUM_BALLS)
+    drawable.resize(MAX_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
                                       layer=LAYERNAME)
@@ -111,7 +118,7 @@ class MYCONTROLLER:
     self.sys_sg = self.controller.findSystem("SceneGraphSystem")###
     self.sys_python = self.controller.findSystem("PythonSystem")###
 
-    print(self.sys_sg)
+    #print(self.sys_sg)
 
     ##################
     # init systems
@@ -126,6 +133,22 @@ class MYCONTROLLER:
     
     self.run_thread = threading.Thread(target=self.run_loop)
     self.run_thread.start()
+
+    if self.main_app.interactive:
+      def start_repl():
+        time.sleep(2)
+        repl_banner = "CONTROLLER REPL. Type exit() to exit the REPL."
+        local_vars = globals().copy()
+        local_vars['self'] = self
+        #code.interact(banner=repl_banner, local=local_vars)
+        c = Config()
+        c.TerminalInteractiveShell.colors = 'Linux'  # Options: 'NoColor', 'Linux', 'LightBG'
+        ipshell = InteractiveShellEmbed(config=c, banner1="IPython REPL. Type exit() to exit the REPL.", user_ns=local_vars)
+        ipshell()
+        #embed(config=c, banner1="IPython REPL. Type exit() to exit the REPL.", user_ns=local_vars)
+
+      repl_thread = threading.Thread(target=start_repl)
+      repl_thread.start()
     
   ##############################################
 
@@ -168,29 +191,54 @@ class MYCONTROLLER:
     ball_spawner.transform.scale = 1.0
     self.ball_spawner = ball_spawner
 
+    self.SAD = ecs.SpawnAnonDynamic("ball_spawner")
+    self.SAD.overridexf.orientation = quat(vec3(0,1,0),0)
+    self.SAD.overridexf.scale = 1.0
+
+  ##############################################
+
+  def userSpawn(self,pos,scale):
+    self.SAD.overridexf.translation = pos
+    self.SAD.overridexf.scale = scale
+    e = self.controller.spawnEntity(self.SAD)
+    #self.SAD.overridexf.scale = 1.0
+    self.all_entities[e.id] = e
+
+  def userSpawnMany(self, pos, scale, the_range, count):
+    for i in range(count):
+      x = random.uniform(-the_range,the_range)
+      y = random.uniform(-the_range,the_range)
+      z = random.uniform(-the_range,the_range)
+      self.userSpawn(vec3(x,y,z)+pos,scale)
+    
+  def printCamera(self):
+      self.controller.systemNotify( self.sys_python,
+                                    tokens.PRINT_CAMERA,{})
+
+  def help(self):
+    print("try self.printCamera()")
+    print("try self.userSpawn(pos,scale)")
+    print("try self.userSpawnMany(pos,scale,range,count)")
+
   ##############################################
 
   def run_loop(self):
 
     self.run_state = 0 # signal that we are not yet running
 
-    SAD = ecs.SpawnAnonDynamic("ball_spawner")
-    SAD.overridexf.orientation = quat(vec3(0,1,0),0)
-    SAD.overridexf.scale = 1.0
 
-    all_entities = dict()
 
     self.run_state = 1        # signal that we are running
     phase = 0.0
     while(self.run_state==1): # run loop
 
-      time.sleep(0.001)
+      time.sleep(0.25)
 
       prob = random.randint(0,100)
 
-      if prob < 99:
+      if prob < 50:
 
-        count = len(all_entities)
+        count = len(self.all_entities)
 
         ##########################################
         # dont let too many balls accumulate
@@ -203,16 +251,16 @@ class MYCONTROLLER:
           if all_entities[index] is None:
               continue
 
-          ent = all_entities[index]
+          ent = self.all_entities[index]
           
           ##########################################
           # despawn it
           ##########################################
 
-          del all_entities[ent.id]
+          del self.all_entities[ent.id]
           self.controller.despawnEntity(ent)
 
-        count = len(all_entities)
+        count = len(self.all_entities)
         
         if count < NUM_BALLS:
 
@@ -221,16 +269,16 @@ class MYCONTROLLER:
           k = random.randint(-100,100)
           pos = vec3(i,j,k)
 
-          SAD.overridexf.translation = pos
-          e = self.controller.spawnEntity(SAD)
-          all_entities[e.id] = e
+          self.SAD.overridexf.translation = pos
+          e = self.controller.spawnEntity(self.SAD)
+          self.all_entities[e.id] = e
 
         ##########################################
         # set new target for 1 entity
         ##########################################
 
-        index = random.choice(list(all_entities.keys()))
-        ent = all_entities[index]
+        index = random.choice(list(self.all_entities.keys()))
+        ent = self.all_entities[index]
         i = random.randint(-30,30)
         j = random.randint(-30,30)
         k = random.randint(-30,30)

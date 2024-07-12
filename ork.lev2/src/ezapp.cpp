@@ -494,7 +494,7 @@ int OrkEzApp::mainThreadLoop() {
         stats_timeaccum += step;
         if (stats_timeaccum >= 15.0) {
 
-          logchan_ezapp->log("UPS<%g>", state_numiters / stats_timeaccum);
+          //logchan_ezapp->log("UPS<%g>", state_numiters / stats_timeaccum);
           stats_timeaccum = 0.0;
           state_numiters  = 0.0;
         }
@@ -504,17 +504,17 @@ int OrkEzApp::mainThreadLoop() {
       sched_yield();
     } // while (not checkAppState(KAPPSTATEFLAG_JOINING)) {
 
-    printf( "update_thread_impl loop exiting\n");
+    //printf( "update_thread_impl loop exiting\n");
 
     _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
     _appstate.fetch_and(~KAPPSTATEFLAG_UPDRUNNING);
 
     if (_mainWindow->_onUpdateExit) {
-      printf( "running _onUpdateExit\n");
+      //printf( "running _onUpdateExit\n");
       _mainWindow->_onUpdateExit();
     }
 
-    printf( "update_thread exited.....\n");
+    //printf( "update_thread exited.....\n");
   };
 
   ///////////////////////////////

@@ -58,6 +58,14 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
       auto key = py::cast<std::string>(item.first);
       if (key == "ssaa") {
         init_data->_ssaa_samples = py::cast<int>(item.second);
+      } else if (key == "left") {
+        init_data->_left = py::cast<int>(item.second);
+      } else if (key == "top") {
+        init_data->_top = py::cast<int>(item.second);
+      } else if (key == "width") {
+        init_data->_width = py::cast<int>(item.second);
+      } else if (key == "height") {
+        init_data->_height = py::cast<int>(item.second);
       } else if (key == "fullscreen") {
         init_data->_fullscreen = py::cast<bool>(item.second);
       } else if (key == "disableMouseCursor") {
