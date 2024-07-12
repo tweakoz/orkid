@@ -22,22 +22,18 @@ class MySystem:
     self.upd_counter = 0
     self.ent_counter = 0
 
-the_sys = MySystem()
-
-###############################################################################
 ###############################################################################
 
 def onSystemInit(simulation):
-  pass
-  #print("onSystemInit<%s>"%simulation)
+  simulation.vars.mysys = MySystem()
 
 ###############################################################################
 
 def onSystemLink(simulation):
   #print("onSystemLink<%s>"%simulation)
-  the_sys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
-  the_sys.sys_py = simulation.findSystemByName("PythonSystem")
-  the_sys.python_components = the_sys.sys_py.vars.components
+  simulation.vars.mysys.sys_sg = simulation.findSystemByName("SceneGraphSystem")
+  simulation.vars.mysys.sys_py = simulation.findSystemByName("PythonSystem")
+  simulation.vars.mysys.python_components = simulation.vars.mysys.sys_py.vars.components
 
 ###############################################################################
 
@@ -53,12 +49,12 @@ def onSystemStage(simulation):
 
 ###############################################################################
 
-def onComponentActivate(component):
+def onComponentActivate(simulation,component):
   ent = component.entity
   eid = ent.id
   sgc = ent.findComponentByName("SceneGraphComponent")
   ent.vars.sgc = sgc
-  ent.vars.incept = the_sys.gametime
+  ent.vars.incept = simulation.vars.mysys.gametime
   ent.vars.target_pos = vec3(0)
   i = random.randint(-100,100)
   j = random.randint(-100,100)
@@ -79,13 +75,13 @@ def onComponentDeactivate(component):
 ###############################################################################
 
 def onSystemNotify(simulation, evID, table):
-  the_sys.notif_count += 1
+  simulation.vars.mysys.notif_count += 1
   if evID.hashed == tokens.SET_TARGET.hashed:
     entID = table[tokens.ent]
     ent = simulation.entityByID(entID)
     ent.vars.target_pos = table[tokens.pos]
   elif evID.hashed == tokens.PRINT_CAMERA.hashed:
-    phase = the_sys.gametime * 0.01
+    phase = simulation.vars.mysys.gametime * 0.01
     tgt = vec3(0,0,0)
     eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
     print("\n###################")
@@ -94,14 +90,14 @@ def onSystemNotify(simulation, evID, table):
     print("###################\n")
   else:
     print("unknown onSystemNotify<%s:%s>"%(evID,table))
-  #if (the_sys.notif_count%500)==0:
-  #  print("onSystemNotify notifcount: %s"%the_sys.notif_count)
+  #if (simulation.vars.mysys.notif_count%500)==0:
+  #  print("onSystemNotify notifcount: %s"%simulation.vars.mysys.notif_count)
 
 ###############################################################################
 
 def onSystemUpdate(simulation):
 
-  the_sys.upd_counter += 1
+  simulation.vars.mysys.upd_counter += 1
 
   ###############
   # query time
@@ -110,47 +106,49 @@ def onSystemUpdate(simulation):
   dt = simulation.deltaTime
   gt = simulation.gameTime
 
-  the_sys.gametime = gt
+  simulation.vars.mysys.gametime = gt
   ###############
   # update camera
   ###############
 
-  the_sys.timeaccum += dt
+  simulation.vars.mysys.timeaccum += dt
   
-  if the_sys.timeaccum>(1.0/120.0):
+  if simulation.vars.mysys.timeaccum>(1.0/120.0):
 
-    the_sys.timeaccum = 0.0
+    simulation.vars.mysys.timeaccum = 0.0
 
-    num_components = the_sys.python_components.size
+    num_components = simulation.vars.mysys.python_components.size
     for index in range(0,num_components):
-      comp = the_sys.python_components[index]
+      comp = simulation.vars.mysys.python_components[index]
       ent = comp.entity
       sgc = ent.vars.sgc
       incept = ent.vars.incept
       target_pos = ent.vars.target_pos
 
-      ent.translation = ent.translation*0.9995 + target_pos*0.0005
+      lerp_factor = 0.001
+      inv_lerp_factor = 1.0 - lerp_factor
+      ent.translation = ent.translation*inv_lerp_factor + target_pos*lerp_factor
       ent.orientation = ent.orientation * ent.vars.dr
  
       # change color
-      age = the_sys.gametime - incept
+      age = simulation.vars.mysys.gametime - incept
       r = 0.5 + (0.5*math.sin(age*3.0))
       g = 0.5 + (0.5*math.sin(age*5.0))
       b = 0.5 + (0.5*math.sin(age*7.0))
       rgb = vec4(r,g,b,1)
       sgc.notify( tokens.ChangeModColor, rgb )
 
-    the_sys.ent_counter += num_components
-    if (the_sys.upd_counter&0xff)==0:
-      ents_per_sec = the_sys.ent_counter / the_sys.gametime
+    simulation.vars.mysys.ent_counter += num_components
+    if (simulation.vars.mysys.upd_counter&0xff)==0:
+      ents_per_sec = simulation.vars.mysys.ent_counter / simulation.vars.mysys.gametime
       #print("ents_per_sec<%s>"%ents_per_sec)
       
   if True:      
-    phase = gt * 0.01
+    phase = gt*0.01
     tgt = vec3(0,0,0)
     eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
 
-    the_sys.sys_sg.notify( tokens.UpdateCamera,{
+    simulation.vars.mysys.sys_sg.notify( tokens.UpdateCamera,{
        tokens.eye: eye,
        tokens.tgt: tgt,
        tokens.up: vec3(0,1,0),

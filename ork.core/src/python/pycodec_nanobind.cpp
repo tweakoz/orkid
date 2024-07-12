@@ -72,6 +72,10 @@ py::object NanoCodecImpl::encode(const varval_t& val) const {
       return py::none();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
+    } else if (auto as_pycall = val.tryAs<py::callable>()) {
+      return as_pycall.value();
+    } else if (auto as_pyobj = val.tryAs<py::object>()) {
+      return as_pyobj.value();
     } else {
       printf("UNKNOWNTYPE<%s>\n", val.typeName());
       OrkAssert(false);
@@ -113,6 +117,10 @@ py::object NanoCodecImpl::encode64(const svar64_t& val) const {
       return py::none();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
+    } else if (auto as_pycall = val.tryAs<py::callable>()) {
+      return as_pycall.value();
+    } else if (auto as_pyobj = val.tryAs<py::object>()) {
+      return as_pyobj.value();
     } else {
       printf("UNKNOWNTYPE<%s>\n", val.typeName());
       OrkAssert(false);
@@ -135,6 +143,14 @@ varval_t NanoCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
+  if (py::isinstance<py::callable>(val)) {
+    rval.set<py::callable>(py::cast<py::callable>(val));
+    return rval;
+  }
+  else if (py::isinstance<py::object>(val)) {
+    rval.set<py::object>(py::cast<py::object>(val));
+    return rval;
+  }
   std::cout << "BadValue: " << py::cast<std::string>(val) << std::endl;
   throw std::runtime_error("pycodec-decode: unregistered type");
   OrkAssert(false); // unknown type!
@@ -153,6 +169,14 @@ svar64_t NanoCodecImpl::decode64(const py::object& val) const {
       codec._decoder(val, rval);
       return rval;
     }
+  }
+  if (py::isinstance<py::callable>(val)) {
+    rval.set<py::callable>(py::cast<py::callable>(val));
+    return rval;
+  }
+  else if (py::isinstance<py::object>(val)) {
+    rval.set<py::object>(py::cast<py::callable>(val));
+    return rval;
   }
   std::cout << "decode64 :: BadValue: " << py::cast<std::string>(val) << std::endl;
   throw std::runtime_error("pycodec-decode: unregistered type");

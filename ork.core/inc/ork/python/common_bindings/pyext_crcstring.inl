@@ -37,7 +37,6 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
   /////////////////////////////////////////////////////////////////////////////////
   struct CrcStringProxy {
     CrcStringProxy(){
-      printf("new CrcStringProxy::CrcStringProxy()\n");
     }
   };
   using crcstrproxy_ptr_t = std::shared_ptr<CrcStringProxy>;

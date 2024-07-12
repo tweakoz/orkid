@@ -113,6 +113,8 @@ public:
   void _onDeactivate(Simulation* inst) final;
   void _onNotify(token_t evID, evdata_t data) final;
 
+  bool _reload(Simulation* psi);
+
   template <typename Arg>
   auto process_arg(Arg&& arg) {
       //auto type_codec = ecssim::simonly_codec_instance();
@@ -151,6 +153,8 @@ public:
 
   obind::object _pymethodOnComponentActivate;
   obind::object _pymethodOnComponentDeactivate;
+
+  const PythonSystemData& _systemData;
 
   //int mScriptRef;
 };

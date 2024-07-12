@@ -221,6 +221,10 @@ class MYCONTROLLER:
     print("try self.userSpawnMany(pos,scale,range,count)")
 
   ##############################################
+  def reload(self):
+    self.controller.systemNotify( self.sys_python,
+                                  tokens.RELOAD,{})
+  ##############################################
 
   def run_loop(self):
 

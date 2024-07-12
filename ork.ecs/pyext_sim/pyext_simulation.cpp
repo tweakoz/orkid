@@ -17,8 +17,10 @@ namespace nb = obind;
 namespace ork::ecssim {
 using eref_ptr_t = std::shared_ptr<EntityRef>;
 void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_t type_codec) {
+  using namespace ::ork::python;
   /////////////////////////////////////////////////////////////////////////////////
-  auto sim_type = nb::class_<pysim_ptr_t>(module_ecssim, "Simulation")
+  auto sim_type = clazz<nanobindadapter,pysim_ptr_t>(module_ecssim, "Simulation")
+       .prop_ro("vars", [](pysim_ptr_t simptr) -> varmap::varmap_ptr_t { return simptr->varmap(); })
       ////////////////////////////////////////////////////////////////////
       // rval->_vars.makeValueForKey<nb::function>("uievfn") = uievfn;
       // rval->onUiEvent([=](ork::ui::event_constptr_t ev) -> ui::HandlerResult { //

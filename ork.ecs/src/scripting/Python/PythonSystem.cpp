@@ -79,8 +79,90 @@ System* PythonSystemData::createSystem(ork::ecs::Simulation* pinst) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* pinst)
-    : ork::ecs::System(&data, pinst) {
+bool PythonSystem::_reload(Simulation* psi) {
+
+  auto scenedata = psi->GetData();
+  auto path      = _systemData._sceneScriptPath;
+  auto abspath   = path.toAbsolute();
+
+  if (not abspath.doesPathExist()) {
+    printf("PythonSystem::_reload() script<%s> not found\n", abspath.c_str());
+    return false;
+  }
+
+  File scriptfile(abspath, EFM_READ);
+  size_t filesize = 0;
+  scriptfile.GetLength(filesize);
+  char* scripttext = (char*)malloc(filesize + 1);
+  scriptfile.Read(scripttext, filesize);
+  scripttext[filesize] = 0;
+  mScriptText          = scripttext;
+  free(scripttext);
+
+  // Execute the script in the subinterpreter context and capture the module
+  py::object scope = py::module_::import_("__main__").attr("__dict__");
+  auto globals     = py::cast<py::dict>(scope);
+  //_systemScript                  = py::module_::import_("__main__");
+  //_systemScript.attr("__file__") = std::string(abspath.c_str());
+  // auto globals         = py::cast<py::dict>(_systemScript.attr("__dict__"));
+  // globals["__file__"]            = std::string(abspath.c_str());
+
+  // py::module_ sys            = py::module_::import_("sys");
+  // py::list original_sys_path = sys.attr("path");
+  // py::module_ math           = py::module_::import("math");
+  // globals["MATH"]                  = math;
+  // py::module_ ecssim         = py::module_::import("orkengine.ecssim");
+  // globals["ECS"]                   = ecssim;
+  //  from orkengine.core import CrcString
+  // py::module_ core = py::module_::import("orkengine.core");
+  // globals["CORE"]        = core;
+
+  // py::module_ OPENCL = py::module_::import("pyopencl");
+  // globals["CL"]        = OPENCL;
+
+  // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
+
+  // auto module_core = py::module::create_extension_module(
+  //"core", nullptr, new py::module_::module_def );
+  //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
+  // sys.attr("path") = py::list();
+
+  py::exec(py::str(mScriptText.c_str()), scope);
+
+  // find global onSystemUpdate() and assign to _pymethodOnSystemUpdate
+  if (globals.contains("onSystemUpdate")) {
+    _pymethodOnSystemUpdate = globals["onSystemUpdate"];
+  }
+  if (globals.contains("onSystemInit")) {
+    _pymethodOnSystemInit = globals["onSystemInit"];
+  }
+  if (globals.contains("onSystemLink")) {
+    _pymethodOnSystemLink = globals["onSystemLink"];
+  }
+  if (globals.contains("onSystemActivate")) {
+    _pymethodOnSystemActivate = globals["onSystemActivate"];
+  }
+  if (globals.contains("onSystemStage")) {
+    _pymethodOnSystemStage = globals["onSystemStage"];
+  }
+  if (globals.contains("onSystemNotify")) {
+    _pymethodOnSystemNotify = globals["onSystemNotify"];
+  }
+  if (globals.contains("onComponentActivate")) {
+    _pymethodOnComponentActivate = globals["onComponentActivate"];
+  }
+  if (globals.contains("onComponentDeactivate")) {
+    _pymethodOnComponentDeactivate = globals["onComponentDeactivate"];
+  }
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* psi)
+    : ork::ecs::System(&data, psi)
+    , _systemData(data) {
 
   logchan_pysys->log("PythonSystem::PythonSystem() <%p>", this);
   _pythonContext = std::make_shared<pyctx_t>();
@@ -91,7 +173,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   // Set Python Search Path
   ///////////////////////////////////////////////
 
-  std::string orkdirstr;
+  /*std::string orkdirstr;
   genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
   OrkAssert(orkdirstr != "");
   auto orkidWorkspaceDir = file::Path(orkdirstr);
@@ -100,7 +182,7 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   OrkAssert(abssrchpath.doesPathExist());
 
   if (abssrchpath.doesPathExist()) {
-  }
+  }*/
 
   // logchan_pysys->log("PythonSystem LUA_PATH <%s>", abssrchpath.c_str() );
 
@@ -108,101 +190,32 @@ PythonSystem::PythonSystem(const PythonSystemData& data, ork::ecs::Simulation* p
   // find & init scene file
   ///////////////////////////////////////////////
 
-  auto scenedata = pinst->GetData();
-  auto path      = data._sceneScriptPath;
-  auto abspath   = path.toAbsolute();
-
   // todo figure out how to remove GIL
   // the update thread should not need
   // the primary interpreter GIL at all...
   // pybind11::gil_scoped_acquire acq;
 
   _pythonContext->bindSubInterpreter();
-  if (abspath.doesPathExist()) {
-    File scriptfile(abspath, EFM_READ);
-    size_t filesize = 0;
-    scriptfile.GetLength(filesize);
-    char* scripttext = (char*)malloc(filesize + 1);
-    scriptfile.Read(scripttext, filesize);
-    scripttext[filesize] = 0;
-    mScriptText          = scripttext;
-    // printf( "%s\n", scripttext);
-    free(scripttext);
 
-    try {
-      // Execute the script in the subinterpreter context and capture the module
-      py::object scope = py::module_::import_("__main__").attr("__dict__");
-      auto globals     = py::cast<py::dict>(scope);
-      //_systemScript                  = py::module_::import_("__main__");
-      //_systemScript.attr("__file__") = std::string(abspath.c_str());
-      // auto globals         = py::cast<py::dict>(_systemScript.attr("__dict__"));
-      // globals["__file__"]            = std::string(abspath.c_str());
-
-      // py::module_ sys            = py::module_::import_("sys");
-      // py::list original_sys_path = sys.attr("path");
-      // py::module_ math           = py::module_::import("math");
-      // globals["MATH"]                  = math;
-      // py::module_ ecssim         = py::module_::import("orkengine.ecssim");
-      // globals["ECS"]                   = ecssim;
-      //  from orkengine.core import CrcString
-      // py::module_ core = py::module_::import("orkengine.core");
-      // globals["CORE"]        = core;
-
-      // py::module_ OPENCL = py::module_::import("pyopencl");
-      // globals["CL"]        = OPENCL;
-
-      // globals["CrcStringProxy"] = core.attr("CrcStringProxy");
-
-      // auto module_core = py::module::create_extension_module(
-      //"core", nullptr, new py::module_::module_def );
-      //::ork::python::init_crcstring(module_core, ecssim::simonly_codec_instance());
-      // sys.attr("path") = py::list();
-
-      py::exec(py::str(mScriptText.c_str()), scope);
-
-      // find global onSystemUpdate() and assign to _pymethodOnSystemUpdate
-      if (globals.contains("onSystemUpdate")) {
-        _pymethodOnSystemUpdate = globals["onSystemUpdate"];
-      }
-      if (globals.contains("onSystemInit")) {
-        _pymethodOnSystemInit = globals["onSystemInit"];
-      }
-      if (globals.contains("onSystemLink")) {
-        _pymethodOnSystemLink = globals["onSystemLink"];
-      }
-      if (globals.contains("onSystemActivate")) {
-        _pymethodOnSystemActivate = globals["onSystemActivate"];
-      }
-      if (globals.contains("onSystemStage")) {
-        _pymethodOnSystemStage = globals["onSystemStage"];
-      }
-      if (globals.contains("onSystemNotify")) {
-        _pymethodOnSystemNotify = globals["onSystemNotify"];
-      }
-      if (globals.contains("onComponentActivate")) {
-        _pymethodOnComponentActivate = globals["onComponentActivate"];
-      }
-      if (globals.contains("onComponentDeactivate")) {
-        _pymethodOnComponentDeactivate = globals["onComponentDeactivate"];
-      }
+  try {
+    if (_reload(psi)) {
 
       if (_pymethodOnSystemInit) {
-        auto wrapped = pysim_ptr_t(pinst);
+        auto wrapped = pysim_ptr_t(psi);
         __pcallargs(_pymethodOnSystemInit, wrapped);
       }
-
-      /*} catch (py::error_already_set& e) {
-        logchan_pysys->log("Error executing Python script: %s\n", abspath.c_str());
-        e.restore();
-        PyErr_Print();
-        OrkAssert(false);*/
-    } catch (const std::exception& e) {
-      logchan_pysys->log("Error executing Python script: %s\n", e.what());
-      // e.restore();
-      PyErr_Print();
-      OrkAssert(false);
     }
+  } catch (const std::exception& e) {
+    logchan_pysys->log("Error executing Python script: %s\n", e.what());
+    // e.restore();
+    PyErr_Print();
+    OrkAssert(false);
   }
+  /*} catch (py::error_already_set& e) {
+    logchan_pysys->log("Error executing Python script: %s\n", abspath.c_str());
+    e.restore();
+    PyErr_Print();
+    OrkAssert(false);*/
   _pythonContext->unbindSubInterpreter();
 }
 
@@ -219,8 +232,9 @@ void PythonSystem::_onActivateComponent(PythonComponent* component) {
 
   if (_pymethodOnComponentActivate) {
     _pythonContext->bindSubInterpreter();
-    auto wrapped = pycomponent_ptr_t(component);
-    __pcallargs(_pymethodOnComponentActivate, wrapped);
+    auto wrapped_c = pycomponent_ptr_t(component);
+    auto wrapped_s = pysim_ptr_t(simulation());
+    __pcallargs(_pymethodOnComponentActivate, wrapped_s, wrapped_c);
     _pythonContext->unbindSubInterpreter();
   }
 
@@ -329,16 +343,25 @@ void PythonSystem::_onUnstage(Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PythonSystem::_onNotify(token_t evID, evdata_t data) {
-  bool has_notify = bool(_pymethodOnSystemNotify);
-  if (has_notify) {
-    // logchan_pysys->log("_onNotify() %d", int(has_notify));
-    auto evIDcrc = std::make_shared<CrcString>();
-    (*evIDcrc)   = evID;
-    _pythonContext->bindSubInterpreter();
-    auto table   = data.getShared<DataTable>();
-    auto wrapped = pysim_ptr_t(simulation());
-    __pcallargs(_pymethodOnSystemNotify, wrapped, evIDcrc, table);
-    _pythonContext->unbindSubInterpreter();
+
+  switch (evID.hashed()) {
+    case "RELOAD"_crcu:
+      _reload(simulation());
+      break;
+    default: {
+      bool has_notify = bool(_pymethodOnSystemNotify);
+      if (has_notify) {
+        // logchan_pysys->log("_onNotify() %d", int(has_notify));
+        auto evIDcrc = std::make_shared<CrcString>();
+        (*evIDcrc)   = evID;
+        _pythonContext->bindSubInterpreter();
+        auto table   = data.getShared<DataTable>();
+        auto wrapped = pysim_ptr_t(simulation());
+        __pcallargs(_pymethodOnSystemNotify, wrapped, evIDcrc, table);
+        _pythonContext->unbindSubInterpreter();
+      }
+      break;
+    }
   }
 }
 
@@ -371,9 +394,9 @@ void PythonSystem::_onUpdate(Simulation* psi) // final
 
   // if instancing active
   //  apply instances
-  for( auto c : _activeComponents._linear ) {
-    if( c->_idata ) {
-      fmtx4 mtx = c->GetEntity()->transform()->composed();
+  for (auto c : _activeComponents._linear) {
+    if (c->_idata) {
+      fmtx4 mtx                                    = c->GetEntity()->transform()->composed();
       c->_idata->_worldmatrices[c->_sginstance_id] = mtx;
     }
   }

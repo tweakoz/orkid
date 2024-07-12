@@ -21,6 +21,7 @@
 #include <ork/python/obind/stl/optional.h>
 #include <ork/python/obind/stl/string.h>
 #include <ork/python/obind/stl/pair.h>
+#include <ork/python/obind/stl/function.h>
 #include <ork/python/obind/stl/shared_ptr.h>
 #include <ork/python/obind/stl/tuple.h>
 #include <ork/python/obind/ndarray.h>

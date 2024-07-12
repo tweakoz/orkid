@@ -141,6 +141,8 @@ struct Simulation {
 
   Controller* controller() const { return _controller; }
 
+  varmap::varmap_ptr_t varmap() { return _varmap; }
+
 private:
 
   void _resetClock();
@@ -302,6 +304,7 @@ private:
   bool _needsGpuInit = false;
   bool _needsGpuExit = false;
   bool _waitingForRLock = false;
+  varmap::varmap_ptr_t _varmap;
 
   lev2::dbufcontext_ptr_t _dbufctxSIM;
 
