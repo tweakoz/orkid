@@ -132,6 +132,7 @@ struct ForwardPbrNodeImpl {
     auto context = drawdata->context();
     auto FBI     = context->FBI();
     auto GBI     = context->GBI();
+    auto& ddprops  = drawdata->_properties;
     auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
 
     auto CIMPL   = drawdata->_cimpl;
@@ -231,6 +232,8 @@ struct ForwardPbrNodeImpl {
     FBI->PopRtGroup();
 
     CIMPL->popCPD(); 
+
+    ddprops["depthbuffer"_crcu].set<rtbuffer_ptr_t>(rtg_out->_depthBuffer);
 
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

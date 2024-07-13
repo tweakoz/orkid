@@ -196,6 +196,9 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
+  ddprops["gbuffer"_crcu].set<rtgroup_ptr_t>(_rtgGbuffer);
+  ddprops["depthbuffer"_crcu].set<rtbuffer_ptr_t>(_rtgGbuffer->_depthBuffer);
+  ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(_rtgGbuffer.get());
   FBI->SetAutoClear(false); // explicit clear
   targ->beginFrame();
