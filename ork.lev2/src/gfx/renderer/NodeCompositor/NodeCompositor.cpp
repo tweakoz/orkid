@@ -125,6 +125,7 @@ void RenderCompositingNode::gpuInit(lev2::Context* pTARG, int w, int h) {
   doGpuInit(pTARG, w, h);
 }
 void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
+  _frameIndex++;
   drawdata.context()->debugPushGroup("RenderCompositingNode::Render");
   DoRender(drawdata);
   drawdata.context()->debugPopGroup();

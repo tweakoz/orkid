@@ -250,6 +250,9 @@ struct ForwardPbrNodeImpl {
     auto RCFD    = drawdata.RCFD();
     auto topcomp = RCFD->topCompositor();
 
+    int node_frame = _node->_frameIndex;
+    RCFD->setUserProperty("noise_seed"_crcu, node_frame);
+    //printf( "node_frame<%d>\n", node_frame );
     /////////////////////////////////////////////////
     // enumerate lights / PBR
     /////////////////////////////////////////////////

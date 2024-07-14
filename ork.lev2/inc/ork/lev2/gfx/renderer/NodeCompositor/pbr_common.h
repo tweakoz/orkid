@@ -72,8 +72,8 @@ struct CommonStuff : public ork::Object {
   lev2::texture_ptr_t envSpecularTexture() const;
   lev2::texture_ptr_t envDiffuseTexture() const;
 
-  lev2::texture_ptr_t ssaoKernel(lev2::Context* ctx);
-  lev2::texture_ptr_t ssaoScrNoise(lev2::Context* ctx, int w, int h);
+  lev2::texture_ptr_t ssaoKernel(lev2::Context* ctx, int seed);
+  lev2::texture_ptr_t ssaoScrNoise(lev2::Context* ctx, int seed, int w, int h);
 
   float environmentIntensity() const {
     return _environmentIntensity;
@@ -111,7 +111,7 @@ struct CommonStuff : public ork::Object {
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
-  std::unordered_map<int, lev2::texture_ptr_t> _ssaoKernels;
+  std::unordered_map<uint64_t, lev2::texture_ptr_t> _ssaoKernels;
   std::unordered_map<uint64_t, lev2::texture_ptr_t> _ssaoScrNoise;
 
   float _environmentIntensity = 1.0f;

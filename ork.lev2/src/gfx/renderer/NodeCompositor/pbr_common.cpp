@@ -152,15 +152,17 @@ asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
+lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx,int noise_seed){
 
+  int seed = noise_seed%67;
   int num_samples = (_ssaoNumSamples<8) ? 8 : _ssaoNumSamples;
+  uint64_t key = uint64_t(seed)<<32 | uint64_t(num_samples);
 
-  auto it = _ssaoKernels.find(num_samples);
+  auto it = _ssaoKernels.find(key);
   if( it == _ssaoKernels.end() ){
     // make new kernel for size and cache
     std::vector<fvec3> ssaoNoise;
-    math::FRANDOMGEN R(num_samples);
+    math::FRANDOMGEN R(seed);
     for (unsigned int i = 0; i < num_samples; i++) {
       glm::vec3 noise(
         R.rangedf(-1,1), 
@@ -179,23 +181,25 @@ lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
     tid._data = ssaoNoise.data();
     tid._truncation_length = ssaoNoise.size() * sizeof(fvec3);
     txi->initTextureFromData(texture.get(), tid);
-    _ssaoKernels[num_samples] = texture;
+    _ssaoKernels[key] = texture;
     return texture;
   }
   return it->second;
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int w, int h){
+lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int noise_seed, int w, int h){
 
-  uint64_t key = uint64_t(w)<<32 | uint64_t(h);
+  int seed = noise_seed&0x3F;
+
+  uint64_t key = uint64_t(seed)<<32 | uint64_t(w)<<16 | uint64_t(h);
 
   auto it = _ssaoKernels.find(key);
   if( it == _ssaoKernels.end() ){
     // make new kernel for size and cache
     std::vector<fvec3> ssaoNoise;
     int numsamples = w*h;
-    math::FRANDOMGEN R(numsamples);
+    math::FRANDOMGEN R(seed);
     for (unsigned int i = 0; i < numsamples; i++) {
       int x = i % w;
       int y = i / w;

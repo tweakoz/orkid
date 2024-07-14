@@ -301,7 +301,7 @@ float ssao(vec2 frg_uv) {
 
     // Random noise texture
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
-    
+
     // Accumulate occlusion
     float occlusion = 0.0;
     for (int i = 0; i < SSAONumSamples; ++i) {
@@ -318,16 +318,19 @@ float ssao(vec2 frg_uv) {
 
             float sampleDepth = texture(MapDepth, samplePos.xy).r;
 
+            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
             if (sampleDepth < depth + SSAOBias) {
-                occlusion += 1.0;
+                occlusion += rangeCheck;
             }
         }
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
+    // Apply bilateral filter to the occlusion result
+    //float filteredOcclusion = bilateralFilter(frg_uv, occlusion);
+
     return 1.0 - occlusion;
 }
-
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

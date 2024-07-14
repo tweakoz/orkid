@@ -265,6 +265,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
 
     int W = RCFD->userPropertyAs<int>("OutputWidth"_crcu);
     int H = RCFD->userPropertyAs<int>("OutputHeight"_crcu);
+    int noise_seed = RCFD->userPropertyAs<int>("noise_seed"_crcu);
 
     FXI->BindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples );
     FXI->BindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps );
@@ -272,8 +273,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     FXI->BindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius );
     FXI->BindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight );
     FXI->BindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower );
-    FXI->BindParamCTex(this->_paramSSAOKernel, pbrcommon->ssaoKernel(context).get() );
-    FXI->BindParamCTex(this->_paramSSAOScrNoise, pbrcommon->ssaoScrNoise(context, 1280, 720 ).get() );
+    FXI->BindParamCTex(this->_paramSSAOKernel, pbrcommon->ssaoKernel(context, noise_seed).get() );
+    FXI->BindParamCTex(this->_paramSSAOScrNoise, pbrcommon->ssaoScrNoise(context, noise_seed, 1280, 720 ).get() );
     FXI->BindParamCTex(this->_paramMapDepth, depthtexture.get() );
     FXI->BindParamVect2(this->_parInvViewSize, fvec2(1.0f/W,1.0f/H) );
   };

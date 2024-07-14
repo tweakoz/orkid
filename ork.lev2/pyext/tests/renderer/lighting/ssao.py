@@ -63,12 +63,12 @@ class SSAOAPP(object):
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://effect_textures/white.dds"
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
-    sceneparams.SSAONumSamples = SSAO_NUM_SAMPLES
+    sceneparams.SSAONumSamples = 8
     sceneparams.SSAONumSteps = 5
     sceneparams.SSAOBias = -1e-5
-    sceneparams.SSAORadius = 2.0*2.54/100
+    sceneparams.SSAORadius = 2.0*2.54/200
     sceneparams.SSAOWeight = 1.0
-    sceneparams.SSAOPower = 0.6
+    sceneparams.SSAOPower = 2.0
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -105,7 +105,7 @@ class SSAOAPP(object):
 
   def onUpdate(self,updinfo):
     abstim = updinfo.absolutetime
-    pos = vec3(0,20+math.sin(abstim*3)*10,0)
+    pos = vec3(0,20+math.sin(abstim*1)*10,0)
     self.modelnode.worldTransform.translation = pos
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
     if self.ssaamode == True:
