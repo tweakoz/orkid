@@ -134,7 +134,6 @@ struct ForwardPbrNodeImpl {
     auto GBI     = context->GBI();
     auto& ddprops  = drawdata->_properties;
     auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
-
     auto CIMPL   = drawdata->_cimpl;
     CompositingPassData MY_CPD = CIMPL->topCPD(); // copy top CPD
     auto pbrcommon = _node->_pbrcommon;
@@ -214,6 +213,10 @@ struct ForwardPbrNodeImpl {
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
     }
+    int W  = drawdata->property("OutputWidth"_crcu).get<int>();
+    int H = drawdata->property("OutputHeight"_crcu).get<int>();
+    RCFD->setUserProperty("OutputWidth"_crcu, W);
+    RCFD->setUserProperty("OutputHeight"_crcu, H);
 
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);

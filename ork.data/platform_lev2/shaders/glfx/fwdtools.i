@@ -1,5 +1,10 @@
 ///////////////////////////////////////////////////////////////
-libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
+libblock lib_fwd //
+  : lib_math //
+  : lib_brdf //
+  : lib_envmapping //
+  : lib_def
+  : lib_ssao {
   /////////////////////////////////////////////////////////
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd,vec3 eyepos) {
     LightCtx plc;
@@ -89,9 +94,19 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 invF  = (vec3(1) - F);
     vec3 diffn = vec3(n.x, n.y, n.z);
     /////////////////////////
-    float ambocc       = 1.0;
-    float ambientshade = ambocc * clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * ambientshade;
+    // ambient occlusion
+    /////////////////////////
+    float ambocc = 1.0;
+    if(SSAONumSamples>=8){
+      // get screen space uv
+      //vec2 uv = gl_FragCoord.xy / vec2(1280, 720);
+      vec2 uv = gl_FragCoord.xy * InvViewportSize;
+      ambocc = pow(ssao(uv),SSAOPower);
+      ambocc = mix(1.0,ambocc,SSAOWeight);
+    }
+    /////////////////////////
+    float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
+    vec3 ambient       = AmbientLevel * ambientshade*ambocc;
     vec3 diffuse_env   = env_equirectangular(diffn, MapDiffuseEnv, 0) * DiffuseLevel * SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
     /////////////////////////
@@ -138,9 +153,10 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
       rval = textureLod(light_cookie3, uv, lod).xyz;
     } else if (index == 4) {
       rval = textureLod(light_cookie4, uv, lod).xyz;
-    } else if (index == 5) {
-      rval = textureLod(light_cookie5, uv, lod).xyz;
     } 
+    //else if (index == 5) {
+      //rval = textureLod(light_cookie5, uv, lod).xyz;
+    //} 
     //else if (index == 6) {
       //rval = textureLod(light_cookie6, uv, lod).xyz;
     //} else if (index == 7) {
@@ -169,9 +185,18 @@ libblock lib_fwd : lib_math : lib_brdf : lib_envmapping : lib_def {
     vec3 refl = normalize(reflect(edir, normal));
     refl.x *= -1.0;
     /////////////////////////
-    float ambocc       = 1.0;
-    float ambientshade = ambocc * clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * ambientshade;
+    // ambient occlusion
+    /////////////////////////
+    float ambocc = 1.0;
+    if(SSAONumSamples>=8){
+      // get screen space uv
+      vec2 uv = gl_FragCoord.xy / vec2(1280, 720);
+      ambocc = pow(ssao(uv),SSAOPower);
+      ambocc = mix(1.0,ambocc,SSAOWeight);
+    }
+    /////////////////////////
+    float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
+    vec3 ambient       = AmbientLevel * ambientshade*ambocc;
     /////////////////////////
     float costheta = clamp(dot(normal, edir), 0.01, 0.99);
     vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;

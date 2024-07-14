@@ -68,6 +68,7 @@ uniform_set ub_frg_fwd {
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
+  sampler2D MapDepth;
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -105,7 +106,7 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie2;
   sampler2D light_cookie3;
   sampler2D light_cookie4;
-  sampler2D light_cookie5;
+  //sampler2D light_cookie5;
   //sampler2D light_cookie6;
   //sampler2D light_cookie7;
 
@@ -116,7 +117,7 @@ uniform_set ub_frg_fwd {
   vec4 AuxA;
   vec4 AuxB;
   uint obj_pickID;
-  // vec2 InvViewportSize; // inverse target size
+  vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
   vec3 EyePostionL;
   vec3 EyePostionR;
@@ -281,6 +282,52 @@ libblock lib_pbr_frg : lib_gbuf_encode {
     // vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
     out_gbuf = packGbuffer(vec3(0, 0, 0), normal, vec3(0, 0, 0), ruf, mtl);
   }
+}
+libblock lib_ssao {
+  /////////////////////////////////////////////////////////
+float ssao(vec2 frg_uv) {
+    float depth = texture(MapDepth, frg_uv).r;
+
+    // Compute the screen space normal from the depth map
+    vec2 texelSize = 1.0 / textureSize(MapDepth, 0);
+    float depthLeft = texture(MapDepth, frg_uv - vec2(texelSize.x, 0.0)).r;
+    float depthRight = texture(MapDepth, frg_uv + vec2(texelSize.x, 0.0)).r;
+    float depthUp = texture(MapDepth, frg_uv - vec2(0.0, texelSize.y)).r;
+    float depthDown = texture(MapDepth, frg_uv + vec2(0.0, texelSize.y)).r;
+
+    vec3 dx = vec3(texelSize.x, 0.0, depthRight - depthLeft);
+    vec3 dy = vec3(0.0, texelSize.y, depthDown - depthUp);
+    vec3 normal = normalize(cross(dx, dy));
+
+    // Random noise texture
+    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+    
+    // Accumulate occlusion
+    float occlusion = 0.0;
+    for (int i = 0; i < SSAONumSamples; ++i) {
+        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
+        sampleDir = normalize(sampleDir);
+
+        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
+        for (int j = 1; j <= SSAONumSteps; ++j) {
+            vec2 samplePos = frg_uv + trv_per_step * float(j);
+
+            // Clamp sample positions to screen boundaries
+            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+
+            float sampleDepth = texture(MapDepth, samplePos.xy).r;
+
+            if (sampleDepth < depth + SSAOBias) {
+                occlusion += 1.0;
+            }
+        }
+    }
+    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
+
+    return 1.0 - occlusion;
+}
+
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

@@ -139,6 +139,7 @@ public:
   fxparam_constptr_t _paramMapNormal     = nullptr;
   fxparam_constptr_t _paramMapMtlRuf     = nullptr;
   fxparam_constptr_t _paramMapEmissive   = nullptr;
+  fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _parInvViewSize     = nullptr;
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;

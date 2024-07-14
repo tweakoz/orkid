@@ -398,6 +398,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramSSAOPower        = fxi->parameter(_shader, "SSAOPower");
   _paramSSAOKernel       = fxi->parameter(_shader, "SSAOKernel");
   _paramSSAOScrNoise     = fxi->parameter(_shader, "SSAOScrNoise");
+  _paramMapDepth         = fxi->parameter(_shader, "MapDepth");
 
 
   _parSpecularMipBias = fxi->parameter(_shader, "SpecularMipBias");
@@ -421,7 +422,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
   _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
-  _parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
+  //_parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
   //_parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
   //_parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
 

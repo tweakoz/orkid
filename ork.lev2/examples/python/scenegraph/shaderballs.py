@@ -20,6 +20,8 @@ from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
+SSAO_NUM_SAMPLES = 128
+
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
@@ -52,11 +54,12 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
     self.nodes=[]
+    self.ssaamode = False
 
   ##############################################
 
@@ -68,12 +71,12 @@ class SceneGraphApp(object):
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(10000),
-      "SSAONumSamples": 96,
+      "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 2,
       "SSAOBias": -1e-5,
-      "SSAORadius": 3.0*2.54/100,
+      "SSAORadius": 2.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 0.3,
+      "SSAOPower": 0.4,
     }
 
     if envmap != "":
@@ -88,6 +91,10 @@ class SceneGraphApp(object):
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.layer1
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.render_node = self.scene.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
+    self.pbr_common.useDepthPrepass = True
 
     ###################################
 
@@ -165,21 +172,37 @@ class SceneGraphApp(object):
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-  ##############################################
+  ################################################
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("A"):
+        if self.ssaamode == True:
+          self.ssaamode = False
+        else:
+          self.ssaamode = True
+        print("SSAO MODE",self.ssaamode)
+        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    else:
+      handled = ui.HandlerResult()
+    return res
 
   ################################################
+
   def onGpuUpdate(self,ctx):
     self.spotlight3.update(self.lighttime)
 
   ################################################
 
   def onUpdate(self,updinfo):
+    if self.ssaamode == True:
+      self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
+    else:
+      self.pbr_common.ssaoNumSamples = 0
     self.lighttime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) 
 
