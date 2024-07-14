@@ -67,7 +67,13 @@ class SceneGraphApp(object):
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
-      "DepthFogDistance": float(10000)
+      "DepthFogDistance": float(10000),
+      "SSAONumSamples": 96,
+      "SSAONumSteps": 2,
+      "SSAOBias": -1e-5,
+      "SSAORadius": 3.0*2.54/100,
+      "SSAOWeight": 1.0,
+      "SSAOPower": 0.3,
     }
 
     if envmap != "":

@@ -88,6 +88,8 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
     FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
 
+    /////////////////////////
+
     auto worldmatrix = RCID.worldMatrix();
 
     auto stereocams = CPD._stereoCameraMatrices;

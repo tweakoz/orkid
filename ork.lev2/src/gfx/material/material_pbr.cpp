@@ -390,6 +390,16 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");
   _paramSkyboxLevel   = fxi->parameter(_shader, "SkyboxLevel");
 
+  _paramSSAONumSamples   = fxi->parameter(_shader, "SSAONumSamples");
+  _paramSSAONumSteps     = fxi->parameter(_shader, "SSAONumSteps");
+  _paramSSAOBias         = fxi->parameter(_shader, "SSAOBias");
+  _paramSSAORadius       = fxi->parameter(_shader, "SSAORadius");
+  _paramSSAOWeight       = fxi->parameter(_shader, "SSAOWeight");
+  _paramSSAOPower        = fxi->parameter(_shader, "SSAOPower");
+  _paramSSAOKernel       = fxi->parameter(_shader, "SSAOKernel");
+  _paramSSAOScrNoise     = fxi->parameter(_shader, "SSAOScrNoise");
+
+
   _parSpecularMipBias = fxi->parameter(_shader, "SpecularMipBias");
 
   _parMapSpecularEnv      = fxi->parameter(_shader, "MapSpecularEnv");

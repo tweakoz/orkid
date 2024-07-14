@@ -233,17 +233,15 @@ void PBRMaterial::addLightingLambda() {
   _state_lambdas.push_back(L);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
 
   ////////////////////////////////////////////////
-  // setup forward lighting
-  ////////////////////////////////////////////////
-
-  ////////////////////////////////////////////////
   // set raster state
   ////////////////////////////////////////////////
-  auto rsi_lambda = [this](const RenderContextInstData& RCID, int ipass) {
+  auto l_rsi = [this](const RenderContextInstData& RCID, int ipass) {
     auto mut = const_cast<PBRMaterial*>(this);
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
@@ -254,6 +252,23 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     mut->_rasterstate.SetZWriteMask(true);
     mut->_rasterstate.SetRGBAWriteMask(true, true);
     RSI->BindRasterState(this->_rasterstate);
+  };
+  ////////////////////////////////////////////////
+  // ssao lambda
+  ////////////////////////////////////////////////
+  auto l_ssao = [this](const RenderContextInstData& RCID, int ipass) {
+    auto RCFD    = RCID.rcfd();
+    auto context = RCFD->GetTarget();
+    auto pbrcommon = RCFD->_pbrcommon;
+    auto FXI              = context->FXI();
+    FXI->BindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples );
+    FXI->BindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps );
+    FXI->BindParamFloat(this->_paramSSAOBias, pbrcommon->_ssaoBias);
+    FXI->BindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius );
+    FXI->BindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight );
+    FXI->BindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower );
+    FXI->BindParamCTex(this->_paramSSAOKernel, pbrcommon->ssaoKernel(context).get() );
+    FXI->BindParamCTex(this->_paramSSAOScrNoise, pbrcommon->ssaoScrNoise(context, 1280, 720 ).get() );
   };
   /////////////////////////////////////////////////////////////
   // STEREO
@@ -297,7 +312,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda(createForwardLightingLambda(this));
-        pipeline->addStateLambda(rsi_lambda);
+        pipeline->addStateLambda(l_rsi);
     }
   }
   /////////////////////////////////////////////////////////////
@@ -333,7 +348,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
       pipeline->addStateLambda(createBasicStateLambda(this));
       pipeline->addStateLambda(createForwardLightingLambda(this));
-      pipeline->addStateLambda(rsi_lambda);
+      pipeline->addStateLambda(l_rsi);
+      pipeline->addStateLambda(l_ssao);
     }
   }
 
