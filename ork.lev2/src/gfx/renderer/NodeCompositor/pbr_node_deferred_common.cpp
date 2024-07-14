@@ -136,6 +136,10 @@ void DeferredContext::gpuInit(Context* target) {
     _parSSAONumSteps        = _lightingmtl->param("SSAONumSteps");
     _parSSAOBias            = _lightingmtl->param("SSAOBias");
     _parSSAORadius          = _lightingmtl->param("SSAORadius");
+    _parSSAOWeight          = _lightingmtl->param("SSAOWeight");
+    _parSSAOPower           = _lightingmtl->param("SSAOPower");
+    _parSSAOKernel          = _lightingmtl->param("SSAOKernel");
+    _parSSAOScrNoise        = _lightingmtl->param("SSAOScrNoise");
     _parNearFar             = _lightingmtl->param("NearFar");
     _parZndc2eye            = _lightingmtl->param("Zndc2eye");
     _parEnvironmentMipBias  = _lightingmtl->param("EnvironmentMipBias");

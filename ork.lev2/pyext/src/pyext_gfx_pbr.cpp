@@ -91,6 +91,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "useFloatColorBuffer",
               [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useFloatColorBuffer; },
               [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useFloatColorBuffer = v; })
+          .def_property(
+              "ssaoNumSamples",
+              [](pbr::commonstuff_ptr_t pbc) -> int { return pbc->_ssaoNumSamples; },
+              [](pbr::commonstuff_ptr_t pbc, int v) { pbc->_ssaoNumSamples = v; })
           .def("__repr__", [](pbr::commonstuff_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrCommon(%p)", d.get());

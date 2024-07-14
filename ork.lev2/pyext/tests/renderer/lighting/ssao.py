@@ -19,6 +19,7 @@ from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 
+SSAO_NUM_SAMPLES = 32
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
 
@@ -30,7 +31,7 @@ class SSAOAPP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1)
+    self.ezapp = OrkEzApp.create(self,width=1280,height=720,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     #self.materials = set()
@@ -39,6 +40,8 @@ class SSAOAPP(object):
                    eye = vec3(0,100,150), #
                    constrainZ=True, #
                    up=vec3(0,1,0))
+    
+    self.ssaamode = True
 
   ################################################
   # gpu data init:
@@ -60,10 +63,12 @@ class SSAOAPP(object):
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://effect_textures/white.dds"
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
-    sceneparams.SSAONumSamples = 16
-    sceneparams.SSAONumSteps = 4
-    sceneparams.SSAOBias = 0.0
-    sceneparams.SSAORadius = 0.1
+    sceneparams.SSAONumSamples = SSAO_NUM_SAMPLES
+    sceneparams.SSAONumSteps = 5
+    sceneparams.SSAOBias = -1e-5
+    sceneparams.SSAORadius = 2.0*2.54/100
+    sceneparams.SSAOWeight = 1.0
+    sceneparams.SSAOPower = 0.6
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
@@ -99,15 +104,33 @@ class SSAOAPP(object):
   ################################################
 
   def onUpdate(self,updinfo):
+    abstim = updinfo.absolutetime
+    pos = vec3(0,20+math.sin(abstim*3)*10,0)
+    self.modelnode.worldTransform.translation = pos
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    if self.ssaamode == True:
+      self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
+    else:
+      self.pbr_common.ssaoNumSamples = 0
     
   ##############################################
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("A"):
+        if self.ssaamode == True:
+          self.ssaamode = False
+        else:
+          self.ssaamode = True
+        print("SSAO MODE",self.ssaamode)
+        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    else:
+      handled = ui.HandlerResult()
+    return res
 
 ###############################################################################
 

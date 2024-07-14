@@ -72,6 +72,9 @@ struct CommonStuff : public ork::Object {
   lev2::texture_ptr_t envSpecularTexture() const;
   lev2::texture_ptr_t envDiffuseTexture() const;
 
+  lev2::texture_ptr_t ssaoKernel(lev2::Context* ctx);
+  lev2::texture_ptr_t ssaoScrNoise(lev2::Context* ctx, int w, int h);
+
   float environmentIntensity() const {
     return _environmentIntensity;
   }
@@ -108,6 +111,9 @@ struct CommonStuff : public ork::Object {
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
+  std::unordered_map<int, lev2::texture_ptr_t> _ssaoKernels;
+  std::unordered_map<uint64_t, lev2::texture_ptr_t> _ssaoScrNoise;
+
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;
   float _environmentMipScale  = 1.0f;
@@ -119,10 +125,12 @@ struct CommonStuff : public ork::Object {
   float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
   fvec4 _clearColor;
-  int _ssaoNumSamples = 16;
+  int _ssaoNumSamples = 0;
   int _ssaoNumSteps = 4;
   float _ssaoRadius = 0.05;
   float _ssaoBias = 0.0;
+  float _ssaoWeight = 1.0;
+  float _ssaoPower = 1.0;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
 

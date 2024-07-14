@@ -238,6 +238,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_ssao = params->tryKeyAsNumber("SSAORadius")) {
       pbrcommon->_ssaoRadius = try_ssao.value();
     }
+    if (auto try_ssao = params->tryKeyAsNumber("SSAOWeight")) {
+      pbrcommon->_ssaoWeight = try_ssao.value();
+    }
+    if (auto try_ssao = params->tryKeyAsNumber("SSAOPower")) {
+      pbrcommon->_ssaoPower = try_ssao.value();
+    }
   }
   //////////////////////////////////////////////
 

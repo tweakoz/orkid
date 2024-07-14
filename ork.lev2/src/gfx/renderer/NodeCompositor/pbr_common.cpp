@@ -24,6 +24,7 @@
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/util/logger.h>
+#include <ork/math/misc_math.h>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
@@ -150,6 +151,77 @@ asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath
   return load_req;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
+
+  auto it = _ssaoKernels.find(_ssaoNumSamples);
+  if( it == _ssaoKernels.end() ){
+    // make new kernel for size and cache
+    std::vector<fvec3> ssaoNoise;
+    math::FRANDOMGEN R(_ssaoNumSamples);
+    for (unsigned int i = 0; i < _ssaoNumSamples; i++) {
+      glm::vec3 noise(
+        R.rangedf(-1,1), 
+        R.rangedf(-1,1), 
+        0.0f); 
+      ssaoNoise.push_back(noise);
+    }     
+    auto texture = std::make_shared<lev2::Texture>();
+    auto txi = ctx->TXI();
+    TextureInitData tid;
+    tid._w = _ssaoNumSamples;
+    tid._h = 1;
+    tid._d = 1;
+    tid._src_format = EBufferFormat::RGB32F;
+    tid._dst_format = EBufferFormat::RGB32F;
+    tid._data = ssaoNoise.data();
+    tid._truncation_length = ssaoNoise.size() * sizeof(fvec3);
+    txi->initTextureFromData(texture.get(), tid);
+    _ssaoKernels[_ssaoNumSamples] = texture;
+    return texture;
+  }
+  return it->second;
+
+}
+///////////////////////////////////////////////////////////////////////////////
+lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int w, int h){
+
+  uint64_t key = uint64_t(w)<<32 | uint64_t(h);
+
+  auto it = _ssaoKernels.find(key);
+  if( it == _ssaoKernels.end() ){
+    // make new kernel for size and cache
+    std::vector<fvec3> ssaoNoise;
+    int numsamples = w*h;
+    math::FRANDOMGEN R(numsamples);
+    for (unsigned int i = 0; i < numsamples; i++) {
+      int x = i % w;
+      int y = i / w;
+      
+      glm::vec3 noise(
+        R.rangedf(-1,1), 
+        R.rangedf(-1,1), 
+        R.rangedf(-1,1));
+        
+      ssaoNoise.push_back(noise);
+    }     
+    auto texture = std::make_shared<lev2::Texture>();
+    auto txi = ctx->TXI();
+    TextureInitData tid;
+    tid._w = w;
+    tid._h = h;
+    tid._d = 1;
+    tid._src_format = EBufferFormat::RGB32F;
+    tid._dst_format = EBufferFormat::RGB32F;
+    tid._data = ssaoNoise.data();
+    tid._truncation_length = ssaoNoise.size() * sizeof(fvec3);
+    txi->initTextureFromData(texture.get(), tid);
+    _ssaoKernels[key] = texture;
+    return texture;
+  }
+  return it->second;
+
+}
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
   assignEnvTexture(tex);

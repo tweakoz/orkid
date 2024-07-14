@@ -68,6 +68,10 @@ uniform_set ub_frg {
   int SSAONumSteps;
   float SSAOBias;
   float SSAORadius;
+  float SSAOWeight;
+  float SSAOPower;
+  sampler2D SSAOKernel;
+  sampler2D SSAOScrNoise;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -377,7 +381,7 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  float ssao(vec2 frg_uv) {
+float ssao(vec2 frg_uv) {
     float depth = texture(MapDepth, frg_uv).r;
 
     // Compute the screen space normal from the depth map
@@ -391,58 +395,34 @@ libblock lib_deferred
     vec3 dy = vec3(0.0, texelSize.y, depthDown - depthUp);
     vec3 normal = normalize(cross(dx, dy));
 
-    // SSAO parameters
-    float radius = 0.05;
-    float bias = 0.0000;
-    const int numSamples = 16;
-
-    // Precomputed kernel of sample points in a hemisphere
-    vec3 sampleKernel[numSamples];
-    sampleKernel[0] = vec3(0.5381, 0.1856, -0.4319);
-    sampleKernel[1] = vec3(0.1379, 0.2486, 0.4430);
-    sampleKernel[2] = vec3(0.3371, 0.5679, -0.0057);
-    sampleKernel[3] = vec3(-0.6999, -0.0451, -0.0019);
-    sampleKernel[4] = vec3(0.0689, -0.1598, -0.8547);
-    sampleKernel[5] = vec3(0.0560, 0.0069, -0.1843);
-    sampleKernel[6] = vec3(-0.0146, 0.1402, 0.0762);
-    sampleKernel[7] = vec3(-0.1168, -0.0149, 0.0010);
-    sampleKernel[8] = vec3(-0.2110, -0.0471, -0.5301);
-    sampleKernel[9] = vec3(-0.2443, 0.0474, -0.1311);
-    sampleKernel[10] = vec3(-0.2611, 0.2013, 0.0765);
-    sampleKernel[11] = vec3(-0.3053, -0.0421, 0.0419);
-    sampleKernel[12] = vec3(0.3722, 0.0858, -0.2073);
-    sampleKernel[13] = vec3(0.4625, 0.5425, -0.1097);
-    sampleKernel[14] = vec3(-0.0339, -0.4319, 0.1444);
-    sampleKernel[15] = vec3(0.2066, -0.1046, 0.2884);
-
     // Random noise texture
-    vec3 randomVec;
-    randomVec.x = noise(frg_uv * (1000.0));
-    randomVec.y = noise(frg_uv * (1100.0));
-    randomVec.z = noise(frg_uv * (1200.0));
-    randomVec = normalize(randomVec - vec3(0.5, 0.5, 0.5));
-
+    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+    
     // Accumulate occlusion
     float occlusion = 0.0;
-    for (int i = 0; i < numSamples; ++i) {
-      vec3 sampleDir = reflect(sampleKernel[i], randomVec); // reflect sample around the random vector
-      sampleDir = normalize(sampleDir);
+    for (int i = 0; i < SSAONumSamples; ++i) {
+        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
+        sampleDir = normalize(sampleDir);
 
-      vec2 trv_per_step = sampleDir.xy*(SSAORadius / float(SSAONumSteps));
-      for (int j = 1; j <= SSAONumSteps; ++j) {
-        vec2 samplePos = frg_uv + trv_per_step * float(j);
-        float sampleDepth = texture(MapDepth, samplePos.xy).r;
+        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
+        for (int j = 1; j <= SSAONumSteps; ++j) {
+            vec2 samplePos = frg_uv + trv_per_step * float(j);
 
-        if (sampleDepth < depth + SSAOBias) {
-          occlusion += 1.0;
+            // Clamp sample positions to screen boundaries
+            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+
+            float sampleDepth = texture(MapDepth, samplePos.xy).r;
+
+            if (sampleDepth < depth + SSAOBias) {
+                occlusion += 1.0;
+            }
         }
-      }
     }
-    occlusion = (occlusion / (numSamples*SSAONumSteps));
+    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return 1.0-occlusion;
-    //return pow(depth,100);
-  }
+    return 1.0 - occlusion;
+}
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
 
@@ -497,7 +477,8 @@ libblock lib_deferred
       /////////////////////////
       float ambocc = 1.0;
       if(SSAONumSamples>0){
-        ambocc = ssao(uv);
+        ambocc = pow(ssao(uv),SSAOPower);
+        ambocc = mix(1.0,ambocc,SSAOWeight);
       }
       /////////////////////////
       // ambient lighting

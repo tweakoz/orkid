@@ -91,8 +91,12 @@ size_t TextureInitData::computeDstSize() const {
     case EBufferFormat::RGBA16UI:
       length *= 8;
       break;
-    case EBufferFormat::RGBA32F:
+    case EBufferFormat::RGB32F:
     case EBufferFormat::RGB32UI:
+      length *= 12;
+      break;
+    case EBufferFormat::RGBA32F:
+    case EBufferFormat::RGBA32UI:
       length *= 16;
       break;
     default:

@@ -837,6 +837,12 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       type           = GL_FLOAT;
       break;
     }
+    case EBufferFormat::RGB32F: {
+      internalformat = GL_RGB32F;
+      format         = GL_RGB;
+      type           = GL_FLOAT;
+      break;
+    }
     case EBufferFormat::R32F: {
       internalformat = GL_R32F;
       format         = GL_RED;

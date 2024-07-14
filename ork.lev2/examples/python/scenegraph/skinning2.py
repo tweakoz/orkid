@@ -18,6 +18,10 @@ from lev2utils.primitives import createParticleData
 from lev2utils.scenegraph import createSceneGraph
 this_dir = path.directoryOfInvokingModule()
 
+tokens = CrcStringProxy()
+
+SSAO_NUM_SAMPLES = 32
+
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph skinning example')
 args = vars(parser.parse_args())
@@ -135,7 +139,7 @@ class SkinningApp(object):
 
     self.materials = set()
 
-    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480)
+    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480, ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, 
                    eye = vec3(0,0,30), 
@@ -143,6 +147,7 @@ class SkinningApp(object):
                    up=vec3(0,1,0),
                    fov_deg = 110 )
     self.time = 0.0
+    self.ssaamode = True
 
   ##############################################
 
@@ -158,14 +163,23 @@ class SkinningApp(object):
     sg_params = VarMap()
     sg_params.SkyboxIntensity = 1.0
     sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 1.0
+    sg_params.SpecularIntensity = 0.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
     sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"
+    sg_params.SSAONumSamples = 32
+    sg_params.SSAONumSteps = 8
+    sg_params.SSAOBias = -1e-4
+    sg_params.SSAORadius = 1.0/100
+    sg_params.SSAOWeight = 0.5
+    sg_params.SSAOPower = 0.5
     self.scenegraph = self.ezapp.createScene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
+    self.render_node = self.scenegraph.compositorrendernode
+    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
 
     ###################################
     # create model data
@@ -249,14 +263,32 @@ class SkinningApp(object):
   def onUpdate(self,updinfo):
     self.time += updinfo.deltatime
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
+    if self.ssaamode == True:
+      self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
+    else:
+      self.pbr_common.ssaoNumSamples = 0
 
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+
+    res = ui.HandlerResult()
+    handled = False
+
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("A"):
+        if self.ssaamode == True:
+          self.ssaamode = False
+        else:
+          self.ssaamode = True
+        print("SSAO MODE",self.ssaamode)
+        return res       
+ 
+    if not handled:
+      handled = self.uicam.uiEventHandler(uievent)
+      if handled:
+        self.camera.copyFrom( self.uicam.cameradata )
+    return res
 
 ###############################################################################
 
