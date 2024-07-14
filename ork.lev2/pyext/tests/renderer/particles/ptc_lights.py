@@ -20,7 +20,7 @@ from signal import signal, SIGINT
 tokens = CrcStringProxy()
 
 from _ptc_harness import *
-
+SSAO_NUM_SAMPLES = 0
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
 
@@ -55,12 +55,20 @@ class ParticlesApp(object):
     ###################################
     sceneparams = VarMap() 
     sceneparams.preset = "ForwardPBR"
-    sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(1.2)
+    sceneparams.SkyboxIntensity = float(1.5)
+    sceneparams.SpecularIntensity = float(1.0)
     sceneparams.DiffuseIntensity = float(1.0)
     sceneparams.AmbientLight = vec3(0.0)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+
+    sceneparams.SSAONumSamples = SSAO_NUM_SAMPLES
+    sceneparams.SSAONumSteps = 4
+    sceneparams.SSAOBias = -1e-5
+    sceneparams.SSAORadius = 4.0*2.54/100
+    sceneparams.SSAOWeight = 1.0
+    sceneparams.SSAOPower = 2.0
+
     ###################################
     # post fx node
     ###################################
@@ -123,8 +131,12 @@ class ParticlesApp(object):
 
   def onUpdate(self,updinfo):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-    for item in self.ptc_systems:
 
+    amp = 0.0 # some lighting bugs when amp > 0
+    pos = vec3(0,20+math.sin(updinfo.absolutetime*3)*amp,0)
+    self.modelnode.worldTransform.translation = pos
+
+    for item in self.ptc_systems:
       prv_trans = item.particlenode.worldTransform.translation
       f = - item.frq
       x = item.radius*math.cos(updinfo.absolutetime*f)
