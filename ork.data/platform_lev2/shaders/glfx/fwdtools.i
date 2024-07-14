@@ -95,7 +95,8 @@ libblock lib_fwd //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    vec2 uv = gl_FragCoord.xy * vec2(1.0/1280,1.0/720);
+    vec2 uv = gl_FragCoord.xy * InvViewportSize;
+    //vec2 uv = gl_FragCoord.xy * vec2(1.0/1280.0,1.0/720.0);
     float ambocc = texture(SSAOMap, uv).x;
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;

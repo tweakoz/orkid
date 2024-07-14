@@ -251,8 +251,11 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
     auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
+    auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);
+    fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
     auto FXI              = context->FXI();
     FXI->BindParamCTex(this->_paramSSAOTexture, ssaotexture.get() );
+    FXI->BindParamVect2(this->_parInvViewSize, ivpdim );
   };
   /////////////////////////////////////////////////////////////
   // STEREO

@@ -305,13 +305,15 @@ uniform_set uset_frg_ssao {
   sampler2D MapDepth;
   vec2 texelSize;
   vec2 InvViewportSize; 
+  mat4 mvp; 
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_ssao //
   : iface_fmt_greyscale //
   : uset_frg_ssao //
   : lib_ssao { 
-  out_value   = 1.0;
+  vec2 uv = gl_FragCoord.xy*InvViewportSize;
+  out_value   = ssao(uv);
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

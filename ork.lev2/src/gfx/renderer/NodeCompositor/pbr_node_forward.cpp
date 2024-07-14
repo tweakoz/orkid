@@ -127,6 +127,8 @@ struct ForwardPbrNodeImpl {
       _ssao_material->gpuInit(context, "orkshader://framefx");
       _tek_ssao = _ssao_material->technique("framefx_ssao");
 
+      _fxpSSAOMVP         = _ssao_material->param("mvp");
+      _fxpSSAONumSamples    = _ssao_material->param("SSAONumSamples");
       _fxpSSAONumSamples    = _ssao_material->param("SSAONumSamples");
       _fxpSSAONumSteps    = _ssao_material->param("SSAONumSteps");
       _fxpSSAOBias    = _ssao_material->param("SSAOBias");
@@ -274,6 +276,7 @@ struct ForwardPbrNodeImpl {
 
         _ssao_material->begin(_tek_ssao,RCFD);
 
+        _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity() );
         _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
         _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps );
         _ssao_material->bindParamFloat(_fxpSSAOBias,pbrcommon->_ssaoBias );
@@ -284,6 +287,10 @@ struct ForwardPbrNodeImpl {
         _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get() );
         _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,0).get() );
         _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,0,W,H).get() );
+
+        fvec2 ivpsize = fvec2(1.0f/W,1.0f/H);
+
+        _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize  , ivpsize );
 
         ViewportRect extents(0, 0, W, H);
         FBI->pushViewport(extents);
@@ -307,6 +314,8 @@ struct ForwardPbrNodeImpl {
       // set to white..
       RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
     }
+    fvec2 ssao_dim = fvec2(_rtg_ambocc_accum->width(),_rtg_ambocc_accum->height());
+    RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
 
     ///////////////////////////////////////////////////////////////////////////
     // main color pass
@@ -628,6 +637,7 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpSSAOMapDepth;
   const FxShaderParam* _fxpSSAOTexelSize;
   const FxShaderParam* _fxpSSAOInvViewportSize;
+  const FxShaderParam* _fxpSSAOMVP;
 
 
 
