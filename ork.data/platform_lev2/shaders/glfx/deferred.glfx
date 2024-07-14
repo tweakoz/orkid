@@ -63,7 +63,11 @@ uniform_set ub_frg {
   float DepthFogDistance;
   float DepthFogPower;
   vec4 ShadowParams;
-  int SSAOMode;
+
+  int SSAONumSamples;
+  int SSAONumSteps;
+  float SSAOBias;
+  float SSAORadius;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -388,10 +392,9 @@ libblock lib_deferred
     vec3 normal = normalize(cross(dx, dy));
 
     // SSAO parameters
-    float radius = 25.5;
-    float bias = 0.0001;
+    float radius = 0.05;
+    float bias = 0.0000;
     const int numSamples = 16;
-    const int numSteps = 4;
 
     // Precomputed kernel of sample points in a hemisphere
     vec3 sampleKernel[numSamples];
@@ -425,19 +428,19 @@ libblock lib_deferred
       vec3 sampleDir = reflect(sampleKernel[i], randomVec); // reflect sample around the random vector
       sampleDir = normalize(sampleDir);
 
-      for (int j = 1; j <= numSteps; ++j) {
-        float scale = float(j) / float(numSteps);
-        vec2 samplePos = frg_uv + sampleDir.xy * scale * radius;
+      float rad_per_step = SSAORadius / float(SSAONumSteps);
+      for (int j = 1; j <= SSAONumSteps; ++j) {
+        vec2 samplePos = frg_uv + sampleDir.xy * float(j) * rad_per_step;
         float sampleDepth = texture(MapDepth, samplePos.xy).r;
 
-        if (sampleDepth < depth + bias) {
+        if (sampleDepth < depth + SSAOBias) {
           occlusion += 1.0;
         }
       }
     }
-    occlusion = (occlusion / (numSamples*numSteps));
+    occlusion = (occlusion / (numSamples*SSAONumSteps));
 
-    return occlusion;
+    return 1.0-occlusion;
     //return pow(depth,100);
   }
   /////////////////////////////////////////////////////////
@@ -490,17 +493,20 @@ libblock lib_deferred
       vec3 invF     = (vec3(1)-F);
       vec3 diffn = vec3(n.x,n.y,n.z);
       /////////////////////////
-      float ambocc = 1.0;
-      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
-      vec3 ambient = AmbientLevel*ambientshade;
-      if(SSAOMode==1){
-        float ao = ssao(uv,wpos,rawn);
-        ambient *= ao;
-      }
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
-      vec3 diffuse_light = diffuse_env;
+      // ambient occlusion
       /////////////////////////
-      vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,1);
+      float ambocc = 1.0;
+      if(SSAONumSamples>0){
+        ambocc = ssao(uv,wpos,rawn);
+      }
+      /////////////////////////
+      // ambient lighting
+      /////////////////////////
+      float ambientshade = clamp(dot(n,-edir),0,1)*0.3+0.7;
+      vec3 ambient = AmbientLevel*ambientshade*ambocc;
+      /////////////////////////
+      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
+      vec3 diffuse = clamp(basecolor*diffuse_env*ambocc,0,1);      
       /////////////////////////
       float spec_ruf = pow(roughness,1.3)*0.7;
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
@@ -519,7 +525,7 @@ libblock lib_deferred
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
       out_color += ambient + gbd._emissive;
 
-     // out_color = vec3( gbd._metallic, gbd._roughness, 0);
+      //out_color = ambient;
     }
     else {
       out_color = skyboxColor;

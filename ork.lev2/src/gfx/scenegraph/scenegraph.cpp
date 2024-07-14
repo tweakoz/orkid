@@ -226,8 +226,17 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
       pbrcommon->_depthFogDistance = try_dfdist.value();
     }
-    if (auto try_ssao = params->tryKeyAsInteger("SSAOMode")) {
-      pbrcommon->_ssaoMode = int(try_ssao.value());
+    if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
+      pbrcommon->_ssaoNumSamples = int(try_ssao.value());
+    }
+    if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
+      pbrcommon->_ssaoNumSteps = int(try_ssao.value());
+    }
+    if (auto try_ssao = params->tryKeyAsNumber("SSAOBias")) {
+      pbrcommon->_ssaoBias = try_ssao.value();
+    }
+    if (auto try_ssao = params->tryKeyAsNumber("SSAORadius")) {
+      pbrcommon->_ssaoRadius = try_ssao.value();
     }
   }
   //////////////////////////////////////////////

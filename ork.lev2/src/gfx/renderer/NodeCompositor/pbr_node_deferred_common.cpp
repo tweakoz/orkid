@@ -132,7 +132,10 @@ void DeferredContext::gpuInit(Context* target) {
     _parTime                = _lightingmtl->param("Time");
     _parNumLights           = _lightingmtl->param("NumLights");
     _parTileDim             = _lightingmtl->param("TileDim");
-    _parSSAOMode            = _lightingmtl->param("SSAOMode");
+    _parSSAONumSamples      = _lightingmtl->param("SSAONumSamples");
+    _parSSAONumSteps        = _lightingmtl->param("SSAONumSteps");
+    _parSSAOBias            = _lightingmtl->param("SSAOBias");
+    _parSSAORadius          = _lightingmtl->param("SSAORadius");
     _parNearFar             = _lightingmtl->param("NearFar");
     _parZndc2eye            = _lightingmtl->param("Zndc2eye");
     _parEnvironmentMipBias  = _lightingmtl->param("EnvironmentMipBias");

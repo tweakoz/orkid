@@ -54,12 +54,16 @@ class SSAOAPP(object):
     sceneparams = VarMap() 
     sceneparams.preset = "DeferredPBR"
     sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(0)
-    sceneparams.DiffuseIntensity = float(0)
-    sceneparams.AmbientLight = vec3(1)
+    sceneparams.SpecularIntensity = float(1)
+    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://effect_textures/white.dds"
-    sceneparams.SSAOMode = 1
+    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
+    sceneparams.SSAONumSamples = 16
+    sceneparams.SSAONumSteps = 4
+    sceneparams.SSAOBias = 0.0
+    sceneparams.SSAORadius = 0.1
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")

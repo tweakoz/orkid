@@ -173,12 +173,20 @@ struct PbrNodeImpl {
 
 
       /////////////////////////
-      _context->_lightingmtl->bindParamInt(_context->_parSSAOMode, pbrcommon->_ssaoMode );
+      // SSAO
+      /////////////////////////
+
+      _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples );
+      _context->_lightingmtl->bindParamInt(_context->_parSSAONumSteps, pbrcommon->_ssaoNumSteps );
+      _context->_lightingmtl->bindParamFloat(_context->_parSSAOBias, pbrcommon->_ssaoBias);
+      _context->_lightingmtl->bindParamFloat(_context->_parSSAORadius, pbrcommon->_ssaoRadius );
+
       /////////////////////////
       _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
       _context->_lightingmtl->bindParamVec3(_context->_parAmbientLevel, pbrcommon->ambientLevel());
       _context->_lightingmtl->bindParamFloat(_context->_parSpecularLevel, _context->_specularLevel);
       _context->_lightingmtl->bindParamFloat(_context->_parDiffuseLevel, _context->_diffuseLevel);
+
       /////////////////////////
 
       float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
