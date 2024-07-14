@@ -63,6 +63,7 @@ uniform_set ub_frg {
   float DepthFogDistance;
   float DepthFogPower;
   vec4 ShadowParams;
+  int SSAOMode;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -372,8 +373,72 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  float occlusion(vec2 uv){
-    return 1.0;
+  float ssao(vec2 frg_uv, vec3 wpos, vec3 wnrm) {
+    float depth = texture(MapDepth, frg_uv).r;
+
+    // Compute the screen space normal from the depth map
+    vec2 texelSize = 1.0 / textureSize(MapDepth, 0);
+    float depthLeft = texture(MapDepth, frg_uv - vec2(texelSize.x, 0.0)).r;
+    float depthRight = texture(MapDepth, frg_uv + vec2(texelSize.x, 0.0)).r;
+    float depthUp = texture(MapDepth, frg_uv - vec2(0.0, texelSize.y)).r;
+    float depthDown = texture(MapDepth, frg_uv + vec2(0.0, texelSize.y)).r;
+
+    vec3 dx = vec3(texelSize.x, 0.0, depthRight - depthLeft);
+    vec3 dy = vec3(0.0, texelSize.y, depthDown - depthUp);
+    vec3 normal = normalize(cross(dx, dy));
+
+    // SSAO parameters
+    float radius = 25.5;
+    float bias = 0.0001;
+    const int numSamples = 16;
+    const int numSteps = 4;
+
+    // Precomputed kernel of sample points in a hemisphere
+    vec3 sampleKernel[numSamples];
+    sampleKernel[0] = vec3(0.5381, 0.1856, -0.4319);
+    sampleKernel[1] = vec3(0.1379, 0.2486, 0.4430);
+    sampleKernel[2] = vec3(0.3371, 0.5679, -0.0057);
+    sampleKernel[3] = vec3(-0.6999, -0.0451, -0.0019);
+    sampleKernel[4] = vec3(0.0689, -0.1598, -0.8547);
+    sampleKernel[5] = vec3(0.0560, 0.0069, -0.1843);
+    sampleKernel[6] = vec3(-0.0146, 0.1402, 0.0762);
+    sampleKernel[7] = vec3(-0.1168, -0.0149, 0.0010);
+    sampleKernel[8] = vec3(-0.2110, -0.0471, -0.5301);
+    sampleKernel[9] = vec3(-0.2443, 0.0474, -0.1311);
+    sampleKernel[10] = vec3(-0.2611, 0.2013, 0.0765);
+    sampleKernel[11] = vec3(-0.3053, -0.0421, 0.0419);
+    sampleKernel[12] = vec3(0.3722, 0.0858, -0.2073);
+    sampleKernel[13] = vec3(0.4625, 0.5425, -0.1097);
+    sampleKernel[14] = vec3(-0.0339, -0.4319, 0.1444);
+    sampleKernel[15] = vec3(0.2066, -0.1046, 0.2884);
+
+    // Random noise texture
+    vec3 randomVec;
+    randomVec.x = noise(frg_uv * (1000.0));
+    randomVec.y = noise(frg_uv * (1100.0));
+    randomVec.z = noise(frg_uv * (1200.0));
+    randomVec = normalize(randomVec - vec3(0.5, 0.5, 0.5));
+
+    // Accumulate occlusion
+    float occlusion = 0.0;
+    for (int i = 0; i < numSamples; ++i) {
+      vec3 sampleDir = reflect(sampleKernel[i], randomVec); // reflect sample around the random vector
+      sampleDir = normalize(sampleDir);
+
+      for (int j = 1; j <= numSteps; ++j) {
+        float scale = float(j) / float(numSteps);
+        vec2 samplePos = frg_uv + sampleDir.xy * scale * radius;
+        float sampleDepth = texture(MapDepth, samplePos.xy).r;
+
+        if (sampleDepth < depth + bias) {
+          occlusion += 1.0;
+        }
+      }
+    }
+    occlusion = (occlusion / (numSamples*numSteps));
+
+    return occlusion;
+    //return pow(depth,100);
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
@@ -428,8 +493,12 @@ libblock lib_deferred
       float ambocc = 1.0;
       float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
       vec3 ambient = AmbientLevel*ambientshade;
+      if(SSAOMode==1){
+        float ao = ssao(uv,wpos,rawn);
+        ambient *= ao;
+      }
       vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
-      vec3 diffuse_light = ambient+diffuse_env;
+      vec3 diffuse_light = diffuse_env;
       /////////////////////////
       vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,1);
       /////////////////////////
@@ -437,7 +506,7 @@ libblock lib_deferred
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
       refl = vec3(refl.x,-refl.y,refl.z);
       vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
-      vec3 specular_light = ambient+spec_env*SkyboxLevel;
+      vec3 specular_light = spec_env*SkyboxLevel;
       vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
       vec3 specularMask = (F*brdf.x+brdf.y);
       vec3 specular = specularMask*specularC;
@@ -448,7 +517,7 @@ libblock lib_deferred
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
       vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
-      out_color += gbd._emissive;
+      out_color += ambient + gbd._emissive;
 
      // out_color = vec3( gbd._metallic, gbd._roughness, 0);
     }

@@ -171,6 +171,9 @@ struct PbrNodeImpl {
 
       _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
 
+
+      /////////////////////////
+      _context->_lightingmtl->bindParamInt(_context->_parSSAOMode, pbrcommon->_ssaoMode );
       /////////////////////////
       _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
       _context->_lightingmtl->bindParamVec3(_context->_parAmbientLevel, pbrcommon->ambientLevel());

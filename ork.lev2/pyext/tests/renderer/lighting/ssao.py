@@ -52,19 +52,19 @@ class SSAOAPP(object):
     # create scenegraph
     ###################################
     sceneparams = VarMap() 
-    sceneparams.preset = "ForwardPBR"
+    sceneparams.preset = "DeferredPBR"
     sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(1)
-    sceneparams.DiffuseIntensity = float(1)
-    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.SpecularIntensity = float(0)
+    sceneparams.DiffuseIntensity = float(0)
+    sceneparams.AmbientLight = vec3(1)
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://effect_textures/white.dds"
     sceneparams.SSAOMode = 1
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.scene.createLayer("std_forward")
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.layer_std = self.scene.createLayer("std_deferred")
+    self.std_layers = [self.layer_std,self.layer_donly]
     self.render_node = self.scene.compositorrendernode
     self.pbr_common = self.render_node.pbr_common
     self.pbr_common.useFloatColorBuffer = True
@@ -83,12 +83,12 @@ class SSAOAPP(object):
     gdata.extent = 1000.0
     self.gdata = gdata
     self.drawable_ground = gdata.createSGDrawable(self.scene)
-    self.groundnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"partgroundicle-node",self.drawable_ground)
+    self.groundnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,0,0)
     #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
-    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 50
     self.modelnode.worldTransform.translation = vec3(0,15,0)
 

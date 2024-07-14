@@ -141,6 +141,7 @@ struct DeferredContext {
   const FxShaderParam* _parInvVpDim            = nullptr;
   const FxShaderParam* _parNumLights           = nullptr;
   const FxShaderParam* _parTileDim             = nullptr;
+  const FxShaderParam* _parSSAOMode            = nullptr;
   const FxShaderParam* _parSpecularLevel       = nullptr;
   const FxShaderParam* _parSpecularMipBias     = nullptr;
   const FxShaderParam* _parDiffuseLevel        = nullptr;
