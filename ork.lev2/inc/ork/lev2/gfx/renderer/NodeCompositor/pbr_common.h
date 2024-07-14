@@ -119,7 +119,7 @@ struct CommonStuff : public ork::Object {
   float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
   fvec4 _clearColor;
-
+  int _ssaoMode = false;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
 

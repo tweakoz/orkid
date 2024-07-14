@@ -226,6 +226,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
       pbrcommon->_depthFogDistance = try_dfdist.value();
     }
+    if (auto try_ssao = params->tryKeyAsInteger("SSAOMode")) {
+      pbrcommon->_ssaoMode = int(try_ssao.value());
+    }
   }
   //////////////////////////////////////////////
 

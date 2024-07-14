@@ -372,178 +372,8 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  XXX environSDF(WPosData wpd, GBufData gbd) {
-    XXX rval;
-    if( gbd._mode==1 ){
-      vec3 wpos = gbd._wpos;
-      vec3 metalbase = vec3(0.04);
-      /////////////////////////
-      //vec3 albedo = gbd._wnrm;
-      vec3 albedo = gbd._albedo;
-      /////////////////////////
-      vec3 rawn = gbd._wnrm;
-      /////////////////////////
-      // pixel was written to in the gbuffer
-      float metallic = clamp(gbd._metallic,0.02,0.99);
-      float roughness = gbd._roughness;
-      float roughnessE = roughness;//*roughness;
-      float roughnessL = max(.01,roughnessE);
-      float dialetric = 1.0-metallic;
-      /////////////////////////
-      vec3 basecolor = albedo;
-      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
-      /////////////////////////
-      vec3 epos = posatdepth(wpd,0.0);
-      vec3 edir = normalize(wpos-epos);
-      vec3 n    = rawn; //normalize(rawn*2-vec3(1));
-      vec3 refl = normalize(reflect(edir,n));
-      /////////////////////////
-      float costheta = clamp(dot(n, edir),0.01,1.0);
-      vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughnessL,0.25)),0).rg;
-      ///////////////////////////
-      // somethings wrong with the brdf output here
-      //   we get speckled black noise
-      //   the following 2 lines and the clamp above on
-      //   costheta are a temporary fix
-      ///////////////////////////
-      //brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
-      brdf = clamp(brdf,vec2(.001),vec2(1));
-      /////////////////////////
-      vec3 F0 = mix(metalbase,basecolor,metallic);
-      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughnessL);
-      vec3 invF     = (vec3(1)-F);
-      vec3 diffn = vec3(n.x,-n.y,n.z);
-      /////////////////////////
-      float ambocc = 1.0;
-      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
-      vec3 ambient = AmbientLevel*ambientshade;
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
-      vec3 diffuse_light = ambient+diffuse_env;
-      /////////////////////////
-      vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
-      //vec3 diffuse = clamp(basecolor*dialetric*ambocc,0,10000);
-      /////////////////////////
-      float spec_miplevel = clamp(EnvironmentMipBias + (roughnessL * EnvironmentMipScale), 0, 10);
-      refl = vec3(refl.x,-refl.y,refl.z);
-      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
-      vec3 specular_light = ambient+spec_env;
-      vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
-      //vec3 ambient = invF*AmbientLevel;
-      /////////////////////////
-      rval._finallitcolor = saturateV(diffuse+specular);
-      rval._depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
-    }
-    else {
-      rval._finallitcolor = vec3(0,0,0);
-      rval._depth_fogval = 1.0;
-    }
-    return rval;
-  }
-  /////////////////////////////////////////////////////////
-  float distance_from_sphere(in vec3 p, in vec3 c, float r)
-  {
-    return length(p - c) - r;
-  }
-  /////////////////////////////////////////////////////////
-  float opRep( in vec3 p, in vec3 rep_freq )
-  {
-    vec3 q = mod(p+0.5*rep_freq,rep_freq)-0.5*rep_freq;
-    return distance_from_sphere( q, vec3(1), 1 );
-  }
-  /////////////////////////////////////////////////////////
-  float worldSDF(in vec3 p)
-  {
-    float t = Time*3;
-
-    float displacement = sin(5.0 * p.x + t) * sin(5.0 * p.y) * sin(5.0 * p.z) * 0.25;
-    float sphere_0 = opRep(p, vec3(10,10,10));
-    return sphere_0 + displacement;
-  }
-  /////////////////////////////////////////////////////////
-  vec3 worldNormalSDF(in vec3 p)
-  {
-    const vec3 small_step = vec3(0.01, 0.0, 0.0);
-
-    float gradient_x = worldSDF(p + small_step.xyy) - worldSDF(p - small_step.xyy);
-    float gradient_y = worldSDF(p + small_step.yxy) - worldSDF(p - small_step.yxy);
-    float gradient_z = worldSDF(p + small_step.yyx) - worldSDF(p - small_step.yyx);
-
-    vec3 normal = vec3(gradient_x, gradient_y, gradient_z);
-
-    return normalize(normal);
-  }
-  /////////////////////////////////////////////////////////
-  vec3 pbrEnvironmentLightingSDF(WPosData wpd){
-    GBufData gbd = decodeGBUF(wpd);
-    float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
-    if(depth_fogval>=1.0) depth_fogval= 0.0;
-    else 
-    depth_fogval = pow(1.0-depth_fogval,10);
-
-    XXX the_xxx = environSDF(wpd,gbd);
-
-    vec2 uv   = wpd._muv;
-    vec3 view_epos0 = posatdepth(wpd,0.0);
-    vec3 view_epos1 = posatdepth(wpd,1.0);
-    vec3 VIEW_N = normalize(view_epos1-view_epos0);
-
-  
-    const float SDF_EPSILON = 0.01;
-    const int MAX_NUM_STEPS = 99;
-
-    float total_distance_traveled = 0.0;
-
-    for (int i = 0; i < MAX_NUM_STEPS; ++i)
-    {
-      vec3 vec_d = VIEW_N*total_distance_traveled;
-      vec3 current_position = view_epos0 + vec_d;
-
-      float distance_SDF = worldSDF(current_position);
-
-      ////////////////////////////////////////////////
-
-      if (distance_SDF < SDF_EPSILON) { // hit
-          vec3 normal = worldNormalSDF(current_position);
-          vec3 light_position = vec3(2.0, -5.0, 3.0);
-          vec3 direction_to_light = normalize(current_position - light_position);
-          float diffuse_intensity = max(0.0, dot(normal, direction_to_light));
-
-          float nze = octavenoise(MapVolTexA,current_position*1.0,vec3(0,1,0),Time,8);
-          float roughness = 1.0-nze;
-          nze = pow(nze,2.5);
-
-          vec3 edir = normalize(current_position-view_epos0);
-          vec3 diffn = vec3(normal.x,-normal.y,normal.z);
-          float ambocc = 1.0;
-          float ambientshade = ambocc*clamp(dot(normal,-edir),0,1)*0.3+0.7;
-          vec3 ambient = AmbientLevel*ambientshade;
-          vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
-          vec3 diffuse_light = ambient+diffuse_env*nze;
-          vec3 refl = normalize(reflect(edir,normal));
-          refl = vec3(refl.x,-refl.y,refl.z);
-          float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
-          vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
-          vec3 specular_light = ambient+spec_env*nze;
-
-          return diffuse_light+specular_light; //normal*diffuse_intensity;
-      }
-
-      ////////////////////////////////////////////////
-      // check for misses
-      ////////////////////////////////////////////////
-
-      total_distance_traveled += distance_SDF*0.1;    
-
-      if( total_distance_traveled > gbd._linZ ) { // miss
-        break;
-      }
-
-    }
-
-    vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
-    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
-    vec3 out1 = mix(the_xxx._finallitcolor,skyboxColor,1.0-depth_fogval);
-    return vec3(1,0,0);//out1;
+  float occlusion(vec2 uv){
+    return 1.0;
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
@@ -778,11 +608,6 @@ fragment_shader ps_environment : iface_f2uv : lib_deferred  {
   out_clr = vec4(pbrEnvironmentLighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_environmentSDF : iface_f2uv : lib_deferred  {
-  WPosData wpd = monoWPD();
-  out_clr = vec4(pbrEnvironmentLightingSDF(wpd),1);
-}
-///////////////////////////////////////////////////////////////
 fragment_shader ps_environment_stereo : iface_f2uv : lib_deferred  {
   WPosData wpd = stereoWPD();
   vec3 c = pbrEnvironmentLighting(wpd);
@@ -938,24 +763,6 @@ technique environmentlighting {
 }
 ///////////////////////////////////////////////////////////////
 technique environmentlighting_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_environment_stereo;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
-technique environmentlightingSDF {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_environmentSDF;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
-technique environmentlightingSDF_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_passthru2uv;

@@ -27,6 +27,12 @@ struct VarParamFloatCast{
   operator bool () const { return _was_set; }
   float value() const { return _value; }
 };
+struct VarParamIntCast{
+  bool _was_set = false;
+  int _value = 0;
+  operator bool () const { return _was_set; }
+  int value() const { return _value; }
+};
 
 template <typename val_t> struct TVarMap {
   using value_type = val_t;
@@ -111,6 +117,23 @@ template <typename val_t> struct TVarMap {
         }
         else if( auto as_int = typedValueForKey<int>(key)){
           rval._value = float(as_int.value());
+          rval._was_set = true;
+        }
+        return rval;
+      };
+  ///////////////////////////////////////////////////////////////////////////
+  VarParamIntCast tryKeyAsInteger(const std::string& key) {
+        VarParamIntCast rval;
+        if( auto as_float = typedValueForKey<float>(key)){
+          rval._value = int(as_float.value());
+          rval._was_set = true;
+        }
+        else if( auto as_double = typedValueForKey<double>(key)){
+          rval._value = int(as_double.value());
+          rval._was_set = true;
+        }
+        else if( auto as_int = typedValueForKey<int>(key)){
+          rval._value = as_int.value();
           rval._was_set = true;
         }
         return rval;
