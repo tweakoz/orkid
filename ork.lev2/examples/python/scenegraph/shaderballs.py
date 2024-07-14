@@ -76,7 +76,7 @@ class SceneGraphApp(object):
       "SSAOBias": -1e-5,
       "SSAORadius": 2.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 0.4,
+      "SSAOPower": 1.0,
     }
 
     if envmap != "":

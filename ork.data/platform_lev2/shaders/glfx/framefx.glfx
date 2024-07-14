@@ -303,6 +303,7 @@ uniform_set uset_frg_ssao {
   sampler2D SSAOKernel;
   sampler2D SSAOScrNoise;
   sampler2D MapDepth;
+  sampler2D SSAOPREV;
   vec2 texelSize;
   vec2 InvViewportSize; 
   mat4 mvp; 
@@ -314,6 +315,8 @@ fragment_shader ps_ssao //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   out_value   = ssao(uv);
+  float prev = texture(SSAOPREV,uv).r;
+  out_value   = mix(prev,out_value,0.25);
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

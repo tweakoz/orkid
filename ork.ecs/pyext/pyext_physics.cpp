@@ -232,7 +232,11 @@ void pyinit_physics(py::module& module_ecs) {
                           .def_property(
                               "debug",
                               [](const bulletsysdata_ptr_t& sysdata) -> bool { return sysdata->_debug; },
-                              [](bulletsysdata_ptr_t& sysdata, bool val) { sysdata->_debug = val; });
+                              [](bulletsysdata_ptr_t& sysdata, bool val) { sysdata->_debug = val; })
+                          .def_property(
+                              "test_deactivation",
+                              [](const bulletsysdata_ptr_t& sysdata) -> bool { return sysdata->_test_deactivation; },
+                              [](bulletsysdata_ptr_t& sysdata, bool val) { sysdata->_test_deactivation = val; });
   type_codec->registerStdCodec<bulletsysdata_ptr_t>(bullsys_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bullfc_type = py::class_<BulletObjectForceControllerData, ork::Object, forcecontrollerdata_ptr_t>(

@@ -171,15 +171,32 @@ class SkinningApp(object):
     sg_params.preset = "DeferredPBR"
     sg_params.SSAONumSamples = 32
     sg_params.SSAONumSteps = 8
-    sg_params.SSAOBias = -1e-4
-    sg_params.SSAORadius = 1.0/100
-    sg_params.SSAOWeight = 0.5
+    sg_params.SSAOBias = -1e-3
+    sg_params.SSAORadius = 5.0/1000
+    sg_params.SSAOWeight = 1
     sg_params.SSAOPower = 0.5
+
+    ###################################
+    # post fx node
+    ###################################
+
+    postNode = PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.8
+    postNode.value = 1.0
+    postNode.gamma = 1.3
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToSceneVars(sg_params,"PostFxChain")
+    self.post_node = postNode
+
+    ###################################
+
     self.scenegraph = self.ezapp.createScene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
     self.render_node = self.scenegraph.compositorrendernode
     self.pbr_common = self.render_node.pbr_common
     self.pbr_common.useFloatColorBuffer = True
+
 
     ###################################
     # create model data

@@ -66,6 +66,7 @@ struct ForwardPbrNodeImpl {
       _rtg_main_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
       _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
       _rtg_ambocc_accum = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_ambocc_accum2 = std::make_shared<RtGroup>(context, 8, 8);
 
       auto pbrcommon = _node->_pbrcommon;
 
@@ -79,6 +80,7 @@ struct ForwardPbrNodeImpl {
       _rtgs_main->addBuffer("ForwardRt0", efmt);
 
       _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
+      _rtg_ambocc_accum2->createRenderTarget(EBufferFormat::R32F);
 
       printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -140,6 +142,7 @@ struct ForwardPbrNodeImpl {
       _fxpSSAOMapDepth    = _ssao_material->param("MapDepth");
       _fxpSSAOTexelSize    = _ssao_material->param("TexelSize");
       _fxpSSAOInvViewportSize    = _ssao_material->param("InvViewportSize");
+      _fxpSSAOPREV    = _ssao_material->param("SSAOPREV");
 
       auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
       _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
@@ -257,15 +260,24 @@ struct ForwardPbrNodeImpl {
 
       OrkAssert(pbrcommon->_useDepthPrepass);
 
-      FBI->validateRtGroup(_rtg_ambocc_accum);
+      bool DB = (node->_frameIndex&1);
+
+      auto ambocc_accum_w = DB ? _rtg_ambocc_accum : _rtg_ambocc_accum2;
+      auto ambocc_accum_r = DB ? _rtg_ambocc_accum2 : _rtg_ambocc_accum;
+
+      if(ambocc_accum_w->width() != W or ambocc_accum_w->height() != H){
+        ambocc_accum_w->Resize(W, H);
+      }
+
+      FBI->validateRtGroup(ambocc_accum_w);
       context->debugPushGroup("ForwardPBR::ssao-pre pass");
 
-      _rtg_ambocc_accum->_autoclear = false;
-      _rtg_ambocc_accum->_depthOnly = false;
-      _rtg_ambocc_accum->_clearMaskDepth = false;
-      _rtg_ambocc_accum->_clearMaskColor = false;
+      ambocc_accum_w->_autoclear = false;
+      ambocc_accum_w->_depthOnly = false;
+      ambocc_accum_w->_clearMaskDepth = false;
+      ambocc_accum_w->_clearMaskColor = false;
 
-      FBI->PushRtGroup(_rtg_ambocc_accum.get());
+      FBI->PushRtGroup(ambocc_accum_w.get());
 
         RenderContextInstData RCID(RCFD);
 
@@ -288,6 +300,7 @@ struct ForwardPbrNodeImpl {
         _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get() );
         _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,node_frame).get() );
         _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,node_frame,W,H).get() );
+        _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get() );
 
         fvec2 ivpsize = fvec2(1.0f/W,1.0f/H);
 
@@ -307,16 +320,17 @@ struct ForwardPbrNodeImpl {
       FBI->PopRtGroup();
       context->debugPopGroup();
 
-      RCFD->setUserProperty("SSAO_MAP"_crcu, _rtg_ambocc_accum->GetMrt(0)->_texture);
+      RCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
+      fvec2 ssao_dim = fvec2(ambocc_accum_w->width(),ambocc_accum_w->height());
+      RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
       //RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
 
     }
     else{
       // set to white..
       RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
+      RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8,8));
     }
-    fvec2 ssao_dim = fvec2(_rtg_ambocc_accum->width(),_rtg_ambocc_accum->height());
-    RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
 
     ///////////////////////////////////////////////////////////////////////////
     // main color pass
@@ -382,10 +396,6 @@ struct ForwardPbrNodeImpl {
       rtg_main->Resize(newwidth, newheight);
     }
     rtg_main->_autoclear = false;
-
-    if(_rtg_ambocc_accum->width() != newwidth or _rtg_ambocc_accum->height() != newheight){
-      _rtg_ambocc_accum->Resize(newwidth, newheight);
-    }
 
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
@@ -612,6 +622,7 @@ struct ForwardPbrNodeImpl {
   rtgset_ptr_t _rtgs_main;
   rtgroup_ptr_t _rtg_main_depth_copy;
   rtgroup_ptr_t _rtg_ambocc_accum;
+  rtgroup_ptr_t _rtg_ambocc_accum2;
   rtgroup_ptr_t _rtg_cube1_depth_copy;
   rtgset_ptr_t _rtgs_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
@@ -639,6 +650,7 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpSSAOTexelSize;
   const FxShaderParam* _fxpSSAOInvViewportSize;
   const FxShaderParam* _fxpSSAOMVP;
+  const FxShaderParam* _fxpSSAOPREV;
 
 
 

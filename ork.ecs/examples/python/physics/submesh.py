@@ -65,6 +65,7 @@ class ECS_MINIMAL(object):
     systemdata_phys.simulationRate = SIMRATE
     systemdata_phys.debug = False
     systemdata_phys.linGravity = vec3(0,-9.8*3,0)
+    systemdata_phys.test_deactivation = True
 
     ####################
     # create scenegraph

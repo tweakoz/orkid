@@ -104,6 +104,7 @@ struct BulletSystemData : public SystemData {
   bool _debug = false;
   fvec3 _lingravity;
   fvec3 _expgravity;
+  bool _test_deactivation = false;
 
 public:
   BulletSystemData();

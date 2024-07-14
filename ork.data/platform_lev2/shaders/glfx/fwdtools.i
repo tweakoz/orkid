@@ -98,14 +98,8 @@ libblock lib_fwd //
     //vec2 uv = gl_FragCoord.xy * InvViewportSize;
     //float ambocc = texture(SSAOMap, uv).x;
     // filter sample ambocc
-    float ambocc = 0.0;
-    for( int i=-3; i<4; i++ )
-    for( int j=-3; j<4; j++ )
-    {
-      vec2 uv = (gl_FragCoord.xy + vec2(i,j)) * InvViewportSize;
-      ambocc += texture(SSAOMap, uv).x;
-    }
-    ambocc /= 49.0;
+    vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
+    float ambocc = texture(SSAOMap, uv).x;
 
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;

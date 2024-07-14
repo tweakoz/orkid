@@ -19,15 +19,16 @@ from lev2utils.cameras import *
 
 ################################################################################
 tokens = core.CrcStringProxy()
-LAYERNAME = "std_deferred"
+LAYERNAME = "std_forward"
 GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
-NUM_BALLS = 1000
+NUM_BALLS = 1500
 OFFSET = vec3(0,0.5,0)
-SIMRATE = 30
+SIMRATE = 120
 BALLS_NODE_NAME = "balls-instancing-node"
+SSAO_NUM_SAMPLES = 64
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -40,6 +41,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     self.ezapp = ecs.createApp( self,
                                 ssaa=0,
                                 fullscreen=False,
+                                left = 20,
+                                top = 42,
+                                width = 1680,
+                                height = 900,
                                 disableMouseCursor=True)
 
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
@@ -77,6 +82,13 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
+      "SSAONumSamples": SSAO_NUM_SAMPLES,
+      "SSAONumSteps": 3,
+      "SSAOBias": -1e-5,
+      "SSAORadius": 2.0*25.4/1000, # 2 inches
+      "SSAOWeight": 1.0,
+      "SSAOPower": 2.0,
+      "preset": "ForwardPBR"
     })
     
     self.systemdata_scenegraph = systemdata_SG

@@ -21,9 +21,10 @@ tokens = CrcStringProxy()
 ################################################################################
 LAYERNAME = "std_deferred"
 BALLS_NODE_NAME = "balls"
-NUM_BALLS = 4000
+NUM_BALLS = 2500
 MAX_BALLS = 5000
 SPAWN_RATE = 0.1
+SSAO_NUM_SAMPLES = 128
 ################################################################################
 
 class MYCONTROLLER:
@@ -67,6 +68,12 @@ class MYCONTROLLER:
       "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
+      "SSAONumSamples": SSAO_NUM_SAMPLES,
+      "SSAONumSteps": 3,
+      "SSAOBias": -1e-5,
+      "SSAORadius": 2.0*25.4/1000, # 2 inches
+      "SSAOWeight": 1.0,
+      "SSAOPower": 2.0,
     })
 
     drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
@@ -236,7 +243,7 @@ class MYCONTROLLER:
     phase = 0.0
     while(self.run_state==1): # run loop
 
-      time.sleep(0.25)
+      time.sleep(0.001)
 
       prob = random.randint(0,100)
 

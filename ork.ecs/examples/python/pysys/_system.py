@@ -125,7 +125,7 @@ def onSystemUpdate(simulation):
       incept = ent.vars.incept
       target_pos = ent.vars.target_pos
 
-      lerp_factor = 0.001
+      lerp_factor = 0.0003
       inv_lerp_factor = 1.0 - lerp_factor
       ent.translation = ent.translation*inv_lerp_factor + target_pos*lerp_factor
       ent.orientation = ent.orientation * ent.vars.dr
@@ -144,7 +144,7 @@ def onSystemUpdate(simulation):
       #print("ents_per_sec<%s>"%ents_per_sec)
       
   if True:      
-    phase = gt*0.01
+    phase = gt*0.1
     tgt = vec3(0,0,0)
     eye = vec3(math.sin(phase),0,-math.cos(phase))*30.0
 
@@ -152,7 +152,7 @@ def onSystemUpdate(simulation):
        tokens.eye: eye,
        tokens.tgt: tgt,
        tokens.up: vec3(0,1,0),
-       tokens.near: 0.1,
+       tokens.near: 1,
        tokens.far: 1000.0,
        tokens.fovy: 90.0*(3.14159/180.0),
     })

@@ -154,7 +154,7 @@ asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx,int noise_seed){
 
-  int seed = noise_seed%67;
+  int seed = noise_seed%97;
   int num_samples = (_ssaoNumSamples<8) ? 8 : _ssaoNumSamples;
   uint64_t key = uint64_t(seed)<<32 | uint64_t(num_samples);
 
@@ -190,7 +190,7 @@ lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx,int noise_seed){
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int noise_seed, int w, int h){
 
-  int seed = noise_seed&0x3F;
+  int seed = noise_seed%33;
 
   uint64_t key = uint64_t(seed)<<32 | uint64_t(w)<<16 | uint64_t(h);
 
