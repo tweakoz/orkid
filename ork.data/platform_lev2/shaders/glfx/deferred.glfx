@@ -377,7 +377,7 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  float ssao(vec2 frg_uv, vec3 wpos, vec3 wnrm) {
+  float ssao(vec2 frg_uv) {
     float depth = texture(MapDepth, frg_uv).r;
 
     // Compute the screen space normal from the depth map
@@ -428,9 +428,9 @@ libblock lib_deferred
       vec3 sampleDir = reflect(sampleKernel[i], randomVec); // reflect sample around the random vector
       sampleDir = normalize(sampleDir);
 
-      float rad_per_step = SSAORadius / float(SSAONumSteps);
+      vec2 trv_per_step = sampleDir.xy*(SSAORadius / float(SSAONumSteps));
       for (int j = 1; j <= SSAONumSteps; ++j) {
-        vec2 samplePos = frg_uv + sampleDir.xy * float(j) * rad_per_step;
+        vec2 samplePos = frg_uv + trv_per_step * float(j);
         float sampleDepth = texture(MapDepth, samplePos.xy).r;
 
         if (sampleDepth < depth + SSAOBias) {
@@ -497,7 +497,7 @@ libblock lib_deferred
       /////////////////////////
       float ambocc = 1.0;
       if(SSAONumSamples>0){
-        ambocc = ssao(uv,wpos,rawn);
+        ambocc = ssao(uv);
       }
       /////////////////////////
       // ambient lighting
