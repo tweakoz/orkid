@@ -66,7 +66,7 @@ class SimApp(object):
   ################################################
   def __init__(self,vrmode,instance_set_class):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,fullscreen=True)
+    self.ezapp = OrkEzApp.create(self,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.instanceset=None
     self.instance_set_class = instance_set_class

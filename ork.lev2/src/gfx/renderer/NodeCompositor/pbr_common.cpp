@@ -154,12 +154,14 @@ asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
 
-  auto it = _ssaoKernels.find(_ssaoNumSamples);
+  int num_samples = (_ssaoNumSamples<8) ? 8 : _ssaoNumSamples;
+
+  auto it = _ssaoKernels.find(num_samples);
   if( it == _ssaoKernels.end() ){
     // make new kernel for size and cache
     std::vector<fvec3> ssaoNoise;
-    math::FRANDOMGEN R(_ssaoNumSamples);
-    for (unsigned int i = 0; i < _ssaoNumSamples; i++) {
+    math::FRANDOMGEN R(num_samples);
+    for (unsigned int i = 0; i < num_samples; i++) {
       glm::vec3 noise(
         R.rangedf(-1,1), 
         R.rangedf(-1,1), 
@@ -169,7 +171,7 @@ lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
     auto texture = std::make_shared<lev2::Texture>();
     auto txi = ctx->TXI();
     TextureInitData tid;
-    tid._w = _ssaoNumSamples;
+    tid._w = num_samples;
     tid._h = 1;
     tid._d = 1;
     tid._src_format = EBufferFormat::RGB32F;
@@ -177,7 +179,7 @@ lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx){
     tid._data = ssaoNoise.data();
     tid._truncation_length = ssaoNoise.size() * sizeof(fvec3);
     txi->initTextureFromData(texture.get(), tid);
-    _ssaoKernels[_ssaoNumSamples] = texture;
+    _ssaoKernels[num_samples] = texture;
     return texture;
   }
   return it->second;

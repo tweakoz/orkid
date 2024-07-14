@@ -49,6 +49,15 @@ uniform_set ub_frg {
   float DepthFogDistance;
   float DepthFogPower;
   vec4 ShadowParams;
+
+  int SSAONumSamples;
+  int SSAONumSteps;
+  float SSAOBias;
+  float SSAORadius;
+  float SSAOWeight;
+  float SSAOPower;
+  sampler2D SSAOKernel;
+  sampler2D SSAOScrNoise;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_v2uv : ub_vtx {

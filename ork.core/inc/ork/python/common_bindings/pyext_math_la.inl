@@ -210,7 +210,7 @@ void pyinit_math_la_t_vec(
           });
   type_codec->registerStdCodec<vec3_t>(vec3_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto bdesc_vec4 = std::make_shared<BufferDescription>();
+  static auto bdesc_vec4 = std::make_shared<BufferDescription>();
   bdesc_vec4->scalar_size    = sizeof(T);
   bdesc_vec4->num_dimensions = 1;
   bdesc_vec4->shape          = {4};
@@ -218,7 +218,7 @@ void pyinit_math_la_t_vec(
   /////////////////////////////////////////////////////////////////////////////////
   auto vec4_type = //
       py::clazz_bufp<vec4_t>(module_core, vec4_name.c_str())
-          .as_buffer([bdesc_vec4](vec4_t& vec) -> adapter_t::buffer_handle_t {
+          .as_buffer([](vec4_t& vec) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_vec4, vec.asArray());
           })
           //////////////////////////////////////////////////////////////////////////

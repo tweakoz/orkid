@@ -129,7 +129,7 @@ struct CommonStuff : public ork::Object {
   int _ssaoNumSteps = 4;
   float _ssaoRadius = 0.05;
   float _ssaoBias = 0.0;
-  float _ssaoWeight = 1.0;
+  float _ssaoWeight = 0.0;
   float _ssaoPower = 1.0;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;

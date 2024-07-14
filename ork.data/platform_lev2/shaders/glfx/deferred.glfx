@@ -423,6 +423,8 @@ float ssao(vec2 frg_uv) {
 
     return 1.0 - occlusion;
 }
+
+
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
 
@@ -476,7 +478,7 @@ float ssao(vec2 frg_uv) {
       // ambient occlusion
       /////////////////////////
       float ambocc = 1.0;
-      if(SSAONumSamples>0){
+      if(SSAONumSamples>=8){
         ambocc = pow(ssao(uv),SSAOPower);
         ambocc = mix(1.0,ambocc,SSAOWeight);
       }
