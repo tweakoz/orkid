@@ -170,6 +170,7 @@ struct ForwardPbrNodeImpl {
     bool renderingPROBE = fpass->_renderingPROBE;
     int W  = drawdata->property("OutputWidth"_crcu).get<int>();
     int H = drawdata->property("OutputHeight"_crcu).get<int>();
+    int node_frame = _node->_frameIndex;
 
     ///////////////////////////////////////////////////////////////////////////
     // CPD modifications for this set of passes
@@ -285,8 +286,8 @@ struct ForwardPbrNodeImpl {
         _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower );
 
         _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get() );
-        _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,0).get() );
-        _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,0,W,H).get() );
+        _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,node_frame).get() );
+        _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,node_frame,W,H).get() );
 
         fvec2 ivpsize = fvec2(1.0f/W,1.0f/H);
 
