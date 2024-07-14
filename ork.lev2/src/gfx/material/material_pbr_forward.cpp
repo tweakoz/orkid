@@ -176,15 +176,6 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       if (texlist.size() > 4) {
         FXI->BindParamCTex(mtl->_parLightCookie4, texlist[4]);
       }
-      //if (texlist.size() > 5) {
-        //FXI->BindParamCTex(mtl->_parLightCookie5, texlist[5]);
-      //}
-      //if (texlist.size() > 6) {
-        //FXI->BindParamCTex(mtl->_parLightCookie6, texlist[6]);
-      //}
-      //if (texlist.size() > 7) {
-        //FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
-      //}
     }
     
     ///////////////////////////////////////////////////////////////////////////
@@ -259,24 +250,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
   auto l_ssao = [this](const RenderContextInstData& RCID, int ipass) {
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
-    auto pbrcommon = RCFD->_pbrcommon;
-    auto depthtexture = RCFD->userPropertyAs<texture_ptr_t>("DEPTH_MAP"_crcu);
+    auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
     auto FXI              = context->FXI();
-
-    int W = RCFD->userPropertyAs<int>("OutputWidth"_crcu);
-    int H = RCFD->userPropertyAs<int>("OutputHeight"_crcu);
-    int noise_seed = RCFD->userPropertyAs<int>("noise_seed"_crcu);
-
-    FXI->BindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples );
-    FXI->BindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps );
-    FXI->BindParamFloat(this->_paramSSAOBias, pbrcommon->_ssaoBias);
-    FXI->BindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius );
-    FXI->BindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight );
-    FXI->BindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower );
-    FXI->BindParamCTex(this->_paramSSAOKernel, pbrcommon->ssaoKernel(context, noise_seed).get() );
-    FXI->BindParamCTex(this->_paramSSAOScrNoise, pbrcommon->ssaoScrNoise(context, noise_seed, 1280, 720 ).get() );
-    FXI->BindParamCTex(this->_paramMapDepth, depthtexture.get() );
-    FXI->BindParamVect2(this->_parInvViewSize, fvec2(1.0f/W,1.0f/H) );
+    FXI->BindParamCTex(this->_paramSSAOTexture, ssaotexture.get() );
   };
   /////////////////////////////////////////////////////////////
   // STEREO

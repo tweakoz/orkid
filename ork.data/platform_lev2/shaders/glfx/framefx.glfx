@@ -1,16 +1,18 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default {}
+fxconfig fxcfg_default {
+  import "pbrtools.i"
+}
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx {
+uniform_set ub_vtx_ffx {
   mat4 mvp;
   vec4 modcolor;
   float time;
 }
-vertex_interface iface_vdefault : ub_vtx {
+vertex_interface iface_vdefault : ub_vtx_ffx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -32,7 +34,7 @@ fragment_interface iface_fdefault {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
+uniform_set ub_frg_ffx {
   vec4 ModColor;
   float time;
   float BlurFactor;
@@ -55,26 +57,32 @@ uniform_set ub_frg {
   sampler2D AuxMap1;
   sampler2D NoiseMap;
 }
-fragment_interface iface_fmt : ub_frg {
+fragment_interface iface_fmt : ub_frg_ffx {
   inputs { vec2 frg_uv; }
   //
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt_greyscale {
+  inputs { vec2 frg_uv; }
+  //
+  outputs { float out_value; }
+}
+///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default : default {
+state_block sb_default_ffx : default {
   BlendMode = OFF;
   DepthTest = OFF;
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend : sb_default {
+state_block sb_lerpblend : sb_default_ffx {
   BlendMode = ALPHA;
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive : sb_default {
+state_block sb_additive : sb_default_ffx {
   BlendMode = ADDITIVE;
   CullTest  = OFF;
 }
@@ -285,6 +293,27 @@ fragment_shader ps_hsvg : iface_fmt : color_tools {
   out_clr   = vec4(r,g,b, 1.0);
 }
 ///////////////////////////////////////////////////////////////
+uniform_set uset_frg_ssao {
+  int SSAONumSamples;
+  int SSAONumSteps;
+  float SSAOBias;
+  float SSAORadius;
+  float SSAOWeight;
+  float SSAOPower;
+  sampler2D SSAOKernel;
+  sampler2D SSAOScrNoise;
+  sampler2D MapDepth;
+  vec2 texelSize;
+  vec2 InvViewportSize; 
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_ssao //
+  : iface_fmt_greyscale //
+  : uset_frg_ssao //
+  : lib_ssao { 
+  out_value   = 1.0;
+}
+///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {
   float EffectAmount;
   sampler2D MrtMap0;
@@ -384,7 +413,7 @@ technique frameeffect_standard {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_standard;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_fbout {
@@ -392,7 +421,7 @@ technique frameeffect_fbout {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_fbout;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_fbin {
@@ -400,7 +429,7 @@ technique frameeffect_fbin {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_fbin;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique framefx_glow_maskbright {
@@ -408,7 +437,7 @@ technique framefx_glow_maskbright {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_maskbright;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique framefx_glow_blurx {
@@ -416,7 +445,7 @@ technique framefx_glow_blurx {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_blurx;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique framefx_glow_blury {
@@ -424,7 +453,7 @@ technique framefx_glow_blury {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_blury;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_radialblur {
@@ -432,7 +461,7 @@ technique frameeffect_radialblur {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_uitextured;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_comic {
@@ -440,7 +469,7 @@ technique frameeffect_comic {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_comic;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique framefx_glow_join {
@@ -448,7 +477,7 @@ technique framefx_glow_join {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_hdr_join;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique framefx_hsvg {
@@ -456,7 +485,15 @@ technique framefx_hsvg {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_hsvg;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_ssao {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_ssao;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_ghost_join {
@@ -464,7 +501,7 @@ technique frameeffect_ghost_join {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_hdr_join_ghost;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_afterlife_join {
@@ -472,7 +509,7 @@ technique frameeffect_afterlife_join {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_uitextured;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_dof_join {
@@ -480,7 +517,7 @@ technique frameeffect_dof_join {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_uitextured;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_debugdepth {
@@ -488,7 +525,7 @@ technique frameeffect_debugdepth {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_uitextured;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }
 technique frameeffect_debugnormals {
@@ -496,6 +533,6 @@ technique frameeffect_debugnormals {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_uitextured;
-    state_block     = sb_default;
+    state_block     = sb_default_ffx;
   }
 }

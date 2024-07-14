@@ -157,14 +157,7 @@ public:
   fxparam_constptr_t _paramSpecularLevel   = nullptr;
   fxparam_constptr_t _paramSkyboxLevel     = nullptr;
 
-  fxparam_constptr_t _paramSSAONumSamples  = nullptr;
-  fxparam_constptr_t _paramSSAONumSteps    = nullptr;
-  fxparam_constptr_t _paramSSAOBias        = nullptr;
-  fxparam_constptr_t _paramSSAORadius      = nullptr;
-  fxparam_constptr_t _paramSSAOWeight      = nullptr;
-  fxparam_constptr_t _paramSSAOPower       = nullptr;
-  fxparam_constptr_t _paramSSAOKernel      = nullptr;
-  fxparam_constptr_t _paramSSAOScrNoise    = nullptr;
+  fxparam_constptr_t _paramSSAOTexture    = nullptr;
 
   fxparam_constptr_t _parMapAmbOcc           = nullptr;
   fxparam_constptr_t _parMapLightMap         = nullptr;

@@ -3,8 +3,7 @@ libblock lib_fwd //
   : lib_math //
   : lib_brdf //
   : lib_envmapping //
-  : lib_def
-  : lib_ssao {
+  : lib_def {
   /////////////////////////////////////////////////////////
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd,vec3 eyepos) {
     LightCtx plc;
@@ -96,14 +95,8 @@ libblock lib_fwd //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    float ambocc = 1.0;
-    if(SSAONumSamples>=8){
-      // get screen space uv
-      //vec2 uv = gl_FragCoord.xy / vec2(1280, 720);
-      vec2 uv = gl_FragCoord.xy * InvViewportSize;
-      ambocc = pow(ssao(uv),SSAOPower);
-      ambocc = mix(1.0,ambocc,SSAOWeight);
-    }
+    vec2 uv = gl_FragCoord.xy * vec2(1.0/1280,1.0/720);
+    float ambocc = texture(SSAOMap, uv).x;
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;
@@ -188,12 +181,6 @@ libblock lib_fwd //
     // ambient occlusion
     /////////////////////////
     float ambocc = 1.0;
-    if(SSAONumSamples>=8){
-      // get screen space uv
-      vec2 uv = gl_FragCoord.xy / vec2(1280, 720);
-      ambocc = pow(ssao(uv),SSAOPower);
-      ambocc = mix(1.0,ambocc,SSAOWeight);
-    }
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;

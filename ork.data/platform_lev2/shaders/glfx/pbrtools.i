@@ -78,14 +78,7 @@ uniform_set ub_frg_fwd {
   float MetallicFactor;
   float RoughnessFactor;
 
-  int SSAONumSamples;
-  int SSAONumSteps;
-  float SSAOBias;
-  float SSAORadius;
-  float SSAOWeight;
-  float SSAOPower;
-  sampler2D SSAOKernel;
-  sampler2D SSAOScrNoise;
+  sampler2D SSAOMap;
 
   float DepthFogDistance;
   float DepthFogPower;

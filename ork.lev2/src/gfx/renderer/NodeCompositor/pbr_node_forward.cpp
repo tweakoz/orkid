@@ -65,6 +65,7 @@ struct ForwardPbrNodeImpl {
 
       _rtg_main_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
       _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_ambocc_accum = std::make_shared<RtGroup>(context, 8, 8);
 
       auto pbrcommon = _node->_pbrcommon;
 
@@ -76,6 +77,8 @@ struct ForwardPbrNodeImpl {
       auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
       _rtgs_main  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
       _rtgs_main->addBuffer("ForwardRt0", efmt);
+
+      _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
 
       printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -113,7 +116,32 @@ struct ForwardPbrNodeImpl {
         _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
         _fxpMVP         = _blit2screenmtl.param("MatMVP");
         _fxpColorMap    = _blit2screenmtl.param("ColorMap");
+
       }
+
+      /////////////////
+      // SSAO
+      /////////////////
+
+      _ssao_material           = std::make_shared<FreestyleMaterial>();
+      _ssao_material->gpuInit(context, "orkshader://framefx");
+      _tek_ssao = _ssao_material->technique("framefx_ssao");
+
+      _fxpSSAONumSamples    = _ssao_material->param("SSAONumSamples");
+      _fxpSSAONumSteps    = _ssao_material->param("SSAONumSteps");
+      _fxpSSAOBias    = _ssao_material->param("SSAOBias");
+      _fxpSSAORadius    = _ssao_material->param("SSAORadius");
+      _fxpSSAOWeight    = _ssao_material->param("SSAOWeight");
+      _fxpSSAOPower    = _ssao_material->param("SSAOPower");
+      _fxpSSAOKernel    = _ssao_material->param("SSAOKernel");
+      _fxpSSAOScrNoise    = _ssao_material->param("SSAOScrNoise");
+      _fxpSSAOMapDepth    = _ssao_material->param("MapDepth");
+      _fxpSSAOTexelSize    = _ssao_material->param("TexelSize");
+      _fxpSSAOInvViewportSize    = _ssao_material->param("InvViewportSize");
+
+      auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
+      _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
+
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,6 +166,8 @@ struct ForwardPbrNodeImpl {
     CompositingPassData MY_CPD = CIMPL->topCPD(); // copy top CPD
     auto pbrcommon = _node->_pbrcommon;
     bool renderingPROBE = fpass->_renderingPROBE;
+    int W  = drawdata->property("OutputWidth"_crcu).get<int>();
+    int H = drawdata->property("OutputHeight"_crcu).get<int>();
 
     ///////////////////////////////////////////////////////////////////////////
     // CPD modifications for this set of passes
@@ -156,6 +186,8 @@ struct ForwardPbrNodeImpl {
     RCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
     RCFD->setUserProperty("renderingPROBE"_crcu, renderingPROBE);
     RCFD->setUserProperty("havePROBES"_crcu, have_probes);
+    RCFD->setUserProperty("OutputWidth"_crcu, W);
+    RCFD->setUserProperty("OutputHeight"_crcu, H);
 
     ///////////////////////////////////////////////////////////////////////////
     // Render Skybox first so MSAA can blend with it
@@ -206,17 +238,80 @@ struct ForwardPbrNodeImpl {
       FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // main color pass
-    ///////////////////////////////////////////////////////////////////////////
+    //
 
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
     }
-    int W  = drawdata->property("OutputWidth"_crcu).get<int>();
-    int H = drawdata->property("OutputHeight"_crcu).get<int>();
-    RCFD->setUserProperty("OutputWidth"_crcu, W);
-    RCFD->setUserProperty("OutputHeight"_crcu, H);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // SSAO prepass
+    ///////////////////////////////////////////////////////////////////////////
+
+    bool is_ssao_active = (pbrcommon->_ssaoNumSamples>=8);
+
+    if(is_ssao_active){
+
+      OrkAssert(pbrcommon->_useDepthPrepass);
+
+      FBI->validateRtGroup(_rtg_ambocc_accum);
+      context->debugPushGroup("ForwardPBR::ssao-pre pass");
+
+      _rtg_ambocc_accum->_autoclear = false;
+      _rtg_ambocc_accum->_depthOnly = false;
+      _rtg_ambocc_accum->_clearMaskDepth = false;
+      _rtg_ambocc_accum->_clearMaskColor = false;
+
+      FBI->PushRtGroup(_rtg_ambocc_accum.get());
+
+        RenderContextInstData RCID(RCFD);
+
+        _ssao_material->_rasterstate.SetBlending(Blending::OFF);
+        _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+        _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
+        _ssao_material->_rasterstate.SetZWriteMask(false);
+        _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
+
+        _ssao_material->begin(_tek_ssao,RCFD);
+
+        _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
+        _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps );
+        _ssao_material->bindParamFloat(_fxpSSAOBias,pbrcommon->_ssaoBias );
+        _ssao_material->bindParamFloat(_fxpSSAORadius,pbrcommon->_ssaoRadius );
+        _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight );
+        _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower );
+
+        _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get() );
+        _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,0).get() );
+        _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,0,W,H).get() );
+
+        ViewportRect extents(0, 0, W, H);
+        FBI->pushViewport(extents);
+        FBI->pushScissor(extents);
+
+        GBI->render2dQuadEML();            // full screen quad
+        FBI->popViewport();
+        FBI->popScissor();
+
+        _ssao_material->end(RCFD);
+        
+
+      FBI->PopRtGroup();
+      context->debugPopGroup();
+
+      RCFD->setUserProperty("SSAO_MAP"_crcu, _rtg_ambocc_accum->GetMrt(0)->_texture);
+      //RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
+
+    }
+    else{
+      // set to white..
+      RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // main color pass
+    ///////////////////////////////////////////////////////////////////////////
+
 
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
@@ -277,6 +372,10 @@ struct ForwardPbrNodeImpl {
       rtg_main->Resize(newwidth, newheight);
     }
     rtg_main->_autoclear = false;
+
+    if(_rtg_ambocc_accum->width() != newwidth or _rtg_ambocc_accum->height() != newheight){
+      _rtg_ambocc_accum->Resize(newwidth, newheight);
+    }
 
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
@@ -502,16 +601,35 @@ struct ForwardPbrNodeImpl {
 
   rtgset_ptr_t _rtgs_main;
   rtgroup_ptr_t _rtg_main_depth_copy;
+  rtgroup_ptr_t _rtg_ambocc_accum;
   rtgroup_ptr_t _rtg_cube1_depth_copy;
   rtgset_ptr_t _rtgs_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
+  freestyle_mtl_ptr_t _ssao_material;
   fxpipelinecache_constptr_t _skybox_fxcache;
+  fxpipelinecache_constptr_t _ssao_fxcache;
+  textureassetptr_t _whiteTexture;
 
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
   const FxShaderParam* _fxpMVP;
   const FxShaderParam* _fxpColorMap;
+  const FxShaderTechnique* _tek_ssao;
+
+  const FxShaderParam* _fxpSSAONumSamples;
+  const FxShaderParam* _fxpSSAONumSteps;
+  const FxShaderParam* _fxpSSAOBias;
+  const FxShaderParam* _fxpSSAORadius;
+  const FxShaderParam* _fxpSSAOWeight;
+  const FxShaderParam* _fxpSSAOPower;
+  const FxShaderParam* _fxpSSAOKernel;
+  const FxShaderParam* _fxpSSAOScrNoise;
+  const FxShaderParam* _fxpSSAOMapDepth;
+  const FxShaderParam* _fxpSSAOTexelSize;
+  const FxShaderParam* _fxpSSAOInvViewportSize;
+
+
 
 }; // IMPL
 
