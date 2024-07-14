@@ -15,12 +15,14 @@
  5. SceneGraph Component/System wraps lev2 rendering. ECS simulation occurs on update thread, and data is passed to rendering thread via this SceneGraph system.
  
  6. Lua Component/System allows for lua driven behaviors
+   
+ 7. Python Component/System allows for Python driven behaviors. Runs in private subinterpreter with own GIL (PEP-684)
  
- 7. Bullet Physics Component/System allows for physics driven behaviors
+ 8. Bullet Physics Component/System allows for physics driven behaviors
 
- 8. Included ImGui based Editor.
+ 9. Included ImGui based Editor.
  
- 9. Scenes can be serialized/deserialized to/from standard orkid reflection based serialization JSON data.
+ 10. Scenes can be serialized/deserialized to/from standard orkid reflection based serialization JSON data.
 
 ---
 
