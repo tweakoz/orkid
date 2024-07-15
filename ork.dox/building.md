@@ -43,6 +43,7 @@ To bootstrap on MacOs Sonoma (14.0)+
 
 To bootstrap on Ubuntu22.04/24.04 x86/64
 ==================================
+* theoretically these instructions should work on any debian based system that is recent enough.. theoretically.
 * update your machine
   * ```sudo apt update```
   * ```sudo apt dist-upgrade```
