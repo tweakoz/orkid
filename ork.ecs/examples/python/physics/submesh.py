@@ -46,7 +46,7 @@ class ECS_MINIMAL(object):
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
     self.ents = list()
-    self.ssaamode = True
+    self.ssaamode = False
     
   ##############################################
 
