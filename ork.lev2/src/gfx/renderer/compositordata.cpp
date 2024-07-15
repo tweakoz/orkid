@@ -120,15 +120,8 @@ RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t 
 
   if(_defaultBG){
     auto pbr_common = r1->_pbrcommon;
-    if(pdata)
-      pdata->_assetSynchro->increment();
     auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
-    load_req->_on_load_complete = [=]() {
-      auto as_tex = load_req->assetAs<lev2::TextureAsset>();
-      pbr_common->assignEnvTexture(as_tex);
-      if(pdata)
-        pdata->_assetSynchro->decrement();
-    };
+    pbr_common->requestAndRefSkyboxTexture(load_req);
   }
 
   return rval;
@@ -214,16 +207,9 @@ RenderPresetContext CompositingData::presetForwardPBR(render_preset_data_ptr_t p
   }
 
   auto pbr_common = r1->_pbrcommon;
-  if(pdata)
-    pdata->_assetSynchro->increment();
   auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
-  load_req->_on_load_complete = [=]() {
-    auto as_tex = load_req->assetAs<lev2::TextureAsset>();
-    pbr_common->assignEnvTexture(as_tex);
-    if(pdata)
-      pdata->_assetSynchro->decrement();
-  };
-  
+  pbr_common->requestAndRefSkyboxTexture(load_req);
+
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;

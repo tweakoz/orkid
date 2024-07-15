@@ -88,7 +88,7 @@ class SceneGraphApp(object):
 #                    rendermodel="ForwardPBR",
                      params_dict=params_dict)
 
-    self.pbrcommon = self.rendernode.pbr_common
+    self.pbrcommon = self.scene.pbr_common
 
     ###################################
 

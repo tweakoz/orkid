@@ -98,8 +98,7 @@ class SceneGraphApp(object):
     }
     
     createSceneGraph(app=self,params_dict=params_dict,rendermodel="PBRVR" if vrmode else "DeferredPBR")
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
 
     models = []
     models += [XgmModel("data://tests/pbr1/pbr1")]

@@ -74,8 +74,7 @@ class SSAOAPP(object):
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_std = self.scene.createLayer("std_deferred")
     self.std_layers = [self.layer_std,self.layer_donly]
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     #######################################
     gmtl = PBRMaterial() 

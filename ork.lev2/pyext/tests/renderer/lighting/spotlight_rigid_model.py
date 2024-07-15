@@ -59,8 +59,7 @@ class StereoApp1(object):
     #createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
 
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useDepthPrepass = True
 
     self.layer_donly = self.scene.createLayer("depth_prepass")

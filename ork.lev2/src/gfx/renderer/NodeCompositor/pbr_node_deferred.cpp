@@ -283,6 +283,9 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr(pbr::commonstuff_ptr_t pb
   _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _pbrcommon      = pbrc;
+  if(_pbrcommon==nullptr){
+    _pbrcommon = std::make_shared<pbr::CommonStuff>();  
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

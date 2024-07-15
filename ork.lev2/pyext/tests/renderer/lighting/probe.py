@@ -95,8 +95,7 @@ class LIGHTING_APP(object):
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.layer_all = self.scene.createLayer("All")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
     DEPTH_LAYERS = [self.layer_donly,self.layer_dprobe]

@@ -91,8 +91,7 @@ class SceneGraphApp(object):
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.layer1
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     self.pbr_common.useDepthPrepass = True
 

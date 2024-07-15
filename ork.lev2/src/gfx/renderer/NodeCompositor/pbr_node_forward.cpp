@@ -661,6 +661,9 @@ ForwardNode::ForwardNode(pbr::commonstuff_ptr_t pbrc) {
   _impl           = std::make_shared<ForwardPbrNodeImpl>(this);
   _renderingmodel = RenderingModel("FORWARD_PBR"_crcu);
   _pbrcommon      = pbrc;
+  if(_pbrcommon==nullptr){
+    _pbrcommon = std::make_shared<pbr::CommonStuff>();  
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardNode::~ForwardNode() {

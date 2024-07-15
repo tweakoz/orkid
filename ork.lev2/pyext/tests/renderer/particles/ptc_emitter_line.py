@@ -91,8 +91,7 @@ class ParticlesApp(object):
     self.layer_fwd = self.scene.createLayer("std_forward")
     #createSceneGraph(app=self,rendermodel="ForwardPBR")
 
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
     ###################################

@@ -82,8 +82,7 @@ class WaterApp(object):
     ###################################
 
     self.scene = self.ezapp.createScene(sceneparams)
-    self.render_node = self.scene.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.scene.createLayer("std_forward")

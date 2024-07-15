@@ -34,47 +34,52 @@ void DrawableDataKvPair::describeX(object::ObjectClass* clazz) {
   clazz->directObjectProperty("DrawableData", &DrawableDataKvPair::_drawabledata);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::__common_init(){
-  _userdata = std::make_shared<varmap::VarMap>();
-  _renderer         = std::make_shared<IRenderer>();
-  _lightManagerData = std::make_shared<LightManagerData>();
-  _lightManager     = std::make_shared<LightManager>(_lightManagerData);
-  _compositorData   = std::make_shared<CompositingData>();
-  _topCPD           = std::make_shared<CompositingPassData>();
-  _dbufcontext_SG        = std::make_shared<DrawQueueContext>();
-  _dbufcontext_SG->_name = "DBC.SceneGraph";
-  _renderPresetData = std::make_shared<RenderPresetData>();
-  _loadSynchro = std::make_shared<asset::LoadSynchronizer>();
+void Scene::__common_init() {
+  _userdata                        = std::make_shared<varmap::VarMap>();
+  _renderer                        = std::make_shared<IRenderer>();
+  _lightManagerData                = std::make_shared<LightManagerData>();
+  _lightManager                    = std::make_shared<LightManager>(_lightManagerData);
+  _compositorData                  = std::make_shared<CompositingData>();
+  _topCPD                          = std::make_shared<CompositingPassData>();
+  _dbufcontext_SG                  = std::make_shared<DrawQueueContext>();
+  _dbufcontext_SG->_name           = "DBC.SceneGraph";
+  _renderPresetData                = std::make_shared<RenderPresetData>();
+  _loadSynchro                     = std::make_shared<asset::LoadSynchronizer>();
   _renderPresetData->_assetSynchro = _loadSynchro;
-  _pbr_common = std::make_shared<pbr::CommonStuff>();
-  _renderPresetData->_pbr_common = _pbr_common;
+  _pbr_common                      = std::make_shared<pbr::CommonStuff>();
+  _renderPresetData->_pbr_common   = _pbr_common;
 }
 
 Scene::Scene(varmap::varmap_ptr_t params) {
   _params = params;
   __common_init();
   _profile_timer.Start();
-  _loadSynchro->increment();
-  auto op = [=](){
+
+  auto opqcurrent = opq::TrackCurrent::context();
+  if (opqcurrent->_queue == opq::mainSerialQueue().get()) {
     initWithParams(_params);
-    _loadSynchro->decrement();
-  };
-  opq::mainSerialQueue()->enqueue(op);
+  } else {
+    //_loadSynchro->increment();
+    auto op = [=]() {
+      initWithParams(_params);
+      //_loadSynchro->decrement();
+    };
+    opq::mainSerialQueue()->enqueue(op);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene() {
   opq::assertOnQueue2(opq::mainSerialQueue());
-  _params = std::make_shared<varmap::VarMap>();
+  _params                                         = std::make_shared<varmap::VarMap>();
   _params->makeValueForKey<std::string>("preset") = "DeferredPBR";
   __common_init();
-  _loadSynchro->increment();
+  //_loadSynchro->increment();
   initWithParams(_params);
-  _loadSynchro->decrement();
+  //_loadSynchro->decrement();
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -164,7 +169,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorPreset = _compositorData->presetUnlit(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
-    _pbr_common = nullptr;
+    _pbr_common       = nullptr;
   }
   if (preset == "ForwardPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
@@ -194,10 +199,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto cdata = std::make_shared<CompositingData>();
     cdata->presetPickingDebug();
     _compositorData = cdata;
-    _pbr_common = nullptr;
+    _pbr_common     = nullptr;
   } else if (preset == "USER") {
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
-    _pbr_common = nullptr;
+    _pbr_common     = nullptr;
   } else {
     throw std::runtime_error("unknown compositor preset type");
   }
@@ -208,10 +213,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
       printf("texture_path<%s>\n", texture_path.c_str());
-      _renderPresetData->_assetSynchro->increment();
-      auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
-      load_req->_on_load_complete = [=](){
-        _renderPresetData->_assetSynchro->decrement();
+      //_renderPresetData->_assetSynchro->increment();
+      auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
+      load_req->_on_load_complete = [=]() {
+        //_renderPresetData->_assetSynchro->decrement();
       };
       _pbr_common->requestAndRefSkyboxTexture(load_req);
     }
@@ -269,15 +274,15 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   if (params->hasKey("PostFxChain")) {
     auto& pfxchain = params->valueForKey("PostFxChain");
-    if( auto as_chain = pfxchain.tryAs<postfx_node_chain_t>() ){
+    if (auto as_chain = pfxchain.tryAs<postfx_node_chain_t>()) {
       _compositorTechnique->_postEffectNodes = as_chain.value();
     }
     // OrkAssert(false);
   }
   if (params->hasKey("ssaa")) {
     auto& ssaa = params->valueForKey("ssaa");
-    if( auto as_ssaa = ssaa.tryAs<int>() ){
-      if( auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())){
+    if (auto as_ssaa = ssaa.tryAs<int>()) {
+      if (auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())) {
         as_scrnode->setSuperSample(as_ssaa.value());
       }
     }
@@ -316,8 +321,8 @@ layer_ptr_t Scene::findLayer(std::string named) {
 
   _layers.atomicOp([&](layer_map_t& unlocked) {
     auto it = unlocked.find(named);
-    if(it==unlocked.end()){
-      printf( "Layer<%s> not found\n", named.c_str());
+    if (it == unlocked.end()) {
+      printf("Layer<%s> not found\n", named.c_str());
       OrkAssert(false);
     }
     rval = it->second;
@@ -328,7 +333,7 @@ layer_ptr_t Scene::findLayer(std::string named) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-compositorpostnode_ptr_t Scene::getPostNode( size_t index ) const {
+compositorpostnode_ptr_t Scene::getPostNode(size_t index) const {
   return _compositorTechnique->_postEffectNodes[index];
 }
 
