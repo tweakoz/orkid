@@ -16,11 +16,13 @@
  
  6. Lua Component/System allows for lua driven behaviors
  
- 7. Bullet Physics Component/System allows for physics driven behaviors
+ 7. Python Component/System allows for python driven behaviors. Runs with a private GIL isolated from primary GIL thans to PEP-684 integration. Requires Python 3.12+
 
- 8. Included ImGui based Editor.
+ 8. Bullet Physics Component/System allows for physics driven behaviors
+
+ 9. Included ImGui based Editor.
  
- 9. Scenes can be serialized/deserialized to/from standard orkid reflection based serialization JSON data.
+ 10. Scenes can be serialized/deserialized to/from standard orkid reflection based serialization JSON data.
 
 ---
 
