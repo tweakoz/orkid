@@ -40,7 +40,7 @@ class ECS_MINIMAL(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = ecs.createApp(self,ssaa=1,fullscreen=False)
+    self.ezapp = ecs.createApp(self,ssaa=0,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
@@ -74,12 +74,19 @@ class ECS_MINIMAL(object):
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
     systemdata_SG.declareParams({
-      "SkyboxIntensity": float(3.0),
+      #"Preset": "ForwardPBR",
+      "SkyboxIntensity": float(2.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
+      "SSAONumSamples": 64,
+      "SSAONumSteps": 8,
+      "SSAOBias": -1.0e-5,
+      "SSAORadius": 3.0*25.4/1000.0,
+      "SSAOWeight": 1.0,
+      "SSAOPower": 0.5,
     })
 
     drawable = InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
