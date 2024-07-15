@@ -32,7 +32,7 @@ GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
-SSAO_NUM_SAMPLES = 96
+SSAO_NUM_SAMPLES = 32
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -84,9 +84,9 @@ class ECS_MINIMAL(object):
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 8,
+      "SSAONumSteps": 2,
       "SSAOBias": -1.0e-5,
-      "SSAORadius": 3.0*25.4/1000.0,
+      "SSAORadius": 2.0*25.4/1000.0,
       "SSAOWeight": 1.0,
       "SSAOPower": 0.5,
     })
