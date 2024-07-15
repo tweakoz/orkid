@@ -193,8 +193,7 @@ class SkinningApp(object):
 
     self.scenegraph = self.ezapp.createScene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
-    self.render_node = self.scenegraph.compositorrendernode
-    self.pbr_common = self.render_node.pbr_common
+    self.pbr_common = self.scenegraph.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
 

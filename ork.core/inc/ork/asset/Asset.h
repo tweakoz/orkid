@@ -25,6 +25,14 @@ using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
 using loadrequest_ptr_t = std::shared_ptr<LoadRequest>;
 using assetloader_ptr_t = std::shared_ptr<AssetLoader>;
 
+struct LoadSynchronizer {
+  std::atomic<int> _load_counter = 0;
+  void increment();
+  void decrement();
+  bool isComplete() const;
+};
+using loadsynchro_ptr_t = std::shared_ptr<LoadSynchronizer>;
+
 struct LoadRequest{
 
   using event_lambda_t = std::function<void(uint32_t,varmap::var_t)>;
@@ -38,6 +46,11 @@ struct LoadRequest{
   void waitForCompletion() const;
   void enqueueAsync(void_lambda_t on_complete) const;
 
+  template <typename T>
+  std::shared_ptr<T> assetAs() const {
+    return std::dynamic_pointer_cast<T>(_asset);
+  }
+
   asset_ptr_t _asset;
   AssetPath _asset_path;
   vars_ptr_t _asset_vars;
@@ -46,6 +59,7 @@ struct LoadRequest{
 
   std::atomic<int> _partial_load_counter = 0;
 };
+
 
 struct Asset : public Object {
   DeclareConcreteX(Asset, ork::Object);

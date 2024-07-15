@@ -20,6 +20,20 @@ ImplementReflectionX(ork::asset::Asset, "Asset");
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
+void LoadSynchronizer::increment(){
+  int count = _load_counter.fetch_add(1);
+  printf("LoadSynchronizer::increment count<%d>\n",count);
+}
+void LoadSynchronizer::decrement(){
+  int count = _load_counter.fetch_add(-1);
+  printf("LoadSynchronizer::decrement count<%d>\n",count);
+}
+bool LoadSynchronizer::isComplete() const{
+  return _load_counter.load()==0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 LoadRequest::LoadRequest() { //
   _asset_vars = std::make_shared<vars_t>();
 }

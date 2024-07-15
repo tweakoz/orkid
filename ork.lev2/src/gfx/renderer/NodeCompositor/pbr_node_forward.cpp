@@ -657,10 +657,10 @@ struct ForwardPbrNodeImpl {
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardNode::ForwardNode() {
+ForwardNode::ForwardNode(pbr::commonstuff_ptr_t pbrc) {
   _impl           = std::make_shared<ForwardPbrNodeImpl>(this);
   _renderingmodel = RenderingModel("FORWARD_PBR"_crcu);
-  _pbrcommon      = std::make_shared<pbr::CommonStuff>();
+  _pbrcommon      = pbrc;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardNode::~ForwardNode() {

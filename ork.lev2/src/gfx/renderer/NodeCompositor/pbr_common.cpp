@@ -138,17 +138,20 @@ irradiancemaps_ptr_t CommonStuff::requestIrradianceMaps(const AssetPath& texture
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-asset::loadrequest_ptr_t CommonStuff::requestAndRefSkyboxTexture(const AssetPath& texture_path) {
-  auto load_req            = std::make_shared<asset::LoadRequest>(texture_path);
+void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) {
+  auto texture_path = load_req->_asset_path;
   load_req->_asset_vars    = _irradianceVars();
   load_req->_asset_vars->makeValueForKey<bool>("equirectangular") = true;
   load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
   _irradianceMaps->_loadRequest = load_req;
-  auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-  OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-  OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-  assignEnvTexture(enviromentmap_asset);
-  return load_req;
+  opq::mainSerialQueue()->enqueue([=]() {
+    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
+    assignEnvTexture(enviromentmap_asset);
+    if(load_req->_on_load_complete)
+      load_req->_on_load_complete();
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

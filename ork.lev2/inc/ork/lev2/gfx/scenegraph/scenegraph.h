@@ -249,6 +249,8 @@ struct Scene {
   Scene();
   Scene(varmap::varmap_ptr_t _initialdata);
   ~Scene();
+  
+  void __common_init();
 
 
   void initWithParams(varmap::varmap_ptr_t _initialdata);
@@ -283,6 +285,9 @@ struct Scene {
 
   void enablePickHud();
 
+
+  render_preset_data_ptr_t _renderPresetData;
+  pbr::commonstuff_ptr_t _pbr_common;
   dbufcontext_ptr_t _dbufcontext_SG;
   irenderer_ptr_t _renderer;
   lightmanager_ptr_t _lightManager;
@@ -310,6 +315,8 @@ struct Scene {
   bool _dogpuinit        = true;
   Context* _boundContext = nullptr;
 
+  asset::loadsynchro_ptr_t _loadSynchro;
+  bool okToRender() const;
   struct DrawItem{
     ork::lev2::DrawQueueLayer * _layer;
     drawable_node_ptr_t _drwnode;

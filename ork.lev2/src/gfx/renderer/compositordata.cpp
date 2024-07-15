@@ -54,9 +54,10 @@ void CompositingData::presetDefault() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
+RenderPresetContext CompositingData::presetUnlit(render_preset_data_ptr_t pdata) {
 
-
+  rtgroup_ptr_t outputgrp = pdata ? pdata->_outputGroup : nullptr;
+  
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto r1 = t1->createRenderNode<compositor::UnlitNode>();
   compositoroutnode_ptr_t o1;
@@ -89,14 +90,15 @@ compositorimpl_ptr_t CompositingData::createImpl() const {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) {
+RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t pdata) {
+  rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
-  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>();
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pdata->_pbr_common);
 
   compositoroutnode_ptr_t selected_output_node = nullptr;
-  if(outputgrp){
-    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgrp);
+  if(outputgroup){
+    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgroup);
   }else{
     auto screennode = t1->createOutputNode<ScreenOutputCompositingNode>();
     screennode->setSuperSample(_ginitdata->_ssaa_samples);
@@ -115,12 +117,18 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   rval._outputnode = selected_output_node;
   rval._rendernode = r1;
 
+
   if(_defaultBG){
-    auto op = [=](){
-      auto pbr_common = r1->_pbrcommon;
-      pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
+    auto pbr_common = r1->_pbrcommon;
+    if(pdata)
+      pdata->_assetSynchro->increment();
+    auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+    load_req->_on_load_complete = [=]() {
+      auto as_tex = load_req->assetAs<lev2::TextureAsset>();
+      pbr_common->assignEnvTexture(as_tex);
+      if(pdata)
+        pdata->_assetSynchro->decrement();
     };
-    opq::mainSerialQueue()->enqueue(op);
   }
 
   return rval;
@@ -128,15 +136,20 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetPBRVR() {
+RenderPresetContext CompositingData::presetPBRVR(render_preset_data_ptr_t pdata) {
+  rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto o1 = t1->createOutputNode<VrCompositingNode>();
-  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>();
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pdata->_pbr_common);
 
   auto pbr_common = r1->_pbrcommon;
 
-  pbr_common->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
+  auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+  load_req->_on_load_complete = [=]() {
+    auto as_tex = load_req->assetAs<lev2::TextureAsset>();
+    pbr_common->assignEnvTexture(as_tex);
+  };
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
@@ -186,21 +199,31 @@ void CompositingData::presetPickingDebug() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
+RenderPresetContext CompositingData::presetForwardPBR(render_preset_data_ptr_t pdata) {
+  rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   compositoroutnode_ptr_t selected_output_node = nullptr;
-  auto r1 = t1->createRenderNode<pbr::ForwardNode>();
-  if(outputgrp){
-    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgrp);
+  auto r1 = t1->createRenderNode<pbr::ForwardNode>(pdata->_pbr_common);
+  if(outputgroup){
+    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgroup);
   }else{
     auto screennode = t1->createOutputNode<ScreenOutputCompositingNode>();
     screennode->setSuperSample(_ginitdata->_ssaa_samples);
     selected_output_node = screennode;
   }
 
-  r1->_pbrcommon->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
-
+  auto pbr_common = r1->_pbrcommon;
+  if(pdata)
+    pdata->_assetSynchro->increment();
+  auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+  load_req->_on_load_complete = [=]() {
+    auto as_tex = load_req->assetAs<lev2::TextureAsset>();
+    pbr_common->assignEnvTexture(as_tex);
+    if(pdata)
+      pdata->_assetSynchro->decrement();
+  };
+  
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
@@ -218,15 +241,21 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetForwardPBRVR() {
+RenderPresetContext CompositingData::presetForwardPBRVR(render_preset_data_ptr_t pdata) {
+  rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto o1 = t1->createOutputNode<VrCompositingNode>();
-  auto r1 = t1->createRenderNode<pbr::ForwardNode>();
+  auto r1 = t1->createRenderNode<pbr::ForwardNode>(pdata->_pbr_common);
 
   o1->setSuperSample(_ginitdata->_ssaa_samples);
 
-  r1->_pbrcommon->requestAndRefSkyboxTexture("src://envmaps/tozenv_nebula");
+  auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+  load_req->_on_load_complete = [=]() {
+    auto as_tex = load_req->assetAs<lev2::TextureAsset>();
+    r1->_pbrcommon->assignEnvTexture(as_tex);
+  };
+  r1->_pbrcommon->requestAndRefSkyboxTexture(load_req);
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();

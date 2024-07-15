@@ -39,10 +39,19 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "requestIrradianceMaps",
               [](std::string path) -> pbr::irradiancemaps_ptr_t { return pbr::CommonStuff::requestIrradianceMaps(path); })
           .def(py::init<>())
-          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestAndRefSkyboxTexture(path); })
+          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { //
+                auto load_req = std::make_shared<asset::LoadRequest>(path);
+                pbc->requestAndRefSkyboxTexture(load_req);
+
+           })
           .def(
               "requestAndRefSkyboxTexture",
-              [](pbr::commonstuff_ptr_t pbc, std::string path) { pbc->requestAndRefSkyboxTexture(path); })
+              [](pbr::commonstuff_ptr_t pbc, std::string path) -> asset::loadrequest_ptr_t { //
+                auto load_req = std::make_shared<asset::LoadRequest>(path);
+                pbc->requestAndRefSkyboxTexture(load_req);
+
+                return load_req;
+              })
           .def_property(
               "environmentIntensity",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentIntensity; },

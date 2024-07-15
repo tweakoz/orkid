@@ -217,6 +217,14 @@ struct RenderPresetContext {
   compositorrendernode_ptr_t _rendernode = nullptr;
 };
 
+struct RenderPresetData {
+  rtgroup_ptr_t _outputGroup;
+  asset::loadsynchro_ptr_t _assetSynchro;
+  pbr::commonstuff_ptr_t _pbr_common;
+};
+
+using render_preset_data_ptr_t = std::shared_ptr<RenderPresetData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CompositingData : public ork::Object {
@@ -230,11 +238,11 @@ public:
   void presetDefault();
   void presetPicking();
   void presetPickingDebug();
-  RenderPresetContext presetUnlit(rtgroup_ptr_t outputgrp = nullptr);
-  RenderPresetContext presetDeferredPBR(rtgroup_ptr_t outputgrp = nullptr);
-  RenderPresetContext presetForwardPBR(rtgroup_ptr_t outputgrp = nullptr);
-  RenderPresetContext presetPBRVR();
-  RenderPresetContext presetForwardPBRVR();
+  RenderPresetContext presetUnlit(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetDeferredPBR(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetForwardPBR(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata=nullptr);
 
   compositingscene_constptr_t findScene(const std::string& named) const;
 

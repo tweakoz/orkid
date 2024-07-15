@@ -278,11 +278,11 @@ struct PbrNodeImpl {
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
+DeferredCompositingNodePbr::DeferredCompositingNodePbr(pbr::commonstuff_ptr_t pbrc) {
   _shader_path    = "orkshader://deferred";
   _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
-  _pbrcommon      = std::make_shared<pbr::CommonStuff>();
+  _pbrcommon      = pbrc;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

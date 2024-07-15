@@ -24,8 +24,15 @@ static logchannel_ptr_t logchan_sgrender = logger()->createChannel("SGRENDER", f
 // enqueue scenegraph to renderer (update thread)
 ///////////////////////////////////////////////////////////////////////////////
 
+bool Scene::okToRender() const{
+  return _loadSynchro->isComplete();
+}
+
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_enqueue) {
 
+  if(not okToRender())
+    return;
+  
   EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
 
   if (_synchro) {
@@ -131,6 +138,8 @@ void Scene::enablePickHud() {
 }
 
 void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
+  if(not okToRender())
+    return;
   //OrkBreak();
     EASY_BLOCK("sg::Scene::_renderIMPL", profiler::colors::Red);
 
@@ -303,6 +312,8 @@ EASY_END_BLOCK;
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf) {
+  if(not okToRender())
+    return;
   auto DB      = acqbuf->_DB;
   auto rcfd    = acqbuf->_RCFD;
   auto context = rcfd->context();
@@ -357,6 +368,8 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe) {
+  if(not okToRender())
+    return;
   auto context = sframe->_drawEvent->GetTarget();
   if (_dogpuinit) {
     sframe->attachDrawQueueContext(_dbufcontext_SG);
@@ -374,12 +387,16 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
+  if(not okToRender())
+    return;
   _renderIMPL(context, RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
+  if(not okToRender())
+    return;
   // from SceneGraphSystem::_onRender
   auto rcfd = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
   if(_compositorImpl and _doResizeFromMainSurface){

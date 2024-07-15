@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -33,27 +34,48 @@ void DrawableDataKvPair::describeX(object::ObjectClass* clazz) {
   clazz->directObjectProperty("DrawableData", &DrawableDataKvPair::_drawabledata);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::__common_init(){
+  _userdata = std::make_shared<varmap::VarMap>();
+  _renderer         = std::make_shared<IRenderer>();
+  _lightManagerData = std::make_shared<LightManagerData>();
+  _lightManager     = std::make_shared<LightManager>(_lightManagerData);
+  _compositorData   = std::make_shared<CompositingData>();
+  _topCPD           = std::make_shared<CompositingPassData>();
+  _dbufcontext_SG        = std::make_shared<DrawQueueContext>();
+  _dbufcontext_SG->_name = "DBC.SceneGraph";
+  _renderPresetData = std::make_shared<RenderPresetData>();
+  _loadSynchro = std::make_shared<asset::LoadSynchronizer>();
+  _renderPresetData->_assetSynchro = _loadSynchro;
+  _pbr_common = std::make_shared<pbr::CommonStuff>();
+  _renderPresetData->_pbr_common = _pbr_common;
+}
+
+Scene::Scene(varmap::varmap_ptr_t params) {
+  _params = params;
+  __common_init();
+  _profile_timer.Start();
+  _loadSynchro->increment();
+  auto op = [=](){
+    initWithParams(_params);
+    _loadSynchro->decrement();
+  };
+  opq::mainSerialQueue()->enqueue(op);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene() {
-
-  ork::opq::assertOnQueue(opq::mainSerialQueue());
-
-  _userdata = std::make_shared<varmap::VarMap>();
-
-  auto params //
-      = std::make_shared<varmap::VarMap>();
-  params->makeValueForKey<std::string>("preset") = "DeferredPBR";
-  this->initWithParams(params);
+  opq::assertOnQueue2(opq::mainSerialQueue());
+  _params = std::make_shared<varmap::VarMap>();
+  _params->makeValueForKey<std::string>("preset") = "DeferredPBR";
+  __common_init();
+  _loadSynchro->increment();
+  initWithParams(_params);
+  _loadSynchro->decrement();
 }
-///////////////////////////////////////////////////////////////////////////////
-
-Scene::Scene(varmap::varmap_ptr_t params) {
-  _profile_timer.Start();
-  _userdata = std::make_shared<varmap::VarMap>();
-  initWithParams(params);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::~Scene() {
@@ -108,18 +130,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _params = params;
 
-  _dbufcontext_SG        = std::make_shared<DrawQueueContext>();
-  _dbufcontext_SG->_name = "DBC.SceneGraph";
-
   if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {
     _dbufcontext_SG = try_dbufcontext.value();
   }
-
-  _renderer         = std::make_shared<IRenderer>();
-  _lightManagerData = std::make_shared<LightManagerData>();
-  _lightManager     = std::make_shared<LightManager>(_lightManagerData);
-  _compositorData   = std::make_shared<CompositingData>();
-  _topCPD           = std::make_shared<CompositingPassData>();
 
   for (auto p : params->_themap) {
     auto k = p.first;
@@ -135,33 +148,30 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   // if (auto try_output = params->typedValueForKey<std::string>("output"))
   // output = try_output.value();
 
-  rtgroup_ptr_t outRTG;
-
   if (auto try_rtgroup = params->typedValueForKey<rtgroup_ptr_t>("outputRTG")) {
-    outRTG = try_rtgroup.value();
+    _renderPresetData->_outputGroup = try_rtgroup.value();
   }
 
   if (auto try_orcl = params->typedValueForKey<gfxcontext_lambda_t>("onRenderComplete")) {
     this->_on_render_complete = try_orcl.value();
   }
 
-  pbr::commonstuff_ptr_t pbrcommon;
   if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
     _compositorData->_defaultBG = false;
   }
 
   if (preset == "Unlit") {
-    _compositorPreset = _compositorData->presetUnlit(outRTG);
+    _compositorPreset = _compositorData->presetUnlit(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
+    _pbr_common = nullptr;
   }
   if (preset == "ForwardPBR") {
-    _compositorPreset = _compositorData->presetForwardPBR(outRTG);
+    _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
-    pbrcommon         = outrnode->_pbrcommon;
   } else if (preset == "DeferredPBR") {
-    _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
+    _compositorPreset = _compositorData->presetDeferredPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outpnode     = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
@@ -172,77 +182,81 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       }
     }
     OrkAssert(outrnode);
-    pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
-    _compositorPreset = _compositorData->presetPBRVR();
+    _compositorPreset = _compositorData->presetPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
-    pbrcommon         = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
-    _compositorPreset = _compositorData->presetForwardPBRVR();
+    _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
-    pbrcommon         = outrnode->_pbrcommon;
   } else if (preset == "PICKTEST") {
     auto cdata = std::make_shared<CompositingData>();
     cdata->presetPickingDebug();
     _compositorData = cdata;
+    _pbr_common = nullptr;
   } else if (preset == "USER") {
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
+    _pbr_common = nullptr;
   } else {
     throw std::runtime_error("unknown compositor preset type");
   }
   //////////////////////////////////////////////
 
-  if (pbrcommon) {
+  if (_pbr_common) {
 
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
       printf("texture_path<%s>\n", texture_path.c_str());
-      pbrcommon->requestAndRefSkyboxTexture(texture_path);
+      _renderPresetData->_assetSynchro->increment();
+      auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+      load_req->_on_load_complete = [=](){
+        _renderPresetData->_assetSynchro->decrement();
+      };
+      _pbr_common->requestAndRefSkyboxTexture(load_req);
     }
 
     if (auto try_envintensity = params->tryKeyAsNumber("EnvironmentIntensity")) {
-      pbrcommon->_environmentIntensity = try_envintensity.value();
+      _pbr_common->_environmentIntensity = try_envintensity.value();
     }
     if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
-      pbrcommon->_diffuseLevel = try_diffuseLevel.value();
+      _pbr_common->_diffuseLevel = try_diffuseLevel.value();
     }
     if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
-      pbrcommon->_ambientLevel = try_ambientLevel.value();
+      _pbr_common->_ambientLevel = try_ambientLevel.value();
     }
     if (auto try_skyboxLevel = params->tryKeyAsNumber("SkyboxIntensity")) {
-      pbrcommon->_skyboxLevel = try_skyboxLevel.value();
+      _pbr_common->_skyboxLevel = try_skyboxLevel.value();
     }
     if (auto try_specularLevel = params->tryKeyAsNumber("SpecularIntensity")) {
-      pbrcommon->_specularLevel = try_specularLevel.value();
+      _pbr_common->_specularLevel = try_specularLevel.value();
     }
     if (auto try_DepthFogDistance = params->tryKeyAsNumber("DepthFogDistance")) {
-      pbrcommon->_depthFogDistance = try_DepthFogDistance.value();
+      _pbr_common->_depthFogDistance = try_DepthFogDistance.value();
     }
     if (auto try_DepthFogPower = params->tryKeysAsNumber("DepthFogPower", "depthFogPower")) {
-      pbrcommon->_depthFogPower = try_DepthFogPower.value();
+      _pbr_common->_depthFogPower = try_DepthFogPower.value();
     }
     if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
-      pbrcommon->_depthFogDistance = try_dfdist.value();
+      _pbr_common->_depthFogDistance = try_dfdist.value();
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
-      pbrcommon->_ssaoNumSamples = int(try_ssao.value());
+      _pbr_common->_ssaoNumSamples = int(try_ssao.value());
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
-      pbrcommon->_ssaoNumSteps = int(try_ssao.value());
+      _pbr_common->_ssaoNumSteps = int(try_ssao.value());
     }
     if (auto try_ssao = params->tryKeyAsNumber("SSAOBias")) {
-      pbrcommon->_ssaoBias = try_ssao.value();
+      _pbr_common->_ssaoBias = try_ssao.value();
     }
     if (auto try_ssao = params->tryKeyAsNumber("SSAORadius")) {
-      pbrcommon->_ssaoRadius = try_ssao.value();
+      _pbr_common->_ssaoRadius = try_ssao.value();
     }
     if (auto try_ssao = params->tryKeyAsNumber("SSAOWeight")) {
-      pbrcommon->_ssaoWeight = try_ssao.value();
+      _pbr_common->_ssaoWeight = try_ssao.value();
     }
     if (auto try_ssao = params->tryKeyAsNumber("SSAOPower")) {
-      pbrcommon->_ssaoPower = try_ssao.value();
+      _pbr_common->_ssaoPower = try_ssao.value();
     }
   }
   //////////////////////////////////////////////

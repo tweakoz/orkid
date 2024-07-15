@@ -88,7 +88,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       "SSAORadius": 2.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
       "SSAOPower": 2.0,
-      "preset": "ForwardPBR"
+      "preset": "DeferredPBR"
     })
     
     self.systemdata_scenegraph = systemdata_SG

@@ -103,7 +103,7 @@ struct CommonStuff : public ork::Object {
     return _depthFogPower;
   }
 
-  asset::loadrequest_ptr_t requestAndRefSkyboxTexture(const AssetPath& texture_path);
+  void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
   static irradiancemaps_ptr_t requestIrradianceMaps(const AssetPath& texture_path);
 
 

@@ -434,6 +434,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   }
                 });
                 return rval;
+              })
+          .def_property_readonly(
+              "pbr_common",
+              [](scene_ptr_t SG) -> pbr::commonstuff_ptr_t { //
+                return SG->_pbr_common;
               });
   ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);

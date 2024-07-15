@@ -217,10 +217,10 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DeferredCompositingNodePbr : public RenderCompositingNode {
-  DeclareConcreteX(DeferredCompositingNodePbr, RenderCompositingNode);
+  DeclareAbstractX(DeferredCompositingNodePbr, RenderCompositingNode);
 
 public:
-  DeferredCompositingNodePbr();
+  DeferredCompositingNodePbr(pbr::commonstuff_ptr_t pbrc);
   ~DeferredCompositingNodePbr();
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;

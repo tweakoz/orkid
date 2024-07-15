@@ -15,10 +15,10 @@ namespace ork::lev2::pbr {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ForwardNode : public RenderCompositingNode {
-  DeclareConcreteX(ForwardNode, RenderCompositingNode);
+  DeclareAbstractX(ForwardNode, RenderCompositingNode);
 
 public:
-  ForwardNode();
+  ForwardNode(pbr::commonstuff_ptr_t pbrc);
   ~ForwardNode();
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;

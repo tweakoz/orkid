@@ -531,7 +531,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto defpbrnode_type = //
       py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(module_lev2, "DeferredPbrRenderNode")
           .def(py::init([]() -> defpbrnode_ptr_t { //
-            return std::make_shared<pbr::deferrednode::DeferredCompositingNodePbr>();
+            return std::make_shared<pbr::deferrednode::DeferredCompositingNodePbr>(nullptr);
           }))
           .def_property_readonly("pbr_common", [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
             return node->_pbrcommon;
@@ -555,7 +555,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto fwdpbrnode_type = //
       py::class_<pbr::ForwardNode, RenderCompositingNode, fwdpbrnode_ptr_t>(module_lev2, "PbrForwardNode")
           .def(py::init([]() -> fwdpbrnode_ptr_t { //
-            return std::make_shared<pbr::ForwardNode>();
+            return std::make_shared<pbr::ForwardNode>(nullptr);
           }))
           .def_property_readonly("pbr_common", [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
             return node->_pbrcommon;
