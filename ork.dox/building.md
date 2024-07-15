@@ -2,7 +2,7 @@ At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox36
 
 Unfortunately, with my job and family, I have had only the bandwidth to maintain the Linux and MacOs builds.
 
-If you want to minimize any pain, right now I would recommend Linux (Ubuntu 22.04 x86/64). The MacOs build is only tested with Xcode on Ventura (Both Intel And Apple Silicon)..
+If you want to minimize any pain, right now I would recommend Linux (Ubuntu 22.04/24.04 x86/64 or ARM64). The MacOs build is only tested with Xcode on Ventura (Both Intel And Apple Silicon)..
 
 
 
