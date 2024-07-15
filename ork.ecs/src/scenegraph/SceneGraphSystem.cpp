@@ -572,6 +572,15 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       _renderops.push(resize_op);
       break;
     }
+    case "UpdatePbrCommon"_crcu: {
+      const auto& table = *data.getShared<DataTable>();
+      const auto& ssaonumsamples   = table["SSAONumSamples"_tok];
+        if( auto as_int = ssaonumsamples.tryAs<int>() ){
+          int numsamps = as_int.value();
+          _scene->_pbr_common->_ssaoNumSamples = numsamps;
+        }
+      break;
+    }
     case UpdateCamera._hashed: {
       const auto& table = *data.getShared<DataTable>();
       const auto& eye   = table["eye"_tok].get<fvec3>();

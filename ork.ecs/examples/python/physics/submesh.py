@@ -32,6 +32,7 @@ GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
+SSAO_NUM_SAMPLES = 96
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -45,6 +46,7 @@ class ECS_MINIMAL(object):
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
     self.ents = list()
+    self.ssaamode = True
     
   ##############################################
 
@@ -81,7 +83,7 @@ class ECS_MINIMAL(object):
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
-      "SSAONumSamples": 64,
+      "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 8,
       "SSAOBias": -1.0e-5,
       "SSAORadius": 3.0*25.4/1000.0,
@@ -358,6 +360,19 @@ class ECS_MINIMAL(object):
                                     }
                                    )
 
+    if self.ssaamode == True:
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdatePbrCommon,{
+                                      tokens.SSAONumSamples: SSAO_NUM_SAMPLES
+                                    }
+                                  )
+    else:
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdatePbrCommon,{
+                                      tokens.SSAONumSamples: 0
+                                    }
+                                  )
+
     ##############################
     # tick the simulation
     ##############################
@@ -367,12 +382,21 @@ class ECS_MINIMAL(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-
+    res = ui.HandlerResult()
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("A"):
+        if self.ssaamode == True:
+          self.ssaamode = False
+        else:
+          self.ssaamode = True
+        print("SSAO MODE",self.ssaamode)
+        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-
-    return ui.HandlerResult()
+    else:
+      handled = ui.HandlerResult()
+    return res
 
 ###############################################################################
 
