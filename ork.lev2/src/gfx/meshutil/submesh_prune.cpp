@@ -15,7 +15,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshPrune(const submesh& inpsubmesh, submesh& outsubmesh) {
-  tsl::robin_map<vertex_const_ptr_t,vertex_ptr_t> used_vertices;
+  std::unordered_map<vertex_const_ptr_t,vertex_ptr_t> used_vertices;
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     p->visitVertices([&](vertex_const_ptr_t v) {
         auto it = used_vertices.find(v);

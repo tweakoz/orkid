@@ -83,11 +83,11 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 4,
-      "SSAOBias": -1e-5,
+      "SSAONumSteps": 8,
+      "SSAOBias": -3e-4,
       "SSAORadius": 1.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 1.0,
+      "SSAOPower": 0.75,
       "preset": "DeferredPBR"
     })
     

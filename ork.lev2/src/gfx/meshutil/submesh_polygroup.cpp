@@ -62,13 +62,13 @@ std::vector<island_ptr_t> PolyGroup::splitByIsland() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tsl::robin_map<uint64_t,polygroup_ptr_t> PolyGroup::splitByPlane() const {
+std::unordered_map<uint64_t,polygroup_ptr_t> PolyGroup::splitByPlane() const {
 
   if( _polys.size() == 0){
-    return tsl::robin_map<uint64_t,polygroup_ptr_t>();
+    return std::unordered_map<uint64_t,polygroup_ptr_t>();
   }
 
-  tsl::robin_map<uint64_t,polygroup_ptr_t> polyset_by_plane;
+  std::unordered_map<uint64_t,polygroup_ptr_t> polyset_by_plane;
 
   for (auto inp_poly : _polys ) {
 
