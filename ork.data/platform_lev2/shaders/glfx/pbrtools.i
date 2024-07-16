@@ -79,6 +79,8 @@ uniform_set ub_frg_fwd {
   float RoughnessFactor;
 
   sampler2D SSAOMap;
+  float SSAOPower;
+  float SSAOWeight;
 
   float DepthFogDistance;
   float DepthFogPower;
@@ -419,7 +421,7 @@ vertex_shader vs_rigid_gbuffer_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
   gl_Position = mvp * position;
 }
 vertex_shader vs_forward_rigid_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
-  frg_clr     = vtxcolor;
+  frg_clr     = vec4(1,1,1,1);//vtxcolor;
   gl_Position = mvp * position;
 }
 ///////////////////////////////////////////////////////////////
@@ -667,6 +669,11 @@ vertex_interface iface_forward_stereo_instanced : iface_vgbuffer_instanced {
   }
 }
 
+vertex_shader vs_forward_test_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
+  vs_common(position, normal, binormal);
+  gl_Position = mvp * position;
+  frg_clr = vtxcolor;
+}
 vertex_shader vs_forward_test : iface_vgbuffer : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position = mvp * position;
@@ -735,6 +742,15 @@ vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : 
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
+}
+//////////////////////////////////////
+fragment_shader ps_forward_test_fragcolor //
+    : iface_forward             //
+    : lib_math                  //
+    : lib_brdf                  //
+    : lib_def                   //
+    : lib_fwd {                 //
+  out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test //

@@ -66,6 +66,13 @@ void pyinit_scenegraph(py::module& module_ecs) {
             if (kwargs.contains("layer")) {
               ndef->_layername = kwargs["layer"].cast<std::string>();
             }
+            if (kwargs.contains("layers")) {
+              auto layer_list = kwargs["layers"].cast<py::list>();
+              for (auto item : layer_list) {
+                ndef->_multilayers.push_back(item.cast<std::string>());
+              }
+              //ndef->_layername
+            }
             if (kwargs.contains("transform")) {
               ndef->_transform = kwargs["transform"].cast<decompxf_ptr_t>();
             }

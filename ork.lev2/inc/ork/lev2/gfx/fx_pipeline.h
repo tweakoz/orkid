@@ -44,6 +44,7 @@ struct FxPipelinePermutation {
   bool _instanced = false;
   bool _skinned = false;
   bool _is_picking = false;
+  bool _has_vtxcolors = false;
   
   fxtechnique_constptr_t _forced_technique = nullptr;
 

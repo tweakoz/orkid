@@ -323,13 +323,16 @@ struct ForwardPbrNodeImpl {
       RCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
       fvec2 ssao_dim = fvec2(ambocc_accum_w->width(),ambocc_accum_w->height());
       RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
-      //RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
+      RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
+      RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
 
     }
     else{
       // set to white..
       RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
       RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8,8));
+      RCFD->setUserProperty("SSAO_POWER"_crcu, 1.0f);
+      RCFD->setUserProperty("SSAO_WEIGHT"_crcu, 0.0f);
     }
 
     ///////////////////////////////////////////////////////////////////////////

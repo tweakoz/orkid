@@ -23,7 +23,7 @@ from lev2utils.shaders import createPipeline
 
 ################################################################################
 tokens = core.CrcStringProxy()
-LAYERNAME = "std_deferred"
+LAYERNAME = "std_forward"
 NUM_BALLS = 8000
 RATE = 0.7
 SIMRATE = 60
@@ -33,6 +33,7 @@ GROUP_ENV = 4
 GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
 SSAO_NUM_SAMPLES = 32
+SPAWN_HEIGHT = 25
 ################################################################################
 
 class ECS_MINIMAL(object):
@@ -75,9 +76,13 @@ class ECS_MINIMAL(object):
 
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
+    systemdata_SG.declareLayer("depth_prepass")
+    #self.layer_donly = self.scene.createLayer("depth_prepass")
+    #self.layer_fwd = self.layer1
+    #self.fwd_layers = [self.layer_fwd,self.layer_donly]
     systemdata_SG.declareParams({
-      #"Preset": "ForwardPBR",
-      "SkyboxIntensity": float(2.5),
+      "preset": "ForwardPBR",
+      "SkyboxIntensity": float(4),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
@@ -87,7 +92,7 @@ class ECS_MINIMAL(object):
       "SSAONumSteps": 2,
       "SSAOBias": -1.0e-5,
       "SSAORadius": 2.0*25.4/1000.0,
-      "SSAOWeight": 1.0,
+      "SSAOWeight": 0.75,
       "SSAOPower": 0.5,
     })
 
@@ -160,7 +165,7 @@ class ECS_MINIMAL(object):
     sphere.radius = 1.0
 
     c_physics.mass = 10.0
-    c_physics.friction = 0.1
+    c_physics.friction = 0.5
     c_physics.restitution = 0.1
     c_physics.angularDamping = 0.1
     c_physics.linearDamping = 0.1
@@ -241,7 +246,7 @@ class ECS_MINIMAL(object):
     shape = ecs.BulletShapeMeshData()
     shape.submesh = submesh
     shape.scale = vec3(1)
-    shape.translation = vec3(0,0.01,0)
+    shape.translation = vec3(0,SPAWN_HEIGHT,0)
 
     c_physics.mass = 0.0
     c_physics.allowSleeping = True
@@ -265,7 +270,7 @@ class ECS_MINIMAL(object):
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
     env_spawner.archetype = arch_env
     env_spawner.autospawn = True
-    env_spawner.transform.translation = vec3(0,-15,0)
+    env_spawner.transform.translation = vec3(0,-SPAWN_HEIGHT,0)
     env_spawner.transform.scale = 1.0
     
   ##############################################
@@ -279,18 +284,41 @@ class ECS_MINIMAL(object):
 
     rprimdata = RigidPrimitiveDrawableData()
     rprimdata.primitive = RigidPrimitive(self.room_submesh,ctx)
-    rprimdata.pipeline = createPipeline( app = self,
-                                         ctx = ctx,
-                                         rendermodel = "DeferredPBR",
-                                         techname="std_mono_deferred_lit")
+    
+    
+    material = PBRMaterial()
+    white_tex = Texture.load("src://effect_textures/white.dds")
+    nmap_tex  = Texture.load("src://effect_textures/default_normal.dds")
+    material.texColor = white_tex
+    material.texNormal = nmap_tex
+    material.texMtlRuf = white_tex
+    material.gpuInit(ctx)
+    self.material = material
 
+    fstyle = material.freestyle
+    fxcache = material.fxcache
+
+    permu = FxPipelinePermutation()
+    permu.rendering_model = "FORWARD_PBR"
+    permu.instanced = False
+    permu.skinned = False
+    permu.is_picking = False
+    permu.stereo = False
+    permu.has_vtxcolors = False
+    self.permu = permu
+    #
+    #pipeline = material.fxcache.findPipeline(permu) 
+    
+    #rprimdata.pipeline = pipeline
+    rprimdata.material = material
+    
     mesh_transform = Transform()
     mesh_transform.scale = 1.0
-    mesh_transform.translation = vec3(0,-0.05,0)
+    mesh_transform.translation = vec3(0,0,0)
 
     room_node = self.room_SGCOMP.declareNodeOnLayer( name = "envnode",
                                                      drawable = rprimdata,
-                                                     layer = LAYERNAME,
+                                                     layers = [LAYERNAME,"depth_prepass"],
                                                      transform = mesh_transform)
 
     #########################
@@ -334,13 +362,7 @@ class ECS_MINIMAL(object):
         SAD.table[tokens.mass] = mass
         self.ents += [self.controller.spawnEntity(SAD)]
       num_ents = len(self.ents)
-      #if num_ents>0:
-      #  rand_ent = random.randint(0,num_ents-1)
-      #  entref = self.ents[rand_ent]
-      #  bcomp = self.controller.findComponent(entref,"BulletObjectComponent")
-      #  print(bcomp)
-        #if sgcomp is not None:
-        #  sgcomp.node.transform.translation.y += 0.1
+
       
     ##############################
     # camera update

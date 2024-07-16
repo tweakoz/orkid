@@ -48,6 +48,7 @@ struct RigidPrimitiveBase {
   using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
 
   virtual lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) = 0;
+  virtual lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) = 0;
   inline lev2::scenegraph::drawable_node_ptr_t createNode(
       std::string named, //
       lev2::scenegraph::layer_ptr_t layer,
@@ -55,8 +56,16 @@ struct RigidPrimitiveBase {
     auto drw = createDrawable(pipeline);
     return layer->createDrawableNode(named, drw);
   }
+  inline lev2::scenegraph::drawable_node_ptr_t createNode(
+      std::string named, //
+      lev2::scenegraph::layer_ptr_t layer,
+      lev2::material_ptr_t material) {
+    auto drw = createDrawable(material);
+    return layer->createDrawableNode(named, drw);
+  }
 
   lev2::fxpipeline_ptr_t _pipeline;
+  lev2::material_ptr_t _material;
 };
 
 using rigidprimitive_ptr_t = std::shared_ptr<RigidPrimitiveBase>;
@@ -69,6 +78,7 @@ struct RigidPrimitiveDrawableData : public lev2::DrawableData {
   lev2::drawable_ptr_t createDrawable() const final;
   rigidprimitive_ptr_t _primitive;
   lev2::fxpipeline_ptr_t _pipeline;
+  lev2::material_ptr_t _material;
 };
 
 using rigidprimitive_drawdata_ptr_t = std::shared_ptr<RigidPrimitiveDrawableData>;
@@ -76,7 +86,14 @@ using rigidprimitive_drawdata_ptr_t = std::shared_ptr<RigidPrimitiveDrawableData
 inline RigidPrimitiveDrawableData::RigidPrimitiveDrawableData() {
 }
 inline lev2::drawable_ptr_t RigidPrimitiveDrawableData::createDrawable() const {
-  return _primitive->createDrawable(_pipeline);
+    if(_pipeline){
+        return _primitive->createDrawable(_pipeline);
+    }
+    else if(_material){
+        return _primitive->createDrawable(_material);
+    }
+    OrkAssert(false);
+    return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,6 +159,44 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
     auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
+      pipeline->wrappedDrawCall(
+          RCID,                       //
+          [this, context]() {         //
+            this->renderEML(context); //
+          });
+    });
+    return drw;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) final {
+
+    OrkAssert(material != nullptr);
+    //OrkAssert(material->_technique != nullptr);
+
+    //_pipeline = pipeline;
+
+    auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
+
+
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      auto RCFD = RCID.rcfd();
+
+      lev2::FxPipelinePermutation permu;
+      permu._stereo = false;
+      permu._instanced = false;
+      permu._skinned = false;
+      permu._is_picking = false;
+      permu._has_vtxcolors = true;
+      permu._rendering_model = RCFD->_renderingmodel._modelID;
+
+      auto fxcache = material->pipelineCache();
+
+
+      auto pipeline = fxcache->findPipeline(permu);
+      OrkAssert(pipeline != nullptr);
       pipeline->wrappedDrawCall(
           RCID,                       //
           [this, context]() {         //

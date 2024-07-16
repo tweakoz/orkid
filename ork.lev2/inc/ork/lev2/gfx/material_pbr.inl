@@ -158,6 +158,8 @@ public:
   fxparam_constptr_t _paramSkyboxLevel     = nullptr;
 
   fxparam_constptr_t _paramSSAOTexture    = nullptr;
+  fxparam_constptr_t _paramSSAOWeight    = nullptr;
+  fxparam_constptr_t _paramSSAOPower    = nullptr;
 
   fxparam_constptr_t _parMapAmbOcc           = nullptr;
   fxparam_constptr_t _parMapLightMap         = nullptr;
@@ -277,6 +279,7 @@ public:
 
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_NM_RI_NI_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_ST = nullptr;
   

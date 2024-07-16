@@ -113,7 +113,6 @@ void Scene::gpuExit(Context* ctx) {
   _layers.atomicOp([](layer_map_t& unlocked) { unlocked.clear(); });
   _userdata = nullptr;
   _nodes2draw.clear();
-  //_instancednodes2draw.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,6 +246,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
       _pbr_common->_ssaoNumSamples = int(try_ssao.value());
+      _pbr_common->_useDepthPrepass = true;
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
       _pbr_common->_ssaoNumSteps = int(try_ssao.value());

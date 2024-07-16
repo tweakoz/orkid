@@ -56,7 +56,6 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
   }
 
   _nodes2draw.clear();
-  //_instancednodes2draw.clear();
 
   std::vector<layer_ptr_t> layers;
 

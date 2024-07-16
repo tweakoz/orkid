@@ -4,12 +4,12 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
-	import "gbuftools.i"
+	import "pbrtools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx
+uniform_set ub_vtx_manip
 {
   mat4        m;
 	mat4        mvp;
@@ -19,7 +19,7 @@ uniform_set ub_vtx
 
 }
 vertex_interface iface_v_mono
-	: ub_vtx
+	: ub_vtx_manip
 {
     inputs {
 	    vec4 position : POSITION;
@@ -38,12 +38,12 @@ vertex_interface iface_v_stereo : iface_v_mono {
   }
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg
+uniform_set ub_frg_manip
 {
 	vec4 modcolor;
 }
 fragment_interface iface_fmt
-	: ub_frg
+	: ub_frg_manip
 {
     inputs {
 	    vec4 frg_clr;
@@ -55,7 +55,7 @@ fragment_interface iface_fmt
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default : default
+state_block sb_default_manip : default
 {
 }
 ///////////////////////////////////////////////////////////////
@@ -102,10 +102,17 @@ fragment_shader ps_vtxcolor
 {
   out_clr = frg_clr;
 }
+fragment_shader ps_forward_fragclr
+  : iface_fmt 
+	: ub_frg_fwd {
+  vec2 screen_uv = gl_FragCoord.xy * InvViewportSize;
+  float ambocc = texture(SSAOMap, screen_uv).x;
+  out_clr = frg_clr*ambocc;
+}
 
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_pbr_deferred
-	: ub_frg
+	: ub_frg_manip
 {
     inputs {
         vec4 frg_clr;
@@ -143,7 +150,7 @@ vertex_interface iface_vwire {
   }
 }
 fragment_interface iface_wire_deferred
-	: ub_frg
+	: ub_frg_manip
 {
     inputs {
         vec4 frg_clr;
@@ -155,7 +162,7 @@ fragment_interface iface_wire_deferred
 	}
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_wnormal_pseudo : iface_vwire : ub_vtx {
+vertex_shader vs_wnormal_pseudo : iface_vwire : ub_vtx_manip {
   vec4 hpos  = mvp * position;
   vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
   ///////////////////////////
@@ -175,7 +182,7 @@ fragment_shader ps_deferred_pseudowire
 }
 
 ///////////////////////////////////////////////////////////////
-state_block sb_m1 : sb_default
+state_block sb_m1 : sb_default_manip
 {
 	DepthTest=OFF;
 	DepthMask=true;
@@ -183,7 +190,7 @@ state_block sb_m1 : sb_default
 	BlendMode = OFF;
 }
 
-state_block sb_pick : sb_default
+state_block sb_pick : sb_default_manip
 {
 	DepthTest=OFF;
 	DepthMask=true;
@@ -208,6 +215,15 @@ technique std_mono_deferred
   pass p0
   { vertex_shader=vs_vtxcolor_mono;
     fragment_shader=ps_deferred_emissive_fragclr;
+    state_block=sb_m1;
+  }
+}
+technique std_mono_forward_lit
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_forward_fragclr;
     state_block=sb_m1;
   }
 }

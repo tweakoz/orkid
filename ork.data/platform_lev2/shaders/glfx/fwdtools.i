@@ -100,7 +100,8 @@ libblock lib_fwd //
     // filter sample ambocc
     vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
     float ambocc = texture(SSAOMap, uv).x;
-
+    ambocc = pow(ambocc, SSAOPower);
+    ambocc = mix(1.0,ambocc,SSAOWeight);
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;
@@ -184,7 +185,10 @@ libblock lib_fwd //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    float ambocc = 1.0;
+    vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
+    float ambocc = texture(SSAOMap, uv).x;
+    ambocc = pow(ambocc, SSAOPower);
+    ambocc = mix(1.0,ambocc,SSAOWeight);
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;
@@ -349,6 +353,7 @@ libblock lib_fwd //
        //spot_lighting += pl_c;
     }
     //return spot_lighting;
+    //return vec3(ambocc,ambocc,ambocc);
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {

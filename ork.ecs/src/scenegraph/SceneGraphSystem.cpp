@@ -174,7 +174,6 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
     auto NID = NID_item.second;
     if (NID->_drawabledata) {
       auto drwdata               = NID->_drawabledata;
-      auto layer                 = _scene->findLayer(NID->_layername);
       auto nitem                 = std::make_shared<SceneGraphNodeItem>();
       nitem->_nodename           = NID->_nodename;
       nitem->_data               = NID;
@@ -182,8 +181,9 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
 
       auto on_gpu_init = [=]() {
         nitem->_drawable = _drwcache->fetch(drwdata);
-
+  
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
+          auto layer                 = _scene->findLayer(NID->_layername);
           auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
           nitem->_sgnode = node;
           size_t count   = as_instanced->_count;
@@ -202,9 +202,20 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
             //printf( "init instanced<%d>\n", i );
           }
         } else {
-          auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
-          node->_modcolor = NID->_modcolor;
-          nitem->_sgnode  = node;
+          auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
+            auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+            node->_modcolor = NID->_modcolor;
+            nitem->_sgnode  = node;
+          };
+          if(NID->_multilayers.size()){
+            for( auto sub_layer : NID->_multilayers ){
+                auto layer = _scene->findLayer(sub_layer);
+                NODE_ON_LAYER(layer);
+            }
+          } else {
+              auto layer = _scene->findLayer(NID->_layername);
+              NODE_ON_LAYER(layer);
+          }
         }
       };
 
@@ -286,12 +297,12 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
       bool was_found = it_drw != component->_nodeitems.end();
 
       if (not was_found) {
-        auto layer = _scene->findLayer(NID->_layername);
         /////////////////////////////////////////////////
         // light ?
         /////////////////////////////////////////////////
         auto as_light = dynamic_pointer_cast<LightData>(drwdata);
         if (as_light) {
+          auto layer = _scene->findLayer(NID->_layername);
           auto l = dynamic_pointer_cast<Light>(as_light->createDrawable());
 
           auto nitem                            = std::make_shared<SceneGraphNodeItem>();
@@ -330,24 +341,39 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
           // drawable ?
           /////////////////////////////////////////////////
         } else {
-
-          auto nitem                            = std::make_shared<SceneGraphNodeItem>();
-          nitem->_drawable                      = _drwcache->fetch(drwdata);
-          nitem->_nodename                      = NID->_nodename;
-          nitem->_data                          = NID;
-          component->_nodeitems[NID->_nodename] = nitem;
-
-          if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
-            nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
-            OrkAssert(false);
-            // we should not hit this, because the instanced drawable
-            //  should be @ system scope, not component scope
-
-          } else {
-            auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
-            node->_modcolor = NID->_modcolor;
-            nitem->_sgnode  = node;
-          }
+            
+            auto DO_ITEM = [=](scenegraph::layer_ptr_t layer) -> sgnodeitem_ptr_t {
+                auto nitem                            = std::make_shared<SceneGraphNodeItem>();
+                nitem->_drawable                      = _drwcache->fetch(drwdata);
+                nitem->_nodename                      = NID->_nodename;
+                nitem->_data                          = NID;
+                component->_nodeitems[NID->_nodename] = nitem;
+                
+                if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
+                    nitem->_sgnode = layer->createDrawableNode(NID->_nodename, as_instanced);
+                    OrkAssert(false);
+                    // we should not hit this, because the instanced drawable
+                    //  should be @ system scope, not component scope
+                    
+                } else {
+                    auto node       = layer->createDrawableNode(NID->_nodename, nitem->_drawable);
+                    node->_modcolor = NID->_modcolor;
+                    nitem->_sgnode  = node;
+                }
+                return nitem;
+            };
+            if(NID->_multilayers.size()){
+                auto layer = _scene->findLayer(NID->_multilayers[0]);
+                auto item = DO_ITEM(layer);
+                for( int i=1; i<NID->_multilayers.size(); i++ ){
+                    auto layer = _scene->findLayer(NID->_multilayers[i]);
+                    auto drw_node = std::dynamic_pointer_cast<lev2::scenegraph::DrawableNode>(item->_sgnode);
+                    layer->addDrawableNode(drw_node);
+                }
+            } else {
+                auto layer = _scene->findLayer(NID->_layername);
+                auto item = DO_ITEM(layer);
+            }
         }
       }
     }

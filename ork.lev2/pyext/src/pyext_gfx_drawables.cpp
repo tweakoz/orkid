@@ -462,8 +462,12 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                           .def(py::init<>())
                           .def_property(
                               "pipeline",
-                              [](meshutil::rigidprimitive_drawdata_ptr_t dd) { return dd->_pipeline; },
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd) -> fxpipeline_ptr_t { return dd->_pipeline; },
                               [](meshutil::rigidprimitive_drawdata_ptr_t dd, fxpipeline_ptr_t pipeline) { dd->_pipeline = pipeline; })
+                          .def_property(
+                              "material",
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd) -> material_ptr_t { return dd->_material; },
+                              [](meshutil::rigidprimitive_drawdata_ptr_t dd, material_ptr_t mtl) { dd->_material = mtl; })
                           .def_property(
                               "primitive",
                               [](meshutil::rigidprimitive_drawdata_ptr_t dd) { return dd->_primitive; },
@@ -487,6 +491,13 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                              [](meshutil::rigidprimitive_ptr_t prim,                                    //
                                 fxpipeline_ptr_t pipeline) -> lev2::callback_drawable_ptr_t { //
                                auto drw = prim->createDrawable(pipeline);
+                               return drw;
+                             })
+                         .def(
+                             "createDrawable",
+                             [](meshutil::rigidprimitive_ptr_t prim,                                    //
+                                material_ptr_t mtl) -> lev2::callback_drawable_ptr_t { //
+                               auto drw = prim->createDrawable(mtl);
                                return drw;
                              })
                          .def(

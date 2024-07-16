@@ -29,7 +29,6 @@ struct Layer;
 struct Node;
 struct DrawableNode;
 struct CameraNode;
-//struct InstancedDrawableNode;
 struct LightNode;
 struct ProbeNode;
 struct Scene;
@@ -43,7 +42,6 @@ using node_atomicptr_t   = std::atomic<node_ptr_t>;
 using scene_ptr_t        = std::shared_ptr<Scene>;
 using drawable_node_ptr_t = std::shared_ptr<DrawableNode>;
 using camera_node_ptr_t = std::shared_ptr<CameraNode>;
-//using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
 using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
 using synchro_ptr_t = std::shared_ptr<Synchro>;
@@ -92,20 +90,6 @@ struct CameraeNode final : public Node {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// InstancedDrawableNode: a scenegraph node
-//  that is part of another instancing group
-///////////////////////////////////////////////////////////////////////////////
-
-/*struct InstancedDrawableNode final : public Node {
-
-  InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
-  ~InstancedDrawableNode();
-
-  instanced_drawable_ptr_t _shared_drawable;
-  size_t _instanced_drawable_id = 0;
-};*/
-
-///////////////////////////////////////////////////////////////////////////////
 
 struct LightNode final : public Node {
 
@@ -143,14 +127,6 @@ struct Layer {
 
   void addDrawableNode(drawable_node_ptr_t node);
 
-  //! create/remove "instanced" drawable node
-  /*!
-      create an instanced node and assign as an instance in parent_drawable
-  */
-
-  //instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t parent_drawable);
-  //void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
-
   //! create/remove drawable nodes
 
   lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
@@ -171,7 +147,6 @@ struct Layer {
   std::string _name;
 
   LockedResource<drawablenodevect_t> _drawable_nodes;
-  //LockedResource<instanced_drawmap_t> _instanced_drawable_map;
   LockedResource<lightnodevect_t> _lightnodes;
   LockedResource<probenodevect_t> _probenodes;
 

@@ -27,6 +27,7 @@ struct NodeDef{
   std::string _nodename;
   lev2::drawabledata_ptr_t _drawabledata;
   std::string _layername;
+  std::vector<std::string> _multilayers;
   decompxf_ptr_t _transform;
   fvec4 _modcolor;
 };
@@ -37,6 +38,7 @@ struct SceneGraphNodeItemData : public ork::Object {
 public:
   lev2::drawabledata_ptr_t _drawabledata;
   std::string _layername;
+  std::vector<std::string> _multilayers;
   std::string _nodename;
   decompxf_ptr_t _xfoverride;
   fvec4 _modcolor;

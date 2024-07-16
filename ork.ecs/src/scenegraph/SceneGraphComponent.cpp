@@ -61,6 +61,7 @@ void SceneGraphComponentData::declareNodeOnLayer( nodedef_ptr_t ndef ) {
   nid->_nodename       = ndef->_nodename;
   nid->_drawabledata   = ndef->_drawabledata;
   nid->_layername      = ndef->_layername;
+  nid->_multilayers    = ndef->_multilayers;
   nid->_xfoverride     = ndef->_transform;
   nid->_modcolor       = ndef->_modcolor;
 

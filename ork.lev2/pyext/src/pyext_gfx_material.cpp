@@ -143,6 +143,46 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](fxpipelinepermutation_ptr_t permu, pyfxtechnique_ptr_t tek) { //
                 permu->_forced_technique = tek.get();
               }
+          )
+          .def_property("stereo",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_stereo;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool stereo) { //
+                permu->_stereo = stereo;
+              }
+          )
+          .def_property("instanced",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_instanced;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool instanced) { //
+                permu->_instanced = instanced;
+              }
+          )
+          .def_property("skinned",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_skinned;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool skinned) { //
+                permu->_skinned = skinned;
+              }
+          )
+          .def_property("is_picking",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_is_picking;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool picking) { //
+                permu->_is_picking = picking;
+              }
+          )
+          .def_property("has_vtxcolors",
+              [](fxpipelinepermutation_ptr_t permu) -> bool { //
+                return permu->_has_vtxcolors;
+              },
+              [](fxpipelinepermutation_ptr_t permu, bool has_vtxcolors) { //
+                permu->_has_vtxcolors = has_vtxcolors;
+              }
           );
   type_codec->registerStdCodec<fxpipelinepermutation_ptr_t>(pipelinepermu_type);
   /////////////////////////////////////////////////////////////////////////////////

@@ -250,12 +250,22 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
   auto l_ssao = [this](const RenderContextInstData& RCID, int ipass) {
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
-    auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
-    auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);
-    fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
     auto FXI              = context->FXI();
-    FXI->BindParamCTex(this->_paramSSAOTexture, ssaotexture.get() );
-    FXI->BindParamVect2(this->_parInvViewSize, ivpdim );
+      if( RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu ){
+        //FXI->BindParamCTex(this->_paramSSAOTexture, nullptr );
+        FXI->BindParamVect2(this->_parInvViewSize, fvec2(1,1) );
+      }
+      else {
+          auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
+          auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);
+          auto ssaoPOWER = RCFD->userPropertyAs<float>("SSAO_POWER"_crcu);
+          auto ssaoWEIGHT = RCFD->userPropertyAs<float>("SSAO_WEIGHT"_crcu);
+          fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
+          FXI->BindParamCTex(this->_paramSSAOTexture, ssaotexture.get() );
+          FXI->BindParamFloat(this->_paramSSAOPower, ssaoPOWER );
+          FXI->BindParamFloat(this->_paramSSAOWeight, ssaoWEIGHT );
+          FXI->BindParamVect2(this->_parInvViewSize, ivpdim );
+      }
   };
   /////////////////////////////////////////////////////////////
   // STEREO
@@ -311,11 +321,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_SK_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_IN_MO;
+          printf( "got fwdtek FWD_CT_NM_SK_IN_MO\n");
         }
       } else { // not instanced
         if (this->_tek_FWD_CT_NM_SK_NI_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_MO;
+          printf( "got fwdtek FWD_CT_NM_SK_NI_MO\n");
         }
       }
     } else { // not skinned
@@ -323,11 +335,22 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
+          printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
         }
       } else {
-        if (this->_tek_FWD_CT_NM_RI_NI_MO) {
-          pipeline             = std::make_shared<FxPipeline>(permu);
-          pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_MO;
+        if( permu._has_vtxcolors ){
+          if (this->_tek_FWD_CV_NM_RI_NI_MO) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO;
+            printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
+          }
+        }
+        else{
+          if (this->_tek_FWD_CT_NM_RI_NI_MO) {
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_MO;
+            printf( "got fwdtek FWD_CT_NM_RI_NI_MO\n");
+          }
         }
       }
     }
