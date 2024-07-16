@@ -47,7 +47,7 @@ struct Controller {
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	using evq_t = std::vector<svar32_t>;
+	using evq_t = std::deque<svar32_t>;
 	using delayed_opq_t = std::multimap<float, void_lambda_t>;
   using delayed_opv_t = std::vector<void_lambda_t>;
 
@@ -200,6 +200,7 @@ private:
 	std::vector<std::shared_ptr<std::string>> _retained_strings;
 	
 	tsl::robin_map<uint64_t,comp_ref_t> _component_cache;
+  evq_t _temp_evq;
 
 };
 

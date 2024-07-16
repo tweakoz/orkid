@@ -316,6 +316,7 @@ class MYCONTROLLER:
 
         index = random.choice(list(self.all_entities.keys()))
         ent = self.all_entities[index]
+        #print("send SET_TARGET eid: %d"%ent.id)
         i = random.randint(-30,30)
         j = random.randint(-30,30)
         k = random.randint(-30,30)

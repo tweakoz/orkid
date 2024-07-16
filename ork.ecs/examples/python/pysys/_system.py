@@ -78,7 +78,9 @@ def onSystemNotify(simulation, evID, table):
   simulation.vars.mysys.notif_count += 1
   if evID.hashed == tokens.SET_TARGET.hashed:
     entID = table[tokens.ent]
+    #print( "GOT SET_TARGET<%s>"%entID.id)
     ent = simulation.entityByID(entID)
+    #print( "GOT SET_TARGET<%s>"%ent)
     ent.vars.target_pos = table[tokens.pos]
   elif evID.hashed == tokens.PRINT_CAMERA.hashed:
     phase = simulation.vars.mysys.gametime * 0.01

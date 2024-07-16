@@ -121,6 +121,7 @@ Entity::Entity(spawndata_constptr_t edata, Simulation* inst, uint64_t entref)
     , mComponentTable(_components) {
   OrkAssert(edata != nullptr);
 
+  //printf( "ent created<%d>\n", entref );
   static const auto noname = "noname"_pool;
 
   _name = _entdata ? _entdata->GetName() : noname;

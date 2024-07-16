@@ -206,62 +206,63 @@ bool Controller::_pollEvents(Simulation* unlocked_sim, evq_t& out_events){
   bool in_barrier = false;
 
   this->_eventQueue.atomicOp([&](Controller::evq_t& unlocked) {
-    bool events_finished = false;
+  
+  bool events_finished = false;
 
-    int eventindex = 0;
+  int eventindex = 0;
 
-    while (not events_finished) {
-      events_finished = true;
-      auto it         = unlocked.begin();
-      if (it != unlocked.end()) {
+  while (not events_finished) {
+    events_finished = true;
+    auto it         = unlocked.begin();
+    if (it != unlocked.end()) {
 
-        ////////////////////////////////////
-        // first respect barriers
-        ////////////////////////////////////
+      ////////////////////////////////////
+      // first respect barriers
+      ////////////////////////////////////
 
-        auto& evreq = *it;
+      auto& evreq = *it;
 
-        if( auto as_ev = evreq.tryAs<Controller::event_ptr_t>() ){
+      if( auto as_ev = evreq.tryAs<Controller::event_ptr_t>() ){
 
-          auto& payload = as_ev.value()->_payload;
+        auto& payload = as_ev.value()->_payload;
 
-          if(auto as_barrier = payload.tryAs<impl::entbarrier_ptr_t>() ){
-            auto entref = as_barrier.value()->_entref;
-            auto ent = unlocked_sim->_findEntityFromRef(entref);
-            if( ent == nullptr ){
-              in_barrier = true;
-              events_finished = true;
-              return in_barrier;
-            }
-            else{
-              //OrkAssert(false);
-            }
-
+        if(auto as_barrier = payload.tryAs<impl::entbarrier_ptr_t>() ){
+          auto entref = as_barrier.value()->_entref;
+          auto ent = unlocked_sim->_findEntityFromRef(entref);
+          if( ent == nullptr ){
+            in_barrier = true;
+            events_finished = true;
+            return in_barrier;
           }
-          else if(auto as_barrier = payload.tryAs<impl::transportbarrier_ptr_t>() ){
-            auto desired_state = as_barrier.value()->_waitForState;
-            // barrier condition exists so long as
-            //  the actual transport state does not match the desired transport state
-            in_barrier = ( desired_state != unlocked_sim->_transportState );
-            if(in_barrier){
-              return true;              
-            }
+          else{
+            //OrkAssert(false);
+          }
+
+        }
+        else if(auto as_barrier = payload.tryAs<impl::transportbarrier_ptr_t>() ){
+          auto desired_state = as_barrier.value()->_waitForState;
+          // barrier condition exists so long as
+          //  the actual transport state does not match the desired transport state
+          in_barrier = ( desired_state != unlocked_sim->_transportState );
+          if(in_barrier){
+            return true;              
           }
         }
-
-        ////////////////////////////////////
-        // then respect timestamps
-        ////////////////////////////////////
-
-        out_events.push_back(evreq);
-        unlocked.erase(it);
-        events_finished = false; // try again
-
-        ////////////////////////////////////
-
       }
-      eventindex++;
+
+      ////////////////////////////////////
+      // then respect timestamps
+      ////////////////////////////////////
+
+      out_events.push_back(evreq);
+      unlocked.erase(it);
+      events_finished = false; // try again
+
+      ////////////////////////////////////
+
     }
+    eventindex++;
+  }
   });
   return in_barrier;
 }
