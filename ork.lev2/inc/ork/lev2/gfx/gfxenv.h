@@ -132,6 +132,8 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
+using sticky_cb_t = std::function<bool()>;
+
 struct Context : public ork::Object {
   DeclareAbstractX(Context, ork::Object);
 
@@ -342,7 +344,7 @@ public:
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
   std::unordered_map<uint32_t,svar64_t> _miscVBs;
-
+  std::vector<sticky_cb_t> _stickyCallbacks;
   bool hiDPI() const;
   float currentDPI() const;
 

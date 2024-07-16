@@ -50,6 +50,9 @@ void Scene::__common_init() {
   _renderPresetData->_assetSynchro = _loadSynchro;
   _pbr_common                      = std::make_shared<pbr::CommonStuff>();
   _renderPresetData->_pbr_common   = _pbr_common;
+
+  _topCPD->addStandardLayers();
+
 }
 
 Scene::Scene(varmap::varmap_ptr_t params) {
@@ -96,7 +99,16 @@ void Scene::gpuInit(Context* ctx) {
   _dogpuinit    = false;
   _boundContext = ctx;
 
-  _compositorImpl->gpuInit(ctx);
+  auto op = [=]() -> bool {
+    if( _compositorImpl ){
+      _compositorImpl->gpuInit(ctx);
+      return true;
+    }
+    return false;
+  };
+
+  ctx->_stickyCallbacks.push_back(op);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -288,10 +300,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     }
     // OrkAssert(false);
   }
-
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
-  _topCPD->addStandardLayers();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

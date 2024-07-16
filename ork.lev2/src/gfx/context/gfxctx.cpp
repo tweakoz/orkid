@@ -59,6 +59,21 @@ void Context::triggerFrameDebugCapture(){
 void Context::beginFrame(void) {
 
   makeCurrentContext();
+
+  bool keep_going = true;
+  while(keep_going) {
+    keep_going = false;
+    auto it = _stickyCallbacks.begin();
+    if( it != _stickyCallbacks.end() ){
+      auto cb = *it;
+      bool processed = cb();
+      if(processed){
+        _stickyCallbacks.erase(it);
+        keep_going = true;
+      }
+    }   
+  }
+
   auto mainrect = mainSurfaceRectAtOrigin();
   FBI()->setViewport(mainrect);
   FBI()->setScissor(mainrect);
