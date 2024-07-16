@@ -121,7 +121,7 @@ libblock lib_fwd //
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
-    vec3 specular       = specularMask * specularC;
+    vec3 specular       = specularMask * specularC*ambocc;
 
     //vec3 probe_REFL = vec3(0);
     // vec3 ambient = invF*AmbientLevel;
