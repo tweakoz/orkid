@@ -316,7 +316,7 @@ fragment_shader ps_ssao //
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   out_value   = ssao(uv);
   float prev = texture(SSAOPREV,uv).r;
-  out_value   = mix(prev,out_value,0.2);
+  out_value   = mix(prev,out_value,0.4);
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

@@ -20,7 +20,7 @@ from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
-SSAO_NUM_SAMPLES = 128
+SSAO_NUM_SAMPLES = 64
 
 ################################################################################
 
@@ -75,8 +75,8 @@ class SceneGraphApp(object):
       "SSAONumSteps": 2,
       "SSAOBias": -1e-5,
       "SSAORadius": 2.0*25.4/1000, # 2 inches
-      "SSAOWeight": 1.0,
-      "SSAOPower": 1.0,
+      "SSAOWeight": 0.75,
+      "SSAOPower": 0.75,
     }
 
     if envmap != "":

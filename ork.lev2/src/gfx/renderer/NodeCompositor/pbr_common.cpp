@@ -157,7 +157,7 @@ void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) 
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx,int noise_seed){
 
-  int seed = noise_seed%97;
+  int seed = 0;//noise_seed%97;
   int num_samples = (_ssaoNumSamples<8) ? 8 : _ssaoNumSamples;
   uint64_t key = uint64_t(seed)<<32 | uint64_t(num_samples);
 

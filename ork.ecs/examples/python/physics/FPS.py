@@ -28,7 +28,7 @@ NUM_BALLS = 1500
 OFFSET = vec3(0,0.5,0)
 SIMRATE = 120
 BALLS_NODE_NAME = "balls-instancing-node"
-SSAO_NUM_SAMPLES = 64
+SSAO_NUM_SAMPLES = 32
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -79,15 +79,15 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       "SkyboxIntensity": float(2.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 3,
+      "SSAONumSteps": 4,
       "SSAOBias": -1e-5,
-      "SSAORadius": 2.0*25.4/1000, # 2 inches
+      "SSAORadius": 1.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 2.0,
+      "SSAOPower": 1.0,
       "preset": "DeferredPBR"
     })
     

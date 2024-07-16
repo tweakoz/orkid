@@ -63,12 +63,12 @@ class SSAOAPP(object):
     sceneparams.DepthFogDistance = float(1e6)
     sceneparams.SkyboxTexPathStr = "src://effect_textures/white.dds"
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
-    sceneparams.SSAONumSamples = 8
+    sceneparams.SSAONumSamples = 32
     sceneparams.SSAONumSteps = 5
     sceneparams.SSAOBias = -1e-5
-    sceneparams.SSAORadius = 2.0*2.54/200
-    sceneparams.SSAOWeight = 1.0
-    sceneparams.SSAOPower = 2.0
+    sceneparams.SSAORadius = 1.0*25.4/1000.0
+    sceneparams.SSAOWeight = 0.75
+    sceneparams.SSAOPower = 0.75
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")

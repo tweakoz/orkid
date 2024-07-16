@@ -93,7 +93,7 @@ class ECS_MINIMAL(object):
       "SSAOBias": -1.0e-5,
       "SSAORadius": 2.0*25.4/1000.0,
       "SSAOWeight": 0.75,
-      "SSAOPower": 0.5,
+      "SSAOPower": 0.75,
     })
 
     drawable = InstancedModelDrawableData("data://tests/pbr_calib_lopoly.glb")
