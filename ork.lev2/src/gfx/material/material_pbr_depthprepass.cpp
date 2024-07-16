@@ -130,7 +130,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
     }
   } else if (permu._instanced and not permu._skinned) {
     if (this->_tek_FWD_DEPTHPREPASS_RI_IN_MO) {
-      OrkAssert(false);
       pipeline             = std::make_shared<FxPipeline>(permu);
       pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_IN_MO;
       pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);

@@ -19,12 +19,20 @@ from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
 tokens = CrcStringProxy()
 ################################################################################
-LAYERNAME = "std_deferred"
+if False:
+  RENDERING_MODEL = "ForwardPBR"
+  LAYERNAME = "std_forward"
+  all_layers = [LAYERNAME,"depth_prepass"]
+else:
+  RENDERING_MODEL = "DeferredPBR"
+  LAYERNAME = "std_deferred"
+  all_layers = [LAYERNAME,"depth_prepass"]
+
 BALLS_NODE_NAME = "balls"
 NUM_BALLS = 2500
 MAX_BALLS = 5000
 SPAWN_RATE = 0.1
-SSAO_NUM_SAMPLES = 128
+SSAO_NUM_SAMPLES = 96
 ################################################################################
 
 class MYCONTROLLER:
@@ -61,17 +69,19 @@ class MYCONTROLLER:
 
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     systemdata_SG.declareLayer(LAYERNAME)
+    systemdata_SG.declareLayer("depth_prepass")
     systemdata_SG.declareParams({
-      "SkyboxIntensity": float(2.5),
-      "SpecularIntensity": float(1),
+      "preset": RENDERING_MODEL,
+      "SkyboxIntensity": float(3.5),
+      "SpecularIntensity": float(0),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 3,
-      "SSAOBias": -1e-5,
-      "SSAORadius": 2.0*25.4/1000, # 2 inches
+      "SSAOBias": -1e-6,
+      "SSAORadius": 3.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
       "SSAOPower": 2.0,
     })
@@ -80,7 +90,7 @@ class MYCONTROLLER:
     drawable.resize(MAX_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
-                                      layer=LAYERNAME)
+                                      layers = all_layers)
 
     self.instance_drawable = drawable
     ####################

@@ -77,6 +77,7 @@ void SceneGraphSystemData::declareNodeOnLayer(nodedef_ptr_t ndef) {
   nid->_nodename     = ndef->_nodename;
   nid->_drawabledata = ndef->_drawabledata;
   nid->_layername    = ndef->_layername;
+  nid->_multilayers    = ndef->_multilayers;
   nid->_xfoverride   = ndef->_transform;
   nid->_modcolor     = ndef->_modcolor;
 
@@ -183,23 +184,34 @@ void SceneGraphSystem::_instantiateDeclaredNodes() {
         nitem->_drawable = _drwcache->fetch(drwdata);
   
         if (auto as_instanced = dynamic_pointer_cast<InstancedDrawable>(nitem->_drawable)) {
-          auto layer                 = _scene->findLayer(NID->_layername);
-          auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
-          nitem->_sgnode = node;
-          size_t count   = as_instanced->_count;
-          auto idata     = as_instanced->_instancedata;
-          for (size_t i = 0; i < count; i++) {
+          auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
+            auto node      = layer->createDrawableNode(NID->_nodename, as_instanced);
+            nitem->_sgnode = node;
+            size_t count   = as_instanced->_count;
+            auto idata     = as_instanced->_instancedata;
+            for (size_t i = 0; i < count; i++) {
 
-            int ix   = rand() & 0xffff;
-            int iz   = rand() & 0xffff;
-            float fx = (float(ix) / 32768.0f - 1.0f) * 100.0f;
-            float fz = (float(iz) / 32768.0f - 1.0f) * 100.0f;
-            fvec3 pos(fx, 0, fz);
+              int ix   = rand() & 0xffff;
+              int iz   = rand() & 0xffff;
+              float fx = (float(ix) / 32768.0f - 1.0f) * 100.0f;
+              float fz = (float(iz) / 32768.0f - 1.0f) * 100.0f;
+              fvec3 pos(fx, 0, fz);
 
-            idata->_worldmatrices[i].setColumn(3, pos);
-            idata->_modcolors[i] = fvec4(1, 1, 1, 1);
-            idata->_pickids[i]   = 0;
-            //printf( "init instanced<%d>\n", i );
+              idata->_worldmatrices[i].setColumn(3, pos);
+              idata->_modcolors[i] = fvec4(1, 1, 1, 1);
+              idata->_pickids[i]   = 0;
+              //printf( "init instanced<%d>\n", i );
+            }
+          };
+          if(NID->_multilayers.size()){
+            for( auto sub_layer : NID->_multilayers ){
+                auto layer = _scene->findLayer(sub_layer);
+                NODE_ON_LAYER(layer);
+            }
+          }
+          else{
+            auto layer                 = _scene->findLayer(NID->_layername);
+                NODE_ON_LAYER(layer);
           }
         } else {
           auto NODE_ON_LAYER = [=](lev2::scenegraph::layer_ptr_t layer){
