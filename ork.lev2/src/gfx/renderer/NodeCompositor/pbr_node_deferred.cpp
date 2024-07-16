@@ -176,14 +176,16 @@ struct PbrNodeImpl {
       // SSAO
       /////////////////////////
 
+      int node_frame = node->_frameIndex;
+
       _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples );
       _context->_lightingmtl->bindParamInt(_context->_parSSAONumSteps, pbrcommon->_ssaoNumSteps );
       _context->_lightingmtl->bindParamFloat(_context->_parSSAOBias, pbrcommon->_ssaoBias);
       _context->_lightingmtl->bindParamFloat(_context->_parSSAORadius, pbrcommon->_ssaoRadius );
       _context->_lightingmtl->bindParamFloat(_context->_parSSAOWeight, pbrcommon->_ssaoWeight );
       _context->_lightingmtl->bindParamFloat(_context->_parSSAOPower, pbrcommon->_ssaoPower );
-      _context->_lightingmtl->bindParamCTex(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ,0).get() );
-      _context->_lightingmtl->bindParamCTex(_context->_parSSAOScrNoise, pbrcommon->ssaoScrNoise(targ, 0, _context->_width, _context->_height ).get() );
+      _context->_lightingmtl->bindParamCTex(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ,node_frame).get() );
+      _context->_lightingmtl->bindParamCTex(_context->_parSSAOScrNoise, pbrcommon->ssaoScrNoise(targ, node_frame, _context->_width, _context->_height ).get() );
 
       /////////////////////////
       _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);

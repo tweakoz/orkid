@@ -32,7 +32,7 @@ GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_STATIC | GROUP_BALL | GROUP_ENV
 BALLS_NODE_NAME = "balls-instancing-node"
-SSAO_NUM_SAMPLES = 32
+SSAO_NUM_SAMPLES = 16
 SPAWN_HEIGHT = 25
 ################################################################################
 

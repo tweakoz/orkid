@@ -73,15 +73,15 @@ class MYCONTROLLER:
     systemdata_SG.declareParams({
       "preset": RENDERING_MODEL,
       "SkyboxIntensity": float(3.5),
-      "SpecularIntensity": float(0),
+      "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(2000),
       "DepthFogPower": float(1.25),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 3,
-      "SSAOBias": -1e-6,
-      "SSAORadius": 3.0*25.4/1000, # 2 inches
+      "SSAOBias": -1e-5,
+      "SSAORadius": 4.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
       "SSAOPower": 2.0,
     })
@@ -176,6 +176,22 @@ class MYCONTROLLER:
     self.run_thread.join
     self.run_thread = None
     self.controller.terminateSimulation()
+
+  ##############################################
+
+  def disableSSAO(self):
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdatePbrCommon,{
+                                      tokens.SSAONumSamples: 0
+                                    }
+                                  )
+
+  def enableSSAO(self):
+      self.controller.systemNotify( self.sys_sg,
+                                    tokens.UpdatePbrCommon,{
+                                      tokens.SSAONumSamples: SSAO_NUM_SAMPLES
+                                    }
+                                  )
 
   ##############################################
 

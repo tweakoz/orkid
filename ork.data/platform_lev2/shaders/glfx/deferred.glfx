@@ -452,7 +452,7 @@ libblock lib_deferred
       vec3 specular_light = spec_env*SkyboxLevel;
       vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
       vec3 specularMask = (F*brdf.x+brdf.y);
-      vec3 specular = specularMask*specularC;
+      vec3 specular = specularMask*specularC*ambocc;
       /////////////////////////
       // final outputs
       /////////////////////////
