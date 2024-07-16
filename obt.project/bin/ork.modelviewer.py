@@ -38,6 +38,7 @@ parser.add_argument("-c", "--overridecolor", type=str, default="", help='overrid
 parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", help='disable zero area poly check')
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
+parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 
 ################################################################################
 
@@ -113,6 +114,12 @@ class SceneGraphApp(object):
       "DiffuseIntensity": diffuintens,
       "SpecularIntensity": specuintens,
       "depthFogDistance": float(10000),
+      "SSAONumSamples": ssao,
+      "SSAONumSteps": 2,
+      "SSAOBias": -1.0e-5,
+      "SSAORadius": 1.0*25.4/1000.0,
+      "SSAOWeight": 0.5,
+      "SSAOPower": 0.5,
     }
 
     if envmap != "":

@@ -27,7 +27,8 @@ parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='lig
 parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-b", "--bonescale", type=float, default=1.0, help='bone scalar')
-parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
+parser.add_argument("-t", "--ssaa", type=int, default=4, help='SSAA samples')
+parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 
 ################################################################################
 
@@ -38,6 +39,7 @@ lightintens = args["lightintensity"]
 camdist = args["camdist"]
 envmap = args["envmap"]
 ssaa = args["ssaa"]
+ssao = args["ssao"]
 bonescale = args["bonescale"]
 
 ################################################################################
@@ -83,6 +85,12 @@ class SceneGraphApp(object):
       "DiffuseIntensity": 1,
       "SpecularIntensity": 1,
       "depthFogDistance": float(10000),
+      "SSAONumSamples": ssao,
+      "SSAONumSteps": 2,
+      "SSAOBias": -1.0e-5,
+      "SSAORadius": 1.0*25.4/1000.0,
+      "SSAOWeight": 0.5,
+      "SSAOPower": 0.5,
     }
 
     if envmap != "":
