@@ -56,6 +56,7 @@ envmap = args["envmap"]
 oshader = args["overrideshader"]
 ocolor = args["overridecolor"]
 ssaa = args["ssaa"]
+ssao = args["ssao"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -103,7 +104,9 @@ class SceneGraphApp(object):
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
     self.modelinsts=[]
-
+    self.ssaamode = False
+    if ssao>0:
+      self.ssaamode = True
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -117,9 +120,9 @@ class SceneGraphApp(object):
       "SSAONumSamples": ssao,
       "SSAONumSteps": 2,
       "SSAOBias": -1.0e-5,
-      "SSAORadius": 1.0*25.4/1000.0,
-      "SSAOWeight": 0.5,
-      "SSAOPower": 0.5,
+      "SSAORadius": 2.0*25.4/1000.0,
+      "SSAOWeight": 0.75,
+      "SSAOPower": 0.75,
     }
 
     if envmap != "":
@@ -143,7 +146,8 @@ class SceneGraphApp(object):
 
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)
-
+    self.pbr_common = self.scene.pbr_common
+    
     ######################
     # override shader ?
     ######################
@@ -220,15 +224,30 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      if uievent.keycode == ord("A"):
+        if self.ssaamode == True:
+          self.ssaamode = False
+        else:
+          self.ssaamode = True
+        print("SSAO MODE",self.ssaamode)
+        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    else:
+      handled = ui.HandlerResult()
+    return res
 
   ################################################
 
   def onUpdate(self,updinfo):
 
+    if self.ssaamode:
+      self.pbr_common.ssaoNumSamples = ssao 
+    else:
+      self.pbr_common.ssaoNumSamples = 0 
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################
