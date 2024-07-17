@@ -143,6 +143,9 @@ struct ForwardPbrNodeImpl {
       _fxpSSAOTexelSize    = _ssao_material->param("TexelSize");
       _fxpSSAOInvViewportSize    = _ssao_material->param("InvViewportSize");
       _fxpSSAOPREV    = _ssao_material->param("SSAOPREV");
+      _fxpZndc2eye    = _ssao_material->param("Zndc2eye");
+        _fxpInvP      = _ssao_material->param("MatInvP");
+        _fxpP      = _ssao_material->param("MatP");
 
       auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
       _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
@@ -154,6 +157,7 @@ struct ForwardPbrNodeImpl {
 
     auto node     = fpass->_node;
     auto drawdata = fpass->_drawdata;
+    auto VD = drawdata->computeViewData();
     auto DB       = fpass->_DB;
     auto rtg_out  = fpass->_rtg_out;
 
@@ -301,6 +305,10 @@ struct ForwardPbrNodeImpl {
         _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,node_frame).get() );
         _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,node_frame,W,H).get() );
         _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get() );
+        _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
+        _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse() );
+        _ssao_material->bindParamMatrix(_fxpP, VD.PL );
+
 
         fvec2 ivpsize = fvec2(1.0f/W,1.0f/H);
 
@@ -638,6 +646,8 @@ struct ForwardPbrNodeImpl {
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
   const FxShaderParam* _fxpMVP;
+  const FxShaderParam* _fxpP;
+  const FxShaderParam* _fxpInvP;
   const FxShaderParam* _fxpColorMap;
   const FxShaderTechnique* _tek_ssao;
 
@@ -654,6 +664,7 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpSSAOInvViewportSize;
   const FxShaderParam* _fxpSSAOMVP;
   const FxShaderParam* _fxpSSAOPREV;
+  const FxShaderParam* _fxpZndc2eye;
 
 
 

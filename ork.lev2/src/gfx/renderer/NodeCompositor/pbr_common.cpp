@@ -191,9 +191,18 @@ lev2::texture_ptr_t CommonStuff::ssaoKernel(lev2::Context* ctx,int noise_seed){
 
 }
 ///////////////////////////////////////////////////////////////////////////////
+struct NoiseData {
+    std::vector<fvec3> _ssaoNoise;
+    texture_ptr_t _texture;
+};
+struct NoiseDataSet{
+    std::map<uint64_t, NoiseData> _ssaoKernels;
+};
+using noisedataset_ptr_t = std::shared_ptr<NoiseDataSet>;
+///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int noise_seed, int w, int h){
 
-  int seed = noise_seed%7;
+  int seed = noise_seed%23;
 
   uint64_t key = uint64_t(seed)<<32 | uint64_t(w)<<16 | uint64_t(h);
 

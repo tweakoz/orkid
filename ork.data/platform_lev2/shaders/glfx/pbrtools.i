@@ -90,6 +90,9 @@ uniform_set ub_frg_fwd {
 
   float EnvironmentMipBias;
   float EnvironmentMipScale;
+  vec2 Zndc2eye;
+  mat4 MatP;
+  mat4 MatInvP;
 
   int point_light_count;
   int spot_light_count;
@@ -279,8 +282,83 @@ libblock lib_pbr_frg : lib_gbuf_encode {
   }
 }
 libblock lib_ssao {
+/////////////////////////////////////////////////////////
+float lindepth(vec2 depthuv) {
+    float depthtex = textureLod(MapDepth, depthuv, 0).r;  // Read depth value from texture
+    float ndc = depthtex * 2.0 - 1.0;                     // Convert to NDC space [-1, 1]
+    return Zndc2eye.x / (ndc - Zndc2eye.y);               // Convert to linear depth
+}
+/////////////////////////////////////////////////////////
+
+vec3 getViewPosition(vec2 uv, float depth) {
+    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
+    vec4 viewSpacePosition = MatInvP * clipSpacePosition;
+    viewSpacePosition /= viewSpacePosition.w;
+    return viewSpacePosition.xyz;
+}
+
+// SSAO calculation function
+float ssao_linear(vec2 frg_uv) {
+    // Linearize the depth at the fragment's UV coordinates
+    float depth = lindepth(frg_uv);
+    vec3 viewPos = getViewPosition(frg_uv, depth);
+
+    // Compute the screen space normal from the depth map
+    vec2 texelSize = 1.0 / textureSize(MapDepth, 0);  // Calculate texel size
+    float depthLeft = lindepth(frg_uv - vec2(texelSize.x, 0.0));  // Linear depth at left texel
+    float depthRight = lindepth(frg_uv + vec2(texelSize.x, 0.0)); // Linear depth at right texel
+    float depthUp = lindepth(frg_uv - vec2(0.0, texelSize.y));    // Linear depth at upper texel
+    float depthDown = lindepth(frg_uv + vec2(0.0, texelSize.y));  // Linear depth at lower texel
+
+    vec3 viewPosLeft = getViewPosition(frg_uv - vec2(texelSize.x, 0.0), depthLeft);
+    vec3 viewPosRight = getViewPosition(frg_uv + vec2(texelSize.x, 0.0), depthRight);
+    vec3 viewPosUp = getViewPosition(frg_uv - vec2(0.0, texelSize.y), depthUp);
+    vec3 viewPosDown = getViewPosition(frg_uv + vec2(0.0, texelSize.y), depthDown);
+
+    vec3 dx = viewPosRight - viewPosLeft;
+    vec3 dy = viewPosDown - viewPosUp;
+    vec3 normal = normalize(cross(dx, dy)); // Compute normal in view space
+
+    // Random noise texture
+    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+
+    // Accumulate occlusion
+    float occlusion = 0.0;
+    for (int i = 0; i < SSAONumSamples; ++i) {
+        // Sample the SSAO kernel and reflect around the random vector
+        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+        vec3 sampleDir = reflect(skern, randomVec);  // Reflect sample direction around random vector
+        sampleDir = normalize(sampleDir);            // Normalize sample direction
+
+        // Traverse the sample direction in steps
+        for (int j = 1; j <= SSAONumSteps; ++j) {
+            vec3 sampleViewPos = viewPos + sampleDir * (SSAORadius / float(SSAONumSteps)) * float(j);
+            vec4 offset = MatP * vec4(sampleViewPos, 1.0);
+            offset /= offset.w;
+            vec2 samplePos = offset.xy * 0.5 + 0.5;  // Convert to UV coordinates
+
+            // Clamp sample positions to screen boundaries
+            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+
+            // Linearize the depth at the sample position
+            float sampleDepth = lindepth(samplePos.xy);  // Linear depth at sample position
+
+            // Improved range check
+            float rangeCheck = step(SSAOBias, depth - sampleDepth);
+            float dist = length(sampleViewPos - viewPos);
+            float attenuation = 1.0 / (1.0 + dist * dist);
+            occlusion += (sampleDepth < depth) ? rangeCheck * attenuation : 0.0;
+        }
+    }
+
+    // Normalize the occlusion value
+    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
+
+    // Return the final occlusion factor
+    return 1.0 - occlusion;  // Invert occlusion for final SSAO effect
+}
   /////////////////////////////////////////////////////////
-float ssao(vec2 frg_uv) {
+float ssao_nonlinear(vec2 frg_uv) {
     float depth = texture(MapDepth, frg_uv).r;
 
     // Compute the screen space normal from the depth map
@@ -326,6 +404,11 @@ float ssao(vec2 frg_uv) {
 
     return 1.0 - occlusion;
 }
+
+float ssao(vec2 frg_uv) {
+  return ssao_nonlinear(frg_uv);
+}
+
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

@@ -50,7 +50,6 @@ uniform_set ub_deferred_frg {
   vec2 NearFar;
   int NumLights;
   int TileDim;
-  vec2 Zndc2eye;
   float SkyboxLevel;
   float SpecularLevel;
   float DiffuseLevel;
@@ -70,6 +69,9 @@ uniform_set ub_deferred_frg {
   float SSAOPower;
   sampler2D SSAOKernel;
   sampler2D SSAOScrNoise;
+  vec2 Zndc2eye;
+  mat4 MatP;
+  mat4 MatInvP;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
