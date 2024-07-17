@@ -57,7 +57,7 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15))
+    setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
     self.ssaamode = False
 

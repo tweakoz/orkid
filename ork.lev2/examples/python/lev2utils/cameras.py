@@ -26,6 +26,8 @@ def setupUiCameraX( near = 0.1,
   uicam = EzUiCam()
   uicam.fov = fov_deg*constants.DTOR
   uicam.constrainZ = constrainZ
+  uicam.near_min = near 
+  uicam.far_max = far
   ###################################
   # initial view
   ###################################

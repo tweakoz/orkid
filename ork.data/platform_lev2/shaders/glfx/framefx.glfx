@@ -329,7 +329,10 @@ fragment_shader ps_linearize_depth //
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
   float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
-  out_value   = Zndc2eye.x / (ndc - Zndc2eye.y); // linearize
+  float near = Zndc2eye.x;
+  float far = Zndc2eye.y;
+  float linz = (2.0*near*far) / (far+near-ndc*(far-near));
+  out_value   = linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

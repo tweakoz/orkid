@@ -283,12 +283,6 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 }
 libblock lib_ssao {
 /////////////////////////////////////////////////////////
-float lindepth(vec2 depthuv) {
-    float depthtex = textureLod(MapDepth, depthuv, 0).r;  // Read depth value from texture
-    float ndc = depthtex * 2.0 - 1.0;                     // Convert to NDC space [-1, 1]
-    return Zndc2eye.x / (ndc - Zndc2eye.y);               // Convert to linear depth
-}
-/////////////////////////////////////////////////////////
 
 vec3 getViewPosition(vec2 uv, float depth) {
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
@@ -300,15 +294,17 @@ vec3 getViewPosition(vec2 uv, float depth) {
 // SSAO calculation function
 float ssao_linear(vec2 frg_uv) {
     // Linearize the depth at the fragment's UV coordinates
-    float depth = lindepth(frg_uv);
+    float depth = textureLod(MapDepth, frg_uv,0).r;
+    return depth;
+    
     vec3 viewPos = getViewPosition(frg_uv, depth);
 
     // Compute the screen space normal from the depth map
     vec2 texelSize = 1.0 / textureSize(MapDepth, 0);  // Calculate texel size
-    float depthLeft = lindepth(frg_uv - vec2(texelSize.x, 0.0));  // Linear depth at left texel
-    float depthRight = lindepth(frg_uv + vec2(texelSize.x, 0.0)); // Linear depth at right texel
-    float depthUp = lindepth(frg_uv - vec2(0.0, texelSize.y));    // Linear depth at upper texel
-    float depthDown = lindepth(frg_uv + vec2(0.0, texelSize.y));  // Linear depth at lower texel
+    float depthLeft = textureLod(MapDepth, frg_uv - vec2(texelSize.x, 0.0), 0).r;  // Linear depth at left texel
+    float depthRight = textureLod(MapDepth, frg_uv + vec2(texelSize.x, 0.0), 0).r; // Linear depth at right texel
+    float depthUp = textureLod(MapDepth, frg_uv - vec2(0.0, texelSize.y), 0).r;    // Linear depth at upper texel
+    float depthDown = textureLod(MapDepth, frg_uv + vec2(0.0, texelSize.y), 0).r;  // Linear depth at lower texel
 
     vec3 viewPosLeft = getViewPosition(frg_uv - vec2(texelSize.x, 0.0), depthLeft);
     vec3 viewPosRight = getViewPosition(frg_uv + vec2(texelSize.x, 0.0), depthRight);
@@ -341,7 +337,7 @@ float ssao_linear(vec2 frg_uv) {
             samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
 
             // Linearize the depth at the sample position
-            float sampleDepth = lindepth(samplePos.xy);  // Linear depth at sample position
+            float sampleDepth = textureLod(MapDepth, samplePos.xy, 0).r;  // Linear depth at sample position
 
             // Improved range check
             float rangeCheck = step(SSAOBias, depth - sampleDepth);
@@ -406,7 +402,7 @@ float ssao_nonlinear(vec2 frg_uv) {
 }
 
 float ssao(vec2 frg_uv) {
-  return ssao_nonlinear(frg_uv);
+  return ssao_linear(frg_uv);
 }
 
 }
