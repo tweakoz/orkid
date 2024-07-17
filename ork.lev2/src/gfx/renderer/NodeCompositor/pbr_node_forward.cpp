@@ -228,6 +228,8 @@ struct ForwardPbrNodeImpl {
     context->debugPopGroup();
     FBI->PopRtGroup();
 
+    bool is_ssao_active = (pbrcommon->_ssaoNumSamples >= 8);
+
     ///////////////////////////////////////////////////////////////////////////
     // depth prepass
     ///////////////////////////////////////////////////////////////////////////
@@ -250,10 +252,13 @@ struct ForwardPbrNodeImpl {
 
       FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
 
-      /////////////////////////////////
-      // linearize depth -> fpass->_rtg_depth_copy_linear
-      /////////////////////////////////
+    }
 
+    /////////////////////////////////
+    // linearize depth -> fpass->_rtg_depth_copy_linear
+    /////////////////////////////////
+
+    if(is_ssao_active){
       auto LDOUT = _rtg_main_depth_copy_linear;
       if (LDOUT->width() != W or LDOUT->height() != H) {
         LDOUT->Resize(W, H);
@@ -302,8 +307,7 @@ struct ForwardPbrNodeImpl {
       FBI->PopRtGroup();
       context->debugPopGroup();
     }
-
-    //
+        //
 
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
@@ -313,7 +317,6 @@ struct ForwardPbrNodeImpl {
     // SSAO prepass
     ///////////////////////////////////////////////////////////////////////////
 
-    bool is_ssao_active = (pbrcommon->_ssaoNumSamples >= 8);
 
     if (is_ssao_active) {
 

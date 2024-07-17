@@ -355,7 +355,7 @@ libblock lib_fwd //
     }
     //return spot_lighting;
     //return vec3(ambocc,ambocc,ambocc);
-    return vec3(env_lighting); //(env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
+    return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;

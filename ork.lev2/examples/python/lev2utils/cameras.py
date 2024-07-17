@@ -5,7 +5,7 @@ print("AAA")
 constants = mathconstants()
 
 def setupUiCameraX( near = 0.1,
-                    far = 100.0,
+                    far = 1000.0,
                     fov_deg = 45,
                     constrainZ = True,
                     cameralut=None,
@@ -43,7 +43,7 @@ print("BBB")
 
 def setupUiCamera( app = None,
                    near = 0.1,
-                   far = 100.0,
+                   far = 1000.0,
                    fov_deg = 45,
                    constrainZ = True,
                    eye = vec3(1,1,1),
