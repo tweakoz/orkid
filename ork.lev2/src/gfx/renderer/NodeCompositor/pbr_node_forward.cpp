@@ -327,6 +327,9 @@ struct ForwardPbrNodeImpl {
       if (ambocc_accum_w->width() != W or ambocc_accum_w->height() != H) {
         ambocc_accum_w->Resize(W, H);
       }
+      if (ambocc_accum_r->width() != W or ambocc_accum_r->height() != H) {
+        ambocc_accum_r->Resize(W, H);
+      }
 
       FBI->validateRtGroup(ambocc_accum_w);
       context->debugPushGroup("ForwardPBR::ssao-pre pass");
