@@ -293,80 +293,7 @@ vec3 getViewPosition(vec2 uv, float depth) {
 
 // SSAO calculation function
 float ssao_linear(vec2 frg_uv) {
-    // Linearize the depth at the fragment's UV coordinates
-    float depth = textureLod(MapDepth, frg_uv,0).r;
-    return depth;
-    
-    vec3 viewPos = getViewPosition(frg_uv, depth);
-
-    // Compute the screen space normal from the depth map
-    vec2 texelSize = 1.0 / textureSize(MapDepth, 0);  // Calculate texel size
-    float depthLeft = textureLod(MapDepth, frg_uv - vec2(texelSize.x, 0.0), 0).r;  // Linear depth at left texel
-    float depthRight = textureLod(MapDepth, frg_uv + vec2(texelSize.x, 0.0), 0).r; // Linear depth at right texel
-    float depthUp = textureLod(MapDepth, frg_uv - vec2(0.0, texelSize.y), 0).r;    // Linear depth at upper texel
-    float depthDown = textureLod(MapDepth, frg_uv + vec2(0.0, texelSize.y), 0).r;  // Linear depth at lower texel
-
-    vec3 viewPosLeft = getViewPosition(frg_uv - vec2(texelSize.x, 0.0), depthLeft);
-    vec3 viewPosRight = getViewPosition(frg_uv + vec2(texelSize.x, 0.0), depthRight);
-    vec3 viewPosUp = getViewPosition(frg_uv - vec2(0.0, texelSize.y), depthUp);
-    vec3 viewPosDown = getViewPosition(frg_uv + vec2(0.0, texelSize.y), depthDown);
-
-    vec3 dx = viewPosRight - viewPosLeft;
-    vec3 dy = viewPosDown - viewPosUp;
-    vec3 normal = normalize(cross(dx, dy)); // Compute normal in view space
-
-    // Random noise texture
-    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
-
-    // Accumulate occlusion
-    float occlusion = 0.0;
-    for (int i = 0; i < SSAONumSamples; ++i) {
-        // Sample the SSAO kernel and reflect around the random vector
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 sampleDir = reflect(skern, randomVec);  // Reflect sample direction around random vector
-        sampleDir = normalize(sampleDir);            // Normalize sample direction
-
-        // Traverse the sample direction in steps
-        for (int j = 1; j <= SSAONumSteps; ++j) {
-            vec3 sampleViewPos = viewPos + sampleDir * (SSAORadius / float(SSAONumSteps)) * float(j);
-            vec4 offset = MatP * vec4(sampleViewPos, 1.0);
-            offset /= offset.w;
-            vec2 samplePos = offset.xy * 0.5 + 0.5;  // Convert to UV coordinates
-
-            // Clamp sample positions to screen boundaries
-            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
-
-            // Linearize the depth at the sample position
-            float sampleDepth = textureLod(MapDepth, samplePos.xy, 0).r;  // Linear depth at sample position
-
-            // Improved range check
-            float rangeCheck = step(SSAOBias, depth - sampleDepth);
-            float dist = length(sampleViewPos - viewPos);
-            float attenuation = 1.0 / (1.0 + dist * dist);
-            occlusion += (sampleDepth < depth) ? rangeCheck * attenuation : 0.0;
-        }
-    }
-
-    // Normalize the occlusion value
-    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
-
-    // Return the final occlusion factor
-    return 1.0 - occlusion;  // Invert occlusion for final SSAO effect
-}
-  /////////////////////////////////////////////////////////
-float ssao_nonlinear(vec2 frg_uv) {
     float depth = texture(MapDepth, frg_uv).r;
-
-    // Compute the screen space normal from the depth map
-    vec2 texelSize = 1.0 / textureSize(MapDepth, 0);
-    float depthLeft = texture(MapDepth, frg_uv - vec2(texelSize.x, 0.0)).r;
-    float depthRight = texture(MapDepth, frg_uv + vec2(texelSize.x, 0.0)).r;
-    float depthUp = texture(MapDepth, frg_uv - vec2(0.0, texelSize.y)).r;
-    float depthDown = texture(MapDepth, frg_uv + vec2(0.0, texelSize.y)).r;
-
-    vec3 dx = vec3(texelSize.x, 0.0, depthRight - depthLeft);
-    vec3 dy = vec3(0.0, texelSize.y, depthDown - depthUp);
-    vec3 normal = normalize(cross(dx, dy));
 
     // Random noise texture
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
@@ -395,8 +322,39 @@ float ssao_nonlinear(vec2 frg_uv) {
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    // Apply bilateral filter to the occlusion result
-    //float filteredOcclusion = bilateralFilter(frg_uv, occlusion);
+    return occlusion;
+}
+
+  /////////////////////////////////////////////////////////
+float ssao_nonlinear(vec2 frg_uv) {
+    float depth = texture(MapDepth, frg_uv).r;
+
+    // Random noise texture
+    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+
+    // Accumulate occlusion
+    float occlusion = 0.0;
+    for (int i = 0; i < SSAONumSamples; ++i) {
+        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
+        sampleDir = normalize(sampleDir);
+
+        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
+        for (int j = 1; j <= SSAONumSteps; ++j) {
+            vec2 samplePos = frg_uv + trv_per_step * float(j);
+
+            // Clamp sample positions to screen boundaries
+            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+
+            float sampleDepth = texture(MapDepth, samplePos.xy).r;
+
+            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
+            if (sampleDepth < depth + SSAOBias) {
+                occlusion += rangeCheck;
+            }
+        }
+    }
+    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
     return 1.0 - occlusion;
 }
