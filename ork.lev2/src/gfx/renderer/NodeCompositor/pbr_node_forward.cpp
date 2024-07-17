@@ -278,9 +278,9 @@ struct ForwardPbrNodeImpl {
 
       _ssao_material->begin(_tek_lindepth, RCFD);
 
-      printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
+      //printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
       _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
-      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get());
+      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
       _ssao_material->bindParamVec2(_fxpZndc2eye, fvec2(VD._near,VD._far));
       _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
       _ssao_material->bindParamMatrix(_fxpP, VD.PL);
