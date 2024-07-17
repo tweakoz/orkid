@@ -435,7 +435,7 @@ libblock lib_deferred
       /////////////////////////
       float ambocc = 1.0;
       if(SSAONumSamples>=8){
-        ambocc = pow(ssao(uv),SSAOPower);
+        ambocc = pow(ssao_nonlinear(uv),SSAOPower);
         ambocc = mix(1.0,ambocc,SSAOWeight);
       }
       /////////////////////////

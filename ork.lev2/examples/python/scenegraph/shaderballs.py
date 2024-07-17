@@ -73,10 +73,10 @@ class SceneGraphApp(object):
       "DepthFogDistance": float(10000),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 4,
-      "SSAOBias": -0.001,
-      "SSAORadius": 10.0*25.4/1000.0, # 2 inches
-      "SSAOWeight": 1.0,
-      "SSAOPower": 0.5,
+      "SSAOBias": 0.001,
+      "SSAORadius": 2.0*25.4/1000.0, # 2 inches
+      "SSAOWeight": 0.75,
+      "SSAOPower": 0.75,
     }
 
     if envmap != "":

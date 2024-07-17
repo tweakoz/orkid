@@ -332,7 +332,7 @@ fragment_shader ps_linearize_depth //
   float near = Zndc2eye.x;
   float far = Zndc2eye.y;
   float linz = (2.0*near*far) / (far+near-ndc*(far-near));
-  out_value   = depthtex; // linearize
+  out_value   = linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

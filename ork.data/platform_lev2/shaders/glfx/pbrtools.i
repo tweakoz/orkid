@@ -284,7 +284,8 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 libblock lib_ssao {
 /////////////////////////////////////////////////////////
 
-vec3 getViewPosition(vec2 uv, float depth) {
+vec3 getViewPosition(vec2 uv) {
+    float depth = texture(MapDepth, uv).r;
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
     vec4 viewSpacePosition = MatInvP * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
@@ -293,7 +294,8 @@ vec3 getViewPosition(vec2 uv, float depth) {
 
 // SSAO calculation function
 float ssao_linear(vec2 frg_uv) {
-    float depth = texture(MapDepth, frg_uv).r;
+    vec3 base_pos = getViewPosition(frg_uv);
+    float base_depth = base_pos.z;
 
     // Random noise texture
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
@@ -307,15 +309,16 @@ float ssao_linear(vec2 frg_uv) {
 
         vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
         for (int j = 1; j <= SSAONumSteps; ++j) {
-            vec2 samplePos = frg_uv + trv_per_step * float(j);
+            vec2 sample_uv = frg_uv + trv_per_step * float(j);
 
             // Clamp sample positions to screen boundaries
-            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+            sample_uv = clamp(sample_uv, vec2(0.0), vec2(1.0));
 
-            float sampleDepth = texture(MapDepth, samplePos.xy).r;
+            vec3 sample_pos = getViewPosition(sample_uv);
+            float sample_depth = sample_pos.z;
 
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
-            if (sampleDepth < depth + SSAOBias) {
+            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - sample_depth));
+            if (sample_depth < base_depth + SSAOBias) {
                 occlusion += rangeCheck;
             }
         }
