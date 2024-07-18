@@ -170,11 +170,11 @@ class SkinningApp(object):
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"
     sg_params.SSAONumSamples = 32
-    sg_params.SSAONumSteps = 8
-    sg_params.SSAOBias = -1e-3
-    sg_params.SSAORadius = 5.0/1000
-    sg_params.SSAOWeight = 1
-    sg_params.SSAOPower = 0.5
+    sg_params.SSAONumSteps = 2
+    sg_params.SSAOBias = 1e-3
+    sg_params.SSAORadius = 25.0/1000
+    sg_params.SSAOWeight = 0.75
+    sg_params.SSAOPower = 0.75
 
     ###################################
     # post fx node

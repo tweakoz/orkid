@@ -45,10 +45,17 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                 top = 42,
                                 width = 1680,
                                 height = 900,
+                                
                                 disableMouseCursor=True)
 
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    setupUiCamera( app=self, eye = vec3(0,0,0), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, 
+                   eye = vec3(0,0,0), 
+                   tgt=vec3(0,0,1), 
+                   constrainZ=True, 
+                   up=vec3(0,1,0),
+                   near=0.1,
+                   far = 1000.0 )
     self.uicam.rotOnMove = True 
 
     ##############################################

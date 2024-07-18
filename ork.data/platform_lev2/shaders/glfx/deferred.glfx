@@ -37,6 +37,7 @@ uniform_set ub_deferred_frg {
   //sampler2D MapRufMtlAlpha;
   usampler2D MapGBuffer;
   sampler2D MapDepthCluster;
+  sampler2D MapLinearDepth;
   sampler2D MapDepth;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
@@ -435,7 +436,7 @@ libblock lib_deferred
       /////////////////////////
       float ambocc = 1.0;
       if(SSAONumSamples>=8){
-        ambocc = pow(ssao(uv),SSAOPower);
+        ambocc = pow(ssao_nonlinear(uv),SSAOPower);
         ambocc = mix(1.0,ambocc,SSAOWeight);
       }
       /////////////////////////

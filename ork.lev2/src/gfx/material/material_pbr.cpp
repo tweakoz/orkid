@@ -302,7 +302,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_FWD_CT_NM_RI_IN_ST = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST"s + _shader_suffix);
 
   _tek_FWD_CT_NM_SK_NI_MO = fxi->technique(_shader, "FWD_CT_NM_SK_NI_MO"s + _shader_suffix);
-  _tek_FWD_CT_NM_SK_NI_MO = fxi->technique(_shader, "FWD_CT_NM_SK_IN_MO"s + _shader_suffix);
+  _tek_FWD_CT_NM_SK_IN_MO = fxi->technique(_shader, "FWD_CT_NM_SK_IN_MO"s + _shader_suffix);
   _tek_FWD_CT_NM_SK_NI_ST = fxi->technique(_shader, "FWD_CT_NM_SK_NI_ST"s + _shader_suffix);
   _tek_FWD_CT_NM_SK_IN_ST = fxi->technique(_shader, "FWD_CT_NM_SK_IN_ST"s + _shader_suffix);
 
@@ -350,6 +350,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramV                 = fxi->parameter(_shader, "v");
+  _paramP                 = fxi->parameter(_shader, "MatP");
+  _paramIP                = fxi->parameter(_shader, "MatInvP");
   _paramVP                = fxi->parameter(_shader, "vp");
   _paramVL                = fxi->parameter(_shader, "v_l");
   _paramVR                = fxi->parameter(_shader, "v_r");
@@ -394,7 +396,17 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramSSAOTexture     = fxi->parameter(_shader, "SSAOMap");
   _paramSSAOWeight     = fxi->parameter(_shader, "SSAOWeight");
   _paramSSAOPower     = fxi->parameter(_shader, "SSAOPower");
+  _paramSSAOBias         = fxi->parameter(_shader, "SSAOBias");
+  _paramSSAORadius         = fxi->parameter(_shader, "SSAORadius");
+  _paramSSAONumSteps         = fxi->parameter(_shader, "SSAONumSteps");
+  _paramSSAONumSamples         = fxi->parameter(_shader, "SSAONumSamples");
+
+  _paramSSAOKernel         = fxi->parameter(_shader, "SSAOKernel");
+  _paramSSAOScrNoise         = fxi->parameter(_shader, "SSAOScrNoise");
+
   _paramMapDepth         = fxi->parameter(_shader, "MapDepth");
+  _paramMapLinearDepth         = fxi->parameter(_shader, "MapLinearDepth");
+  _paramNearFar = fxi->parameter(_shader, "Zndc2eye");
 
 
   _parSpecularMipBias = fxi->parameter(_shader, "SpecularMipBias");
@@ -417,7 +429,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie1 = fxi->parameter(_shader, "light_cookie1");
   _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
-  _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
+  //_parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
   //_parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
   //_parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
   //_parLightCookie7 = fxi->parameter(_shader, "light_cookie7");

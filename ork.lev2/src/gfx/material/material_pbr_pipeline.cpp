@@ -295,6 +295,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
   /////////////////////////////////////////////////////////////////////////////
    else {
     std::string rmodelstr, variantstr;
+
     switch (permu._rendering_model) { // rendering/lighting model of frame
       case "DEFERRED_PBR"_crcu:
         rmodelstr = "DEFERRED_PBR";
@@ -340,13 +341,15 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     }
     auto shfilename = mtl->_shader->GetName();
     printf(
-        "No PIPELINE for mtl<%s> shfile<%s> variant<%08x:%s>\n",
+        "No PIPELINE for mtl<%s> shfile<%s> variant<%08x:%s> shsuffix<%s>\n",
         mtl->mMaterialName.c_str(),
         shfilename,
         mtl->_variant,
-        variantstr.c_str());
+        variantstr.c_str(),
+        mtl->_shader_suffix.c_str());
     printf("permu-renderingmodel<%08x:%s>\n", permu._rendering_model, rmodelstr.c_str());
-    printf("permu-instanced<%d> skinned<%d> stereo<%d>\n", int(permu._instanced), int(permu._skinned), int(permu._stereo));
+    printf("permu-instanced<%d> skinned<%d> stereo<%d> picking<%d> vtxcolors<%d>\n", int(permu._instanced), int(permu._skinned), int(permu._stereo), int(permu._is_picking), int(permu._has_vtxcolors));
+    printf("permu-forced_technique<%p>\n", (void*) permu._forced_technique );
     OrkAssert(false);
   }
 

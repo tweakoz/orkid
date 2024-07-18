@@ -151,6 +151,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   auto griddrawdata_type = //
       py::class_<GridDrawableData, DrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")
           .def(py::init<>())
+          .def("createDrawable", [](griddrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
           .def_property(
               "texturepath",
               [](griddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },

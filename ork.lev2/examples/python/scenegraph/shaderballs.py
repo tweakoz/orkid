@@ -57,7 +57,7 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15))
+    setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
     self.ssaamode = False
 
@@ -76,7 +76,7 @@ class SceneGraphApp(object):
       "SSAOBias": -0.001,
       "SSAORadius": 1.0*25.4/1000.0, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 2.0,
+      "SSAOPower": 1.0,
     }
 
     if envmap != "":
@@ -168,7 +168,9 @@ class SceneGraphApp(object):
     self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(0.5)
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_draw = self.grid_data.createDrawable()
+    self.grid_node = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"grid",self.grid_draw)
+    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
   ################################################

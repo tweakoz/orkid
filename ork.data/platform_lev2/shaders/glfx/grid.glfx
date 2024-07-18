@@ -42,7 +42,7 @@ vertex_interface iface_vtx_fwd_grid_lit : ub_fwd_grid_vtx {
     float frg_camdist;
     vec3 frg_camz;
   }
-}
+}  
 vertex_interface iface_vtx_fwd_grid_lit_stereo : iface_vtx_fwd_grid_lit {
   outputs {
     layout(secondary_view_offset = 1) int gl_Layer;
@@ -357,6 +357,37 @@ fragment_shader ps_grid_forward_unlit_v3
   out_clr = gout;
 }
 ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_fwd_grid_depth : ub_fwd_grid_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    float frg_camz;
+  }
+}
+fragment_interface iface_frg_grid_forward_depth {
+  inputs {
+    float frg_camz;
+  }
+  outputs {
+    layout(location = 0) float out_z;
+  }
+}
+vertex_shader vs_grid_forward_depth_prepass : iface_vtx_fwd_grid_depth {
+  vec4 HPOS = mvp * position;
+  gl_Position = HPOS;
+  frg_camz     = HPOS.z/HPOS.w;
+}
+fragment_shader ps_grid_forward_depth_prepass : iface_frg_grid_forward_depth {
+  out_z   = frg_camz;
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_mono : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
@@ -470,6 +501,22 @@ technique FWD_UNLIT_NI_MO_V3 {
 technique FWD_UNLIT_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v4, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V2 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V3 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
 }
 technique FWD_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;

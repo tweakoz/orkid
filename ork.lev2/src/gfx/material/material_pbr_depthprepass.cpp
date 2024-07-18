@@ -35,12 +35,12 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr_unl = logger()->createChannel("mtlpbrUNL", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_unl = logger()->createChannel("mtlpbrDPP", fvec3(0.8, 0.8, 0.1), true);
 
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
 
-  if (not permu._instanced and not permu._skinned) {
+  if ((not permu._instanced) and (not permu._skinned)) {
     if (permu._stereo) {
       if (this->_tek_FWD_DEPTHPREPASS_RI_NI_ST) {
         pipeline             = std::make_shared<FxPipeline>(permu);
@@ -83,6 +83,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
           mut->_rasterstate.SetRGBAWriteMask(false, false);
           RSI->BindRasterState(this->_rasterstate);
         });
+      }
+      else{
+        logchan_pbr_unl->log( "mtl<%s> NO _tek_FWD_DEPTHPREPASS_RI_NI_MO\n", mMaterialName.c_str() );
+      
       }
     }
   } else if (not permu._instanced and permu._skinned) {
@@ -148,6 +152,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         RSI->BindRasterState(this->_rasterstate);
       });
     }
+  }
+  if(nullptr==pipeline){
+    logchan_pbr_unl->log( "mtl<%s> NO DEPTH PREPASS\n", mMaterialName.c_str() );
   }
   return pipeline;
 }

@@ -303,6 +303,7 @@ uniform_set uset_frg_ssao {
   sampler2D SSAOKernel;
   sampler2D SSAOScrNoise;
   sampler2D MapDepth;
+  sampler2D MapLinearDepth;
   sampler2D SSAOPREV;
   vec2 texelSize;
   vec2 InvViewportSize; 
@@ -320,6 +321,19 @@ fragment_shader ps_ssao //
   out_value   = ssao(uv);
   float prev = texture(SSAOPREV,uv).r;
   out_value   = mix(prev,out_value,0.5);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_linearize_depth //
+  : iface_fmt_greyscale //
+  : uset_frg_ssao //
+  : lib_ssao { 
+  vec2 uv = gl_FragCoord.xy*InvViewportSize;
+  float depthtex = texture(MapDepth,uv).r;
+  float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
+  float near = Zndc2eye.x;
+  float far = Zndc2eye.y;
+  float linz = (1.0*near*far) / (far+near-ndc*(far-near));
+  out_value   = linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {
@@ -501,6 +515,14 @@ technique framefx_ssao {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_ssao;
+    state_block     = sb_default_ffx;
+  }
+}
+technique framefx_linearize_depth {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_linearize_depth;
     state_block     = sb_default_ffx;
   }
 }

@@ -122,6 +122,8 @@ public:
   Context* _initialTarget                = nullptr;
   fxparam_constptr_t _paramM             = nullptr;
   fxparam_constptr_t _paramV             = nullptr;
+  fxparam_constptr_t _paramP             = nullptr;
+  fxparam_constptr_t _paramIP            = nullptr;
   fxparam_constptr_t _paramVP            = nullptr;
   fxparam_constptr_t _paramIVP           = nullptr;
   fxparam_constptr_t _paramVL            = nullptr;
@@ -140,6 +142,7 @@ public:
   fxparam_constptr_t _paramMapMtlRuf     = nullptr;
   fxparam_constptr_t _paramMapEmissive   = nullptr;
   fxparam_constptr_t _paramMapDepth      = nullptr;
+  fxparam_constptr_t _paramMapLinearDepth      = nullptr;
   fxparam_constptr_t _parInvViewSize     = nullptr;
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
@@ -160,6 +163,14 @@ public:
   fxparam_constptr_t _paramSSAOTexture    = nullptr;
   fxparam_constptr_t _paramSSAOWeight    = nullptr;
   fxparam_constptr_t _paramSSAOPower    = nullptr;
+  fxparam_constptr_t _paramSSAOBias    = nullptr;
+  fxparam_constptr_t _paramSSAORadius    = nullptr;
+  fxparam_constptr_t _paramSSAONumSteps    = nullptr;
+  fxparam_constptr_t _paramSSAONumSamples    = nullptr;
+  fxparam_constptr_t _paramSSAOKernel    = nullptr;
+  fxparam_constptr_t _paramSSAOScrNoise    = nullptr;
+
+  fxparam_constptr_t _paramNearFar      = nullptr;
 
   fxparam_constptr_t _parMapAmbOcc           = nullptr;
   fxparam_constptr_t _parMapLightMap         = nullptr;
@@ -180,8 +191,8 @@ public:
   fxparam_constptr_t _parLightCookie1   = nullptr;
   fxparam_constptr_t _parLightCookie2   = nullptr;
   fxparam_constptr_t _parLightCookie3   = nullptr;
-  fxparam_constptr_t _parLightCookie4   = nullptr;
-  fxparam_constptr_t _parLightCookie5   = nullptr;
+  //fxparam_constptr_t _parLightCookie4   = nullptr;
+  //fxparam_constptr_t _parLightCookie5   = nullptr;
   //fxparam_constptr_t _parLightCookie6   = nullptr;
   //fxparam_constptr_t _parLightCookie7   = nullptr;
 

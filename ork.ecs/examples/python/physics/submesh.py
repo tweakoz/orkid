@@ -100,7 +100,7 @@ class ECS_MINIMAL(object):
     drawable.resize(NUM_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
-                                      layer=LAYERNAME)
+                                      layers=[LAYERNAME,"depth_prepass"])
 
     ####################
     # create archetype/entity data
@@ -246,7 +246,7 @@ class ECS_MINIMAL(object):
     shape = ecs.BulletShapeMeshData()
     shape.submesh = submesh
     shape.scale = vec3(1)
-    shape.translation = vec3(0,SPAWN_HEIGHT,0)
+    #shape.translation = vec3(0,SPAWN_HEIGHT,0)
 
     c_physics.mass = 0.0
     c_physics.allowSleeping = True

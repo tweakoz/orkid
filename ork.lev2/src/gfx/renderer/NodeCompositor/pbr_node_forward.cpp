@@ -38,12 +38,13 @@ void ForwardNode::describeX(class_t* c) {
 struct ForwardPass {
   ForwardNode* _node            = nullptr;
   CompositorDrawData* _drawdata = nullptr;
-  const DrawQueue* _DB     = nullptr;
-  std::string _fwd_pass_layer = "std_forward";
-  std::string _dpp_pass_layer = "depth_prepass";
-  bool _stereo = false;
+  const DrawQueue* _DB          = nullptr;
+  std::string _fwd_pass_layer   = "std_forward";
+  std::string _dpp_pass_layer   = "depth_prepass";
+  bool _stereo                  = false;
   rtgroup_ptr_t _rtg_out;
   rtgroup_ptr_t _rtg_depth_copy;
+  rtgroup_ptr_t _rtg_depth_copy_linear;
   bool _renderingPROBE = false;
 };
 using forward_pass_ptr_t = std::shared_ptr<ForwardPass>;
@@ -65,8 +66,8 @@ struct ForwardPbrNodeImpl {
 
       _rtg_main_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
       _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
-      _rtg_ambocc_accum = std::make_shared<RtGroup>(context, 8, 8);
-      _rtg_ambocc_accum2 = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_ambocc_accum     = std::make_shared<RtGroup>(context, 8, 8);
+      _rtg_ambocc_accum2    = std::make_shared<RtGroup>(context, 8, 8);
 
       auto pbrcommon = _node->_pbrcommon;
 
@@ -78,9 +79,12 @@ struct ForwardPbrNodeImpl {
       auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
       _rtgs_main  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
       _rtgs_main->addBuffer("ForwardRt0", efmt);
+      // MsaaSamples msaa = rtg_out->_msaa_samples;
 
       _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
       _rtg_ambocc_accum2->createRenderTarget(EBufferFormat::R32F);
+      _rtg_main_depth_copy_linear = std::make_shared<RtGroup>(context, 8, 8, e_msaa);
+      _rtg_main_depth_copy_linear->createRenderTarget(EBufferFormat::R32F);
 
       printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
       //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -92,7 +96,7 @@ struct ForwardPbrNodeImpl {
       _enumeratedLights          = std::make_shared<EnumeratedLights>();
 
       if (_ginitdata->_msaa_samples > 1) {
-        switch(_ginitdata->_msaa_samples){
+        switch (_ginitdata->_msaa_samples) {
           case 0:
           case 1:
             _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
@@ -118,38 +122,37 @@ struct ForwardPbrNodeImpl {
         _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
         _fxpMVP         = _blit2screenmtl.param("MatMVP");
         _fxpColorMap    = _blit2screenmtl.param("ColorMap");
-
       }
 
       /////////////////
       // SSAO
       /////////////////
 
-      _ssao_material           = std::make_shared<FreestyleMaterial>();
+      _ssao_material = std::make_shared<FreestyleMaterial>();
       _ssao_material->gpuInit(context, "orkshader://framefx");
-      _tek_ssao = _ssao_material->technique("framefx_ssao");
+      _tek_ssao     = _ssao_material->technique("framefx_ssao");
+      _tek_lindepth = _ssao_material->technique("framefx_linearize_depth");
 
-      _fxpSSAOMVP         = _ssao_material->param("mvp");
-      _fxpSSAONumSamples    = _ssao_material->param("SSAONumSamples");
-      _fxpSSAONumSamples    = _ssao_material->param("SSAONumSamples");
-      _fxpSSAONumSteps    = _ssao_material->param("SSAONumSteps");
-      _fxpSSAOBias    = _ssao_material->param("SSAOBias");
-      _fxpSSAORadius    = _ssao_material->param("SSAORadius");
-      _fxpSSAOWeight    = _ssao_material->param("SSAOWeight");
-      _fxpSSAOPower    = _ssao_material->param("SSAOPower");
-      _fxpSSAOKernel    = _ssao_material->param("SSAOKernel");
-      _fxpSSAOScrNoise    = _ssao_material->param("SSAOScrNoise");
-      _fxpSSAOMapDepth    = _ssao_material->param("MapDepth");
-      _fxpSSAOTexelSize    = _ssao_material->param("TexelSize");
-      _fxpSSAOInvViewportSize    = _ssao_material->param("InvViewportSize");
-      _fxpSSAOPREV    = _ssao_material->param("SSAOPREV");
-      _fxpZndc2eye    = _ssao_material->param("Zndc2eye");
-        _fxpInvP      = _ssao_material->param("MatInvP");
-        _fxpP      = _ssao_material->param("MatP");
+      _fxpSSAOMVP             = _ssao_material->param("mvp");
+      _fxpSSAONumSamples      = _ssao_material->param("SSAONumSamples");
+      _fxpSSAONumSamples      = _ssao_material->param("SSAONumSamples");
+      _fxpSSAONumSteps        = _ssao_material->param("SSAONumSteps");
+      _fxpSSAOBias            = _ssao_material->param("SSAOBias");
+      _fxpSSAORadius          = _ssao_material->param("SSAORadius");
+      _fxpSSAOWeight          = _ssao_material->param("SSAOWeight");
+      _fxpSSAOPower           = _ssao_material->param("SSAOPower");
+      _fxpSSAOKernel          = _ssao_material->param("SSAOKernel");
+      _fxpSSAOScrNoise        = _ssao_material->param("SSAOScrNoise");
+      _fxpSSAOMapDepth        = _ssao_material->param("MapDepth");
+      _fxpSSAOTexelSize       = _ssao_material->param("TexelSize");
+      _fxpSSAOInvViewportSize = _ssao_material->param("InvViewportSize");
+      _fxpSSAOPREV            = _ssao_material->param("SSAOPREV");
+      _fxpZndc2eye            = _ssao_material->param("Zndc2eye");
+      _fxpInvP                = _ssao_material->param("MatInvP");
+      _fxpP                   = _ssao_material->param("MatP");
 
       auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
       _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
-
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +160,7 @@ struct ForwardPbrNodeImpl {
 
     auto node     = fpass->_node;
     auto drawdata = fpass->_drawdata;
-    auto VD = drawdata->computeViewData();
+    auto VD       = drawdata->computeViewData();
     auto DB       = fpass->_DB;
     auto rtg_out  = fpass->_rtg_out;
 
@@ -165,27 +168,27 @@ struct ForwardPbrNodeImpl {
 
     RtGroupRenderTarget rt(rtg_out.get());
 
-    auto RCFD    = drawdata->RCFD();
-    auto context = drawdata->context();
-    auto FBI     = context->FBI();
-    auto GBI     = context->GBI();
-    auto& ddprops  = drawdata->_properties;
-    auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
-    auto CIMPL   = drawdata->_cimpl;
+    auto RCFD                  = drawdata->RCFD();
+    auto context               = drawdata->context();
+    auto FBI                   = context->FBI();
+    auto GBI                   = context->GBI();
+    auto& ddprops              = drawdata->_properties;
+    auto irenderer             = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
+    auto CIMPL                 = drawdata->_cimpl;
     CompositingPassData MY_CPD = CIMPL->topCPD(); // copy top CPD
-    auto pbrcommon = _node->_pbrcommon;
-    bool renderingPROBE = fpass->_renderingPROBE;
-    int W  = drawdata->property("OutputWidth"_crcu).get<int>();
-    int H = drawdata->property("OutputHeight"_crcu).get<int>();
-    int node_frame = _node->_frameIndex;
+    auto pbrcommon             = _node->_pbrcommon;
+    bool renderingPROBE        = fpass->_renderingPROBE;
+    int W                      = drawdata->property("OutputWidth"_crcu).get<int>();
+    int H                      = drawdata->property("OutputHeight"_crcu).get<int>();
+    int node_frame             = _node->_frameIndex;
 
     ///////////////////////////////////////////////////////////////////////////
     // CPD modifications for this set of passes
     ///////////////////////////////////////////////////////////////////////////
 
     MY_CPD._stereo1pass = fpass->_stereo;
-    //MY_CPD._cameraMatrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
-    CIMPL->pushCPD(MY_CPD); 
+    // MY_CPD._cameraMatrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
+    CIMPL->pushCPD(MY_CPD);
 
     ///////////////////////////////////////////////////////////////////////////
     // setup global RCFD state for PBR materials
@@ -205,8 +208,8 @@ struct ForwardPbrNodeImpl {
 
     context->debugPushGroup("ForwardPBR::skybox pass");
 
-    rtg_out->_depthOnly = false;
-    rtg_out->_autoclear = true;
+    rtg_out->_depthOnly      = false;
+    rtg_out->_autoclear      = true;
     rtg_out->_clearMaskDepth = true;
     rtg_out->_clearMaskColor = true;
 
@@ -225,6 +228,8 @@ struct ForwardPbrNodeImpl {
     context->debugPopGroup();
     FBI->PopRtGroup();
 
+    bool is_ssao_active = (pbrcommon->_ssaoNumSamples >= 8);
+
     ///////////////////////////////////////////////////////////////////////////
     // depth prepass
     ///////////////////////////////////////////////////////////////////////////
@@ -235,8 +240,8 @@ struct ForwardPbrNodeImpl {
       DB->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, irenderer);
       RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
 
-      rtg_out->_autoclear = true;
-      rtg_out->_depthOnly = true;
+      rtg_out->_autoclear      = true;
+      rtg_out->_depthOnly      = true;
       rtg_out->_clearMaskDepth = true;
       rtg_out->_clearMaskColor = false;
       FBI->PushRtGroup(rtg_out.get());
@@ -246,107 +251,171 @@ struct ForwardPbrNodeImpl {
       context->debugPopGroup();
 
       FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
+
     }
 
-    //
+    /////////////////////////////////
+    // linearize depth -> fpass->_rtg_depth_copy_linear
+    /////////////////////////////////
 
+    if(pbrcommon->_useDepthPrepass){
+      auto LDOUT = _rtg_main_depth_copy_linear;
+      if (LDOUT->width() != W or LDOUT->height() != H) {
+        LDOUT->Resize(W, H);
+      }
+
+      context->debugPushGroup("ForwardPBR::depth-linearize pass");
+
+      LDOUT->_autoclear      = false;
+      LDOUT->_depthOnly      = false;
+      LDOUT->_clearMaskDepth = false;
+      LDOUT->_clearMaskColor = false;
+
+      FBI->PushRtGroup(LDOUT.get());
+
+      RenderContextInstData RCID(RCFD);
+
+      _ssao_material->_rasterstate.SetBlending(Blending::OFF);
+      _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+      _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
+      _ssao_material->_rasterstate.SetZWriteMask(false);
+      _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
+
+      _ssao_material->begin(_tek_lindepth, RCFD);
+
+      //printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
+      _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
+      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
+      _ssao_material->bindParamVec2(_fxpZndc2eye, fvec2(VD._near,VD._far));
+      _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
+      _ssao_material->bindParamMatrix(_fxpP, VD.PL);
+
+      fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
+
+      _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
+
+      ViewportRect extents(0, 0, W, H);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
+
+      GBI->render2dQuadEML(); // full screen quad
+      FBI->popViewport();
+      FBI->popScissor();
+
+      _ssao_material->end(RCFD);
+
+      FBI->PopRtGroup();
+      context->debugPopGroup();
+    }
+        //
+
+    auto ssao_kernel = pbrcommon->ssaoKernel(context, node_frame);
+    auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
+      RCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
+      RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(VD._near,VD._far));
+      RCFD->setUserProperty("PMATRIX"_crcu, VD.PL);
+      RCFD->setUserProperty("IPMATRIX"_crcu, VD.PL.inverse());
+
+      RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
+      RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // SSAO prepass
     ///////////////////////////////////////////////////////////////////////////
 
-    bool is_ssao_active = (pbrcommon->_ssaoNumSamples>=8);
 
-    if(is_ssao_active){
+    if (is_ssao_active) {
+
 
       OrkAssert(pbrcommon->_useDepthPrepass);
 
-      bool DB = (node->_frameIndex&1);
+      bool DB = (node->_frameIndex & 1);
 
       auto ambocc_accum_w = DB ? _rtg_ambocc_accum : _rtg_ambocc_accum2;
       auto ambocc_accum_r = DB ? _rtg_ambocc_accum2 : _rtg_ambocc_accum;
 
-      if(ambocc_accum_w->width() != W or ambocc_accum_w->height() != H){
+      if (ambocc_accum_w->width() != W or ambocc_accum_w->height() != H) {
         ambocc_accum_w->Resize(W, H);
+      }
+      if (ambocc_accum_r->width() != W or ambocc_accum_r->height() != H) {
+        ambocc_accum_r->Resize(W, H);
       }
 
       FBI->validateRtGroup(ambocc_accum_w);
       context->debugPushGroup("ForwardPBR::ssao-pre pass");
 
-      ambocc_accum_w->_autoclear = false;
-      ambocc_accum_w->_depthOnly = false;
+      ambocc_accum_w->_autoclear      = false;
+      ambocc_accum_w->_depthOnly      = false;
       ambocc_accum_w->_clearMaskDepth = false;
       ambocc_accum_w->_clearMaskColor = false;
 
       FBI->PushRtGroup(ambocc_accum_w.get());
 
-        RenderContextInstData RCID(RCFD);
+      RenderContextInstData RCID(RCFD);
 
-        _ssao_material->_rasterstate.SetBlending(Blending::OFF);
-        _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
-        _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
-        _ssao_material->_rasterstate.SetZWriteMask(false);
-        _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
+      _ssao_material->_rasterstate.SetBlending(Blending::OFF);
+      _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+      _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
+      _ssao_material->_rasterstate.SetZWriteMask(false);
+      _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
 
-        _ssao_material->begin(_tek_ssao,RCFD);
+      _ssao_material->begin(_tek_ssao, RCFD);
 
-        _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity() );
-        _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
-        _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps );
-        _ssao_material->bindParamFloat(_fxpSSAOBias,pbrcommon->_ssaoBias );
-        _ssao_material->bindParamFloat(_fxpSSAORadius,pbrcommon->_ssaoRadius );
-        _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight );
-        _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower );
+      _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
+      _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
+      _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps);
+      _ssao_material->bindParamFloat(_fxpSSAOBias, pbrcommon->_ssaoBias);
+      _ssao_material->bindParamFloat(_fxpSSAORadius, pbrcommon->_ssaoRadius);
+      _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight);
+      _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
 
-        _ssao_material->bindParamCTex(_fxpSSAOMapDepth, fpass->_rtg_depth_copy->_depthBuffer->_texture.get() );
-        _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context,node_frame).get() );
-        _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context,node_frame,W,H).get() );
-        _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get() );
-        _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
-        _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse() );
-        _ssao_material->bindParamMatrix(_fxpP, VD.PL );
+      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
+      _ssao_material->bindParamCTex(_fxpSSAOKernel, ssao_kernel.get() );
+      _ssao_material->bindParamCTex(_fxpSSAOScrNoise, ssao_scrnoise.get());
+      _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
+      _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
+      _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
+      _ssao_material->bindParamMatrix(_fxpP, VD.PL);
 
+      fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
 
-        fvec2 ivpsize = fvec2(1.0f/W,1.0f/H);
+      _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
 
-        _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize  , ivpsize );
+      ViewportRect extents(0, 0, W, H);
+      FBI->pushViewport(extents);
+      FBI->pushScissor(extents);
 
-        ViewportRect extents(0, 0, W, H);
-        FBI->pushViewport(extents);
-        FBI->pushScissor(extents);
+      GBI->render2dQuadEML(); // full screen quad
+      FBI->popViewport();
+      FBI->popScissor();
 
-        GBI->render2dQuadEML();            // full screen quad
-        FBI->popViewport();
-        FBI->popScissor();
-
-        _ssao_material->end(RCFD);
-        
+      _ssao_material->end(RCFD);
 
       FBI->PopRtGroup();
       context->debugPopGroup();
 
       RCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
-      fvec2 ssao_dim = fvec2(ambocc_accum_w->width(),ambocc_accum_w->height());
+      fvec2 ssao_dim = fvec2(ambocc_accum_w->width(), ambocc_accum_w->height());
       RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
       RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
       RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
 
-    }
-    else{
+    } else {
       // set to white..
       RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
-      RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8,8));
+      RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8, 8));
       RCFD->setUserProperty("SSAO_POWER"_crcu, 1.0f);
       RCFD->setUserProperty("SSAO_WEIGHT"_crcu, 0.0f);
     }
+    RCFD->setUserProperty("PBR_COMMON"_crcu, pbrcommon);
 
     ///////////////////////////////////////////////////////////////////////////
     // main color pass
     ///////////////////////////////////////////////////////////////////////////
-
 
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
@@ -354,8 +423,8 @@ struct ForwardPbrNodeImpl {
     RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
     context->debugPushGroup("ForwardPBR::color pass");
     // irenderer->_debugLog = true;
-    rtg_out->_autoclear = false;
-    rtg_out->_depthOnly = false;
+    rtg_out->_autoclear      = false;
+    rtg_out->_depthOnly      = false;
     rtg_out->_clearMaskDepth = false; // not clearing anyway ...
     rtg_out->_clearMaskColor = false; // not clearing anyway ...
     FBI->PushRtGroup(rtg_out.get());
@@ -364,10 +433,9 @@ struct ForwardPbrNodeImpl {
 
     FBI->PopRtGroup();
 
-    CIMPL->popCPD(); 
+    CIMPL->popCPD();
 
     ddprops["depthbuffer"_crcu].set<rtbuffer_ptr_t>(rtg_out->_depthBuffer);
-
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(ForwardNode* node, CompositorDrawData& drawdata) {
@@ -382,7 +450,7 @@ struct ForwardPbrNodeImpl {
 
     int node_frame = _node->_frameIndex;
     RCFD->setUserProperty("noise_seed"_crcu, node_frame);
-    //printf( "node_frame<%d>\n", node_frame );
+    // printf( "node_frame<%d>\n", node_frame );
     /////////////////////////////////////////////////
     // enumerate lights / PBR
     /////////////////////////////////////////////////
@@ -496,14 +564,13 @@ struct ForwardPbrNodeImpl {
           switch (probe->_type) {
             case LightProbeType::REFLECTION:
               if (nullptr == probe->_cubeRenderRTG) {
-                probe->_cubeRenderRTG = std::make_shared<RtGroup>(context, 8, 8);
-                probe->_cubeRenderRTG->_name = "ReflectionProbeRTG";
-                auto colorbuf = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
-                colorbuf->_debugName = "ReflectionProbeColorCubeMap";
+                probe->_cubeRenderRTG           = std::make_shared<RtGroup>(context, 8, 8);
+                probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
+                auto colorbuf                   = probe->_cubeRenderRTG->createRenderTarget(EBufferFormat::RGBA8);
+                colorbuf->_debugName            = "ReflectionProbeColorCubeMap";
                 probe->_cubeRenderRTG->_cubeMap = true;
-                
               }
-              if( probe->_dirty ){
+              if (probe->_dirty) {
                 int prevW = probe->_cubeRenderRTG->width();
                 int prevH = probe->_cubeRenderRTG->height();
                 if (prevW != probe->_dim or prevH != probe->_dim) {
@@ -512,28 +579,25 @@ struct ForwardPbrNodeImpl {
 
                 auto CMATRIX = probe->_worldMatrix;
 
-                fvec3 POSX = CMATRIX.xNormal()*-1;
+                fvec3 POSX = CMATRIX.xNormal() * -1;
                 fvec3 POSY = CMATRIX.yNormal();
-                fvec3 POSZ = CMATRIX.zNormal()*-1;
+                fvec3 POSZ = CMATRIX.zNormal() * -1;
 
                 fvec3 position = CMATRIX.translation();
 
                 CompositingPassData cubemapCPD = CPD.clone();
                 CameraMatrices CUBECAM;
                 // compute projection matrix
-                CUBECAM._pmatrix.perspective(90.0f*DTOR, 1.0f, 0.01f, 1000.0f);
+                CUBECAM._pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
 
                 // flip y on projection matrix
                 fmtx4 flipy;
-                flipy.setScale(1,-1,1);
+                flipy.setScale(1, -1, 1);
                 CUBECAM._pmatrix = flipy * CUBECAM._pmatrix;
 
+                for (int iface = 0; iface < 6; iface++) {
 
-
-                for( int iface=0; iface<6; iface++ ){
-
-                  context->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>",iface));
-
+                  context->debugPushGroup(FormatString("ForwardPBR::cubemap pass<%d>", iface));
 
                   // compute view matrices from cubeface and CMATRIX
                   //  face 0 = POSX
@@ -543,43 +607,53 @@ struct ForwardPbrNodeImpl {
                   //  face 4 = POSZ
                   //  face 5 = NEGZ
 
-                  switch( iface ){
-                    case 1: CUBECAM._vmatrix.lookAt( position, position + POSX, POSY ); break;
-                    case 0: CUBECAM._vmatrix.lookAt( position, position - POSX, POSY ); break;
-                    case 2: CUBECAM._vmatrix.lookAt( position, position + POSY, POSZ*-1 ); break;
-                    case 3: CUBECAM._vmatrix.lookAt( position, position - POSY, POSZ ); break;
-                    case 4: CUBECAM._vmatrix.lookAt( position, position + POSZ, POSY ); break;
-                    case 5: CUBECAM._vmatrix.lookAt( position, position - POSZ, POSY ); break;
+                  switch (iface) {
+                    case 1:
+                      CUBECAM._vmatrix.lookAt(position, position + POSX, POSY);
+                      break;
+                    case 0:
+                      CUBECAM._vmatrix.lookAt(position, position - POSX, POSY);
+                      break;
+                    case 2:
+                      CUBECAM._vmatrix.lookAt(position, position + POSY, POSZ * -1);
+                      break;
+                    case 3:
+                      CUBECAM._vmatrix.lookAt(position, position - POSY, POSZ);
+                      break;
+                    case 4:
+                      CUBECAM._vmatrix.lookAt(position, position + POSZ, POSY);
+                      break;
+                    case 5:
+                      CUBECAM._vmatrix.lookAt(position, position - POSZ, POSY);
+                      break;
                   }
 
-
-                  CUBECAM._vpmatrix                 = CUBECAM._vmatrix * CUBECAM._pmatrix;
-                  CUBECAM._ivpmatrix                = CUBECAM._vpmatrix.inverse();
-                  CUBECAM._ivmatrix                 = CUBECAM._vmatrix.inverse();
-                  CUBECAM._ipmatrix                 = CUBECAM._pmatrix.inverse();
-                  CUBECAM._frustum.set(CUBECAM._vmatrix,CUBECAM._pmatrix);
+                  CUBECAM._vpmatrix  = CUBECAM._vmatrix * CUBECAM._pmatrix;
+                  CUBECAM._ivpmatrix = CUBECAM._vpmatrix.inverse();
+                  CUBECAM._ivmatrix  = CUBECAM._vmatrix.inverse();
+                  CUBECAM._ipmatrix  = CUBECAM._pmatrix.inverse();
+                  CUBECAM._frustum.set(CUBECAM._vmatrix, CUBECAM._pmatrix);
                   CUBECAM._explicitProjectionMatrix = true;
                   CUBECAM._explicitViewMatrix       = true;
                   CUBECAM._aspectRatio              = 1.0f;
 
-                  auto probe_pass             = std::make_shared<ForwardPass>();
-                  probe_pass->_node           = node;
-                  probe_pass->_drawdata       = &drawdata;
-                  probe_pass->_DB             = DB;
-                  probe_pass->_rtg_out        = probe->_cubeRenderRTG;
-                  probe_pass->_rtg_depth_copy = _rtg_cube1_depth_copy;
-                  probe_pass->_renderingPROBE  = true;
-                  probe_pass->_fwd_pass_layer = "probe";
-                  probe_pass->_stereo = false;
+                  auto probe_pass                        = std::make_shared<ForwardPass>();
+                  probe_pass->_node                      = node;
+                  probe_pass->_drawdata                  = &drawdata;
+                  probe_pass->_DB                        = DB;
+                  probe_pass->_rtg_out                   = probe->_cubeRenderRTG;
+                  probe_pass->_rtg_depth_copy            = _rtg_cube1_depth_copy;
+                  probe_pass->_renderingPROBE            = true;
+                  probe_pass->_fwd_pass_layer            = "probe";
+                  probe_pass->_stereo                    = false;
                   probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
-                  cubemapCPD._cameraMatrices        = &CUBECAM;
+                  cubemapCPD._cameraMatrices = &CUBECAM;
                   topcomp->pushCPD(cubemapCPD);
                   _render_xxx(probe_pass);
                   topcomp->popCPD();
 
                   context->debugPopGroup();
-
                 }
 
                 probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
@@ -596,14 +670,15 @@ struct ForwardPbrNodeImpl {
 
         context->debugPushGroup("ForwardPBR::MAIN RTG PASS");
 
-        auto main_fwd_pass             = std::make_shared<ForwardPass>();
-        main_fwd_pass->_node           = node;
-        main_fwd_pass->_drawdata       = &drawdata;
-        main_fwd_pass->_DB             = DB;
-        main_fwd_pass->_rtg_out        = rtg_main;
-        main_fwd_pass->_rtg_depth_copy = _rtg_main_depth_copy;
-        main_fwd_pass->_renderingPROBE  = false;
-        main_fwd_pass->_stereo = CPD._stereo1pass;
+        auto main_fwd_pass                    = std::make_shared<ForwardPass>();
+        main_fwd_pass->_node                  = node;
+        main_fwd_pass->_drawdata              = &drawdata;
+        main_fwd_pass->_DB                    = DB;
+        main_fwd_pass->_rtg_out               = rtg_main;
+        main_fwd_pass->_rtg_depth_copy        = _rtg_main_depth_copy;
+        main_fwd_pass->_rtg_depth_copy_linear = _rtg_main_depth_copy_linear;
+        main_fwd_pass->_renderingPROBE        = false;
+        main_fwd_pass->_stereo                = CPD._stereo1pass;
 
         _render_xxx(main_fwd_pass);
 
@@ -632,6 +707,7 @@ struct ForwardPbrNodeImpl {
 
   rtgset_ptr_t _rtgs_main;
   rtgroup_ptr_t _rtg_main_depth_copy;
+  rtgroup_ptr_t _rtg_main_depth_copy_linear;
   rtgroup_ptr_t _rtg_ambocc_accum;
   rtgroup_ptr_t _rtg_ambocc_accum2;
   rtgroup_ptr_t _rtg_cube1_depth_copy;
@@ -650,6 +726,7 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpInvP;
   const FxShaderParam* _fxpColorMap;
   const FxShaderTechnique* _tek_ssao;
+  const FxShaderTechnique* _tek_lindepth;
 
   const FxShaderParam* _fxpSSAONumSamples;
   const FxShaderParam* _fxpSSAONumSteps;
@@ -666,8 +743,6 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpSSAOPREV;
   const FxShaderParam* _fxpZndc2eye;
 
-
-
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -675,8 +750,8 @@ ForwardNode::ForwardNode(pbr::commonstuff_ptr_t pbrc) {
   _impl           = std::make_shared<ForwardPbrNodeImpl>(this);
   _renderingmodel = RenderingModel("FORWARD_PBR"_crcu);
   _pbrcommon      = pbrc;
-  if(_pbrcommon==nullptr){
-    _pbrcommon = std::make_shared<pbr::CommonStuff>();  
+  if (_pbrcommon == nullptr) {
+    _pbrcommon = std::make_shared<pbr::CommonStuff>();
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
