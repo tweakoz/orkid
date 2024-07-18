@@ -134,8 +134,8 @@ libblock lib_fwd //
     vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
     // return vec3(specular);
-    //return finallitcolor;
-    return vec3(ssao_linear(uv));
+    return finallitcolor;
+    //return vec3(ssao_linear(uv));
     //return vec3(ambocc);
 
   } // vec3 environmentLighting(){
