@@ -69,6 +69,7 @@ uniform_set ub_frg_fwd {
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
   sampler2D MapDepth;
+  sampler2D MapLinearDepth;
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -79,8 +80,14 @@ uniform_set ub_frg_fwd {
   float RoughnessFactor;
 
   sampler2D SSAOMap;
+  sampler2D SSAOKernel;
+  sampler2D SSAOScrNoise;
   float SSAOPower;
   float SSAOWeight;
+  float SSAORadius;
+  float SSAOBias;
+  int SSAONumSteps;
+  int SSAONumSamples;
 
   float DepthFogDistance;
   float DepthFogPower;
@@ -103,7 +110,7 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie1;
   sampler2D light_cookie2;
   sampler2D light_cookie3;
-  sampler2D light_cookie4;
+  //sampler2D light_cookie4;
   //sampler2D light_cookie5;
   //sampler2D light_cookie6;
   //sampler2D light_cookie7;
@@ -284,12 +291,65 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 libblock lib_ssao {
 /////////////////////////////////////////////////////////
 
-vec3 getViewPosition(vec2 uv) {
+vec3 getViewPositionNL(vec2 uv) {
     float depth = texture(MapDepth, uv).r;
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
     vec4 viewSpacePosition = MatInvP * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
     return viewSpacePosition.xyz;
+}
+vec3 getViewPosition(vec2 uv) {
+    float lin_depth = texture(MapLinearDepth, uv).r;
+    float near = Zndc2eye.x;
+    float far = Zndc2eye.y;
+    float unit_depth = (lin_depth - near) / (far - near) * 2.0 - 1.0;
+    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, unit_depth, 1.0);
+    vec4 viewSpacePosition = MatInvP * clipSpacePosition;
+    viewSpacePosition /= viewSpacePosition.w;
+    return vec3(viewSpacePosition.xy,unit_depth);
+}
+
+vec3 ssao_normal(vec2 frg_uv) {
+    vec3 base_pos = getViewPosition(frg_uv);
+
+    // compute surface normal @ base_pos (via differential normal calculation)
+
+    vec2 uv_l = frg_uv + vec2(InvViewportSize.x, 0.0);
+    vec2 uv_r = frg_uv - vec2(InvViewportSize.x, 0.0);
+    vec2 uv_t = frg_uv + vec2(0.0, InvViewportSize.y);
+    vec2 uv_b = frg_uv - vec2(0.0, InvViewportSize.y);
+
+    vec3 pos_l = getViewPosition(uv_l);
+    vec3 pos_r = getViewPosition(uv_r);
+    vec3 pos_t = getViewPosition(uv_t);
+    vec3 pos_b = getViewPosition(uv_b);
+
+    vec3 dx = pos_l - base_pos;
+    vec3 dy = pos_t - base_pos;
+    vec3 normal = normalize(cross(dx, dy));
+    return normal*vec3(-1,1,1);
+}
+vec3 ssao_normal2(vec2 frg_uv) {
+    // compute surface normal @ base_pos (via differential normal calculation)
+    vec3 normal = ssao_normal(frg_uv);
+    vec3 up = vec3(0,1,0);
+    vec3 nxu = normalize(cross(normal, up));
+    vec3 nxv = normalize(cross(normal, nxu));
+    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+
+    // Accumulate occlusion
+    vec3 NN = normal;
+    float rad_div_steps = SSAORadius / float(SSAONumSteps);
+    for (int i = 0; i < SSAONumSamples; ++i) {
+        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
+        if (dot(NOISEOUT, normal) < 0.0) {
+          NOISEOUT = -NOISEOUT;
+        } 
+        vec3 sampleDir = normalize(NOISEOUT.x * nxu + NOISEOUT.y * nxv + NOISEOUT.z * normal);
+        NN += sampleDir*0.02;
+    }
+    return normalize(NN);
 }
 
 // SSAO calculation function
@@ -297,31 +357,47 @@ float ssao_linear(vec2 frg_uv) {
     vec3 base_pos = getViewPosition(frg_uv);
     float base_depth = base_pos.z;
 
-    // Random noise texture
+    vec3 up = vec3(0,1,0);
+    vec3 normal = ssao_normal(frg_uv);
+    vec3 nxu = normalize(cross(normal, up));
+    vec3 nxv = normalize(cross(normal, nxu));
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
 
     // Accumulate occlusion
     float occlusion = 0.0;
+    float rad_div_steps = SSAORadius / float(SSAONumSteps);
     for (int i = 0; i < SSAONumSamples; ++i) {
+
+        // generate hemisphere of rays centered on "normal" at base_pos
+
         vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
-        sampleDir = normalize(sampleDir);
+        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
 
-        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
+        // construct sample direction from NOISEOUT, normal, nxu, nxv
+        vec3 sampleDir = normalize(normal+NOISEOUT*0.4);
+        //vec3 sampleDir = normalize(normal + NOISEOUT);
+        
+        // ensure sampledir is on hemisphere of normal by reflecting of plane defined by normal
+
+        vec3 trv_per_step = sampleDir.xyz * rad_div_steps;
         for (int j = 1; j <= SSAONumSteps; ++j) {
-            vec2 sample_uv = frg_uv + trv_per_step * float(j);
 
-            // Clamp sample positions to screen boundaries
-            sample_uv = clamp(sample_uv, vec2(0.0), vec2(1.0));
+            // ray cast depth
+            vec3 sample_pos = base_pos + trv_per_step * float(j);
+            float casted_depth = -sample_pos.z;
 
-            vec3 sample_pos = getViewPosition(sample_uv);
-            float sample_depth = sample_pos.z;
+            // depth map sample
+            vec2 sample_uv = clamp(sample_pos.xy, vec2(0.0), vec2(1.0));
+            float depth_sample2 = -getViewPosition(sample_uv).z;
 
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - sample_depth));
-            if (sample_depth < base_depth + SSAOBias) {
+
+            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - depth_sample2));
+            if(casted_depth < (depth_sample2-SSAOBias)) {
                 occlusion += rangeCheck;
             }
+            //occlusion += casted_depth*0.5;
         }
+        //occlusion = sampleDir.z;
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
@@ -359,7 +435,7 @@ float ssao_nonlinear(vec2 frg_uv) {
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return 1.0 - occlusion;
+    return occlusion;
 }
 
 float ssao(vec2 frg_uv) {

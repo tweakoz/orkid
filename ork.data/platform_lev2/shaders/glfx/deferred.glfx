@@ -37,6 +37,7 @@ uniform_set ub_deferred_frg {
   //sampler2D MapRufMtlAlpha;
   usampler2D MapGBuffer;
   sampler2D MapDepthCluster;
+  sampler2D MapLinearDepth;
   sampler2D MapDepth;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;

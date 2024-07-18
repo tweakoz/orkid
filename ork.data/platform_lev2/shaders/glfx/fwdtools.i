@@ -3,7 +3,8 @@ libblock lib_fwd //
   : lib_math //
   : lib_brdf //
   : lib_envmapping //
-  : lib_def {
+  : lib_def 
+  : lib_ssao {
   /////////////////////////////////////////////////////////
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd,vec3 eyepos) {
     LightCtx plc;
@@ -133,7 +134,8 @@ libblock lib_fwd //
     vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
     // return vec3(specular);
-    return finallitcolor;
+    //return finallitcolor;
+    return vec3(ssao_linear(uv));
     //return vec3(ambocc);
 
   } // vec3 environmentLighting(){
@@ -148,11 +150,12 @@ libblock lib_fwd //
       rval = textureLod(light_cookie1, uv, lod).xyz;
     } else if (index == 2) {
       rval = textureLod(light_cookie2, uv, lod).xyz;
-    } else if (index == 3) {
-      rval = textureLod(light_cookie3, uv, lod).xyz;
-    } else if (index == 4) {
-      rval = textureLod(light_cookie4, uv, lod).xyz;
-    } 
+    } //else if (index == 3) {
+      //rval = textureLod(light_cookie3, uv, lod).xyz;
+    //}
+    // else if (index == 4) {
+      //rval = textureLod(light_cookie4, uv, lod).xyz;
+    //} 
     //else if (index == 5) {
       //rval = textureLod(light_cookie5, uv, lod).xyz;
     //} 
@@ -355,7 +358,7 @@ libblock lib_fwd //
     }
     //return spot_lighting;
     //return vec3(ambocc,ambocc,ambocc);
-    return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
+    return env_lighting; //(env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;

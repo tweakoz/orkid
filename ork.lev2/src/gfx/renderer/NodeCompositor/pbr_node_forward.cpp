@@ -258,7 +258,7 @@ struct ForwardPbrNodeImpl {
     // linearize depth -> fpass->_rtg_depth_copy_linear
     /////////////////////////////////
 
-    if(is_ssao_active){
+    if(pbrcommon->_useDepthPrepass){
       auto LDOUT = _rtg_main_depth_copy_linear;
       if (LDOUT->width() != W or LDOUT->height() != H) {
         LDOUT->Resize(W, H);
@@ -309,8 +309,18 @@ struct ForwardPbrNodeImpl {
     }
         //
 
+    auto ssao_kernel = pbrcommon->ssaoKernel(context, node_frame);
+    auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
     if (pbrcommon->_useDepthPrepass) {
       RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
+      RCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
+      RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(VD._near,VD._far));
+      RCFD->setUserProperty("PMATRIX"_crcu, VD.PL);
+      RCFD->setUserProperty("IPMATRIX"_crcu, VD.PL.inverse());
+
+      RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
+      RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -319,6 +329,7 @@ struct ForwardPbrNodeImpl {
 
 
     if (is_ssao_active) {
+
 
       OrkAssert(pbrcommon->_useDepthPrepass);
 
@@ -363,8 +374,8 @@ struct ForwardPbrNodeImpl {
       _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
 
       _ssao_material->bindParamCTex(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
-      _ssao_material->bindParamCTex(_fxpSSAOKernel, pbrcommon->ssaoKernel(context, node_frame).get());
-      _ssao_material->bindParamCTex(_fxpSSAOScrNoise, pbrcommon->ssaoScrNoise(context, node_frame, W, H).get());
+      _ssao_material->bindParamCTex(_fxpSSAOKernel, ssao_kernel.get() );
+      _ssao_material->bindParamCTex(_fxpSSAOScrNoise, ssao_scrnoise.get());
       _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
       _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
       _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
@@ -400,6 +411,7 @@ struct ForwardPbrNodeImpl {
       RCFD->setUserProperty("SSAO_POWER"_crcu, 1.0f);
       RCFD->setUserProperty("SSAO_WEIGHT"_crcu, 0.0f);
     }
+    RCFD->setUserProperty("PBR_COMMON"_crcu, pbrcommon);
 
     ///////////////////////////////////////////////////////////////////////////
     // main color pass

@@ -303,6 +303,7 @@ uniform_set uset_frg_ssao {
   sampler2D SSAOKernel;
   sampler2D SSAOScrNoise;
   sampler2D MapDepth;
+  sampler2D MapLinearDepth;
   sampler2D SSAOPREV;
   vec2 texelSize;
   vec2 InvViewportSize; 
@@ -331,7 +332,7 @@ fragment_shader ps_linearize_depth //
   float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
   float near = Zndc2eye.x;
   float far = Zndc2eye.y;
-  float linz = (2.0*near*far) / (far+near-ndc*(far-near));
+  float linz = (1.0*near*far) / (far+near-ndc*(far-near));
   out_value   = linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
