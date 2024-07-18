@@ -68,15 +68,15 @@ struct PbrNodeImpl {
 
     _timer.Start();
     EASY_BLOCK("PbrNodeImpl::_render", profiler::colors::Red);
-    auto RCFD = drawdata.RCFD();
-    auto pbrcommon               = node->_pbrcommon;
-    auto targ                    = RCFD->GetTarget();
-    auto CIMPL                   = drawdata._cimpl;
-    auto FBI                     = targ->FBI();
-    auto this_buf                = FBI->GetThisBuffer();
-    auto RSI                     = targ->RSI();
-    auto DWI                     = targ->DWI();
-    const auto TOPCPD            = CIMPL->topCPD();
+    auto RCFD         = drawdata.RCFD();
+    auto pbrcommon    = node->_pbrcommon;
+    auto targ         = RCFD->GetTarget();
+    auto CIMPL        = drawdata._cimpl;
+    auto FBI          = targ->FBI();
+    auto this_buf     = FBI->GetThisBuffer();
+    auto RSI          = targ->RSI();
+    auto DWI          = targ->DWI();
+    const auto TOPCPD = CIMPL->topCPD();
     /////////////////////////////////////////////////
     RCFD->setUserProperty("rtg_gbuffer"_crc, rtg_gbuffer);
     RCFD->setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->GetMrt(0));
@@ -171,22 +171,25 @@ struct PbrNodeImpl {
 
       _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
 
-
       /////////////////////////
       // SSAO
       /////////////////////////
 
       int node_frame = node->_frameIndex;
 
-      _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples );
-      _context->_lightingmtl->bindParamInt(_context->_parSSAONumSteps, pbrcommon->_ssaoNumSteps );
-      _context->_lightingmtl->bindParamFloat(_context->_parSSAOBias, pbrcommon->_ssaoBias);
-      _context->_lightingmtl->bindParamFloat(_context->_parSSAORadius, pbrcommon->_ssaoRadius );
-      _context->_lightingmtl->bindParamFloat(_context->_parSSAOWeight, pbrcommon->_ssaoWeight );
-      _context->_lightingmtl->bindParamFloat(_context->_parSSAOPower, pbrcommon->_ssaoPower );
-      _context->_lightingmtl->bindParamCTex(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ,node_frame).get() );
-      _context->_lightingmtl->bindParamCTex(_context->_parSSAOScrNoise, pbrcommon->ssaoScrNoise(targ, node_frame, _context->_width, _context->_height ).get() );
-
+      if (_context->_parSSAONumSamples) {
+        _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples);
+        _context->_lightingmtl->bindParamInt(_context->_parSSAONumSteps, pbrcommon->_ssaoNumSteps);
+        _context->_lightingmtl->bindParamFloat(_context->_parSSAOBias, pbrcommon->_ssaoBias);
+        _context->_lightingmtl->bindParamFloat(_context->_parSSAORadius, pbrcommon->_ssaoRadius);
+        _context->_lightingmtl->bindParamFloat(_context->_parSSAOWeight, pbrcommon->_ssaoWeight);
+        _context->_lightingmtl->bindParamFloat(_context->_parSSAOPower, pbrcommon->_ssaoPower);
+        if (pbrcommon->_ssaoNumSamples >= 8) {
+          _context->_lightingmtl->bindParamCTex(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ, node_frame).get());
+          _context->_lightingmtl->bindParamCTex(
+              _context->_parSSAOScrNoise, pbrcommon->ssaoScrNoise(targ, node_frame, _context->_width, _context->_height).get());
+        }
+      }
       /////////////////////////
       _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
       _context->_lightingmtl->bindParamVec3(_context->_parAmbientLevel, pbrcommon->ambientLevel());
@@ -285,8 +288,8 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr(pbr::commonstuff_ptr_t pb
   _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _pbrcommon      = pbrc;
-  if(_pbrcommon==nullptr){
-    _pbrcommon = std::make_shared<pbr::CommonStuff>();  
+  if (_pbrcommon == nullptr) {
+    _pbrcommon = std::make_shared<pbr::CommonStuff>();
   }
 }
 
