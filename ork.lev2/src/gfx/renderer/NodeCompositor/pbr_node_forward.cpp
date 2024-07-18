@@ -258,7 +258,7 @@ struct ForwardPbrNodeImpl {
     // linearize depth -> fpass->_rtg_depth_copy_linear
     /////////////////////////////////
 
-    if(pbrcommon->_useDepthPrepass){
+    if(is_ssao_active){
       auto LDOUT = _rtg_main_depth_copy_linear;
       if (LDOUT->width() != W or LDOUT->height() != H) {
         LDOUT->Resize(W, H);
@@ -306,20 +306,17 @@ struct ForwardPbrNodeImpl {
 
       FBI->PopRtGroup();
       context->debugPopGroup();
-    }
-        //
 
-    auto ssao_kernel = pbrcommon->ssaoKernel(context, node_frame);
-    auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
-    if (pbrcommon->_useDepthPrepass) {
-      RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
       RCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
       RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(VD._near,VD._far));
       RCFD->setUserProperty("PMATRIX"_crcu, VD.PL);
       RCFD->setUserProperty("IPMATRIX"_crcu, VD.PL.inverse());
+    }
+        //
 
-      RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
-      RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
+    if (pbrcommon->_useDepthPrepass) {
+      RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
+
 
     }
 
@@ -330,6 +327,10 @@ struct ForwardPbrNodeImpl {
 
     if (is_ssao_active) {
 
+        auto ssao_kernel = pbrcommon->ssaoKernel(context, node_frame);
+        auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
+        RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
+        RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
 
       OrkAssert(pbrcommon->_useDepthPrepass);
 
