@@ -159,7 +159,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      printf("binding texspotlights<%d>\n", num_texspotlights);
+      //printf("binding texspotlights<%d>\n", num_texspotlights);
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
       if (texlist.size() > 0) {
