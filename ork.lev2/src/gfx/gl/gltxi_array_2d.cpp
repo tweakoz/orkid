@@ -67,7 +67,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
         max_w      = std::max(max_w, W);
         max_h      = std::max(max_h, H);
         max_levels = std::max(max_levels, num_levels);
-        printf("subtex<%d> w<%d> h<%d> numlev<%d>\n", i, W, H, num_levels);
+        auto subtexname = subtex->_debugName;
+        printf("subtex.xtx<%d:%s> w<%d> h<%d> numlev<%d>\n", i, subtexname.c_str(), W, H, num_levels);
       }
       else if (Char4("DDS ") == Char4(magic)) {
         // DDS
@@ -80,7 +81,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
         max_w      = std::max(max_w, W);
         max_h      = std::max(max_h, H);
         max_levels = std::max(max_levels, num_levels);
-        printf("subtex<%d> w<%d> h<%d> numlev<%d>\n", i, W, H, num_levels);
+        auto subtexname = subtex->_debugName;
+        printf("subtex.dds<%d:%s> w<%d> h<%d> numlev<%d>\n", i, subtexname.c_str(), W, H, num_levels);
       }
       else {
         // needs convert

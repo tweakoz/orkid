@@ -80,9 +80,11 @@ class StereoApp1(object):
     self.frustum_prim = frustum_prim
     self.frustum = frust
     material = PBRMaterial()
-    material.texColor = Texture.load("src://effect_textures/white.dds")
-    material.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    material.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    material.assignTextures(ctx,
+                            color = Texture.load("src://effect_textures/white_64.dds"),
+                            normal = Texture.load("src://effect_textures/default_normal.dds"),
+                            mtlruf = Texture.load("src://effect_textures/white_64.dds")
+                           )
     material.metallicFactor = 1
     material.roughnessFactor = 1
     material.gpuInit(ctx)
@@ -105,7 +107,6 @@ class StereoApp1(object):
     self.grid_data.intensityC = 0
     self.grid_data.intensityD = 0
     self.grid_data.lineWidth = 0.025
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 

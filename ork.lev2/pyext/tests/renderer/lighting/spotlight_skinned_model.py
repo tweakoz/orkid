@@ -40,7 +40,6 @@ class StereoApp1(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
     self.cameralut = CameraDataLut()
     self.vrcamera = CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
@@ -111,7 +110,6 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_data.modcolor = vec3(2)
     self.grid_data.intensityA = 1.0
     self.grid_data.intensityB = 0.97

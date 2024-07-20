@@ -105,6 +105,8 @@ public:
 
   void forceEmissive();
   ////////////////////////////////////////////
+  void conformTextures(lev2::Context* ctx);
+  ////////////////////////////////////////////
   void assignTextures( lev2::Context* ctx,     //
                        texture_ptr_t color,    //
                        texture_ptr_t normal,   // 

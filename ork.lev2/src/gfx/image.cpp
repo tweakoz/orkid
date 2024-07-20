@@ -184,7 +184,9 @@ void Image::downsample(Image& imgout) const {
 
       switch (_format) {
         case EBufferFormat::R8:
+        case EBufferFormat::BGR8:
         case EBufferFormat::RGB8:
+        case EBufferFormat::BGRA8: 
         case EBufferFormat::RGBA8: {
           auto outpixel     = imgout.pixel8(x, y);
           auto inppixelXAYA = pixel8(xa, ya);
@@ -238,6 +240,27 @@ void Image::downsample(Image& imgout) const {
   // deco::printf(_image_deco, "// imgout._height<%zu>\n", imgout._height);
   // deco::printf(_image_deco, "// imgout._numcomponents<%zu>\n", imgout._numcomponents);
   // deco::printf(_image_deco, "///////////////////////////////////\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color) {
+  uint8_t r = uint8_t(color.x * 255.0f);
+  uint8_t g = uint8_t(color.y * 255.0f);
+  uint8_t b = uint8_t(color.z * 255.0f);
+  _format = EBufferFormat::RGB8;
+  _bytesPerChannel = 1;
+  init(w, h, 3, 1);
+  auto outptr = (uint8_t*)_data->data();
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int pixelindex = y * w + x;
+      int elembase   = pixelindex * 3;
+      outptr[elembase + 0] = r;
+      outptr[elembase + 1] = g;
+      outptr[elembase + 2] = b;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -784,24 +807,46 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
     int size                   = width * height * BPP;
     _format                    = EBufferFormat::BGRA8;
     _numcomponents = 4;
+    _bytesPerChannel = 1;
     printf("DDS.BGRA8\n");
-    for (int lidx = 0; lidx < num_mips; lidx++) {
-      auto mipdata = inpstream.current();
-      CompressedImage level;
-      level._data = std::make_shared<DataBlock>(mipdata, size);
-      level._format = _format;
-      level._width  = width;
-      level._height = height;
-      level._depth  = depth;
-      level._blocked_width  = width;
-      level._blocked_height = height;
-      level._numcomponents  = 4;
-      level._bytesPerChannel = 1;
-      _levels.push_back(level);
-      width >>= 1;
-      height >>= 1;
-      size = width * height * BPP;
-      inpstream.advance(size);
+    if(num_mips==1){
+      Image imga, imgb;
+      imga._data = std::make_shared<DataBlock>(inpstream.current(), size);
+      imga._format = _format;
+      imga._width  = width;
+      imga._height = height;
+      imga._depth  = depth;
+      imga._numcomponents  = 4;
+      imga._bytesPerChannel = 1;
+      int mipindex = 0;
+      while ((imga._width >= 4) and (imga._height >= 4)) {
+        CompressedImage cimg;
+        imga.uncompressed(cimg);
+        _levels.push_back(cimg);
+        imgb = imga;
+        imgb.downsample(imga);
+        mipindex++;
+      }
+    }
+    else{
+      for (int lidx = 0; lidx < num_mips; lidx++) {
+        auto mipdata = inpstream.current();
+        CompressedImage level;
+        level._data = std::make_shared<DataBlock>(mipdata, size);
+        level._format = _format;
+        level._width  = width;
+        level._height = height;
+        level._depth  = depth;
+        level._blocked_width  = width;
+        level._blocked_height = height;
+        level._numcomponents  = 4;
+        level._bytesPerChannel = 1;
+        _levels.push_back(level);
+        width >>= 1;
+        height >>= 1;
+        size = width * height * BPP;
+        inpstream.advance(size);
+      }
     }
   }
   //////////////////////////////////////////////////////////////////////
