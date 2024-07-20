@@ -72,7 +72,7 @@ class StereoApp1(object):
       "SkyboxIntensity": 1.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
-      "AmbientLevel": vec3(.125),
+      "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
     if mono:
@@ -124,7 +124,7 @@ class StereoApp1(object):
 
     shadow_size = 4096
     shadow_bias = 1e-3
-    intens = 350
+    intens = 450
     self.spotlight1 = MySpotLight(app=self,
                                  model=self.ball_model,
                                  frq=0.3,
