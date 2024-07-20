@@ -197,10 +197,10 @@ public:
   fxparam_constptr_t _parLightCookie1   = nullptr;
   fxparam_constptr_t _parLightCookie2   = nullptr;
   fxparam_constptr_t _parLightCookie3   = nullptr;
-  //fxparam_constptr_t _parLightCookie4   = nullptr;
-  //fxparam_constptr_t _parLightCookie5   = nullptr;
-  //fxparam_constptr_t _parLightCookie6   = nullptr;
-  //fxparam_constptr_t _parLightCookie7   = nullptr;
+  fxparam_constptr_t _parLightCookie4   = nullptr;
+  fxparam_constptr_t _parLightCookie5   = nullptr;
+  fxparam_constptr_t _parLightCookie6   = nullptr;
+  fxparam_constptr_t _parLightCookie7   = nullptr;
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
   fxparam_constptr_t _parProbeIrradiance   = nullptr;

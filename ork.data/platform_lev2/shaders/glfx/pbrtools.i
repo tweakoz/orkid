@@ -68,10 +68,10 @@ uniform_set ub_frg_fwd {
   sampler2D light_cookie1; // 13
   sampler2D light_cookie2; // 14
   sampler2D light_cookie3; // 15
-  //sampler2D light_cookie4;
-  //sampler2D light_cookie5;
-  //sampler2D light_cookie6;
-  //sampler2D light_cookie7;
+  sampler2D light_cookie4;
+  sampler2D light_cookie5;
+  sampler2D light_cookie6;
+  sampler2D light_cookie7;
 
   samplerCube reflectionPROBE; // 16
   samplerCube irradiancePROBE; // 17

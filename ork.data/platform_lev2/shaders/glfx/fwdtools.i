@@ -152,6 +152,14 @@ libblock lib_fwd //
       rval = textureLod(light_cookie2, uv, lod).xyz;
     } else if (index == 3) {
       rval = textureLod(light_cookie3, uv, lod).xyz;
+    } else if (index == 4) {
+      rval = textureLod(light_cookie4, uv, lod).xyz;
+    } else if (index == 5) {
+      rval = textureLod(light_cookie5, uv, lod).xyz;
+    } else if (index == 6) {
+      rval = textureLod(light_cookie6, uv, lod).xyz;
+    } else if (index == 7) {
+      rval = textureLod(light_cookie7, uv, lod).xyz;
     }
     return rval;
   }
@@ -162,7 +170,7 @@ libblock lib_fwd //
     vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
     vec3 N         = TN * 2.0 - vec3(1, 1, 1);
     vec3 normal    = normalize(frg_tbn * N);
-    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
+    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 0)).xyz;
     vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
     vec3 metalbase = vec3(0.2);
     float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
@@ -346,8 +354,8 @@ libblock lib_fwd //
        //spot_lighting += pl_c;
     }
     //return spot_lighting;
-    //return vec3(ambocc,ambocc,ambocc);
-    return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
+    return vec3(metallic, roughness, 0);
+    //return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;

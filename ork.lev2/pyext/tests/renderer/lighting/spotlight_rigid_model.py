@@ -119,7 +119,7 @@ class StereoApp1(object):
     
     shadow_size = 2048
     shadow_bias = 1e-4
-    intens_scale = 0.5
+    intens_scale = 0.03
     speed_scale = 0.5
     self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,5500,0)*intens_scale,cookie=cookie1,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)
     self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37*speed_scale,color=vec3(5000,0,0)*intens_scale,cookie=cookie2,fovbase=60.0,fovamp=20.0,voffset=15,vscale=13,bias=shadow_bias,dim=shadow_size,radius=12)

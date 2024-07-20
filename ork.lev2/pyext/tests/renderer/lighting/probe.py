@@ -166,7 +166,7 @@ class LIGHTING_APP(object):
     ###################################
 
     cookie1 = MyCookie("src://effect_textures/L0D.png")
-    cookie2 = MyCookie("src://effect_textures/knob2.dds")
+    cookie2 = MyCookie("src://effect_textures/knob2.png")
     
     shadow_size = 2048
     shadow_bias = 1e-3

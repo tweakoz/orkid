@@ -56,28 +56,6 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PBRMaterial::assignTextures( lev2::Context* ctx,     //
-                                  texture_ptr_t color,    //
-                                  texture_ptr_t normal,   //
-                                  texture_ptr_t mtlruf,   //
-                                  texture_ptr_t emissive, //
-                                  texture_ptr_t ambocc){  //
-  OrkAssert(ambocc==nullptr);
-  TextureArrayInitData TID;
-
-  TID._slices.resize(4);
-  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
-  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, normal};
-  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, mtlruf};
-  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, emissive};
-  _texArrayCNMREA = std::make_shared<Texture>();
-  _texArrayCNMREA->_debugName = "pbrtexarray";
-  auto txi = ctx->TXI();
-  txi->initTextureArray2DFromData(_texArrayCNMREA.get(), TID);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFormat fmt) {
     auto basehasher = DataBlock::createHasher();
     basehasher->accumulateString("pbr-default-color");
@@ -120,6 +98,33 @@ textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFor
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// join PBR texture set into a texture array
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::assignTextures( lev2::Context* ctx,     //
+                                  texture_ptr_t color,    //
+                                  texture_ptr_t normal,   //
+                                  texture_ptr_t mtlruf,   //
+                                  texture_ptr_t emissive, //
+                                  texture_ptr_t ambocc){  //
+  OrkAssert(ambocc==nullptr);
+  TextureArrayInitData TID;
+
+  printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
+
+  TID._slices.resize(4);
+  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
+  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, normal};
+  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, mtlruf};
+  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, emissive};
+  _texArrayCNMREA = std::make_shared<Texture>();
+  _texArrayCNMREA->_debugName = "pbrtexarray";
+  auto txi = ctx->TXI();
+  txi->initTextureArray2DFromData(_texArrayCNMREA.get(), TID);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // PBRMaterial::conformTextures
 //   we need textures to be same size and format
 //   so they can go into a texture array 
@@ -135,39 +140,45 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     OrkAssert(_texColor->_texFormat != EBufferFormat::NONE );
   }
   //////////////
+  // fetch color texture size and format
+  //////////////
   int color_w = _texColor->_width;
   int color_h = _texColor->_height;
   auto format = _texColor->_texFormat;
   //////////////
+  // if normal map is not set, create a default one, matching color texture size and format
+  //////////////
   if (_texNormal == nullptr) {
-    fvec3 ncolor = fvec3(0.5, 0.501, 1);
+    fvec3 ncolor = fvec3(0.5, 0.5, 1);
     auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h, format);
     _texNormal = nasset->GetTexture();
     _texNormal->_debugName = "default_normal";
     OrkAssert(_texNormal != nullptr);
+    printf( "default normal<%p>\n", _texNormal.get() );
   }
+  //////////////
+  // if mtlruf map is not set, create a default one, matching color texture size and format
   //////////////
   if (_texMtlRuf == nullptr) {
-    if (_metallicFactor == 0.0f) {
-      fvec3 ncolor = fvec3(0,1.01,1);
-      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
-      _texMtlRuf = nasset->GetTexture();
-    }
-    else{
-      fvec3 ncolor = fvec3(1,0,1.01);
-      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
-      _texMtlRuf = nasset->GetTexture();
-    }
+    fvec3 color = (_metallicFactor == 0.0f) //
+                ? fvec3(1,1,0) //
+                : fvec3(1,0,1);
+    auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
+    _texMtlRuf = nasset->GetTexture();
     _texMtlRuf->_debugName = "default_metallicroughness";
     OrkAssert(_texMtlRuf != nullptr);
+    printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
   }
   //////////////
+  // if emissive map is not set, create a default one, matching color texture size and format
+  //////////////
   if (_texEmissive == nullptr) {
-    fvec3 ncolor = fvec3(0,0,0.01);
-    auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
+    fvec3 color = fvec3(0,0,0);
+    auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
     _texEmissive = nasset->GetTexture();
     _texEmissive->_debugName = "default_emissive";
     OrkAssert(_texEmissive != nullptr);
+    printf( "default emissive<%p>\n", _texEmissive.get() );
   }
   //////////////
   assignTextures(ctx, _texColor, _texNormal, _texMtlRuf, _texEmissive, _texAmbOcc);
@@ -177,6 +188,12 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
 
 void PBRMaterial::describeX(class_t* c) {
 
+  /////////////////////////////////////////////////////////////////
+  // chunkfile::materialreader_t
+  //  this is a callback invoked from the xgm model reader
+  //  when a material is encountered in the xgm file
+  //  it is in callback form so the model reader can fork
+  //  based on material types..
   /////////////////////////////////////////////////////////////////
 
   chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx) -> ork::lev2::material_ptr_t {
@@ -260,6 +277,12 @@ void PBRMaterial::describeX(class_t* c) {
   };
 
   /////////////////////////////////////////////////////////////////
+  // chunkfile::materialreader_t
+  //  this is a callback invoked from the xgm model writer
+  //  when a material is encountered in a model being written to a xgm file
+  //  it is in callback form so the model writer can fork
+  //  based on material types..
+  /////////////////////////////////////////////////////////////////
 
   chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx) {
     auto pbrmtl = std::static_pointer_cast<const PBRMaterial>(ctx._material);
@@ -302,6 +325,8 @@ void PBRMaterial::describeX(class_t* c) {
     // pbrmtl->_baseColor.w);
   };
 
+  /////////////////////////////////////////////////////////////////
+  // attach reader and writer to the material class reflection annotations
   /////////////////////////////////////////////////////////////////
 
   c->annotate("xgm.writer", writer);
@@ -514,10 +539,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie1 = fxi->parameter(_shader, "light_cookie1");
   _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
-  //_parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
-  //_parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
-  //_parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
-  //_parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
+  _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
+  _parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
+  _parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
+  _parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
 
   _parProbeReflection = fxi->parameter(_shader, "reflectionPROBE");
   _parProbeIrradiance = fxi->parameter(_shader, "irradiancePROBE");
