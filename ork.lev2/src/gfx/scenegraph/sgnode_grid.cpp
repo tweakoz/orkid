@@ -33,13 +33,20 @@ struct GridRenderImpl {
     _normaltexture = texasset->GetTexture();
     OrkAssert(_normaltexture);
 
+    load_req = std::make_shared<asset::LoadRequest>(_griddata->_mtlruftexpath);
+    texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(texasset);
+
+    _mtlruftexture = texasset->GetTexture();
+    OrkAssert(_mtlruftexture);
+
     _pbrmaterial       = new PBRMaterial();
     _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
     _pbrmaterial->_shaderpath = "orkshader://grid";
     _pbrmaterial->assignTextures( ctx,            // context
                                   _colortexture,  // COLOR
                                   _normaltexture, // NORMAL
-                                  nullptr,        // MTLRUF
+                                  _mtlruftexture, // MTLRUF
                                   nullptr,        // EMISSIVE
                                   nullptr);       // AMBOCC
     _pbrmaterial->gpuInit(ctx);
@@ -152,6 +159,7 @@ struct GridRenderImpl {
 
   texture_ptr_t _colortexture;
   texture_ptr_t _normaltexture;
+  texture_ptr_t _mtlruftexture;
   fxpipelinecache_constptr_t _fxcache;
   fxparam_constptr_t _paramAuxA;
   fxparam_constptr_t _paramAuxB;
@@ -181,6 +189,7 @@ drawable_ptr_t GridDrawableData::createDrawable() const {
 
 GridDrawableData::GridDrawableData() {
   _colortexpath = "src://effect_textures/white_64.dds";
+  _mtlruftexpath = "src://effect_textures/blue_64.dds";
   _normaltexpath = "src://effect_textures/default_normal.dds";
 }
 

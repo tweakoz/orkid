@@ -267,12 +267,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     auto require_pbr = mtl->_vars->typedValueForKey<bool>("requirePBRparams");
 
     if (require_pbr and require_pbr.value()) {
-      //pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
-      //pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
-      //pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
-      //pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
       pipeline->bindParam(mtl->_paramMapCNMREA, mtl->_texArrayCNMREA);
-
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
     }

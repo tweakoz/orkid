@@ -201,16 +201,19 @@ class SkinningApp(object):
     # create model data
     ###################################
 
-    tex_white = Texture.load("src://effect_textures/white.dds")
+    tex_white = Texture.load("src://effect_textures/white_64.dds")
     tex_normal = Texture.load("src://effect_textures/default_normal.dds")
 
     self.model = XgmModel("data://tests/chartest/char_mesh")
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = tex_white
-        copy.texNormal = tex_normal
-        copy.texMtlRuf = tex_white
+        copy.assignTextures(
+          ctx,
+          color = tex_white,
+          normal = tex_normal,
+          mtlruf = tex_white,
+        )
         copy.baseColor = vec4(1,.75,.75,1)*1.4
         copy.roughnessFactor = 0.75
         copy.metallicFactor = 0.0

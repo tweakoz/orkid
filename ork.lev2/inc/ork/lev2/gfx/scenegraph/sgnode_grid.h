@@ -16,6 +16,7 @@ public:
 
   std::string _colortexpath;
   std::string _normaltexpath;
+  std::string _mtlruftexpath;
   fvec3 _modcolor = fvec3(1, 1, 1);
   float _intensityA = 1.0;
   float _intensityB = 1.0;

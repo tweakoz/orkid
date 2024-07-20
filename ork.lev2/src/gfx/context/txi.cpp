@@ -70,6 +70,7 @@ size_t TextureInitData::computeDstSize() const {
       break;
 
 
+    case EBufferFormat::BGR8:
     case EBufferFormat::RGB8:
       length *= 3;
       break;
@@ -121,6 +122,36 @@ texture_ptr_t TextureInterface::createColorTexture(fvec4 color, int w, int h){
   tid._h = h;
   tid._src_format = EBufferFormat::RGBA8;
   tid._dst_format = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  //tid._allow_async = false;
+  tid._data = (const void*) data;
+
+  initTextureFromData(rval.get(),tid);
+
+  delete[] data;
+
+  return rval;
+}
+
+texture_ptr_t TextureInterface::createColorTextureV3(fvec3 color, int w, int h){
+  auto rval = std::make_shared<Texture>();
+
+  int numpixels = (w*h);
+  auto data = new uint8_t[numpixels*3];
+  uint8_t r = uint8_t(color.x*255.0f);
+  uint8_t g = uint8_t(color.y*255.0f);
+  uint8_t b = uint8_t(color.z*255.0f);
+  for( int i=0; i<numpixels; i++ ){
+    data[i*3+0] = r;
+    data[i*3+1] = g;
+    data[i*3+2] = b;
+  }
+
+  TextureInitData tid;
+  tid._w = w;
+  tid._h = h;
+  tid._src_format = EBufferFormat::BGR8;
+  tid._dst_format = EBufferFormat::BGR8;
   tid._autogenmips = false;
   //tid._allow_async = false;
   tid._data = (const void*) data;

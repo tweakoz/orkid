@@ -143,10 +143,6 @@ public:
   fxparam_constptr_t _paramMVPR          = nullptr;
   fxparam_constptr_t _paramMV            = nullptr;
   fxparam_constptr_t _paramMROT          = nullptr;
-  fxparam_constptr_t _paramMapColor      = nullptr;
-  fxparam_constptr_t _paramMapNormal     = nullptr;
-  fxparam_constptr_t _paramMapMtlRuf     = nullptr;
-  fxparam_constptr_t _paramMapEmissive   = nullptr;
   fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _paramMapLinearDepth      = nullptr;
 
@@ -181,7 +177,6 @@ public:
 
   fxparam_constptr_t _paramNearFar      = nullptr;
 
-  fxparam_constptr_t _parMapAmbOcc           = nullptr;
   fxparam_constptr_t _parMapLightMap         = nullptr;
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;

@@ -63,6 +63,7 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
                                   texture_ptr_t ambocc){  //
   OrkAssert(ambocc==nullptr);
   TextureArrayInitData TID;
+
   TID._slices.resize(4);
   TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
   TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, normal};
@@ -363,11 +364,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMVPR              = fxi->parameter(_shader, "mvp_r");
   _paramMV                = fxi->parameter(_shader, "mv");
   _paramMROT              = fxi->parameter(_shader, "mrot");
-  _paramMapColor          = fxi->parameter(_shader, "ColorMap");
-  _paramMapNormal         = fxi->parameter(_shader, "NormalMap");
-  _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
-  _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
-  _parMapAmbOcc           = fxi->parameter(_shader, "AmbOccMap");
   _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   _parMapLightMap         = fxi->parameter(_shader, "LightMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
@@ -440,37 +436,36 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   //
 
-  OrkAssert(_paramMapNormal != nullptr);
   OrkAssert(_parBoneBlock != nullptr);
 
   // printf( "_texColor<%p>\n", _texColor.get() );
   // printf( "_texNormal<%p>\n", _texNormal.get() );
   // printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
-  _texBlack = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 1), 32, 32);
-  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 32,32);
+  _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
+  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
 
   if (_texColor == nullptr) {
     auto loadreq         = std::make_shared<asset::LoadRequest>();
-    loadreq->_asset_path = "src://effect_textures/white";
+    loadreq->_asset_path = "src://effect_textures/white_64";
     _asset_texcolor      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texColor            = _asset_texcolor->GetTexture();
     // logchan_pbr->log("substituted white for non-existant color texture");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
-    static auto defntex = targ->TXI()->createColorTexture(fvec4(0.5, 0.5, 1, 1), 8, 8);
+    static auto defntex = targ->TXI()->createColorTextureV3(fvec3(0.5, 0.5, 1), 64, 64);
     defntex->_debugName = "default_normal";
     _texNormal          = defntex;
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
 
-    static auto defmrtex = targ->TXI()->createColorTexture(fvec4(1, 1, 0, 1), 8, 8);
+    static auto defmrtex = targ->TXI()->createColorTextureV3(fvec3(1, 1, 0), 64, 64);
     _texMtlRuf           = defmrtex;
 
     if (_metallicFactor != 0.0f) {
-      static auto metallictex = targ->TXI()->createColorTexture(fvec4(1, 0, 1, 1), 8, 8);
+      static auto metallictex = targ->TXI()->createColorTextureV3(fvec3(1, 0, 1), 64, 64);
       metallictex->_debugName = "default_metallicroughness";
       _texMtlRuf              = metallictex;
     }
@@ -478,7 +473,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     OrkAssert(_texMtlRuf != nullptr);
   }
   if (_texEmissive == nullptr) {
-    static auto defemitex = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 0), 8, 8);
+    static auto defemitex = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 8, 8);
     defemitex->_debugName = "default_emissive";
     _texEmissive          = defemitex;
   }
