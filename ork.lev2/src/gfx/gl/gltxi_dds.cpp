@@ -25,6 +25,7 @@ bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t dat
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
   load_req._inpstream.advance(sizeof(dds::DDS_HEADER));
+  ptex->_final_datablock = datablock;
   ////////////////////////////////////////////////////////////////////
   auto ddsh = (const dds::DDS_HEADER*)load_req._inpstream.data(0);
   ////////////////////////////////////////////////////////////////////

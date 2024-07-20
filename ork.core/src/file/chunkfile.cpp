@@ -349,6 +349,34 @@ Reader::Reader(datablock_ptr_t datablock, ILoadAllocator& allocator)
   mbOk = readFromDataBlock(datablock);
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+bool ChunkFileHeaderOnly::readFromDataBlock(datablock_ptr_t datablock){
+  DataBlockInputStream dblockstream(datablock);
+
+  const Char4 good_chunk_magic("chkf");
+  OrkHeapCheck();
+  ///////////////////////////
+  Char4 check_chunk_magic(dblockstream.getItem<uint32_t>());
+  if (check_chunk_magic != good_chunk_magic)
+    return false;
+  ///////////////////////////
+  mistrtablen = dblockstream.getItem<int>();
+  char* pst   = new char[mistrtablen];
+  memcpy_fast(pst, dblockstream.current(), mistrtablen);
+  dblockstream.advance(mistrtablen);
+  mpstrtab = pst;
+  OrkHeapCheck();
+  ///////////////////////////
+  int32_t ifiletype     = dblockstream.getItem<int32_t>();
+  const char* pthistype = mpstrtab + ifiletype;
+  _chunkfiletype        = pthistype;
+  OrkHeapCheck();
+  ///////////////////////////
+  _num_chunks = dblockstream.getItem<int32_t>();
+ }
+
+
+///////////////////////////////////////////////////////////////////////////////
 bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   DataBlockInputStream dblockstream(datablock);
 

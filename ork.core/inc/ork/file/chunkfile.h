@@ -168,6 +168,15 @@ struct Reader {
   ILoadAllocator& _allocator;
 };
 
+struct ChunkFileHeaderOnly{
+  bool readFromDataBlock(datablock_ptr_t datablock);
+  size_t mistrtablen;
+  const char* mpstrtab;
+  bool mbOk;
+  std::string _chunkfiletype;
+  size_t _num_chunks = 0;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace chunkfile
 } // namespace ork

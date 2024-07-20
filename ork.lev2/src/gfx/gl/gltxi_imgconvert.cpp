@@ -24,6 +24,7 @@ namespace ork::lev2 {
 
 bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock) {
   auto asset_load_req = ptex->loadRequest();
+  ptex->_final_datablock = src_datablock;
   DataBlockInputStream checkstream(src_datablock);
   uint8_t magic[4];
   magic[0]                     = checkstream.getItem<uint8_t>();

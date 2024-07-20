@@ -34,6 +34,12 @@ namespace ork::lev2 {
         _type           = GL_UNSIGNED_BYTE;
         break;
       }
+      case EBufferFormat::BGR8: {
+        _internalFormat = GL_BGR;
+        _format         = GL_RGB;
+        _type           = GL_UNSIGNED_BYTE;
+        break;
+      }
       case EBufferFormat::RGBA8: {
         _internalFormat = GL_RGBA8;
         _format         = GL_RGBA;
@@ -79,6 +85,12 @@ namespace ork::lev2 {
       case EBufferFormat::R8: {
         _internalFormat = GL_R8;
         _format         = GL_RED;
+        _type           = GL_UNSIGNED_BYTE;
+        break;
+      }
+      case EBufferFormat::RGBA_BPTC_UNORM: {
+        _internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+        _format         = GL_RGBA;
         _type           = GL_UNSIGNED_BYTE;
         break;
       }
@@ -502,6 +514,9 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     GLenum tgt = (glto->mTarget != GL_NONE) ? glto->mTarget : GL_TEXTURE_2D;
 
     if (tgt == GL_TEXTURE_CUBE_MAP) {
+      return;
+    }
+    if (tgt == GL_TEXTURE_2D_ARRAY) {
       return;
     }
 

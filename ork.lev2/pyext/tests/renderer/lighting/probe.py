@@ -154,7 +154,7 @@ class LIGHTING_APP(object):
     self.grid_data.intensityC = 0
     self.grid_data.intensityD = 0
     self.grid_data.lineWidth = 0.05
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
+    self.grid_data.texturepath = "src://effect_textures/white_64.dds"
     self.grid_drawable = self.grid_data.createDrawable()
     self.grid_node = self.scene.createDrawableNodeOnLayers(COLOR_LAYERS,"grid-node",self.grid_drawable)
     #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)

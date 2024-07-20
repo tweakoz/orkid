@@ -46,6 +46,8 @@ struct CompressedImageMipChain {
   void readXTX(const file::Path& inppath);
   void readXTX(datablock_ptr_t datablock);
 
+  void readDDS(datablock_ptr_t datablock);
+
   EBufferFormat _format = EBufferFormat::NONE;
   size_t _width         = 0;
   size_t _height        = 0;

@@ -36,8 +36,12 @@ struct GridRenderImpl {
     _pbrmaterial       = new PBRMaterial();
     _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
     _pbrmaterial->_shaderpath = "orkshader://grid";
-    _pbrmaterial->_texColor = _colortexture;
-    _pbrmaterial->_texNormal = _normaltexture;
+    _pbrmaterial->assignTextures( ctx,            // context
+                                  _colortexture,  // COLOR
+                                  _normaltexture, // NORMAL
+                                  nullptr,        // MTLRUF
+                                  nullptr,        // EMISSIVE
+                                  nullptr);       // AMBOCC
     _pbrmaterial->gpuInit(ctx);
     _pbrmaterial->_metallicFactor  = 0.0f;
     _pbrmaterial->_roughnessFactor = 1.0f;
@@ -54,6 +58,7 @@ struct GridRenderImpl {
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
+
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto context    = RCID.context();
 

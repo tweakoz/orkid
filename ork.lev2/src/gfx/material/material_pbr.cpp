@@ -55,6 +55,27 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PBRMaterial::assignTextures( lev2::Context* ctx,     //
+                                  texture_ptr_t color,    //
+                                  texture_ptr_t normal,   //
+                                  texture_ptr_t mtlruf,   //
+                                  texture_ptr_t emissive, //
+                                  texture_ptr_t ambocc){  //
+  OrkAssert(ambocc==nullptr);
+  TextureArrayInitData TID;
+  TID._slices.resize(4);
+  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
+  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, normal};
+  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, mtlruf};
+  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, emissive};
+  _texArrayCNMREA = std::make_shared<Texture>();
+  _texArrayCNMREA->_debugName = "pbrtexarray";
+  auto txi = ctx->TXI();
+  txi->initTextureArray2DFromData(_texArrayCNMREA.get(), TID);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void PBRMaterial::describeX(class_t* c) {
 
   /////////////////////////////////////////////////////////////////
