@@ -49,6 +49,37 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
+  //sampler2D ColorMap;             // 0
+  //sampler2D NormalMap;            // 1
+  //sampler2D MtlRufMap;           // 2
+  //sampler2D EmissiveMap;         // 3
+
+  sampler2D SSAOMap;            // 4
+  sampler2D SSAOKernel;      // 5
+  sampler2D SSAOScrNoise;   // 6
+
+  sampler2D MapBrdfIntegration; // 7
+  sampler2D MapSpecularEnv; // 8
+  sampler2D MapDiffuseEnv; // 9
+  sampler2D MapDepth; // 10
+  sampler2D MapLinearDepth; // 11
+
+  sampler2D light_cookie0; // 12
+  sampler2D light_cookie1; // 13
+  sampler2D light_cookie2; // 14
+  sampler2D light_cookie3; // 15
+  //sampler2D light_cookie4;
+  //sampler2D light_cookie5;
+  //sampler2D light_cookie6;
+  //sampler2D light_cookie7;
+
+  samplerCube reflectionPROBE; // 16
+  samplerCube irradiancePROBE; // 17
+
+  sampler2DArray CNMREA;         // 4
+
+  //
+
   mat4 m;
   mat4 vp;
   mat4 v_l;
@@ -60,16 +91,7 @@ uniform_set ub_frg_fwd {
   mat4 inv_vp_l;
   mat4 inv_vp_r;
 
-  sampler2D ColorMap;
-  sampler2D NormalMap;
-  sampler2D MtlRufMap;
-  sampler2D EmissiveMap;
 
-  sampler2D MapBrdfIntegration;
-  sampler2D MapSpecularEnv;
-  sampler2D MapDiffuseEnv;
-  sampler2D MapDepth;
-  sampler2D MapLinearDepth;
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -79,9 +101,6 @@ uniform_set ub_frg_fwd {
   float MetallicFactor;
   float RoughnessFactor;
 
-  sampler2D SSAOMap;
-  sampler2D SSAOKernel;
-  sampler2D SSAOScrNoise;
   float SSAOPower;
   float SSAOWeight;
   float SSAORadius;
@@ -106,17 +125,6 @@ uniform_set ub_frg_fwd {
   //sampler2D UnTexPointLightsData;
 
   //sampler2D light_cookies[8];
-  sampler2D light_cookie0;
-  sampler2D light_cookie1;
-  sampler2D light_cookie2;
-  sampler2D light_cookie3;
-  //sampler2D light_cookie4;
-  //sampler2D light_cookie5;
-  //sampler2D light_cookie6;
-  //sampler2D light_cookie7;
-
-  samplerCube reflectionPROBE;
-  samplerCube irradiancePROBE;
 
   vec4 ModColor;
   vec4 AuxA;

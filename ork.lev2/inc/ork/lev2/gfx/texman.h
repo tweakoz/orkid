@@ -250,6 +250,7 @@ struct Texture {
   bool _formatSupportsFiltering = true;
   ipctexture_ptr_t _external_memory;
   std::atomic<int> _residenceState;
+  datablock_ptr_t _final_datablock;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

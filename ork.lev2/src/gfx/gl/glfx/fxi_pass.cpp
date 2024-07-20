@@ -243,6 +243,16 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       if (puni->_typeName == "sampler2D") {
         is_sampler = true;
         tex_target = GL_TEXTURE_2D;
+      } else if (puni->_typeName == "sampler1DArray") {
+        is_sampler = true;
+        tex_target = GL_TEXTURE_1D_ARRAY;
+      } else if (puni->_typeName == "sampler2DArray") {
+        is_sampler = true;
+        tex_target = GL_TEXTURE_2D_ARRAY;
+      } else if (puni->_typeName == "sampler3DArray") {
+        is_sampler = true;
+        OrkAssert(false);
+        //tex_target = GL_TEXTURE_3D_ARRAY;
       } else if (puni->_typeName == "usampler2D") {
         is_sampler = true;
         tex_target = GL_TEXTURE_2D;

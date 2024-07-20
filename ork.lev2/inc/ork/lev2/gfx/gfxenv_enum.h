@@ -85,7 +85,10 @@ enum ETextureType {
   ETEXTYPE_3D,
   ETEXTYPE_CUBE,
   ETEXTYPE_ENVSPH,
-  ETEXTYPE_END,
+  ETEXTYPE_1D_ARRAY,
+  ETEXTYPE_2D_ARRAY,
+  ETEXTYPE_3D_ARRAY,
+ ETEXTYPE_END,
 };
 
 ///////////////////////////////////////////////////////////////////////////////

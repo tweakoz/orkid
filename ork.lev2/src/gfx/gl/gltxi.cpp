@@ -25,6 +25,72 @@ GLuint gLastBoundNonZeroTex = 0;
 
 namespace ork::lev2 {
 
+///////////////////////////////////////////////////////////////////////////////
+  GLFormatTriplet::GLFormatTriplet(EBufferFormat inp){
+    switch (inp) {
+      case EBufferFormat::RGB8: {
+        _internalFormat = GL_RGB8;
+        _format         = GL_RGB;
+        _type           = GL_UNSIGNED_BYTE;
+        break;
+      }
+      case EBufferFormat::RGBA8: {
+        _internalFormat = GL_RGBA8;
+        _format         = GL_RGBA;
+        _type           = GL_UNSIGNED_BYTE;
+        break;
+      }
+      case EBufferFormat::RGBA16F: {
+        _internalFormat = GL_RGBA16F;
+        _format         = GL_RGBA;
+        _type           = GL_HALF_FLOAT;
+        break;
+      }
+      case EBufferFormat::RGBA16UI: {
+        _internalFormat = GL_RGBA16UI;
+        _format         = GL_RGBA_INTEGER;
+        _type           = GL_UNSIGNED_SHORT;
+        break;
+      }
+      case EBufferFormat::RGBA32F: {
+        _internalFormat = GL_RGBA32F;
+        _format         = GL_RGBA;
+        _type           = GL_FLOAT;
+        break;
+      }
+      case EBufferFormat::RGB32F: {
+        _internalFormat = GL_RGB32F;
+        _format         = GL_RGB;
+        _type           = GL_FLOAT;
+        break;
+      }
+      case EBufferFormat::R32F: {
+        _internalFormat = GL_R32F;
+        _format         = GL_RED;
+        _type           = GL_FLOAT;
+        break;
+      }
+      case EBufferFormat::R16: {
+        _internalFormat = GL_R16UI;
+        _format         = GL_RED_INTEGER;
+        _type           = GL_UNSIGNED_SHORT;
+        break;
+      }
+      case EBufferFormat::R8: {
+        _internalFormat = GL_R8;
+        _format         = GL_RED;
+        _type           = GL_UNSIGNED_BYTE;
+        break;
+      }
+
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
+///////////////////////////////////////////////////////////////////////////////
+
+
 std::atomic<size_t> GLTextureObject::_glto_count = 0;
 
 GLTextureObject::GLTextureObject(GlTextureInterface* txi)
@@ -647,9 +713,13 @@ bool _checkTexture(GLuint texID, const std::string& name) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
+
+  ///////////////////////////////////
+
   bool is_3d   = (tid._d > 1);
   bool is_cube = tid._initCubeTexture;
     EASY_BLOCK("gltxi::itfd:1", profiler::colors::Red);
+
 
   ///////////////////////////////////
 
@@ -804,68 +874,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   EASY_END_BLOCK;
     EASY_BLOCK("gltxi::itfd:5", profiler::colors::Red);
 
-  ///////////////////////////////////
-  GLenum internalformat, format, type;
-  switch (tid._dst_format) {
-    case EBufferFormat::RGB8: {
-      internalformat = GL_RGB8;
-      format         = GL_RGB;
-      type           = GL_UNSIGNED_BYTE;
-      break;
-    }
-    case EBufferFormat::RGBA8: {
-      internalformat = GL_RGBA8;
-      format         = GL_RGBA;
-      type           = GL_UNSIGNED_BYTE;
-      break;
-    }
-    case EBufferFormat::RGBA16F: {
-      internalformat = GL_RGBA16F;
-      format         = GL_RGBA;
-      type           = GL_HALF_FLOAT;
-      break;
-    }
-    case EBufferFormat::RGBA16UI: {
-      internalformat = GL_RGBA16UI;
-      format         = GL_RGBA_INTEGER;
-      type           = GL_UNSIGNED_SHORT;
-      break;
-    }
-    case EBufferFormat::RGBA32F: {
-      internalformat = GL_RGBA32F;
-      format         = GL_RGBA;
-      type           = GL_FLOAT;
-      break;
-    }
-    case EBufferFormat::RGB32F: {
-      internalformat = GL_RGB32F;
-      format         = GL_RGB;
-      type           = GL_FLOAT;
-      break;
-    }
-    case EBufferFormat::R32F: {
-      internalformat = GL_R32F;
-      format         = GL_RED;
-      type           = GL_FLOAT;
-      break;
-    }
-    case EBufferFormat::R16: {
-      internalformat = GL_R16UI;
-      format         = GL_RED_INTEGER;
-      type           = GL_UNSIGNED_SHORT;
-      break;
-    }
-    case EBufferFormat::R8: {
-      internalformat = GL_R8;
-      format         = GL_RED;
-      type           = GL_UNSIGNED_BYTE;
-      break;
-    }
+  GLFormatTriplet triplet(tid._dst_format);
 
-    default:
-      OrkAssert(false);
-      break;
-  }
   GL_ERRORCHECK();
   ///////////////////////////////////
   // update texels
@@ -879,25 +889,25 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     if (size_or_fmt_dirty) { // allocating
       // init all 6 faces with PBO data
       for (int i = 0; i < 6; i++) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, triplet._internalFormat, tid._w, tid._h, 0, triplet._format, triplet._type, nullptr);
       }
     } else { // non allocating
       for (int i = 0; i < 6; i++) {
-        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+        glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, tid._w, tid._h, triplet._format, triplet._type, nullptr);
       }
     }
   } else if (is_3d) {
     if (size_or_fmt_dirty) // allocating
-      glTexImage3D(texture_target, 0, internalformat, tid._w, tid._h, tid._d, 0, format, type, nullptr);
+      glTexImage3D(texture_target, 0, triplet._internalFormat, tid._w, tid._h, tid._d, 0, triplet._format, triplet._type, nullptr);
     else // non allocating
-      glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, format, type, nullptr);
+      glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
   } else {
       if(0) printf( "pboitem<%d> size_or_fmt_dirty<%d> w<%d> h<%d>\n", int(pboitem->_handle), int(size_or_fmt_dirty), tid._w, tid._h );
     if (size_or_fmt_dirty) // allocating
-      glTexImage2D(texture_target, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+      glTexImage2D(texture_target, 0, triplet._internalFormat, tid._w, tid._h, 0, triplet._format, triplet._type, nullptr);
     else // non allocating
-      glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+      glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
   }
   EASY_END_BLOCK;

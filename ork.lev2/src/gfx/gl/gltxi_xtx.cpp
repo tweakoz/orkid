@@ -24,6 +24,7 @@ namespace ork::lev2 {
 bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
   auto asset_load_req = ptex->loadRequest();
   GlTexLoadReq load_req;
+  ptex->_final_datablock = datablock;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
   load_req._cmipchain            = std::make_shared<CompressedImageMipChain>();

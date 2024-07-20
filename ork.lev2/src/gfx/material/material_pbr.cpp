@@ -83,6 +83,8 @@ void PBRMaterial::describeX(class_t* c) {
     auto begintextures = ctx._reader.GetString(istring);
     OrkAssert(0 == strcmp(begintextures, "begintextures"));
     bool done = false;
+    TextureArrayInitData TID;
+    TID._slices.resize(4);
     while (false == done) {
       ctx._inputStream->GetItem(istring);
       auto token = ctx._reader.GetString(istring);
@@ -99,6 +101,7 @@ void PBRMaterial::describeX(class_t* c) {
         auto tex = std::make_shared<lev2::Texture>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
+
         bool ok        = txi->LoadTexture(tex, datablock);
         OrkAssert(ok);
         logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
@@ -106,21 +109,29 @@ void PBRMaterial::describeX(class_t* c) {
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor     = tex;
           mtl->_colorMapName = texname;
+          TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, tex};
         }
         if (0 == strcmp(token, "normalmap")) {
           mtl->_texNormal     = tex;
           mtl->_normalMapName = texname;
+          TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, tex};
         }
         if (0 == strcmp(token, "mtlrufmap")) {
           mtl->_texMtlRuf     = tex;
           mtl->_mtlRufMapName = texname;
+          TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, tex};
         }
         if (0 == strcmp(token, "emissivemap")) {
           mtl->_texEmissive     = tex;
           mtl->_emissiveMapName = texname;
+          TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, tex};
         }
       }
     }
+    mtl->_texArrayCNMREA = std::make_shared<Texture>();
+    mtl->_texArrayCNMREA->_debugName = "pbrtexarray";
+    txi->initTextureArray2DFromData(mtl->_texArrayCNMREA.get(), TID);
+
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
@@ -370,6 +381,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
   _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
   _parMapAmbOcc           = fxi->parameter(_shader, "AmbOccMap");
+  _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   _parMapLightMap         = fxi->parameter(_shader, "LightMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");

@@ -16,6 +16,13 @@
 struct MipChainLevel;
 struct MipChain;
 
+struct TextureArrayInitSubItem{
+  uint32_t _usage = 0;
+  texture_ptr_t _subtex;
+};
+struct TextureArrayInitData{
+  std::vector<TextureArrayInitSubItem> _slices;
+};
 struct TextureInitData {
 
   size_t computeSrcSize() const;
@@ -50,6 +57,12 @@ public:
   virtual void ApplySamplingMode(Texture* ptex) {
   }
   virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {
+  }
+  virtual void initTextureArray1DFromData(Texture* ptex, TextureArrayInitData tid) {
+  }
+  virtual void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) {
+  }
+  virtual void initTextureArray3DFromData(Texture* ptex, TextureArrayInitData tid) {
   }
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;

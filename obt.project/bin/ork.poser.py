@@ -233,8 +233,6 @@ class SceneGraphApp(object):
       elif uievent.keycode == ord("A") or uievent.keycode == ord("S"):
         self.descendants = []
         self.push_screen_pos = scoord
-        self.push_cam_z_dir = camdat.znormal
-        self.vpmatrix = camdat.vpMatrix(1280/720.0)
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1).xyz()
@@ -320,11 +318,19 @@ class SceneGraphApp(object):
               self.acive_pos = scoord
 
           if self.activate_rot:
+            
+            ###########################
+            # # get screen space 2D delta/direction from push to current drag
+            ###########################
             deltaA = (self.acive_pos - self.push_screen_pos).normalized()
             deltaB = (scoord - self.push_screen_pos).normalized()
             angle = deltaB.orientedAngle(deltaA)
+            
+            ###########################
             # transform selected bone
-            self.localpose.concatenate()
+            ###########################
+          
+            self.localpose.concatenate() # recompute from concatenated
             #
             X = self.concats_push[self.sel_joint]
             OR = X.toRotMatrix4()

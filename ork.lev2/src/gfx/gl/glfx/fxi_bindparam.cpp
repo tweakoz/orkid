@@ -208,9 +208,11 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
     int uniloc = pinst->_locations[0];
 
-    if(0){
+    if(pTex and true){
+      const char* texnam = pTex->_debugName.c_str();
       const char* teknam = container->mActiveTechnique->_name.c_str();
-      printf("Bind2 Tex<%p> par<%s> uniloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), uniloc, teknam);
+      const char* parname = hpar->_name.c_str();
+      printf("Bind2 Tex<%p:%s> par<%s> uniloc<%d> teknam<%s>\n", pTex, texnam, parname, uniloc, teknam);
     }
     // if (uniloc >= 0) {
     // const char* psem = puni->_semantic.c_str();

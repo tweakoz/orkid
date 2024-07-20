@@ -19,6 +19,8 @@ namespace ork {
 struct DataBlock;
 using datablock_ptr_t = std::shared_ptr<DataBlock>;
 using datablock_constptr_t = std::shared_ptr<const DataBlock>;
+using datablock_list_t = std::vector<datablock_ptr_t>;
+using datablock_crcmap_t = std::unordered_map<uint32_t, datablock_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// DataBlock : SerDes container for arbitrary binary data

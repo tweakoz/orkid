@@ -86,6 +86,13 @@ struct GLTextureAsyncTask{
 
 using gltexasynctask_ptr_t = std::shared_ptr<GLTextureAsyncTask>;
 
+struct GLFormatTriplet {
+    GLFormatTriplet(EBufferFormat inp);
+    GLenum _internalFormat;
+    GLenum _format;
+    GLenum _type;
+};
+
 struct GLTextureObject {
 
   GLTextureObject(GlTextureInterface* txi);
@@ -417,6 +424,7 @@ struct GlTextureInterface : public TextureInterface {
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
+  void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) final;
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 

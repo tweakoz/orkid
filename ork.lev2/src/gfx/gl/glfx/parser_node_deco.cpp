@@ -102,7 +102,7 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
                                   : nullptr;
 
     if(blocknode==nullptr){
-      printf("BlockNode<%s> not found\n", deco.c_str());
+      //printf("BlockNode<%s> not found\n", deco.c_str());
       //OrkAssert(false);
     }
 

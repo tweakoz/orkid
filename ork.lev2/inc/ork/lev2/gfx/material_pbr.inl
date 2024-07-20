@@ -143,6 +143,9 @@ public:
   fxparam_constptr_t _paramMapEmissive   = nullptr;
   fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _paramMapLinearDepth      = nullptr;
+
+  fxparam_constptr_t _paramMapCNMREA      = nullptr;
+
   fxparam_constptr_t _parInvViewSize     = nullptr;
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
@@ -219,6 +222,7 @@ public:
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
   texture_ptr_t _texCubeBlack;
+  texture_ptr_t _texArrayCNMREA;
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////
