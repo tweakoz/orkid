@@ -59,8 +59,9 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFormat fmt) {
     auto basehasher = DataBlock::createHasher();
     basehasher->accumulateString("pbr-default-color");
-    basehasher->accumulateString("version10");
+    basehasher->accumulateString("version14");
     basehasher->accumulateItem<fvec3>(color);
+    basehasher->accumulateItem<EBufferFormat>(fmt);
     basehasher->accumulateItem<int>(w);
     basehasher->accumulateItem<int>(h);
     basehasher->finish();
@@ -68,19 +69,23 @@ textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFor
     auto defmr_datablock = DataBlockCache::findDataBlock(hashkey);
     auto name = FormatString("pbr-default-color-%08x.png", hashkey);
     auto outpath = ork::file::Path::temp_dir()/name;
+    EBufferFormat temp_fmt = fmt;
+    if(temp_fmt==EBufferFormat::RGBA_BPTC_UNORM){
+      temp_fmt = EBufferFormat::RGBA8;
+    }
     if(defmr_datablock){
 
     }
     else{
       Image mr_image;
-      switch(fmt){
+      switch(temp_fmt){
         case EBufferFormat::BGRA8:
         case EBufferFormat::RGBA8:
-          mr_image.initRGBA8WithColor(w, h, fvec4(color,1), fmt);
+          mr_image.initRGBA8WithColor(w, h, fvec4(color,1), temp_fmt);
           break;
         case EBufferFormat::RGB8:
         case EBufferFormat::BGR8:
-          mr_image.initRGB8WithColor(w, h, color, fmt);
+          mr_image.initRGB8WithColor(w, h, color, temp_fmt);
           break;
         default:
           OrkAssert(false);
@@ -152,7 +157,9 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     fvec3 ncolor = fvec3(0.5, 0.5, 1);
     auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h, format);
     _texNormal = nasset->GetTexture();
-    _texNormal->_debugName = "default_normal";
+    auto des_fmt = EBufferFormatToName(format);
+    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
+    _texNormal->_debugName = FormatString("pbr-def-nrm des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texNormal != nullptr);
     printf( "default normal<%p>\n", _texNormal.get() );
   }
@@ -165,7 +172,9 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
                 : fvec3(1,0,1);
     auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
     _texMtlRuf = nasset->GetTexture();
-    _texMtlRuf->_debugName = "default_metallicroughness";
+    auto des_fmt = EBufferFormatToName(format);
+    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
+    _texMtlRuf->_debugName = FormatString("pbr-def-mtlruf des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texMtlRuf != nullptr);
     printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
   }
@@ -176,7 +185,9 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     fvec3 color = fvec3(0,0,0);
     auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
     _texEmissive = nasset->GetTexture();
-    _texEmissive->_debugName = "default_emissive";
+    auto des_fmt = EBufferFormatToName(format);
+    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
+    _texEmissive->_debugName = FormatString("pbr-def-emi des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texEmissive != nullptr);
     printf( "default emissive<%p>\n", _texEmissive.get() );
   }

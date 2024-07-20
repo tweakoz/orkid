@@ -444,7 +444,7 @@ void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fm
       outptr[elembase + 0] = r;
       outptr[elembase + 1] = g;
       outptr[elembase + 2] = b;
-      outptr[elembase +32] = a;
+      outptr[elembase + 3] = a;
     }
   }
 }

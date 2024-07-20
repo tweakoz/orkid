@@ -195,9 +195,9 @@ bool Controller::_pollEvents(Simulation* unlocked_sim, evq_t& out_events) {
 
     while (not events_finished) {
       events_finished = true;
-      
-      auto it         = unlocked.begin();
-      if(it==unlocked.end())
+
+      auto it = unlocked.begin();
+      if (it == unlocked.end())
         continue; // break out of while loop
 
       ////////////////////////////////////
