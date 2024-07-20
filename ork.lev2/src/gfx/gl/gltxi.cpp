@@ -40,6 +40,12 @@ namespace ork::lev2 {
         _type           = GL_UNSIGNED_BYTE;
         break;
       }
+        case EBufferFormat::BGRA8: {
+          _internalFormat = GL_RGBA8;
+          _format         = GL_BGRA;
+          _type           = GL_UNSIGNED_BYTE;
+          break;
+        }
       case EBufferFormat::RGBA8: {
         _internalFormat = GL_RGBA8;
         _format         = GL_RGBA;

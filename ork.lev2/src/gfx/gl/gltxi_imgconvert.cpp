@@ -40,7 +40,7 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
 
     auto basehasher = DataBlock::createHasher();
     basehasher->accumulateString("GlTextureInterface::_loadImageTexture");
-    basehasher->accumulateString("png2xtx");
+    basehasher->accumulateString("png2xtx-v2");
     basehasher->accumulateItem(src_datablock->hash());
     basehasher->finish();
     uint64_t hashkey = basehasher->result();
@@ -59,6 +59,13 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     } else {
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
+      if(asset_load_req){
+        auto try_force_fmt = asset_load_req->_asset_vars->typedValueForKey<EBufferFormat>("force-format");
+        if(try_force_fmt){
+          auto forced_format = try_force_fmt.value();
+          img = img.convertToFormat(forced_format);
+        }
+      }
       img._debugName = ptex->_debugName;
       auto cmipchain = img.compressedMipChainDefault();
       xtx_datablock  = std::make_shared<DataBlock>();

@@ -187,9 +187,11 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     if (subtex_cmipc) {
 
       GL_ERRORCHECK();
-      //int num_levels = int(subtex_cmipc->_levels.size())-1;
-
-      for (int level = 0; level < max_levels; level++) {
+      int num_levels = int(subtex_cmipc->_levels.size())-1;
+        if(num_levels<max_levels){
+            glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_levels-1);
+        }
+      for (int level = 0; level < num_levels; level++) {
 
         auto mip      = subtex_cmipc->_levels[level];
         auto mip_w    = mip._width;

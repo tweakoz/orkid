@@ -113,9 +113,9 @@ class StereoApp1(object):
     ###################################
 
     cookie1 = MyCookie("src://effect_textures/L0D.png")
-    cookie2 = MyCookie("data://platform_lev2/textures/transponder24.dds")
-    cookie3 = MyCookie("src://effect_textures/knob2.dds")
-    cookie4 = MyCookie("src://effect_textures/knob2.dds")
+    cookie2 = MyCookie("data://platform_lev2/textures/transponder24")
+    cookie3 = MyCookie("src://effect_textures/knob2")
+    cookie4 = MyCookie("src://effect_textures/knob2")
     
     shadow_size = 2048
     shadow_bias = 1e-4

@@ -128,7 +128,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   }
   pTEXOBJ->mTarget = TARGET;
 
-  if (0) {
+  if (1) {
     auto dbgname = ptex->_debugName;
     printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
     printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);

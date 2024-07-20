@@ -65,12 +65,13 @@ struct Image {
   void init(size_t w, size_t h, size_t numc, int bytesperchannel);
   void initFromInMemoryFile(std::string fmtguess, const void* src, size_t srclen);
   void initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer);
-  void initRGB8WithColor(size_t w, size_t h, fvec3 color);
+  void initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt);
+  void initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fmt);
   void writeToFile(ork::file::Path outpath) const;
   Image clone() const;
   void convertToRGBA(Image& imgout,bool force_8bc=false) const;
   void downsample(Image& imgout) const;
-
+  Image convertToFormat(EBufferFormat fmt) const;
   void compressDefault(CompressedImage& imgout) const;
   CompressedImageMipChain compressedMipChainDefault() const;
 

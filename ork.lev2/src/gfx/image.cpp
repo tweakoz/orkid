@@ -81,12 +81,26 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
         case 1:
           _format = EBufferFormat::R8;
           break;
-        case 3:
-          _format = EBufferFormat::RGB8;
+        case 3:{
+          auto channames = spec.channelnames;
+          if( channames[0] == "R" and channames[1] == "G" and channames[2] == "B" )
+            _format = EBufferFormat::RGB8;
+          else if( channames[0] == "B" and channames[1] == "G" and channames[2] == "R" )
+            _format = EBufferFormat::BGR8;
+          else
+            OrkAssert(false);
           break;
-        case 4:
-          _format = EBufferFormat::RGBA8;
+        }
+        case 4:{
+          auto channames = spec.channelnames;
+          if( channames[0] == "R" and channames[1] == "G" and channames[2] == "B" and channames[3] == "A" )
+            _format = EBufferFormat::RGBA8;
+          else if( channames[0] == "B" and channames[1] == "G" and channames[2] == "R" and channames[3] == "A" )
+            _format = EBufferFormat::BGRA8;
+          else
+            OrkAssert(false);
           break;
+        }
         default:
           OrkAssert(false);
           return;
@@ -137,12 +151,107 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Image Image::convertToFormat(EBufferFormat fmt) const{
+
+  if( fmt == _format )
+    return *this;
+  else if( fmt==EBufferFormat::BGRA8 and _format==EBufferFormat::RGBA8 ){
+    Image img;
+    img.init(_width, _height, 4, _bytesPerChannel);
+    auto outptr = (uint8_t*)img._data->data();
+    auto inptr  = (const uint8_t*)_data->data();
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        int pixelindex = y * _width + x;
+        int elembase   = pixelindex * 4;
+        outptr[elembase + 0] = inptr[elembase + 2];
+        outptr[elembase + 1] = inptr[elembase + 1];
+        outptr[elembase + 2] = inptr[elembase + 0];
+        outptr[elembase + 3] = inptr[elembase + 3];
+      }
+    }
+      img._format = fmt;
+    return img;
+  }
+  else if( fmt==EBufferFormat::RGBA8 and _format==EBufferFormat::BGRA8 ){
+    Image img;
+    img.init(_width, _height, 4, _bytesPerChannel);
+    auto outptr = (uint8_t*)img._data->data();
+    auto inptr  = (const uint8_t*)_data->data();
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        int pixelindex = y * _width + x;
+        int elembase   = pixelindex * 4;
+        outptr[elembase + 0] = inptr[elembase + 2];
+        outptr[elembase + 1] = inptr[elembase + 1];
+        outptr[elembase + 2] = inptr[elembase + 0];
+        outptr[elembase + 3] = inptr[elembase + 3];
+      }
+    }
+      img._format = fmt;
+    return img;
+  }
+  else
+  {
+    OrkAssert(false);
+    return *this;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Image::writeToFile(ork::file::Path outpath) const {
   auto cstrpath = outpath.c_str();
   auto out      = ImageOutput::create(cstrpath);
   if (!out)
     return;
   ImageSpec spec(_width, _height, _numcomponents, TypeDesc::UINT8);
+  switch(_format) {
+    case EBufferFormat::R8:
+      spec.format = TypeDesc::UINT8;
+      spec.channelnames = {"R"};
+      spec.nchannels = 1;
+      break;
+    case EBufferFormat::RGB8:
+      spec.format = TypeDesc::UINT8;
+      spec.nchannels = 3;
+      spec.channelnames = {"R", "G", "B"};
+      break;
+    case EBufferFormat::BGR8:
+      spec.format = TypeDesc::UINT8;
+      spec.nchannels = 3;
+      spec.channelnames = {"B", "G", "R"};
+      break;
+    case EBufferFormat::RGBA8:
+      spec.format = TypeDesc::UINT8;
+      spec.nchannels = 4;
+      spec.channelnames = {"R", "G", "B", "A"};
+      break;
+    case EBufferFormat::BGRA8:
+      spec.format = TypeDesc::UINT8;
+      spec.nchannels = 4;
+      spec.channelnames = {"B", "G", "R", "A"};
+      break;
+    case EBufferFormat::R16:
+      spec.format = TypeDesc::UINT16;
+      spec.nchannels = 1;
+      spec.channelnames = {"R"};
+      break;
+    case EBufferFormat::RGB16:
+      spec.format = TypeDesc::UINT16;
+      spec.nchannels = 3;
+      spec.channelnames = {"R", "G", "B"};
+      break;
+    case EBufferFormat::RGBA16:
+      spec.format = TypeDesc::UINT16;
+      spec.nchannels = 4;
+      spec.channelnames = {"R", "G", "B", "A"};
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+
   out->open(cstrpath, spec);
   out->write_image(TypeDesc::UINT8, _data->data());
   out->close();
@@ -244,14 +353,24 @@ void Image::downsample(Image& imgout) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color) {
+void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt) {
   uint8_t r = uint8_t(color.x * 255.0f);
   uint8_t g = uint8_t(color.y * 255.0f);
   uint8_t b = uint8_t(color.z * 255.0f);
-  _format = EBufferFormat::RGB8;
+  _format = fmt; //EBufferFormat::RGB8;
   _bytesPerChannel = 1;
   init(w, h, 3, 1);
   auto outptr = (uint8_t*)_data->data();
+  switch(fmt){
+    case EBufferFormat::RGB8:
+      break;
+    case EBufferFormat::BGR8:
+      std::swap(r,b);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
       int pixelindex = y * w + x;
@@ -259,6 +378,39 @@ void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color) {
       outptr[elembase + 0] = r;
       outptr[elembase + 1] = g;
       outptr[elembase + 2] = b;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fmt) {
+  uint8_t r = uint8_t(color.x * 255.0f);
+  uint8_t g = uint8_t(color.y * 255.0f);
+  uint8_t b = uint8_t(color.z * 255.0f);
+  uint8_t a = uint8_t(color.w * 255.0f);
+  _format = fmt;
+  _bytesPerChannel = 1;
+  init(w, h, 4, 1);
+  auto outptr = (uint8_t*)_data->data();
+  switch(fmt){
+    case EBufferFormat::RGBA8:
+      break;
+    case EBufferFormat::BGRA8:
+      std::swap(r,b);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int pixelindex = y * w + x;
+      int elembase   = pixelindex * 4;
+      outptr[elembase + 0] = r;
+      outptr[elembase + 1] = g;
+      outptr[elembase + 2] = b;
+      outptr[elembase +32] = a;
     }
   }
 }
@@ -602,7 +754,7 @@ CompressedImageMipChain Image::uncompressedMipChain() const {
   rval._width           = _width;
   rval._height          = _height;
   rval._format          = _format;
-  rval._numcomponents   = 4;
+  rval._numcomponents   = _numcomponents;
   rval._bytesPerChannel = _bytesPerChannel;
   Image imga            = this->clone();
   Image imgb;

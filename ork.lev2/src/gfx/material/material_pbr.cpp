@@ -78,10 +78,10 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h) {
-    fvec3 ncolor = fvec3(1.0, 0.0, 1);
+textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFormat fmt) {
     auto basehasher = DataBlock::createHasher();
     basehasher->accumulateString("pbr-default-color");
+    basehasher->accumulateString("version10");
     basehasher->accumulateItem<fvec3>(color);
     basehasher->accumulateItem<int>(w);
     basehasher->accumulateItem<int>(h);
@@ -95,17 +95,34 @@ textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h) {
     }
     else{
       Image mr_image;
-      mr_image.initRGB8WithColor(w, h, color);
+      switch(fmt){
+        case EBufferFormat::BGRA8:
+        case EBufferFormat::RGBA8:
+          mr_image.initRGBA8WithColor(w, h, fvec4(color,1), fmt);
+          break;
+        case EBufferFormat::RGB8:
+        case EBufferFormat::BGR8:
+          mr_image.initRGB8WithColor(w, h, color, fmt);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
       mr_image.writeToFile(outpath);
       int X = 0;
       defmr_datablock = std::make_shared<DataBlock>((void*) &X, sizeof(X));
       DataBlockCache::setDataBlock(hashkey, defmr_datablock);
     }
     auto load_req = std::make_shared<asset::LoadRequest>(outpath);
+    load_req->_asset_vars->set<EBufferFormat>("force-format", fmt);
     auto tex_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
     return tex_asset;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// PBRMaterial::conformTextures
+//   we need textures to be same size and format
+//   so they can go into a texture array 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::conformTextures(lev2::Context* ctx){
@@ -114,15 +131,17 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     loadreq->_asset_path = "src://effect_textures/white_64";
     _asset_texcolor      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texColor            = _asset_texcolor->GetTexture();
-    OrkAssert(_texColor != nullptr);
+      OrkAssert(_texColor != nullptr);
+    OrkAssert(_texColor->_texFormat != EBufferFormat::NONE );
   }
   //////////////
   int color_w = _texColor->_width;
   int color_h = _texColor->_height;
+  auto format = _texColor->_texFormat;
   //////////////
   if (_texNormal == nullptr) {
-    fvec3 ncolor = fvec3(0.5, 0.5, 1);
-    auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h);
+    fvec3 ncolor = fvec3(0.5, 0.501, 1);
+    auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h, format);
     _texNormal = nasset->GetTexture();
     _texNormal->_debugName = "default_normal";
     OrkAssert(_texNormal != nullptr);
@@ -130,13 +149,13 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
   //////////////
   if (_texMtlRuf == nullptr) {
     if (_metallicFactor == 0.0f) {
-      fvec3 ncolor = fvec3(0,1,1);
-      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h);
+      fvec3 ncolor = fvec3(0,1.01,1);
+      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
       _texMtlRuf = nasset->GetTexture();
     }
     else{
-      fvec3 ncolor = fvec3(1,0,1);
-      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h);
+      fvec3 ncolor = fvec3(1,0,1.01);
+      auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
       _texMtlRuf = nasset->GetTexture();
     }
     _texMtlRuf->_debugName = "default_metallicroughness";
@@ -144,9 +163,11 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
   }
   //////////////
   if (_texEmissive == nullptr) {
-    static auto defemitex = ctx->TXI()->createColorTextureV3(fvec3(0, 0, 0), color_w, color_h);
-    defemitex->_debugName = "default_emissive";
-    _texEmissive          = defemitex;
+    fvec3 ncolor = fvec3(0,0,0.01);
+    auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h,format);
+    _texEmissive = nasset->GetTexture();
+    _texEmissive->_debugName = "default_emissive";
+    OrkAssert(_texEmissive != nullptr);
   }
   //////////////
   assignTextures(ctx, _texColor, _texNormal, _texMtlRuf, _texEmissive, _texAmbOcc);
