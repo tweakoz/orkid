@@ -56,10 +56,15 @@ bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t dat
     }
     this->_loadDDSTextureMainThreadPart(load_req);
   };
-  if (ptex->_vars->hasKey("loadimmediate")) {
+  auto opqcurrent = opq::TrackCurrent::context();
+  if (opqcurrent->_queue == opq::mainSerialQueue().get()) {
     lamb();
   } else {
-    opq::mainSerialQueue()->enqueue(lamb);
+    if (ptex->_vars->hasKey("loadimmediate")) {
+      lamb();
+    } else {
+      opq::mainSerialQueue()->enqueue(lamb);
+    }
   }
 
   ///////////////////////////////////////////////

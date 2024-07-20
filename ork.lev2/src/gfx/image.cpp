@@ -155,6 +155,40 @@ Image Image::convertToFormat(EBufferFormat fmt) const{
 
   if( fmt == _format )
     return *this;
+  else if( fmt==EBufferFormat::BGR8 and _format==EBufferFormat::RGB8 ){
+    Image img;
+    img.init(_width, _height, 3, _bytesPerChannel);
+    auto outptr = (uint8_t*)img._data->data();
+    auto inptr  = (const uint8_t*)_data->data();
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        int pixelindex = y * _width + x;
+        int elembase   = pixelindex * 3;
+        outptr[elembase + 0] = inptr[elembase + 2];
+        outptr[elembase + 1] = inptr[elembase + 1];
+        outptr[elembase + 2] = inptr[elembase + 0];
+      }
+    }
+      img._format = fmt;
+    return img;
+  }
+  else if( fmt==EBufferFormat::RGB8 and _format==EBufferFormat::BGR8 ){
+    Image img;
+    img.init(_width, _height, 3, _bytesPerChannel);
+    auto outptr = (uint8_t*)img._data->data();
+    auto inptr  = (const uint8_t*)_data->data();
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        int pixelindex = y * _width + x;
+        int elembase   = pixelindex * 3;
+        outptr[elembase + 0] = inptr[elembase + 2];
+        outptr[elembase + 1] = inptr[elembase + 1];
+        outptr[elembase + 2] = inptr[elembase + 0];
+      }
+    }
+      img._format = fmt;
+    return img;
+  }
   else if( fmt==EBufferFormat::BGRA8 and _format==EBufferFormat::RGBA8 ){
     Image img;
     img.init(_width, _height, 4, _bytesPerChannel);

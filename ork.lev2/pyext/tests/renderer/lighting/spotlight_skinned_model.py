@@ -120,7 +120,7 @@ class StereoApp1(object):
     self.grid_node.sortkey = 1
 
     self.ball_model = XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.dds")
+    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
     shadow_size = 4096
     shadow_bias = 1e-3
