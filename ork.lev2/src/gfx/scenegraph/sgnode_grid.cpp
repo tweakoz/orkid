@@ -180,7 +180,7 @@ drawable_ptr_t GridDrawableData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 GridDrawableData::GridDrawableData() {
-  _colortexpath = "lev2://textures/gridcell_grey";
+  _colortexpath = "src://effect_textures/white_64.dds";
   _normaltexpath = "src://effect_textures/default_normal.dds";
 }
 

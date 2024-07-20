@@ -146,15 +146,17 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
       case EBufferFormat::RGB8:
       case EBufferFormat::BGR8:
         GL_ERRORCHECK();
+        if(1)printf( "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>\n",
+                texture_target, level, w, h, num_subtextures, triplet._internalFormat, w * h * num_subtextures, clear_tex_data);
         glTexImage3D(
             texture_target,          // target
             level,                   // level
-            triplet._format,         // internal format
+            triplet._internalFormat, // internal format
             w,                       // width
             h,                       // height
             num_subtextures,         // depth
             0,                       // border
-            triplet._internalFormat, // format
+            triplet._format,         // format
             triplet._type,           // type
             clear_tex_data);         // data
         GL_ERRORCHECK();
@@ -228,7 +230,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
                 mip_w,               // width
                 mip_h,               // height
                 1,                   // depth (of data for slice)
-                triplet._internalFormat,     // format
+                triplet._format,     // format
                 triplet._type,       // type
                 mip_data->data());   // data
             GL_ERRORCHECK();

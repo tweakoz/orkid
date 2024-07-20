@@ -250,40 +250,6 @@ PBRMaterial::~PBRMaterial() {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy     = *this;
-
-  /*copy->_asset_shader = _asset_shader;
-  copy->_asset_texcolor = _asset_texcolor;
-  copy->_asset_texnormal = _asset_texnormal;
-  copy->_asset_mtlruf = _asset_mtlruf;
-  copy->_asset_emissive = _asset_emissive;
-
-  copy->_texColor = _texColor;
-  copy->_texNormal = _texNormal;
-  copy->_texMtlRuf = _texMtlRuf;
-  copy->_texEmissive = _texEmissive;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_colorMapName = _colorMapName;
-  copy->_normalMapName = _normalMapName;
-  copy->_mtlRufMapName = _mtlRufMapName;
-  copy->_amboccMapName = _amboccMapName;
-  copy->_emissiveMapName = _emissiveMapName;
-  copy->_shaderpath = _shaderpath;
-
-  copy->_metallicFactor = _metallicFactor;
-  copy->_roughnessFactor = _roughnessFactor;
-  copy->_baseColor = _baseColor;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_variant = _variant;
-  copy->mMaterialName = mMaterialName;
-  copy->_varmap = _varmap;
-
-  // TODO - flyweight clones
-
-  if(_initialTarget){
-    //copy->gpuInit(_initialTarget);
-  }*/
   return copy;
 }
 

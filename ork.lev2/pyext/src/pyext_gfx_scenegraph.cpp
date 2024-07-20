@@ -222,8 +222,6 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](layer_ptr_t layer, //
                  std::string named,
                  griddrawabledataptr_t data) -> node_ptr_t { //
-                if (data->_colortexpath == "")
-                  data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
                 // printf("D\n");
                 return layer->createDrawableNode(named, drawable);

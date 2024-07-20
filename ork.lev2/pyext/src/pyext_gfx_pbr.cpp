@@ -131,6 +131,31 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               })
           .def_property_readonly("freestyle", [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t { return m->_as_freestyle; })
           .def("gpuInit", [](pbrmaterial_ptr_t m, ctx_t& c) { m->gpuInit(c.get()); })
+          .def(
+              "assignTextures",
+              [](pbrmaterial_ptr_t m,
+                  ctx_t context,
+                  py::kwargs kwa ) { //
+                  texture_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
+                  
+                  if( kwa.contains("color") )
+                    color_tex = kwa["color"].cast<texture_ptr_t>();
+                  if( kwa.contains("normal") )
+                    normal_tex = kwa["normal"].cast<texture_ptr_t>();
+                  if( kwa.contains("mtlruf") )
+                    mtlruf_tex = kwa["mtlruf"].cast<texture_ptr_t>();
+                  if( kwa.contains("emissive") )
+                    emissive_tex = kwa["emissive"].cast<texture_ptr_t>();
+                  if( kwa.contains("ambocc") )
+                    ambocc_tex = kwa["ambocc"].cast<texture_ptr_t>();    
+
+                   m->assignTextures(context.get(),
+                                    color_tex,
+                                    normal_tex,
+                                    mtlruf_tex,
+                                    emissive_tex,
+                                    ambocc_tex);
+              })
           .def_property(
               "metallicFactor",
               [](pbrmaterial_ptr_t m) -> float { //

@@ -103,9 +103,12 @@ class SceneGraphApp(object):
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = Texture.load("src://effect_textures/white.dds")
-        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-        copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+        copy.assignTextures(
+          ctx,
+          color = Texture.load("src://effect_textures/white_64.dds"),
+          normal = Texture.load("src://effect_textures/default_normal.dds"),
+          mtlruf = Texture.load("src://effect_textures/white_64.dds"),
+        )
         submesh.material = copy
 
     for i in range(81):
@@ -165,7 +168,6 @@ class SceneGraphApp(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(0.5)
     self.grid_draw = self.grid_data.createDrawable()
