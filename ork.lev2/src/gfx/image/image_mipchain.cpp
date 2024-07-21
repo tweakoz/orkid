@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/image.h>
 #include <math.h>
 

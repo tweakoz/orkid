@@ -55,7 +55,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     auto subimg       = slice._subimg;
     if (subimg) {
       formats.insert(subimg->_format);
-      auto subimg_cmipc = subimg->compressedMipChainDefault();
+      //auto subimg_cmipc = subimg->compressedMipChainDefault();
+      auto subimg_cmipc = subimg->uncompressedMipChain();
       subimagedata[i]   = subimg_cmipc;
       max_levels = std::max(max_levels, subimg_cmipc->_levels.size());
       max_w      = std::max(max_w, subimg_cmipc->_width);

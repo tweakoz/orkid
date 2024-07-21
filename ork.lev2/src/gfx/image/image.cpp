@@ -9,6 +9,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/kernel/memcpy.inl>
 #include <math.h>
 
@@ -197,7 +198,7 @@ void Image::uncompressed(CompressedImage& imgout) const {
   size_t dst_stride        = src_stride;
   auto src_base            = (uint8_t*)this->_data->data();
   auto dst_base            = (uint8_t*)imgout._data->allocateBlock(data_size);
-  std::memcpy(dst_base, src_base, data_size);
+  memcpy_fast(dst_base, src_base, data_size);
 
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;

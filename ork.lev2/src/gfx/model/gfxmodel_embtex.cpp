@@ -64,7 +64,7 @@ datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
       pixels[i] = 0;
     }
     img._debugName    = FormatString("emtex_%s", _name.c_str());
-    auto cimgchain    = img.compressedMipChainDefault();
+    auto cimgchain    = img.uncompressedMipChain();
     cimgchain->_varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
     cimgchain->writeXTX(compressed_path);
@@ -73,7 +73,7 @@ datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
     img._debugName    = FormatString("emtex_%s", _name.c_str());
-    auto cimgchain    = img.compressedMipChainDefault();
+    auto cimgchain    = img.uncompressedMipChain();
     cimgchain->_varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
     cimgchain->writeXTX(compressed_path);

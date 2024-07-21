@@ -104,6 +104,10 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
     memcpy_fast(outptr, inptr, _width * _height * _numcomponents * _bytesPerChannel);
   }
   /////////////////////////////
+  else if (fmt == EBufferFormat::RGB8 and inp._format == EBufferFormat::RGBA_BPTC_UNORM) {
+    
+  }
+  /////////////////////////////
   else if (fmt == EBufferFormat::BGR8 and inp._format == EBufferFormat::RGB8) {
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     auto outptr = (uint8_t*)_data->data();
@@ -147,6 +151,9 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         }
       }
     } else {
+      auto inp_fmt_str = EBufferFormatToName(inp._format);
+      auto fmt_str     = EBufferFormatToName(fmt);
+      printf( "Image::convertFromImageToFormat unsupported combo : fmt<%s> inp_fmt<%s>\n", fmt_str.c_str(), inp_fmt_str.c_str());
       OrkAssert(false);
     }
   }
