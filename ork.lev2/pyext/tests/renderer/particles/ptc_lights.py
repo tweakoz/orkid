@@ -102,9 +102,15 @@ class ParticlesApp(object):
                                     self.layer_fwd)
     #######################################
     gmtl = PBRMaterial() 
-    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
-    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    white = Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = Image.createFromFile("src://effect_textures/default_normal.dds")
+    gmtl.assignImages(
+      ctx,
+      color = white,
+      normal = normal,
+      mtlruf = white,
+      doConform=True
+    )
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(0.8,0.8,1.3,1)

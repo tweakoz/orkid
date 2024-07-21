@@ -105,11 +105,11 @@ class SceneGraphApp(object):
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
 
     random.seed(12)
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
-        normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
         copy.assignImages(
           ctx,
           color = white,
