@@ -95,9 +95,34 @@ class StereoApp1(object):
     ###################################
     
     img_dim = 1024
-    np_img = np.random.randint(0, 255, size=(img_dim, img_dim, 3), dtype = np.uint8)
-    print(np_img)
+    num_circles = 5
     
+    # generate a overlapping circles pattern (circular) with numpy
+
+    height, width = img_dim, img_dim
+    center_y, center_x = height // 2, width // 2
+    max_radius = min(center_x, center_y)
+
+    # Create a grid of (x, y) coordinates
+    y, x = np.ogrid[:height, :width]
+
+    # Calculate the distance of each pixel from the center
+    distance_from_center = np.sqrt((x - center_x)**2 + (y - center_y)**2)
+
+    # Normalize distances to the range [0, 1]
+    normalized_distance = distance_from_center / max_radius
+
+    # Calculate the pattern for concentric circles
+    circle_pattern = (normalized_distance * num_circles) % 1.0
+
+    # Create the buffer and map the pattern to a grayscale image
+    np_img = (circle_pattern * 255).astype(np.uint8)
+        
+    print(f"np_img.shape:{np_img.shape}")
+
+    # convert to rgb
+    np_img = np.stack((np_img,)*3, axis=-1)
+
     ###################################
 
     self.grid_data = createGridData()
@@ -106,15 +131,56 @@ class StereoApp1(object):
                                                              tokens.RGB8,
                                                              np_img)
 
-    self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(2)
-    self.grid_data.intensityA = 1.0
-    self.grid_data.intensityB = 0.97
-    self.grid_data.intensityC = 0.9
-    self.grid_data.intensityD = 0.85
-    self.grid_data.lineWidth = 0.1
+    self.grid_data.shader_suffix = "_V5"
+    self.grid_data.modcolor = vec3(4)
+    self.grid_data.majorTileDim = 20.0
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
+
+    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
+    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
+
+    shadow_size = 4096
+    shadow_bias = 1e-3
+    intens = 100
+    self.spotlight1 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.3,
+                                 color=vec3(intens,0,0),
+                                 cookie=self.cookie1,
+                                 radius=12,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=45,
+                                 voffset=16,
+                                 vscale=12)
+
+    self.spotlight2 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.7,
+                                 color=vec3(0,intens,0),
+                                 cookie=self.cookie1,
+                                 radius=16,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=65,
+                                 voffset=17,
+                                 vscale=10)
+
+    self.spotlight3 = MySpotLight(app=self,
+                                 model=self.ball_model,
+                                 frq=0.9,
+                                 color=vec3(0,0,intens),
+                                 cookie=self.cookie1,
+                                 radius=19,
+                                 bias=shadow_bias,
+                                 dim=shadow_size,
+                                 fovamp=0,
+                                 fovbase=75,
+                                 voffset=20,
+                                 vscale=10)
 
   ##############################################
 
@@ -156,6 +222,9 @@ class StereoApp1(object):
     self.scene.updateScene(self.cameralut) 
 
   def onGpuUpdate(self,ctx):
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
     self.frame_index += 0.3
     pass 
 

@@ -297,6 +297,70 @@ libblock lib_frg_grid : lib_gbuf_encode {
     return vec4(basecolor, map_x*map_z);
   }
 
+  vec4 grid_output5(vec3 pos) {
+
+    float intensA = AuxA.x;
+    float intensB = AuxA.y;
+    float intensC = AuxA.z;
+    float intensD = AuxA.w;
+    float width   = AuxB.x;
+
+    vec2 paramMajor = frg_uv0;
+
+    vec2 dpdxMajor = dFdx(paramMajor) * 2;
+    vec2 dpdyMajor = dFdy(paramMajor) * 2;
+
+    vec2 paramMinor = paramMajor * 10.0;
+    vec2 dpdxMinor  = dFdx(paramMinor);
+    vec2 dpdyMinor  = dFdy(paramMinor);
+
+    float gMajor = filteredGrid(paramMajor, dpdxMajor, dpdyMajor, width);
+    float gMinor = filteredGrid(paramMinor, dpdxMinor, dpdyMinor, width);
+
+    // Default base color setup (might be overridden based on axis logic)
+    vec3 basecolor = ModColor.xyz;
+
+    basecolor = mix(basecolor*intensC,basecolor,gMajor);
+    basecolor = mix(basecolor*intensD,basecolor,gMinor);
+
+    int ix = int(abs(floor(pos.x)));
+    int iz = int(abs(floor(pos.z)));
+
+    if ((ix & 1) == (iz & 1)){
+      basecolor *= intensA;
+    }
+    else{
+      basecolor *= intensB;
+    }
+
+    float dXdx = dFdx(pos.x);
+    float dXdy = dFdy(pos.x);
+    float dZdx = dFdx(pos.z);
+    float dZdy = dFdy(pos.z);
+    float edgeWidthX = length(vec2(dXdx, dXdy));
+    float edgeWidthZ = length(vec2(dZdx, dZdy));
+    float adjustedWidthX = width + 0.5 * edgeWidthX;
+    float adjustedWidthZ = width + 0.5 * edgeWidthZ;
+
+    float clamo_x = clamp(abs(pos.x) / adjustedWidthX, 0.0, 1.0);
+    float clamo_z = clamp(abs(pos.z) / adjustedWidthZ, 0.0, 1.0);
+
+    float map_x = 1.0 - smoothstep(0.5, 1.0, clamo_x);
+    float map_z = 1.0 - smoothstep(0.5, 1.0, clamo_z);
+
+    vec3 tgt_x = mix(vec3(.5,0,0),vec3(1.5,0,0),float(pos.x>0.0));
+    vec3 tgt_z = mix(vec3(0,0,.5),vec3(0,0,1.5),float(pos.z>0.0));
+
+    vec3 lerp_x = mix(vec3(1),tgt_x,map_z);
+    vec3 lerp_z = mix(vec3(1),tgt_z,map_x);
+
+    basecolor *= lerp_x;
+    basecolor *= lerp_z;
+
+    // Rest of your shader logic
+    return vec4(basecolor, map_x*map_z);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////
@@ -348,6 +412,10 @@ fragment_shader ps_grid_forward_unlit_mono_v3 : iface_grid_forward_unlit : lib_f
 }
 fragment_shader ps_grid_forward_unlit_mono_v4 : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
   vec4 gout = grid_output4(frg_pos.xyz);
+  out_clr   = gout;
+}
+fragment_shader ps_grid_forward_unlit_mono_v5 : iface_grid_forward_unlit : lib_frg_grid : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec4 gout = grid_output5(frg_pos.xyz);
   out_clr   = gout;
 }
 fragment_shader ps_grid_forward_unlit_v3
@@ -410,6 +478,11 @@ fragment_shader ps_grid_forward_lit_mono_v4 : iface_grid_forward_lit : lib_frg_g
   vec4 gout = grid_output4(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
   out_clr   = vec4(oc.xyz, gout.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_mono_v5 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec3 oc   = forward_lighting_mono(vec3(1,1,1))*ModColor.xyz;
+  out_clr   = vec4(oc, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo : iface_grid_forward_lit : lib_frg_grid : lib_fwd_stereo : ub_frg_fwd
@@ -502,6 +575,10 @@ technique FWD_UNLIT_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v4, sb_forward }
 }
+technique FWD_UNLIT_NI_MO_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_unlit_mono_v5, sb_forward }
+}
 technique FWD_DEPTHPREPASS_RI_NI_MO {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
@@ -515,6 +592,10 @@ technique FWD_DEPTHPREPASS_RI_NI_MO_V3 {
   vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
 }
 technique FWD_DEPTHPREPASS_RI_NI_MO_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
+}
+technique FWD_DEPTHPREPASS_RI_NI_MO_V5 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_depth_prepass, ps_grid_forward_depth_prepass, sb_forward }
 }
@@ -533,6 +614,10 @@ technique FWD_CT_NM_RI_NI_MO_V3 {
 technique FWD_CT_NM_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v4, sb_forward_blend }
+}
+technique FWD_CT_NM_RI_NI_MO_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v5, sb_forward_blend }
 }
 technique FWD_CT_NM_RI_NI_ST_V4 {
   fxconfig = fxcfg_default;
