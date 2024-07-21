@@ -62,7 +62,14 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
       max_h      = std::max(max_h, subimg_cmipc->_height);
     }
   }
-  OrkAssert(formats.size() == 1);
+  if(formats.size()>1){
+    printf( "TextureArray2D has multiple formats\n");
+    for( auto fmt : formats){
+      auto fmt_str = EBufferFormatToName(fmt);
+      printf( "  format<%s>\n", fmt_str.c_str() );
+    }
+    OrkAssert(false);
+  }
 
   max_levels -= 1;
   auto format           = *formats.begin();

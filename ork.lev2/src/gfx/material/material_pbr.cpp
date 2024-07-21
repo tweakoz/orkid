@@ -148,6 +148,17 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
 
 void PBRMaterial::conformImages(){
   //////////////////////////
+  // retain pre-existing images
+  //  so they cant get deleted
+  //  until we return
+  //////////////////////////
+  std::unordered_set<image_ptr_t> retain_images;
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
+  //////////////////////////
   // get biggest size
   //  and mark down non-rgb images
   //////////////////////////
@@ -190,12 +201,15 @@ void PBRMaterial::conformImages(){
     }
   }
   //////////////////////////
+  std::atomic<int> sync_rgb = 0;
+  std::atomic<int> sync_resize = 0;
+  std::atomic<int> sync_defaults = 0;
+  //////////////////////////
   // convert non-rgb to rgb
   //  overwriting the original images
   //////////////////////////
   for(auto img : images_to_rgb){
     auto rgb = std::make_shared<Image>();
-    rgb->convertFromImageToFormat(*img, EBufferFormat::RGB8);
     if(img==_image_color){
       _image_color = rgb;
     }
@@ -211,7 +225,21 @@ void PBRMaterial::conformImages(){
     if(img==_image_ambocc){
       _image_ambocc = rgb;
     }
+    sync_rgb++;
+    auto OP = [=, &sync_rgb](){
+      rgb->convertFromImageToFormat(*img, EBufferFormat::RGB8);
+      sync_rgb--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
+  while(sync_rgb>0){
+    usleep(1000);
+  }
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
   //////////////////////////
   // now, find out which images need to be resized
   //////////////////////////
@@ -246,7 +274,6 @@ void PBRMaterial::conformImages(){
   //////////////////////////
   for(auto img : images_to_resize){
     auto resized = std::make_shared<Image>();
-    resized->resizedOf(*img, max_w, max_h);
     if(img==_image_color){
       _image_color = resized;
     }
@@ -262,36 +289,78 @@ void PBRMaterial::conformImages(){
     if(img==_image_ambocc){
       _image_ambocc = resized;
     }
+    sync_resize++;
+    auto OP = [=, &sync_resize](){
+      resized->resizedOf(*img, max_w, max_h);
+      sync_resize--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
+  while(sync_resize>0){
+    usleep(1000);
+  }
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
   //////////////////////////
   // now create defaults if they do not exist
   //////////////////////////
   if (_image_color == nullptr) {
-    fvec3 color = fvec3(1,1,1);
-    _image_color = std::make_shared<Image>();
-    _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(1,1,1);
+      _image_color = std::make_shared<Image>();
+      _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_normal == nullptr) {
-    fvec3 color = fvec3(0.5,0.5,1);
-    _image_normal = std::make_shared<Image>();
-    _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(0.5,0.5,1);
+      _image_normal = std::make_shared<Image>();
+      _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_mtlruf == nullptr) {
-    fvec3 color = (_metallicFactor == 0.0f) //
-                ? fvec3(1,0,0) //
-                : fvec3(1,0,1);
-    _image_mtlruf = std::make_shared<Image>();
-    _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = (_metallicFactor == 0.0f) //
+                  ? fvec3(1,0,0) //
+                  : fvec3(1,0,1);
+      _image_mtlruf = std::make_shared<Image>();
+      _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_emissive == nullptr) {
-    fvec3 color = fvec3(0,0,0);
-    _image_emissive = std::make_shared<Image>();
-    _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(0,0,0);
+      _image_emissive = std::make_shared<Image>();
+      _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_ambocc == nullptr) {
-    fvec3 color = fvec3(1,1,1);
-    _image_ambocc = std::make_shared<Image>();
-    _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(1,1,1);
+      _image_ambocc = std::make_shared<Image>();
+      _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  while(sync_defaults>0){
+    usleep(1000);
   }
 }
 
