@@ -130,9 +130,10 @@ class StereoApp1(object):
                                                              img_dim,
                                                              tokens.RGB8,
                                                              np_img)
+    self.grid_data.mtlrufImage = lev2.Image.createRGB8FromColor( img_dim,img_dim,vec3(1,0,1) )
 
     self.grid_data.shader_suffix = "_V5"
-    self.grid_data.modcolor = vec3(4)
+    self.grid_data.modcolor = vec3(1,0.5,1)*3
     self.grid_data.majorTileDim = 20.0
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
