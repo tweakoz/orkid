@@ -176,6 +176,7 @@ libblock lib_fwd //
     vec3 metalbase = vec3(0.2);
     float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
     float roughness = rufmtlamb.y * RoughnessFactor;
+    roughness = pow(roughness, RoughnessPower);
     float dialetric = 1.0 - metallic;
     vec3 basecolor = albedo;
     vec3 diffcolor = mix(basecolor, vec3(0), metallic);

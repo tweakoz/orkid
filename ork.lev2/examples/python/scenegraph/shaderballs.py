@@ -187,6 +187,12 @@ class SceneGraphApp(object):
           self.ssaamode = True
         print("SSAO MODE",self.ssaamode)
         return res
+      if uievent.keycode == ord("-"):
+        self.pbr_common.roughnessPower *= 0.95
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
+      if uievent.keycode == ord("="):
+        self.pbr_common.roughnessPower *= 1.05
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )

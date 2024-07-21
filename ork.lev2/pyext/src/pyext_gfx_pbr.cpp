@@ -93,6 +93,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_depthFogPower; },
               [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_depthFogPower = v; })
           .def_property(
+              "roughnessPower",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_roughnessPower; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_roughnessPower = v; })
+          .def_property(
               "useDepthPrepass",
               [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useDepthPrepass; },
               [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useDepthPrepass = v; })

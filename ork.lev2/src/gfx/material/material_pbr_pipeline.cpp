@@ -87,6 +87,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
     FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
     FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
+    FXI->BindParamFloat(mtl->_parRoughnessPower, pbrcommon->_roughnessPower);
 
     /////////////////////////
 

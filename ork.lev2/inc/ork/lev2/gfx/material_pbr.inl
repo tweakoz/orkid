@@ -153,6 +153,7 @@ public:
   fxparam_constptr_t _parInvViewSize     = nullptr;
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
+  fxparam_constptr_t _parRoughnessPower  = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
   fxparam_constptr_t _parPickID          = nullptr;
   fxparamblock_constptr_t _parBoneBlock  = nullptr;

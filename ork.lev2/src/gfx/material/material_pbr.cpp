@@ -168,7 +168,7 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
   //////////////
   if (_texMtlRuf == nullptr) {
     fvec3 color = (_metallicFactor == 0.0f) //
-                ? fvec3(1,1,0) //
+                ? fvec3(1,0,0) //
                 : fvec3(1,0,1);
     auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
     _texMtlRuf = nasset->GetTexture();
@@ -495,6 +495,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
+  _parRoughnessPower      = fxi->parameter(_shader, "RoughnessPower" );
   _parModColor            = fxi->parameter(_shader, "ModColor");
   _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");

@@ -42,6 +42,7 @@ uniform_set ub_frg {
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
   float RoughnessFactor;
+  float RoughnessPower;
   vec3 EyePostion;
   vec4 AuxA;
   vec4 AuxB;
@@ -100,6 +101,7 @@ uniform_set ub_frg_fwd {
 
   float MetallicFactor;
   float RoughnessFactor;
+  float RoughnessPower;
 
   float SSAOPower;
   float SSAOWeight;
