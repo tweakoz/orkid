@@ -23,6 +23,37 @@ void pyinit_gfx_image(py::module& module_lev2) {
         img->initFromDataBlock(datablock);
         return img;
       })
+      .def_static("createRGB8FromColor", [](int w, int h, fvec3 color) -> image_ptr_t {
+        auto img = std::make_shared<Image>();
+        img->initRGB8WithColor(w,h,color,EBufferFormat::RGB8);
+        return img;
+      })
+      .def_static("createRGBA8FromColor", [](int w, int h, fvec4 color) -> image_ptr_t {
+        auto img = std::make_shared<Image>();
+        img->initRGBA8WithColor(w,h,color,EBufferFormat::RGBA8);
+        return img;
+      })
+      .def_static("createImageFromBuffer", [](int w, int h, crcstring_ptr_t fmt, py::buffer data) -> image_ptr_t {
+         py::buffer_info info  = data.request();
+         auto format_code = EBufferFormat(fmt->hashed());
+        //img->initRGBA8WithColor(w,h,color,EBufferFormat::RGBA8);
+         size_t bytes_per_item = 0;
+         if (info.format == py::format_descriptor<uint8_t>::format()) {
+           //bytes_per_item = 1;
+         } else if (info.format == py::format_descriptor<int>::format()) {
+           //bytes_per_item = sizeof(int);
+         } else if (info.format == py::format_descriptor<long>::format()) {
+           //bytes_per_item = sizeof(long);
+         } else if (info.format == py::format_descriptor<float>::format()) {
+           int num_components = info.size;
+           printf( "float :: num_components<%d>\n", num_components );
+           //bytes_per_item = sizeof(float);
+         } else if (info.format == py::format_descriptor<double>::format()) {
+           //bytes_per_item = sizeof(double);
+         }
+        auto img = std::make_shared<Image>();
+        return img;
+      })
       .def_property_readonly("width", [](image_ptr_t img) -> int { return img->_width; })
       .def_property_readonly("height", [](image_ptr_t img) -> int { return img->_height; })
       .def_property_readonly("depth", [](image_ptr_t img) -> int { return img->_depth; })
