@@ -230,9 +230,9 @@ void PBRMaterial::conformImages(){
       rgb->convertFromImageToFormat(*img, EBufferFormat::RGB8);
       sync_rgb--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
-  if(0) while(sync_rgb>0){
+  while(sync_rgb>0){
     usleep(1000);
   }
   retain_images.insert(_image_color);
@@ -294,9 +294,9 @@ void PBRMaterial::conformImages(){
       resized->resizedOf(*img, max_w, max_h);
       sync_resize--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
-  if(0) while(sync_resize>0){
+  if(1) while(sync_resize>0){
     usleep(1000);
   }
   retain_images.insert(_image_color);
@@ -315,7 +315,7 @@ void PBRMaterial::conformImages(){
       _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_normal == nullptr) {
       sync_defaults++;
@@ -325,7 +325,7 @@ void PBRMaterial::conformImages(){
       _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_mtlruf == nullptr) {
     sync_defaults++;
@@ -337,7 +337,7 @@ void PBRMaterial::conformImages(){
       _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_emissive == nullptr) {
     sync_defaults++;
@@ -347,7 +347,7 @@ void PBRMaterial::conformImages(){
       _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
   if (_image_ambocc == nullptr) {
     sync_defaults++;
@@ -357,9 +357,9 @@ void PBRMaterial::conformImages(){
       _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;
     };
-    OP(); //opq::concurrentQueue()->enqueue(OP);
+    opq::concurrentQueue()->enqueue(OP);
   }
-  if(0)while(sync_defaults>0){
+  if(1)while(sync_defaults>0){
     usleep(1000);
   }
 }
