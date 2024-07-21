@@ -1,5 +1,5 @@
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, mathconstants
+from orkengine.lev2 import CameraData, CameraDataLut, EzUiCam
 
 print("AAA")
 constants = mathconstants()

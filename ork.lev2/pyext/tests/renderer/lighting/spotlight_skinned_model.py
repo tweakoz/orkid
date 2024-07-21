@@ -8,15 +8,14 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, quat, mtx4, lev2_pyexdir, Transform
+from orkengine import lev2
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.misc import *
+
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
@@ -38,10 +37,10 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=2)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.cameralut = CameraDataLut()
-    self.vrcamera = CameraData()
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    self.cameralut = lev2.CameraDataLut()
+    self.vrcamera = lev2.CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
     self.xf_hmd = Transform()
 
@@ -60,7 +59,7 @@ class StereoApp1(object):
 
     self.frame_index = 0
 
-    self.vrdev = orkidvr.novr_device()
+    self.vrdev = lev2.orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
 
     ###################################
@@ -80,10 +79,10 @@ class StereoApp1(object):
     else:
       params_dict["preset"] = "FWDPBRVR"
 
-    self.model = XgmModel("data://tests/chartest/char_mesh")
-    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+    self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
+    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
-    self.anim_inst = XgmAnimInst(self.anim)
+    self.anim_inst = lev2.XgmAnimInst(self.anim)
     self.anim_inst.mask.enableAll()
     self.anim_inst.use_temporal_lerp = True
     self.anim_inst.bindToSkeleton(self.model.skeleton)
@@ -96,7 +95,7 @@ class StereoApp1(object):
         copy.metallicFactor = 0.0
         copy.roughnessFactor = 1.0
         colortex = copy.texColor
-        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
         copy.assignImages(
           ctx,
           color = white,
@@ -136,7 +135,7 @@ class StereoApp1(object):
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-    self.ball_model = XgmModel("data://tests/pbr_calib.glb")
+    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
     shadow_size = 4096

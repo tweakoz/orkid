@@ -8,15 +8,14 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, quat, mtx4, dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine import lev2
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.misc import *
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
@@ -32,8 +31,8 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,msaa=0)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,msaa=0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
 
@@ -69,7 +68,7 @@ class StereoApp1(object):
     ###################################
     frust = dfrustum()
     frust .set(fmtx4_to_dmtx4(mtx4()),fmtx4_to_dmtx4(mtx4()))
-    frustum_prim = primitives.FrustumPrimitive()
+    frustum_prim = lev2.primitives.FrustumPrimitive()
     frustum_prim.frustum = frust
     frustum_prim.topColor = dvec4(0.2,1.0,0.2,1)
     frustum_prim.bottomColor = dvec4(0.5,0.5,0.5,1)
@@ -79,9 +78,9 @@ class StereoApp1(object):
     frustum_prim.farColor = dvec4(1.0,1.0,1.0,1)
     self.frustum_prim = frustum_prim
     self.frustum = frust
-    material = PBRMaterial()
-    white = Image.createFromFile("src://effect_textures/white_64.dds")
-    normal = Image.createFromFile("src://effect_textures/default_normal.dds")
+    material = lev2.PBRMaterial()
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     material.assignImages(
       ctx,
       color = white,
@@ -95,7 +94,7 @@ class StereoApp1(object):
     self.frustum_material = material
     ###################################
 
-    model = XgmModel("data://tests/pbr_calib.glb")
+    model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.drawable_model = model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 1

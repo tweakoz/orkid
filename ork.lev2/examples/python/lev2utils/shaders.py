@@ -1,5 +1,5 @@
 from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.lev2 import FreestyleMaterial
 ################################################################################
 tokens = CrcStringProxy()
 
