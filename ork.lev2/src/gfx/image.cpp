@@ -61,234 +61,80 @@ static fvec3 _image_deco(0.1, 0.2, 0.3);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size_t srclen) {
-  ImageSpec config;                                          // ImageSpec describing input configuration options
-  Filesystem::IOMemReader memreader((void*)srcdata, srclen); // I/O proxy object
-  void* ptr = &memreader;
-  config.attribute("oiio:ioproxy", TypeDesc::PTR, &ptr);
+Image Image::convertToFormat(EBufferFormat fmt) const {
 
-  auto name = std::string("inmem.") + fmtguess;
-
-  auto in               = ImageInput::open(name, &config);
-  const ImageSpec& spec = in->spec();
-  _width                = spec.width;
-  _height               = spec.height;
-  _numcomponents        = spec.nchannels;
-  switch (spec.format.basetype) {
-    case TypeDesc::UINT8:
-      _bytesPerChannel = 1;
-      switch (_numcomponents) {
-        case 1:
-          _format = EBufferFormat::R8;
-          break;
-        case 3:{
-          auto channames = spec.channelnames;
-          if( channames[0] == "R" and channames[1] == "G" and channames[2] == "B" )
-            _format = EBufferFormat::RGB8;
-          else if( channames[0] == "B" and channames[1] == "G" and channames[2] == "R" )
-            _format = EBufferFormat::BGR8;
-          else
-            OrkAssert(false);
-          break;
-        }
-        case 4:{
-          auto channames = spec.channelnames;
-          if( channames[0] == "R" and channames[1] == "G" and channames[2] == "B" and channames[3] == "A" )
-            _format = EBufferFormat::RGBA8;
-          else if( channames[0] == "B" and channames[1] == "G" and channames[2] == "R" and channames[3] == "A" )
-            _format = EBufferFormat::BGRA8;
-          else
-            OrkAssert(false);
-          break;
-        }
-        default:
-          OrkAssert(false);
-          return;
-      }
-      break;
-    case TypeDesc::UINT16:
-      _bytesPerChannel = 2;
-      switch (_numcomponents) {
-        case 1:
-          _format = EBufferFormat::R16;
-          break;
-        case 3:
-          _format = EBufferFormat::RGB16;
-          break;
-        case 4:
-          _format = EBufferFormat::RGBA16;
-          break;
-        default:
-          OrkAssert(false);
-          return;
-      }
-      break;
-    default:
-      OrkAssert(false);
-      return;
-  }
-
-  _data = std::make_shared<DataBlock>();
-  _data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
-  auto pixels = (uint8_t*)_data->data();
-  if (_bytesPerChannel == 1) {
-    in->read_image(TypeDesc::UINT8, pixels);
-  } else if (_bytesPerChannel == 2) {
-    in->read_image(TypeDesc::UINT16, pixels);
-  }
-  in->close();
-
-  if (1) {
-    deco::printf(_image_deco, "///////////////////////////////////\n");
-    deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
-    deco::printf(_image_deco, "// _width<%zu>\n", _width);
-    deco::printf(_image_deco, "// _height<%zu>\n", _height);
-    deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
-    deco::printf(_image_deco, "// _bytesPerChannel<%d>\n", _bytesPerChannel);
-    deco::printf(_image_deco, "///////////////////////////////////\n");
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-Image Image::convertToFormat(EBufferFormat fmt) const{
-
-  if( fmt == _format )
+  if (fmt == _format)
     return *this;
-  else if( fmt==EBufferFormat::BGR8 and _format==EBufferFormat::RGB8 ){
+  else if (fmt == EBufferFormat::BGR8 and _format == EBufferFormat::RGB8) {
     Image img;
     img.init(_width, _height, 3, _bytesPerChannel);
     auto outptr = (uint8_t*)img._data->data();
     auto inptr  = (const uint8_t*)_data->data();
     for (int y = 0; y < _height; y++) {
       for (int x = 0; x < _width; x++) {
-        int pixelindex = y * _width + x;
-        int elembase   = pixelindex * 3;
+        int pixelindex       = y * _width + x;
+        int elembase         = pixelindex * 3;
         outptr[elembase + 0] = inptr[elembase + 2];
         outptr[elembase + 1] = inptr[elembase + 1];
         outptr[elembase + 2] = inptr[elembase + 0];
       }
     }
-      img._format = fmt;
+    img._format = fmt;
     return img;
-  }
-  else if( fmt==EBufferFormat::RGB8 and _format==EBufferFormat::BGR8 ){
+  } else if (fmt == EBufferFormat::RGB8 and _format == EBufferFormat::BGR8) {
     Image img;
     img.init(_width, _height, 3, _bytesPerChannel);
     auto outptr = (uint8_t*)img._data->data();
     auto inptr  = (const uint8_t*)_data->data();
     for (int y = 0; y < _height; y++) {
       for (int x = 0; x < _width; x++) {
-        int pixelindex = y * _width + x;
-        int elembase   = pixelindex * 3;
+        int pixelindex       = y * _width + x;
+        int elembase         = pixelindex * 3;
         outptr[elembase + 0] = inptr[elembase + 2];
         outptr[elembase + 1] = inptr[elembase + 1];
         outptr[elembase + 2] = inptr[elembase + 0];
       }
     }
-      img._format = fmt;
+    img._format = fmt;
     return img;
-  }
-  else if( fmt==EBufferFormat::BGRA8 and _format==EBufferFormat::RGBA8 ){
+  } else if (fmt == EBufferFormat::BGRA8 and _format == EBufferFormat::RGBA8) {
     Image img;
     img.init(_width, _height, 4, _bytesPerChannel);
     auto outptr = (uint8_t*)img._data->data();
     auto inptr  = (const uint8_t*)_data->data();
     for (int y = 0; y < _height; y++) {
       for (int x = 0; x < _width; x++) {
-        int pixelindex = y * _width + x;
-        int elembase   = pixelindex * 4;
+        int pixelindex       = y * _width + x;
+        int elembase         = pixelindex * 4;
         outptr[elembase + 0] = inptr[elembase + 2];
         outptr[elembase + 1] = inptr[elembase + 1];
         outptr[elembase + 2] = inptr[elembase + 0];
         outptr[elembase + 3] = inptr[elembase + 3];
       }
     }
-      img._format = fmt;
+    img._format = fmt;
     return img;
-  }
-  else if( fmt==EBufferFormat::RGBA8 and _format==EBufferFormat::BGRA8 ){
+  } else if (fmt == EBufferFormat::RGBA8 and _format == EBufferFormat::BGRA8) {
     Image img;
     img.init(_width, _height, 4, _bytesPerChannel);
     auto outptr = (uint8_t*)img._data->data();
     auto inptr  = (const uint8_t*)_data->data();
     for (int y = 0; y < _height; y++) {
       for (int x = 0; x < _width; x++) {
-        int pixelindex = y * _width + x;
-        int elembase   = pixelindex * 4;
+        int pixelindex       = y * _width + x;
+        int elembase         = pixelindex * 4;
         outptr[elembase + 0] = inptr[elembase + 2];
         outptr[elembase + 1] = inptr[elembase + 1];
         outptr[elembase + 2] = inptr[elembase + 0];
         outptr[elembase + 3] = inptr[elembase + 3];
       }
     }
-      img._format = fmt;
+    img._format = fmt;
     return img;
-  }
-  else
-  {
+  } else {
     OrkAssert(false);
     return *this;
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Image::writeToFile(ork::file::Path outpath) const {
-  auto cstrpath = outpath.c_str();
-  auto out      = ImageOutput::create(cstrpath);
-  if (!out)
-    return;
-  ImageSpec spec(_width, _height, _numcomponents, TypeDesc::UINT8);
-  switch(_format) {
-    case EBufferFormat::R8:
-      spec.format = TypeDesc::UINT8;
-      spec.channelnames = {"R"};
-      spec.nchannels = 1;
-      break;
-    case EBufferFormat::RGB8:
-      spec.format = TypeDesc::UINT8;
-      spec.nchannels = 3;
-      spec.channelnames = {"R", "G", "B"};
-      break;
-    case EBufferFormat::BGR8:
-      spec.format = TypeDesc::UINT8;
-      spec.nchannels = 3;
-      spec.channelnames = {"B", "G", "R"};
-      break;
-    case EBufferFormat::RGBA8:
-      spec.format = TypeDesc::UINT8;
-      spec.nchannels = 4;
-      spec.channelnames = {"R", "G", "B", "A"};
-      break;
-    case EBufferFormat::BGRA8:
-      spec.format = TypeDesc::UINT8;
-      spec.nchannels = 4;
-      spec.channelnames = {"B", "G", "R", "A"};
-      break;
-    case EBufferFormat::R16:
-      spec.format = TypeDesc::UINT16;
-      spec.nchannels = 1;
-      spec.channelnames = {"R"};
-      break;
-    case EBufferFormat::RGB16:
-      spec.format = TypeDesc::UINT16;
-      spec.nchannels = 3;
-      spec.channelnames = {"R", "G", "B"};
-      break;
-    case EBufferFormat::RGBA16:
-      spec.format = TypeDesc::UINT16;
-      spec.nchannels = 4;
-      spec.channelnames = {"R", "G", "B", "A"};
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  out->open(cstrpath, spec);
-  out->write_image(TypeDesc::UINT8, _data->data());
-  out->close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -329,7 +175,7 @@ void Image::downsample(Image& imgout) const {
         case EBufferFormat::R8:
         case EBufferFormat::BGR8:
         case EBufferFormat::RGB8:
-        case EBufferFormat::BGRA8: 
+        case EBufferFormat::BGRA8:
         case EBufferFormat::RGBA8: {
           auto outpixel     = imgout.pixel8(x, y);
           auto inppixelXAYA = pixel8(xa, ya);
@@ -388,18 +234,18 @@ void Image::downsample(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt) {
-  uint8_t r = uint8_t(color.x * 255.0f);
-  uint8_t g = uint8_t(color.y * 255.0f);
-  uint8_t b = uint8_t(color.z * 255.0f);
-  _format = fmt; //EBufferFormat::RGB8;
+  uint8_t r        = uint8_t(color.x * 255.0f);
+  uint8_t g        = uint8_t(color.y * 255.0f);
+  uint8_t b        = uint8_t(color.z * 255.0f);
+  _format          = fmt; // EBufferFormat::RGB8;
   _bytesPerChannel = 1;
   init(w, h, 3, 1);
   auto outptr = (uint8_t*)_data->data();
-  switch(fmt){
+  switch (fmt) {
     case EBufferFormat::RGB8:
       break;
     case EBufferFormat::BGR8:
-      std::swap(r,b);
+      std::swap(r, b);
       break;
     default:
       OrkAssert(false);
@@ -407,8 +253,8 @@ void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt
   }
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      int pixelindex = y * w + x;
-      int elembase   = pixelindex * 3;
+      int pixelindex       = y * w + x;
+      int elembase         = pixelindex * 3;
       outptr[elembase + 0] = r;
       outptr[elembase + 1] = g;
       outptr[elembase + 2] = b;
@@ -419,19 +265,19 @@ void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fmt) {
-  uint8_t r = uint8_t(color.x * 255.0f);
-  uint8_t g = uint8_t(color.y * 255.0f);
-  uint8_t b = uint8_t(color.z * 255.0f);
-  uint8_t a = uint8_t(color.w * 255.0f);
-  _format = fmt;
+  uint8_t r        = uint8_t(color.x * 255.0f);
+  uint8_t g        = uint8_t(color.y * 255.0f);
+  uint8_t b        = uint8_t(color.z * 255.0f);
+  uint8_t a        = uint8_t(color.w * 255.0f);
+  _format          = fmt;
   _bytesPerChannel = 1;
   init(w, h, 4, 1);
   auto outptr = (uint8_t*)_data->data();
-  switch(fmt){
+  switch (fmt) {
     case EBufferFormat::RGBA8:
       break;
     case EBufferFormat::BGRA8:
-      std::swap(r,b);
+      std::swap(r, b);
       break;
     default:
       OrkAssert(false);
@@ -439,8 +285,8 @@ void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fm
   }
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      int pixelindex = y * w + x;
-      int elembase   = pixelindex * 4;
+      int pixelindex       = y * w + x;
+      int elembase         = pixelindex * 4;
       outptr[elembase + 0] = r;
       outptr[elembase + 1] = g;
       outptr[elembase + 2] = b;
@@ -962,22 +808,24 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
   _height = height;
   _depth  = depth;
 
-  if(0)printf(
-      "width<%d> height<%d> depth<%d> num_mips<%d> block_width<%d> block_height<%d> is_volume<%d> flags<%08x> fourcc<%08x> bpp<%d> "
-      "rmask<%08x> gmask<%08x> bmask<%08x>\n",
-      width,
-      height,
-      depth,
-      num_mips,
-      block_width,
-      block_height,
-      is_volume,
-      flags,
-      fourcc,
-      bpp,
-      rmask,
-      gmask,
-      bmask);
+  if (0)
+    printf(
+        "width<%d> height<%d> depth<%d> num_mips<%d> block_width<%d> block_height<%d> is_volume<%d> flags<%08x> fourcc<%08x> "
+        "bpp<%d> "
+        "rmask<%08x> gmask<%08x> bmask<%08x>\n",
+        width,
+        height,
+        depth,
+        num_mips,
+        block_width,
+        block_height,
+        is_volume,
+        flags,
+        fourcc,
+        bpp,
+        rmask,
+        gmask,
+        bmask);
 
   if (dds::IsLUM(ddsh->ddspf)) {
     int size = width * height;
@@ -992,19 +840,19 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
     int BPP                    = 4;
     int size                   = width * height * BPP;
     _format                    = EBufferFormat::BGRA8;
-    _numcomponents = 4;
-    _bytesPerChannel = 1;
-    //printf("DDS.BGRA8\n");
-    if(num_mips==1){
+    _numcomponents             = 4;
+    _bytesPerChannel           = 1;
+    // printf("DDS.BGRA8\n");
+    if (num_mips == 1) {
       Image imga, imgb;
-      imga._data = std::make_shared<DataBlock>(inpstream.current(), size);
-      imga._format = _format;
-      imga._width  = width;
-      imga._height = height;
-      imga._depth  = depth;
-      imga._numcomponents  = 4;
+      imga._data            = std::make_shared<DataBlock>(inpstream.current(), size);
+      imga._format          = _format;
+      imga._width           = width;
+      imga._height          = height;
+      imga._depth           = depth;
+      imga._numcomponents   = 4;
       imga._bytesPerChannel = 1;
-      int mipindex = 0;
+      int mipindex          = 0;
       while ((imga._width >= 4) and (imga._height >= 4)) {
         CompressedImage cimg;
         imga.uncompressed(cimg);
@@ -1013,19 +861,18 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
         imgb.downsample(imga);
         mipindex++;
       }
-    }
-    else{
+    } else {
       for (int lidx = 0; lidx < num_mips; lidx++) {
         auto mipdata = inpstream.current();
         CompressedImage level;
-        level._data = std::make_shared<DataBlock>(mipdata, size);
-        level._format = _format;
-        level._width  = width;
-        level._height = height;
-        level._depth  = depth;
-        level._blocked_width  = width;
-        level._blocked_height = height;
-        level._numcomponents  = 4;
+        level._data            = std::make_shared<DataBlock>(mipdata, size);
+        level._format          = _format;
+        level._width           = width;
+        level._height          = height;
+        level._depth           = depth;
+        level._blocked_width   = width;
+        level._blocked_height  = height;
+        level._numcomponents   = 4;
         level._bytesPerChannel = 1;
         _levels.push_back(level);
         width >>= 1;
@@ -1036,24 +883,24 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
     }
   }
   //////////////////////////////////////////////////////////////////////
-   else if (dds::IsBGR8(ddsh->ddspf)) {
+  else if (dds::IsBGR8(ddsh->ddspf)) {
     const dds::DdsLoadInfo& li = dds::loadInfoBGR8;
     int BPP                    = 3;
     int size                   = width * height * BPP;
     _format                    = EBufferFormat::BGR8;
-    _numcomponents = 3;
-    //printf("DDS.BGR8\n");
+    _numcomponents             = 3;
+    // printf("DDS.BGR8\n");
     for (int lidx = 0; lidx < num_mips; lidx++) {
       auto mipdata = inpstream.current();
       CompressedImage level;
-      level._data = std::make_shared<DataBlock>(mipdata, size);
-      level._format = _format;
-      level._width  = width;
-      level._height = height;
-      level._depth  = depth;
-      level._blocked_width  = width;
-      level._blocked_height = height;
-      level._numcomponents  = 3;
+      level._data            = std::make_shared<DataBlock>(mipdata, size);
+      level._format          = _format;
+      level._width           = width;
+      level._height          = height;
+      level._depth           = depth;
+      level._blocked_width   = width;
+      level._blocked_height  = height;
+      level._numcomponents   = 3;
       level._bytesPerChannel = 1;
       _levels.push_back(level);
       width >>= 1;
@@ -1086,7 +933,37 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+bool Image::initFromDataBlock(datablock_ptr_t datablock) {
+  DataBlockInputStream checkstream(datablock);
+  uint32_t magic     = checkstream.getItem<uint32_t>();
+  bool ok            = false;
+  ptex->_contentHash = datablock->hash();
+  if (Char4("chkf") == Char4(magic)) {
+    // ok = _loadXTXTexture(ptex, datablock);
+    OrkAssert(false);
+  } else if (Char4("DDS ") == Char4(magic)) {
+    OrkAssert(false);
+    // ok = _loadDDSTexture(ptex, datablock);
+  } else {
+    DataBlockInputStream checkstream(datablock);
+    uint8_t magic[4];
+    magic[0] = checkstream.getItem<uint8_t>();
+    magic[1] = checkstream.getItem<uint8_t>();
+    magic[2] = checkstream.getItem<uint8_t>();
+    magic[3] = checkstream.getItem<uint8_t>();
+    if (magic[1] == 'P' and //
+        magic[2] == 'N' and //
+        magic[3] == 'G') {
+      ok = _initFromDataBlockPNG(ptex, datablock);
+      OrkAssert(false);
+    } else {
+      OrkAssert(false);
+    }
+    OrkAssert(false);
+    // ok = _loadImageTexture(ptex, datablock);
+  }
+  return ok;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -63,7 +63,11 @@ struct CompressedImageMipChain {
 struct Image {
 
   void init(size_t w, size_t h, size_t numc, int bytesperchannel);
-  void initFromInMemoryFile(std::string fmtguess, const void* src, size_t srclen);
+  bool initFromInMemoryFile(std::string fmtguess, const void* src, size_t srclen);
+  bool initFromDataBlock(datablock_ptr_t datablock);
+  bool _initFromDataBlockPNG(datablock_ptr_t datablock);
+
+
   void initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer);
   void initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt);
   void initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fmt);

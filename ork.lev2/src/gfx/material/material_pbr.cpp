@@ -303,32 +303,37 @@ void PBRMaterial::describeX(class_t* c) {
         auto embtex = itt->second;
         logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
         auto tex = std::make_shared<lev2::Texture>();
+        auto image = std::make_shared<lev2::Image>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
-
-        bool ok        = txi->LoadTexture(tex, datablock);
-        OrkAssert(ok);
+        image->initFromDataBlock(datablock);
+        //bool ok        = txi->LoadTexture(tex, datablock);
+        //OrkAssert(ok);
         logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         logchan_pbr->log(" token<%s>", token);
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor     = tex;
           mtl->_colorMapName = texname;
+          mtl->_image_color = image;
         }
         if (0 == strcmp(token, "normalmap")) {
           mtl->_texNormal     = tex;
           mtl->_normalMapName = texname;
+          mtl->_image_normal = image;
         }
         if (0 == strcmp(token, "mtlrufmap")) {
           mtl->_texMtlRuf     = tex;
           mtl->_mtlRufMapName = texname;
+          mtl->_image_mtlruf = image;
         }
         if (0 == strcmp(token, "emissivemap")) {
           mtl->_texEmissive     = tex;
           mtl->_emissiveMapName = texname;
+          mtl->_image_emissive = image;
         }
       }
     }
-    mtl->conformTextures(targ);
+    mtl->conformImages(targ);
 
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
