@@ -120,6 +120,14 @@ public:
 
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct EzUiEventInterceptor : public ui::Widget {
+  EzUiEventInterceptor();
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
+  ui::Widget* doRouteUiEvent(ui::event_constptr_t ev);
+  ui::event_lambda_t _onUiEventLambda;
+  varmap::varmap_ptr_t _vars;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct EzTopWidget : public ui::Group {
   EzTopWidget(EzMainWin* mainwin);
   void _doGpuInit(ork::lev2::Context* pTARG) final;

@@ -72,6 +72,23 @@ void IWidgetEventFilter::Filter(event_constptr_t Ev) {
 
   DoFilter(Ev);
 }
+
 ///////////////////////////////////////////////////////////
 
+std::string Event::description() const{
+
+  auto as_str = FormatString(
+      "Event<0x%zx> x<%d> y<%d> key<%d> ctrl<%d> alt<%d> shift<%d> meta<%d>",
+      uint64_t(_eventcode),
+      miX,
+      miY,
+      miKeyCode,
+      mbCTRL,
+      mbALT,
+      mbSHIFT,
+      mbMETA);
+    return as_str;
+}
+
+///////////////////////////////////////////////////////////
 } // namespace ork::ui

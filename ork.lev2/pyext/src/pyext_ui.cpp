@@ -68,11 +68,22 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
-          .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); });
+          .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); })
+          .def_property("overlayWidget", //
+            [](ui::context_ptr_t uictx) -> uiwidget_ptr_t { //
+              return uictx->_overlayWidget; //
+            }, //
+            [](ui::context_ptr_t uictx, uiwidget_ptr_t w) { //
+              uictx->_overlayWidget = w; //
+            }) //
+          ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
       py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "Event")
+          .def( "__repr__", [](ui::event_ptr_t ev) -> std::string { //
+            return ev->description();
+          })
           .def(
               "clone",                                    //
               [](ui::event_ptr_t ev) -> ui::event_ptr_t { //

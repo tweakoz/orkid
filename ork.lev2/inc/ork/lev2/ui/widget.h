@@ -211,7 +211,7 @@ private:
   friend struct ui::Context;
   virtual void _doGpuInit(lev2::Context* pTARG) {
   }
-  virtual void DoDraw(ui::drawevent_constptr_t drwev) = 0;
+  virtual void DoDraw(ui::drawevent_constptr_t drwev) {}
   virtual HandlerResult DoOnUiEvent(event_constptr_t Ev);
   void ReLayout();
   virtual void DoLayout() {

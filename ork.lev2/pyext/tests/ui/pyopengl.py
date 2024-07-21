@@ -7,10 +7,16 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
+#pip3 install imgui[glfw] pyopengl
+
 import numpy as np
 from orkengine.core import *
 from orkengine import lev2
 from OpenGL.GL import *
+import imgui
+from imgui.integrations.opengl import ProgrammablePipelineRenderer
+
+tokens = CrcStringProxy()
 
 ################################################################################
 # vertex shader source code
@@ -139,6 +145,12 @@ class UiTestApp(object):
     super().__init__()
     self.ezapp = lev2.OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    self.uicontext = self.ezapp.uicontext
+    print(self.uicontext)
+    UIOVERLAY = lev2.EzUiEventInterceptor()
+    UIOVERLAY.onUiEvent = lambda uievent : self.onOverlayUiEvent(uievent)
+    self.uicontext.overlayWidget = UIOVERLAY
+
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 8
@@ -175,13 +187,60 @@ class UiTestApp(object):
     W.enableDraw = False
     self.test_widget = W
     self.time = 0.0
+    self.rate = 0.1
 
   ##############################################
   # onUpdate - called from update / simulation thread
   ##############################################
 
   def onUpdate(self,updev):
-    self.time = updev.absolutetime
+    self.time = updev.absolutetime*self.rate
+
+  ##############################################
+  def onOverlayUiEvent(self,uievent):
+    handler = self.uicontext.overlayWidget
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      #print("KEY_DOWN :", uievent )
+      pass
+    elif uievent.code == tokens.KEY_UP.hashed:
+      #print("KEY_UP :", uievent )
+      pass
+    elif uievent.code == tokens.PUSH.hashed:
+      #print("PUSHED :", uievent )
+      self.imgui_io.mouse_down[0] = True
+      if not self.imgui_io.want_capture_mouse:
+        #print("PUSHED -> native :", uievent )
+        handler = None
+        #custom_mouse_button_handler(button, action, mods)
+      pass
+    elif uievent.code == tokens.RELEASE.hashed:
+      self.imgui_io.mouse_down[0] = False
+      if not self.imgui_io.want_capture_mouse:
+        #print("RELEASED :", uievent )
+        handler = None
+      pass
+    elif uievent.code == tokens.BEGIN_DRAG.hashed:
+      #print("BEGIN_DRAG :", uievent )
+      pass
+    elif uievent.code == tokens.END_DRAG.hashed:
+      #print("END_DRAG :", uievent )
+      pass
+    elif uievent.code == tokens.DRAG.hashed:
+      self.imgui_io.mouse_pos = uievent.x, uievent.y
+      if not self.imgui_io.want_capture_mouse:
+        #print("DRAG :", uievent )
+        handler = None
+      pass
+    elif uievent.code == tokens.MOVE.hashed:
+      self.imgui_io.mouse_pos = uievent.x, uievent.y
+      if not self.imgui_io.want_capture_mouse:
+        #print("MOVE :", uievent )
+        handler = None
+      pass
+            
+    result = lev2.ui.HandlerResult()
+    result.setHandler(handler)
+    return result
 
   ##############################################
   # onGpuInit - called once at startup (in rendering thread)
@@ -191,6 +250,10 @@ class UiTestApp(object):
   def onGpuInit(self,ctx):
     self.shaders = Shaders()
     self.geometry = Geometry()
+    imgui.create_context()
+    self.imgui_io = imgui.get_io()
+    self.imgui_io.fonts.get_tex_data_as_rgba32()
+    self.imgui_renderer = ProgrammablePipelineRenderer()
 
   ##############################################
   # onGpuPostFrame - called after all orkid rendering is done
@@ -225,6 +288,34 @@ class UiTestApp(object):
 
     glBindVertexArray(0)
 
+    #################################
+
+    TOPW = self.ezapp.topWidget    
+    scr_w = TOPW.width
+    scr_h = TOPW.height
+    W = self.test_widget
+    wx = W.x
+    wy = scr_h-W.y2-1 # raw-opengl has origin at bottom left
+    ww = W.width
+    wh = W.height    
+    
+    #self.imgui_io.display_pos = wx, wy
+    self.imgui_io.display_size = scr_w, scr_h
+    imgui.new_frame()
+    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
+
+    clicked, self.rate = imgui.slider_float(
+        label="TimeRate",
+        value=self.rate,
+        min_value=-10.0,
+        max_value=10.0,
+    )
+    imgui.end()
+
+    imgui.render()
+    imgui.end_frame()
+    self.imgui_renderer.render(imgui.get_draw_data())
+
   ##############################################
   # _clearPanel - clear the panel before drawing
   ##############################################
@@ -248,9 +339,9 @@ class UiTestApp(object):
     glScissor(wx,wy,ww,wh)
     glViewport(wx,wy,ww,wh)
     glEnable(GL_SCISSOR_TEST)
-    glClearColor(0.0, 1.0, 1.0, 1.0)
+    glClearColor(0.0, 0.1, 0.1, 1.0)
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
-    glDepthMask(GL_TRUE)
+    glDepthMask(GL_FALSE)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     

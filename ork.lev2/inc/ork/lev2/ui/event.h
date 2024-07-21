@@ -147,7 +147,13 @@ struct Event final // RawEvent
   }
 
   static HandlerResult sendToContext(event_constptr_t ev);
+
+  std::string description() const;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+using event_lambda_t = std::function<HandlerResult(event_constptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

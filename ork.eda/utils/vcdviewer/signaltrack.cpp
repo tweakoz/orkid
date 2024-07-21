@@ -95,7 +95,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       break;
     case EventCode::MOUSE_ENTER:
       printf("enter trakwidg<%p>\n", (void*) this);
-      uictx->_overlayWidget = overlay.get();
+      uictx->_overlayWidget = overlay;
       break;
     case EventCode::MOUSE_LEAVE:
       uictx->_overlayWidget = nullptr;
