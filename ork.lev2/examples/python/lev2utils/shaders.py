@@ -1,5 +1,5 @@
 from orkengine.core import *
-from orkengine.lev2 import FreestyleMaterial
+from orkengine import lev2
 ################################################################################
 tokens = CrcStringProxy()
 
@@ -13,7 +13,7 @@ def createPipeline( app=None,
                     shaderfile=Path("orkshader://manip"),
                     shadertext=None,
                     techname = "std_mono_fwd" ):
-    material = FreestyleMaterial()
+    material = lev2.FreestyleMaterial()
     if shadertext!=None:
       material.gpuInitFromShaderText(ctx,shadername,shadertext)
     else:
@@ -23,7 +23,7 @@ def createPipeline( app=None,
     material.rasterstate.culltest = culltest
     material.rasterstate.depthtest = depthtest
     #
-    permu = FxPipelinePermutation()
+    permu = lev2.FxPipelinePermutation()
     permu.rendering_model = rendermodel
     permu.technique = material.shader.technique(techname)
     #

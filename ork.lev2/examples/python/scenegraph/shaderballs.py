@@ -7,20 +7,25 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys, colorsys
-from orkengine.core import *
-from orkengine.lev2 import *
+import math, random, argparse, sys, signal, colorsys
+from orkengine.core import vec3, vec4, quat, mtx4
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from lev2utils.cameras import *
-from lev2utils.shaders import *
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 SSAO_NUM_SAMPLES = 64
+
 
 ################################################################################
 
@@ -54,8 +59,8 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
@@ -97,17 +102,20 @@ class SceneGraphApp(object):
 
     ###################################
 
-    model = XgmModel("data://tests/pbr_calib.glb")
+    model = lev2.XgmModel("data://tests/pbr_calib.glb")
 
     random.seed(12)
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.assignTextures(
+        white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+        normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+        copy.assignImages(
           ctx,
-          color = Texture.load("src://effect_textures/white_64.dds"),
-          normal = Texture.load("src://effect_textures/default_normal.dds"),
-          mtlruf = Texture.load("src://effect_textures/white_64.dds"),
+          color = white,
+          normal = normal,
+          mtlruf = white,
+          doConform=True
         )
         submesh.material = copy
 
@@ -178,7 +186,7 @@ class SceneGraphApp(object):
   ################################################
 
   def onUiEvent(self,uievent):
-    res = ui.HandlerResult()
+    res = lev2.ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("A"):
         if self.ssaamode == True:
@@ -197,7 +205,7 @@ class SceneGraphApp(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     else:
-      handled = ui.HandlerResult()
+      handled = lev2.ui.HandlerResult()
     return res
 
   ################################################
