@@ -24,6 +24,7 @@ namespace ork::lev2 {
 using matrix_lamda_t = std::function<fmtx4()>;
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LoadingPhase;
 struct Context;
 class TextureInterface;
 class CTXBASE;
@@ -40,7 +41,11 @@ struct GpuEventSink;
 struct CompressedImage;
 
 //
+using loadingphase_ptr_t = std::shared_ptr<LoadingPhase>;
+using loadingphase_list_t = std::list<loadingphase_ptr_t>;
 using gfxcontext_lambda_t = std::function<void(Context*)>;
+using gfxcontext_lambda_list_t = std::vector<gfxcontext_lambda_t>;
+
 using context_ptr_t          = std::shared_ptr<Context>;
 using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
 using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;

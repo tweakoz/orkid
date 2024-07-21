@@ -57,8 +57,8 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
       if (try_force_fmt) {
         forced_format = try_force_fmt.value();
       }
-      basehasher->accumulateItem(forced_format);
     }
+    basehasher->accumulateItem(forced_format);
     basehasher->finish();
     /////////////////////////////////////////////
     // check cache
@@ -80,7 +80,7 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     // is it cached ?
     /////////////////////////////////////////////
     if (xtx_datablock) {
-      // printf("GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex.get());
+      printf("GlTextureInterface::_loadImageTexture tex<%p:%s> precached!\n", ptex.get(), ptex->_debugName.c_str());
     }
     /////////////////////////////////////////////
     // it is not cached...

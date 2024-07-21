@@ -252,8 +252,9 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
   logchan_pbrgen->log(
-      "filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d> equirectangular<%d>",
+      "filterenv-spec tex<%p:%s> hash<0x%zx> w<%d> h<%d> equirectangular<%d>",
       (void*)rawenvmap.get(),
+      rawenvmap->_debugName.c_str(),
       rawenvmap->_contentHash,
       w,
       h,
@@ -423,8 +424,9 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   rawenvmap->_vars->makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
   logchan_pbrgen->log(
-      "filterenv-diff tex<%p> hash<0x%zx> equirectangular<%d>",
+      "filterenv-diff tex<%p:%s> hash<0x%zx> equirectangular<%d>",
       (void*)rawenvmap.get(),
+      rawenvmap->_debugName.c_str(),
       rawenvmap->_contentHash,
       int(equirectangular));
   boost::Crc64 basehasher;

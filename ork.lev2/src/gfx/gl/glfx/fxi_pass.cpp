@@ -187,7 +187,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
   pptimer.Start();
   auto flatunimap = container->flatUniMap();
 
-  printf("postproc pass<%s>\n", _name.c_str());
+  //printf("postproc pass<%s>\n", _name.c_str());
   //////////////////////////
   // query unis
   //////////////////////////

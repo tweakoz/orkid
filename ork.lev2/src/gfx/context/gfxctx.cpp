@@ -27,6 +27,23 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+loadingphase_ptr_t Context::newLoadingPhase(){
+  auto phase = std::make_shared<LoadingPhase>();
+  _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked){
+    unlocked.push_back(phase);
+  });
+  return phase;
+}
+
+void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l){
+  _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked){
+    unlocked.push_back(l);
+  });
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Context::enqueueGpuEvent(gpuevent_ptr_t evt) {
   _gpuEventQueue.push(evt);
 }
@@ -60,6 +77,11 @@ void Context::beginFrame(void) {
 
   makeCurrentContext();
 
+  /////////////////////////////////////
+  // sticky callbacks
+  //  (they stay at the front until they return true)
+  /////////////////////////////////////
+
   bool keep_going = true;
   while(keep_going) {
     keep_going = false;
@@ -73,6 +95,32 @@ void Context::beginFrame(void) {
       }
     }   
   }
+
+  /////////////////////////////////////
+  // loading phase based operations
+  /////////////////////////////////////
+
+  loadingphase_ptr_t phase = nullptr;
+  _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked){
+    if( unlocked.size() ){
+      phase = unlocked.front();
+      unlocked.pop_front();
+    }
+  });
+  if(phase){
+    static gfxcontext_lambda_list_t ops;
+    phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked){
+      ops = unlocked;
+      unlocked.clear();
+    });
+
+    for( auto op : ops ){
+      op(this);
+    }
+    ops.clear();
+  }
+
+  /////////////////////////////////////
 
   auto mainrect = mainSurfaceRectAtOrigin();
   FBI()->setViewport(mainrect);
@@ -93,8 +141,14 @@ void Context::beginFrame(void) {
 
   _doBeginFrame();
 
+  /////////////////////////////////////
+  // call onBeginFrame callbacks
+  /////////////////////////////////////
+
   for (auto l : _onBeginFrameCallbacks)
     l();
+
+  /////////////////////////////////////
 
   _gpuEventSinks.atomicOp([this](gpueventsink_map_t& unlocked){
     while(not _gpuEventQueue.empty() ){

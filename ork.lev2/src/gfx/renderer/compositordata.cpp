@@ -206,9 +206,13 @@ RenderPresetContext CompositingData::presetForwardPBR(render_preset_data_ptr_t p
     selected_output_node = screennode;
   }
 
-  auto pbr_common = r1->_pbrcommon;
-  auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
-  pbr_common->requestAndRefSkyboxTexture(load_req);
+
+  if(_defaultBG){
+    auto pbr_common = r1->_pbrcommon;
+    auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+    //auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/blender_sunset");
+    pbr_common->requestAndRefSkyboxTexture(load_req);
+  }
 
   auto s1 = std::make_shared<CompositingScene>();
   auto i1 = std::make_shared<CompositingSceneItem>();

@@ -82,7 +82,7 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
     else:
-      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night"
 
     createSceneGraph(app=self,
                      rendermodel="ForwardPBR",
@@ -146,7 +146,7 @@ class SceneGraphApp(object):
 
       self.nodes += [node]
 
-    cookie3 = MyCookie("src://effect_textures/knob2.dds")
+    cookie3 = MyCookie("src://effect_textures/knob2.png")
     
     #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
     #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)

@@ -962,7 +962,7 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
   _height = height;
   _depth  = depth;
 
-  printf(
+  if(0)printf(
       "width<%d> height<%d> depth<%d> num_mips<%d> block_width<%d> block_height<%d> is_volume<%d> flags<%08x> fourcc<%08x> bpp<%d> "
       "rmask<%08x> gmask<%08x> bmask<%08x>\n",
       width,
@@ -994,7 +994,7 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
     _format                    = EBufferFormat::BGRA8;
     _numcomponents = 4;
     _bytesPerChannel = 1;
-    printf("DDS.BGRA8\n");
+    //printf("DDS.BGRA8\n");
     if(num_mips==1){
       Image imga, imgb;
       imga._data = std::make_shared<DataBlock>(inpstream.current(), size);
@@ -1042,7 +1042,7 @@ void CompressedImageMipChain::readDDS(datablock_ptr_t datablock) {
     int size                   = width * height * BPP;
     _format                    = EBufferFormat::BGR8;
     _numcomponents = 3;
-    printf("DDS.BGR8\n");
+    //printf("DDS.BGR8\n");
     for (int lidx = 0; lidx < num_mips; lidx++) {
       auto mipdata = inpstream.current();
       CompressedImage level;

@@ -280,8 +280,8 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t pte
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-  // printf("infname<%s>\n", infname.c_str());
-  // printf("final_fname<%s>\n", final_fname.c_str());
+  printf("infname<%s>\n", infname.c_str());
+  printf("final_fname<%s>\n", final_fname.c_str());
 
   if (auto dblock = datablockFromFileAtPath(final_fname))
     return LoadTexture(ptex, dblock);
@@ -295,15 +295,13 @@ bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablo
   DataBlockInputStream checkstream(datablock);
   uint32_t magic = checkstream.getItem<uint32_t>();
   bool ok        = false;
+  ptex->_contentHash = datablock->hash();
   if (Char4("chkf") == Char4(magic))
     ok = _loadXTXTexture(ptex, datablock);
   else if (Char4("DDS ") == Char4(magic))
     ok = _loadDDSTexture(ptex, datablock);
   else
     ok = _loadImageTexture(ptex, datablock);
-
-  ptex->_contentHash = datablock->hash();
-
   return ok;
 }
 

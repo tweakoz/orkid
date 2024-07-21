@@ -115,7 +115,7 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
   OrkAssert(ambocc==nullptr);
   TextureArrayInitData TID;
 
-  printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
+  //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
 
   TID._slices.resize(4);
   TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
@@ -161,7 +161,7 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
     _texNormal->_debugName = FormatString("pbr-def-nrm des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texNormal != nullptr);
-    printf( "default normal<%p>\n", _texNormal.get() );
+    //printf( "default normal<%p>\n", _texNormal.get() );
   }
   //////////////
   // if mtlruf map is not set, create a default one, matching color texture size and format
@@ -176,7 +176,7 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
     _texMtlRuf->_debugName = FormatString("pbr-def-mtlruf des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texMtlRuf != nullptr);
-    printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
+    //printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
   }
   //////////////
   // if emissive map is not set, create a default one, matching color texture size and format
@@ -189,7 +189,7 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
     _texEmissive->_debugName = FormatString("pbr-def-emi des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texEmissive != nullptr);
-    printf( "default emissive<%p>\n", _texEmissive.get() );
+    //printf( "default emissive<%p>\n", _texEmissive.get() );
   }
   //////////////
   assignTextures(ctx, _texColor, _texNormal, _texMtlRuf, _texEmissive, _texAmbOcc);

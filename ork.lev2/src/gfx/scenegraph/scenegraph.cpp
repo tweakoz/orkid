@@ -224,11 +224,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
       printf("texture_path<%s>\n", texture_path.c_str());
-      //_renderPresetData->_assetSynchro->increment();
+      _compositorData->_defaultBG = false;
       auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
-      load_req->_on_load_complete = [=]() {
-        //_renderPresetData->_assetSynchro->decrement();
-      };
       _pbr_common->requestAndRefSkyboxTexture(load_req);
     }
 

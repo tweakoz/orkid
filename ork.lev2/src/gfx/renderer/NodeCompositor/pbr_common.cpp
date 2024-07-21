@@ -58,7 +58,7 @@ static asset::vars_ptr_t _irradianceVars() {
         inp_datablock->length());
 
     auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("irradiancemap-v1");
+    hasher->accumulateString("irradiancemap-v2");
     hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
     hasher->finish();
     uint64_t cachekey = hasher->result();
@@ -145,6 +145,7 @@ void CommonStuff::requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req) 
   load_req->_asset_vars->makeValueForKey<irradiancemaps_ptr_t>("irrmaps") = _irradianceMaps;
   _irradianceMaps->_loadRequest = load_req;
   opq::mainSerialQueue()->enqueue([=]() {
+    printf( "SKYBOX<%s>\n", load_req->_asset_path.c_str());
     auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
     OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
     OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));

@@ -129,14 +129,12 @@ libblock lib_fwd //
     // vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     vec3 finallitcolor = saturateV(diffuse + specular);
-    float depth_fogval = saturateF(pow(pbd._fogZ * DepthFogDistance, DepthFogPower));
-    vec3 skybox_n      = vec3(0, 0, 1);
-    vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
+    //float depth_fogval = saturateF(pow(pbd._fogZ * DepthFogDistance, DepthFogPower));
+    //vec3 skybox_n      = vec3(0, 0, 1);
+    //vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
 
-    // return vec3(specular);
     return finallitcolor;
-    //return vec3(ssao_linear(uv));
-    //return vec3(ambocc);
+
 
   } // vec3 environmentLighting(){
 
@@ -166,17 +164,19 @@ libblock lib_fwd //
 
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
-    vec3 wpos = frg_wpos.xyz;
+    // sample PBR material textures
+    vec3 albedo = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
     vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
+    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
+    vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
+
+    vec3 wpos = frg_wpos.xyz;
     vec3 N         = TN * 2.0 - vec3(1, 1, 1);
     vec3 normal    = normalize(frg_tbn * N);
-    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 0)).xyz;
-    vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
     vec3 metalbase = vec3(0.2);
     float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
     float roughness = rufmtlamb.y * RoughnessFactor;
     float dialetric = 1.0 - metallic;
-    vec3 albedo = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
     vec3 basecolor = albedo;
     vec3 diffcolor = mix(basecolor, vec3(0), metallic);
     /////////////////////////

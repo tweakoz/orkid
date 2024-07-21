@@ -366,13 +366,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_SK_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_IN_MO;
-          printf( "got fwdtek FWD_CT_NM_SK_IN_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_SK_IN_MO\n");
         }
       } else { // not instanced
         if (this->_tek_FWD_CT_NM_SK_NI_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_MO;
-          printf( "got fwdtek FWD_CT_NM_SK_NI_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_SK_NI_MO\n");
         }
       }
     } else { // not skinned
@@ -380,21 +380,21 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
-          printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
         }
       } else {
         if( permu._has_vtxcolors ){
           if (this->_tek_FWD_CV_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO;
-            printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
+            //printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
           }
         }
         else{
           if (this->_tek_FWD_CT_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_MO;
-            printf( "got fwdtek FWD_CT_NM_RI_NI_MO\n");
+            //printf( "got fwdtek FWD_CT_NM_RI_NI_MO\n");
           }
         }
       }
