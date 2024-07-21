@@ -8,16 +8,22 @@
 ################################################################################
 
 import math, random, argparse, sys, colorsys
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, quat, mtx4, mathconstants
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine import lev2
+
+constants = mathconstants()
+tokens = CrcStringProxy()
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.shaders import *
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
+from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
@@ -55,12 +61,12 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=False)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,fullscreen=False)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     self.nodes=[]
-    self.camera = CameraData()
-    self.cameralut = CameraDataLut()
+    self.camera = lev2.CameraData()
+    self.cameralut = lev2.CameraDataLut()
     self.cameralut.addCamera("spawncam",self.camera)
     self.seed = 12
     self.ambient = ambient
@@ -92,16 +98,19 @@ class SceneGraphApp(object):
 
     ###################################
 
-    model = XgmModel("data://tests/pbr_calib.glb")
+    model = lev2.XgmModel("data://tests/pbr_calib.glb")
 
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.assignTextures(
+        copy.assignImages(
           ctx,
-          color = Texture.load("src://effect_textures/white_64.dds"),
-          normal = Texture.load("src://effect_textures/default_normal.dds"),
-          mtlruf = Texture.load("src://effect_textures/white_64.dds"),
+          color = white,
+          normal = normal,
+          mtlruf = white,
+          doConform=True
         )
         submesh.material = copy
 
@@ -182,16 +191,26 @@ class SceneGraphApp(object):
         self.regenColors()
       if uievent.keycode == ord("-"): # -
         self.ambient -= 0.05
+        print("AMBIENT",self.ambient)
       if uievent.keycode == ord("="): # =
         self.ambient += 0.05
+        print("AMBIENT",self.ambient)
       if uievent.keycode == ord("["): # [
         self.specular -= 0.05
+        print("SPECULAR",self.specular)
       if uievent.keycode == ord("]"): # ]
         self.specular += 0.05
+        print("SPECULAR",self.specular)
+      if uievent.keycode == ord(","):
+        self.pbrcommon.roughnessPower *= 0.95
+        print("ROUGHNESS POWER",self.pbrcommon.roughnessPower)
+      if uievent.keycode == ord("."):
+        self.pbrcommon.roughnessPower *= 1.05
+        print("ROUGHNESS POWER",self.pbrcommon.roughnessPower)
       ##############################
       self.pbrcommon.specularLevel = self.specular
       self.pbrcommon.ambientLevel = vec3(self.ambient)
-    return ui.HandlerResult()
+    return lev2.ui.HandlerResult()
 
 ###############################################################################
 
