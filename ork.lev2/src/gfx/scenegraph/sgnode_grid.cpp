@@ -24,9 +24,24 @@ struct GridRenderImpl {
     auto texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
     OrkAssert(texasset);
 
-    _color_image = Image::createFromFile(_griddata->_colortexpath);
-    _normal_image = Image::createFromFile(_griddata->_normaltexpath);
-    _mtlruf_image = Image::createFromFile(_griddata->_mtlruftexpath);
+    if(_griddata->_colorImage){
+      _color_image = _griddata->_colorImage;
+    }
+    else{
+      _color_image = Image::createFromFile(_griddata->_colortexpath);
+    }
+    if(_griddata->_normalImage){
+      _normal_image = _griddata->_normalImage;
+    }
+    else{
+      _normal_image = Image::createFromFile(_griddata->_normaltexpath);
+    }
+    if(_griddata->_mtlrufImage){
+      _mtlruf_image = _griddata->_mtlrufImage;
+    }
+    else{
+      _mtlruf_image = Image::createFromFile(_griddata->_mtlruftexpath);
+    }
 
     OrkAssert(_color_image);
     OrkAssert(_normal_image);

@@ -14,6 +14,10 @@ public:
   GridDrawableData();
   ~GridDrawableData();
 
+  image_ptr_t _colorImage;
+  image_ptr_t _normalImage;
+  image_ptr_t _mtlrufImage;
+
   std::string _colortexpath;
   std::string _normaltexpath;
   std::string _mtlruftexpath;

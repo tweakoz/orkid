@@ -16,6 +16,7 @@
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
+#include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -152,6 +153,18 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
       py::class_<GridDrawableData, DrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")
           .def(py::init<>())
           .def("createDrawable", [](griddrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
+          .def_property(
+              "colorImage",
+              [](griddrawabledataptr_t drw) -> image_ptr_t { return drw->_colorImage; },
+              [](griddrawabledataptr_t drw, image_ptr_t val) { drw->_colorImage = val; })
+          .def_property(
+              "normalImage",
+              [](griddrawabledataptr_t drw) -> image_ptr_t { return drw->_normalImage; },
+              [](griddrawabledataptr_t drw, image_ptr_t val) { drw->_normalImage = val; })
+          .def_property(
+              "mtlrufImage",
+              [](griddrawabledataptr_t drw) -> image_ptr_t { return drw->_mtlrufImage; },
+              [](griddrawabledataptr_t drw, image_ptr_t val) { drw->_mtlrufImage = val; })
           .def_property(
               "texturepath",
               [](griddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
