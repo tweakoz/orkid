@@ -142,6 +142,8 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                   py::kwargs kwa ) { //
                   texture_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
                   
+                  bool doConform = false;
+
                   if( kwa.contains("color") )
                     color_tex = kwa["color"].cast<texture_ptr_t>();
                   if( kwa.contains("normal") )
@@ -152,13 +154,16 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                     emissive_tex = kwa["emissive"].cast<texture_ptr_t>();
                   if( kwa.contains("ambocc") )
                     ambocc_tex = kwa["ambocc"].cast<texture_ptr_t>();    
-
+                  if( kwa.contains("doConform") ){
+                    doConform = kwa["doConform"].cast<bool>();
+                  }
                    m->assignTextures(context.get(),
                                     color_tex,
                                     normal_tex,
                                     mtlruf_tex,
                                     emissive_tex,
-                                    ambocc_tex);
+                                    ambocc_tex,
+                                    doConform);
               })
           .def_property(
               "metallicFactor",

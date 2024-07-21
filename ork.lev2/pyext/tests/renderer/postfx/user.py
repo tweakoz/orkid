@@ -112,12 +112,12 @@ class HSVGAPP(object):
     self.pfx_feedback.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
     self.pfx_radial.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
     rendernode = self.scene.compositorrendernode
-    deferred_context = rendernode.context
-    gbuffer_group = deferred_context.gbuffer
-    if gbuffer_group is not None:
-      gbuffer = gbuffer_group.mrt_buffer(0)
-      if gbuffer.texture is not None:
-        self.pfx_radial.params.GBufferMap = gbuffer.texture
+    #deferred_context = rendernode.context
+    #gbuffer_group = deferred_context.gbuffer
+    #if gbuffer_group is not None:
+      #gbuffer = gbuffer_group.mrt_buffer(0)
+      #if gbuffer.texture is not None:
+        #self.pfx_radial.params.GBufferMap = gbuffer.texture
 
   ################################################
 

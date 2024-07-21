@@ -112,7 +112,8 @@ public:
                        texture_ptr_t normal,   // 
                        texture_ptr_t mtlruf,   // 
                        texture_ptr_t emissive, // 
-                       texture_ptr_t ambocc);  
+                       texture_ptr_t ambocc,
+                       bool do_conform = false);  
   ////////////////////////////////////////////
   fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////

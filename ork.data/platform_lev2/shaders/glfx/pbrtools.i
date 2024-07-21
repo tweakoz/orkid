@@ -30,10 +30,13 @@ uniform_set ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  sampler2D ColorMap;
-  sampler2D NormalMap;
+  //sampler2D ColorMap;
+  //sampler2D NormalMap;
+  //sampler2D MtlRufMap;
+
+  sampler2DArray CNMREA;         // 4
   sampler2D EmissiveMap;
-  sampler2D MtlRufMap;
+
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;
   vec4 ModColor;
@@ -282,10 +285,10 @@ libblock lib_pbr_vtx_instanced {
 libblock lib_pbr_frg : lib_gbuf_encode {
   void ps_common_n(vec4 modc, vec3 N, vec2 UV) {
     vec3 normal    = normalize(frg_tbn * N);
-    vec3 rufmtlamb = texture(MtlRufMap, UV).xyz;
+    vec3 rufmtlamb = texture(CNMREA, vec3(UV,2)).xyz;
     float mtl      = rufmtlamb.z * MetallicFactor;
     float ruf      = rufmtlamb.y * RoughnessFactor;
-    vec3 color     = (modc * frg_clr * texture(ColorMap, UV)).xyz;
+    vec3 color     = (modc * frg_clr * texture(CNMREA, vec3(UV,0))).xyz;
     vec3 emission  = texture(EmissiveMap, UV).xyz * modc.xyz;
     out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }
@@ -588,7 +591,7 @@ fragment_shader ps_gbuffer_vizn : iface_fgbuffer : lib_pbr_frg {
 fragment_shader ps_gbuffer_n // normalmap
     : iface_fgbuffer 
     : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   ps_common_n(ModColor, N, frg_uv0);
@@ -596,7 +599,7 @@ fragment_shader ps_gbuffer_n // normalmap
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
     : iface_fgbuffer : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -604,7 +607,7 @@ fragment_shader ps_gbuffer_n_stereo // normalmap
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
@@ -613,7 +616,7 @@ fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg 
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -627,7 +630,7 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
   vec2 map_uv    = frg_uv0 * vec2(1, 0.5);
   if (is_right)
     map_uv += vec2(0, 0.5);
-  vec3 TN = texture(NormalMap, map_uv).xyz;
+  vec3 TN = texture(CNMREA, vec3(map_uv,1)).xyz;
   vec3 N  = TN * 2.0 - vec3(1, 1, 1);
   ps_common_n(ModColor, N, map_uv);
 }

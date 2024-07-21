@@ -111,8 +111,23 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
                                   texture_ptr_t normal,   //
                                   texture_ptr_t mtlruf,   //
                                   texture_ptr_t emissive, //
-                                  texture_ptr_t ambocc){  //
+                                  texture_ptr_t ambocc,   //
+                                  bool do_conform ) {     //
+
   OrkAssert(ambocc==nullptr);
+
+  if( do_conform ){
+    _texColor = color;
+    _texNormal = normal;
+    _texMtlRuf = mtlruf;
+    _texEmissive = emissive;
+    conformTextures(ctx);
+    if(normal==nullptr) normal = _texNormal;
+    if(mtlruf==nullptr) mtlruf = _texMtlRuf;
+    if(emissive==nullptr) emissive = _texEmissive;
+  }
+
+
   TextureArrayInitData TID;
 
   //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
@@ -136,6 +151,33 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
 ///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::conformTextures(lev2::Context* ctx){
+  //////////////////////////
+  // get biggest size
+  //////////////////////////
+  int max_w = 0;
+  int max_h = 0;
+  if (_texColor != nullptr) {
+    max_w = std::max(max_w, _texColor->_width);
+    max_h = std::max(max_h, _texColor->_height);
+  }
+  if (_texNormal != nullptr) {
+    max_w = std::max(max_w, _texNormal->_width);
+    max_h = std::max(max_h, _texNormal->_height);
+  }
+  if (_texMtlRuf != nullptr) {
+    max_w = std::max(max_w, _texMtlRuf->_width);
+    max_h = std::max(max_h, _texMtlRuf->_height);
+  }
+  if (_texEmissive != nullptr) {
+    max_w = std::max(max_w, _texEmissive->_width);
+    max_h = std::max(max_h, _texEmissive->_height);
+  }
+  if (_texAmbOcc != nullptr) {
+    max_w = std::max(max_w, _texAmbOcc->_width);
+    max_h = std::max(max_h, _texAmbOcc->_height);
+  }
+  //////////////////////////
+
   if (_texColor == nullptr) {
     auto loadreq         = std::make_shared<asset::LoadRequest>();
     loadreq->_asset_path = "src://effect_textures/white_64";
@@ -143,6 +185,10 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     _texColor            = _asset_texcolor->GetTexture();
       OrkAssert(_texColor != nullptr);
     OrkAssert(_texColor->_texFormat != EBufferFormat::NONE );
+  }
+  else{
+      OrkAssert(_texColor->_width == max_w);
+      OrkAssert(_texColor->_height == max_h);
   }
   //////////////
   // fetch color texture size and format
@@ -163,6 +209,10 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     OrkAssert(_texNormal != nullptr);
     //printf( "default normal<%p>\n", _texNormal.get() );
   }
+  else{
+    OrkAssert(_texNormal->_width == max_w);
+    OrkAssert(_texNormal->_height == max_h);
+  }
   //////////////
   // if mtlruf map is not set, create a default one, matching color texture size and format
   //////////////
@@ -178,6 +228,10 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     OrkAssert(_texMtlRuf != nullptr);
     //printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
   }
+  else{
+    OrkAssert(_texMtlRuf->_width == max_w);
+    OrkAssert(_texMtlRuf->_height == max_h);
+  }
   //////////////
   // if emissive map is not set, create a default one, matching color texture size and format
   //////////////
@@ -190,6 +244,10 @@ void PBRMaterial::conformTextures(lev2::Context* ctx){
     _texEmissive->_debugName = FormatString("pbr-def-emi des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
     OrkAssert(_texEmissive != nullptr);
     //printf( "default emissive<%p>\n", _texEmissive.get() );
+  }
+  else{
+    OrkAssert(_texEmissive->_width == max_w);
+    OrkAssert(_texEmissive->_height == max_h);
   }
   //////////////
   assignTextures(ctx, _texColor, _texNormal, _texMtlRuf, _texEmissive, _texAmbOcc);

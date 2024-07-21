@@ -32,9 +32,6 @@ uniform_set ub_deferred_frg {
   mat4 IVPArray[2];
   mat4 VArray[2];
   mat4 PArray[2];
-  //sampler2D MapAlbedoAo;
-  //sampler2D MapNormalL;
-  //sampler2D MapRufMtlAlpha;
   usampler2D MapGBuffer;
   sampler2D MapDepthCluster;
   sampler2D MapLinearDepth;

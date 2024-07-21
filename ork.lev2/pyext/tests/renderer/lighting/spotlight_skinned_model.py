@@ -89,6 +89,20 @@ class StereoApp1(object):
     self.anim_inst.bindToSkeleton(self.model.skeleton)
 
     ##################
+
+    for mesh in self.model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.metallicFactor = 0.0
+        copy.roughnessFactor = 1.0
+        colortex = copy.texColor
+        copy.assignTextures(
+          ctx,
+          color = Texture.load("src://effect_textures/white_64.dds"),
+          doConform=True)
+        submesh.material = copy
+
+    ##################
     # create model / sg node
     ##################
 
