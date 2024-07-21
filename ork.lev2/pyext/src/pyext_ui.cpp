@@ -227,6 +227,16 @@ void pyinit_ui(py::module& module_lev2) {
                 return widget->y();
               })
           .def_property_readonly(
+              "x2",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->x()+widget->width()-1;
+              })
+          .def_property_readonly(
+              "y2",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->y()+widget->height()-1;
+              })
+          .def_property_readonly(
               "width",
               [](uiwidget_ptr_t widget) -> int { //
                 return widget->width();
@@ -263,6 +273,11 @@ void pyinit_ui(py::module& module_lev2) {
             return widget->_ignoreEvents;
           }, [](uiwidget_ptr_t widget, bool x) { //
             widget->_ignoreEvents = x;
+          })
+          .def_property("enableDraw", [](uiwidget_ptr_t widget) -> bool { //
+            return widget->_enableDraw;
+          }, [](uiwidget_ptr_t widget, bool x) { //
+            widget->_enableDraw = x;
           })
           .def("getUserVar", [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
             py::object rval;

@@ -267,7 +267,8 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       float funity  = float(ilocy) / float(_geometry._h);
       float funitks = float(kpanelw) / float(_geometry._h);
 
-      bool is_splitter = (fabs(funity - mSplitVal) < funitks) and (ilocy < (_geometry._h - kpanelw * 2));
+      bool is_splitter = (fabs(funity - mSplitVal) < funitks) //
+                     and (ilocy < (_geometry._h - kpanelw * 2));
 
       is_splitter &= (ilocx > kpanelw) and (ilocx < (_geometry._w - kpanelw)); // x check
 

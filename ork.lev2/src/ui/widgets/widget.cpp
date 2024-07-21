@@ -311,6 +311,10 @@ void Widget::SetDirty() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::draw(ui::drawevent_constptr_t drwev) {
+
+  if(_enableDraw == false)
+    return;
+
   _drawEvent = drwev;
   _target    = drwev->GetTarget();
 
