@@ -15,6 +15,7 @@
 // expecting to get these class declarations.
 #include <ork/file/fileenv.h>
 #include <ork/file/filedev.h>
+#include <ork/kernel/datablock.h>
 #include <ctype.h>
 
 
@@ -36,6 +37,8 @@ public:
   bool mbEnableBuffering;
   size_t miPhysicalPos;
   size_t miUserPos; // current position user wants
+
+  static datablock_ptr_t loadDatablock(const file::Path& sFileName);
 
   File(FileDev* pdev = NULL);
   File(const char* sFileName, EFileMode eMode, FileDev* pdev = NULL);

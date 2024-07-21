@@ -13,6 +13,15 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+datablock_ptr_t File::loadDatablock(const file::Path& sFileName){
+  File file(sFileName, EFM_READ);
+  void* filebuffer = NULL;
+  size_t size      = 0;
+  file.Load(&filebuffer, size);
+  datablock_ptr_t datablock = std::make_shared<DataBlock>(filebuffer, size);
+  return datablock;
+}
+
 File::File(FileDev* pdev)
     : mpDevice(pdev)
     , msFileName("NoFile")

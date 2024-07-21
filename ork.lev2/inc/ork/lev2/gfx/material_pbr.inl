@@ -105,16 +105,14 @@ public:
 
   void forceEmissive();
   ////////////////////////////////////////////
-  void conformTextures(lev2::Context* ctx);
-  void conformImages(lev2::Context* ctx);
-  ////////////////////////////////////////////
-  void assignTextures( lev2::Context* ctx,     //
-                       texture_ptr_t color,    //
-                       texture_ptr_t normal,   // 
-                       texture_ptr_t mtlruf,   // 
-                       texture_ptr_t emissive, // 
-                       texture_ptr_t ambocc,
-                       bool do_conform = false);  
+  void conformImages();
+  void assignImages(  lev2::Context* ctx,   //
+                      image_ptr_t color,    //
+                      image_ptr_t normal,   // 
+                      image_ptr_t mtlruf,   // 
+                      image_ptr_t emissive, // 
+                      image_ptr_t ambocc,
+                      bool do_conform = false);  
   ////////////////////////////////////////////
   fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
@@ -126,12 +124,6 @@ public:
   textureassetptr_t _asset_texnormal;
   textureassetptr_t _asset_mtlruf;
   textureassetptr_t _asset_emissive;
-
-  image_ptr_t _image_color;
-  image_ptr_t _image_normal;
-  image_ptr_t _image_mtlruf;
-  image_ptr_t _image_emissive;
-  image_ptr_t _image_ambocc;
 
   ////////////////////////////////////////////
 
@@ -226,6 +218,12 @@ public:
   fxparam_constptr_t _paramInstanceIdMap     = nullptr; // 1k*1k texture containing instance pickids
   fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
   const FxShaderParamBlock* _paramInstanceBlock = nullptr;
+  ///////////////////////////////////////////
+  image_ptr_t _image_color;
+  image_ptr_t _image_normal;
+  image_ptr_t _image_mtlruf;
+  image_ptr_t _image_emissive;
+  image_ptr_t _image_ambocc;
   ///////////////////////////////////////////
   texture_ptr_t _texColor;
   texture_ptr_t _texNormal;

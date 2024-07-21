@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
@@ -136,28 +137,28 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def_property_readonly("freestyle", [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t { return m->_as_freestyle; })
           .def("gpuInit", [](pbrmaterial_ptr_t m, ctx_t& c) { m->gpuInit(c.get()); })
           .def(
-              "assignTextures",
+              "assignImages",
               [](pbrmaterial_ptr_t m,
                   ctx_t context,
                   py::kwargs kwa ) { //
-                  texture_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
+                  image_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
                   
                   bool doConform = false;
 
                   if( kwa.contains("color") )
-                    color_tex = kwa["color"].cast<texture_ptr_t>();
+                    color_tex = kwa["color"].cast<image_ptr_t>();
                   if( kwa.contains("normal") )
-                    normal_tex = kwa["normal"].cast<texture_ptr_t>();
+                    normal_tex = kwa["normal"].cast<image_ptr_t>();
                   if( kwa.contains("mtlruf") )
-                    mtlruf_tex = kwa["mtlruf"].cast<texture_ptr_t>();
+                    mtlruf_tex = kwa["mtlruf"].cast<image_ptr_t>();
                   if( kwa.contains("emissive") )
-                    emissive_tex = kwa["emissive"].cast<texture_ptr_t>();
+                    emissive_tex = kwa["emissive"].cast<image_ptr_t>();
                   if( kwa.contains("ambocc") )
-                    ambocc_tex = kwa["ambocc"].cast<texture_ptr_t>();    
+                    ambocc_tex = kwa["ambocc"].cast<image_ptr_t>();    
                   if( kwa.contains("doConform") ){
                     doConform = kwa["doConform"].cast<bool>();
                   }
-                   m->assignTextures(context.get(),
+                   m->assignImages(context.get(),
                                     color_tex,
                                     normal_tex,
                                     mtlruf_tex,

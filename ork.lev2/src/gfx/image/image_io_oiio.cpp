@@ -7,27 +7,22 @@
 
 #include <ork/pch.h>
 #include <ork/file/file.h>
-#include <ork/kernel/spawner.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/image.h>
-
-#include <ork/lev2/gfx/gfxenv.h>
-#include <ork/gfx/dds.h>
-#include <ork/lev2/gfx/texman.h>
 #include <math.h>
-#include <OpenImageIO/imageio.h>
-#include <OpenImageIO/filesystem.h>
 #include <ork/file/chunkfile.inl>
 #include <ork/kernel/memcpy.inl>
 
-#if defined(ENABLE_ISPC)
-#include <ispc_texcomp.h>
-#endif
+#include <OpenImageIO/imageio.h>
+#include <OpenImageIO/filesystem.h>
 
 OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
+
+static fvec3 _image_deco(0.1, 0.2, 0.3);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Image::_initFromDataBlockPNG(datablock_ptr_t datablock) {
@@ -36,7 +31,9 @@ bool Image::_initFromDataBlockPNG(datablock_ptr_t datablock) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size_t srclen) {
+bool Image::initFromInMemoryFile( std::string fmtguess, //
+                                  const void* srcdata,  //
+                                  size_t srclen ) {     //
   ImageSpec config;                                          // ImageSpec describing input configuration options
   Filesystem::IOMemReader memreader((void*)srcdata, srclen); // I/O proxy object
   void* ptr = &memreader;
@@ -78,7 +75,7 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
         }
         default:
           OrkAssert(false);
-          return;
+          return false;
       }
       break;
     case TypeDesc::UINT16:
@@ -95,12 +92,13 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
           break;
         default:
           OrkAssert(false);
-          return;
+          return false;
       }
       break;
     default:
       OrkAssert(false);
-      return;
+      return false;
+      
   }
 
   _data = std::make_shared<DataBlock>();
@@ -122,11 +120,13 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
     deco::printf(_image_deco, "// _bytesPerChannel<%d>\n", _bytesPerChannel);
     deco::printf(_image_deco, "///////////////////////////////////\n");
   }
+
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Image::writeToFile(ork::file::Path outpath) const {
+void Image::writeToFile(const ork::file::Path& outpath) const {
   auto cstrpath = outpath.c_str();
   auto out      = ImageOutput::create(cstrpath);
   if (!out)

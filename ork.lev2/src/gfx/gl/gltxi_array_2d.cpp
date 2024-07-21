@@ -38,62 +38,28 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   }
 
   array_tex->_texType = ETEXTYPE_2D_ARRAY;
-  int num_subtextures = int(tid._slices.size());
+  int num_slices = int(tid._slices.size());
   std::vector<compressedmipchain_ptr_t> subimagedata;
-  subimagedata.resize(num_subtextures);
+  subimagedata.resize(num_slices);
   ///////////////////////////
-  // scan present subtextures
+  // scan present subimages
   //  extract max width and height
   //  and load mipchains
   ///////////////////////////
-  int max_w      = 0;
-  int max_h      = 0;
-  int max_levels = 0;
+  size_t max_w      = 0;
+  size_t max_h      = 0;
+  size_t max_levels = 0;
   std::unordered_set<EBufferFormat> formats;
-  for (int i = 0; i < num_subtextures; i++) {
+  for (int i = 0; i < num_slices; i++) {
     const auto& slice = tid._slices[i];
-    auto subtex       = slice._subtex;
-    if (subtex) {
-      auto subtex_cmipc = std::make_shared<CompressedImageMipChain>();
-      subimagedata[i]   = subtex_cmipc;
-
-      DataBlockInputStream checkstream(subtex->_final_datablock);
-      uint32_t magic = checkstream.getItem<uint32_t>();
-      bool ok        = false;
-      if (Char4("chkf") == Char4(magic)) {
-        // XTX
-        subtex_cmipc->readXTX(subtex->_final_datablock);
-        int W          = subtex_cmipc->_width;
-        int H          = subtex_cmipc->_height;
-        int num_levels = int(subtex_cmipc->_levels.size());
-        auto fmt       = subtex_cmipc->_format;
-        formats.insert(fmt);
-        max_w           = std::max(max_w, W);
-        max_h           = std::max(max_h, H);
-        max_levels      = std::max(max_levels, num_levels);
-        auto subtexname = subtex->_debugName;
-        if (DEBUG_TEXARRAY2D) {
-          printf("subtex.xtx<%d:%s> w<%d> h<%d> numlev<%d>\n", i, subtexname.c_str(), W, H, num_levels);
-        }
-      } else if (Char4("DDS ") == Char4(magic)) {
-        // DDS
-        subtex_cmipc->readDDS(subtex->_final_datablock);
-        int W          = subtex_cmipc->_width;
-        int H          = subtex_cmipc->_height;
-        int num_levels = int(subtex_cmipc->_levels.size());
-        auto fmt       = subtex_cmipc->_format;
-        formats.insert(fmt);
-        max_w           = std::max(max_w, W);
-        max_h           = std::max(max_h, H);
-        max_levels      = std::max(max_levels, num_levels);
-        auto subtexname = subtex->_debugName;
-        if (DEBUG_TEXARRAY2D) {
-          printf("subtex.dds<%d:%s> w<%d> h<%d> numlev<%d>\n", i, subtexname.c_str(), W, H, num_levels);
-        }
-      } else {
-        // needs convert
-        OrkAssert(false);
-      }
+    auto subimg       = slice._subimg;
+    if (subimg) {
+      formats.insert(subimg->_format);
+      auto subimg_cmipc = subimg->compressedMipChainDefault();
+      subimagedata[i]   = subimg_cmipc;
+      max_levels = std::max(max_levels, subimg_cmipc->_levels.size());
+      max_w      = std::max(max_w, subimg_cmipc->_width);
+      max_h      = std::max(max_h, subimg_cmipc->_height);
     }
   }
   OrkAssert(formats.size() == 1);
@@ -117,7 +83,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, array_tex->_debugName);
   }
   array_tex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
-  // glTexStorage3D(texture_target, 4, GL_RGBA8, max_w, max_h, num_subtextures);
+  // glTexStorage3D(texture_target, 4, GL_RGBA8, max_w, max_h, num_slices);
 
   static auto clear_tex_data = (const uint8_t*)calloc(1, 256 << 20);
 
@@ -132,7 +98,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
       case EBufferFormat::RGBA_BPTC_UNORM: {
         int blocked_width  = (w + 3) & 0xfffffffc;
         int blocked_height = (h + 3) & 0xfffffffc;
-        size_t size        = blocked_width * blocked_height * num_subtextures;
+        size_t size        = blocked_width * blocked_height * num_slices;
         GL_ERRORCHECK();
         glCompressedTexImage3D(
             texture_target,          // target
@@ -140,7 +106,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
             triplet._internalFormat, // internal format
             w,                       // width
             h,                       // height
-            num_subtextures,         // depth
+            num_slices,         // depth
             0,                       // border
             size,                    // size
             clear_tex_data);         // data
@@ -152,9 +118,9 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
               level,
               w,
               h,
-              num_subtextures,
+              num_slices,
               triplet._internalFormat,
-              blocked_width * blocked_height * num_subtextures,
+              blocked_width * blocked_height * num_slices,
               clear_tex_data);
         }
         break;
@@ -171,9 +137,9 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
               level,
               w,
               h,
-              num_subtextures,
+              num_slices,
               triplet._internalFormat,
-              w * h * num_subtextures,
+              w * h * num_slices,
               clear_tex_data);
         }
         glTexImage3D(
@@ -182,7 +148,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
             triplet._internalFormat, // internal format
             w,                       // width
             h,                       // height
-            num_subtextures,         // depth
+            num_slices,         // depth
             0,                       // border
             triplet._format,         // format
             triplet._type,           // type
@@ -208,19 +174,19 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   GL_ERRORCHECK();
 
   if (1)
-    for (int isub = 0; isub < num_subtextures; isub++) {
+    for (int isub = 0; isub < num_slices; isub++) {
 
-      auto subtex_cmipc = subimagedata[isub];
-      if (subtex_cmipc) {
+      auto subimg_cmipc = subimagedata[isub];
+      if (subimg_cmipc) {
 
         GL_ERRORCHECK();
-        int num_levels = int(subtex_cmipc->_levels.size()) - 1;
+        int num_levels = int(subimg_cmipc->_levels.size()) - 1;
         if (num_levels < max_levels) {
           glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_levels - 1);
         }
         for (int level = 0; level < num_levels; level++) {
 
-          auto mip      = subtex_cmipc->_levels[level];
+          auto mip      = subimg_cmipc->_levels[level];
           auto mip_w    = mip._width;
           auto mip_h    = mip._height;
           auto mip_data = mip._data;
@@ -295,16 +261,16 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
           }
         }
       }
-    } //   if(0)for (int isub = 0; isub < num_subtextures; isub++) {
+    } //   if(0)for (int isub = 0; isub < num_slices; isub++) {
 
   ///////////////////////////
 
   if (DEBUG_TEXARRAY2D) {
-    printf("TextureArray maxw<%d> maxh<%d> depth<%d>\n", max_w, max_h, num_subtextures);
+    printf("TextureArray maxw<%d> maxh<%d> depth<%d>\n", max_w, max_h, num_slices);
     printf("///////////////////////////////////////////////////////////\n");
   }
   array_tex->_residenceState.fetch_or(1);
-  // OrkAssert(num_subtextures==0);
+  // OrkAssert(num_slices==0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -118,11 +118,14 @@ class LIGHTING_APP(object):
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.assignTextures(
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        normal = Image.createFromFile("src://effect_textures/default_normal.dds")
+        copy.assignImages(
           ctx,
-          color = Texture.load("src://effect_textures/white_64.dds"),
-          normal = Texture.load("src://effect_textures/default_normal.dds"),
-          mtlruf = Texture.load("src://effect_textures/white_64.dds"),
+          color = white,
+          normal = normal,
+          mtlruf = white,
+          doConform=True
         )
         submesh.material = copy
 

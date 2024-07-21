@@ -65,18 +65,18 @@ datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
     }
     img._debugName    = FormatString("emtex_%s", _name.c_str());
     auto cimgchain    = img.compressedMipChainDefault();
-    cimgchain._varmap = _varmap;
+    cimgchain->_varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
-    cimgchain.writeXTX(compressed_path);
+    cimgchain->writeXTX(compressed_path);
   }
   else if (1) { // ISPC compressor (WIP)
     Image img;
     img.initFromInMemoryFile(_format, _srcdata, _srcdatalen);
     img._debugName    = FormatString("emtex_%s", _name.c_str());
     auto cimgchain    = img.compressedMipChainDefault();
-    cimgchain._varmap = _varmap;
+    cimgchain->_varmap = _varmap;
     compressed_path   = ork::file::generateContentTempPath(hash, "xtx");
-    cimgchain.writeXTX(compressed_path);
+    cimgchain->writeXTX(compressed_path);
   } else { // nvtt compressor
     compressed_path = ork::file::generateContentTempPath(hash, "dds");
     auto options    = compressionOptsForUsage(_usage);

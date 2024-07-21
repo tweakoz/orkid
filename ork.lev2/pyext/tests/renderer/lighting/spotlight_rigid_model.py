@@ -80,11 +80,15 @@ class StereoApp1(object):
     self.frustum_prim = frustum_prim
     self.frustum = frust
     material = PBRMaterial()
-    material.assignTextures(ctx,
-                            color = Texture.load("src://effect_textures/white_64.dds"),
-                            normal = Texture.load("src://effect_textures/default_normal.dds"),
-                            mtlruf = Texture.load("src://effect_textures/white_64.dds")
-                           )
+    white = Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = Image.createFromFile("src://effect_textures/default_normal.dds")
+    material.assignImages(
+      ctx,
+      color = white,
+      normal = normal,
+      mtlruf = white,
+      doConform=True
+    )
     material.metallicFactor = 1
     material.roughnessFactor = 1
     material.gpuInit(ctx)

@@ -290,18 +290,6 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  auto image_type = //
-      py::class_<Image, image_ptr_t>(module_lev2, "Image")
-      .def_property_readonly("width", [](image_ptr_t img) -> int { return img->_width; })
-      .def_property_readonly("height", [](image_ptr_t img) -> int { return img->_height; })
-      .def_property_readonly("depth", [](image_ptr_t img) -> int { return img->_depth; })
-      .def_property_readonly("numcomponents", [](image_ptr_t img) -> int { return img->_numcomponents; })
-      .def_property_readonly("bytesPerChannel", [](image_ptr_t img) -> int { return img->_bytesPerChannel; })
-      .def_property_readonly("format", [](image_ptr_t img) -> int { return int(img->_format); })
-      .def_property_readonly("data", [](image_ptr_t img) -> datablock_ptr_t { return img->_data; })
-      ;
-  type_codec->registerStdCodec<image_ptr_t>(image_type);      
-  /////////////////////////////////////////////////////////////////////////////////
   auto texture_asset_type = //
       py::class_<TextureAsset, ::ork::asset::Asset, textureassetptr_t>(module_lev2, "TextureAsset")
           .def_property_readonly("texture", [](textureassetptr_t ta) -> texture_ptr_t { return ta->_texture; });

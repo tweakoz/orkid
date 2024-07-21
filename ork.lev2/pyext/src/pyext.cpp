@@ -27,6 +27,7 @@ void pyinit_gfx_lighting(py::module& module_lev2);
 void pyinit_gfx_qtez(py::module& module_lev2);
 void pyinit_gfx_buffers(py::module& module_lev2);
 void pyinit_gfx_particles(py::module& module_lev2);
+void pyinit_gfx_image(py::module& module_lev2);
 void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
 void pyinit_meshutil(py::module& module_lev2);
@@ -38,7 +39,6 @@ void pyinit_midi(py::module& module_lev2);
 void pyinit_gfx_camera(py::module& module_lev2);
 void pyinit_vr(py::module& module_lev2);
 void pyinit_editor(py::module& module_lev2);
-
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 
@@ -158,6 +158,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_xgmmodel(module_lev2);
   pyinit_gfx_xgmanim(module_lev2);
   pyinit_gfx_pbr(module_lev2);
+  pyinit_gfx_image(module_lev2);
   pyinit_vr(module_lev2);
   pyinit_editor(module_lev2);
   ::ork::audio::singularity::pyinit_aud_singularity(module_lev2);

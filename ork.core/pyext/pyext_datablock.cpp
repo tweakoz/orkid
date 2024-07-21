@@ -19,7 +19,21 @@ void pyinit_datablock(py::module& module_core) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")
+                         ///////////////////
                          .def(py::init<>())
+                         ///////////////////
+                         .def_static("createFromFile", [](const file::Path& path) -> datablock_ptr_t { //
+                            auto dblock = std::make_shared<DataBlock>();
+                            ::ork::File infile(path.c_str(), ::ork::EFM_READ);
+                            size_t length = 0;
+                            infile.GetLength(length);
+                            auto buffer = new uint8_t[length];
+                            infile.Read(buffer, length);
+                            dblock->addData(buffer, length);
+                            delete[] buffer;
+                            return dblock;
+                          })
+                         ///////////////////
                          .def(
                              "readByte",
                              [](datablock_ptr_t db, int integer) -> uint8_t {

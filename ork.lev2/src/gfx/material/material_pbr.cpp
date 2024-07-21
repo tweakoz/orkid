@@ -103,40 +103,36 @@ textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFor
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// join PBR texture set into a texture array
+// join PBR image set into a texture array
 ///////////////////////////////////////////////////////////////////////////////
 
-void PBRMaterial::assignTextures( lev2::Context* ctx,     //
-                                  texture_ptr_t color,    //
-                                  texture_ptr_t normal,   //
-                                  texture_ptr_t mtlruf,   //
-                                  texture_ptr_t emissive, //
-                                  texture_ptr_t ambocc,   //
-                                  bool do_conform ) {     //
+void PBRMaterial::assignImages( lev2::Context* ctx,   //
+                                image_ptr_t color,    //
+                                image_ptr_t normal,   //
+                                image_ptr_t mtlruf,   //
+                                image_ptr_t emissive, //
+                                image_ptr_t ambocc,   //
+                                bool do_conform ) {   //
 
   OrkAssert(ambocc==nullptr);
 
   if( do_conform ){
-    _texColor = color;
-    _texNormal = normal;
-    _texMtlRuf = mtlruf;
-    _texEmissive = emissive;
-    conformTextures(ctx);
-    if(normal==nullptr) normal = _texNormal;
-    if(mtlruf==nullptr) mtlruf = _texMtlRuf;
-    if(emissive==nullptr) emissive = _texEmissive;
+    _image_color = color;
+    _image_normal = normal;
+    _image_mtlruf = mtlruf;
+    _image_emissive = emissive;
+    conformImages();
   }
-
-
+    
   TextureArrayInitData TID;
 
   //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
 
   TID._slices.resize(4);
-  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, color};
-  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, normal};
-  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, mtlruf};
-  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, emissive};
+  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, _image_color};
+  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, _image_normal};
+  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, _image_mtlruf};
+  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, _image_emissive};
   _texArrayCNMREA = std::make_shared<Texture>();
   _texArrayCNMREA->_debugName = "pbrtexarray";
   auto txi = ctx->TXI();
@@ -145,112 +141,158 @@ void PBRMaterial::assignTextures( lev2::Context* ctx,     //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// PBRMaterial::conformTextures
+// PBRMaterial::conformImages
 //   we need textures to be same size and format
 //   so they can go into a texture array 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PBRMaterial::conformTextures(lev2::Context* ctx){
+void PBRMaterial::conformImages(){
   //////////////////////////
   // get biggest size
+  //  and mark down non-rgb images
   //////////////////////////
-  int max_w = 0;
-  int max_h = 0;
-  if (_texColor != nullptr) {
-    max_w = std::max(max_w, _texColor->_width);
-    max_h = std::max(max_h, _texColor->_height);
+  size_t max_w = 64;
+  size_t max_h = 64;
+  std::set<image_ptr_t> images_to_rgb;
+  if (_image_color != nullptr) {
+    max_w = std::max(max_w, _image_color->_width);
+    max_h = std::max(max_h, _image_color->_height);
+    if(_image_color->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_color);
+    }
   }
-  if (_texNormal != nullptr) {
-    max_w = std::max(max_w, _texNormal->_width);
-    max_h = std::max(max_h, _texNormal->_height);
+  if (_image_normal != nullptr) {
+    max_w = std::max(max_w, _image_normal->_width);
+    max_h = std::max(max_h, _image_normal->_height);
+    if(_image_normal->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_normal);
+    }
   }
-  if (_texMtlRuf != nullptr) {
-    max_w = std::max(max_w, _texMtlRuf->_width);
-    max_h = std::max(max_h, _texMtlRuf->_height);
+  if (_image_mtlruf != nullptr) {
+    max_w = std::max(max_w, _image_mtlruf->_width);
+    max_h = std::max(max_h, _image_mtlruf->_height);
+    if(_image_mtlruf->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_mtlruf);
+    }
   }
-  if (_texEmissive != nullptr) {
-    max_w = std::max(max_w, _texEmissive->_width);
-    max_h = std::max(max_h, _texEmissive->_height);
+  if (_image_emissive != nullptr) {
+    max_w = std::max(max_w, _image_emissive->_width);
+    max_h = std::max(max_h, _image_emissive->_height);
+    if(_image_emissive->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_emissive);
+    }
   }
-  if (_texAmbOcc != nullptr) {
-    max_w = std::max(max_w, _texAmbOcc->_width);
-    max_h = std::max(max_h, _texAmbOcc->_height);
+  if (_image_ambocc != nullptr) {
+    max_w = std::max(max_w, _image_ambocc->_width);
+    max_h = std::max(max_h, _image_ambocc->_height);
+    if(_image_ambocc->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_ambocc);
+    }
   }
   //////////////////////////
-
-  if (_texColor == nullptr) {
-    auto loadreq         = std::make_shared<asset::LoadRequest>();
-    loadreq->_asset_path = "src://effect_textures/white_64";
-    _asset_texcolor      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
-    _texColor            = _asset_texcolor->GetTexture();
-      OrkAssert(_texColor != nullptr);
-    OrkAssert(_texColor->_texFormat != EBufferFormat::NONE );
+  // convert non-rgb to rgb
+  //  overwriting the original images
+  //////////////////////////
+  for(auto img : images_to_rgb){
+    auto rgb = std::make_shared<Image>();
+    rgb->convertFromImageToFormat(*img, EBufferFormat::RGB8);
+    if(img==_image_color){
+      _image_color = rgb;
+    }
+    if(img==_image_normal){
+      _image_normal = rgb;
+    }
+    if(img==_image_mtlruf){
+      _image_mtlruf = rgb;
+    }
+    if(img==_image_emissive){
+      _image_emissive = rgb;
+    }
+    if(img==_image_ambocc){
+      _image_ambocc = rgb;
+    }
   }
-  else{
-      OrkAssert(_texColor->_width == max_w);
-      OrkAssert(_texColor->_height == max_h);
+  //////////////////////////
+  // now, find out which images need to be resized
+  //////////////////////////
+  std::set<image_ptr_t> images_to_resize;
+  if (_image_color != nullptr) {
+    if(_image_color->_width!=max_w || _image_color->_height!=max_h){
+      images_to_resize.insert(_image_color);
+    }
   }
-  //////////////
-  // fetch color texture size and format
-  //////////////
-  int color_w = _texColor->_width;
-  int color_h = _texColor->_height;
-  auto format = _texColor->_texFormat;
-  //////////////
-  // if normal map is not set, create a default one, matching color texture size and format
-  //////////////
-  if (_texNormal == nullptr) {
-    fvec3 ncolor = fvec3(0.5, 0.5, 1);
-    auto nasset = _loadDefaultColorTexture(ncolor, color_w, color_h, format);
-    _texNormal = nasset->GetTexture();
-    auto des_fmt = EBufferFormatToName(format);
-    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
-    _texNormal->_debugName = FormatString("pbr-def-nrm des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
-    OrkAssert(_texNormal != nullptr);
-    //printf( "default normal<%p>\n", _texNormal.get() );
+  if (_image_normal != nullptr) {
+    if(_image_normal->_width!=max_w || _image_normal->_height!=max_h){
+      images_to_resize.insert(_image_normal);
+    }
   }
-  else{
-    OrkAssert(_texNormal->_width == max_w);
-    OrkAssert(_texNormal->_height == max_h);
+  if (_image_mtlruf != nullptr) {
+    if(_image_mtlruf->_width!=max_w || _image_mtlruf->_height!=max_h){
+      images_to_resize.insert(_image_mtlruf);
+    }
   }
-  //////////////
-  // if mtlruf map is not set, create a default one, matching color texture size and format
-  //////////////
-  if (_texMtlRuf == nullptr) {
+  if (_image_emissive != nullptr) {
+    if(_image_emissive->_width!=max_w || _image_emissive->_height!=max_h){
+      images_to_resize.insert(_image_emissive);
+    }
+  }
+  if (_image_ambocc != nullptr) {
+    if(_image_ambocc->_width!=max_w || _image_ambocc->_height!=max_h){
+      images_to_resize.insert(_image_ambocc);
+    }
+  }
+  //////////////////////////
+  // resize the images
+  //////////////////////////
+  for(auto img : images_to_resize){
+    auto resized = std::make_shared<Image>();
+    resized->resizedOf(*img, max_w, max_h);
+    if(img==_image_color){
+      _image_color = resized;
+    }
+    if(img==_image_normal){
+      _image_normal = resized;
+    }
+    if(img==_image_mtlruf){
+      _image_mtlruf = resized;
+    }
+    if(img==_image_emissive){
+      _image_emissive = resized;
+    }
+    if(img==_image_ambocc){
+      _image_ambocc = resized;
+    }
+  }
+  //////////////////////////
+  // now create defaults if they do not exist
+  //////////////////////////
+  if (_image_color == nullptr) {
+    fvec3 color = fvec3(1,1,1);
+    _image_color = std::make_shared<Image>();
+    _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+  }
+  if (_image_normal == nullptr) {
+    fvec3 color = fvec3(0.5,0.5,1);
+    _image_normal = std::make_shared<Image>();
+    _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+  }
+  if (_image_mtlruf == nullptr) {
     fvec3 color = (_metallicFactor == 0.0f) //
                 ? fvec3(1,0,0) //
                 : fvec3(1,0,1);
-    auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
-    _texMtlRuf = nasset->GetTexture();
-    auto des_fmt = EBufferFormatToName(format);
-    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
-    _texMtlRuf->_debugName = FormatString("pbr-def-mtlruf des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
-    OrkAssert(_texMtlRuf != nullptr);
-    //printf( "default mtlruf<%p>\n", _texMtlRuf.get() );
+    _image_mtlruf = std::make_shared<Image>();
+    _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
   }
-  else{
-    OrkAssert(_texMtlRuf->_width == max_w);
-    OrkAssert(_texMtlRuf->_height == max_h);
-  }
-  //////////////
-  // if emissive map is not set, create a default one, matching color texture size and format
-  //////////////
-  if (_texEmissive == nullptr) {
+  if (_image_emissive == nullptr) {
     fvec3 color = fvec3(0,0,0);
-    auto nasset = _loadDefaultColorTexture(color, color_w, color_h,format);
-    _texEmissive = nasset->GetTexture();
-    auto des_fmt = EBufferFormatToName(format);
-    auto act_fmt = EBufferFormatToName(_texNormal->_texFormat);
-    _texEmissive->_debugName = FormatString("pbr-def-emi des<%s> act<%s>", des_fmt.c_str(), act_fmt.c_str());
-    OrkAssert(_texEmissive != nullptr);
-    //printf( "default emissive<%p>\n", _texEmissive.get() );
+    _image_emissive = std::make_shared<Image>();
+    _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
   }
-  else{
-    OrkAssert(_texEmissive->_width == max_w);
-    OrkAssert(_texEmissive->_height == max_h);
+  if (_image_ambocc == nullptr) {
+    fvec3 color = fvec3(1,1,1);
+    _image_ambocc = std::make_shared<Image>();
+    _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
   }
-  //////////////
-  assignTextures(ctx, _texColor, _texNormal, _texMtlRuf, _texEmissive, _texAmbOcc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -302,7 +344,6 @@ void PBRMaterial::describeX(class_t* c) {
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
         logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
-        auto tex = std::make_shared<lev2::Texture>();
         auto image = std::make_shared<lev2::Image>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
@@ -312,28 +353,32 @@ void PBRMaterial::describeX(class_t* c) {
         logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         logchan_pbr->log(" token<%s>", token);
         if (0 == strcmp(token, "colormap")) {
-          mtl->_texColor     = tex;
           mtl->_colorMapName = texname;
           mtl->_image_color = image;
         }
         if (0 == strcmp(token, "normalmap")) {
-          mtl->_texNormal     = tex;
           mtl->_normalMapName = texname;
           mtl->_image_normal = image;
         }
         if (0 == strcmp(token, "mtlrufmap")) {
-          mtl->_texMtlRuf     = tex;
           mtl->_mtlRufMapName = texname;
           mtl->_image_mtlruf = image;
         }
         if (0 == strcmp(token, "emissivemap")) {
-          mtl->_texEmissive     = tex;
           mtl->_emissiveMapName = texname;
           mtl->_image_emissive = image;
         }
       }
     }
-    mtl->conformImages(targ);
+
+    mtl->assignImages( targ,                  //
+                       mtl->_image_color,     //
+                       mtl->_image_normal,    //
+                       mtl->_image_mtlruf,    //
+                       mtl->_image_emissive,  //
+                       nullptr,  //
+                       true);
+
 
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
@@ -636,7 +681,14 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
 
   if(_texArrayCNMREA == nullptr){
-    conformTextures(targ);
+    conformImages();
+    assignImages( targ,                  //
+                  _image_color,     //
+                  _image_normal,    //
+                  _image_mtlruf,    //
+                  _image_emissive,  //
+                  nullptr,  //
+                  false);
   }
 
 }

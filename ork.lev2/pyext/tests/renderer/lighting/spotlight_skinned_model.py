@@ -96,10 +96,13 @@ class StereoApp1(object):
         copy.metallicFactor = 0.0
         copy.roughnessFactor = 1.0
         colortex = copy.texColor
-        copy.assignTextures(
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        copy.assignImages(
           ctx,
-          color = Texture.load("src://effect_textures/white_64.dds"),
-          doConform=True)
+          color = white,
+          mtlruf = white,
+          doConform=True
+        )
         submesh.material = copy
 
     ##################
