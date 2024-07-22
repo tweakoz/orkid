@@ -33,13 +33,15 @@ def installImguiOnApp(app):
 class ImGuiWrapper:
 
   ####################################
-  def __init__(self, ezapp, appID, docking=True ):
+  def __init__(self, app, appID, docking=True, lock_to_panel=None ):
+    self.app = app
     self.appID = appID
     self.imgui_settings_file = obt_path.temp()/("_imgui_settings_%s.ini" % self.appID)
     self.app_settings_file = obt_path.temp()/("_app_settings_%s.json" % self.appID)
-    self.ezapp = ezapp
-    self.uicontext = ezapp.uicontext
-    self.topwidget = ezapp.topWidget
+    self.ezapp = app.ezapp
+    self.uicontext = app.ezapp.uicontext
+    self.topwidget = app.ezapp.topWidget
+    self.lock_to_panel = lock_to_panel
     ###################################
     # key remap table
     ###################################
@@ -53,6 +55,7 @@ class ImGuiWrapper:
       glfw.KEY_UP: imgui.Key.up_arrow,
       glfw.KEY_DOWN: imgui.Key.down_arrow,
       glfw.KEY_ESCAPE: imgui.Key.escape,
+      glfw.KEY_SPACE: imgui.Key.space,
       # numerics
       glfw.KEY_0: imgui.Key._0,
       glfw.KEY_1: imgui.Key._1,
@@ -191,12 +194,25 @@ class ImGuiWrapper:
       self.imgui_io = imgui.get_io()
       window_flags = imgui.WindowFlags_.menu_bar | imgui.WindowFlags_.no_docking
       dockspace_flags = imgui.DockNodeFlags_.none
+
+      if self.lock_to_panel!=None:
+        W = self.lock_to_panel
+        wx = W.x
+        wy = W.y
+        ww = W.width
+        wh = W.height    
+
+        locked_pos = imgui.ImVec2(wx, wy)  # Change these values to your desired position
+        locked_size = imgui.ImVec2(ww, wh)  # Change these values to your desired size
+        imgui.set_next_window_pos( pos=locked_pos, cond=imgui.Cond_.always)
+        imgui.set_next_window_size(size=locked_size, cond=imgui.Cond_.always)
+
    
       imgui.push_style_var(imgui.StyleVar_.window_rounding, 0.0)
       imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
 
       imgui.push_style_var(imgui.StyleVar_.window_padding, (0.0, 0.0))
-      imgui.begin("DockSpace Demo", True, window_flags)
+      imgui.begin("OrkidDockspace", True, window_flags)
       imgui.pop_style_var()
 
       # DockSpace
@@ -236,9 +252,13 @@ class ImGuiWrapper:
       else:
         keycode = uievent.keycode
         remapped_key = self._remapNativeKeyToImguiKey(keycode)
+        metas = (uievent.alt == True) or (uievent.ctrl == True)                       
         if remapped_key!=None:
-          self.imgui_io.add_key_event(remapped_key,True)
-          self.imgui_io.add_key_event(remapped_key,False)
+          if metas:
+            self.app.onMetaKey(uievent,remapped_key)
+          else:
+            self.imgui_io.add_key_event(remapped_key,True)
+            self.imgui_io.add_key_event(remapped_key,False)
           key_0 = getattr(imgui.Key,"_0")
           key_9 = getattr(imgui.Key,"_9")
           key_a = getattr(imgui.Key,"a")
@@ -279,9 +299,10 @@ class ImGuiWrapper:
               character = ord(':') if uievent.shift else ord(';')
             elif remapped_key == imgui.Key.apostrophe:
               character = ord('"') if uievent.shift else ord('\'')
+            elif remapped_key == imgui.Key.space:
+              character = ord(' ')
           ################################### 
-          no_metas = (uievent.alt == False) and (uievent.ctrl == False)                       
-          if character != None and no_metas:
+          if character != None and not metas:
             self.imgui_io.add_input_character(character)
     ###############################################################
     elif uievent.code == tokens.KEY_UP.hashed:

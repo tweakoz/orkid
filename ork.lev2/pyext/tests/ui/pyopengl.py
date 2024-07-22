@@ -96,7 +96,7 @@ class UiTestApp(object):
     self.newAppState() # define application state (for save/restore)
 
     # create ezapp
-    self.ezapp = lev2.OrkEzApp.create(self)
+    self.ezapp = lev2.OrkEzApp.create(self,fullscreen=False)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
 
@@ -122,9 +122,11 @@ class UiTestApp(object):
     
     self.griditems = griditems
     
-    W = self.griditems[0].widget
+    W = self.griditems[2].widget
     W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
     self.test_widget = W
+
+    self.status_text = "OK"
 
     # animation properties
     self.time = 0.0
@@ -160,22 +162,25 @@ class UiTestApp(object):
   def onGpuInit(self,ctx):
 
     ##################################
+    # setup imgui
+    ##################################
+
+    W = self.griditems[0].widget
+    W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
+
+    self.imgui_handler = ImGuiWrapper(self, "ork_pyext_test_pyopengl", docking=True, lock_to_panel=W)
+    self.imgui_handler.onGpuInit(ctx,self.app_vars)
+    self.text_editor = TextEditor()
+    self.text_editor.set_text(self.app_vars.frg_shader_src)
+    self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
+    
+    ##################################
     # define geometry and shaders
     ##################################
 
     self.geometry = GeometryBuffer(vertices, indices )
-    self.shaders = PyShader( vertex_shader_source, fragment_shader_source, ["time","ModColor"] )
+    self.recompileShader()
 
-    ##################################
-    # setup imgui
-    ##################################
-
-    self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl", docking=True)
-    self.imgui_handler.onGpuInit(ctx,self.app_vars)
-    self.text_editor = TextEditor()
-    self.text_editor.set_text(fragment_shader_source)
-    self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
-    
   ##############################################
 
   def onExit(self):
@@ -189,6 +194,26 @@ class UiTestApp(object):
 
   def onOverlayUiEvent(self,uievent):
     return self.imgui_handler.onUiEvent(uievent)
+
+  ##############################################
+
+  def recompileShader(self):
+    try:
+      frg_src = self.text_editor.get_text()
+      sh = PyShader(vertex_shader_source, frg_src, ["time","ModColor"])
+      self.shaders = sh
+      self.app_vars.frg_shader_src = frg_src
+      self.status_text = "OK"
+    except Exception as e:
+      print("Error compiling shader:", e)
+      self.status_text = "Error: " + str(e)
+        
+  ##############################################
+
+  def onMetaKey(self,uievent,im_key):
+    print("onMetaKey",im_key)
+    if im_key == imgui.Key.enter:
+      self.recompileShader()
 
   ##############################################
   # onGpuPostFrame - called after ALL orkid rendering is done
@@ -280,7 +305,8 @@ class UiTestApp(object):
     #################################
 
     self.imgui_handler.beginFrame()
-
+    io = imgui.get_io()
+    
     #################################
     # property sheet for app_vars
     #################################
@@ -302,6 +328,14 @@ class UiTestApp(object):
       str=self.app_vars.text
     )
 
+    imgui.text("FPS %g"%(io.framerate))
+    
+    # draw status color and text
+    status_color = imgui.ImVec4(1,0,0,1)
+    if self.status_text=="OK":
+      status_color = imgui.ImVec4(0,1,0,1)
+    imgui.text_colored(status_color, self.status_text)
+    
     imgui.end()
 
     #################################
