@@ -15,7 +15,7 @@ import numpy as np
 from orkengine.core import *
 from orkengine import lev2
 lev2_pyexdir.addToSysPath()
-from lev2utils.imgui import ImGuiWrapper
+from lev2utils.imgui import ImGuiWrapper, installImguiOnApp
 from lev2utils.pyopengl import PyShader, GeometryBuffer
 from OpenGL.GL import *
 
@@ -88,17 +88,17 @@ class UiTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.new_app_state()
+    self.newAppState() # define application state (for save/restore)
 
+    # create ezapp
     self.ezapp = lev2.OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.uicontext = self.ezapp.uicontext
-    print(self.uicontext)
-    UIOVERLAY = lev2.EzUiEventInterceptor()
-    UIOVERLAY.onUiEvent = lambda uievent : self.onOverlayUiEvent(uievent)
-    self.uicontext.overlayWidget = UIOVERLAY
-
     self.ezapp.topWidget.enableUiDraw()
+
+    # create and bind overlay event interceptor
+    #  so we can route events to imgui
+    installImguiOnApp(self)
+
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 8
     griditems = lg_group.makeGrid( width = 2,
@@ -133,7 +133,7 @@ class UiTestApp(object):
   #  the restore will be done when the app starts (onGpuInit)
   ##############################################
 
-  def new_app_state(self):
+  def newAppState(self):
     self.app_vars = VarMap()
     self.app_vars.rate = 0.1
     self.app_vars.color = 1., .0, .5

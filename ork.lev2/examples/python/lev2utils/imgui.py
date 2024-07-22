@@ -11,7 +11,23 @@ from orkengine.core import CrcStringProxy
 from orkengine import lev2
 from imgui.integrations.opengl import ProgrammablePipelineRenderer
 
+################################################################################
 tokens = CrcStringProxy()
+################################################################################
+
+def installImguiOnApp(app):
+  assert(hasattr(app,"ezapp"))
+  assert(hasattr(app,"onOverlayUiEvent"))
+  assert(hasattr(app,"onGpuPostFrame"))
+  assert(hasattr(app,"onGpuInit"))
+  assert(hasattr(app,"onExit"))
+  assert(hasattr(app,"newAppState"))
+  assert(hasattr(app,"app_vars"))
+  UIOVERLAY = lev2.EzUiEventInterceptor()
+  UIOVERLAY.onUiEvent = lambda uievent : app.onOverlayUiEvent(uievent)
+  app.ezapp.uicontext.overlayWidget = UIOVERLAY
+
+################################################################################
 
 class ImGuiWrapper:
 
