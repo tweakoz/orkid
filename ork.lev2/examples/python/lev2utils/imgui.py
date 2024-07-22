@@ -67,20 +67,6 @@ class ImGuiWrapper:
 
   ####################################
 
-  def load_app_dict(self,appdict):
-    print(appdict)
-    def do_attr(name):
-      if name in appdict:
-        value = appdict[name]
-        # if its an array, convert to tuple
-        if isinstance(value,list):
-          value = tuple(value)
-        setattr(self.app_vars,name,value)
-
-    do_attr("rate")
-    do_attr("color")
-    do_attr("text")
-
   def onGpuInit(self,ctx, vars):
     imgui.create_context()
     imgui.style_colors_dark()
