@@ -61,6 +61,27 @@ void main() {
 """
 
 ################################################################################
+# Geometry data
+################################################################################
+
+extent = 1.0
+vertices = np.array([
+    # positions        # texture coords
+    -extent, -extent, 0.0,   0.0, 0.0,
+     extent, -extent, 0.0,   1.0, 0.0,
+     extent,  extent, 0.0,   1.0, 1.0,
+    -extent,  extent, 0.0,   0.0, 1.0
+], dtype=np.float32)
+
+# Indices for the quad (two triangles)
+indices = np.array([
+    0, 1, 2,
+    2, 3, 0
+], dtype=np.uint32)
+
+################################################################################
+# Our hybrid application class
+################################################################################
 
 class UiTestApp(object):
 
@@ -85,34 +106,23 @@ class UiTestApp(object):
 
     print(griditems)
 
+    # set up event handlers for the grid items
     griditems[0].widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
     griditems[1].widget.onPressed(lambda: print("GRIDITEM1 PUSHED"))
     griditems[2].widget.onPressed(lambda: print("GRIDITEM2 PUSHED"))
     griditems[3].widget.onPressed(lambda: print("GRIDITEM3 PUSHED"))
     
     self.griditems = griditems
-    print(self.ezapp.mainwin)
-    print(self.ezapp.mainwin.appwin)
-    print(self.ezapp.topWidget)
-    print(self.ezapp.topWidget.name)
-    print(lg_group.name)
-    print(lg_group)
-    print(lg_group.layout)
-    print(lg_group.layout.top)
-    print(lg_group.layout.bottom)
-    print(lg_group.layout.left)
-    print(lg_group.layout.right)
-    print(lg_group.layout.centerH)
-    print(lg_group.layout.centerV)
-    print(self.ezapp.uicontext)
     
     W = self.griditems[0].widget
-    W.enableDraw = False
+    W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
     self.test_widget = W
+
+    # application state
+
     self.time = 0.0
     self.rate = 0.1
     self.color = 1., .0, .5
-
     self.text = "Hello, world!"
 
   ##############################################
@@ -133,21 +143,6 @@ class UiTestApp(object):
     # define geometry and shaders
     ##################################
 
-    extent = 1.0
-    vertices = np.array([
-        # positions        # texture coords
-        -extent, -extent, 0.0,   0.0, 0.0,
-         extent, -extent, 0.0,   1.0, 0.0,
-         extent,  extent, 0.0,   1.0, 1.0,
-        -extent,  extent, 0.0,   0.0, 1.0
-    ], dtype=np.float32)
-
-    # Indices for the quad (two triangles)
-    indices = np.array([
-        0, 1, 2,
-        2, 3, 0
-    ], dtype=np.uint32)
-
     self.geometry = GeometryBuffer(vertices, indices )
     self.shaders = PyShader( vertex_shader_source, fragment_shader_source, ["time","ModColor"] )
 
@@ -159,13 +154,17 @@ class UiTestApp(object):
     self.imgui_handler.onGpuInit(ctx)
 
   ##############################################
+  # invoked by the UI overlay widget
+  #  this is where imgui events are processed
+  #  if the event is not handled by imgui, it is passed to the app
+  ##############################################
 
   def onOverlayUiEvent(self,uievent):
     return self.imgui_handler.onUiEvent(uievent)
 
   ##############################################
-  # onGpuPostFrame - called after all orkid rendering is done
-  #  this is where pyopengl rendering should be done
+  # onGpuPostFrame - called after ALL orkid rendering is done
+  #  this is where pyopengl/imgui rendering should be done
   ##############################################
 
   def onGpuPostFrame(self,ctx):
@@ -198,9 +197,13 @@ class UiTestApp(object):
     glBindVertexArray(0)
 
     #################################
+    # begin imgui rendering
+    #################################
 
     self.imgui_handler.beginFrame()
     
+    #################################
+
     imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
 
     clicked, self.rate = imgui.slider_float(
@@ -215,28 +218,41 @@ class UiTestApp(object):
     
     imgui.end()
     
-    imgui.begin("Win2", True)
+    imgui.begin("Imgui Panel2", True)
     imgui.end()
+
+    #################################
+    # end imgui rendering
+    #################################
 
     self.imgui_handler.endFrame()
 
   ##############################################
-  # _clearPanel - clear the panel before drawing
+  # _clearPanel - clear the panel before drawing (via PyOpenGL)
   ##############################################
 
   def _clearPanel(self, widget):
+
+    ############################
     # get dimensions of window
+    ############################
 
     TOPW = self.ezapp.topWidget    
     scr_w = TOPW.width
     scr_h = TOPW.height
 
+    ############################
     # Draw On Top Of test widget
+    #  raw-opengl has origin at bottom left
+    #  so we need to flip the y coordinate
+    ############################
 
     wx = widget.x
-    wy = scr_h-widget.y2-1 # raw-opengl has origin at bottom left
+    wy = scr_h-widget.y2-1 
     ww = widget.width
     wh = widget.height    
+
+    # render it
 
     glDrawBuffers([GL_BACK_LEFT])
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
