@@ -87,6 +87,9 @@ class UiTestApp(object):
 
   def __init__(self):
     super().__init__()
+
+    self.new_app_state()
+
     self.ezapp = lev2.OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.uicontext = self.ezapp.uicontext
@@ -118,41 +121,26 @@ class UiTestApp(object):
     W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
     self.test_widget = W
 
-    # application state
-
+    # animation properties
     self.time = 0.0
-    self.rate = 0.1
-    self.color = 1., .0, .5
-    self.text = "Hello, world!"
-
-  ##############################################
-  # appdict support
-  ##############################################
-
-  def gen_app_dict(self):
-    return {
-      "time": self.time,
-      "rate": self.rate,
-      "color": self.color,
-      "text": self.text
-    }    
-
-  def load_app_dict(self,appdict):
-    def do_attr(name):
-      if name in appdict:
-        setattr(self,name,appdict[name])
-
-    do_attr("time")
-    do_attr("rate")
-    do_attr("color")
-    do_attr("text")
     
+
+  ##############################################
+  # appstate support
+  ##############################################
+
+  def new_app_state(self):
+    self.app_vars = VarMap()
+    self.app_vars.rate = 0.1
+    self.app_vars.color = 1., .0, .5
+    self.app_vars.text = "Hello, world!"
+
   ##############################################
   # onUpdate - called from update / simulation thread
   ##############################################
 
   def onUpdate(self,updev):
-    self.time = updev.absolutetime*self.rate
+    self.time = updev.absolutetime*self.app_vars.rate
 
   ##############################################
   # onGpuInit - called once at startup (in rendering thread)
@@ -173,14 +161,12 @@ class UiTestApp(object):
     ##################################
 
     self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl")
-    self.imgui_handler.onGpuInit(ctx)
-    self.load_app_dict(self.imgui_handler.app_dict)
+    self.imgui_handler.onGpuInit(ctx,self.app_vars)
 
   ##############################################
 
   def onExit(self):
-    appdict = self.gen_app_dict()
-    self.imgui_handler.onExit(appdict)
+    self.imgui_handler.onExit(self.app_vars)
 
   ##############################################
   # invoked by the UI overlay widget
@@ -210,7 +196,7 @@ class UiTestApp(object):
         
     glUseProgram(self.shaders.shader_program)
     glUniform1f(self.shaders.par_time,self.time)
-    glUniform3f(self.shaders.par_color,*self.color)
+    glUniform3f(self.shaders.par_color,*(self.app_vars.color))
 
     #################################
     # bind VAO and draw
@@ -235,15 +221,15 @@ class UiTestApp(object):
 
     imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
 
-    clicked, self.rate = imgui.slider_float(
+    clicked, self.app_vars.rate = imgui.slider_float(
         label="TimeRate",
-        value=self.rate,
+        value=self.app_vars.rate,
         min_value=-10.0,
         max_value=10.0,
     )
     
-    changed, self.color = imgui.color_edit3("Color", *self.color )
-    changed, self.text = imgui.input_text("Text", self.text, 256)
+    changed, self.app_vars.color = imgui.color_edit3("Color", *self.app_vars.color )
+    changed, self.app_vars.text = imgui.input_text("Text", self.app_vars.text, 256)
     
     imgui.end()
     

@@ -67,7 +67,21 @@ class ImGuiWrapper:
 
   ####################################
 
-  def onGpuInit(self,ctx):
+  def load_app_dict(self,appdict):
+    print(appdict)
+    def do_attr(name):
+      if name in appdict:
+        value = appdict[name]
+        # if its an array, convert to tuple
+        if isinstance(value,list):
+          value = tuple(value)
+        setattr(self.app_vars,name,value)
+
+    do_attr("rate")
+    do_attr("color")
+    do_attr("text")
+
+  def onGpuInit(self,ctx, vars):
     imgui.create_context()
     imgui.style_colors_dark()
     imgui.load_ini_settings_from_disk(str(self.imgui_settings_file))
@@ -75,19 +89,28 @@ class ImGuiWrapper:
     self.imgui_io.fonts.get_tex_data_as_rgba32()
     self.imgui_renderer = ProgrammablePipelineRenderer()
     self._map_keys()
-
     self.app_dict = {}
-
     if self.app_settings_file.exists():
       with open(self.app_settings_file, "r") as f:
         appdict_as_json = f.read()
         self.app_dict = json.loads(appdict_as_json)
+    for item in self.app_dict:
+      if item in vars.keys():
+        value = self.app_dict[item]
+        if isinstance(value,list):
+          value = tuple(value)
+        setattr(vars,item,value)
 
   ####################################
 
-  def onExit(self,appdict):
+  def onExit(self,vars):
     imgui.save_ini_settings_to_disk(str(self.imgui_settings_file))
-    appdict_as_json = json.dumps(appdict)
+    as_dict = dict()
+    for k in vars.keys():
+      val = vars[k]
+      as_dict[k] = val
+    appdict_as_json = json.dumps(as_dict)
+    print(self.app_settings_file)
     print(appdict_as_json)
     with open(self.app_settings_file, "w") as f:
       f.write(appdict_as_json)
