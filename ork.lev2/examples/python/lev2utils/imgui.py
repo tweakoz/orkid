@@ -5,7 +5,8 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import imgui, glfw
+import imgui, glfw, json
+from obt import path as obt_path
 from orkengine.core import CrcStringProxy
 from orkengine import lev2
 from imgui.integrations.opengl import ProgrammablePipelineRenderer
@@ -15,10 +16,13 @@ tokens = CrcStringProxy()
 class ImGuiWrapper:
 
   ####################################
-  def __init__(self, ezapp):
+  def __init__(self, ezapp, appID ):
+    self.appID = appID
+    self.imgui_settings_file = obt_path.temp()/("_imgui_settings_%s.ini" % self.appID)
+    self.app_settings_file = obt_path.temp()/("_app_settings_%s.json" % self.appID)
     self.ezapp = ezapp
     self.uicontext = ezapp.uicontext
-    self.topwidget = ezapp.topWidget 
+    self.topwidget = ezapp.topWidget
     
     self.GLFW_TO_IMGUI_KEY_MAP = {
       glfw.KEY_DELETE: imgui.KEY_DELETE,
@@ -65,10 +69,28 @@ class ImGuiWrapper:
 
   def onGpuInit(self,ctx):
     imgui.create_context()
+    imgui.style_colors_dark()
+    imgui.load_ini_settings_from_disk(str(self.imgui_settings_file))
     self.imgui_io = imgui.get_io()
     self.imgui_io.fonts.get_tex_data_as_rgba32()
     self.imgui_renderer = ProgrammablePipelineRenderer()
     self._map_keys()
+
+    self.app_dict = {}
+
+    if self.app_settings_file.exists():
+      with open(self.app_settings_file, "r") as f:
+        appdict_as_json = f.read()
+        self.app_dict = json.loads(appdict_as_json)
+
+  ####################################
+
+  def onExit(self,appdict):
+    imgui.save_ini_settings_to_disk(str(self.imgui_settings_file))
+    appdict_as_json = json.dumps(appdict)
+    print(appdict_as_json)
+    with open(self.app_settings_file, "w") as f:
+      f.write(appdict_as_json)
 
   ####################################
 

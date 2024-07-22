@@ -126,6 +126,28 @@ class UiTestApp(object):
     self.text = "Hello, world!"
 
   ##############################################
+  # appdict support
+  ##############################################
+
+  def gen_app_dict(self):
+    return {
+      "time": self.time,
+      "rate": self.rate,
+      "color": self.color,
+      "text": self.text
+    }    
+
+  def load_app_dict(self,appdict):
+    def do_attr(name):
+      if name in appdict:
+        setattr(self,name,appdict[name])
+
+    do_attr("time")
+    do_attr("rate")
+    do_attr("color")
+    do_attr("text")
+    
+  ##############################################
   # onUpdate - called from update / simulation thread
   ##############################################
 
@@ -150,8 +172,15 @@ class UiTestApp(object):
     # setup imgui
     ##################################
 
-    self.imgui_handler = ImGuiWrapper(self.ezapp)
+    self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl")
     self.imgui_handler.onGpuInit(ctx)
+    self.load_app_dict(self.imgui_handler.app_dict)
+
+  ##############################################
+
+  def onExit(self):
+    appdict = self.gen_app_dict()
+    self.imgui_handler.onExit(appdict)
 
   ##############################################
   # invoked by the UI overlay widget
@@ -266,4 +295,6 @@ class UiTestApp(object):
 
 ###############################################################################
 
-UiTestApp().ezapp.mainThreadLoop()
+the_app = UiTestApp()
+the_app.ezapp.mainThreadLoop()
+the_app.onExit()
