@@ -10,15 +10,18 @@
 
 #pip3 install imgui[glfw] pyopengl
 
+################################################################################
 import imgui
 import numpy as np
-from orkengine.core import *
+from OpenGL.GL import *
+################################################################################
+from orkengine.core import CrcStringProxy, lev2_pyexdir, VarMap
+from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 from orkengine import lev2
+################################################################################
 lev2_pyexdir.addToSysPath()
 from lev2utils.imgui import ImGuiWrapper, installImguiOnApp
 from lev2utils.pyopengl import PyShader, GeometryBuffer
-from OpenGL.GL import *
-
 ################################################################################
 
 tokens = CrcStringProxy()
@@ -187,6 +190,14 @@ class UiTestApp(object):
   ##############################################
 
   def onGpuPostFrame(self,ctx):
+    self._renderPanel(ctx)
+    self._renderImGui(ctx)
+
+  ##############################################
+  # _renderPanel - render the panel using PyOpenGL
+  ##############################################
+
+  def _renderPanel(self,ctx):
 
     #################################
     # clear the panel before drawing
@@ -214,37 +225,6 @@ class UiTestApp(object):
     #################################
 
     glBindVertexArray(0)
-
-    #################################
-    # begin imgui rendering
-    #################################
-
-    self.imgui_handler.beginFrame()
-    
-    #################################
-
-    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
-
-    clicked, self.app_vars.rate = imgui.slider_float(
-        label="TimeRate",
-        value=self.app_vars.rate,
-        min_value=-10.0,
-        max_value=10.0,
-    )
-    
-    changed, self.app_vars.color = imgui.color_edit3("Color", *self.app_vars.color )
-    changed, self.app_vars.text = imgui.input_text("Text", self.app_vars.text, 256)
-    
-    imgui.end()
-    
-    imgui.begin("Imgui Panel2", True)
-    imgui.end()
-
-    #################################
-    # end imgui rendering
-    #################################
-
-    self.imgui_handler.endFrame()
 
   ##############################################
   # _clearPanel - clear the panel before drawing (via PyOpenGL)
@@ -282,6 +262,43 @@ class UiTestApp(object):
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
     glDepthMask(GL_FALSE)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+  ##############################################
+  # _renderImGui - render the imgui UI
+  ##############################################
+
+  def _renderImGui(self,ctx):
+
+    #################################
+    # begin imgui rendering
+    #################################
+
+    self.imgui_handler.beginFrame()
+    
+    #################################
+
+    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
+
+    clicked, self.app_vars.rate = imgui.slider_float(
+        label="TimeRate",
+        value=self.app_vars.rate,
+        min_value=-10.0,
+        max_value=10.0,
+    )
+    
+    changed, self.app_vars.color = imgui.color_edit3("Color", *self.app_vars.color )
+    changed, self.app_vars.text = imgui.input_text("Text", self.app_vars.text, 256)
+    
+    imgui.end()
+    
+    imgui.begin("Imgui Panel2", True)
+    imgui.end()
+
+    #################################
+    # end imgui rendering
+    #################################
+
+    self.imgui_handler.endFrame()
 
 ###############################################################################
 
