@@ -83,7 +83,11 @@
    * Wraps all above functionality into a scene node based paradigm
    * Integrates with ECS via SceneGraphComponent/SceneGraphSystem 
    * Also works standalone with C++ or python
-   
+
+6. Integrations
+   * Supports ImGui integration direct in c++ (ImGui is embedded in this case)
+   * Supports ImGui integration via pyimgui in python (in this case ImGui is embedded in the pyimgui extension)
+   * PyOpenGL integration with Orkid's native UI system
 
 ---
 
