@@ -127,6 +127,10 @@ class UiTestApp(object):
 
   ##############################################
   # appstate support
+  #  we put all appstate that we want to save/restore in a VarMap
+  #  then we can save/restore the VarMap to/from a json file
+  #  the save will be done when the app exits (onExit)
+  #  the restore will be done when the app starts (onGpuInit)
   ##############################################
 
   def new_app_state(self):
