@@ -5,11 +5,12 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import imgui, glfw, json
+from imgui_bundle import imgui, hello_imgui
+from imgui_bundle.python_backends.opengl_backend import ProgrammablePipelineRenderer
+import glfw, json
 from obt import path as obt_path
 from orkengine.core import CrcStringProxy
 from orkengine import lev2
-from imgui.integrations.opengl import ProgrammablePipelineRenderer
 
 ################################################################################
 tokens = CrcStringProxy()
@@ -32,42 +33,42 @@ def installImguiOnApp(app):
 class ImGuiWrapper:
 
   ####################################
-  def __init__(self, ezapp, appID ):
+  def __init__(self, ezapp, appID, docking=True ):
     self.appID = appID
     self.imgui_settings_file = obt_path.temp()/("_imgui_settings_%s.ini" % self.appID)
     self.app_settings_file = obt_path.temp()/("_app_settings_%s.json" % self.appID)
     self.ezapp = ezapp
     self.uicontext = ezapp.uicontext
     self.topwidget = ezapp.topWidget
-    
+
     self.GLFW_TO_IMGUI_KEY_MAP = {
-      glfw.KEY_DELETE: imgui.KEY_DELETE,
-      glfw.KEY_BACKSPACE: imgui.KEY_BACKSPACE,
-      glfw.KEY_ENTER: imgui.KEY_ENTER,
-      glfw.KEY_TAB: imgui.KEY_TAB,
-      glfw.KEY_LEFT: imgui.KEY_LEFT_ARROW,
-      glfw.KEY_RIGHT: imgui.KEY_RIGHT_ARROW,
-      glfw.KEY_UP: imgui.KEY_UP_ARROW,
-      glfw.KEY_DOWN: imgui.KEY_DOWN_ARROW,
-      glfw.KEY_ESCAPE: imgui.KEY_ESCAPE,
+      #glfw.KEY_DELETE: imgui.KEY_DELETE,
+      #glfw.KEY_BACKSPACE: imgui.KEY_BACKSPACE,
+      #glfw.KEY_ENTER: imgui.KEY_ENTER,
+      #glfw.KEY_TAB: imgui.KEY_TAB,
+      #glfw.KEY_LEFT: imgui.KEY_LEFT_ARROW,
+      #glfw.KEY_RIGHT: imgui.KEY_RIGHT_ARROW,
+      #glfw.KEY_UP: imgui.KEY_UP_ARROW,
+      #glfw.KEY_DOWN: imgui.KEY_DOWN_ARROW,
+      #glfw.KEY_ESCAPE: imgui.KEY_ESCAPE,
       # Add more key mappings as needed
     }
     self.GLFW_IGNORE_KEYS = {
-      glfw.KEY_LEFT_SHIFT,
-      glfw.KEY_RIGHT_SHIFT,
-      glfw.KEY_LEFT_CONTROL,
-      glfw.KEY_RIGHT_CONTROL,
-      glfw.KEY_LEFT_ALT,
-      glfw.KEY_RIGHT_ALT,
-      glfw.KEY_LEFT_SUPER,
-      glfw.KEY_RIGHT_SUPER,
-      glfw.KEY_MENU,
-      glfw.KEY_ESCAPE,
+      #glfw.KEY_LEFT_SHIFT,
+      #glfw.KEY_RIGHT_SHIFT,
+      #glfw.KEY_LEFT_CONTROL,
+      #glfw.KEY_RIGHT_CONTROL,
+      #glfw.KEY_LEFT_ALT,
+      #glfw.KEY_RIGHT_ALT,
+      #glfw.KEY_LEFT_SUPER,
+      #glfw.KEY_RIGHT_SUPER,
+      #glfw.KEY_MENU,
+      #glfw.KEY_ESCAPE,
     }
     # fill in alphanumeric keys for both cases
     #for i in range(ord('A'), ord('Z')+1):
     #  self.GLFW_TO_IMGUI_KEY_MAP[ord('A')] = imgui.KEY_A + i - ord('A')
-      
+    self.docking = docking
   ####################################
 
   def _remapNativeKeyToImguiKey(self,keycode):
@@ -125,11 +126,40 @@ class ImGuiWrapper:
     scr_h = TOPW.height
     io = self.imgui_io
     io.display_size = scr_w, scr_h
+    self.imgui_io.config_flags |= imgui.ConfigFlags_.docking_enable
     imgui.new_frame()
+    ####################
+    # set up docking
+    ####################
+    if self.docking:
+      self.imgui_io = imgui.get_io()
+      window_flags = imgui.WindowFlags_.menu_bar | imgui.WindowFlags_.no_docking
+      dockspace_flags = imgui.DockNodeFlags_.none
+   
+      imgui.push_style_var(imgui.StyleVar_.window_rounding, 0.0)
+      imgui.push_style_var(imgui.StyleVar_.window_border_size, 0.0)
+
+      imgui.push_style_var(imgui.StyleVar_.window_padding, (0.0, 0.0))
+      imgui.begin("DockSpace Demo", True, window_flags)
+      imgui.pop_style_var()
+
+      # DockSpace
+      if self.imgui_io.config_flags & imgui.ConfigFlags_.docking_enable:
+          dockspace_id = imgui.get_id("MyDockSpace")
+          imgui.dock_space(dockspace_id, (0.0, 0.0), dockspace_flags)
 
   ####################################
 
   def endFrame(self):
+    ####################
+    # end docking
+    ####################
+    if self.docking:
+      imgui.pop_style_var(2)
+      imgui.end()
+    ####################
+    # render
+    ####################
     imgui.render()
     imgui.end_frame()
     self.render(imgui.get_draw_data())
@@ -142,6 +172,7 @@ class ImGuiWrapper:
   ####################################
 
   def _map_keys(self):
+      return
       key_map = self.imgui_io.key_map
 
       key_map[imgui.KEY_TAB] = glfw.KEY_TAB

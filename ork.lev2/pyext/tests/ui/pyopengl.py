@@ -8,10 +8,12 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-#pip3 install imgui[glfw] pyopengl
+#pip3 install imgui_bundle
 
 ################################################################################
-import imgui
+from imgui_bundle import imgui, hello_imgui
+#hello_imgui, icons_fontawesome_6, imgui, immapp, imgui_ctx, ImVec4, ImVec2
+#from imgui_bundle.demos_python import demo_utils
 import numpy as np
 from OpenGL.GL import *
 ################################################################################
@@ -139,8 +141,9 @@ class UiTestApp(object):
   def newAppState(self):
     self.app_vars = VarMap()
     self.app_vars.rate = 0.1
-    self.app_vars.color = 1., .0, .5
+    self.app_vars.color = [1., .0, .5]
     self.app_vars.text = "Hello, world!"
+    self.app_vars.frg_shader_src = fragment_shader_source
 
   ##############################################
   # onUpdate - called from update / simulation thread
@@ -167,7 +170,7 @@ class UiTestApp(object):
     # setup imgui
     ##################################
 
-    self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl")
+    self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl", docking=True)
     self.imgui_handler.onGpuInit(ctx,self.app_vars)
 
   ##############################################
@@ -274,29 +277,37 @@ class UiTestApp(object):
     #################################
 
     self.imgui_handler.beginFrame()
-    
-    #################################
 
     imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
 
     clicked, self.app_vars.rate = imgui.slider_float(
         label="TimeRate",
-        value=self.app_vars.rate,
-        min_value=-10.0,
-        max_value=10.0,
+        v=self.app_vars.rate,
+        v_min=-10.0,
+        v_max=10.0,
     )
-    
-    changed, self.app_vars.color = imgui.color_edit3("Color", *self.app_vars.color )
-    changed, self.app_vars.text = imgui.input_text("Text", self.app_vars.text, 256)
-    
+
+    changed, self.app_vars.color = imgui.color_edit3(
+      label="Color", 
+      col=self.app_vars.color
+    )
+    changed, self.app_vars.text = imgui.input_text(
+      label="Text", 
+      str=self.app_vars.text
+    )
+
     imgui.end()
-    
-    imgui.begin("Imgui Panel2", True)
+
+    imgui.begin("FragmentShader", True)
+    changed, self.app_vars.frg_shader_src = imgui.input_text_multiline(
+       label="Fragment Shader",
+       str=self.app_vars.frg_shader_src)
     imgui.end()
 
     #################################
     # end imgui rendering
     #################################
+
 
     self.imgui_handler.endFrame()
 

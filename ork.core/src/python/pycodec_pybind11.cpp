@@ -359,6 +359,20 @@ template <> pb11_typecodec_t::TypeCodec() {
           outval.set<tuple_ptr_t>(copy_of_tuple);
         });
   ///////////////////////////////
+  // tuple type (opaque hidden type)
+  ///////////////////////////////
+   using list_ptr_t = std::shared_ptr<py::list>;
+   registerCodec(
+        builtins.attr("list"),    // pytype
+        TypeId::of<list_ptr_t>(), // c++type
+        [](const varval_t& inpval, pybind11::object& outval) { // encoder
+          outval = *(inpval.get<list_ptr_t>());
+        },
+        [](const py::object& inpval, varval_t& outval) { // decoder
+          auto copy_of_list = std::make_shared<py::list>(inpval.cast<py::list>());
+          outval.set<list_ptr_t>(copy_of_list);
+        });
+  ///////////////////////////////
   registerCodec64(
       bool_type, //
       TypeId::of<bool>(),
