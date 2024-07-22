@@ -11,9 +11,8 @@
 #pip3 install imgui_bundle
 
 ################################################################################
-from imgui_bundle import imgui, hello_imgui
-#hello_imgui, icons_fontawesome_6, imgui, immapp, imgui_ctx, ImVec4, ImVec2
-#from imgui_bundle.demos_python import demo_utils
+from imgui_bundle import imgui, hello_imgui, imgui_md
+from imgui_bundle import imgui_color_text_edit as ed
 import numpy as np
 from OpenGL.GL import *
 ################################################################################
@@ -27,6 +26,7 @@ from lev2utils.pyopengl import PyShader, GeometryBuffer
 ################################################################################
 
 tokens = CrcStringProxy()
+TextEditor = ed.TextEditor
 
 ################################################################################
 # vertex shader source code
@@ -172,7 +172,10 @@ class UiTestApp(object):
 
     self.imgui_handler = ImGuiWrapper(self.ezapp, "ork_pyext_test_pyopengl", docking=True)
     self.imgui_handler.onGpuInit(ctx,self.app_vars)
-
+    self.text_editor = TextEditor()
+    self.text_editor.set_text(fragment_shader_source)
+    self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
+    
   ##############################################
 
   def onExit(self):
@@ -278,6 +281,10 @@ class UiTestApp(object):
 
     self.imgui_handler.beginFrame()
 
+    #################################
+    # property sheet for app_vars
+    #################################
+
     imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
 
     clicked, self.app_vars.rate = imgui.slider_float(
@@ -286,7 +293,6 @@ class UiTestApp(object):
         v_min=-10.0,
         v_max=10.0,
     )
-
     changed, self.app_vars.color = imgui.color_edit3(
       label="Color", 
       col=self.app_vars.color
@@ -298,16 +304,19 @@ class UiTestApp(object):
 
     imgui.end()
 
-    imgui.begin("FragmentShader", True)
-    changed, self.app_vars.frg_shader_src = imgui.input_text_multiline(
-       label="Fragment Shader",
-       str=self.app_vars.frg_shader_src)
-    imgui.end()
+    #################################
+    # text editor
+    #################################
 
+    imgui.begin("FragmentShader", True)
+    #imgui.push_font(imgui_md.get_code_font())
+    self.text_editor.render("Code")
+    #imgui.pop_font()
+    imgui.end()
+    
     #################################
     # end imgui rendering
     #################################
-
 
     self.imgui_handler.endFrame()
 
