@@ -43,7 +43,7 @@ void pyinit_math_la_t_vec(
   auto vec4_name = pfx + "vec4";
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto bdesc_vec2 = std::make_shared<BufferDescription>();
+  static auto bdesc_vec2 = std::make_shared<BufferDescription>();
   bdesc_vec2->scalar_size    = sizeof(T);
   bdesc_vec2->num_dimensions = 1;
   bdesc_vec2->shape          = {2};
@@ -52,7 +52,7 @@ void pyinit_math_la_t_vec(
   auto vec2_type = //
       py::clazz_bufp<vec2_t>(module_core, vec2_name.c_str())
           //////////////////////////////////////////////////////////////////////////
-          .as_buffer([bdesc_vec2](vec2_t& vec) -> adapter_t::buffer_handle_t {
+          .as_buffer([](vec2_t& vec) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_vec2, vec.asArray());
           })
           //////////////////////////////////////////////////////////////////////////
@@ -296,7 +296,7 @@ void pyinit_math_la_t_quat(
   auto quat_name    = pfx + "quat";
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto bdesc_quat = std::make_shared<BufferDescription>();
+  static auto bdesc_quat = std::make_shared<BufferDescription>();
   bdesc_quat->scalar_size    = sizeof(T);
   bdesc_quat->num_dimensions = 1;
   bdesc_quat->shape          = {4};
@@ -306,7 +306,7 @@ void pyinit_math_la_t_quat(
       py::clazz_bufp<quat_t>(module_core, quat_name.c_str())
       //py::class_<quat_t>(module_core, quat_name.c_str())
           //////////////////////////////////////////////////////////////////////////
-          .as_buffer([bdesc_quat](quat_t& q) -> adapter_t::buffer_handle_t {
+          .as_buffer([](quat_t& q) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_quat, q.asArray());
           })
           //////////////////////////////////////////////////////////////////////////
