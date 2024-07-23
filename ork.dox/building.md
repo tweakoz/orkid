@@ -14,6 +14,7 @@ To bootstrap on MacOs Sonoma (14.0)+
 * install / update XCode via AppStore.
 * Install Ork Build Tools (OBT)
   * see [OBT installation docs](https://github.com/tweakoz/ork.build/blob/develop/README.md)
+  * ensure that you have created a virtual environment using homebrew's python 3.12+
 * If you have not done so already, create an ork.build (OBT) *staging* environment/container.
   * ```obt.create.env.py --stagedir ~/.staging-xxx --wipe```
   * This can take a bit, it will be building a container scoped python and a few other deps which are required for consistent OBT operation.
@@ -26,8 +27,13 @@ To bootstrap on MacOs Sonoma (14.0)+
   * ```obt.dep.build.py orkid --force --wipe```
 * Build orkid (incremental)
   * ```obt.dep.build.py orkid --incremental```
-* Pre-convert some assets
-  * ```ork.asset.process.py```
+* first time fixup on macos
+  * ```obt.osx.macho.fixup.libs.py --all```
+  * ```obt.osx.macho.fixup.libs.py --all``` # yes run it twice
+* Download audio assets
+  * ```ork.singularity.download.data.py```
+* Pre-bake some assets
+  * ```ork.asset.process.py``` # after asset_count<1> printed five times exit
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
