@@ -33,7 +33,7 @@ To bootstrap on MacOs Sonoma (14.0)+
 * Download audio assets
   * ```ork.singularity.download.data.py```
 * Pre-bake some assets
-  * ```ork.asset.process.py``` # after asset_count<1> printed five times exit
+  * ```ork.asset.process.py``` # after asset_count<1> printed five times exit via ctrl-c
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
