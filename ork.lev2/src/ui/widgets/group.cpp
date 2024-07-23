@@ -268,6 +268,7 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::RELEASE: {
+      _clearColor = fvec4(0, 0, 0, 1);
       was_handled = true;
       break;
     }
@@ -275,14 +276,6 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       was_handled       = true;
       result.mHoldFocus = true;
       GUIDES_UNDER_MOUSE = anchor::findGuidePairUnderMouse(_layout.get(), fvec2(ev->miX, ev->miY));
-      auto g1 = GUIDES_UNDER_MOUSE.first;
-      auto g2 = GUIDES_UNDER_MOUSE.second;
-      //printf( "g1<%p> g2<%p>\n", g1.get(), g2.get() );
-      if(g1 and g2){
-        auto w1 = g1->_layout->_widget->_name;
-        auto w2 = g1->_layout->_widget->_name;
-        //printf( "w1<%s> w2<%s>\n", w1.c_str(), w2.c_str() );
-      }
       lastx = ev->miX;
       lasty = ev->miY;
       break;
@@ -293,6 +286,10 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       GUIDES_UNDER_MOUSE = std::pair<anchor::guide_ptr_t, anchor::guide_ptr_t>(nullptr,nullptr);
       break;
     }
+    case ui::EventCode::MOVE: {
+      _clearColor = fvec4(0.1,0.1,0.2, 1);
+      break;
+    }
     case ui::EventCode::DRAG: {
       result.mHoldFocus = true;
       was_handled       = true;
@@ -300,17 +297,21 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       auto g2 = GUIDES_UNDER_MOUSE.second;
       int dx           = ev->miX - lastx;
       int dy           = ev->miY - lasty;
-      if(g1 and g2 and (not g1->_locked) and (not g2->_locked)){
-        if(g1->isVertical() && g2->isVertical()){
-          dragGuidePairV(GUIDES_UNDER_MOUSE, dx);
-          _layout->updateAll();
-        }
-        else if(g1->isHorizontal() && g2->isHorizontal()){
-          dragGuidePairH(GUIDES_UNDER_MOUSE, dy);
-          _layout->updateAll();
-        }
-        else{
-          printf("BAD GUIDE PAIR\n");
+      if(g1 and g2){
+        if((not g1->_locked) and (not g2->_locked)){
+          _clearColor = fvec4(0.2,0.2,0.3, 1);
+          if(g1->isVertical() && g2->isVertical()){
+            dragGuidePairV(GUIDES_UNDER_MOUSE, dx);
+            _layout->updateAll();
+          }
+          else if(g1->isHorizontal() && g2->isHorizontal()){
+            dragGuidePairH(GUIDES_UNDER_MOUSE, dy);
+            _layout->updateAll();
+          }
+          else{
+            //_clearColor = fvec4(1, 0, 0, 1.0);
+            printf("BAD GUIDE PAIR\n");
+          }
         }
       }
       lastx = ev->miX;
@@ -321,6 +322,26 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
   if (was_handled)
     result.setHandled(this);
   return result;
+}
+/////////////////////////////////////////////////////////////////////////
+Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
+  //
+  for (auto& child : _children) {
+    bool inside = child->IsEventInside(ev);
+    if (inside) {
+      auto child_target = child->routeUiEvent(ev);
+      if (child_target and not child_target->_ignoreEvents) {
+        _clearColor = fvec4(0,0,0, 1.0);
+        return child_target;
+      }
+    }
+  }
+  //
+  if (IsEventInside(ev))
+    _clearColor = fvec4(0.15,0.15,0.25, 1.0);
+    return this;
+  //
+  return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui
