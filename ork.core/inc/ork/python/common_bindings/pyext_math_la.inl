@@ -427,7 +427,7 @@ void pyinit_math_la_t(
 
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::class_<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
+      py::clazz<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat3_t& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -447,11 +447,6 @@ void pyinit_math_la_t(
                                              return mtx;
                                            })*/
           //////////////////////////////////////////////////////////////////////////
-          .def(py::init<>())
-          .def(py::init<const mat3_t&>())
-          .def(py::init<const quat_t&>())
-          .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
-          .def("setColumn", (void(mat3_t::*)(int icol, const vec3_t&)) & mat3_t::setColumn)
           .def_property_readonly(
               "inverse",
               [](const mat3_t& inp) -> mat3_t {
@@ -459,6 +454,18 @@ void pyinit_math_la_t(
                 inv.inverse();
                 return inv;
               })
+          .def(py::init<>())
+          .def(py::init<const mat3_t&>())
+          .def(py::init<const quat_t&>())
+          .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
+          .def("setColumn", [](mat3_t& mtx, int icol, vec3_t c) { //
+            OrkPyAssert(icol >= 0 && icol < 3);
+            mtx.setColumn(icol, c);
+          })
+          .def("getColumn", [](mat3_t mtx, int icol) -> vec3_t { //
+            OrkPyAssert(icol >= 0 && icol < 3);
+            return mtx.column(icol);
+          })
           .def("fromQuaternion", &mat3_t::fromQuaternion)
           .def("zNormal", &mat3_t::xNormal)
           .def("yNormal", &mat3_t::yNormal)
