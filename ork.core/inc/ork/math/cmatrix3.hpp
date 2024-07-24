@@ -437,39 +437,20 @@ template <typename T> void Matrix33<T>::transpose() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::inverse() {
-  Matrix33<T> result;
-
-  /////////////
-  // The rotational part of the matrix is simply the transpose of the original matrix.
-
-  for (int i = 0; i <= 2; i++) {
-    for (int j = 0; j <= 2; j++) {
-      result.setElemYX(i, j, elemYX(j, i));
-    }
-  }
-
-  ////////////
-
-  *this = result;
+  Matrix33<T> out;
+  out = glm::inverse(this->asGlmMat3());
+  *this = out;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::inverseTranspose() {
-  Matrix33<T> result;
-
-  /////////////
-  // The rotational part of the matrix is simply the transpose of the original matrix.
-
+  Matrix33<T> temp = *this;
   for (int i = 0; i <= 3; i++) {
     for (int j = 0; j <= 3; j++) {
-      result.setElemXY(i, j, elemYX(j, i));
+      this->setElemXY(i, j, temp.elemXY(j, i));
     }
   }
-
-  ////////////
-
-  *this = result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

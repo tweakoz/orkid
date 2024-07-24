@@ -43,7 +43,7 @@ void pyinit_math_la_t_vec(
   auto vec4_name = pfx + "vec4";
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto bdesc_vec2 = std::make_shared<BufferDescription>();
+  static auto bdesc_vec2     = std::make_shared<BufferDescription>();
   bdesc_vec2->scalar_size    = sizeof(T);
   bdesc_vec2->num_dimensions = 1;
   bdesc_vec2->shape          = {2};
@@ -52,9 +52,8 @@ void pyinit_math_la_t_vec(
   auto vec2_type = //
       py::clazz_bufp<vec2_t>(module_core, vec2_name.c_str())
           //////////////////////////////////////////////////////////////////////////
-          .as_buffer([bdesc_vec2](vec2_t& vec) -> adapter_t::buffer_handle_t {
-            return adapter_t::gen_buffer<T>(bdesc_vec2, vec.asArray());
-          })
+          .as_buffer([](vec2_t& vec) -> adapter_t::buffer_handle_t { return adapter_t::gen_buffer<T>(bdesc_vec2, vec.asArray()); })
+          .template from_buffer<vec2_t>([](const T* data) -> vec2_t { return vec2_t(data[0], data[1]); })
           //////////////////////////////////////////////////////////////////////////
           .prop_ro(
               "fract",
@@ -65,6 +64,11 @@ void pyinit_math_la_t_vec(
               "floor",
               [](const vec2_t& vec) -> vec2_t { //
                 return vec2_t(floor(vec.x), floor(vec.y));
+              })
+          .prop_ro(
+              "ceil",
+              [](const vec2_t& vec) -> vec2_t { //
+                return vec2_t(ceil(vec.x), ceil(vec.y));
               })
           .prop_ro("length", [](const vec2_t& vec) -> T { return vec.magnitude(); })
           .prop_ro("lengthSquared", [](const vec2_t& vec) -> T { return vec.magnitudeSquared(); })
@@ -80,7 +84,7 @@ void pyinit_math_la_t_vec(
           .def("angle", &vec2_t::angle)
           .def("orientedAngle", &vec2_t::orientedAngle)
           .def("mag", &vec2_t::magnitude)
-          .def("magsquared", &vec2_t::magnitudeSquared)
+          .def("magSquared", &vec2_t::magnitudeSquared)
           .def("lerp", &vec2_t::lerp)
           .def("serp", &vec2_t::serp)
           .def("normalized", &vec2_t::normalized)
@@ -88,6 +92,7 @@ void pyinit_math_la_t_vec(
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
+          .def(py::self * T())
           .def("mul", [](const vec2_t& v, float scalar) -> vec2_t { return v * scalar; })
           .def(
               "__str__",
@@ -103,7 +108,7 @@ void pyinit_math_la_t_vec(
           });
   type_codec->registerStdCodec<vec2_t>(vec2_type);
   /////////////////////////////////////////////////////////////////////////////////
-  static auto bdesc_vec3 = std::make_shared<BufferDescription>();
+  static auto bdesc_vec3     = std::make_shared<BufferDescription>();
   bdesc_vec3->scalar_size    = sizeof(T);
   bdesc_vec3->num_dimensions = 1;
   bdesc_vec3->shape          = {3};
@@ -111,9 +116,25 @@ void pyinit_math_la_t_vec(
   /////////////////////////////////////////////////////////////////////////////////
   auto vec3_type = //
       py::clazz_bufp<vec3_t>(module_core, vec3_name.c_str())
-          .as_buffer([](vec3_t& vec) -> adapter_t::buffer_handle_t {
-            return adapter_t::gen_buffer<T>(bdesc_vec3, vec.asArray());
-          })
+          .as_buffer([](vec3_t& vec) -> adapter_t::buffer_handle_t { return adapter_t::gen_buffer<T>(bdesc_vec3, vec.asArray()); })
+          .template from_buffer<vec3_t>([](const T* data) -> vec3_t { return vec3_t(data[0], data[1], data[2]); })
+          //////////////////////////////////////////////////////////////////////////
+          .prop_ro(
+              "fract",
+              [](const vec3_t& vec) -> vec3_t { //
+                return vec3_t(vec.x - floor(vec.x), vec.y - floor(vec.y), vec.z - floor(vec.z));
+              })
+          .prop_ro(
+              "floor",
+              [](const vec3_t& vec) -> vec3_t { //
+                return vec3_t(floor(vec.x), floor(vec.y), floor(vec.z));
+              })
+          .prop_ro(
+
+              "ceil",
+              [](const vec3_t& vec) -> vec3_t { //
+                return vec3_t(ceil(vec.x), ceil(vec.y), ceil(vec.z));
+              })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
               "x",
@@ -131,6 +152,22 @@ void pyinit_math_la_t_vec(
               [](vec3_t& vec, T val) { return vec.z = val; } //
               )
           .prop_ro(
+              "xy",
+              [](const vec3_t& inp) -> vec2_t { //
+                return vec2_t(inp.x, inp.y);
+              })
+          .prop_ro(
+              "xz",
+              [](const vec3_t& inp) -> vec2_t { //
+                return vec2_t(inp.x, inp.z);
+              })
+          .prop_ro(
+              "yz",
+              [](const vec3_t& inp) -> vec2_t { //
+                return vec2_t(inp.y, inp.z);
+              })
+          .prop_ro("zyx", [](const vec3_t& inp) -> vec3_t { return vec3_t(inp.z, inp.y, inp.x); })
+          .prop_ro(
               "as_list",
               [](const vec3_t& vec) -> py::list { //
                 py::list rval;
@@ -141,11 +178,10 @@ void pyinit_math_la_t_vec(
               })
           .prop_ro("length", [](const vec3_t& vec) -> T { return vec.magnitude(); })
           .prop_ro("lengthSquared", [](const vec3_t& vec) -> T { return vec.magnitudeSquared(); })
-          .prop_ro(
-              "yz",
-              [](const vec3_t& inp) -> vec2_t { //
-                return vec2_t(inp.y, inp.z);
-              })
+          .prop_ro("saturated", &vec3_t::saturated)
+          .prop_ro("mag", &vec3_t::magnitude)
+          //          .def("length", &vec3_t::magnitude)
+          .prop_ro("magsquared", &vec3_t::magnitudeSquared)
           .def(py::init<>())
           .def(py::init<T>())
           .def(py::init<T, T, T>())
@@ -158,9 +194,8 @@ void pyinit_math_la_t_vec(
           .def("orientedAngle", &vec3_t::orientedAngle)
           .def("dot", &vec3_t::dotWith)
           .def("cross", &vec3_t::crossWith)
-          .def("mag", &vec3_t::magnitude)
-          //          .def("length", &vec3_t::magnitude)
-          .def("magsquared", &vec3_t::magnitudeSquared)
+          .def("normalized", &vec3_t::normalized)
+          .def("clamped", &vec3_t::clamped)
           .def("lerp", &vec3_t::lerp)
           .def("serp", &vec3_t::serp)
           .def(
@@ -174,16 +209,11 @@ void pyinit_math_la_t_vec(
                 v.z   = float(x) / 65536.0f;
               })
           .def("reflect", &vec3_t::reflect)
-          .def("saturated", &vec3_t::saturated)
-          .def("clamped", &vec3_t::clamped)
-          .def("normalized", &vec3_t::normalized)
           .def("normalize", &vec3_t::normalizeInPlace)
           .def("transform", [](const vec3_t& v, mat4_t matrix) -> vec3_t { return vec4_t(v, 1).transform(matrix).xyz(); })
           .def("rotx", &vec3_t::rotateOnX)
           .def("roty", &vec3_t::rotateOnY)
           .def("rotz", &vec3_t::rotateOnZ)
-          .def("xy", &vec3_t::xy)
-          .def("xz", &vec3_t::xz)
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -210,7 +240,7 @@ void pyinit_math_la_t_vec(
           });
   type_codec->registerStdCodec<vec3_t>(vec3_type);
   /////////////////////////////////////////////////////////////////////////////////
-  static auto bdesc_vec4 = std::make_shared<BufferDescription>();
+  static auto bdesc_vec4     = std::make_shared<BufferDescription>();
   bdesc_vec4->scalar_size    = sizeof(T);
   bdesc_vec4->num_dimensions = 1;
   bdesc_vec4->shape          = {4};
@@ -218,10 +248,19 @@ void pyinit_math_la_t_vec(
   /////////////////////////////////////////////////////////////////////////////////
   auto vec4_type = //
       py::clazz_bufp<vec4_t>(module_core, vec4_name.c_str())
-          .as_buffer([](vec4_t& vec) -> adapter_t::buffer_handle_t {
-            return adapter_t::gen_buffer<T>(bdesc_vec4, vec.asArray());
-          })
+          .as_buffer([](vec4_t& vec) -> adapter_t::buffer_handle_t { return adapter_t::gen_buffer<T>(bdesc_vec4, vec.asArray()); })
+          .template from_buffer<vec4_t>([](const T* data) -> vec4_t { return vec4_t(data[0], data[1], data[2], data[3]); })
           //////////////////////////////////////////////////////////////////////////
+          .prop_ro("fract", [](const vec4_t& vec) -> vec4_t { //
+            return vec4_t(vec.x - floor(vec.x), vec.y - floor(vec.y), vec.z - floor(vec.z), vec.w - floor(vec.w));
+          })
+          .prop_ro("floor", [](const vec4_t& vec) -> vec4_t { //
+            return vec4_t(floor(vec.x), floor(vec.y), floor(vec.z), floor(vec.w));
+          })
+          .prop_ro("ceil", [](const vec4_t& vec) -> vec4_t { //
+            return vec4_t(ceil(vec.x), ceil(vec.y), ceil(vec.z), ceil(vec.w));
+          })
+          .prop_ro("xyz", &vec4_t::xyz)
           .prop_rw(
               "x", [](const vec4_t& vec) -> T { return vec.x; }, [](vec4_t& vec, T val) { return vec.x = val; } //
               )
@@ -238,6 +277,13 @@ void pyinit_math_la_t_vec(
           .prop_ro("rgbaU32", [](const vec4_t& v) -> uint32_t { return v.RGBAU32(); })
           .prop_ro("argbU32", [](const vec4_t& v) -> uint32_t { return v.ARGBU32(); })
           .prop_ro("abgrU32", [](const vec4_t& v) -> uint32_t { return v.ABGRU32(); })
+          .prop_ro("mag", &vec4_t::magnitude)
+          .prop_ro("length", &vec4_t::magnitude)
+          .prop_ro("lengthSquared", &vec4_t::magnitudeSquared)
+          .prop_ro("magSquared", &vec4_t::magnitudeSquared)
+          .prop_ro("perspectiveDivided", &vec4_t::perspectiveDivided)
+          .prop_ro("saturated", &vec4_t::saturated)
+          .prop_ro("normalized", &vec4_t::normalized)
           .def(py::init<>())
           .def(py::init<T>())
           .def(py::init<T, T, T, T>())
@@ -246,20 +292,13 @@ void pyinit_math_la_t_vec(
           //.def(py::init<uint32_t>())
           .def("dot", &vec4_t::dotWith)
           .def("cross", &vec4_t::crossWith)
-          .def("mag", &vec4_t::magnitude)
-          .def("length", &vec4_t::magnitude)
-          .def("magSquared", &vec4_t::magnitudeSquared)
           .def("lerp", &vec4_t::lerp)
           .def("serp", &vec4_t::serp)
-          .def("saturated", &vec4_t::saturated)
-          .def("normalized", &vec4_t::normalized)
           .def("normalize", &vec4_t::normalizeInPlace)
           .def("rotx", &vec4_t::rotateOnX)
           .def("roty", &vec4_t::rotateOnY)
           .def("rotz", &vec4_t::rotateOnZ)
-          .def("xyz", &vec4_t::xyz)
           .def("transform", &vec4_t::transform)
-          .def("perspectiveDivided", &vec4_t::perspectiveDivided)
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -288,15 +327,15 @@ void pyinit_math_la_t_quat(
     std::string pfx,
     adapter_t::codec_ptr_t type_codec) { //
 
-  using vec3_t        = Vector3<T>;
-  using vec4_t        = Vector4<T>;
-  using mat3_t        = Matrix33<T>;
-  using mat4_t        = Matrix44<T>;
-  using quat_t        = Quaternion<T>;
-  auto quat_name    = pfx + "quat";
+  using vec3_t   = Vector3<T>;
+  using vec4_t   = Vector4<T>;
+  using mat3_t   = Matrix33<T>;
+  using mat4_t   = Matrix44<T>;
+  using quat_t   = Quaternion<T>;
+  auto quat_name = pfx + "quat";
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto bdesc_quat = std::make_shared<BufferDescription>();
+  static auto bdesc_quat     = std::make_shared<BufferDescription>();
   bdesc_quat->scalar_size    = sizeof(T);
   bdesc_quat->num_dimensions = 1;
   bdesc_quat->shape          = {4};
@@ -304,11 +343,10 @@ void pyinit_math_la_t_quat(
   /////////////////////////////////////////////////////////////////////////////////
   auto quat_type = //
       py::clazz_bufp<quat_t>(module_core, quat_name.c_str())
-      //py::class_<quat_t>(module_core, quat_name.c_str())
+          // py::class_<quat_t>(module_core, quat_name.c_str())
           //////////////////////////////////////////////////////////////////////////
-          .as_buffer([bdesc_quat](quat_t& q) -> adapter_t::buffer_handle_t {
-            return adapter_t::gen_buffer<T>(bdesc_quat, q.asArray());
-          })
+          .as_buffer([](quat_t& q) -> adapter_t::buffer_handle_t { return adapter_t::gen_buffer<T>(bdesc_quat, q.asArray()); })
+          .template from_buffer<quat_t>([](const T* data) -> quat_t { return quat_t(data[0], data[1], data[2], data[3]); })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
               "x", [](const quat_t& quat) -> T { return quat.x; }, [](quat_t& quat, T val) { return quat.x = val; })
@@ -389,7 +427,7 @@ void pyinit_math_la_t(
 
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::class_<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
+      py::clazz<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat3_t& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -400,13 +438,15 @@ void pyinit_math_la_t(
                 2,                           // Number of dimensions
                 {3, 3},                      // Buffer dimensions
                 {sizeof(T) * 3, sizeof(T)}); // Strides (in bytes) for each index
-          })
+          })                                 /*
+                                           .template from_buffer<mat3_t>([](const T* data) -> mat3_t {
+                                             mat3_t mtx;
+                                             mtx.setColumn(0, vec3_t(data[0], data[1], data[2]));
+                                             mtx.setColumn(1, vec3_t(data[3], data[4], data[5]));
+                                             mtx.setColumn(2, vec3_t(data[6], data[7], data[8]));
+                                             return mtx;
+                                           })*/
           //////////////////////////////////////////////////////////////////////////
-          .def(py::init<>())
-          .def(py::init<const mat3_t&>())
-          .def(py::init<const quat_t&>())
-          .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
-          .def("setColumn", (void(mat3_t::*)(int icol, const vec3_t&)) & mat3_t::setColumn)
           .def_property_readonly(
               "inverse",
               [](const mat3_t& inp) -> mat3_t {
@@ -414,6 +454,18 @@ void pyinit_math_la_t(
                 inv.inverse();
                 return inv;
               })
+          .def(py::init<>())
+          .def(py::init<const mat3_t&>())
+          .def(py::init<const quat_t&>())
+          .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
+          .def("setColumn", [](mat3_t& mtx, int icol, vec3_t c) { //
+            OrkPyAssert(icol >= 0 && icol < 3);
+            mtx.setColumn(icol, c);
+          })
+          .def("getColumn", [](mat3_t mtx, int icol) -> vec3_t { //
+            OrkPyAssert(icol >= 0 && icol < 3);
+            return mtx.column(icol);
+          })
           .def("fromQuaternion", &mat3_t::fromQuaternion)
           .def("zNormal", &mat3_t::xNormal)
           .def("yNormal", &mat3_t::yNormal)
@@ -448,7 +500,14 @@ void pyinit_math_la_t(
                 2,                           // Number of dimensions
                 {4, 4},                      // Buffer dimensions
                 {sizeof(T) * 4, sizeof(T)}); // Strides (in bytes) for each index
-          })
+          })                                 /*
+                                           .template from_buffer<mat4_t>([](const T* data) -> mat4_t {
+                                             mat4_t mtx;
+                                             mtx.setColumn(0, vec4_t(data[0], data[1], data[2], data[3]));
+                                             mtx.setColumn(1, vec4_t(data[4], data[5], data[6], data[7]));
+                                             mtx.setColumn(2, vec4_t(data[8], data[9], data[10], data[11]));
+                                             mtx.setColumn(3, vec4_t(data[12], data[13], data[14], data[15]));
+                                           })*/
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const mat4_t&>())

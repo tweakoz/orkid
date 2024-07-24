@@ -48,6 +48,8 @@ template <typename T> struct Vector3;
 template <typename T> struct Quaternion final 
   : public glm::qua<T, glm::defaultp> {
 
+  constexpr static int knumelements = 4;
+  using element_t = T;
   using base_t = glm::qua<T, glm::defaultp>;
 
   //////////////////////////////////////////////////////

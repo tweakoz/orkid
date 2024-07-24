@@ -31,6 +31,8 @@ template <typename T> struct Vector2;
 template <typename T> struct Vector3 final
   : public glm::vec<3, T, glm::defaultp> {
 
+  using element_t = T;
+  constexpr static int knumelements = 3;
   using base_t = glm::vec<3, T, glm::defaultp>;
   using base4_t = glm::vec<4, T, glm::defaultp>;
 

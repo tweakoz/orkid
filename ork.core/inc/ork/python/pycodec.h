@@ -11,7 +11,10 @@
 #include <ork/python/context.h>
 #include <ork/python/wraprawpointer.inl>
 #include <ork/kernel/varmap.inl>
+#include <ork/util/function_traits.inl>
 #include <iostream>
+#include <type_traits>
+#include <utility>
 
 #include <ork/python/obind/nanobind.h>
 #include <ork/python/obind/stl/detail/traits.h>
@@ -168,6 +171,89 @@ struct pybind11adapter {
       Base::def_buffer(f, extra...);
       return *this;
     }
+    inline pybind11::object _from_buffer(buffer_handle_t buffer) {
+      return pybind11::object();
+      //fn_t X = f; // this works!!!
+      //Base::def(pybind11::init(f), extra...);
+      return *this;
+    }
+    template <typename ret_t, typename... Extra> _clazz& from_buffer(std::function<ret_t(const typename ret_t::element_t* data)> setter, const Extra&... extra) {
+      //using namespace ::ork::utils;
+      //using traits = function_signature_t<Func>;
+      //using ret_t = typename traits::return_type;
+      //using args_t = typename traits::argument_types; // tuple of args
+      //using fn_t = std_function_type<ret_t, args_t>;
+      auto the_fn = [setter](const pybind11::buffer& data) -> ret_t {
+        using elem_t = typename ret_t::element_t;
+        constexpr size_t count_t = ret_t::knumelements;
+        auto float_fmt = pybind11::format_descriptor<float>::format();
+        auto double_fmt = pybind11::format_descriptor<double>::format();
+        //int_ format
+        auto int_fmt = pybind11::format_descriptor<long int>::format();
+        //auto int_fmt = pybind11::format_descriptor<pybind11::int_>::format();
+        pybind11::buffer_info info  = data.request();
+        size_t data_len = info.size;
+        auto float_ptr = static_cast<const float*>(info.ptr);
+        auto double_ptr = static_cast<const double*>(info.ptr);
+        auto int_ptr = static_cast<const int64_t*>(info.ptr);
+
+        if constexpr (std::is_same<elem_t, float>::value) {
+          // input is float, output is float
+          if(float_fmt == info.format){
+            return setter(float_ptr);
+          }
+          // input is double, output is float
+          else if(double_fmt == info.format){
+            float temp_data[count_t];
+            for(size_t i = 0; i < count_t; i++){
+              temp_data[i] = (float) double_ptr[i];
+            }
+            return setter(temp_data);
+          }
+          // input is int output is float
+          else if(info.format[0] == 'l') { // signed long int
+            float temp_data[count_t];
+            for(size_t i = 0; i < count_t; i++){
+              temp_data[i] = (float) int_ptr[i];
+            }
+            return setter(temp_data);
+          }
+          else{
+            OrkAssert(false);
+          }
+        } else if constexpr (std::is_same<elem_t, double>::value) {
+          // input is double, output is double
+          if(double_fmt == info.format){
+            return setter(double_ptr);
+          }
+          // input is float, output is double
+          else if(float_fmt == info.format){
+            double temp_data[count_t];
+            for(size_t i = 0; i < count_t; i++){
+              temp_data[i] = (double) float_ptr[i];
+            }
+            return setter(temp_data);
+          }
+          // input is int output is double
+          else if(info.format[0] == 'l') { // signed long int
+            double temp_data[count_t];
+            for(size_t i = 0; i < count_t; i++){
+              temp_data[i] = (double) int_ptr[i];
+            }
+            return setter(temp_data);
+          }
+          else{
+            OrkAssert(false);
+          }
+        } else {
+          OrkAssert(false);
+        }
+        OrkAssert(false);
+        return ret_t();
+      };
+      Base::def(pybind11::init(the_fn), extra...);
+      return *this;
+    }
 
   };
 
@@ -300,6 +386,12 @@ struct nanobindadapter {
       prop_ro("as_buffer", f, extra...);
       return *this;
     }
+    template <typename ret_t, typename... Extra> _clazz& from_buffer(std::function<ret_t(const typename ret_t::element_t* data)> setter, const Extra&... extra) {
+      OrkAssert(false);
+      //Base::def_buffer(f, extra...);
+      return *this;
+    }
+
   };
 
   //////////////////////////////////

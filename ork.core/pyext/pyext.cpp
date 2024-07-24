@@ -26,6 +26,9 @@ struct CorePythonApplication {
 };
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
+
+extern bool _ENABLE_LOGGING;
+
 namespace python {
   void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
   void init_crcstring(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
@@ -130,6 +133,11 @@ static PoolString _addpoolstring(std::string str) {
   return AddPooledString(str.c_str());
 }
 
+
+static void _disableLogging() {
+  _ENABLE_LOGGING = false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void pyinit_reflection(py::module& module_core);
@@ -144,6 +152,7 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.def("lev2dir", &_lev2dir);
   module_core.def("lev2pyexdir", &_lev2pyexdir);
   module_core.def("addpoolstring", &_addpoolstring);
+  module_core.def("disableLogging", &_disableLogging);
 
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes

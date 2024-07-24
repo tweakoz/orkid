@@ -331,7 +331,7 @@ void GlTextureInterface::TexManInit(void) {
 
 PboSet::PboSet(size_t size)
     : _size(size) {
-      printf( "New PboSet size<%zu>\n", size );
+      //printf( "New PboSet size<%zu>\n", size );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

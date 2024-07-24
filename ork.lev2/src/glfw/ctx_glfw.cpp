@@ -307,7 +307,7 @@ CtxGLFW::CtxGLFW(Window* ork_win)
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-  printf( "set swap interval to<%d>\n", aid->_swap_interval );
+  logchan_glfw->log( "set swap interval to<%d>", aid->_swap_interval );
   glfwSwapInterval(aid->_swap_interval);
   glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
@@ -490,7 +490,7 @@ void CtxGLFW::Show() {
 
   glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
 
-  printf( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
+  logchan_glfw->log( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
