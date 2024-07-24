@@ -25,7 +25,7 @@ extern GLuint gLastBoundNonZeroTex;
 
 namespace ork::lev2 {
 
-constexpr bool DEBUG_TEXARRAY2D = true;
+constexpr bool DEBUG_TEXARRAY2D = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 

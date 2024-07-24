@@ -12,8 +12,10 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/kernel/memcpy.inl>
 #include <math.h>
+#include <ork/util/logger.h>
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_image = logger()->createChannel("IMAGE", fvec3(0.1, 0.2, 0.3), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,8 +41,6 @@ Image Image::clone() const {
   rval._debugName       = _debugName;
   return rval;
 }
-
-static fvec3 _image_deco(0.1, 0.2, 0.3);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -174,8 +174,7 @@ void Image::compressDefault(CompressedImage& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::uncompressed(CompressedImage& imgout) const {
-  deco::printf(
-      _image_deco,
+  logchan_image->log(
       "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>\n",
       _debugName.c_str(),
       _width,
@@ -202,7 +201,7 @@ void Image::uncompressed(CompressedImage& imgout) const {
 
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
-  deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
+  logchan_image->log("// compression time<%g> MPPS<%g>\n", time, MPPS);
 }
 
 
