@@ -55,7 +55,10 @@ void pyinit_math_la_t_vec(
           .as_buffer([](vec2_t& vec) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_vec2, vec.asArray());
           })
-          //////////////////////////////////////////////////////////////////////////
+          .template from_buffer<vec2_t>([](const T* data) -> vec2_t {
+            return vec2_t(data[0], data[1]);
+          })
+           //////////////////////////////////////////////////////////////////////////
           .prop_ro(
               "fract",
               [](const vec2_t& vec) -> vec2_t { //
@@ -113,6 +116,9 @@ void pyinit_math_la_t_vec(
       py::clazz_bufp<vec3_t>(module_core, vec3_name.c_str())
           .as_buffer([](vec3_t& vec) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_vec3, vec.asArray());
+          })
+          .template from_buffer<vec3_t>([](const T* data) -> vec3_t {
+            return vec3_t(data[0], data[1], data[2]);
           })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
@@ -221,6 +227,9 @@ void pyinit_math_la_t_vec(
           .as_buffer([](vec4_t& vec) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_vec4, vec.asArray());
           })
+          .template from_buffer<vec4_t>([](const T* data) -> vec4_t {
+            return vec4_t(data[0], data[1], data[2], data[3]);
+          })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
               "x", [](const vec4_t& vec) -> T { return vec.x; }, [](vec4_t& vec, T val) { return vec.x = val; } //
@@ -308,6 +317,9 @@ void pyinit_math_la_t_quat(
           //////////////////////////////////////////////////////////////////////////
           .as_buffer([](quat_t& q) -> adapter_t::buffer_handle_t {
             return adapter_t::gen_buffer<T>(bdesc_quat, q.asArray());
+          })
+          .template from_buffer<quat_t>([](const T* data) -> quat_t {
+            return quat_t(data[0], data[1], data[2], data[3]);
           })
           //////////////////////////////////////////////////////////////////////////
           .prop_rw(
@@ -400,7 +412,14 @@ void pyinit_math_la_t(
                 2,                           // Number of dimensions
                 {3, 3},                      // Buffer dimensions
                 {sizeof(T) * 3, sizeof(T)}); // Strides (in bytes) for each index
-          })
+          })/*
+          .template from_buffer<mat3_t>([](const T* data) -> mat3_t {
+            mat3_t mtx;
+            mtx.setColumn(0, vec3_t(data[0], data[1], data[2]));
+            mtx.setColumn(1, vec3_t(data[3], data[4], data[5]));
+            mtx.setColumn(2, vec3_t(data[6], data[7], data[8]));
+            return mtx;
+          })*/
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const mat3_t&>())
@@ -448,7 +467,14 @@ void pyinit_math_la_t(
                 2,                           // Number of dimensions
                 {4, 4},                      // Buffer dimensions
                 {sizeof(T) * 4, sizeof(T)}); // Strides (in bytes) for each index
-          })
+          })/*
+          .template from_buffer<mat4_t>([](const T* data) -> mat4_t {
+            mat4_t mtx;
+            mtx.setColumn(0, vec4_t(data[0], data[1], data[2], data[3]));
+            mtx.setColumn(1, vec4_t(data[4], data[5], data[6], data[7]));
+            mtx.setColumn(2, vec4_t(data[8], data[9], data[10], data[11]));
+            mtx.setColumn(3, vec4_t(data[12], data[13], data[14], data[15]));
+          })*/
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<const mat4_t&>())

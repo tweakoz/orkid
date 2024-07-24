@@ -31,6 +31,8 @@ template <typename T> struct Matrix44 final
   using base_t = glm::mat<4, 4, T, glm::defaultp>;
   using base33_t = glm::mat<3, 3, T, glm::defaultp>;
 
+  constexpr static int knumelements = 16;
+  using element_t = T;
   typedef T value_type;
 
   //////////////////////////////////////////////////////

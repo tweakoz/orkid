@@ -26,6 +26,8 @@ template <typename T> struct Vector3;
 template <typename T> struct Vector2 final
   : public glm::vec<2, T, glm::defaultp> {
 
+  constexpr static int knumelements = 2;
+  using element_t = T;
   using base_t = glm::vec<2, T, glm::defaultp>;
 
   Vector2();
