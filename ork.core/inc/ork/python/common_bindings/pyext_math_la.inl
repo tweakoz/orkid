@@ -427,7 +427,7 @@ void pyinit_math_la_t(
 
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::clazz<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
+      py::class_<mat3_t>(module_core, mat3_name.c_str(), pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](mat3_t& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
