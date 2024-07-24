@@ -9,8 +9,6 @@
 
 namespace ork {
 
-Future Future::gnilfut;
-
 Future::Future()
     : mID(0)
     , mResult(nullptr)

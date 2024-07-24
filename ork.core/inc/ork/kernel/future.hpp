@@ -38,12 +38,7 @@ struct Future
     var_t                   mResult;
     var_t                   mCallback;
     //mutable std::condition_variable mWaitCV;
-
-    static Future gnilfut;
 };
-
-
-using future_ptr_t = std::shared_ptr<Future>;
 
 template <typename T>
 void Future::Signal( const T& result )

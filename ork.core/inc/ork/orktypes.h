@@ -132,6 +132,9 @@ using file_ptr_t = std::shared_ptr<File>;
 using filedev_ptr_t = std::shared_ptr<FileDev>;
 using fileprogresswatcher_ptr_t = std::shared_ptr<FileProgressWatcher>;
 
+struct Future;
+using future_ptr_t = std::shared_ptr<Future>;
+
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////
