@@ -5,7 +5,7 @@ from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 import numpy as np
 
 
-class TestMathMtx4Methods(unittest.TestCase):
+class TestCoreMathMtx4Methods(unittest.TestCase):
   pass
   ########################################
   #def test_mtx4_to_np(self):

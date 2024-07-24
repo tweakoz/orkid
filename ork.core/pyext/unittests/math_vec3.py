@@ -7,7 +7,7 @@ import numpy as np
 EPSILON = 1.0e-5
 CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
 
-class TestMathVec3Methods(unittest.TestCase):
+class TestCoreMathVec3Methods(unittest.TestCase):
   ########################################
   def test_vec3_to_np(self):
     v = vec3(1,2,3)

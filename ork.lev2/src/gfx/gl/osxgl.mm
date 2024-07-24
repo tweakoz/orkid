@@ -25,6 +25,7 @@
 #include <GLFW/glfw3native.h>
 #include <objc/objc.h>
 #include <objc/message.h>
+#include <ork/util/logger.h>
 
 extern "C"
 {
@@ -34,6 +35,8 @@ extern "C"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_osxgl = logger()->createChannel("OSXGL", fvec3(0.8, 0.8, 0.5), true);
 
 static void _osxDisableMacOs(ContextGL* cgl){
     cgl->_SUPPORTS_BINARY_PIPELINE = false;
@@ -227,7 +230,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   plato->makeCurrent();
   mFbI.SetThisBuffer(pWin);
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
-  printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
+  logchan_osxgl->log( "GL_RENDERER<%s>", _GL_RENDERER.c_str() );
   _osxDisableMacOs(this); 
 }
 

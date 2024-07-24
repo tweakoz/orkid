@@ -21,7 +21,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
   // printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
 
-  hexdumpbytes(datablock->_storage.data(), 64);
+  //hexdumpbytes(datablock->_storage.data(), 64);
 
   constexpr int kVERSIONTAG = 0x01234567;
   bool rval                 = false;

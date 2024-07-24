@@ -7,7 +7,7 @@ import numpy as np
 EPSILON = 1.0e-5
 CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
 
-class TestMathQuatMethods(unittest.TestCase):
+class TestCoreMathQuatMethods(unittest.TestCase):
   ########################################
   def test_quat_to_np(self):
     q = quat()

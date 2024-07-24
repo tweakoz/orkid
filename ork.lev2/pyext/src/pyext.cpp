@@ -85,9 +85,9 @@ orkezapp_ptr_t lev2appinit() {
   int argc      = _dynaargs_refs.size();
   char** argv = _dynaargs_refs.data();
 
-  for( int i=0; i<argc; i++ ){
-    printf( "dynarg<%d:%s>\n", i, argv[i] );
-  }
+  //for( int i=0; i<argc; i++ ){
+    //printf( "dynarg<%d:%s>\n", i, argv[i] );
+  //}
 
   static auto init_data = std::make_shared<AppInitData>(argc,argv);
 

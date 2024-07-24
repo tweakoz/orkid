@@ -14,7 +14,7 @@ struct IndexScrambler {
 
     std::seed_seq seed{seedval};
 
-    printf("initializing scrambler\n");
+    //printf("initializing scrambler\n");
     // Initialize the lookup table with the identity mapping
     for (int i = 0; i < KSIZE; ++i) {
       _scrambleLUT[i] = i;
@@ -29,7 +29,7 @@ struct IndexScrambler {
       _scrambleLUT[i] = indices[i];
       _unscrambleLUT[indices[i]] = i;
     }
-    printf("scrambler initialized....\n");
+    //printf("scrambler initialized....\n");
     }
 
     uint16_t scramble(uint16_t value) {
