@@ -139,6 +139,9 @@ std::string EBufferFormatToName(EBufferFormat fmt){
     case EBufferFormat::RGBA8:
       rval = "RGBA8";
       break;
+    case EBufferFormat::RGB16:
+      rval = "RGB16";
+      break;
     case EBufferFormat::RGBA16F:
       rval = "RGBA16F";
       break;
@@ -185,6 +188,7 @@ std::string EBufferFormatToName(EBufferFormat fmt){
       rval = "S3TC_DXT5";
       break;
     default:
+      printf( "invalid buffer format<%0zx>\n", uint64_t(fmt) );
       OrkAssert(false);
       break;
   }

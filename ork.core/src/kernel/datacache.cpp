@@ -11,8 +11,11 @@
 #include <ork/util/crc64.h>
 #include <ork/kernel/environment.h>
 #include <boost/filesystem.hpp>
+#include <ork/util/logger.h>
 
 namespace ork {
+
+logchannel_ptr_t logchan_dcache = logger()->createChannel("DCACHE", fvec3(0.5, 0.5, 0.5), true);
 
 bool DataBlockCache::_enabled = true;
 DataBlockCache::DataBlockCache() {
@@ -27,7 +30,7 @@ std::string DataBlockCache::_generateCachePath(uint64_t key) {
   using namespace boost::filesystem;
   auto cache_dir = file::Path::dblockcache_dir();
   if (false == exists(cache_dir.toBFS())) {
-    printf("Making cache_dir folder<%s>\n", cache_dir.c_str());
+    logchan_dcache->log("Making cache_dir folder<%s>", cache_dir.c_str());
     create_directory(cache_dir.toBFS());
   }
   auto cache_path = cache_dir / FormatString("%zx.bin", key);
@@ -78,7 +81,7 @@ void DataBlockCache::setDataBlock(uint64_t key, datablock_ptr_t item, bool cache
     m[key] = item;
     using namespace boost::filesystem;
     if (cacheable) {
-      printf( "writing to cache <%s>\n", cache_path.c_str() );
+      logchan_dcache->log( "writing to cache <%s>", cache_path.c_str() );
       FILE* fout = fopen(cache_path.c_str(), "wb");
       fwrite(item->data(), item->length(), 1, fout);
       fclose(fout);

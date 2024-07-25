@@ -16,12 +16,13 @@
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/filesystem.h>
+#include <ork/util/logger.h>
 
 OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static fvec3 _image_deco(0.1, 0.2, 0.3);
+extern logchannel_ptr_t logchan_image;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,13 +113,13 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
   in->close();
 
   if (1) {
-    deco::printf(_image_deco, "///////////////////////////////////\n");
-    deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
-    deco::printf(_image_deco, "// _width<%zu>\n", _width);
-    deco::printf(_image_deco, "// _height<%zu>\n", _height);
-    deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
-    deco::printf(_image_deco, "// _bytesPerChannel<%d>\n", _bytesPerChannel);
-    deco::printf(_image_deco, "///////////////////////////////////\n");
+    logchan_image->log("///////////////////////////////////");
+    logchan_image->log("// Image::initFromInMemoryFile()");
+    logchan_image->log("// _width<%zu>", _width);
+    logchan_image->log("// _height<%zu>", _height);
+    logchan_image->log("// _numcomponents<%zu>", _numcomponents);
+    logchan_image->log("// _bytesPerChannel<%d>", _bytesPerChannel);
+    logchan_image->log("///////////////////////////////////");
   }
 
   return true;

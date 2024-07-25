@@ -25,16 +25,17 @@ extern GLuint gLastBoundNonZeroTex;
 
 namespace ork::lev2 {
 
-constexpr bool DEBUG_TEXARRAY2D = false;
+constexpr bool DEBUG_TEXARRAY2D = true;
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureArrayInitData tid) {
 
   if (DEBUG_TEXARRAY2D) {
-    printf("///////////////////////////////////////////////////////////\n");
-    printf("// GlTextureInterface::initTextureArray2DFromData ptex<%p>\n", array_tex);
-    printf("///////////////////////////////////////////////////////////\n");
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+    logchan_txia2d->log("// GlTextureInterface::initTextureArray2DFromData ptex<%p>", array_tex);
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
 
   array_tex->_texType = ETEXTYPE_2D_ARRAY;
@@ -64,10 +65,10 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     }
   }
   if(formats.size()>1){
-    printf( "TextureArray2D has multiple formats\n");
+    logchan_txia2d->log( "TextureArray2D has multiple formats");
     for( auto fmt : formats){
       auto fmt_str = EBufferFormatToName(fmt);
-      printf( "  format<%s>\n", fmt_str.c_str() );
+      logchan_txia2d->log( "  format<%s>", fmt_str.c_str() );
     }
     OrkAssert(false);
   }
@@ -93,8 +94,6 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   array_tex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
   // glTexStorage3D(texture_target, 4, GL_RGBA8, max_w, max_h, num_slices);
 
-  static auto clear_tex_data = (const uint8_t*)calloc(1, 256 << 20);
-
   //////////////////////////////////////////////////////////////////
   // allocate
   //////////////////////////////////////////////////////////////////
@@ -117,11 +116,11 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
             num_slices,         // depth
             0,                       // border
             size,                    // size
-            clear_tex_data);         // data
+            nullptr);         // data
         GL_ERRORCHECK();
         if (DEBUG_TEXARRAY2D){
-          printf(
-              "GLCTI3Da target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>\n",
+          logchan_txia2d->log(
+              "GLCTI3Da target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
               texture_target,
               level,
               w,
@@ -129,7 +128,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
               num_slices,
               triplet._internalFormat,
               blocked_width * blocked_height * num_slices,
-              clear_tex_data);
+              nullptr);
         }
         break;
       }
@@ -139,8 +138,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
       case EBufferFormat::BGR8:
         GL_ERRORCHECK();
         if (DEBUG_TEXARRAY2D){
-          printf(
-              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>\n",
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
               texture_target,
               level,
               w,
@@ -148,7 +147,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
               num_slices,
               triplet._internalFormat,
               w * h * num_slices,
-              clear_tex_data);
+              nullptr);
         }
         glTexImage3D(
             texture_target,          // target
@@ -160,7 +159,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
             0,                       // border
             triplet._format,         // format
             triplet._type,           // type
-            clear_tex_data);         // data
+            nullptr);         // data
         GL_ERRORCHECK();
         break;
       default:
@@ -205,8 +204,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
               int blocked_width  = (mip_w + 3) & 0xfffffffc;
               int blocked_height = (mip_h + 3) & 0xfffffffc;
               if (DEBUG_TEXARRAY2D){
-                printf(
-                    "GLCTSI3Da target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%zu> data<%p>\n",
+                logchan_txia2d->log(
+                    "GLCTSI3Da target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%zu> data<%p>",
                     texture_target,
                     level,
                     0,
@@ -238,8 +237,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
             default:
               GL_ERRORCHECK();
               if (DEBUG_TEXARRAY2D){
-                printf(
-                    "GLCTSI3Db target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%zu> h<%zu> d<%d> fmt<0x%08x> size<%zu> data<%p>\n",
+                logchan_txia2d->log(
+                    "GLCTSI3Db target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%zu> h<%zu> d<%d> fmt<0x%08x> size<%zu> data<%p>",
                     texture_target,
                     level,
                     0,
@@ -274,8 +273,8 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   ///////////////////////////
 
   if (DEBUG_TEXARRAY2D) {
-    printf("TextureArray maxw<%d> maxh<%d> depth<%d>\n", max_w, max_h, num_slices);
-    printf("///////////////////////////////////////////////////////////\n");
+    logchan_txia2d->log("TextureArray maxw<%d> maxh<%d> depth<%d>", max_w, max_h, num_slices);
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
   array_tex->_residenceState.fetch_or(1);
   // OrkAssert(num_slices==0);

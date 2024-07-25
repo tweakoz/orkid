@@ -214,7 +214,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       return rval;
     };
 
-    logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
+    logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////");
 
     //////////////////////////////////////////////
 
@@ -287,7 +287,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       //logchan_meshutilassimp->log("");
     }
 
-    logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
+    logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////");
 
     //////////////////////////////////////////////
 
@@ -554,7 +554,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       largestWeightMap.insert(pr);
                     }
                     deformer_bones.insert(infl._jointpath);
-                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, infl._jointpath.c_str(), fw);
+                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>", inf, infl._jointpath.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -699,7 +699,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 template <typename ClusterizerType>
 void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
+  logchan_meshutilassimp->log("BEGIN: clusterizing model");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -778,7 +778,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     op_counter.fetch_add(1);
     auto op = [&op_counter,inp_submesh,clusterizer, subindex, materialGroup](){
 
-     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
+     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>", subindex);
 
       ork::meshutil::XgmClusterTri clustertri;
       clusterizer->Begin();
@@ -800,7 +800,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       clusterizer->End();
       op_counter.fetch_add(-1);
   
-      logchan_meshutilassimp->log("END: clusterizing submesh<%d> ops remaining: %d\n", subindex, op_counter.load());
+      logchan_meshutilassimp->log("END: clusterizing submesh<%d> ops remaining: %d", subindex, op_counter.load());
 
     };
 
@@ -830,7 +830,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
 
-  logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
+  logchan_meshutilassimp->log("generating %d submeshes", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;

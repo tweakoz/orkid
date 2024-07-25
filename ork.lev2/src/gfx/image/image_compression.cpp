@@ -11,6 +11,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/image.h>
+#include <ork/util/logger.h>
 
 #if defined(ENABLE_ISPC)
 #include <ispc_texcomp.h>
@@ -18,7 +19,8 @@
 
 namespace ork::lev2 {
 
-static fvec3 _image_deco(0.1, 0.2, 0.3);
+extern logchannel_ptr_t logchan_image;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,10 +40,10 @@ void CompressedImage::convertToImage(Image& ref) const{
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_ISPC)
 void Image::compressBC7(CompressedImage& imgout) const {
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::compressBC7(%s)\n", _debugName.c_str());
-  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
-  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
+  logchan_image->log("///////////////////////////////////");
+  logchan_image->log("// Image::compressBC7(%s)", _debugName.c_str());
+  logchan_image->log("// imgout._width<%zu>", _width);
+  logchan_image->log("// imgout._height<%zu>", _height);
   imgout._format = EBufferFormat::RGBA_BPTC_UNORM;
   OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
@@ -106,8 +108,8 @@ void Image::compressBC7(CompressedImage& imgout) const {
 
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
-  deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
-  deco::printf(_image_deco, "///////////////////////////////////\n");
+  logchan_image->log("// compression time<%g> MPPS<%g>", time, MPPS);
+  logchan_image->log("///////////////////////////////////");
 }
 #endif
 

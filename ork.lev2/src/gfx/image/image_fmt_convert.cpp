@@ -127,9 +127,9 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   else if (fmt == EBufferFormat::RGB8) {
     init(inp._width, inp._height, 3, inp._bytesPerChannel);
     _format     = fmt;
-    auto inptr  = (const uint8_t*)inp._data->data();
     auto outptr = (uint8_t*)_data->data();
     if (inp._format == EBufferFormat::BGR8) {
+      auto inptr  = (const uint8_t*)inp._data->data();
       for (int y = 0; y < inp._height; y++) {
         for (int x = 0; x < inp._width; x++) {
           int pixelindex       = y * inp._width + x;
@@ -140,6 +140,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         }
       }
     } else if (inp._format == EBufferFormat::RGBA8) {
+      auto inptr  = (const uint8_t*)inp._data->data();
       for (int y = 0; y < inp._height; y++) {
         for (int x = 0; x < inp._width; x++) {
           int pixelindex           = y * inp._width + x;
@@ -148,6 +149,16 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
           outptr[out_elembase + 0] = inptr[in_elembase + 0];
           outptr[out_elembase + 1] = inptr[in_elembase + 1];
           outptr[out_elembase + 2] = inptr[in_elembase + 2];
+        }
+      }
+    } else if (inp._format == EBufferFormat::RGB16) {
+      auto inptr  = (const uint16_t*)inp._data->data();
+      for (int y = 0; y < inp._height; y++) {
+        for (int x = 0; x < inp._width; x++) {
+          int pixelindex           = y * inp._width + x;
+          int in_elembase          = pixelindex * 3;
+          int out_elembase         = pixelindex * 3;
+          outptr[out_elembase + 0] = uint8_t(inptr[in_elembase + 0]>>8);
         }
       }
     } else {

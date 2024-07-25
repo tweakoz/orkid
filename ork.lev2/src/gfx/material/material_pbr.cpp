@@ -116,17 +116,19 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
 
   OrkAssert(ambocc==nullptr);
 
+  //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
+
   if( do_conform ){
     _image_color = color;
     _image_normal = normal;
     _image_mtlruf = mtlruf;
     _image_emissive = emissive;
     conformImages();
+    //printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
   }
     
   TextureArrayInitData TID;
 
-  //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
 
   TID._slices.resize(4);
   TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, _image_color};

@@ -15,7 +15,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_image = logger()->createChannel("IMAGE", fvec3(0.1, 0.2, 0.3), true);
+logchannel_ptr_t logchan_image = logger()->createChannel("IMAGE", fvec3(0.1, 0.2, 0.3), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -175,7 +175,7 @@ void Image::compressDefault(CompressedImage& imgout) const {
 
 void Image::uncompressed(CompressedImage& imgout) const {
   logchan_image->log(
-      "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>\n",
+      "// Image::uncompressed(%s) w<%zu> h<%zu> BPC<%d> _format<%x>",
       _debugName.c_str(),
       _width,
       _height,
@@ -201,7 +201,7 @@ void Image::uncompressed(CompressedImage& imgout) const {
 
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
-  logchan_image->log("// compression time<%g> MPPS<%g>\n", time, MPPS);
+  logchan_image->log("// compression time<%g> MPPS<%g>", time, MPPS);
 }
 
 
