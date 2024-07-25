@@ -17,13 +17,13 @@ hand_name = "Left"
 class TestLev2XgmSkeletonMethods(unittest.TestCase):
   ########################################
   def test_skel_1(self):
-    skl = _fixture.instance().model.skeleton
+    skl = _fixture.instance().skeleton
     self.assertEqual(skl.numJoints, 50)
     self.assertEqual(skl.numBones, 42)
     self.assertEqual(skl.name, "")
   ########################################
   def test_skel_2(self):
-    skl = _fixture.instance().model.skeleton
+    skl = _fixture.instance().skeleton
     j_hand = skl.jointIndex("mixamorig.%sHand"%(hand_name))
     j_forearm = skl.jointIndex("mixamorig.%sForeArm"%(hand_name))
     jnts_thumbs = [ skl.jointIndex("mixamorig.%sHandThumb%d"%(hand_name,i+1)) for i in range(4)]
@@ -34,12 +34,11 @@ class TestLev2XgmSkeletonMethods(unittest.TestCase):
     self.assertEqual(jnts_index, [17,18,19,20])
   ########################################
   def test_skel_3(self):
-    skl = _fixture.instance().model.skeleton
+    skl = _fixture.instance().skeleton
     j_hand = skl.jointIndex("mixamorig.%sHand"%(hand_name))
     self.assertEqual(skl.jointName(j_hand), "mixamorig.%sHand"%(hand_name))
     self.assertEqual(skl.descendantJointsOf(12), [17, 13, 14, 15, 16, 44, 18, 19, 20, 45])
     self.assertEqual(skl.childJointsOf(12), [17, 13])
-  ########################################
   ########################################
   ########################################
   ########################################
