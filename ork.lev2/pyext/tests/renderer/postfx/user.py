@@ -53,7 +53,7 @@ class HSVGAPP(object):
     # create scenegraph
     ###################################
     sceneparams = VarMap() 
-    sceneparams.preset = "DeferredPBR"
+    sceneparams.preset = "ForwardPBR"
     sceneparams.SkyboxIntensity = float(1)
     sceneparams.SpecularIntensity = float(1.2)
     sceneparams.DiffuseIntensity = float(1.0)
