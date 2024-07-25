@@ -55,7 +55,7 @@ A.setColumn(1,col1)
 #######################################
 B = dmtx4.lookAt(dvec3(0,0,0),dvec3(0,0,1),dvec3(0,-1,0))
 #######################################
-C = dmtx4(dquat(dvec3(1,1,1).normalized(),math.pi))
+C = dmtx4(dquat(dvec3(1,1,1).normalized,math.pi))
 #######################################
 D = dmtx4()
 D.setRow(0,dvec4(1,2,3,4))

@@ -150,7 +150,7 @@ class ParticlesApp(object):
       
       new_trans = vec3(x,y,z)
 
-      #delta_dir = (new_trans-prv_trans).normalized()
+      #delta_dir = (new_trans-prv_trans).normalized
       #item.EMITN.inputs.Offset = new_trans
       #item.EMITR.inputs.Offset = new_trans
       #item.PNTA.inputs.position = new_trans

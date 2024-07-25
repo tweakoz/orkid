@@ -221,7 +221,7 @@ class WaterApp(object):
     radius = (pos.xz() - center.xz()).length
     amp    = clamp(math.pow(1 / radius, falloff), 0, 1)
     amp *= clamp(radius * rscale, 0, 1)
-    dir = (pos - center).normalized()
+    dir = (pos - center).normalized
     # gersnter wave point moves in circe about pos along direction and up vectors
     phase        = radius * frq - timeval
     displacementA = dir * math.sin(phase)

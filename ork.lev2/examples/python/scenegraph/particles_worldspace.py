@@ -125,11 +125,11 @@ class ParticlesApp(object):
 
     V0 = vec3(math.sin(phA)*radius,0,-math.cos(phA)*radius)
     V1 = vec3(math.sin(phB)*radius,0,-math.cos(phB)*radius)
-    VDY = (V1-V0).normalized()
+    VDY = (V1-V0).normalized
 
-    VDX = vec3(0,1,0).cross(VDY).normalized()
-    VDZ = VDY.cross(VDX).normalized()
-    VDX = VDZ.cross(VDY).normalized()
+    VDX = vec3(0,1,0).cross(VDY).normalized
+    VDZ = VDY.cross(VDX).normalized
+    VDX = VDZ.cross(VDY).normalized
 
     POS = V0
 
@@ -148,7 +148,7 @@ class ParticlesApp(object):
 
     phC = phB+1.0+math.sin(self.phi*2.3)*0.5
     V2 = vec3(math.sin(phC)*radius,0,-math.cos(phC)*radius)
-    GDIR = (V0-V2).normalized()
+    GDIR = (V0-V2).normalized
     self.gravity.inputs.Center = POS+GDIR*2
     self.gravity.inputs.G = 1.05
 

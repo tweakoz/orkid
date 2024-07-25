@@ -117,7 +117,7 @@ class TestCoreMathVec2Methods(unittest.TestCase):
     self.assertTrue(CHECK_CLOSE(b,-math.pi/2))
   ########################################
   def test_vec2_normalize(self):
-    v1 = vec2(3,4).normalized()
+    v1 = vec2(3,4).normalized
     self.assertTrue(CHECK_CLOSE(v1.length,1))    
   ########################################
   def test_vec2_mag(self):

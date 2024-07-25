@@ -32,7 +32,7 @@ print("###################")
 def yo(deco, vspace_v3):
   vspace_v4 = vec4(vspace_v3,1)
   hspace = vspace_v4.transform(pmatrix)
-  dspace = hspace.xyz()*(1/hspace.w)
+  dspace = hspace.xyz*(1/hspace.w)
   print("## %s" % deco)
   print("vspace_v3: %s" % vspace_v3)
   print("vspace_v4: %s" % vspace_v4)
@@ -95,20 +95,20 @@ def do_frustum_check(fov_degrees = 0.0,
 
   # get frustum corner edge direction vectors (far-near)
 
-  c0 = (frus.farCorner(0)-frus.nearCorner(0)).normalized()
-  c1 = (frus.farCorner(1)-frus.nearCorner(1)).normalized()
-  c2 = (frus.farCorner(2)-frus.nearCorner(2)).normalized()
-  c3 = (frus.farCorner(3)-frus.nearCorner(3)).normalized()
+  c0 = (frus.farCorner(0)-frus.nearCorner(0)).normalized
+  c1 = (frus.farCorner(1)-frus.nearCorner(1)).normalized
+  c2 = (frus.farCorner(2)-frus.nearCorner(2)).normalized
+  c3 = (frus.farCorner(3)-frus.nearCorner(3)).normalized
   #print("frustum.c0: ",c0)
   #print("frustum.c1: ",c1)
   #print("frustum.c2: ",c2)
   #print("frustum.c3: ",c3)
 
   # get frustum side edge direction vectors (centered horiz,vertical)
-  cL = (c0+c3).normalized()
-  cR = (c1+c2).normalized()
-  cT = (c0+c1).normalized()
-  cB = (c2+c3).normalized()
+  cL = (c0+c3).normalized
+  cR = (c1+c2).normalized
+  cT = (c0+c1).normalized
+  cB = (c2+c3).normalized
   #print("frustum.cL: ",cL)
   #print("frustum.cR: ",cR)
   #print("frustum.cT: ",cT)

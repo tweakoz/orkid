@@ -90,12 +90,12 @@ class HandPoser(object):
       ####################################
 
       dir_forarm_to_hand = (concatmatrices[self.jnt_hand].translation
-                         - concatmatrices[self.jnt_forearm].translation).normalized()
+                         - concatmatrices[self.jnt_forearm].translation).normalized
 
       dir_hand_to_index = (concatmatrices[self.jnts_index[0]].translation 
-                        - concatmatrices[self.jnt_hand].translation).normalized()
+                        - concatmatrices[self.jnt_hand].translation).normalized
 
-      dir_cross = dir_forarm_to_hand.cross(dir_hand_to_index).normalized()
+      dir_cross = dir_forarm_to_hand.cross(dir_hand_to_index).normalized
       angle = dir_forarm_to_hand.angle(dir_hand_to_index)
 
       Q = quat()

@@ -24,7 +24,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().__init__()
   ##############################################
   def cutWithPlane(self,inpsubmesh,n,o):
-    nn = n.normalized()
+    nn = n.normalized
     tp = dplane(nn,0)
     d = tp.distanceToPoint(o) * -1.0
     new_plane = dplane(nn,d)
@@ -81,7 +81,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     for i in range(0,numsides):
       cub_submesh = self.cutWithPlane(cub_submesh,yzdir,dvec3(0,-beveld,0))
       cub_submesh = self.cutWithPlane(cub_submesh,yzdir*-1.0,dvec3(0,beveld,0))
-      yzdir = dvec4(yzdir,0).transform(dm).xyz()
+      yzdir = dvec4(yzdir,0).transform(dm).xyz
 
     ##############################################
     # XZ
@@ -93,7 +93,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     yzdir = dvec3(1,0,1)
     for i in range(0,numsides):
       cub_submesh = self.cutWithPlane(cub_submesh,yzdir,yzdir*-beveld*0.5)
-      yzdir = dvec4(yzdir,0).transform(dm).xyz()
+      yzdir = dvec4(yzdir,0).transform(dm).xyz
 
     ##############################################
 

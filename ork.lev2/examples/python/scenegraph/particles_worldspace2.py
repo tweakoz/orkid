@@ -140,9 +140,9 @@ class ParticlesApp(object):
     if Z_DIR.length < 0.001:
       Z_DIR = vec3(0,0,1)
     else:
-      Z_DIR = Z_DIR.normalized()
+      Z_DIR = Z_DIR.normalized
     Y_DIR = vec3(0,1,0)
-    X_DIR = Y_DIR.cross(Z_DIR).normalized()
+    X_DIR = Y_DIR.cross(Z_DIR).normalized
 
     self.emitter.inputs.Offset = self.ppos
     self.emitter.inputs.DirectionX = X_DIR
@@ -214,7 +214,7 @@ class ParticlesApp(object):
        if did_intersect:
         self.prev_isect = self.isect
         self.isect = isect_test["point"]
-        self.isect_dir = (self.isect - self.prev_isect).normalized()
+        self.isect_dir = (self.isect - self.prev_isect).normalized
         self.ppos = self.isect
         self.gpos = self.isect+vec3(0,1,0)#  (self.isect_dir*2)
       
