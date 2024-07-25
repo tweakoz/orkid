@@ -38,6 +38,8 @@ ImplementReflectionX(ork::lev2::pbr::CommonStuff, "pbr::CommonStuff");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::pbr {
 
+constexpr size_t KNUMSSAONOISEFRAMES = 2;
+
 static logchannel_ptr_t logchan_pbrcom = logger()->createChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), true);
 
 
@@ -202,7 +204,7 @@ using noisedataset_ptr_t = std::shared_ptr<NoiseDataSet>;
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int noise_seed, int w, int h){
 
-  int seed = noise_seed%23;
+  int seed = noise_seed%KNUMSSAONOISEFRAMES;
 
   uint64_t key = uint64_t(seed)<<32 | uint64_t(w)<<16 | uint64_t(h);
 

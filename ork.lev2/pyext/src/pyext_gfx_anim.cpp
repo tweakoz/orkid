@@ -469,7 +469,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("bindPose", [](xgmlocalpose_ptr_t self) { return self->bindPose(); })
           .def("blendPoses", [](xgmlocalpose_ptr_t self) { return self->blendPoses(); })
           .def("concatenate", [](xgmlocalpose_ptr_t self) { return self->concatenate(); })
-          .def("decomposeConcatenated", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
+          .def("deconcatenate", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
           .def("poseJoint", [](xgmlocalpose_ptr_t self, int index, float fweight, DecompMatrix& mtx) { //
             self->poseJoint(index,fweight,mtx);
            })
