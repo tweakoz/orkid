@@ -10,8 +10,8 @@
 import math, sys, os, random, numpy, argparse
 from obt import path
 from pathlib import Path
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, CrcStringProxy, VarMap, lev2_pyexdir
+from orkengine import lev2
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import *
 from lev2utils.scenegraph import createSceneGraph
@@ -31,8 +31,8 @@ class SSAOAPP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,width=1280,height=720,ssaa=0)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,width=1280,height=720,ssaa=0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
 
     #self.materials = set()
 
@@ -77,16 +77,22 @@ class SSAOAPP(object):
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     #######################################
-    gmtl = PBRMaterial() 
-    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
-    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+    gmtl = lev2.PBRMaterial() 
+    gmtl.assignImages(
+      ctx,
+      color = white,
+      normal = normal,
+      mtlruf = white,
+      doConform=True
+    )
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(.9,.9,1,1)
     gmtl.doubleSided = True
     gmtl.gpuInit(ctx)
-    gdata = GroundPlaneDrawableData()
+    gdata = lev2.GroundPlaneDrawableData()
     gdata.pbrmaterial = gmtl
     gdata.extent = 1000.0
     self.gdata = gdata
@@ -94,7 +100,7 @@ class SSAOAPP(object):
     self.groundnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"partgroundicle-node",self.drawable_ground)
     self.groundnode.worldTransform.translation = vec3(0,0,0)
     #######################################
-    self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
+    self.model = lev2.XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 50
@@ -115,6 +121,7 @@ class SSAOAPP(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+    ui = lev2.ui
     res = ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("A"):

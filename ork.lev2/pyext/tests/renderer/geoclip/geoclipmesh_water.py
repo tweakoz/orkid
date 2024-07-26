@@ -10,16 +10,18 @@
 import math, sys, os, random, numpy, argparse
 from obt import path
 from pathlib import Path
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4
+from orkengine.core import CrcStringProxy, VarMap
+from orkengine.core import lev2_pyexdir, thisdir
+from orkengine import lev2
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
+from lev2utils.cameras import setupUiCamera
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
-
+ui = lev2.ui
 sys.path.append(str(thisdir()/".."/"particles"))
 from _ptc_harness import *
 
@@ -69,7 +71,7 @@ class WaterApp(object):
     # post fx node
     ###################################
 
-    postNode = PostFxNodeDecompBlur()
+    postNode = lev2.PostFxNodeDecompBlur()
     postNode.threshold = 0.99
     postNode.blurwidth = 3.0
     postNode.blurfactor = 0.1
@@ -88,7 +90,7 @@ class WaterApp(object):
     self.layer_fwd = self.scene.createLayer("std_forward")
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
 
-    lite_model = XgmModel("data://tests/pbr_calib.glb")
+    lite_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     cookie = MyCookie("src://effect_textures/knob2.png")
     shadow_size = 2048
     shadow_bias = -1e-4
@@ -140,10 +142,16 @@ class WaterApp(object):
     # ground material (water)
     #######################################
 
-    gmtl = PBRMaterial() 
-    gmtl.texColor = Texture.load("src://effect_textures/white_64.dds")
-    gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white_64.dds")
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+    gmtl = lev2.PBRMaterial() 
+    gmtl.assignImages(
+      ctx,
+      color = white,
+      normal = normal,
+      mtlruf = white,
+      doConform=True
+    )
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.doubleSided = True
@@ -151,8 +159,8 @@ class WaterApp(object):
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
     gmtl.blending = tokens.ALPHA
-    self.NOISETEX = Texture.load("src://effect_textures/voltex_pn2.dds")
-    self.NOISETEX2 = Texture.load("src://effect_textures/NoiseKern.dds")
+    self.NOISETEX = lev2.Texture.load("src://effect_textures/voltex_pn2.dds")
+    self.NOISETEX2 = lev2.Texture.load("src://effect_textures/NoiseKern.dds")
 
     freestyle = gmtl.freestyle
     assert(freestyle)
@@ -186,7 +194,7 @@ class WaterApp(object):
     # ground drawable
     #######################################
 
-    gdata = GeoClipMapDrawable()
+    gdata = lev2.GeoClipMapDrawable()
     gdata.pbrmaterial = gmtl
     gdata.numLevels = 16
     gdata.ringSize = 128
@@ -205,7 +213,7 @@ class WaterApp(object):
     # helmet mesh
     #######################################
 
-    self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
+    self.model = lev2.XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 35

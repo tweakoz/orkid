@@ -10,15 +10,16 @@
 import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
-from orkengine import core, lev2, ecs
-
+from orkengine.core import vec3, vec4, quat
+from orkengine.core import CrcStringProxy, VarMap, Transform
+from orkengine import lev2, ecs
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 from lev2utils.cameras import *
 
 ################################################################################
-tokens = core.CrcStringProxy()
+tokens = CrcStringProxy()
 LAYERNAME = "std_forward"
 GROUP_PLAYER = 1
 GROUP_BALL = 2
@@ -48,7 +49,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                 
                                 disableMouseCursor=True)
 
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera( app=self, 
                    eye = vec3(0,0,0), 
                    tgt=vec3(0,0,1), 
@@ -112,7 +113,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     self.systemdata_phys = systemdata_phys
 
-    drawable = InstancedModelDrawableData("data://tests/pbr_calib.glb")
+    drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib.glb")
     drawable.resize(NUM_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
@@ -319,7 +320,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.groupAssign = GROUP_BALL
     c_physics.groupCollidesWith = GROUP_ALL
 
-    ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
+    ball_drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="projnode",
                                      drawable=ball_drawable,
                                      layer=LAYERNAME,
@@ -361,7 +362,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # visible mesh for room
     #########################
 
-    room_drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    room_drawable = lev2.ModelDrawableData("data://tests/environ/roomtest.glb")
     
     room_mesh_transform = Transform()
     room_mesh_transform.nonUniformScale = vec3(5,8,5)
@@ -414,9 +415,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     PXF = self.player_transform
     if PXF is not None:
+
       UIC = self.uicam.cameradata
       ROT = self.playerforce_rot
-      DIR = (UIC.target-UIC.eye).normalized()
+      DIR = (UIC.target-UIC.eye).normalized
       # rot around Y by ROT
       MOTION_DIR = vec3(DIR.x,DIR.y,DIR.z)
       MOTION_DIR.roty(ROT)
@@ -488,6 +490,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+
+    ui = lev2.ui
 
     walk_force = 3e2
 
