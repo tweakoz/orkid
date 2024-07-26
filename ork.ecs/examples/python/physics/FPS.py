@@ -468,7 +468,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       EYE = PXF.translation+OFFSET
       UIC = self.uicam.cameradata
       ROT = self.playerforce_rot
-      DIR = (UIC.target-UIC.eye).normalized()
+      DIR = (UIC.target-UIC.eye).normalized
 
       SAD = ecs.SpawnAnonDynamic("proj_spawner")
       SAD.overridexf.orientation = quat(vec3(0,1,0),0)

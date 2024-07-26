@@ -62,7 +62,7 @@ def onComponentActivate(simulation,component):
   i = float(i)/100.0
   j = float(j)/100.0
   k = float(k)/100.0
-  axis = vec3(i,j,k).normalized()
+  axis = vec3(i,j,k).normalized
   angle = random.randint(-1,1)*3.14159/180.0
   ent.vars.dr = quat(axis,angle)
   ent.vars.r = quat()
