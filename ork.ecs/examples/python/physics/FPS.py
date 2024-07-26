@@ -93,9 +93,9 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       "SSAONumSamples": SSAO_NUM_SAMPLES,
       "SSAONumSteps": 8,
       "SSAOBias": -3e-4,
-      "SSAORadius": 1.0*25.4/1000, # 2 inches
+      "SSAORadius": 2.0*25.4/1000, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 0.75,
+      "SSAOPower": 1.0,
       "preset": "DeferredPBR"
     })
     

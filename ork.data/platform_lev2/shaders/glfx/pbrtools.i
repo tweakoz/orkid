@@ -448,7 +448,7 @@ float ssao_nonlinear(vec2 frg_uv) {
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return occlusion;
+    return 1.0-occlusion;
 }
 
 float ssao(vec2 frg_uv) {

@@ -77,11 +77,11 @@ class SceneGraphApp(object):
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(10000),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 2,
-      "SSAOBias": -0.001,
+      "SSAONumSteps": 4,
+      "SSAOBias": 0.001,
       "SSAORadius": 1.0*25.4/1000.0, # 2 inches
-      "SSAOWeight": 1.0,
-      "SSAOPower": 1.0,
+      "SSAOWeight": 0.5,
+      "SSAOPower": 0.5,
     }
 
     if envmap != "":
