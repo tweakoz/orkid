@@ -218,7 +218,7 @@ class WaterApp(object):
   ################################################
 
   def _radial_gerstnerwave_fn(self, center, pos, timeval, frq, baseamp, rscale, falloff):
-    radius = (pos.xz() - center.xz()).length
+    radius = (pos.xz - center.xz).length
     amp    = clamp(math.pow(1 / radius, falloff), 0, 1)
     amp *= clamp(radius * rscale, 0, 1)
     dir = (pos - center).normalized
@@ -243,7 +243,7 @@ class WaterApp(object):
     speed   = self.curtime * 1.65
     baseamp = 25
     wave_pos = vec3(0,0,0.001)
-    radius  = wave_pos.xz().length
+    radius  = wave_pos.xz.length
 
     cdist   = 3000.0
     falloff = 0.09
