@@ -30,7 +30,7 @@ DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shader
     : _node(node) {
   ///////////
   _shadername = shadername;
-  _layername  = "All";
+  _layername  = "std_deferred";
 
   for (int i = 0; i < numlights; i++) {
 
@@ -209,6 +209,8 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   auto DB = RCFD->GetDB();
   if (DB == nullptr)
     return;
+  const auto TOPCPD = CIMPL->topCPD();
+  auto CPD          = TOPCPD;
   FBI->PushRtGroup(_rtgGbuffer.get());
   FBI->SetAutoClear(true); // explicit clear
   targ->beginFrame();
@@ -220,9 +222,12 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   if (RCFD->_pbrcommon->_useDepthPrepass) {
     FBI->validateRtGroup(_rtgGbuffer);
     targ->debugPushGroup("Deferred::depth-pre pass");
+    CPD.assignLayers("depth_prepass");
+    CIMPL->pushCPD(CPD); // drawenq
     DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
     RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
     irenderer->drawEnqueuedRenderables(true);
+    CIMPL->popCPD(); // drawenq
     targ->debugPopGroup();
   }
   ///////////////////////////////////////////////////////////////////////////
@@ -230,25 +235,23 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ///////////////////////////////////////////////////////////////////////////
   if (true) {
     /////////////////////////////////////////////////
-    const auto TOPCPD = CIMPL->topCPD();
-    auto CPD          = TOPCPD;
-    CPD.assignLayers(_layername);
     CPD._irendertarget = _rtgGbuffer->_rendertarget.get();
     CPD.SetDstRect(tgt_rect);
     CPD.SetMrtRect(mrt_rect);
     CPD._passID           = "defgbuffer1"_crcu;
     RCFD->_renderingmodel = "DEFERRED_PBR"_crcu;
+    CPD.assignLayers("std_deferred");
+    CIMPL->pushCPD(CPD); // drawenq
     /////////////////////////////////////////////////
     // DrawQueue -> RenderQueue enqueue
     /////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
-       printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());
+       printf("Deferred::renderEnqueuedScene::layer<%s>\n", layer_name.c_str());
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
       DB->enqueueLayerToRenderQueue(layer_name, irenderer);
     }
     /////////////////////////////////////////////////
     auto MTXI = targ->MTXI();
-    CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("Deferred::gbuffer pass");
     auto newmask = RGBAMask{true, true, true, false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);

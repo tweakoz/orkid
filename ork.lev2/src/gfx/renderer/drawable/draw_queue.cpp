@@ -84,7 +84,7 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
             pdrw->enqueueToRenderQueue(item, renderer);
           }
         }
-        if( renderer->_debugLog ){
+        if( true ) { //} renderer->_debugLog ){
           auto str = FormatString("DrawQueue::enqueueLayerToRenderQueue layer<%s> itemcount<%d>", LayerName.c_str(), max_index + 1);
           printf( "%s\n", str.c_str() );
         }
@@ -98,7 +98,7 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
 
     bool Match = (LayerName == TestLayerName);
     bool has = topCPD.HasLayer(TestLayerName);
-    //printf( "against layer<%s> match<%d> has<%d>\n", TestLayerName.c_str(), int(Match), int(has) );
+    printf( "against layer<%s> match<%d> has<%d>\n", TestLayerName.c_str(), int(Match), int(has) );
 
     target->debugMarker(FormatString(
         "DrawQueue::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
