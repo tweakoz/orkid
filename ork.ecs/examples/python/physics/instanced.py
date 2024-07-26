@@ -10,16 +10,16 @@
 import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
-from orkengine import core, lev2, ecs
-
+from orkengine.core import vec3, vec4, quat, CrcStringProxy, VarMap, Transform
+from orkengine import lev2, ecs
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 sys.path.append(str(ork_path.lev2_pylib)) # add parent dir to path
-from lev2utils.cameras import *
+from lev2utils.cameras import setupUiCamera
 
 ################################################################################
-tokens = core.CrcStringProxy()
+tokens = CrcStringProxy()
 LAYERNAME = "std_deferred"
 NUM_BALLS = 3500
 BALLS_NODE_NAME = "balls-instancing-node"
@@ -32,7 +32,7 @@ class ECS_INSTANCED(object):
   def __init__(self):
     super().__init__()
     self.ezapp = ecs.createApp(self,ssaa=2,fullscreen=False)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(50), tgt=vec3(0,0,1), constrainZ=True, up=vec3(0,1,0))
     self.ecsInit()
 
@@ -72,7 +72,7 @@ class ECS_INSTANCED(object):
       "DepthFogPower": float(1.25),
     })
 
-    drawable = InstancedModelDrawableData("data://tests/pbr_calib.glb")
+    drawable = lev2.InstancedModelDrawableData("data://tests/pbr_calib.glb")
     drawable.resize(NUM_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
@@ -188,7 +188,7 @@ class ECS_INSTANCED(object):
     # visible mesh for room
     #########################
 
-    drawable = ModelDrawableData("data://tests/environ/roomtest.glb")
+    drawable = lev2.ModelDrawableData("data://tests/environ/roomtest.glb")
     
     mesh_transform = Transform()
     mesh_transform.nonUniformScale = vec3(5,8,5)
@@ -271,7 +271,7 @@ class ECS_INSTANCED(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
 
-    return ui.HandlerResult()
+    return lev2.ui.HandlerResult()
 
 ###############################################################################
 

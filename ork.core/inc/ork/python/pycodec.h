@@ -387,7 +387,7 @@ struct nanobindadapter {
       return *this;
     }
     template <typename ret_t, typename... Extra> _clazz& from_buffer(std::function<ret_t(const typename ret_t::element_t* data)> setter, const Extra&... extra) {
-      OrkAssert(false);
+      //OrkAssert(false);
       //Base::def_buffer(f, extra...);
       return *this;
     }
