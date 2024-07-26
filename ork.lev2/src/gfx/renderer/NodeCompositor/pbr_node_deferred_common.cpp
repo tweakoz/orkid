@@ -242,14 +242,14 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     // DrawQueue -> RenderQueue enqueue
     /////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
-      // printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());
+       printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
       DB->enqueueLayerToRenderQueue(layer_name, irenderer);
     }
     /////////////////////////////////////////////////
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
-    targ->debugPushGroup("toolvp::DrawEnqRenderables");
+    targ->debugPushGroup("Deferred::gbuffer pass");
     auto newmask = RGBAMask{true, true, true, false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
