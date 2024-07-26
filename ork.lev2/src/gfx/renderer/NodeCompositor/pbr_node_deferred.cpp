@@ -177,8 +177,8 @@ struct PbrNodeImpl {
 
       int node_frame = node->_frameIndex;
 
+      _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples);
       if (_context->_parSSAONumSamples) {
-        _context->_lightingmtl->bindParamInt(_context->_parSSAONumSamples, pbrcommon->_ssaoNumSamples);
         _context->_lightingmtl->bindParamInt(_context->_parSSAONumSteps, pbrcommon->_ssaoNumSteps);
         _context->_lightingmtl->bindParamFloat(_context->_parSSAOBias, pbrcommon->_ssaoBias);
         _context->_lightingmtl->bindParamFloat(_context->_parSSAORadius, pbrcommon->_ssaoRadius);

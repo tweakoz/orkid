@@ -206,24 +206,41 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ///////////////////////////////////////////////////////////////////////////
   ddprops["gbuffer"_crcu].set<rtgroup_ptr_t>(_rtgGbuffer);
   ddprops["depthbuffer"_crcu].set<rtbuffer_ptr_t>(_rtgGbuffer->_depthBuffer);
-  ///////////////////////////////////////////////////////////////////////////
-  FBI->PushRtGroup(_rtgGbuffer.get());
-  FBI->SetAutoClear(false); // explicit clear
-  targ->beginFrame();
-  ///////////////////////////////////////////////////////////////////////////
-  const auto TOPCPD = CIMPL->topCPD();
-  auto CPD          = TOPCPD;
-  CPD.assignLayers(_layername);
-  CPD._irendertarget = _rtgGbuffer->_rendertarget.get();
-  CPD.SetDstRect(tgt_rect);
-  CPD.SetMrtRect(mrt_rect);
-  CPD._passID = "defgbuffer1"_crcu;
-  ///////////////////////////////////////////////////////////////////////////
   auto DB = RCFD->GetDB();
-  if (DB) {
-    ///////////////////////////////////////////////////////////////////////////
+  if (DB == nullptr)
+    return;
+  FBI->PushRtGroup(_rtgGbuffer.get());
+  FBI->SetAutoClear(true); // explicit clear
+  targ->beginFrame();
+  _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
+  FBI->rtGroupClear(_rtgGbuffer.get());
+  ///////////////////////////////////////////////////////////////////////////
+  // depth prepass
+  ///////////////////////////////////////////////////////////////////////////
+  if (RCFD->_pbrcommon->_useDepthPrepass) {
+    FBI->validateRtGroup(_rtgGbuffer);
+    targ->debugPushGroup("Deferred::depth-pre pass");
+    DB->enqueueLayerToRenderQueue("depth_prepass", irenderer);
+    RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
+    irenderer->drawEnqueuedRenderables(true);
+    targ->debugPopGroup();
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  // GBUFFER pass
+  ///////////////////////////////////////////////////////////////////////////
+  if (true) {
+    /////////////////////////////////////////////////
+    const auto TOPCPD = CIMPL->topCPD();
+    auto CPD          = TOPCPD;
+    CPD.assignLayers(_layername);
+    CPD._irendertarget = _rtgGbuffer->_rendertarget.get();
+    CPD.SetDstRect(tgt_rect);
+    CPD.SetMrtRect(mrt_rect);
+    CPD._passID           = "defgbuffer1"_crcu;
+    RCFD->_renderingmodel = "DEFERRED_PBR"_crcu;
+    /////////////////////////////////////////////////
     // DrawQueue -> RenderQueue enqueue
-    ///////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
       // printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
@@ -233,8 +250,6 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
-    _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
-    FBI->rtGroupClear(_rtgGbuffer.get());
     auto newmask = RGBAMask{true, true, true, false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
@@ -242,6 +257,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
     irenderer->resetQueue();
+    /////////////////////////////////
   }
   /////////////////////////////////////////////////////////////////////////////////////////
   targ->endFrame();

@@ -64,7 +64,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
       }
     } else {
         
-    
       if (this->_tek_FWD_DEPTHPREPASS_RI_NI_MO) {
         pipeline             = std::make_shared<FxPipeline>(permu);
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_NI_MO;

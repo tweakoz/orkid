@@ -432,10 +432,10 @@ libblock lib_deferred
       // ambient occlusion
       /////////////////////////
       float ambocc = 1.0;
-      /*if(SSAONumSamples>=8){
-        ambocc = pow(ssao_nonlinear(uv),SSAOPower);
+      if(SSAONumSamples>=8){
+        //ambocc = pow(ssao_nonlinear(uv),SSAOPower);
         ambocc = mix(1.0,ambocc,SSAOWeight);
-      }*/
+      }
       /////////////////////////
       // ambient lighting
       /////////////////////////

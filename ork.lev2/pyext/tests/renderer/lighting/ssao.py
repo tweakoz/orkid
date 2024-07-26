@@ -66,7 +66,7 @@ class SSAOAPP(object):
     sceneparams.SSAONumSamples = 32
     sceneparams.SSAONumSteps = 5
     sceneparams.SSAOBias = -1e-5
-    sceneparams.SSAORadius = 1.0*25.4/1000.0
+    sceneparams.SSAORadius = 2.0*25.4/1000.0
     sceneparams.SSAOWeight = 0.75
     sceneparams.SSAOPower = 0.75
     ###################################
@@ -76,6 +76,7 @@ class SSAOAPP(object):
     self.std_layers = [self.layer_std,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
+    self.pbr_common.useDepthPrepass = True
     #######################################
     white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
     normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")

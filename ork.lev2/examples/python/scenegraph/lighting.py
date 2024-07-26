@@ -47,11 +47,11 @@ class AnimationState(object):
 ################################################################################
 class instance_set(object):
   ########################################################
-  def __init__(self,model,num_instances,layer):
+  def __init__(self,model,num_instances,layers):
     super().__init__()
     self.num_instances = num_instances
     self.model = model
-    self.sgnode = model.createInstancedNode(num_instances,"node1",layer)
+    self.sgnode = model.createInstancedNode(num_instances,"node1",layers[0])
     self.animated = dict()
     self.animstates = dict()
     for i in range(num_instances):
@@ -101,13 +101,18 @@ class SceneGraphApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     self.scene = self.ezapp.createScene(self.sceneparams)
-    layer = self.scene.createLayer("layer1")
+    layer_donly = self.scene.createLayer("depth_prepass")
+    layer_std = self.scene.createLayer("std_deferred")
+    self.std_layers = [layer_std,layer_donly]
+    self.pbr_common = self.scene.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
+    self.pbr_common.useDepthPrepass = True
     models = []
     models += [XgmModel("src://environ/objects/misc/ref/torus.glb")]
     models += [XgmModel("src://environ/objects/misc/ref/uvsph.glb")]
     ###################################
     for model in models:
-      self.instancesets += [instance_set(model,numinstances,layer)]
+      self.instancesets += [instance_set(model,numinstances,self.std_layers)]
     ###################################
     self.camera = CameraData()
     self.cameralut = CameraDataLut()
@@ -115,13 +120,13 @@ class SceneGraphApp(object):
     ###################################
     self.r_lightdata = PointLightData()
     self.r_lightdata.color = vec3(1000,0,0)
-    self.r_lightnode = self.r_lightdata.createNode("red-light-node",layer)
+    self.r_lightnode = self.r_lightdata.createNode("red-light-node",layer_std)
     self.g_lightdata = PointLightData()
     self.g_lightdata.color = vec3(0,1000,0)
-    self.g_lightnode = self.g_lightdata.createNode("grn-light-node",layer)
+    self.g_lightnode = self.g_lightdata.createNode("grn-light-node",layer_std)
     self.b_lightdata = PointLightData()
     self.b_lightdata.color = vec3(0,0,1000)
-    self.b_lightnode = self.b_lightdata.createNode("blu-light-node",layer)
+    self.b_lightnode = self.b_lightdata.createNode("blu-light-node",layer_std)
     ###################################
     self.camera.perspective(0.1, 150.0, 45.0)
     self.camera.lookAt(vec3(0,0,5), # eye
