@@ -9,7 +9,7 @@ from imgui_bundle import imgui, hello_imgui
 from imgui_bundle.python_backends.opengl_backend import ProgrammablePipelineRenderer
 import glfw, json
 from obt import path as obt_path
-from orkengine.core import CrcStringProxy
+from orkengine.core import CrcStringProxy, vec2, vec3, vec4
 from orkengine import lev2
 
 ################################################################################
@@ -38,6 +38,7 @@ class ImGuiWrapper:
     self.appID = appID
     self.imgui_settings_file = obt_path.temp()/("_imgui_settings_%s.ini" % self.appID)
     self.app_settings_file = obt_path.temp()/("_app_settings_%s.json" % self.appID)
+    self.apppresets_file = obt_path.temp()/("_app_presets_%s.json" % self.appID)
     self.ezapp = app.ezapp
     self.uicontext = app.ezapp.uicontext
     self.topwidget = app.ezapp.topWidget
@@ -145,6 +146,44 @@ class ImGuiWrapper:
 
   ####################################
 
+  def serializeAppState(self,vars):
+    as_dict = dict()
+    for k in vars.keys():
+      val = vars[k]
+      if isinstance(val,vec2):
+        val = "vec2(%f,%f)" % (val.x,val.y)
+      elif isinstance(val,vec3):
+        val = "vec3(%f,%f,%f)" % (val.x,val.y,val.z)
+      as_dict[k] = val
+      #print("saving var<%s> val<%s>" % (k,val))
+    appdict_as_json = json.dumps(as_dict)
+    #print(self.app_settings_file)
+    print(appdict_as_json)
+    return appdict_as_json
+  
+  ####################################
+
+  def deserializeAppState(self,vars,appdict_as_json):
+    app_dict = json.loads(appdict_as_json)
+        
+    for item in app_dict:
+      value = app_dict[item]
+      if isinstance(value,str):
+        if value.startswith("vec2"):
+          value = value.replace("vec2(","").replace(")","").split(",")
+          value = vec2(float(value[0]),float(value[1]))
+        elif value.startswith("vec3"):
+          value = value.replace("vec3(","").replace(")","").split(",")
+          value = vec3(float(value[0]),float(value[1]),float(value[2]))
+        elif value.startswith("vec4"):
+          value = value.replace("vec4(","").replace(")","").split(",")
+          value = vec4(float(value[0]),float(value[1]),float(value[2]),float(value[3]))
+      if "shader" not in item:
+        print("setting var<%s> val<%s>" % (item,value))
+      setattr(vars,item,value)
+
+  ####################################
+
   def onGpuInit(self,ctx, vars):
     imgui.create_context()
     imgui.style_colors_dark()
@@ -154,29 +193,17 @@ class ImGuiWrapper:
     self.imgui_renderer = ProgrammablePipelineRenderer()
     self.imgui_io.config_flags |= imgui.ConfigFlags_.docking_enable
     self.imgui_io.config_flags |= imgui.ConfigFlags_.viewports_enable;
-    self.app_dict = {}
+
     if self.app_settings_file.exists():
       with open(self.app_settings_file, "r") as f:
         appdict_as_json = f.read()
-        self.app_dict = json.loads(appdict_as_json)
-    for item in self.app_dict:
-      if item in vars.keys():
-        value = self.app_dict[item]
-        if isinstance(value,list):
-          value = tuple(value)
-        setattr(vars,item,value)
+        self.deserializeAppState(vars,appdict_as_json)
 
   ####################################
 
   def onExit(self,vars):
     imgui.save_ini_settings_to_disk(str(self.imgui_settings_file))
-    as_dict = dict()
-    for k in vars.keys():
-      val = vars[k]
-      as_dict[k] = val
-    appdict_as_json = json.dumps(as_dict)
-    print(self.app_settings_file)
-    print(appdict_as_json)
+    appdict_as_json = self.serializeAppState(vars)
     with open(self.app_settings_file, "w") as f:
       f.write(appdict_as_json)
 

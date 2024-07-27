@@ -10,6 +10,7 @@
 
 #pip3 install imgui_bundle
 
+import traceback, time, json
 ################################################################################
 from imgui_bundle import imgui, hello_imgui, imgui_md
 from imgui_bundle import imgui_color_text_edit as ed
@@ -51,19 +52,29 @@ void main() {
 
 fragment_shader_source = """
 #version 410 core
-uniform float time;
-uniform vec3 ModColor;
-out vec4 FragColor;
-in vec2 TexCoord;
-
-void main() {
-  vec2 uv = TexCoord;
-  vec2 uvc = uv-vec2(0.5,0.5);
-  float d = length(uvc)*10;
-  d = mod(d+time*0.3,1.0);
-  FragColor = vec4(ModColor*d, 1.0);
-}
-"""
+ uniform float time;
+ uniform float scale;
+ uniform float scale_power;     // range (0.5,2.0,0)
+ uniform float rot_scale;       // range (0, 10, 0.5)
+ uniform float spin_rate;       // range (-1,1,0.1)
+ uniform float spin_bias;       // range (-3.1415,3.1415)
+ uniform float cycle_rate;      // range (-4,4,0.1)
+ uniform float d_final_scale;
+ uniform float d_final_bias;
+ uniform vec3 ModColor;
+ out vec4 FragColor;
+ in vec2 TexCoord;
+ void main() {
+   vec2 uv = TexCoord;
+   vec2 uvc = uv-vec2(0.5,0.5);
+   float angle = atan(uvc.x,uvc.y);
+   float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;
+   float d = length(uvc)*scale*sina;
+   d = sign(scale)*pow(abs(d),scale_power);
+   d = mod(d+time*cycle_rate,1.0);
+   d = d*d_final_scale + d_final_bias;
+   FragColor = vec4(ModColor*d, 1.0);
+}"""
 
 ################################################################################
 # Geometry data
@@ -120,15 +131,30 @@ class UiTestApp(object):
     
     self.griditems = griditems
     
+    IMGW = self.griditems[0].widget
+    IMGW.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
+    self.imgui_widget = IMGW
+    
     OLGW = self.griditems[1].widget
-    OLGW.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
+    OLGW.enableDraw = True # disable default drawing for widget 0, as it will be drawn by PyOpenGL
     self.opengl_widget = OLGW
 
     self.status_text = "OK"
 
     # animation properties
     self.time = 0.0
-    
+    self.fps_accum = 0.0
+    self.fps_time_base = time.time()
+    self.ups_accum = 0.0
+    self.ups_time_base = time.time()
+    self.FPS = 0.0
+    self.UPS = 0.0
+    self.presets = {
+      "default": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "presets": "", "sh_ModColor": "vec3(0.567358,0.185217,0.803922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 2.5, "sh_scale": 4.079999923706055, "sh_scale_power": 2.0, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+      "preset2": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "presets": "", "sh_ModColor": "vec3(0.567358,0.085217,0.303922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 2.5, "sh_scale": 4.079999923706055, "sh_scale_power": 2.0, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 1.0, "text": "Hello, world!"}
+    }
+    self.current_preset = "none"
+    self.item_current_idx = 0
 
   ##############################################
   # appstate support
@@ -140,17 +166,22 @@ class UiTestApp(object):
 
   def newAppState(self):
     self.app_vars = VarMap()
-    self.app_vars.rate = 0.1
-    self.app_vars.color = [1., .0, .5]
-    self.app_vars.text = "Hello, world!"
+    self.app_vars.preset_name = "NewPreset"
     self.app_vars.frg_shader_src = fragment_shader_source
-
+    
   ##############################################
   # onUpdate - called from update / simulation thread
   ##############################################
 
   def onUpdate(self,updev):
-    self.time = updev.absolutetime*self.app_vars.rate
+    self.time = updev.absolutetime
+    self.ups_accum += 1.0
+    now = time.time()
+    delta = now-self.ups_time_base
+    if delta>1.0:
+      self.UPS = self.ups_accum/delta
+      self.ups_accum = 0.0
+      self.ups_time_base = time.time()
 
   ##############################################
   # onGpuInit - called once at startup (in rendering thread)
@@ -163,17 +194,19 @@ class UiTestApp(object):
     # setup imgui
     ##################################
 
-    W = self.griditems[0].widget
-    W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
-
-    self.imgui_handler = ImGuiWrapper(self, "ork_pyext_test_pyopengl", docking=True, lock_to_panel=W)
+    self.imgui_handler = ImGuiWrapper( self, 
+                                       "ork_pyext_test_pyopengl", 
+                                       docking=True, 
+                                       lock_to_panel=self.imgui_widget )
     self.imgui_handler.onGpuInit(ctx,self.app_vars)
     self.text_editor = TextEditor()
     self.text_editor.set_text(self.app_vars.frg_shader_src)
     self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
 
-    W2 = self.griditems[1].widget
-    W2.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
+    if self.imgui_handler.apppresets_file.exists():
+      with open(self.imgui_handler.apppresets_file,"r") as f:
+        all_presets_json = f.read()
+        self.presets = json.loads(all_presets_json)
     
     ##################################
     # define geometry and shaders
@@ -194,21 +227,65 @@ class UiTestApp(object):
   ##############################################
 
   def onOverlayUiEvent(self,uievent):
-    return self.imgui_handler.onUiEvent(uievent)
-
+    handled = False
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      keycode = uievent.keycode
+      is_ctrl = uievent.ctrl 
+      if is_ctrl:
+        if keycode == ord("R"):
+          self.newAppState()
+          self.recompileShader()
+          self.text_editor.set_text(fragment_shader_source)
+    if not handled:
+      return self.imgui_handler.onUiEvent(uievent)
+       
   ##############################################
 
   def recompileShader(self):
     try:
       frg_src = self.text_editor.get_text()
-      sh = PyShader(vertex_shader_source, frg_src, ["time","ModColor"])
+      sh = PyShader(vertex_shader_source, frg_src)
       self.shaders = sh
       self.app_vars.frg_shader_src = frg_src
       self.status_text = "OK"
+      ################################################
+      # strip sh_* vars that are not in the new shader
+      ################################################
+      keys_to_delete = []
+      for item in self.app_vars.keys():
+        if "sh_" in item:
+          label = item[3:]
+          if item not in sh._bound_params:
+            keys_to_delete.append(item)
+      for item in keys_to_delete:
+        setattr(self.app_vars,item,"")
+      ################################################
+      # add sh_* vars that are in the new shader
+      #  and not in the app_vars
+      ################################################
+      for item in sh._bound_params.keys():
+        if item not in self.app_vars.keys():
+          name = item[3:]
+          uni_loc = sh._bound_params[item]
+          type_str = sh._param_types[item]
+          if type_str=="float":
+            setattr(self.app_vars,item,float(1))
+          elif type_str=="vec2":
+            setattr(self.app_vars,item,vec2(1,1))
+          elif type_str=="vec3":
+            setattr(self.app_vars,item,vec3(1,1,1))
+          elif type_str=="vec4":
+            setattr(self.app_vars,item,vec4(1,1,1,1))
+          else:
+            print("unknown type for shader-var: ",item)
+            assert(False)
+          print("added shader-var: ",item,type_str)
+      ################################################
     except Exception as e:
       print("Error compiling shader:", e)
       self.status_text = "Error: " + str(e)
-        
+      callstack = traceback.format_exc()
+      print(callstack)        
   ##############################################
 
   def onMetaKey(self,uievent,im_key):
@@ -226,6 +303,13 @@ class UiTestApp(object):
     self._renderImGui(ctx)
     imgui.update_platform_windows();
     imgui.render_platform_windows_default();
+    self.fps_accum += 1.0
+    now = time.time()
+    delta = now-self.fps_time_base
+    if delta>1.0:
+      self.FPS = self.fps_accum/delta
+      self.fps_accum = 0.0
+      self.fps_time_base = time.time()
     
   ##############################################
   # _renderPanel - render the panel using PyOpenGL
@@ -245,7 +329,23 @@ class UiTestApp(object):
         
     glUseProgram(self.shaders.shader_program)
     glUniform1f(self.shaders.par_time,self.time)
-    glUniform3f(self.shaders.par_color,*(self.app_vars.color))
+
+    for item in self.app_vars.keys():
+      if "sh_" in item:
+        label = item[3:]
+        val = self.app_vars[item]
+        #print(item,label,val)
+        if item in self.shaders._bound_params:
+          uni_loc = self.shaders._bound_params[item]
+          #print(uni_loc)
+          if type(val) == float:
+            glUniform1f(uni_loc, val)
+          elif type(val) == vec2:
+            glUniform2f(uni_loc, val.x, val.y)
+          elif type(val) == vec3:
+            glUniform3f(uni_loc, val.x, val.y, val.z)
+          elif type(val) == vec4:
+            glUniform3f(uni_loc, val.x, val.y, val.z, val.w)
 
     #################################
     # bind VAO and draw
@@ -309,29 +409,107 @@ class UiTestApp(object):
 
     self.imgui_handler.beginFrame()
     io = imgui.get_io()
-    
+
+    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
+
+    #################################
+    # presets combo
+    #################################
+
+    def assign_new_preset(preset):
+      print("selected preset<%s>"%preset)
+      if preset!=self.current_preset:
+        the_preset = self.presets[preset]
+        self.current_preset = preset
+        as_json = json.dumps(the_preset)
+        self.imgui_handler.deserializeAppState(self.app_vars,as_json)
+        self.recompileShader()
+        self.text_editor.set_text(self.app_vars.frg_shader_src)
+      
+
+    lin_dict = list(self.presets.keys())
+    combo_preview_value = lin_dict[self.item_current_idx]
+    prev_item = self.item_current_idx
+    if imgui.begin_combo("PRESET", combo_preview_value, 0):
+        was_changed = False
+        for n in range(len(self.presets)):
+          is_selected = (self.item_current_idx == n)
+          key = lin_dict[n]
+          was_changed,x = imgui.selectable(key, is_selected)
+          if was_changed or x:
+            self.item_current_idx = n
+        imgui.end_combo()
+        if prev_item!=self.item_current_idx:
+          preset = lin_dict[self.item_current_idx]
+          assign_new_preset(preset)
+
     #################################
     # property sheet for app_vars
     #################################
 
-    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
+    for item in self.app_vars.keys():
+      #print("item<%s>"%item)
+      if "sh_" in item:
+        uniname = item[3:]
+        val = self.app_vars[item]
+        minval = -10.0
+        maxval = 10.0
+        stpval = 0.0
+        if uniname in self.shaders._param_ranges:
+          minval,maxval,stpval = self.shaders._param_ranges[uniname]
+        #print("item<%s> minval<%s> maxval<%s>"%(item,minval,maxval))
+                
+        if type(val) == float:
+          prv_val = self.app_vars[item]
+          # quantize input to nearest step value (stpval) 
+          # if stpval is not zero
+          if stpval>0.0:
+            prv_val = round(prv_val/stpval)*stpval
+          changed, new_val = imgui.slider_float(
+            label=uniname, 
+            v=prv_val, 
+            v_min=minval, 
+            v_max=maxval,
+          )
+          if changed:
+            if stpval>0.0:
+              new_val = round(new_val/stpval)*stpval
+            setattr(self.app_vars,item,new_val)
+        elif type(val) == vec3:        
+          inp_val = [val.x,val.y,val.z]
+          changed, newval = imgui.color_edit3(
+            label=uniname, 
+            col=inp_val
+          )
+          if changed:
+            as_v3 = vec3(newval[0],newval[1],newval[2])
+            setattr(self.app_vars,item,as_v3)
+    #)
 
-    clicked, self.app_vars.rate = imgui.slider_float(
-        label="TimeRate",
-        v=self.app_vars.rate,
-        v_min=-10.0,
-        v_max=10.0,
-    )
-    changed, self.app_vars.color = imgui.color_edit3(
-      label="Color", 
-      col=self.app_vars.color
-    )
-    changed, self.app_vars.text = imgui.input_text(
-      label="Text", 
-      str=self.app_vars.text
-    )
+    # pack two widgets in a row
 
-    imgui.text("FPS %g"%(io.framerate))
+
+    changed, self.app_vars.preset_name = imgui.input_text(
+      label="PresetName", 
+      str=self.app_vars.preset_name
+    )
+    # write button
+    if imgui.button("SavePreset"):
+      self.presets[self.app_vars.preset_name] = self.app_vars
+      self.current_preset = self.app_vars.preset_name
+      self.item_current_idx = len(self.presets)-1
+      as_json = self.imgui_handler.serializeAppState(self.app_vars)
+      as_dict = json.loads(as_json)
+      self.presets[self.app_vars.preset_name] = as_dict
+      all_presets_json = json.dumps(self.presets)
+      with open(self.imgui_handler.apppresets_file,"w") as f:
+        f.write(all_presets_json)
+        
+      print("saved preset<%s>"%self.app_vars.preset_name)
+
+
+    imgui.text("FPS %g"%(self.FPS))
+    imgui.text("UPS %g"%(self.UPS))
     
     # draw status color and text
     status_color = imgui.ImVec4(1,0,0,1)
