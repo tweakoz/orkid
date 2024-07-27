@@ -171,7 +171,7 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
   uiev->mbALT     = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL    = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT   = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA    = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER   = (modifiers & GLFW_MOD_SUPER);
   switch (action) {
     case GLFW_PRESS:
       uiev->_eventcode = ui::EventCode::KEY_DOWN;
@@ -843,7 +843,7 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
 
   uiev->_eventcode = DOWN                           //
                          ? ork::ui::EventCode::PUSH //
@@ -1013,7 +1013,7 @@ struct PopupImpl {
       uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
       uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
       uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-      uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
+      uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
 
       uiev->_eventcode = DOWN                           //
                              ? ork::ui::EventCode::PUSH //

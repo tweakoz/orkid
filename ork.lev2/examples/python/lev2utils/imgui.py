@@ -5,12 +5,13 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
+import glfw, json
+from obt import path as obt_path, dep, host
+from OpenGL import GL 
+from orkengine import lev2
 from imgui_bundle import imgui, hello_imgui
 from imgui_bundle.python_backends.opengl_backend import ProgrammablePipelineRenderer
-import glfw, json
-from obt import path as obt_path
 from orkengine.core import CrcStringProxy, vec2, vec3, vec4
-from orkengine import lev2
 
 ################################################################################
 tokens = CrcStringProxy()
@@ -43,7 +44,12 @@ class ImGuiWrapper:
     self.uicontext = app.ezapp.uicontext
     self.topwidget = app.ezapp.topWidget
     self.lock_to_panel = lock_to_panel
-    
+    self.mod_shift = False
+    self.mod_ctrl = False
+    self.mod_alt = False
+    self.mod_super = False
+    self.selected_text = ""
+    self.clipboard_input_queue = ""
     ###################################
     # key remap table
     ###################################
@@ -109,6 +115,10 @@ class ImGuiWrapper:
       glfw.KEY_PERIOD: imgui.Key.period,
       glfw.KEY_SLASH: imgui.Key.slash,
       # Add more key mappings as needed
+      glfw.KEY_LEFT_SHIFT: imgui.Key.left_shift,
+      glfw.KEY_LEFT_CONTROL: imgui.Key.left_ctrl,
+      glfw.KEY_LEFT_ALT: imgui.Key.left_alt,
+      glfw.KEY_LEFT_SUPER: imgui.Key.left_super,
     }
 
     # fill in alphanumeric keys for both cases
@@ -188,11 +198,35 @@ class ImGuiWrapper:
     imgui.create_context()
     imgui.style_colors_dark()
     imgui.load_ini_settings_from_disk(str(self.imgui_settings_file))
-    self.imgui_io = imgui.get_io()
-    self.imgui_io.fonts.get_tex_data_as_rgba32()
+    
+    io = imgui.get_io()
+    self.imgui_io = io
+    io.config_mac_osx_behaviors = host.IsOsx   
+    io.fonts.get_tex_data_as_rgba32()
+    clip_set = io.set_clipboard_text_fn_
+    clip_get = io.get_clipboard_text_fn_
     self.imgui_renderer = ProgrammablePipelineRenderer()
-    self.imgui_io.config_flags |= imgui.ConfigFlags_.docking_enable
-    self.imgui_io.config_flags |= imgui.ConfigFlags_.viewports_enable;
+    io.config_flags |= imgui.ConfigFlags_.docking_enable
+    io.config_flags |= imgui.ConfigFlags_.viewports_enable;
+    io.set_clipboard_text_fn_ = clip_set
+    io.get_clipboard_text_fn_ = clip_get
+    python = dep.instance("python")
+    site_dir = python.pylib_dir/"site-packages"
+    imgui_dir = site_dir/"imgui_bundle"
+    assets_dir = imgui_dir/"assets"
+    fonts_dir = assets_dir/"fonts"
+    font_size = 18  # Set the desired font size
+    font_path = str(fonts_dir/"Inconsolata-Medium.ttf")
+        
+    io.fonts.clear()
+         
+    self.new_font = io.fonts.add_font_from_file_ttf(font_path, font_size)
+    io.fonts.build()
+    self.imgui_renderer.refresh_font_texture()
+
+    self.beginFrame()
+    self.endFrame()
+
 
     if self.app_settings_file.exists():
       with open(self.app_settings_file, "r") as f:
@@ -215,12 +249,13 @@ class ImGuiWrapper:
     scr_h = TOPW.height
     io = self.imgui_io
     io.display_size = scr_w, scr_h
+    self.selected_text = ""
+
     imgui.new_frame()
     ####################
     # set up docking
     ####################
     if self.docking:
-      self.imgui_io = imgui.get_io()
       window_flags = imgui.WindowFlags_.menu_bar | imgui.WindowFlags_.no_docking
       dockspace_flags = imgui.DockNodeFlags_.none
 
@@ -249,6 +284,11 @@ class ImGuiWrapper:
           dockspace_id = imgui.get_id("MyDockSpace")
           imgui.dock_space(dockspace_id, (0.0, 0.0), dockspace_flags)
 
+      io.key_shift = self.mod_shift
+      io.key_ctrl = self.mod_ctrl
+      io.key_alt = self.mod_alt
+      io.key_super = self.mod_super
+
   ####################################
 
   def endFrame(self):
@@ -274,20 +314,47 @@ class ImGuiWrapper:
 
   def onUiEvent(self,uievent):
     handler = self.uicontext.overlayWidget
+    self.mod_shift = uievent.shift
+    self.mod_ctrl = uievent.ctrl
+    self.mod_alt = uievent.alt
+    self.mod_super = uievent.super
     ###############################################################
-    if uievent.code == tokens.KEY_DOWN.hashed:
+    if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
       if not self.imgui_io.want_capture_keyboard:
         handler = None
       else:
         keycode = uievent.keycode
         remapped_key = self._remapNativeKeyToImguiKey(keycode)
-        metas = (uievent.alt == True) or (uievent.ctrl == True)                       
+        metas = (uievent.alt == True) or (uievent.ctrl == True) or (uievent.super == True)                      
         if remapped_key!=None:
-          if metas:
-            self.app.onMetaKey(uievent,remapped_key)
-          else:
+          ###################################
+          # meta keys
+          ###################################
+          if metas and uievent.code == tokens.KEY_DOWN.hashed:
+            key_c = getattr(imgui.Key,"c")
+            key_v = getattr(imgui.Key,"v")
+            key_x = getattr(imgui.Key,"x")
+            print("metas: ", metas)
+            if remapped_key == key_c:
+              if self.selected_text != "":
+                print(f"copying selected text: {self.selected_text}")
+                imgui.set_clipboard_text(self.selected_text)
+            elif remapped_key == key_v:
+              text = imgui.get_clipboard_text()
+              print("setting clipboard input queue", text)
+              self.clipboard_input_queue = text
+            elif remapped_key == key_x:
+              self.app.onCut(uievent)
+            else:
+              self.app.onMetaKey(uievent,remapped_key)
+          elif uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
+            #print(f"down remapped_key: {remapped_key} shift: {uievent.shift}")
             self.imgui_io.add_key_event(remapped_key,True)
             self.imgui_io.add_key_event(remapped_key,False)
+            self.imgui_io.set_key_event_native_data(remapped_key, keycode, -1);
+          ###################################
+          # basic character input
+          ###################################
           key_0 = getattr(imgui.Key,"_0")
           key_9 = getattr(imgui.Key,"_9")
           key_a = getattr(imgui.Key,"a")
@@ -336,6 +403,15 @@ class ImGuiWrapper:
     ###############################################################
     elif uievent.code == tokens.KEY_UP.hashed:
       keycode = uievent.keycode
+      remapped_key = self._remapNativeKeyToImguiKey(keycode)
+      metas = (uievent.alt == True) or (uievent.ctrl == True)                       
+      if remapped_key!=None:
+        if metas:
+          pass 
+        else:
+          pass 
+          #print(f"up remapped_key: {remapped_key} shift: {uievent.shift}")
+          #self.imgui_io.add_key_event(remapped_key,False)
       if self.imgui_io.want_capture_keyboard:
         handler = None
     ###############################################################

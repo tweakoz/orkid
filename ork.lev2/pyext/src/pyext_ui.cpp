@@ -152,6 +152,11 @@ void pyinit_ui(py::module& module_lev2) {
                 return int(ev->mbCTRL);
               })
           .def_property_readonly(
+              "super",                        //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbSUPER);
+              })
+          .def_property_readonly(
               "left",                         //
               [](ui::event_ptr_t ev) -> int { //
                 return int(ev->mbLeftButton);

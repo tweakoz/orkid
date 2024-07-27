@@ -51,6 +51,7 @@ struct EventCooked {
   bool mALT            = false;
   bool mSHIFT          = false;
   bool mMETA           = false;
+  bool mSUPER          = false;
   ork::FixedString<64> mAction;
 
   void Reset();
@@ -91,7 +92,7 @@ struct Event final // RawEvent
   bool mbCTRL  = false;
   bool mbALT   = false;
   bool mbSHIFT = false;
-  bool mbMETA  = false;
+  bool mbSUPER  = false;
 
   bool mbLeftButton   = false;
   bool mbMiddleButton = false;

@@ -68,7 +68,7 @@ void IWidgetEventFilter::Filter(event_constptr_t Ev) {
   fev.mCTRL     = Ev->mbCTRL;
   fev.mALT      = Ev->mbALT;
   fev.mSHIFT    = Ev->mbSHIFT;
-  fev.mMETA     = Ev->mbMETA;
+  fev.mSUPER    = Ev->mbSUPER;
 
   DoFilter(Ev);
 }
@@ -86,7 +86,7 @@ std::string Event::description() const{
       mbCTRL,
       mbALT,
       mbSHIFT,
-      mbMETA);
+      mbSUPER);
     return as_str;
 }
 

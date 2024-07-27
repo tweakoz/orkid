@@ -153,14 +153,12 @@ class UiTestApp(object):
     self.ups_time_base = time.time()
     self.FPS = 0.0
     self.UPS = 0.0
-    self.presets = {
-      "default": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "presets": "", "sh_ModColor": "vec3(0.567358,0.185217,0.803922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 2.5, "sh_scale": 4.079999923706055, "sh_scale_power": 2.0, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 0.0, "text": "Hello, world!"},
-      "preset2": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "presets": "", "sh_ModColor": "vec3(0.567358,0.085217,0.303922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 2.5, "sh_scale": 4.079999923706055, "sh_scale_power": 2.0, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 1.0, "text": "Hello, world!"}
-    }
+    
     self.current_preset = "none"
     self.item_current_idx = 0
     self._movie_frames = []
     self.writing_movie = False
+
 
   ##############################################
   # appstate support
@@ -173,7 +171,31 @@ class UiTestApp(object):
   def newAppState(self):
     self.app_vars = VarMap()
     self.app_vars.preset_name = "NewPreset"
-    self.app_vars.frg_shader_src = fragment_shader_source
+    self.presets = {
+      "preset1": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "presets": "", "sh_ModColor": "vec3(0.567358,0.185217,0.803922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 2.5, "sh_scale": 4.079999923706055, "sh_scale_power": 2.0, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+      "preset2": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "preset2", "presets": "", "sh_ModColor": "vec3(0.567358,0.085217,0.303922)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 3.0, "sh_rot_scale2": "", "sh_scale": 6.517000198364258, "sh_scale_power": 0.5, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 1.0, "text": "Hello, world!"},
+      "preset3": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "Preset3", "presets": "", "sh_ModColor": "vec3(1.000000,0.117647,0.117647)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -0.3009999990463257, "sh_d_final_scale": 6.984000205993652, "sh_rot_scale": 5.0, "sh_rot_scale2": "", "sh_scale": 4.790999889373779, "sh_scale_power": 2.0, "sh_spin_bias": 1.6100000143051147, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+      "preset4": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-10,10,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "Preset4", "presets": "", "sh_ModColor": "vec3(0.000000,0.151961,0.008939)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": 5.5329999923706055, "sh_d_final_scale": -10.0, "sh_rot_scale": 5.0, "sh_rot_scale2": "", "sh_scale": 2.556999921798706, "sh_scale_power": 2.0, "sh_spin_bias": -1.5149999856948853, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+      "preset5": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-10,10,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "Preset5", "presets": "", "sh_ModColor": "vec3(0.106618,0.426471,0.106618)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -3.2690000534057617, "sh_d_final_scale": 7.836999893188477, "sh_rot_scale": 3.0, "sh_rot_scale2": "", "sh_scale": 2.26200008392334, "sh_scale_power": 1.9190000295639038, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 1.0, "text": "Hello, world!"},
+      "preset6": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float rot_scale2; // range (0,100,0,01)\nuniform float spin_rate; // range (-10,10,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  sina = sina * (0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale2)*0.5);\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "Preset6", "presets": "", "sh_ModColor": "vec3(0.106618,0.228915,0.426471)", "sh_cycle_rate": 0.4000000059604645, "sh_d_final_bias": -3.2690000534057617, "sh_d_final_scale": 7.836999893188477, "sh_rot_scale": 3.0, "sh_rot_scale2": 36.395999908447266, "sh_scale": -2.763000011444092, "sh_scale_power": 0.7350000143051147, "sh_spin_bias": 1.5779999494552612, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+      "preset7": {"frg_shader_src": "\n#version 410 core\nuniform float time;\nuniform float scale;\nuniform float scale_power; // range (0.5,2.0,0)\nuniform float rot_scale; // range (0, 10, 0.5)\nuniform float spin_rate; // range (-1,1,0.1)\nuniform float spin_bias; // range (-3.1415,3.1415)\nuniform float cycle_rate; // range (-4,4,0.1)\nuniform float d_final_scale;\nuniform float d_final_bias;\nuniform vec3 ModColor;\nout vec4 FragColor;\nin vec2 TexCoord;\n\nvoid main() {\n  vec2 uv = TexCoord;\n  vec2 uvc = uv-vec2(0.5,0.5);\n  float angle = atan(uvc.x,uvc.y);\n  float sina = 0.5+sin(spin_bias+time*spin_rate*-1+angle*rot_scale)*0.5;\n  float d = length(uvc)*scale*sina;\n  d = sign(scale)*pow(abs(d),scale_power);\n  d = mod(d+time*cycle_rate,1.0);\n  d = d*d_final_scale + d_final_bias;\n  FragColor = vec4(ModColor*d, 1.0);\n}\n", "preset_name": "preset7", "presets": "", "sh_ModColor": "vec3(0.705882,0.296764,0.010381)", "sh_cycle_rate": 1.600000023841858, "sh_d_final_bias": 7.005000114440918, "sh_d_final_scale": -9.10200023651123, "sh_rot_scale": 10.0, "sh_rot_scale2": "", "sh_scale": 1.0160000324249268, "sh_scale_power": 0.5, "sh_spin_bias": -1.3919999599456787, "sh_spin_rate": 0.0, "text": "Hello, world!"},
+    }
+    self.current_preset = "none"
+    self.assignPreset("preset1")
+
+  ##############################################
+  # assign preset to app state
+  ##############################################
+
+  def assignPreset(self,preset):
+    if preset!=self.current_preset:
+      the_preset = self.presets[preset]
+      self.current_preset = preset
+      as_json = json.dumps(the_preset)
+      if hasattr(self,"text_editor"):
+        self.text_editor.set_text(the_preset["frg_shader_src"])
+        self.imgui_handler.deserializeAppState(self.app_vars,as_json)
+        self.recompileShader()
     
   ##############################################
   # onUpdate - called from update / simulation thread
@@ -209,6 +231,8 @@ class UiTestApp(object):
     self.text_editor = TextEditor()
     self.text_editor.set_text(self.app_vars.frg_shader_src)
     self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
+    self.text_editor.set_handle_keyboard_inputs(True)
+   
 
     if self.imgui_handler.apppresets_file.exists():
       with open(self.imgui_handler.apppresets_file,"r") as f:
@@ -298,9 +322,12 @@ class UiTestApp(object):
   ##############################################
 
   def onMetaKey(self,uievent,im_key):
+    handled = False
     print("onMetaKey",im_key)
     if im_key == imgui.Key.enter:
       self.recompileShader()
+      handled = True
+    return handled
 
   ##############################################
   # onGpuPostFrame - called after ALL orkid rendering is done
@@ -471,7 +498,7 @@ class UiTestApp(object):
     #################################
 
     self.imgui_handler.beginFrame()
-    io = imgui.get_io()
+    io = self.imgui_handler.imgui_io
 
     imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)      
 
@@ -524,15 +551,6 @@ class UiTestApp(object):
     # presets combo
     #################################
 
-    def assign_new_preset(preset):
-      if preset!=self.current_preset:
-        the_preset = self.presets[preset]
-        self.current_preset = preset
-        as_json = json.dumps(the_preset)
-        self.text_editor.set_text(the_preset["frg_shader_src"])
-        self.imgui_handler.deserializeAppState(self.app_vars,as_json)
-        self.recompileShader()
-
     lin_dict = list(self.presets.keys())
     combo_preview_value = lin_dict[self.item_current_idx]
     prev_item = self.item_current_idx
@@ -547,7 +565,7 @@ class UiTestApp(object):
         imgui.end_combo()
         if prev_item!=self.item_current_idx:
           preset = lin_dict[self.item_current_idx]
-          assign_new_preset(preset)
+          self.assignPreset(preset)
 
     #################################
     # presets write button
@@ -581,8 +599,14 @@ class UiTestApp(object):
     # FPS
     #################################
 
+    is_shift = io.key_shift
+    is_ctrl = io.key_ctrl
+    is_alt = io.key_alt
+    is_super = io.key_super
+
     imgui.text("FPS %g"%(self.FPS))
     imgui.text("UPS %g"%(self.UPS))
+    imgui.text("is_shift %s is_ctrl %s is_alt %s is_super %s"%(is_shift,is_ctrl,is_alt,is_super))
     
     # draw status color and text
     status_color = imgui.ImVec4(1,0,0,1)
@@ -599,6 +623,15 @@ class UiTestApp(object):
     imgui.begin("FragmentShader", True)
     #imgui.push_font(imgui_md.get_code_font())
     self.text_editor.render("Code")
+    imgh = self.imgui_handler
+    if self.text_editor.has_selection():
+      txt = self.text_editor.get_selected_text()
+      self.imgui_handler.selected_text = txt
+    if len(imgh.clipboard_input_queue):
+      print("clipboard_input_queue<%s>"%imgh.clipboard_input_queue)
+      self.text_editor.insert_text(imgh.clipboard_input_queue)
+      imgh.clipboard_input_queue = ""
+
     #imgui.pop_font()
     imgui.end()
     
