@@ -15,6 +15,7 @@ import threading, concurrent.futures
 import subprocess, os
 from PIL import Image
 from obt import path as obt_path
+from string import Template
 ################################################################################
 from imgui_bundle import imgui, hello_imgui, imgui_md
 from imgui_bundle import imgui_color_text_edit as ed
@@ -79,6 +80,38 @@ fragment_shader_source = """
    d = d*d_final_scale + d_final_bias;
    FragColor = vec4(ModColor*d, 1.0);
 }"""
+
+#####
+
+SSAA_MULT = 4
+SSAA_EXT = SSAA_MULT-2
+SSAA_SCALE = 1.0/(SSAA_MULT*SSAA_MULT)
+
+fragment_shader_ssaa_resolve = """
+#version 410 core
+uniform sampler2D ssaaTex;
+in vec2 TexCoord;
+out vec4 FragColor;
+void main() {
+
+    vec2 texelSize = 1.0 / textureSize(ssaaTex, 0);
+    vec2 uv = TexCoord;
+    vec3 result = vec3(0.0);
+    for(int x = -$EXTENT; x <= $EXTENT; ++x)
+    {
+        for(int y = -$EXTENT; y <= $EXTENT; ++y)
+        {
+            vec2 offset = vec2(x, y) * texelSize;
+            result += texture(ssaaTex, uv + offset).rgb;
+        }
+    }
+    result *= $SCALE;
+    FragColor = vec4(result, 1.0);
+}
+"""
+template = Template(fragment_shader_ssaa_resolve)
+fragment_shader_ssaa_resolve = template.substitute( EXTENT = SSAA_EXT, SCALE=SSAA_SCALE )
+
 
 ################################################################################
 # Geometry data
@@ -219,6 +252,8 @@ class UiTestApp(object):
 
   def onGpuInit(self,ctx):
 
+    self.ssaa_resolve_shader = PyShader(vertex_shader_source, fragment_shader_ssaa_resolve)
+
     ##################################
     # setup imgui
     ##################################
@@ -245,7 +280,16 @@ class UiTestApp(object):
 
     self.geometry = GeometryBuffer(vertices, indices )
     self.recompileShader()
-
+    
+    # create SSAA framebuffer
+    self.ssaa_fbo = glGenFramebuffers(1)
+    glBindFramebuffer(GL_FRAMEBUFFER, self.ssaa_fbo)
+    self.ssaa_color = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, self.ssaa_color)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    self.ssaa_size = vec2(0,0)
+    self.ssaa_mult = SSAA_MULT
+    
   ##############################################
 
   def onExit(self):
@@ -356,6 +400,65 @@ class UiTestApp(object):
       self.time += 1.0/60.0
     
   ##############################################
+  # _clearPanel - clear the panel before drawing (via PyOpenGL)
+  ##############################################
+
+  def _setupPanel(self, widget):
+
+    ############################
+    # get dimensions of window
+    ############################
+
+    TOPW = self.ezapp.topWidget    
+    scr_w = TOPW.width
+    scr_h = TOPW.height
+
+    ############################
+    # Draw On Top Of test widget
+    #  raw-opengl has origin at bottom left
+    #  so we need to flip the y coordinate
+    ############################
+
+    wx = widget.x
+    wy = scr_h-widget.y2-1 
+    ww = widget.width
+    wh = widget.height    
+    ssaa_w = ww*self.ssaa_mult
+    ssaa_h = wh*self.ssaa_mult
+
+    # resize ssaa framebuffer
+    if self.ssaa_size.x!=ssaa_w or self.ssaa_size.y!=ssaa_h:
+      print( "resizing ssaa framebuffer to %d x %d"%(ssaa_w,ssaa_h))
+      self.ssaa_size = vec2(ssaa_w,ssaa_h)
+      glBindFramebuffer(GL_FRAMEBUFFER, self.ssaa_fbo)
+      glBindTexture(GL_TEXTURE_2D, self.ssaa_color)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ssaa_w, ssaa_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.ssaa_color, 0)
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0)
+      glBindFramebuffer(GL_FRAMEBUFFER, 0)
+      # validate framebuffer
+      status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
+      if status != GL_FRAMEBUFFER_COMPLETE:
+        print("framebuffer not complete")
+        assert(False)
+    
+
+    # clear FBO
+
+    glBindFramebuffer(GL_FRAMEBUFFER, self.ssaa_fbo)
+    glViewport(0, 0, ssaa_w, ssaa_h)
+    glScissor(0, 0, ssaa_w, ssaa_h)
+    glClearColor(1.0, 0.1, 0.1, 1.0)
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
+    glDepthMask(GL_FALSE)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+
+  ##############################################
   # _renderPanel - render the panel using PyOpenGL
   ##############################################
 
@@ -398,100 +501,101 @@ class UiTestApp(object):
     glBindVertexArray(self.geometry.VAO)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
     glBindVertexArray(0)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    #################################
+    # ssaa resolve from ssaa_fbo to screen (fbo 0)
+    # use a fullscreen quad
+    #################################
+
+    w = self.opengl_widget.width
+    h = self.opengl_widget.height
+    x = self.opengl_widget.x
+    y = self.opengl_widget.y
+
+    glUseProgram(self.ssaa_resolve_shader.shader_program)
+    uni_loc = self.ssaa_resolve_shader._shader_params["ssaaTex"] 
+       
+    glActiveTexture(GL_TEXTURE0) # select unit 0
+    glBindTexture(GL_TEXTURE_2D, self.ssaa_color) # bind the texture to unit 0
+    glUniform1i(uni_loc, 0) # set the uniform to the texture unit 0
+        
+    glBindVertexArray(self.geometry.VAO)
+    glViewport(x, y, w, h)
+    glScissor(x, y, w, h)    
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
+    glBindVertexArray(0)
 
     #################################
     # write movie
     #################################
     
     if self.writing_movie:
-      # grab frame from current viewport
-      w = self.opengl_widget.width
-      h = self.opengl_widget.height
-      x = self.opengl_widget.x
-      y = self.opengl_widget.y
-      glPixelStorei(GL_PACK_ALIGNMENT, 1)
-      data = glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
-      # convert to numpy array
-      img = np.frombuffer(data, np.uint8)
-      img.shape = (h, w, 4)
-      # flip image
-      img = np.flipud(img)
-      index = len(self._movie_frames)
-      self._movie_frames.append((index,img))
-      NUM_FRAMES = 960
-      self.status_text = "capturing movie frame %d of %d"%(len(self._movie_frames),NUM_FRAMES)
-      ########################################
-      # write movie when we have enough frames
-      ########################################
-      if len(self._movie_frames)>=NUM_FRAMES:
-        self.writing_movie = False
-        tmpdir = obt_path.temp()
-        def worker(n):
-            print(f"Worker {n} is starting.")
-            while len(self._movie_frames)>0:
-              item = self._movie_frames.pop(0)
-              index = item[0]
-              img = item[1]
-              remaining = len(self._movie_frames)
-              self.status_text = "writing images : remaining: %d"%remaining
-              imgfile = os.path.join(tmpdir,"frame%04d.png"%index)
-              img = Image.fromarray(img)
-              img.save(imgfile)
-            print(f"Worker {n} is done.")
-            return f"Result from worker {n}"
+      self._writeMovieFrame()
 
-        def do_all():
-          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-              # Submit tasks to the thread pool
-              futures = [executor.submit(worker, i) for i in range(10)]            
-              # As tasks complete, get the results
-              for future in concurrent.futures.as_completed(futures):
-                  result = future.result()
-                  print(result)
-          outmovie = os.path.join(tmpdir,"movie.mov")
-          cmd = "ffmpeg -y -r 60 -i %s/frame%%04d.png -c:v h264 -vf fps=60 -pix_fmt yuv420p %s"%(tmpdir,outmovie)
-          self.status_text = "writing movie...."
-          subprocess.run(cmd,shell=True)
-          self.status_text = "OK"
-          subprocess.run("open %s"%outmovie,shell=True)
-        threading.Thread(target=do_all).start()
-      ########################################
   ##############################################
-  # _clearPanel - clear the panel before drawing (via PyOpenGL)
+  # _writeMovieFrame - write a frame to a movie file
   ##############################################
 
-  def _setupPanel(self, widget):
+  def _writeMovieFrame(self):
 
-    ############################
-    # get dimensions of window
-    ############################
+    w = self.opengl_widget.width
+    h = self.opengl_widget.height
+    x = self.opengl_widget.x
+    y = self.opengl_widget.y
 
-    TOPW = self.ezapp.topWidget    
-    scr_w = TOPW.width
-    scr_h = TOPW.height
+    ########################################
+    # capture frame from current viewport
+    ########################################
 
-    ############################
-    # Draw On Top Of test widget
-    #  raw-opengl has origin at bottom left
-    #  so we need to flip the y coordinate
-    ############################
+    glPixelStorei(GL_PACK_ALIGNMENT, 1)
+    data = glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+    # convert to numpy array
+    img = np.frombuffer(data, np.uint8)
+    img.shape = (h, w, 4)
+    # flip image
+    img = np.flipud(img)
+    index = len(self._movie_frames)
+    self._movie_frames.append((index,img))
+    NUM_FRAMES = 960
+    self.status_text = "capturing movie frame %d of %d"%(len(self._movie_frames),NUM_FRAMES)
 
-    wx = widget.x
-    wy = scr_h-widget.y2-1 
-    ww = widget.width
-    wh = widget.height    
+    ########################################
+    # write movie when we have enough frames
+    ########################################
 
-    # render it
+    if len(self._movie_frames)>=NUM_FRAMES:
+      self.writing_movie = False
+      tmpdir = obt_path.temp()
+      def worker(n):
+          print(f"Worker {n} is starting.")
+          while len(self._movie_frames)>0:
+            item = self._movie_frames.pop(0)
+            index = item[0]
+            img = item[1]
+            remaining = len(self._movie_frames)
+            self.status_text = "writing images : remaining: %d"%remaining
+            imgfile = os.path.join(tmpdir,"frame%04d.png"%index)
+            img = Image.fromarray(img)
+            img.save(imgfile)
+          print(f"Worker {n} is done.")
+          return f"Result from worker {n}"
 
-    glDrawBuffers([GL_BACK_LEFT])
-    glBindFramebuffer(GL_FRAMEBUFFER, 0)
-    glScissor(wx,wy,ww,wh)
-    glViewport(wx,wy,ww,wh)
-    glEnable(GL_SCISSOR_TEST)
-    glClearColor(0.0, 0.1, 0.1, 1.0)
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
-    glDepthMask(GL_FALSE)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+      def do_all():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            # Submit tasks to the thread pool
+            futures = [executor.submit(worker, i) for i in range(10)]            
+            # As tasks complete, get the results
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                print(result)
+        outmovie = os.path.join(tmpdir,"movie.mov")
+        cmd = "ffmpeg -y -r 60 -i %s/frame%%04d.png -c:v h264 -vf fps=60 -pix_fmt yuv420p %s"%(tmpdir,outmovie)
+        self.status_text = "writing movie...."
+        subprocess.run(cmd,shell=True)
+        self.status_text = "OK"
+        subprocess.run("open %s"%outmovie,shell=True)
+      threading.Thread(target=do_all).start()
 
   ##############################################
   # _renderImGui - render the imgui UI

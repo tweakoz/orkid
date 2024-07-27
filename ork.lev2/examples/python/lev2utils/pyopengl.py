@@ -103,6 +103,8 @@ class PyShader:
         type_str = "vec4"
       elif type == GL.GL_INT:
         type_str = "int"
+      elif type == GL.GL_SAMPLER_2D:
+        type_str = "sampler2D"
       else: 
         assert(False)
       print(f"Uniform: {i} {name} {size} {type_str}")
