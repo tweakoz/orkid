@@ -322,11 +322,17 @@ class UiTestApp(object):
   ##############################################
 
   def onMetaKey(self,uievent,im_key):
-    handled = False
-    print("onMetaKey",im_key)
-    if im_key == imgui.Key.enter:
+    handled = True
+    if im_key == imgui.Key.s:
       self.recompileShader()
-      handled = True
+    elif im_key == imgui.Key.c:
+      self.text_editor.copy()
+    elif im_key == imgui.Key.v:
+      self.text_editor.paste()
+    elif im_key == imgui.Key.z:
+      self.text_editor.undo()
+    else:
+      handled = False
     return handled
 
   ##############################################
@@ -623,15 +629,6 @@ class UiTestApp(object):
     imgui.begin("FragmentShader", True)
     #imgui.push_font(imgui_md.get_code_font())
     self.text_editor.render("Code")
-    imgh = self.imgui_handler
-    if self.text_editor.has_selection():
-      txt = self.text_editor.get_selected_text()
-      self.imgui_handler.selected_text = txt
-    if len(imgh.clipboard_input_queue):
-      print("clipboard_input_queue<%s>"%imgh.clipboard_input_queue)
-      self.text_editor.insert_text(imgh.clipboard_input_queue)
-      imgh.clipboard_input_queue = ""
-
     #imgui.pop_font()
     imgui.end()
     

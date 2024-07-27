@@ -117,6 +117,16 @@ void pyinit_ui(py::module& module_lev2) {
                 return ev->miY;
               })
           .def_property_readonly(
+            "wheel_x",                           //
+            [](ui::event_ptr_t ev) -> int { //
+              return ev->miMWX;
+            })
+          .def_property_readonly(
+            "wheel_y",                           //
+            [](ui::event_ptr_t ev) -> int { //
+              return ev->miMWY;
+            })
+          .def_property_readonly(
               "midiController",               //
               [](ui::event_ptr_t ev) -> int { //
                 return ev->_midiController;

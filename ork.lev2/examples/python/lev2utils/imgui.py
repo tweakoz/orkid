@@ -201,7 +201,7 @@ class ImGuiWrapper:
     
     io = imgui.get_io()
     self.imgui_io = io
-    io.config_mac_osx_behaviors = host.IsOsx   
+    #io.config_mac_osx_behaviors = host.IsOsx   
     io.fonts.get_tex_data_as_rgba32()
     clip_set = io.set_clipboard_text_fn_
     clip_get = io.get_clipboard_text_fn_
@@ -318,6 +318,8 @@ class ImGuiWrapper:
     self.mod_ctrl = uievent.ctrl
     self.mod_alt = uievent.alt
     self.mod_super = uievent.super
+    #print(f"mod_shift: {self.mod_shift} mod_ctrl: {self.mod_ctrl} mod_alt: {self.mod_alt} mod_super: {self.mod_super}")
+    #print( "got uievent: ", uievent.code, uievent.x, uievent.y, uievent.keycode, uievent.shift, uievent.ctrl, uievent.alt, uievent.super)
     ###############################################################
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
       if not self.imgui_io.want_capture_keyboard:
@@ -326,32 +328,21 @@ class ImGuiWrapper:
         keycode = uievent.keycode
         remapped_key = self._remapNativeKeyToImguiKey(keycode)
         metas = (uievent.alt == True) or (uievent.ctrl == True) or (uievent.super == True)                      
+        #print( "got key: ", remapped_key, metas)
         if remapped_key!=None:
           ###################################
           # meta keys
           ###################################
           if metas and uievent.code == tokens.KEY_DOWN.hashed:
-            key_c = getattr(imgui.Key,"c")
-            key_v = getattr(imgui.Key,"v")
-            key_x = getattr(imgui.Key,"x")
-            print("metas: ", metas)
-            if remapped_key == key_c:
-              if self.selected_text != "":
-                print(f"copying selected text: {self.selected_text}")
-                imgui.set_clipboard_text(self.selected_text)
-            elif remapped_key == key_v:
-              text = imgui.get_clipboard_text()
-              print("setting clipboard input queue", text)
-              self.clipboard_input_queue = text
-            elif remapped_key == key_x:
-              self.app.onCut(uievent)
-            else:
-              self.app.onMetaKey(uievent,remapped_key)
-          elif uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
-            #print(f"down remapped_key: {remapped_key} shift: {uievent.shift}")
-            self.imgui_io.add_key_event(remapped_key,True)
-            self.imgui_io.add_key_event(remapped_key,False)
-            self.imgui_io.set_key_event_native_data(remapped_key, keycode, -1);
+            handled = self.app.onMetaKey(uievent,remapped_key)
+            if handled:
+              return lev2.ui.HandlerResult()
+          ###################################
+          # raw key events
+          ###################################
+          self.imgui_io.add_key_event(remapped_key,True)
+          self.imgui_io.add_key_event(remapped_key,False)
+          self.imgui_io.set_key_event_native_data(remapped_key, keycode, -1);
           ###################################
           # basic character input
           ###################################
@@ -443,6 +434,12 @@ class ImGuiWrapper:
       self.imgui_io.mouse_pos = uievent.x, uievent.y
       if not self.imgui_io.want_capture_mouse:
         handler = None
+      pass
+    ###############################################################
+    elif uievent.code == tokens.MOUSEWHEEL.hashed:
+      scroll_x = uievent.wheel_x
+      scroll_y = uievent.wheel_y
+      self.imgui_io.add_mouse_wheel_event(scroll_x,scroll_y)
       pass
     ###############################################################
     result = lev2.ui.HandlerResult()

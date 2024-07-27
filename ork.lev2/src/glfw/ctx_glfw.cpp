@@ -886,7 +886,7 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
   opq::mainSerialQueue()->enqueue( [=](){
   auto uiev = this->uievent();
-  if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+  /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
     const char* clipboardText = glfwGetClipboardString(_glfwWindow);
     if (clipboardText) {
       uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -894,7 +894,7 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
       _fire_ui_event();
       return;
     }
-  }
+  }*/
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
   });
@@ -1028,7 +1028,7 @@ struct PopupImpl {
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
       if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
-        if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+        /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
           const char* clipboardText = glfwGetClipboardString(_glfwPopupWindow);
           if (clipboardText) {
             uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -1036,7 +1036,8 @@ struct PopupImpl {
             _fireEvent(uiev);
             return;
           }
-        } else {
+        } else */
+        {
           fillEventKeyboard(uiev, key, scancode, action, modifiers);
           _fireEvent(uiev);
         }
