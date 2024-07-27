@@ -11,6 +11,10 @@
 #pip3 install imgui_bundle
 
 import traceback, time, json
+import threading, concurrent.futures
+import subprocess, os
+from PIL import Image
+from obt import path as obt_path
 ################################################################################
 from imgui_bundle import imgui, hello_imgui, imgui_md
 from imgui_bundle import imgui_color_text_edit as ed
@@ -155,6 +159,8 @@ class UiTestApp(object):
     }
     self.current_preset = "none"
     self.item_current_idx = 0
+    self._movie_frames = []
+    self.writing_movie = False
 
   ##############################################
   # appstate support
@@ -174,7 +180,8 @@ class UiTestApp(object):
   ##############################################
 
   def onUpdate(self,updev):
-    self.time = updev.absolutetime
+    if not self.writing_movie:
+      self.time = updev.absolutetime
     self.ups_accum += 1.0
     now = time.time()
     delta = now-self.ups_time_base
@@ -236,6 +243,8 @@ class UiTestApp(object):
           self.newAppState()
           self.recompileShader()
           self.text_editor.set_text(fragment_shader_source)
+        elif keycode == ord("M"):
+          self.writing_movie = not self.writing_movie
     if not handled:
       return self.imgui_handler.onUiEvent(uievent)
        
@@ -310,6 +319,8 @@ class UiTestApp(object):
       self.FPS = self.fps_accum/delta
       self.fps_accum = 0.0
       self.fps_time_base = time.time()
+    if self.writing_movie:
+      self.time += 1.0/60.0
     
   ##############################################
   # _renderPanel - render the panel using PyOpenGL
@@ -353,13 +364,65 @@ class UiTestApp(object):
 
     glBindVertexArray(self.geometry.VAO)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, None)
-
-    #################################
-    # cleanup
-    #################################
-
     glBindVertexArray(0)
 
+    #################################
+    # write movie
+    #################################
+    
+    if self.writing_movie:
+      # grab frame from current viewport
+      w = self.opengl_widget.width
+      h = self.opengl_widget.height
+      x = self.opengl_widget.x
+      y = self.opengl_widget.y
+      glPixelStorei(GL_PACK_ALIGNMENT, 1)
+      data = glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+      # convert to numpy array
+      img = np.frombuffer(data, np.uint8)
+      img.shape = (h, w, 4)
+      # flip image
+      img = np.flipud(img)
+      index = len(self._movie_frames)
+      self._movie_frames.append((index,img))
+      NUM_FRAMES = 960
+      self.status_text = "capturing movie frame %d of %d"%(len(self._movie_frames),NUM_FRAMES)
+      ########################################
+      # write movie when we have enough frames
+      ########################################
+      if len(self._movie_frames)>=NUM_FRAMES:
+        self.writing_movie = False
+        tmpdir = obt_path.temp()
+        def worker(n):
+            print(f"Worker {n} is starting.")
+            while len(self._movie_frames)>0:
+              item = self._movie_frames.pop(0)
+              index = item[0]
+              img = item[1]
+              remaining = len(self._movie_frames)
+              self.status_text = "writing images : remaining: %d"%remaining
+              imgfile = os.path.join(tmpdir,"frame%04d.png"%index)
+              img = Image.fromarray(img)
+              img.save(imgfile)
+            print(f"Worker {n} is done.")
+            return f"Result from worker {n}"
+
+        def do_all():
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+              # Submit tasks to the thread pool
+              futures = [executor.submit(worker, i) for i in range(10)]            
+              # As tasks complete, get the results
+              for future in concurrent.futures.as_completed(futures):
+                  result = future.result()
+                  print(result)
+          outmovie = os.path.join(tmpdir,"movie.mov")
+          cmd = "ffmpeg -y -r 60 -i %s/frame%%04d.png -c:v h264 -vf fps=60 -pix_fmt yuv420p %s"%(tmpdir,outmovie)
+          self.status_text = "writing movie...."
+          subprocess.run(cmd,shell=True)
+          self.status_text = "OK"
+          subprocess.run("open %s"%outmovie,shell=True)
+        threading.Thread(target=do_all).start()
+      ########################################
   ##############################################
   # _clearPanel - clear the panel before drawing (via PyOpenGL)
   ##############################################
@@ -410,38 +473,7 @@ class UiTestApp(object):
     self.imgui_handler.beginFrame()
     io = imgui.get_io()
 
-    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)
-
-    #################################
-    # presets combo
-    #################################
-
-    def assign_new_preset(preset):
-      print("selected preset<%s>"%preset)
-      if preset!=self.current_preset:
-        the_preset = self.presets[preset]
-        self.current_preset = preset
-        as_json = json.dumps(the_preset)
-        self.imgui_handler.deserializeAppState(self.app_vars,as_json)
-        self.recompileShader()
-        self.text_editor.set_text(self.app_vars.frg_shader_src)
-      
-
-    lin_dict = list(self.presets.keys())
-    combo_preview_value = lin_dict[self.item_current_idx]
-    prev_item = self.item_current_idx
-    if imgui.begin_combo("PRESET", combo_preview_value, 0):
-        was_changed = False
-        for n in range(len(self.presets)):
-          is_selected = (self.item_current_idx == n)
-          key = lin_dict[n]
-          was_changed,x = imgui.selectable(key, is_selected)
-          if was_changed or x:
-            self.item_current_idx = n
-        imgui.end_combo()
-        if prev_item!=self.item_current_idx:
-          preset = lin_dict[self.item_current_idx]
-          assign_new_preset(preset)
+    imgui.begin("Orkid/PyImGui/PyOpenGL integration example", True)      
 
     #################################
     # property sheet for app_vars
@@ -488,12 +520,39 @@ class UiTestApp(object):
 
     # pack two widgets in a row
 
+    #################################
+    # presets combo
+    #################################
 
-    changed, self.app_vars.preset_name = imgui.input_text(
-      label="PresetName", 
-      str=self.app_vars.preset_name
-    )
-    # write button
+    def assign_new_preset(preset):
+      if preset!=self.current_preset:
+        the_preset = self.presets[preset]
+        self.current_preset = preset
+        as_json = json.dumps(the_preset)
+        self.text_editor.set_text(the_preset["frg_shader_src"])
+        self.imgui_handler.deserializeAppState(self.app_vars,as_json)
+        self.recompileShader()
+
+    lin_dict = list(self.presets.keys())
+    combo_preview_value = lin_dict[self.item_current_idx]
+    prev_item = self.item_current_idx
+    if imgui.begin_combo("PRESET", combo_preview_value, 0):
+        was_changed = False
+        for n in range(len(self.presets)):
+          is_selected = (self.item_current_idx == n)
+          key = lin_dict[n]
+          was_changed,x = imgui.selectable(key, is_selected)
+          if was_changed or x:
+            self.item_current_idx = n
+        imgui.end_combo()
+        if prev_item!=self.item_current_idx:
+          preset = lin_dict[self.item_current_idx]
+          assign_new_preset(preset)
+
+    #################################
+    # presets write button
+    #################################
+
     if imgui.button("SavePreset"):
       self.presets[self.app_vars.preset_name] = self.app_vars
       self.current_preset = self.app_vars.preset_name
@@ -507,6 +566,20 @@ class UiTestApp(object):
         
       print("saved preset<%s>"%self.app_vars.preset_name)
 
+    #################################
+    # presets name
+    #################################
+
+    imgui.same_line()
+
+    changed, self.app_vars.preset_name = imgui.input_text(
+      label="PresetName", 
+      str=self.app_vars.preset_name,
+    )
+
+    #################################
+    # FPS
+    #################################
 
     imgui.text("FPS %g"%(self.FPS))
     imgui.text("UPS %g"%(self.UPS))
