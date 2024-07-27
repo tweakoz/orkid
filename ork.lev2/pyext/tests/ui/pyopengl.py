@@ -107,7 +107,7 @@ class UiTestApp(object):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 5
     griditems = lg_group.makeGrid( width = 2,
-                                   height = 2,
+                                   height = 1,
                                    margin = 1,
                                    uiclass = lev2.ui.LambdaBox,
                                    args = ["box",vec4(1,0,1,1)] )
@@ -117,14 +117,12 @@ class UiTestApp(object):
     # set up event handlers for the grid items
     griditems[0].widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
     griditems[1].widget.onPressed(lambda: print("GRIDITEM1 PUSHED"))
-    griditems[2].widget.onPressed(lambda: print("GRIDITEM2 PUSHED"))
-    griditems[3].widget.onPressed(lambda: print("GRIDITEM3 PUSHED"))
     
     self.griditems = griditems
     
-    W = self.griditems[2].widget
-    W.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
-    self.test_widget = W
+    OLGW = self.griditems[1].widget
+    OLGW.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
+    self.opengl_widget = OLGW
 
     self.status_text = "OK"
 
@@ -173,6 +171,9 @@ class UiTestApp(object):
     self.text_editor = TextEditor()
     self.text_editor.set_text(self.app_vars.frg_shader_src)
     self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
+
+    W2 = self.griditems[1].widget
+    W2.enableDraw = False # disable default drawing for widget 0, as it will be drawn by PyOpenGL
     
     ##################################
     # define geometry and shaders
@@ -223,7 +224,9 @@ class UiTestApp(object):
   def onGpuPostFrame(self,ctx):
     self._renderPanel(ctx)
     self._renderImGui(ctx)
-
+    imgui.update_platform_windows();
+    imgui.render_platform_windows_default();
+    
   ##############################################
   # _renderPanel - render the panel using PyOpenGL
   ##############################################
@@ -234,7 +237,7 @@ class UiTestApp(object):
     # clear the panel before drawing
     #################################
 
-    self._clearPanel(self.test_widget)
+    self._setupPanel(self.opengl_widget)
 
     #################################
     # bind shader and uniforms
@@ -261,7 +264,7 @@ class UiTestApp(object):
   # _clearPanel - clear the panel before drawing (via PyOpenGL)
   ##############################################
 
-  def _clearPanel(self, widget):
+  def _setupPanel(self, widget):
 
     ############################
     # get dimensions of window

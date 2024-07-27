@@ -42,6 +42,7 @@ class ImGuiWrapper:
     self.uicontext = app.ezapp.uicontext
     self.topwidget = app.ezapp.topWidget
     self.lock_to_panel = lock_to_panel
+    
     ###################################
     # key remap table
     ###################################
@@ -151,6 +152,8 @@ class ImGuiWrapper:
     self.imgui_io = imgui.get_io()
     self.imgui_io.fonts.get_tex_data_as_rgba32()
     self.imgui_renderer = ProgrammablePipelineRenderer()
+    self.imgui_io.config_flags |= imgui.ConfigFlags_.docking_enable
+    self.imgui_io.config_flags |= imgui.ConfigFlags_.viewports_enable;
     self.app_dict = {}
     if self.app_settings_file.exists():
       with open(self.app_settings_file, "r") as f:
@@ -185,7 +188,6 @@ class ImGuiWrapper:
     scr_h = TOPW.height
     io = self.imgui_io
     io.display_size = scr_w, scr_h
-    self.imgui_io.config_flags |= imgui.ConfigFlags_.docking_enable
     imgui.new_frame()
     ####################
     # set up docking
