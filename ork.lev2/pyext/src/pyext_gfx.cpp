@@ -157,6 +157,28 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<TextureInitData,textureinitdata_ptr_t>(module_lev2, "TextureInitData")
+      .def(py::init<>())
+      .def_property("width", [](textureinitdata_ptr_t tid) -> int { return tid->_w; }, [](textureinitdata_ptr_t tid, int w) { tid->_w = w; })
+      .def_property("height", [](textureinitdata_ptr_t tid) -> int { return tid->_h; }, [](textureinitdata_ptr_t tid, int h) { tid->_h = h; })
+      .def_property("depth", [](textureinitdata_ptr_t tid) -> int { return tid->_d; }, [](textureinitdata_ptr_t tid, int d) { tid->_d = d; })
+      .def_property("src_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_src_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_src_format = fmt; })
+      .def_property("dst_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_dst_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_dst_format = fmt; })
+      .def_property("autogenmips", [](textureinitdata_ptr_t tid) -> bool { return tid->_autogenmips; }, [](textureinitdata_ptr_t tid, bool b) { tid->_autogenmips = b; });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<TextureArrayInitData,texturearrayinitdata_ptr_t>(module_lev2, "TextureArrayInitData")
+      .def(py::init<>())
+      .def(py::init([](py::list list) {
+        texturearrayinitdata_ptr_t rval = std::make_shared<TextureArrayInitData>();
+        for (int i = 0; i < list.size(); i++) {
+          image_ptr_t img = list[i].cast<image_ptr_t>();
+          rval->_slices.push_back(TextureArrayInitSubItem{0, img});
+        }
+        return rval;
+      }))
+      .def_property_readonly("size", [](texturearrayinitdata_ptr_t tid) -> int { return int(tid->_slices.size()); })
+      .def("append", [](texturearrayinitdata_ptr_t tid, image_ptr_t img) { tid->_slices.push_back(TextureArrayInitSubItem{0, img}); });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<txi_t>(module_lev2, "TextureInterface")
       .def(
           "createColorTexture",
@@ -166,6 +188,13 @@ void pyinit_gfx(py::module& module_lev2) {
              int h) -> texture_ptr_t {                       //
             return the_txi->createColorTexture(color, w, h); //
           })
+      .def("updateTextureArraySlice", // 
+           [](const txi_t& the_txi, //
+              texture_ptr_t ptex, //
+              int slice, //
+              image_ptr_t img) { //
+        the_txi->updateTextureArraySlice(ptex.get(), slice, img);
+      })
       .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());

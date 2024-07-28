@@ -193,13 +193,13 @@ context_ptr_t OpenGlContextInit() {
 
 ContextGL::ContextGL()
 	: Context()
-	, mFxI( *this )
 	, mImI( *this )
+	, mFxI( *this )
 	, mRsI( *this )
+	, mMtxI( *this )
 	, mGbI( *this )
 	, mFbI( *this )
 	, mTxI( *this )
-	, mMtxI( *this )
 	, mDWI(*this)
 	, mTargetDrawableSizeDirty(true)
 {

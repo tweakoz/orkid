@@ -282,4 +282,74 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlTextureInterface::updateTextureArraySlice(Texture* array_tex, int slice, image_ptr_t img) {
+  OrkAssert(array_tex->_texType == ETEXTYPE_2D_ARRAY);
+  OrkAssert(slice < array_tex->_depth);
+  OrkAssert(img != nullptr);
+  OrkAssert(img->_format == array_tex->_texFormat);
+  OrkAssert(img->_width == array_tex->_width);
+  OrkAssert(img->_height == array_tex->_height);
+  OrkAssert(img->_depth == 1);
+
+  auto glto = array_tex->_impl.getShared<GLTextureObject>();
+  auto texture_target = GL_TEXTURE_2D_ARRAY;
+  glBindTexture(texture_target, glto->_textureObject);
+  auto format = array_tex->_texFormat;
+  GLFormatTriplet triplet(format);
+  auto subimg_cmipc = img->uncompressedMipChain();
+  int num_levels = int(subimg_cmipc->_levels.size()) - 1;
+  glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_levels - 1);
+  for (int level = 0; level < num_levels; level++) {
+    auto mip      = subimg_cmipc->_levels[level];
+    auto mip_w    = mip._width;
+    auto mip_h    = mip._height;
+    auto mip_data = mip._data;
+    switch (format) {
+      case EBufferFormat::RGBA_BPTC_UNORM: {
+        GL_ERRORCHECK();
+        int blocked_width  = (mip_w + 3) & 0xfffffffc;
+        int blocked_height = (mip_h + 3) & 0xfffffffc;
+        glCompressedTexSubImage3D(
+            texture_target,          // target
+            level,                   // level
+            0,                       // xoffset
+            0,                       // yoffset
+            slice,                   // zoffset (slice)
+            mip_w,                   // width
+            mip_h,                   // height
+            1,                       // depth (of data for slice)
+            triplet._internalFormat, // format
+            mip_data->length(),      // size
+            mip_data->data());       // data
+        GL_ERRORCHECK();
+        break;
+      }
+      case EBufferFormat::RGBA8:
+      case EBufferFormat::BGRA8:
+      case EBufferFormat::RGB8:
+      case EBufferFormat::BGR8:{
+        GL_ERRORCHECK();
+        glTexSubImage3D(
+            texture_target,    // target
+            level,             // level
+            0,                 // xoffset
+            0,                 // yoffset
+            slice,             // zoffset (slice)
+            mip_w,             // width
+            mip_h,             // height
+            1,                 // depth (of data for slice)
+            triplet._format,   // format
+            triplet._type,     // type
+            mip_data->data()); // data
+        GL_ERRORCHECK();
+        break;
+      }
+      default:
+        OrkAssert(false);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2

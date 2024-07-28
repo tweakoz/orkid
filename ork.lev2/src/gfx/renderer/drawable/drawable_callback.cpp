@@ -87,13 +87,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
 /////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CallbackRenderable::CallbackRenderable(IRenderer* renderer)
-    : IRenderable()
-    , mSortKey(0)
-    , mMaterialIndex(0)
-    , mMaterialPassIndex(0)
-    , _drawable(nullptr)
-    //, mUserData1()
-    , mRenderCallback(0) {
+    : IRenderable(){
 }
 /////////////////////////////////////////////////////////////////////
 void CallbackRenderable::Render(const IRenderer* renderer) const {

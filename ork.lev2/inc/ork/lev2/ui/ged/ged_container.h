@@ -60,20 +60,21 @@ struct GedContainer { //}: public ork::AutoConnector {
   void SetDims(int iw, int ih);
   static const int kdim = 8;
 
+  int _skin_index = 1;
+  int miW = 0;
+  int miH = 0;
+  int miRootH = 0;
+  U64 mStackHash = 0;
+  bool mbDeleteModel = false;
+  GedSurface* _viewport = nullptr;
+  GedSkin* _activeSkin = nullptr;
+
   geditemnode_ptr_t mRootItem;
-  int miW;
-  int miH;
   object_ptr_t mRootObject;
   objectmodel_ptr_t _model;
   std::deque<GedItemNode*> _itemstack;
-  int miRootH;
-  GedSurface* _viewport;
-  U64 mStackHash;
   orkvector<GedSkin*> mSkins;
-  GedSkin* _activeSkin = nullptr;
 
-  int _skin_index;
-  bool mbDeleteModel;
   sigslot2::scoped_connection _connection_modelinvalidated;
 
 };

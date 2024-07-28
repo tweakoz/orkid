@@ -67,12 +67,17 @@ struct Image;
 struct CompressedImageMipChain;
 struct Texture;
 struct IpcTexture;
+struct TextureInitData;
+struct TextureArrayInitData;
+
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using image_ptr_t            = std::shared_ptr<Image>;
 using texture_list_t = std::vector<texture_ptr_t>;
 using texture_rawlist_t = std::vector<Texture*>;
 using compressedmipchain_ptr_t = std::shared_ptr<CompressedImageMipChain>;
+using textureinitdata_ptr_t = std::shared_ptr<TextureInitData>;
+using texturearrayinitdata_ptr_t = std::shared_ptr<TextureArrayInitData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer

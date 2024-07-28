@@ -46,8 +46,8 @@ KeyDecoName::KeyDecoName(const char* pkey) // precomposed name/index
 }
 ///////////////////////////////////////////////////////////////////////////////
 KeyDecoName::KeyDecoName(const char* pkey, int index) // decomposed name/index
-    : miMultiIndex(index)
-    , mActualKey(pkey) {
+    : mActualKey(pkey)
+    , miMultiIndex(index) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 PropTypeString KeyDecoName::DecoratedName() const {

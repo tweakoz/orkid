@@ -243,9 +243,7 @@ struct VRIMPL {
   rtgroup_ptr_t _ssaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::VrCompositingNode()
-    : _supersample(0)
-    , _format(EBufferFormat::RGBA8) {
+VrCompositingNode::VrCompositingNode() {
   _impl = std::make_shared<VRIMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -36,7 +36,7 @@ public:
     _supersample = ss;
   }
 
-  EBufferFormat _format;
+  EBufferFormat _format = EBufferFormat::RGBA8;
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
@@ -46,7 +46,7 @@ private:
 
   svar256_t _impl;
   distortion_lambda_t _distorion_lambda;
-  int _supersample;
+  int _supersample = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

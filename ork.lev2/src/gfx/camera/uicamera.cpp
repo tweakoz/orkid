@@ -30,15 +30,12 @@ void UiCamera::describeX(object::ObjectClass* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 UiCamera::UiCamera()
-    : mfWorldSizeAtLocator(1.0f)
+    : _vpdim(1,1)
+    , mfWorldSizeAtLocator(1.0f)
     , QuatC(0.0f, -1.0f, 0.0f, 0.0f)
-    , MeasuredCameraVelocity(0.0f, 0.0f, 0.0f)
-    , LastMeasuredCameraVelocity(0.0f, 0.0f, 0.0f)
     , mfLoc(3.0f)
-    , mvCenter(0.0f, 0.0, 0.0f)
     , locscale(1.0f)
-    , mbInMotion(false)
-    , _vpdim(1,1) {
+    , mbInMotion(false) {
   other_info = (std::string) "";
   _camcamdata.setUiCamera(this);
   //printf("SETLEV2CAM<%p>\n", (void*)this);

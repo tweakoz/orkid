@@ -98,10 +98,10 @@ struct GLTextureObject {
   GLTextureObject(GlTextureInterface* txi);
   ~GLTextureObject();
 
-  GLuint _textureObject;
-  GLuint mFbo;
-  GLuint mDbo;
-  GLenum mTarget;
+  GLuint _textureObject = 0;
+  GLuint mFbo = 0;
+  GLuint mDbo = 0;
+  GLenum mTarget = GL_NONE;
   int _maxmip = 0;
   gltexasynctask_ptr_t _async;
   GlTextureInterface* _txi = nullptr;
@@ -425,6 +425,7 @@ struct GlTextureInterface : public TextureInterface {
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) final;
+  void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) final;
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 

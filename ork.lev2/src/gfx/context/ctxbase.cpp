@@ -44,14 +44,8 @@ void CTXBASE::onSharedCreate(std::shared_ptr<CTXBASE> shared_this){
   //shared_this->_slotRepaint->attach(shared_this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CTXBASE::CTXBASE(Window* pwin) //
-    //: ConstructAutoSlot(Repaint) //
-    : _target(0) //
-    , _orkwindow(pwin) //
-    , _needsInitialize(true){ //
-
+CTXBASE::CTXBASE(Window* pwin) {
   _slotRepaint = std::make_shared<object::AutoSlot>("repaint");
-
   if(_orkwindow)
     _orkwindow->mpCTXBASE = this;
   _uievent = std::make_shared<ui::Event>();

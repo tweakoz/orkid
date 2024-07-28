@@ -113,11 +113,7 @@ namespace ork::lev2 {
 std::atomic<size_t> GLTextureObject::_glto_count = 0;
 
 GLTextureObject::GLTextureObject(GlTextureInterface* txi)
-    : _txi(txi)
-    , _textureObject(0)
-    , mFbo(0)
-    , mDbo(0)
-    , mTarget(GL_NONE) {
+    : _txi(txi) {
   _glto_count.fetch_add(1);
   // printf( "create glto_count: %zu\n", _glto_count.load() );
 }

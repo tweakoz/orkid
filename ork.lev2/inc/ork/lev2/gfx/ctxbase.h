@@ -94,9 +94,9 @@ public:
 
   std::stack<RefreshPolicyItem> _policyStack;
 
-  Window* _orkwindow;
+  Window* _orkwindow = nullptr;
   ui::event_ptr_t _uievent;
-  bool _needsInitialize;
+  bool _needsInitialize = true;
   svar16_t _pimpl_progress;
   varmap::varmap_constptr_t _vars;
 
@@ -105,7 +105,7 @@ public:
   object::autoslot_ptr_t _slotRepaint;
 
   protected:
-    Context* _target;
+    Context* _target = nullptr;
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);
     CTXBASE(Window* pwin);
     virtual ~CTXBASE();
