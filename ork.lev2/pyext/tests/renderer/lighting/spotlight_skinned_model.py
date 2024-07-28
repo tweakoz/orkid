@@ -88,10 +88,10 @@ class StereoApp1(object):
     self.anim_inst.bindToSkeleton(self.model.skeleton)
 
     ##################
-
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
+        copy.baseColor = vec4(1,.5,1,1)
         copy.metallicFactor = 0.0
         copy.roughnessFactor = 1.0
         copy.assignImages(
