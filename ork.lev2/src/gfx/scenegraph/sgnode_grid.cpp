@@ -43,7 +43,7 @@ void GridDrawableImpl::gpuInit(lev2::Context* ctx) {
   OrkAssert(_normal_image);
   OrkAssert(_mtlruf_image);
 
-  _pbrmaterial                 = new PBRMaterial();
+  _pbrmaterial                 = std::make_shared<PBRMaterial>();
   _pbrmaterial->_shader_suffix = _griddata->_shader_suffix;
   _pbrmaterial->_shaderpath    = "orkshader://grid";
   _pbrmaterial->assignImages(
@@ -152,7 +152,8 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
 
 void GridDrawableImpl::renderGrid(RenderContextInstData& RCID) { // static
   auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
-  renderable->GetDrawableDataA().getShared<GridDrawableImpl>()->_render(RCID);
+  auto drawable   = renderable->_drawable;
+  drawable->_implA.getShared<GridDrawableImpl>()->_render(RCID);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,6 +165,7 @@ void GridDrawableData::describeX(class_t* c) {
 
 drawable_ptr_t GridDrawableData::createDrawable() const {
   auto drw = std::make_shared<CallbackDrawable>(nullptr);
+  auto impl = drw->_implA.makeShared<GridDrawableImpl>(this);
   drw->_sortkey = 10;
   drw->SetRenderCallback(GridDrawableImpl::renderGrid);
   return drw;

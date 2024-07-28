@@ -40,11 +40,13 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "requestIrradianceMaps",
               [](std::string path) -> pbr::irradiancemaps_ptr_t { return pbr::CommonStuff::requestIrradianceMaps(path); })
           .def(py::init<>())
-          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { //
+          .def(
+              "requestSkyboxTexture",
+              [](pbr::commonstuff_ptr_t pbc, std::string path) { //
                 auto load_req = std::make_shared<asset::LoadRequest>(path);
                 pbc->requestAndRefSkyboxTexture(load_req);
 
-           })
+              })
           .def(
               "requestAndRefSkyboxTexture",
               [](pbr::commonstuff_ptr_t pbc, std::string path) -> asset::loadrequest_ptr_t { //
@@ -139,32 +141,26 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def(
               "assignImages",
               [](pbrmaterial_ptr_t m,
-                  ctx_t context,
-                  py::kwargs kwa ) { //
-                  image_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
-                  
-                  bool doConform = false;
+                 ctx_t context,
+                 py::kwargs kwa) { //
+                image_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
 
-                  if( kwa.contains("color") )
-                    color_tex = kwa["color"].cast<image_ptr_t>();
-                  if( kwa.contains("normal") )
-                    normal_tex = kwa["normal"].cast<image_ptr_t>();
-                  if( kwa.contains("mtlruf") )
-                    mtlruf_tex = kwa["mtlruf"].cast<image_ptr_t>();
-                  if( kwa.contains("emissive") )
-                    emissive_tex = kwa["emissive"].cast<image_ptr_t>();
-                  if( kwa.contains("ambocc") )
-                    ambocc_tex = kwa["ambocc"].cast<image_ptr_t>();    
-                  if( kwa.contains("doConform") ){
-                    doConform = kwa["doConform"].cast<bool>();
-                  }
-                   m->assignImages(context.get(),
-                                    color_tex,
-                                    normal_tex,
-                                    mtlruf_tex,
-                                    emissive_tex,
-                                    ambocc_tex,
-                                    doConform);
+                bool doConform = false;
+
+                if (kwa.contains("color"))
+                  color_tex = kwa["color"].cast<image_ptr_t>();
+                if (kwa.contains("normal"))
+                  normal_tex = kwa["normal"].cast<image_ptr_t>();
+                if (kwa.contains("mtlruf"))
+                  mtlruf_tex = kwa["mtlruf"].cast<image_ptr_t>();
+                if (kwa.contains("emissive"))
+                  emissive_tex = kwa["emissive"].cast<image_ptr_t>();
+                if (kwa.contains("ambocc"))
+                  ambocc_tex = kwa["ambocc"].cast<image_ptr_t>();
+                if (kwa.contains("doConform")) {
+                  doConform = kwa["doConform"].cast<bool>();
+                }
+                m->assignImages(context.get(), color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex, doConform);
               })
           .def_property(
               "metallicFactor",
@@ -273,7 +269,13 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               },
               [](pbrmaterial_ptr_t m, crcstring_ptr_t ctest) { //
                 m->_rasterstate._blending = Blending(ctest->hashed());
-              });
+              })
+              .def_property_readonly("texArrayCNMREA", [](pbrmaterial_ptr_t m) -> texture_ptr_t { return m->_texArrayCNMREA; })
+          .def("setColorImage", [](pbrmaterial_ptr_t mtl, ctx_t context, image_ptr_t img) {
+            auto txi = context->TXI();
+            auto tex = mtl->_texArrayCNMREA;
+            txi->updateTextureArraySlice(tex.get(), 0, img);
+          });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }
 

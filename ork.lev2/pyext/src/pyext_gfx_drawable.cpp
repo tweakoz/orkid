@@ -35,7 +35,16 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
   type_codec->registerStdCodec<drawable_ptr_t>(drawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawable_type = //
-      py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable");
+      py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable")
+      .def_property_readonly(
+          "tryGridImpl",
+          [](callback_drawable_ptr_t drw) -> griddrawableimpl_ptr_t {
+            griddrawableimpl_ptr_t gridimpl;
+            if( auto as_impl = drw->_implA.tryAsShared<GridDrawableImpl>() ){
+              gridimpl = as_impl.value();
+            }
+            return gridimpl;
+          });
   type_codec->registerStdCodec<callback_drawable_ptr_t>(cbdrawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mdldrawable_type =
@@ -197,6 +206,27 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           "fromSubMesh",
           [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
       .def("renderEML", [](rigidprim_ptr_t prim, ctx_t context) { prim->renderEML(context.get()); });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto grid_drawimpl_type = //
+      py::class_<GridDrawableImpl, griddrawableimpl_ptr_t>(module_lev2, "GridDrawableImpl")
+      .def("setColorImage", [](griddrawableimpl_ptr_t gridimpl, ctx_t context, image_ptr_t img) {
+        auto txi = context->TXI();
+        auto mtl = gridimpl->_pbrmaterial;
+        if(mtl){
+          auto tex = mtl->_texArrayCNMREA;
+          txi->updateTextureArraySlice(tex.get(), 0, img);
+        }
+      })
+      .def("setMtlRufImage", [](griddrawableimpl_ptr_t gridimpl, ctx_t context, image_ptr_t img) {
+        auto txi = context->TXI();
+        auto mtl = gridimpl->_pbrmaterial;
+        if(mtl){
+          auto tex = mtl->_texArrayCNMREA;
+          txi->updateTextureArraySlice(tex.get(), 2, img);
+        }
+      })
+      .def_property_readonly("material", [](griddrawableimpl_ptr_t gridimpl) -> pbrmaterial_ptr_t { return gridimpl->_pbrmaterial; });
+  type_codec->registerStdCodec<griddrawableimpl_ptr_t>(grid_drawimpl_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

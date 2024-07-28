@@ -127,10 +127,10 @@ struct Image {
   size_t _depth         = 1;
   size_t _numcomponents = 4; // 3 or 4
   size_t _bytesPerChannel = 1;
-  uint64_t _contentHash = 0;
+  mutable uint64_t _contentHash = 0;
   std::string _debugName;
   varmap::VarMap _varmap;
-  compressedmipchain_ptr_t _cmipchain;
+  mutable compressedmipchain_ptr_t _cmipchain;
 };
 
 } // namespace ork::lev2

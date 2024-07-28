@@ -251,6 +251,7 @@ struct Texture {
   ipctexture_ptr_t _external_memory;
   std::atomic<int> _residenceState;
   datablock_ptr_t _final_datablock;
+  std::vector<image_ptr_t> _images;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -16,7 +16,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-logchannel_ptr_t logchan_image = logger()->createChannel("IMAGE", fvec3(0.1, 0.2, 0.3), true);
+logchannel_ptr_t logchan_image = logger()->createChannel("IMAGE", fvec3(0.1, 0.2, 0.3), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -343,7 +343,13 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
-          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; });
+          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
+          .def("subimage", [](texture_ptr_t self, int slice) -> image_ptr_t { //
+            OrkAssert(slice >= 0);
+            OrkAssert(slice < self->_images.size());
+            auto rval = self->_images[slice];
+            return rval;
+           });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////

@@ -26,7 +26,7 @@ extern GLuint gLastBoundNonZeroTex;
 namespace ork::lev2 {
 
 constexpr bool DEBUG_TEXARRAY2D = true;
-static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -55,6 +55,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     const auto& slice = tid._slices[i];
     auto subimg       = slice._subimg;
     if (subimg) {
+      array_tex->_images.push_back(subimg);
       formats.insert(subimg->_format);
       //auto subimg_cmipc = subimg->compressedMipChainDefault();
       auto subimg_cmipc = subimg->uncompressedMipChain();
@@ -276,6 +277,11 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     logchan_txia2d->log("TextureArray maxw<%d> maxh<%d> depth<%d>", max_w, max_h, num_slices);
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
+  array_tex->_width  = max_w;
+  array_tex->_height = max_h;
+  array_tex->_depth  = num_slices;
+  array_tex->_texFormat = format;
+
   array_tex->_residenceState.fetch_or(1);
   // OrkAssert(num_slices==0);
 }
@@ -283,13 +289,18 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::updateTextureArraySlice(Texture* array_tex, int slice, image_ptr_t img) {
-  OrkAssert(array_tex->_texType == ETEXTYPE_2D_ARRAY);
-  OrkAssert(slice < array_tex->_depth);
-  OrkAssert(img != nullptr);
-  OrkAssert(img->_format == array_tex->_texFormat);
-  OrkAssert(img->_width == array_tex->_width);
-  OrkAssert(img->_height == array_tex->_height);
-  OrkAssert(img->_depth == 1);
+  bool ok = true;
+  ok &= (array_tex->_texType == ETEXTYPE_2D_ARRAY);
+  ok &= (slice < array_tex->_depth);
+  ok &= (img != nullptr);
+  ok &= (img->_format == array_tex->_texFormat);
+  ok &= (img->_width == array_tex->_width);
+  ok &= (img->_height == array_tex->_height);
+  ok &= (img->_depth == 1);
+
+  if( not ok ){
+    return;
+  }
 
   auto glto = array_tex->_impl.getShared<GLTextureObject>();
   auto texture_target = GL_TEXTURE_2D_ARRAY;

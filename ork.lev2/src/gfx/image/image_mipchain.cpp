@@ -83,6 +83,19 @@ CompressedImageMipChain Image::uncompressedMipChain_b() const {
 }
 
 compressedmipchain_ptr_t Image::uncompressedMipChain() const {
+
+  auto hasher = DataBlock::createHasher();
+  hasher->accumulateItem(_width);
+  hasher->accumulateItem(_height);
+  hasher->accumulateItem(_format);
+  hasher->accumulateItem(_numcomponents);
+  hasher->accumulateItem(_bytesPerChannel);
+  hasher->accumulate(_data->data(), _data->length());
+  auto hash = hasher->result();
+  if( hash == _contentHash )
+    return _cmipchain;
+
+  _contentHash = hash;
   compressedmipchain_ptr_t rval = std::make_shared<CompressedImageMipChain>();
   rval->_width           = _width;
   rval->_height          = _height;
@@ -100,6 +113,7 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
     imgb.downsample(imga);
     mipindex++;
   }
+  _cmipchain = rval;
   return rval;
 }
 

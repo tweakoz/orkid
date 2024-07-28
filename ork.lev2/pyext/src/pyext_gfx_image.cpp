@@ -48,7 +48,7 @@ void pyinit_gfx_image(py::module& module_lev2) {
             img->_format = format_code;
             auto data_out = (void*) img->_data->data();
             memcpy_fast(data_out,data_ptr,data_len);
-            printf( "got good rgb8 bufferdata <%p>\n", data_ptr );
+            //printf( "got good rgb8 bufferdata <%p>\n", data_ptr );
             break;
           }
           default:

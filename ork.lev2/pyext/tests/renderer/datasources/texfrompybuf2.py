@@ -34,6 +34,7 @@ args = vars(parser.parse_args())
 
 stereo = args["stereo"]
 mono = not stereo
+NUM_IMAGES = 120
 
 ################################################################################
 
@@ -95,25 +96,30 @@ class StereoApp1(object):
     ###################################
     
     img_dim = 1024
-    num_circles = 5
+    num_circles = 3
     
+    self.np_images = []
     self.images = []
     
     # generate a overlapping circles pattern (circular) with numpy
-    for i in range(30):
-      scale = float(29-i) / 30.0
+    for i in range(NUM_IMAGES):
+      fiter_fwd = float(NUM_IMAGES-(i+1)) / float(NUM_IMAGES)
+      fiter_bak = float(i) / float(NUM_IMAGES)
+
+      fiter = fiter_fwd*2 if (i<(NUM_IMAGES/2)) else fiter_bak*2
+
       height, width = img_dim, img_dim
       center_y, center_x = img_dim // 2, img_dim // 2
       max_radius = img_dim
 
       # Create a grid of (x, y) coordinates
       y, x = np.ogrid[:height, :width]
-
+      
       # Calculate the distance of each pixel from the center
       distance_from_center = np.sqrt((x - center_x)**2 + (y - center_y)**2)
 
       # Normalize distances to the range [0, 1]
-      normalized_distance = scale*distance_from_center / max_radius
+      normalized_distance = distance_from_center*fiter / max_radius
 
       # Calculate the pattern for concentric circles
       circle_pattern = (normalized_distance * num_circles) % 1.0
@@ -121,71 +127,31 @@ class StereoApp1(object):
       # Create the buffer and map the pattern to a grayscale image
       np_img = (circle_pattern * 255).astype(np.uint8)
           
-      print(f"np_img.shape:{np_img.shape}")
+      #print(f"np_img.shape:{np_img.shape}")
 
       # convert to rgb
       np_img = np.stack((np_img,)*3, axis=-1)
-      self.images.append(np_img)
+      self.np_images.append(np_img)
+      image = lev2.Image.createFromBuffer( img_dim,
+                                           img_dim,
+                                           tokens.RGB8,
+                                           np_img)
+      self.images.append(image)
 
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.colorImage = lev2.Image.createFromBuffer( img_dim,
-                                                             img_dim,
-                                                             tokens.RGB8,
-                                                             self.images[0])
+    self.grid_data.colorImage = self.images[0]
     self.grid_data.mtlrufImage = lev2.Image.createRGB8FromColor( img_dim,img_dim,vec3(1,0,1) )
 
     self.grid_data.shader_suffix = "_V5"
-    self.grid_data.modcolor = vec3(1,0.5,1)*3
-    self.grid_data.majorTileDim = 20.0
+    self.grid_data.modcolor = vec3(1)*3
+    self.grid_data.majorTileDim = 8.0
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.png")
-
-    shadow_size = 4096
-    shadow_bias = 1e-3
-    intens = 100
-    self.spotlight1 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.3,
-                                 color=vec3(intens,0,0),
-                                 cookie=self.cookie1,
-                                 radius=12,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=45,
-                                 voffset=16,
-                                 vscale=12)
-
-    self.spotlight2 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.7,
-                                 color=vec3(0,intens,0),
-                                 cookie=self.cookie1,
-                                 radius=16,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=65,
-                                 voffset=17,
-                                 vscale=10)
-
-    self.spotlight3 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.9,
-                                 color=vec3(0,0,intens),
-                                 cookie=self.cookie1,
-                                 radius=19,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=75,
-                                 voffset=20,
-                                 vscale=10)
 
   ##############################################
 
@@ -227,9 +193,16 @@ class StereoApp1(object):
     self.scene.updateScene(self.cameralut) 
 
   def onGpuUpdate(self,ctx):
-    self.spotlight1.update(self.lighttime)
-    self.spotlight2.update(self.lighttime)
-    self.spotlight3.update(self.lighttime)
+    drw = self.grid_node.drawable
+    gimpl = drw.tryGridImpl
+    mtl = gimpl.material
+    if mtl!=None:
+      next_image = self.images[int(self.frame_index*0.25)%NUM_IMAGES]
+      gimpl.setColorImage(ctx,next_image)
+      gimpl.setMtlRufImage(ctx,next_image)
+      mtl.metallicFactor = 0.0
+      mtl.roughnessFactor = 1.0  
+      mtl.baseColor = vec4(1,0,0,1)
     self.frame_index += 0.3
     pass 
 

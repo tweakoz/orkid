@@ -34,6 +34,11 @@ void pyinit_datablock(py::module& module_core) {
                             return dblock;
                           })
                          ///////////////////
+                         .def_property_readonly("bytes", [](datablock_ptr_t db) -> py::memoryview { //
+                           auto as_str = (const char*) db->data();
+                           return py::memoryview(py::bytes(as_str, db->length()));
+                         })
+                         ///////////////////
                          .def(
                              "readByte",
                              [](datablock_ptr_t db, int integer) -> uint8_t {
