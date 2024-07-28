@@ -108,10 +108,10 @@ class StereoApp1(object):
     mask = self.genMask(input_width, input_height)
     
     self.images = []
-    fig = plt.figure(figsize=(10, 7))
+    #fig = plt.figure(figsize=(10, 7))
 
     for i in range(NUM_IMAGES):
-      fig.add_subplot(6, 5, i+1) 
+      #fig.add_subplot(6, 5, i+1) 
       fiter = float(i) / float(NUM_IMAGES)
       np_img = np_input_data.copy()
       #np_img = np.roll(np_img, int(fiter * input_height), axis=0)
@@ -128,13 +128,13 @@ class StereoApp1(object):
       np_img = self.alphaBlendWithMaskImage(orig_np_img, np_img, mask)
 
       np_img = np_img.astype(np.uint8)
-      plt.imshow(np_img)
+      #plt.imshow(np_img)
       image = lev2.Image.createFromBuffer( input_width,
                                            input_height,
                                            tokens.RGB8,
                                            np_img)
       self.images.append(image)    
-    plt.show()
+    #plt.show()
 
   ##############################################
 
