@@ -312,13 +312,20 @@ layer_ptr_t Scene::createLayer(std::string named) {
 
   _layers.atomicOp([&](layer_map_t& unlocked) {
     auto it = unlocked.find(named);
-    OrkAssert(it == unlocked.end());
-    unlocked[named] = l;
+    if(it!=unlocked.end()){
+      l = it->second;
+      if (DEBUG_LOG) {
+        logchan_sg->log("Scene<%p> preexisting layer<%p:%s>", this, l.get(), (void*)named.c_str());
+      }
+    }
+    else{
+      if (DEBUG_LOG) {
+        logchan_sg->log("Scene<%p> created layer<%p:%s>", this, l.get(), (void*)named.c_str());
+      }
+      unlocked[named] = l;
+    }
   });
 
-  if (DEBUG_LOG) {
-    logchan_sg->log("Scene<%p> create layer<%p:%s>", this, l.get(), (void*)named.c_str());
-  }
 
   return l;
 }

@@ -26,14 +26,13 @@ CompressedImageMipChain Image::compressedMipChainBC7_b() const {
   rval._numcomponents = 4;
   Image imga          = this->clone();
   Image imgb;
-  int mipindex = 0;
-  while ((imga._width >= 4) and (imga._height >= 4)) {
+  auto miplevgen = miplevelgen2D(imga._width, imga._height, 4);
+  for (const auto& mipdim : miplevgen) {
     CompressedImage cimg;
     imga.compressBC7(cimg);
     rval._levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
-    mipindex++;
   }
   return rval;
 }
@@ -47,13 +46,13 @@ compressedmipchain_ptr_t Image::compressedMipChainBC7() const {
   Image imga          = this->clone();
   Image imgb;
   int mipindex = 0;
-  while ((imga._width >= 4) and (imga._height >= 4)) {
+  auto miplevgen = miplevelgen2D(imga._width, imga._height, 4);
+  for (const auto& mipdim : miplevgen) {
     CompressedImage cimg;
     imga.compressBC7(cimg);
     rval->_levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
-    mipindex++;
   }
   return rval;
 }
@@ -70,14 +69,13 @@ CompressedImageMipChain Image::uncompressedMipChain_b() const {
   rval._bytesPerChannel = _bytesPerChannel;
   Image imga            = this->clone();
   Image imgb;
-  int mipindex = 0;
-  while ((imga._width >= 4) and (imga._height >= 4)) {
+  auto miplevgen = miplevelgen2D(imga._width, imga._height, 4);
+  for (const auto& mipdim : miplevgen) {
     CompressedImage cimg;
     imga.uncompressed(cimg);
     rval._levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
-    mipindex++;
   }
   return rval;
 }
@@ -104,14 +102,17 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
   rval->_bytesPerChannel = _bytesPerChannel;
   Image imga            = this->clone();
   Image imgb;
-  int mipindex = 0;
-  while ((imga._width >= 4) and (imga._height >= 4)) {
+  auto miplevgen = miplevelgen2D(_width, _height, 4);
+  for (const auto& mipdim : miplevgen) {
+    int w = mipdim._width;
+    int h = mipdim._height;
+    int index = mipdim._mipindex;
+    //printf("miplevgen %d <%d %d>\n", index, w, h);
     CompressedImage cimg;
     imga.uncompressed(cimg);
     rval->_levels.push_back(cimg);
     imgb = imga;
     imgb.downsample(imga);
-    mipindex++;
   }
   _cmipchain = rval;
   return rval;

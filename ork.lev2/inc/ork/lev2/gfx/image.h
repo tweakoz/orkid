@@ -12,10 +12,33 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/util/generator.inl>
 
 namespace ork::lev2 {
 
 struct Image;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct MipDimensions{
+  operator bool() const { return (_width>0) and (_height>0) and (_depth>0); }
+  const size_t numPixels() const { return _width*_height*_depth; }
+  size_t _width = 0;
+  size_t _height = 0;
+  size_t _depth = 0;
+  size_t _mipindex = 0;
+};
+
+inline ::ork::coroutine::generator<MipDimensions> miplevelgen2D(size_t w, size_t h, const size_t min_tiledim=4) {
+  size_t mipindex = 0;
+  while(w>=min_tiledim and h>=min_tiledim) {
+    MipDimensions mipdim{w,h,1,mipindex};
+    co_yield mipdim;
+    w>>=1;
+    h>>=1;
+    mipindex++;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

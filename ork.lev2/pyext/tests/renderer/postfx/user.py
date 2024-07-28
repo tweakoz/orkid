@@ -21,8 +21,8 @@ tokens = CrcStringProxy()
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 ################################################################################
-parser = argparse.ArgumentParser(description='scenegraph particles example')
-parser.add_argument("-r, '--rendermodel', type=str, default="deferred", help='rendering model (deferred,forward)')
+parser = argparse.ArgumentParser(description="scenegraph particles example")
+parser.add_argument("-r", "--rendermodel", type=str, default="deferred", help="rendering model (deferred,forward)")
 args = vars(parser.parse_args())
 rendermodel = args["rendermodel"]
 ################################################################################
@@ -135,7 +135,7 @@ class HSVGAPP(object):
 ###############################################################################
 
 def sig_handler(signal_received, frame):
-  print('SIGINT or CTRL-C detected. Exiting gracefully')
+  print("SIGINT or CTRL-C detected. Exiting gracefully")
   sys.exit(0)
 
 ###############################################################################

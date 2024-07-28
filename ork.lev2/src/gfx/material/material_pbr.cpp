@@ -556,6 +556,7 @@ PBRMaterial::~PBRMaterial() {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy     = *this;
+  copy->_initialTarget = nullptr;
   return copy;
 }
 
@@ -573,7 +574,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   auto loadreq = std::make_shared<asset::LoadRequest>();
 
-  // printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
+  printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
   loadreq->_asset_path = _shaderpath;
 
   _as_freestyle = std::make_shared<FreestyleMaterial>();
