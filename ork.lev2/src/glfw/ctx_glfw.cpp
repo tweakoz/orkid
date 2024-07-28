@@ -458,14 +458,16 @@ void CtxGLFW::Show() {
                       _appinitdata->_width, //
                       _appinitdata->_height);
 
-    glfwSetWindowPos(
-        _glfwWindow,
-        _appinitdata->_left, //
-        _appinitdata->_top);
-    glfwSetWindowSize(
-        _glfwWindow,
-        _appinitdata->_width, //
-        _appinitdata->_height);
+      if(_glfwWindow){
+          glfwSetWindowPos(
+                           _glfwWindow,
+                           _appinitdata->_left, //
+                           _appinitdata->_top);
+          glfwSetWindowSize(
+                            _glfwWindow,
+                            _appinitdata->_width, //
+                            _appinitdata->_height);
+      }
   }
 
   if (_needsInitialize) {
@@ -487,8 +489,10 @@ void CtxGLFW::Show() {
   }
 
   _glfwMonitor = selected_monitor;
-
-  glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+    if(_glfwWindow){
+        glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+    }
+    
 
   logchan_glfw->log( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
 }
