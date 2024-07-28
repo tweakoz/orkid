@@ -26,8 +26,9 @@ void Image::resizedOf(const Image& inp, int w, int h) {
 
   _format = inp._format;
   
+  using enum EBufferFormat;
   switch( inp._format ){
-    case EBufferFormat::R8:{
+    case R8:{
       // bicubic interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
@@ -58,15 +59,15 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       }
       break;
     }
-    case EBufferFormat::R16:{
+    case R16:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::R32F:{
+    case R32F:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGB8:{
+    case RGB8:{
       // bicubic interpolation
       for (size_t y = 0; y<h; y++) {
         for (size_t x = 0; x<w; x++) {
@@ -97,27 +98,27 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       }
       break;
     }
-    case EBufferFormat::RGBA8:{
+    case RGBA8:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGB16:{
+    case RGB16:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGBA16:{
+    case RGBA16:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGB32F:{
+    case RGB32F:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGBA32F:{
+    case RGBA32F:{
       OrkAssert(false);
       break;
     }
-    case EBufferFormat::RGBA16F:{
+    case RGBA16F:{
       OrkAssert(false);
       break;
     }
@@ -142,12 +143,13 @@ void Image::downsample(Image& imgout) const {
       if (xb > (_width - 1))
         xb = _width - 1;
 
+      using enum EBufferFormat;
       switch (_format) {
-        case EBufferFormat::R8:
-        case EBufferFormat::BGR8:
-        case EBufferFormat::RGB8:
-        case EBufferFormat::BGRA8:
-        case EBufferFormat::RGBA8: {
+        case R8:
+        case BGR8:
+        case RGB8:
+        case BGRA8:
+        case RGBA8: {
           auto outpixel     = imgout.pixel8(x, y);
           auto inppixelXAYA = pixel8(xa, ya);
           auto inppixelXBYA = pixel8(xb, ya);
@@ -164,9 +166,9 @@ void Image::downsample(Image& imgout) const {
           }
           break;
         }
-        case EBufferFormat::R16:
-        case EBufferFormat::RGB16:
-        case EBufferFormat::RGBA16: {
+        case R16:
+        case RGB16:
+        case RGBA16: {
           auto outpixel     = imgout.pixel16(x, y);
           auto inppixelXAYA = pixel16(xa, ya);
           auto inppixelXBYA = pixel16(xb, ya);

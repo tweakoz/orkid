@@ -13,7 +13,7 @@ from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from lev2utils.cameras import *
-from lev2utils.primitives import createParticleData
+from lev2utils.primitives import createParticleData, presetMaterial, presetGRAD
 from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
@@ -55,7 +55,8 @@ class ParticlesApp(object):
     # create particle data 
     ###################################
 
-    self.ptc_data = createParticleData()
+    self.ptc_data = createParticleData(use_streaks=True)
+    ptc_drawable = self.ptc_data.drawable_data.createDrawable()
 
     self.emitterplugs = self.ptc_data.emitter.inputs
     self.emitter2plugs = self.ptc_data.emitter2.inputs
@@ -73,10 +74,12 @@ class ParticlesApp(object):
     emitter_pos.z = 0
     self.emitterplugs.Offset = emitter_pos
 
-    self.material = particles.FlatMaterial.createShared();
-    self.material2 = particles.TextureMaterial.createShared();
+    #self.material = particles.FlatMaterial.createShared();
+    #self.material2 = particles.TextureMaterial.createShared();
+    #self.material2.texture = Texture.load("src://effect_textures/spinner");
 
-    self.material2.texture = Texture.load("src://effect_textures/spinner");
+    self.material = presetMaterial(grad=presetGRAD(0))
+    self.material2 = presetMaterial(grad=presetGRAD(1))
 
     self.cur_size = 1
     self.tgt_size = 1
@@ -85,7 +88,6 @@ class ParticlesApp(object):
     # create particle sg node
     ##################
 
-    ptc_drawable = self.ptc_data.drawable_data.createDrawable()
     self.particlenode = self.layer1.createDrawableNode("particle-node",ptc_drawable)
     self.particlenode.sortkey = 2;
     self.color = vec4(1, .5, 0, 1)

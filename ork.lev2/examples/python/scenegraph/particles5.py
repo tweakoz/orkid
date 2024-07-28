@@ -161,7 +161,7 @@ class ParticlesApp(object):
     })
     self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
 
-    self.material2 = particles.TextureMaterial.createShared();
+    self.material2 = particles.GradientMaterial.createShared();
     self.material2.texture = Texture.load("src://effect_textures/spinner");
 
     self.ptc_data.streaks.material = self.material

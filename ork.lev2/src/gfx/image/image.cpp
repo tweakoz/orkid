@@ -71,10 +71,11 @@ void Image::initRGB8WithColor(size_t w, size_t h, fvec3 color, EBufferFormat fmt
   _bytesPerChannel = 1;
   init(w, h, 3, 1);
   auto outptr = (uint8_t*)_data->data();
+  using enum EBufferFormat;
   switch (fmt) {
-    case EBufferFormat::RGB8:
+    case RGB8:
       break;
-    case EBufferFormat::BGR8:
+    case BGR8:
       std::swap(r, b);
       break;
     default:
@@ -103,10 +104,11 @@ void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fm
   _bytesPerChannel = 1;
   init(w, h, 4, 1);
   auto outptr = (uint8_t*)_data->data();
+  using enum EBufferFormat;
   switch (fmt) {
-    case EBufferFormat::RGBA8:
+    case RGBA8:
       break;
-    case EBufferFormat::BGRA8:
+    case BGRA8:
       std::swap(r, b);
       break;
     default:
@@ -128,15 +130,16 @@ void Image::initRGBA8WithColor(size_t w, size_t h, fvec4 color, EBufferFormat fm
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::initRGBA8WithNormalizedFloatBuffer(size_t w, size_t h, size_t numc, const float* buffer) {
+  using enum EBufferFormat;
   switch (numc) {
     case 1:
-      _format = EBufferFormat::R8;
+      _format = R8;
       break;
     case 3:
-      _format = EBufferFormat::RGB8;
+      _format = RGB8;
       break;
     case 4:
-      _format = EBufferFormat::RGBA8;
+      _format = RGBA8;
       break;
     default:
       OrkAssert(false);

@@ -274,15 +274,18 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto node = layer->createDrawableNode(named, drawable);
                 return node;
               })
-          .def_property_readonly("drawable_nodes", [](layer_ptr_t layer) -> py::list {
-            py::list rval;
-            layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
-              for (auto it : unlocked) {
-                rval.append(it);
-              }
-            });
-            return rval;
-          });
+          .def_property_readonly(
+              "drawable_nodes",
+              [](layer_ptr_t layer) -> py::list {
+                py::list rval;
+                layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
+                  for (auto it : unlocked) {
+                    rval.append(it);
+                  }
+                });
+                return rval;
+              })
+          .def_property_readonly("name", [](layer_ptr_t layer) -> std::string { return layer->_name; });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
@@ -312,12 +315,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->_outputNode;
               })
           .def_property_readonly(
-              "compositorpostnodecount",                         //
+              "compositorpostnodecount",     //
               [](scene_ptr_t SG) -> size_t { //
                 return SG->getPostNodeCount();
               })
           .def(
-              "compositorpostnode",                         //
+              "compositorpostnode",              //
               [](scene_ptr_t SG, size_t index) { //
                 return SG->getPostNode(index);
               })
@@ -443,10 +446,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto instance_type = py::class_<NodeInstanceData, node_instance_data_ptr_t>(sgmodule, "NodeInstanceData")
                            .def(py::init<>([](std::string name) -> node_instance_data_ptr_t { //
-                              auto nid =  std::make_shared<NodeInstanceData>(); 
-                              nid->_groupname = name;
-                              return nid;
-                            }))
+                             auto nid        = std::make_shared<NodeInstanceData>();
+                             nid->_groupname = name;
+                             return nid;
+                           }))
                            .def_property(
                                "groupName",
                                [](node_instance_data_ptr_t drw) -> std::string { return drw->_groupname; },

@@ -52,9 +52,9 @@ btTransform orkmtx4tobtmtx4(const ork::fmtx4& mtx) {
   xf.setOrigin(orkv3tobtv3(position));
   btMatrix3x3& mtx33 = xf.getBasis();
   for (int i = 0; i < 3; i++) {
-    float fx = mtx.elemYX(i, 0);
-    float fy = mtx.elemYX(i, 1);
-    float fz = mtx.elemYX(i, 2);
+    float fx = mtx[0,i];
+    float fy = mtx[1,i];
+    float fz = mtx[2,i];
     mtx33[i] = btVector3(fx, fy, fz);
   }
   return xf;
@@ -67,9 +67,9 @@ ork::fmtx4 btmtx4toorkmtx4(const btTransform& mtx) {
   const btMatrix3x3& mtx33 = mtx.getBasis();
   for (int i = 0; i < 3; i++) {
     const btVector3& vec = mtx33.getColumn(i);
-    rval.setElemXY(i, 0, float(vec.x()));
-    rval.setElemXY(i, 1, float(vec.y()));
-    rval.setElemXY(i, 2, float(vec.z()));
+    rval[i, 0] = float(vec.x());
+    rval[i, 1] = float(vec.y());
+    rval[i, 2] = float(vec.z());
   }
   return rval;
 }

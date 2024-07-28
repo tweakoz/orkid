@@ -45,10 +45,17 @@ class ParticlesApp(object):
   ################################################
 
   def createGrid(self,extent=1000):
-     self.grid_data = createGridData()
-     self.grid_data.extent =  extent
-     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-     self.grid_node.sortkey = 1
+    self.grid_data = createGridData()
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(.7)
+    self.grid_data.intensityA = 1.0*0.5
+    self.grid_data.intensityB = 0.97*0.5
+    self.grid_data.intensityC = 0
+    self.grid_data.intensityD = 0
+    self.grid_data.lineWidth = 0.025
+    self.grid_data.extent =  extent
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ################################################
 

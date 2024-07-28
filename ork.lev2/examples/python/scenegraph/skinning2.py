@@ -196,7 +196,7 @@ class SkinningApp(object):
     ###################################
 
     self.scenegraph = self.ezapp.createScene(sg_params)
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_deferred")
     self.pbr_common = self.scenegraph.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
@@ -296,7 +296,7 @@ class SkinningApp(object):
 
   def onUiEvent(self,uievent):
 
-    res = ui.HandlerResult()
+    res = lev2.ui.HandlerResult()
     handled = False
 
     if uievent.code == tokens.KEY_DOWN.hashed:

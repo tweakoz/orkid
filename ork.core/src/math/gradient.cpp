@@ -61,7 +61,10 @@ template <typename T> T Gradient<T>::sample(float fu) const {
   int inumv  = int(_data.size());
   while (false == bdone) {
     isegb = (isega + 1);
-    OrkAssert(isegb < inumv);
+    if(isegb >= inumv){
+      isegb = inumv-1;
+      printf("isegb<%d> inumv<%d>\n", isegb, inumv);
+    }
     if ((fu >= _data.GetItemAtIndex(isega).first) && (fu <= _data.GetItemAtIndex(isegb).first)) {
       bdone = true;
     } else {

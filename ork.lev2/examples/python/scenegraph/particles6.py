@@ -135,7 +135,11 @@ class ParticlesApp(object):
       "DepthFogDistance": float(10000)
     }
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
+    createSceneGraph( app=self,
+                     rendermodel="ForwardPBR",
+                     params_dict=params_dict)
+
+    print(self.layer1.name)
 
     self.model = XgmModel("data://tests/pbr_calib.glb")
     self.nodeP1 = NODE(self.model,self.layer1,0)
@@ -161,10 +165,10 @@ class ParticlesApp(object):
       1.0:vec4(0,0,0,1)
       #1.0:vec4(1,1,1,1)
     })
-    self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
+    #self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
 
-    self.material2 = particles.TextureMaterial.createShared();
-    self.material2.texture = Texture.load("src://effect_textures/spinner");
+    #self.material2 = particles.GradientMaterial.createShared();
+    #self.material2.texture = Texture.load("src://effect_textures/spinner");
 
     self.ptc_data.streaks.material = self.material
 

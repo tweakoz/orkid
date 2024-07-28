@@ -78,7 +78,10 @@ class SimApp(object):
       "SpecularIntensity": float(1),
       "DepthFogDistance": float(10000)
     }
-    createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
+    createSceneGraph( app=self,
+                      rendermodel="DeferredPBR",
+                      params_dict=params_dict,
+                      layer_name="std_deferred")
     model = XgmModel("src://environ/objects/misc/ref/uvsph.glb")
     self.instanceset = self.instance_set_class(model,self.layer1)
   ################################################

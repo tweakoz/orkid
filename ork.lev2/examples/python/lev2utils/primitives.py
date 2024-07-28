@@ -1,6 +1,7 @@
 from orkengine.core import *
 from orkengine.lev2 import *
 dflow = dataflow
+tokens = CrcStringProxy()
 
 def createCubePrim( ctx=None, size=1.0 ):
   cube_prim = primitives.CubePrimitive()
@@ -35,7 +36,14 @@ def createPointsPrimV12C4(ctx=None,numpoints=0):
 
 def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data = GridDrawableData()
-  grid_data.extent = extent
+  grid_data.shader_suffix = "_V4"
+  grid_data.modcolor = vec3(.7)
+  grid_data.intensityA = 1.0*0.5
+  grid_data.intensityB = 0.97*0.5
+  grid_data.intensityC = 0
+  grid_data.intensityD = 0
+  grid_data.lineWidth = 0.025
+  grid_data.extent =  extent
   grid_data.majorTileDim = majordim
   grid_data.minorTileDim = minordim
   return grid_data
@@ -51,6 +59,78 @@ def createGroundPlaneData(extent=10.0,pbrmaterial=None, pipeline=None):
   ground_data.pbrmaterial = pbrmaterial
   ground_data.pipeline = pipeline
   return ground_data
+
+gradients = [GradientV4() for i in range(8)]
+
+gradients[0].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.25: vec4(1,0,1,1),
+  0.5: vec4(1,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[1].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.25: vec4(1,0.8,0,1),
+  0.5: vec4(1,1,0.5,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[2].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,0,0,1),
+  0.35: vec4(1,0.8,0,1),
+  0.5: vec4(1,0,0,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[3].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,0,1,1),
+  0.35: vec4(0,0.8,1,1),
+  0.5: vec4(0,0,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[4].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,1,1,1),
+  0.35: vec4(.5,1,1,1),
+  0.5: vec4(0,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[5].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(0,1,0,1),
+  0.35: vec4(0,1,0,1),
+  0.5: vec4(0,1,0,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[6].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,1,1,1),
+  0.35: vec4(1,1,1,1),
+  0.5: vec4(1,1,1,1),
+  1.0: vec4(0,0,0,0),
+})
+gradients[7].setColorStops({
+  0.0: vec4(0,0,0,0),
+  0.25: vec4(1,1,.5,1),
+  0.35: vec4(1,1,.5,1),
+  0.5: vec4(1,1,.5,1),
+  1.0: vec4(0,0,0,0),
+})
+
+def presetGRAD(index):
+  return gradients[index]  
+
+################################################
+
+def presetMaterial(grad=presetGRAD(0),texname="src://effect_textures/knob2"):
+  material = particles.GradientMaterial.createShared()
+  material.modulation_texture = Texture.load(texname)
+  material.gradient = grad
+  material.blending = tokens.ADDITIVE
+  material.depthtest = tokens.LEQUALS
+  return material
 
 def createParticleData( use_streaks = True ):
 
@@ -88,7 +168,8 @@ def createParticleData( use_streaks = True ):
       if use_streaks:
         self.graphdata.connect( self.streaks.inputs.pool,    self.vortex.outputs.pool )
         self.streaks.inputs.Length = .1
-        self.streaks.inputs.Width = .01
+        self.streaks.inputs.Width = .05
+        self.streaks.material = presetMaterial()
       else:
         self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
 
