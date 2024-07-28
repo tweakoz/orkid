@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 ################################################################################
-# lev2 sample which renders a scenegraph to a window
+# lev2 sample which overrides the compositor
+#  specifically it overrides the gbuffer write shader
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/

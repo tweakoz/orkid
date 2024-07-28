@@ -101,7 +101,7 @@ class SceneGraphApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     self.scene = self.ezapp.createScene(self.sceneparams)
-    layer = self.scene.createLayer("layer1")
+    layer = self.scene.createLayer("std_deferred")
     models = []
     #models += [XgmModel("data://tests/pbr1/pbr1")]
     #models += [XgmModel("data://tests/pbr_calib.gltf")]

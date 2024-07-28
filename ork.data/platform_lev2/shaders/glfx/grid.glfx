@@ -540,9 +540,31 @@ fragment_shader ps_gbuffer_nx_stereo : iface_fgrid_gbuffer : lib_frgdeferred_gri
   pscommon();
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_deferred_lit_mono_v4 
+ : iface_fgrid_gbuffer 
+ : lib_frgdeferred_grid_pbr 
+ : lib_frg_grid {
+  vec4 grid_color = grid_output4(frg_pos.xyz);
+  vec3 normal     = vec3(0, 1, 0);
+  float mtl       = 0.0;
+  float ruf       = 1.0;
+  out_gbuf        = packGbuffer(
+      grid_color.xyz,  // basecolor
+      vec3(0,0,0), // emmisive
+      normal,     // normal
+      ruf,
+      mtl);
+
+}
+///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_rigid_gbuffer_grid, ps_gbuffer_nx, sb_default }
+}
+technique GBU_CT_NM_RI_NI_MO_V4 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_rigid_gbuffer_grid, ps_grid_deferred_lit_mono_v4, sb_default }
+  //vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_lit_mono_v4, sb_forward }
 }
 technique GBU_CT_NM_RI_NI_ST {
   fxconfig = fxcfg_default;
