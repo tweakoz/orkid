@@ -39,6 +39,9 @@ def createSceneGraph( app=None,
         layer_name = "std_deferred"
     
     app.layer1 = app.scene.createLayer(layer_name)
+    app.layer_std = app.layer1
+    app.layer_dpp = app.scene.createLayer("depth_prepass")
+    app.std_layers = [app.layer_std,app.layer_dpp]
     app.rendernode = app.scene.compositorrendernode
 
     return app.scene

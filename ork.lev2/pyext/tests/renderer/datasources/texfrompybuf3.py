@@ -30,13 +30,15 @@ from lev2utils.lighting import MySpotLight, MyCookie
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--stereo', action='store_true', help='stereo mode')
+parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
+
 ################################################################################
 
 args = vars(parser.parse_args())
 
 stereo = args["stereo"]
 mono = not stereo
-NUM_IMAGES = 30
+NUM_IMAGES = 15
 
 ################################################################################
 
@@ -156,19 +158,21 @@ class StereoApp1(object):
       "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
-    if mono:
-      params_dict["preset"] = "ForwardPBR"
-    else:
-      params_dict["preset"] = "FWDPBRVR"
 
     ##################
-    # create model / sg node
+    # create scenegraph
     ##################
 
-    createSceneGraph(app=self,params_dict=params_dict)
-    self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.layer1
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    rendermodel = args["rendermodel"]
+    if rendermodel == "deferred":
+      rendermodel = "DeferredPBR"
+    elif rendermodel == "forward":
+      rendermodel="ForwardPBR"
+
+    createSceneGraph( app=self,
+                     rendermodel=rendermodel,
+                     params_dict=params_dict
+                    )
 
     ###################################
 
@@ -176,7 +180,7 @@ class StereoApp1(object):
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(1)*3
     self.grid_data.majorTileDim = 8.0
-    self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer_std.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
@@ -217,7 +221,7 @@ class StereoApp1(object):
     ##################
 
     self.model_drawable = self.model.createDrawable()
-    self.sgnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"modelnode",self.model_drawable)
+    self.sgnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"modelnode",self.model_drawable)
     self.modelinst = self.model_drawable.modelinst
     self.modelinst.enableSkinning()
     self.modelinst.enableAllMeshes()

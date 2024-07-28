@@ -22,7 +22,7 @@ this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
-parser.add_argument("-m", '--rendermodel', type=str, default="deferred", help='rendering model (deferred,forward)')
+parser.add_argument("-r, '--rendermodel', type=str, default="deferred", help='rendering model (deferred,forward)')
 args = vars(parser.parse_args())
 rendermodel = args["rendermodel"]
 ################################################################################
