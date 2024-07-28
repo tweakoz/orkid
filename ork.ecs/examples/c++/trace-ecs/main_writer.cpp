@@ -78,7 +78,7 @@ struct PseudoClientImpl {
           float wait_time = _controller->random(4, 5);
 
           _controller->realtimeDelayedOperation(wait_time,[=](){
-            printf("CLIENT<%p> DELETING CLIENT ENTITY <%zu>\n", (void*)this, ent._entID );
+            printf("CLIENT<%p> DELETING CLIENT ENTITY <%llu>\n", (void*)this, ent._entID );
             _controller->despawnEntity(ent);
           }); // despawn at a later time...
 

@@ -121,6 +121,9 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       OrkAssert(false);
       break;
     }
+    default:
+      OrkAssert(false);
+      break;
   }
 }
 

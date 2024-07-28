@@ -286,7 +286,7 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
         OrkAssert(false);
         break;
       default:
-        printf( "unsupported format<%zx>\n", (uint64_t)req.ptex->_texFormat);
+        printf( "unsupported format<%llx>\n", (uint64_t)req.ptex->_texFormat);
         OrkAssert(false);
         break;
     }

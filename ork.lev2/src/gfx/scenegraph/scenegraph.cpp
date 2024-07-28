@@ -257,6 +257,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       _pbr_common->_ssaoNumSamples = int(try_ssao.value());
       _pbr_common->_useDepthPrepass = true;
     }
+    if (auto try_dpp = params->typedValueForKey<bool>("DepthPrepass")) {
+      _pbr_common->_useDepthPrepass = try_dpp.value();
+    }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
       _pbr_common->_ssaoNumSteps = int(try_ssao.value());
     }

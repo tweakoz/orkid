@@ -162,17 +162,17 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
     bool OK = _loadOrkScene(mdl, datablock);
     return OK;
   }
-  printf("check_magic<%08x>\n", check_magic);
+  printf("check_magic<%s>\n", check_magic.c_str());
   if (check_magic.muVal32 == 0x736d656f) { // its encrypted
-    printf("aaa: decrypting datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length());
+    printf("aaa: decrypting datablock hash<%llx> length<%zu>\n", datablock->hash(), datablock->length());
     uint32_t codecID = datablockstream.getItem<uint32_t>();
     auto& storage    = datablock->_storage;
     storage.erase(storage.begin(), storage.begin() + 8);
-    printf("aaa: decrypting datablock rehash<%zx> relength<%zu>\n", datablock->hash(), datablock->length());
+    printf("aaa: decrypting datablock rehash<%llx> relength<%zu>\n", datablock->hash(), datablock->length());
     auto codec               = encryptionCodecFactory(codecID);
     auto decrypted_datablock = datablock->decrypt(codec);
     hexdumpbytes(decrypted_datablock->_storage.data(), 64);
-    printf("aaa: decrypted_datablock hash<%zx> length<%zu>\n", decrypted_datablock->hash(), decrypted_datablock->length());
+    printf("aaa: decrypted_datablock hash<%llx> length<%zu>\n", decrypted_datablock->hash(), decrypted_datablock->length());
     bool OK = _loadAssimp(mdl, decrypted_datablock);
     printf("assimp load status<%d>\n", int(OK));
     // OrkAssert(false);
@@ -550,7 +550,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     }
   }
   chunkwriter.writeToDataBlock(out_datablock);
-  printf("aaa: _saveXGM datablock hash<%zx> len<%zu>\n", out_datablock->hash(), out_datablock->length());
+  printf("aaa: _saveXGM datablock hash<%llx> len<%zu>\n", out_datablock->hash(), out_datablock->length());
   // OrkAssert(false);
   return out_datablock;
 }

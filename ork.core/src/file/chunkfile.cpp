@@ -373,6 +373,8 @@ bool ChunkFileHeaderOnly::readFromDataBlock(datablock_ptr_t datablock){
   OrkHeapCheck();
   ///////////////////////////
   _num_chunks = dblockstream.getItem<int32_t>();
+  ///////////////////////////
+  return true;
  }
 
 

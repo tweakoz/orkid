@@ -155,6 +155,8 @@ public:
           break;
         }
       }
+      default:
+        break;
     }
     return true;
   }
@@ -188,6 +190,8 @@ public:
         }
         break;
       }
+      default:
+        break;
     }
     return true;
   }

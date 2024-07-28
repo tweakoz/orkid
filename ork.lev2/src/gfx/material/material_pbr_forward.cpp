@@ -121,9 +121,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         float SMS = light->_spdata->shadowMapSize();
 
          if(0){
-          printf( "C<%d> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
-          printf( "P<%d> <%g %g %g>\n", index, P.x, P.y, P.z );
-          printf( "R<%d> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
+          printf( "C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
+          printf( "P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z );
+          printf( "R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
          }
          
         size_t v4_offset                                          = index * vec4_stride;

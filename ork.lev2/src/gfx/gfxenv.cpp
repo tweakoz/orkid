@@ -80,7 +80,7 @@ int msaaEnumToInt( const MsaaSamples& samples ){
 }
 
 MsaaSamples intToMsaaEnum( int samples ){
-  MsaaSamples rval;
+  MsaaSamples rval = MsaaSamples::MSAA_1X;
   switch(samples){
     case 0:
     case 1:
@@ -188,7 +188,7 @@ std::string EBufferFormatToName(EBufferFormat fmt){
       rval = "S3TC_DXT5";
       break;
     default:
-      printf( "invalid buffer format<%0zx>\n", uint64_t(fmt) );
+      printf( "invalid buffer format<%0zx>\n", size_t(fmt) );
       OrkAssert(false);
       break;
   }

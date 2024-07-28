@@ -86,6 +86,8 @@ float Simulation::_computeDeltaTime() {
       mLastGameTime  = mGameTime;
       mGameTime += mDeltaTime;
     }
+    default:
+      break;
   }
 
   //	logchan_simupdate->log( "mGameTime<%f>", mGameTime );

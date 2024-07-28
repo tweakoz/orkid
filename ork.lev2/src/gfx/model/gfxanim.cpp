@@ -102,7 +102,7 @@ void XgmAnimMask::Disable(int iboneindex) {
   int ibitindex  = BONE_TO_BIT(iboneindex);
   mMaskBits[icharindex] &= ~(1<<ibitindex);
   printf( "XgmAnimMask<%p> disable iboneindex<%d> icharindex<%d> ibitindex<%d> mMaskBits<%zx>\n", //
-          this, iboneindex, icharindex, ibitindex, mMaskBits[icharindex] );
+          this, iboneindex, icharindex, ibitindex, size_t(mMaskBits[icharindex]) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

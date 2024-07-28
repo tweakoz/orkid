@@ -217,7 +217,6 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
       //float ae   = _param[1].eval();
       // float ae   = aenv[i];
       float res = (inU + inL) * 0.5 * _filt * 2.0;
-      res       = res;
       ubuf[i]   = res;
       lbuf[i]   = res;
     }
@@ -445,8 +444,6 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
       float inU  = ubuf[i] * _dbd->_inputPad;
       float inL  = lbuf[i] * _dbd->_inputPad;
       float res  = (inU * inL) * linG;
-      res        = res;
-
       outputchan[i] = res;
     }
     _fval[0] = _filt;

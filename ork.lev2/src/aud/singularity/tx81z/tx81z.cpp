@@ -84,9 +84,10 @@ float compute_ratio(int coarse, int fine) {
 void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
   ork::File syxfile(path, ork::EFM_READ);
-  u8* data    = nullptr;
-  size_t size = 0;
-  syxfile.Load((void**)(&data), size);
+  std::vector<u8> bytes;
+  syxfile.Load(bytes);
+  auto data = bytes.data();
+  auto size = bytes.size();
 
   printf("tx81z syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
 

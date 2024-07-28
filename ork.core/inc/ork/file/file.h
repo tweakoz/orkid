@@ -48,7 +48,7 @@ public:
   EFileErrCode OpenFile(const file::Path& sFileName, EFileMode eMode);
   EFileErrCode Open();
   EFileErrCode Close();
-  EFileErrCode Load(void** filebuffer, size_t& size);
+  EFileErrCode Load(std::vector<uint8_t>& bytes);
 
   EFileErrCode Read(void* pTo, size_t iSize);
   EFileErrCode Write(const void* pFrom, size_t iSize);

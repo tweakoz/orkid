@@ -5,8 +5,6 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#pragma once
-
 #include <ork/lev2/gfx/gfxanim.h>
 #include <ork/lev2/gfx/ikchain.h>
 #include <ork/math/math_types.inl>

@@ -121,17 +121,17 @@ struct GpuResources {
     _sg_params                                         = std::make_shared<varmap::VarMap>();
 
     _sg_params->makeValueForKey<float>("SkyboxIntensity") = 2.0f;
-
     if(use_vr){
       _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "FWDPBRVR" : "PBRVR" ;
     }
     else{
-    _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
+      _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
     }
-
+    _sg_params->makeValueForKey<bool>("DepthPrepass") = true;
 
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
-    auto sg_layer    = _sg_scene->createLayer("default");
+    std::string std_layer = use_forward ? "std_forward" : "std_deferred";
+    auto sg_layer    = _sg_scene->createLayer(std_layer);
     auto sg_compdata = _sg_scene->_compositorData;
 
     //////////////////////////////////////////////////////////

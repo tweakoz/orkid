@@ -1232,12 +1232,11 @@ Path::HashType Path::hashFileContents() const{
   OrkAssert(isFile());
   auto abs =   toAbsolute();
   File f(abs,EFM_READ);
-  void* buffer = nullptr;
+  std::vector<uint8_t> bytes;
   size_t length = 0;
-  auto status = f.Load(&buffer,length);
+  auto status = f.Load(bytes);
   OrkAssert(EFEC_FILE_OK==status);
-  U32 uval = Crc32::HashMemory(buffer, length);
-  delete[] buffer;
+  U32 uval = Crc32::HashMemory(bytes.data(), length);
   return HashType(uval);
 }
 

@@ -102,6 +102,7 @@ bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t
       data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
     asset_load_req->_on_event("loadComplete"_crcu,data);
   }
+  return OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

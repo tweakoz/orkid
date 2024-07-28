@@ -11,9 +11,9 @@
 
 namespace ork { namespace asset {
 
-class AssetSetEntry;
+struct AssetSetEntry;
 
-class AssetSetLevel
+struct AssetSetLevel
 {
 public:
 	AssetSetLevel(AssetSetLevel *parent)

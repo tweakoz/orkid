@@ -37,7 +37,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     OrkAssert(n != nullptr);
     auto name      = remapSkelName(n->mName.data);
     auto node_path = aiNodePathName(n);
-    std::string node_ID = (n->mID.data) ? n->mID.data : "";
+    std::string node_ID = (n->mID.data!=nullptr) ? n->mID.data : "";
     auto itb       = uniqskelnodeset.find(node_path);
     if (itb != uniqskelnodeset.end()) {
       auto prior      = itb->second;

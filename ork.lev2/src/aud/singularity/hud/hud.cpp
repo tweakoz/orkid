@@ -89,7 +89,7 @@ HudLayoutGroup::HudLayoutGroup() //
   }
   _handledkeymap['['] = 0;
   _handledkeymap[']'] = 0;
-  _handledkeymap[256] = 0;
+  _handledkeymap[0] = 0;
 
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     switch (ev->_eventcode) {

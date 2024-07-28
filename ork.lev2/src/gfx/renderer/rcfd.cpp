@@ -95,7 +95,8 @@ const CompositingPassData& RenderContextFrameData::topCPD() const {
   if( topCompositor() ){
     return topCompositor()->topCPD();
   }
-  return CompositingPassData();
+  static const CompositingPassData _default;
+  return _default;
 }
 bool RenderContextFrameData::hasCPD() const {
   bool rval = false;

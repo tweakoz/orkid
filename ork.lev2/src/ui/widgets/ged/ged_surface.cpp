@@ -299,7 +299,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         auto pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
         if(0)printf( "move ilocx<%d> ilocy<%d> pobj<%p> ", ilocx, ilocy, (void*) pobj );
         if( pobj ) {
-            if(0)printf( "clazz<%s> ", (void*) pobj->objectClass()->Name().c_str() );
+            if(0)printf( "clazz<%s> ", pobj->objectClass()->Name().c_str() );
           auto pnode = dynamic_cast<GedObject*>(pobj);
           if (pnode) {
             if(0)printf( "pnode<%p> ", (void*) pnode );
@@ -375,6 +375,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
             bool was_handled = pnode->OnUiEvent(locEV);
             break;
           }
+          default:
+            break;
         }
       }
 

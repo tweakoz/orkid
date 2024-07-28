@@ -116,7 +116,7 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
         auto it    = unlocked.find(FEV._syskey);
         bool found = (it != unlocked.end());
         if (found){
-          printf( "system ID<%d> for key<%s> found\n", FEV._sysref._sysID, FEV._syskey.data());
+          //printf( "system ID<%d> for key<%s> found\n", FEV._sysref._sysID, FEV._syskey.data());
           the_system = (it->second);
         }
         else{

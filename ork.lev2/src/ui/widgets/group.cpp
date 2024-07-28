@@ -158,6 +158,9 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
         was_handled = (result.mHandler!=nullptr);
         break;
       }
+      default: {
+        break;
+      }
     }
     if(was_handled)
       result.setHandled(this);
@@ -316,6 +319,9 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       }
       lastx = ev->miX;
       lasty = ev->miY;
+      break;
+    }
+    default: {
       break;
     }
   }

@@ -666,7 +666,7 @@ bool _checkTexture(GLuint texID, const std::string& name) {
         glBindTexture(target, texID);
 
         if (glGetError() == GL_NO_ERROR) {
-            GLenum faces[] = {target};
+            GLenum faces[] = {target,target,target,target,target,target};
             int faceCount = 1;
 
             if (target == GL_TEXTURE_CUBE_MAP) {

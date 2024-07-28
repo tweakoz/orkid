@@ -166,11 +166,12 @@ template <typename T> void Vector4<T>::setRGBAU64(uint64_t inp) {
 
 template <typename T> U32 Vector4<T>::vertexColorU32() const {
 
-  #if defined(ORK_CONFIG_IX)//GL
-  return BGRAU32();
-  #elif defined(ORK_CONFIG_DARWIN)
+  #if defined(ORK_CONFIG_DARWIN)
   return ABGRU32();
+  #else
+  return BGRAU32();
   #endif
+  
 }
 
 ////////////////////////////////////////////////////////////////////////////////

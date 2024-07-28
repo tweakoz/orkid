@@ -1029,9 +1029,10 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
-
+    
+    static const std::string PITCH = "PITCH";
     // printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
-    if (blockn1 != "PITCH" and blockn2 != "PITCH") {
+    if (blockn1 != PITCH and blockn2 != PITCH) {
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
       if (dspblock) {
         if ((paramcount > 0) and (jsonobj.HasMember(blockn1))) {

@@ -259,6 +259,9 @@ void GedSkin::AddPrim(const GedPrim& cb) {
         }
         break;
       }
+      default:
+        OrkAssert(false);
+        break;
     }
 }
 

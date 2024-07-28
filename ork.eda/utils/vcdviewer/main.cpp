@@ -93,8 +93,8 @@ int main(int argc, char** argv, char** envp) {
   auto viewparams            = ViewParams::instance();
   viewparams->_min_timestamp = *vcdfile._timestamps.begin();
   viewparams->_max_timestamp = *vcdfile._timestamps.rbegin();
-  printf("min_timestamp<%lu>\n", viewparams->_min_timestamp);
-  printf("max_timestamp<%lu>\n", viewparams->_max_timestamp);
+  //printf("min_timestamp<%lu>\n", viewparams->_min_timestamp);
+  //printf("max_timestamp<%lu>\n", viewparams->_max_timestamp);
   //////////////////////////////////////
   int numsigtracks = flat_sigtracks.size();
   std::vector<anchor::guide_ptr_t> track_guides;

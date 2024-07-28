@@ -29,6 +29,7 @@ using datablock_crcmap_t = std::unordered_map<uint32_t, datablock_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EncryptionCodec{
+  virtual ~EncryptionCodec() {}
   virtual datablock_ptr_t encrypt(const DataBlock* inp) = 0;
   virtual datablock_ptr_t decrypt(const DataBlock* inp) = 0;
   svar64_t _impl;

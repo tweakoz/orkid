@@ -246,7 +246,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     // DrawQueue -> RenderQueue enqueue
     /////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
-       printf("Deferred::renderEnqueuedScene::layer<%s>\n", layer_name.c_str());
+      //printf("Deferred::renderEnqueuedScene::layer<%s>\n", layer_name.c_str());
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
       DB->enqueueLayerToRenderQueue(layer_name, irenderer);
     }

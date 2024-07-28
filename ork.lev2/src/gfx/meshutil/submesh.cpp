@@ -501,7 +501,7 @@ bool submesh::isConvexHull() const {
       printf( "%d ", p1->vertexID(i) );
     }
     printf( "] ");
-    printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
+    printf( "plane <%f %f %f> <%f>\n", pl.n.x, pl.n.y, pl.n.z, pl.d );
     visitAllPolys([&](merged_poly_const_ptr_t p2) {
       if (p1 != p2) {
         p2->visitVertices([&](vertex_const_ptr_t v) {

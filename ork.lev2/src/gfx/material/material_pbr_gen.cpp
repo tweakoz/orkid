@@ -358,7 +358,6 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       w >>= 1;
       h >>= 1;
       numpix = w * h;
-      imip++;
     }
     while (pending.load() > 0) {
       usleep(1000);

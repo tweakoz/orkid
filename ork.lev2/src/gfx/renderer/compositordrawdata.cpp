@@ -37,7 +37,7 @@ Context* CompositorDrawData::context() const {
 }
 
 const svar16_t& CompositorDrawData::property(uint64_t key) const{
-  const svar16_t NONE;
+  static const svar16_t NONE;
   auto it = _properties.find(key);
   return (it != _properties.end()) ? it->second : NONE;
 }

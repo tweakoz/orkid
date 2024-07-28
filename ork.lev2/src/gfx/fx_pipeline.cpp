@@ -31,7 +31,7 @@ uint64_t FxPipelinePermutation::genIndex() const {
 void FxPipelinePermutation::dump() const {
   printf(
       "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
-      uint64_t(_rendering_model),
+      size_t(_rendering_model),
       int(_stereo),
       int(_instanced),
       int(_skinned),

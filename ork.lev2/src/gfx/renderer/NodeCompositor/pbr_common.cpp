@@ -209,7 +209,7 @@ lev2::texture_ptr_t CommonStuff::ssaoScrNoise(lev2::Context* ctx, int noise_seed
 
   auto it = _ssaoKernels.find(key);
   if( it == _ssaoKernels.end() ){
-    printf( "spin up ssao screen noise for key<%zu>\n", key);
+    printf( "spin up ssao screen noise for key<%llu>\n", key);
     // make new kernel for size and cache
     std::vector<fvec3> ssaoNoise;
     int numsamples = w*h;

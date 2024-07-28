@@ -27,7 +27,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_simfsm = logger()->createChannel("ecs.simfsm",fvec3(1.0,0.9,0));
+static logchannel_ptr_t logchan_simfsm = logger()->createChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
 
 struct RootState : public fsm::State {
   RootState(fsm::StateMachine* machine)
@@ -50,12 +50,12 @@ void Simulation::_buildStateMachine() {
   ///////////////////////////////////////////////////////////
   // set up update thread state machine
   ///////////////////////////////////////////////////////////
-  _updateThreadSM       = std::make_shared<fsm::StateMachine>();
-  auto upd_root         = _updateThreadSM->newState<RootState>();
-  _updateReadySimState  = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updateEditSimState   = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updateActiveSimState = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
-  _updatePausedSimState = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
+  _updateThreadSM           = std::make_shared<fsm::StateMachine>();
+  auto upd_root             = _updateThreadSM->newState<RootState>();
+  _updateReadySimState      = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
+  _updateEditSimState       = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
+  _updateActiveSimState     = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
+  _updatePausedSimState     = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
   _updateTerminatedSimState = _updateThreadSM->newState<fsm::LambdaState>(upd_root);
   ////////////////////////////////////////////////////////
   // READY STATE
@@ -160,10 +160,8 @@ void Simulation::_buildStateMachine() {
   };
   ////////////////////////////////////////////////////////
 
-  _updateTerminatedSimState->_onenter = [this](){
-    _controller->_delopq.atomicOp([&](Controller::delayed_opq_t& unlocked) {
-      unlocked.clear();
-    });
+  _updateTerminatedSimState->_onenter = [this]() {
+    _controller->_delopq.atomicOp([&](Controller::delayed_opq_t& unlocked) { unlocked.clear(); });
     // todo actually render...
     auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
@@ -184,10 +182,10 @@ void Simulation::_buildStateMachine() {
   // set up render thread state machine
   ///////////////////////////////////////////////////////////
 
-  _renderThreadSM     = std::make_shared<fsm::StateMachine>();
-  auto ren_root       = _renderThreadSM->newState<RootState>();
-  auto ren_init_state = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
-  auto ren_sim_state  = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
+  _renderThreadSM           = std::make_shared<fsm::StateMachine>();
+  auto ren_root             = _renderThreadSM->newState<RootState>();
+  auto ren_init_state       = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
+  auto ren_sim_state        = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
   _renderTerminatedSimState = _renderThreadSM->newState<fsm::LambdaState>(ren_root);
 
   //////////////////
@@ -210,7 +208,7 @@ void Simulation::_buildStateMachine() {
       auto LOCKS = lev2::GfxEnv::dumpLocks();
 
       auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
-      if( auto sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>() ){
+      if (auto sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>()) {
         sframe.value()->attachDrawQueueContext(_dbufctxSIM);
       }
 
@@ -221,10 +219,10 @@ void Simulation::_buildStateMachine() {
       SystemLut render_systems;
       _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
 
-      for (auto sys : render_systems){
+      for (auto sys : render_systems) {
         sys.second->_onGpuInit(this, _currentdrwev->_target);
       }
-      for (auto sys : render_systems){
+      for (auto sys : render_systems) {
         sys.second->_onGpuLink(this, _currentdrwev->_target);
       }
 
@@ -233,15 +231,13 @@ void Simulation::_buildStateMachine() {
       _needsGpuInit    = false;
       _waitingForRLock = true;
 
-
       lev2::GfxEnv::releaseLock(l);
     }
   };
   //////////////////
   // RENDER SIMULATION
   //////////////////
-  ren_sim_state->_onenter = [this]() {
-  };
+  ren_sim_state->_onenter = [this]() {};
   //
   ren_sim_state->_onupdate = [this]() {
     EASY_BLOCK("ecs::sim::fsm_render", profiler::colors::Red);
@@ -260,31 +256,31 @@ void Simulation::_buildStateMachine() {
         sys.second->_endRender();
       }
     } else {
-        if(_currentdrwev){
-            OrkAssert(_currentdrwev);
-            EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
-            SystemLut render_systems;
-            _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
-            EASY_END_BLOCK;
-            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-            for (auto sys : render_systems) {
-                sys.second->_beginRender();
-            }
-            EASY_END_BLOCK;
-            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-            for (auto sys : render_systems)
-                sys.second->_render(this, _currentdrwev);
-            EASY_END_BLOCK;
-            EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
-            for (auto sys : render_systems) {
-                sys.second->_endRender();
-            }
-            EASY_END_BLOCK;
+      if (_currentdrwev) {
+        OrkAssert(_currentdrwev);
+        EASY_BLOCK("ecs::sim::fsm_render::1", profiler::colors::Red);
+        SystemLut render_systems;
+        _systems.atomicOp([&](const SystemLut& syslut) { render_systems = syslut; });
+        EASY_END_BLOCK;
+        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+        for (auto sys : render_systems) {
+          sys.second->_beginRender();
         }
+        EASY_END_BLOCK;
+        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+        for (auto sys : render_systems)
+          sys.second->_render(this, _currentdrwev);
+        EASY_END_BLOCK;
+        EASY_BLOCK("ecs::sim::fsm_render::2", profiler::colors::Red);
+        for (auto sys : render_systems) {
+          sys.second->_endRender();
+        }
+        EASY_END_BLOCK;
+      }
     }
   };
 
-  _renderTerminatedSimState->_onenter = [this](){
+  _renderTerminatedSimState->_onenter = [this]() {
     //_unlink();
     //_decompose();
     //_uninitialize();
@@ -378,7 +374,10 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       _updateThreadSM->enqueueStateChange(_updateTerminatedSimState);
       _renderThreadSM->enqueueStateChange(_renderTerminatedSimState);
       break;
-      ///////////////////////////////////////
+    ///////////////////////////////////////
+    case ESimulationMode::NONE:
+      OrkAssert(false);
+      break;
   }
   _currentSimulationMode = emode;
 }
@@ -467,7 +466,7 @@ void Simulation::_initializeEntities() {
   // Compose Entities
   ///////////////////////////////////
 
-  logchan_simfsm->log( "simulation<%p> Composing AutoSpawn Entities..", (void*) this );
+  logchan_simfsm->log("simulation<%p> Composing AutoSpawn Entities..", (void*)this);
 
   auto scene = _controller->_scenedata;
 
@@ -481,7 +480,7 @@ void Simulation::_initializeEntities() {
 
         uint64_t entref = _controller->_objectIdCounter.fetch_add(1);
 
-        ork::ecs::Entity* pent = new ork::ecs::Entity(spawner, this,entref);
+        ork::ecs::Entity* pent = new ork::ecs::Entity(spawner, this, entref);
         _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { unlocked[entref].set<Entity*>(pent); });
 
         std::string actualLayerName = "Default";
@@ -498,25 +497,26 @@ void Simulation::_initializeEntities() {
         }
         ////////////////////////////////////////////////////////////////
 
-        logchan_simfsm->log( "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>", //
-                             (void*) pent, //
-                             (void*) arch.get(), //
-                             layer_name.c_str() );
+        logchan_simfsm->log(
+            "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>", //
+            (void*)pent,                                       //
+            (void*)arch.get(),                                 //
+            layer_name.c_str());
 
         assert(pent != nullptr);
 
         auto node  = spawner->_dagnode;
         auto world = node->_xfnode->_transform;
-        //auto init_xf          = pent->data()->_dagnode->_xfnode;
-        //ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
+        // auto init_xf          = pent->data()->_dagnode->_xfnode;
+        // ent->GetDagNode()->_xfnode->_transform->set(init_xf->_transform);
         pent->setTransform(world);
         mEntities[spawner->GetName()] = pent;
 
-        if(spawner->_onSpawn){
-          auto invocation = std::make_shared<deferred_script_invokation>();
-          invocation->_cb = spawner->_onSpawn;
-          auto& datatable = *invocation->_data.makeShared<DataTable>();
-          EntityRef eref            = {pent->_entref};
+        if (spawner->_onSpawn) {
+          auto invocation         = std::make_shared<deferred_script_invokation>();
+          invocation->_cb         = spawner->_onSpawn;
+          auto& datatable         = *invocation->_data.makeShared<DataTable>();
+          EntityRef eref          = {pent->_entref};
           datatable["entity"_tok] = pent;
           datatable["entref"_tok] = eref;
           this->_enqueueDeferredInvokation(invocation);
@@ -685,13 +685,13 @@ void Simulation::_deactivateEntities() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   for (orkmap<ork::PoolString, ork::ecs::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
     ork::ecs::Entity* pent = it->second;
-      if(pent){
-          auto edata             = pent->data();
-          OrkAssert(pent);
-          if (edata->GetArchetype()) {
-              edata->GetArchetype()->deactivateEntity(this, pent);
-          }
+    if (pent) {
+      auto edata = pent->data();
+      OrkAssert(pent);
+      if (edata->GetArchetype()) {
+        edata->GetArchetype()->deactivateEntity(this, pent);
       }
+    }
   }
 }
 ///////////////////////////////////////////////////////////////////////////
