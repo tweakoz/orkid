@@ -129,12 +129,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "setInstanceColor",                                             //
-              [](drawable_node_ptr_t node, int instance, fvec4_ptr_t color) { //
+              [](drawable_node_ptr_t node, int instance, fvec4 color) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
                   auto instdata                  = instdrw->_instancedata;
-                  instdata->_modcolors[instance] = *color.get();
+                  instdata->_modcolors[instance] = color;
                 } else {
                   OrkAssert(false);
                 }
