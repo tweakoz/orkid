@@ -423,7 +423,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   using unlit_ptr_t = std::shared_ptr<compositor::UnlitNode>;
   auto unlitnode_type = //
       py::class_<compositor::UnlitNode, RenderCompositingNode, unlit_ptr_t>(module_lev2, "UnlitRenderNode")
-          .def(py::init([]() -> unlit_ptr_t { //
+          .def(py::init([] -> unlit_ptr_t { //
             return std::make_shared<compositor::UnlitNode>();
           }))
           .def("__repr__", [](unlit_ptr_t i) -> std::string {
@@ -530,7 +530,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;
   auto defpbrnode_type = //
       py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(module_lev2, "DeferredPbrRenderNode")
-          .def(py::init([]() -> defpbrnode_ptr_t { //
+          .def(py::init([] -> defpbrnode_ptr_t { //
             return std::make_shared<pbr::deferrednode::DeferredCompositingNodePbr>(nullptr);
           }))
           .def_property_readonly("pbr_common", [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
@@ -554,7 +554,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   using fwdpbrnode_ptr_t = std::shared_ptr<pbr::ForwardNode>;
   auto fwdpbrnode_type = //
       py::class_<pbr::ForwardNode, RenderCompositingNode, fwdpbrnode_ptr_t>(module_lev2, "PbrForwardNode")
-          .def(py::init([]() -> fwdpbrnode_ptr_t { //
+          .def(py::init([] -> fwdpbrnode_ptr_t { //
             return std::make_shared<pbr::ForwardNode>(nullptr);
           }))
           .def_property_readonly("pbr_common", [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
@@ -572,7 +572,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   using scroutnode_ptr_t = std::shared_ptr<ScreenOutputCompositingNode>;
   auto scroutnode_type = //
       py::class_<ScreenOutputCompositingNode, OutputCompositingNode, scroutnode_ptr_t>(module_lev2, "ScreenOutputNode")
-          .def(py::init([]() -> scroutnode_ptr_t { //
+          .def(py::init([] -> scroutnode_ptr_t { //
             return std::make_shared<ScreenOutputCompositingNode>();
           }))
           .def_property("format",
@@ -595,7 +595,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   using vroutnode_ptr_t = std::shared_ptr<VrCompositingNode>;
   auto vroutnode_type = //
       py::class_<VrCompositingNode, OutputCompositingNode, vroutnode_ptr_t>(module_lev2, "VrOutputNode")
-          .def(py::init([]() -> vroutnode_ptr_t { //
+          .def(py::init([] -> vroutnode_ptr_t { //
             return std::make_shared<VrCompositingNode>();
           }))
           .def("__repr__", [](vroutnode_ptr_t n) -> std::string {
@@ -608,7 +608,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto rtgoutnode_type = //
       py::class_<RtGroupOutputCompositingNode, OutputCompositingNode, compositoroutnode_rtgroup_ptr_t>(module_lev2, "RtGroupOutputCompositingNode")
-          .def(py::init([]() -> compositoroutnode_rtgroup_ptr_t { //
+          .def(py::init([] -> compositoroutnode_rtgroup_ptr_t { //
             return std::make_shared<RtGroupOutputCompositingNode>();
           }))
           .def_property("supersample", //

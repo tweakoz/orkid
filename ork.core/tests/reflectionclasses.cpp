@@ -234,7 +234,7 @@ InterfaceTest::InterfaceTest(){
 ///////////////////////////////////////////////////////////////////////////////
 void InterfaceTest::describeX(class_t* clazz) {
     using factory_t = std::function<std::shared_ptr<TheTestInterface>()>;
-    clazz->annotateTyped<factory_t>("TheTestInterface", []() -> std::shared_ptr<TheTestInterface> {
+    clazz->annotateTyped<factory_t>("TheTestInterface", [] -> std::shared_ptr<TheTestInterface> {
         auto instance = TheTestInterface::objectClassStatic()->createShared();
         return objcast<TheTestInterface>(instance);
     });

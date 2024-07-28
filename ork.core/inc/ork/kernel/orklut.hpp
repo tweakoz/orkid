@@ -11,6 +11,7 @@
 
 #include <ork/kernel/orklut.h>
 #include <assert.h>
+#include <algorithm>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +61,7 @@ typename orklut<K, V, Allocator>::iterator orklut<K, V, Allocator>::UpperBound(c
     return end();
 
   value_type ComparePair(key, V());
-  iterator WhereIt = std::upper_bound(begin(), end(), ComparePair, LutComparator<K, V>());
+  auto WhereIt = std::upper_bound(begin(), end(), ComparePair, LutComparator<K, V>());
   return WhereIt;
 }
 

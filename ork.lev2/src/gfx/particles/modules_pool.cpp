@@ -112,7 +112,7 @@ dflow::dgmoduleinst_ptr_t ParticlePoolData::createInstance(dataflow::GraphInst* 
 }
 
 void ParticlePoolData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return ParticlePoolData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return ParticlePoolData::createShared(); });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
     _reshapePoolIOs(mdata);
   });

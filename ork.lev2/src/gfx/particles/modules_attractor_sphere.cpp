@@ -125,7 +125,7 @@ dgmoduleinst_ptr_t SphAttractorModuleData::createInstance(dataflow::GraphInst* g
 //////////////////////////////////////////////////////////////////////////
 
 void SphAttractorModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return SphAttractorModuleData::createShared();
   });
   clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){

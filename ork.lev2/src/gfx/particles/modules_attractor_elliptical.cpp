@@ -184,7 +184,7 @@ dgmoduleinst_ptr_t EllipticalAttractorModuleData::createInstance(dataflow::Graph
 //////////////////////////////////////////////////////////////////////////
 
 void EllipticalAttractorModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return EllipticalAttractorModuleData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return EllipticalAttractorModuleData::createShared(); });
   clazz->annotateTyped<moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeEllipticalAttractorIOs(mdata); });
 }

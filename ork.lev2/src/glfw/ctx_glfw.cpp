@@ -281,7 +281,7 @@ static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
 CtxGLFW::CtxGLFW(Window* ork_win)
     : CTXBASE(ork_win) {
 
-  _onRunLoopIteration = []() {};
+  _onRunLoopIteration = [] {};
 
   _uievent = std::make_shared<ui::Event>();
 

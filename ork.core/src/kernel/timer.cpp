@@ -120,7 +120,7 @@ float get_sync_time()
 ////////////////////////////////
 #if defined(ORK_OSX)
 ////////////////////////////////
-	auto getres = []()->double
+	auto getres = []->double
 	{
 		mach_timebase_info_data_t timebase;
 		mach_timebase_info(&timebase);

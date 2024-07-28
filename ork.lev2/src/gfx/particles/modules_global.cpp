@@ -141,7 +141,7 @@ dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance(dataflow::GraphInst* 
 }
 
 void GlobalModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return GlobalModuleData::createShared();
   });
   clazz->annotateTyped<dataflow::moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){

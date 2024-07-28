@@ -44,9 +44,9 @@ struct SkinningTest {
   svar64_t _impl;
   GpuResources* _gpurec = nullptr;
 
-  void_lambda_t onDraw         = []() {};
-  void_lambda_t onActivate     = []() {};
-  void_lambda_t onDeactivate   = []() {};
+  void_lambda_t onDraw         = [] {};
+  void_lambda_t onActivate     = [] {};
+  void_lambda_t onDeactivate   = [] {};
   update_lambda_t onUpdate     = [](ui::updatedata_ptr_t) {};
 };
 

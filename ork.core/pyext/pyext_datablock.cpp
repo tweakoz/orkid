@@ -187,7 +187,7 @@ void pyinit_datablock(py::module& module_core) {
               })
           .def_static("setDataBlock", [](uint64_t key, datablock_ptr_t db) { DataBlockCache::setDataBlock(key, db); })
           .def_static("removeDataBlock", [](uint64_t key) { DataBlockCache::removeDataBlock(key); })
-          .def_property_readonly_static("totalMemoryConsumed", []() -> size_t { return DataBlockCache::totalMemoryConsumed(); });
+          .def_property_readonly_static("totalMemoryConsumed", [] -> size_t { return DataBlockCache::totalMemoryConsumed(); });
 }
 
 } // namespace ork

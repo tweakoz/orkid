@@ -31,7 +31,7 @@ void pyinit_gfx(py::module& module_lev2) {
   auto gfxenv_type = //
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
-          .def_static("loadingContext", []() -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
+          .def_static("loadingContext", [] -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
@@ -463,7 +463,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto inpmgr_typ = //
       py::class_<InputManager, inputmanager_ptr_t>(module_lev2, "InputManager")
-          .def_static("instance", []() -> inputmanager_ptr_t { return InputManager::instance(); })
+          .def_static("instance", [] -> inputmanager_ptr_t { return InputManager::instance(); })
           .def("inputGroup", [](inputmanager_ptr_t mgr, std::string named) { return mgr->inputGroup(named); });
   type_codec->registerStdCodec<inputmanager_ptr_t>(inpmgr_typ);
   /////////////////////////////////////////////////////////////////////////////////

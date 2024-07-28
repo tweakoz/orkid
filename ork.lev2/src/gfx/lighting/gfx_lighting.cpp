@@ -97,7 +97,7 @@ Light::Light(const LightData* ld)
       _cookieTexture = ld->cookie();
     }
 
-    _xformgenerator = []()->fmtx4{
+    _xformgenerator = []->fmtx4{
       return fmtx4();
     };
   }

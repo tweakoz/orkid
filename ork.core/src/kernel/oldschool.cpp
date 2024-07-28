@@ -190,7 +190,7 @@ S64 OldSchool::ClockCyclesToMicroSeconds(S64 cycles)
 ///////////////////////////////////////////////
 f32 OldSchool::GetLoResTime( void )
 {
-  auto getres = []()->double
+  auto getres = []->double
   {
     mach_timebase_info_data_t timebase;
     mach_timebase_info(&timebase);

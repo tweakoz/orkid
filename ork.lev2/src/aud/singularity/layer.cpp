@@ -414,7 +414,7 @@ controller_t Layer::getController(const std::string& srcn) const {
     }
   }
 
-  return []() { return 0.0f; };
+  return [] { return 0.0f; };
 }
 
 ///////////////////////////////////////////////////////////////////////////////

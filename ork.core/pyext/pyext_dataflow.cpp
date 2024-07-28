@@ -164,7 +164,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto dgmoduledata_type = //
       py::class_<DgModuleData, ModuleData, dgmoduledata_ptr_t>(dfgmodule, "DgModuleData")
-          .def_static("createShared", []() -> dgmoduledata_ptr_t { return DgModuleData::createShared(); })
+          .def_static("createShared", [] -> dgmoduledata_ptr_t { return DgModuleData::createShared(); })
           .def(
               "createUniformFloatXfInputPlug",
               [](dgmoduledata_ptr_t m, std::string named) -> inplugdata_ptr_t {
@@ -215,7 +215,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto lambdamoduledata_type = //
       py::class_<LambdaModuleData, DgModuleData, lambdamoduledata_ptr_t>(dfgmodule, "LambdaModule")
-          .def_static("createShared", []() -> lambdamoduledata_ptr_t { return LambdaModuleData::createShared(); })
+          .def_static("createShared", [] -> lambdamoduledata_ptr_t { return LambdaModuleData::createShared(); })
           .def(
               "onCompute",
               [](lambdamoduledata_ptr_t m, py::object pylambda) { //
@@ -278,8 +278,8 @@ void pyinit_dataflow(py::module& module_core) {
   using pylambdamoduledata_ptr_t = std::shared_ptr<PyLambdaModuleData>;
   auto pylambdamoduledata_type   = //
       py::class_<PyLambdaModuleData, LambdaModuleData, pylambdamoduledata_ptr_t>(dfgmodule, "PyLambdaModule")
-          .def_static("__dflow_trampoline", []() -> bool { return true; })
-          .def_static("createShared", []() -> pylambdamoduledata_ptr_t { return std::make_shared<PyLambdaModuleData>(); })
+          .def_static("__dflow_trampoline", [] -> bool { return true; })
+          .def_static("createShared", [] -> pylambdamoduledata_ptr_t { return std::make_shared<PyLambdaModuleData>(); })
           .def(
               "hackself",
               [type_codec](pylambdamoduledata_ptr_t m) {
@@ -541,7 +541,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto graphdata_type = //
       py::class_<GraphData, ::ork::Object, graphdata_ptr_t>(dfgmodule, "GraphData")
-          .def_static("createShared", []() -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
+          .def_static("createShared", [] -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
           .def(
               "createGraphInst",
               [](graphdata_ptr_t g) -> graphinst_ptr_t { //
@@ -583,7 +583,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto context_type = //
       py::class_<dgcontext, dgcontext_ptr_t>(dfgmodule, "DgContext")
-          .def_static("createShared", []() -> dgcontext_ptr_t { return std::make_shared<dgcontext>(); })
+          .def_static("createShared", [] -> dgcontext_ptr_t { return std::make_shared<dgcontext>(); })
           .def(
               "createFloatRegisterBlock",
               [](dgcontext_ptr_t ctx, std::string blockname, int count) -> dgregisterblock_ptr_t {

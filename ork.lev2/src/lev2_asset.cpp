@@ -301,7 +301,7 @@ void FxShaderAsset::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void autoloadAssets(bool wait) {
-  auto autoload_op = []() {
+  auto autoload_op = []{
     bool loaded;
     do {
       loaded = false;

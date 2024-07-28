@@ -40,7 +40,7 @@ typedef std::function<bool()> bpred_lambda_t;
 struct PredicatedTransition {
   PredicatedTransition(state_ptr_t pdest)
       : _destination(pdest) {
-    _predicate = []() { return true; };
+    _predicate = [] { return true; };
   }
   PredicatedTransition(state_ptr_t pdest, bpred_lambda_t p)
       : _predicate(p)

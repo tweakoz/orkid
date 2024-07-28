@@ -57,7 +57,7 @@ struct Resources {
     // primitive instance is always rendered at origin
     ///////////////////////////////////////////////////
 
-    _RCID->_genMatrix = []() -> fmtx4{
+    _RCID->_genMatrix = [] -> fmtx4{
         return fmtx4();
     };
 

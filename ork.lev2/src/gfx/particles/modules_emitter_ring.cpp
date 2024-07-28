@@ -214,7 +214,7 @@ dgmoduleinst_ptr_t RingEmitterData::createInstance(dataflow::GraphInst* ginst) c
 }
 
 void RingEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return RingEmitterData::createShared();
   });
   clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){

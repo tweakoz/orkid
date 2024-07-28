@@ -4,7 +4,7 @@ project (Orkid)
 
 ################################################################################
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
@@ -112,7 +112,7 @@ ENDIF()
 ################################################################################
 
 IF(${APPLE})
-    #set(CMAKE_OSX_DEPLOYMENT_TARGET 14.2)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.2)
     set(CMAKE_OSX_SYSROOT $ENV{OBT_MACOS_SDK_DIR})
     set(CMAKE_MACOSX_RPATH 1)
     LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)

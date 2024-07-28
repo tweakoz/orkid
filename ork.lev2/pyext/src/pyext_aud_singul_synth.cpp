@@ -32,7 +32,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto auddev_t = py::class_<AudioDevice, audiodevice_ptr_t>(singmodule, "device") //
-                      .def_static("instance", []() -> audiodevice_ptr_t {          //
+                      .def_static("instance", [] -> audiodevice_ptr_t {          //
                         auto the_dev = AudioDevice::instance();
                         printf("the_dev<%p>\n", (void*)the_dev.get());
                         return the_dev;
@@ -43,7 +43,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
       py::class_<synth, synth_ptr_t>(singmodule, "synth") //
           .def_static(
               "instance",
-              []() -> synth_ptr_t { //
+              [] -> synth_ptr_t { //
                 auto the_synth = synth::instance();
                 printf("the_synth<%p>\n", (void*)the_synth.get());
                 return the_synth;
