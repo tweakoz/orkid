@@ -167,7 +167,7 @@ drawable_ptr_t ClipMapDrawableData::createDrawable() const {
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(ClipMapRenderImpl::renderClipMap);
-  auto impl      = rval->mDataA.makeShared<ClipMapRenderImpl>(this);
+  auto impl      = rval->_implA.makeShared<ClipMapRenderImpl>(this);
   rval->_sortkey = 10;
   return rval;
 }

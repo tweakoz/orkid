@@ -82,7 +82,6 @@ std::string JoinString(const std::set<std::string>& strvect, const std::string& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool IsSubStringPresent(const std::string& needle, const std::string& haystack);
 int FindSubString(const std::string& needle, const std::string& haystack);
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -52,7 +52,7 @@ void AssetTest::describeX(ObjectClass* clazz) {
     return rval;
   };
   dyn_loader->_checkFn = [=](const AssetPath& path) { //
-    return ork::IsSubStringPresent("dyn://", path.c_str());
+    return std::string(path.c_str()).contains("dyn://");
   };
   dyn_loader->_loadFn = [=](asset::loadrequest_ptr_t loadreq) -> asset::asset_ptr_t {
     AssetPath assetpath = loadreq->_asset_path;

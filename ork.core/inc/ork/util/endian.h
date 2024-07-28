@@ -11,11 +11,12 @@
 
 #include <ork/util/Context.h>
 
+
 namespace ork {
 
 template <typename T>
-void swapbytes( T& item ) // inplace endian swap
-{
+void swapbytes( T& item ) { // inplace endian swap
+
 	int isize = sizeof(T);
 
 	T temp = item;

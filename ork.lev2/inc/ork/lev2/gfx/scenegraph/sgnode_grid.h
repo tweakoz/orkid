@@ -33,6 +33,27 @@ public:
   std::string _shader_suffix = "";
 };
 
+struct GridDrawableImpl {
+
+  GridDrawableImpl(const GridDrawableData* grid);
+  ~GridDrawableImpl();
+  void gpuInit(lev2::Context* ctx);
+  void _render(const RenderContextInstData& RCID);
+  static void renderGrid(RenderContextInstData& RCID);
+
+  const GridDrawableData* _griddata = nullptr;
+  PBRMaterial* _pbrmaterial = nullptr;
+
+  image_ptr_t _color_image;
+  image_ptr_t _normal_image;
+  image_ptr_t _mtlruf_image;
+  fxpipelinecache_constptr_t _fxcache;
+  fxparam_constptr_t _paramAuxA;
+  fxparam_constptr_t _paramAuxB;
+  bool _initted = false;
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

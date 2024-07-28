@@ -19,8 +19,9 @@ CallbackDrawable::CallbackDrawable(DrawableContainer* pent)
     , mDataDestroyer(nullptr)
     , mRenderCallback(nullptr)
     , _enqueueOnLayerCallback(nullptr)
-    , _renderLambda(nullptr){
+    , _renderLambda(nullptr) {
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 CallbackDrawable::~CallbackDrawable() {
@@ -30,24 +31,42 @@ CallbackDrawable::~CallbackDrawable() {
   mDataDestroyer          = nullptr;
   _enqueueOnLayerCallback = nullptr;
   mRenderCallback         = nullptr;
-  _renderLambda = nullptr;
+  _renderLambda           = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void CallbackDrawable::SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) {
+  mDataDestroyer = pdestroyer;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CallbackDrawable::SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
+  mRenderCallback = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void CallbackDrawable::setEnqueueOnLayerCallback(Q2LCBType cb) {
+  _enqueueOnLayerCallback = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CallbackDrawable::setEnqueueOnLayerLambda(Q2LLambdaType cb) {
+  _enqueueOnLayerLambda = cb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CallbackDrawable::_renderWithLambda(RenderContextInstData& RCID) {
-    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
-    auto drawable = renderable->_drawable;
-    OrkAssert(drawable!=nullptr);
-    OrkAssert(drawable->_renderLambda!=nullptr);
-    drawable->_renderLambda(RCID);
+  auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
+  auto drawable   = renderable->_drawable;
+  OrkAssert(drawable != nullptr);
+  OrkAssert(drawable->_renderLambda != nullptr);
+  drawable->_renderLambda(RCID);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CallbackDrawable::setRenderLambda(RLCBType cb) {
   mRenderCallback = _renderWithLambda;
-  _renderLambda = cb;
+  _renderLambda   = cb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +88,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
   const auto& DQDATA = item->_dqxferdata;
 
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
-  auto matrix                   = DQDATA._worldTransform->composed();
+  auto matrix                          = DQDATA._worldTransform->composed();
 
   // auto str                             = matrix.dump4x3cn();
   // printf("XFX: %s\n", str.c_str());
@@ -87,7 +106,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2:
 /////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CallbackRenderable::CallbackRenderable(IRenderer* renderer)
-    : IRenderable(){
+    : IRenderable() {
 }
 /////////////////////////////////////////////////////////////////////
 void CallbackRenderable::Render(const IRenderer* renderer) const {
@@ -97,22 +116,6 @@ void CallbackRenderable::Render(const IRenderer* renderer) const {
 void CallbackRenderable::SetSortKey(uint32_t skey) {
   mSortKey = skey;
 }
-/////////////////////////////////////////////////////////////////////
-//void CallbackRenderable::SetUserData0(IRenderable::var_t pdata) {
-  //mUserData0 = pdata;
-//}
-/////////////////////////////////////////////////////////////////////
-//const IRenderable::var_t& CallbackRenderable::GetUserData0() const {
-  //return mUserData0;
-//}
-/////////////////////////////////////////////////////////////////////
-//void CallbackRenderable::SetUserData1(IRenderable::var_t pdata) {
-  //mUserData1 = pdata;
-//}
-/////////////////////////////////////////////////////////////////////
-//const IRenderable::var_t& CallbackRenderable::GetUserData1() const {
-  //return mUserData1;
-//}
 /////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetRenderCallback(cbtype_t cb) {
   mRenderCallback = cb;
@@ -127,7 +130,7 @@ uint32_t CallbackRenderable::ComposeSortKey(const IRenderer* renderer) const {
 }
 /////////////////////////////////////////////////////////////////////
 drawable_ptr_t CallbackDrawableData::createDrawable() const {
-  auto drw = std::make_shared<CallbackDrawable>(nullptr);
+  auto drw             = std::make_shared<CallbackDrawable>(nullptr);
   drw->mRenderCallback = mRenderCallback;
   return drw;
 }
@@ -136,7 +139,7 @@ CallbackDrawableData::CallbackDrawableData() {
 void CallbackDrawableData::SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
   mRenderCallback = cb;
 }
-void CallbackDrawableData::describeX(object::ObjectClass* clazz){
+void CallbackDrawableData::describeX(object::ObjectClass* clazz) {
 }
 /////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

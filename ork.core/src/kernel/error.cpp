@@ -5,7 +5,6 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/orkconfig.h>
 #include <ork/orkprotos.h>

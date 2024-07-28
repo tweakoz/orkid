@@ -77,8 +77,8 @@ drawqueueitem_ptr_t Drawable::enqueueOnLayer(const DrawQueueTransferData& xfdata
 
 ///////////////////////////////////////////////////////////////////////////////
 Drawable::Drawable()
-    : mDataA(nullptr)
-    , mDataB(nullptr)
+    : _implA(nullptr)
+    , _implB(nullptr)
     , mEnabled(true) {
     _modcolor = fvec4(1,1,1,1);
 }

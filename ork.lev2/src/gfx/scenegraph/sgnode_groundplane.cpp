@@ -156,7 +156,7 @@ drawable_ptr_t GroundPlaneDrawableData::createDrawable() const {
 
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(GroundPlaneRenderImpl::renderGroundPlane);
-  auto impl = rval->mDataA.makeShared<GroundPlaneRenderImpl>(this);
+  auto impl = rval->_implA.makeShared<GroundPlaneRenderImpl>(this);
   rval->_sortkey = 10;
   return rval;
 }

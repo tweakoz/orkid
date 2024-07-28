@@ -309,16 +309,16 @@ struct Drawable {
   virtual drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const;
 
   void SetUserDataA(var_t data) {
-    mDataA = data;
+    _implA = data;
   }
   const var_t& GetUserDataA() const {
-    return mDataA;
+    return _implA;
   }
   void SetUserDataB(var_t data) {
-    mDataB = data;
+    _implB = data;
   }
   const var_t& GetUserDataB() const {
-    return mDataB;
+    return _implB;
   }
   bool IsEnabled() const {
     return mEnabled;
@@ -336,8 +336,8 @@ struct Drawable {
   }
 
   pickvariant_t _pickID;
-  var_t mDataA;
-  var_t mDataB;
+  var_t _implA;
+  var_t _implB;
   varmap::varmap_ptr_t _properties;
   fvec4 _modcolor;
   onrenderable_fn_t _onrenderable;
@@ -673,23 +673,14 @@ struct CallbackDrawable : public Drawable {
   CallbackDrawable(DrawableContainer* owner);
   ~CallbackDrawable();
 
-  void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) {
-    mDataDestroyer = pdestroyer;
-  }
-  void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
-    mRenderCallback = cb;
-  }
+  void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer);
+  void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb);
   static void _renderWithLambda(RenderContextInstData& RCID);
   void setRenderLambda(RLCBType cb);
-
-  void setEnqueueOnLayerCallback(Q2LCBType cb) {
-    _enqueueOnLayerCallback = cb;
-  }
-  void setEnqueueOnLayerLambda(Q2LLambdaType cb) {
-    _enqueueOnLayerLambda = cb;
-  }
-  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const final;
-  drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const final;
+  void setEnqueueOnLayerCallback(Q2LCBType cb);
+  void setEnqueueOnLayerLambda(Q2LLambdaType cb);
+  void enqueueToRenderQueue(drawqueueitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  drawqueueitem_ptr_t enqueueOnLayer(const DrawQueueTransferData& xfdata, DrawQueueLayer& buffer) const override;
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;

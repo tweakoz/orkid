@@ -14,7 +14,7 @@ sys.path.append(str(path.orkid()/"ork.lev2"/"examples"/"python")) # add parent d
 sys.path.append(str(thisdir())) # add parent dir to path
 from lev2utils.cameras import *
 from lev2utils.scenegraph import createSceneGraph
-from lev2utils.primitives import presetMaterial
+from lev2utils.primitives import presetMaterial, presetGRAD
 
 tokens = CrcStringProxy()
 

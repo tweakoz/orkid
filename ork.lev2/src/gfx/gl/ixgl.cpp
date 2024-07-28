@@ -320,8 +320,8 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   mFbI.SetThisBuffer(pWin);
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
   //printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
-  bool is_virgl = _GL_RENDERER.find("virgl")!=std::string::npos;
-  bool is_wsl = _GL_RENDERER.find("D3D12")!=std::string::npos;
+  bool is_virgl = _GL_RENDERER.contains("virgl");
+  bool is_wsl = _GL_RENDERER.contains("D3D12");
   bool is_force = false;
   #if ! defined(OPENGL_46)
     is_force = true;

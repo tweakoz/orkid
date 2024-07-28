@@ -21,6 +21,7 @@ void pyinit_gfx(py::module& module_lev2);
 void pyinit_gfx_compositor(py::module& module_lev2);
 void pyinit_gfx_material(py::module& module_lev2);
 void pyinit_gfx_drawables(py::module& module_lev2);
+void pyinit_gfx_drawabledatas(py::module& module_lev2);
 void pyinit_gfx_shader(py::module& module_lev2);
 void pyinit_gfx_renderer(py::module& module_lev2);
 void pyinit_gfx_lighting(py::module& module_lev2);
@@ -148,6 +149,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_buffers(module_lev2);
   pyinit_gfx_camera(module_lev2);
   pyinit_gfx_compositor(module_lev2);
+  pyinit_gfx_drawabledatas(module_lev2);
   pyinit_gfx_drawables(module_lev2);
   pyinit_gfx_material(module_lev2);
   pyinit_gfx_shader(module_lev2);
