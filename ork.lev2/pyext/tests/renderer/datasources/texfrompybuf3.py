@@ -13,7 +13,7 @@ from orkengine.core import vec3, vec4, quat, mtx4, Transform
 from orkengine.core import CrcStringProxy, lev2_pyexdir
 from orkengine import lev2
 from matplotlib import pyplot as plt
-from skimage import color
+from skimage import color # see https://scikit-image.org/docs/dev/api/skimage.color.html
 import cv2
 tokens = CrcStringProxy()
         
