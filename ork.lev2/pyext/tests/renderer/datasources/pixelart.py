@@ -21,21 +21,7 @@ from _boilerplate import BasicUiCamSgApp
 # generate a mesh from pixels in a string
 #################################################################################
 
-galaxian = \
-"""
- ****         ****
- *   **     **   *
-    ***********
-  ***  ****   ***
-*****  ****   *****
-    ***********    
-    *   **    *    
-   **   **    **   
-   *           *
-  ****       ****
-"""
-
-def genPolys():
+def genPolys(pixel_art):
   ###################################################
   # generate polygons and vertices
   # each pixel should be a cube centered at z==0
@@ -47,7 +33,7 @@ def genPolys():
   center = vec3(0, 0, 0)
   count = 0
   i = -1
-  for line in galaxian.splitlines():
+  for line in pixel_art.splitlines():
     j = -1
     i = i + 1
     y = i * -2.0
@@ -87,20 +73,108 @@ def genPolys():
       item[2] -= center.z
   return vertices, faces
 
+galaxian1 = \
+"""
+ ****         ****
+ *   **     **   *
+    ************
+  ***   ****   ***
+*****   ****   *****
+    ************    
+    *    **    *    
+   **    **    **   
+   *            *
+  ****        ****
+"""
+galaxian2 = \
+"""
+ **               **
+  ****         ****
+      **     **     
+     ***********
+   ***  ****   ***
+ ** **  ****   ** **
+**   ***********   **
+     **  **  **   
+      *      *   
+   ****      ****
+"""
+galaxian3 = \
+"""
+**               **
+  ****         ****
+      **     **     
+      ***********
+    ***  ****   ***
+  ** **  ****   ** **
+  **   ***********   **
+        **  **  **   
+        *      *   
+      ****      ****
+"""
+galaxian4 = \
+"""
+**               **
+  ****         ****
+      **     **     
+      ***********  **
+    ***  ****   ****
+  ** **  ****   **  
+  **   ***********     
+        **  **  **   
+        *      *   
+      ****      ****
+"""
 ################################################################################
 
 class PixelArtApp(BasicUiCamSgApp):
 
   def __init__(self):
     super().__init__(ssaa=1)
+    self.time = 0.0
+
+  ##############################################
+
+  def onUpdate(self,updevent):
+    self.time = updevent.absolutetime
+    itime = int(self.time*8)
+    frame = itime&3
+    if frame == 0:
+      self.node1[2].enabled = True
+      self.node2[2].enabled = False
+      self.node3[2].enabled = False
+      self.node4[2].enabled = False
+    elif frame == 1:
+      self.node1[2].enabled = False
+      self.node2[2].enabled = True
+      self.node3[2].enabled = False
+      self.node4[2].enabled = False
+    elif frame == 2:
+      self.node1[2].enabled = False
+      self.node2[2].enabled = False
+      self.node3[2].enabled = True
+      self.node4[2].enabled = False
+    elif frame == 3:
+      self.node1[2].enabled = False
+      self.node2[2].enabled = False
+      self.node3[2].enabled = False
+      self.node4[2].enabled = True
+      
+    super().onUpdate(updevent)
 
   ##############################################
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
-    v,f = genPolys()
-    self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.25)
-
+    v1,f1 = genPolys(galaxian1)
+    v2,f2 = genPolys(galaxian2)
+    v3,f3 = genPolys(galaxian3)
+    v4,f4 = genPolys(galaxian4)
+    self.node1 = self.createBaryDrawableFromVertsAndFaces(ctx,v1,f1,0.25)
+    self.node2 = self.createBaryDrawableFromVertsAndFaces(ctx,v2,f2,0.25)
+    self.node3 = self.createBaryDrawableFromVertsAndFaces(ctx,v3,f3,0.25)
+    self.node4 = self.createBaryDrawableFromVertsAndFaces(ctx,v4,f4,0.25)
+    
 ###############################################################################
 
 PixelArtApp().ezapp.mainThreadLoop()

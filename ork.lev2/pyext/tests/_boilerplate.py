@@ -306,10 +306,11 @@ class BasicUiCamSgApp(object):
             "vertices": [{  "p": vec3(item[0], item[1], item[2])*scale} for item in verts],
             "faces": faces
         })
-        self.barysubmesh = result_submesh.withBarycentricUVs()
-        self.union_prim = lev2.RigidPrimitive(self.barysubmesh,ctx)
-        self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
-        self.union_sgnode.enabled = True
+        barysubmesh = result_submesh.withBarycentricUVs()
+        union_prim = lev2.RigidPrimitive(barysubmesh,ctx)
+        union_sgnode = union_prim.createNode("union",self.layer1,solid_wire_pipeline)
+        union_sgnode.enabled = True
+        return (barysubmesh,union_prim, union_sgnode)
 
     ################################################
 
