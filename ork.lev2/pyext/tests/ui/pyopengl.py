@@ -264,7 +264,8 @@ class UiTestApp(object):
                                        lock_to_panel=self.imgui_widget )
     self.imgui_handler.onGpuInit(ctx,self.app_vars)
     self.text_editor = TextEditor()
-    self.text_editor.set_text(self.app_vars.frg_shader_src)
+    if self.app_vars.frg_shader_src != None:
+      self.text_editor.set_text(self.app_vars.frg_shader_src)
     self.text_editor.set_language_definition(TextEditor.LanguageDefinition.hlsl())
     self.text_editor.set_handle_keyboard_inputs(True)
    
