@@ -83,9 +83,9 @@ class TestCoreMathMtx3Methods(unittest.TestCase):
     m.setColumn(0, vec3(1,2,3))
     m.setColumn(1, vec3(4,5,6))
     m.setColumn(2, vec3(7,8,9))
-    xnormal = m.xNormal().normalized
-    ynormal = m.yNormal().normalized
-    znormal = m.zNormal().normalized
+    xnormal = m.xNormal().normalized()
+    ynormal = m.yNormal().normalized()
+    znormal = m.zNormal().normalized()
     #print(xnormal)
     self.assertEqual(CHECK_CLOSE(xnormal.x, 0.502571), True)
     self.assertEqual(CHECK_CLOSE(xnormal.y, 0.574366), True)

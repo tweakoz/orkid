@@ -150,8 +150,8 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
     auto gpurec = impl->_gpurec;
     gpurec->_pbrcommon->_depthFogDistance = 10000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 1.0f;
-    gpurec->_pbrcommon->_skyboxLevel      = 0.25;
-    gpurec->_pbrcommon->_diffuseLevel     = 0.2;
+    gpurec->_pbrcommon->_skyboxLevel      = 1.0;
+    gpurec->_pbrcommon->_diffuseLevel     = 1.0;
     gpurec->_pbrcommon->_specularLevel    = 3.2;
 
     ///////////////////////////////////////////////////////////

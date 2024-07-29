@@ -268,6 +268,22 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->_bindMatrices[index];
                                  })
+                             .def_property_readonly("bindMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_bindMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
+                             .def_property_readonly("inverseBindMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_inverseBindMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
                              .def(
                                  "descendantJointsOf",                                    //
                                  [](xgmskeleton_ptr_t self, int index) -> py::list { //
@@ -334,6 +350,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                     }
                                    return rval;
                                  })
+                             .def_property_readonly(
+                                 "rootNodeIndex",                                    //
+                                 [](xgmskeleton_ptr_t self) -> int { //
+                                   return self->miRootNode;
+                                 })
                              .def_property(
                                  "visualBoneScale",                                    //
                                  [](xgmskeleton_ptr_t self) -> float { //
@@ -387,7 +408,15 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
         }
         return rval;
       })
-      .def("__setitem__", &LocalMatrixInterface::set);
+      .def("__setitem__", &LocalMatrixInterface::set)
+      .def_property_readonly("as_list", [](LocalMatrixInterface& LMI) -> py::list {
+        py::list rval;
+        for (int i = 0; i < LMI.pose->NumJoints(); i++) {
+          auto as_py = py::cast(LMI.get(i));
+          rval.append(as_py);
+        }
+        return rval;
+      });
   py::class_<ConcatMatrixInterface>(module_lev2, "XgmLocalPoseConcatMatrixInterface")
       .def("__getitem__", &ConcatMatrixInterface::get)
       .def("__getitem__", [](ConcatMatrixInterface& CMI, py::slice slicer) -> py::list {
@@ -401,7 +430,15 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
         }
         return rval;
       })
-      .def("__setitem__", &ConcatMatrixInterface::set);
+      .def("__setitem__", &ConcatMatrixInterface::set)
+      .def_property_readonly("as_list", [](ConcatMatrixInterface& CMI) -> py::list {
+        py::list rval;
+        for (int i = 0; i < CMI.pose->NumJoints(); i++) {
+          auto as_py = py::cast(CMI.get(i));
+          rval.append(as_py);
+        }
+        return rval;
+      });
   py::class_<BindRelaMatrixInterface>(module_lev2, "XgmLocalPoseBindRelaMatrixInterface")
       .def("__getitem__", &BindRelaMatrixInterface::get)
       .def("__getitem__", [](BindRelaMatrixInterface& BMI, py::slice slicer) -> py::list {
@@ -415,7 +452,15 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
         }
         return rval;
       })
-      .def("__setitem__", &BindRelaMatrixInterface::set);
+      .def("__setitem__", &BindRelaMatrixInterface::set)
+      .def_property_readonly("as_list", [](BindRelaMatrixInterface& BMI) -> py::list {
+        py::list rval;
+        for (int i = 0; i < BMI.pose->NumJoints(); i++) {
+          auto as_py = py::cast(BMI.get(i));
+          rval.append(as_py);
+        }
+        return rval;
+      });
   ///
   auto lpose_type_t =
       py::class_<XgmLocalPose, xgmlocalpose_ptr_t>(module_lev2, "XgmLocalPose")
@@ -424,7 +469,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("bindPose", [](xgmlocalpose_ptr_t self) { return self->bindPose(); })
           .def("blendPoses", [](xgmlocalpose_ptr_t self) { return self->blendPoses(); })
           .def("concatenate", [](xgmlocalpose_ptr_t self) { return self->concatenate(); })
-          .def("decomposeConcatenated", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
+          .def("deconcatenate", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
           .def("poseJoint", [](xgmlocalpose_ptr_t self, int index, float fweight, DecompMatrix& mtx) { //
             self->poseJoint(index,fweight,mtx);
            })

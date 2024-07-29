@@ -74,6 +74,7 @@ class SceneGraphApp(object):
     self.uictx = self.ezapp.uicontext
     setupUiCamera(app=self,eye=vec3(0,0.5,1))
     self.sel_joint = -1
+    self.activate_rot = False
 
   ##############################################
 
@@ -189,13 +190,111 @@ class SceneGraphApp(object):
 
   ##############################################
 
+  def rotateOnScreenZ(self,cur_screen_pos):
+    camdat = self.uicam.cameradata
+    ######################
+    # get length of delta from push_screen_pos and current screen coord
+    #  we dont activate rotation until we have a minimum delta
+    ######################
+    mag = (cur_screen_pos - self.push_screen_pos).length
+    if self.activate_rot == False:
+      if mag > 32: # 32 pixels
+        self.activate_rot = True
+        self.activated_pos = cur_screen_pos
+    ######################
+    # determine angle of rotation
+    # from cur_screen_pos delta and camdat.znormal and acos
+    ######################
+    if self.activate_rot:
+      # delta a is 2D screenspace directional vector from push_screen_pos to activated_pos
+      deltaA = (self.activated_pos - self.push_screen_pos).normalized
+      deltaB = (cur_screen_pos - self.push_screen_pos).normalized
+      angle = deltaB.orientedAngle(deltaA)
+      #################################
+      # transform selected bone
+      #################################
+      self.localpose.concatenate() # first re-concatenate locals->concats
+      #
+      X = self.concats_at_push[self.sel_joint]
+      OR = X.toRotMatrix4()
+      ZN = vec4(camdat.znormal,0).transform(OR).xyz.normalized
+      IP = mtx4.transMatrix(self.pivot_point*-1.0)
+      P = mtx4.transMatrix(self.pivot_point)
+      Q = quat.createFromAxisAngle(ZN,angle)
+      R = Q.toMatrix()
+      M = P*R*IP
+      self.propogateFromJoint(X,M)
+
+  ##############################################
+
+  def rotateOnLocalX(self,cur_screen_pos):
+    delta = (cur_screen_pos.x - self.push_screen_pos.x)
+    angle = delta*0.01
+    #################################
+    # transform selected bone
+    #################################
+    self.localpose.concatenate() # first re-concatenate locals->concats
+    C = self.concats_at_push[self.sel_joint]
+    R = quat.createFromAxisAngle(vec3(1,0,0),angle).toMatrix()
+    IP = mtx4.transMatrix(self.pivot_point*-1.0)
+    P = mtx4.transMatrix(self.pivot_point)
+    M = P*(R)*IP
+    self.propogateFromJoint(C,M)
+
+  ##############################################
+
+  def rotateOnLocalY(self,cur_screen_pos):
+    delta = (cur_screen_pos.x - self.push_screen_pos.x)
+    angle = delta*0.01
+    #################################
+    # transform selected bone
+    #################################
+    self.localpose.concatenate() # first re-concatenate locals->concats
+    C = self.concats_at_push[self.sel_joint]
+    R = quat.createFromAxisAngle(vec3(0,1,0),angle).toMatrix()
+    IP = mtx4.transMatrix(self.pivot_point*-1.0)
+    P = mtx4.transMatrix(self.pivot_point)
+    M = P*(R)*IP
+    self.propogateFromJoint(C,M)
+
+  ##############################################
+
+  def rotateOnLocalZ(self,cur_screen_pos):
+    delta = (cur_screen_pos.x - self.push_screen_pos.x)
+    angle = delta*0.01
+    #################################
+    # transform selected bone
+    #################################
+    self.localpose.concatenate() # first re-concatenate locals->concats
+    C = self.concats_at_push[self.sel_joint]
+    R = quat.createFromAxisAngle(vec3(0,0,1),angle).toMatrix()
+    IP = mtx4.transMatrix(self.pivot_point*-1.0)
+    P = mtx4.transMatrix(self.pivot_point)
+    M = P*(R)*IP
+    self.propogateFromJoint(C,M)
+    
+  ##############################################
+
+  def propogateFromJoint(self,C,M):
+    self.localpose.concatMatrices[self.sel_joint] = C*M
+    # transform descendants bones (concatenated)
+    for i in range(len(self.descendants)):
+      ich = self.descendants[i]
+      MCH = self.relmats[i]
+      self.localpose.concatMatrices[ich]=C*M*MCH
+    # recompute from concatenated
+    self.localpose.deconcatenate()
+    self.localpose.concatenate()
+
+  ##############################################
+
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     camdat = self.uicam.cameradata
     scoord = uievent.pos
     handled = False
     if uievent.code == tokens.KEY_UP.hashed:
-      if uievent.keycode == ord("A") or uievent.keycode == ord("S"):
+      if uievent.keycode in [ord("A"),ord("S"),ord("1"),ord("2"),ord("3")]:
         self.skeleton.selectBone(-1)
         self.sel_joint = -1
         handled = True
@@ -230,14 +329,14 @@ class SceneGraphApp(object):
       elif uievent.keycode == ord("="):
         self.skeleton.visualBoneScale *= 1.1        
       ##############################
-      elif uievent.keycode == ord("A") or uievent.keycode == ord("S"):
+      elif uievent.keycode in [ord("A"),ord("S"),ord("1"),ord("2"),ord("3")]:
         self.descendants = []
         self.push_screen_pos = scoord
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
-          pos = pixel_fetch_context.value(1).xyz()
-          nrm = pixel_fetch_context.value(2).xyz()
-          uv  = pixel_fetch_context.value(3).xyz().xy()
+          pos = pixel_fetch_context.value(1).xyz
+          nrm = pixel_fetch_context.value(2).xyz
+          uv  = pixel_fetch_context.value(3).xyz.xy
           eye = camdat.eye+camdat.znormal*10
           print(obj)
           if obj is not None and (type(obj["x"])==vec4):
@@ -245,7 +344,7 @@ class SceneGraphApp(object):
             self.skeleton.selectBone(sel_bone_index)
             sel_bone = self.skeleton.bone(sel_bone_index)
             sel_parent_index = sel_bone.parentIndex
-            self.pivot = self.localpose.concatMatrices[self.sel_joint].translation
+            self.pivot_point = self.localpose.concatMatrices[self.sel_joint].translation
             self.sel_joint = sel_parent_index
             pname = self.skeleton.jointName(sel_bone.parentIndex)
             cname = self.skeleton.jointName(sel_bone.childIndex)
@@ -296,7 +395,8 @@ class SceneGraphApp(object):
 
             self.pmat = self.localpose.concatMatrices[sel_parent_index]
             self.chcmats = [self.localpose.concatMatrices[i] for i in self.descendants]
-            self.concats_push = self.localpose.concatMatrices[0:]
+            self.concats_at_push = self.localpose.concatMatrices[0:]
+            self.locals_at_push = self.localpose.localMatrices[0:]
             # compute matrices relative to pmat
             self.relmats = [self.pmat.inverse * ch for ch in self.chcmats]
             A = camdat.project(1280/720.0,pos).xy()*vec2(0.5,0.5)+vec2(0.5,0.5)
@@ -309,48 +409,25 @@ class SceneGraphApp(object):
     elif self.uictx.isKeyDown(ord("A")):
       if uievent.code == tokens.MOVE.hashed:
         if self.sel_joint > 0:
-          # determine angle of rotation
-          # from scoord delta and camdat.znormal and acos
-          mag = (scoord - self.push_screen_pos).length
-          if self.activate_rot == False:
-            if mag > 32:
-              self.activate_rot = True
-              self.acive_pos = scoord
-
-          if self.activate_rot:
-            
-            ###########################
-            # # get screen space 2D delta/direction from push to current drag
-            ###########################
-            deltaA = (self.acive_pos - self.push_screen_pos).normalized()
-            deltaB = (scoord - self.push_screen_pos).normalized()
-            angle = deltaB.orientedAngle(deltaA)
-            
-            ###########################
-            # transform selected bone
-            ###########################
-          
-            self.localpose.concatenate() # recompute from concatenated
-            #
-            X = self.concats_push[self.sel_joint]
-            OR = X.toRotMatrix4()
-            ZN = vec4(camdat.znormal,0).transform(OR).xyz().normalized()
-            IP = mtx4.transMatrix(self.pivot*-1.0)
-            P = mtx4.transMatrix(self.pivot)
-            Q = quat.createFromAxisAngle(ZN,angle)
-            R = Q.toMatrix()
-            M = P*R*IP
-            self.localpose.concatMatrices[self.sel_joint] = X*M
-            # transform descendants bones (concatenated)
-            for i in range(len(self.descendants)):
-              ich = self.descendants[i]
-              MCH = self.relmats[i]
-              self.localpose.concatMatrices[ich]=X*M*MCH
-            # recompute from concatenated
-            self.localpose.decomposeConcatenated()
-            #self.localpose.blendPoses()
-            self.localpose.concatenate()
-            #
+          self.rotateOnScreenZ(scoord)
+          handled = True
+      ##############################
+    elif self.uictx.isKeyDown(ord("1")):
+      if uievent.code == tokens.MOVE.hashed:
+        if self.sel_joint > 0:
+          self.rotateOnLocalX(scoord)
+          handled = True
+      ##############################
+    elif self.uictx.isKeyDown(ord("2")):
+      if uievent.code == tokens.MOVE.hashed:
+        if self.sel_joint > 0:
+          self.rotateOnLocalY(scoord)
+          handled = True
+      ##############################
+    elif self.uictx.isKeyDown(ord("3")):
+      if uievent.code == tokens.MOVE.hashed:
+        if self.sel_joint > 0:
+          self.rotateOnLocalZ(scoord)
           handled = True
       ##############################
     elif self.uictx.isKeyDown(ord("S")):
@@ -362,20 +439,20 @@ class SceneGraphApp(object):
           if self.activate_rot == False:
             if mag > 32:
               self.activate_rot = True
-              self.acive_pos = scoord
+              self.activated_pos = scoord
 
           if self.activate_rot:
-            deltaA = (self.acive_pos - self.push_screen_pos).normalized()
-            deltaB = (scoord - self.push_screen_pos).normalized()
+            deltaA = (self.activated_pos - self.push_screen_pos).normalized
+            deltaB = (scoord - self.push_screen_pos).normalized
             angle = deltaB.orientedAngle(deltaA)
             # transform selected bone
             self.localpose.concatenate()
             #
-            X = self.concats_push[self.sel_joint]
+            X = self.concats_at_push[self.sel_joint]
             OR = X.toRotMatrix4()
-            ZN = vec4(camdat.znormal,0).transform(OR).xyz()
-            IP = mtx4.transMatrix(self.pivot*-1.0)
-            P = mtx4.transMatrix(self.pivot)
+            ZN = vec4(camdat.znormal,0).transform(OR).xyz
+            IP = mtx4.transMatrix(self.pivot_point*-1.0)
+            P = mtx4.transMatrix(self.pivot_point)
             Q = quat.createFromAxisAngle(ZN,angle)
             R = Q.toMatrix()
             M = P*R*IP
