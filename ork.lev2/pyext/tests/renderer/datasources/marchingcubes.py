@@ -23,10 +23,10 @@ from _boilerplate import BasicUiCamSgApp
 ################################################################################
 
 half_dim = 5  # Half-width of the sampling region
-resolution = 300  # Number of points in each dimension
+resolution = 400  # Number of points in each dimension
 falloff_radius = 2.0  # Radius of the radial falloff function
 falloff_power = 1.5  # Power of the radial falloff function
-octaves = 5
+octaves = 7
 
 def hashParams():
   crcA = Crc64Context()
