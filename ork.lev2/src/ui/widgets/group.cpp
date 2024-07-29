@@ -343,11 +343,10 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
     }
   }
   //
-  if (IsEventInside(ev))
+  if (IsEventInside(ev)){
     _clearColor = fvec4(0.15,0.15,0.25, 1.0);
-    return this;
-  //
-  return nullptr;
+  }
+  return this;
 }
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui
