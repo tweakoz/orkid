@@ -23,7 +23,7 @@ lev2_pyexdir.addToSysPath()
 
 from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
-from lev2utils.scenegraph import createSceneGraph
+from lev2utils.scenegraph import createSceneGraph, createParams
 from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
@@ -36,25 +36,19 @@ parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='re
 
 args = vars(parser.parse_args())
 
-stereo = args["stereo"]
-mono = not stereo
 NUM_IMAGES = 15
 
 ################################################################################
 
-class StereoApp1(object):
+class TestApp(object):
 
   def __init__(self):
     super().__init__()
     self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
-    self.vrcamera = lev2.CameraData()
-    self.cameralut.addCamera("vrcam",self.vrcamera)
-    self.xf_hmd = Transform()
 
-    if mono:
-      setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,10,0))
+    setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,10,0))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -143,22 +137,14 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     self.frame_index = 0
-    self.vrdev = lev2.orkidvr.novr_device()
-    self.vrdev.camera = "vrcam"
 
     ###################################
     # create scenegraph
     ###################################
 
-    params_dict = {
-      "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
-      "SkyboxIntensity": 1.5,
-      "DiffuseIntensity": 1.0,
-      "SpecularIntensity": 1.0,
-      "AmbientLevel": vec3(0),
-      "DepthFogDistance": 10000.0,
-    }
-
+    params_dict = createParams()
+    params_dict.SkyboxTexPathStr = "src://envmaps/blender_studio"
+    
     ##################
     # create scenegraph
     ##################
@@ -170,8 +156,8 @@ class StereoApp1(object):
       rendermodel="ForwardPBR"
 
     createSceneGraph( app=self,
-                     rendermodel=rendermodel,
-                     params_dict=params_dict
+                      rendermodel=rendermodel,
+                      params_dict=params_dict
                     )
 
     ###################################
@@ -183,12 +169,9 @@ class StereoApp1(object):
     self.grid_node = self.layer_std.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
-
     self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
-    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
+    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
     self.anim_inst = lev2.XgmAnimInst(self.anim)
     self.anim_inst.mask.enableAll()
     self.anim_inst.use_temporal_lerp = True
@@ -202,8 +185,8 @@ class StereoApp1(object):
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
         copy.baseColor = vec4(2,2,2,1)
-        copy.metallicFactor = 0.0
-        copy.roughnessFactor = 1.0
+        copy.metallicFactor = 1.0
+        copy.roughnessFactor = 0.0
         submesh.material = copy
         cnmrea = copy.texArrayCNMREA
         texset.add(cnmrea)
@@ -272,4 +255,4 @@ class StereoApp1(object):
 
 ###############################################################################
 
-StereoApp1().ezapp.mainThreadLoop()
+TestApp().ezapp.mainThreadLoop()

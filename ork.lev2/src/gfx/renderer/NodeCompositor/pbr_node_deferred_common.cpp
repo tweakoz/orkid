@@ -82,7 +82,7 @@ void DeferredContext::gpuInit(Context* target) {
   if (nullptr == _rtgs_gbuffer) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
-    printf("LOADING DeferredContext SHADER<%s>\n", _shadername.c_str());
+    //printf("LOADING DeferredContext SHADER<%s>\n", _shadername.c_str());
     _lightingmtl = std::make_shared<FreestyleMaterial>();
     _lightingmtl->gpuInit(target, _shadername);
     _tekBaseLighting       = _lightingmtl->technique("baselight");
@@ -178,7 +178,7 @@ void DeferredContext::gpuInit(Context* target) {
 
     _pipeline_envlighting_model0_mono = fxcache->findPipeline(permu);
 
-    printf("SHADER<%s> Load Complete\n", _shadername.c_str());
+    //printf("SHADER<%s> Load Complete\n", _shadername.c_str());
   }
   target->debugPopGroup();
   auto ev      = std::make_shared<GpuEvent>();
@@ -335,7 +335,7 @@ void DeferredContext::renderUpdate(RenderCompositingNode* node, CompositorDrawDa
   int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
   int newheight = ddprops["OutputHeight"_crcu].get<int>();
   if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
-    printf("RESIZEDEFCTX\n");
+    //printf("RESIZEDEFCTX\n");
     _width    = newwidth;
     _height   = newheight;
     _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;

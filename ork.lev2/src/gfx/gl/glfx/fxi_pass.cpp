@@ -209,7 +209,6 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      //printf("  find uni<%s> unisiz<%d> unityp<%08x>", nambuf, unisiz, unityp);
       GL_ERRORCHECK();
 
       str_name = nambuf;
@@ -233,7 +232,10 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       puni->_type = unityp;
       OrkAssert(unityp != GL_ZERO);
 
+      //printf(" find uni<%p:%s> unisiz<%d> unityp<%08x>\n", puni, str_name.c_str(), unisiz, unityp);
+
       UniformInstance* pinst = new UniformInstance;
+      puni->_state = 0;
       pinst->mpUniform       = puni;
       pinst->_is_array       = (unisiz > 1);
       GLint uniloc           = glGetUniformLocation(_programObjectId, str_name.c_str());

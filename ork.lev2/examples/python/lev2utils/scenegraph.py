@@ -21,15 +21,26 @@ def createParams( rendermodel = "ForwardPBR" ):
   return sceneparams
 
 def createSceneGraph( app=None, 
-                      rendermodel = "ForwardPBR",
+                      rendermodel = None,
                       params_dict = None,
                       layer_name = None):
+
+
     sceneparams = VarMap()
-    sceneparams.preset = rendermodel
+
+    if rendermodel == None:
+      rendermodel = "ForwardPBR"      
 
     if params_dict != None:
       for k in params_dict.keys():
+        if k == "preset":
+          rendermodel = params_dict[k]
         sceneparams.__setattr__(k,params_dict[k])
+        print("sceneparams<%s> = %s" % (k,params_dict[k]))
+
+    
+    sceneparams.preset = rendermodel
+
     app.scene = app.ezapp.createScene(sceneparams)
     
     if layer_name == None:
@@ -37,6 +48,9 @@ def createSceneGraph( app=None,
         layer_name = "std_forward"
       elif rendermodel in ["DeferredPBR","PBRVR"]:
         layer_name = "std_deferred"
+      else:
+        print("required layer name for rendermodel<%s>" % rendermodel)
+        assert(False)
     
     app.layer1 = app.scene.createLayer(layer_name)
     app.layer_std = app.layer1

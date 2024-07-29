@@ -59,8 +59,8 @@ class StereoApp1(object):
 
     self.frame_index = 0
 
-    self.vrdev = lev2.orkidvr.novr_device()
-    self.vrdev.camera = "vrcam"
+    #self.vrdev = lev2.orkidvr.novr_device()
+    #self.vrdev.camera = "vrcam"
 
     ###################################
     # create scenegraph
@@ -190,25 +190,6 @@ class StereoApp1(object):
 
   def onUpdate(self,updinfo):
     self.lighttime = updinfo.absolutetime
-
-    ########################################
-    # stereo viewing setup  
-    ########################################
-
-    self.vrdev.FOV = 90
-    self.vrdev.IPD = 0.065
-    self.vrdev.near = 0.1
-    self.vrdev.far = 1e5
-    
-    #self.vrcamera.perspective(.1,1e5,90)
-    #self.vrcamera.lookAt( 
-    #  vec3(0,10,-1), # eye 
-    #  vec3(0,10,0), # tgt
-    #  vec3(0,1,0) # up
-    #)
-    mtx_hmd = mtx4()
-    mtx_hmd.setColumn(3,vec4(0,5,10,1))
-    self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
     
     ########################################
 

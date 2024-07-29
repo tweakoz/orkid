@@ -80,7 +80,7 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     // is it cached ?
     /////////////////////////////////////////////
     if (xtx_datablock) {
-      printf("GlTextureInterface::_loadImageTexture tex<%p:%s> precached!\n", ptex.get(), ptex->_debugName.c_str());
+      //printf("GlTextureInterface::_loadImageTexture tex<%p:%s> precached!\n", ptex.get(), ptex->_debugName.c_str());
     }
     /////////////////////////////////////////////
     // it is not cached...

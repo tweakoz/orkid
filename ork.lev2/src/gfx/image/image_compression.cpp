@@ -5,6 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <mdspan>
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/kernel/spawner.h>

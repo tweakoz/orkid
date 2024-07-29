@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-//#include <generator>
+#include <mdspan>
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/deco.inl>

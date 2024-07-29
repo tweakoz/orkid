@@ -82,7 +82,8 @@ class CompositorSetupApp(object):
                      params_dict={
                       "preset": "USER",
                       "compositordata": comp_data
-                    })
+                    },
+                    layer_name="std_deferred")
 
     ###################################
     # create grid
