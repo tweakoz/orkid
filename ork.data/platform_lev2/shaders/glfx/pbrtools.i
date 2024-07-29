@@ -1005,7 +1005,8 @@ vertex_shader vs_forward_unlit : iface_vgbuffer : lib_pbr_vtx {
   frg_uv0     = uv0;
 }
 fragment_shader ps_forward_unlit : iface_forward {
-  vec3 rgb  = texture(ColorMap, frg_uv0).xyz * ModColor.xyz;
+  vec3 rgb = texture(CNMREA, vec3(frg_uv0,0)).xyz;
+  rgb *= ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////

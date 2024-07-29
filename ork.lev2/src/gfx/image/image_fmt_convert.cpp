@@ -140,6 +140,18 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
           outptr[elembase + 2] = inptr[elembase + 0];
         }
       }
+    } else if (inp._format == EBufferFormat::BGRA8) {
+      printf( "convert from BGRA8 to RGB8\n");
+      auto inptr  = (const uint8_t*)inp._data->data();
+      for (int y = 0; y < inp._height; y++) {
+        for (int x = 0; x < inp._width; x++) {
+          int pixelindex       = y * inp._width + x;
+          int elembase         = pixelindex * 4;
+          outptr[pixelindex * 3 + 0] = inptr[elembase + 2];
+          outptr[pixelindex * 3 + 1] = inptr[elembase + 1];
+          outptr[pixelindex * 3 + 2] = inptr[elembase + 0];
+        }
+      }
     } else if (inp._format == EBufferFormat::RGBA8) {
       auto inptr  = (const uint8_t*)inp._data->data();
       for (int y = 0; y < inp._height; y++) {
