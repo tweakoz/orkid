@@ -131,6 +131,8 @@ class MoleculeApp(BasicUiCamSgApp):
     super().onGpuInit(ctx)
     v,f = genMesh()
     self.node = self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.5)
+    #self.node = self.createPbrDrawableFromVertsAndFaces(ctx,v,f,0.5)
+
 
 ###############################################################################
 

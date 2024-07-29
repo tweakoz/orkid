@@ -250,12 +250,21 @@ class BasicUiCamSgApp(object):
         pipeline.sharedMaterial = material
         return pipeline
 
-    def createPbrPipeline(self,
-                       rendermodel="ForwardPBR"):
+    def createPbrPipeline(self, ctx, rendermodel="ForwardPBR"):
 
         material = PBRMaterial()
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        nrmap = Image.createFromFile("src://effect_textures/default_normal.dds")
+        material.assignImages(
+          ctx,
+          color = white,
+          normal = nrmap,
+          mtlruf = white,
+          doConform=True
+        )
         #
         permu = FxPipelinePermutation()
+        
         permu.rendering_model = rendermodel
         #permu.technique = material.shader.technique(techname)
         #
@@ -309,6 +318,30 @@ class BasicUiCamSgApp(object):
         barysubmesh = result_submesh.withBarycentricUVs()
         union_prim = lev2.RigidPrimitive(barysubmesh,ctx)
         union_sgnode = union_prim.createNode("union",self.layer1,solid_wire_pipeline)
+        union_sgnode.enabled = True
+        return (barysubmesh,union_prim, union_sgnode)
+
+    ################################################
+
+    def createPbrDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
+        material = PBRMaterial()
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        nrmap = Image.createFromFile("src://effect_textures/default_normal.dds")
+        material.assignImages(
+          ctx,
+          color = white,
+          normal = nrmap,
+          mtlruf = white,
+          doConform=True
+        )
+        #this_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+        result_submesh = lev2.meshutil.SubMesh.createFromDict({
+            "vertices": [{  "p": vec3(item[0], item[1], item[2])*scale} for item in verts],
+            "faces": faces
+        })
+        barysubmesh = result_submesh.withBarycentricUVs()
+        union_prim = lev2.RigidPrimitive(barysubmesh,ctx)
+        union_sgnode = union_prim.createNode("union",self.layer1,material)
         union_sgnode.enabled = True
         return (barysubmesh,union_prim, union_sgnode)
 

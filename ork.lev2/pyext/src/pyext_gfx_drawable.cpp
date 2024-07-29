@@ -169,6 +169,17 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                 return node;
               })
           .def(
+              "createNode",
+              [](meshutil::rigidprimitive_ptr_t prim,                            //
+                 std::string named,                                              //
+                 scenegraph::layer_ptr_t layer,                                  //
+                 lev2::material_ptr_t mtl) -> scenegraph::drawable_node_ptr_t { //
+                auto node                                                        //
+                    = prim->createNode(named, layer, mtl);
+                // node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
+                return node;
+              })
+          .def(
               "createDrawable",
               [](meshutil::rigidprimitive_ptr_t prim,                          //
                  fxpipeline_ptr_t pipeline) -> lev2::callback_drawable_ptr_t { //

@@ -292,7 +292,7 @@ int main(int argc, char** argv, char** envp) {
     // compute camera data
     ///////////////////////////////////////
     float phase    = abstime * PI2 * 0.01f;
-    float distance = 5.0f;
+    float distance = 3.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
