@@ -296,6 +296,23 @@ class BasicUiCamSgApp(object):
         pipeline.bindParam(param_modcolor, vec4(1,0,0,1))
         return pipeline
 
+    ################################################
+
+    def createBaryDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
+        solid_wire_pipeline =  self.createBaryWirePipeline()
+        material = solid_wire_pipeline.sharedMaterial
+        solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+        result_submesh = lev2.meshutil.SubMesh.createFromDict({
+            "vertices": [{  "p": vec3(item[0], item[1], item[2])*scale} for item in verts],
+            "faces": faces
+        })
+        self.barysubmesh = result_submesh.withBarycentricUVs()
+        self.union_prim = lev2.RigidPrimitive(self.barysubmesh,ctx)
+        self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
+        self.union_sgnode.enabled = True
+
+    ################################################
+
 ################################################################################
 
 def stripSubmesh(inpsubmesh):

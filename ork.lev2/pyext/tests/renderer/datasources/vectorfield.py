@@ -7,22 +7,17 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys, signal
-from obt import path as obt_path
+import sys
 import pyvista as pv
 import numpy as np
+from obt import path as obt_path
 
 #from orkengine.core import vec3, vec4, quat, mtx4
 from orkengine.core import lev2_pyexdir
-from orkengine.core import CrcStringProxy
-from orkengine import lev2
-
 this_dir = obt_path.Path(__file__).parent
 lev2_pyexdir.addToSysPath()
 sys.path.append(str(this_dir/".."/"..")) # add parent dir to path
-from _boilerplate import *
-
-tokens = CrcStringProxy()
+from _boilerplate import BasicUiCamSgApp
 
 ################################################################################
 # generate a vector field via PyVista
@@ -76,30 +71,8 @@ class MoleculeApp(BasicUiCamSgApp):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
-
-    ##################################
-    # solid wire pipeline
-    ##################################
-
-    solid_wire_pipeline =  self.createBaryWirePipeline()
-    material = solid_wire_pipeline.sharedMaterial
-    solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
-
-    ###################################
-    # generate mesh
-    ###################################
-
     v,f = genVectorField()
-    result_submesh = lev2.meshutil.SubMesh.createFromDict({
-        "vertices": [{  "p": vec3(item[0], item[1], item[2])*0.5} for item in v],
-        "faces": f
-    })
-    self.barysubmesh = result_submesh.withBarycentricUVs()
-    self.union_prim = lev2.RigidPrimitive(self.barysubmesh,ctx)
-    self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
-    self.union_sgnode.enabled = True
-
-    ###################################
+    self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.5)
 
 ###############################################################################
 
