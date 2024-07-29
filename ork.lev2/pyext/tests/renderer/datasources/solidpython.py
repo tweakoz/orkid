@@ -189,7 +189,7 @@ class MoleculeApp(BasicUiCamSgApp):
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     v,f = genPolys()
-    self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.25)
+    self.node = self.createBaryDrawableFromVertsAndFaces(ctx,v,f,0.25)
 
 ###############################################################################
 
