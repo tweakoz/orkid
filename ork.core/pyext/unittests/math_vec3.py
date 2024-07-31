@@ -4,8 +4,7 @@ import unittest, math
 from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 import numpy as np
 
-EPSILON = 1.0e-5
-CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
+EPSILON_DIGITS = 5
 
 class TestCoreMathVec3Methods(unittest.TestCase):
   ########################################
@@ -78,9 +77,9 @@ class TestCoreMathVec3Methods(unittest.TestCase):
   def test_vec3_normalize(self):
     v1 = vec3(3,4,5)
     v1.normalize()
-    self.assertTrue(CHECK_CLOSE(v1.x, 0.4242640687119285))
-    self.assertTrue(CHECK_CLOSE(v1.y, 0.565685424949238))
-    self.assertTrue(CHECK_CLOSE(v1.z, 0.7071067811865475))
+    self.assertAlmostEqual(v1.x, 0.4242640687119285)
+    self.assertAlmostEqual(v1.y, 0.565685424949238)
+    self.assertAlmostEqual(v1.z, 0.7071067811865475)
   ########################################
   def test_vec3_fraction(self):
     v1 = vec3(1,2,3)
@@ -149,7 +148,7 @@ class TestCoreMathVec3Methods(unittest.TestCase):
   ########################################
   def test_vec3_length(self):
     v1 = vec3(3,4,5)
-    self.assertTrue(CHECK_CLOSE(v1.length, 7.0710678118654755))
+    self.assertAlmostEqual(v1.length, 7.0710678118654755)
   ########################################
   def test_vec3_lengthSquared(self):
     v1 = vec3(3,4,5)
@@ -159,16 +158,16 @@ class TestCoreMathVec3Methods(unittest.TestCase):
     v1 = vec3(1,0,0)
     v2 = vec3(0,1,0)
     a = v1.angle(v2)
-    self.assertTrue(CHECK_CLOSE(a,math.pi/2))
+    self.assertAlmostEqual(a,math.pi/2)
   ########################################
   def test_vec3_orientedAngle(self):
     v1 = vec3(1,0,0)
     v2 = vec3(0,1,0)
     ref_axis = vec3(0,0,1)
     a = v1.orientedAngle(v2, ref_axis)
-    self.assertTrue(CHECK_CLOSE(a,math.pi/2))
+    self.assertAlmostEqual(a,math.pi/2)
     b = v2.orientedAngle(v1, ref_axis)
-    self.assertTrue(CHECK_CLOSE(b,-math.pi/2))    
+    self.assertAlmostEqual(b,-math.pi/2)   
   ########################################
   def test_vec3_dot(self):
     v1 = vec3(1,2,3)
@@ -184,6 +183,24 @@ class TestCoreMathVec3Methods(unittest.TestCase):
     self.assertEqual(v3.y, 6)
     self.assertEqual(v3.z, -3)
   ########################################
+  def test_vec3_triple(self):
+    up = vec3(0,1,0)
+    v1 = vec3(1,2,3).normalized()
+    v2 = v1.cross(up)
+    v3 = v1.cross(v2)
+    
+    # check that they are orthogonal
+    v1dv2 = v1.dot(v2)
+    v1dv3 = v1.dot(v3)
+    v2dv3 = v2.dot(v3)
+    self.assertAlmostEqual(v3.x, 0.1428571343421936,EPSILON_DIGITS)
+    self.assertAlmostEqual(v3.y, -0.7142856121063232 ,EPSILON_DIGITS)
+    self.assertAlmostEqual(v3.z, 0.4285714030265808,EPSILON_DIGITS)
+    self.assertAlmostEqual(v3.x, 0.1428571343421936,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1dv2, 0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1dv3, 0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v2dv3, 0,EPSILON_DIGITS)
+  ########################################
   def vec3_test_lerp(self):
     v1 = vec3(1,2,3)
     v2 = vec3(4,5,6)
@@ -196,7 +213,7 @@ class TestCoreMathVec3Methods(unittest.TestCase):
     v1 = vec3(1,0,0)
     v2 = vec3(0,1,0)
     v3 = v1.serp(v2, 0.5)
-    self.assertTrue(CHECK_CLOSE(v3.x, 0.7071067811865475))
+    self.assertAlmostEqual(v3.x, 0.7071067811865475)
   ########################################
   def vec3_test_reflect(self):
     v1 = vec3(1,1,1)
@@ -223,30 +240,30 @@ class TestCoreMathVec3Methods(unittest.TestCase):
   def test_vec3_rotx(self):
     v1 = vec3(0,2,0)
     v1.rotx(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,0))
-    self.assertTrue(CHECK_CLOSE(v1.z,2))
+    self.assertAlmostEqual(v1.x,0)
+    self.assertAlmostEqual(v1.y,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.z,2)
   ########################################
   def test_vec3_roty(self):
     v1 = vec3(2,0,0)
     v1.roty(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,0))
-    self.assertTrue(CHECK_CLOSE(v1.z,2))
+    self.assertAlmostEqual(v1.x,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.y,0)
+    self.assertAlmostEqual(v1.z,2)
   ########################################
   def test_vec3_rotz(self):
     v1 = vec3(2,0,0)
     v1.rotz(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,2))
-    self.assertTrue(CHECK_CLOSE(v1.z,0))
+    self.assertAlmostEqual(v1.x,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.y,2)
+    self.assertAlmostEqual(v1.z,0)
   ########################################
   def test_vec3_hsv2rgb(self):
     hsv = vec3(0,1,1)
     rgb = hsv.hsv2rgb()
-    self.assertTrue(CHECK_CLOSE(rgb.x,1))
-    self.assertTrue(CHECK_CLOSE(rgb.y,0))
-    self.assertTrue(CHECK_CLOSE(rgb.z,0))
+    self.assertAlmostEqual(rgb.x,1)
+    self.assertAlmostEqual(rgb.y,0)
+    self.assertAlmostEqual(rgb.z,0)
   ########################################
   def test_vec3_set(self):
     v1 = vec3(1,2,3)

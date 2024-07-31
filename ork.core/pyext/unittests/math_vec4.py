@@ -4,8 +4,7 @@ import unittest, math
 from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 import numpy as np
 
-EPSILON = 1.0e-5
-CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
+EPSILON_DIGITS = 6
 
 class TestCoreMathVec4Methods(unittest.TestCase):
   ########################################
@@ -73,10 +72,10 @@ class TestCoreMathVec4Methods(unittest.TestCase):
   def test_vec4_fraction(self):
     v1 = vec4(1.3,2.3,3.3,4.3)
     v3 = v1.fract
-    self.assertTrue(CHECK_CLOSE(v3.x, 0.3))
-    self.assertTrue(CHECK_CLOSE(v3.y, 0.3))
-    self.assertTrue(CHECK_CLOSE(v3.z, 0.3))
-    self.assertTrue(CHECK_CLOSE(v3.w, 0.3))
+    self.assertAlmostEqual(v3.x, 0.3)
+    self.assertAlmostEqual(v3.y, 0.3)
+    self.assertAlmostEqual(v3.z, 0.3)
+    self.assertAlmostEqual(v3.w, 0.3,EPSILON_DIGITS)
   ########################################
   def test_vec4_floor(self):
     v1 = vec4(1.5,2.5,3.5,4.5)
@@ -97,20 +96,20 @@ class TestCoreMathVec4Methods(unittest.TestCase):
   def test_vec4_normalize(self):
     v1 = vec4(3,4,5,1)
     v1.normalize()
-    self.assertTrue(CHECK_CLOSE(v1.x, 0.4242640687119285))
-    self.assertTrue(CHECK_CLOSE(v1.y, 0.565685424949238))
-    self.assertTrue(CHECK_CLOSE(v1.z, 0.7071067811865475))
-    self.assertTrue(CHECK_CLOSE(v1.w, 1.0))
+    self.assertAlmostEqual(v1.x, 0.4242640687119285)
+    self.assertAlmostEqual(v1.y, 0.565685424949238)
+    self.assertAlmostEqual(v1.z, 0.7071067811865475)
+    self.assertAlmostEqual(v1.w, 1.0)
   ########################################
   def test_vec4_length(self):
     v1 = vec4(3,4,5,1)
     l = v1.length
-    self.assertTrue(CHECK_CLOSE(l, 7.0710678118654755))
+    self.assertAlmostEqual(l, 7.0710678118654755)
   ########################################
   def test_vec4_lengthSquared(self):
     v1 = vec4(3,4,5,1)
     l = v1.magSquared
-    self.assertTrue(CHECK_CLOSE(l, 50))
+    self.assertAlmostEqual(l, 50)
   ########################################
   def test_vec4_x(self):
     v1 = vec4(3,4,5,1)
@@ -155,9 +154,9 @@ class TestCoreMathVec4Methods(unittest.TestCase):
   def test_vec4_perspectiveDivided(self):
     v1 = vec4(3,4,5,17.7)
     v2 = v1.perspectiveDivided
-    self.assertTrue(CHECK_CLOSE(v2.x, 3/17.7))
-    self.assertTrue(CHECK_CLOSE(v2.y, 4/17.7))
-    self.assertTrue(CHECK_CLOSE(v2.z, 5/17.7))
+    self.assertAlmostEqual(v2.x, 3/17.7)
+    self.assertAlmostEqual(v2.y, 4/17.7)
+    self.assertAlmostEqual(v2.z, 5/17.7)
   ########################################
   def test_vec4_dot(self):
     v1 = vec4(1,2,3,1)
@@ -186,7 +185,7 @@ class TestCoreMathVec4Methods(unittest.TestCase):
     v1 = vec4(1,0,0,0)
     v2 = vec4(0,1,0,0)
     v3 = v1.serp(v2, 0.5)
-    self.assertTrue(CHECK_CLOSE(v3.x, 0.7071067811865475))
+    self.assertAlmostEqual(v3.x, 0.7071067811865475)
   ########################################
   def vec4_test_reflect(self):
     v1 = vec4(1,1,1,1)
@@ -207,31 +206,31 @@ class TestCoreMathVec4Methods(unittest.TestCase):
   ########################################
   def test_vec4_normalized(self):
     v1 = vec4(3,4,5,1).normalized
-    self.assertTrue(CHECK_CLOSE(v1.length,1))
+    self.assertAlmostEqual(v1.length,1)
   ########################################
   def test_vec4_rotx(self):
     v1 = vec4(0,2,0,0)
     v1.rotx(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,0))
-    self.assertTrue(CHECK_CLOSE(v1.z,2))
-    self.assertTrue(CHECK_CLOSE(v1.w,0))
+    self.assertAlmostEqual(v1.x,0)
+    self.assertAlmostEqual(v1.y,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.z,2,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.w,0)
   ########################################
   def test_vec4_roty(self):
     v1 = vec4(2,0,0,0)
     v1.roty(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,0))
-    self.assertTrue(CHECK_CLOSE(v1.z,2))
-    self.assertTrue(CHECK_CLOSE(v1.w,0))
+    self.assertAlmostEqual(v1.x,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.y,0)
+    self.assertAlmostEqual(v1.z,2)
+    self.assertAlmostEqual(v1.w,0)
   ########################################
   def test_vec4_rotz(self):
     v1 = vec4(2,0,0,0)
     v1.rotz(math.pi/2)
-    self.assertTrue(CHECK_CLOSE(v1.x,0))
-    self.assertTrue(CHECK_CLOSE(v1.y,2))
-    self.assertTrue(CHECK_CLOSE(v1.z,0))
-    self.assertTrue(CHECK_CLOSE(v1.w,0))
+    self.assertAlmostEqual(v1.x,0,EPSILON_DIGITS)
+    self.assertAlmostEqual(v1.y,2)
+    self.assertAlmostEqual(v1.z,0)
+    self.assertAlmostEqual(v1.w,0)
   ########################################
 
 

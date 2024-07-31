@@ -106,19 +106,19 @@ class TestCoreMathVec2Methods(unittest.TestCase):
     v1 = vec2(1,0)
     v2 = vec2(0,1)
     a = v1.angle(v2) # radians of 90 degrees
-    self.assertTrue(CHECK_CLOSE(a,math.pi/2))
+    self.assertAlmostEqual(a,math.pi/2)
   ########################################
   def test_vec2_orientedAngle(self):
     v1 = vec2(1,0)
     v2 = vec2(0,1)
     a = v1.orientedAngle(v2)
-    self.assertTrue(CHECK_CLOSE(a,math.pi/2))
+    self.assertAlmostEqual(a,math.pi/2)
     b = v2.orientedAngle(v1)
-    self.assertTrue(CHECK_CLOSE(b,-math.pi/2))
+    self.assertAlmostEqual(b,-math.pi/2)
   ########################################
   def test_vec2_normalize(self):
     v1 = vec2(3,4).normalized()
-    self.assertTrue(CHECK_CLOSE(v1.length,1))    
+    self.assertAlmostEqual(v1.length,1)   
   ########################################
   def test_vec2_mag(self):
     v1 = vec2(3,4)

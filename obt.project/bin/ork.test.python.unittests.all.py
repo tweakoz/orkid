@@ -59,6 +59,7 @@ orklev2_tests_dir = orkdir / "ork.lev2"/"pyext"/"unittests"
 lev2_tests = {
     "gfx_skeleton": orklev2_tests_dir/"gfx_skeleton.py",
     "gfx_pose": orklev2_tests_dir/"gfx_pose.py",
+    "gfx_camera": orklev2_tests_dir/"gfx_camera.py",
 }
 ###############################################################################
 orkecs_tests_dir = orkdir / "ork.ecs"/"pyext"/"unittests"

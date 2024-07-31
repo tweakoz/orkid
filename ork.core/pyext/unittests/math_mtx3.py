@@ -4,8 +4,7 @@ import unittest, math
 from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 import numpy as np
 
-EPSILON = 1.0e-5
-CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
+EPSILON_DIGITS = 5
 
 class TestCoreMathMtx3Methods(unittest.TestCase):
   ########################################
@@ -48,17 +47,17 @@ class TestCoreMathMtx3Methods(unittest.TestCase):
     
     #print(c0)
 
-    self.assertEqual(CHECK_CLOSE(c0.x, 0.5), True)
-    self.assertEqual(CHECK_CLOSE(c0.y, 0), True)
-    self.assertEqual(CHECK_CLOSE(c0.z, 0), True)
+    self.assertAlmostEqual(c0.x, 0.5)
+    self.assertAlmostEqual(c0.y, 0)
+    self.assertAlmostEqual(c0.z, 0)
     
-    self.assertEqual(CHECK_CLOSE(c1.x, 0), True)
-    self.assertEqual(CHECK_CLOSE(c1.y, 1/3), True)
-    self.assertEqual(CHECK_CLOSE(c1.z, 0), True)
+    self.assertAlmostEqual(c1.x, 0)
+    self.assertAlmostEqual(c1.y, 1/3)
+    self.assertAlmostEqual(c1.z, 0)
     
-    self.assertEqual(CHECK_CLOSE(c2.x, 0), True)
-    self.assertEqual(CHECK_CLOSE(c2.y, 0), True)
-    self.assertEqual(CHECK_CLOSE(c2.z, 0.25), True)
+    self.assertAlmostEqual(c2.x, 0)
+    self.assertAlmostEqual(c2.y, 0)
+    self.assertAlmostEqual(c2.z, 0.25)
     
     mim = m*im
     
@@ -66,17 +65,17 @@ class TestCoreMathMtx3Methods(unittest.TestCase):
     c1 = mim.getColumn(1)
     c2 = mim.getColumn(2)
     
-    self.assertEqual(CHECK_CLOSE(c0.x, 1), True)
-    self.assertEqual(CHECK_CLOSE(c0.y, 0), True)
-    self.assertEqual(CHECK_CLOSE(c0.z, 0), True)
+    self.assertAlmostEqual(c0.x, 1)
+    self.assertAlmostEqual(c0.y, 0)
+    self.assertAlmostEqual(c0.z, 0)
     
-    self.assertEqual(CHECK_CLOSE(c1.x, 0), True)
-    self.assertEqual(CHECK_CLOSE(c1.y, 1), True)
-    self.assertEqual(CHECK_CLOSE(c1.z, 0), True)
+    self.assertAlmostEqual(c1.x, 0)
+    self.assertAlmostEqual(c1.y, 1)
+    self.assertAlmostEqual(c1.z, 0)
     
-    self.assertEqual(CHECK_CLOSE(c2.x, 0), True)
-    self.assertEqual(CHECK_CLOSE(c2.y, 0), True)
-    self.assertEqual(CHECK_CLOSE(c2.z, 1), True)
+    self.assertAlmostEqual(c2.x, 0)
+    self.assertAlmostEqual(c2.y, 0)
+    self.assertAlmostEqual(c2.z, 1)
   ########################################
   def test_mtx3_xnormal(self):
     m = mtx3()
@@ -87,17 +86,17 @@ class TestCoreMathMtx3Methods(unittest.TestCase):
     ynormal = m.yNormal().normalized()
     znormal = m.zNormal().normalized()
     #print(xnormal)
-    self.assertEqual(CHECK_CLOSE(xnormal.x, 0.502571), True)
-    self.assertEqual(CHECK_CLOSE(xnormal.y, 0.574366), True)
-    self.assertEqual(CHECK_CLOSE(xnormal.z, 0.646161), True)
+    self.assertAlmostEqual(xnormal.x, 0.502571,EPSILON_DIGITS)
+    self.assertAlmostEqual(xnormal.y, 0.574366,EPSILON_DIGITS)
+    self.assertAlmostEqual(xnormal.z, 0.646161,EPSILON_DIGITS)
     #print(ynormal)
-    self.assertEqual(CHECK_CLOSE(ynormal.x, 0.455842), True)
-    self.assertEqual(CHECK_CLOSE(ynormal.y, 0.569803), True)
-    self.assertEqual(CHECK_CLOSE(ynormal.z, 0.683764), True)
+    self.assertAlmostEqual(ynormal.x, 0.455842,EPSILON_DIGITS)
+    self.assertAlmostEqual(ynormal.y, 0.569803,EPSILON_DIGITS)
+    self.assertAlmostEqual(ynormal.z, 0.683764,EPSILON_DIGITS)
     #print(znormal)
-    self.assertEqual(CHECK_CLOSE(znormal.x, 0.267261), True)
-    self.assertEqual(CHECK_CLOSE(znormal.y, 0.534522), True)
-    self.assertEqual(CHECK_CLOSE(znormal.z, 0.801784), True)
+    self.assertAlmostEqual(znormal.x, 0.267261,EPSILON_DIGITS)
+    self.assertAlmostEqual(znormal.y, 0.534522,EPSILON_DIGITS)
+    self.assertAlmostEqual(znormal.z, 0.801784,EPSILON_DIGITS)
     
   ########################################
   ########################################
