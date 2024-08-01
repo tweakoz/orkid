@@ -658,6 +658,7 @@ void pyinit_math_la_t(
                 return rval;
               })
           //.def("lookAt", &mat4_t::decompose)
+          .def("setScale", (void(mat4_t::*)(T, T, T)) & mat4_t::setScale)
           .def(py::self * py::self)
           .def(py::self == py::self)
           .def("__repr__", [](mat4_t mtx) -> std::string {

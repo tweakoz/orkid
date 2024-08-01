@@ -4,8 +4,7 @@ import unittest, math
 from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4
 import numpy as np
 
-EPSILON = 1.0e-5
-CHECK_CLOSE = lambda a,b: math.fabs(a-b)<EPSILON
+EPSILON_DIGITS = 5
 
 class TestCoreMathQuatMethods(unittest.TestCase):
   ########################################
@@ -38,26 +37,26 @@ class TestCoreMathQuatMethods(unittest.TestCase):
     q_roty = quat(vec3(0,1,0), 3.14159/2)
     q_rotz = quat(vec3(0,0,1), 3.14159/2)
     q_rot = q_roty*q_rotz
-    self.assertTrue(CHECK_CLOSE(q_rot.x, 0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.y, 0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.z, 0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.w, 0.5))
+    self.assertAlmostEqual(q_rot.x, 0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.y, 0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.z, 0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.w, 0.5,EPSILON_DIGITS)
     q_rot = q_rotz*q_roty
     handedness = "left" if q_rot.w<0 else "right"
     self.assertTrue(handedness=="right")
     # check normalisation
     #print( "system is %s handed" % handedness )
-    self.assertTrue(CHECK_CLOSE(q_rot.x, -0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.y, 0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.z, 0.5))
-    self.assertTrue(CHECK_CLOSE(q_rot.w, 0.5))
+    self.assertAlmostEqual(q_rot.x, -0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.y, 0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.z, 0.5,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.w, 0.5,EPSILON_DIGITS)
     q_rot = q_rotz*q_roty*q_rotx
     handedness = "left" if q_rot.w<0 else "right"
     self.assertTrue(handedness=="right")
-    self.assertTrue(CHECK_CLOSE(q_rot.x, 4.33813e-07))
-    self.assertTrue(CHECK_CLOSE(q_rot.y, 0.707107))
-    self.assertTrue(CHECK_CLOSE(q_rot.z, 4.33813e-07))
-    self.assertTrue(CHECK_CLOSE(q_rot.w, 0.707107))
+    self.assertAlmostEqual(q_rot.x, 4.33813e-07,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.y, 0.707107,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.z, 4.33813e-07,EPSILON_DIGITS)
+    self.assertAlmostEqual(q_rot.w, 0.707107,EPSILON_DIGITS)
     # determine handedness from above results
     handedness = "left" if q_rot.w<0 else "right"
     self.assertTrue(handedness=="right")

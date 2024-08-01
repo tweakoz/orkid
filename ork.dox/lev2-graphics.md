@@ -2,6 +2,8 @@
 
 ---
 
+![Lev2Gfx Architecture:1](Lev2GraphicsLayout.png)
+
 ### Summary:
 
 1. Low Graphics Device API abstraction
