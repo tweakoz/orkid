@@ -24,11 +24,12 @@ parser.add_argument("-g", '--showgrid', action="store_true", help='show grid' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
-parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
+parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-b", "--bonescale", type=float, default=1.0, help='bone scalar')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='SSAA samples')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
+parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 
 ################################################################################
 
@@ -41,6 +42,7 @@ envmap = args["envmap"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
 bonescale = args["bonescale"]
+rendermodel = args["rendermodel"]
 
 ################################################################################
 # make sure env vars are set before importing the engine...
@@ -98,6 +100,10 @@ class SceneGraphApp(object):
       params_dict["SkyboxTexPathStr"] = envmap
 
     rendermodel = "DeferredPBR"
+    if rendermodel == "deferred":
+      rendermodel = "DeferredPBR"
+    elif rendermodel == "forward":
+      rendermodel="ForwardPBR"
 
     #rendermodel = "PICKTEST"
 

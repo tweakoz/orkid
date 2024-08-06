@@ -79,7 +79,8 @@ fragment_shader_source = """
    d = mod(d+time*cycle_rate,1.0);
    d = d*d_final_scale + d_final_bias;
    FragColor = vec4(ModColor*d, 1.0);
-}"""
+}
+"""
 
 #####
 
@@ -280,6 +281,11 @@ class UiTestApp(object):
     ##################################
 
     self.geometry = GeometryBuffer(vertices, indices )
+
+    frg_src = self.text_editor.get_text()
+    if(len(frg_src)==0):
+      self.assignPreset("preset1")
+
     self.recompileShader()
     
     # create SSAA framebuffer
@@ -474,7 +480,7 @@ class UiTestApp(object):
     #################################
     # bind shader and uniforms
     #################################
-        
+    
     glUseProgram(self.shaders.shader_program)
     glUniform1f(self.shaders.par_time,self.time)
 

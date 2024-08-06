@@ -21,17 +21,15 @@ print(sys.argv)
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 parser.add_argument("-g", '--showgrid', action="store_true", help='show grid' )
 parser.add_argument('--showskeleton', action="store_true", help='show skeleton' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
-parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr renderer' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='specular intensity')
 parser.add_argument("-a", "--ambientintensity", type=float, default=0.0, help='diffuse intensity')
 parser.add_argument("-d", "--diffuseintensity", type=float, default=1.0, help='diffuse intensity')
-parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
+parser.add_argument("-D", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-o", "--overrideshader", type=str, default="", help='override shader')
 parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
@@ -39,11 +37,11 @@ parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", hel
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
+parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 
 ################################################################################
 
 args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
 showgrid = args["showgrid"]
 modelpath = args["model"]
 lightintens = args["lightintensity"]
@@ -51,12 +49,12 @@ specuintens = args["specularintensity"]
 diffuintens = args["diffuseintensity"]
 ambiuintens = args["ambientintensity"]
 camdist = args["camdist"]
-fwdpbr = args["forwardpbr"]
 envmap = args["envmap"]
 oshader = args["overrideshader"]
 ocolor = args["overridecolor"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
+rendermodel = args["rendermodel"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -128,16 +126,11 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    if fwdpbr:
-      if vrmode:
-        rendermodel = "FWDPBRVR"
-      else:
-        rendermodel = "ForwardPBR"
-    else:
-      if vrmode:
-        rendermodel = "PBRVR"
-      else:
-        rendermodel = "DeferredPBR"
+    rendermodel = "DeferredPBR"
+    if rendermodel == "deferred":
+      rendermodel = "DeferredPBR"
+    elif rendermodel == "forward":
+      rendermodel="ForwardPBR"
 
 
     createSceneGraph( app=self,
