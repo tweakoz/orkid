@@ -80,7 +80,6 @@ void DeferredContext::gpuInit(Context* target) {
   target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgs_gbuffer) {
-    _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
     //printf("LOADING DeferredContext SHADER<%s>\n", _shadername.c_str());
     _lightingmtl = std::make_shared<FreestyleMaterial>();
@@ -216,6 +215,11 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   targ->beginFrame();
   _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
   FBI->rtGroupClear(_rtgGbuffer.get());
+
+  //auto irr = RCFD->_pbrcommon->_irradianceMaps;
+  //_brdfIntegrationMap = irr->_brdfIntegrationMap;
+  _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
+
   ///////////////////////////////////////////////////////////////////////////
   // depth prepass
   ///////////////////////////////////////////////////////////////////////////
@@ -445,6 +449,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   _lightingmtl->commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
   _lightingmtl->end(RCFD);

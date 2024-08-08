@@ -28,6 +28,7 @@ from lev2utils.lighting import MySpotLight, MyCookie
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--stereo', action='store_true', help='stereo mode')
+parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 ################################################################################
 
 args = vars(parser.parse_args())
@@ -42,7 +43,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,width=640,height=480)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
     self.vrcamera = lev2.CameraData()
@@ -73,22 +74,25 @@ class StereoApp1(object):
 
     params_dict = {
       "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
-      "SkyboxIntensity": 1.5,
+      "SkyboxIntensity": 1.0,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
-    if mono:
-      params_dict["preset"] = "ForwardPBR"
-    else:
-      params_dict["preset"] = "FWDPBRVR"
+
+    rendermodel = args["rendermodel"]
+
+    if rendermodel == "deferred":
+      rendermodel = "DeferredPBR"
+    elif rendermodel == "forward":
+      rendermodel="ForwardPBR"
 
     ##################
     # create model / sg node
     ##################
 
-    createSceneGraph(app=self,params_dict=params_dict)
+    createSceneGraph(app=self,params_dict=params_dict,rendermodel=rendermodel)
     self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.layer1
     self.fwd_layers = [self.layer_fwd,self.layer_donly]
@@ -144,8 +148,8 @@ class StereoApp1(object):
     self.grid_data.colorImage = self.images[0]
     self.grid_data.mtlrufImage = lev2.Image.createRGB8FromColor( img_dim,img_dim,vec3(1,0,1) )
 
-    self.grid_data.shader_suffix = "_V5"
-    self.grid_data.modcolor = vec3(1)*3
+    self.grid_data.shader_suffix = "_V6"
+    self.grid_data.modcolor = vec3(1)
     self.grid_data.majorTileDim = 8.0
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
@@ -201,7 +205,7 @@ class StereoApp1(object):
       gimpl.setColorImage(ctx,next_image)
       gimpl.setMtlRufImage(ctx,next_image)
       mtl.metallicFactor = 0.0
-      mtl.roughnessFactor = 1.0  
+      mtl.roughnessFactor = 0.0  
       mtl.baseColor = vec4(1,0,0,1)
     self.frame_index += 0.3
     pass 

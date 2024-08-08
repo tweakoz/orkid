@@ -480,8 +480,9 @@ fragment_shader ps_grid_forward_lit_mono_v4 : iface_grid_forward_lit : lib_frg_g
   out_clr   = vec4(oc.xyz, gout.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono_v5 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
-  vec3 oc   = forward_lighting_mono(vec3(1,1,1))*ModColor.xyz;
+fragment_shader ps_grid_forward_lit_mono_v6 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec3 bxm = BaseColor.xyz*ModColor.xyz;
+  vec3 oc   = forward_lighting_mono(bxm);
   out_clr   = vec4(oc, 1.0);
 }
 ///////////////////////////////////////////////////////////////
@@ -556,6 +557,24 @@ fragment_shader ps_grid_deferred_lit_mono_v4
       mtl);
 
 }
+fragment_shader ps_grid_deferred_lit_mono_v6
+ : iface_fgrid_gbuffer 
+ : lib_frgdeferred_grid_pbr 
+ : lib_frg_grid {
+  vec3 C = texture(CNMREA,vec3(frg_uv0,0)).xyz;
+  vec3 MR = texture(CNMREA,vec3(frg_uv0,2)).xyz;
+  vec3 grid_color = C*ModColor.xyz*BaseColor.xyz;
+  vec3 normal     = vec3(0, 1, 0);
+  float mtl       = MR.z;
+  float ruf       = MR.y;
+  out_gbuf        = packGbuffer(
+      grid_color.xyz,  // basecolor
+      vec3(0,0,0), // emmisive
+      normal,     // normal
+      ruf,
+      mtl);
+
+}
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_RI_NI_MO {
   fxconfig = fxcfg_default;
@@ -564,7 +583,10 @@ technique GBU_CT_NM_RI_NI_MO {
 technique GBU_CT_NM_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_rigid_gbuffer_grid, ps_grid_deferred_lit_mono_v4, sb_default }
-  //vf_pass  = { vs_grid_forward_unlit, ps_grid_forward_lit_mono_v4, sb_forward }
+}
+technique GBU_CT_NM_RI_NI_MO_V6 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_rigid_gbuffer_grid, ps_grid_deferred_lit_mono_v6, sb_default }
 }
 technique GBU_CT_NM_RI_NI_ST {
   fxconfig = fxcfg_default;
@@ -637,9 +659,9 @@ technique FWD_CT_NM_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v4, sb_forward_blend }
 }
-technique FWD_CT_NM_RI_NI_MO_V5 {
+technique FWD_CT_NM_RI_NI_MO_V6 {
   fxconfig = fxcfg_default;
-  vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v5, sb_forward_blend }
+  vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v6, sb_forward_blend }
 }
 technique FWD_CT_NM_RI_NI_ST_V4 {
   fxconfig = fxcfg_default;

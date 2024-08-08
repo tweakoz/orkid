@@ -677,6 +677,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
   _parRoughnessPower      = fxi->parameter(_shader, "RoughnessPower" );
   _parModColor            = fxi->parameter(_shader, "ModColor");
+  _parBaseColor           = fxi->parameter(_shader, "BaseColor");
   _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
@@ -684,6 +685,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceBlock  = fxi->parameterBlock(_shader, "ub_instancing");
 
   _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
+
 
   // fwd
 

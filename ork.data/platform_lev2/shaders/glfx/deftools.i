@@ -18,17 +18,5 @@ libblock lib_def
     float _roughness;
     float _metallic;
   };
-  /////////////////////////////////////////////////////////
-  struct PbrData{
-  	bool _emissive;
-  	vec3 _wpos;
-  	vec3 _wnrm;
-  	float _metallic;
-  	float _roughness;
-  	float _fogZ;
-  	float _atmos;
-  	float _alpha;
-  	vec3 _albedo;
-  };
 
 }

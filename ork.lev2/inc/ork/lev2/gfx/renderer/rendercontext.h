@@ -81,6 +81,7 @@ struct RenderContextInstData {
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;
   pickvariant_t _pickID;
+  fvec4 _modColor = fvec4(1, 1, 1, 1);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

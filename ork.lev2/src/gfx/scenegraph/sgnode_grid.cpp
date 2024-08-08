@@ -153,7 +153,9 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
 void GridDrawableImpl::renderGrid(RenderContextInstData& RCID) { // static
   auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
   auto drawable   = renderable->_drawable;
-  drawable->_implA.getShared<GridDrawableImpl>()->_render(RCID);
+  auto impl = drawable->_implA.getShared<GridDrawableImpl>();
+  RCID._modColor = impl->_griddata->_modcolor;
+  impl->_render(RCID);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

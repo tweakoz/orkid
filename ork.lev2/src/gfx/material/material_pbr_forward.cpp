@@ -46,6 +46,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
     bool is_skinned = RCID._isSkinned;
+    auto pbrcommon = RCFD->_pbrcommon;
 
     ///////////////////////////////////////////////////////////////////////////
     // retrieve global RCFD state for PBR materials
@@ -219,11 +220,19 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       FXI->BindParamCTex(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
       FXI->BindParamCTex(mtl->_parProbeIrradiance, mtl->_texCubeBlack.get() );
     }
-
+    auto imap = PBRMaterial::brdfIntegrationMap(context);
+    FXI->BindParamCTex(mtl->_parMapBrdfIntegration, imap.get());
+    int ow = RCFD->userPropertyAs<int>("OutputWidth"_crcu);
+    int oh = RCFD->userPropertyAs<int>("OutputHeight"_crcu);
+    fvec2 vpsize = fvec2(ow, oh);
+    FXI->BindParamVect2(mtl->_parInvViewSize, fvec2(1.0f / vpsize.x, 1.0f / vpsize.y));
     ///////////////////////////////////////////////////////////////////////////
 
-    auto modcolor = context->RefModColor();
-    FXI->BindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);
+    auto modcolor = RCID._modColor;
+    auto bascolor = mtl->_baseColor;
+    FXI->BindParamVect4(mtl->_parModColor, modcolor);
+    FXI->BindParamVect4(mtl->_parBaseColor, bascolor);
+    printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, bascolor.x, bascolor.y, bascolor.z, bascolor.w );
   };
   return L;
 }

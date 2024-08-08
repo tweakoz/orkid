@@ -49,15 +49,16 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
     auto RSI        = context->RSI();
     const auto& CPD = RCFD->topCPD();
     auto FXI        = context->FXI();
-    auto modcolor   = context->RefModColor();
+    auto modcolor   = RCID._modColor;
     mut->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
     mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
     mut->_rasterstate.SetZWriteMask(true);
     mut->_rasterstate.SetRGBAWriteMask(true, true);
     RSI->BindRasterState(this->_rasterstate);
-    FXI->BindParamVect4(this->_parModColor, modcolor * this->_baseColor);
+    FXI->BindParamVect4(this->_parModColor, modcolor);
+    FXI->BindParamVect4(this->_parBaseColor, this->_baseColor);
+    printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, this->_baseColor.x, this->_baseColor.y, this->_baseColor.z, this->_baseColor.w );
   };
-  // printf( "OK1..\n");
   ////////////////////////////////////////////////////////////////////////////////////////////
   if (permu._stereo) {                         // stereo
     if (permu._instanced) {                    // stereo-instanced

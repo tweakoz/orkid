@@ -48,7 +48,6 @@ static logchannel_ptr_t logchan_pbrcom = logger()->createChannel("PBRCOM", fvec3
 ///////////////////////////////////////////////////////////////////////////////
 
 static asset::vars_ptr_t _irradianceVars() {
-
   auto vars                                          = std::make_shared<asset::vars_t>();
   vars->makeValueForKey<Texture::proc_t>("postproc") = //
       [vars](

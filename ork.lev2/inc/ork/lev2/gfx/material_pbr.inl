@@ -181,6 +181,8 @@ public:
 
   fxparam_constptr_t _paramNearFar      = nullptr;
 
+  fxparam_constptr_t _parBaseColor      = nullptr;
+
   fxparam_constptr_t _parMapLightMap         = nullptr;
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;

@@ -30,15 +30,13 @@ uniform_set ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  //sampler2D ColorMap;
-  //sampler2D NormalMap;
-  //sampler2D MtlRufMap;
 
-  sampler2DArray CNMREA;         // 4
+  sampler2DArray CNMREA; // 4
   sampler2D EmissiveMap;
 
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;
+  vec4 BaseColor;
   vec4 ModColor;
   uint obj_pickID;
   mat4 v;
@@ -53,34 +51,31 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
-  //sampler2D ColorMap;             // 0
-  //sampler2D NormalMap;            // 1
-  //sampler2D MtlRufMap;           // 2
-  //sampler2D EmissiveMap;         // 3
+  vec4 BaseColor;
 
-  sampler2D SSAOMap;            // 4
-  sampler2D SSAOKernel;      // 5
-  sampler2D SSAOScrNoise;   // 6
+  sampler2D SSAOMap;      // 0
+  sampler2D SSAOKernel;   // 1
+  sampler2D SSAOScrNoise; // 2
 
-  sampler2D MapBrdfIntegration; // 7
-  sampler2D MapSpecularEnv; // 8
-  sampler2D MapDiffuseEnv; // 9
-  sampler2D MapDepth; // 10
-  sampler2D MapLinearDepth; // 11
+  sampler2D MapBrdfIntegration; // 3
+  sampler2D MapSpecularEnv;     // 4
+  sampler2D MapDiffuseEnv;      // 5
+  sampler2D MapDepth;           // 6
+  sampler2D MapLinearDepth;     // 7
 
-  sampler2D light_cookie0; // 12
-  sampler2D light_cookie1; // 13
-  sampler2D light_cookie2; // 14
-  sampler2D light_cookie3; // 15
-  sampler2D light_cookie4;
-  sampler2D light_cookie5;
-  sampler2D light_cookie6;
-  sampler2D light_cookie7;
+  sampler2D light_cookie0; // 8
+  sampler2D light_cookie1; // 9
+  sampler2D light_cookie2; // 10
+  sampler2D light_cookie3; // 11
+  sampler2D light_cookie4; // 12
+  sampler2D light_cookie5; // 13
+  sampler2D light_cookie6; // 14
+  sampler2D light_cookie7; // 15
 
   samplerCube reflectionPROBE; // 16
   samplerCube irradiancePROBE; // 17
 
-  sampler2DArray CNMREA;         // 4
+  sampler2DArray CNMREA; // 18
 
   //
 
@@ -94,8 +89,6 @@ uniform_set ub_frg_fwd {
   mat4 inv_mvp;
   mat4 inv_vp_l;
   mat4 inv_vp_r;
-
-
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -127,9 +120,9 @@ uniform_set ub_frg_fwd {
 
   int point_light_count;
   int spot_light_count;
-  //sampler2D UnTexPointLightsData;
+  // sampler2D UnTexPointLightsData;
 
-  //sampler2D light_cookies[8];
+  // sampler2D light_cookies[8];
 
   vec4 ModColor;
   vec4 AuxA;
@@ -217,8 +210,7 @@ fragment_interface iface_fdprepass : ub_frg_fwd {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fgbuffer 
- : ub_frg {
+fragment_interface iface_fgbuffer : ub_frg {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -285,11 +277,11 @@ libblock lib_pbr_vtx_instanced {
 libblock lib_pbr_frg : lib_gbuf_encode {
   void ps_common_n(vec4 modc, vec3 N, vec2 UV) {
     vec3 normal    = normalize(frg_tbn * N);
-    vec3 rufmtlamb = texture(CNMREA, vec3(UV,2)).xyz;
+    vec3 rufmtlamb = texture(CNMREA, vec3(UV, 2)).xyz;
     float mtl      = rufmtlamb.z * MetallicFactor;
     float ruf      = rufmtlamb.y * RoughnessFactor;
-    vec3 color     = (modc * frg_clr * texture(CNMREA, vec3(UV,0))).xyz;
-    vec3 emission  = texture(CNMREA, vec3(UV,3)).xyz * modc.xyz;
+    vec3 color     = (modc * frg_clr * texture(CNMREA, vec3(UV, 0))).xyz;
+    vec3 emission  = texture(CNMREA, vec3(UV, 3)).xyz * modc.xyz;
     out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }
   void ps_common_vizn(vec4 modc, vec3 N) {
@@ -302,27 +294,27 @@ libblock lib_pbr_frg : lib_gbuf_encode {
   }
 }
 libblock lib_ssao {
-/////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
 
-vec3 getViewPositionNL(vec2 uv) {
-    float depth = texture(MapDepth, uv).r;
+  vec3 getViewPositionNL(vec2 uv) {
+    float depth            = texture(MapDepth, uv).r;
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
     vec4 viewSpacePosition = MatInvP * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
     return viewSpacePosition.xyz;
-}
-vec3 getViewPosition(vec2 uv) {
-    float lin_depth = texture(MapLinearDepth, uv).r;
-    float near = Zndc2eye.x;
-    float far = Zndc2eye.y;
-    float unit_depth = (lin_depth - near) / (far - near) * 2.0 - 1.0;
+  }
+  vec3 getViewPosition(vec2 uv) {
+    float lin_depth        = texture(MapLinearDepth, uv).r;
+    float near             = Zndc2eye.x;
+    float far              = Zndc2eye.y;
+    float unit_depth       = (lin_depth - near) / (far - near) * 2.0 - 1.0;
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, unit_depth, 1.0);
     vec4 viewSpacePosition = MatInvP * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
-    return vec3(viewSpacePosition.xy,unit_depth);
-}
+    return vec3(viewSpacePosition.xy, unit_depth);
+  }
 
-vec3 ssao_normal(vec2 frg_uv) {
+  vec3 ssao_normal(vec2 frg_uv) {
     vec3 base_pos = getViewPosition(frg_uv);
 
     // compute surface normal @ base_pos (via differential normal calculation)
@@ -337,88 +329,87 @@ vec3 ssao_normal(vec2 frg_uv) {
     vec3 pos_t = getViewPosition(uv_t);
     vec3 pos_b = getViewPosition(uv_b);
 
-    vec3 dx = pos_l - base_pos;
-    vec3 dy = pos_t - base_pos;
+    vec3 dx     = pos_l - base_pos;
+    vec3 dy     = pos_t - base_pos;
     vec3 normal = normalize(cross(dx, dy));
-    return normal*vec3(-1,1,1);
-}
-vec3 ssao_normal2(vec2 frg_uv) {
+    return normal * vec3(-1, 1, 1);
+  }
+  vec3 ssao_normal2(vec2 frg_uv) {
     // compute surface normal @ base_pos (via differential normal calculation)
-    vec3 normal = ssao_normal(frg_uv);
-    vec3 up = vec3(0,1,0);
-    vec3 nxu = normalize(cross(normal, up));
-    vec3 nxv = normalize(cross(normal, nxu));
+    vec3 normal    = ssao_normal(frg_uv);
+    vec3 up        = vec3(0, 1, 0);
+    vec3 nxu       = normalize(cross(normal, up));
+    vec3 nxv       = normalize(cross(normal, nxu));
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
 
     // Accumulate occlusion
-    vec3 NN = normal;
+    vec3 NN             = normal;
     float rad_div_steps = SSAORadius / float(SSAONumSteps);
     for (int i = 0; i < SSAONumSamples; ++i) {
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
-        if (dot(NOISEOUT, normal) < 0.0) {
-          NOISEOUT = -NOISEOUT;
-        } 
-        vec3 sampleDir = normalize(NOISEOUT.x * nxu + NOISEOUT.y * nxv + NOISEOUT.z * normal);
-        NN += sampleDir*0.02;
+      vec3 skern    = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+      vec3 NOISEOUT = normalize(reflect(skern, randomVec));
+      if (dot(NOISEOUT, normal) < 0.0) {
+        NOISEOUT = -NOISEOUT;
+      }
+      vec3 sampleDir = normalize(NOISEOUT.x * nxu + NOISEOUT.y * nxv + NOISEOUT.z * normal);
+      NN += sampleDir * 0.02;
     }
     return normalize(NN);
-}
+  }
 
-// SSAO calculation function
-float ssao_linear(vec2 frg_uv) {
-    vec3 base_pos = getViewPosition(frg_uv);
+  // SSAO calculation function
+  float ssao_linear(vec2 frg_uv) {
+    vec3 base_pos    = getViewPosition(frg_uv);
     float base_depth = base_pos.z;
 
-    vec3 up = vec3(0,1,0);
-    vec3 normal = ssao_normal(frg_uv);
-    vec3 nxu = normalize(cross(normal, up));
-    vec3 nxv = normalize(cross(normal, nxu));
+    vec3 up        = vec3(0, 1, 0);
+    vec3 normal    = ssao_normal(frg_uv);
+    vec3 nxu       = normalize(cross(normal, up));
+    vec3 nxv       = normalize(cross(normal, nxu));
     vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
 
     // Accumulate occlusion
-    float occlusion = 0.0;
+    float occlusion     = 0.0;
     float rad_div_steps = SSAORadius / float(SSAONumSteps);
     for (int i = 0; i < SSAONumSamples; ++i) {
 
-        // generate hemisphere of rays centered on "normal" at base_pos
+      // generate hemisphere of rays centered on "normal" at base_pos
 
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
+      vec3 skern    = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+      vec3 NOISEOUT = normalize(reflect(skern, randomVec));
 
-        // construct sample direction from NOISEOUT, normal, nxu, nxv
-        vec3 sampleDir = normalize(normal+NOISEOUT*0.4);
-        //vec3 sampleDir = normalize(normal + NOISEOUT);
-        
-        // ensure sampledir is on hemisphere of normal by reflecting of plane defined by normal
+      // construct sample direction from NOISEOUT, normal, nxu, nxv
+      vec3 sampleDir = normalize(normal + NOISEOUT * 0.4);
+      // vec3 sampleDir = normalize(normal + NOISEOUT);
 
-        vec3 trv_per_step = sampleDir.xyz * rad_div_steps;
-        for (int j = 1; j <= SSAONumSteps; ++j) {
+      // ensure sampledir is on hemisphere of normal by reflecting of plane defined by normal
 
-            // ray cast depth
-            vec3 sample_pos = base_pos + trv_per_step * float(j);
-            float casted_depth = -sample_pos.z;
+      vec3 trv_per_step = sampleDir.xyz * rad_div_steps;
+      for (int j = 1; j <= SSAONumSteps; ++j) {
 
-            // depth map sample
-            vec2 sample_uv = clamp(sample_pos.xy, vec2(0.0), vec2(1.0));
-            float depth_sample2 = -getViewPosition(sample_uv).z;
+        // ray cast depth
+        vec3 sample_pos    = base_pos + trv_per_step * float(j);
+        float casted_depth = -sample_pos.z;
 
+        // depth map sample
+        vec2 sample_uv      = clamp(sample_pos.xy, vec2(0.0), vec2(1.0));
+        float depth_sample2 = -getViewPosition(sample_uv).z;
 
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - depth_sample2));
-            if(casted_depth < (depth_sample2-SSAOBias)) {
-                occlusion += rangeCheck;
-            }
-            //occlusion += casted_depth*0.5;
+        float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - depth_sample2));
+        if (casted_depth < (depth_sample2 - SSAOBias)) {
+          occlusion += rangeCheck;
         }
-        //occlusion = sampleDir.z;
+        // occlusion += casted_depth*0.5;
+      }
+      // occlusion = sampleDir.z;
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
     return occlusion;
-}
+  }
 
   /////////////////////////////////////////////////////////
-float ssao_nonlinear(vec2 frg_uv) {
+  float ssao_nonlinear(vec2 frg_uv) {
     float depth = texture(MapDepth, frg_uv).r;
 
     // Random noise texture
@@ -427,35 +418,93 @@ float ssao_nonlinear(vec2 frg_uv) {
     // Accumulate occlusion
     float occlusion = 0.0;
     for (int i = 0; i < SSAONumSamples; ++i) {
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
-        sampleDir = normalize(sampleDir);
+      vec3 skern     = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
+      vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
+      sampleDir      = normalize(sampleDir);
 
-        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
-        for (int j = 1; j <= SSAONumSteps; ++j) {
-            vec2 samplePos = frg_uv + trv_per_step * float(j);
+      vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
+      for (int j = 1; j <= SSAONumSteps; ++j) {
+        vec2 samplePos = frg_uv + trv_per_step * float(j);
 
-            // Clamp sample positions to screen boundaries
-            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
+        // Clamp sample positions to screen boundaries
+        samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
 
-            float sampleDepth = texture(MapDepth, samplePos.xy).r;
+        float sampleDepth = texture(MapDepth, samplePos.xy).r;
 
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
-            if (sampleDepth < depth + SSAOBias) {
-                occlusion += rangeCheck;
-            }
+        float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
+        if (sampleDepth < depth + SSAOBias) {
+          occlusion += rangeCheck;
         }
+      }
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return 1.0-occlusion;
+    return 1.0 - occlusion;
+  }
+
+  float ssao(vec2 frg_uv) {
+    return ssao_linear(frg_uv);
+  }
 }
 
-float ssao(vec2 frg_uv) {
-  return ssao_linear(frg_uv);
+libblock lib_pbr {
+
+  struct PbrInpA {
+    vec3 _albedo;
+    vec3 _wpos;
+    vec3 _epos;
+    vec3 _wnrm;
+    float _metallic;
+    float _roughness;
+    float _fogZ;
+    float _atmos;
+    float _alpha;
+    bool _emissive;
+  };
+  struct PbrOutA {
+    vec3 _metalbase;
+    vec3 _F0;
+    vec3 _G0;
+    vec3 _F;
+    vec3 _invF;
+    vec3 _edir;
+    vec3 _refl;
+    vec3 _diffuseColor;
+    float _metallic;
+    float _dialetric;
+    float _ambshade;
+    vec2 _BRDF;
+  };
+
+  PbrOutA pbrIoEnvA(PbrInpA inp) {
+    PbrOutA _out;
+    // float roughness = rufmtlamb.y * RoughnessFactor;
+    // roughness = pow(roughness, RoughnessPower);
+    vec3 N = normalize(inp._wnrm);
+    vec3 edir = normalize(inp._wpos - inp._epos);
+    _out._metallic  = clamp(inp._metallic, 0.02, 0.99);
+    _out._dialetric = 1.0 - inp._metallic;
+    _out._metalbase = mix(vec3(0.04), inp._albedo, _out._metallic);
+    _out._F0        = mix(_out._metalbase, inp._albedo, _out._metallic);
+    _out._G0        = mix(_out._metalbase, inp._albedo, 1.0 - _out._metallic);
+    _out._edir      = edir;
+
+    float costheta = clamp(dot(N, edir), 0.01, 0.99);
+    _out._BRDF     = textureLod(MapBrdfIntegration, vec2(costheta, inp._roughness * 0.99), 0).rg;
+    _out._BRDF     = clamp(_out._BRDF, vec2(0), vec2(1));
+
+    _out._F    = fresnelSchlickRoughness(costheta, _out._F0, inp._roughness);
+    _out._invF = (vec3(1) - _out._F);
+
+    _out._ambshade = clamp(dot(N, edir), 0, 1) * 0.3 + 0.7;
+    _out._refl     = normalize(reflect(edir, N));
+    //_out._refl *= vec3(-1, -1, -1);
+
+    _out._diffuseColor = mix(inp._albedo, vec3(0), _out._metallic);
+    return _out;
+  }
 }
 
-}
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -486,8 +535,8 @@ vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
 // vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced //
-  : iface_vgbuffer_instanced //
-  : lib_pbr_vtx_instanced { //
+    : iface_vgbuffer_instanced           //
+    : lib_pbr_vtx_instanced {            //
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
@@ -503,10 +552,10 @@ vertex_shader vs_rigid_gbuffer_instanced //
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced_stereo //
-  : extension(GL_NV_stereo_view_rendering) //
-  : extension(GL_NV_viewport_array2) //
-  : iface_vgbuffer_stereo_instanced //
-  : lib_pbr_vtx_instanced { //
+    : extension(GL_NV_stereo_view_rendering)    //
+    : extension(GL_NV_viewport_array2)          //
+    : iface_vgbuffer_stereo_instanced           //
+    : lib_pbr_vtx_instanced {                   //
   ////////////////////////////////
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
@@ -550,13 +599,13 @@ vertex_shader vs_rigid_gbuffer_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
   gl_Position = mvp * position;
 }
 vertex_shader vs_forward_rigid_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
-  frg_clr     = vec4(1,1,1,1);//vtxcolor;
+  frg_clr     = vec4(1, 1, 1, 1); // vtxcolor;
   gl_Position = mvp * position;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
-  out_gbuf = packGbuffer(vec3(0), frg_clr.xyz, vec3(0,0,1), 1, 0);
-  //out_gbuf = packGbuffer(vec3(0,1,0), vec3(1,1,0), vec3(0,0,1), 1, 0);
+  out_gbuf = packGbuffer(vec3(0), frg_clr.xyz, vec3(0, 0, 1), 1, 0);
+  // out_gbuf = packGbuffer(vec3(0,1,0), vec3(1,1,0), vec3(0,0,1), 1, 0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_frgcolor : iface_forward {
@@ -589,17 +638,16 @@ fragment_shader ps_gbuffer_vizn : iface_fgbuffer : lib_pbr_frg {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n // normalmap
-    : iface_fgbuffer 
-    : lib_pbr_frg {
-  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
+    : iface_fgbuffer : lib_pbr_frg {
+  vec3 TN = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
-  ps_common_n(ModColor, N, frg_uv0);
+  ps_common_n(vec3(1, 1, 1), N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
     : iface_fgbuffer : lib_pbr_frg {
-  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -607,7 +655,7 @@ fragment_shader ps_gbuffer_n_stereo // normalmap
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
@@ -616,7 +664,7 @@ fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg 
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -630,9 +678,9 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
   vec2 map_uv    = frg_uv0 * vec2(1, 0.5);
   if (is_right)
     map_uv += vec2(0, 0.5);
-  vec3 TN = texture(CNMREA, vec3(map_uv,1)).xyz;
+  vec3 TN = texture(CNMREA, vec3(map_uv, 1)).xyz;
   vec3 N  = TN * 2.0 - vec3(1, 1, 1);
-  ps_common_n(ModColor, N, map_uv);
+  ps_common_n(vec3(1, 1, 1), N, map_uv);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -696,15 +744,15 @@ fragment_interface iface_fdprepass_stereo : ub_frg_fwd {
 ///////////////////////////////////////////////////////////////
 
 vertex_shader vs_forward_depthprepass_mono : iface_vdprepass {
-  vec4 hpos    = mvp * position;
-  gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w);
+  vec4 hpos   = mvp * position;
+  gl_Position = hpos;
+  frg_depth   = (hpos.z) / (hpos.w);
 }
 vertex_shader vs_forward_depthprepass_skinned_mono : iface_vdprepass_skinned : skin_tools {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec4 hpos    = mvp * skn_pos;
   gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w);
+  frg_depth    = (hpos.z) / (hpos.w);
 }
 vertex_shader vs_forward_depthprepass_instanced_mono : iface_vdprepass {
   int matrix_v     = (gl_InstanceID >> 10);
@@ -721,7 +769,7 @@ vertex_shader vs_forward_depthprepass_instanced_mono : iface_vdprepass {
   // gl_FragDepth = hpos.z/hpos.w;
 }
 vertex_shader vs_forward_depthprepass_skinned_instanced_mono : iface_vdprepass {
-  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec4 skn_pos     = vec4(SkinPosition(position.xyz), 1);
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
@@ -736,57 +784,50 @@ vertex_shader vs_forward_depthprepass_skinned_instanced_mono : iface_vdprepass {
   // gl_FragDepth = hpos.z/hpos.w;
 }
 
-
-vertex_shader vs_forward_depthprepass_stereo 
-  : iface_vdprepass_stereo 
-  : extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2) {
-  vec4 hposL    = mvp_l * position;
-  vec4 hposR    = mvp_r * position;
+vertex_shader vs_forward_depthprepass_stereo : iface_vdprepass_stereo : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
+  vec4 hposL                    = mvp_l * position;
+  vec4 hposR                    = mvp_r * position;
   gl_Position                   = hposL;
   gl_SecondaryPositionNV        = hposR;
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  frg_depthL = hposL.z / hposL.w;
-  frg_depthR = hposR.z / hposR.w;
+  frg_depthL                    = hposL.z / hposL.w;
+  frg_depthR                    = hposR.z / hposR.w;
 }
-vertex_shader vs_forward_depthprepass_skinned_stereo 
-  : iface_vdprepass_skinned_stereo 
-  : skin_tools 
-  : extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2) {
-  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
-  vec4 hposL    = mvp_l * skn_pos;
-  vec4 hposR    = mvp_r * skn_pos;
+vertex_shader vs_forward_depthprepass_skinned_stereo : iface_vdprepass_skinned_stereo : skin_tools
+    : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
+  vec4 skn_pos                  = vec4(SkinPosition(position.xyz), 1);
+  vec4 hposL                    = mvp_l * skn_pos;
+  vec4 hposR                    = mvp_r * skn_pos;
   gl_Position                   = hposL;
   gl_SecondaryPositionNV        = hposR;
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  frg_depthL = hposL.z / hposL.w;
-  frg_depthR = hposR.z / hposR.w;
+  frg_depthL                    = hposL.z / hposL.w;
+  frg_depthR                    = hposR.z / hposR.w;
 }
 vertex_shader vs_forward_depthprepass_instanced_stereo : iface_vdprepass_skinned : skin_tools {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec4 hpos    = mvp * skn_pos;
   gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w);
+  frg_depth    = (hpos.z) / (hpos.w);
 }
 vertex_shader vs_forward_depthprepass_skinned_instanced_stereo : iface_vdprepass_skinned : skin_tools {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec4 hpos    = mvp * skn_pos;
   gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w);
+  frg_depth    = (hpos.z) / (hpos.w);
 }
 fragment_shader ps_forward_depthprepass_mono : iface_fdprepass {
-  //gl_FragDepth = frg_depth;
+  // gl_FragDepth = frg_depth;
   gl_FragDepth = gl_FragCoord.z + 1e-6;
 }
-fragment_shader ps_forward_depthprepass_stereo 
-  : iface_fdprepass_stereo
-  : extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2) {
+fragment_shader ps_forward_depthprepass_stereo : iface_fdprepass_stereo : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
 }
 
 ///////////////////////////////////////////////////////////////
@@ -801,7 +842,7 @@ vertex_interface iface_forward_stereo_instanced : iface_vgbuffer_instanced {
 vertex_shader vs_forward_test_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position = mvp * position;
-  frg_clr = vtxcolor;
+  frg_clr     = vtxcolor;
 }
 vertex_shader vs_forward_test : iface_vgbuffer : lib_pbr_vtx {
   vs_common(position, normal, binormal);
@@ -874,12 +915,12 @@ vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : 
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test_fragcolor //
-    : iface_forward             //
-    : lib_math                  //
-    : lib_brdf                  //
-    : lib_def                   //
-    : lib_fwd {                 //
-  out_color = vec4(forward_lighting_mono(frg_clr.xyz*ModColor.xyz), 1);
+    : iface_forward                       //
+    : lib_math                            //
+    : lib_brdf                            //
+    : lib_def                             //
+    : lib_fwd {                           //
+  out_color = vec4(forward_lighting_mono(frg_clr.xyz * ModColor.xyz), 1);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test //
@@ -894,15 +935,9 @@ fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_
   out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test_stereo 
-  : iface_forward 
-  : lib_math 
-  : lib_brdf 
-  : lib_def 
-  : lib_fwd 
-  : lib_fwd_stereo 
-  : extension(GL_NV_stereo_view_rendering)
-  : extension(GL_NV_viewport_array2) {
+fragment_shader ps_forward_test_stereo : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo
+    : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
   out_color = vec4(forward_lighting_stereo(ModColor.xyz), 1);
 }
 fragment_shader ps_forward_test_instanced_stereo : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo
@@ -954,7 +989,8 @@ fragment_shader ps_forward_skybox_mono //
   xyzw.xyz *= (1.0 / xyzw.w);
   vec3 posB = xyzw.xyz;
   vec3 VN   = normalize(posA - posB);
-
+  // VN.z      = -VN.z;
+  // VN.x      = -VN.x;
   ///////////////////////
   // environment map
   ///////////////////////
@@ -1005,7 +1041,7 @@ vertex_shader vs_forward_unlit : iface_vgbuffer : lib_pbr_vtx {
   frg_uv0     = uv0;
 }
 fragment_shader ps_forward_unlit : iface_forward {
-  vec3 rgb = texture(CNMREA, vec3(frg_uv0,0)).xyz;
+  vec3 rgb = texture(CNMREA, vec3(frg_uv0, 0)).xyz;
   rgb *= ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
 }
@@ -1059,21 +1095,21 @@ fragment_interface iface_frg_pick : ub_frg_fwd {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : skin_tools : ub_vtx {
-  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
-  vec3 skn_nrm = SkinNormal(normal);
-  gl_Position  = mvp * skn_pos;
-  frg_wpos     = (m * skn_pos).xyz;
-  frg_wnrm     = normalize(mrot * skn_nrm);
-  frg_uv      = uv0;
-  frg_pickSUBID  = pickSUBID;
+  vec4 skn_pos  = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm  = SkinNormal(normal);
+  gl_Position   = mvp * skn_pos;
+  frg_wpos      = (m * skn_pos).xyz;
+  frg_wnrm      = normalize(mrot * skn_nrm);
+  frg_uv        = uv0;
+  frg_pickSUBID = pickSUBID;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_vtx {
-  gl_Position = mvp * position;
-  frg_wpos    = (m * position).xyz;
-  frg_wnrm    = normalize(mrot * normal);
-  frg_uv      = vec2(0,0);
-  frg_pickSUBID  = pickSUBID;
+  gl_Position   = mvp * position;
+  frg_wpos      = (m * position).xyz;
+  frg_wnrm      = normalize(mrot * normal);
+  frg_uv        = vec2(0, 0);
+  frg_pickSUBID = pickSUBID;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
@@ -1089,25 +1125,25 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
       texelFetch(InstanceMatrices, ivec2(matrix_u + 3, matrix_v), 0));
   mat3 instance_rot = mat3(instance_matrix);
   ////////////////////////////////
-  //vec4 instanced_pos      = (instance_matrix * position);
-  //vs_instanced(position, normal, binormal, instance_matrix);
+  // vec4 instanced_pos      = (instance_matrix * position);
+  // vs_instanced(position, normal, binormal, instance_matrix);
   ////////////////////////////////
-  gl_Position = mvp * instance_matrix * position;
-  frg_wpos    = (m * position).xyz;
-  frg_wnrm    = normalize(mrot * normal);
-  frg_uv = vec2(0,0);
-  frg_pickSUBID.x  = gl_InstanceID;
-  frg_pickSUBID.y  = 2;
-  frg_pickSUBID.z  = 3;
+  gl_Position     = mvp * instance_matrix * position;
+  frg_wpos        = (m * position).xyz;
+  frg_wnrm        = normalize(mrot * normal);
+  frg_uv          = vec2(0, 0);
+  frg_pickSUBID.x = gl_InstanceID;
+  frg_pickSUBID.y = 2;
+  frg_pickSUBID.z = 3;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //
     : iface_frg_pick {
 
-  out_pickID = uvec4(obj_pickID,frg_pickSUBID.x,frg_pickSUBID.y,frg_pickSUBID.z);
+  out_pickID = uvec4(obj_pickID, frg_pickSUBID.x, frg_pickSUBID.y, frg_pickSUBID.z);
 
-  out_wpos  = vec4(frg_wpos,0);
-  out_wnrm  = vec4(normalize(frg_wnrm), 0);
-  out_uv  = vec4(frg_uv, 0, 0);
+  out_wpos = vec4(frg_wpos, 0);
+  out_wnrm = vec4(normalize(frg_wnrm), 0);
+  out_uv   = vec4(frg_uv, 0, 0);
 }
 ///////////////////////////////////////////////////////////////

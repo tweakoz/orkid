@@ -54,7 +54,6 @@ oshader = args["overrideshader"]
 ocolor = args["overridecolor"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
-rendermodel = args["rendermodel"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -97,7 +96,7 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=ssaa)
+    self.ezapp = OrkEzApp.create(self,ssaa=ssaa,width=640,height=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
@@ -126,12 +125,12 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = "DeferredPBR"
+    rendermodel = args["rendermodel"]
+
     if rendermodel == "deferred":
       rendermodel = "DeferredPBR"
     elif rendermodel == "forward":
       rendermodel="ForwardPBR"
-
 
     createSceneGraph( app=self,
                       params_dict=params_dict,

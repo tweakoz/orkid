@@ -42,7 +42,6 @@ envmap = args["envmap"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
 bonescale = args["bonescale"]
-rendermodel = args["rendermodel"]
 
 ################################################################################
 # make sure env vars are set before importing the engine...
@@ -81,7 +80,7 @@ class SceneGraphApp(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-
+    
     params_dict = {
       "SkyboxIntensity": float(lightintens),
       "AmbientLight": vec3(0.05),
@@ -99,13 +98,11 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = "DeferredPBR"
+    rendermodel = args["rendermodel"]
     if rendermodel == "deferred":
       rendermodel = "DeferredPBR"
     elif rendermodel == "forward":
       rendermodel="ForwardPBR"
-
-    #rendermodel = "PICKTEST"
 
     createSceneGraph( app=self,
                       params_dict=params_dict,
