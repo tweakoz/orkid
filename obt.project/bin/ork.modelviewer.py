@@ -125,16 +125,9 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = args["rendermodel"]
-
-    if rendermodel == "deferred":
-      rendermodel = "DeferredPBR"
-    elif rendermodel == "forward":
-      rendermodel="ForwardPBR"
-
     createSceneGraph( app=self,
                       params_dict=params_dict,
-                      rendermodel=rendermodel )
+                      rendermodel=args["rendermodel"] )
 
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)

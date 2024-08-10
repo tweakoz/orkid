@@ -58,17 +58,11 @@ class RenderTestApp(object):
     params_dict = {
       "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
       "SkyboxIntensity": 1.5,
-      "DiffuseIntensity": 1.0,
+      "DiffuseIntensity": 0.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
-    rendermodel = args["rendermodel"]
-
-    if rendermodel == "deferred":
-      rendermodel = "DeferredPBR"
-    elif rendermodel == "forward":
-      rendermodel="ForwardPBR"
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
 
@@ -79,7 +73,7 @@ class RenderTestApp(object):
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
         copy.baseColor = vec4(1,1,1,1)
-        copy.metallicFactor = 0.0
+        copy.metallicFactor = 1.0
         copy.roughnessFactor = 0.0
         copy.assignImages(
           ctx,
@@ -96,7 +90,7 @@ class RenderTestApp(object):
 
     createSceneGraph( app=self,
                       params_dict=params_dict,
-                      rendermodel=rendermodel )
+                      rendermodel=args["rendermodel"] )
 
     self.model_drawable = self.ball_model.createDrawable()
     self.sgnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"modelnode",self.model_drawable)
@@ -105,20 +99,21 @@ class RenderTestApp(object):
 
     ###################################
 
-    self.grid_data = createGridData()
-    self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(2)
-    self.grid_data.intensityA = 1.0
-    self.grid_data.intensityB = 0.97
-    self.grid_data.intensityC = 0.9
-    self.grid_data.intensityD = 0.85
-    self.grid_data.lineWidth = 0.1
-    self.grid_node = self.layer_std.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+    if False:
+      self.grid_data = createGridData()
+      self.grid_data.shader_suffix = "_V4"
+      self.grid_data.modcolor = vec3(2)
+      self.grid_data.intensityA = 1.0
+      self.grid_data.intensityB = 0.97
+      self.grid_data.intensityC = 0.9
+      self.grid_data.intensityD = 0.85
+      self.grid_data.lineWidth = 0.1
+      self.grid_node = self.layer_std.createGridNode("grid",self.grid_data)
+      self.grid_node.sortkey = 1
 
-    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
     """
+    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
     shadow_size = 4096
     shadow_bias = 1e-3

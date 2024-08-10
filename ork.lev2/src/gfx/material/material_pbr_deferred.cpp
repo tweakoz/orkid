@@ -57,7 +57,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
     RSI->BindRasterState(this->_rasterstate);
     FXI->BindParamVect4(this->_parModColor, modcolor);
     FXI->BindParamVect4(this->_parBaseColor, this->_baseColor);
-    printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, this->_baseColor.x, this->_baseColor.y, this->_baseColor.z, this->_baseColor.w );
+    //printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, this->_baseColor.x, this->_baseColor.y, this->_baseColor.z, this->_baseColor.w );
   };
   ////////////////////////////////////////////////////////////////////////////////////////////
   if (permu._stereo) {                         // stereo

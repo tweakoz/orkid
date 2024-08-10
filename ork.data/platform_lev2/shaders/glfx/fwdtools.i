@@ -102,20 +102,21 @@ libblock lib_fwd //
     /////////////////////////
     float spec_ruf      = pow(pbd._roughness, 1.3) * 0.7;
     float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
-    vec3 refl_equi      = vec3(refl.x, -refl.y, refl.z);
+    vec3 refl_equi      = vec3(-refl.x, -refl.y, refl.z);
     vec3 spec_env       = env_equirectangular(refl_equi, MapSpecularEnv, spec_miplevel)+probe_REFL;
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * OA._F0 * SpecularLevel;
     vec3 specularMask   = clamp(OA._F * OA._BRDF.x + OA._BRDF.y, 0, 1);
     vec3 specular       = specularMask * specularC*ambocc;
     /////////////////////////
+    //return albedo;
     return saturateV(diffuse + specular);
   } // vec3 environmentLighting(){
   /////////////////////////////////////////////////////////  
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
     // sample PBR material textures
-    vec3 albedo = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
+    vec3 albedo = (BaseColor.xyz*modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
     vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
     vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
     vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
@@ -131,15 +132,13 @@ libblock lib_fwd //
     ambocc = pow(ambocc, SSAOPower);
     ambocc = mix(1.0,ambocc,SSAOWeight);
     /////////////////////////
-    vec3 WSC = vec3(-1,1,1);
-    /////////////////////////
     PbrInpA pbd;
     pbd._emissive  = length(TN) < 0.1;
     pbd._metallic  = rufmtlamb.z * MetallicFactor;
     pbd._roughness = rufmtlamb.y * RoughnessFactor;
     pbd._albedo    = albedo;
-    pbd._epos      = eyepos*WSC;
-    pbd._wpos      = wpos*WSC;
+    pbd._epos      = eyepos;
+    pbd._wpos      = wpos;
     pbd._wnrm      = normal;
     pbd._fogZ      = 0.0;
     pbd._atmos     = 0.0;
@@ -281,7 +280,7 @@ libblock lib_fwd //
     }
     //return vec3(1,1,1);
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, OA);
-    return env_lighting;
+    //return env_lighting;
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {

@@ -177,7 +177,7 @@ class SceneGraphApp(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(0.5)
+    self.grid_data.modcolor = vec3(1.5)
     self.grid_draw = self.grid_data.createDrawable()
     self.grid_node = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"grid",self.grid_draw)
     #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)

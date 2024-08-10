@@ -232,7 +232,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     auto bascolor = mtl->_baseColor;
     FXI->BindParamVect4(mtl->_parModColor, modcolor);
     FXI->BindParamVect4(mtl->_parBaseColor, bascolor);
-    printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, bascolor.x, bascolor.y, bascolor.z, bascolor.w );
+    //printf( "OK1.. mc<%g %g %g %g> bc<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w, bascolor.x, bascolor.y, bascolor.z, bascolor.w );
   };
   return L;
 }
