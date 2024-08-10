@@ -137,6 +137,8 @@ void Scene::enablePickHud() {
 }
 
 void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
+
+
   if(not okToRender())
     return;
   //OrkBreak();
@@ -145,7 +147,7 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
   if (_dogpuinit) {
     gpuInit(context);
   }
-
+  
   if (_synchro) {
     EASY_BLOCK("sg::Scene::_renderIMPL::synchro", profiler::colors::Red);
     bool OK = _synchro->beginRender();

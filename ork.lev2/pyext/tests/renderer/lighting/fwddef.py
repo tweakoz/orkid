@@ -34,7 +34,7 @@ class RenderTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=1)
+    self.ezapp = lev2.OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(lev2.RefreshFixedFPS, 30)
 
     # enable UI draw mode
@@ -77,8 +77,8 @@ class RenderTestApp(object):
     self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
     ##################
-    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
-    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+    #white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    #normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
@@ -87,9 +87,9 @@ class RenderTestApp(object):
         copy.roughnessFactor = 0.0
         copy.assignImages(
           ctx,
-          color = white,
-          normal = normal,
-          mtlruf = white,
+          #color = white,
+          #normal = normal,
+          #mtlruf = white,
           doConform=True
         )
         submesh.material = copy
@@ -102,6 +102,9 @@ class RenderTestApp(object):
     self.grid_data.intensityC = 0.9
     self.grid_data.intensityD = 0.85
     self.grid_data.lineWidth = 0.2
+
+    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
+    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
     
     ########################################################
     # scenegraph init data
@@ -114,6 +117,7 @@ class RenderTestApp(object):
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
+    sg_params.SSAA = 2
 
     ########################################################
     # create scenegraph / panels
@@ -156,6 +160,7 @@ class RenderTestApp(object):
         sg_params_sub = sg_params.clone()
         sg_params_sub.preset = rendermodel
         self.scenegraph = lev2.scenegraph.Scene(sg_params_sub)
+        self.scene = self.scenegraph
         canonicalizeSG(self,self.scenegraph,rendermodel)
 
         self.string_drwdata = lev2.StringDrawableData()
@@ -186,6 +191,49 @@ class RenderTestApp(object):
         self.cameralut = parent.shared_cameralut
         self.camera = parent.shared_camera
         self.uicam = parent.shared_uicam
+
+        if False:
+          shadow_size = 4096
+          shadow_bias = 1e-3
+          intens = 450
+          self.spotlight1 = MySpotLight(app=self,
+                                       model=parent.ball_model,
+                                       frq=0.3,
+                                       color=vec3(intens,0,0),
+                                       cookie=parent.cookie1,
+                                       radius=12,
+                                       bias=shadow_bias,
+                                       dim=shadow_size,
+                                       fovamp=0,
+                                       fovbase=45,
+                                       voffset=16,
+                                       vscale=12)
+
+          self.spotlight2 = MySpotLight(app=self,
+                                       model=parent.ball_model,
+                                       frq=0.7,
+                                       color=vec3(0,intens,0),
+                                       cookie=parent.cookie1,
+                                       radius=16,
+                                       bias=shadow_bias,
+                                       dim=shadow_size,
+                                       fovamp=0,
+                                       fovbase=65,
+                                       voffset=17,
+                                       vscale=10)
+
+          self.spotlight3 = MySpotLight(app=self,
+                                       model=parent.ball_model,
+                                       frq=0.9,
+                                       color=vec3(0,0,intens),
+                                       cookie=parent.cookie1,
+                                       radius=19,
+                                       bias=shadow_bias,
+                                       dim=shadow_size,
+                                       fovamp=0,
+                                       fovbase=75,
+                                       voffset=20,
+                                       vscale=10)
 
         def handler(context):
           self.localpose.bindPose()

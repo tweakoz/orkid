@@ -266,6 +266,7 @@ public:
 
   int _defaultW = 100;
   int _defaultH = 100;
+  int _SSAA = 0;
 
   compositorimpl_ptr_t createImpl() const;
 };
@@ -327,6 +328,7 @@ struct CompositingImpl {
   compositorctx_ptr_t _compcontext;
   compositingpassdatastack_t _stack;
   std::string _name;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
