@@ -422,9 +422,6 @@ libblock lib_deferred
       /////////////////////////
       float roughness = gbd._roughness;
       /////////////////////////
-      vec3 basecolor = albedo;
-      vec3 diffcolor = mix(basecolor,vec3(0),OA._metallic);
-      /////////////////////////
       // ambient occlusion
       /////////////////////////
       float ambocc = 1.0;
@@ -435,10 +432,10 @@ libblock lib_deferred
       /////////////////////////
       // ambient lighting
       /////////////////////////
-      vec3 ambient = AmbientLevel*OA._ambshade*ambocc;
+      vec3 ambient = OA._ambient*ambocc;
       /////////////////////////
-      vec3 diffuse_env = env_equirectangular(rawn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
-      vec3 diffuse = clamp(basecolor*diffuse_env*ambocc,0,1);      
+      vec3 diffuse_env = OA._diffuseEnv; //env_equirectangular(rawn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
+      vec3 diffuse = clamp(albedo*diffuse_env*ambocc,0,1);      
       /////////////////////////
       float spec_ruf = pow(roughness,1.3)*0.7;
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);

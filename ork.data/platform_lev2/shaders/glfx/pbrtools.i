@@ -470,9 +470,10 @@ libblock lib_pbr {
     vec3 _edir;
     vec3 _refl;
     vec3 _diffuseColor;
+    vec3 _diffuseEnv;
     float _metallic;
     float _dialetric;
-    float _ambshade;
+    vec3 _ambient;
     vec2 _BRDF;
   };
 
@@ -496,11 +497,12 @@ libblock lib_pbr {
     _out._F    = fresnelSchlickRoughness(costheta, _out._F0, inp._roughness);
     _out._invF = (vec3(1) - _out._F);
 
-    _out._ambshade = clamp(dot(N, edir), 0, 1) * 0.3 + 0.7;
+    _out._ambient = (clamp(dot(N, edir), 0, 1) * 0.3 + 0.7)*AmbientLevel;
     _out._refl     = normalize(reflect(edir, N));
     //_out._refl *= vec3(-1, -1, -1);
 
     _out._diffuseColor = mix(inp._albedo, vec3(0), _out._metallic);
+    _out._diffuseEnv = env_equirectangular(N,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
     return _out;
   }
 }

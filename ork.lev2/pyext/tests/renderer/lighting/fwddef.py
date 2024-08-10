@@ -7,26 +7,24 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, signal, numpy, obt.path, os
-from orkengine.core import *
-from orkengine.lev2 import *
-from PIL import Image
+import math, random, argparse, sys, signal
+from orkengine.core import vec3, vec4, quat, mtx4, Transform
+from orkengine.core import lev2_pyexdir, CrcStringProxy, VarMap
+from orkengine import lev2
 
 ################################################################################
 
-l2exdir = (lev2exdir()/"python").normalized.as_string
-this_dir = obt.path.directoryOfInvokingModule()
+lev2_pyexdir.addToSysPath()
 
-sys.path.append(l2exdir) # add parent dir to path
-from lev2utils.cameras import *
-from lev2utils.shaders import *
+from lev2utils.cameras import setupUiCameraX
 from lev2utils.primitives import createGridData, createCubePrim
+from lev2utils.shaders import createPipeline
 from lev2utils.scenegraph import createSceneGraph
+from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
-save_images = False 
-do_offscreen = False 
+tokens = CrcStringProxy()
 
 ################################################################################
 
@@ -35,8 +33,8 @@ class UiSgQuadViewTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self, offscreen=do_offscreen)
-    self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
+    self.ezapp = lev2.OrkEzApp.create(self)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFixedFPS, 30)
 
     # enable UI draw mode
     self.ezapp.topWidget.enableUiDraw()
@@ -48,10 +46,9 @@ class UiSgQuadViewTestApp(object):
     self.griditems = lg_group.makeGrid( width = 2,
                                         height = 1,
                                         margin = 8,
-                                        uiclass = ui.SceneGraphViewport,
+                                        uiclass = lev2.ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
 
-    self.gpu_update_handlers = []
     self.abstime = 0.0
 
     def onCtrlC(signum, frame):
@@ -75,14 +72,14 @@ class UiSgQuadViewTestApp(object):
     self.grid_data = createGridData()
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
     pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
-    mesh = meshutil.Mesh()
+    mesh = lev2.meshutil.Mesh()
     mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
     submesh = mesh.submesh_list[0]
-    submesh_prim = RigidPrimitive(submesh,ctx)
+    submesh_prim = lev2.RigidPrimitive(submesh,ctx)
     pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
 
-    self.model = XgmModel("data://tests/chartest/char_mesh")
-    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+    self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
+    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
     ########################################################
     # scenegraph init data
@@ -101,7 +98,7 @@ class UiSgQuadViewTestApp(object):
     # create scenegraph / panels
     ########################################################
 
-    self.shared_cameralut = CameraDataLut()
+    self.shared_cameralut = lev2.CameraDataLut()
     self.shared_camera, self.shared_uicam = setupUiCameraX( cameralut=self.shared_cameralut, 
                                                             camname="SharedCamera",
                                                             eye = vec3(0,5,20),
@@ -122,7 +119,7 @@ class UiSgQuadViewTestApp(object):
 
         #
 
-        self.cameralut = CameraDataLut()
+        self.cameralut = lev2.CameraDataLut()
         self.cur_eye = vec3(0,0,0)
         self.cur_tgt = vec3(0,0,1)
         self.dst_eye = vec3(0,0,0)
@@ -130,7 +127,7 @@ class UiSgQuadViewTestApp(object):
         self.counter = 0
 
         griditem = parent.griditems[index]        
-        self.cameralut = CameraDataLut()
+        self.cameralut = lev2.CameraDataLut()
         self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
 
         if True:
@@ -143,13 +140,13 @@ class UiSgQuadViewTestApp(object):
             sg_params_def.AmbientLevel = vec3(.125)
             sg_params_def.DepthFogDistance = 10000.0
             sg_params_def.preset = "DeferredPBR"
-            self.scenegraph = scenegraph.Scene(sg_params_def)
+            self.scenegraph = lev2.scenegraph.Scene(sg_params_def)
           else:
-            comp_tek = NodeCompositingTechnique()
-            comp_tek.renderNode = DeferredPbrRenderNode()
-            comp_tek.outputNode = ScreenOutputNode()
+            comp_tek = lev2.NodeCompositingTechnique()
+            comp_tek.renderNode = lev2.DeferredPbrRenderNode()
+            comp_tek.outputNode = lev2.ScreenOutputNode()
 
-            comp_data = CompositingData()
+            comp_data = lev2.CompositingData()
             comp_scene = comp_data.createScene("scene1")
             comp_sceneitem = comp_scene.createSceneItem("item1")
             comp_sceneitem.technique = comp_tek
@@ -167,21 +164,18 @@ class UiSgQuadViewTestApp(object):
             pbr_common.skyboxLevel = .5
             pbr_common.depthFogDistance = 100
             pbr_common.depthFogPower = 1
-            comp_tek.renderNode.overrideShader(str(this_dir/"sgdualview.glfx"))
+            #comp_tek.renderNode.overrideShader(str(this_dir/"sgdualview.glfx"))
 
-            print(comp_sceneitem)
-            print(comp_tek)
-            print(pbr_common)
             sg_params_xxx = VarMap()
             sg_params_xxx.preset = "USER"
             sg_params_xxx.compositordata = comp_data
-            self.scenegraph = scenegraph.Scene(sg_params_xxx)
+            self.scenegraph = lev2.scenegraph.Scene(sg_params_xxx)
 
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")
           self.sgnode = parent.model.createNode("modelnode",self.layer)
 
-          self.anim_inst = XgmAnimInst(parent.anim)
+          self.anim_inst = lev2.XgmAnimInst(parent.anim)
           self.anim_inst.mask.enableAll()
           self.anim_inst.use_temporal_lerp = True
           self.anim_inst.bindToSkeleton(parent.model.skeleton)
@@ -196,17 +190,6 @@ class UiSgQuadViewTestApp(object):
           self.cameralut = parent.shared_cameralut
           self.camera = parent.shared_camera
           self.uicam = parent.shared_uicam
-
-          def handler(context):
-            self.localpose.bindPose()
-            self.anim_inst.currentFrame = parent.abstime*30.0
-            self.anim_inst.weight = 1.0
-            self.anim_inst.applyToPose(self.localpose)
-            self.localpose.blendPoses()
-            self.localpose.concatenate()
-            self.worldpose.fromLocalPose(self.localpose,mtx4())
-
-          parent.gpu_update_handlers += [handler]
 
         #
 
@@ -224,30 +207,9 @@ class UiSgQuadViewTestApp(object):
           if self.use_event:
             self.uicam.uiEventHandler(event)
           
-          return ui.HandlerResult()
+          return lev2.ui.HandlerResult()
 
         griditem.widget.evhandler = lambda ev: onPanelEvent(index,ev)
-
-        ########################################### 
-
-        if save_images:
-          self.capbuf = CaptureBuffer()
-          self.frame_index = 0
-
-          def _on_render():
-            rtgroup = griditem.widget.rtgroup
-            rtbuffer = rtgroup.buffer(0) #rtg's MRT buffer 0
-            FBI = ctx.FBI()
-            FBI.captureAsFormat(rtbuffer,self.capbuf,"RGBA8")
-            as_np = numpy.array(self.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
-            img = Image.fromarray(as_np, 'RGBA')
-            flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
-            out_path = ork.path.temp()/("%s-%003d.png"%(camname,self.frame_index))
-            flipped.save(out_path)
-            self.frame_index += 1
-
-          griditem.widget.onPostRender(_on_render)
-
         self.griditem = griditem
 
       ####################################################################################
@@ -286,17 +248,6 @@ class UiSgQuadViewTestApp(object):
       Panel(self, 1),
     ]
     
-    ##########################################################################
-
-    #self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
-    #self.panels[0].griditem.widget.aspect_from_rtgroup = True
-
-  ################################################
-
-  def onGpuUpdate(self,context):
-    for handler in self.gpu_update_handlers:
-      handler(context)
-
   ################################################
 
   def onUpdate(self,updinfo):

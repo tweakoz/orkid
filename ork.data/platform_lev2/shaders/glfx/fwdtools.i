@@ -78,8 +78,6 @@ libblock lib_fwd //
     vec3 albedo = pbd._albedo;
     vec3 rawn = pbd._wnrm;
     /////////////////////////
-    vec3 diffcolor = mix(albedo, vec3(0), OA._metallic);
-    /////////////////////////
     // ambient occlusion
     /////////////////////////
     // filter sample ambocc
@@ -89,8 +87,9 @@ libblock lib_fwd //
     ambocc = mix(1.0,ambocc,SSAOWeight);
     /////////////////////////
     //float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * OA._ambshade*ambocc;
-    vec3 diffuse_env   = env_equirectangular(rawn, MapDiffuseEnv, 0) * DiffuseLevel * SkyboxLevel;
+    vec3 ambient       = OA._ambient*ambocc;
+    //vec3 diffuse_env   = env_equirectangular(rawn, MapDiffuseEnv, 0) * DiffuseLevel * SkyboxLevel;
+    vec3 diffuse_env = OA._diffuseEnv; //env_equirectangular(rawn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
     /////////////////////////
     vec3 diffuse = clamp(albedo * diffuse_light * OA._dialetric * ambocc, 0, 1);
@@ -152,7 +151,7 @@ libblock lib_fwd //
 
     ///////////////////////////////////////////////
 
-    vec3 ambient       = AmbientLevel * OA._ambshade*ambocc;
+    vec3 ambient       = AmbientLevel * OA._ambient*ambocc;
 
     ///////////////////////////////////////////////
     // point lighting
