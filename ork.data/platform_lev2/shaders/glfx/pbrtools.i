@@ -460,6 +460,7 @@ libblock lib_pbr {
     float _atmos;
     float _alpha;
     bool _emissive;
+    float _ambocc;
   };
   struct PbrOutA {
     vec3 _metalbase;
@@ -471,6 +472,7 @@ libblock lib_pbr {
     vec3 _refl;
     vec3 _diffuseColor;
     vec3 _diffuseEnv;
+    vec3 _diffuseOut;
     float _metallic;
     float _dialetric;
     vec3 _ambient;
@@ -497,12 +499,14 @@ libblock lib_pbr {
     _out._F    = fresnelSchlickRoughness(costheta, _out._F0, inp._roughness);
     _out._invF = (vec3(1) - _out._F);
 
-    _out._ambient = (clamp(dot(N, edir), 0, 1) * 0.3 + 0.7)*AmbientLevel;
+    _out._ambient = (clamp(dot(N, edir), 0, 1) * 0.3 + 0.7)*AmbientLevel*inp._ambocc;
     _out._refl     = normalize(reflect(edir, N));
     //_out._refl *= vec3(-1, -1, -1);
 
     _out._diffuseColor = mix(inp._albedo, vec3(0), _out._metallic);
     _out._diffuseEnv = env_equirectangular(N,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
+    vec3 diffuse_light = _out._ambient + _out._diffuseEnv;
+    _out._diffuseOut = clamp(inp._albedo * diffuse_light * _out._dialetric * inp._ambocc, 0, 1);
     return _out;
   }
 }

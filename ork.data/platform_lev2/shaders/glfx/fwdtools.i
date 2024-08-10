@@ -74,25 +74,8 @@ libblock lib_fwd //
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrInpA pbd, PbrOutA OA) {
     /////////////////////////
-    vec3 wpos = pbd._wpos;
-    vec3 albedo = pbd._albedo;
-    vec3 rawn = pbd._wnrm;
-    /////////////////////////
-    // ambient occlusion
-    /////////////////////////
-    // filter sample ambocc
-    vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
-    float ambocc = texture(SSAOMap, uv).x;
-    ambocc = pow(ambocc, SSAOPower);
-    ambocc = mix(1.0,ambocc,SSAOWeight);
-    /////////////////////////
-    //float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = OA._ambient*ambocc;
-    //vec3 diffuse_env   = env_equirectangular(rawn, MapDiffuseEnv, 0) * DiffuseLevel * SkyboxLevel;
-    vec3 diffuse_env = OA._diffuseEnv; //env_equirectangular(rawn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
-    vec3 diffuse_light = ambient + diffuse_env;
-    /////////////////////////
-    vec3 diffuse = clamp(albedo * diffuse_light * OA._dialetric * ambocc, 0, 1);
+    vec3 ambient = OA._ambient;
+    vec3 diffuse = OA._diffuseOut;
     /////////////////////////
     // rotate refl by 180 degrees on y to get refl_probe_coord
     vec3 refl = OA._refl;
@@ -106,9 +89,8 @@ libblock lib_fwd //
     vec3 specular_light = ambient + spec_env * SkyboxLevel;
     vec3 specularC      = specular_light * OA._F0 * SpecularLevel;
     vec3 specularMask   = clamp(OA._F * OA._BRDF.x + OA._BRDF.y, 0, 1);
-    vec3 specular       = specularMask * specularC*ambocc;
+    vec3 specular       = specularMask * specularC*pbd._ambocc;
     /////////////////////////
-    //return albedo;
     return saturateV(diffuse + specular);
   } // vec3 environmentLighting(){
   /////////////////////////////////////////////////////////  
@@ -142,6 +124,7 @@ libblock lib_fwd //
     pbd._fogZ      = 0.0;
     pbd._atmos     = 0.0;
     pbd._alpha     = 1.0;
+    pbd._ambocc    = ambocc;
 
     // if(pbd._emissive){
     // return modcolor*pbd._albedo;

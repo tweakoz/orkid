@@ -1,6 +1,7 @@
 from orkengine.core import *
 from orkengine.lev2 import *
 
+###############################################################################
 
 def createParams( rendermodel = "ForwardPBR" ):
 
@@ -20,23 +21,49 @@ def createParams( rendermodel = "ForwardPBR" ):
 
   return sceneparams
 
+###############################################################################
+
+def canonicalizeSG(parent,SG, rendermodel):
+
+  if rendermodel in ["ForwardPBR","FWDPBRVR"]:
+    layer_name = "std_forward"
+  elif rendermodel in ["DeferredPBR","PBRVR"]:
+    layer_name = "std_deferred"
+  else:
+    print("invalid rendermodel<%s>" % rendermodel)
+    assert(False)
+
+  parent.layer1 = SG.createLayer(layer_name)
+  parent.layer_std = parent.layer1
+  parent.layer_dpp = SG.createLayer("depth_prepass")
+  parent.std_layers = [parent.layer_std,parent.layer_dpp]
+  parent.rendernode = SG.compositorrendernode
+
+###############################################################################
+
 def createSceneGraph( app=None, 
                       rendermodel = None,
                       params_dict = None,
                       layer_name = None):
 
 
-  if rendermodel == "deferred":
+  if rendermodel == None:
+    rendermodel = "ForwardPBR"      
+  elif rendermodel == "deferred":
     rendermodel = "DeferredPBR"
   elif rendermodel == "forward":
     rendermodel="ForwardPBR"
 
   sceneparams = VarMap()
 
-  if rendermodel == None:
-    rendermodel = "ForwardPBR"      
-
-  if params_dict != None:
+  if params_dict == None:
+    params_dict = VarMap()
+    params_dict.SkyboxIntensity = 3.0
+    params_dict.DiffuseIntensity = 1.0
+    params_dict.SpecularIntensity = 1.0
+    params_dict.AmbientLevel = vec3(0)
+    params_dict.DepthFogDistance = 10000.0
+  else:
     for k in params_dict.keys():
       if k == "preset":
         rendermodel = params_dict[k]

@@ -395,32 +395,6 @@ libblock lib_deferred
     vec3 out_color;
 
     if( gbd._mode==1 ){
-      vec3 albedo = gbd._albedo;
-      albedo.x = pow(albedo.x,1.25);
-      albedo.y = pow(albedo.y,1.25);
-      albedo.z = pow(albedo.z,1.25);
-      /////////////////////////
-      // pixel was written to in the gbuffer
-      /////////////////////////
-      vec3 wpos = gbd._wpos;
-      vec3 rawn = gbd._wnrm;
-      vec3 epos = posatdepth(wpd,1.0);
-      /////////////////////////
-      PbrInpA pbd;
-      pbd._emissive  = length(rawn) < 0.1;
-      pbd._metallic  = gbd._metallic;
-      pbd._roughness = gbd._roughness;
-      pbd._albedo    = gbd._albedo;
-      pbd._epos      = epos;
-      pbd._wpos      = gbd._wpos;
-      pbd._wnrm      = gbd._wnrm;
-      pbd._fogZ      = 0.0;
-      pbd._atmos     = 0.0;
-      pbd._alpha     = 1.0;
-      /////////////////////////
-      PbrOutA OA = pbrIoEnvA(pbd);
-      /////////////////////////
-      float roughness = gbd._roughness;
       /////////////////////////
       // ambient occlusion
       /////////////////////////
@@ -430,14 +404,25 @@ libblock lib_deferred
         ambocc = mix(1.0,ambocc,SSAOWeight);
       }
       /////////////////////////
-      // ambient lighting
+      PbrInpA pbd;
+      pbd._emissive  = length(gbd._wnrm) < 0.1;
+      pbd._metallic  = gbd._metallic;
+      pbd._roughness = gbd._roughness;
+      pbd._albedo    = gbd._albedo;
+      pbd._epos      = posatdepth(wpd,1.0);
+      pbd._wpos      = gbd._wpos;
+      pbd._wnrm      = gbd._wnrm;
+      pbd._fogZ      = 0.0;
+      pbd._atmos     = 0.0;
+      pbd._alpha     = 1.0;
+      pbd._ambocc    = ambocc;
       /////////////////////////
-      vec3 ambient = OA._ambient*ambocc;
+      PbrOutA OA = pbrIoEnvA(pbd);
       /////////////////////////
-      vec3 diffuse_env = OA._diffuseEnv; //env_equirectangular(rawn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
-      vec3 diffuse = clamp(albedo*diffuse_env*ambocc,0,1);      
+      vec3 ambient = OA._ambient;
+      vec3 diffuse = OA._diffuseOut;
       /////////////////////////
-      float spec_ruf = pow(roughness,1.3)*0.7;
+      float spec_ruf = pow(gbd._roughness,1.3)*0.7;
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
       /////////////////////////
       vec3 spec_env = env_equirectangularFlipV(OA._refl,MapSpecularEnv,spec_miplevel);
