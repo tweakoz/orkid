@@ -642,7 +642,7 @@ fragment_shader ps_gbuffer_n // normalmap
   vec3 TN = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
-  ps_common_n(vec3(1, 1, 1), N, frg_uv0);
+  ps_common_n(vec4(1, 1, 1, 1), N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
