@@ -36,7 +36,7 @@ class WaterApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=True)
+    self.ezapp = OrkEzApp.create(self,ssaa=0,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.curtime = 0.0
 
@@ -184,7 +184,7 @@ class WaterApp(object):
     #gmtl.bindParam(param_voltexa,self.NOISETEX)
     #gmtl.bindParam(param_noizekernmap,self.NOISETEX2)
     gmtl.bindParam(param_time,lambda: _gentime() )
-    gmtl.bindParam(param_color,lambda: vec3(0.75,1.2,1) ) 
+    gmtl.bindParam(param_color,lambda: vec4(0.75,1.2,1,1) ) 
     gmtl.bindParam(param_depthmap,tokens.RCFD_DEPTH_MAP )
     gmtl.bindParam(param_bufinvdim,tokens.CPD_Rtg_InvDim )
     gmtl.bindParam(param_m,tokens.RCFD_M )

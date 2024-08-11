@@ -12,7 +12,6 @@ import "orkshader://misctools.i";
 uniform_set ub_frgX {
   float Time;
   sampler2D depth_map;
-  vec3 BaseColor;
   float GroundColorPower;
   vec2 bufinvdim;
   float plightamp;
@@ -259,10 +258,10 @@ fragment_shader ps_fwd_ground_mono
   skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
   float F                 = fresnelSchlick(eye_dir * -1.0, normal, vec3(0.004)).x;
   F                       = 0.5; // pow(F, 0.1);
-  vec3 albedo             = BaseColor;
+  vec3 albedo             = BaseColor.xyz;
   vec3 altcolor           = skyboxRefractColor; // normal*0.5+vec3(0.5,0.5,0.5);
   albedo                  = mix(albedo, skyboxRefractColor, 0.65);
-  PbrData pbd;
+  PbrInpA pbd;
   pbd._emissive = false;
   pbd._metallic = 0.75;
 
@@ -274,8 +273,11 @@ fragment_shader ps_fwd_ground_mono
   pbd._fogZ      = 0.0;
   pbd._atmos     = 0.0;
   pbd._alpha     = 1.0;
+  pbd._ambocc     = 1.0;
 
-  vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, EyePostion);
+  PbrOutA OA = pbrIoEnvA(pbd);
+
+  vec3 env_lighting = pbrEnvironmentLightingXXX(pbd,OA);
   ///////////////////////////////////////////////
   // point lighting
   ///////////////////////////////////////////////
