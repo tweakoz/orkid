@@ -112,6 +112,7 @@ libblock lib_fwd //
     float ambocc = texture(SSAOMap, uv).x;
     ambocc = pow(ambocc, SSAOPower);
     ambocc = mix(1.0,ambocc,SSAOWeight);
+    ambocc = 1.0;
     /////////////////////////
     PbrInpA pbd;
     pbd._emissive  = length(TN) < 0.1;

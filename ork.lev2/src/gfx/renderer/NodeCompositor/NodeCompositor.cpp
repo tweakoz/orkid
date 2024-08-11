@@ -179,10 +179,15 @@ void LambdaPostCompositingNode::DoRender(CompositorDrawData& drawdata) {
 ///////////////////////////////////////////////////////////////////////////////
 void OutputCompositingNode::describeX(class_t* c) {
 }
-OutputCompositingNode::OutputCompositingNode() {
+OutputCompositingNode::OutputCompositingNode() 
+  : _supersample(0) {
 }
 OutputCompositingNode::~OutputCompositingNode() {
 }
+void OutputCompositingNode::setSuperSample(int ss) {
+  _supersample = ss;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

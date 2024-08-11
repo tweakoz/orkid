@@ -36,7 +36,12 @@ public:
   }
   virtual void composite(CompositorDrawData& drawdata) {
   }
+  int supersample() const {
+    return _supersample;
+  }
+  void setSuperSample(int ss);
   bool _flipY = true;
+  int _supersample;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -24,10 +24,6 @@ public:
   ~ScreenOutputCompositingNode();
 
   std::string _layername;
-  int supersample() const {
-    return _supersample;
-  }
-  void setSuperSample(int ss);
 
   EBufferFormat _format;
 
@@ -40,7 +36,6 @@ private:
 
   svar256_t _impl;
   rtgroup_ptr_t _downsamplebuffer;
-  int _supersample;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

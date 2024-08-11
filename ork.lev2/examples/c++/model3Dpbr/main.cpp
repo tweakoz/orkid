@@ -118,7 +118,9 @@ struct GpuResources {
     // create scenegraph
     //////////////////////////////////////////////
 
-    _sg_params                                         = std::make_shared<varmap::VarMap>();
+    _sg_params = std::make_shared<varmap::VarMap>();
+
+    _sg_params->makeValueForKey<int>("SSAA") = init_data->_ssaa_samples;
 
     _sg_params->makeValueForKey<float>("SkyboxIntensity") = 2.0f;
     if(use_vr){

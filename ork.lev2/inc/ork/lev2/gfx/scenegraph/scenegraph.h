@@ -299,6 +299,7 @@ struct Scene {
 
   std::vector<DrawItem> _nodes2draw;
   bool _enable_pick_hud = false;
+  int _SSAA = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

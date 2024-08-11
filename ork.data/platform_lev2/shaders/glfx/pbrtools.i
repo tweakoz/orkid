@@ -280,7 +280,8 @@ libblock lib_pbr_frg : lib_gbuf_encode {
     vec3 rufmtlamb = texture(CNMREA, vec3(UV, 2)).xyz;
     float mtl      = rufmtlamb.z * MetallicFactor;
     float ruf      = rufmtlamb.y * RoughnessFactor;
-    vec3 color     = (modc * frg_clr * texture(CNMREA, vec3(UV, 0))).xyz;
+    vec3 color     = (frg_clr * texture(CNMREA, vec3(UV, 0))).xyz;
+    color = color * BaseColor.xyz * modc.xyz;
     vec3 emission  = texture(CNMREA, vec3(UV, 3)).xyz * modc.xyz;
     out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }

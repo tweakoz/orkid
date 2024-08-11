@@ -66,6 +66,8 @@ struct RTGIMPL {
       }
       _width  = w;
       _height = h;
+      int ssaa = _node->_supersample;
+      printf("RTGIMPL<%p> node<%p>::gpuInit ssaa<%d>\n", this, _node, ssaa);
     }
   }
   ///////////////////////////////////////
@@ -110,8 +112,7 @@ struct RTGIMPL {
   int _height     = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) 
-  : _supersample(0) {
+RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) {
   _impl       = std::make_shared<RTGIMPL>(this,defaultrtg);
 }
 RtGroupOutputCompositingNode::~RtGroupOutputCompositingNode() {

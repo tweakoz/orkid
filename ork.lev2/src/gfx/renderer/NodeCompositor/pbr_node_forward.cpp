@@ -151,8 +151,8 @@ struct ForwardPbrNodeImpl {
       _fxpInvP                = _ssao_material->param("MatInvP");
       _fxpP                   = _ssao_material->param("MatP");
 
-      auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
-      _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
+      //auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white_64.dds");
+      _whiteTexture      = context->TXI()->createColorTexture(fvec4(1,1,1,1),256,256);
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -404,13 +404,12 @@ struct ForwardPbrNodeImpl {
       RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
       RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
       RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
-
     } else {
       // set to white..
-      RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
-      RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8, 8));
-      RCFD->setUserProperty("SSAO_POWER"_crcu, 1.0f);
-      RCFD->setUserProperty("SSAO_WEIGHT"_crcu, 0.0f);
+      RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture);
+      RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(256, 256));
+      RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
+      RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
     }
     RCFD->setUserProperty("PBR_COMMON"_crcu, pbrcommon);
 
@@ -721,7 +720,7 @@ struct ForwardPbrNodeImpl {
   freestyle_mtl_ptr_t _ssao_material;
   fxpipelinecache_constptr_t _skybox_fxcache;
   fxpipelinecache_constptr_t _ssao_fxcache;
-  textureassetptr_t _whiteTexture;
+  texture_ptr_t _whiteTexture;
 
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;

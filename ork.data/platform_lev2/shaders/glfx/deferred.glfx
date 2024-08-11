@@ -426,18 +426,19 @@ libblock lib_deferred
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
       /////////////////////////
       vec3 spec_env = env_equirectangularFlipV(OA._refl,MapSpecularEnv,spec_miplevel);
-      vec3 specular_light = spec_env*SkyboxLevel;
-      vec3 specularC = specular_light*OA._F0*SpecularLevel;
+      vec3 specular_light = ambient + spec_env * SkyboxLevel;
+      vec3 specularC = specular_light * OA._F0 * SpecularLevel;
       vec3 specularMask   = clamp(OA._F * OA._BRDF.x + OA._BRDF.y, 0, 1);
-      vec3 specular = specularMask*specularC*ambocc;
+      vec3 specular = specularC; //specularMask*specularC*ambocc;
       /////////////////////////
       // final outputs
       /////////////////////////
       vec3 finallitcolor = saturateV(diffuse+specular);
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
       vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
-      out_color = mix(finallitcolor,skyboxColor,depth_fogval);
-      out_color += ambient + gbd._emissive;
+      //out_color = mix(finallitcolor,skyboxColor,depth_fogval);
+      //out_color += ambient + gbd._emissive;
+      out_color = finallitcolor;
     }
     else {
       out_color = skyboxColor;

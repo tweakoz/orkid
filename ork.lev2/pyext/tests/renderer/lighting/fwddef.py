@@ -77,19 +77,14 @@ class RenderTestApp(object):
     self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
     ##################
-    #white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
-    #normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.baseColor = vec4(1,1,1,1)
-        copy.metallicFactor = 1.0
-        copy.roughnessFactor = 0.0
+        copy.baseColor = vec4(1,0,1,1)
+        copy.metallicFactor = 0.0
+        copy.roughnessFactor = 1.0
         copy.assignImages(
           ctx,
-          #color = white,
-          #normal = normal,
-          #mtlruf = white,
           doConform=True
         )
         submesh.material = copy
@@ -117,7 +112,7 @@ class RenderTestApp(object):
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
-    sg_params.SSAA = 2
+    sg_params.SSAA = 3
 
     ########################################################
     # create scenegraph / panels

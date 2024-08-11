@@ -131,16 +131,11 @@ struct SCRIMPL {
   rtgroup_ptr_t _msaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
-ScreenOutputCompositingNode::ScreenOutputCompositingNode()
-    : _supersample(0) {
+ScreenOutputCompositingNode::ScreenOutputCompositingNode() {
   _format = EBufferFormat::RGBA8;
   _impl   = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
-}
-void ScreenOutputCompositingNode::setSuperSample(int ss) {
-  printf("setss<%d>\n", ss);
-  _supersample = ss;
 }
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);

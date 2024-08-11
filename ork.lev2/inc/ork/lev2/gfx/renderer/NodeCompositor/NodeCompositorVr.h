@@ -29,12 +29,6 @@ public:
   void setDistortionLambda(distortion_lambda_t l){
     _distorion_lambda = l;
   }
-  int supersample() const {
-    return _supersample;
-  }
-  void setSuperSample(int ss) {
-    _supersample = ss;
-  }
 
   EBufferFormat _format = EBufferFormat::RGBA8;
 
@@ -46,7 +40,6 @@ private:
 
   svar256_t _impl;
   distortion_lambda_t _distorion_lambda;
-  int _supersample = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

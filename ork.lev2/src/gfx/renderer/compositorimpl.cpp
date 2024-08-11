@@ -102,15 +102,6 @@ void CompositingImpl::gpuInit(lev2::Context* ctx){
     _compcontext->_compositingTechnique->gpuInit(ctx,w,h);
   }
 
-  /*
-  if (auto as_scrnode = dynamic_cast<ScreenOutputCompositingNode*>(_outputNode.get())) {
-    as_scrnode->setSuperSample(ssaa_val);
-  }
-  else if (auto as_rtgnode = dynamic_cast<RtGroupOutputCompositingNode*>(_outputNode.get())) {
-    as_rtgnode->setSuperSample(ssaa_val);
-  }
-  */
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 

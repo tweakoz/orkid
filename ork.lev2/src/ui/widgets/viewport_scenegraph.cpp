@@ -48,6 +48,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   
   if(_scenegraph){
 
+    _outputnode->setSuperSample(_scenegraph->_SSAA);
     ////////////////////////////////////////////////////
     // in this case we already have a AcquiredDrawQueueForRendering!
     //  provided by ezapp_topwidget enableUiDraw()

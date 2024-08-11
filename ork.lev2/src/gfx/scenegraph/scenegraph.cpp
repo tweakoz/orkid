@@ -101,7 +101,9 @@ void Scene::gpuInit(Context* ctx) {
 
   auto op = [=]() -> bool {
     if( _compositorImpl ){
+  printf("WTF3..\n");
       _compositorImpl->gpuInit(ctx);
+  printf("WTF4..\n");
       return true;
     }
     return false;
@@ -176,6 +178,11 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorData->_defaultBG = false;
   }
 
+  if (auto as_ssaa = params->tryKeyAsNumber("SSAA")) {
+    _SSAA = int(as_ssaa.value());
+  }
+
+
   if (preset == "Unlit") {
     _compositorPreset = _compositorData->presetUnlit(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -191,13 +198,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outpnode     = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
-
-    if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
-      if (outpnode) {
-        outpnode->setSuperSample(try_supersample.value());
-      }
-    }
-    OrkAssert(outrnode);
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -217,6 +217,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   } else {
     throw std::runtime_error("unknown compositor preset type");
   }
+  //////////////////////////////////////////////
+  auto nodetek = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
+  auto outnode = nodetek->tryOutputNodeAs<OutputCompositingNode>();
+  outnode->setSuperSample(_SSAA);
   //////////////////////////////////////////////
 
   if (_pbr_common) {
@@ -291,12 +295,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     }
     // OrkAssert(false);
   }
-  OrkAssert(_outputNode!=nullptr);
-  if (auto as_ssaa = params->tryKeyAsNumber("SSAA")) {
-    _compositorData->_SSAA = int(as_ssaa.value());
-  }
+  printf("WTF1..\n");
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
+  printf("WTF2..\n");
 } 
 
 ///////////////////////////////////////////////////////////////////////////////
