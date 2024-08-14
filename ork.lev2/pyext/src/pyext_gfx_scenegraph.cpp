@@ -43,15 +43,6 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return node->_name;
               })
           .def_property(
-              "modcolor",                    //
-              [](node_ptr_t node) -> fvec4 { //
-                return node->_dqxfdata._modcolor;
-              },
-              [](node_ptr_t node, fvec4 color) { //
-                node->_dqxfdata._modcolor     = color;
-                node->_dqxfdata._use_modcolor = true;
-              })
-          .def_property(
               "enabled",                    //
               [](node_ptr_t node) -> bool { //
                 return node->_enabled;
@@ -95,6 +86,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
               },
               [](drawable_node_ptr_t node, int key) { //
                 node->_drawable->_sortkey = key;
+              })
+          .def_property(
+              "modcolor",                    //
+              [](drawable_node_ptr_t node) -> fvec4 { //
+                return node->_modcolor;
+              },
+              [](drawable_node_ptr_t node, fvec4 color) { //
+                node->_modcolor     = color;
+                node->_dqxfdata._use_modcolor = true;
               })
           .def_property_readonly(
               "drawable",

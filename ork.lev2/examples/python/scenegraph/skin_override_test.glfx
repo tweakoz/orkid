@@ -42,8 +42,9 @@ fragment_shader FS
   noise *= cellnoise(POS*54.7);
   noise = pow(noise, 0.02);
   vec3 color_tex = texture(CNMREA, vec3(frg_uv0,0)).xyz;
-  vec3 color = (ModColor.xyz * color_tex).xyz * noise;
+  vec3 color = (BaseColor.xyz * color_tex).xyz;// * noise;
   out_gbuf   = packGbuffer(color, vec3(0), normal, ruf, mtl);
+  //out_gbuf   = packGbuffer(vec3(0), rufmtlamb, normal, ruf, mtl);
 }
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_SK_NI_MO {

@@ -167,13 +167,13 @@ class SkinningApp(object):
     sg_params = VarMap()
     sg_params.SkyboxIntensity = 1.0
     sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 0.0
+    sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(0)
     sg_params.DepthFogDistance = 10000.0
     sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"
-    sg_params.SSAONumSamples = 32
+    sg_params.SSAONumSamples = 0
     sg_params.SSAONumSteps = 2
     sg_params.SSAOBias = 1e-3
     sg_params.SSAORadius = 25.0/1000
@@ -214,8 +214,8 @@ class SkinningApp(object):
           doConform=True
         )
         copy.baseColor = vec4(1,.75,.75,1)
-        copy.roughnessFactor = 0.0
-        copy.metallicFactor = 1.0
+        copy.roughnessFactor = 1.0
+        copy.metallicFactor = 0.0
         copy.shaderpath = str(this_dir/"skin_override_test.glfx")
         copy.gpuInit(ctx)
         submesh.material = copy
@@ -230,6 +230,7 @@ class SkinningApp(object):
     self.anim_inst.mask.enableAll()
     self.anim_inst.use_temporal_lerp = True
     self.anim_inst.bindToSkeleton(self.model.skeleton)
+    self.model.skeleton.visualBoneScale = 3.0
 
     ##################
     # create model / sg node

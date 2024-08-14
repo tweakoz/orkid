@@ -80,7 +80,7 @@ vertex_shader vs_pseudowire : iface_vtx {
 fragment_shader ps_pseudowire : iface_frg {
   
     float intens = 0.0;
-    float width = 12.0;
+    float width = 8.0;
 
     // https://www.reedbeta.com/blog/quadrilateral-interpolation-part-1/
     vec2 UV = frg_uvq.xy / frg_uvq.z;

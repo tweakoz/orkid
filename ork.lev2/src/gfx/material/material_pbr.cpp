@@ -116,7 +116,7 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
 
   OrkAssert(ambocc==nullptr);
 
-  //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
+  printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
 
   if( do_conform ){
     _image_color = color;
@@ -124,7 +124,7 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
     _image_mtlruf = mtlruf;
     _image_emissive = emissive;
     conformImages();
-    //printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
+    printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
   }
     
   TextureArrayInitData TID;
@@ -334,7 +334,7 @@ void PBRMaterial::conformImages(){
     auto OP = [=, &sync_defaults](){
       fvec3 color = (_metallicFactor == 0.0f) //
                   ? fvec3(1,0,0) //
-                  : fvec3(1,0,1);
+                  : fvec3(1,1,1);
       _image_mtlruf = std::make_shared<Image>();
       _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
       sync_defaults--;

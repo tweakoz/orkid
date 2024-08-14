@@ -100,9 +100,9 @@ class PointsPrimApp(object):
 
     nodesetxf(node=self.primnode,trans=trans,orient=orient,scale=scale)
 
-    r = 0.5+math.sin(updinfo.absolutetime*1.2)*0.5
-    g = 0.5+math.sin(updinfo.absolutetime*1.7)*0.5
-    b = 0.5+math.sin(updinfo.absolutetime*1.9)*0.5
+    r = 0.5+math.sin(updinfo.absolutetime*1.2)*0.05
+    g = 0.5+math.sin(updinfo.absolutetime*1.7)*0.05
+    b = 0.5+math.sin(updinfo.absolutetime*1.9)*0.05
 
     self.primnode.modcolor = vec4(r,g,b,1)
 

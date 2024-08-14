@@ -26,6 +26,9 @@ static constexpr bool DEBUG_LOG = false;
 
 ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
 
+namespace ork::lev2{
+extern appinitdata_ptr_t _ginitdata;  
+}
 namespace ork::lev2::scenegraph {
 static logchannel_ptr_t logchan_sg = logger()->createChannel("scenegraph", fvec3(0.9, 0.2, 0.9));
 
@@ -177,6 +180,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
     _compositorData->_defaultBG = false;
   }
+
+  _SSAA = _ginitdata->_ssaa_samples;
 
   if (auto as_ssaa = params->tryKeyAsNumber("SSAA")) {
     _SSAA = int(as_ssaa.value());
