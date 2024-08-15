@@ -76,10 +76,9 @@ if pack in known_packs:
                 "xvf",
                 decoded,
                 "-C",
-                dest,
-                "-q"
+                dest
               ]
-              command.run(cmd_list)
+              command.capture(cmd_list)
               
         #wget.fetch(item)
   #print(f"fetching pack {pack} from {packpath}")
