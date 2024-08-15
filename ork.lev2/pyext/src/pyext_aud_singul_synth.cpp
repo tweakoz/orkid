@@ -45,7 +45,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               "instance",
               []() -> synth_ptr_t { //
                 auto the_synth = synth::instance();
-                printf("the_synth<%p>\n", (void*)the_synth.get());
+                //printf("the_synth<%p>\n", (void*)the_synth.get());
                 return the_synth;
               })
           .def("panic", &synth::panic)
