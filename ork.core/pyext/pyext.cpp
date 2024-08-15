@@ -138,6 +138,36 @@ static void _disableLogging() {
   _ENABLE_LOGGING = false;
 }
 
+/*
+gettrace = getattr(sys, 'gettrace', None)
+if gettrace is None:
+    print('No sys.gettrace')
+elif gettrace():
+    print('Hmm, Big Debugger is watching me')
+else:
+    print("Let's do something interesting")
+    print(1 / 0)
+*/
+
+struct GetPythonDebuggingStatus{
+  GetPythonDebuggingStatus(){
+    auto sys_module = py::module::import("sys");
+    auto gettrace = sys_module.attr("gettrace");
+    if( gettrace.is_none() ){
+      _is_debugging = false;
+    }
+    else{
+      auto trace = gettrace();
+      _is_debugging = trace.is_none() == false;
+    }
+  }
+  bool _is_debugging = false;
+};
+///////////////////////////////////////////////////////////////////////////////
+bool _is_python_debugging_active(){
+  static GetPythonDebuggingStatus GPDS;
+  return GPDS._is_debugging;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void pyinit_reflection(py::module& module_core);
