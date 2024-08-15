@@ -1,0 +1,11 @@
+{
+  "singularity_std": {
+    "type": "asset_pak",
+    "merge": true,
+    "dest_path": "<share>",
+    "loc": "<default>",
+    "filename": "SINGUL_PAK_STD",
+    "md5": "43be06d16db50d01be0187c2c7bcf831",
+    "dependencies": {}
+  }
+}
