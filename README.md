@@ -36,6 +36,7 @@ Installation via PyPi (in progress, not working yet...)
    * [Ork.Core.Reflection](ork.dox/reflection.md)
    * [Ork.Core.Datablocks](ork.dox/datablocks.md)
    * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
+   * [Ork.Lev2.Graphics.GlFx](ork.dox/glslfx.md)
    * [Ork.Lev2.Audio](ork.dox/singularity.md)
    * [Ork.ECS](ork.dox/ecs.md)
 
