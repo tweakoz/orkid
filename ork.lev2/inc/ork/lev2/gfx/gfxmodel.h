@@ -52,7 +52,9 @@ struct EmbeddedTexture final {
   varmap::VarMap _varmap;
 };
 
-typedef std::map<std::string, EmbeddedTexture*> embtexmap_t;
+using embtex_ptr_t = std::shared_ptr<EmbeddedTexture>;
+
+typedef std::map<std::string, embtex_ptr_t> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 

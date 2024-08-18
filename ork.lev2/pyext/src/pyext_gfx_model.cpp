@@ -24,6 +24,10 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
         return modl_asset->_model.atomicCopy();
       }))
+      .def(py::init([](asset::loadrequest_ptr_t loadreq) -> xgmmodel_ptr_t {
+        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
+        return modl_asset->_model.atomicCopy();
+      }))
       .def_property_readonly(
           "skeleton", //
           [](xgmmodel_ptr_t model) -> xgmskeleton_ptr_t { //

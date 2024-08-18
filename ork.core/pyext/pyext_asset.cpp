@@ -23,6 +23,7 @@ void pyinit_asset(py::module& module_core) {
     varmap::varmap_ptr_t as_varmap = nullptr;
 
     py::dict vars;
+    varmap::VarMap varmap;
     py::function py_on_event;
     std::string apath;
     for (auto item : _kwargs) {
@@ -31,7 +32,11 @@ void pyinit_asset(py::module& module_core) {
         apath = item.second.cast<std::string>();
       }
       else if (key == "vars") {
-        vars = item.second.cast<py::dict>();
+        if(py::isinstance<py::dict>(item.second)){
+          vars = item.second.cast<py::dict>();
+        }
+        else if(isinstance<varmap::VarMap>(item.second)){
+        }
       }
       else if (key == "onEvent") {
         py_on_event = item.second.cast<py::function>();
@@ -51,7 +56,7 @@ void pyinit_asset(py::module& module_core) {
         as_varmap->setValueForKey(key,value);
       }
     }
-    else{
+    else if (py::isinstance<varmap::VarMap>(vars)) {
       as_varmap = vars.cast<varmap::varmap_ptr_t>();
     }
     auto loadreq = std::make_shared<LoadRequest>(apath,as_varmap);

@@ -177,7 +177,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         size_t datasize = 0;
         EmbTexStream->GetItem(datasize);
         auto texturedata   = EmbTexStream->GetCurrent();
-        auto embtex        = new EmbeddedTexture;
+        auto embtex        = std::make_shared<EmbeddedTexture>();
         embtexmap[texname] = embtex;
         if (datasize) {
           auto texdatcopy = malloc(datasize);

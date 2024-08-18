@@ -47,15 +47,13 @@ inline void _init_varmap(typename ADAPTER::module_t& module_core, typename ADAPT
   auto varmaptype_t =                                                         //
       py::class_<VarMap>(module_core, "VarMap") //
           .def(py::init<>())
-          /*.def(py::init([](py::dict dict) -> varmap_ptr_t {
-            auto vmap = std::make_shared<VarMap>();
+          .def("update",[](varmap_ptr_t vmap, py::dict dict) {
             for (auto item : dict) {
               auto key = py::cast<std::string>(item.first);
               auto val = item.second;
               vmap->setValueForKey(key, val);
             }
-            return vmap;
-          }))*/
+          })
           .def(
               "__setattr__",                                                                    //
               [type_codec](varmap_ptr_t vmap, const std::string& key, py::object val) { //

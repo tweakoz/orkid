@@ -300,6 +300,16 @@ struct Mesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+using mesh_transformer_t = std::function<mesh_ptr_t(mesh_ptr_t)>;
+
+struct MeshTransformerPipe{
+  std::vector<mesh_transformer_t> _transformers;
+};
+
+using mesh_transformer_pipe_ptr_t = std::shared_ptr<MeshTransformerPipe>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 class AmbientLight : public Light {
   DeclareConcreteX(AmbientLight, Light);
 

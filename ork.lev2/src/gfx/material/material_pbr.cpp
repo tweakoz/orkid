@@ -414,14 +414,14 @@ void PBRMaterial::describeX(class_t* c) {
         auto itt = embtexmap.find(texname);
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
-        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
+        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex.get(), embtex->_srcdata, embtex->_srcdatalen);
         auto image = std::make_shared<lev2::Image>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         image->initFromDataBlock(datablock);
         //bool ok        = txi->LoadTexture(tex, datablock);
         //OrkAssert(ok);
-        logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
+        logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex.get(), datablock.get(), datablock->length());
         logchan_pbr->log(" token<%s>", token);
         if (0 == strcmp(token, "colormap")) {
           mtl->_colorMapName = texname;

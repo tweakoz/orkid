@@ -28,7 +28,7 @@
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
-datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_ptr_t mproc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,10 +196,16 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   // include asset vars as hash mutator
   //  because they may influence the loading mechanism
   /////////////////////////////////////
+  meshutil::mesh_transformer_pipe_ptr_t meshpipe;
   for (auto item : mdl->_varmap._themap) {
     const std::string& k = item.first;
     const rendervar_t& v = item.second;
     basehasher->accumulateString(k);
+    if(k=="mesh_proc_pipe"){
+      if (auto as_pipe = v.tryAs<meshutil::mesh_transformer_pipe_ptr_t>()) {
+        meshpipe = as_pipe.value();
+      }
+    }
     if (auto as_str = v.tryAs<std::string>()) {
       basehasher->accumulateString(as_str.value());
       logchan_mioR->log("LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());
@@ -220,7 +226,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   }
   logchan_mioR->log("xgm_datablock<%p>", (void*)xgm_datablock.get());
   if (not xgm_datablock) {
-    xgm_datablock = meshutil::assimpToXgm(inp_datablock);
+    xgm_datablock = meshutil::assimpToXgm(inp_datablock,meshpipe);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }
   return _loadXGM(mdl, xgm_datablock);
@@ -365,7 +371,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     for (auto item : embtexmap) {
       std::string texname = item.first;
       logchan_mioW->log("WriteXgm: writetex<%s>", texname.c_str());
-      EmbeddedTexture* ptex = item.second;
+      embtex_ptr_t ptex = item.second;
       int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
       auto ddsblock = ptex->_ddsdestdatablock;
