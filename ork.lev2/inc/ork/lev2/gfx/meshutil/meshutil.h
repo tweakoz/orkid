@@ -300,6 +300,11 @@ struct Mesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+using mesh_transformer_t = std::function<mesh_ptr_t(mesh_ptr_t)>;
+using mesh_transformer_pipe_t = std::vector<mesh_transformer_t>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 class AmbientLight : public Light {
   DeclareConcreteX(AmbientLight, Light);
 

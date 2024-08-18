@@ -881,25 +881,35 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_t proc) {
 
-  Mesh tmesh;
-  tmesh.readFromAssimp(inp_datablock);
+  auto tmesh = std::make_shared<Mesh>();
+  tmesh->readFromAssimp(inp_datablock);
+
+  //////////////////////////////////////////
+  // mesh preproc pipeline
+  //////////////////////////////////////////
+
+  for( auto item : proc ){
+    tmesh = item(tmesh);
+  }
+
+  //////////////////////////////////////////
 
   ork::lev2::XgmModel xgmmdlout;
   bool is_skinned = false;
-  if (auto as_bool = tmesh._varmap->valueForKey("is_skinned").tryAs<bool>()) {
+  if (auto as_bool = tmesh->_varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
     if (is_skinned)
-      configureXgmSkeleton(tmesh, xgmmdlout);
+      configureXgmSkeleton(*tmesh, xgmmdlout);
   }
   //logchan_meshutilassimp->log("clusterizing..\n");
-  clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(tmesh, xgmmdlout);
+  clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(*tmesh, xgmmdlout);
 
-  auto vmin = tmesh._vertexExtents.Min();
-  auto vmax = tmesh._vertexExtents.Max();
-  auto smin = tmesh._skeletonExtents.Min();
-  auto smax = tmesh._skeletonExtents.Max();
+  auto vmin = tmesh->_vertexExtents.Min();
+  auto vmax = tmesh->_vertexExtents.Max();
+  auto smin = tmesh->_skeletonExtents.Min();
+  auto smax = tmesh->_skeletonExtents.Max();
   auto center = (vmax+vmin)*0.5f;
   
   /////////////////////////
