@@ -365,7 +365,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     for (auto item : embtexmap) {
       std::string texname = item.first;
       logchan_mioW->log("WriteXgm: writetex<%s>", texname.c_str());
-      EmbeddedTexture* ptex = item.second;
+      embtex_ptr_t ptex = item.second;
       int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
       auto ddsblock = ptex->_ddsdestdatablock;

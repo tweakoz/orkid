@@ -49,8 +49,8 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
     /////////////////////////////////
 
     auto parse_texture =
-        [&](const std::string& texture_name, const std::string& channel_name, ETextureUsage usage) -> EmbeddedTexture* {
-      EmbeddedTexture* rval = nullptr;
+        [&](const std::string& texture_name, const std::string& channel_name, ETextureUsage usage) -> embtex_ptr_t {
+      embtex_ptr_t rval = nullptr;
       bfs::path tex_path;
       if (texture_name.find("://") == std::string::npos) {
         tex_path = base_dir / texture_name;
@@ -71,7 +71,7 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
 
         if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga" or tex_ext == ".dds") {
 
-          rval          = new EmbeddedTexture;
+          rval          = std::make_shared<EmbeddedTexture>();
           rval->_format = tex_ext.substr(1);
           rval->_usage  = usage;
 

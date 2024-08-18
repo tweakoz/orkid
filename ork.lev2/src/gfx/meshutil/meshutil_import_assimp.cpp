@@ -94,7 +94,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       const void* dataptr = nullptr;
       size_t datalen      = 0;
 
-      auto embtex = new lev2::EmbeddedTexture;
+      auto embtex = std::make_shared<lev2::EmbeddedTexture>();
 
       embtex->_varmap["src.filename"].set<std::string>(texname);
       embtex->_varmap["src.format"].set<std::string>(fmt);
@@ -134,12 +134,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse materials
     //////////////////////////////////////////////
 
-    auto find_texture = [&](const std::string texname, lev2::ETextureUsage usage) -> lev2::EmbeddedTexture* {
-      lev2::EmbeddedTexture* rval = nullptr;
+    auto find_texture = [&](const std::string texname, lev2::ETextureUsage usage) -> lev2::embtex_ptr_t {
+      lev2::embtex_ptr_t rval = nullptr;
       auto it                     = embtexmap.find(texname);
       if (it != embtexmap.end()) {
         rval = it->second;
-        logchan_meshutilassimp->log("findtex: texname<%s> found! ptr<%p> _compressionPending<%d>", texname.c_str(), rval, int(rval->_compressionPending) );
+        logchan_meshutilassimp->log("findtex: texname<%s> found! ptr<%p> _compressionPending<%d>", texname.c_str(), rval.get(), int(rval->_compressionPending) );
         if (rval->_compressionPending) {
           rval->_usage = usage;
           rval->fetchDDSdata();
@@ -165,7 +165,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
           if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga" or tex_ext == ".dds") {
 
-            auto embtex     = new ork::lev2::EmbeddedTexture;
+            auto embtex     = std::make_shared<ork::lev2::EmbeddedTexture>();
             embtex->_format = tex_ext.substr(1);
             embtex->_usage  = usage;
 
@@ -199,7 +199,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
           std::string texid   = FormatString("*%d", int(embtexmap.size()));
 
-          auto embtex     = new ork::lev2::EmbeddedTexture;
+          auto embtex     = std::make_shared<ork::lev2::EmbeddedTexture>();
           embtex->_name       = texname;
           embtex->_format = "bin.nodata";
           embtex->_usage  = usage;
@@ -261,28 +261,28 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
         auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
-        logchan_meshutilassimp->log("has_pbr_colormap<%s> tex<%p>", outmtl->_colormap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_colormap<%s> tex<%p>", outmtl->_colormap.c_str(), (void*) tex.get());
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
         outmtl->_metallicAndRoughnessMap = (const char*)string.data;
         auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap, lev2::ETEXUSAGE_COLOR);
-        logchan_meshutilassimp->log("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex.get());
       }
 
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_normalmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_normalmap, lev2::ETEXUSAGE_NORMAL);
-        logchan_meshutilassimp->log("has_pbr_normalmap<%s> tex<%p>", outmtl->_normalmap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_normalmap<%s> tex<%p>", outmtl->_normalmap.c_str(), (void*) tex.get());
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
-        logchan_meshutilassimp->log("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex.get());
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
         auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
-        logchan_meshutilassimp->log("has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex.get());
       }
       //logchan_meshutilassimp->log("");
     }
