@@ -28,7 +28,7 @@
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
-datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_t mproc);
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_ptr_t mproc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,11 +196,16 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   // include asset vars as hash mutator
   //  because they may influence the loading mechanism
   /////////////////////////////////////
-  auto meshpipe = meshutil::mesh_transformer_pipe_t();
+  meshutil::mesh_transformer_pipe_ptr_t meshpipe;
   for (auto item : mdl->_varmap._themap) {
     const std::string& k = item.first;
     const rendervar_t& v = item.second;
     basehasher->accumulateString(k);
+    if(k=="mesh_proc_pipe"){
+      if (auto as_pipe = v.tryAs<meshutil::mesh_transformer_pipe_ptr_t>()) {
+        meshpipe = as_pipe.value();
+      }
+    }
     if (auto as_str = v.tryAs<std::string>()) {
       basehasher->accumulateString(as_str.value());
       logchan_mioR->log("LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());

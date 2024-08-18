@@ -301,7 +301,12 @@ struct Mesh {
 ///////////////////////////////////////////////////////////////////////////////
 
 using mesh_transformer_t = std::function<mesh_ptr_t(mesh_ptr_t)>;
-using mesh_transformer_pipe_t = std::vector<mesh_transformer_t>;
+
+struct MeshTransformerPipe{
+  std::vector<mesh_transformer_t> _transformers;
+};
+
+using mesh_transformer_pipe_ptr_t = std::shared_ptr<MeshTransformerPipe>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -881,7 +881,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_t proc) {
+datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_ptr_t proc) {
 
   auto tmesh = std::make_shared<Mesh>();
   tmesh->readFromAssimp(inp_datablock);
@@ -890,7 +890,7 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock,mesh_transformer_pipe_
   // mesh preproc pipeline
   //////////////////////////////////////////
 
-  for( auto item : proc ){
+  for( auto item : proc->_transformers ){
     tmesh = item(tmesh);
   }
 
