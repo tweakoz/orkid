@@ -42,15 +42,15 @@ GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
 GlFrameBufferInterface::~GlFrameBufferInterface() {
 }
 
-freestyle_mtl_ptr_t GlFrameBufferInterface::utilshader(){
+freestyle_mtl_ptr_t GlFrameBufferInterface::utilshader() {
 
-  if(nullptr==_freestyle_mtl){
+  if (nullptr == _freestyle_mtl) {
     _freestyle_mtl = std::make_shared<FreestyleMaterial>();
     _freestyle_mtl->gpuInit(&_target, "orkshader://solid");
     _tek_downsample2x2 = _freestyle_mtl->technique("downsample_2x2");
-    _tek_blit = _freestyle_mtl->technique("blit");
-    _fxpMVP         = _freestyle_mtl->param("MatMVP");
-    _fxpColorMap    = _freestyle_mtl->param("ColorMap");
+    _tek_blit          = _freestyle_mtl->technique("blit");
+    _fxpMVP            = _freestyle_mtl->param("MatMVP");
+    _fxpColorMap       = _freestyle_mtl->param("ColorMap");
   }
   return _freestyle_mtl;
 }
@@ -173,11 +173,11 @@ void GlFrameBufferInterface::_doEndFrame(void) {
   auto rtg = mTargetGL.FBI()->GetRtGroup();
 
   if (rtg) {
-    int inumtargets     = rtg->GetNumTargets();
+    int inumtargets = rtg->GetNumTargets();
     // printf( "ENDFRAME<RtGroup>\n" );
   } else {
-    //glFinish();
-    //mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
+    // glFinish();
+    // mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
   }
   ////////////////////////////////
   popViewport();
@@ -279,9 +279,7 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
   auto framedata = mTargetGL.topRenderContextFrameData();
   bool stereo    = (framedata and framedata->isStereo());
 
-
-
-  //printf("setViewport<%d %d %d %d> stereo<%d>\n", iX, iY, iW, iH, int(stereo));
+  // printf("setViewport<%d %d %d %d> stereo<%d>\n", iX, iY, iW, iH, int(stereo));
 
   GL_ERRORCHECK();
 
@@ -301,7 +299,7 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
 void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   glClearColor(color.x, color.y, color.z, color.w);
 
-  /*GLuint clearColor[4] = { 
+  /*GLuint clearColor[4] = {
     GLuint(color.x * 65535.0f),
     GLuint(color.y * 65535.0f),
     GLuint(color.z * 65535.0f),
@@ -329,6 +327,25 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlFrameBufferInterface::clearRectWithColor(
+    ViewportRect rect,     //
+    const fcolor4& C) { //
+
+  int h   = GetVPH();
+  int y1 = rect._y;
+  int y2 = y1 + rect._h;
+  rect._y = h - y2;
+  //printf( "y<%d> h<%d> TH<%d>\n", rect._y, rect._h, h );
+  this->pushScissor(rect);
+  this->pushViewport(rect);
+  glClearColor(C.x,C.y,C.z,C.w);
+  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+  this->popViewport();
+  this->popScissor();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
 
   if (not rtb->_impl.isSet())
@@ -336,10 +353,10 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
 
   auto bufimpl = rtb->_impl.get<GlRtBufferImpl*>();
   auto teximpl = bufimpl->_teximpl.get<gltexobj_ptr_t>();
-  auto tex_id = teximpl->_textureObject;
+  auto tex_id  = teximpl->_textureObject;
 
-  int iw        = rtb->_width;
-  int ih        = rtb->_height;
+  int iw = rtb->_width;
+  int ih = rtb->_height;
 
   printf("pth<%s> BUFW<%d> BUF<%d>\n", pth.c_str(), iw, ih);
 
@@ -362,15 +379,15 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
   // glBindFramebuffer(GL_FRAMEBUFFER, 0 );
   GL_ERRORCHECK();
 
-  auto outbuf = (uint8_t*) malloc(iw * ih * 4);
+  auto outbuf = (uint8_t*)malloc(iw * ih * 4);
 
-  for( int iy=0; iy<ih; iy++ ){
-    for( int ix=0; ix<iw; ix++ ){
-      int ipix = (ih-1-iy)*iw + ix;
+  for (int iy = 0; iy < ih; iy++) {
+    for (int ix = 0; ix < iw; ix++) {
+      int ipix = (ih - 1 - iy) * iw + ix;
       int opix = (iy)*iw + ix;
 
-      int ibyt   = ipix * 4;
-      int obyt   = opix * 4;
+      int ibyt = ipix * 4;
+      int obyt = opix * 4;
 
       uint8_t c0 = pu8[ibyt + 0];
       uint8_t c1 = pu8[ibyt + 1];
@@ -378,20 +395,18 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
       uint8_t c3 = pu8[ibyt + 3];
       // c0 c1 c2
 
-  #if defined(DARWIN)
+#if defined(DARWIN)
       outbuf[obyt + 0] = c0; // A
       outbuf[obyt + 1] = c1;
       outbuf[obyt + 2] = c2;
       outbuf[obyt + 3] = c3;
-  #else
+#else
       outbuf[obyt + 0] = c2;
       outbuf[obyt + 1] = c1;
       outbuf[obyt + 2] = c0;
       outbuf[obyt + 3] = c3; // A
-  #endif
-
+#endif
     }
-
   }
 
 #if defined(USE_OIIO)
@@ -417,27 +432,26 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
     return false;
   }
 
-
   GlFboObject* the_fbo = nullptr;
 
   int irt = 0;
-  int x = 0;
-  int y = 0;
-  int w = 0;
-  int h = 0;
+  int x   = 0;
+  int y   = 0;
+  int w   = 0;
+  int h   = 0;
 
   GLint readbuffer = 0;
   GL_ERRORCHECK();
   glGetIntegerv(GL_READ_BUFFER, &readbuffer);
   GL_ERRORCHECK();
 
-  if( rtb ){
+  if (rtb) {
     auto as_impl = rtb->_rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
-    if(as_impl){
+    if (as_impl) {
       the_fbo = as_impl.value()->_standard.get();
-      irt = rtb->_slot;
-      w = rtb->_width;
-      h = rtb->_height;
+      irt     = rtb->_slot;
+      w       = rtb->_width;
+      h       = rtb->_height;
       if (0 == the_fbo->_fbo) {
         OrkAssert(false);
         return false;
@@ -447,11 +461,11 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
       glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->_fbo);
       GL_ERRORCHECK();
 
-      switch(rtb->mFormat){
+      switch (rtb->mFormat) {
         case EBufferFormat::RGBA8:
         case EBufferFormat::RGBA16F:
         case EBufferFormat::RGBA32F:
-          OrkAssert(irt>=0 and irt<8);
+          OrkAssert(irt >= 0 and irt < 8);
           glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
           GL_ERRORCHECK();
           break;
@@ -464,8 +478,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
           break;
       }
     }
-  }
-  else{
+  } else {
     w = mTargetGL.mainSurfaceWidth();
     h = mTargetGL.mainSurfaceHeight();
     GL_ERRORCHECK();
@@ -477,15 +490,14 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
 
   // glDepthMask(GL_TRUE); ??? wtf ???
 
-
-  if(capbuf->_captureW!=0){
+  if (capbuf->_captureW != 0) {
     x = capbuf->_captureX;
     y = capbuf->_captureY;
     w = capbuf->_captureW;
     h = capbuf->_captureH;
   }
 
-  //printf("captureAsFormat w<%d> h<%d>\n", w, h);
+  // printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
   bool fmtmatch = (capbuf->format() == destfmt);
   bool sizmatch = (capbuf->width() == w);
@@ -582,13 +594,13 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
       //////////////////////////////////////
       // discard alpha
       //////////////////////////////////////
-      auto SRC = (const uint32_t*) capbuf->_tempbuffer.data();
-      auto DST = (uint8_t*) capbuf->_data;
-      for( size_t ipix=0; ipix<(w*h); ipix++ ){
-        int idi = ipix*3;
-        DST[idi++] = (SRC[ipix]&0x00ff0000)>>16;
-        DST[idi++] = (SRC[ipix]&0x0000ff00)>>8;
-        DST[idi++] = (SRC[ipix]&0x000000ff);
+      auto SRC = (const uint32_t*)capbuf->_tempbuffer.data();
+      auto DST = (uint8_t*)capbuf->_data;
+      for (size_t ipix = 0; ipix < (w * h); ipix++) {
+        int idi    = ipix * 3;
+        DST[idi++] = (SRC[ipix] & 0x00ff0000) >> 16;
+        DST[idi++] = (SRC[ipix] & 0x0000ff00) >> 8;
+        DST[idi++] = (SRC[ipix] & 0x000000ff);
       }
       //////////////////////////////////////
       break;
@@ -620,7 +632,6 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
   return true;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) {
@@ -632,7 +643,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  logchan_glfbi->log("GetPixel rtg<%p> numbuf<%d>", (void*)pfc._rtgroup.get(), pfc._rtgroup->mNumMrts );
+  logchan_glfbi->log("GetPixel rtg<%p> numbuf<%d>", (void*)pfc._rtgroup.get(), pfc._rtgroup->mNumMrts);
 
   if (bInBounds) {
     if (pfc._rtgroup) {
@@ -641,15 +652,16 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
       int sx = int((rAt.x) * float(W));
       int sy = int((1.0f - rAt.y) * float(H));
 
-      //printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
+      // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
       auto as_impl = pfc._rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
-      if(as_impl){
+      if (as_impl) {
         auto fboobj = as_impl.value()->_standard;
         GL_ERRORCHECK();
         glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        logchan_glfbi->log("GetPixel<%d %d> w<%d> h<%d> FboMaster<%u> rtg<%s>", sx, sy, W, H, fboobj->_fbo, pfc._rtgroup->_name.c_str());
+        logchan_glfbi->log(
+            "GetPixel<%d %d> w<%d> h<%d> FboMaster<%u> rtg<%s>", sx, sy, W, H, fboobj->_fbo, pfc._rtgroup->_name.c_str());
 
         if (fboobj->_fbo) {
 
@@ -662,14 +674,14 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
           logchan_glfbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
 
-          int pfc_index = 0;
+          int pfc_index   = 0;
           size_t pfc_size = pfc._pickvalues.size();
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
             if (MrtTest & MrtMask) {
 
-              if(MrtIndex<pfc_size){
+              if (MrtIndex < pfc_size) {
                 pfc._pickvalues[MrtIndex] = nullptr;
               }
 
@@ -677,28 +689,28 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
               OrkAssert(MrtIndex < pfc._rtgroup->GetNumTargets());
 
-              //GL_ERRORCHECK();
-              //glDepthMask(GL_TRUE);
-              //GL_ERRORCHECK();
+              // GL_ERRORCHECK();
+              // glDepthMask(GL_TRUE);
+              // GL_ERRORCHECK();
               GL_ERRORCHECK();
               glReadBuffer(GL_COLOR_ATTACHMENT0 + MrtIndex);
               GL_ERRORCHECK();
 
               switch (pfc._usage[MrtIndex]) {
                 case PixelFetchContext::EPU_SVARIANT: {
-                  switch(rtbuffer->mFormat){
+                  switch (rtbuffer->mFormat) {
                     case EBufferFormat::RGBA32F: {
                       fvec4 rgba;
-                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) & rgba );
-                      if(MrtIndex<pfc_size){
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)&rgba);
+                      if (MrtIndex < pfc_size) {
                         pfc._pickvalues[MrtIndex] = pfc.decodePixel(rgba);
                       }
                       break;
                     }
                     case EBufferFormat::RGBA32UI: {
                       u32vec4 value;
-                      glReadPixels(sx, sy, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (void*) & value );
-                      if(MrtIndex<pfc_size){
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (void*)&value);
+                      if (MrtIndex < pfc_size) {
                         pfc._pickvalues[MrtIndex] = pfc.decodePixel(value);
                       }
                       break;
@@ -710,43 +722,55 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                   break;
                 }
                 case PixelFetchContext::EPU_PTR64: {
-                  switch(rtbuffer->mFormat){
+                  switch (rtbuffer->mFormat) {
                     case EBufferFormat::RGBA16UI: {
-                      uint16_t rgba[4] = {0,0,0,0};
+                      uint16_t rgba[4] = {0, 0, 0, 0};
                       glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT, (void*)rgba);
                       /////////////////////////////////////////////////////////////////
                       // swizzle so hex appears as xxxxyyyyzzzzwwww
                       /////////////////////////////////////////////////////////////////
-                      uint64_t a             = uint64_t(rgba[0]);
-                      uint64_t b             = uint64_t(rgba[1]);
-                      uint64_t c             = uint64_t(rgba[2]);
-                      uint64_t d             = uint64_t(rgba[3]);
+                      uint64_t a     = uint64_t(rgba[0]);
+                      uint64_t b     = uint64_t(rgba[1]);
+                      uint64_t c     = uint64_t(rgba[2]);
+                      uint64_t d     = uint64_t(rgba[3]);
                       uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                       /////////////////////////////////////////////////////////////////
                       pfc._pickvalues[MrtIndex].set<uint64_t>(value);
-                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(u16)<%u %u %u %u> value<0x%zx>", 
-                                          MrtIndex, sx, sy, 
-                                          rgba[0], rgba[1], rgba[2], rgba[3],
-                                          value);
+                      logchan_glfbi->log(
+                          "getpix MrtIndex<%d> rx<%d> ry<%d> rgba(u16)<%u %u %u %u> value<0x%zx>",
+                          MrtIndex,
+                          sx,
+                          sy,
+                          rgba[0],
+                          rgba[1],
+                          rgba[2],
+                          rgba[3],
+                          value);
                       break;
-                    }                    
+                    }
                     case EBufferFormat::RGBA32F: {
                       float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
                       glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
                       /////////////////////////////////////////////////////////////////
                       // swizzle so hex appears as xxxxyyyyzzzzwwww
                       /////////////////////////////////////////////////////////////////
-                      uint64_t a             = uint64_t(rgba[0]);
-                      uint64_t b             = uint64_t(rgba[1]);
-                      uint64_t c             = uint64_t(rgba[2]);
-                      uint64_t d             = uint64_t(rgba[3]);
+                      uint64_t a     = uint64_t(rgba[0]);
+                      uint64_t b     = uint64_t(rgba[1]);
+                      uint64_t c     = uint64_t(rgba[2]);
+                      uint64_t d     = uint64_t(rgba[3]);
                       uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                       /////////////////////////////////////////////////////////////////
                       pfc._pickvalues[MrtIndex].set<uint64_t>(value);
-                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(f32)<%g %g %g %g> value<0x%zx>", 
-                                          MrtIndex, sx, sy, 
-                                          rgba[0], rgba[1], rgba[2], rgba[3],
-                                          value);
+                      logchan_glfbi->log(
+                          "getpix MrtIndex<%d> rx<%d> ry<%d> rgba(f32)<%g %g %g %g> value<0x%zx>",
+                          MrtIndex,
+                          sx,
+                          sy,
+                          rgba[0],
+                          rgba[1],
+                          rgba[2],
+                          rgba[3],
+                          value);
                       break;
                     }
                     default:
@@ -772,8 +796,8 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
           }
           GL_ERRORCHECK();
           glBindFramebuffer(GL_FRAMEBUFFER, 0);
-          if(previous_readbuffer<1000)
-            glReadBuffer( previous_readbuffer );
+          if (previous_readbuffer < 1000)
+            glReadBuffer(previous_readbuffer);
           GL_ERRORCHECK();
         } else {
           printf("!!!ERR - GetPix BindFBO<%d>\n", fboobj->_fbo);
@@ -786,7 +810,6 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
   }
   _target.debugPopGroup();
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

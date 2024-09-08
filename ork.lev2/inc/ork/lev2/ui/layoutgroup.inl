@@ -177,6 +177,7 @@ struct LayoutGroup : public Group {
   int _margin = 2;
   bool _clear = true;
   fvec4 _clearColor;
+  bool _lockLayout = false;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
 private:

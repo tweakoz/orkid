@@ -89,6 +89,7 @@ public:
   virtual void _setScissor(int iX, int iY, int iW, int iH)    = 0;
   virtual void Clear(const fcolor4& rCol, float fdepth)       = 0;
   virtual void clearDepth(float fdepth)                       = 0;
+  virtual void clearRectWithColor(lev2::ViewportRect rect,const fcolor4& rCol) {} 
   virtual void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) = 0;
   virtual void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
   virtual void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}

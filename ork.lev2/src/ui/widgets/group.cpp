@@ -203,15 +203,18 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     auto FBI     = context->FBI();
     lev2::ViewportRect vrect;
-    vrect._x = x();
-    vrect._y = y();
-    vrect._w = width();
-    vrect._h = height();
-    FBI->pushScissor(vrect);
-    FBI->pushViewport(vrect);
-    FBI->Clear(_clearColor, 1);
-    FBI->popViewport();
-    FBI->popScissor();
+
+    int _x = x();
+    int _y = y();
+    int _w = width();
+    int _h = height();
+
+    vrect._x = _x;
+    vrect._y = _y;
+    vrect._w = _w;
+    vrect._h = _h;
+
+    FBI->clearRectWithColor(vrect,_clearColor);
     //_clear = false;
   }
   drawChildren(drwev);
@@ -271,7 +274,9 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::RELEASE: {
-      _clearColor = fvec4(0, 0, 0, 1);
+      if(not _lockLayout){
+        _clearColor = fvec4(0, 0, 0, 1);
+      }
       was_handled = true;
       break;
     }
@@ -290,30 +295,34 @@ HandlerResult LayoutGroup::OnUiEvent(event_constptr_t ev) {
       break;
     }
     case ui::EventCode::MOVE: {
-      _clearColor = fvec4(0.1,0.1,0.2, 1);
+      if(not _lockLayout){
+        _clearColor = fvec4(0.1,0.1,0.2, 1);
+      }
       break;
     }
     case ui::EventCode::DRAG: {
       result.mHoldFocus = true;
       was_handled       = true;
-      auto g1 = GUIDES_UNDER_MOUSE.first;
-      auto g2 = GUIDES_UNDER_MOUSE.second;
-      int dx           = ev->miX - lastx;
-      int dy           = ev->miY - lasty;
-      if(g1 and g2){
-        if((not g1->_locked) and (not g2->_locked)){
-          _clearColor = fvec4(0.2,0.2,0.3, 1);
-          if(g1->isVertical() && g2->isVertical()){
-            dragGuidePairV(GUIDES_UNDER_MOUSE, dx);
-            _layout->updateAll();
-          }
-          else if(g1->isHorizontal() && g2->isHorizontal()){
-            dragGuidePairH(GUIDES_UNDER_MOUSE, dy);
-            _layout->updateAll();
-          }
-          else{
-            //_clearColor = fvec4(1, 0, 0, 1.0);
-            printf("BAD GUIDE PAIR\n");
+      if(not _lockLayout){
+        auto g1 = GUIDES_UNDER_MOUSE.first;
+        auto g2 = GUIDES_UNDER_MOUSE.second;
+        int dx           = ev->miX - lastx;
+        int dy           = ev->miY - lasty;
+        if(g1 and g2){
+          if((not g1->_locked) and (not g2->_locked)){
+            _clearColor = fvec4(0.2,0.2,0.3, 1);
+            if(g1->isVertical() && g2->isVertical()){
+              dragGuidePairV(GUIDES_UNDER_MOUSE, dx);
+              _layout->updateAll();
+            }
+            else if(g1->isHorizontal() && g2->isHorizontal()){
+              dragGuidePairH(GUIDES_UNDER_MOUSE, dy);
+              _layout->updateAll();
+            }
+            else{
+              //_clearColor = fvec4(1, 0, 0, 1.0);
+              printf("BAD GUIDE PAIR\n");
+            }
           }
         }
       }
@@ -344,7 +353,12 @@ Widget* LayoutGroup::doRouteUiEvent(event_constptr_t ev) {
   }
   //
   if (IsEventInside(ev)){
-    _clearColor = fvec4(0.15,0.15,0.25, 1.0);
+    if(_lockLayout){
+      _clearColor = fvec4(0.0,0.0,0.1, 1.0);
+    }
+    else{
+      _clearColor = fvec4(0.15,0.15,0.25, 1.0);
+    }
   }
   return this;
 }

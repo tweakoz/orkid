@@ -274,6 +274,7 @@ public:
   void SetRtGroup(RtGroup* Base) final;
   void Clear(const fcolor4& rCol, float fdepth) final;
   void clearDepth(float fdepth) final;
+  void clearRectWithColor(lev2::ViewportRect rect,const fcolor4& rCol) final;
   void _setViewport(int iX, int iY, int iW, int iH) final;
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame() final;

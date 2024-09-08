@@ -21,22 +21,16 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////
   auto vp                  = app->_topLayoutGroup;
   auto w0                  = vp->makeChild<EvTestBox>("w0", fvec4(1, 1, 0, 1));
-  auto w1                  = vp->makeChild<SplitPanel>("w1");
+  auto w1                  = vp->makeChild<LayoutGroup>("w1");
   auto w2                  = vp->makeChild<LayoutGroup>("w2", 0, 0, 0, 0);
   auto w3                  = vp->makeChild<EvTestBox>("w3", fvec4(0, 1, 0, 1));
-  w1.typedWidget()->_moveEnabled = false;
-  //////////////////////////////////////
-  auto panel_w0 = std::make_shared<EvTestBox>("panel-w0", fvec4(0, 1, 1, 1));
-  auto panel_w1 = std::make_shared<LayoutGroup>("panel-w1");
-  w1.typedWidget()->setChild1(panel_w0);
-  w1.typedWidget()->setChild2(panel_w1);
   //////////////////////////////////////
   auto root_layout = vp->_layout;
   auto l0          = w0._layout;
   auto l1          = w1._layout;
   auto l2          = w2._layout;
   auto l3          = w3._layout;
-  //root_layout->_locked = true;
+  root_layout->_locked = true;
   //////////////////////////////////////
   l0->setMargin(4);
   l1->setMargin(4);
@@ -69,10 +63,11 @@ int main(int argc, char** argv, char** envp) {
   l3->right()->anchorTo(root_layout->right());   // 22
   //////////////////////////////////////
   w2.typedWidget()->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(1, 1, 1, 1));
-  panel_w1->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
+  w1.typedWidget()->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
+  w1.typedWidget()->_lockLayout = true;
+  w2.typedWidget()->_lockLayout = true;
   //////////////////////////////////////
   root_layout->dump();
-  // exit(0);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app->mainThreadLoop();
