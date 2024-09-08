@@ -480,6 +480,12 @@ fragment_shader ps_grid_forward_lit_mono_v4 : iface_grid_forward_lit : lib_frg_g
   out_clr   = vec4(oc.xyz, gout.w);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_grid_forward_lit_mono_v5 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
+  vec4 gout = grid_output5(frg_wpos.xyz);
+  vec3 oc   = forward_lighting_mono(gout.xyz);
+  out_clr   = vec4(oc.xyz, gout.w);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_mono_v6 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : ub_frg_fwd : ub_frg_fwd_lighting {
   vec3 bxm = BaseColor.xyz*ModColor.xyz;
   vec3 oc   = forward_lighting_mono(bxm);
@@ -658,6 +664,10 @@ technique FWD_CT_NM_RI_NI_MO_V3 {
 technique FWD_CT_NM_RI_NI_MO_V4 {
   fxconfig = fxcfg_default;
   vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v4, sb_forward_blend }
+}
+technique FWD_CT_NM_RI_NI_MO_V5 {
+  fxconfig = fxcfg_default;
+  vf_pass  = { vs_grid_forward_lit, ps_grid_forward_lit_mono_v5, sb_forward_blend }
 }
 technique FWD_CT_NM_RI_NI_MO_V6 {
   fxconfig = fxcfg_default;
