@@ -97,7 +97,8 @@ libblock lib_fwd //
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
     // sample PBR material textures
-    vec3 albedo = (BaseColor.xyz*modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
+    vec3 albedo = texture(CNMREA, vec3(frg_uv0, 0)).xyz;
+    //vec3 albedo = (BaseColor.xyz*modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
     vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
     vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
     vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
