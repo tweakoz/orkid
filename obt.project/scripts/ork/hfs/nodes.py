@@ -21,6 +21,7 @@ def createCamera(
   aspectRatio : float = 1.777 ):
 
   camera = stage.createTypedNode( 
+    clazz = utils.SolarisCamera,                                 
     typ="camera", 
     name=name, 
     params={ 
@@ -46,6 +47,7 @@ def createPointLight(
   intensity : float = 1.0 ):
 
   light = stage.createTypedNode(
+    clazz=utils.SolarisLightNode,
     typ="light::2.0", 
     name=name,
     params={ 
@@ -63,12 +65,13 @@ def createPointLight(
 def createKarmaRenderSettings(
   stage : utils.SolarisStage,
   name : str,
-  camera : utils.SolarisObject,
+  camera : utils.SolarisCamera,
   input : utils.SolarisObject,
   resolutionx : int = 1280,
   samplesperpixel : int = 9 ):
 
   rendersettings = stage.createTypedNode(
+    clazz=utils.SolarisRenderSettingsNode,
     typ="karmarenderproperties", 
     name=name,
     params={
@@ -90,7 +93,7 @@ def createUsdRopNode(
   stage : utils.SolarisStage,
   name : str,
   input : utils.SolarisObject,
-  rendersettings : utils.SolarisObject,
+  rendersettings : utils.SolarisRenderSettingsNode,
   renderer : str = "BRAY_HdKarma", # (BRAY_HdKarma,BRAY_HdKarmaXPU)
   start_frame : int = 1,
   end_frame : int = 1 ):
@@ -223,7 +226,7 @@ def createMaterialXNode(
 
   #######################
 
-  solobj = utils.SolarisObject(parent=stage)
+  solobj = utils.SolarisMaterialNode(parent=stage)
   solobj.node = materialx_subnet
   solobj.prim = None
   solobj.prim_name = None
@@ -232,7 +235,6 @@ def createMaterialXNode(
 
   return solobj
 
-
 #########################################################
 # assign material to a shape node
 #########################################################
@@ -240,8 +242,8 @@ def createMaterialXNode(
 def assignMaterial(
   stage : utils.SolarisStage,
   name : str,
-  shape : utils.SolarisObject,
-  material : utils.SolarisObject,
+  shape : utils.SolarisGeoNode,
+  material : utils.SolarisMaterialNode,
   input : utils.SolarisObject
   ):
 
@@ -271,7 +273,7 @@ def createSphereAndNode(
   sph_prim.setParms({"radius":radius})
   sph_node = hou.node("/stage/"+prim_name)
   sph_node.setName(node_name)
-  sol_obj = utils.SolarisObject(parent=stage)
+  sol_obj = utils.SolarisGeoNode(parent=stage)
   sol_obj.node = sph_node
   sol_obj.prim = sph_prim
   sol_obj.prim_name = prim_name

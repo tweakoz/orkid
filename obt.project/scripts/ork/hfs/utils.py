@@ -83,6 +83,7 @@ class SolarisStage:
   #########################################################
 
   def createTypedNode(self,
+                      clazz = SolarisObject,
                       parent=None, 
                       typ="subnet",
                       name="generic_node",
@@ -90,7 +91,7 @@ class SolarisStage:
                       inputs=None,
                       displayFlag=None):
     #####################
-    sol_obj = SolarisObject(parent=self)
+    sol_obj = clazz(parent=self)
     sol_obj.node = self.impl.createNode(typ, name)
     sol_obj.node_name = name
     sol_obj.prim = None
@@ -110,7 +111,7 @@ class SolarisStage:
       if type(inputs) == list:
         for i in range(len(inputs)):
           inp = inputs[i]
-          if type(inp) == SolarisObject:
+          if issubclass(type(inp), SolarisObject):
             inp = inp.node
           sol_obj.node.setInput(i, inp)
     #####################
@@ -119,4 +120,34 @@ class SolarisStage:
     #####################
     return sol_obj
 
- 
+
+###############################################################################
+
+class SolarisCamera(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="camera", parent=parent)
+
+###############################################################################
+
+class SolarisGeoNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="camera", parent=parent)
+
+###############################################################################
+
+class SolarisLightNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="camera", parent=parent)
+
+###############################################################################
+
+class SolarisMaterialNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="camera", parent=parent)
+
+###############################################################################
+
+class SolarisRenderSettingsNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="camera", parent=parent)
+
