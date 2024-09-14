@@ -267,7 +267,10 @@ def createSphereAndNode(
   stage : utils.SolarisStage,
   prim_name : str,
   node_name : str,
-  radius : float = 1.0 ):
+  input : utils.SolarisObject = None,
+  outputs : list = None,
+  radius : float = 1.0,
+):
 
   sph_prim = stage.impl.createNode("sphere", prim_name)
   sph_prim.setParms({"radius":radius})
@@ -281,5 +284,11 @@ def createSphereAndNode(
   sol_obj.stage_path = utils.SolarisPath(name=node_name, parent=stage.stage_path)
   sol_obj.prim_path = utils.SolarisPath(name=prim_name, parent=None)
   sol_obj.root_path = utils.SolarisPath(name=node_name, parent=None)
+
+  if outputs is not None:
+    for output_item in outputs:
+      node = output_item[0]
+      index = output_item[1]
+      node.setInput(index, sph_node, 0)
 
   return sol_obj
