@@ -137,6 +137,38 @@ class StandardFixture:
       shared_file = shared_file,
       this_name = this_name    
     )
+  
+  #############################################
+  
+  def createPointLight(
+    self,
+    name : str = "light",
+    translation : tuple = (0,0,0),
+    intensity : float = 1.0 ):
+    
+    return createPointLight(
+      fixture=self,
+      name=name,
+      translation=translation,
+      intensity=intensity
+    )
+  
+  def createCamera(
+    self,
+    name : str = "camera",
+    translation : tuple = (0,0,0),
+    lookat : tuple = (0,0,0),
+    aperatureH : float = 35.0,
+    aspectRatio : float = 1.777 ):
+    
+    return createCamera(
+      fixture=self,
+      name=name,
+      translation=translation,
+      lookat=lookat,
+      aperatureH=aperatureH,
+      aspectRatio=aspectRatio
+    )
 
 ###############################################################################
 
@@ -179,19 +211,21 @@ def createCamera(
   rendersettings = fixture.rendersettings
   rendersettings.node.setParms({"camera": camera.cameras_path.fqname})
 
+  fixture.cameras_subnet.node.layoutChildren()
+  
   return camera
 
 ###############################################################################
 
 def createPointLight(
-  parent : utils.SolarisObject,
+  fixture : StandardFixture,
   input : utils.SolarisObject = None,
   name : str = "point_light",
   translation : tuple = (0,0,0),
   intensity : float = 1.0 ):
 
   light = utils.createTypedNode(
-    parent=parent,
+    parent=fixture.lights_subnet,
     clazz=utils.SolarisLightNode,
     typ="light::2.0", 
     name=name,
@@ -203,12 +237,12 @@ def createPointLight(
     inputs=[input]
   )
   
-  if issubclass(type(parent), utils.SolarisSubnetNode):
-    merge_node = parent.merge_node
-    merge_node.node.setNextInput(light.node)
-    merge_node.subitems += [light]
+  # add to subnets merge node
+  merge_node = fixture.lights_subnet.merge_node
+  merge_node.node.setNextInput(light.node)
+  merge_node.subitems += [light]
     
-    # add to subnets merge node
+  fixture.lights_subnet.node.layoutChildren()
 
   return light
         
@@ -402,6 +436,9 @@ def createMaterialXNode(
   solobj.node_name = mat_name
   solobj.materials_path = utils.SolarisPath(name=mat_name, parent=mtl_lib.materials_path)
 
+  materialx_subnet.layoutChildren()
+  mtl_lib.node.layoutChildren()
+  
   return solobj
 
 #########################################################
@@ -442,6 +479,8 @@ def assignMaterial(
   merge_node = assignments.merge_node
   merge_node.node.setNextInput(assign_material.node)
   merge_node.subitems += [assign_material]
+  
+  assignments.node.layoutChildren()
   
   return assign_material
 
@@ -485,6 +524,8 @@ def createSphereAndNode(
     merge_node.subitems += [sol_obj]
 
 
+  parent.node.layoutChildren()
+  
   return sol_obj
 
 #########################################################
@@ -620,6 +661,8 @@ def setTransformKeyframe(
   keyframe.setFrame(frame)
   keyframe.setValue(translation[2])
   parm.setKeyframe(keyframe)  
+
+#########################################################
 
 GENMOVIE = '''  
 import subprocess
