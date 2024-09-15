@@ -9,19 +9,151 @@ if i == 1 or (n_hasFlag and i == 2):
     r = 'inherit'
 return r'''
 
+class StandardFixture:
+  def __init__(
+    self,
+    hq_server : str,
+    hq_hfs_linux : str,
+    shared_file : str,
+    this_name : str,
+    image_w : int = 1280,
+    start_frame : int = 1,
+    end_frame : int = 1,
+    fps : int = 24
+    ):
+
+    utils.setAnimGlobals( 
+      fps=fps, 
+      start=start_frame, 
+      end=end_frame, 
+      active=1
+    )
+
+    self.stage = utils.SolarisStage()
+
+    self.material_lib = utils.SolarisMaterialsLibraryNode(parent=self.stage)
+
+    #############################################
+    # create shapes Subnet
+    #############################################
+
+    self.shapes_subnet = createSubnet(
+      parent=self.stage, 
+      node_name = "shapes_subnet",
+      disconnectInternal = True,
+      outputs = [(self.material_lib,0)],
+      mergeNode = True,
+    )
+
+    #############################################
+    # create lights Subnet
+    #############################################
+
+    self.lights_subnet = createSubnet(
+      parent=self.stage, 
+      node_name = "lights_subnet",
+      disconnectInternal = True,
+      mergeNode = True,
+    )
+
+    #############################################
+    # create cameras Subnet
+    #############################################
+
+    self.cameras_subnet = createSubnet(
+      parent=self.stage, 
+      node_name = "cameras_subnet",
+      disconnectInternal = True,
+      mergeNode = True,
+    )
+
+    #############################################
+    # create assignments Subnet
+    #############################################
+
+    self.assignments_subnet = createSubnet(
+      parent=self.stage, 
+      node_name = "material_assignments",
+      disconnectInternal = True,
+      mergeNode = True,
+    )
+
+    # connect assignments input 0 to material library output
+    self.assignments_subnet.node.setInput(0, self.material_lib.node)
+    # connect assignments input 1 to shapes output
+
+    ####################################
+
+    merge_visuals = createMergeNode(
+      parent=self.stage, 
+      node_name="merge_visuals",
+      mergeItems = [self.lights_subnet,self.cameras_subnet,self.assignments_subnet]
+    )
+
+    #############################################
+    # Create a KarmaRenderSettings in Solaris
+    #############################################
+
+    self.rendersettings = createKarmaRenderSettings(
+      stage=self.stage, 
+      input = merge_visuals,
+      name="rendersettings",
+      resolutionx = image_w,
+      samplesPerPixel = 32,
+      secondaryMinSamples = 1,
+      secondaryMaxSamples = 1024,
+      indirectGuiding = True,
+      denoiser = "oidn",
+      tonemap = "unreal"
+    )
+
+    self.rendersettings.assignAsOutputNode() # set as "display" node
+
+    #############################################
+    # create USD ROP
+    #############################################
+
+    self.render = createUsdRopNode(
+      stage=self.stage, 
+      input = self.rendersettings,
+      name="render1",
+      #renderer = "BRAY_HdKarma",  
+      renderer = "BRAY_HdKarmaXPU",  
+      renderSettings = self.rendersettings,
+      startFrame = start_frame,
+      endFrame = end_frame,
+    )
+
+    self.stage.node.layoutChildren() # layout the nodes in /stage
+
+    ####################################
+    # create the hqueue render output
+    ####################################
+
+    self.HQR = utils.createHqueueRenderOut(
+      usd_render_node = self.render,
+      hq_server = hq_server,
+      hq_hfs_linux = hq_hfs_linux,
+      shared_file = shared_file,
+      this_name = this_name    
+    )
+
 ###############################################################################
 
 def createCamera(
-  stage : utils.SolarisStage,
-  input : utils.SolarisObject,
+  fixture : StandardFixture,
+  input : utils.SolarisObject = None,
   name : str = "camera",
   translation : tuple = (0,0,0),
   lookat : tuple = (0,0,0),
   aperatureH : float = 35.0,
   aspectRatio : float = 1.777 ):
 
+  stage = fixture.stage
+  parent = fixture.cameras_subnet
+
   camera = utils.createTypedNode( 
-    parent=stage,
+    parent=parent,
     clazz = utils.SolarisCamera,                                 
     typ="camera", 
     name=name, 
@@ -37,19 +169,29 @@ def createCamera(
     inputs=[input]
   )
   camera.cameras_path = utils.SolarisPath(name=name, parent=stage.cameras_path)
+
+  if issubclass(type(parent), utils.SolarisSubnetNode):
+    merge_node = parent.merge_node
+    merge_node.node.setNextInput(camera.node)
+    merge_node.subitems += [camera]
+
+
+  rendersettings = fixture.rendersettings
+  rendersettings.node.setParms({"camera": camera.cameras_path.fqname})
+
   return camera
 
 ###############################################################################
 
 def createPointLight(
-  stage : utils.SolarisStage,
-  input : utils.SolarisObject,
+  parent : utils.SolarisObject,
+  input : utils.SolarisObject = None,
   name : str = "point_light",
   translation : tuple = (0,0,0),
   intensity : float = 1.0 ):
 
   light = utils.createTypedNode(
-    parent=stage,
+    parent=parent,
     clazz=utils.SolarisLightNode,
     typ="light::2.0", 
     name=name,
@@ -60,6 +202,13 @@ def createPointLight(
     },
     inputs=[input]
   )
+  
+  if issubclass(type(parent), utils.SolarisSubnetNode):
+    merge_node = parent.merge_node
+    merge_node.node.setNextInput(light.node)
+    merge_node.subitems += [light]
+    
+    # add to subnets merge node
 
   return light
         
@@ -68,7 +217,7 @@ def createPointLight(
 def createKarmaRenderSettings(
   stage : utils.SolarisStage,
   name : str,
-  camera : utils.SolarisCamera,
+  #camera : utils.SolarisCamera,
   input : utils.SolarisObject,
   resolutionx : int = 1280,
   samplesPerPixel : int = 9,
@@ -86,7 +235,7 @@ def createKarmaRenderSettings(
     typ="karmarenderproperties", 
     name=name,
     params={
-      "camera": camera.cameras_path,
+      #"camera": camera.cameras_path,
       "resolutionx": resolutionx,
       "samplesperpixel": samplesPerPixel,
       "varianceaa_minsamples" : secondaryMinSamples,
@@ -136,7 +285,7 @@ def createUsdRopNode(
 ###############################################################################
 
 def createMaterialXNode(
-  stage : utils.SolarisStage, 
+  mtl_lib : utils.SolarisMaterialsLibraryNode, 
   mat_name : str,
   baseColor : tuple = (0.5,0.5,0.5),
   diffuseRoughness : float = 0.0,
@@ -147,7 +296,7 @@ def createMaterialXNode(
   subsurfaceScale : float = 1.0,
   ):
                         
-  materialx_subnet = stage.material_lib.createNode("subnet", mat_name)
+  materialx_subnet = mtl_lib.node.createNode("subnet", mat_name)
   materialx_subnet.setMaterialFlag(True)    
   #materialx_subnet.setInput(0, sphere_node)
   parameters = materialx_subnet.parmTemplateGroup()
@@ -248,10 +397,10 @@ def createMaterialXNode(
 
   #######################
 
-  solobj = utils.SolarisMaterialNode(parent=stage)
+  solobj = utils.SolarisMaterialNode(parent=mtl_lib)
   solobj.node = materialx_subnet
   solobj.node_name = mat_name
-  solobj.materials_path = utils.SolarisPath(name=mat_name, parent=stage.materials_path)
+  solobj.materials_path = utils.SolarisPath(name=mat_name, parent=mtl_lib.materials_path)
 
   return solobj
 
@@ -260,28 +409,39 @@ def createMaterialXNode(
 #########################################################
 
 def assignMaterial(
-  stage : utils.SolarisStage,
+  fixture : StandardFixture,
   name : str,
   shapes : list,
   material : utils.SolarisMaterialNode,
-  input : utils.SolarisObject
+  #input : utils.SolarisObject
   ):
 
+  mtl_lib = fixture.material_lib
+  assignments = fixture.assignments_subnet
+    
   prims = ""
   
   for item in shapes:
     prims += item.root_path.fqname + " "
 
   assign_material = utils.createTypedNode(
-    parent = stage,
+    parent = assignments,
     typ="assignmaterial",
     name=name,
     params={
       "primpattern1": prims,
       "matspecpath1": material.materials_path,
     },
-    inputs = [input]
   )
+  
+  # connect assignments input 0 to subnet input 0
+  subnet_input_0 = assignments.node.indirectInputs()[0]
+  assign_material.node.setInput(0, subnet_input_0)
+                                
+  # append assign_material output 0 to merge node connections
+  merge_node = assignments.merge_node
+  merge_node.node.setNextInput(assign_material.node)
+  merge_node.subitems += [assign_material]
   
   return assign_material
 
@@ -319,6 +479,12 @@ def createSphereAndNode(
       index = output_item[1]
       node.setInput(index, sph_node, 0)
 
+  if issubclass(type(parent), utils.SolarisSubnetNode):
+    merge_node = parent.merge_node
+    merge_node.node.setNextInput(sph_node)
+    merge_node.subitems += [sol_obj]
+
+
   return sol_obj
 
 #########################################################
@@ -329,25 +495,29 @@ def createSubnet(
   parent : utils.SolarisObject,
   node_name : str,
   input : utils.SolarisObject = None,
-  outputs : list = None ):
+  outputs : list = None,
+  disconnectInternal : bool = False,
+  mergeNode : bool = False ):
 
   stage_path = utils.SolarisPath(name=node_name, parent=parent.stage_path)
   root_path = utils.SolarisPath(name=node_name, parent=None)
 
   subnet = parent.node.createNode("subnet", node_name)
 
-  sol_obj = utils.SolarisGeoNode(parent=parent)
+  sol_obj = utils.SolarisSubnetNode(parent=parent)
   sol_obj.node = subnet
   sol_obj.node_name = node_name
   sol_obj.stage_path = stage_path
   sol_obj.root_path = root_path
 
+  ##############################################
+
   if outputs is not None:
     for output_item in outputs:
       node = output_item[0]
       index = output_item[1]
-      node.setInput(index, subnet, 0)
-
+      node.node.setInput(index, subnet, 0)
+    
   ##############################################
   # add "disconnectAll" method to SolarisGeoNode
   ##############################################
@@ -371,6 +541,23 @@ def createSubnet(
   sol_obj.setOutput = setOutput.__get__(sol_obj)
   
   ##############################################
+
+  if disconnectInternal:
+    sol_obj.disconnectAll()
+
+  if mergeNode:
+    sol_obj.disconnectAll()
+    merge_node = subnet.createNode("merge", "merge")
+    merge_obj = utils.SolarisMergeNode(parent=sol_obj)
+    merge_obj.node = merge_node
+    merge_obj.node_name = "merge"
+    merge_obj.stage_path = utils.SolarisPath(name="merge", parent=stage_path)
+    merge_obj.root_path = utils.SolarisPath(name="merge", parent=root_path)
+    sol_obj.merge_node = merge_obj
+    child_node = subnet.node("output0")
+    child_node.setInput(0, merge_node, 0)
+    # connect merge node to subnet output
+    #sol_obj.setOutput(merge_node)
 
   return sol_obj
 
@@ -452,3 +639,5 @@ def generate_movie_with_mplay(directory, frame_pattern):
 # Example usage
 generate_movie_with_mplay("/path/to/frames", "frame.%04d.exr")
 '''
+
+

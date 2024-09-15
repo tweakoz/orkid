@@ -70,11 +70,23 @@ class SolarisStage(SolarisObject):
     if not node:
       node = hou.node("/obj").createNode("lopnet", "stage")
     self.node = node
-    self.material_lib = self.node.createNode("materiallibrary", "my_material_lib")
-    self.materials_path = SolarisPath(name="materials",parent=None)
+
     self.cameras_path = SolarisPath(name="cameras",parent=None)
     self.render_path = SolarisPath(name="Render",parent=None)
     self.stage_path = SolarisPath(name="stage", parent=None)  
+
+###############################################################################
+
+class SolarisSubnetNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="subnet", parent=parent)
+
+###############################################################################
+
+class SolarisMergeNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="merge", parent=parent)
+    self.subitems = []
 
 ###############################################################################
 
@@ -86,25 +98,33 @@ class SolarisCamera(SolarisObject):
 
 class SolarisGeoNode(SolarisObject):
   def __init__(self, parent=None):
-    super().__init__(node_name="camera", parent=parent)
+    super().__init__(node_name="geo", parent=parent)
 
 ###############################################################################
 
 class SolarisLightNode(SolarisObject):
   def __init__(self, parent=None):
-    super().__init__(node_name="camera", parent=parent)
+    super().__init__(node_name="light", parent=parent)
 
 ###############################################################################
 
 class SolarisMaterialNode(SolarisObject):
   def __init__(self, parent=None):
-    super().__init__(node_name="camera", parent=parent)
+    super().__init__(node_name="material", parent=parent)
 
 ###############################################################################
 
 class SolarisRenderSettingsNode(SolarisObject):
   def __init__(self, parent=None):
-    super().__init__(node_name="camera", parent=parent)
+    super().__init__(node_name="rendersettings", parent=parent)
+
+###############################################################################
+
+class SolarisMaterialsLibraryNode(SolarisObject):
+  def __init__(self, parent=None):
+    super().__init__(node_name="materials", parent=parent)
+    self.materials_path = SolarisPath(name="materials",parent=None)
+    self.node = parent.node.createNode("materiallibrary", "my_material_lib")
 
 ###############################################################################
 
