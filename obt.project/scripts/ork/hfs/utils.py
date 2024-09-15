@@ -41,9 +41,7 @@ class SolarisPath:
 class SolarisObject:
   def __init__(self, node_name=None, parent=None):
     self.parent = parent
-    self.prim_name = None
     self.node_name = None
-    self.prim = None 
     self.node = None
     self.path = SolarisPath(name=node_name, parent=parent)
 
@@ -62,64 +60,21 @@ class SolarisObject:
 
 ###############################################################################
 
-class SolarisStage:
+class SolarisStage(SolarisObject):
   
   #########################################################
 
   def __init__(self):
     #super().__init__(node_name="stage", parent=None)
-    impl = hou.node("/stage")
-    if not impl:
-      impl = hou.node("/obj").createNode("lopnet", "stage")
-    self.impl = impl
-    self.material_lib = self.impl.createNode("materiallibrary", "my_material_lib")
+    node = hou.node("/stage")
+    if not node:
+      node = hou.node("/obj").createNode("lopnet", "stage")
+    self.node = node
+    self.material_lib = self.node.createNode("materiallibrary", "my_material_lib")
     self.materials_path = SolarisPath(name="materials",parent=None)
     self.cameras_path = SolarisPath(name="cameras",parent=None)
     self.render_path = SolarisPath(name="Render",parent=None)
     self.stage_path = SolarisPath(name="stage", parent=None)  
-
-  #########################################################
-  # create generic node
-  #########################################################
-
-  def createTypedNode(self,
-                      clazz = SolarisObject,
-                      parent=None, 
-                      typ="subnet",
-                      name="generic_node",
-                      params=None,
-                      inputs=None,
-                      displayFlag=None):
-    #####################
-    sol_obj = clazz(parent=self)
-    sol_obj.node = self.impl.createNode(typ, name)
-    sol_obj.node_name = name
-    sol_obj.prim = None
-    sol_obj.prim_name = None
-    sol_obj.stage_path = SolarisPath(name=name, parent=self.stage_path)
-    #####################
-    if params is not None:
-      conv_dict = {}
-      for key in params:
-        val = params[key]
-        if type(val) == SolarisPath:
-          val = val.fqname
-        conv_dict[key] = val
-      sol_obj.node.setParms(conv_dict)
-    #####################
-    if inputs is not None:
-      if type(inputs) == list:
-        for i in range(len(inputs)):
-          inp = inputs[i]
-          if issubclass(type(inp), SolarisObject):
-            inp = inp.node
-          sol_obj.node.setInput(i, inp)
-    #####################
-    if displayFlag is not None:
-      sol_obj.node.setDisplayFlag(displayFlag)
-    #####################
-    return sol_obj
-
 
 ###############################################################################
 
@@ -151,3 +106,71 @@ class SolarisRenderSettingsNode(SolarisObject):
   def __init__(self, parent=None):
     super().__init__(node_name="camera", parent=parent)
 
+###############################################################################
+
+def createTypedNode(parent : SolarisObject,
+                    clazz = SolarisObject,
+                    typ : str = "subnet",
+                    name : str = "generic_node",
+                    params : dict = None,
+                    inputs : list = None,
+                    displayFlag : bool = None ):
+  #####################
+  sol_obj = clazz(parent=parent)
+  sol_obj.node = parent.node.createNode(typ, name)
+  sol_obj.node_name = name
+  sol_obj.stage_path = SolarisPath(name=name, parent=parent.stage_path)
+  #####################
+  if params is not None:
+    conv_dict = {}
+    for key in params:
+      val = params[key]
+      if type(val) == SolarisPath:
+        val = val.fqname
+      conv_dict[key] = val
+    sol_obj.node.setParms(conv_dict)
+  #####################
+  if inputs is not None:
+    if type(inputs) == list:
+      for i in range(len(inputs)):
+        inp = inputs[i]
+        if issubclass(type(inp), SolarisObject):
+          inp = inp.node
+        sol_obj.node.setInput(i, inp)
+  #####################
+  if displayFlag is not None:
+    sol_obj.node.setDisplayFlag(displayFlag)
+  #####################
+  return sol_obj
+
+###############################################################################
+
+def createHqueueRenderOut( 
+  usd_render_node : SolarisRenderSettingsNode,
+  hq_server : str,
+  hq_hfs_linux : str,
+  shared_file : str,
+  this_name : str ):
+
+  out = hou.node("/out")
+  fetch_rop = out.createNode("fetch", "fetch_rop")
+  fetch_rop.setParms({"source": usd_render_node.stage_path.fqname})
+
+  # Configure HQueue render settings
+  # Set HQueue rendering to process the Solaris LOP network
+
+  hqueue_render = out.createNode("hq_render", "hqueue_render")
+  hqueue_render.setParms({
+    "hq_useuniversalhfs": False,
+    "hq_hip_action": "use_target_hip",
+    "hq_server": hq_server,  # Current HIP file path
+    "hq_hfs_linux": hq_hfs_linux,  # Current HIP file path
+    "hq_hip": str(shared_file),  # Current HIP file path
+    "hq_job_name": "OBT_"+this_name,
+  })
+  hqueue_render.setInput(0, fetch_rop)
+
+  out.layoutChildren()
+  
+  return hqueue_render
+  

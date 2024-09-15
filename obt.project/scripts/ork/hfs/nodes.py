@@ -20,12 +20,14 @@ def createCamera(
   aperatureH : float = 35.0,
   aspectRatio : float = 1.777 ):
 
-  camera = stage.createTypedNode( 
+  camera = utils.createTypedNode( 
+    parent=stage,
     clazz = utils.SolarisCamera,                                 
     typ="camera", 
     name=name, 
     params={ 
       "t": translation,
+      "lookatenable": True,
       "lookatposition": lookat,
       "horizontalAperture": aperatureH,
       #"verticalAperture": aper_v,
@@ -46,7 +48,8 @@ def createPointLight(
   translation : tuple = (0,0,0),
   intensity : float = 1.0 ):
 
-  light = stage.createTypedNode(
+  light = utils.createTypedNode(
+    parent=stage,
     clazz=utils.SolarisLightNode,
     typ="light::2.0", 
     name=name,
@@ -68,9 +71,16 @@ def createKarmaRenderSettings(
   camera : utils.SolarisCamera,
   input : utils.SolarisObject,
   resolutionx : int = 1280,
-  samplesperpixel : int = 9 ):
+  samplesperpixel : int = 9,
+  secondary_minsamples : int = 1,
+  secondary_maxsamples : int = 1,
+  sssquality : int = 1,
+  tonemap : str = "off",
+  denoiser : str = "off" ):
+  
 
-  rendersettings = stage.createTypedNode(
+  rendersettings = utils.createTypedNode(
+    parent=stage,
     clazz=utils.SolarisRenderSettingsNode,
     typ="karmarenderproperties", 
     name=name,
@@ -78,6 +88,11 @@ def createKarmaRenderSettings(
       "camera": camera.cameras_path,
       "resolutionx": resolutionx,
       "samplesperpixel": samplesperpixel,
+      "varianceaa_minsamples" : secondary_minsamples,
+      "varianceaa_maxsamples" : secondary_maxsamples,
+      "sssquality" : sssquality,
+      "denoiser": denoiser,
+      "tonemap": tonemap,
     },
     inputs=[input]
   )
@@ -98,7 +113,8 @@ def createUsdRopNode(
   start_frame : int = 1,
   end_frame : int = 1 ):
 
-  ROP = stage.createTypedNode(
+  ROP = utils.createTypedNode(
+    parent=stage,
     typ="usdrender_rop", 
     name="render1",
     params= {
@@ -228,8 +244,6 @@ def createMaterialXNode(
 
   solobj = utils.SolarisMaterialNode(parent=stage)
   solobj.node = materialx_subnet
-  solobj.prim = None
-  solobj.prim_name = None
   solobj.node_name = mat_name
   solobj.materials_path = utils.SolarisPath(name=mat_name, parent=stage.materials_path)
 
@@ -242,16 +256,22 @@ def createMaterialXNode(
 def assignMaterial(
   stage : utils.SolarisStage,
   name : str,
-  shape : utils.SolarisGeoNode,
+  shapes : list,
   material : utils.SolarisMaterialNode,
   input : utils.SolarisObject
   ):
 
-  assign_material = stage.createTypedNode(
+  prims = ""
+  
+  for item in shapes:
+    prims += item.root_path.fqname + " "
+
+  assign_material = utils.createTypedNode(
+    parent = stage,
     typ="assignmaterial",
     name=name,
     params={
-      "primpattern1": shape.root_path,
+      "primpattern1": prims,
       "matspecpath1": material.materials_path,
     },
     inputs = [input]
@@ -264,26 +284,28 @@ def assignMaterial(
 #########################################################
 
 def createSphereAndNode(
-  stage : utils.SolarisStage,
-  prim_name : str,
+  parent : utils.SolarisObject,
   node_name : str,
+  translation : tuple = (0,0,0),
   input : utils.SolarisObject = None,
   outputs : list = None,
   radius : float = 1.0,
 ):
 
-  sph_prim = stage.impl.createNode("sphere", prim_name)
-  sph_prim.setParms({"radius":radius})
-  sph_node = hou.node("/stage/"+prim_name)
-  sph_node.setName(node_name)
-  sol_obj = utils.SolarisGeoNode(parent=stage)
+  stage_path = utils.SolarisPath(name=node_name, parent=parent.stage_path)
+  root_path = utils.SolarisPath(name=node_name, parent=None)
+
+  sph_node = parent.node.createNode("sphere", node_name)
+  sph_node.setParms({
+    "radius":radius,
+    "t":translation
+  })
+
+  sol_obj = utils.SolarisGeoNode(parent=parent)
   sol_obj.node = sph_node
-  sol_obj.prim = sph_prim
-  sol_obj.prim_name = prim_name
   sol_obj.node_name = node_name
-  sol_obj.stage_path = utils.SolarisPath(name=node_name, parent=stage.stage_path)
-  sol_obj.prim_path = utils.SolarisPath(name=prim_name, parent=None)
-  sol_obj.root_path = utils.SolarisPath(name=node_name, parent=None)
+  sol_obj.stage_path = stage_path
+  sol_obj.root_path = root_path
 
   if outputs is not None:
     for output_item in outputs:
@@ -292,3 +314,135 @@ def createSphereAndNode(
       node.setInput(index, sph_node, 0)
 
   return sol_obj
+
+#########################################################
+# Create a USD primitive node to instantiate a sphere
+#########################################################
+
+def createSubnet(
+  parent : utils.SolarisObject,
+  node_name : str,
+  input : utils.SolarisObject = None,
+  outputs : list = None ):
+
+  stage_path = utils.SolarisPath(name=node_name, parent=parent.stage_path)
+  root_path = utils.SolarisPath(name=node_name, parent=None)
+
+  subnet = parent.node.createNode("subnet", node_name)
+
+  sol_obj = utils.SolarisGeoNode(parent=parent)
+  sol_obj.node = subnet
+  sol_obj.node_name = node_name
+  sol_obj.stage_path = stage_path
+  sol_obj.root_path = root_path
+
+  if outputs is not None:
+    for output_item in outputs:
+      node = output_item[0]
+      index = output_item[1]
+      node.setInput(index, subnet, 0)
+
+  ##############################################
+  # add "disconnectAll" method to SolarisGeoNode
+  ##############################################
+
+  def disconnectAll(self):
+    child_nodes = self.node.children()
+    for child in child_nodes:
+      child.setInput(0, None)
+    
+
+  sol_obj.disconnectAll = disconnectAll.__get__(sol_obj)
+
+  ##############################################
+  # add setOutput method to SolarisGeoNode
+  ##############################################
+
+  def setOutput(self, subnode):
+    child_node = self.node.node("output0")
+    child_node.setInput(0, subnode.node, 0)
+    
+  sol_obj.setOutput = setOutput.__get__(sol_obj)
+  
+  ##############################################
+
+  return sol_obj
+
+#########################################################
+# Create a USD primitive node to instantiate a sphere
+#########################################################
+
+def createMergeNode(
+  parent : utils.SolarisObject,
+  node_name : str,
+  input : utils.SolarisObject = None,
+  outputs : list = None,
+  mergeItems : list = [] ):
+  
+  stage_path = utils.SolarisPath(name=node_name, parent=parent.stage_path)
+  root_path = utils.SolarisPath(name=node_name, parent=None)
+  
+  merge_node = parent.node.createNode("merge", node_name)
+  
+  for item in mergeItems:
+    merge_node.setNextInput(item.node)
+    
+  sol_obj = utils.SolarisGeoNode(parent=parent)
+  sol_obj.node = merge_node
+  sol_obj.node_name = node_name
+  sol_obj.stage_path = stage_path
+  sol_obj.root_path = root_path
+  
+  if outputs is not None:
+    for output_item in outputs:
+      node = output_item[0]
+      index = output_item[1]
+      node.setInput(index, merge_node, 0)  
+      
+  return sol_obj
+
+#########################################################
+# Create a curve
+#########################################################
+
+def setTransformKeyframe(
+  object : utils.SolarisObject,
+  translation : tuple = (0,0,0),
+  frame : int = 1 ):
+
+  parm = object.node.parm("tx")
+  keyframe = hou.Keyframe()
+  keyframe.setFrame(frame)
+  keyframe.setValue(translation[0])
+  parm.setKeyframe(keyframe)  
+
+  parm = object.node.parm("ty")
+  keyframe = hou.Keyframe()
+  keyframe.setFrame(frame)
+  keyframe.setValue(translation[1])
+  parm.setKeyframe(keyframe)  
+
+  parm = object.node.parm("tz")
+  keyframe = hou.Keyframe()
+  keyframe.setFrame(frame)
+  keyframe.setValue(translation[2])
+  parm.setKeyframe(keyframe)  
+
+GENMOVIE = '''  
+import subprocess
+def generate_movie_with_mplay(directory, frame_pattern):
+    """
+    directory: the folder where frames are stored
+    frame_pattern: the pattern of frame filenames (e.g., 'frame.%04d.exr')
+    """
+    mplay_cmd = [
+        'mplay', '-r', '24',  # '-r' sets frame rate
+        os.path.join(directory, frame_pattern)
+    ]
+    
+    # Run the mplay command
+    subprocess.run(mplay_cmd)
+
+# Example usage
+generate_movie_with_mplay("/path/to/frames", "frame.%04d.exr")
+'''
