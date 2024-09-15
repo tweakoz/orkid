@@ -71,9 +71,10 @@ def createKarmaRenderSettings(
   camera : utils.SolarisCamera,
   input : utils.SolarisObject,
   resolutionx : int = 1280,
-  samplesperpixel : int = 9,
-  secondary_minsamples : int = 1,
-  secondary_maxsamples : int = 1,
+  samplesPerPixel : int = 9,
+  secondaryMinSamples : int = 1,
+  secondaryMaxSamples : int = 1,
+  indirectGuiding : bool = True,
   sssquality : int = 1,
   tonemap : str = "off",
   denoiser : str = "off" ):
@@ -87,12 +88,13 @@ def createKarmaRenderSettings(
     params={
       "camera": camera.cameras_path,
       "resolutionx": resolutionx,
-      "samplesperpixel": samplesperpixel,
-      "varianceaa_minsamples" : secondary_minsamples,
-      "varianceaa_maxsamples" : secondary_maxsamples,
+      "samplesperpixel": samplesPerPixel,
+      "varianceaa_minsamples" : secondaryMinSamples,
+      "varianceaa_maxsamples" : secondaryMaxSamples,
       "sssquality" : sssquality,
       "denoiser": denoiser,
       "tonemap": tonemap,
+      "guiding_enable": indirectGuiding,
     },
     inputs=[input]
   )
@@ -108,10 +110,10 @@ def createUsdRopNode(
   stage : utils.SolarisStage,
   name : str,
   input : utils.SolarisObject,
-  rendersettings : utils.SolarisRenderSettingsNode,
+  renderSettings : utils.SolarisRenderSettingsNode,
   renderer : str = "BRAY_HdKarma", # (BRAY_HdKarma,BRAY_HdKarmaXPU)
-  start_frame : int = 1,
-  end_frame : int = 1 ):
+  startFrame : int = 1,
+  endFrame : int = 1 ):
 
   ROP = utils.createTypedNode(
     parent=stage,
@@ -119,10 +121,10 @@ def createUsdRopNode(
     name="render1",
     params= {
       "renderer": renderer,
-      "rendersettings": rendersettings.render_path,
+      "rendersettings": renderSettings.render_path,
       "trange": "on",  # frame range
-      "f1": start_frame,  # frame start
-      "f2": end_frame,  # frame end
+      "f1": startFrame,  # frame start
+      "f2": endFrame,  # frame end
       "f3": 1,  # frame increment
     },
     inputs=[input]
@@ -137,10 +139,12 @@ def createMaterialXNode(
   stage : utils.SolarisStage, 
   mat_name : str,
   baseColor : tuple = (0.5,0.5,0.5),
+  diffuseRoughness : float = 0.0,
+  specularRoughness : float = 0.0,
   subsurface : float = 0.0,
   subsurfaceColor : tuple = (0,0,0),
   subsurfaceRadius : tuple = (1,1,1),
-  subsurfaceScale : float = 1.0
+  subsurfaceScale : float = 1.0,
   ):
                         
   materialx_subnet = stage.material_lib.createNode("subnet", mat_name)
@@ -229,6 +233,8 @@ def createMaterialXNode(
   surfaceshader.setParms({
     "base_color": baseColor,
     "subsurface": subsurface,
+    "diffuse_roughness": diffuseRoughness,
+    "specular_roughness": specularRoughness,
     "subsurface_color": subsurfaceColor,
     "subsurface_radius": subsurfaceRadius,
     "subsurface_scale": subsurfaceScale,
