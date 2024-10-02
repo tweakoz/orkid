@@ -439,46 +439,47 @@ template <typename ADAPTER> struct ORK_API TypeCodec {
   using encoderfn_t   = std::function<void(const varval_t& inpval, typename ADAPTER::object_t& outval)>;
   using decoderfn64_t = std::function<void(const typename ADAPTER::object_t& inpval, svar64_t& outval)>;
   using encoderfn64_t = std::function<void(const svar64_t& inpval, typename ADAPTER::object_t& outval)>;
+  using object_t = typename ADAPTER::object_t;
 
   //////////////////////////////////
 
   static std::shared_ptr<TypeCodec> instance();
 
   //////////////////////////////////
-  ADAPTER::object_t encode(const varval_t& val) const;
-  ADAPTER::object_t encode64(const svar64_t& val) const;
-  varval_t decode(const ADAPTER::object_t& val) const;
-  svar64_t decode64(const ADAPTER::object_t& val) const;
+  object_t encode(const varval_t& val) const;
+  object_t encode64(const svar64_t& val) const;
+  varval_t decode(const object_t& val) const;
+  svar64_t decode64(const object_t& val) const;
 
   //////////////////////////////////
 
-  varmap::VarMap decode_kwargs(ADAPTER::kwargs_t kwargs);
-  std::vector<varval_t> decodeList(ADAPTER::list_t py_args);
+  varmap::VarMap decode_kwargs(typename ADAPTER::kwargs_t kwargs);
+  std::vector<varval_t> decodeList(typename ADAPTER::list_t py_args);
 
   //////////////////////////////////
   // register std codec (will reduce boilerplate for a lot of cases)
   //////////////////////////////////
 
   void registerCodec(
-      const ADAPTER::object_t& pytype, //
+      const object_t& pytype, //
       const ork::TypeId& orktypeid,
       encoderfn_t efn,
       decoderfn_t dfn);
 
   void registerCodec64(
-      const ADAPTER::object_t& pytype, //
+      const object_t& pytype, //
       const ork::TypeId& orktypeid,
       encoderfn64_t efn,
       decoderfn64_t dfn);
 
   template <typename ORKTYPE> //
-  void registerStdCodec(const ADAPTER::object_t& pytype);
+  void registerStdCodec(const object_t& pytype);
 
   template <typename ORKTYPE> //
-  void registerStdCodecBIG(const ADAPTER::object_t& pytype);
+  void registerStdCodecBIG(const object_t& pytype);
 
   template <typename PYREPR, typename ORKTYPE> //
-  void registerRawPtrCodec(const ADAPTER::object_t& pytype);
+  void registerRawPtrCodec(const object_t& pytype);
 
 protected:
   TypeCodec();

@@ -66,7 +66,7 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
           .method("finish", [](crc64_ctx_ptr_t ctx) { ctx->finish(); })
           .method(
               "accum",
-              [](crc64_ctx_ptr_t ctx, ADAPTER::object_t value) {
+              [](crc64_ctx_ptr_t ctx, typename ADAPTER::object_t value) {
                 if (is_instance_pystr<ADAPTER>(value)) {
                   ctx->accumulateString(cast2ork<ADAPTER, std::string>(value));
                 } else if (is_instance_pyint<ADAPTER>(value)) {
