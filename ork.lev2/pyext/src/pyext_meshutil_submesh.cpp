@@ -8,15 +8,20 @@
 #include "pyext.h"
 #include <ork/lev2/gfx/meshutil/igl.h>
 
+
 namespace ork::meshutil {
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
+extern bool __enable_zero_area_face_check;
 } // namespace ork::meshutil
+
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 using namespace meshutil;
 void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto type_codec = python::pb11_typecodec_t::instance();
+  /////////////////////////////////////////////////////////////////////////////////
+  module_meshutil.def("enableZeroAreaFaceCheck", [](bool enable) { __enable_zero_area_face_check = enable; });
   /////////////////////////////////////////////////////////////////////////////////
   auto submesh_type =
       py::class_<submesh, submesh_ptr_t>(module_meshutil, "SubMesh")

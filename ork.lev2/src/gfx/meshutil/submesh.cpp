@@ -24,6 +24,15 @@ submesh::submesh()
 
   _connectivityIMPL = std::make_shared<DefaultConnectivity>(this);
 }
+
+/////////////////////////////////////////////////////////////////////////
+
+void submesh::inheritParams( const submesh* from ){
+  auto con_from = std::dynamic_pointer_cast<const DefaultConnectivity>(from->_connectivityIMPL);
+  auto con_to = std::dynamic_pointer_cast<DefaultConnectivity>(_connectivityIMPL);
+  con_to->_enable_zero_area_check = con_from->_enable_zero_area_check;
+}
+
 /////////////////////////////////////////////////////////////////////////
 submesh::~submesh() {
 }

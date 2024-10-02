@@ -239,6 +239,10 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  void inheritParams( const submesh* from );
+
+  //////////////////////////////////////////////////////////////////////////////
+
   void addQuad(
       dvec3 p0, //
       dvec3 p1,
@@ -313,8 +317,9 @@ struct submesh {
   mutable AABox _aaBox;
   mutable bool _aaBoxDirty;
 
-private:
   connectivity_impl_ptr_t _connectivityIMPL;
+
+private:
   mutable mutex _concmutex;
 
   /////////////////////////////////////

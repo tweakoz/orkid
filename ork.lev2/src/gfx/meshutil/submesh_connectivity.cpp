@@ -12,7 +12,22 @@
 #include <ork/kernel/environment.h>
 
 namespace ork::meshutil {
+
+bool __enable_zero_area_face_check = true;
+
 static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity", fvec3(.9, .9, 1), true);
+
+static bool GETZEROAREACHECK(){
+  if(genviron.has("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK")){
+    std::string ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK;
+    genviron.get("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK", ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK);
+    if(ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK=="1"){
+      __enable_zero_area_face_check = false;
+      //OrkAssert(false);
+    }
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 
 IConnectivity::IConnectivity(submesh* sub)
@@ -24,19 +39,14 @@ IConnectivity::~IConnectivity() {
 ////////////////////////////////////////////////////////////////
 DefaultConnectivity::DefaultConnectivity(submesh* sub)
     : IConnectivity(sub) {
+
+  _enable_zero_area_check = GETZEROAREACHECK();
+
   _vtxpool = std::make_shared<vertexpool>();
   for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
 
 
-  if(genviron.has("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK")){
-    std::string ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK;
-    genviron.get("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK", ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK);
-    if(ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK=="1"){
-      _enable_zero_area_check = false;
-      OrkAssert(false);
-    }
-  }
 
 }
 ////////////////////////////////////////////////////////////////
