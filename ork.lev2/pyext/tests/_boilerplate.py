@@ -283,6 +283,10 @@ class BasicUiCamSgApp(object):
         return self.createPipeline(rendermodel="ForwardPBR",
                                    shaderfile=Path("orkshader://basic"),
                                    techname="tek_fnormal_wire")
+    def createVtxColorPipeline(self):
+        return self.createPipeline(rendermodel="ForwardPBR",
+                                   shaderfile=Path("orkshader://basic"),
+                                   techname="tek_vtxcolor")
     def createPointsPipeline(self):
         pipeline =  self.createPipeline( shadertext = SHADERTEXT_POINTS,
                                          blending=tokens.ADDITIVE,

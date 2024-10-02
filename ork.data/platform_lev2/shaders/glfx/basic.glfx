@@ -182,6 +182,20 @@ vertex_shader vs_wnormal_wire : iface_vwire {
 }
 
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_vtx_color : iface_vwire {
+  vec4 hpos  = mvp * position;
+  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
+  ///////////////////////////
+  frg_clr     = vtxcolor;
+  frg_pos     = (m * position).xyz;
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
+  frg_bary    = bary;
+  gl_Position = hpos;
+  ///////////////////////////
+}
+
+///////////////////////////////////////////////////////////////
 vertex_interface iface_rigid_stereo : iface_rigid {
   outputs {
     layout(secondary_view_offset=1) int gl_Layer;
@@ -288,6 +302,11 @@ fragment_shader ps_fnormal_wire
   out_clr = vec4(c*pow(closest_edge,0.05),1);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_vtx_color 
+  : iface_fwire {
+  out_clr = vec4(frg_clr.xyz,1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_vnormal_wire 
   : iface_fwire {
   vec3 normal = normalize(frg_nrmd.xyz);
@@ -357,6 +376,14 @@ technique tek_fnormal_wire {
   pass p0 {
     vertex_shader   = vs_wnormal_wire;
     fragment_shader = ps_fnormal_wire;
+    state_block     = sb_default;
+  }
+}
+technique tek_vtxcolor {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtx_color;
+    fragment_shader = ps_vtx_color;
     state_block     = sb_default;
   }
 }
