@@ -26,6 +26,7 @@ static bool GETZEROAREACHECK(){
       //OrkAssert(false);
     }
   }
+  return __enable_zero_area_face_check;
 }
 
 ////////////////////////////////////////////////////////////////
