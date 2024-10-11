@@ -37,6 +37,7 @@ void StateBlockNode::parse(GlSlFxParser* parser, const ScannerView& view) {
     } else if (vt_tok->text == "\n") {
       i++;
     } else {
+      printf("StateBlockNode::parse error token<%s>\n", vt_tok->text.c_str());
       OrkAssert(false);
     }
   }

@@ -740,7 +740,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
     auto mtlout = std::make_shared<ork::lev2::PBRMaterial>();
     mtlout->setTextureBaseName(FormatString("material%d", subindex));
-    mtlout->SetName(AddPooledString(gltfmtl->_name.c_str()));
+    mtlout->mMaterialName = gltfmtl->_name;
     mtlout->_colorMapName    = gltfmtl->_colormap;
     mtlout->_normalMapName   = gltfmtl->_normalmap;
     mtlout->_amboccMapName   = gltfmtl->_amboccmap;

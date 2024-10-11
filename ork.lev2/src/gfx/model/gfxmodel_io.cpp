@@ -390,18 +390,18 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     auto& writeranno = matclass->annotation("xgm.writer");
 
     HeaderStream->AddItem(imat);
-    istring = chunkwriter.stringIndex(pmat->GetName().c_str());
+    istring = chunkwriter.stringIndex(pmat->mMaterialName.c_str());
     HeaderStream->AddItem(istring);
 
     rtti::Class* pclass    = pmat->GetClass();
     auto classname         = pclass->Name();
     const char* pclassname = classname.c_str();
 
-    logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());
+    logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->mMaterialName.c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
     HeaderStream->AddItem(istring);
 
-    logchan_mioW->log("Material Name<%s> Class<%s>", pmat->GetName().c_str(), classname.c_str());
+    logchan_mioW->log("Material Name<%s> Class<%s>", pmat->mMaterialName.c_str(), classname.c_str());
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
@@ -455,7 +455,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           inumenabledclus++;
         } else {
           logchan_mioW->log(
-              "WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
+              "WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->mMaterialName.c_str(), ic);
         }
       }
 
@@ -464,7 +464,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
       logchan_mioW->log("WriteXgm:  submesh<%d> numenaclus<%d>", ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
-      istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
+      istring = chunkwriter.stringIndex(pmat ? pmat->mMaterialName.c_str() : "None");
       HeaderStream->AddItem(istring);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {

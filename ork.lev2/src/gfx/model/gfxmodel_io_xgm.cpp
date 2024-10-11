@@ -233,7 +233,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         auto it = override_map->_mtl_map.find(pmatname);
         if (it != override_map->_mtl_map.end()) {
           auto pmat = it->second;
-          pmat->SetName(AddPooledString(pmatname));
+          pmat->mMaterialName = pmatname;
           mdl->AddMaterial(pmat);
           pmat->gpuInit(context);
           do_original_shader = false;
@@ -250,7 +250,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         auto anno = pmatclass->annotation("xgm.reader");
         if (auto as_reader = anno.tryAs<chunkfile::materialreader_t>()) {
           auto pmat = as_reader.value()(materialread_ctx);
-          pmat->SetName(AddPooledString(pmatname));
+          pmat->mMaterialName = pmatname;
           mdl->AddMaterial(pmat);
           //printf( "RUNREADER\n");
           pmat->gpuInit(context);
@@ -304,7 +304,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
         for (int imat = 0; imat < mdl->miNumMaterials; imat++) {
           auto pmat = mdl->GetMaterial(imat);
-          if (strcmp(pmat->GetName().c_str(), matname) == 0) {
+          if (pmat->mMaterialName == matname) {
             xgm_sub_mesh._material = pmat;
           }
         }

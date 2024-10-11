@@ -183,9 +183,14 @@ class BasicUiCamSgApp(object):
 
     ##############################################
 
-    def onGpuInit(self, ctx, add_grid=False, cam_overlay=True):
+    def onGpuInit(self, ctx, 
+                  add_grid=False, 
+                  cam_overlay=True, 
+                  params_dict = None):
+
+        
         self.context = ctx
-        createSceneGraph(app=self, rendermodel="ForwardPBR")
+        createSceneGraph(app=self, params_dict=params_dict)
         if cam_overlay:
             self.cam_overlay = self.layer1.createDrawableNode(
                 "camoverlay", self.uicam.createDrawable())
@@ -221,6 +226,7 @@ class BasicUiCamSgApp(object):
     ################################################
 
     def createPipeline(self,
+                       name="unnamed",
                        rendermodel="ForwardPBR",
                        depthtest=tokens.LEQUALS,
                        blending=tokens.OFF,
@@ -230,6 +236,7 @@ class BasicUiCamSgApp(object):
                        techname="std_mono_fwd"):
 
         material = FreestyleMaterial()
+        material.name = name
         if shadertext != None:
             material.gpuInitFromShaderText(
                 self.context, "myshader", shadertext)
@@ -245,6 +252,7 @@ class BasicUiCamSgApp(object):
         permu.technique = material.shader.technique(techname)
         #
         pipeline = material.fxcache.findPipeline(permu)
+        pipeline.name = name
         pipeline.bindParam(material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
         #
         pipeline.sharedMaterial = material

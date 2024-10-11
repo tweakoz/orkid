@@ -205,7 +205,7 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
       if (mchan) {
         for (int imat = 0; imat < nummaterials; imat++) {
           auto material             = mModel->GetMaterial(imat);
-          std::string matname = material->GetName().c_str();
+          std::string matname = material->mMaterialName;
 
           if (matname == objectname) {
             /*

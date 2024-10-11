@@ -95,6 +95,7 @@ void GlRasterStateInterface::SetBlending( Blending eVal )
 			glBlendFunc( GL_ZERO, GL_SRC_ALPHA );
 			break;
 		default :
+		  printf( "BAD RASTERSTATE<%zx>\n", size_t(eVal) );
 			OrkAssert( false );
 			break;
 

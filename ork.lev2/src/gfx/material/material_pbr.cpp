@@ -77,7 +77,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->_vars->makeValueForKey<bool>("from_xgm") = true;
-    mtl->SetName(AddPooledString(materialname));
+    mtl->mMaterialName = materialname;
     logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
@@ -382,7 +382,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceBlock  = fxi->parameterBlock(_shader, "ub_instancing");
 
   _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
-
   // fwd
 
   _paramEyePostion    = fxi->parameter(_shader, "EyePostion");

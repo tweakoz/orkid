@@ -17,7 +17,18 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto material_type = //
       py::class_<GfxMaterial, material_ptr_t>(module_lev2, "Material")
-          .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
+          .def_property("name", 
+            [](material_ptr_t material) -> std::string { //
+              return material->mMaterialName; //
+            }, 
+            [](material_ptr_t material, std::string name) { //
+              material->mMaterialName = name; //
+            })
+          .def_property_readonly(
+              "rasterstate",                                    //
+              [](material_ptr_t material) -> SRasterState&  { //
+                return material->_rasterstate; 
+              })
           /*.def_property(
               "rasterstate",                                    //
               [](material_ptr_t material) -> SRasterState  { //
@@ -203,6 +214,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pipeline_type =                                                     //
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
+          .def_property("name", 
+            [](fxpipeline_ptr_t pipeline) -> std::string { //
+              return pipeline->_debugName; //
+            }, 
+            [](fxpipeline_ptr_t pipeline, std::string name) { //
+              pipeline->_debugName = name; //
+            })
           .def(
               "bindParam",                                                                    //
               [type_codec](fxpipeline_ptr_t pipeline, //
@@ -338,11 +356,6 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "fxcache",                                    //
               [](freestyle_mtl_ptr_t material) -> fxpipelinecache_constptr_t { //
                 return material->pipelineCache(); // material
-              })
-          .def_property_readonly(
-              "rasterstate",                                    //
-              [](freestyle_mtl_ptr_t material) -> SRasterState&  { //
-                return material->_rasterstate; 
               })
           .def(
               "gpuInit",

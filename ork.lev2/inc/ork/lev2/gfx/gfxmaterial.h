@@ -142,13 +142,6 @@ public:
   const TextureContext& GetTexture(ETextureDest edest) const;
   TextureContext& GetTexture(ETextureDest edest);
 
-  void SetName(const PoolString& nam) {
-    mMaterialName = nam;
-  }
-  const PoolString& GetName(void) const {
-    return mMaterialName;
-  }
-
   void SetFogStart(F32 fstart) {
     mfFogStart = float(fstart);
   };
@@ -195,7 +188,7 @@ public:
   SRasterState _rasterstate;
 
   int miNumPasses = 0; ///< Number Of Render Passes in this Material (platform specific)
-  PoolString mMaterialName;
+  std::string mMaterialName;
   TextureContext mTextureMap[ETEXDEST_END];
   float mfFogStart;
   float mfFogRange;

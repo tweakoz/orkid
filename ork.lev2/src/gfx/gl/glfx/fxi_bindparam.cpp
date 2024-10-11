@@ -22,6 +22,7 @@ void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
 
 void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t& binder) {
   auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
+  OrkAssert(hpar != nullptr);
   Uniform* puni  = static_cast<Uniform*>(hpar->GetPlatformHandle());
   assert(container->_activePass != nullptr);
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);

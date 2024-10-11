@@ -95,7 +95,7 @@ TextureContext::TextureContext(const Texture* ptex, float repU, float repV)
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterial::GfxMaterial()
-    : mMaterialName(AddPooledString("DefaultMaterial")) {
+    : mMaterialName("DefaultMaterial") {
   PushDebug(false);
 }
 

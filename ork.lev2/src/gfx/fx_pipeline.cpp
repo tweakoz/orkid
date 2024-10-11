@@ -29,9 +29,24 @@ uint64_t FxPipelinePermutation::genIndex() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipelinePermutation::dump() const {
+  std::string rmodel = FormatString("0x%zx", uint64_t(_rendering_model));
+
+  switch(_rendering_model){
+    case "DEFERRED_PBR"_crcu:
+      rmodel = "DEFERRED_PBR";
+      break;
+    case "DeferredPBR"_crcu:
+      rmodel = "DeferredPBR(Did you mean DEFERRED_PBR?)";
+      break;
+    case "FORWARD_PBR"_crcu:
+      rmodel = "FORWARD_PBR";
+      break;
+    default:
+      break;
+  }
   printf(
-      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
-      uint64_t(_rendering_model),
+      "PipelinePermu configdump: rendering_model<%s> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
+      rmodel.c_str(),
       int(_stereo),
       int(_instanced),
       int(_skinned),
@@ -276,8 +291,9 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     }
 }
 void FxPipeline::dump() const {
-  printf( "FxPipeline<%p>\n", (void*) this );
+  printf( "FxPipeline<%p:%s>\n", (void*) this, _debugName.c_str() );
   __permutation.dump();
+  printf( "  debugtext<%s>\n", (void*) _debugText.c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
