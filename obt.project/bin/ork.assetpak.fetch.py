@@ -73,7 +73,7 @@ if pack in known_packs:
               print(f"extracting asset_pak {key}")
               cmd_list = [
                 "tar",
-                "xvf",
+                "xf",
                 decoded,
                 "-C",
                 dest
