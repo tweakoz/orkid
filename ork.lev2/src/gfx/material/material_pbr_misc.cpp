@@ -62,7 +62,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
   OrkAssert(permu._instanced == false);
   OrkAssert(permu._skinned == false);
   //////////////////////////////////////////////////////////
-  if (permu._stereo and this->_tek_FWD_SKYBOX_ST) {
+  if (permu._stereo and (not permu._vr_mono) and this->_tek_FWD_SKYBOX_ST) {
     auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
     pipeline_stereo->_technique = this->_tek_FWD_SKYBOX_ST;
     pipeline_stereo->bindParam(this->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);

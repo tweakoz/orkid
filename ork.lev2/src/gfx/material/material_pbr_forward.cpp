@@ -301,7 +301,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
   /////////////////////////////////////////////////////////////
   // STEREO
   /////////////////////////////////////////////////////////////
-  if (permu._stereo) {
+  if (permu._stereo and (not permu._vr_mono)) {
     ////////////////////////////// 
     // SKINNED
     ////////////////////////////// 
@@ -329,7 +329,11 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_ST;
         }
       } else { // not instanced
-        if (this->_tek_FWD_CT_NM_RI_NI_ST) {
+        if(permu._vr_mono and this->_tek_FWD_CT_NM_SK_NI_MO ){
+          pipeline             = std::make_shared<FxPipeline>(permu);
+          pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_MO;
+        }
+        else if (this->_tek_FWD_CT_NM_RI_NI_ST) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_ST;
         }
@@ -386,7 +390,12 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       }
     }
     if(pipeline){
-      pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+      if(permu._vr_mono){
+        pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Left"_crcsh);
+      }
+      else{
+        pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+      }
       pipeline->addStateLambda(createBasicStateLambda(this));
       pipeline->addStateLambda(createForwardLightingLambda(this));
       pipeline->addStateLambda(l_rsi);
