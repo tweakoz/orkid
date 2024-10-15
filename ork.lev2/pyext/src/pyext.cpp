@@ -93,7 +93,12 @@ orkezapp_ptr_t lev2appinit() {
 
   auto po_opts = OrkEzApp::createDefaultOptions( init_data, "python-ork-app");
   init_data->_offscreen = true;
-  auto vars = *init_data->parse();
+  try {
+    auto vars = *init_data->parse();
+  }
+  catch (std::exception& e) {
+
+  }
   auto ezapp = OrkEzApp::create(init_data);
 
 
