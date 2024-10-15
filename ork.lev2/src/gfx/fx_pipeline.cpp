@@ -203,6 +203,12 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_Camera_MVP_Mono"_crcu: {
+          #if defined(__APPLE__)
+            if (is_stereo and stereocams) {
+              FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+            }
+            break;
+          #endif
           if (monocams) {
             //printf("monocams<%p>\n", (void*)monocams);  
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
@@ -361,6 +367,11 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID
   /////////////////
   FxPipelinePermutation permu;
   permu._stereo          = stereo;
+  #if defined(__APPLE__)
+  permu._stereo          = false;
+  permu._vr_mono         = stereo;
+  #endif
+
   permu._skinned         = RCID._isSkinned;
   permu._instanced       = RCID._isInstanced;
   permu._forced_technique = RCID._forced_technique;
