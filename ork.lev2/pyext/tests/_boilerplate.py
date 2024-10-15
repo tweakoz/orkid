@@ -228,7 +228,7 @@ class BasicUiCamSgApp(object):
                        shaderfile=Path("orkshader://manip"),
                        shadertext=None,
                        techname="std_mono_fwd"):
-
+        
         material = FreestyleMaterial()
         if shadertext != None:
             material.gpuInitFromShaderText(

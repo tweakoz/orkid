@@ -92,7 +92,22 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
               instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
             }
             return node;
-          });
+          })
+        .def(
+          "mAABoundXYZ",
+          [](xgmmodel_ptr_t model) -> fvec3
+          {
+            return model->mAABoundXYZ;
+          }
+        )
+        .def(
+          "mAABoundWHD",
+          [](xgmmodel_ptr_t model) -> fvec3
+          {
+            return model->mAABoundWHD;
+          }
+        )
+        ;
   type_codec->registerStdCodec<xgmmodel_ptr_t>(model_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto mesh_type_t = py::class_<XgmMesh, xgmmesh_ptr_t>(module_lev2, "XgmMesh")
@@ -142,7 +157,11 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<xgmsubmesh_ptr_t>(submesh_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<XgmCluster, xgmcluster_ptr_t>(module_lev2, "XgmCluster");
+  py::class_<XgmCluster, xgmcluster_ptr_t>(module_lev2, "XgmCluster")
+    .def("AABox",
+      [](xgmcluster_ptr_t xci){
+        printf("\nAABox Tian Qiu\n");
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<XgmPrimGroup, xgmprimgroup_ptr_t>(module_lev2, "XgmPrimGroup");
   /////////////////////////////////////////////////////////////////////////////////
