@@ -118,6 +118,7 @@ struct Device {
   usermatrixgenerator_t _usermtxgen = nullptr;
 
   void overrideSize(int w, int h);
+  void resetCalibration();
 
   uint32_t _width      = 128;
   uint32_t _height     = 128;

@@ -583,6 +583,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                 uint64_t hashed = CrcString(str_val.c_str()).hashed();
                 self->_format = EBufferFormat(hashed);
             })
+          .def_property("mono",
+            [](scroutnode_ptr_t self) -> bool {
+              return self->_monoviewer;
+            },
+            [](scroutnode_ptr_t self, bool value){
+              self->_monoviewer = value;
+            })
           .def("__repr__", [](scroutnode_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("ScreenOutputNode(%p)", i.get());
@@ -598,6 +605,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def(py::init([]() -> vroutnode_ptr_t { //
             return std::make_shared<VrCompositingNode>();
           }))
+          .def_property("mono",
+            [](vroutnode_ptr_t self) -> bool {
+              return self->_monoviewer;
+            },
+            [](vroutnode_ptr_t self, bool value){
+              self->_monoviewer = value;
+            })
           .def("__repr__", [](vroutnode_ptr_t n) -> std::string {
             fxstring<64> fxs;
             fxs.format("VrCompositingNode(%p)", n.get());

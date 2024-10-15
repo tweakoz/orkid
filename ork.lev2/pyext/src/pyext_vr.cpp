@@ -53,7 +53,13 @@ void pyinit_vr(py::module& module_lev2) {
         return dev->_cameraName;
       }, [](orkidvr::device_ptr_t dev, std::string name) { //
         dev->_cameraName = name;
-      });
+      })
+      .def_property("calibstate", [](orkidvr::device_ptr_t dev) -> int { //
+        return dev->_calibstate;
+      }, [](orkidvr::device_ptr_t dev, int state) { //
+        dev->_calibstate = state;
+      })
+      .def("resetCalibration", &orkidvr::Device::resetCalibration);
   type_codec->registerStdCodec<orkidvr::device_ptr_t>(vrdevice_type);
   /////////////////////////////////////////////////////////////////////////////////
 }

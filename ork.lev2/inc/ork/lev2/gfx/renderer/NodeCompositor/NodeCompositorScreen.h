@@ -30,6 +30,7 @@ public:
   void setSuperSample(int ss);
 
   EBufferFormat _format;
+  bool _monoviewer = false;
 
 
 private:

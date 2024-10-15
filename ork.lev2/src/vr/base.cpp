@@ -89,6 +89,16 @@ controllerstate_ptr_t Device::controller(int id) {
   return rval;
 }
 
+void Device::resetCalibration(){
+  _calibstate = 0;
+  _calibstateFrame = 0;
+  _calibposvect.clear();
+  _calibnxvect.clear();
+  _calibnyvect.clear();
+  _calibnzvect.clear();
+  _baseMatrix = fmtx4();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void Device::_updatePosesCommon() {
@@ -111,13 +121,8 @@ void Device::_updatePosesCommon() {
 
   switch (_calibstate) {
     case 0: // init
-      _calibstateFrame = 0;
-      _calibposvect.clear();
-      _calibnxvect.clear();
-      _calibnyvect.clear();
-      _calibnzvect.clear();
+      resetCalibration();
       _calibstate = 1;
-      _baseMatrix = fmtx4();
       break;
     case 1: // calibrating
       if (_calibstateFrame >= 30) {

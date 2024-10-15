@@ -355,7 +355,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
 
         }
 
-        if (_distorion_lambda) {
+        if (_distorion_lambda and not _monoviewer) {
           _distorion_lambda(framedata, tex);
         } else {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
@@ -373,11 +373,31 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
-          if(_flipY){
-            this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          if(_monoviewer){
+            if(_flipY){
+              this_buf->Render2dQuadEML(fvec4(-0.6, -1, 1.2, 2), // xywh
+                                        fvec4(0, 0, 0.5, 1.0),   // uvrectA
+                                        fvec4(0, 0, 0.5, 1.0));  // uvrectB
+            }
+            else{
+              this_buf->Render2dQuadEML(fvec4(-0.6, -1, 1.2, 2), // xywh
+                                        fvec4(0, 1, 0.5, -1),  // uvrectA
+                                        fvec4(0, 1, 0.5, -1)); // uvrectB           
+            }
+
           }
           else{
-            this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
+            if(_flipY){
+              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), // xywh  
+                                        fvec4(0, 0, 1, 1),   // uvrectA
+                                        fvec4(0, 0, 1, 1));  // uvrectB
+            }
+            else{
+              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), // xywh
+                                        fvec4(0, 1, 1, -1),  // uvrectA 
+                                        fvec4(0, 1, 1, -1)); // uvrectB           
+            }
+
           }
           fbi->popViewport();
           fbi->popScissor();
