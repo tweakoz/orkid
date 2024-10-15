@@ -107,6 +107,17 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
             return model->mAABoundWHD;
           }
         )
+        .def(
+          "IntersectBoundingBox",
+          [](xgmmodel_ptr_t model,
+          const fray3 &ray, 
+          fvec3 &isect_in, 
+          fvec3 &isect_out
+          ) -> bool
+          {
+            return model->IntersectBoundingBox(ray, isect_in, isect_out);
+          }
+        )
         ;
   type_codec->registerStdCodec<xgmmodel_ptr_t>(model_type_t);
   /////////////////////////////////////////////////////////////////////////////////

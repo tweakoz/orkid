@@ -373,6 +373,15 @@ struct XgmModel final {
       ork::lev2::Context* pTARG,
       const RenderContextInstData& RCID) const;
 
+  bool IntersectBoundingBox(const fray3 &ray, fvec3 &isect_in, fvec3 &isect_out)
+  {
+    for(int i = 0; i < 3 ; i++)
+    {
+      aabx.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
+      aabx.mMax[i] = mAABoundXYZ[i] + mAABoundWHD[i]; 
+    }
+    return aabx.Intersect(ray, isect_in, isect_out);
+  }
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_ptr_t vars);
@@ -405,6 +414,7 @@ struct XgmModel final {
   bool mbSkinned;
   asset::vars_t _varmap;
   XgmModelAsset* _asset = nullptr;
+  AABox aabx;
 };
 
 
