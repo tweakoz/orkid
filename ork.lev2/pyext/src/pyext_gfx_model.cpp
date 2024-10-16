@@ -168,11 +168,7 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<xgmsubmesh_ptr_t>(submesh_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<XgmCluster, xgmcluster_ptr_t>(module_lev2, "XgmCluster")
-    .def("AABox",
-      [](xgmcluster_ptr_t xci){
-        printf("\nAABox Tian Qiu\n");
-      });
+  py::class_<XgmCluster, xgmcluster_ptr_t>(module_lev2, "XgmCluster");
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<XgmPrimGroup, xgmprimgroup_ptr_t>(module_lev2, "XgmPrimGroup");
   /////////////////////////////////////////////////////////////////////////////////
