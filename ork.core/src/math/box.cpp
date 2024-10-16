@@ -71,6 +71,7 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
     tymin = (bndy.y - ori.y) * ray.mInverseDirection.y;
     tymax = (bndiy.y - ori.y) * ray.mInverseDirection.y;
 
+    //printf("tmin, %f, tmax, %f, tymin, %f, tymax, %f\n", tmin, tmax, tymin, tymax);
     if ( (tmin > tymax) || (tymin > tmax) )
         return false;
 
@@ -82,6 +83,7 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
     tzmin = (bndz.z - ori.z) * ray.mInverseDirection.z;
     tzmax = (bndiz.z - ori.z) * ray.mInverseDirection.z;
 
+    //printf("tzmin, %f, tzmax, %f\n", tzmin, tzmax);
     if ( (tmin > tzmax) || (tzmin > tmax) )
         return false;
 
@@ -89,6 +91,9 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
         tmin = tzmin;
     if (tzmax < tmax)
         tmax = tzmax;
+
+    if (tmax < 0)
+        return false;
 
     isect_in = ori + ray.mDirection*tmin;
     isect_out = ori + ray.mDirection*tmax;
