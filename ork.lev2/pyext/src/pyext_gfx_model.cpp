@@ -113,8 +113,7 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           const fray3 &ray, 
           fvec3& isect_in, 
           fvec3& isect_out
-          ) -> bool
-          {
+          ) -> bool {
             return model->intersectBoundingBox(ray, isect_in, isect_out);
           }
         );
