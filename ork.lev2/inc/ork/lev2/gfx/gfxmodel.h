@@ -373,8 +373,7 @@ struct XgmModel final {
       ork::lev2::Context* pTARG,
       const RenderContextInstData& RCID) const;
 
-  bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out)
-  {
+  bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out) {
     for(int i = 0; i < 3 ; i++)
     {
       _aabb.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
