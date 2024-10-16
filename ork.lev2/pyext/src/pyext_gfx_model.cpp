@@ -95,15 +95,13 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           })
         .def_property_readonly(
           "aabb_xyz",
-          [](xgmmodel_ptr_t model) -> fvec3
-          {
+          [](xgmmodel_ptr_t model) -> fvec3 {
             return model->mAABoundXYZ;
           }
         )
         .def_property_readonly(
           "aabb_whd",
-          [](xgmmodel_ptr_t model) -> fvec3
-          {
+          [](xgmmodel_ptr_t model) -> fvec3 {
             return model->mAABoundWHD;
           }
         )
