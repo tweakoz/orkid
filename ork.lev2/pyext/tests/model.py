@@ -51,6 +51,20 @@ class SceneGraphApp(object):
     print(model)
     print(model.materials)
     print(model.meshes)
+    myRay = ray3(vec3(0,0,0), vec3(1,0.01,0.01))
+    isect_int = vec3(0,0,0)
+    isect_out = vec3(0,0,0)
+    if model.intersectBoundingBox(myRay, isect_int, isect_out):
+      print(isect_int)
+      print(isect_out)
+    else:
+      print("no intersection with", myRay)
+    myRay = ray3(vec3(0,0,0), vec3(-1,0.01,0.01))
+    if model.intersectBoundingBox(myRay, isect_int, isect_out):
+      print(isect_int)
+      print(isect_out)
+    else:
+      print("no intersection with", myRay)
     for mesh in model.meshes:
       print(mesh.submeshes)
       print(mesh.boundingRadius)

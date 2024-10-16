@@ -93,32 +93,31 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
             }
             return node;
           })
-        .def(
-          "mAABoundXYZ",
+        .def_property_readonly(
+          "aabb_xyz",
           [](xgmmodel_ptr_t model) -> fvec3
           {
             return model->mAABoundXYZ;
           }
         )
-        .def(
-          "mAABoundWHD",
+        .def_property_readonly(
+          "aabb_whd",
           [](xgmmodel_ptr_t model) -> fvec3
           {
             return model->mAABoundWHD;
           }
         )
         .def(
-          "IntersectBoundingBox",
+          "intersectBoundingBox",
           [](xgmmodel_ptr_t model,
           const fray3 &ray, 
-          fvec3 &isect_in, 
-          fvec3 &isect_out
+          fvec3& isect_in, 
+          fvec3& isect_out
           ) -> bool
           {
-            return model->IntersectBoundingBox(ray, isect_in, isect_out);
+            return model->intersectBoundingBox(ray, isect_in, isect_out);
           }
-        )
-        ;
+        );
   type_codec->registerStdCodec<xgmmodel_ptr_t>(model_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto mesh_type_t = py::class_<XgmMesh, xgmmesh_ptr_t>(module_lev2, "XgmMesh")
