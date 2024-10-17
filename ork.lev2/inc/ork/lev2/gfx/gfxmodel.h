@@ -373,15 +373,7 @@ struct XgmModel final {
       ork::lev2::Context* pTARG,
       const RenderContextInstData& RCID) const;
 
-  bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out) const {
-    AABox aabb;
-    for(int i = 0; i < 3 ; i++)
-    {
-      aabb.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
-      aabb.mMax[i] = mAABoundXYZ[i] + mAABoundWHD[i]; 
-    }
-    return aabb.Intersect(ray, isect_in, isect_out);
-  }
+  bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out) const ;
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_ptr_t vars);
