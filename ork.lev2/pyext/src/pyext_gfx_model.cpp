@@ -114,7 +114,14 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           ) -> bool {
             return model->intersectBoundingBox(ray, isect_in, isect_out);
           }
-        );
+        )
+        .def_property_readonly(
+          "get_bounding_box",
+          [](xgmmodel_ptr_t model) -> AABox {
+            return model->GetBoundingBox();
+          }
+        )
+        ;
   type_codec->registerStdCodec<xgmmodel_ptr_t>(model_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto mesh_type_t = py::class_<XgmMesh, xgmmesh_ptr_t>(module_lev2, "XgmMesh")
