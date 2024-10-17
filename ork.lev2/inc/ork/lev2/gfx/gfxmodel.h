@@ -374,12 +374,13 @@ struct XgmModel final {
       const RenderContextInstData& RCID) const;
 
   bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out) {
+    AABox aabb;
     for(int i = 0; i < 3 ; i++)
     {
-      _aabb.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
-      _aabb.mMax[i] = mAABoundXYZ[i] + mAABoundWHD[i]; 
+      aabb.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
+      aabb.mMax[i] = mAABoundXYZ[i] + mAABoundWHD[i]; 
     }
-    return _aabb.Intersect(ray, isect_in, isect_out);
+    return aabb.Intersect(ray, isect_in, isect_out);
   }
   /////////////////////////////////////
 
@@ -413,7 +414,6 @@ struct XgmModel final {
   bool mbSkinned;
   asset::vars_t _varmap;
   XgmModelAsset* _asset = nullptr;
-  AABox _aabb;
 };
 
 
