@@ -384,7 +384,6 @@ struct XgmModel final {
       ork::lev2::Context* pTARG,
       const RenderContextInstData& RCID) const;
 
-  bool intersectBoundingBox(const fray3& ray, fvec3& isect_in, fvec3& isect_out) const ;
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_ptr_t vars);

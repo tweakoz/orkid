@@ -52,16 +52,17 @@ class SceneGraphApp(object):
     print(model.materials)
     print(model.meshes)
     myRay = ray3(vec3(0,0,0), vec3(1,0.01,0.01))
-    isect_int = vec3(0,0,0)
+    isect_in = vec3(0,0,0)
     isect_out = vec3(0,0,0)
-    if model.intersectBoundingBox(myRay, isect_int, isect_out):
-      print(isect_int)
+    aabb = model.get_bounding_box()
+    if aabb.intersect(myRay, isect_in, isect_out):
+      print(isect_in)
       print(isect_out)
     else:
       print("no intersection with", myRay)
     myRay = ray3(vec3(0,0,0), vec3(-1,0.01,0.01))
-    if model.intersectBoundingBox(myRay, isect_int, isect_out):
-      print(isect_int)
+    if aabb.intersect(myRay, isect_in, isect_out):
+      print(isect_in)
       print(isect_out)
     else:
       print("no intersection with", myRay)
