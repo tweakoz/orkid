@@ -90,6 +90,9 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
     if (tzmax < tmax)
         tmax = tzmax;
 
+    if (tmax < 0)
+        return false;
+
     isect_in = ori + ray.mDirection*tmin;
     isect_out = ori + ray.mDirection*tmax;
 

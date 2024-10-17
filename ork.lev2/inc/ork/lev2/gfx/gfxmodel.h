@@ -337,6 +337,17 @@ struct XgmModel final {
     mAABoundWHD = v;
   }
 
+  AABox GetBoundingBox(void)
+  {
+    AABox aabb;
+    for(int i = 0; i < 3 ; i++)
+    {
+      aabb.mMin[i] = mAABoundXYZ[i] - mAABoundWHD[i];
+      aabb.mMax[i] = mAABoundXYZ[i] + mAABoundWHD[i]; 
+    }
+    return aabb;
+  }
+
   void SetBonesPerCluster(int i) {
     miBonesPerCluster = i;
   }
