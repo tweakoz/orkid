@@ -355,7 +355,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
 
         }
 
-        if (_distorion_lambda and not _monoviewer) {
+        if (_distorion_lambda and (not _monoviewer)) {
           _distorion_lambda(framedata, tex);
         } else {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
