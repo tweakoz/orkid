@@ -15,9 +15,10 @@ struct ImGuiTexturedWindow {
 
   ////////////////////////////////////////////////////////
 
-  ImGuiTexturedWindow(std::string name, bool flipy = false)
+  ImGuiTexturedWindow(std::string name, bool flipy = false, bool flipx = false)
     : _name(name)
-    , _flipy(flipy) {
+    , _flipy(flipy) 
+    , _flipx(flipx) {
     _onsizeop = [](int, int) {};
   }
 
@@ -83,10 +84,10 @@ struct ImGuiTexturedWindow {
           pa,
           pd,
           pc,
-          ImVec2(1, _flipy ? 1 : 0), // uva,
-          ImVec2(0, _flipy ? 1 : 0), // uvb,
-          ImVec2(0, _flipy ? 0 : 1), // uvc,
-          ImVec2(1, _flipy ? 0 : 1), // uvd,
+          ImVec2(_flipx ? 0 : 1, _flipy ? 1 : 0), // uva,
+          ImVec2(_flipx ? 1 : 0, _flipy ? 1 : 0), // uvb,
+          ImVec2(_flipx ? 1 : 0, _flipy ? 0 : 1), // uvc,
+          ImVec2(_flipx ? 0 : 1, _flipy ? 0 : 1), // uvd,
           0xffffffff);
       }
       ImGui::End();
@@ -100,6 +101,7 @@ struct ImGuiTexturedWindow {
   int _vpw = 1;
   int _vph = 1;
   bool _flipy;
+  bool _flipx;
   on_win_size_op_t _onsizeop;
 };
 

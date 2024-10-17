@@ -722,7 +722,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         src_buffer = rgb_buffer;
         break;
       }
-      case EBufferFormat::RGB8: {
+      case EBufferFormat::RGB8: 
+      case EBufferFormat::BGR8: {
         break;
       }
       default:
@@ -810,6 +811,12 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     case EBufferFormat::RGB8: {
       internalformat = GL_RGB8;
       format         = GL_RGB;
+      type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    case EBufferFormat::BGR8: {
+      internalformat = GL_RGB8;
+      format         = GL_BGR;
       type           = GL_UNSIGNED_BYTE;
       break;
     }

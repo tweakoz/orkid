@@ -31,6 +31,7 @@ size_t TextureInitData::computeSrcSize() const {
       break;
 
     case EBufferFormat::RGB8:
+    case EBufferFormat::BGR8:
       length *= 3;
       break;
 
@@ -71,6 +72,7 @@ size_t TextureInitData::computeDstSize() const {
 
 
     case EBufferFormat::RGB8:
+    case EBufferFormat::BGR8:
       length *= 3;
       break;
 
