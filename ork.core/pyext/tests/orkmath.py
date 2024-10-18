@@ -32,7 +32,7 @@ print("###################")
 def yo(deco, vspace_v3):
   vspace_v4 = vec4(vspace_v3,1)
   hspace = vspace_v4.transform(pmatrix)
-  dspace = hspace.xyz()*(1/hspace.w)
+  dspace = hspace.xyz*(1/hspace.w)
   print("## %s" % deco)
   print("vspace_v3: %s" % vspace_v3)
   print("vspace_v4: %s" % vspace_v4)
