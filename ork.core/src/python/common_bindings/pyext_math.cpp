@@ -12,6 +12,7 @@
 #include <ork/math/noiselib.inl>
 #include <ork/math/audiomath.h>
 #include <ork/python/pycodec.inl>
+#include <ork/math/box.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -24,6 +25,20 @@ namespace ork::python {
 void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 void init_math_la_double(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) {
+  using aabb_ptr_t = std::shared_ptr<ork::AABox>;
+  /////////////////////////////////////////////////////////////////////////////////
+  auto aabb_type_t = py::class_<AABox, aabb_ptr_t>(module_core, "aabb") //
+  .def(py::init<>())
+  .def_property_readonly("center", [] (aabb_ptr_t self)-> fvec3 {
+    return self->center();
+  })
+  .def_property_readonly("size", [] (aabb_ptr_t self)-> fvec3 {
+    return self->size();
+  })
+  .def("intersect",[](aabb_ptr_t self, const fray3& ray, fvec3& isect_in, fvec3& isect_out) -> bool {
+    return self->Intersect(ray, isect_in, isect_out);
+  });
+  type_codec->registerStdCodec<aabb_ptr_t>(aabb_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;

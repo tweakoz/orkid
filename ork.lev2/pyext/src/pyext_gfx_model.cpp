@@ -92,7 +92,25 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
               instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
             }
             return node;
-          });
+          })
+        .def_property_readonly(
+          "aabb_xyz",
+          [](xgmmodel_ptr_t model) -> fvec3 {
+            return model->mAABoundXYZ;
+          }
+        )
+        .def_property_readonly(
+          "aabb_whd",
+          [](xgmmodel_ptr_t model) -> fvec3 {
+            return model->mAABoundWHD;
+          }
+        )
+        .def(
+          "get_bounding_box",
+          [](xgmmodel_ptr_t model) -> AABox {
+            return model->GetBoundingBox();
+          }
+        );
   type_codec->registerStdCodec<xgmmodel_ptr_t>(model_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto mesh_type_t = py::class_<XgmMesh, xgmmesh_ptr_t>(module_lev2, "XgmMesh")
