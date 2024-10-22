@@ -235,54 +235,54 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         material_name = (const char*)string.data;
         outmtl->_name = material_name;
         logchan_meshutilassimp->log("//////////////////////////////");
-        logchan_meshutilassimp->log("has name<%s>", material_name.c_str());
+        logchan_meshutilassimp->log("material: has name<%s>", material_name.c_str());
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
         outmtl->_baseColor = fvec4(color.r, color.g, color.b, color.a);
-        logchan_meshutilassimp->log("has_uniform_diffuse<%f %f %f %f>", color.r, color.g, color.b, color.a);
+        logchan_meshutilassimp->log("material: has_uniform_diffuse<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color)) {
-        logchan_meshutilassimp->log("has_uniform_specular<%f %f %f %f>", color.r, color.g, color.b, color.a);
+        logchan_meshutilassimp->log("material: has_uniform_specular<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
-        logchan_meshutilassimp->log("has_uniform_ambient<%f %f %f %f>", color.r, color.g, color.b, color.a);
+        logchan_meshutilassimp->log("material: has_uniform_ambient<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
-        logchan_meshutilassimp->log("has_uniform_emissive<%f %f %f %f>", color.r, color.g, color.b, color.a);
+        logchan_meshutilassimp->log("material: has_uniform_emissive<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &f)) {
         outmtl->_metallicFactor = f;
-        logchan_meshutilassimp->log("has_pbr_MetallicFactor<%g>", f);
+        logchan_meshutilassimp->log("material: has_pbr_MetallicFactor<%g>", f);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, &f)) {
         outmtl->_roughnessFactor = f;
-        logchan_meshutilassimp->log("has_pbr_RoughnessFactor<%g>", f);
+        logchan_meshutilassimp->log("material: has_pbr_RoughnessFactor<%g>", f);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
         auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
-        logchan_meshutilassimp->log("has_pbr_colormap<%s> tex<%p>", outmtl->_colormap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("material: has_pbr_colormap<%s> tex<%p>", outmtl->_colormap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
         outmtl->_metallicAndRoughnessMap = (const char*)string.data;
         auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap, lev2::ETEXUSAGE_COLOR);
-        logchan_meshutilassimp->log("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("material: has_pbr_MetallicAndRoughnessMap<%s> tex<%p>", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
       }
 
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_normalmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_normalmap, lev2::ETEXUSAGE_NORMAL);
-        logchan_meshutilassimp->log("has_pbr_normalmap<%s> tex<%p>", outmtl->_normalmap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("material: has_pbr_normalmap<%s> tex<%p>", outmtl->_normalmap.c_str(), (void*) tex);
       }
-      if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
+      if (AI_SUCCESS == material->GetTexture(aiTextureType_LIGHTMAP, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
-        logchan_meshutilassimp->log("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("material: has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
         auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
-        logchan_meshutilassimp->log("has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("material: has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex);
       }
       //logchan_meshutilassimp->log("");
     }

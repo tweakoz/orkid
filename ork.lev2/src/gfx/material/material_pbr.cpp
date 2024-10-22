@@ -119,6 +119,11 @@ void PBRMaterial::describeX(class_t* c) {
           mtl->_texEmissive     = tex;
           mtl->_emissiveMapName = texname;
         }
+        if (0 == strcmp(token, "amboccmap")) {
+          mtl->_texAmbOcc     = tex;
+          mtl->_amboccMapName = texname;
+          printf("amboccmap<%s>\n", texname );
+        }
       }
     }
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
@@ -218,40 +223,6 @@ PBRMaterial::~PBRMaterial() {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy     = *this;
-
-  /*copy->_asset_shader = _asset_shader;
-  copy->_asset_texcolor = _asset_texcolor;
-  copy->_asset_texnormal = _asset_texnormal;
-  copy->_asset_mtlruf = _asset_mtlruf;
-  copy->_asset_emissive = _asset_emissive;
-
-  copy->_texColor = _texColor;
-  copy->_texNormal = _texNormal;
-  copy->_texMtlRuf = _texMtlRuf;
-  copy->_texEmissive = _texEmissive;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_colorMapName = _colorMapName;
-  copy->_normalMapName = _normalMapName;
-  copy->_mtlRufMapName = _mtlRufMapName;
-  copy->_amboccMapName = _amboccMapName;
-  copy->_emissiveMapName = _emissiveMapName;
-  copy->_shaderpath = _shaderpath;
-
-  copy->_metallicFactor = _metallicFactor;
-  copy->_roughnessFactor = _roughnessFactor;
-  copy->_baseColor = _baseColor;
-  copy->_textureBaseName = _textureBaseName;
-
-  copy->_variant = _variant;
-  copy->mMaterialName = mMaterialName;
-  copy->_varmap = _varmap;
-
-  // TODO - flyweight clones
-
-  if(_initialTarget){
-    //copy->gpuInit(_initialTarget);
-  }*/
   return copy;
 }
 
@@ -457,6 +428,14 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     _texColor            = _asset_texcolor->GetTexture();
     // logchan_pbr->log("substituted white for non-existant color texture");
     OrkAssert(_texColor != nullptr);
+  }
+  if (_texAmbOcc == nullptr) {
+    auto loadreq         = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "src://effect_textures/white";
+    _asset_texambocc      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
+    _texAmbOcc            = _asset_texambocc->GetTexture();
+    // logchan_pbr->log("substituted white for non-existant color texture");
+    OrkAssert(_texAmbOcc != nullptr);
   }
   if (_texNormal == nullptr) {
     static auto defntex = targ->TXI()->createColorTexture(fvec4(0.5, 0.5, 1, 1), 8, 8);

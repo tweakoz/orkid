@@ -99,10 +99,12 @@ libblock lib_fwd //
     //vec2 uv = gl_FragCoord.xy * InvViewportSize;
     //float ambocc = texture(SSAOMap, uv).x;
     // filter sample ambocc
-    vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
-    float ambocc = texture(SSAOMap, uv).x;
-    ambocc = pow(ambocc, SSAOPower);
-    ambocc = mix(1.0,ambocc,SSAOWeight);
+    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
+    float sambocc = 1.0; //texture(AmbOccMap, uv).x;
+    float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;
+    //dambocc = pow(dambocc, SSAOPower);
+    //dambocc = mix(1.0,dambocc,SSAOWeight);
+    float ambocc = sambocc * dambocc;
     //ambocc = 1.0;//
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
@@ -149,9 +151,9 @@ libblock lib_fwd //
     } else if (index == 1) {
       rval = textureLod(light_cookie1, uv, lod).xyz;
     } else if (index == 2) {
-      rval = textureLod(light_cookie2, uv, lod).xyz;
+      //rval = textureLod(light_cookie2, uv, lod).xyz;
     } else if (index == 3) {
-      rval = textureLod(light_cookie3, uv, lod).xyz;
+      //rval = textureLod(light_cookie3, uv, lod).xyz;
     }
     return rval;
   }
@@ -178,10 +180,12 @@ libblock lib_fwd //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    vec2 uv = (gl_FragCoord.xy) * InvViewportSize;
-    float ambocc = texture(SSAOMap, uv).x;
-    ambocc = pow(ambocc, SSAOPower);
-    ambocc = mix(1.0,ambocc,SSAOWeight);
+    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
+    float sambocc = texture(AmbOccMap, frg_uv0).x; // static AO
+    float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
+    dambocc = pow(dambocc, SSAOPower);
+    dambocc = mix(1.0,dambocc,SSAOWeight);
+    float ambocc = sambocc * dambocc;
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;
@@ -220,7 +224,8 @@ libblock lib_fwd //
     //}
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
-
+    env_lighting = env_lighting * ambocc;
+    
     ///////////////////////////////////////////////
     // point lighting
     ///////////////////////////////////////////////

@@ -61,15 +61,35 @@ uniform_set ub_frg_fwd {
   mat4 inv_vp_r;
 
   sampler2D ColorMap;
+  sampler2D AmbOccMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
-  sampler2D EmissiveMap;
+  sampler2D EmissiveMap; // 5
 
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
   sampler2D MapDepth;
-  sampler2D MapLinearDepth;
+  sampler2D MapLinearDepth; // 10
+
+  //sampler2D UnTexPointLightsData;
+
+  //sampler2D SSAOMap;
+  //sampler2D SSAOKernel;
+  //sampler2D SSAOScrNoise;
+
+  //sampler2D light_cookies[8];
+  sampler2D light_cookie0;  // 11
+  sampler2D light_cookie1;  // 12
+  //sampler2D light_cookie2;
+  //sampler2D light_cookie3;
+  //sampler2D light_cookie4;
+  //sampler2D light_cookie5;
+  //sampler2D light_cookie6;
+  //sampler2D light_cookie7;
+
+  samplerCube reflectionPROBE; // 13
+  samplerCube irradiancePROBE; // 14
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -79,9 +99,6 @@ uniform_set ub_frg_fwd {
   float MetallicFactor;
   float RoughnessFactor;
 
-  sampler2D SSAOMap;
-  sampler2D SSAOKernel;
-  sampler2D SSAOScrNoise;
   float SSAOPower;
   float SSAOWeight;
   float SSAORadius;
@@ -103,20 +120,6 @@ uniform_set ub_frg_fwd {
 
   int point_light_count;
   int spot_light_count;
-  //sampler2D UnTexPointLightsData;
-
-  //sampler2D light_cookies[8];
-  sampler2D light_cookie0;
-  sampler2D light_cookie1;
-  sampler2D light_cookie2;
-  sampler2D light_cookie3;
-  //sampler2D light_cookie4;
-  //sampler2D light_cookie5;
-  //sampler2D light_cookie6;
-  //sampler2D light_cookie7;
-
-  samplerCube reflectionPROBE;
-  samplerCube irradiancePROBE;
 
   vec4 ModColor;
   vec4 AuxA;
@@ -329,6 +332,7 @@ vec3 ssao_normal(vec2 frg_uv) {
     vec3 normal = normalize(cross(dx, dy));
     return normal*vec3(-1,1,1);
 }
+/*
 vec3 ssao_normal2(vec2 frg_uv) {
     // compute surface normal @ base_pos (via differential normal calculation)
     vec3 normal = ssao_normal(frg_uv);
@@ -351,7 +355,6 @@ vec3 ssao_normal2(vec2 frg_uv) {
     }
     return normalize(NN);
 }
-
 // SSAO calculation function
 float ssao_linear(vec2 frg_uv) {
     vec3 base_pos = getViewPosition(frg_uv);
@@ -437,9 +440,10 @@ float ssao_nonlinear(vec2 frg_uv) {
 
     return occlusion;
 }
+*/
 
 float ssao(vec2 frg_uv) {
-  return ssao_linear(frg_uv);
+  return 1.0; //ssao_linear(frg_uv);
 }
 
 }
