@@ -998,12 +998,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         break;
       }
       case PrimitiveType::TRIANGLES:
-        // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+        printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
       case PrimitiveType::TRIANGLESTRIP:
-        // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
+        printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;

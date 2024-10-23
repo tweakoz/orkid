@@ -276,12 +276,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_LIGHTMAP, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
-        auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
+        auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_COLOR);
         logchan_meshutilassimp->log("material: has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
-        auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
+        auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_COLOR);
         logchan_meshutilassimp->log("material: has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex);
       }
       //logchan_meshutilassimp->log("");

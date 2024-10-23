@@ -299,7 +299,7 @@ fragment_shader ps_fnormal_wire
   vec3 bary = frg_bary.xyz;
   float closest_edge = min(bary.x, min(bary.y, bary.z));
   vec3 c = vec3(.5,.5,.5)+normal*0.5;
-  out_clr = vec4(c*pow(closest_edge,0.05),1);
+  out_clr = vec4(1,1,1,1);//vec4(c*pow(closest_edge,0.05),1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_vtx_color 

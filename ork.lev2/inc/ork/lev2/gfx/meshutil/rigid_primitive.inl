@@ -86,6 +86,7 @@ using rigidprimitive_drawdata_ptr_t = std::shared_ptr<RigidPrimitiveDrawableData
 inline RigidPrimitiveDrawableData::RigidPrimitiveDrawableData() {
 }
 inline lev2::drawable_ptr_t RigidPrimitiveDrawableData::createDrawable() const {
+    OrkAssert(false);
     if(_pipeline){
         return _primitive->createDrawable(_pipeline);
     }
@@ -176,6 +177,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
 
   lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) final {
 
+    OrkAssert(false);
     OrkAssert(material != nullptr);
     //OrkAssert(material->_technique != nullptr);
 

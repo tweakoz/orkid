@@ -181,11 +181,11 @@ libblock lib_fwd //
     // ambient occlusion
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    float sambocc = texture(AmbOccMap, frg_uv0).x; // static AO
+    vec3 sambocc = texture(AmbOccMap, frg_uv0).xyz; // static AO
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
     dambocc = pow(dambocc, SSAOPower);
     dambocc = mix(1.0,dambocc,SSAOWeight);
-    float ambocc = sambocc * dambocc;
+    vec3 ambocc = sambocc * dambocc;
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade*ambocc;
@@ -224,7 +224,7 @@ libblock lib_fwd //
     //}
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
-    env_lighting = env_lighting * ambocc;
+    env_lighting = env_lighting * sambocc;
     
     ///////////////////////////////////////////////
     // point lighting

@@ -61,10 +61,10 @@ class SceneGraphApp(object):
     # solid wire pipeline
     ##################################
     solid_wire_pipeline = createPipeline( app = self,
-                                       ctx = ctx,
-                                       rendermodel = "ForwardPBR",
-                                       shaderfile=Path("orkshader://basic"),
-                                       techname="tek_fnormal_wire" )
+                                          ctx = ctx,
+                                          rendermodel = "ForwardPBR",
+                                          shaderfile=Path("orkshader://basic"),
+                                          techname="tek_fnormal_wire" )
 
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
@@ -95,7 +95,7 @@ class SceneGraphApp(object):
     #print(capsule_submesh.edges)
 
     self.barysub_isect = capsule_submesh.withBarycentricUVs()
-    self.capsule_prim = RigidPrimitive(self.barysub_isect,ctx)
+    self.capsule_prim = RigidPrimitive(capsule_submesh,ctx)
     self.capsule_sgnode = self.capsule_prim.createNode("capsule",self.layer1,solid_wire_pipeline)
     self.capsule_sgnode.enabled = True
     #################################################################
