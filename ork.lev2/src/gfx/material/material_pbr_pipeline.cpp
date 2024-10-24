@@ -73,6 +73,10 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID.rcfd()->_pbrcommon;
 
+    if(mtl->_commonOverride){
+      pbrcommon = mtl->_commonOverride;
+    }
+
     float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
 
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
@@ -80,8 +84,10 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
     FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+
     FXI->BindParamCTex(mtl->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());    
+    
     FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
     FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
     FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);

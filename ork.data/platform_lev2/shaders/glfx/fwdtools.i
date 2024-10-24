@@ -181,14 +181,14 @@ libblock lib_fwd //
     // ambient occlusion
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc = texture(AmbOccMap, frg_uv0).xyz; // static AO
+    vec3 sambocc = texture(AmbOccMap, frg_uv0).xyz*0.7; // static AO
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
     dambocc = pow(dambocc, SSAOPower);
     dambocc = mix(1.0,dambocc,SSAOWeight);
     vec3 ambocc = sambocc * dambocc;
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * ambientshade*ambocc;
+    vec3 ambient       = AmbientLevel * ambientshade;
     /////////////////////////
     float costheta = clamp(dot(normal, edir), 0.01, 0.99);
     vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;

@@ -37,8 +37,20 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
       py::class_<pbr::CommonStuff, pbr::commonstuff_ptr_t>(module_lev2, "PbrCommon")
           .def_static(
               "requestIrradianceMaps",
-              [](std::string path) -> pbr::irradiancemaps_ptr_t { return pbr::CommonStuff::requestIrradianceMaps(path); })
+              [](py::object path) -> pbr::irradiancemaps_ptr_t { //
+                auto as_py_str = py::str(path);
+                auto as_str    = as_py_str.cast<std::string>();
+                printf("requestIrradianceMaps<%s>\n", as_str.c_str());
+                return pbr::CommonStuff::requestIrradianceMaps(as_str);
+               })
           .def(py::init<>())
+          .def_property("irradianceMaps", 
+             [](pbr::commonstuff_ptr_t pbc) -> pbr::irradiancemaps_ptr_t { //
+               return pbc->_irradianceMaps; //
+             },
+              [](pbr::commonstuff_ptr_t pbc, pbr::irradiancemaps_ptr_t v) { //
+                pbc->_irradianceMaps = v; //
+              })
           .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { //
                 auto load_req = std::make_shared<asset::LoadRequest>(path);
                 pbc->requestAndRefSkyboxTexture(load_req);
@@ -238,6 +250,14 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               },
               [](pbrmaterial_ptr_t m, crcstring_ptr_t ctest) { //
                 m->_rasterstate._blending = Blending(ctest->hashed());
+              })
+          .def_property(
+              "pbrcommon",
+              [](pbrmaterial_ptr_t mtl) -> pbr::commonstuff_ptr_t { //
+                return mtl->_commonOverride;
+              },
+              [](pbrmaterial_ptr_t mtl, pbr::commonstuff_ptr_t irr) { //
+                mtl->_commonOverride = irr;
               });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }

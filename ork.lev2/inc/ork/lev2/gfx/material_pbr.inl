@@ -220,6 +220,10 @@ public:
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
   texture_ptr_t _texCubeBlack;
+
+  //pbr::irradiancemaps_ptr_t _irradianceMaps;
+  pbr::commonstuff_ptr_t _commonOverride;
+
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////

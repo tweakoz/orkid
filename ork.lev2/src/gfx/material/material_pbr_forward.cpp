@@ -169,10 +169,10 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         FXI->BindParamCTex(mtl->_parLightCookie1, texlist[1]);
       }
       if (texlist.size() > 2) {
-        FXI->BindParamCTex(mtl->_parLightCookie2, texlist[2]);
+        //FXI->BindParamCTex(mtl->_parLightCookie2, texlist[2]);
       }
       if (texlist.size() > 3) {
-        FXI->BindParamCTex(mtl->_parLightCookie3, texlist[3]);
+        //FXI->BindParamCTex(mtl->_parLightCookie3, texlist[3]);
       }
       
     }
