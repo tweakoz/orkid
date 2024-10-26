@@ -72,26 +72,25 @@ fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float b
 		float TransY = -float(top + bottom) * invHeight;
 		float TransZ = -float(ffar + fnear) * invDepth;
 
+		rval[0,0] = fScaleX;
+		rval[0,1] = zero;
+		rval[0,2] = zero;
+		rval[0,3] = zero;
 
-		rval.setElemYX( 0,0, fScaleX );
-		rval.setElemYX( 1,0, zero );
-		rval.setElemYX( 2,0, zero );
-		rval.setElemYX( 3,0, zero );
+		rval[1,0] = zero;
+		rval[1,1] = fScaleY;
+		rval[1,2] = zero;
+		rval[1,3] = zero;
 
-		rval.setElemYX( 0,1, zero );
-		rval.setElemYX( 1,1, fScaleY );
-		rval.setElemYX( 2,1, zero );
-		rval.setElemYX( 3,1, zero );
+		rval[2,0] = zero;
+		rval[2,1] = zero;
+		rval[2,2] = fScaleZ;
+		rval[2,3] = zero;
 
-		rval.setElemYX( 0,2, zero );
-		rval.setElemYX( 1,2, zero );
-		rval.setElemYX( 2,2, fScaleZ );
-		rval.setElemYX( 3,2, zero );
-
-		rval.setElemYX( 0,3, TransX );
-		rval.setElemYX( 1,3, TransY );
-		rval.setElemYX( 2,3, TransZ );
-		rval.setElemYX( 3,3, one );
+		rval[3,0] = TransX;
+		rval[3,1] = TransY;
+		rval[3,2] = TransZ;
+		rval[3,3] = one;
 
   //rval.dump("ORTHO");
 

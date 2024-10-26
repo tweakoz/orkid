@@ -106,7 +106,7 @@ using object_rawconstptr_t = const Object*;
 
 namespace asset {
 struct Asset;
-class AssetSet;
+struct AssetSet;
 struct AssetLoader;
 
 using assetset_ptr_t   = std::shared_ptr<AssetSet>;
@@ -131,6 +131,9 @@ class FileProgressWatcher;
 using file_ptr_t = std::shared_ptr<File>;
 using filedev_ptr_t = std::shared_ptr<FileDev>;
 using fileprogresswatcher_ptr_t = std::shared_ptr<FileProgressWatcher>;
+
+struct Future;
+using future_ptr_t = std::shared_ptr<Future>;
 
 } // namespace ork
 

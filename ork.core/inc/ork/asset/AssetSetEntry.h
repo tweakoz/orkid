@@ -14,10 +14,10 @@
 
 namespace ork { namespace asset {
 
-class AssetDependent;
-class AssetSetLevel;
+struct AssetDependent;
+struct AssetSetLevel;
 
-class AssetSetEntry {
+struct AssetSetEntry {
 public:
   AssetSetEntry(asset_ptr_t asset, AssetLoader* loader, AssetSetLevel* level);
   ~AssetSetEntry();

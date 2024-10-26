@@ -97,6 +97,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 node->_drawable->_sortkey = key;
               })
           .def_property_readonly(
+              "drawable",
+              [](drawable_node_ptr_t node) -> drawable_ptr_t { //
+                return node->_drawable;
+              })
+          .def_property_readonly(
               "instanceData",
               [](drawable_node_ptr_t drwnode) -> instanceddrawinstancedata_ptr_t {
                 auto drw     = drwnode->_drawable;
@@ -124,12 +129,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "setInstanceColor",                                             //
-              [](drawable_node_ptr_t node, int instance, fvec4_ptr_t color) { //
+              [](drawable_node_ptr_t node, int instance, fvec4 color) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
                   auto instdata                  = instdrw->_instancedata;
-                  instdata->_modcolors[instance] = *color.get();
+                  instdata->_modcolors[instance] = color;
                 } else {
                   OrkAssert(false);
                 }
@@ -222,8 +227,6 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](layer_ptr_t layer, //
                  std::string named,
                  griddrawabledataptr_t data) -> node_ptr_t { //
-                if (data->_colortexpath == "")
-                  data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
                 // printf("D\n");
                 return layer->createDrawableNode(named, drawable);
@@ -276,15 +279,18 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 auto node = layer->createDrawableNode(named, drawable);
                 return node;
               })
-          .def_property_readonly("drawable_nodes", [](layer_ptr_t layer) -> py::list {
-            py::list rval;
-            layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
-              for (auto it : unlocked) {
-                rval.append(it);
-              }
-            });
-            return rval;
-          });
+          .def_property_readonly(
+              "drawable_nodes",
+              [](layer_ptr_t layer) -> py::list {
+                py::list rval;
+                layer->_drawable_nodes.atomicOp([&rval](Layer::drawablenodevect_t& unlocked) {
+                  for (auto it : unlocked) {
+                    rval.append(it);
+                  }
+                });
+                return rval;
+              })
+          .def_property_readonly("name", [](layer_ptr_t layer) -> std::string { return layer->_name; });
   type_codec->registerStdCodec<layer_ptr_t>(layer_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
@@ -314,12 +320,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->_outputNode;
               })
           .def_property_readonly(
-              "compositorpostnodecount",                         //
+              "compositorpostnodecount",     //
               [](scene_ptr_t SG) -> size_t { //
                 return SG->getPostNodeCount();
               })
           .def(
-              "compositorpostnode",                         //
+              "compositorpostnode",              //
               [](scene_ptr_t SG, size_t index) { //
                 return SG->getPostNode(index);
               })
@@ -445,10 +451,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto instance_type = py::class_<NodeInstanceData, node_instance_data_ptr_t>(sgmodule, "NodeInstanceData")
                            .def(py::init<>([](std::string name) -> node_instance_data_ptr_t { //
-                              auto nid =  std::make_shared<NodeInstanceData>(); 
-                              nid->_groupname = name;
-                              return nid;
-                            }))
+                             auto nid        = std::make_shared<NodeInstanceData>();
+                             nid->_groupname = name;
+                             return nid;
+                           }))
                            .def_property(
                                "groupName",
                                [](node_instance_data_ptr_t drw) -> std::string { return drw->_groupname; },

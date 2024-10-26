@@ -47,27 +47,27 @@ struct SampleData : public ork::Object {
   void loadFromAudioFile(const std::string& filename, bool normalize=true);
 
   std::string _name;
-  const s16* _sampleBlock;
+  const s16* _sampleBlock = nullptr;
 
-  int _blk_start;
-  int _blk_alt;
-  int _blk_end;
+  int _blk_start = 0;
+  int _blk_alt = 0;
+  int _blk_end = 0;
 
-  int _blk_loopstart;
-  int _blk_loopend;
+  int _blk_loopstart = 0;
+  int _blk_loopend = 0;
   int _numChannels = 1;
-  int _loopPoint;
-  int _subid;
-  float _sampleRate;
-  float _linGain;
-  int _rootKey;
-  int _highestPitch;
+  int _loopPoint = 0;
+  int _subid = 0;
+  float _sampleRate = 0.0f;
+  float _linGain = 1.0f;
+  int _rootKey = 0;
+  int _highestPitch = 0;
   int _interpMethod = 0;
   float _originalPitch = 0.0f;
   
   svar64_t _user;
 
-  eLoopMode _loopMode = eLoopMode::NONE;
+  eLoopMode _loopMode = eLoopMode::NOTSET;
   natenvwrapperdata_ptr_t _naturalEnvelope;
   int _pitchAdjust = 0;
 };

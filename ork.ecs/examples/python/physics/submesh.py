@@ -10,7 +10,8 @@
 import math, sys, os, random
 from pathlib import Path
 from obt import path as obt_path
-from orkengine import core, lev2, ecs
+from orkengine.core import vec3, vec4, quat, CrcStringProxy, VarMap, Transform
+from orkengine import lev2, ecs
 import trimesh
 
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -22,7 +23,7 @@ from lev2utils.submeshes import *
 from lev2utils.shaders import createPipeline
 
 ################################################################################
-tokens = core.CrcStringProxy()
+tokens = CrcStringProxy()
 LAYERNAME = "std_forward"
 NUM_BALLS = 8000
 RATE = 0.7
@@ -285,13 +286,16 @@ class ECS_MINIMAL(object):
     rprimdata = RigidPrimitiveDrawableData()
     rprimdata.primitive = RigidPrimitive(self.room_submesh,ctx)
     
-    
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     material = PBRMaterial()
-    white_tex = Texture.load("src://effect_textures/white.dds")
-    nmap_tex  = Texture.load("src://effect_textures/default_normal.dds")
-    material.texColor = white_tex
-    material.texNormal = nmap_tex
-    material.texMtlRuf = white_tex
+    material.assignImages(
+      ctx,
+      color = white,
+      normal = normal,
+      mtlruf = white,
+      doConform=True
+    )
     material.gpuInit(ctx)
     self.material = material
 

@@ -24,7 +24,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().__init__()
   ##############################################
   def cutWithPlane(self,inpsubmesh,n,o):
-    nn = n.normalized()
+    nn = n.normalized
     tp = dplane(nn,0)
     d = tp.distanceToPoint(o) * -1.0
     new_plane = dplane(nn,d)

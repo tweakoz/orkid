@@ -407,7 +407,7 @@ static void _reshapeStreakRendererIOs(dataflow::moduledata_ptr_t mdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void StreakRendererData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return StreakRendererData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return StreakRendererData::createShared(); });
   clazz
       ->directObjectProperty("material", &StreakRendererData::_material) //
       ->annotate<ConstString>("editor.factorylistbase", "psys::MaterialBase");

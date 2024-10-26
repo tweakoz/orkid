@@ -121,17 +121,17 @@ struct GpuResources {
     _sg_params                                         = std::make_shared<varmap::VarMap>();
 
     _sg_params->makeValueForKey<float>("SkyboxIntensity") = 2.0f;
-
     if(use_vr){
       _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "FWDPBRVR" : "PBRVR" ;
     }
     else{
-    _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
+      _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
     }
-
+    _sg_params->makeValueForKey<bool>("DepthPrepass") = true;
 
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
-    auto sg_layer    = _sg_scene->createLayer("default");
+    std::string std_layer = use_forward ? "std_forward" : "std_deferred";
+    auto sg_layer    = _sg_scene->createLayer(std_layer);
     auto sg_compdata = _sg_scene->_compositorData;
 
     //////////////////////////////////////////////////////////
@@ -292,7 +292,7 @@ int main(int argc, char** argv, char** envp) {
     // compute camera data
     ///////////////////////////////////////
     float phase    = abstime * PI2 * 0.01f;
-    float distance = 5.0f;
+    float distance = 3.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);

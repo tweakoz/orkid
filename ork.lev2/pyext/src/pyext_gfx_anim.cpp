@@ -19,7 +19,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
   module_lev2.attr("animMaxBones") = kmaxbones;
   /////////////////////////////////////////////////////////////////////////////////
   auto dcmtx_type_t = py::class_<DecompMatrix>(module_lev2, "DecompMatrix") //
-      .def(py::init([]() -> DecompMatrix {
+      .def(py::init([] -> DecompMatrix {
         return DecompMatrix();
       }))
       .def_property(
@@ -74,7 +74,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
   type_codec->registerStdCodec<xgmanim_ptr_t>(anim_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto animinst_type_t = py::class_<XgmAnimInst, xgmaniminst_ptr_t>(module_lev2, "XgmAnimInst") //
-                             .def(py::init([]() -> xgmaniminst_ptr_t { return std::make_shared<XgmAnimInst>(); }))
+                             .def(py::init([] -> xgmaniminst_ptr_t { return std::make_shared<XgmAnimInst>(); }))
                              .def(py::init([](xgmanim_constptr_t anim) -> xgmaniminst_ptr_t {
                                auto rval = std::make_shared<XgmAnimInst>();
                                rval->bindAnim(anim);

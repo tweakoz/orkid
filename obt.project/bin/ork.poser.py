@@ -24,11 +24,12 @@ parser.add_argument("-g", '--showgrid', action="store_true", help='show grid' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
-parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
+parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-b", "--bonescale", type=float, default=1.0, help='bone scalar')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='SSAA samples')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
+parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 
 ################################################################################
 
@@ -41,6 +42,7 @@ envmap = args["envmap"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
 bonescale = args["bonescale"]
+rendermodel = args["rendermodel"]
 
 ################################################################################
 # make sure env vars are set before importing the engine...
@@ -98,6 +100,10 @@ class SceneGraphApp(object):
       params_dict["SkyboxTexPathStr"] = envmap
 
     rendermodel = "DeferredPBR"
+    if rendermodel == "deferred":
+      rendermodel = "DeferredPBR"
+    elif rendermodel == "forward":
+      rendermodel="ForwardPBR"
 
     #rendermodel = "PICKTEST"
 
@@ -207,8 +213,8 @@ class SceneGraphApp(object):
     ######################
     if self.activate_rot:
       # delta a is 2D screenspace directional vector from push_screen_pos to activated_pos
-      deltaA = (self.activated_pos - self.push_screen_pos).normalized()
-      deltaB = (cur_screen_pos - self.push_screen_pos).normalized()
+      deltaA = (self.activated_pos - self.push_screen_pos).normalized
+      deltaB = (cur_screen_pos - self.push_screen_pos).normalized
       angle = deltaB.orientedAngle(deltaA)
       #################################
       # transform selected bone
@@ -217,7 +223,7 @@ class SceneGraphApp(object):
       #
       X = self.concats_at_push[self.sel_joint]
       OR = X.toRotMatrix4()
-      ZN = vec4(camdat.znormal,0).transform(OR).xyz.normalized()
+      ZN = vec4(camdat.znormal,0).transform(OR).xyz.normalized
       IP = mtx4.transMatrix(self.pivot_point*-1.0)
       P = mtx4.transMatrix(self.pivot_point)
       Q = quat.createFromAxisAngle(ZN,angle)
@@ -332,8 +338,6 @@ class SceneGraphApp(object):
       elif uievent.keycode in [ord("A"),ord("S"),ord("1"),ord("2"),ord("3")]:
         self.descendants = []
         self.push_screen_pos = scoord
-        self.push_cam_z_dir = camdat.znormal
-        self.vpmatrix = camdat.vpMatrix(1280/720.0)
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1).xyz
@@ -444,8 +448,8 @@ class SceneGraphApp(object):
               self.activated_pos = scoord
 
           if self.activate_rot:
-            deltaA = (self.activated_pos - self.push_screen_pos).normalized()
-            deltaB = (scoord - self.push_screen_pos).normalized()
+            deltaA = (self.activated_pos - self.push_screen_pos).normalized
+            deltaB = (scoord - self.push_screen_pos).normalized
             angle = deltaB.orientedAngle(deltaA)
             # transform selected bone
             self.localpose.concatenate()

@@ -158,7 +158,7 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {
-  printf("EzTopWidget::_doOnResized<%d %d>\n", width(), height());
+  //printf("EzTopWidget::_doOnResized<%d %d>\n", width(), height());
   if (_mainwin->_onResize) {
     _mainwin->_onResize(width(), height());
   }

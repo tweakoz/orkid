@@ -78,7 +78,7 @@ std::shared_ptr<PointAttractorModuleData> PointAttractorModuleData::createShared
 //////////////////////////////////////////////////////////////////////////
 
 void PointAttractorModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return PointAttractorModuleData::createShared();
   });
   clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){

@@ -13,6 +13,14 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+datablock_ptr_t File::loadDatablock(const file::Path& sFileName){
+  File file(sFileName, EFM_READ);
+  std::vector<uint8_t> bytes;
+  file.Load(bytes);
+  datablock_ptr_t datablock = std::make_shared<DataBlock>(bytes.data(), bytes.size());
+  return datablock;
+}
+
 File::File(FileDev* pdev)
     : mpDevice(pdev)
     , msFileName("NoFile")
@@ -85,7 +93,7 @@ EFileErrCode File::OpenFile(const file::Path& fname, EFileMode eMode) {
   return Open();
 }
 
-EFileErrCode File::Load(void** filebuffer, size_t& size) {
+EFileErrCode File::Load(std::vector<uint8_t>& bytes) {
   OrkAssert(meFileMode & EFM_READ);
   OrkAssert(IsOpen());
 
@@ -95,24 +103,11 @@ EFileErrCode File::Load(void** filebuffer, size_t& size) {
     size_t length = 0;
     result        = GetLength(length);
     if (EFEC_FILE_OK == result) {
-      if (*filebuffer) {
-        if (size > length)
-          size = length;
-        result = Read(*filebuffer, size);
-        if (EFEC_FILE_OK != result)
-          size = 0;
-      } else {
-        size             = length;
-        char* charBuffer = new char[size];
-        *filebuffer      = charBuffer;
-        result           = Read(*filebuffer, size);
-        if (EFEC_FILE_OK != result) {
-          size = 0;
-          OrkAssertI(false, "Stacked allocations cannot be deleted.");
-          delete[] charBuffer;
-          *filebuffer = NULL;
-        }
-      }
+      bytes.resize(length);
+      result = Read(bytes.data(), length);
+    }
+    else{
+      bytes.clear();
     }
   }
 

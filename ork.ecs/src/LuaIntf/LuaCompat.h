@@ -174,8 +174,10 @@ void lua_rawsetp(lua_State* L, int i, const void* p);
 void lua_getuservalue(lua_State* L, int i);
 void lua_setuservalue(lua_State* L, int i);
 
+# if ! defined(luaL_newlib)
 #define luaL_newlib(L, l) \
     (lua_newtable(L), luaL_setfuncs(L, l, 0))
+# endif
 
 void luaL_checkversion(lua_State* L);
 

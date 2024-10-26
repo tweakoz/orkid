@@ -326,7 +326,7 @@ dgmoduleinst_ptr_t EllipticalEmitterData::createInstance(dataflow::GraphInst* gi
 //////////////////////////////////////////////////////////////////////////
 
 void EllipticalEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return EllipticalEmitterData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return EllipticalEmitterData::createShared(); });
 
   clazz->annotateTyped<moduleIOreshape_fn_t>(
       "reshapeIOs", [](dataflow::moduledata_ptr_t mdata) { _reshapeEllipticalEmitterIOs(mdata); });

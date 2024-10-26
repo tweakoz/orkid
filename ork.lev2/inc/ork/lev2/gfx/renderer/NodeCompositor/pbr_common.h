@@ -123,6 +123,7 @@ struct CommonStuff : public ork::Object {
   float _skyboxLevel          = 1.0f;
   float _depthFogDistance     = 1000.0f;
   float _depthFogPower        = 1.0f;
+  float _roughnessPower       = 1.2f;
   fvec3 _ambientLevel;
   fvec4 _clearColor;
   int _ssaoNumSamples = 0;

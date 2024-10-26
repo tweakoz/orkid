@@ -63,7 +63,7 @@ class instance_set(object):
     ########################################
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
-                    random.uniform(-1,1)).normalized()
+                    random.uniform(-1,1)).normalized
     incrmagn = random.uniform(-0.05,0.05)
     ########################################
     Z = random.uniform(-2.5,-50)
@@ -101,7 +101,7 @@ class SceneGraphApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     self.scene = self.ezapp.createScene(self.sceneparams)
-    layer = self.scene.createLayer("layer1")
+    layer = self.scene.createLayer("std_deferred")
     models = []
     #models += [XgmModel("data://tests/pbr1/pbr1")]
     #models += [XgmModel("data://tests/pbr_calib.gltf")]

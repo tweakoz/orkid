@@ -31,7 +31,7 @@ void pyinit_gfx(py::module& module_lev2) {
   auto gfxenv_type = //
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
-          .def_static("loadingContext", []() -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
+          .def_static("loadingContext", [] -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
@@ -157,6 +157,28 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<TextureInitData,textureinitdata_ptr_t>(module_lev2, "TextureInitData")
+      .def(py::init<>())
+      .def_property("width", [](textureinitdata_ptr_t tid) -> int { return tid->_w; }, [](textureinitdata_ptr_t tid, int w) { tid->_w = w; })
+      .def_property("height", [](textureinitdata_ptr_t tid) -> int { return tid->_h; }, [](textureinitdata_ptr_t tid, int h) { tid->_h = h; })
+      .def_property("depth", [](textureinitdata_ptr_t tid) -> int { return tid->_d; }, [](textureinitdata_ptr_t tid, int d) { tid->_d = d; })
+      .def_property("src_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_src_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_src_format = fmt; })
+      .def_property("dst_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_dst_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_dst_format = fmt; })
+      .def_property("autogenmips", [](textureinitdata_ptr_t tid) -> bool { return tid->_autogenmips; }, [](textureinitdata_ptr_t tid, bool b) { tid->_autogenmips = b; });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<TextureArrayInitData,texturearrayinitdata_ptr_t>(module_lev2, "TextureArrayInitData")
+      .def(py::init<>())
+      .def(py::init([](py::list list) {
+        texturearrayinitdata_ptr_t rval = std::make_shared<TextureArrayInitData>();
+        for (int i = 0; i < list.size(); i++) {
+          image_ptr_t img = list[i].cast<image_ptr_t>();
+          rval->_slices.push_back(TextureArrayInitSubItem{0, img});
+        }
+        return rval;
+      }))
+      .def_property_readonly("size", [](texturearrayinitdata_ptr_t tid) -> int { return int(tid->_slices.size()); })
+      .def("append", [](texturearrayinitdata_ptr_t tid, image_ptr_t img) { tid->_slices.push_back(TextureArrayInitSubItem{0, img}); });
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<txi_t>(module_lev2, "TextureInterface")
       .def(
           "createColorTexture",
@@ -166,6 +188,13 @@ void pyinit_gfx(py::module& module_lev2) {
              int h) -> texture_ptr_t {                       //
             return the_txi->createColorTexture(color, w, h); //
           })
+      .def("updateTextureArraySlice", // 
+           [](const txi_t& the_txi, //
+              texture_ptr_t ptex, //
+              int slice, //
+              image_ptr_t img) { //
+        the_txi->updateTextureArraySlice(ptex.get(), slice, img);
+      })
       .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());
@@ -290,18 +319,6 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  auto image_type = //
-      py::class_<Image, image_ptr_t>(module_lev2, "Image")
-      .def_property_readonly("width", [](image_ptr_t img) -> int { return img->_width; })
-      .def_property_readonly("height", [](image_ptr_t img) -> int { return img->_height; })
-      .def_property_readonly("depth", [](image_ptr_t img) -> int { return img->_depth; })
-      .def_property_readonly("numcomponents", [](image_ptr_t img) -> int { return img->_numcomponents; })
-      .def_property_readonly("bytesPerChannel", [](image_ptr_t img) -> int { return img->_bytesPerChannel; })
-      .def_property_readonly("format", [](image_ptr_t img) -> int { return int(img->_format); })
-      .def_property_readonly("data", [](image_ptr_t img) -> datablock_ptr_t { return img->_data; })
-      ;
-  type_codec->registerStdCodec<image_ptr_t>(image_type);      
-  /////////////////////////////////////////////////////////////////////////////////
   auto texture_asset_type = //
       py::class_<TextureAsset, ::ork::asset::Asset, textureassetptr_t>(module_lev2, "TextureAsset")
           .def_property_readonly("texture", [](textureassetptr_t ta) -> texture_ptr_t { return ta->_texture; });
@@ -326,7 +343,13 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
-          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; });
+          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
+          .def("subimage", [](texture_ptr_t self, int slice) -> image_ptr_t { //
+            OrkAssert(slice >= 0);
+            OrkAssert(slice < self->_images.size());
+            auto rval = self->_images[slice];
+            return rval;
+           });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -446,7 +469,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto inpmgr_typ = //
       py::class_<InputManager, inputmanager_ptr_t>(module_lev2, "InputManager")
-          .def_static("instance", []() -> inputmanager_ptr_t { return InputManager::instance(); })
+          .def_static("instance", [] -> inputmanager_ptr_t { return InputManager::instance(); })
           .def("inputGroup", [](inputmanager_ptr_t mgr, std::string named) { return mgr->inputGroup(named); });
   type_codec->registerStdCodec<inputmanager_ptr_t>(inpmgr_typ);
   /////////////////////////////////////////////////////////////////////////////////

@@ -36,6 +36,21 @@ void GfxInit(const std::string& gfxlayer);
 static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 
 ////////////////////////////////////////////////////////////////////////////////
+EzUiEventInterceptor::EzUiEventInterceptor()
+  : Widget("UiEventInterceptor",0,0,0,0){
+  _enableDraw = false;
+  _vars = std::make_shared<varmap::VarMap>();
+}
+ui::HandlerResult EzUiEventInterceptor::DoOnUiEvent(ui::event_constptr_t ev) {
+  if(_onUiEventLambda){
+    return _onUiEventLambda(ev);
+  }
+  return ui::HandlerResult();
+}
+ui::Widget* EzUiEventInterceptor::doRouteUiEvent(ui::event_constptr_t ev) {
+  return this;
+}
+////////////////////////////////////////////////////////////////////////////////
 ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
   if (nullptr == initdata) {
     initdata = std::make_shared<AppInitData>();

@@ -171,7 +171,7 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
   uiev->mbALT     = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL    = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT   = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA    = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER   = (modifiers & GLFW_MOD_SUPER);
   switch (action) {
     case GLFW_PRESS:
       uiev->_eventcode = ui::EventCode::KEY_DOWN;
@@ -281,7 +281,7 @@ static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
 CtxGLFW::CtxGLFW(Window* ork_win)
     : CTXBASE(ork_win) {
 
-  _onRunLoopIteration = []() {};
+  _onRunLoopIteration = [] {};
 
   _uievent = std::make_shared<ui::Event>();
 
@@ -458,14 +458,16 @@ void CtxGLFW::Show() {
                       _appinitdata->_width, //
                       _appinitdata->_height);
 
-    glfwSetWindowPos(
-        _glfwWindow,
-        _appinitdata->_left, //
-        _appinitdata->_top);
-    glfwSetWindowSize(
-        _glfwWindow,
-        _appinitdata->_width, //
-        _appinitdata->_height);
+      if(_glfwWindow){
+          glfwSetWindowPos(
+                           _glfwWindow,
+                           _appinitdata->_left, //
+                           _appinitdata->_top);
+          glfwSetWindowSize(
+                            _glfwWindow,
+                            _appinitdata->_width, //
+                            _appinitdata->_height);
+      }
   }
 
   if (_needsInitialize) {
@@ -487,8 +489,10 @@ void CtxGLFW::Show() {
   }
 
   _glfwMonitor = selected_monitor;
-
-  glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+    if(_glfwWindow){
+        glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
+    }
+    
 
   logchan_glfw->log( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
 }
@@ -843,7 +847,7 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
 
   uiev->_eventcode = DOWN                           //
                          ? ork::ui::EventCode::PUSH //
@@ -886,7 +890,7 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
   opq::mainSerialQueue()->enqueue( [=](){
   auto uiev = this->uievent();
-  if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+  /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
     const char* clipboardText = glfwGetClipboardString(_glfwWindow);
     if (clipboardText) {
       uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -894,7 +898,7 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
       _fire_ui_event();
       return;
     }
-  }
+  }*/
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
   });
@@ -1013,7 +1017,7 @@ struct PopupImpl {
       uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
       uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
       uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-      uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
+      uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
 
       uiev->_eventcode = DOWN                           //
                              ? ork::ui::EventCode::PUSH //
@@ -1028,7 +1032,7 @@ struct PopupImpl {
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
       if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
-        if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+        /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
           const char* clipboardText = glfwGetClipboardString(_glfwPopupWindow);
           if (clipboardText) {
             uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -1036,7 +1040,8 @@ struct PopupImpl {
             _fireEvent(uiev);
             return;
           }
-        } else {
+        } else */
+        {
           fillEventKeyboard(uiev, key, scancode, action, modifiers);
           _fireEvent(uiev);
         }

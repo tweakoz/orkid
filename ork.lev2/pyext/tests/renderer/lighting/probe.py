@@ -8,15 +8,16 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, quat, mtx4
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine import lev2
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.misc import *
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
@@ -39,13 +40,13 @@ class LIGHTING_APP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=1,msaa=1, fullscreen=False)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=1,msaa=1, fullscreen=False)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
 
     if stereo:
-      self.cameralut = CameraDataLut()
-      self.vrcamera = CameraData()
+      self.cameralut = lev2.CameraDataLut()
+      self.vrcamera = lev2.CameraData()
       self.cameralut.addCamera("vrcam",self.vrcamera)
     else:
       setupUiCamera(app=self,eye=vec3(0,12,15))
@@ -80,7 +81,7 @@ class LIGHTING_APP(object):
       sceneparams.preset = "FWDPBRVR"
 
     ###################################
-    postNode1 = PostFxNodeHSVG()
+    postNode1 = lev2.PostFxNodeHSVG()
     postNode1.gpuInit(ctx,8,8);
     postNode1.addToSceneVars(sceneparams,"PostFxChain")
     postNode1.saturation = 0.75
@@ -114,13 +115,19 @@ class LIGHTING_APP(object):
 
     ###################################
 
-    model = XgmModel("data://tests/pbr_calib.glb")
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+    model = lev2.XgmModel("data://tests/pbr_calib.glb")
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = Texture.load("src://effect_textures/white.dds")
-        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-        copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+        copy.assignImages(
+          ctx,
+          color = white,
+          normal = normal,
+          mtlruf = white,
+          doConform=True
+        )
         submesh.material = copy
 
     class Node:
@@ -154,7 +161,7 @@ class LIGHTING_APP(object):
     self.grid_data.intensityC = 0
     self.grid_data.intensityD = 0
     self.grid_data.lineWidth = 0.05
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
+    self.grid_data.texturepath = "src://effect_textures/white_64.dds"
     self.grid_drawable = self.grid_data.createDrawable()
     self.grid_node = self.scene.createDrawableNodeOnLayers(COLOR_LAYERS,"grid-node",self.grid_drawable)
     #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
@@ -163,7 +170,7 @@ class LIGHTING_APP(object):
     ###################################
 
     cookie1 = MyCookie("src://effect_textures/L0D.png")
-    cookie2 = MyCookie("src://effect_textures/knob2.dds")
+    cookie2 = MyCookie("src://effect_textures/knob2.png")
     
     shadow_size = 2048
     shadow_bias = 1e-3
@@ -198,7 +205,7 @@ class LIGHTING_APP(object):
                                      layers = COLOR_LAYERS)
     ##############################################
 
-    self.probe = LightProbe()
+    self.probe = lev2.LightProbe()
     self.probe.type = tokens.REFLECTION
     self.probe.imageDim = 1024
     self.probe.worldMatrix = mtx4.transMatrix(0,4,0)
@@ -213,7 +220,7 @@ class LIGHTING_APP(object):
       handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    return lev2.ui.HandlerResult()
 
   ################################################
 

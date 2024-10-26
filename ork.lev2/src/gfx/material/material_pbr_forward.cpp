@@ -120,10 +120,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         float B   = light->shadowDepthBias();
         float SMS = light->_spdata->shadowMapSize();
 
-        // printf( "C<%g %g %g %g>\n", C.x, C.y, C.z, C.w );
-        // printf( "P<%g %g %g>\n", P.x, P.y, P.z );
-        // printf( "R<%f> B<%f> SMS<%f>\n", R, B, SMS );
-
+         if(0){
+          printf( "C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
+          printf( "P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z );
+          printf( "R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
+         }
+         
         size_t v4_offset                                          = index * vec4_stride;
         pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
         pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
@@ -159,7 +161,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      //printf("binding texspotlights<%d>\n", num_texspotlights);
+      //printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
       if (texlist.size() > 0) {
@@ -173,6 +175,18 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       }
       if (texlist.size() > 3) {
         //FXI->BindParamCTex(mtl->_parLightCookie3, texlist[3]);
+      }
+      if (texlist.size() > 4) {
+        FXI->BindParamCTex(mtl->_parLightCookie4, texlist[4]);
+      }
+      if (texlist.size() > 5) {
+        FXI->BindParamCTex(mtl->_parLightCookie5, texlist[5]);
+      }
+      if (texlist.size() > 6) {
+        FXI->BindParamCTex(mtl->_parLightCookie6, texlist[6]);
+      }
+      if (texlist.size() > 7) {
+        FXI->BindParamCTex(mtl->_parLightCookie7, texlist[7]);
       }
       
     }
@@ -356,13 +370,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_SK_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_IN_MO;
-          printf( "got fwdtek FWD_CT_NM_SK_IN_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_SK_IN_MO\n");
         }
       } else { // not instanced
         if (this->_tek_FWD_CT_NM_SK_NI_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_SK_NI_MO;
-          printf( "got fwdtek FWD_CT_NM_SK_NI_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_SK_NI_MO\n");
         }
       }
     } else { // not skinned
@@ -370,21 +384,21 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
         if (this->_tek_FWD_CT_NM_RI_IN_MO) {
           pipeline             = std::make_shared<FxPipeline>(permu);
           pipeline->_technique = this->_tek_FWD_CT_NM_RI_IN_MO;
-          printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
+          //printf( "got fwdtek FWD_CT_NM_RI_IN_MO\n");
         }
       } else {
         if( permu._has_vtxcolors ){
           if (this->_tek_FWD_CV_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CV_NM_RI_NI_MO;
-            printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
+            //printf( "got fwdtek FWD_CV_NM_SK_NI_MO\n");
           }
         }
         else{
           if (this->_tek_FWD_CT_NM_RI_NI_MO) {
             pipeline             = std::make_shared<FxPipeline>(permu);
             pipeline->_technique = this->_tek_FWD_CT_NM_RI_NI_MO;
-            printf( "got fwdtek FWD_CT_NM_RI_NI_MO\n");
+            //printf( "got fwdtek FWD_CT_NM_RI_NI_MO\n");
           }
         }
       }

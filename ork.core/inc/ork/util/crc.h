@@ -82,6 +82,18 @@ constexpr uint64_t crc32_recurse(uint64_t crc, const char* s) {
         s + 1);                                    //
   }
 }
+consteval uint64_t crc32_recurse2(uint64_t crc, const char* s) {
+  if (*s == 0) {           // last character ?
+    return crc ^ KENDHASH; // terminate with KENDHASH
+  } else {
+    return crc32_recurse2(
+        crc32_table                                //
+                [static_cast<unsigned char>(crc)   //
+                 ^ static_cast<unsigned char>(*s)] //
+            ^ (crc >> 8),                          //
+        s + 1);                                    //
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,11 +142,11 @@ using crcstring_ptr_t = std::shared_ptr<CrcString>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr CrcString operator"" _crc(const char* s, size_t len) {
-  return CrcString(crc32_recurse(KENDHASH, s));
+consteval CrcString operator"" _crc(const char* s, size_t len) {
+  return CrcString(crc32_recurse2(KENDHASH, s));
 }
-constexpr uint64_t operator"" _crcu(const char* s, size_t len) {
-  return crc32_recurse(KENDHASH, s);
+consteval uint64_t operator"" _crcu(const char* s, size_t len) {
+  return crc32_recurse2(KENDHASH, s);
 }
 
 inline crcstring_ptr_t operator"" _crcsh(const char* s, size_t len) {

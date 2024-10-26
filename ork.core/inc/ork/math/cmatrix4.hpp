@@ -52,6 +52,20 @@ template <typename T> Matrix44<T>::Matrix44(const kln::motor& m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> 
+T Matrix44<T>::operator[](int i, int j) const {
+  return elemXY(i, j);
+}
+template <typename T> 
+T& Matrix44<T>::operator[](int i, int j) {
+  base_t& as_base = *this;
+  OrkAssert(0<=i and i<4);
+  OrkAssert(0<=j and j<4);
+  return as_base[i][j];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a, const Matrix44<T>& b) {
   return b.multiply_rtol(a);
 }

@@ -20,7 +20,7 @@ class UiTestApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
-    lg_group.margin = 4
+    lg_group.margin = 8
     griditems = lg_group.makeGrid( width = 2,
                                    height = 2,
                                    margin = 1,

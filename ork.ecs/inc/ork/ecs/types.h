@@ -153,8 +153,8 @@ struct ResponseRef{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr CrcString operator"" _tok(const char* s, size_t len) {
-  return CrcString(crc32_recurse(KENDHASH, s));
+consteval CrcString operator"" _tok(const char* s, size_t len) {
+  return CrcString(crc32_recurse2(KENDHASH, s));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

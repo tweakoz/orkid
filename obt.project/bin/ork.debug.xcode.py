@@ -91,6 +91,7 @@ if __name__ == "__main__":
     "ORKID_WORKSPACE_DIR": os.getenv("ORKID_WORKSPACE_DIR"),
     "LD_LIBRARY_PATH": os.getenv("LD_LIBRARY_PATH"),
     "PATH": os.getenv("PATH"),
+    "PYTHONPATH": os.getenv("PYTHONPATH"),
     "OBT_STAGE": os.getenv("OBT_STAGE")
   }
   if "ORKID_GRAPHICS_API" in os.environ:

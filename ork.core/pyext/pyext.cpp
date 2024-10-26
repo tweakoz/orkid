@@ -269,7 +269,6 @@ PYBIND11_MODULE(_core, module_core) {
           .def(
               "__iter__",
               [](varmap::varmap_ptr_t vmap) { //
-                OrkAssert(false);
                 return py::make_iterator( //
                   VarMapKeyIterator::_begin(vmap), //
                   VarMapKeyIterator::_end(vmap));

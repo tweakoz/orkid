@@ -661,10 +661,10 @@ int CzProgData::numOscs() const {
 ///////////////////////////////////////////////////////////////////////////////
 void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname) {
   ork::File syxfile(path, ork::EFM_READ);
-  u8* data    = nullptr;
-  size_t size = 0;
-  syxfile.Load((void**)(&data), size);
-
+  std::vector<u8> bytes;
+  syxfile.Load(bytes);
+  auto data = bytes.data();
+  auto size = bytes.size();
 
   int programcount = 0;
   int programincrm = 0;
@@ -824,7 +824,7 @@ void CzOscData::dump() const{
     OrkAssert(_dcoBaseWaveB >= 0);
     OrkAssert(_dcoBaseWaveA < 8);
     OrkAssert(_dcoBaseWaveB < 8);
-    printf("  osc<%d>\n", this);
+    printf("  osc<%p>\n", (void*) this);
     printf("    _dcoBaseWaveA<%d>\n", _dcoBaseWaveA);
     printf("    _dcoBaseWaveB<%d>\n", _dcoBaseWaveB);
     auto dumpenv = [](const CzEnvelope& env) {

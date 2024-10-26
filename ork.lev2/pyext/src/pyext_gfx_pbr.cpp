@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
@@ -42,20 +43,23 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
                 auto as_str    = as_py_str.cast<std::string>();
                 printf("requestIrradianceMaps<%s>\n", as_str.c_str());
                 return pbr::CommonStuff::requestIrradianceMaps(as_str);
-               })
-          .def(py::init<>())
-          .def_property("irradianceMaps", 
-             [](pbr::commonstuff_ptr_t pbc) -> pbr::irradiancemaps_ptr_t { //
-               return pbc->_irradianceMaps; //
-             },
-              [](pbr::commonstuff_ptr_t pbc, pbr::irradiancemaps_ptr_t v) { //
-                pbc->_irradianceMaps = v; //
               })
-          .def("requestSkyboxTexture", [](pbr::commonstuff_ptr_t pbc, std::string path) { //
+          .def(py::init<>())
+          .def_property(
+              "irradianceMaps",
+              [](pbr::commonstuff_ptr_t pbc) -> pbr::irradiancemaps_ptr_t { //
+                return pbc->_irradianceMaps;                                //
+              },
+              [](pbr::commonstuff_ptr_t pbc, pbr::irradiancemaps_ptr_t v) { //
+                pbc->_irradianceMaps = v;                                   //
+              })
+          .def(
+              "requestSkyboxTexture",
+              [](pbr::commonstuff_ptr_t pbc, std::string path) { //
                 auto load_req = std::make_shared<asset::LoadRequest>(path);
                 pbc->requestAndRefSkyboxTexture(load_req);
 
-           })
+              })
           .def(
               "requestAndRefSkyboxTexture",
               [](pbr::commonstuff_ptr_t pbc, std::string path) -> asset::loadrequest_ptr_t { //
@@ -105,6 +109,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_depthFogPower; },
               [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_depthFogPower = v; })
           .def_property(
+              "roughnessPower",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_roughnessPower; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_roughnessPower = v; })
+          .def_property(
               "useDepthPrepass",
               [](pbr::commonstuff_ptr_t pbc) -> bool { return pbc->_useDepthPrepass; },
               [](pbr::commonstuff_ptr_t pbc, bool v) { pbc->_useDepthPrepass = v; })
@@ -136,9 +144,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def("addLightingLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
           .def("addBasicStateLambda", [](pbrmaterial_ptr_t m) { m->addBasicStateLambda(); })
           .def("addLightingLambda", [](pbrmaterial_ptr_t m) { m->addLightingLambda(); })
-          .def("setActiveLightMap", [](pbrmaterial_ptr_t m, std::string name) { 
-              m->setActiveLightMap(name);
-          })
+          .def("setActiveLightMap", [](pbrmaterial_ptr_t m, std::string name) { m->setActiveLightMap(name); })
           .def_property_readonly(
               "fxcache",                                              //
               [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
@@ -146,6 +152,30 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               })
           .def_property_readonly("freestyle", [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t { return m->_as_freestyle; })
           .def("gpuInit", [](pbrmaterial_ptr_t m, ctx_t& c) { m->gpuInit(c.get()); })
+          .def(
+              "assignImages",
+              [](pbrmaterial_ptr_t m,
+                 ctx_t context,
+                 py::kwargs kwa) { //
+                image_ptr_t color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex;
+
+                bool doConform = false;
+
+                if (kwa.contains("color"))
+                  color_tex = kwa["color"].cast<image_ptr_t>();
+                if (kwa.contains("normal"))
+                  normal_tex = kwa["normal"].cast<image_ptr_t>();
+                if (kwa.contains("mtlruf"))
+                  mtlruf_tex = kwa["mtlruf"].cast<image_ptr_t>();
+                if (kwa.contains("emissive"))
+                  emissive_tex = kwa["emissive"].cast<image_ptr_t>();
+                if (kwa.contains("ambocc"))
+                  ambocc_tex = kwa["ambocc"].cast<image_ptr_t>();
+                if (kwa.contains("doConform")) {
+                  doConform = kwa["doConform"].cast<bool>();
+                }
+                m->assignImages(context.get(), color_tex, normal_tex, mtlruf_tex, emissive_tex, ambocc_tex, doConform);
+              })
           .def_property(
               "metallicFactor",
               [](pbrmaterial_ptr_t m) -> float { //
@@ -261,7 +291,13 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               },
               [](pbrmaterial_ptr_t mtl, pbr::commonstuff_ptr_t irr) { //
                 mtl->_commonOverride = irr;
-              });
+              })
+          .def_property_readonly("texArrayCNMREA", [](pbrmaterial_ptr_t m) -> texture_ptr_t { return m->_texArrayCNMREA; })
+          .def("setColorImage", [](pbrmaterial_ptr_t mtl, ctx_t context, image_ptr_t img) {
+            auto txi = context->TXI();
+            auto tex = mtl->_texArrayCNMREA;
+            txi->updateTextureArraySlice(tex.get(), 0, img);
+          });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }
 

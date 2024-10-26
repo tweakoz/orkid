@@ -247,7 +247,7 @@ void System::_notify(token_t evID, evdata_t data) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void System::_request(impl::sys_response_ptr_t response, token_t evID, evdata_t data) {
-  printf( "System::_request<%08x>\n", evID._hashed );
+  printf( "System::_request<%08llx>\n", evID._hashed );
   this->_onRequest(response, evID, data);
 }
 

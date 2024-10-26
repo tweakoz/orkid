@@ -54,10 +54,10 @@ struct OperationsQueue;
 using opq_ptr_t = std::shared_ptr<OperationsQueue>;
 
 struct BarrierSyncReq {
-  BarrierSyncReq(Future& f)
-      : mFuture(f) {
+  BarrierSyncReq(future_ptr_t f)
+      : _future(f) {
   }
-  Future& mFuture;
+  future_ptr_t _future;
 };
 
 struct Op {

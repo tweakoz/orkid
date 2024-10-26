@@ -318,7 +318,7 @@ fragment_shader ps_ssao //
   : uset_frg_ssao //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
-  out_value   = ssao(uv);
+  out_value   = ssao_nonlinear(uv);
   float prev = texture(SSAOPREV,uv).r;
   out_value   = mix(prev,out_value,0.5);
 }

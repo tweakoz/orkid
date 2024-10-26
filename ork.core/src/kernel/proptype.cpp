@@ -193,7 +193,7 @@ template<> s32 PropType<s32>::FromString(const PropTypeString& String)
 template<> s64 PropType<s64>::FromString(const PropTypeString& String)
 {
 	s64 Value;
-	sscanf(String.c_str(), "%ld", &Value);
+	sscanf(String.c_str(), "%lld", &Value);
 	return Value;
 }
 ///////////////////////////////////////////////////////////////////////////////

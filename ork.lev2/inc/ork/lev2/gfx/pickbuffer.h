@@ -72,7 +72,7 @@ struct PixelFetchContext {
 struct PickBuffer  {
 
   PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);
-
+  virtual ~PickBuffer() {}
   void Init();
   void resize(int w, int h);
   uint64_t AssignPickId(const void*);

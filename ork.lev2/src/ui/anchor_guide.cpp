@@ -403,11 +403,16 @@ static float _distanceFromPointToLine(const fvec2& point, const fvec2& lineStart
 /////////////////////////////////////////////////////////////////////////
 // Function to check if a point (mouse position) is over a guide
 /////////////////////////////////////////////////////////////////////////
-static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float threshold = 5.0f) {
+static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos) {
   if (!guide)
     return false;
   Line line = guide->line(Mode::Geometry);
-  return _distanceFromPointToLine(mousePos, line._from, line._to) <= threshold;
+  float distance = _distanceFromPointToLine(mousePos, line._from, line._to);
+  bool is_over = distance < guide->_margin;
+  if(is_over){
+    //printf("is_over guide<%d> edge<%s> distance<%g> margin<%d> pos<%g,%g>\n", guide->_name, edge2str(guide->_edge).c_str(), distance, guide->_margin, mousePos.x, mousePos.y);
+  }
+  return is_over;
 }
 /////////////////////////////////////////////////////////////////////////
 // Function to get all guides from a layout

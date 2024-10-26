@@ -8,15 +8,14 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, vec4, quat, mtx4, lev2_pyexdir, Transform
+from orkengine import lev2
 
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
-from lev2utils.cameras import *
-from lev2utils.shaders import *
-from lev2utils.misc import *
+
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
@@ -38,11 +37,10 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=2)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
-    self.cameralut = CameraDataLut()
-    self.vrcamera = CameraData()
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    self.cameralut = lev2.CameraDataLut()
+    self.vrcamera = lev2.CameraData()
     self.cameralut.addCamera("vrcam",self.vrcamera)
     self.xf_hmd = Transform()
 
@@ -61,8 +59,8 @@ class StereoApp1(object):
 
     self.frame_index = 0
 
-    self.vrdev = orkidvr.novr_device()
-    self.vrdev.camera = "vrcam"
+    #self.vrdev = lev2.orkidvr.novr_device()
+    #self.vrdev.camera = "vrcam"
 
     ###################################
     # create scenegraph
@@ -73,7 +71,7 @@ class StereoApp1(object):
       "SkyboxIntensity": 1.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
-      "AmbientLevel": vec3(.125),
+      "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
     if mono:
@@ -81,13 +79,26 @@ class StereoApp1(object):
     else:
       params_dict["preset"] = "FWDPBRVR"
 
-    self.model = XgmModel("data://tests/chartest/char_mesh")
-    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+    self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
+    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
-    self.anim_inst = XgmAnimInst(self.anim)
+    self.anim_inst = lev2.XgmAnimInst(self.anim)
     self.anim_inst.mask.enableAll()
     self.anim_inst.use_temporal_lerp = True
     self.anim_inst.bindToSkeleton(self.model.skeleton)
+
+    ##################
+    for mesh in self.model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.baseColor = vec4(1,.5,1,1)
+        copy.metallicFactor = 0.0
+        copy.roughnessFactor = 1.0
+        copy.assignImages(
+          ctx,
+          doConform=True
+        )
+        submesh.material = copy
 
     ##################
     # create model / sg node
@@ -111,7 +122,6 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_data.modcolor = vec3(2)
     self.grid_data.intensityA = 1.0
     self.grid_data.intensityB = 0.97
@@ -121,12 +131,12 @@ class StereoApp1(object):
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-    self.ball_model = XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.dds")
+    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
+    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
 
     shadow_size = 4096
     shadow_bias = 1e-3
-    intens = 350
+    intens = 450
     self.spotlight1 = MySpotLight(app=self,
                                  model=self.ball_model,
                                  frq=0.3,
@@ -174,31 +184,12 @@ class StereoApp1(object):
       handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    return lev2.ui.HandlerResult()
 
   ################################################
 
   def onUpdate(self,updinfo):
     self.lighttime = updinfo.absolutetime
-
-    ########################################
-    # stereo viewing setup  
-    ########################################
-
-    self.vrdev.FOV = 90
-    self.vrdev.IPD = 0.065
-    self.vrdev.near = 0.1
-    self.vrdev.far = 1e5
-    
-    #self.vrcamera.perspective(.1,1e5,90)
-    #self.vrcamera.lookAt( 
-    #  vec3(0,10,-1), # eye 
-    #  vec3(0,10,0), # tgt
-    #  vec3(0,1,0) # up
-    #)
-    mtx_hmd = mtx4()
-    mtx_hmd.setColumn(3,vec4(0,5,10,1))
-    self.vrdev.setPoseMatrix("hmd",mtx_hmd.inverse)
     
     ########################################
 

@@ -219,7 +219,7 @@ dgmoduleinst_ptr_t NozzleEmitterData::createInstance(dataflow::GraphInst* ginst)
 //////////////////////////////////////////////////////////////////////////
 
 void NozzleEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return NozzleEmitterData::createShared();
   });
 

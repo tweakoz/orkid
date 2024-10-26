@@ -166,7 +166,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ParticlesDrawableData::_doAttachSGDrawable(drawable_ptr_t drw, scenegraph::scene_ptr_t SG) const { // final
-  auto impl  = drw->mDataA.getShared<ParticlesDrawableInst>();
+  auto impl  = drw->_implA.getShared<ParticlesDrawableInst>();
   impl->_LM  = SG->_lightManager;
   impl->_LMD = SG->_lightManagerData;
   OrkAssert(impl->_LM != nullptr);

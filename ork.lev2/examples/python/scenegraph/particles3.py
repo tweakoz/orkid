@@ -90,7 +90,7 @@ class ParticlesApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, 
-                   eye = vec3(0.5,-0.2,-2.5).normalized()*15, 
+                   eye = vec3(0.5,-0.2,-2.5).normalized*15, 
                    constrainZ=True, 
                    up=vec3(0,1,0))
 

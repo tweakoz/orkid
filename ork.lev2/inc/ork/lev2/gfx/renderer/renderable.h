@@ -128,11 +128,11 @@ struct CallbackRenderable : public IRenderable {
   void Render(const IRenderer* renderer) const final;
   uint32_t ComposeSortKey(const IRenderer* renderer) const final;
 
-  uint32_t mSortKey;
-  int mMaterialIndex;
-  int mMaterialPassIndex;
+  uint32_t mSortKey = 0;
+  int mMaterialIndex = 0;
+  int mMaterialPassIndex = 0;
+  const CallbackDrawable* _drawable = nullptr;
   cbtype_t mRenderCallback;
-  const CallbackDrawable* _drawable;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

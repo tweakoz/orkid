@@ -90,6 +90,14 @@ struct RenderQueueSortingData {
   bool mbTransparency;
 };
 
+struct LoadingPhase {
+
+  void enqueueOperation(gfxcontext_lambda_t l);
+
+  LockedResource<gfxcontext_lambda_list_t> _load_operations;
+
+};
+
 /// ////////////////////////////////////////////////////////////////////////////
 ///
 /// ////////////////////////////////////////////////////////////////////////////
@@ -367,7 +375,11 @@ public:
   void enqueueGpuEvent(gpuevent_ptr_t evt);
   void registerGpuEventSink(gpueventsink_ptr_t sink);
 
+  loadingphase_ptr_t newLoadingPhase();
+  LockedResource<loadingphase_list_t> _loadingPhases;
+
 private:
+
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
   std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;

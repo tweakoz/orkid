@@ -52,7 +52,7 @@ bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
         [&](const std::string& texture_name, const std::string& channel_name, ETextureUsage usage) -> EmbeddedTexture* {
       EmbeddedTexture* rval = nullptr;
       bfs::path tex_path;
-      if (texture_name.find("://") == std::string::npos) {
+      if (not texture_name.contains("://")) {
         tex_path = base_dir / texture_name;
       } else {
         auto as_ork = file::Path(texture_name);

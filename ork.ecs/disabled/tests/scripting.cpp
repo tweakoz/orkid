@@ -44,7 +44,7 @@ void ScriptOnlyArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 TEST(ScriptCompTest)
 {
-  auto opl1 = []()
+  auto opl1 = []
   {
       SceneData* scenedata = new SceneData;
 

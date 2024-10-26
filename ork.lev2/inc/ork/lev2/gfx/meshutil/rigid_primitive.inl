@@ -47,6 +47,7 @@ struct RigidPrimitiveBase {
   using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
   using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
 
+  virtual ~RigidPrimitiveBase() {}
   virtual lev2::callback_drawable_ptr_t createDrawable(lev2::fxpipeline_ptr_t pipeline) = 0;
   virtual lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) = 0;
   inline lev2::scenegraph::drawable_node_ptr_t createNode(

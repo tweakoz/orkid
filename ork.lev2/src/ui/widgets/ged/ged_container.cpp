@@ -33,15 +33,7 @@ gedcontainer_ptr_t GedContainer::createShared(objectmodel_ptr_t mdl){
 ////////////////////////////////////////////////////////////////
 
 GedContainer::GedContainer(objectmodel_ptr_t mdl)
-    : _model(mdl)
-    , mRootItem(0)
-    , miW(0)
-    , miH(0)
-    , miRootH(0)
-    , mStackHash(0)
-    , _skin_index(1)
-    , mbDeleteModel(false) {
-
+    : _model(mdl){
   mdl->_gedContainer = this;
   mRootItem = std::make_shared<GedRootNode>(this, "Root", nullptr, nullptr);
   PushItemNode(mRootItem.get());

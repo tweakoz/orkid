@@ -45,10 +45,17 @@ class ParticlesApp(object):
   ################################################
 
   def createGrid(self,extent=1000):
-     self.grid_data = createGridData()
-     self.grid_data.extent =  extent
-     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-     self.grid_node.sortkey = 1
+    self.grid_data = createGridData()
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(.7)
+    self.grid_data.intensityA = 1.0*0.5
+    self.grid_data.intensityB = 0.97*0.5
+    self.grid_data.intensityC = 0
+    self.grid_data.intensityD = 0
+    self.grid_data.lineWidth = 0.025
+    self.grid_data.extent =  extent
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ################################################
 
@@ -125,11 +132,11 @@ class ParticlesApp(object):
 
     V0 = vec3(math.sin(phA)*radius,0,-math.cos(phA)*radius)
     V1 = vec3(math.sin(phB)*radius,0,-math.cos(phB)*radius)
-    VDY = (V1-V0).normalized()
+    VDY = (V1-V0).normalized
 
-    VDX = vec3(0,1,0).cross(VDY).normalized()
-    VDZ = VDY.cross(VDX).normalized()
-    VDX = VDZ.cross(VDY).normalized()
+    VDX = vec3(0,1,0).cross(VDY).normalized
+    VDZ = VDY.cross(VDX).normalized
+    VDX = VDZ.cross(VDY).normalized
 
     POS = V0
 
@@ -148,7 +155,7 @@ class ParticlesApp(object):
 
     phC = phB+1.0+math.sin(self.phi*2.3)*0.5
     V2 = vec3(math.sin(phC)*radius,0,-math.cos(phC)*radius)
-    GDIR = (V0-V2).normalized()
+    GDIR = (V0-V2).normalized
     self.gravity.inputs.Center = POS+GDIR*2
     self.gravity.inputs.G = 1.05
 

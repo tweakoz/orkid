@@ -109,7 +109,7 @@ class ParticlesApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     setupUiCamera( app=self, 
-                   eye = vec3(0.5,-0.2,-2.5).normalized()*15, 
+                   eye = vec3(0.5,-0.2,-2.5).normalized*15, 
                    constrainZ=True, 
                    up=vec3(0,1,0))
 
@@ -161,7 +161,7 @@ class ParticlesApp(object):
     })
     self.material.modulation_texture = Texture.load("src://effect_textures/knob2");
 
-    self.material2 = particles.TextureMaterial.createShared();
+    self.material2 = particles.GradientMaterial.createShared();
     self.material2.texture = Texture.load("src://effect_textures/spinner");
 
     self.ptc_data.streaks.material = self.material
@@ -205,10 +205,10 @@ class ParticlesApp(object):
       
       self.ptc_data.elliptical.inputs.P1 = P1
       self.ptc_data.elliptical.inputs.P2 = P2
-      DY = (P1-P2).normalized()
-      DX = DY.cross(vec3(0,1,1)).normalized()
-      DZ = DX.cross(DY).normalized()
-      #DX = DZ.cross(DY).normalized()
+      DY = (P1-P2).normalized
+      DX = DY.cross(vec3(0,1,1)).normalized
+      DZ = DX.cross(DY).normalized
+      #DX = DZ.cross(DY).normalized
             
       EMI = self.ptc_data.emitter.inputs
       EMI.P1 = P1

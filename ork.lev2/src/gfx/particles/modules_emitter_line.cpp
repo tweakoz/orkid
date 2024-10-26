@@ -272,7 +272,7 @@ dgmoduleinst_ptr_t LineEmitterData::createInstance(dataflow::GraphInst* ginst) c
 //////////////////////////////////////////////////////////////////////////
 
 void LineEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return LineEmitterData::createShared();
   });
 

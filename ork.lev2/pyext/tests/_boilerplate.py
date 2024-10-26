@@ -166,9 +166,9 @@ technique tek_points_fwd {
 
 class BasicUiCamSgApp(object):
 
-    def __init__(self):
+    def __init__(self,ssaa=0):
         super().__init__()
-        self.ezapp = OrkEzApp.create(self,height=640,width=1280)
+        self.ezapp = OrkEzApp.create(self,height=640,width=1280,ssaa=ssaa)
         self.ezapp.setRefreshPolicy(RefreshFastest, 0)
         self.materials = set()
         setupUiCamera(app=self, eye=vec3(5, 5, 5), tgt=vec3(0, 0, 0))
@@ -258,12 +258,21 @@ class BasicUiCamSgApp(object):
         pipeline.sharedMaterial = material
         return pipeline
 
-    def createPbrPipeline(self,
-                       rendermodel="ForwardPBR"):
+    def createPbrPipeline(self, ctx, rendermodel="ForwardPBR"):
 
         material = PBRMaterial()
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        nrmap = Image.createFromFile("src://effect_textures/default_normal.dds")
+        material.assignImages(
+          ctx,
+          color = white,
+          normal = nrmap,
+          mtlruf = white,
+          doConform=True
+        )
         #
         permu = FxPipelinePermutation()
+        
         permu.rendering_model = rendermodel
         #permu.technique = material.shader.technique(techname)
         #
@@ -307,6 +316,48 @@ class BasicUiCamSgApp(object):
         pipeline.bindParam(param_psize, float(16))
         pipeline.bindParam(param_modcolor, vec4(1,0,0,1))
         return pipeline
+
+    ################################################
+
+    def createBaryDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
+        solid_wire_pipeline =  self.createBaryWirePipeline()
+        material = solid_wire_pipeline.sharedMaterial
+        solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+        result_submesh = lev2.meshutil.SubMesh.createFromDict({
+            "vertices": [{  "p": vec3(item[0], item[1], item[2])*scale} for item in verts],
+            "faces": faces
+        })
+        barysubmesh = result_submesh.withBarycentricUVs()
+        union_prim = lev2.RigidPrimitive(barysubmesh,ctx)
+        union_sgnode = union_prim.createNode("union",self.layer1,solid_wire_pipeline)
+        union_sgnode.enabled = True
+        return (barysubmesh,union_prim, union_sgnode)
+
+    ################################################
+
+    def createPbrDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
+        material = PBRMaterial()
+        white = Image.createFromFile("src://effect_textures/white_64.dds")
+        nrmap = Image.createFromFile("src://effect_textures/default_normal.dds")
+        material.assignImages(
+          ctx,
+          color = white,
+          normal = nrmap,
+          mtlruf = white,
+          doConform=True
+        )
+        #this_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+        result_submesh = lev2.meshutil.SubMesh.createFromDict({
+            "vertices": [{  "p": vec3(item[0], item[1], item[2])*scale} for item in verts],
+            "faces": faces
+        })
+        barysubmesh = result_submesh.withBarycentricUVs()
+        union_prim = lev2.RigidPrimitive(barysubmesh,ctx)
+        union_sgnode = union_prim.createNode("union",self.layer1,material)
+        union_sgnode.enabled = True
+        return (barysubmesh,union_prim, union_sgnode)
+
+    ################################################
 
 ################################################################################
 

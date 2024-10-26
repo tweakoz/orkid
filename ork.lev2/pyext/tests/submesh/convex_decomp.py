@@ -108,7 +108,7 @@ class ConvexDecomp:
       nx = random.uniform(-1,1)
       ny = random.uniform(-1,1)
       nz = random.uniform(-1,1)
-      self.normals += [vec3(nx,ny,nz).normalized()]
+      self.normals += [vec3(nx,ny,nz).normalized]
 
     ##################################
 

@@ -45,9 +45,9 @@ controllerdata_ptr_t FunData::clone() const {
 FunInst::FunInst(const FunData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data) {
-  _a  = []() -> float { return 0.0f; };
-  _b  = []() -> float { return 0.0f; };
-  _op = []() -> float { return 0.0f; };
+  _a  = [] -> float { return 0.0f; };
+  _b  = [] -> float { return 0.0f; };
+  _op = [] -> float { return 0.0f; };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
 
   _a  = l->getController(_data->_a);
   _b  = l->getController(_data->_b);
-  _op = []() -> float { return 0.0f; };
+  _op = [] -> float { return 0.0f; };
 
   const auto& op = _data->_op;
   if (0)

@@ -189,12 +189,6 @@ void SplitString(const PieceString& instr, orkvector<PieceString>& splitvect, co
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool IsSubStringPresent(const std::string& needle, const std::string& haystack) {
-  return haystack.find(needle) != std::string::npos;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
 std::string CreateFormattedString(const char* formatstring, ...) {
   std::string rval;
   char formatbuffer[512];

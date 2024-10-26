@@ -68,11 +68,22 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
-          .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); });
+          .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); })
+          .def_property("overlayWidget", //
+            [](ui::context_ptr_t uictx) -> uiwidget_ptr_t { //
+              return uictx->_overlayWidget; //
+            }, //
+            [](ui::context_ptr_t uictx, uiwidget_ptr_t w) { //
+              uictx->_overlayWidget = w; //
+            }) //
+          ;
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
       py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "Event")
+          .def( "__repr__", [](ui::event_ptr_t ev) -> std::string { //
+            return ev->description();
+          })
           .def(
               "clone",                                    //
               [](ui::event_ptr_t ev) -> ui::event_ptr_t { //
@@ -105,6 +116,16 @@ void pyinit_ui(py::module& module_lev2) {
               [](ui::event_ptr_t ev) -> int { //
                 return ev->miY;
               })
+          .def_property_readonly(
+            "wheel_x",                           //
+            [](ui::event_ptr_t ev) -> int { //
+              return ev->miMWX;
+            })
+          .def_property_readonly(
+            "wheel_y",                           //
+            [](ui::event_ptr_t ev) -> int { //
+              return ev->miMWY;
+            })
           .def_property_readonly(
               "midiController",               //
               [](ui::event_ptr_t ev) -> int { //
@@ -139,6 +160,11 @@ void pyinit_ui(py::module& module_lev2) {
               "ctrl",                         //
               [](ui::event_ptr_t ev) -> int { //
                 return int(ev->mbCTRL);
+              })
+          .def_property_readonly(
+              "super",                        //
+              [](ui::event_ptr_t ev) -> int { //
+                return int(ev->mbSUPER);
               })
           .def_property_readonly(
               "left",                         //
@@ -227,6 +253,16 @@ void pyinit_ui(py::module& module_lev2) {
                 return widget->y();
               })
           .def_property_readonly(
+              "x2",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->x()+widget->width()-1;
+              })
+          .def_property_readonly(
+              "y2",
+              [](uiwidget_ptr_t widget) -> int { //
+                return widget->y()+widget->height()-1;
+              })
+          .def_property_readonly(
               "width",
               [](uiwidget_ptr_t widget) -> int { //
                 return widget->width();
@@ -263,6 +299,11 @@ void pyinit_ui(py::module& module_lev2) {
             return widget->_ignoreEvents;
           }, [](uiwidget_ptr_t widget, bool x) { //
             widget->_ignoreEvents = x;
+          })
+          .def_property("enableDraw", [](uiwidget_ptr_t widget) -> bool { //
+            return widget->_enableDraw;
+          }, [](uiwidget_ptr_t widget, bool x) { //
+            widget->_enableDraw = x;
           })
           .def("getUserVar", [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
             py::object rval;

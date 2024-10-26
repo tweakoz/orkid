@@ -332,8 +332,8 @@ DspParam::DspParam() {
 
 void DspParam::reset() {
   _evaluator = [](DspParam& param_inst) { return 0.0f; };
-  _C1        = []() { return 0.0f; };
-  _C2        = []() { return 0.0f; };
+  _C1        = [] { return 0.0f; };
+  _C2        = [] { return 0.0f; };
 }
 
 void DspParam::keyOn(int ikey, int ivel) {

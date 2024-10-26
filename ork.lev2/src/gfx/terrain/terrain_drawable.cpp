@@ -861,7 +861,7 @@ void TerrainRenderImpl::gpuInitGeometry(Context* context) {
   auto dblock = DataBlockCache::findDataBlock(hashkey);
 
   if (dblock) {
-    printf("Read geometrycache hash<0x%zx>\n", hashkey);
+    printf("Read geometrycache hash<0x%llx>\n", hashkey);
   } else {
     chunkfile::Writer chunkwriter("tergeom");
     auto hdrstream = chunkwriter.AddStream("header");
@@ -869,7 +869,7 @@ void TerrainRenderImpl::gpuInitGeometry(Context* context) {
     recomputeGeometry(hdrstream, geostream);
     dblock = std::make_shared<DataBlock>();
     chunkwriter.writeToDataBlock(dblock);
-    printf("Writing geometrycache hash<0x%zx>\n", hashkey);
+    printf("Writing geometrycache hash<0x%llx>\n", hashkey);
     DataBlockCache::setDataBlock(hashkey, dblock);
   }
   gpuLoadGeometry(context, dblock);

@@ -15,6 +15,7 @@
 // expecting to get these class declarations.
 #include <ork/file/fileenv.h>
 #include <ork/file/filedev.h>
+#include <ork/kernel/datablock.h>
 #include <ctype.h>
 
 
@@ -37,6 +38,8 @@ public:
   size_t miPhysicalPos;
   size_t miUserPos; // current position user wants
 
+  static datablock_ptr_t loadDatablock(const file::Path& sFileName);
+
   File(FileDev* pdev = NULL);
   File(const char* sFileName, EFileMode eMode, FileDev* pdev = NULL);
   File(const file::Path& sFileName, EFileMode eMode, FileDev* pdev = NULL);
@@ -45,7 +48,7 @@ public:
   EFileErrCode OpenFile(const file::Path& sFileName, EFileMode eMode);
   EFileErrCode Open();
   EFileErrCode Close();
-  EFileErrCode Load(void** filebuffer, size_t& size);
+  EFileErrCode Load(std::vector<uint8_t>& bytes);
 
   EFileErrCode Read(void* pTo, size_t iSize);
   EFileErrCode Write(const void* pFrom, size_t iSize);

@@ -93,6 +93,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
     FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
     FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
+    FXI->BindParamFloat(mtl->_parRoughnessPower, pbrcommon->_roughnessPower);
 
     /////////////////////////
 
@@ -274,19 +275,20 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
 
     if (require_pbr and require_pbr.value()) {
       //printf("WTF\n");
-      pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
+      //pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
       //pipeline->bindParam(mtl->_paramMapColor, mtl->_texAmbOcc);
       if(mtl->_activeLightMap){
-        pipeline->bindParam(mtl->_parMapAmbOcc, mtl->_activeLightMap);
+        //pipeline->bindParam(mtl->_parMapAmbOcc, mtl->_activeLightMap);
       }
       else{
-        pipeline->bindParam(mtl->_parMapAmbOcc, mtl->_texAmbOcc);
+        //pipeline->bindParam(mtl->_parMapAmbOcc, mtl->_texAmbOcc);
       }
       //printf("_texAmbOcc<%p>\n", mtl->_texAmbOcc.get());
-      pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
-      pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
-      pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
+      //pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
+      //pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
+      //pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
 
+      pipeline->bindParam(mtl->_paramMapCNMREA, mtl->_texArrayCNMREA);
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
     }

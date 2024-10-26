@@ -81,7 +81,7 @@ static void _reshapeLightRendererIOs(dataflow::moduledata_ptr_t mdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LightRendererData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return LightRendererData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return LightRendererData::createShared(); });
   clazz
       ->directObjectProperty("material", &LightRendererData::_material) //
       ->annotate<ConstString>("editor.factorylistbase", "psys::MaterialBase");

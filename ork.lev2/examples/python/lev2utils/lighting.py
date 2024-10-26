@@ -74,4 +74,4 @@ class MySpotLight:
       vec3(0,1,0)) # up
     
     self.modelnode.worldTransform.translation = LPOS
-    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized(),phase*self.frequency*16)
+    self.modelnode.worldTransform.orientation = quat(vec3(1,1,1).normalized,phase*self.frequency*16)

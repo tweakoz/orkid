@@ -103,7 +103,7 @@ using newiodriver_ptr_t = std::shared_ptr<NewIoDriver>;
 
 struct NewIoDriver {
 
-  void_lambda_t _onValueChanged = [](){};
+  void_lambda_t _onValueChanged = []{};
   svar64_t _impl;  
   const reflect::ObjectProperty* _par_prop = nullptr;
   object_ptr_t _object = nullptr;

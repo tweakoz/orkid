@@ -124,7 +124,7 @@ dgmoduleinst_ptr_t GravityModuleData::createInstance(dataflow::GraphInst* ginst)
 //////////////////////////////////////////////////////////////////////////
 
 void GravityModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+  clazz->setSharedFactory( [] -> rtti::castable_ptr_t {
     return GravityModuleData::createShared();
   });
   clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){

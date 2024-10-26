@@ -111,7 +111,7 @@ class SkinningApp(object):
     ##################
 
     self.scenegraph = scenegraph.Scene(sg_params)
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_deferred")
     self.sgnode = self.model.createNode("modelnode",self.layer)
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.modelinst.enableSkinning()

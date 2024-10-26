@@ -107,6 +107,15 @@ public:
   void setActiveLightMap(std::string name);
   
   ////////////////////////////////////////////
+  void conformImages();
+  void assignImages(  lev2::Context* ctx,   //
+                      image_ptr_t color,    //
+                      image_ptr_t normal,   // 
+                      image_ptr_t mtlruf,   // 
+                      image_ptr_t emissive, // 
+                      image_ptr_t ambocc,
+                      bool do_conform = false);  
+  ////////////////////////////////////////////
   fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
   //void setupCamera(const RenderContextFrameData& RCFD);
@@ -118,6 +127,7 @@ public:
   textureassetptr_t _asset_texnormal;
   textureassetptr_t _asset_mtlruf;
   textureassetptr_t _asset_emissive;
+
   ////////////////////////////////////////////
 
   FxShader* _shader                      = nullptr;
@@ -139,15 +149,15 @@ public:
   fxparam_constptr_t _paramMVPR          = nullptr;
   fxparam_constptr_t _paramMV            = nullptr;
   fxparam_constptr_t _paramMROT          = nullptr;
-  fxparam_constptr_t _paramMapColor      = nullptr;
-  fxparam_constptr_t _paramMapNormal     = nullptr;
-  fxparam_constptr_t _paramMapMtlRuf     = nullptr;
-  fxparam_constptr_t _paramMapEmissive   = nullptr;
   fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _paramMapLinearDepth      = nullptr;
+
+  fxparam_constptr_t _paramMapCNMREA      = nullptr;
+
   fxparam_constptr_t _parInvViewSize     = nullptr;
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
+  fxparam_constptr_t _parRoughnessPower  = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
   fxparam_constptr_t _parPickID          = nullptr;
   fxparamblock_constptr_t _parBoneBlock  = nullptr;
@@ -174,7 +184,6 @@ public:
 
   fxparam_constptr_t _paramNearFar      = nullptr;
 
-  fxparam_constptr_t _parMapAmbOcc           = nullptr;
   fxparam_constptr_t _parMapLightMap         = nullptr;
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
@@ -193,10 +202,10 @@ public:
   fxparam_constptr_t _parLightCookie1   = nullptr;
   fxparam_constptr_t _parLightCookie2   = nullptr;
   fxparam_constptr_t _parLightCookie3   = nullptr;
-  //fxparam_constptr_t _parLightCookie4   = nullptr;
-  //fxparam_constptr_t _parLightCookie5   = nullptr;
-  //fxparam_constptr_t _parLightCookie6   = nullptr;
-  //fxparam_constptr_t _parLightCookie7   = nullptr;
+  fxparam_constptr_t _parLightCookie4   = nullptr;
+  fxparam_constptr_t _parLightCookie5   = nullptr;
+  fxparam_constptr_t _parLightCookie6   = nullptr;
+  fxparam_constptr_t _parLightCookie7   = nullptr;
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
   fxparam_constptr_t _parProbeIrradiance   = nullptr;
@@ -213,6 +222,12 @@ public:
   fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
   const FxShaderParamBlock* _paramInstanceBlock = nullptr;
   ///////////////////////////////////////////
+  image_ptr_t _image_color;
+  image_ptr_t _image_normal;
+  image_ptr_t _image_mtlruf;
+  image_ptr_t _image_emissive;
+  image_ptr_t _image_ambocc;
+  ///////////////////////////////////////////
   texture_ptr_t _texColor;
   texture_ptr_t _texNormal;
   texture_ptr_t _texMtlRuf;
@@ -226,6 +241,7 @@ public:
   //pbr::irradiancemaps_ptr_t _irradianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
+  texture_ptr_t _texArrayCNMREA;
   std::string _textureBaseName;
   std::string _shader_suffix;
   ///////////////////////////////////////////

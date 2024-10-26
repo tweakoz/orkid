@@ -63,6 +63,7 @@ struct Uniform {
   GLenum _type;
   std::string _semantic;
   int _arraySize;
+  int _state = -1;
 
   Uniform(const std::string& nam, const std::string& sem = "")
       : _name(nam)

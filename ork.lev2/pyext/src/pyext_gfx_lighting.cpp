@@ -60,7 +60,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           [](pointlightdata_ptr_t lightdata, //
              std::string named,
              scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
-            auto xfgen = []() -> fmtx4 { return fmtx4(); };
+            auto xfgen = [] -> fmtx4 { return fmtx4(); };
             auto light = std::make_shared<PointLight>(xfgen, lightdata.get());
             return layer->createLightNode(named, light);
           });

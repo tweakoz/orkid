@@ -88,7 +88,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //
       py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
-          .def(py::init([]() -> cameradata_ptr_t { return std::make_shared<CameraData>(); }))
+          .def(py::init([] -> cameradata_ptr_t { return std::make_shared<CameraData>(); }))
           .def(
               "perspective",                                                    //
               [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
@@ -200,7 +200,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto cammatstype = //
       py::class_<CameraMatrices, cameramatrices_ptr_t>(module_lev2, "CameraMatrices")
-          .def(py::init([]() -> cameramatrices_ptr_t { //
+          .def(py::init([] -> cameramatrices_ptr_t { //
             return std::make_shared<CameraMatrices>();
           }))
           .def(

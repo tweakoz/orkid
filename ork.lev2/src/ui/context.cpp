@@ -31,6 +31,29 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
   OrkAssert(_top);
   HandlerResult rval;
   double curtime = _uitimer.SecsSinceStart();
+  if(_overlayWidget){
+    auto route  = _overlayWidget->routeUiEvent(ev);
+    if(route == _overlayWidget.get() ){
+      rval = _overlayWidget->OnUiEvent(ev);
+      bool was_handled_by_overlay = rval.wasHandled();
+
+      if( not _overlayHandledPrevious and was_handled_by_overlay){
+        _mousefocuswidget = nullptr;
+        // emit a mouse leave event for native system
+        auto evcopy = std::make_shared<Event>(*ev);
+        evcopy->_eventcode = EventCode::MOUSE_LEAVE;
+        _top->handleUiEvent(evcopy);
+      } else if( _overlayHandledPrevious and not was_handled_by_overlay){
+        // emit a mouse enter event for native system
+        auto evcopy = std::make_shared<Event>(*ev);
+        evcopy->_eventcode = EventCode::MOUSE_ENTER;
+        _top->handleUiEvent(evcopy);
+      }
+      _overlayHandledPrevious = was_handled_by_overlay;
+      if(was_handled_by_overlay)
+        return rval;
+    }
+  }
   /////////////////////////////////
   // drag operations always target
   //  the widget they started on..

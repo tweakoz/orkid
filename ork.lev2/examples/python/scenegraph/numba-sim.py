@@ -18,7 +18,7 @@ parser.add_argument('--numinstances', metavar="numinstances", help='number of me
 parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 ################################################################################
 args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
+vrmode = False #(args["vrmode"]==True)
 if args["numinstances"]==None:
   numinstances = 10000
 else:
@@ -44,6 +44,8 @@ class instance_set_class(_simsetup.InstanceSet):
   def update(self,deltatime):
     matrix_update(self.instancematrices,self.delta_rots)
     matrix_update(self.instancematrices,self.delta_tras)
+    index = random.randint(0,numinstances-1)
+    self.instancecolors[index] = color
 ################################################################################
 class NumbaSimApp(_simsetup.SimApp):
   ################################################

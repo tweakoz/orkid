@@ -41,7 +41,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   singmodule.def("linearFrequencyRatioToCents", [](float fratio) -> float { //
     return linear_freq_ratio_to_cents(fratio);
   });
-  singmodule.def("baseDataPath", []() -> file::Path { return basePath(); });
+  singmodule.def("baseDataPath", [] -> file::Path { return basePath(); });
   pyinit_aud_singularity_synth(singmodule);
   pyinit_aud_singularity_datas(singmodule);
   pyinit_aud_singularity_ui(singmodule);

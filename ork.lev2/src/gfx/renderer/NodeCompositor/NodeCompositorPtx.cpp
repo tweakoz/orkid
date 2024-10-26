@@ -176,7 +176,7 @@ void PtxCompositingNode::describeX(class_t* c) {
     });
     return rval;
   };
-  nodins_loader->mCheckFn = [=](const PieceString& name) { return ork::IsSubStringPresent("nodins://", name.c_str()); };
+  nodins_loader->mCheckFn = [=](const PieceString& name) { return std::string(name.c_str()).contains("nodins://"); };
   nodins_loader->mLoadFn  = [=](asset::asset_ptr_t asset) {
     auto as_tex     = std::dynamic_pointer_cast<lev2::TextureAsset>(asset);
     auto asset_name = asset->GetName().c_str();

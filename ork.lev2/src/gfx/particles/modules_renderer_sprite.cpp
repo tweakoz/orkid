@@ -350,7 +350,7 @@ static void _reshapeSpriteRendererIOs(dataflow::moduledata_ptr_t mdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpriteRendererData::describeX(class_t* clazz) {
-  clazz->setSharedFactory([]() -> rtti::castable_ptr_t { return SpriteRendererData::createShared(); });
+  clazz->setSharedFactory([] -> rtti::castable_ptr_t { return SpriteRendererData::createShared(); });
   clazz
       ->directObjectProperty("material", &SpriteRendererData::_material) //
       ->annotate<ConstString>("editor.factorylistbase", "psys::MaterialBase");

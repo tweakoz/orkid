@@ -1,6 +1,5 @@
 import math, random
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, quat
 
 ################################################################################
 
@@ -17,7 +16,7 @@ class modelinst(object):
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
-                    random.uniform(-1,1)).normalized()
+                    random.uniform(-1,1)).normalized
     incrmagn = random.uniform(-0.01,0.01)
     self.rotincr = quat(incraxis,incrmagn)
     self.scale = random.uniform(0.5,0.7)

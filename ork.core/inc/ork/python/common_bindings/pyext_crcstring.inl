@@ -46,7 +46,7 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
           .def(
               "__getattr__",                                                           //
               [type_codec](crcstrproxy_ptr_t proxy, const std::string& key) -> typename ADAPTER::object_t { //
-                if(key.find("__")!=std::string::npos){
+                if(key.contains("__")){
                   return type_codec->encode(nullptr);
                 }
                   if(key=="xxx"){

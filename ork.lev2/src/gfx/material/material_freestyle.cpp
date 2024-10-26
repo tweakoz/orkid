@@ -44,7 +44,7 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
        break;
     }
     default:
-      printf( "UNKNOWN VARIANT<%zu>\n", mtl->_variant);
+      printf( "UNKNOWN VARIANT<%u>\n", mtl->_variant);
       OrkAssert(false);
       break;
   }

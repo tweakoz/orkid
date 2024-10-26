@@ -242,19 +242,19 @@ struct MyParser : public Parser {
       auto fn_name = seq->_items[1]->_impl.get<classmatch_ptr_t>();
       auto args    = seq->_items[3]->_impl.get<n_or_more_ptr_t>();
       auto stas    = seq->_items[6]->_impl.get<n_or_more_ptr_t>();
-      printf(
+      /*printf(
           "MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
           funcdef->_name.c_str(),                                             //
           fn_name->_token->text.c_str(),                                      //
           args->_items.size(),                                                //
-          stas->_items.size());
+          stas->_items.size());*/
 
       for (auto arg : args->_items) {
         auto argseq     = arg->_impl.get<sequence_ptr_t>();
         auto argtype    = argseq->_items[0]->_impl.get<oneof_ptr_t>();
         auto argtypeval = argtype->_selected->_impl.get<wordmatch_ptr_t>();
         auto argname    = argseq->_items[1]->_impl.get<classmatch_ptr_t>();
-        printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
+        //printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
       }
 
       int i = 0;

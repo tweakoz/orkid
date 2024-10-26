@@ -165,14 +165,14 @@ class ParticlesApp(object):
     Q = Qelev * Qazim
     R = mtx4(Q)
     
-    cubeP1 = vec4(cubeP1,0).transform(R).xyz()
-    cubeP2 = vec4(cubeP2,0).transform(R).xyz()
-    cubeP3 = vec4(cubeP3,0).transform(R).xyz()
-    cubeP4 = vec4(cubeP4,0).transform(R).xyz()
-    cubeP5 = vec4(cubeP5,0).transform(R).xyz()
-    cubeP6 = vec4(cubeP6,0).transform(R).xyz()
-    cubeP7 = vec4(cubeP7,0).transform(R).xyz()
-    cubeP8 = vec4(cubeP8,0).transform(R).xyz()
+    cubeP1 = vec4(cubeP1,0).transform(R).xyz
+    cubeP2 = vec4(cubeP2,0).transform(R).xyz
+    cubeP3 = vec4(cubeP3,0).transform(R).xyz
+    cubeP4 = vec4(cubeP4,0).transform(R).xyz
+    cubeP5 = vec4(cubeP5,0).transform(R).xyz
+    cubeP6 = vec4(cubeP6,0).transform(R).xyz
+    cubeP7 = vec4(cubeP7,0).transform(R).xyz
+    cubeP8 = vec4(cubeP8,0).transform(R).xyz
 
     rand = (self.counter>>2) % 12
     if rand==0: # top left back to top right back

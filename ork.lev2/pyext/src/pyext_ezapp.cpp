@@ -19,6 +19,27 @@ namespace ork::lev2 {
 void pyinit_gfx_qtez(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  using evinterceptor_ptr_t = std::shared_ptr<EzUiEventInterceptor>;
+  auto ezintercept_type = //
+      py::class_<EzUiEventInterceptor, ui::Widget, evinterceptor_ptr_t>(module_lev2, "EzUiEventInterceptor")
+      .def(py::init<>())
+      .def_property("onUiEvent", //
+        [](evinterceptor_ptr_t evi) -> py::object { //
+          return py::int_(7);
+        },
+        [](evinterceptor_ptr_t evi, py::object val) { //
+          auto as_callable = py::cast<py::function>(val);
+          evi->_vars->makeValueForKey<py::function>("_onuieventhandler") = as_callable;
+          ui::event_lambda_t handler = [=](ui::event_constptr_t ev) -> ui::HandlerResult {
+            py::gil_scoped_acquire acquire;
+            auto pyfn = evi->_vars->typedValueForKey<py::function>("_onuieventhandler");
+            auto invoked = pyfn.value()(ev);
+            return py::cast<ui::HandlerResult>(invoked);
+          };
+          evi->_onUiEventLambda = handler;
+        });
+  type_codec->registerStdCodec<evinterceptor_ptr_t>(ezintercept_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto ezappcontext_type = //
       py::class_<EzAppContext, ezappctx_ptr_t>(module_lev2, "EzAppContext");
   type_codec->registerStdCodec<ezappctx_ptr_t>(ezappcontext_type);

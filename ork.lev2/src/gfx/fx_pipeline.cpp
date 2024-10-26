@@ -45,8 +45,8 @@ void FxPipelinePermutation::dump() const {
       break;
   }
   printf(
-      "PipelinePermu configdump: rendering_model<%s> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
-      rmodel.c_str(),
+      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
+      size_t(_rendering_model),
       int(_stereo),
       int(_instanced),
       int(_skinned),

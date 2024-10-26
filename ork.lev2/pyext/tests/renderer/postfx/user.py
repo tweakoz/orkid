@@ -14,17 +14,17 @@ from orkengine.core import *
 from orkengine.lev2 import *
 lev2_pyexdir.addToSysPath()
 from lev2utils.cameras import *
-from lev2utils.scenegraph import createSceneGraph
+from lev2utils.scenegraph import createSceneGraph, createParams
 from signal import signal, SIGINT
 
 tokens = CrcStringProxy()
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 ################################################################################
-parser = argparse.ArgumentParser(description='scenegraph particles example')
-
+parser = argparse.ArgumentParser(description="scenegraph particles example")
+parser.add_argument("-r", "--rendermodel", type=str, default="deferred", help="rendering model (deferred,forward)")
 args = vars(parser.parse_args())
-
+rendermodel = args["rendermodel"]
 ################################################################################
 
 class HSVGAPP(object):
@@ -52,14 +52,12 @@ class HSVGAPP(object):
     ###################################
     # create scenegraph
     ###################################
-    sceneparams = VarMap() 
-    sceneparams.preset = "DeferredPBR"
-    sceneparams.SkyboxIntensity = float(1)
-    sceneparams.SpecularIntensity = float(1.2)
-    sceneparams.DiffuseIntensity = float(1.0)
-    sceneparams.AmbientLight = vec3(0.0)
-    sceneparams.DepthFogDistance = float(1e6)
-    sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_caustic1.png"
+    if rendermodel == "deferred":
+      sceneparams = createParams(rendermodel="DeferredPBR")
+    elif rendermodel == "forward":
+      sceneparams = createParams(rendermodel="ForwardPBR")
+    else:
+      assert(False) 
     ###################################
     # post fx node
     ###################################
@@ -94,15 +92,15 @@ class HSVGAPP(object):
     self.pfx_swapchannels = pfx_swapchannels
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
-    self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.scene.createLayer("std_forward")
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.layer_std = self.scene.createLayer(sceneparams.layers[0])
+    self.layer_donly = self.scene.createLayer(sceneparams.layers[1])
+    self.std_layers = [self.layer_std,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     #######################################
     self.model = XgmModel("data://tests/misc_gltf_samples/DamagedHelmet.glb")
     self.drawable_model = self.model.createDrawable()
-    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.std_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 35
     self.modelnode.worldTransform.translation = vec3(0,28,0)
 
@@ -112,12 +110,12 @@ class HSVGAPP(object):
     self.pfx_feedback.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
     self.pfx_radial.params.FeedbackMap = self.scene.compositorpostnode(2).outputBuffer.texture
     rendernode = self.scene.compositorrendernode
-    deferred_context = rendernode.context
-    gbuffer_group = deferred_context.gbuffer
-    if gbuffer_group is not None:
-      gbuffer = gbuffer_group.mrt_buffer(0)
-      if gbuffer.texture is not None:
-        self.pfx_radial.params.GBufferMap = gbuffer.texture
+    #deferred_context = rendernode.context
+    #gbuffer_group = deferred_context.gbuffer
+    #if gbuffer_group is not None:
+      #gbuffer = gbuffer_group.mrt_buffer(0)
+      #if gbuffer.texture is not None:
+        #self.pfx_radial.params.GBufferMap = gbuffer.texture
 
   ################################################
 
@@ -137,7 +135,7 @@ class HSVGAPP(object):
 ###############################################################################
 
 def sig_handler(signal_received, frame):
-  print('SIGINT or CTRL-C detected. Exiting gracefully')
+  print("SIGINT or CTRL-C detected. Exiting gracefully")
   sys.exit(0)
 
 ###############################################################################

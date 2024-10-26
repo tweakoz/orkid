@@ -7,13 +7,17 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, random, numpy, argparse
+import math, random, argparse, sys, signal, numpy
 from obt import path
-from orkengine.core import *
-from orkengine.lev2 import *
-l2exdir = (lev2exdir()/"python").normalized.as_string
-sys.path.append(l2exdir) # add parent dir to path
-from lev2utils.cameras import *
+
+from orkengine.core import vec3, vec4, quat, mtx4
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine import lev2
+
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createParticleData
 from lev2utils.scenegraph import createSceneGraph
 this_dir = path.directoryOfInvokingModule()
@@ -35,7 +39,7 @@ class HandPoser(object):
     self.jnt_forearm = self.app.model.skeleton.jointIndex("mixamorig.%sForeArm"%(hand_name))
     self.jnts_thumbs = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandThumb%d"%(hand_name,i+1)) for i in range(4)]
     self.jnts_index = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandIndex%d"%(hand_name,i+1)) for i in range(4)] 
-    self.ikchain = IkChain(self.app.model.skeleton)
+    self.ikchain = lev2.IkChain(self.app.model.skeleton)
     self.ikchain.bindToJointNamed("mixamorig.%sArm"%(hand_name))
     self.ikchain.bindToJointNamed("mixamorig.%sForeArm"%(hand_name))
     self.ikchain.prepare()
@@ -86,12 +90,12 @@ class HandPoser(object):
       ####################################
 
       dir_forarm_to_hand = (concatmatrices[self.jnt_hand].translation
-                         - concatmatrices[self.jnt_forearm].translation).normalized()
+                         - concatmatrices[self.jnt_forearm].translation).normalized
 
       dir_hand_to_index = (concatmatrices[self.jnts_index[0]].translation 
-                        - concatmatrices[self.jnt_hand].translation).normalized()
+                        - concatmatrices[self.jnt_hand].translation).normalized
 
-      dir_cross = dir_forarm_to_hand.cross(dir_hand_to_index).normalized()
+      dir_cross = dir_forarm_to_hand.cross(dir_hand_to_index).normalized
       angle = dir_forarm_to_hand.angle(dir_hand_to_index)
 
       Q = quat()
@@ -139,8 +143,8 @@ class SkinningApp(object):
 
     self.materials = set()
 
-    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480, ssaa=2)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self, left=100, top=100, width=960, height=480, ssaa=2)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera( app=self, 
                    eye = vec3(0,0,30), 
                    constrainZ=True, 
@@ -180,7 +184,7 @@ class SkinningApp(object):
     # post fx node
     ###################################
 
-    postNode = PostFxNodeHSVG()
+    postNode = lev2.PostFxNodeHSVG()
     postNode.hue = 0.0
     postNode.saturation = 0.8
     postNode.value = 1.0
@@ -192,7 +196,7 @@ class SkinningApp(object):
     ###################################
 
     self.scenegraph = self.ezapp.createScene(sg_params)
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_deferred")
     self.pbr_common = self.scenegraph.pbr_common
     self.pbr_common.useFloatColorBuffer = True
 
@@ -201,19 +205,17 @@ class SkinningApp(object):
     # create model data
     ###################################
 
-    tex_white = Texture.load("src://effect_textures/white.dds")
-    tex_normal = Texture.load("src://effect_textures/default_normal.dds")
-
-    self.model = XgmModel("data://tests/chartest/char_mesh")
+    self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
     for mesh in self.model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = tex_white
-        copy.texNormal = tex_normal
-        copy.texMtlRuf = tex_white
-        copy.baseColor = vec4(1,.75,.75,1)*1.4
-        copy.roughnessFactor = 0.75
-        copy.metallicFactor = 0.0
+        copy.assignImages(
+          ctx,
+          doConform=True
+        )
+        copy.baseColor = vec4(1,.75,.75,1)
+        copy.roughnessFactor = 0.0
+        copy.metallicFactor = 1.0
         copy.shaderpath = str(this_dir/"skin_override_test.glfx")
         copy.gpuInit(ctx)
         submesh.material = copy
@@ -222,9 +224,9 @@ class SkinningApp(object):
     # create animation data
     ###################################
 
-    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+    self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
 
-    self.anim_inst = XgmAnimInst(self.anim)
+    self.anim_inst = lev2.XgmAnimInst(self.anim)
     self.anim_inst.mask.enableAll()
     self.anim_inst.use_temporal_lerp = True
     self.anim_inst.bindToSkeleton(self.model.skeleton)
@@ -288,7 +290,7 @@ class SkinningApp(object):
 
   def onUiEvent(self,uievent):
 
-    res = ui.HandlerResult()
+    res = lev2.ui.HandlerResult()
     handled = False
 
     if uievent.code == tokens.KEY_DOWN.hashed:

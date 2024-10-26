@@ -9,7 +9,7 @@
 
 ### Description
 
-Orkid is a C++20 flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive MIT license, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
+Orkid is a C++23 flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive MIT license, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
 
 ### History
 

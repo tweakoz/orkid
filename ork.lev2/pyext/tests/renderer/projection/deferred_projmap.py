@@ -137,7 +137,7 @@ class Panel:
     #################################################
 
     self.use_event = True
-    self.layer = self.scenegraph.createLayer("layer")
+    self.layer = self.scenegraph.createLayer("std_deferred")
 
     self.sgnode = parent.model.createNode("modelnode",self.layer)
 

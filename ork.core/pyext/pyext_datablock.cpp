@@ -19,7 +19,26 @@ void pyinit_datablock(py::module& module_core) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")
+                         ///////////////////
                          .def(py::init<>())
+                         ///////////////////
+                         .def_static("createFromFile", [](const file::Path& path) -> datablock_ptr_t { //
+                            auto dblock = std::make_shared<DataBlock>();
+                            ::ork::File infile(path.c_str(), ::ork::EFM_READ);
+                            size_t length = 0;
+                            infile.GetLength(length);
+                            auto buffer = new uint8_t[length];
+                            infile.Read(buffer, length);
+                            dblock->addData(buffer, length);
+                            delete[] buffer;
+                            return dblock;
+                          })
+                         ///////////////////
+                         .def_property_readonly("bytes", [](datablock_ptr_t db) -> py::memoryview { //
+                           auto as_str = (const char*) db->data();
+                           return py::memoryview(py::bytes(as_str, db->length()));
+                         })
+                         ///////////////////
                          .def(
                              "readByte",
                              [](datablock_ptr_t db, int integer) -> uint8_t {
@@ -173,7 +192,7 @@ void pyinit_datablock(py::module& module_core) {
               })
           .def_static("setDataBlock", [](uint64_t key, datablock_ptr_t db) { DataBlockCache::setDataBlock(key, db); })
           .def_static("removeDataBlock", [](uint64_t key) { DataBlockCache::removeDataBlock(key); })
-          .def_property_readonly_static("totalMemoryConsumed", []() -> size_t { return DataBlockCache::totalMemoryConsumed(); });
+          .def_property_readonly_static("totalMemoryConsumed", [] -> size_t { return DataBlockCache::totalMemoryConsumed(); });
 }
 
 } // namespace ork

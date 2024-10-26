@@ -229,7 +229,7 @@ void Op::invoke() {
   if (auto as_lambda = mWrapped.tryAs<void_lambda_t>()) {
     as_lambda.value()();
   } else if (auto as_barrier = mWrapped.tryAs<BarrierSyncReq>()) {
-    as_barrier.value().mFuture.Signal<bool>(true);
+    as_barrier.value()._future->Signal<bool>(true);
   } else {
     printf("unknown operation type<%s>\n", mWrapped.typeName());
     OrkAssert(false);
@@ -242,10 +242,10 @@ void Op::QueueASync(opq_ptr_t q) const {
 void Op::QueueSync(opq_ptr_t q) const {
   assertNotOnQueue(q);
   q->enqueue(*this);
-  Future the_fut;
+  auto the_fut = std::make_shared<Future>();
   BarrierSyncReq R(the_fut);
   q->enqueue(R);
-  the_fut.GetResult();
+  the_fut->GetResult();
 }
 ///////////////////////////////////////////////////////////////////////////
 struct OpqDrained : public IOpqSynchrComparison {
@@ -451,23 +451,23 @@ void OperationsQueue::enqueue(const BarrierSyncReq& s) {
 void OperationsQueue::enqueueAndWait(const Op& the_op) {
   _assertNotOnQueue(this);
   enqueue(the_op);
-  Future the_fut;
+  auto the_fut = std::make_shared<Future>();
   BarrierSyncReq R(the_fut);
   enqueue(R);
-  the_fut.GetResult();
+  the_fut->GetResult();
 }
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::sync() {
-  Future the_fut;
+  auto the_fut = std::make_shared<Future>();
   BarrierSyncReq R(the_fut);
   enqueue(R);
   auto ot = TrackCurrent::context();
   if (ot->_queue == this) {
-    while (false == the_fut.IsSignaled()) {
+    while (false == the_fut->IsSignaled()) {
       this->Process();
     }
   }
-  the_fut.GetResult();
+  the_fut->GetResult();
 }
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::drain() {

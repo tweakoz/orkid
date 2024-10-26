@@ -79,9 +79,9 @@ class HSVGAPP(object):
     self.pbr_common.useFloatColorBuffer = True
     #######################################
     gmtl = PBRMaterial() 
-    gmtl.texColor = Texture.load("src://effect_textures/white.dds")
+    gmtl.texColor = Texture.load("src://effect_textures/white_64.dds")
     gmtl.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-    gmtl.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+    gmtl.texMtlRuf = Texture.load("src://effect_textures/white_64.dds")
     gmtl.metallicFactor = 1
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(0.8,0.8,1.3,1)

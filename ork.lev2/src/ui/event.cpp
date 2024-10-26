@@ -68,10 +68,27 @@ void IWidgetEventFilter::Filter(event_constptr_t Ev) {
   fev.mCTRL     = Ev->mbCTRL;
   fev.mALT      = Ev->mbALT;
   fev.mSHIFT    = Ev->mbSHIFT;
-  fev.mMETA     = Ev->mbMETA;
+  fev.mSUPER    = Ev->mbSUPER;
 
   DoFilter(Ev);
 }
+
 ///////////////////////////////////////////////////////////
 
+std::string Event::description() const{
+
+  auto as_str = FormatString(
+      "Event<0x%zx> x<%d> y<%d> key<%d> ctrl<%d> alt<%d> shift<%d> meta<%d>",
+      uint64_t(_eventcode),
+      miX,
+      miY,
+      miKeyCode,
+      mbCTRL,
+      mbALT,
+      mbSHIFT,
+      mbSUPER);
+    return as_str;
+}
+
+///////////////////////////////////////////////////////////
 } // namespace ork::ui

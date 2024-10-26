@@ -185,6 +185,9 @@ template <typename T> struct Matrix44 final
   void setElemXY(int ix, int iy, T val);
   T elemXY(int ix, int iy) const;
 
+  T operator[](int i, int j) const;
+  T& operator[](int i, int j);
+
   ///////////////////////////////////////////////////////////////////////////////
   // Column/Row Accessors
   ///////////////////////////////////////////////////////////////////////////////

@@ -7,20 +7,25 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, random, argparse, sys, colorsys
-from orkengine.core import *
-from orkengine.lev2 import *
+import math, random, argparse, sys, signal, colorsys
+from orkengine.core import vec3, vec4, quat, mtx4
+from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
+from orkengine.core import lev2_pyexdir, Transform
+from orkengine.core import CrcStringProxy, thisdir, VarMap
+from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
-from lev2utils.cameras import *
-from lev2utils.shaders import *
+lev2_pyexdir.addToSysPath()
+from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 SSAO_NUM_SAMPLES = 64
+
 
 ################################################################################
 
@@ -54,8 +59,8 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,ssaa=0)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
@@ -72,17 +77,17 @@ class SceneGraphApp(object):
       "AmbientLight": vec3(0.0),
       "DepthFogDistance": float(10000),
       "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 2,
-      "SSAOBias": -0.001,
+      "SSAONumSteps": 4,
+      "SSAOBias": 0.001,
       "SSAORadius": 1.0*25.4/1000.0, # 2 inches
-      "SSAOWeight": 1.0,
-      "SSAOPower": 1.0,
+      "SSAOWeight": 0.5,
+      "SSAOPower": 0.5,
     }
 
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
     else:
-      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night"
 
     createSceneGraph(app=self,
                      rendermodel="ForwardPBR",
@@ -97,15 +102,21 @@ class SceneGraphApp(object):
 
     ###################################
 
-    model = XgmModel("data://tests/pbr_calib.glb")
+    model = lev2.XgmModel("data://tests/pbr_calib.glb")
 
     random.seed(12)
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
-        copy.texColor = Texture.load("src://effect_textures/white.dds")
-        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-        copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+        copy.assignImages(
+          ctx,
+          color = white,
+          normal = normal,
+          mtlruf = white,
+          doConform=True
+        )
         submesh.material = copy
 
     for i in range(81):
@@ -143,7 +154,7 @@ class SceneGraphApp(object):
 
       self.nodes += [node]
 
-    cookie3 = MyCookie("src://effect_textures/knob2.dds")
+    cookie3 = MyCookie("src://effect_textures/knob2.png")
     
     #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
     #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
@@ -165,7 +176,6 @@ class SceneGraphApp(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_data.texturepath = "src://effect_textures/white.dds"
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(0.5)
     self.grid_draw = self.grid_data.createDrawable()
@@ -176,7 +186,7 @@ class SceneGraphApp(object):
   ################################################
 
   def onUiEvent(self,uievent):
-    res = ui.HandlerResult()
+    res = lev2.ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("A"):
         if self.ssaamode == True:
@@ -185,11 +195,17 @@ class SceneGraphApp(object):
           self.ssaamode = True
         print("SSAO MODE",self.ssaamode)
         return res
+      if uievent.keycode == ord("-"):
+        self.pbr_common.roughnessPower *= 0.95
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
+      if uievent.keycode == ord("="):
+        self.pbr_common.roughnessPower *= 1.05
+        print("ROUGHNESS POWER",self.pbr_common.roughnessPower)
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     else:
-      handled = ui.HandlerResult()
+      handled = lev2.ui.HandlerResult()
     return res
 
   ################################################

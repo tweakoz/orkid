@@ -16,8 +16,8 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
 PlugInst::PlugInst(const PlugData* plugdata, ModuleInst* minst)
-    : _plugdata(plugdata)
-    , _moduleinst(minst) {
+    : _moduleinst(minst) 
+    , _plugdata(plugdata) {
 }
 
 PlugInst::~PlugInst() {

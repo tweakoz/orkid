@@ -605,7 +605,7 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
 
   //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
   _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
-  _materialDeferred->gpuInit(context);
+  //_materialDeferred->gpuInit(context);
 
 #if defined(__APPLE__)
   /*if (_macosUseHIDPI) {

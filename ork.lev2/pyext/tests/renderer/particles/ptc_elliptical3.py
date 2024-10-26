@@ -123,9 +123,9 @@ class EllipticalParticleSystem(object):
            
       self.elliptical.inputs.P1 = P1
       self.elliptical.inputs.P2 = P2
-      DY = (P1-P2).normalized()
-      DX = DY.cross(vec3(0,1,1)).normalized()
-      DZ = DX.cross(DY).normalized()
+      DY = (P1-P2).normalized
+      DX = DY.cross(vec3(0,1,1)).normalized
+      DZ = DX.cross(DY).normalized
             
       EMI = self.emitter.inputs
       EMI.P1 = P1

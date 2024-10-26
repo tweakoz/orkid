@@ -71,6 +71,8 @@ vertex_vect_t Quad::generateTriangleList() const {
       addTriangle(vertices[2], vertices[3], center);
       break;
     }
+    default:
+      break;
   }
 
   return triangles;

@@ -51,11 +51,13 @@ GedArrayNode::GedArrayNode(
   auto enumerated_items = ary_prop->enumerateElements(obj);
   int index             = 0;
 
-  if(0)printf("!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size());
+  if (0)
+    printf("!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size());
 
   for (auto e : enumerated_items) {
 
-    if(0)printf("!!! GedArrayNode<%p> item<%d>\n", this, index);
+    if (0)
+      printf("!!! GedArrayNode<%p> item<%d>\n", this, index);
 
     auto iodriver             = std::make_shared<NewIoDriver>();
     auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
@@ -71,11 +73,11 @@ GedArrayNode::GedArrayNode(
     };
     auto itemstr = FormatString("%d", index - 1);
     if (e.isA<object_ptr_t>()) {
-      auto clazz = e.get<object_ptr_t>()->GetClass();
+      auto clazz     = e.get<object_ptr_t>()->GetClass();
       auto try_namer = clazz->annotationTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer");
       if (try_namer) {
         itemstr = try_namer.value()(e.get<object_ptr_t>());
-      } 
+      }
     }
     auto item_node = model->createAbstractNode(itemstr.c_str(), iodriver);
   }
@@ -95,7 +97,9 @@ bool GedArrayNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   int iy = ev->miY;
 
   auto model = _container->_model;
-  /*
+
+#if 0
+
 //printf("GedArrayNode<%p> ilx<%d> ily<%d>\n", this, ix, iy);
 
 if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
@@ -201,6 +205,8 @@ if (pact) {
   pmap->SetValue("index", CreateFormattedString("%d", _selectedItemIndex));
   updateVisibility();
 }*/
+
+#endif
   ///////////////////////////////////////
   return false;
 }

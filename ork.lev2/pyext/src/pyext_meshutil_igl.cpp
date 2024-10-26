@@ -18,7 +18,7 @@ using namespace meshutil;
 
 void pyinit_meshutil_igl(py::module& module_meshutil) {
   py::class_<IglMesh, iglmesh_ptr_t>(module_meshutil, "IglMesh") //
-      .def(py::init([]() {                                       //
+      .def(py::init([] {                                       //
         return std::make_shared<IglMesh>();
       }))
       .def(py::init([](const Eigen::MatrixXd& verts,   //

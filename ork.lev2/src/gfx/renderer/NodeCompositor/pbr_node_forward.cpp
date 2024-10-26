@@ -563,7 +563,7 @@ struct ForwardPbrNodeImpl {
 
         for (auto probe : _enumeratedLights->_lightprobes) {
           switch (probe->_type) {
-            case LightProbeType::REFLECTION:
+            case LightProbeType::REFLECTION:{
               if (nullptr == probe->_cubeRenderRTG) {
                 probe->_cubeRenderRTG           = std::make_shared<RtGroup>(context, 8, 8);
                 probe->_cubeRenderRTG->_name    = "ReflectionProbeRTG";
@@ -661,6 +661,9 @@ struct ForwardPbrNodeImpl {
                 TXI->generateMipMaps(probe->_cubeTexture.get());
                 probe->_dirty = false;
               }
+              break;
+            }
+            default:
               break;
           }
         }

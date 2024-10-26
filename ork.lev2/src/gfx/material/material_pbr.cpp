@@ -19,6 +19,7 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/gfx/brdf.inl>
@@ -56,8 +57,326 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+textureassetptr_t _loadDefaultColorTexture(fvec3 color, int w, int h, EBufferFormat fmt) {
+    auto basehasher = DataBlock::createHasher();
+    basehasher->accumulateString("pbr-default-color");
+    basehasher->accumulateString("version14");
+    basehasher->accumulateItem<fvec3>(color);
+    basehasher->accumulateItem<EBufferFormat>(fmt);
+    basehasher->accumulateItem<int>(w);
+    basehasher->accumulateItem<int>(h);
+    basehasher->finish();
+    uint64_t hashkey   = basehasher->result();
+    auto defmr_datablock = DataBlockCache::findDataBlock(hashkey);
+    auto name = FormatString("pbr-default-color-%08x.png", hashkey);
+    auto outpath = ork::file::Path::temp_dir()/name;
+    EBufferFormat temp_fmt = fmt;
+    if(temp_fmt==EBufferFormat::RGBA_BPTC_UNORM){
+      temp_fmt = EBufferFormat::RGBA8;
+    }
+    if(defmr_datablock){
+
+    }
+    else{
+      Image mr_image;
+      switch(temp_fmt){
+        case EBufferFormat::BGRA8:
+        case EBufferFormat::RGBA8:
+          mr_image.initRGBA8WithColor(w, h, fvec4(color,1), temp_fmt);
+          break;
+        case EBufferFormat::RGB8:
+        case EBufferFormat::BGR8:
+          mr_image.initRGB8WithColor(w, h, color, temp_fmt);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+      }
+      mr_image.writeToFile(outpath);
+      int X = 0;
+      defmr_datablock = std::make_shared<DataBlock>((void*) &X, sizeof(X));
+      DataBlockCache::setDataBlock(hashkey, defmr_datablock);
+    }
+    auto load_req = std::make_shared<asset::LoadRequest>(outpath);
+    load_req->_asset_vars->set<EBufferFormat>("force-format", fmt);
+    auto tex_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    return tex_asset;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// join PBR image set into a texture array
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::assignImages( lev2::Context* ctx,   //
+                                image_ptr_t color,    //
+                                image_ptr_t normal,   //
+                                image_ptr_t mtlruf,   //
+                                image_ptr_t emissive, //
+                                image_ptr_t ambocc,   //
+                                bool do_conform ) {   //
+
+  OrkAssert(ambocc==nullptr);
+
+  //printf( "assignTextures color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", color.get(), normal.get(), mtlruf.get(), emissive.get() );
+
+  if( do_conform ){
+    _image_color = color;
+    _image_normal = normal;
+    _image_mtlruf = mtlruf;
+    _image_emissive = emissive;
+    conformImages();
+    //printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
+  }
+    
+  TextureArrayInitData TID;
+
+
+  TID._slices.resize(4);
+  TID._slices[0] = TextureArrayInitSubItem{"color"_crcu, _image_color};
+  TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, _image_normal};
+  TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, _image_mtlruf};
+  TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, _image_emissive};
+  _texArrayCNMREA = std::make_shared<Texture>();
+  _texArrayCNMREA->_debugName = "pbrtexarray";
+  auto txi = ctx->TXI();
+  txi->initTextureArray2DFromData(_texArrayCNMREA.get(), TID);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// PBRMaterial::conformImages
+//   we need textures to be same size and format
+//   so they can go into a texture array 
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::conformImages(){
+  //////////////////////////
+  // retain pre-existing images
+  //  so they cant get deleted
+  //  until we return
+  //////////////////////////
+  std::unordered_set<image_ptr_t> retain_images;
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
+  //////////////////////////
+  // get biggest size
+  //  and mark down non-rgb images
+  //////////////////////////
+  size_t max_w = 64;
+  size_t max_h = 64;
+  std::set<image_ptr_t> images_to_rgb;
+  if (_image_color != nullptr) {
+    max_w = std::max(max_w, _image_color->_width);
+    max_h = std::max(max_h, _image_color->_height);
+    if(_image_color->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_color);
+    }
+  }
+  if (_image_normal != nullptr) {
+    max_w = std::max(max_w, _image_normal->_width);
+    max_h = std::max(max_h, _image_normal->_height);
+    if(_image_normal->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_normal);
+    }
+  }
+  if (_image_mtlruf != nullptr) {
+    max_w = std::max(max_w, _image_mtlruf->_width);
+    max_h = std::max(max_h, _image_mtlruf->_height);
+    if(_image_mtlruf->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_mtlruf);
+    }
+  }
+  if (_image_emissive != nullptr) {
+    max_w = std::max(max_w, _image_emissive->_width);
+    max_h = std::max(max_h, _image_emissive->_height);
+    if(_image_emissive->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_emissive);
+    }
+  }
+  if (_image_ambocc != nullptr) {
+    max_w = std::max(max_w, _image_ambocc->_width);
+    max_h = std::max(max_h, _image_ambocc->_height);
+    if(_image_ambocc->_format!=EBufferFormat::RGB8){
+      images_to_rgb.insert(_image_ambocc);
+    }
+  }
+  //////////////////////////
+  std::atomic<int> sync_rgb = 0;
+  std::atomic<int> sync_resize = 0;
+  std::atomic<int> sync_defaults = 0;
+  //////////////////////////
+  // convert non-rgb to rgb
+  //  overwriting the original images
+  //////////////////////////
+  for(auto img : images_to_rgb){
+    auto rgb = std::make_shared<Image>();
+    if(img==_image_color){
+      _image_color = rgb;
+    }
+    if(img==_image_normal){
+      _image_normal = rgb;
+    }
+    if(img==_image_mtlruf){
+      _image_mtlruf = rgb;
+    }
+    if(img==_image_emissive){
+      _image_emissive = rgb;
+    }
+    if(img==_image_ambocc){
+      _image_ambocc = rgb;
+    }
+    sync_rgb++;
+    auto OP = [=, &sync_rgb](){
+      rgb->convertFromImageToFormat(*img, EBufferFormat::RGB8);
+      sync_rgb--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  while(sync_rgb>0){
+    usleep(1000);
+  }
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
+  //////////////////////////
+  // now, find out which images need to be resized
+  //////////////////////////
+  std::set<image_ptr_t> images_to_resize;
+  if (_image_color != nullptr) {
+    if(_image_color->_width!=max_w || _image_color->_height!=max_h){
+      images_to_resize.insert(_image_color);
+    }
+  }
+  if (_image_normal != nullptr) {
+    if(_image_normal->_width!=max_w || _image_normal->_height!=max_h){
+      images_to_resize.insert(_image_normal);
+    }
+  }
+  if (_image_mtlruf != nullptr) {
+    if(_image_mtlruf->_width!=max_w || _image_mtlruf->_height!=max_h){
+      images_to_resize.insert(_image_mtlruf);
+    }
+  }
+  if (_image_emissive != nullptr) {
+    if(_image_emissive->_width!=max_w || _image_emissive->_height!=max_h){
+      images_to_resize.insert(_image_emissive);
+    }
+  }
+  if (_image_ambocc != nullptr) {
+    if(_image_ambocc->_width!=max_w || _image_ambocc->_height!=max_h){
+      images_to_resize.insert(_image_ambocc);
+    }
+  }
+  //////////////////////////
+  // resize the images
+  //////////////////////////
+  for(auto img : images_to_resize){
+    auto resized = std::make_shared<Image>();
+    if(img==_image_color){
+      _image_color = resized;
+    }
+    if(img==_image_normal){
+      _image_normal = resized;
+    }
+    if(img==_image_mtlruf){
+      _image_mtlruf = resized;
+    }
+    if(img==_image_emissive){
+      _image_emissive = resized;
+    }
+    if(img==_image_ambocc){
+      _image_ambocc = resized;
+    }
+    sync_resize++;
+    auto OP = [=, &sync_resize](){
+      resized->resizedOf(*img, max_w, max_h);
+      sync_resize--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if(1) while(sync_resize>0){
+    usleep(1000);
+  }
+  retain_images.insert(_image_color);
+  retain_images.insert(_image_normal);
+  retain_images.insert(_image_mtlruf);
+  retain_images.insert(_image_emissive);  
+  retain_images.insert(_image_ambocc);  
+  //////////////////////////
+  // now create defaults if they do not exist
+  //////////////////////////
+  if (_image_color == nullptr) {
+      sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(1,1,1);
+      _image_color = std::make_shared<Image>();
+      _image_color->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if (_image_normal == nullptr) {
+      sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(0.5,0.5,1);
+      _image_normal = std::make_shared<Image>();
+      _image_normal->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if (_image_mtlruf == nullptr) {
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = (_metallicFactor == 0.0f) //
+                  ? fvec3(1,0,0) //
+                  : fvec3(1,0,1);
+      _image_mtlruf = std::make_shared<Image>();
+      _image_mtlruf->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if (_image_emissive == nullptr) {
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(0,0,0);
+      _image_emissive = std::make_shared<Image>();
+      _image_emissive->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if (_image_ambocc == nullptr) {
+    sync_defaults++;
+    auto OP = [=, &sync_defaults](){
+      fvec3 color = fvec3(1,1,1);
+      _image_ambocc = std::make_shared<Image>();
+      _image_ambocc->initRGB8WithColor(max_w, max_h, color, EBufferFormat::RGB8);
+      sync_defaults--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  if(1)while(sync_defaults>0){
+    usleep(1000);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void PBRMaterial::describeX(class_t* c) {
 
+  /////////////////////////////////////////////////////////////////
+  // chunkfile::materialreader_t
+  //  this is a callback invoked from the xgm model reader
+  //  when a material is encountered in the xgm file
+  //  it is in callback form so the model reader can fork
+  //  based on material types..
   /////////////////////////////////////////////////////////////////
 
   chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx) -> ork::lev2::material_ptr_t {
@@ -97,36 +416,47 @@ void PBRMaterial::describeX(class_t* c) {
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
         logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
-        auto tex = std::make_shared<lev2::Texture>();
+        auto image = std::make_shared<lev2::Image>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
-        bool ok        = txi->LoadTexture(tex, datablock);
-        OrkAssert(ok);
+        image->initFromDataBlock(datablock);
+        //bool ok        = txi->LoadTexture(tex, datablock);
+        //OrkAssert(ok);
         logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         logchan_pbr->log(" token<%s>", token);
         if (0 == strcmp(token, "colormap")) {
-          mtl->_texColor     = tex;
           mtl->_colorMapName = texname;
+          mtl->_image_color = image;
         }
         if (0 == strcmp(token, "normalmap")) {
-          mtl->_texNormal     = tex;
           mtl->_normalMapName = texname;
+          mtl->_image_normal = image;
         }
         if (0 == strcmp(token, "mtlrufmap")) {
-          mtl->_texMtlRuf     = tex;
           mtl->_mtlRufMapName = texname;
+          mtl->_image_mtlruf = image;
         }
         if (0 == strcmp(token, "emissivemap")) {
-          mtl->_texEmissive     = tex;
           mtl->_emissiveMapName = texname;
+          mtl->_image_emissive = image;
         }
         if (0 == strcmp(token, "amboccmap")) {
-          mtl->_texAmbOcc     = tex;
-          mtl->_amboccMapName = texname;
+          //mtl->_texAmbOcc     = tex;
+          //mtl->_amboccMapName = texname;
           printf("amboccmap<%s>\n", texname );
         }
       }
     }
+
+    mtl->assignImages( targ,                  //
+                       mtl->_image_color,     //
+                       mtl->_image_normal,    //
+                       mtl->_image_mtlruf,    //
+                       mtl->_image_emissive,  //
+                       nullptr,  //
+                       true);
+
+
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
@@ -162,6 +492,12 @@ void PBRMaterial::describeX(class_t* c) {
     return mtl;
   };
 
+  /////////////////////////////////////////////////////////////////
+  // chunkfile::materialreader_t
+  //  this is a callback invoked from the xgm model writer
+  //  when a material is encountered in a model being written to a xgm file
+  //  it is in callback form so the model writer can fork
+  //  based on material types..
   /////////////////////////////////////////////////////////////////
 
   chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx) {
@@ -233,6 +569,8 @@ void PBRMaterial::describeX(class_t* c) {
   };
 
   /////////////////////////////////////////////////////////////////
+  // attach reader and writer to the material class reflection annotations
+  /////////////////////////////////////////////////////////////////
 
   c->annotate("xgm.writer", writer);
   c->annotate("xgm.reader", reader);
@@ -271,6 +609,7 @@ PBRMaterial::~PBRMaterial() {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy     = *this;
+  copy->_initialTarget = nullptr;
   return copy;
 }
 
@@ -299,7 +638,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   auto loadreq = std::make_shared<asset::LoadRequest>();
 
-  // printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
+  //printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
   loadreq->_asset_path = _shaderpath;
 
   _as_freestyle = std::make_shared<FreestyleMaterial>();
@@ -395,15 +734,12 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMVPR              = fxi->parameter(_shader, "mvp_r");
   _paramMV                = fxi->parameter(_shader, "mv");
   _paramMROT              = fxi->parameter(_shader, "mrot");
-  _paramMapColor          = fxi->parameter(_shader, "ColorMap");
-  _paramMapNormal         = fxi->parameter(_shader, "NormalMap");
-  _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
-  _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
-  _parMapAmbOcc           = fxi->parameter(_shader, "AmbOccMap");
+  _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   _parMapLightMap         = fxi->parameter(_shader, "LightMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
+  _parRoughnessPower      = fxi->parameter(_shader, "RoughnessPower" );
   _parModColor            = fxi->parameter(_shader, "ModColor");
   _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
@@ -458,10 +794,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie1 = fxi->parameter(_shader, "light_cookie1");
   _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
-  //_parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
-  //_parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
-  //_parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
-  //_parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
+  _parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
+  _parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
+  _parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
+  _parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
 
   _parProbeReflection = fxi->parameter(_shader, "reflectionPROBE");
   _parProbeIrradiance = fxi->parameter(_shader, "irradiancePROBE");
@@ -470,24 +806,26 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   //
 
-  OrkAssert(_paramMapNormal != nullptr);
   OrkAssert(_parBoneBlock != nullptr);
 
   // printf( "_texColor<%p>\n", _texColor.get() );
   // printf( "_texNormal<%p>\n", _texNormal.get() );
   // printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
-  _texBlack = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 1), 32, 32);
-  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 32,32);
+  _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
+  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
 
-  if (_texColor == nullptr) {
-    auto loadreq         = std::make_shared<asset::LoadRequest>();
-    loadreq->_asset_path = "src://effect_textures/white";
-    _asset_texcolor      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
-    _texColor            = _asset_texcolor->GetTexture();
-    // logchan_pbr->log("substituted white for non-existant color texture");
-    OrkAssert(_texColor != nullptr);
+  if(_texArrayCNMREA == nullptr){
+    conformImages();
+    assignImages( targ,                  //
+                  _image_color,     //
+                  _image_normal,    //
+                  _image_mtlruf,    //
+                  _image_emissive,  //
+                  nullptr,  //
+                  false);
   }
+  /*
   if (_texAmbOcc == nullptr) {
     auto loadreq         = std::make_shared<asset::LoadRequest>();
     loadreq->_asset_path = "src://effect_textures/white";
@@ -504,23 +842,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
+  */
 
-    static auto defmrtex = targ->TXI()->createColorTexture(fvec4(1, 1, 0, 1), 8, 8);
-    _texMtlRuf           = defmrtex;
-
-    if (_metallicFactor != 0.0f) {
-      static auto metallictex = targ->TXI()->createColorTexture(fvec4(1, 0, 1, 1), 8, 8);
-      metallictex->_debugName = "default_metallicroughness";
-      _texMtlRuf              = metallictex;
-    }
-
-    OrkAssert(_texMtlRuf != nullptr);
-  }
-  if (_texEmissive == nullptr) {
-    static auto defemitex = targ->TXI()->createColorTexture(fvec4(0, 0, 0, 0), 8, 8);
-    defemitex->_debugName = "default_emissive";
-    _texEmissive          = defemitex;
-  }
 }
 
 void PBRMaterial::forceEmissive() {

@@ -74,8 +74,8 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   for (size_t i = 0; i < renderQueueSize; i++) {
     int skey     = _sortedNodes[i]->_renderable->ComposeSortKey(this);
     _sortkeys[i] = skey;
-    if(false){ //_debugLog){
-      printf( "skey<%d:%d>\n", i, skey );
+    if(_debugLog){
+      printf( "skey<%zu:%d>\n", i, skey );
     }
   }
   EASY_END_BLOCK;

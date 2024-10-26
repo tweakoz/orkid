@@ -43,10 +43,9 @@ struct CpuNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   CpuNodeImpl(DeferredCompositingNode* node)
       : _node(node)
-      , _camname(AddPooledString("Camera"))
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
-      , _lighttiles(KMAXTILECOUNT)
-      , _lightbuffer(nullptr) {
+      , _camname(AddPooledString("Camera"))
+      , _lighttiles(KMAXTILECOUNT){
     for (int i = 0; i < KMAXTILECOUNT; i++)
       _lighttiles[i] = new locked_pllist_t;
   }
@@ -271,16 +270,19 @@ struct CpuNodeImpl {
     _context.endPointLighting(drawdata, VD);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  PoolString _camname;
-  typedef std::vector<const PointLight*> pllist_t;
-  typedef ork::LockedResource<pllist_t> locked_pllist_t;
+
+  using pllist_t = std::vector<const PointLight*>;
+  using locked_pllist_t = ork::LockedResource<pllist_t>;
 
   DeferredCompositingNode* _node = nullptr;
   DeferredContext _context;
+  PoolString _camname;
+  ork::fixedvector<locked_pllist_t*, KMAXTILECOUNT> _lighttiles;
+
+
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  ork::fixedvector<locked_pllist_t*, KMAXTILECOUNT> _lighttiles;
   int _pendingtiles[KMAXTILECOUNT];
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;

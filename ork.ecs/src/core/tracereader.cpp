@@ -68,7 +68,7 @@ struct ReaderImpl {
         } else if (jsonval["token"].IsNumber()) {
           double as_dbl = jsonval["token"].GetDouble();
           token._hashed = uint64_t(as_dbl);
-          printf("as_dbl<%g> token._hashed<%zd>\n", as_dbl, token._hashed);
+          printf("as_dbl<%g> token._hashed<%llx>\n", as_dbl, token._hashed);
         }
         rval = token;
       } else if (jsonval.HasMember("int")) {
@@ -145,7 +145,7 @@ struct ReaderImpl {
         auto& out_FSYS          = out_item.make<impl::_FindSystem>();
         out_FSYS._sysref._sysID = sysID;
 
-        printf("sysID<%zu>\n", out_FSYS._sysref._sysID);
+        printf("sysID<%llu>\n", out_FSYS._sysref._sysID);
 
         // OrkAssert(false);
         out_FSYS._syskey = EVENTTYPE["syskey"].GetString();
@@ -336,7 +336,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
       auto op           = [=]() {
         uint64_t ID = _controller->_objectIdCounter.fetch_add(1);
 
-        printf("FINDSYS ID<%zx> TRID<%zx>\n", ID, value._sysref._sysID);
+        printf("FINDSYS ID<%llx> TRID<%llx>\n", ID, value._sysref._sysID);
 
         OrkAssert(ID == value._sysref._sysID);
 
@@ -361,7 +361,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
       auto op           = [=]() {
         uint64_t ID = _controller->_objectIdCounter.fetch_add(1);
 
-        printf("FINDCOMP ID<%zu> TRID<%zu>\n", ID, value._compref._compID);
+        printf("FINDCOMP ID<%llu> TRID<%llu>\n", ID, value._compref._compID);
 
         OrkAssert(ID == value._compref._compID);
 
@@ -406,7 +406,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
 
         uint64_t objID = _controller->_objectIdCounter.fetch_add(1);
 
-        printf("SYSREQ ID<%zu> TRID<%zu>\n", objID, value._respref._responseID);
+        printf("SYSREQ ID<%llu> TRID<%llu>\n", objID, value._respref._responseID);
 
         OrkAssert(objID == value._respref._responseID);
 
@@ -450,7 +450,7 @@ Controller::TraceReader::TraceReader(Controller* c, file::Path path)
 
         uint64_t objID = _controller->_objectIdCounter.fetch_add(1);
         OrkAssert(objID == value._respref._responseID);
-        printf("COMPREQ ID<%zu> TRID<%zu>\n", objID, value._respref._responseID);
+        printf("COMPREQ ID<%llu> TRID<%llu>\n", objID, value._respref._responseID);
 
         auto rref = ResponseRef{._responseID = objID};
 

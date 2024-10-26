@@ -2,31 +2,60 @@ from orkengine.core import *
 from orkengine.lev2 import *
 
 
+def createParams( rendermodel = "ForwardPBR" ):
+
+  sceneparams = VarMap()
+  sceneparams.preset = rendermodel
+  sceneparams.SkyboxIntensity = float(1)
+  sceneparams.SpecularIntensity = float(1)
+  sceneparams.DiffuseIntensity = float(1)
+  sceneparams.AmbientLight = vec3(0.0)
+  sceneparams.DepthFogDistance = float(1e6)
+  sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
+
+  if rendermodel == "DeferredPBR":
+    sceneparams.layers = ["std_deferred","depth_prepass"]
+  elif rendermodel == "ForwardPBR":
+    sceneparams.layers = ["std_forward","depth_prepass"]    
+
+  return sceneparams
+
 def createSceneGraph( app=None, 
-                      rendermodel = "ForwardPBR", # DEPRECATED
+                      rendermodel = None,
                       params_dict = None,
-                      layer_name = "All"):
+                      layer_name = None):
+
 
     sceneparams = VarMap()
-    sceneparams.preset = rendermodel
+
+    if rendermodel == None:
+      rendermodel = "ForwardPBR"      
 
     if params_dict != None:
       for k in params_dict.keys():
-        sceneparams.__setattr__(k,params_dict[k])
         if k == "preset":
-          if params_dict[k] == "DeferredPBR":
-            rendermodel = "DeferredPBR"
-          elif params_dict[k] == "ForwardPBR":
-            rendermodel = "ForwardPBR"
-          else:
-            assert(False) # unknown preset
+          rendermodel = params_dict[k]
+        sceneparams.__setattr__(k,params_dict[k])
+        print("sceneparams<%s> = %s" % (k,params_dict[k]))
+
+    
+    sceneparams.preset = rendermodel
 
     app.scene = app.ezapp.createScene(sceneparams)
     
-    if rendermodel in ["ForwardPBR","FWDPBRVR"]:
-      layer_name = "std_forward"
+    if layer_name == None:
+      if rendermodel in ["ForwardPBR","FWDPBRVR"]:
+        layer_name = "std_forward"
+      elif rendermodel in ["DeferredPBR","PBRVR"]:
+        layer_name = "std_deferred"
+      else:
+        print("required layer name for rendermodel<%s>" % rendermodel)
+        assert(False)
     
     app.layer1 = app.scene.createLayer(layer_name)
+    app.layer_std = app.layer1
+    app.layer_dpp = app.scene.createLayer("depth_prepass")
+    app.std_layers = [app.layer_std,app.layer_dpp]
     app.rendernode = app.scene.compositorrendernode
 
     return app.scene

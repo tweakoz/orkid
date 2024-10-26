@@ -7,7 +7,7 @@ namespace ork::lev2 {
 struct IRenderTarget {
 public:
   IRenderTarget();
-
+  virtual ~IRenderTarget() {}
   virtual int width()                                = 0;
   virtual int height()                                = 0;
   virtual void BeginFrame(Context* pTARG) = 0;

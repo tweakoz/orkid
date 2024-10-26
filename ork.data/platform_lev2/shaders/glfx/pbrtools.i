@@ -30,10 +30,13 @@ uniform_set ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  sampler2D ColorMap;
-  sampler2D NormalMap;
+  //sampler2D ColorMap;
+  //sampler2D NormalMap;
+  //sampler2D MtlRufMap;
+
+  sampler2DArray CNMREA;         // 4
   sampler2D EmissiveMap;
-  sampler2D MtlRufMap;
+
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;
   vec4 ModColor;
@@ -42,12 +45,44 @@ uniform_set ub_frg {
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
   float RoughnessFactor;
+  float RoughnessPower;
   vec3 EyePostion;
   vec4 AuxA;
   vec4 AuxB;
 }
 
 uniform_set ub_frg_fwd {
+
+  //sampler2D ColorMap;             // 0
+  //sampler2D NormalMap;            // 1
+  //sampler2D MtlRufMap;           // 2
+  //sampler2D EmissiveMap;         // 3
+
+  sampler2D SSAOMap;            // 4
+  sampler2D SSAOKernel;      // 5
+  sampler2D SSAOScrNoise;   // 6
+
+  sampler2D MapBrdfIntegration; // 7
+  sampler2D MapSpecularEnv; // 8
+  sampler2D MapDiffuseEnv; // 9
+  sampler2D MapDepth; // 10
+  sampler2D MapLinearDepth; // 11
+
+  sampler2D light_cookie0; // 12
+  sampler2D light_cookie1; // 13
+  sampler2D light_cookie2; // 14
+  sampler2D light_cookie3; // 15
+  sampler2D light_cookie4;
+  sampler2D light_cookie5;
+  sampler2D light_cookie6;
+  sampler2D light_cookie7;
+
+  samplerCube reflectionPROBE; // 16
+  samplerCube irradiancePROBE; // 17
+
+  sampler2DArray CNMREA;         // 4
+
+  //
 
   mat4 m;
   mat4 vp;
@@ -60,36 +95,6 @@ uniform_set ub_frg_fwd {
   mat4 inv_vp_l;
   mat4 inv_vp_r;
 
-  sampler2D ColorMap;
-  sampler2D AmbOccMap;
-  sampler2D NormalMap;
-  sampler2D MtlRufMap;
-  sampler2D EmissiveMap; // 5
-
-  sampler2D MapBrdfIntegration;
-  sampler2D MapSpecularEnv;
-  sampler2D MapDiffuseEnv;
-  sampler2D MapDepth;
-  sampler2D MapLinearDepth; // 10
-
-  //sampler2D UnTexPointLightsData;
-
-  //sampler2D SSAOMap;
-  //sampler2D SSAOKernel;
-  //sampler2D SSAOScrNoise;
-
-  //sampler2D light_cookies[8];
-  sampler2D light_cookie0;  // 11
-  sampler2D light_cookie1;  // 12
-  //sampler2D light_cookie2;
-  //sampler2D light_cookie3;
-  //sampler2D light_cookie4;
-  //sampler2D light_cookie5;
-  //sampler2D light_cookie6;
-  //sampler2D light_cookie7;
-
-  samplerCube reflectionPROBE; // 13
-  samplerCube irradiancePROBE; // 14
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -98,6 +103,7 @@ uniform_set ub_frg_fwd {
 
   float MetallicFactor;
   float RoughnessFactor;
+  float RoughnessPower;
 
   float SSAOPower;
   float SSAOWeight;
@@ -120,6 +126,9 @@ uniform_set ub_frg_fwd {
 
   int point_light_count;
   int spot_light_count;
+  //sampler2D UnTexPointLightsData;
+
+  //sampler2D light_cookies[8];
 
   vec4 ModColor;
   vec4 AuxA;
@@ -275,11 +284,11 @@ libblock lib_pbr_vtx_instanced {
 libblock lib_pbr_frg : lib_gbuf_encode {
   void ps_common_n(vec4 modc, vec3 N, vec2 UV) {
     vec3 normal    = normalize(frg_tbn * N);
-    vec3 rufmtlamb = texture(MtlRufMap, UV).xyz;
+    vec3 rufmtlamb = texture(CNMREA, vec3(UV,2)).xyz;
     float mtl      = rufmtlamb.z * MetallicFactor;
     float ruf      = rufmtlamb.y * RoughnessFactor;
-    vec3 color     = (modc * frg_clr * texture(ColorMap, UV)).xyz;
-    vec3 emission  = texture(EmissiveMap, UV).xyz * modc.xyz;
+    vec3 color     = (modc * frg_clr * texture(CNMREA, vec3(UV,0))).xyz;
+    vec3 emission  = texture(CNMREA, vec3(UV,3)).xyz * modc.xyz;
     out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }
   void ps_common_vizn(vec4 modc, vec3 N) {
@@ -438,7 +447,7 @@ float ssao_nonlinear(vec2 frg_uv) {
     }
     occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return occlusion;
+    return 1.0-occlusion;
 }
 */
 
@@ -582,7 +591,7 @@ fragment_shader ps_gbuffer_vizn : iface_fgbuffer : lib_pbr_frg {
 fragment_shader ps_gbuffer_n // normalmap
     : iface_fgbuffer 
     : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   ps_common_n(ModColor, N, frg_uv0);
@@ -590,7 +599,7 @@ fragment_shader ps_gbuffer_n // normalmap
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
     : iface_fgbuffer : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -598,7 +607,7 @@ fragment_shader ps_gbuffer_n_stereo // normalmap
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
@@ -607,7 +616,7 @@ fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg 
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 TN = texture(CNMREA, vec3(frg_uv0,1)).xyz;
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
@@ -621,7 +630,7 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
   vec2 map_uv    = frg_uv0 * vec2(1, 0.5);
   if (is_right)
     map_uv += vec2(0, 0.5);
-  vec3 TN = texture(NormalMap, map_uv).xyz;
+  vec3 TN = texture(CNMREA, vec3(map_uv,1)).xyz;
   vec3 N  = TN * 2.0 - vec3(1, 1, 1);
   ps_common_n(ModColor, N, map_uv);
 }
@@ -996,7 +1005,8 @@ vertex_shader vs_forward_unlit : iface_vgbuffer : lib_pbr_vtx {
   frg_uv0     = uv0;
 }
 fragment_shader ps_forward_unlit : iface_forward {
-  vec3 rgb  = texture(ColorMap, frg_uv0).xyz * ModColor.xyz;
+  vec3 rgb = texture(CNMREA, vec3(frg_uv0,0)).xyz;
+  rgb *= ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////

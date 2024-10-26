@@ -13,12 +13,12 @@
 
 namespace ork { namespace asset {
 
-class AssetEntry;
+struct AssetEntry;
 struct AssetLoader;
-class AssetSetLevel;
-class AssetSetEntry;
+struct AssetSetLevel;
+struct AssetSetEntry;
 
-class AssetSet {
+struct AssetSet {
 public:
   static void Describe();
 

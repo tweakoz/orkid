@@ -205,22 +205,7 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SampleData::SampleData()
-    : _sampleBlock(nullptr)
-    , _blk_start(0)
-    , _blk_alt(0)
-    , _blk_loopstart(0)
-    , _blk_loopend(0)
-    , _blk_end(0)
-    , _loopPoint(0)
-    , _subid(0)
-    , _sampleRate(0.0f)
-    , _linGain(1.0f)
-    , _rootKey(0)
-    , _highestPitch(0)
-    , _loopMode(eLoopMode::NOTSET) {
-      _interpMethod = 0;
-}
+SampleData::SampleData(){}
 
 ///////////////////////////////////////////////////////////////////////////////
 

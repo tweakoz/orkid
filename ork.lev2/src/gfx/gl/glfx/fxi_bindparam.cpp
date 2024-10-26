@@ -27,11 +27,21 @@ void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t&
   assert(container->_activePass != nullptr);
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
+    puni = pinst->mpUniform;
     int iloc = pinst->_locations[0];
     if (iloc >= 0) {
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
       GLenum etyp      = puni->_type;
+      if(etyp==0){
+        auto sh = _activeShader;
+        auto shname = sh->mName.c_str();
+        auto pass = container->_activePass;
+        auto tek = container->mActiveTechnique;
+        auto tekname = tek->_name.c_str();
+        printf("shader<%s> tek<%s> uni<%p> unistate<%d> BindParam<%s> loc<%d> sem<%s> type<%d>\n", shname, tekname, puni, puni->_state, pnam, iloc, psem, etyp);
+        OrkAssert(false);
+      }
       binder(iloc, etyp);
     }
   }
@@ -209,9 +219,11 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
     int uniloc = pinst->_locations[0];
 
-    if(0){
+    if(pTex and false){
+      const char* texnam = pTex->_debugName.c_str();
       const char* teknam = container->mActiveTechnique->_name.c_str();
-      printf("Bind2 Tex<%p> par<%s> uniloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), uniloc, teknam);
+      const char* parname = hpar->_name.c_str();
+      printf("Bind2 Tex<%p:%s> par<%s> uniloc<%d> teknam<%s>\n", pTex, texnam, parname, uniloc, teknam);
     }
     // if (uniloc >= 0) {
     // const char* psem = puni->_semantic.c_str();

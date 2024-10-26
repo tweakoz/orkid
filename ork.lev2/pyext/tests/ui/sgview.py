@@ -80,6 +80,7 @@ class UiSgQuadViewTestApp(object):
     # make a grid of scenegraph viewports
 
     lg_group = self.ezapp.topLayoutGroup
+    
     self.griditems = lg_group.makeGrid( width = 1,
                                         height = 1,
                                         margin = 1,

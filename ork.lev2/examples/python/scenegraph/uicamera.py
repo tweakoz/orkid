@@ -18,7 +18,7 @@ from lev2utils.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 constants = mathconstants()
-RENDERMODEL = "DeferredPBR"
+RENDERMODEL = "ForwardPBR"
 
 ################################################################################
 
@@ -28,7 +28,6 @@ class UiCamera(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
     setupUiCamera( app=self,
                    eye = vec3(10,5,10),
                    tgt = vec3(0,0,0) )
@@ -41,13 +40,18 @@ class UiCamera(object):
 
     pipeline_cube = createPipeline(app=self,
                                    ctx=ctx,
-                                   techname = "std_mono",
                                    rendermodel=RENDERMODEL)
     cube_prim = createCubePrim(ctx=ctx,size=1.0)
     self.cube_node = cube_prim.createNode("cube",self.layer1,pipeline_cube)
     self.cube_node.sortkey = 1
 
     self.grid_data = createGridData()
+    self.grid_data.intensityA = 2.1
+    self.grid_data.intensityB = 2.0
+    self.grid_data.intensityC = 0
+    self.grid_data.intensityD = 0
+    self.grid_data.lineWidth = 0.025
+    self.grid_data.extent = 100.0
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
@@ -75,25 +79,26 @@ class UiCamera(object):
 
       # print out the event type
 
-      if uievent.code == tokens.PUSH.hashed:
-        print("PUSH")
-      elif uievent.code == tokens.DRAG.hashed:
-        print("DRAG")
-      elif uievent.code == tokens.MOVE.hashed:
-        print("MOVE")
-      elif uievent.code == tokens.RELEASE.hashed:
-        print("RELEASE")
-      elif uievent.code == tokens.KEY_DOWN.hashed:
-        print("KEY_DOWN")
-      elif uievent.code == tokens.KEY_REPEAT.hashed:
-        print("KEY_REPEAT")
-      elif uievent.code == tokens.KEY_UP.hashed:
-        print("KEY_UP")
-      else:
+      if False:
+        if uievent.code == tokens.PUSH.hashed:
+          print("PUSH")
+        elif uievent.code == tokens.DRAG.hashed:
+          print("DRAG")
+        elif uievent.code == tokens.MOVE.hashed:
+          print("MOVE")
+        elif uievent.code == tokens.RELEASE.hashed:
+          print("RELEASE")
+        elif uievent.code == tokens.KEY_DOWN.hashed:
+          print("KEY_DOWN")
+        elif uievent.code == tokens.KEY_REPEAT.hashed:
+          print("KEY_REPEAT")
+        elif uievent.code == tokens.KEY_UP.hashed:
+          print("KEY_UP")
+        else:
 
-        # unhandled type
+          # unhandled type
 
-        print(uievent.code,uievent.x,uievent.y)
+          print(uievent.code,uievent.x,uievent.y)
         
     return ui.HandlerResult()
 

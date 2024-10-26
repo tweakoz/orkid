@@ -50,7 +50,7 @@ class ParticlesApp(object):
     # create particle drawable 
     ###################################
 
-    self.ptc_data = createParticleData()
+    self.ptc_data = createParticleData(use_streaks=True)
     ptc_drawable = self.ptc_data.drawable_data.createDrawable()
 
     self.emitterplugs = self.ptc_data.emitter.inputs

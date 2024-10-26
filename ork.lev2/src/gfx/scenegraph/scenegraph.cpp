@@ -285,10 +285,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       }
 
 
+      _compositorData->_defaultBG = false;
       auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
-      load_req->_on_load_complete = [=]() {
-        //_renderPresetData->_assetSynchro->decrement();
-      };
       _pbr_common->requestAndRefSkyboxTexture(load_req);
     }
 
@@ -319,6 +317,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
       _pbr_common->_ssaoNumSamples = int(try_ssao.value());
       _pbr_common->_useDepthPrepass = true;
+    }
+    if (auto try_dpp = params->typedValueForKey<bool>("DepthPrepass")) {
+      _pbr_common->_useDepthPrepass = try_dpp.value();
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
       _pbr_common->_ssaoNumSteps = int(try_ssao.value());
@@ -372,13 +373,20 @@ layer_ptr_t Scene::createLayer(std::string named) {
 
   _layers.atomicOp([&](layer_map_t& unlocked) {
     auto it = unlocked.find(named);
-    OrkAssert(it == unlocked.end());
-    unlocked[named] = l;
+    if(it!=unlocked.end()){
+      l = it->second;
+      if (DEBUG_LOG) {
+        logchan_sg->log("Scene<%p> preexisting layer<%p:%s>", this, l.get(), (void*)named.c_str());
+      }
+    }
+    else{
+      if (DEBUG_LOG) {
+        logchan_sg->log("Scene<%p> created layer<%p:%s>", this, l.get(), (void*)named.c_str());
+      }
+      unlocked[named] = l;
+    }
   });
 
-  if (DEBUG_LOG) {
-    logchan_sg->log("Scene<%p> create layer<%p:%s>", this, l.get(), (void*)named.c_str());
-  }
 
   return l;
 }
