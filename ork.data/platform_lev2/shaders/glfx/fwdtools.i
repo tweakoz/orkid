@@ -182,7 +182,8 @@ libblock lib_fwd //
     // ambient occlusion
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc = texture(LightMapA, frg_uv0).xyz; // static AO
+    vec3 sambocc = texture(LightMapA, frg_uv0).xyz*LightMapColorA; // static AO
+    sambocc = sambocc + texture(LightMapB, frg_uv0).xyz*LightMapColorB; // static AO
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
     dambocc = pow(dambocc, SSAOPower);
     dambocc = mix(1.0,dambocc,SSAOWeight);

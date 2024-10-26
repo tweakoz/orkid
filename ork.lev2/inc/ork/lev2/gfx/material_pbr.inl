@@ -104,7 +104,8 @@ public:
   void UpdateMMatrix(Context* pTARG) final;
 
   void forceEmissive();
-  void setActiveLightMap(std::string name);
+  void setActiveLightMapA(std::string name, fvec3 c );
+  void setActiveLightMapB(std::string name, fvec3 c );
   
   ////////////////////////////////////////////
   void conformImages();
@@ -233,7 +234,16 @@ public:
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
   texture_ptr_t _texCubeBlack;
-  texture_ptr_t _activeLightMap;
+
+  ///////////////////////////////////////////
+  // Lightmaps
+  ///////////////////////////////////////////
+
+  fxparam_constptr_t _paramLightMapColorA = nullptr; 
+  fxparam_constptr_t _paramLightMapColorB = nullptr; 
+  
+  texture_ptr_t _activeLightMapA;
+  texture_ptr_t _activeLightMapB;
   
   //pbr::irradiancemaps_ptr_t _irradianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
@@ -241,6 +251,10 @@ public:
   texture_ptr_t _texArrayCNMREA;
   std::string _textureBaseName;
   std::string _shader_suffix;
+
+  fvec3 _lightmapColorA;
+  fvec3 _lightmapColorB;
+
   ///////////////////////////////////////////
 
   // PIK: Picking

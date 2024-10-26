@@ -153,7 +153,7 @@ class SceneGraphApp(object):
       for m in self.model.meshes:
         for s in m.submeshes:
           mtl = s.material
-          mtl.setActiveLightMap(lightmap)
+          mtl.setActiveLightMapA(lightmap,vec3(1))
 
     elif oshader != "":
       self.modelinst = self.sgnode.user.pyext_retain_modelinst

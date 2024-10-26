@@ -614,12 +614,23 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
 }
 
 
-void PBRMaterial::setActiveLightMap(std::string name){
+void PBRMaterial::setActiveLightMapA(std::string name, fvec3 c ){
+  _lightmapColorA = c;
   if( _modifiers ){
     auto it = _modifiers->_lightmap_texture_assets.find(name);
     if( it != _modifiers->_lightmap_texture_assets.end() ){
       auto asset = it->second;
-      _activeLightMap = asset->GetTexture();
+      _activeLightMapA = asset->GetTexture();
+    }
+  }
+}
+void PBRMaterial::setActiveLightMapB(std::string name, fvec3 c ){
+  _lightmapColorB = c;
+  if( _modifiers ){
+    auto it = _modifiers->_lightmap_texture_assets.find(name);
+    if( it != _modifiers->_lightmap_texture_assets.end() ){
+      auto asset = it->second;
+      _activeLightMapB = asset->GetTexture();
     }
   }
 }
@@ -735,8 +746,12 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMV                = fxi->parameter(_shader, "mv");
   _paramMROT              = fxi->parameter(_shader, "mrot");
   _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
+  
   _parMapLightMapA        = fxi->parameter(_shader, "LightMapA");
   _parMapLightMapB        = fxi->parameter(_shader, "LightMapB");
+  _paramLightMapColorA    = fxi->parameter(_shader, "LightMapColorA");
+  _paramLightMapColorB    = fxi->parameter(_shader, "LightMapColorB");
+  
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");

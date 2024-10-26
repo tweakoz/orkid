@@ -74,9 +74,12 @@ uniform_set ub_frg_fwd {
   samplerCube reflectionPROBE; // 14
   samplerCube irradiancePROBE; // 15
 
-  sampler2DArray CNMREA;         // 16
+  sampler2DArray CNMREA;       // 16
 
   //
+
+  vec3 LightMapColorA;        
+  vec3 LightMapColorB;        
 
   mat4 m;
   mat4 vp;
