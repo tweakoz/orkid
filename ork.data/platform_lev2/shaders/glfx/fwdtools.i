@@ -100,11 +100,11 @@ libblock lib_fwd //
     //float ambocc = texture(SSAOMap, uv).x;
     // filter sample ambocc
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    float sambocc = 1.0; //texture(AmbOccMap, uv).x;
+    vec3 sambocc = vec3(1); //texture(LightMapA, pbd.).xyz;
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;
     //dambocc = pow(dambocc, SSAOPower);
     //dambocc = mix(1.0,dambocc,SSAOWeight);
-    float ambocc = sambocc * dambocc;
+    float ambocc = 1.0;//(sambocc * dambocc);
     //ambocc = 1.0;//
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
@@ -152,14 +152,6 @@ libblock lib_fwd //
       //rval = textureLod(light_cookie2, uv, lod).xyz;
     } else if (index == 3) {
       rval = textureLod(light_cookie3, uv, lod).xyz;
-    } else if (index == 4) {
-      rval = textureLod(light_cookie4, uv, lod).xyz;
-    } else if (index == 5) {
-      rval = textureLod(light_cookie5, uv, lod).xyz;
-    } else if (index == 6) {
-      rval = textureLod(light_cookie6, uv, lod).xyz;
-    } else if (index == 7) {
-      rval = textureLod(light_cookie7, uv, lod).xyz;
     }
     return rval;
   }
@@ -190,7 +182,7 @@ libblock lib_fwd //
     // ambient occlusion
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc = vec3(1); //texture(AmbOccMap, frg_uv0).xyz*0.7; // static AO
+    vec3 sambocc = texture(LightMapA, frg_uv0).xyz; // static AO
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
     dambocc = pow(dambocc, SSAOPower);
     dambocc = mix(1.0,dambocc,SSAOWeight);

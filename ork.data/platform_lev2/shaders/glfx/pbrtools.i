@@ -53,34 +53,28 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
-  //sampler2D ColorMap;             // 0
-  //sampler2D NormalMap;            // 1
-  //sampler2D MtlRufMap;           // 2
-  //sampler2D EmissiveMap;         // 3
+  sampler2D SSAOMap;        // 0
+  sampler2D SSAOKernel;     // 1
+  sampler2D SSAOScrNoise;   // 2
 
-  sampler2D SSAOMap;            // 4
-  sampler2D SSAOKernel;      // 5
-  sampler2D SSAOScrNoise;   // 6
+  sampler2D MapBrdfIntegration; // 3
+  sampler2D MapSpecularEnv;     // 4
+  sampler2D MapDiffuseEnv;      // 5
+  sampler2D MapDepth;           // 6
+  sampler2D MapLinearDepth;     // 7
 
-  sampler2D MapBrdfIntegration; // 7
-  sampler2D MapSpecularEnv; // 8
-  sampler2D MapDiffuseEnv; // 9
-  sampler2D MapDepth; // 10
-  sampler2D MapLinearDepth; // 11
+  sampler2D LightMapA;          // 8
+  sampler2D LightMapB;          // 9
 
-  sampler2D light_cookie0; // 12
-  sampler2D light_cookie1; // 13
-  sampler2D light_cookie2; // 14
-  sampler2D light_cookie3; // 15
-  sampler2D light_cookie4;
-  sampler2D light_cookie5;
-  sampler2D light_cookie6;
-  sampler2D light_cookie7;
+  sampler2D light_cookie0; // 10
+  sampler2D light_cookie1; // 11
+  sampler2D light_cookie2; // 12
+  sampler2D light_cookie3; // 13
 
-  samplerCube reflectionPROBE; // 16
-  samplerCube irradiancePROBE; // 17
+  samplerCube reflectionPROBE; // 14
+  samplerCube irradiancePROBE; // 15
 
-  sampler2DArray CNMREA;         // 4
+  sampler2DArray CNMREA;         // 16
 
   //
 

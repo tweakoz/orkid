@@ -1,0 +1,11 @@
+{
+  "materials": {
+    "mtl-interior":{
+      "class": "inherit_from_glb",
+      "lightmaps":{
+        "a": "LMAP-A.png",
+        "b": "LMAP-B.png"
+      }
+    }
+  }
+}

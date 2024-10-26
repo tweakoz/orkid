@@ -37,7 +37,7 @@ parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", hel
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
-parser.add_argument("-L", "--lightmap", type=str, default=0, help='set active lightmap')
+parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
 
 ################################################################################
@@ -128,7 +128,8 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = "DeferredPBR"
+    #rendermodel = "DeferredPBR"
+    global rendermodel
     if rendermodel == "deferred":
       rendermodel = "DeferredPBR"
     elif rendermodel == "forward":
