@@ -73,7 +73,7 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(lightintens),
+      "SkyboxIntensity": float(0.0),
       "AmbientLight": vec3(ambiuintens),
       "DiffuseIntensity": diffuintens,
       "SpecularIntensity": specuintens,
@@ -178,11 +178,18 @@ class SceneGraphApp(object):
   def onGpuUpdate(self,ctx):
 
     for mtl in self.lmap_materials:
-      phia = 0.5 + 0.5*math.sin(self.abstime*10)
-      phib = 0.5 - 0.5*math.cos(self.abstime*7)
-      mtl.setActiveLightMapA("a",vec3(phia,0,0))
-      mtl.setActiveLightMapB("b",vec3(0,phib,0))
-      print(phia,phib)
+      phia = self.abstime*1.5
+      phib = math.pi*0.5+self.abstime*1.6
+      phic = math.pi*0.75+self.abstime*1.7
+      phid = math.pi*0.95+self.abstime*1.8
+      phia = 0.5 + 0.5*math.sin(phia)
+      phib = 0.5 + 0.5*math.sin(phib)
+      phic = 0.5 + 0.5*math.sin(phic)
+      phid = 0.5 + 0.5*math.sin(phid)
+      mtl.setActiveLightMapA("nx",vec3(phia,0,0))
+      mtl.setActiveLightMapB("nz",vec3(0,phib,0))
+      mtl.setActiveLightMapC("px",vec3(0,0,phic))
+      mtl.setActiveLightMapD("pz",vec3(phid))
 
 ###############################################################################
 

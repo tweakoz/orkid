@@ -179,15 +179,20 @@ libblock lib_fwd //
     vec3 refl = normalize(reflect(edir, normal));
     refl.x *= -1.0;
     /////////////////////////
+    // light maps
+    /////////////////////////
+    vec3 light_maps = texture(LightMapA, frg_uv0).xyz*LightMapColorA; // static AO
+    light_maps = light_maps + texture(LightMapB, frg_uv0).xyz*LightMapColorB; // static AO
+    light_maps = light_maps + texture(LightMapC, frg_uv0).xyz*LightMapColorC; // static AO
+    light_maps = light_maps + texture(LightMapD, frg_uv0).xyz*LightMapColorD; // static AO
+    /////////////////////////
     // ambient occlusion
     /////////////////////////
     vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc = texture(LightMapA, frg_uv0).xyz*LightMapColorA; // static AO
-    sambocc = sambocc + texture(LightMapB, frg_uv0).xyz*LightMapColorB; // static AO
     float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
     dambocc = pow(dambocc, SSAOPower);
     dambocc = mix(1.0,dambocc,SSAOWeight);
-    vec3 ambocc = sambocc * dambocc;
+    float ambocc = dambocc;
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade;
@@ -226,7 +231,7 @@ libblock lib_fwd //
     //}
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
-    env_lighting = env_lighting * sambocc;
+    env_lighting = env_lighting + light_maps;
     
     ///////////////////////////////////////////////
     // point lighting

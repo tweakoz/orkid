@@ -104,8 +104,6 @@ public:
   void UpdateMMatrix(Context* pTARG) final;
 
   void forceEmissive();
-  void setActiveLightMapA(std::string name, fvec3 c );
-  void setActiveLightMapB(std::string name, fvec3 c );
   
   ////////////////////////////////////////////
   void conformImages();
@@ -185,8 +183,6 @@ public:
 
   fxparam_constptr_t _paramNearFar      = nullptr;
 
-  fxparam_constptr_t _parMapLightMapA        = nullptr;
-  fxparam_constptr_t _parMapLightMapB        = nullptr;
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
   fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
@@ -195,9 +191,6 @@ public:
   fxparam_constptr_t _parSpecularMipBias  = nullptr;
   fxparam_constptr_t _parDepthFogDistance = nullptr;
   fxparam_constptr_t _parDepthFogPower = nullptr;
-
-
-
 
   //fxparam_constptr_t _parLightCookies   = nullptr;
   fxparam_constptr_t _parLightCookie0   = nullptr;
@@ -239,12 +232,33 @@ public:
   // Lightmaps
   ///////////////////////////////////////////
 
+  void setActiveLightMapA(std::string name, fvec3 c );
+  void setActiveLightMapB(std::string name, fvec3 c );
+  void setActiveLightMapC(std::string name, fvec3 c );
+  void setActiveLightMapD(std::string name, fvec3 c );
+
+  fxparam_constptr_t _parMapLightMapA        = nullptr;
+  fxparam_constptr_t _parMapLightMapB        = nullptr;
+  fxparam_constptr_t _parMapLightMapC        = nullptr;
+  fxparam_constptr_t _parMapLightMapD        = nullptr;
+
   fxparam_constptr_t _paramLightMapColorA = nullptr; 
   fxparam_constptr_t _paramLightMapColorB = nullptr; 
+  fxparam_constptr_t _paramLightMapColorC = nullptr; 
+  fxparam_constptr_t _paramLightMapColorD = nullptr; 
   
   texture_ptr_t _activeLightMapA;
   texture_ptr_t _activeLightMapB;
-  
+  texture_ptr_t _activeLightMapC;
+  texture_ptr_t _activeLightMapD;
+
+  fvec3 _lightmapColorA;
+  fvec3 _lightmapColorB;
+  fvec3 _lightmapColorC;
+  fvec3 _lightmapColorD;
+
+  ///////////////////////////////////////////
+
   //pbr::irradiancemaps_ptr_t _irradianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
@@ -252,8 +266,6 @@ public:
   std::string _textureBaseName;
   std::string _shader_suffix;
 
-  fvec3 _lightmapColorA;
-  fvec3 _lightmapColorB;
 
   ///////////////////////////////////////////
 

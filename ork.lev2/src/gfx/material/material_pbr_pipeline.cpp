@@ -277,22 +277,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
       //printf("WTF\n");
       //pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
       //pipeline->bindParam(mtl->_paramMapColor, mtl->_texAmbOcc);
-      if(mtl->_activeLightMapA){
-        pipeline->bindParam(mtl->_parMapLightMapA, mtl->_activeLightMapA);
-        pipeline->bindParam(mtl->_paramLightMapColorA, mtl->_lightmapColorA);
-      }
-      else{
-        pipeline->bindParam(mtl->_parMapLightMapA, mtl->_texBlack);
-        pipeline->bindParam(mtl->_paramLightMapColorA, fvec3(0.0f));
-      }
-      if(mtl->_activeLightMapB){
-        pipeline->bindParam(mtl->_parMapLightMapB, mtl->_activeLightMapB);
-        pipeline->bindParam(mtl->_paramLightMapColorB, mtl->_lightmapColorB);
-      }
-      else{
-        pipeline->bindParam(mtl->_parMapLightMapB, mtl->_texBlack);
-        pipeline->bindParam(mtl->_paramLightMapColorB, fvec3(0.0f));
-      }
       //printf("_texAmbOcc<%p>\n", mtl->_texAmbOcc.get());
       //pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
       //pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);

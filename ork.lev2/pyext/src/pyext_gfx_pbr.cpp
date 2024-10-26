@@ -150,6 +150,12 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def("setActiveLightMapB", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
             m->setActiveLightMapB(name,color);
           })
+          .def("setActiveLightMapC", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
+            m->setActiveLightMapC(name,color);
+          })
+          .def("setActiveLightMapD", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
+            m->setActiveLightMapD(name,color);
+          })
           .def_property_readonly(
               "fxcache",                                              //
               [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //

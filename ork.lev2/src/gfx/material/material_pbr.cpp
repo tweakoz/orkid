@@ -634,6 +634,26 @@ void PBRMaterial::setActiveLightMapB(std::string name, fvec3 c ){
     }
   }
 }
+void PBRMaterial::setActiveLightMapC(std::string name, fvec3 c ){
+  _lightmapColorC = c;
+  if( _modifiers ){
+    auto it = _modifiers->_lightmap_texture_assets.find(name);
+    if( it != _modifiers->_lightmap_texture_assets.end() ){
+      auto asset = it->second;
+      _activeLightMapC = asset->GetTexture();
+    }
+  }
+}
+void PBRMaterial::setActiveLightMapD(std::string name, fvec3 c ){
+  _lightmapColorD = c;
+  if( _modifiers ){
+    auto it = _modifiers->_lightmap_texture_assets.find(name);
+    if( it != _modifiers->_lightmap_texture_assets.end() ){
+      auto asset = it->second;
+      _activeLightMapD = asset->GetTexture();
+    }
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -749,8 +769,12 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   
   _parMapLightMapA        = fxi->parameter(_shader, "LightMapA");
   _parMapLightMapB        = fxi->parameter(_shader, "LightMapB");
+  _parMapLightMapC        = fxi->parameter(_shader, "LightMapC");
+  _parMapLightMapD        = fxi->parameter(_shader, "LightMapD");
   _paramLightMapColorA    = fxi->parameter(_shader, "LightMapColorA");
   _paramLightMapColorB    = fxi->parameter(_shader, "LightMapColorB");
+  _paramLightMapColorC    = fxi->parameter(_shader, "LightMapColorC");
+  _paramLightMapColorD    = fxi->parameter(_shader, "LightMapColorD");
   
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");

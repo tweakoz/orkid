@@ -493,6 +493,16 @@ Path Path::toAbsoluteFolderX() const{
     if(bfs::exists(as_abs) and bfs::is_regular_file(as_abs)){
       // if the path is a file, we need to strip the filename
       as_abs = as_abs.parent_path();
+      // if path ends with /. or /.., we need to strip that
+      
+      while(as_abs.string().back() == '.'){
+        as_abs = as_abs.parent_path();
+      }
+
+      while(as_abs.string().back() == '..'){
+        as_abs = as_abs.parent_path().parent_path();
+      }
+
     }
     Path rval;
     rval.fromBFS(as_abs);

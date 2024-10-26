@@ -3,8 +3,10 @@
     "mtl-interior":{
       "class": "inherit_from_glb",
       "lightmaps":{
-        "a": "LMAP-A.png",
-        "b": "LMAP-B.png"
+        "nx": "BAKE.NX.png",
+        "px": "BAKE.PX.png",
+        "nz": "BAKE.NZ.png",
+        "pz": "BAKE.PZ.png"
       }
     }
   }

@@ -209,6 +209,43 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // lightmaps
+    ///////////////////////////////////////////////////////////////////////////
+
+    if(mtl->_activeLightMapA){
+      FXI->BindParamCTex(mtl->_parMapLightMapA, mtl->_activeLightMapA.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorA, mtl->_lightmapColorA);
+    }
+    else{
+      FXI->BindParamCTex(mtl->_parMapLightMapA, mtl->_texBlack.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorA, fvec3(0.0f));
+    }
+    if(mtl->_activeLightMapB){
+      FXI->BindParamCTex(mtl->_parMapLightMapB, mtl->_activeLightMapB.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorB, mtl->_lightmapColorB);
+    }
+    else{
+      FXI->BindParamCTex(mtl->_parMapLightMapB, mtl->_texBlack.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorB, fvec3(0.0f));
+    }
+    if(mtl->_activeLightMapC){
+      FXI->BindParamCTex(mtl->_parMapLightMapC, mtl->_activeLightMapC.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorC, mtl->_lightmapColorC);
+    }
+    else{
+      FXI->BindParamCTex(mtl->_parMapLightMapC, mtl->_texBlack.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorC, fvec3(0.0f));
+    }
+    if(mtl->_activeLightMapD){
+      FXI->BindParamCTex(mtl->_parMapLightMapD, mtl->_activeLightMapD.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorD, mtl->_lightmapColorD);
+    }
+    else{
+      FXI->BindParamCTex(mtl->_parMapLightMapD, mtl->_texBlack.get());
+      FXI->BindParamVect3(mtl->_paramLightMapColorD, fvec3(0.0f));
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
 
     auto modcolor = context->RefModColor();
     FXI->BindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);
