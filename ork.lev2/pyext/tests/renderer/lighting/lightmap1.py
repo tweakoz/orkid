@@ -136,6 +136,12 @@ class SceneGraphApp(object):
       self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
       self.grid_node.sortkey = 1
 
+    self.lmap_materials = []
+    for m in self.model.meshes:
+      for s in m.submeshes:
+        mtl = s.material
+        self.lmap_materials += [mtl]
+
   ##############################################
 
   def onUiEvent(self,uievent):
@@ -170,15 +176,13 @@ class SceneGraphApp(object):
   ################################################
 
   def onGpuUpdate(self,ctx):
-    
-    for m in self.model.meshes:
-      for s in m.submeshes:
-        mtl = s.material
-        phia = 0.5 + 0.5*math.sin(self.abstime*10)
-        phib = 0.5 - 0.5*math.cos(self.abstime*7)
-        mtl.setActiveLightMapA("a",vec3(phia,0,0))
-        mtl.setActiveLightMapB("b",vec3(0,phib,0))
-        print(phia,phib)
+
+    for mtl in self.lmap_materials:
+      phia = 0.5 + 0.5*math.sin(self.abstime*10)
+      phib = 0.5 - 0.5*math.cos(self.abstime*7)
+      mtl.setActiveLightMapA("a",vec3(phia,0,0))
+      mtl.setActiveLightMapB("b",vec3(0,phib,0))
+      print(phia,phib)
 
 ###############################################################################
 
