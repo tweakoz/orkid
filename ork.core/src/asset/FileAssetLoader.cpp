@@ -191,7 +191,8 @@ asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
   ///////////////////////////////////////////////////////////////////////////////
   // resolve extension / search path, etc..
   ///////////////////////////////////////////////////////////////////////////////
-  if (not _find(orig_path, loadreq->_asset_path)) {
+  bool using_datablock = (loadreq->_datablock != nullptr);
+  if ((not using_datablock) and (not _find(orig_path, loadreq->_asset_path))) {
     printf("Error Loading File Asset %s\n", orig_path.c_str());
     return nullptr;
   }

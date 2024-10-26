@@ -25,7 +25,10 @@
 #include <ork/util/hexdump.inl>
 #include <ork/kernel/memcpy.inl>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <nlohmann/json.hpp>
+#include <fstream>
 
+using json = nlohmann::json;
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
 datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
@@ -74,6 +77,53 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
   bool rval        = false;
   auto ActualPath  = Filename.toAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
+  /////////////////////
+  auto path_asset_modifiers = ActualPath;
+  path_asset_modifiers.setExtension(".orkid.json");
+  printf("path_asset_modifiers<%s>\n", path_asset_modifiers.c_str());
+  auto abs_path = path_asset_modifiers.toAbsolute();
+
+  if(path_asset_modifiers.exists()){
+    try{
+
+      auto MODS = mdl->_varmap.makeSharedForKey<XgmModelAssetModifiers>("mods.json");
+
+      std::ifstream f(abs_path.c_str());
+      json data = json::parse(f);
+      OrkAssert(data.is_object());
+      auto mtls = data["materials"]; // a dictionary of material names
+      OrkAssert(mtls.is_object());
+      for(auto item=mtls.begin(); item!=mtls.end(); ++item){
+
+        // name is the key
+        auto name = item.key();
+        auto mtl = item.value();
+
+        auto MTLMOD = std::make_shared<XgmModelAssetMaterialModifiers>();
+        MODS->_materials[name] = MTLMOD;
+
+        printf("material<%s>\n", name.c_str());
+        auto type = mtl["class"];
+        OrkAssert(type.is_string());
+        MTLMOD->_material_class = type.get<std::string>();;
+        printf("type<%s>\n", MTLMOD->_material_class.c_str());
+        auto lightmaps = mtl["lightmaps"];
+        for(auto lmitem=lightmaps.begin(); lmitem!=lightmaps.end(); ++lmitem){
+          auto lmname = lmitem.key();
+          auto lmpath = lmitem.value().get<std::string>();
+
+          auto folder = Filename.toAbsoluteFolderX();
+          MTLMOD->_lightmap_paths[lmname] = (folder/lmpath).toAbsolute().c_str();
+          printf("lightmap<%s> path<%s>\n", lmname.c_str(), lmpath.c_str());
+       }
+      }
+    }
+    catch(std::exception& e){
+      printf("error parsing asset modifiers json file<%s> :  <%s>\n", abs_path.c_str(), e.what());
+      OrkAssert(false);
+    }
+
+  }
   /////////////////////
   // merge in asset vars
   /////////////////////
@@ -189,9 +239,11 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  basehasher->accumulateString("version-x042423");
+  basehasher->accumulateString("version-102524");
 
   inp_datablock->accumlateHash(basehasher);
+
+  inp_datablock->_vars->makeValueForKey<XgmModel*>("xgmmodel") = mdl;
   /////////////////////////////////////
   // include asset vars as hash mutator
   //  because they may influence the loading mechanism

@@ -175,6 +175,7 @@ public:
   Path toRelative(EPathType etype = EPATHTYPE_NATIVE) const;
   Path toAbsolute(EPathType etype = EPATHTYPE_NATIVE) const;
   Path toAbsoluteFolder(EPathType etype = EPATHTYPE_NATIVE) const;
+  Path toAbsoluteFolderX() const;
 
   //////////////////////////////////////////////
 
@@ -202,6 +203,7 @@ public:
   //////////////////////////////////////
 
   bool doesPathExist() const;
+  inline bool exists() const { return doesPathExist(); }
   bool isFile() const;
   bool isFolder() const;
   bool isSymLink() const;

@@ -39,6 +39,7 @@ parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", hel
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
 parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
+parser.add_argument("-L", "--lightmap", type=str, default=0, help='set active lightmap')
 
 ################################################################################
 
@@ -57,6 +58,7 @@ oshader = args["overrideshader"]
 ocolor = args["overridecolor"]
 ssaa = args["ssaa"]
 ssao = args["ssao"]
+lightmap = args["lightmap"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -152,7 +154,14 @@ class SceneGraphApp(object):
     # override shader ?
     ######################
 
-    if oshader != "":
+    if lightmap != "":
+      self.modelinst = self.sgnode.user.pyext_retain_modelinst
+      for m in self.model.meshes:
+        for s in m.submeshes:
+          mtl = s.material
+          mtl.setActiveLightMap(lightmap)
+
+    elif oshader != "":
       self.modelinst = self.sgnode.user.pyext_retain_modelinst
       mesh = self.model.meshes[0]
       orig_submesh = mesh.submeshes[0]

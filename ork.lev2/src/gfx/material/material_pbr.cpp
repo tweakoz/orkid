@@ -11,6 +11,7 @@
 #include <ork/kernel/prop.hpp>
 #include <ork/util/crc.h>
 #include <ork/file/path.h>
+#include <ork/file/chunkfile.inl>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -130,6 +131,26 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
     // logchan_pbr->log("read.xgm: basecolor<%g %g %g>", mtl->_baseColor.x,mtl->_baseColor.y,mtl->_baseColor.z);
+    size_t num_lightmaps = 0;
+    ctx._inputStream->GetItem<size_t>(num_lightmaps);
+    mtl->_modifiers = std::make_shared<XgmModelAssetMaterialModifiers>();
+    for(size_t i=0; i<num_lightmaps; i++){
+      std::string key;
+      std::string val;
+      ctx._inputStream->GetItem(istring);
+      key = ctx._reader.GetString(istring);
+      uint64_t hash = 0;
+      ctx._inputStream->GetItem<uint64_t>(hash);
+      mtl->_modifiers->_lightmap_hashes[key] = hash;
+      logchan_pbr->log("read.xgm:  lightmap<%s> -> 0x%lx", key.c_str(), hash );
+      auto datablock = DataBlockCache::findDataBlock(hash);
+      auto loadreq         = std::make_shared<asset::LoadRequest>(datablock);
+      auto asset_lightmap  = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
+      printf("asset_lightmap<%p>\n", asset_lightmap.get());
+      mtl->_modifiers->_lightmap_texture_assets[key] = asset_lightmap;
+      //auto tex = std::make_shared<lev2::Texture>();
+      
+    }
 
     if (auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& ov_val = try_ov.value();
@@ -174,6 +195,33 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
     ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
     ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
+
+    //////////////////////////////////
+    // save lightmaps
+    //////////////////////////////////
+
+    if (pbrmtl->_modifiers) {
+      size_t num_lightmaps = pbrmtl->_modifiers->_lightmap_paths.size();
+      ctx._outputStream->AddItem<size_t>(num_lightmaps);
+      for(auto item : pbrmtl->_modifiers->_lightmap_paths){
+        auto key = item.first;
+        auto val = item.second;
+        logchan_pbr->log("Write.xgm: lightmap<%s> val<%s>", key.c_str(), val.c_str());
+        auto datablock = DataBlock::createFromPath(val);
+        OrkAssert(datablock);
+        auto loadreq         = std::make_shared<asset::LoadRequest>(datablock);
+        auto asset_lightmap  = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
+        uint64_t hash = loadreq->_contentHash;
+        istring = ctx._writer.stringIndex(key.c_str());
+        ctx._outputStream->AddItem(istring);
+        ctx._outputStream->AddItem(hash);
+      }
+    }
+    else{
+      ctx._outputStream->AddItem<size_t>(0);
+    }
+
+    //////////////////////////////////
     // logchan_pbr->log("write.xgm: _metallicFactor<%g>", pbrmtl->_metallicFactor);
     // logchan_pbr->log("write.xgm: _roughnessFactor<%g>", pbrmtl->_roughnessFactor);
     // logchan_pbr->log(
@@ -224,6 +272,17 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy     = *this;
   return copy;
+}
+
+
+void PBRMaterial::setActiveLightMap(std::string name){
+  if( _modifiers ){
+    auto it = _modifiers->_lightmap_texture_assets.find(name);
+    if( it != _modifiers->_lightmap_texture_assets.end() ){
+      auto asset = it->second;
+      _activeLightMap = asset->GetTexture();
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -434,6 +493,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     loadreq->_asset_path = "src://effect_textures/white";
     _asset_texambocc      = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texAmbOcc            = _asset_texambocc->GetTexture();
+    //_activeLightMap = _texAmbOcc; // HACK
     // logchan_pbr->log("substituted white for non-existant color texture");
     OrkAssert(_texAmbOcc != nullptr);
   }

@@ -482,6 +482,21 @@ void Path::eatDoubleSlashes() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Path Path::toAbsoluteFolderX() const{
+  namespace bfs = boost::filesystem;
+  auto as_bfs = toBFS();
+  auto as_abs = bfs::absolute(as_bfs);
+  if(bfs::exists(as_abs) and bfs::is_regular_file(as_abs)){
+    // if the path is a file, we need to strip the filename
+    as_abs = as_abs.parent_path();
+  }
+  Path rval;
+  rval.fromBFS(as_abs);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Path Path::toAbsoluteFolder(EPathType etype) const {
   // printf( " Path::toAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );
 

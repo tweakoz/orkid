@@ -5,6 +5,7 @@
 
 #include "assimp_util.inl"
 #include<ork/util/logger.h>
+#include<ork/lev2/gfx/gfxmodel.h>
 #include <ork/kernel/opq.h>
 
 namespace bfs = boost::filesystem;
@@ -217,10 +218,22 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
+    // asset json modifiers
+    //////////////////////////////////////////////
+
+    auto xgm_dest_model = datablock->_vars->typedValueForKey<lev2::XgmModel*>("xgmmodel").value();
+    const auto& xgm_vars = xgm_dest_model->_varmap;
+    lev2::xgmmodelassetmodifiers_ptr_t amods;
+    if( auto try_amods = xgm_vars.typedValueForKey<lev2::xgmmodelassetmodifiers_ptr_t>("mods.json") ){
+      amods = try_amods.value();
+    }
+    
+    //////////////////////////////////////////////
 
     gltfmaterialmap_t materialmap;
 
     for (int i = 0; i < scene->mNumMaterials; i++) {
+
       auto material = scene->mMaterials[i];
 
       auto outmtl    = new GltfMaterial;
@@ -237,6 +250,21 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         logchan_meshutilassimp->log("//////////////////////////////");
         logchan_meshutilassimp->log("material: has name<%s>", material_name.c_str());
       }
+
+      if(amods){
+        auto it = amods->_materials.find(material_name);
+        if(it!=amods->_materials.end()){
+          auto mtlmods = it->second;
+          outmtl->_modifiers = mtlmods;
+          logchan_meshutilassimp->log("material<%s>: has json modifiers!", material_name.c_str());
+          for(auto lmitem : mtlmods->_lightmap_paths){
+            auto key = lmitem.first;
+            auto val = lmitem.second;
+            logchan_meshutilassimp->log("material<%s>: lightmap<%s> val<%s>", material_name.c_str(), key.c_str(), val.c_str());
+          }
+        }
+      }
+
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
         outmtl->_baseColor = fvec4(color.r, color.g, color.b, color.a);
         logchan_meshutilassimp->log("material: has_uniform_diffuse<%f %f %f %f>", color.r, color.g, color.b, color.a);
@@ -749,6 +777,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     mtlout->_metallicFactor  = gltfmtl->_metallicFactor;
     mtlout->_roughnessFactor = gltfmtl->_roughnessFactor;
     mtlout->_baseColor       = gltfmtl->_baseColor;
+    mtlout->_modifiers       = gltfmtl->_modifiers;
     out_model.AddMaterial(mtlout);
 
     auto clusterizer                            = new ClusterizerType;

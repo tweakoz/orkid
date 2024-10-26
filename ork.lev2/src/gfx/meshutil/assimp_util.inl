@@ -103,6 +103,7 @@ struct GltfMaterial {
   float _metallicFactor  = 0.0f;
   float _roughnessFactor = 1.0f;
   fvec4 _baseColor       = fvec4(1, 1, 1, 1);
+  lev2::xgmmodelassetmaterialmodifiers_ptr_t _modifiers;
 };
 
 using gltfmaterialmap_t = std::map<int, GltfMaterial*>;

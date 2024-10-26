@@ -49,6 +49,12 @@ void OutputStream::AddItem(const unsigned short& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
+void OutputStream::AddItem(const uint64_t& data) {
+  uint64_t temp = data;
+  swapbytes_dynamic(temp);
+  Write((unsigned char*)&temp, sizeof(temp));
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem(const int& data) {
   int temp = data;
   swapbytes_dynamic(temp);

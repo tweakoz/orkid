@@ -104,7 +104,8 @@ public:
   void UpdateMMatrix(Context* pTARG) final;
 
   void forceEmissive();
-
+  void setActiveLightMap(std::string name);
+  
   ////////////////////////////////////////////
   fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
@@ -220,7 +221,8 @@ public:
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
   texture_ptr_t _texCubeBlack;
-
+  texture_ptr_t _activeLightMap;
+  
   //pbr::irradiancemaps_ptr_t _irradianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
@@ -359,6 +361,8 @@ public:
   bool _doubleSided = false;
   
   varmap::varmap_ptr_t _vars;
+  xgmmodelassetmaterialmodifiers_ptr_t _modifiers;
+
 };
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);

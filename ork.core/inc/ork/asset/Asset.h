@@ -13,6 +13,7 @@
 #include <ork/config/config.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/file/path.h>
+#include <ork/kernel/datablock.h>
 
 namespace ork::asset {
 
@@ -39,7 +40,8 @@ struct LoadRequest{
 
   LoadRequest();
   LoadRequest(const AssetPath& p);
-  LoadRequest(const AssetPath& p, vars_ptr_t _asset_vars);
+  LoadRequest(const AssetPath& p, vars_ptr_t asset_vars);
+  LoadRequest(datablock_ptr_t db,vars_ptr_t asset_vars=nullptr);
 
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();
@@ -56,6 +58,8 @@ struct LoadRequest{
   vars_ptr_t _asset_vars;
   void_lambda_t _on_load_complete;
   event_lambda_t _on_event;
+  datablock_ptr_t _datablock;
+  uint64_t _contentHash = 0;
 
   std::atomic<int> _partial_load_counter = 0;
 };

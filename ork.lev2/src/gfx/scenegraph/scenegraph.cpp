@@ -225,6 +225,66 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       auto texture_path = try_bgtex.value();
       printf("texture_path<%s>\n", texture_path.c_str());
       //_renderPresetData->_assetSynchro->increment();
+      // aliases 
+      if(texture_path == "black") {
+        texture_path = "src://effect_textures/black";
+      }
+      else if(texture_path == "white") {
+        texture_path = "src://effect_textures/white";
+      }
+      else if(texture_path == "red") {
+        texture_path = "src://effect_textures/red";
+      }
+      else if(texture_path == "green") {
+        texture_path = "src://effect_textures/green";
+      }
+      else if(texture_path == "yellow") {
+        texture_path = "src://effect_textures/yellow";
+      }
+      else if(texture_path == "blue") {
+        texture_path = "src://effect_textures/blue";
+      }
+      else if(texture_path == "magenta") {
+        texture_path = "src://effect_textures/magenta";
+      }
+      else if(texture_path == "cyan") {
+        texture_path = "src://effect_textures/cyan";
+      }
+      else if(texture_path == "nebula") {
+        texture_path = "src://envmaps/tozenv_nebula";
+      }
+      else if(texture_path == "hellscape") {
+        texture_path = "src://envmaps/toz_hellscape";
+      }
+      else if(texture_path == "caustics") {
+        texture_path = "src://envmaps/tozenv_caustic1";
+      }
+      else if(texture_path == "forest") {
+        texture_path = "src://envmaps/blender_forest";
+      }
+      else if(texture_path == "city") {
+        texture_path = "src://envmaps/blender_city";
+      }
+      else if(texture_path == "courtyard") {
+        texture_path = "src://envmaps/blender_courtyard";
+      }
+      else if(texture_path == "studio") {
+        texture_path = "src://envmaps/blender_studio";
+      }
+      else if(texture_path == "interior") {
+        texture_path = "src://envmaps/blender_interior";
+      }
+      else if(texture_path == "night") {
+        texture_path = "src://envmaps/blender_night";
+      }
+      else if(texture_path == "sunrise") {
+        texture_path = "src://envmaps/blender_sunrise";
+      }
+      else if(texture_path == "sunset") {
+        texture_path = "src://envmaps/blender_sunset";
+      }
+
+
       auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);
       load_req->_on_load_complete = [=]() {
         //_renderPresetData->_assetSynchro->decrement();

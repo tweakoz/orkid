@@ -131,7 +131,13 @@ asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t load
   auto context = lev2::contextForCurrentThread();
 
   auto txi = context->TXI();
-  bool bOK = txi->LoadTexture(loadreq->_asset_path, texture_asset->GetTexture());
+  bool bOK = false;
+  if(loadreq->_datablock){
+    bOK = txi->LoadTexture(texture_asset->GetTexture(),loadreq->_datablock);
+  }
+  else{
+    bOK = txi->LoadTexture(loadreq->_asset_path, texture_asset->GetTexture());
+  }
   OrkAssert(bOK);
   return texture_asset;
 }

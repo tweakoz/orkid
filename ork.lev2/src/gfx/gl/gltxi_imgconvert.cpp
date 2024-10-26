@@ -42,6 +42,8 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     basehasher->accumulateItem(src_datablock->hash());
     basehasher->finish();
     uint64_t hashkey = basehasher->result();
+    asset_load_req->_contentHash = hashkey;
+    printf( "image hash<0x%lx>\n", hashkey );
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
     if(asset_load_req and asset_load_req->_on_event){
       auto data = std::make_shared<varmap::VarMap>();

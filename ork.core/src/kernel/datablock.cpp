@@ -211,5 +211,23 @@ void DataBlockInputStream::resetCursor() {
     item = (T*) & pchbase[ midx ];
     midx += isize;
 }*/
-///////////////////////////////////////////////////////////////////////////////
+/////////
+
+datablock_ptr_t DataBlock::createFromPath(std::string path){
+  FILE* fin = fopen(path.c_str(), "rb");
+  if(fin){
+    auto rval = std::make_shared<DataBlock>();
+    rval->_name = path;
+    fseek(fin, 0, SEEK_END);
+    size_t len = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    rval->_storage.resize(len);
+    fread(rval->_storage.data(), 1, len, fin);
+    fclose(fin);
+    return rval;
+  }
+  return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////
 } // namespace ork

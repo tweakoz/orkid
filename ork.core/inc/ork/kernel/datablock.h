@@ -87,6 +87,8 @@ struct DataBlock {
   /////////////////////////////////////////////
   datablock_ptr_t decrypt(encryptioncodec_ptr_t codec) const;
   /////////////////////////////////////////////
+  static datablock_ptr_t createFromPath(std::string path);
+  /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";

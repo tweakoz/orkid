@@ -40,6 +40,17 @@ LoadRequest::LoadRequest() { //
 
 ///////////////////////////////////////////////////////////////////////////////
 
+LoadRequest::LoadRequest(datablock_ptr_t db,vars_ptr_t asset_vars) //
+  : _asset_path("")
+  , _asset_vars(asset_vars)
+  , _datablock(db) { //
+  if(_asset_vars==nullptr){
+    _asset_vars = std::make_shared<vars_t>();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 LoadRequest::LoadRequest(const AssetPath& p) //
   : _asset_path(p) { //
   _asset_vars = std::make_shared<vars_t>();

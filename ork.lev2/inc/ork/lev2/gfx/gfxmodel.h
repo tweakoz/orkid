@@ -235,6 +235,21 @@ struct XgmMesh final {
   int miMeshIndex;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct XgmModelAssetMaterialModifiers{
+  std::map<std::string, std::string> _lightmap_paths;
+  std::map<std::string, uint64_t> _lightmap_hashes;
+  std::map<std::string, pbr::irradiancemaps_ptr_t> _lightmap_irrs;
+  std::map<std::string, textureassetptr_t> _lightmap_texture_assets;
+  std::string _material_class;
+};
+using xgmmodelassetmaterialmodifiers_ptr_t = std::shared_ptr<XgmModelAssetMaterialModifiers>;
+
+struct XgmModelAssetModifiers{
+  std::map<std::string, xgmmodelassetmaterialmodifiers_ptr_t> _materials;
+};
+using xgmmodelassetmodifiers_ptr_t = std::shared_ptr<XgmModelAssetModifiers>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

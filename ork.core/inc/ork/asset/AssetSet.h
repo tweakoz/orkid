@@ -14,7 +14,7 @@
 namespace ork { namespace asset {
 
 class AssetEntry;
-class AssetLoader;
+struct AssetLoader;
 class AssetSetLevel;
 class AssetSetEntry;
 
