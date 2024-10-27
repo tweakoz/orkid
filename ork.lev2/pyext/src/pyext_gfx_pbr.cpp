@@ -144,17 +144,8 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def("addLightingLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
           .def("addBasicStateLambda", [](pbrmaterial_ptr_t m) { m->addBasicStateLambda(); })
           .def("addLightingLambda", [](pbrmaterial_ptr_t m) { m->addLightingLambda(); })
-          .def("setActiveLightMapA", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
-            m->setActiveLightMapA(name,color);
-          })
-          .def("setActiveLightMapB", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
-            m->setActiveLightMapB(name,color);
-          })
-          .def("setActiveLightMapC", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
-            m->setActiveLightMapC(name,color);
-          })
-          .def("setActiveLightMapD", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
-            m->setActiveLightMapD(name,color);
+          .def("setActiveLightMap", [](pbrmaterial_ptr_t m, int index, std::string name, fvec3 color) { //
+            m->setActiveLightMap(index,name,color);
           })
           .def_property_readonly(
               "fxcache",                                              //

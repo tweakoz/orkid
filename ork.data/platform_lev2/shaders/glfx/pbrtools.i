@@ -53,39 +53,31 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
-  sampler2DArray CNMREA;       // 0
+  sampler2DArray CNMREA;        // 0
+  sampler2DArray LightMapArray; // 1
 
-  sampler2D LightMapA;          // 1
-  sampler2D LightMapB;          // 2
-  sampler2D LightMapC;          // 3
-  sampler2D LightMapD;          // 4
+  sampler2D SSAOMap;            // 2
+  sampler2D SSAOKernel;         // 3
+  sampler2D SSAOScrNoise;       // 4
 
-  sampler2D SSAOMap;        // 5
-  sampler2D SSAOKernel;     // 6
-  sampler2D SSAOScrNoise;   // 7
-
-  sampler2D MapBrdfIntegration; // 8
-  sampler2D MapSpecularEnv;     // 9
-  sampler2D MapDiffuseEnv;      // 10
-  sampler2D MapDepth;           // 11
-  sampler2D MapLinearDepth;     // 12
+  sampler2D MapBrdfIntegration; // 5
+  sampler2D MapSpecularEnv;     // 6
+  sampler2D MapDiffuseEnv;      // 7
+  sampler2D MapDepth;           // 8
+  sampler2D MapLinearDepth;     // 9
 
 
-  sampler2D light_cookie0; // 13
-  sampler2D light_cookie1; // 14
-  sampler2D light_cookie2; // 15
-  sampler2D light_cookie3; // 16
+  sampler2D light_cookie0;      // 10
+  sampler2D light_cookie1;      // 11
+  sampler2D light_cookie2;      // 12
+  sampler2D light_cookie3;      // 13
 
-  samplerCube reflectionPROBE; // 17
-  samplerCube irradiancePROBE; // 18
-
+  samplerCube reflectionPROBE; // 14
+  samplerCube irradiancePROBE; // 15
 
   //
 
-  vec3 LightMapColorA;        
-  vec3 LightMapColorB;        
-  vec3 LightMapColorC;        
-  vec3 LightMapColorD;        
+  vec3 LightMapColors[8];        
 
   mat4 m;
   mat4 vp;

@@ -144,6 +144,82 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::conformLightmaps() {
+  ////////////////////////////////
+  // retain and find biggest size
+  ////////////////////////////////
+  size_t max_w = 64;
+  size_t max_h = 64;
+  std::set<image_ptr_t> retain_lmaps;
+  std::unordered_map<std::string,image_ptr_t> lmap_by_name;
+  for(auto lmitem : _lightmap_image_assets){
+    auto name = lmitem.first;
+    auto lm = lmitem.second;
+    max_w = std::max(max_w, lm->_width);
+    max_h = std::max(max_h, lm->_height);
+    retain_lmaps.insert(lm);
+    lmap_by_name[name] = lm;
+  }
+  ////////////////////////////////
+  // convert to RGB8
+  ////////////////////////////////
+  std::unordered_map<std::string,image_ptr_t> images_to_rgb;
+  std::atomic<int> sync_rgb = 0;
+  for(auto lmitem : _lightmap_image_assets){
+    auto name = lmitem.first;
+    auto lm = lmitem.second;
+    max_w = std::max(max_w, lm->_width);
+    max_h = std::max(max_h, lm->_height);
+    if(lm->_format!=EBufferFormat::RGB8){
+      auto rgb = std::make_shared<Image>();
+      images_to_rgb[name] = rgb;
+      retain_lmaps.insert(rgb);
+      lmap_by_name[name] = rgb;
+      sync_rgb++;
+      auto OP = [=, &sync_rgb](){
+        rgb->convertFromImageToFormat(*lm, EBufferFormat::RGB8);
+        sync_rgb--;
+      };
+      opq::concurrentQueue()->enqueue(OP);
+    }
+  }
+  while(sync_rgb>0){
+    usleep(1000);
+  }
+  ////////////////////////////////
+  // conform size to largest 
+  ////////////////////////////////
+  std::atomic<int> sync_resize = 0;
+  std::unordered_map<std::string,image_ptr_t> resized_lmaps;
+  for(auto lmitem : images_to_rgb){
+    auto name = lmitem.first;
+    auto lm = lmitem.second;
+    if(lm->_width!=max_w || lm->_height!=max_h){
+      auto resized = std::make_shared<Image>();
+      resized_lmaps[name] = resized;
+      lmap_by_name[name] = resized;
+        sync_resize++;
+        auto OP = [=, &sync_resize](){
+          resized->resizedOf(*lm, max_w, max_h);
+          sync_resize--;
+        };
+        opq::concurrentQueue()->enqueue(OP);
+    }
+  }
+  while(sync_resize>0){
+    usleep(1000);
+  }
+  ////////////////////////////////
+  for( auto item : lmap_by_name ){
+    auto name = item.first;
+    auto img = item.second;
+    _lightmap_image_assets[name] = img;
+  }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // PBRMaterial::conformImages
 //   we need textures to be same size and format
 //   so they can go into a texture array 
@@ -456,7 +532,6 @@ void PBRMaterial::describeX(class_t* c) {
                        nullptr,  //
                        true);
 
-
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
@@ -474,13 +549,11 @@ void PBRMaterial::describeX(class_t* c) {
       mtl->_modifiers->_lightmap_hashes[key] = hash;
       logchan_pbr->log("read.xgm:  lightmap<%s> -> 0x%lx", key.c_str(), hash );
       auto datablock = DataBlockCache::findDataBlock(hash);
-      auto loadreq         = std::make_shared<asset::LoadRequest>(datablock);
-      auto asset_lightmap  = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
-      printf("asset_lightmap<%p>\n", asset_lightmap.get());
-      mtl->_modifiers->_lightmap_texture_assets[key] = asset_lightmap;
-      //auto tex = std::make_shared<lev2::Texture>();
-      
+      auto image = std::make_shared<lev2::Image>();
+      image->initFromDataBlock(datablock);
+      mtl->_lightmap_image_assets[key] = image;      
     }
+    mtl->assignLightmaps(targ);
 
     if (auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& ov_val = try_ov.value();
@@ -613,46 +686,34 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   return copy;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
-void PBRMaterial::setActiveLightMapA(std::string name, fvec3 c ){
-  _lightmapColorA = c;
-  if( _modifiers ){
-    auto it = _modifiers->_lightmap_texture_assets.find(name);
-    if( it != _modifiers->_lightmap_texture_assets.end() ){
-      auto asset = it->second;
-      _activeLightMapA = asset->GetTexture();
-    }
-  }
+void PBRMaterial::setActiveLightMap(int index, std::string name, fvec3 c ){
+  _lightmapColors[index] = c;
 }
-void PBRMaterial::setActiveLightMapB(std::string name, fvec3 c ){
-  _lightmapColorB = c;
-  if( _modifiers ){
-    auto it = _modifiers->_lightmap_texture_assets.find(name);
-    if( it != _modifiers->_lightmap_texture_assets.end() ){
-      auto asset = it->second;
-      _activeLightMapB = asset->GetTexture();
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PBRMaterial::assignLightmaps(Context* ctx){
+  printf("beg PBRMaterial::assignLightmaps\n");
+  conformLightmaps();
+  if(_lightmap_image_assets.size()){
+    TextureArrayInitData TID;
+    TID._slices.resize(_lightmap_image_assets.size());
+    uint32_t idx = 0;
+    for( auto item : _lightmap_image_assets ){
+      auto name = item.first;
+      auto img = item.second;
+      TID._slices[idx] = TextureArrayInitSubItem{idx, img};
+      idx++;
     }
+    ////////////////////////////////
+    _texLightMapArray = std::make_shared<Texture>();
+    _texLightMapArray->_debugName = "pbrLMtexarray";
+    ctx->TXI()->initTextureArray2DFromData(_texLightMapArray.get(), TID);
+    ////////////////////////////////
   }
-}
-void PBRMaterial::setActiveLightMapC(std::string name, fvec3 c ){
-  _lightmapColorC = c;
-  if( _modifiers ){
-    auto it = _modifiers->_lightmap_texture_assets.find(name);
-    if( it != _modifiers->_lightmap_texture_assets.end() ){
-      auto asset = it->second;
-      _activeLightMapC = asset->GetTexture();
-    }
-  }
-}
-void PBRMaterial::setActiveLightMapD(std::string name, fvec3 c ){
-  _lightmapColorD = c;
-  if( _modifiers ){
-    auto it = _modifiers->_lightmap_texture_assets.find(name);
-    if( it != _modifiers->_lightmap_texture_assets.end() ){
-      auto asset = it->second;
-      _activeLightMapD = asset->GetTexture();
-    }
-  }
+  printf("end PBRMaterial::assignLightmaps\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -767,14 +828,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMROT              = fxi->parameter(_shader, "mrot");
   _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   
-  _parMapLightMapA        = fxi->parameter(_shader, "LightMapA");
-  _parMapLightMapB        = fxi->parameter(_shader, "LightMapB");
-  _parMapLightMapC        = fxi->parameter(_shader, "LightMapC");
-  _parMapLightMapD        = fxi->parameter(_shader, "LightMapD");
-  _paramLightMapColorA    = fxi->parameter(_shader, "LightMapColorA");
-  _paramLightMapColorB    = fxi->parameter(_shader, "LightMapColorB");
-  _paramLightMapColorC    = fxi->parameter(_shader, "LightMapColorC");
-  _paramLightMapColorD    = fxi->parameter(_shader, "LightMapColorD");
+  _parMapLightMapArray    = fxi->parameter(_shader, "LightMapArray");
+  _paramLightMapColors    = fxi->parameter(_shader, "LightMapColors");
   
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
@@ -854,6 +909,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
   _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
+
+  /////////////////////////////////////////////////
 
   if(_texArrayCNMREA == nullptr){
     conformImages();

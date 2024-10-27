@@ -181,10 +181,10 @@ libblock lib_fwd //
     /////////////////////////
     // light maps
     /////////////////////////
-    vec3 light_maps = texture(LightMapA, frg_uv0).xyz*LightMapColorA; // static AO
-    light_maps = light_maps + texture(LightMapB, frg_uv0).xyz*LightMapColorB; // static AO
-    light_maps = light_maps + texture(LightMapC, frg_uv0).xyz*LightMapColorC; // static AO
-    light_maps = light_maps + texture(LightMapD, frg_uv0).xyz*LightMapColorD; // static AO
+    vec3 light_maps =         texture(LightMapArray, vec3(frg_uv0,0)).xyz*LightMapColors[0];
+    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,1)).xyz*LightMapColors[1];
+    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,2)).xyz*LightMapColors[2];
+    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,3)).xyz*LightMapColors[3];
     /////////////////////////
     // ambient occlusion
     /////////////////////////
@@ -231,7 +231,7 @@ libblock lib_fwd //
     //}
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
-    env_lighting = env_lighting + light_maps;
+    env_lighting = light_maps;
     
     ///////////////////////////////////////////////
     // point lighting

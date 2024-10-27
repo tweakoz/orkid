@@ -186,10 +186,10 @@ class SceneGraphApp(object):
       phib = 0.5 + 0.5*math.sin(phib)
       phic = 0.5 + 0.5*math.sin(phic)
       phid = 0.5 + 0.5*math.sin(phid)
-      mtl.setActiveLightMapA("nx",vec3(phia,0,0))
-      mtl.setActiveLightMapB("nz",vec3(0,phib,0))
-      mtl.setActiveLightMapC("px",vec3(0,0,phic))
-      mtl.setActiveLightMapD("pz",vec3(phid))
+      mtl.setActiveLightMap(0,"nx",vec3(phia,0,0))
+      mtl.setActiveLightMap(1,"nz",vec3(0,phib,0))
+      mtl.setActiveLightMap(2,"px",vec3(0,0,phic))
+      mtl.setActiveLightMap(3,"pz",vec3(phid))
 
 ###############################################################################
 

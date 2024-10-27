@@ -232,30 +232,22 @@ public:
   // Lightmaps
   ///////////////////////////////////////////
 
-  void setActiveLightMapA(std::string name, fvec3 c );
-  void setActiveLightMapB(std::string name, fvec3 c );
-  void setActiveLightMapC(std::string name, fvec3 c );
-  void setActiveLightMapD(std::string name, fvec3 c );
+  void setActiveLightMap(int index, std::string name, fvec3 c );
 
-  fxparam_constptr_t _parMapLightMapA        = nullptr;
-  fxparam_constptr_t _parMapLightMapB        = nullptr;
-  fxparam_constptr_t _parMapLightMapC        = nullptr;
-  fxparam_constptr_t _parMapLightMapD        = nullptr;
+  fxparam_constptr_t _parMapLightMapArray      = nullptr;
 
-  fxparam_constptr_t _paramLightMapColorA = nullptr; 
-  fxparam_constptr_t _paramLightMapColorB = nullptr; 
-  fxparam_constptr_t _paramLightMapColorC = nullptr; 
-  fxparam_constptr_t _paramLightMapColorD = nullptr; 
+  fxparam_constptr_t _paramLightMapColors = nullptr; 
   
-  texture_ptr_t _activeLightMapA;
-  texture_ptr_t _activeLightMapB;
-  texture_ptr_t _activeLightMapC;
-  texture_ptr_t _activeLightMapD;
+  texture_ptr_t _texLightMapArray;
 
-  fvec3 _lightmapColorA;
-  fvec3 _lightmapColorB;
-  fvec3 _lightmapColorC;
-  fvec3 _lightmapColorD;
+  constexpr static size_t kMaxLightmaps = 8;
+  std::unordered_map<std::string, image_ptr_t> _lightmap_image_assets;
+  std::vector<image_ptr_t> _image_lightmaps;
+
+  void conformLightmaps();
+  void assignLightmaps(Context* ctx);
+
+  fvec3 _lightmapColors[kMaxLightmaps];
 
   ///////////////////////////////////////////
 
