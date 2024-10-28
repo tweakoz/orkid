@@ -54,7 +54,7 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
   sampler2DArray CNMREA;        // 0
-  sampler2DArray LightMapArray; // 1
+  //sampler2DArray LightMapArray; // 1
 
   sampler2D SSAOMap;            // 2
   sampler2D SSAOKernel;         // 3
@@ -77,7 +77,7 @@ uniform_set ub_frg_fwd {
 
   //
 
-  vec3 LightMapColors[8];        
+  //vec3 LightMapColors[8];        
 
   mat4 m;
   mat4 vp;

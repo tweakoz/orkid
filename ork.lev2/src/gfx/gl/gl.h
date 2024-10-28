@@ -512,6 +512,10 @@ public:
   void _doEndFrame() final;
   void* _doClonePlatformHandle() const final;
 
+  void _validateCurrentShaderProgram() const;
+  void _validateCurrentFramebuffer() const;
+  void _validateCurrentGeomBuffers() const;
+
 public:
   //////////////////////////////////////////////
   // Interfaces

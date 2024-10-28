@@ -152,7 +152,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     if (mtl->_parUnTexPointLightsCount)
       FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
     if (mtl->_parUnTexPointLightsData) {
-      // printf( "binding lighting UBO\n");
+      printf( "binding lighting UBO\n");
       FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
     }
 
@@ -179,6 +179,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       
     }
     
+    printf("HUH <%p> <%p>\n", mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
+    FXI->BindParamCTex( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
+
     ///////////////////////////////////////////////////////////////////////////
     // bind light/environment probes
     ///////////////////////////////////////////////////////////////////////////
@@ -214,12 +217,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
 
     if(mtl->_texLightMapArray){
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
-      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      //FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
+      //FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
     else{
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, nullptr);
-      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      //FXI->BindParamCTex(mtl->_parMapLightMapArray, nullptr);
+      //FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
 
     ///////////////////////////////////////////////////////////////////////////

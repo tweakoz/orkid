@@ -998,12 +998,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         break;
       }
       case PrimitiveType::TRIANGLES:
-        //printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+        printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
       case PrimitiveType::TRIANGLESTRIP:
-        //printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
+        printf( "drawindexedtristrip inum<%d> imin<%d> imax<%d>\n", iNum-2, imin, imax );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;
@@ -1015,10 +1015,20 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         break;
     }
     if (glprimtype != 0) {
-      if (ivbase != 0)
+      if (ivbase != 0){
+        printf("A\n");
         glDrawElementsBaseVertex(glprimtype, iNum, GL_UNSIGNED_SHORT, nullptr, ivbase);
-      else
+      }
+      else{
+        int vblen = VBuf.GetNumVertices();
+        printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
+        if(true){
+          mTargetGL._validateCurrentShaderProgram();
+          mTargetGL._validateCurrentFramebuffer();
+          mTargetGL._validateCurrentGeomBuffers();
+        }
         glDrawRangeElements(glprimtype, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
+      }
     }
     GL_ERRORCHECK();
   }

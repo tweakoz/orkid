@@ -69,6 +69,11 @@ public:
 
   ////////////////////////////////////////////
 
+  static material_ptr_t _xgmReader( chunkfile::XgmMaterialReaderContext& ctx );
+  static void _xgmWriter( chunkfile::XgmMaterialWriterContext& ctx );
+
+  ////////////////////////////////////////////
+
   pbrmaterial_ptr_t clone() const;
   void addBasicStateLambda(fxpipeline_ptr_t pipe);
   void addLightingLambda(fxpipeline_ptr_t pipe);

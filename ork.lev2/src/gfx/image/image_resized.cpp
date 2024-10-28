@@ -68,6 +68,7 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       OrkAssert(false);
       break;
     }
+    case BGR8:
     case RGB8:{
       // bicubic interpolation
       for (size_t y = 0; y<h; y++) {
@@ -124,6 +125,7 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       break;
     }
     default:
+      printf("unknown format <%08x>\n", (uint32_t) inp._format );
       OrkAssert(false);
       break;
   }

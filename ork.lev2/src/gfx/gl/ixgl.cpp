@@ -134,6 +134,9 @@ struct GlIxPlatformObject {
     _current = this;
     if( _ctxbase ){
       _ctxbase->makeCurrent();
+      GL_ERRORCHECK();
+      glEnable(GL_DEBUG_OUTPUT);
+      GL_ERRORCHECK();
     }
   }
   void swapBuffers() {
