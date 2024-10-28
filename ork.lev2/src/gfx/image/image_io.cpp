@@ -58,11 +58,9 @@ bool Image::initFromDataBlock(datablock_ptr_t datablock) {
         magic[2] == 'N' and //
         magic[3] == 'G') {
       ok = _initFromDataBlockPNG(datablock);
-      OrkAssert(false);
     } else {
       OrkAssert(false);
     }
-    OrkAssert(false);
     // ok = _loadImageTexture(ptex, datablock);
   }
   return ok;

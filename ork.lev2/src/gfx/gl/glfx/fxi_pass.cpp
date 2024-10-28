@@ -57,6 +57,8 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
     return rval;
   }
 
+    GL_ERRORCHECK();
+
   glUniformBlockBinding(_programObjectId, rval->_blockIndex, rval->_bindingPoint);
 
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &rval->_blockSize);
@@ -107,6 +109,7 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
     // logchan_pass->log("block<%s> uni<%d> arystride<%d>", block->_name.c_str(), i, uniarystrides[i]);
     // logchan_pass->log("block<%s> uni<%d> mtxstride<%d>", block->_name.c_str(), i, unimtxstrides[i]);
   }
+    GL_ERRORCHECK();
 
   //////////////////////////////////////////////
 

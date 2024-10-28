@@ -282,7 +282,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
       //pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
       //pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
 
-      pipeline->bindParam(mtl->_paramMapCNMREA, mtl->_texArrayCNMREA);
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
     }

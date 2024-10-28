@@ -232,7 +232,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
     //_checkTexture(texID, "");
  // }
 
-  if (0) {
+  if (1) {
     auto fxi       = mTargetGL.FXI();
     auto container = fxi->activeShader()->_internalHandle.get<glslfx::rootcontainer_ptr_t>();
     auto pass      = container->_activePass;
@@ -241,12 +241,15 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
     std::string texname = tex->_debugName;
 
     printf(
-        "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> tex<%p:%s> \n",
+        "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> dim<%dx%dx%d> tex<%p:%s>  \n",
         pass->_name.c_str(),
         loc,
         tex_unit,
         texID,
         int(tex_target),
+        tex->_width,
+        tex->_height,
+        tex->_depth,
         tex,
         texname.c_str());
   }

@@ -34,12 +34,13 @@ public:
   void SetHandle(void* ph) const;
   virtual int GetIndexSize() const = 0;
   virtual bool IsStatic() const    = 0;
-
+  
 protected:
   int miNumIndices;
   mutable void* mhIndexBuf;
   void* mpIndices;
   bool mbLocked;
+
 
   void Release(void);
 };
