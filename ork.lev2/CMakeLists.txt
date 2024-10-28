@@ -4,6 +4,7 @@ include (GenerateExportHeader)
 #find_package(embree 3 REQUIRED)
 #find_package(CGAL REQUIRED)
 #find_package(igl REQUIRED)
+#find_package(ftxui REQUIRED)
 
 #set( LIBIGL_DIR $ENV{OBT_STAGE}/builds/igl )
 #set( LIBIGL_INCLUDE_DIR ${LIBIGL_DIR}/igl/include )
@@ -14,6 +15,7 @@ include (GenerateExportHeader)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
+set( FTXUIINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.ftxui/include )
 ###################################
 
 file(GLOB_RECURSE src_editor ${SRCD}/editor/*.cpp)
@@ -71,7 +73,6 @@ list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi  )
 list(APPEND libs avformat avcodec swscale avutil )
 list(APPEND libs ConvexDecomposition Bullet3Geometry LinearMath )
-#list(APPEND libs embree )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
   list(APPEND libs ispc_texcomp  )
@@ -122,6 +123,7 @@ list(APPEND libs  mpfr gmp )
 
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
+target_include_directories (ork_lev2 PRIVATE ${FTXUIINCD} )
 target_include_directories (ork_lev2 PRIVATE ${CGAL_INCLUDE_DIR} )
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
@@ -130,6 +132,7 @@ target_link_libraries(ork_lev2 PRIVATE ${libs} )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile sndfile )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
+target_link_libraries(ork_lev2 LINK_PRIVATE ork_ftxui )
 
 ###################################
 # intel specific

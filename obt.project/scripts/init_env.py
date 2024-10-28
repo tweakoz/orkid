@@ -54,8 +54,7 @@ def setup():
   obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.lev2")
   obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.eda")
   obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ecs")
-  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
-  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tuio")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ftxui")
   obt.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
 
   ##############################################

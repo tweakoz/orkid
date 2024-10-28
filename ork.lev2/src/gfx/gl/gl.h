@@ -5,15 +5,26 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
-// Win32GL Specific
-///////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <functional>
 #include <map>
+///////////////////////////////////////////////////////////////////////////////
+#include <ftxui/dom/node.hpp>      
+#include <ftxui/dom/elements.hpp>  
+#include <ftxui/screen/color.hpp>  
+#include <ftxui/screen/screen.hpp>  
+#include <ftxui/component/component_base.hpp>  
+#include <ftxui/component/component.hpp>  
+#include <ftxui/component/captured_mouse.hpp>  
+#include <ftxui/component/screen_interactive.hpp>  
+#include <ftxui/screen/color_info.hpp>  
+#include <ftxui/screen/terminal.hpp> 
+
+///////////////////////////////////////////////////////////////////////////////
+
+
 #include <ork/kernel/svariant.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #if defined(__APPLE__)
@@ -515,6 +526,7 @@ public:
   void _validateCurrentShaderProgram() const;
   void _validateCurrentFramebuffer() const;
   void _validateCurrentGeomBuffers() const;
+  void _validateAllStates() const;
 
 public:
   //////////////////////////////////////////////
@@ -633,6 +645,8 @@ public:
 #endif
 
   bool mTargetDrawableSizeDirty;
+
+  mutable svar16_t _debugger;
 };
 
 bool _checkTexture(GLuint texID, const std::string& name);
