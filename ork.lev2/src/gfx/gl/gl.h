@@ -651,6 +651,8 @@ public:
 
 bool _checkTexture(GLuint texID, const std::string& name);
 
+std::string _glTypeToString(GLenum type);
+
 }} // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////

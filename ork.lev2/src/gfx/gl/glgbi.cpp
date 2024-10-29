@@ -530,7 +530,7 @@ struct vtx_config {
       mPass = pfxpass;
     }
     if (mAttr) {
-      // printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNu_components, mOffset );
+      //printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNu_components, mOffset );
       switch( _attrtype ){
         case AttrType::FLOAT:
           glVertexAttribPointer(mAttr->mLocation, mNu_components, mType, false, istride, (void*)(uint64_t)mOffset);
