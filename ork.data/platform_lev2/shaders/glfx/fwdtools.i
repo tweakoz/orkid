@@ -185,6 +185,8 @@ libblock lib_fwd //
     light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,1)).xyz*LightMapColors[1];
     light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,2)).xyz*LightMapColors[2];
     light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,3)).xyz*LightMapColors[3];
+    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,4)).xyz*LightMapColors[4];
+    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,5)).xyz*LightMapColors[5];
     /////////////////////////
     // ambient occlusion
     /////////////////////////

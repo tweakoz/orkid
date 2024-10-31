@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ################################################################################
-# lev2 sample which renders a scenegraph, optionally in VR mode
+# lev2 sample which renders a scenegraph, blending 6 lightmaps
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
@@ -27,7 +27,7 @@ ambiuintens = float(0)
 camdist = 1.0
 envmap = "white"
 oshader = None
-ssaa = 0
+ssaa = 2
 ssao = 0
 ocolor = None
 #ssaa = args["ssaa"]
@@ -178,18 +178,24 @@ class SceneGraphApp(object):
   def onGpuUpdate(self,ctx):
 
     for mtl in self.lmap_materials:
-      phia = self.abstime*1.5
-      phib = math.pi*0.5+self.abstime*1.6
-      phic = math.pi*0.75+self.abstime*1.7
-      phid = math.pi*0.95+self.abstime*1.8
-      phia = 0.5 + 0.5*math.sin(phia)
-      phib = 0.5 + 0.5*math.sin(phib)
-      phic = 0.5 + 0.5*math.sin(phic)
-      phid = 0.5 + 0.5*math.sin(phid)
-      mtl.setActiveLightMap(0,"nx",vec3(phia,0,0))
-      mtl.setActiveLightMap(1,"nz",vec3(0,phib,0))
-      mtl.setActiveLightMap(2,"px",vec3(0,0,phic))
-      mtl.setActiveLightMap(3,"pz",vec3(phid))
+      phnx = math.pi*0.00+self.abstime*2.0
+      phnz = math.pi*0.25+self.abstime*2.0
+      phpx = math.pi*0.5+self.abstime*2.0
+      phpz = math.pi*0.75+self.abstime*2.0
+      phpy = math.pi*1.0+self.abstime*0.3
+      phny = math.pi*0.5+self.abstime*0.6
+      phnx = 0.5 + 0.5*math.sin(phnx)
+      phnz = 0.5 + 0.5*math.sin(phnz)
+      phpx = 0.5 - 0.5*math.cos(phpx)
+      phpz = 0.5 - 0.5*math.cos(phpz)
+      phny = 0.5 + 0.5*math.sin(phny)
+      phpy = 0.5 - 0.5*math.cos(phpy)
+      mtl.setActiveLightMap(0,"nx",vec3(phnx,0,0))
+      mtl.setActiveLightMap(1,"px",vec3(0,0,phpx))
+      mtl.setActiveLightMap(2,"ny",vec3(phny,phny,0))
+      mtl.setActiveLightMap(3,"py",vec3(0,phpy,phpy))
+      mtl.setActiveLightMap(4,"nz",vec3(0,0,phnz))
+      mtl.setActiveLightMap(5,"pz",vec3(0,phpz,phpz))
 
 ###############################################################################
 

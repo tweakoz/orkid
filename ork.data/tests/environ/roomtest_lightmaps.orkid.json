@@ -5,6 +5,8 @@
       "lightmaps":{
         "nx": "BAKE.NX.png",
         "px": "BAKE.PX.png",
+        "ny": "BAKE.NY.png",
+        "py": "BAKE.PY.png",
         "nz": "BAKE.NZ.png",
         "pz": "BAKE.PZ.png"
       }
