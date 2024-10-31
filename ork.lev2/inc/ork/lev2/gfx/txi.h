@@ -49,6 +49,7 @@ public:
   texture_ptr_t createColorTexture(fvec4 color, int w, int h);
   texture_ptr_t createColorTextureV3(fvec3 color, int w, int h);
   texture_ptr_t createColorCubeTexture(fvec4 color, int w, int h);
+  texture_ptr_t createColorTextureV3Array(fvec3 color, int w, int h, int d);
 
   virtual bool destroyTexture(texture_ptr_t ptex)                           = 0;
   virtual bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex)      = 0;

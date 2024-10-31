@@ -322,6 +322,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
   _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
 
+  _texWhiteLightMapArray = targ->TXI()->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 4);
+
   /////////////////////////////////////////////////
 
   if(_texArrayCNMREA == nullptr){

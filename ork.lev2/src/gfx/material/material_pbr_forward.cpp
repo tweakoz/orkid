@@ -164,18 +164,16 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       //printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
-      if (texlist.size() > 0) {
-        FXI->BindParamCTex(mtl->_parLightCookie0, texlist[0]);
-      }
-      if (texlist.size() > 1) {
-        FXI->BindParamCTex(mtl->_parLightCookie1, texlist[1]);
-      }
-      if (texlist.size() > 2) {
-        FXI->BindParamCTex(mtl->_parLightCookie2, texlist[2]);
-      }
-      if (texlist.size() > 3) {
-        FXI->BindParamCTex(mtl->_parLightCookie3, texlist[3]);
-      }
+
+      size_t num_cookies = texlist.size();
+      auto tex0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlack.get();
+      auto tex1 = (num_cookies > 1) ? texlist[1] : mtl->_texBlack.get();
+      auto tex2 = (num_cookies > 2) ? texlist[2] : mtl->_texBlack.get();
+      auto tex3 = (num_cookies > 3) ? texlist[3] : mtl->_texBlack.get();
+      FXI->BindParamCTex(mtl->_parLightCookie0, tex0);
+      FXI->BindParamCTex(mtl->_parLightCookie1, tex1);
+      FXI->BindParamCTex(mtl->_parLightCookie2, tex2);
+      FXI->BindParamCTex(mtl->_parLightCookie3, tex3);
       
     }
     
@@ -217,12 +215,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
 
     if(mtl->_texLightMapArray){
-      //FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
-      //FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
+      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
     else{
-      //FXI->BindParamCTex(mtl->_parMapLightMapArray, nullptr);
-      //FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray.get());
+      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
 
     ///////////////////////////////////////////////////////////////////////////

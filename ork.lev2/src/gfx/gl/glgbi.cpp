@@ -1022,9 +1022,6 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
       else{
         int vblen = VBuf.GetNumVertices();
         printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
-        if(true){
-          mTargetGL._validateAllStates();
-        }
         glDrawRangeElements(glprimtype, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
       }
     }

@@ -9,6 +9,8 @@
 
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/math/cmatrix3.h>
+#include <ork/math/cmatrix4.h>
 
 #include "gl.h"
 #include <string>
@@ -240,6 +242,7 @@ struct ShaderAttrib {
   std::string _name;
   GLint _size  = 0;
   GLenum _type = GL_NONE;
+  GLint _location = -1;
 };
 using shader_attrib_ptr_t = std::shared_ptr<ShaderAttrib>;
 
@@ -256,7 +259,7 @@ struct _FtxGlDebugger {
   ftxui::node_ptr_t _node_geometry;
   using shader_text_t = std::vector<std::string>;
 
-  std::vector<shader_attrib_ptr_t> _shader_attribs;
+  std::map<int,shader_attrib_ptr_t> _shader_attribs;
   std::map<std::string,shader_text_t> _shader_texts;
 };
 
@@ -282,6 +285,26 @@ void _colortext(ftxui::node_vect_t& NODES, irgb foreground, irgb background, con
   NODES.push_back(
       text(out_str) | color(Color::RGB(foreground.r, foreground.g, foreground.b)) |
       bgcolor(Color::RGB(background.r, background.g, background.b)));
+}
+void _colortext_wrap(ftxui::node_vect_t& NODES, irgb foreground, irgb background, const char* formatstring, ...) {
+  using namespace ftxui;
+  char out_str[512];
+  va_list args;
+  va_start(args, formatstring);
+  vsnprintf(&out_str[0], sizeof(out_str), formatstring, args);
+  va_end(args);
+  // wrap to 80 columns
+  std::string str(out_str);
+  while (str.length() > 0) {
+    std::string wrapped = str.substr(0, 80);
+    NODES.push_back(
+        text(wrapped) | color(Color::RGB(foreground.r, foreground.g, foreground.b)) |
+        bgcolor(Color::RGB(background.r, background.g, background.b)));
+    size_t len = wrapped.length();
+    // remove len from beginning of str
+    str = str.substr(len, str.length() - len);
+  }
+
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -450,8 +473,15 @@ void ContextGL::_validateCurrentShaderProgram() const {
   GLint validateStatus = 0;
   glGetProgramiv(currentProgram, GL_VALIDATE_STATUS, &validateStatus);
   _colortext(NODES, WHI, BLK, "currentProgram<%d> linkStatus<%d> validateStatus<%d>\n", currentProgram, linkStatus, validateStatus);
-  OrkAssert(linkStatus == GL_TRUE);
-  OrkAssert(validateStatus == GL_TRUE);
+  if(0==validateStatus){
+    GLint infolen = 0;
+    glGetProgramiv(currentProgram, GL_INFO_LOG_LENGTH, &infolen);
+    std::vector<char> infolog(infolen);
+    glGetProgramInfoLog(currentProgram, infolen, &infolen, infolog.data());
+    _colortext_wrap(NODES, RED, BLK, "ProgramInfoLog<%s>\n", infolog.data());
+  }
+  //OrkAssert(linkStatus == GL_TRUE);
+  //OrkAssert(validateStatus == GL_TRUE);
   // validate all bound shader parameters are valid
   GLint numUniforms = 0;
   glGetProgramiv(currentProgram, GL_ACTIVE_UNIFORMS, &numUniforms);
@@ -471,7 +501,8 @@ void ContextGL::_validateCurrentShaderProgram() const {
     // Retrieve attribute information
     glGetActiveAttrib(currentProgram, i, sizeof(nameBuffer), &nameLength, &shattrib->_size, &shattrib->_type, nameBuffer);
     shattrib->_name = nameBuffer;
-    debugger->_shader_attribs.push_back(shattrib);
+    shattrib->_location = glGetAttribLocation(currentProgram, nameBuffer);
+    debugger->_shader_attribs[shattrib->_location] = shattrib;
   }
 
   std::vector<GLuint> uniformIndices(numUniforms);
@@ -484,6 +515,9 @@ void ContextGL::_validateCurrentShaderProgram() const {
 
   for (int i = 0; i < numUniforms; i++) {
     irgb fg, bg;
+
+    fg      = WHI;
+    bg      = BLK;
 
     GLint nameLength = 0;
     GLint size       = 0;
@@ -502,64 +536,64 @@ void ContextGL::_validateCurrentShaderProgram() const {
       }
       case GL_FLOAT_VEC2: {
         fvec2 value;
+        fg      = irgb{255, 255, 96};
         glGetUniformfv(currentProgram, location, value.asArray());
         value_str = FormatString("vec2(%g %g)", value.x, value.y);
         break;
       }
       case GL_FLOAT_VEC3: {
         fvec3 value;
+        fg      = irgb{255, 255, 128};
         glGetUniformfv(currentProgram, location, value.asArray());
         value_str = FormatString("vec3(%g %g %g)", value.x, value.y, value.z);
         break;
       }
       case GL_FLOAT_VEC4: {
         fvec4 value;
+        fg      = irgb{255, 255, 192};
         glGetUniformfv(currentProgram, location, value.asArray());
         value_str = FormatString("vec4(%g %g %g %g)", value.x, value.y, value.z, value.w);
         break;
       }
       case GL_FLOAT_MAT4: {
-        fvec4 value[4];
-        glGetUniformfv(currentProgram, location, value[0].asArray());
-        glGetUniformfv(currentProgram, location, value[1].asArray());
-        glGetUniformfv(currentProgram, location, value[2].asArray());
-        glGetUniformfv(currentProgram, location, value[3].asArray());
+        fmtx4 mtx;
+        fg      = irgb{128, 192, 192};
+        glGetUniformfv(currentProgram, location, mtx.asArray());
         value_str = FormatString(
             "mat4(%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g)",
-            value[0].x,
-            value[0].y,
-            value[0].z,
-            value[0].w,
-            value[1].x,
-            value[1].y,
-            value[1].z,
-            value[1].w,
-            value[2].x,
-            value[2].y,
-            value[2].z,
-            value[2].w,
-            value[3].x,
-            value[3].y,
-            value[3].z,
-            value[3].w);
+            mtx.column(0).x,
+            mtx.column(0).y,
+            mtx.column(0).z,
+            mtx.column(0).w,
+            mtx.column(1).x,
+            mtx.column(1).y,
+            mtx.column(1).z,
+            mtx.column(1).w,
+            mtx.column(2).x,
+            mtx.column(2).y,
+            mtx.column(2).z,
+            mtx.column(2).w,
+            mtx.column(3).x,
+            mtx.column(3).y,
+            mtx.column(3).z,
+            mtx.column(3).w);
         break;
       }
       case GL_FLOAT_MAT3: {
-        fvec3 value[3];
-        glGetUniformfv(currentProgram, location, value[0].asArray());
-        glGetUniformfv(currentProgram, location, value[1].asArray());
-        glGetUniformfv(currentProgram, location, value[2].asArray());
+        fmtx3 mtx;
+        fg      = irgb{128, 128, 255};
+        glGetUniformfv(currentProgram, location, mtx.asArray());
         value_str = FormatString(
             "mat3(%g %g %g %g %g %g %g %g %g)",
-            value[0].x,
-            value[0].y,
-            value[0].z,
-            value[1].x,
-            value[1].y,
-            value[1].z,
-            value[2].x,
-            value[2].y,
-            value[2].z);
+            mtx.column(0).x,
+            mtx.column(0).y,
+            mtx.column(0).z,
+            mtx.column(1).x,
+            mtx.column(1).y,
+            mtx.column(1).z,
+            mtx.column(2).x,
+            mtx.column(2).y,
+            mtx.column(2).z);
         break;
       }
       case GL_INT: {
@@ -581,125 +615,122 @@ void ContextGL::_validateCurrentShaderProgram() const {
         break;
       }
       case GL_SAMPLER_2D: {
-        int unit = 0;
-        glGetUniformiv(currentProgram, location, &unit);
-        // query texture array dimensions of texture @ location (width, height, depth, nummips)
-        // use statless query to get texture array size, or restore state after query
-
-        // store current texture binding
+        fg      = irgb{255, 128, 255};
+        int tex_unit = 0;
+        int current_active = -1;
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
+        glGetUniformiv(currentProgram, location, &tex_unit);
+        glActiveTexture(GL_TEXTURE0 + tex_unit);
         GLint currentTexture = 0;
-        glGetIntegeri_v(GL_TEXTURE_BINDING_2D, unit, &currentTexture);
-        // bind texture @ location
-        glBindTexture(GL_TEXTURE_2D, currentTexture);
-        // query texture array size
         GLint width = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
         GLint height = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-        // restore texture binding
-        glBindTexture(GL_TEXTURE_2D, currentTexture);
-
-        value_str = FormatString("samp2D(unit: %d tobj: %d dim<%dx%d>)", unit, currentTexture, width, height);
+        value_str = FormatString("sampler2D(unit: %d tobj: %d dim<%dx%d>)", tex_unit, currentTexture, width, height);
+        glActiveTexture(GL_TEXTURE0 + current_active);
         break;
       }
       case GL_SAMPLER_3D: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp3d(%d)", value);
+        value_str = FormatString("sampler3D(%d)", value);
         break;
       }
       case GL_SAMPLER_CUBE: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampCUBE(%d)", value);
+        fg      = irgb{255, 64, 255};
+        int tex_unit = 0;
+        int current_active = -1;
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
+        glGetUniformiv(currentProgram, location, &tex_unit);
+        GLint currentTexture = 0;
+        glGetIntegeri_v(GL_TEXTURE_BINDING_CUBE_MAP, tex_unit, &currentTexture);
+        glActiveTexture(GL_TEXTURE0 + tex_unit);
+        GLint width = 0;
+        GLint height = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
+        value_str = FormatString("samplerCube(unit: %d tobj: %d dim<%dx%d>)", tex_unit, currentTexture, width, height);
+        glActiveTexture(GL_TEXTURE0 + current_active);
         break;
       }
       case GL_SAMPLER_2D_SHADOW: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2DSHAD(%d)", value);
+        value_str = FormatString("sampler2DShadow(%d)", value);
         break;
       }
       case GL_SAMPLER_2D_ARRAY: {
-        int unit = 0;
-        glGetUniformiv(currentProgram, location, &unit);
-        // value represents the texture unit
-
-        // query texture array dimensions of texture @ unit (width, height, depth, nummips)
-        // use statless query to get texture array size, or restore state after query
-
-        // store current texture binding
+        fg      = irgb{255, 192, 255};
+        int tex_unit = 0;
+        int current_active = -1;
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
+        glGetUniformiv(currentProgram, location, &tex_unit);
         GLint currentTexture = 0;
-        glGetIntegeri_v(GL_TEXTURE_BINDING_2D_ARRAY, unit, &currentTexture);
-        // bind texture @ location
-        glActiveTexture(GL_TEXTURE0 + unit);
-        // glBindTexture(GL_TEXTURE_2D_ARRAY, value);
-        //  query texture array size
-        GLint depth = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_DEPTH, &depth);
-        // query w,h
+        glActiveTexture(GL_TEXTURE0 + tex_unit);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D_ARRAY, &currentTexture);
         GLint width = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_WIDTH, &width);
         GLint height = 0;
+        GLint depth = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_WIDTH, &width);
         glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_HEIGHT, &height);
-        // restore texture binding
-        glBindTexture(GL_TEXTURE_2D_ARRAY, currentTexture);
-
-        value_str = FormatString("samp2Darr(unit: %d tobj: %d dim<%dx%dx%d>)", unit, currentTexture, width, height, depth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_DEPTH, &depth);
+        value_str = FormatString("sampler2Darray(unit: %d tobj: %d dim<%dx%dx%d>)", tex_unit, currentTexture, width, height, depth);
+        glActiveTexture(GL_TEXTURE0 + current_active);
         break;
       }
       case GL_SAMPLER_2D_ARRAY_SHADOW: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2DarrSHAD(%d)", value);
+        value_str = FormatString("sampler2DArrayShadow(%d)", value);
         break;
       }
       case GL_SAMPLER_2D_MULTISAMPLE: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2Dmultisamp(%d)", value);
+        value_str = FormatString("sampler2DMS(%d)", value);
         break;
       }
       case GL_SAMPLER_2D_MULTISAMPLE_ARRAY: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2Dmultisamparr(%d)", value);
+        value_str = FormatString("sampler2DMSArray(%d)", value);
         break;
       }
       case GL_SAMPLER_CUBE_SHADOW: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampCUBESHAD(%d)", value);
+        value_str = FormatString("samplerCubeArrayShadow(%d)", value);
         break;
       }
       case GL_SAMPLER_1D: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp1D(%d)", value);
+        value_str = FormatString("sampler1D(%d)", value);
         break;
       }
       case GL_SAMPLER_1D_ARRAY: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp1Darr(%d)", value);
+        value_str = FormatString("sampler1Darray(%d)", value);
         break;
       }
       case GL_SAMPLER_1D_SHADOW: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp1DSHAD(%d)", value);
+        value_str = FormatString("sampler1DShadow(%d)", value);
         break;
       }
       case GL_SAMPLER_BUFFER: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampbuff(%d)", value);
+        value_str = FormatString("samplerBuffer(%d)", value);
         break;
       }
       case GL_SAMPLER_2D_RECT: {
         int value = 0;
         glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2Drect(%d)", value);
+        value_str = FormatString("sampler2Drect(%d)", value);
         break;
       }
       case GL_SAMPLER_2D_RECT_SHADOW: {
@@ -721,17 +752,15 @@ void ContextGL::_validateCurrentShaderProgram() const {
     if (location == -1) {
       int block_index = uniformBlockIndices[i];
       if (block_index == -1) {
-        fg = RED;
-        bg = BLK;
+        fg = WHI;
+        bg = irgb{96,0,0};
       } else {
-        fg = YEL;
-        bg = BLK;
+        fg = WHI;
+        bg = irgb{96,0,96};
       }
-      out_str = FormatString("  %d : %s : BLOCK<%d> size<%d> value: %s\n", i, name, block_index, size, value_str.c_str());
+      out_str = FormatString(" %02d BLOCK%02d SIZ%02d : %32s  :  %s\n", i, block_index, size, name, value_str.c_str());
     } else {
-      fg      = WHI;
-      bg      = BLK;
-      out_str = FormatString("  %d : %s : loc<%d> size<%d> value: %s\n", i, name, location, size, value_str.c_str());
+      out_str = FormatString(" %02d LOC%02d   SIZ%02d : %32s  :  %s\n", i, location, size, name, value_str.c_str());
     }
     _colortext(NODES, fg, bg, "%s", out_str.c_str());
   }
@@ -823,7 +852,7 @@ void ContextGL::_validateCurrentGeomBuffers() const {
   glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &currentIBO);
   printf("currentIBO<%d>\n", currentIBO);
   _colortext(NODES, YEL, BLK, "currentIBO<%d>", currentIBO);
-  OrkAssert(currentIBO != 0);
+  //OrkAssert(currentIBO != 0);
   // validate that the current VAO state is valid
   GLint currentVAO = 0;
   glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &currentVAO);
@@ -839,8 +868,9 @@ void ContextGL::_validateCurrentGeomBuffers() const {
   GLint numAttribs = 0;
   glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &numAttribs);
   _colortext(NODES, YEL, BLK, "numAttribs<%d>", numAttribs);
-  int j = 0;
-  for (int i = 0; i < numAttribs; i++) {
+  for ( auto attr_item : debugger->_shader_attribs) {
+    int i = attr_item.first;
+    auto shattrib = attr_item.second;
     GLint currentVBO = 0;
     glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &currentVBO);
     // get attrib format
@@ -853,8 +883,6 @@ void ContextGL::_validateCurrentGeomBuffers() const {
     GLboolean normalized = GL_FALSE;
     GLint stride         = 0;
     GLvoid* offset       = 0;
-
-    auto shattrib = debugger->_shader_attribs[j];
 
     glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
     glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, (GLint*)&type);
@@ -869,7 +897,7 @@ void ContextGL::_validateCurrentGeomBuffers() const {
         YEL,
         BLK,
         "  attrib<%d:%s> vbo<%d> size<%d> type<%s> normalized<%d> stride<%d> offset<%u>\n",
-        j,
+        shattrib->_location,
         shattrib->_name.c_str(),
         currentVBO,
         size,
@@ -877,8 +905,6 @@ void ContextGL::_validateCurrentGeomBuffers() const {
         normalized,
         stride,
         size_t(offset));
-
-    j++;
   }
   debugger->_node_geometry = vbox({
       text("Geometry State"),

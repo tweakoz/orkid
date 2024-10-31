@@ -20,6 +20,8 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+static ContextGL* _gcurrentContext = nullptr;
+
 std::atomic<int> __FIND_IT;
 
 void ContextGL::describeX(class_t* clazz) {
@@ -41,6 +43,7 @@ static thread_local std::stack<std::string> _groupstack;
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 void ContextGL::debugPushGroup(const std::string str) {
+  _gcurrentContext = this;
   int level = _dbglevel++;
   auto mstr = indent(level) + str;
   // printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", this, level, mstr.c_str() );
@@ -170,6 +173,7 @@ std::string GetGlErrorString(int iGLERR) {
 
 /////////////////////////////////////////////////////////////////////////
 
+
 void check_debug_log();
 
 int GetGlError(void) {
@@ -177,13 +181,41 @@ int GetGlError(void) {
 
   if (err != GL_NO_ERROR) {
     std::string errstr = GetGlErrorString(err);
-    orkprintf("GLERROR [%s]\n", errstr.c_str());
+    orkprintf("GLERROR [%s] cctx<%p>\n", errstr.c_str(), _gcurrentContext);
+    //_gcurrentContext->_validateAllStates();
     check_debug_log();
   }
 
   return err;
 }
 
+/*
+Bind2 Tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]> par<MapSpecularEnv> uniloc<0> teknam<FWD_SKYBOX_MO>
+Bind3 pass<FWD_SKYBOX_MO_p0> loc<0> unit<0> obj<20> tgt<3553> dim<64x64x1> tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]>
+Bind2 Tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]> par<MapSpecularEnv> uniloc<0> teknam<FWD_SKYBOX_MO>
+Bind3 pass<FWD_SKYBOX_MO_p0> loc<0> unit<0> obj<20> tgt<3553> dim<64x64x1> tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]>
+Bind2 Tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]> par<MapSpecularEnv> uniloc<8> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<8> unit<0> obj<20> tgt<3553> dim<64x64x1> tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]>
+Bind2 Tex<0x126632690:src://effect_textures/white.dds[filtenvmap-processed-diffuse]> par<MapDiffuseEnv> uniloc<26> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<26> unit<1> obj<21> tgt<3553> dim<64x64x1> tex<0x126632690:src://effect_textures/white.dds[filtenvmap-processed-diffuse]>
+binding lighting UBO
+Bind2 Tex<0x126575860:> par<light_cookie0> uniloc<15> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<15> unit<2> obj<2> tgt<3553> dim<64x64x1> tex<0x126575860:>
+Bind2 Tex<0x126575860:> par<light_cookie1> uniloc<33> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<33> unit<3> obj<2> tgt<3553> dim<64x64x1> tex<0x126575860:>
+Bind2 Tex<0x126575860:> par<light_cookie2> uniloc<31> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<31> unit<4> obj<2> tgt<3553> dim<64x64x1> tex<0x126575860:>
+Bind2 Tex<0x126575860:> par<light_cookie3> uniloc<7> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<7> unit<5> obj<2> tgt<3553> dim<64x64x1> tex<0x126575860:>
+HUH <0x6000023d2520> <0x126561b00>
+Bind2 Tex<0x126561b00:pbrtexarray> par<CNMREA> uniloc<41> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<41> unit<6> obj<1> tgt<35866> dim<64x64x4> tex<0x126561b00:pbrtexarray>
+Bind2 Tex<0x12656cd30:> par<reflectionPROBE> uniloc<34> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<34> unit<7> obj<3> tgt<34067> dim<64x64x1> tex<0x12656cd30:>
+Bind2 Tex<0x142b12d30:> par<LightMapArray> uniloc<39> teknam<FWD_CT_NM_RI_NI_MO>
+Bind3 pass<FWD_CT_NM_RI_NI_MO_p0> loc<39> unit<8> obj<4> tgt<35866> dim<64x64x4> tex<0x142b12d30:>
+GLERROR [GL_INVALID_OPERATION] cctx<0x153057020>
+*/
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

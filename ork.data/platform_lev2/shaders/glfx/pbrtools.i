@@ -24,9 +24,9 @@ uniform_set ub_vtx {
   mat3 mrot;
   vec4 modcolor;
   vec2 InvViewportSize; // inverse target size
-  sampler2D InstanceMatrices;
-  sampler2D InstanceColors;
-  usampler2D InstanceIds;
+  //sampler2D InstanceMatrices;
+  //sampler2D InstanceColors;
+  //usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
@@ -54,7 +54,7 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
   sampler2DArray CNMREA;        // 0
-  //sampler2DArray LightMapArray; // 1
+  sampler2DArray LightMapArray; // 1
 
   sampler2D SSAOMap;            // 2
   sampler2D SSAOKernel;         // 3
@@ -77,7 +77,7 @@ uniform_set ub_frg_fwd {
 
   //
 
-  //vec3 LightMapColors[8];        
+  vec3 LightMapColors[8];        
 
   mat4 m;
   mat4 vp;
@@ -149,7 +149,7 @@ vertex_interface iface_vgbuffer : ub_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 binormal : BINORMAL;
-    vec4 vtxcolor : COLOR0;
+    //vec4 vtxcolor : COLOR0;
     vec2 uv0 : TEXCOORD0;
   }
   outputs {
@@ -159,12 +159,13 @@ vertex_interface iface_vgbuffer : ub_vtx {
     mat3 frg_tbn;
     float frg_camdist;
     vec3 frg_camz;
+    vec4 frg_modcolor;
   }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_instanced : iface_vgbuffer {
   outputs {
-    vec4 frg_modcolor;
+    //vec4 frg_modcolor;
   }
 }
 ///////////////////////////////////////////////////////////////

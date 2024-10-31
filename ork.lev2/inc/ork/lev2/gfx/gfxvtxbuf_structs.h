@@ -750,11 +750,11 @@ struct SVtxV16T16C16 // 48 BPV
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T16 { // 52BPV
-  fvec3 mPosition;
-  fvec3 mNormal;
-  fvec3 mBiNormal;
-  fvec2 mUV0;
-  fvec2 mUV1;
+  fvec3 mPosition; // 12
+  fvec3 mNormal;   // 24
+  fvec3 mBiNormal; // 36
+  fvec2 mUV0;      // 44
+  fvec2 mUV1;      // 52
 
   SVtxV12N12B12T16(
       const fvec3& pos   = fvec3(),
@@ -795,12 +795,12 @@ struct SVtxV12N12B12T16 { // 52BPV
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T8I4W4 { // 52BPV
-  fvec3 mPosition;
-  fvec3 mNormal;
-  fvec3 mBiNormal;
-  fvec2 mUV0;
-  U32 mBoneIndices;
-  U32 mBoneWeights;
+  fvec3 mPosition;   // 12
+  fvec3 mNormal;     // 24
+  fvec3 mBiNormal;   // 36
+  fvec2 mUV0;        // 44
+  U32 mBoneIndices;  // 48
+  U32 mBoneWeights;  // 52
 
   SVtxV12N12B12T8I4W4(
       const fvec3& pos   = fvec3(),

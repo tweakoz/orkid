@@ -609,6 +609,7 @@ public:
   bool _SUPPORTS_BUFFER_STORAGE = true;
   bool _SUPPORTS_PERSISTENT_MAP = true;
   bool _SUPPORTS_EXTERNAL_MEMORY_OBJECT = true;
+  int _MAX_TEXTURE_IMAGE_UNITS = 0;
   std::string _GL_RENDERER;
   
   std::stack<void*> mDCStack;

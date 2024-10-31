@@ -140,6 +140,9 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit) {
+
+  OrkAssert(tex_unit < mTargetGL._MAX_TEXTURE_IMAGE_UNITS);
+
   gltexobj_ptr_t tex_obj;
 
   if (tex->_impl.isA<gltexobj_ptr_t>()) {
@@ -241,7 +244,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
     std::string texname = tex->_debugName;
 
     printf(
-        "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<%d> dim<%dx%dx%d> tex<%p:%s>  \n",
+        "Bind3 pass<%s> loc<%d> unit<%d> obj<%d> tgt<0x%04x> dim<%dx%dx%d> tex<%p:%s>  \n",
         pass->_name.c_str(),
         loc,
         tex_unit,

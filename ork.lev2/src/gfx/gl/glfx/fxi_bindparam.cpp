@@ -240,6 +240,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
       GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
 
       glUniform1i(uniloc, itexunit);
+      printf( "ASSSAMP LOC<%d> UNIT<%d>\n", uniloc, itexunit );
       GL_ERRORCHECK();
     }
     //}

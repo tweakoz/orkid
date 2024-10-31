@@ -47,6 +47,12 @@ void PBRMaterial::setActiveLightMap(int index, std::string name, fvec3 c ){
 ///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::conformLightmaps() {
+  if(_lightmap_image_assets.size()==0){
+    auto img = std::make_shared<Image>();
+    img->initRGB8WithColor(64, 64, fvec3(1,1,1),EBufferFormat::RGB8);
+    _lightmap_image_assets["default"] = img;
+  }
+
   ////////////////////////////////
   // retain and find biggest size
   ////////////////////////////////
@@ -146,9 +152,9 @@ void PBRMaterial::assignLightmaps(Context* ctx){
       idx++;
     }
     ////////////////////////////////
-    //_texLightMapArray = std::make_shared<Texture>();
-    //_texLightMapArray->_debugName = "pbrLMtexarray";
-    //ctx->TXI()->initTextureArray2DFromData(_texLightMapArray.get(), TID);
+    _texLightMapArray = std::make_shared<Texture>();
+    _texLightMapArray->_debugName = "pbrLMtexarray";
+    ctx->TXI()->initTextureArray2DFromData(_texLightMapArray.get(), TID);
     ////////////////////////////////
   }
   printf("end PBRMaterial::assignLightmaps\n");

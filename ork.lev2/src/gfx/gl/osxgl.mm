@@ -44,6 +44,10 @@ static void _osxDisableMacOs(ContextGL* cgl){
     cgl->_SUPPORTS_PERSISTENT_MAP = false;
     cgl->_SUPPORTS_EXTERNAL_MEMORY_OBJECT = false;
     GfxEnv::disableBC7();
+
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &cgl->_MAX_TEXTURE_IMAGE_UNITS);
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////
