@@ -152,7 +152,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     if (mtl->_parUnTexPointLightsCount)
       FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
     if (mtl->_parUnTexPointLightsData) {
-      printf( "binding lighting UBO\n");
+      //printf( "binding lighting UBO\n");
       FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
     }
 
@@ -177,7 +177,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       
     }
     
-    printf("HUH <%p> <%p>\n", mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
+    //printf("HUH <%p> <%p>\n", mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
     FXI->BindParamCTex( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
 
     ///////////////////////////////////////////////////////////////////////////
@@ -254,7 +254,14 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     auto context = RCFD->GetTarget();
     auto RSI     = context->RSI();
     //this->_rasterstate.SetBlending(Blending::ADDITIVE);
-    mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+    bool is_rendering_PROBE = RCFD->userPropertyAs<bool>("renderingPROBE"_crcu);
+
+    ECullTest culltest = this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT;
+    if(is_rendering_PROBE){
+      culltest = ECullTest::OFF;
+    }
+
+    mut->_rasterstate.SetCullTest(culltest);
     mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
     mut->_rasterstate.SetZWriteMask(true);
     mut->_rasterstate.SetRGBAWriteMask(true, true);

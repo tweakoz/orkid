@@ -19,8 +19,11 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto model_type_t = py::class_<XgmModel, xgmmodel_ptr_t>(module_lev2, "XgmModel") //
-      .def(py::init([](const std::string& model_path) -> xgmmodel_ptr_t {
-        auto loadreq    = std::make_shared<asset::LoadRequest>(model_path.c_str());
+      .def(py::init([](py::object path) -> xgmmodel_ptr_t {
+        // convert to py::str
+        auto as_py_str = py::cast<py::str>(path);
+        auto as_std_str = as_py_str.cast<std::string>();
+        auto loadreq    = std::make_shared<asset::LoadRequest>(as_std_str.c_str());
         auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
         return modl_asset->_model.atomicCopy();
       }))

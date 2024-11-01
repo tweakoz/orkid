@@ -165,6 +165,8 @@ struct LightProbe {
   ~LightProbe();
   void resize(int dim);
 
+  void exportEquirectangular(Context* ctx, const std::string& path);
+
   LightProbeType _type = LightProbeType::REFLECTION;
   int _dim = 0;
   bool _dirty = true;
@@ -172,6 +174,7 @@ struct LightProbe {
   std::string _name;
   fmtx4 _worldMatrix; // +y up, right handed
   rtgroup_ptr_t _cubeRenderRTG;
+  rtgroup_ptr_t _equiRenderRTG;
   texture_ptr_t _cubeTexture;
   varmap::varmap_ptr_t _userdata;
   svar64_t _impl;

@@ -1,0 +1,86 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+}
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx_ffx {
+  mat4 mvp;
+  samplerCube cube_sampler;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vface_c2e : ub_vtx_ffx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fface_c2e : ub_vtx_ffx {
+  inputs {
+    vec2 frg_uv;
+  }
+  //
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_c2e : vface_c2e {
+  gl_Position = mvp * position;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_c2e : fface_c2e {
+  // convert 2D equirectangular to 3D cube map coordinate
+  // input uv is in [0,1]x[0,1]
+  vec2 equi = frg_uv;// * vec2(1, -1);
+
+  // Calculate spherical angles
+  float theta = equi.x * 2.0 * PI;        // Longitude angle, ranges from 0 to 2π
+  float phi   = equi.y * PI - (PI / 2.0); // Latitude angle, ranges from -π/2 to π/2
+
+  // Convert spherical coordinates to Cartesian coordinates
+  vec3 dir;
+  dir.x = cos(phi) * cos(theta);
+  dir.y = sin(phi);
+  dir.z = (cos(phi) * sin(theta));
+
+  // rotate dir by 90 on x
+  //dir = mat3(0, 0, 1, 0, 1, 0, -1, 0, 0) * dir;
+  // rotate dir by 90 on z
+  //dir = mat3(0, -1, 0, 1, 0, 0, 0, 0, 1) * dir;
+  // rotate dir by 90 on y
+  //dir = mat3(0, 0, -1, 0, 1, 0, 1, 0, 0) * dir;
+  // rotate dir by 180 on y
+  dir = mat3(-1, 0, 0, 0, 1, 0, 0, 0, -1) * dir;
+  // rotate dir by 180 on z
+  //dir = mat3(-1, 0, 0, 0, -1, 0, 0, 0, 1) * dir;
+  // rotate dir by 180 on x
+  dir = mat3(1, 0, 0, 0, -1, 0, 0, 0, -1) * dir;
+  // Sample the cube map texture using the direction vector
+  vec3 c = texture(cube_sampler, dir).xyz;
+
+  // Output the color
+  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+technique tek_cube2equi {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_c2e;
+    fragment_shader = ps_c2e;
+    state_block     = sb_default;
+  }
+}

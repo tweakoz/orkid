@@ -178,24 +178,24 @@ class SceneGraphApp(object):
   def onGpuUpdate(self,ctx):
 
     for mtl in self.lmap_materials:
-      phnx = math.pi*0.00+self.abstime*2.0
-      phnz = math.pi*0.25+self.abstime*2.0
-      phpx = math.pi*0.5+self.abstime*2.0
-      phpz = math.pi*0.75+self.abstime*2.0
+      phnx = math.pi*0.00+self.abstime*1.0
+      phpx = math.pi*1.0+self.abstime*1.0
+      phpz = math.pi*0.5+self.abstime*1.0
+      phnz = math.pi*1.5+self.abstime*1.0
       phpy = math.pi*1.0+self.abstime*0.3
       phny = math.pi*0.5+self.abstime*0.6
       phnx = 0.5 + 0.5*math.sin(phnx)
       phnz = 0.5 + 0.5*math.sin(phnz)
-      phpx = 0.5 - 0.5*math.cos(phpx)
-      phpz = 0.5 - 0.5*math.cos(phpz)
+      phpx = 0.5 + 0.5*math.sin(phpx)
+      phpz = 0.5 + 0.5*math.sin(phpz)
       phny = 0.5 + 0.5*math.sin(phny)
-      phpy = 0.5 - 0.5*math.cos(phpy)
-      mtl.setActiveLightMap(0,"nx",vec3(phnx,0,0))
-      mtl.setActiveLightMap(1,"px",vec3(0,0,phpx))
-      mtl.setActiveLightMap(2,"ny",vec3(phny,phny,0))
-      mtl.setActiveLightMap(3,"py",vec3(0,phpy,phpy))
-      mtl.setActiveLightMap(4,"nz",vec3(0,0,phnz))
-      mtl.setActiveLightMap(5,"pz",vec3(0,phpz,phpz))
+      phpy = 0.5 + 0.5*math.sin(phpy)
+      mtl.setActiveLightMap("nx",vec3(1,1,1)*4)
+      #mtl.setActiveLightMap("px",vec3(0,0,phpx))
+      #mtl.setActiveLightMap("ny",vec3(phny,phny,0))
+      #mtl.setActiveLightMap("py",vec3(0,phpy,phpy))
+      #mtl.setActiveLightMap("nz",vec3(0,0,phnz))
+      #mtl.setActiveLightMap("pz",vec3(0,phpz,phpz))
 
 ###############################################################################
 

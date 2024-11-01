@@ -235,7 +235,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       puni->_type = unityp;
       OrkAssert(unityp != GL_ZERO);
 
-      printf(" find uni<%p:%s> unisiz<%d> unityp<%08x:%s> ", puni, str_name.c_str(), unisiz, unityp, puni->_typeName.c_str());
+      //printf(" find uni<%p:%s> unisiz<%d> unityp<%08x:%s> ", puni, str_name.c_str(), unisiz, unityp, puni->_typeName.c_str());
 
       UniformInstance* pinst = new UniformInstance;
       puni->_state = 0;
@@ -278,16 +278,16 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       if (is_sampler) {
         pinst->mPrivData.set<GLenum>(tex_target);
         if (is_array) {
-          printf(" LOCS[");
+          //printf(" LOCS[");
           for (int i = 0; i < unisiz; i++) {
             auto subitemstr = FormatString("%s[%d]", str_name.c_str(), i);
             GLint subuniloc = glGetUniformLocation(_programObjectId, subitemstr.c_str());
             pinst->_locations.push_back(subuniloc);
             printf(" %d:%d ", i, subuniloc);
           }
-          printf("] ");
+          //printf("] ");
         } else {
-          printf(" LOC<%d> ", uniloc);
+          //printf(" LOC<%d> ", uniloc);
           pinst->_locations.push_back(uniloc);
         }
       }
@@ -304,7 +304,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       OrkAssert(it != flatunimap.end());
       // prob a UBO uni
     }
-    printf("\n");
+    //printf("\n");
   }
   double postproc_time = pptimer.SecsSinceStart();
   // printf( "postproctime<%f>\n", postproc_time );

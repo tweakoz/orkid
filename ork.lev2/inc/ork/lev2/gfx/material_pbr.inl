@@ -238,7 +238,7 @@ public:
   // Lightmaps
   ///////////////////////////////////////////
 
-  void setActiveLightMap(int index, std::string name, fvec3 c );
+  void setActiveLightMap(std::string name, fvec3 c );
 
   fxparam_constptr_t _parMapLightMapArray      = nullptr;
 
@@ -248,6 +248,7 @@ public:
 
   constexpr static size_t kMaxLightmaps = 8;
   std::unordered_map<std::string, image_ptr_t> _lightmap_image_assets;
+  std::unordered_map<std::string, int> _lightmap_indices;
   std::vector<image_ptr_t> _image_lightmaps;
 
   void conformLightmaps();

@@ -233,7 +233,7 @@ libblock lib_fwd //
     //}
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
-    env_lighting = light_maps;
+    env_lighting += light_maps;
     
     ///////////////////////////////////////////////
     // point lighting

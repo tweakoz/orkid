@@ -180,6 +180,11 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
             probe->_type = LightProbeType(t->hashed());
+          })
+          .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, py::object path) {
+            auto path_as_str = py::str(path);
+            auto path_as_std = path_as_str.cast<std::string>();
+            probe->exportEquirectangular(ctx.get(), path_as_std);
           });
   type_codec->registerStdCodec<lightprobe_ptr_t>(probe_t);
   /////////////////////////////////////////////////////////////////////////////////

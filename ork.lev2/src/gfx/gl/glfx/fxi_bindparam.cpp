@@ -219,7 +219,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
     int uniloc = pinst->_locations[0];
 
-    if(pTex and true){
+    if(false and pTex){
       const char* texnam = pTex->_debugName.c_str();
       const char* teknam = container->mActiveTechnique->_name.c_str();
       const char* parname = hpar->_name.c_str();
@@ -240,7 +240,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
       GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
 
       glUniform1i(uniloc, itexunit);
-      printf( "ASSSAMP LOC<%d> UNIT<%d>\n", uniloc, itexunit );
+      //printf( "ASSSAMP LOC<%d> UNIT<%d>\n", uniloc, itexunit );
       GL_ERRORCHECK();
     }
     //}
@@ -267,7 +267,7 @@ void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_
         int uniloc   = pinst->_locations[i];
         int itexunit = pass->assignSampler(uniloc);
         texunits[i]  = itexunit;
-        printf("aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit);
+        //printf("aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit);
         GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
         glUniform1i(uniloc, itexunit);
         GL_ERRORCHECK();

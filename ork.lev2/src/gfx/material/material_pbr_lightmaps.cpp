@@ -40,8 +40,12 @@ namespace ork::lev2 {
 static logchannel_ptr_t logchan_pbr_lm = logger()->createChannel("mtlpbrLM", fvec3(0.8, 0.8, 0.1), true);
 ///////////////////////////////////////////////////////////////////////////////
 
-void PBRMaterial::setActiveLightMap(int index, std::string name, fvec3 c ){
-  _lightmapColors[index] = c;
+void PBRMaterial::setActiveLightMap(std::string name, fvec3 c ){
+  auto it = _lightmap_indices.find(name);
+  if(it!=_lightmap_indices.end()){
+    int index = it->second;
+    _lightmapColors[index] = c;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,6 +153,7 @@ void PBRMaterial::assignLightmaps(Context* ctx){
       auto name = item.first;
       auto img = item.second;
       TID._slices[idx] = TextureArrayInitSubItem{idx, img};
+      _lightmap_indices[name] = idx;
       idx++;
     }
     ////////////////////////////////

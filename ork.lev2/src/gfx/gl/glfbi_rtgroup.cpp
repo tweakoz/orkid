@@ -531,6 +531,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
             glinternalformat = GL_RG32F;
             gltype           = GL_FLOAT;
             break;
+          case EBufferFormat::RGB8:
+            glinternalformat = GL_RGB8;
+            gltype           = GL_UNSIGNED_BYTE;
+            break;
           case EBufferFormat::RGBA8:
             glinternalformat = GL_RGBA8;
             gltype           = GL_UNSIGNED_BYTE;
