@@ -165,7 +165,7 @@ struct LightProbe {
   ~LightProbe();
   void resize(int dim);
 
-  void exportEquirectangular(Context* ctx, const std::string& path);
+  void exportEquirectangular(Context* ctx, const fquat& rot, const file::Path& path);
 
   LightProbeType _type = LightProbeType::REFLECTION;
   int _dim = 0;

@@ -34,7 +34,7 @@ void LightProbe::resize(int dim) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightProbe::exportEquirectangular(Context* ctx, const std::string& path) {
+void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const file::Path& path) {
   auto tex              = _cubeTexture;
   int w                 = 2048;
   int h                 = 1024;
@@ -52,7 +52,7 @@ void LightProbe::exportEquirectangular(Context* ctx, const std::string& path) {
   material->_rasterstate._depthtest = EDepthTest::OFF;
 
   auto tek_c2e = material->technique("tek_cube2equi");
-  auto p_mvp   = material->param("mvp");
+  auto p_mrot   = material->param("mrot");
   auto p_cube  = material->param("cube_sampler");
 
   material->_rasterstate.SetCullTest(ECullTest::OFF);
@@ -63,10 +63,15 @@ void LightProbe::exportEquirectangular(Context* ctx, const std::string& path) {
   FBI->PushRtGroup(_equiRenderRTG.get());
   FBI->Clear(fvec4(1, 0, 0, 0), 1.0);
 
+  fmtx3 mtxrot;
+  mtxrot.fromQuaternion(rot);
+
   if (1) {
     auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
     material->begin(tek_c2e, RCFD);
-    material->bindParamMatrix(p_mvp, fmtx4::Identity());
+
+
+    material->bindParamMatrix(p_mrot, mtxrot);
     material->bindParamCTex(p_cube, _cubeTexture.get());
     ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->render2dQuadEML(); // full screen quad
@@ -76,7 +81,7 @@ void LightProbe::exportEquirectangular(Context* ctx, const std::string& path) {
   FBI->PopRtGroup();
   ctx->endFrame();
 
-  FBI->capture(colorbuf.get(), "equirectangular.png");
+  FBI->capture(colorbuf.get(), path);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
