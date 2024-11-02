@@ -141,7 +141,7 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit) {
 
-  OrkAssert(tex_unit < mTargetGL._MAX_TEXTURE_IMAGE_UNITS);
+  //OrkAssert(tex_unit < mTargetGL._MAX_TEXTURE_IMAGE_UNITS);
 
   gltexobj_ptr_t tex_obj;
 

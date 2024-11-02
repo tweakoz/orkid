@@ -211,7 +211,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
             break;
           #endif
           if (monocams) {
-              printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
+              //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
             //printf("monocams<%p>\n", (void*)monocams);  
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
