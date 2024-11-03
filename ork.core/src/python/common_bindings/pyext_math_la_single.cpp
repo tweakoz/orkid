@@ -61,6 +61,13 @@ void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t typ
               [](decompxf_ptr_t dcxf, fvec3 eye, fvec3 tgt, fvec3 up) {
                 dcxf->lookAt(eye, tgt, up);
               })
+          .def(
+              "set",
+              [](decompxf_ptr_t dcxf, fvec3 pos, fquat ori, float scale) {
+                dcxf->_translation    = pos;
+                dcxf->_rotation       = ori;
+                dcxf->_uniformScale   = scale;
+              })
           .def_property(
               "directMatrix",
               [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
