@@ -20,7 +20,7 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-static ContextGL* _gcurrentContext = nullptr;
+ContextGL* _gcurrentContext = nullptr;
 
 std::atomic<int> __FIND_IT;
 

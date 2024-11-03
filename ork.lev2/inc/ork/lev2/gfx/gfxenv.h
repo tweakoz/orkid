@@ -313,6 +313,8 @@ public:
   virtual void TakeThreadOwnership() {
   }
 
+  virtual void _validateAllStates() const {}
+
   void* BeginLoad();
   void EndLoad(void* ploadtok);
 

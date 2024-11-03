@@ -207,12 +207,11 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
             if (is_stereo and stereocams) {
               //printf( "RCFD_Camera_MVP_Mono: stereocams<%p>\n", (void*)stereocams );
               FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+              break;
             }
-            break;
           #endif
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
-            //printf("monocams<%p>\n", (void*)monocams);  
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());

@@ -82,12 +82,15 @@ struct DDS_HEADER;
 
 namespace ork { namespace lev2 {
 
+
 class ContextGL;
 class GlslFxInterface;
 struct GLTextureObject;
 struct GlTextureInterface;
 
 using gltexobj_ptr_t = std::shared_ptr<GLTextureObject>;
+
+extern ContextGL* _gcurrentContext;
 
 struct GLTextureAsyncTask{
   GLTextureAsyncTask();
@@ -527,7 +530,7 @@ public:
   void _validateCurrentFramebuffer() const;
   void _validateCurrentGeomBuffers() const;
   void _validateTextureState() const;
-  void _validateAllStates() const;
+  void _validateAllStates() const final;
 
 public:
   //////////////////////////////////////////////

@@ -48,6 +48,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
+    #solid_wire_pipeline = self.createVtxColorPipeline()
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
