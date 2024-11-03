@@ -120,7 +120,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         float B   = light->shadowDepthBias();
         float SMS = light->_spdata->shadowMapSize();
 
-         if(1){
+         if(0){
           printf( "C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
           printf( "P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z );
           printf( "R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
@@ -161,19 +161,19 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
+      //printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
 
-      size_t num_cookies = texlist.size();
-      auto tex0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlack.get();
-      auto tex1 = (num_cookies > 1) ? texlist[1] : mtl->_texBlack.get();
-      auto tex2 = (num_cookies > 2) ? texlist[2] : mtl->_texBlack.get();
-      auto tex3 = (num_cookies > 3) ? texlist[3] : mtl->_texBlack.get();
-      FXI->BindParamCTex(mtl->_parLightCookie0, tex0);
-      FXI->BindParamCTex(mtl->_parLightCookie1, tex1);
-      FXI->BindParamCTex(mtl->_parLightCookie2, tex2);
-      FXI->BindParamCTex(mtl->_parLightCookie3, tex3);
+      size_t num_cookies = num_texspotlights;
+      auto tex_color0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlack.get();
+      auto tex_depth0 = (num_cookies > 0) ? texlist[1] : mtl->_texBlack.get();
+      auto tex_color1 = (num_cookies > 1) ? texlist[2] : mtl->_texBlack.get();
+      auto tex_depth1 = (num_cookies > 1) ? texlist[3] : mtl->_texBlack.get();
+      FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
+      FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
+      FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
+      FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
       
     }
     

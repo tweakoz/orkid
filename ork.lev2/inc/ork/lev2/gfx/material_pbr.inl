@@ -198,10 +198,10 @@ public:
   fxparam_constptr_t _parDepthFogPower = nullptr;
 
   //fxparam_constptr_t _parLightCookies   = nullptr;
-  fxparam_constptr_t _parLightCookie0   = nullptr;
-  fxparam_constptr_t _parLightCookie1   = nullptr;
-  fxparam_constptr_t _parLightCookie2   = nullptr;
-  fxparam_constptr_t _parLightCookie3   = nullptr;
+  fxparam_constptr_t _parLightColorCookie0   = nullptr;
+  fxparam_constptr_t _parLightColorCookie1   = nullptr;
+  fxparam_constptr_t _parLightDepthCookie0   = nullptr;
+  fxparam_constptr_t _parLightDepthCookie1   = nullptr;
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
   fxparam_constptr_t _parProbeIrradiance   = nullptr;

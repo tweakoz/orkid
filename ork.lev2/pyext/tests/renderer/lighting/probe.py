@@ -204,20 +204,6 @@ class LIGHTING_APP(object):
                                      dim=shadow_size,
                                      radius=4,
                                      layers = COLOR_LAYERS)
-      self.spotlight3 = MySpotLight( index=2,
-                                     app=self,
-                                     model=model,
-                                     frq=0.47,
-                                     color=vec3(0,500,0),
-                                     cookie=cookie3,
-                                     fovbase=20.0,
-                                     fovamp=55.0,
-                                     voffset=13,
-                                     vscale=8,
-                                     bias=shadow_bias,
-                                     dim=shadow_size,
-                                     radius=4,
-                                     layers = COLOR_LAYERS)
    ##############################################
 
     self.probe = lev2.LightProbe()
@@ -280,7 +266,6 @@ class LIGHTING_APP(object):
     if hasattr(self,'spotlight1'):
       self.spotlight1.update(self.lighttime)
       self.spotlight2.update(self.lighttime)
-      self.spotlight3.update(self.lighttime)
 
 ###############################################################################
 

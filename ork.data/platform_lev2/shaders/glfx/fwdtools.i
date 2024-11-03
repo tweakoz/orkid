@@ -145,13 +145,13 @@ libblock lib_fwd //
   vec3 _sample_cookie_lod(int index, vec2 uv, float lod) {
     vec3 rval = vec3(0);
     if (index == 0) {
-      rval = textureLod(light_cookie0, uv, lod).xyz;
+      rval = textureLod(light_cookie_color_0, uv, lod).xyz;
     } else if (index == 1) {
-      rval = textureLod(light_cookie1, uv, lod).xyz;
+      rval = textureLod(light_cookie_depth_0, uv, lod).xyz;
     } else if (index == 2) {
-      rval = textureLod(light_cookie2, uv, lod).xyz;
+      rval = textureLod(light_cookie_color_1, uv, lod).xyz;
     } else if (index == 3) {
-      rval = textureLod(light_cookie3, uv, lod).xyz;
+      rval = textureLod(light_cookie_depth_1, uv, lod).xyz;
     }
     return rval;
   }
@@ -353,8 +353,8 @@ libblock lib_fwd //
 
 
       vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
-      vec3 lighttex  = vec3(1);//diffuse;
-      //lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
+      vec3 lighttex  = diffuse;
+      lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
       //spot_lighting += vec3(specular_lighttex);
        //spot_lighting += pl_c;
