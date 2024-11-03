@@ -50,7 +50,7 @@ class TestApp(frqdom.WaveformsApp):
   ##########################################
   def modLayer(self,newlyr):
     irdataset = S.SpectralImpulseDataSet()
-    cplxlen = S.spectralComplexSize()
+    cplxlen = S.defaultSpectralComplexSize()
     violinR,violinI = create_violin_formant_response(cplxlen, 48000)
     irdataset.resize(1)
     sir = S.SpectralImpulseResponse()
