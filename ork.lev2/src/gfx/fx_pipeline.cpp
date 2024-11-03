@@ -223,8 +223,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
               FXI->BindParamMatrix(param, stereocams->VPL());
+              break;
             }
-            break;
           #endif
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->VPMONO());
@@ -238,8 +238,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
               FXI->BindParamMatrix(param, stereocams->VL().inverse());
+              break;
             }
-            break;
           #endif
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->GetIVMatrix());
@@ -253,8 +253,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
               FXI->BindParamMatrix(param, stereocams->VPL().inverse());
+              break;
             }
-            break;
           #endif
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
