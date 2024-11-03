@@ -462,7 +462,7 @@ libblock lib_deferred
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
       out_color += ambient + gbd._emissive;
 
-      //out_color = ambient;
+      //out_color = basecolor;
     }
     else {
       out_color = skyboxColor;

@@ -129,6 +129,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
         FXI->BindParamVect3(this->_paramEyePostion, eye_pos);
         FXI->BindParamMatrix(this->_paramM, worldmatrix);
         FXI->BindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
+        FXI->BindParamCTex(this->_paramMapCNMREA, this->_texArrayCNMREA.get());
       });
     }
   }

@@ -174,7 +174,7 @@ class PixelArtApp(BasicUiCamSgApp):
     self.node2 = self.createBaryDrawableFromVertsAndFaces(ctx,v2,f2,0.25)
     self.node3 = self.createBaryDrawableFromVertsAndFaces(ctx,v3,f3,0.25)
     self.node4 = self.createBaryDrawableFromVertsAndFaces(ctx,v4,f4,0.25)
-    
+
 ###############################################################################
 
 PixelArtApp().ezapp.mainThreadLoop()
