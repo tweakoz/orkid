@@ -190,12 +190,12 @@ class SceneGraphApp(object):
       phpz = 0.5 + 0.5*math.sin(phpz)
       phny = 0.5 + 0.5*math.sin(phny)
       phpy = 0.5 + 0.5*math.sin(phpy)
-      mtl.setActiveLightMap("nx",vec3(1,1,1)*4)
-      #mtl.setActiveLightMap("px",vec3(0,0,phpx))
-      #mtl.setActiveLightMap("ny",vec3(phny,phny,0))
-      #mtl.setActiveLightMap("py",vec3(0,phpy,phpy))
-      #mtl.setActiveLightMap("nz",vec3(0,0,phnz))
-      #mtl.setActiveLightMap("pz",vec3(0,phpz,phpz))
+      mtl.setActiveLightMap("nx",vec3(1,1,1)*phnx)
+      mtl.setActiveLightMap("px",vec3(0,0,phpx))
+      mtl.setActiveLightMap("ny",vec3(phny,phny,0))
+      mtl.setActiveLightMap("py",vec3(0,phpy,phpy))
+      mtl.setActiveLightMap("nz",vec3(0,0,phnz))
+      mtl.setActiveLightMap("pz",vec3(0,phpz,phpz))
 
 ###############################################################################
 
