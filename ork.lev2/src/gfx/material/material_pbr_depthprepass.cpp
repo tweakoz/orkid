@@ -41,7 +41,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
   fxpipeline_ptr_t pipeline;
 
   if ((not permu._instanced) and (not permu._skinned)) {
-    if (permu._stereo) {
+    if (permu._stereo and (not permu._vr_mono)) {
       if (this->_tek_FWD_DEPTHPREPASS_RI_NI_ST) {
         pipeline             = std::make_shared<FxPipeline>(permu);
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_NI_ST;
@@ -89,7 +89,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
       }
     }
   } else if (not permu._instanced and permu._skinned) {
-    if (permu._stereo) {
+    if (permu._stereo and (not permu._vr_mono)) {
       if (this->_tek_FWD_DEPTHPREPASS_SK_NI_ST) {
         pipeline             = std::make_shared<FxPipeline>(permu);
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_SK_NI_ST;

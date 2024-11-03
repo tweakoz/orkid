@@ -205,7 +205,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         case "RCFD_Camera_MVP_Mono"_crcu: {
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
-              printf( "RCFD_Camera_MVP_Mono: stereocams<%p>\n", (void*)stereocams );
+              //printf( "RCFD_Camera_MVP_Mono: stereocams<%p>\n", (void*)stereocams );
               FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
             }
             break;
