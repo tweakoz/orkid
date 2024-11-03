@@ -83,12 +83,12 @@ void PBRMaterial::conformLightmaps() {
     auto lm = lmitem.second;
     max_w = std::max(max_w, lm->_width);
     max_h = std::max(max_h, lm->_height);
-    if(lm->_format!=EBufferFormat::RGB8){
+    if(lm->_format!=EBufferFormat::RGB16){
       auto rgb = std::make_shared<Image>();
       images_to_rgb[name] = rgb;
       sync_rgb++;
       auto OP = [=, &sync_rgb](){
-        rgb->convertFromImageToFormat(*lm, EBufferFormat::RGB8);
+        rgb->convertFromImageToFormat(*lm, EBufferFormat::RGB16);
         sync_rgb--;
       };
       opq::concurrentQueue()->enqueue(OP);
@@ -102,7 +102,7 @@ void PBRMaterial::conformLightmaps() {
     auto name = lmitem.first;
     auto lm = lmitem.second;
     lmap_by_name[name] = lm;
-    OrkAssert(lm->_format==EBufferFormat::RGB8);
+    //OrkAssert(lm->_format==EBufferFormat::RGB8);
   }
   ////////////////////////////////
   // conform size to largest 

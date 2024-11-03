@@ -52,6 +52,12 @@ namespace ork::lev2 {
         _type           = GL_UNSIGNED_BYTE;
         break;
       }
+      case EBufferFormat::RGB16: {
+        _internalFormat = GL_RGB16;
+        _format         = GL_RGB;
+        _type           = GL_UNSIGNED_SHORT;
+        break;
+      }
       case EBufferFormat::RGBA16F: {
         _internalFormat = GL_RGBA16F;
         _format         = GL_RGBA;

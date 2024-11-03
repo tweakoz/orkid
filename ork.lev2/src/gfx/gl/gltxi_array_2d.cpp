@@ -133,6 +133,34 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
         }
         break;
       }
+      case EBufferFormat::RGBA16:
+      case EBufferFormat::RGB16:
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w,
+              h,
+              num_slices,
+              triplet._internalFormat,
+              w * h * num_slices,
+              nullptr);
+        }
+        glTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w,                       // width
+            h,                       // height
+            num_slices,         // depth
+            0,                       // border
+            triplet._format,         // format
+            triplet._type,           // type
+            nullptr);         // data
+        GL_ERRORCHECK();
+        break;
       case EBufferFormat::RGBA8:
       case EBufferFormat::BGRA8:
       case EBufferFormat::RGB8:

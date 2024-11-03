@@ -184,8 +184,62 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
   /////////////////////////////
   else if (fmt == EBufferFormat::BGRA8 and inp._format == EBufferFormat::RGBA8) {
     init(inp._width, inp._height, 4, inp._bytesPerChannel);
-
-  } else {
+  } 
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGB16) {
+    init(inp._width, inp._height, 3, inp._bytesPerChannel);
+  } 
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGB8) {
+    init(inp._width, inp._height, 3, 2);
+    auto outptr = (uint16_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase         = pixelindex * 3;
+        outptr[elembase + 0] = uint16_t(inptr[elembase + 0])<<8;
+        outptr[elembase + 1] = uint16_t(inptr[elembase + 1])<<8;
+        outptr[elembase + 2] = uint16_t(inptr[elembase + 2])<<8;
+      }
+    }
+    _format = fmt;
+  }  
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA8) {
+    init(inp._width, inp._height, 3, 2);
+    auto outptr = (uint16_t*)_data->data();
+    auto inptr  = (const uint8_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase_i         = pixelindex * 4;
+        int elembase_o         = pixelindex * 3;
+        outptr[elembase_o + 0] = uint16_t(inptr[elembase_i + 0])<<8;
+        outptr[elembase_o + 1] = uint16_t(inptr[elembase_i + 1])<<8;
+        outptr[elembase_o + 2] = uint16_t(inptr[elembase_i + 2])<<8;
+      }
+    }
+    _format = fmt;
+  }  
+  /////////////////////////////
+  else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA16) {
+    init(inp._width, inp._height, 3, 2);
+    auto outptr = (uint16_t*)_data->data();
+    auto inptr  = (const uint16_t*)inp._data->data();
+    for (int y = 0; y < inp._height; y++) {
+      for (int x = 0; x < inp._width; x++) {
+        int pixelindex       = y * inp._width + x;
+        int elembase_i         = pixelindex * 4;
+        int elembase_o         = pixelindex * 3;
+        outptr[elembase_o + 0] = uint16_t(inptr[elembase_i + 0]);
+        outptr[elembase_o + 1] = uint16_t(inptr[elembase_i + 1]);
+        outptr[elembase_o + 2] = uint16_t(inptr[elembase_i + 2]);
+      }
+    }
+    _format = fmt;
+  }  
+  else {
     OrkAssert(false);
   }
 }

@@ -142,6 +142,9 @@ std::string EBufferFormatToName(EBufferFormat fmt){
     case EBufferFormat::RGB16:
       rval = "RGB16";
       break;
+    case EBufferFormat::RGBA16:
+      rval = "RGBA16";
+      break;
     case EBufferFormat::RGBA16F:
       rval = "RGBA16F";
       break;
