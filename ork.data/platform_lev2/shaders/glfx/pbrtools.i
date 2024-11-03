@@ -24,9 +24,9 @@ uniform_set ub_vtx {
   mat3 mrot;
   vec4 modcolor;
   vec2 InvViewportSize; // inverse target size
-  //sampler2D InstanceMatrices;
-  //sampler2D InstanceColors;
-  //usampler2D InstanceIds;
+  sampler2D InstanceMatrices;
+  sampler2D InstanceColors;
+  usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
