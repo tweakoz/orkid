@@ -260,10 +260,10 @@ libblock lib_fwd //
       int LCI_STD = j * 2 + 0;
       int LCI_DEP = j * 2 + 1;
 
-      vec4 LSB = _lightsizbias[j];
+      vec4 LSB = _lightsizbias[i];
 
-      mat4 shmtx           = _shadowmatrix[j];
-      vec3 lightpos        = _lightpos[j].xyz;
+      mat4 shmtx           = _shadowmatrix[i];
+      vec3 lightpos        = _lightpos[i].xyz;
       vec3 lightdel        = lightpos - wpos;
       float lightrange     = LSB.x;
       vec4 light_hpos      = (shmtx)*vec4(wpos, 1);
@@ -336,7 +336,7 @@ libblock lib_fwd //
 
       ///////////////////////
 
-      vec3 lightcol          = _lightcolor[j].xyz;
+      vec3 lightcol          = _lightcolor[i].xyz;
       float level            = pbd._roughness*4;
       vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;   // diffuse WIP
       vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
@@ -353,8 +353,8 @@ libblock lib_fwd //
 
 
       vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
-      vec3 lighttex  = diffuse;
-      lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
+      vec3 lighttex  = vec3(1);//diffuse;
+      //lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
       //spot_lighting += vec3(specular_lighttex);
        //spot_lighting += pl_c;

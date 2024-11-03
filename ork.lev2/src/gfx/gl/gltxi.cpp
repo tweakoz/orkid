@@ -255,8 +255,8 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
         tex->_depth,
         tex,
         texname.c_str());
-  }
-
+  }    
+    
   GL_ERRORCHECK();
   glActiveTexture(GL_TEXTURE0 + tex_unit);
   GL_ERRORCHECK();

@@ -301,10 +301,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parLightCookie1 = fxi->parameter(_shader, "light_cookie1");
   _parLightCookie2 = fxi->parameter(_shader, "light_cookie2");
   _parLightCookie3 = fxi->parameter(_shader, "light_cookie3");
-  //_parLightCookie4 = fxi->parameter(_shader, "light_cookie4");
-  //_parLightCookie5 = fxi->parameter(_shader, "light_cookie5");
-  //_parLightCookie6 = fxi->parameter(_shader, "light_cookie6");
-  //_parLightCookie7 = fxi->parameter(_shader, "light_cookie7");
 
   _parProbeReflection = fxi->parameter(_shader, "reflectionPROBE");
   _parProbeIrradiance = fxi->parameter(_shader, "irradiancePROBE");

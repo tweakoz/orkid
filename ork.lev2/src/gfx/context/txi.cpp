@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/gfx/ctxbase.h>
+#include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -165,32 +166,20 @@ texture_ptr_t TextureInterface::createColorTextureV3(fvec3 color, int w, int h){
 }
 
 texture_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int w, int h, int d){
-  auto rval = std::make_shared<Texture>();
 
-  int numpixels = (w*h*d);
-  auto data = new uint8_t[numpixels*3];
-  uint8_t r = uint8_t(color.x*255.0f);
-  uint8_t g = uint8_t(color.y*255.0f);
-  uint8_t b = uint8_t(color.z*255.0f);
-  for( int i=0; i<numpixels; i++ ){
-    data[i*3+0] = r;
-    data[i*3+1] = g;
-    data[i*3+2] = b;
+  auto image = std::make_shared<Image>();
+  image->initRGB8WithColor(w,h,color,EBufferFormat::RGB8);
+
+  TextureArrayInitData TID;
+
+
+  TID._slices.resize(d);
+  for(uint32_t i=0; i<d; i++){
+    TID._slices[i] = TextureArrayInitSubItem{i, image};
   }
-
-  TextureInitData tid;
-  tid._w = w;
-  tid._h = h;
-  tid._d = d;
-  tid._src_format = EBufferFormat::BGR8;
-  tid._dst_format = EBufferFormat::BGR8;
-  tid._autogenmips = false;
-  //tid._allow_async = false;
-  tid._data = (const void*) data;
-
-  initTextureFromData(rval.get(),tid);
-
-  delete[] data;
+  auto rval = std::make_shared<Texture>();
+  rval->_debugName = "tidtexarray";
+  initTextureArray2DFromData(rval.get(), TID);
 
   return rval;
 }

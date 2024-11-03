@@ -120,7 +120,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         float B   = light->shadowDepthBias();
         float SMS = light->_spdata->shadowMapSize();
 
-         if(0){
+         if(1){
           printf( "C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
           printf( "P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z );
           printf( "R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
@@ -161,7 +161,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      //printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
+      printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
       FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
 
@@ -215,12 +215,17 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
 
     if(mtl->_texLightMapArray){
+      //printf("binding lightmap array\n");
       FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
       FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
     else{
+      //printf("binding white lightmap array\n");
+      //printf("mtl->_parMapLightMapArray<%p>\n", mtl->_parMapLightMapArray);
+      //printf("mtl->_texWhiteLightMapArray<%p>\n", mtl->_texWhiteLightMapArray.get());
       FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray.get());
       FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      //printf("OK...\n");
     }
 
     ///////////////////////////////////////////////////////////////////////////

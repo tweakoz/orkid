@@ -11,6 +11,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
+#include <ork/kernel/debug.h>
 
 #include "gl.h"
 #include <string>
@@ -253,10 +254,12 @@ struct _FtxGlDebugger {
 
   std::shared_ptr<ftxui::ScreenInteractive> _fxtui_screen;
   ftxui::component_ptr_t _comp_top;
+  ftxui::node_ptr_t _node_backtrace;
   ftxui::node_ptr_t _node_framebuffer;
   ftxui::node_ptr_t _node_shader;
   // ftxui::node_ptr_t _node_shadertext;
   ftxui::node_ptr_t _node_geometry;
+  ftxui::node_ptr_t _node_texturestate;
   using shader_text_t = std::vector<std::string>;
 
   std::map<int,shader_attrib_ptr_t> _shader_attribs;
@@ -393,18 +396,24 @@ void _FtxGlDebugger::run_loop() {
   int num_shader_texts = _shader_texts.size();
 
   std::vector<std::string> menu_entries = {
+      "BackTrace",
       "FrameBufferState",
+      "TextureState",
       "GeometryState",
       "ShaderState",
   };
 
+  auto content_backtrace = Renderer([&] { return _node_backtrace | vscroll_indicator | frame; });
   auto content_framebuffer = Renderer([&] { return _node_framebuffer | vscroll_indicator | frame; });
+  auto content_texstate = Renderer([&] { return _node_texturestate | vscroll_indicator | frame; });
   auto content_geometry    = Renderer([&] { return _node_geometry | vscroll_indicator | frame; });
 
   auto content_shader = Renderer([&] { return _node_shader | vscroll_indicator | frame; });
 
   std::vector<Component> content_components;
+  content_components.push_back(content_backtrace);
   content_components.push_back(content_framebuffer);
+  content_components.push_back(content_texstate);
   content_components.push_back(content_geometry);
   content_components.push_back(content_shader);
   for (auto it : _shader_texts) {
@@ -447,10 +456,49 @@ void _FtxGlDebugger::run_loop() {
 void ContextGL::_validateAllStates() const {
 
   _debugger.makeShared<_FtxGlDebugger>();
+  /////////////////////////////
+  {
+    using namespace ftxui;
+
+    std::string callstack = ork::get_backtrace();
+    std::vector<std::string> lines;
+    size_t pos = 0;
+    size_t length = callstack.length();
+    while (pos < length) {
+      size_t start = pos;
+      while (pos < length && callstack[pos] != '\n') pos++;
+
+      std::string line = callstack.substr(start, pos - start);
+
+      int status = 0;
+      char* demangled = abi::__cxa_demangle(line.c_str(), 0, 0, &status);
+      if(status==0){
+        lines.push_back(demangled);
+        free(demangled);
+      }
+      else{
+        lines.push_back(line);
+      }
+      if (pos < length) pos++;  // Include newline
+    }
+
+    node_vect_t NODES;
+    for (const auto& line : lines) {
+      _colortext(NODES, WHI, BLK, "%s\n", line.c_str());
+    }
+    _debugger.getShared<_FtxGlDebugger>()->_node_backtrace = vbox({
+        text("BackTrace"),
+        separator(),
+        vbox(std::move(NODES)),
+    });
+  }
+
+  /////////////////////////////
 
   _validateCurrentShaderProgram();
   _validateCurrentFramebuffer();
   _validateCurrentGeomBuffers();
+  _validateTextureState();
 
   _debugger.getShared<_FtxGlDebugger>()->run_loop();
 }
@@ -863,51 +911,196 @@ void ContextGL::_validateCurrentGeomBuffers() const {
   std::string vaoNameStr(vaoName.begin(), vaoName.end());
 
   _colortext(NODES, YEL, BLK, "currentVAO<%d:%s>", currentVAO, vaoNameStr.c_str());
-  OrkAssert(currentVAO != 0);
-  // validate all bound VBOs are valid
-  GLint numAttribs = 0;
-  glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &numAttribs);
-  _colortext(NODES, YEL, BLK, "numAttribs<%d>", numAttribs);
-  for ( auto attr_item : debugger->_shader_attribs) {
-    int i = attr_item.first;
-    auto shattrib = attr_item.second;
-    GLint currentVBO = 0;
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &currentVBO);
-    // get attrib format
-    GLint isEnabled = 0;
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &isEnabled);
-    if (not isEnabled)
-      continue;
-    GLint size           = 0;
-    GLenum type          = GL_NONE;
-    GLboolean normalized = GL_FALSE;
-    GLint stride         = 0;
-    GLvoid* offset       = 0;
+  if(currentVAO != 0){
+    // validate all bound VBOs are valid
+    GLint numAttribs = 0;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &numAttribs);
+    _colortext(NODES, YEL, BLK, "numAttribs<%d>", numAttribs);
+    for ( auto attr_item : debugger->_shader_attribs) {
+      int i = attr_item.first;
+      auto shattrib = attr_item.second;
+      GLint currentVBO = 0;
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &currentVBO);
+      // get attrib format
+      GLint isEnabled = 0;
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &isEnabled);
+      if (not isEnabled)
+        continue;
+      GLint size           = 0;
+      GLenum type          = GL_NONE;
+      GLboolean normalized = GL_FALSE;
+      GLint stride         = 0;
+      GLvoid* offset       = 0;
 
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, (GLint*)&type);
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, (GLint*)&normalized);
-    glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &stride);
-    glGetVertexAttribPointerv(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, &offset);
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &size);
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, (GLint*)&type);
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, (GLint*)&normalized);
+      glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &stride);
+      glGetVertexAttribPointerv(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, &offset);
 
-    auto type_str = _glTypeToString(shattrib->_type);
+      auto type_str = _glTypeToString(shattrib->_type);
 
-    _colortext(
-        NODES,
-        YEL,
-        BLK,
-        "  attrib<%d:%s> vbo<%d> size<%d> type<%s> normalized<%d> stride<%d> offset<%u>\n",
-        shattrib->_location,
-        shattrib->_name.c_str(),
-        currentVBO,
-        size,
-        type_str.c_str(),
-        normalized,
-        stride,
-        size_t(offset));
+      _colortext(
+          NODES,
+          YEL,
+          BLK,
+          "  attrib<%d:%s> vbo<%d> size<%d> type<%s> normalized<%d> stride<%d> offset<%u>\n",
+          shattrib->_location,
+          shattrib->_name.c_str(),
+          currentVBO,
+          size,
+          type_str.c_str(),
+          normalized,
+          stride,
+          size_t(offset));
+    }
   }
   debugger->_node_geometry = vbox({
       text("Geometry State"),
+      separator(),
+      vbox(std::move(NODES)),
+  });
+}
+
+void ContextGL::_validateTextureState() const {
+  // display all texture state
+  using namespace ftxui;
+  auto debugger = _debugger.getShared<_FtxGlDebugger>();
+  node_vect_t NODES;
+  GLint numTexUnits = 0;
+  glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &numTexUnits);
+  _colortext(NODES, WHI, BLK, "numTexUnits<%d>\n", numTexUnits);
+  for (int i = 0; i < numTexUnits; i++) {
+    GLint currentTexture = 0;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &currentTexture);
+    glActiveTexture(GL_TEXTURE0 + i);
+    GLint currentTexObj = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexObj);
+    GLint currentTexObj3D = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_3D, &currentTexObj3D);
+    GLint currentTexObj2DArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_ARRAY, &currentTexObj2DArray);
+    GLint currentTexObjCube = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &currentTexObjCube);
+    GLint currentTexObjRect = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_RECTANGLE, &currentTexObjRect);
+    GLint currentTexObjBuffer = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &currentTexObjBuffer);
+    GLint currentTexObjMS = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE, &currentTexObjMS);
+    GLint currentTexObjMSArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY, &currentTexObjMSArray);
+    GLint currentTexObj1D = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_1D, &currentTexObj1D);
+    GLint currentTexObj1DArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_1D_ARRAY, &currentTexObj1DArray);
+    GLint currentTexObjCubeArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP_ARRAY, &currentTexObjCubeArray);
+    GLint currentTexObjShadowRect = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_RECTANGLE, &currentTexObjShadowRect);
+    GLint currentTexObjShadowCube = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &currentTexObjShadowCube);
+    GLint currentTexObjShadow2DArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_ARRAY, &currentTexObjShadow2DArray);
+    GLint currentTexObjShadowCubeArray = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP_ARRAY, &currentTexObjShadowCubeArray);
+    GLint currentTexObjBufferShadow = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_BUFFER, &currentTexObjBufferShadow);
+    GLint currentTexObjRectShadow = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_RECTANGLE, &currentTexObjRectShadow);
+    GLint currentTexObjMSArrayShadow = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY, &currentTexObjMSArrayShadow);
+    GLint currentTexObjMSShadow = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE, &currentTexObjMSShadow);
+
+    std::string texunit_str = FormatString("TexUnit<%d>", i);
+    bool show = false;
+    if(i==currentTexture){
+      texunit_str += " (active)";
+      show = true;
+    }
+    if(currentTexObj!=0){
+      texunit_str += FormatString(" 2D<%d>", currentTexObj);
+      show = true;
+    }
+    if(currentTexObj3D!=0){
+      texunit_str += FormatString(" 3D<%d>", currentTexObj3D);
+      show = true;
+    }
+    if(currentTexObj2DArray!=0){
+      texunit_str += FormatString(" 2DA<%d>", currentTexObj2DArray);
+      show = true;
+    }
+    if(currentTexObjCube!=0){
+      texunit_str += FormatString(" Cube<%d>", currentTexObjCube);
+      show = true;
+    }
+    if(currentTexObjRect!=0){
+      texunit_str += FormatString(" Rect<%d>", currentTexObjRect);
+      show = true;
+    }
+    if(currentTexObjBuffer!=0){
+      texunit_str += FormatString(" Buff<%d>", currentTexObjBuffer);
+      show = true;
+    }
+    if(currentTexObjMS!=0){
+      texunit_str += FormatString(" MS<%d>", currentTexObjMS);
+      show = true;
+    }
+    if(currentTexObjMSArray!=0){
+      texunit_str += FormatString(" MSA<%d>", currentTexObjMSArray);
+      show = true;
+    }
+    if(currentTexObj1D!=0){
+      texunit_str += FormatString(" 1D<%d>", currentTexObj1D);
+      show = true;
+    }
+    if(currentTexObj1DArray!=0){
+      texunit_str += FormatString(" 1DA<%d>", currentTexObj1DArray);
+      show = true;
+    }
+    if(currentTexObjCubeArray!=0){
+      texunit_str += FormatString(" CubeA<%d>", currentTexObjCubeArray);
+      show = true;
+    }
+    if(currentTexObjShadowRect!=0){
+      texunit_str += FormatString(" RectS<%d>", currentTexObjShadowRect);
+      show = true;
+    }
+    if(currentTexObjShadowCube!=0){
+      texunit_str += FormatString(" CubeS<%d>", currentTexObjShadowCube);
+      show = true;
+    }
+    if(currentTexObjShadow2DArray!=0){
+      texunit_str += FormatString(" 2DSA<%d>", currentTexObjShadow2DArray);
+      show = true;
+    }
+    if(currentTexObjShadowCubeArray!=0){
+      texunit_str += FormatString(" CubeSA<%d>", currentTexObjShadowCubeArray);
+      show = true;
+    }
+    if(currentTexObjBufferShadow!=0){
+      texunit_str += FormatString(" BuffS<%d>", currentTexObjBufferShadow);
+      show = true;
+    }
+    if(currentTexObjRectShadow!=0){
+      texunit_str += FormatString(" RectS<%d>", currentTexObjRectShadow);
+      show = true;
+    }
+    if(currentTexObjMSArrayShadow!=0){
+      texunit_str += FormatString(" MSAS<%d>", currentTexObjMSArrayShadow);
+      show = true;
+    }
+    if(currentTexObjMSShadow!=0){
+      texunit_str += FormatString(" MSS<%d>", currentTexObjMSShadow);
+      show = true;
+    }
+    if(show){
+      _colortext(NODES, WHI, BLK, "%s\n", texunit_str.c_str());
+    }
+  }
+  debugger->_node_texturestate = vbox({
+      text("Texture State"),
       separator(),
       vbox(std::move(NODES)),
   });

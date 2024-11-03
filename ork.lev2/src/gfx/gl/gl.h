@@ -526,6 +526,7 @@ public:
   void _validateCurrentShaderProgram() const;
   void _validateCurrentFramebuffer() const;
   void _validateCurrentGeomBuffers() const;
+  void _validateTextureState() const;
   void _validateAllStates() const;
 
 public:
