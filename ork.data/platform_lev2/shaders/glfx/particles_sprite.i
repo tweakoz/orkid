@@ -176,8 +176,8 @@ compute_shader compute_sprites
     vec3 inp_vel  = inp_vertex[index].vel.xyz;      // velocity
     vec2 inp_ar   = inp_vertex[index].age_rand.xy;  // age and random
 
-    mat3 mtxRotL = mat3(v_L);  // Extract rotation only
-    mat3 mtxRotR = mat3(v_R);  // Extract rotation only
+    mat3 mtxRotL = transpose(mat3(v_L));  // Extract rotation only
+    mat3 mtxRotR = transpose(mat3(v_R));  // Extract rotation only
     vec3 pxL = mtxRotL[0];
     vec3 pyL = mtxRotL[1];
     vec3 pxR = mtxRotR[0];
