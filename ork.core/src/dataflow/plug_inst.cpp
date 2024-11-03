@@ -74,6 +74,10 @@ bool InPlugInst::connectedIsVarying() const{
   bool rval = false;
   if( _connectedOutput ){
     rval = _connectedOutput->isVarying();
+    if(rval){
+      std::string plugname=_plugdata->_name;
+      printf("plug<%s> is varying\n",plugname.c_str());
+    }
   }
 
   return rval;

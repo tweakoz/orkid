@@ -7,10 +7,15 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, signal
+import sys, signal, argparse
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append(str(thisdir()/".."/"particles")) 
+
+parser = argparse.ArgumentParser(description='ptc harness')
+parser.add_argument("-f", "--fullscreen", action='store_true', help='fullscreen')
+args = vars(parser.parse_args())
+fullscreen = args["fullscreen"]
 
 ################################################################################
 
@@ -26,7 +31,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,fullscreen=fullscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.cameralut = CameraDataLut()
     self.xf_hmd = Transform()

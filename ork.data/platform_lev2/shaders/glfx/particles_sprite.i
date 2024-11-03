@@ -158,7 +158,7 @@ compute_interface iface_compute_sprites
             mat4         v_R;             // 64
             mat4         mvp_L;             // 0
             mat4         mvp_R;             // 64
-            vec4         obj_nrmz;          // 132
+            vec3         obj_nrmz;          // 132
             InputVertexSprite  inp_vertex[16384]; // 152
             OutputVertexSprite out_vertex[65536]; // 152 + 16384*44
             // total size = 152 + 16384*40 + 65536*40 = 3276952
@@ -171,21 +171,26 @@ compute_shader compute_sprites
 
     int index = int(gl_WorkGroupID.x);
     
-    vec3 inp_pos  = inp_vertex[index].pos.xyz;
-    vec3 inp_lw   = inp_vertex[index].lw.xyz;
-    vec3 inp_vel  = inp_vertex[index].vel.xyz;
-    vec2 inp_ar   = inp_vertex[index].age_rand.xy;
+    vec3 inp_pos  = inp_vertex[index].pos.xyz;      // pos in object space
+    vec3 inp_lw   = inp_vertex[index].lw.xyz;       // size
+    vec3 inp_vel  = inp_vertex[index].vel.xyz;      // velocity
+    vec2 inp_ar   = inp_vertex[index].age_rand.xy;  // age and random
 
-    float len = inp_lw.x;
-    float wid = inp_lw.y;
+    mat3 mtxRotL = mat3(v_L);  // Extract rotation only
+    mat3 mtxRotR = mat3(v_R);  // Extract rotation only
+    vec3 pxL = mtxRotL[0];
+    vec3 pyL = mtxRotL[1];
+    vec3 pxR = mtxRotR[0];
+    vec3 pyR = mtxRotR[1];
 
-    vec3 lpos = inp_pos - (inp_vel * len);
-    vec3 crs = normalize(cross(inp_vel, obj_nrmz.xyz)) * wid;
+    vec2 lw = inp_lw.xy*0.5;
+    vec3 hori = normalize(pxL + pxR)*lw.x;
+    vec3 vert = normalize(pyL + pyR)*lw.y;
 
-    vec3 p0 = inp_pos + crs;
-    vec3 p1 = inp_pos - crs;
-    vec3 p2 = lpos - crs;
-    vec3 p3 = lpos + crs;
+    vec3 p0 = inp_pos - hori - vert;
+    vec3 p1 = inp_pos + hori - vert;
+    vec3 p2 = inp_pos + hori + vert;
+    vec3 p3 = inp_pos - hori + vert;
 
     vec4 p0L = mvp_L * vec4(p0,1);
     vec4 p1L = mvp_L * vec4(p1,1);
@@ -200,22 +205,22 @@ compute_shader compute_sprites
 
     int o = index*6;
 
-    // 0 2 1
-    // 0 3 2
+    // 0 1 2 nxny pxny pxpy
+    // 0 2 3 nxny pxpy nxpy
 
     out_vertex[o+0].hposL = p0L;
     out_vertex[o+0].hposR = p0R;
     out_vertex[o+0].uv = vec2(0,0);
     out_vertex[o+0].age_rand = inp_ar;
 
-    out_vertex[o+1].hposL = p2L;
-    out_vertex[o+1].hposR = p2R;
-    out_vertex[o+1].uv = vec2(0,1);
+    out_vertex[o+1].hposL = p1L;
+    out_vertex[o+1].hposR = p1R;
+    out_vertex[o+1].uv = vec2(1,0);
     out_vertex[o+1].age_rand = inp_ar;
 
-    out_vertex[o+2].hposL = p1L;
-    out_vertex[o+2].hposR = p1R;
-    out_vertex[o+2].uv = vec2(1,0);
+    out_vertex[o+2].hposL = p2L;
+    out_vertex[o+2].hposR = p2R;
+    out_vertex[o+2].uv = vec2(1,1);
     out_vertex[o+2].age_rand = inp_ar;
 
     //
@@ -225,13 +230,13 @@ compute_shader compute_sprites
     out_vertex[o+3].uv = vec2(0,0);
     out_vertex[o+3].age_rand = inp_ar;
 
-    out_vertex[o+4].hposL = p3L;
-    out_vertex[o+4].hposR = p3R;
+    out_vertex[o+4].hposL = p2L;
+    out_vertex[o+4].hposR = p2R;
     out_vertex[o+4].uv = vec2(1,1);
     out_vertex[o+4].age_rand = inp_ar;
 
-    out_vertex[o+5].hposL = p2L;
-    out_vertex[o+5].hposR = p2R;
+    out_vertex[o+5].hposL = p3L;
+    out_vertex[o+5].hposR = p3R;
     out_vertex[o+5].uv = vec2(0,1);
     out_vertex[o+5].age_rand = inp_ar;
 }

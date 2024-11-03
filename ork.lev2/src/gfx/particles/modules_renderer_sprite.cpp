@@ -220,10 +220,21 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto storage        = material->_cu_vertex_io_buffer;
     size_t mapping_size = 1 << 20;
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
+
+    auto VL = stereocams->VL();
+    auto VR = stereocams->VR();
+    
+    fvec3 pxL = VL.column(0).xyz();
+    fvec3 pyL = VL.column(1).xyz();
+    fvec3 pxR = VR.column(0).xyz();
+    fvec3 pyR = VR.column(1).xyz();
+    fvec3 hori = (pxL + pxR).normalized();
+    fvec3 vert = (pyL + pyR).normalized();
+
     mapped_storage->seek(0);
     mapped_storage->make<int32_t>(icnt);                        // 0
-    mapped_storage->make<fmtx4>(stereocams->VL());              // 16
-    mapped_storage->make<fmtx4>(stereocams->VR());              // 80
+    mapped_storage->make<fmtx4>(VL);                            // 16
+    mapped_storage->make<fmtx4>(VR);                            // 80
     mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
     mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
     mapped_storage->make<fvec4>(obj_nrmz);                      // 144
@@ -236,8 +247,8 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         fsize = _input_size->value(); // transformers applied here..
         LW = ork::fvec2(fsize, fsize);
         mapped_storage->make<fvec4>(ptcl->mPosition);
-        mapped_storage->make<fvec4>(ptcl->mVelocity);
         mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+        mapped_storage->make<fvec4>(ptcl->mVelocity);
         mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0, 0);
       }
     }
@@ -245,8 +256,8 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       for (int i = 0; i < icnt; i++) {
         auto ptcl             = get_particle(i);
         mapped_storage->make<fvec4>(ptcl->mPosition);
-        mapped_storage->make<fvec4>(ptcl->mVelocity);
         mapped_storage->make<fvec4>(LW.x, LW.y, 0, 0);              // 160
+        mapped_storage->make<fvec4>(ptcl->mVelocity);
         mapped_storage->make<fvec4>(ptcl->_unit_age, ptcl->mfRandom, 0, 0);
       }
     }
