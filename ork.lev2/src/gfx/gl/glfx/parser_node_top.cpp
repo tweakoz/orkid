@@ -234,15 +234,15 @@ void TopNode::parse() {
         } else if (tok.text == "compute_shader") {
           auto sh = std::make_shared<ComputeShaderNode>();
           sh->parse(_parser,scanview);
-//#if defined(ENABLE_COMPUTE_SHADERS)
           program->addBlockNode(sh);
-//#endif
+        } else if (tok.text == "storage_interface") {
+          auto sif = std::make_shared<StorageInterfaceNode>();
+          sif->parse(_parser,scanview);
+          program->addBlockNode(sif);
         } else if (tok.text == "compute_interface") {
           auto sif = std::make_shared<ComputeInterfaceNode>();
           sif->parse(_parser,scanview);
-//#if defined(ENABLE_COMPUTE_SHADERS)
           program->addBlockNode(sif);
-//#endif
         } else if (tok.text == "nvtask_shader") {
           auto sh = std::make_shared<NvTaskShaderNode>();
           sh->parse(_parser,scanview);

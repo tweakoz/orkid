@@ -53,8 +53,6 @@
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-#define USE_ORKSL_LANG
-
 #if 1 //defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \

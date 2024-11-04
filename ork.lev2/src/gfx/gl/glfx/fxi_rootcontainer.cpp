@@ -239,9 +239,8 @@ StreamInterface* RootContainer::nvMeshInterface(const std::string& name) const {
 void RootContainer::addComputeInterface(StreamInterface* pif) {
   _computeInterfaces[pif->mName] = pif;
 }
-StreamInterface* RootContainer::computeInterface(const std::string& name) const {
-  const auto& it = _computeInterfaces.find(name);
-  return (it == _computeInterfaces.end()) ? nullptr : it->second;
+void RootContainer::addStorageInterface(StreamInterface* pif) {
+  _storageInterfaces[pif->mName] = pif;
 }
 void RootContainer::addComputeShader(ComputeShader* psha) {
   _computeShaders[psha->mName] = psha;

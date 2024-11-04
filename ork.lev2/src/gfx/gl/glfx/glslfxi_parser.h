@@ -17,9 +17,6 @@ struct TechniqueNode;
 struct FnMatchResultsBas;
 struct FnMatchResultsWrap;
 struct ShaderBodyElement;
-struct VariableDeclaration;
-struct Statement;
-struct Expression;
 struct InterfaceNode;
 struct InterfaceIoNode;
 struct IoContainerNode;
@@ -49,9 +46,6 @@ using namednode_ptr_t = std::shared_ptr<NamedBlockNode>;
 using confignode_ptr_t = std::shared_ptr<ConfigNode>;
 using libblock_ptr_t = std::shared_ptr<LibraryBlockNode>;
 using bodyelem_ptr_t = std::shared_ptr<ShaderBodyElement>;
-using vardecl_ptr_t = std::shared_ptr<VariableDeclaration>;
-using statement_ptr_t = std::shared_ptr<Statement>;
-using expression_ptr_t = std::shared_ptr<Expression>;
 using interfacenode_ptr_t = std::shared_ptr<InterfaceNode>;
 using interfaceionode_ptr_t = std::shared_ptr<InterfaceIoNode>;
 using interfacelayoutnode_ptr_t = std::shared_ptr<InterfaceLayoutNode>;
@@ -82,10 +76,6 @@ using uniformsetnode_constptr_t = std::shared_ptr<const UniformSetNode>;
 using uniformblocknode_constptr_t = std::shared_ptr<const UniformBlockNode>;
 using parser_constptr_t = std::shared_ptr<const GlSlFxParser>;
 
-
-
-using match_results_t = FnMatchResultsWrap;
-//using match_fn_t = std::function<orkslmatch_ptr_t(FnParseContext)>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -274,453 +264,10 @@ struct AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(USE_ORKSL_LANG)
-
-struct FnParseContext {
-  FnParseContext(GlSlFxParser* parser, const ScannerView* v);
-  FnParseContext(const FnParseContext& oth);
-  FnParseContext& operator=(const FnParseContext& oth);
-  FnParseContext advance(size_t count) const;
-  std::string tokenValue(size_t offset) const;
-  void dump(const std::string dumpid) const;
-
-  GlSlFxParser* _parser;
-  size_t _startIndex        = 0;
-  const ScannerView* _view;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ParseResult {
-  size_t _numtokens = 0;
-  astnode_ptr_t _node    = nullptr;
-};
-typedef ParseResult parsed_t;
-
-struct FnMatchResultsBas {
-
-  FnMatchResultsBas(FnParseContext ctx)
-      : _ctx(ctx) {
-  }
-  virtual ~FnMatchResultsBas() {
-  }
-  operator bool() const {
-    return _matched;
-  }
-  virtual orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const = 0;
-
-  virtual ParseResult parse() = 0;
-
-  FnParseContext consume() const {
-    assert(_matched);
-    FnParseContext rval = _ctx;
-    rval._startIndex += _count;
-    return rval;
-  }
-
-  size_t _start = 0;
-  size_t _count = 0;
-  size_t end() const {
-    return _start + _count-1;
-  }
-  bool _matched = false;
-  FnParseContext _ctx;
-  std::vector<orkslmatch_ptr_t> _subMatches;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct FnMatchResultsSt : public FnMatchResultsBas {
-    orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final { return nullptr; }
-    ParseResult parse() final { return ParseResult(); }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct FnMatchResultsWrap {
-  FnMatchResultsWrap(orkslmatch_ptr_t p = nullptr)
-      : _results(p) {
-  }
-  void dump(std::string dumpid) const {
-    if(this->operator bool()){
-      size_t st = _results->_start;
-      size_t en = _results->end();
-      std::string sttok = _results->_ctx._view->token(st)->text;
-      std::string entok = _results->_ctx._view->token(en)->text;
-      printf( "matchres<%s> matched st<%zd:%s> en<%zd:%s>\n", dumpid.c_str(), st,sttok.c_str(), en, entok.c_str() );
-    }
-    else{
-      printf( "matchres<%s> no-match\n", dumpid.c_str() );
-    }
-  }
-  template <typename T> inline FnMatchResultsWrap& operator=(std::shared_ptr<T> p) {
-    _results = std::dynamic_pointer_cast<FnMatchResultsBas>(p);
-    return *this;
-  }
-  template <typename T> inline void make(FnParseContext ctx) {
-    _results = std::dynamic_pointer_cast<FnMatchResultsBas>(std::make_shared<T>(ctx));
-  }
-  inline operator bool() const {
-    if (not _results)
-      return false;
-    return _results->operator bool();
-  }
-  inline FnMatchResultsWrap operator+(FnMatchResultsWrap b) const {
-    return b._results ? _results->merge(b._results) : _results;
-  }
-  inline FnMatchResultsBas* operator->() {
-    return _results.get();
-  }
-  orkslmatch_ptr_t _results;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> struct FnMatchResults : public FnMatchResultsBas {
-
-  FnMatchResults(FnParseContext ctx)
-      : FnMatchResultsBas(ctx) {
-  }
-  FnMatchResults(const FnMatchResultsBas& oth)
-      : FnMatchResultsBas(oth) {
-  }
-
-  ParseResult parse() final {
-    return ParseResult(); // T::parse(*this);
-  }
-
-  orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final {
-    orkslmatch_ptr_t rval = std::make_shared<FnMatchResults>(*this);
-    if (false == _matched)
-      rval->_start = rhs->_start;
-    rval->_count += rhs->_count;
-    rval->_matched |= rhs->_matched;
-    return rval;
-  }
-};
-
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct ShaderBodyElement : public AstNode {
   ShaderBodyElement()
       : AstNode() {
   }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ShaderEmittable : public AstNode {
-  ShaderEmittable()
-      : AstNode() {
-  }
-  virtual void emit(shaderbuilder::BackEnd& backend) const = 0;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-#if defined(USE_ORKSL_LANG)
-
-#define DECLARE_STD_FNS(xxx)                                                                                                       \
-  typedef FnMatchResults<xxx> match_t;                                                                                             \
-  static match_results_t match(FnParseContext ctx);
-// static parsed_t parse(const match_t& match);
-
-#define DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                             \
-  DECLARE_STD_FNS(xxx)                                                                                                             \
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-#define DECLARE_STD_EMITTABLE(xxx)                                                                                                 \
-  struct xxx : public ShaderEmittable {                                                                                            \
-    xxx()                                                                                                      \
-        : ShaderEmittable() {                                                                                                 \
-    }                                                                                                                              \
-    DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                                 \
-  };
-
-#define DECLARE_STD_ABSTRACT_EMITTABLE(xxx)                                                                                        \
-  struct xxx : public ShaderEmittable {                                                                                            \
-    xxx()                                                                                                      \
-        : ShaderEmittable() {                                                                                                 \
-    }                                                                                                                              \
-    DECLARE_STD_FNS(xxx)                                                                                                           \
-  };
-
-#define DECLARE_RECURSIVE_FNS(xxx)                                                                                                       \
-  typedef FnMatchResults<xxx> match_t;                                                                                             \
-  static match_results_t match(FnParseContext ctx, int level=0);
-
-#define DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                             \
-  DECLARE_RECURSIVE_FNS(xxx)                                                                                                             \
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-#define DECLARE_RECURSIVE_EMITTABLE(xxx)                                                                                                 \
-  struct xxx : public ShaderEmittable {                                                                                            \
-    xxx()                                                                                                      \
-        : ShaderEmittable() {                                                                                                 \
-    }                                                                                                                              \
-    DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                                 \
-  };
-
-#endif 
-
-///////////////////////////////////////////////////////////////////////////////
-// good
-
-DECLARE_STD_EMITTABLE(PrimaryExpression);
-DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
-
-///////////////////////////////////////////////////////////////////////////////
-// elemental types
-///////////////////////////////////////////////////////////////////////////////
-
-#if defined(USE_ORKSL_LANG)
-
-DECLARE_STD_EMITTABLE(Constant);
-DECLARE_STD_EMITTABLE(StringLiteral);
-DECLARE_STD_EMITTABLE(TypeName);
-DECLARE_STD_EMITTABLE(Identifier);
-DECLARE_STD_EMITTABLE(IdentifierPath);
-DECLARE_STD_EMITTABLE(Reference);
-DECLARE_STD_EMITTABLE(Keyword);
-
-DECLARE_STD_EMITTABLE(OpenCurly);
-DECLARE_STD_EMITTABLE(CloseCurly);
-DECLARE_STD_EMITTABLE(OpenSquare);
-DECLARE_STD_EMITTABLE(CloseSquare);
-DECLARE_STD_EMITTABLE(OpenParen);
-DECLARE_STD_EMITTABLE(CloseParen);
-
-DECLARE_STD_EMITTABLE(SizeofOp);
-DECLARE_STD_EMITTABLE(MathOp);
-
-DECLARE_STD_EMITTABLE(SemicolonOp);
-DECLARE_STD_EMITTABLE(CommaOp);
-DECLARE_STD_EMITTABLE(DotOp);
-DECLARE_STD_EMITTABLE(NotOp);
-DECLARE_STD_EMITTABLE(BitNotOp);
-
-DECLARE_STD_EMITTABLE(IncOp);
-DECLARE_STD_EMITTABLE(DecOp);
-DECLARE_STD_EMITTABLE(OrOp);
-DECLARE_STD_EMITTABLE(OrOrOp);
-DECLARE_STD_EMITTABLE(AndOp);
-DECLARE_STD_EMITTABLE(AndAndOp);
-DECLARE_STD_EMITTABLE(XorOp);
-DECLARE_STD_EMITTABLE(EqOp);
-DECLARE_STD_EMITTABLE(NeqOp);
-DECLARE_STD_EMITTABLE(LtOp);
-DECLARE_STD_EMITTABLE(LtEqOp);
-DECLARE_STD_EMITTABLE(GtOp);
-DECLARE_STD_EMITTABLE(GtEqOp);
-DECLARE_STD_EMITTABLE(LeftOp);
-DECLARE_STD_EMITTABLE(RightOp);
-DECLARE_STD_EMITTABLE(AddOp);
-DECLARE_STD_EMITTABLE(SubOp);
-DECLARE_STD_EMITTABLE(MulOp);
-DECLARE_STD_EMITTABLE(DivOp);
-DECLARE_STD_EMITTABLE(ModOp);
-
-///////////////////////////////////////////////////////////////////////////////
-// ???
-
-DECLARE_STD_EMITTABLE(InitialAssignmentOperator);
-DECLARE_STD_EMITTABLE(MutatingAssignmentOperator);
-///////////////////////////////////////////////////////////////////////////////
-DECLARE_STD_EMITTABLE(ArgumentExpressionList);
-
-DECLARE_STD_EMITTABLE(CastExpression);
-DECLARE_STD_EMITTABLE(ExpressionNode);
-DECLARE_STD_EMITTABLE(MultiplicativeExpression);
-DECLARE_STD_EMITTABLE(LogicalOrExpression);
-DECLARE_STD_EMITTABLE(LogicalAndExpression);
-DECLARE_STD_EMITTABLE(ExclusiveOrExpression);
-DECLARE_STD_EMITTABLE(InclusiveOrExpression);
-DECLARE_STD_EMITTABLE(AndExpression);
-DECLARE_STD_EMITTABLE(EqualityExpression);
-DECLARE_STD_EMITTABLE(RelationalExpression);
-DECLARE_STD_EMITTABLE(ShiftExpression);
-DECLARE_STD_EMITTABLE(AdditiveExpression);
-DECLARE_STD_EMITTABLE(UnaryExpression);
-
-DECLARE_STD_EMITTABLE(Statement);
-DECLARE_STD_EMITTABLE(ExpressionStatement);
-DECLARE_STD_EMITTABLE(InstantiationStatement);
-DECLARE_STD_EMITTABLE(ReturnStatement);
-DECLARE_STD_EMITTABLE(AssignmentStatement);
-
-DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
-DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct FnElement : public ShaderEmittable {
-  FnElement()
-      : ShaderEmittable() {
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct VariableDeclaration : public FnElement {
-  VariableDeclaration()
-      : FnElement() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(VariableDeclaration);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct DeclarationList : public ShaderEmittable {
-  DeclarationList()
-      : ShaderEmittable() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(DeclarationList);
-  std::vector<vardecl_ptr_t> _children;
-};
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct Expression : public ShaderEmittable {
-  Expression()
-      : ShaderEmittable() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(Expression);
-  std::vector<bodyelem_ptr_t> _children;
-};
-
-struct TernaryExpression : public ConditionalExpression {
-  TernaryExpression()
-      : ConditionalExpression() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(TernaryExpression);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct StatementList : public ShaderEmittable {
-  StatementList()
-      : ShaderEmittable() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(StatementList);
-  std::vector<statement_ptr_t> _children;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct CompoundStatement : public FnElement {
-  CompoundStatement()
-      : FnElement() {
-  }
-  DECLARE_STD_EMITTABLE_FNS(CompoundStatement);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*struct ReturnStatement : public StatementNode {
-  ReturnStatement(TopNode* cnode)
-      : StatementNode() {}
-
-  typedef FnMatchResults<ReturnStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-  expression_ptr_t _returnValue = nullptr;
-};*/
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ForLoopStatement : public IterationStatement {
-  ForLoopStatement()
-      : IterationStatement() {
-  }
-
-  DECLARE_STD_EMITTABLE_FNS(ForLoopStatement);
-
-  const Token* _variable = nullptr;
-  expression_ptr_t _condition = nullptr;
-  // AssignmentNode* _advance = nullptr;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-/*
-struct WhileLoopStatement : public IterationStatement {
-  WhileLoopStatement()
-      : IterationStatement() {}
-
-  typedef FnMatchResults<WhileLoopStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-  expression_ptr_t _condition = nullptr;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-struct ElseNode : public ShaderEmittable {
-  ElseNode(TopNode* cnode)
-      : ShaderEmittable() {}
-
-  typedef FnMatchResults<ElseNode> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-};
-
-struct ElseIfNode : public ShaderEmittable {
-  ElseIfNode(TopNode* cnode)
-      : ShaderEmittable() {}
-
-  typedef FnMatchResults<ElseIfNode> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-  expression_ptr_t _condition = nullptr;
-};
-
-
-struct IfStatement : public StatementNode {
-  IfStatement(TopNode* cnode)
-      : StatementNode() {}
-  typedef FnMatchResults<IfStatement> match_t;
-  typedef match_t::ParseResult parsed_t;
-  static match_t match(const FnParseContext& ctx);
-  static parsed_t parse(const match_t& match);
-  void emit(shaderbuilder::BackEnd& backend) const final;
-
-  expression_ptr_t _condition = nullptr;
-  std::vector<ElseIfNode*> _elseifs;
-  ElseNode* _elseNode = nullptr;
-};*/
-
-#endif 
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct OrkSlFunctionNode : public AstNode {
-
-  OrkSlFunctionNode(parser_rawptr_t parser);
-  int parse(const ScannerView& view);
-  void emit(shaderbuilder::BackEnd& backend) const;
-
-  static svar16_t _getimpl(OrkSlFunctionNode* node);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct LibraryStructMemberNode : public AstNode {
-  std::string _typename;
-  std::string _identifier;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -765,6 +312,11 @@ struct RequiredExtensionNode : public AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct unique_deco_set{
+  std::vector<decoblocknode_ptr_t> _ordered;
+  std::unordered_set<decoblocknode_ptr_t> _uniques;
+};
+
 struct DecoBlockNode : public NamedBlockNode {
 
   DecoBlockNode()
@@ -775,15 +327,21 @@ struct DecoBlockNode : public NamedBlockNode {
   void _pregen(shaderbuilder::BackEnd& backend) const;
   //void emitChildren(shaderbuilder::BackEnd& backend) const;
 
-  std::vector<requiredextensionnode_ptr_t> _requiredExtensions;
+  static void walkUp(decoblocknode_ptr_t node, unique_deco_set& uset);
 
+  std::vector<requiredextensionnode_ptr_t> _requiredExtensions;
+  mutable std::vector<decoblocknode_ptr_t> _dependencies;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct DecoChildren{
   
   const DecoBlockNode* _parent = nullptr;
 
-  std::vector<interfacenode_ptr_t> _interfaceNodes;
+  void interfaceNodes(unique_deco_set& uset) const;
+
+  std::vector<decoblocknode_ptr_t> _dependencies;
   std::vector<libblock_ptr_t> _libraryBlocks;
   std::vector<uniformsetnode_ptr_t> _uniformSets;
   std::vector<uniformblocknode_ptr_t> _uniformBlocks;
@@ -1073,6 +631,10 @@ struct ComputeShaderNode : public ShaderNode {
 };
 struct ComputeInterfaceNode : public InterfaceNode {
   explicit ComputeInterfaceNode();
+  void _generate1(shaderbuilder::BackEnd& backend) const final;
+};
+struct StorageInterfaceNode : public InterfaceNode {
+  explicit StorageInterfaceNode();
   void _generate1(shaderbuilder::BackEnd& backend) const final;
 };
 

@@ -100,14 +100,16 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
     decoblocknode_ptr_t blocknode = present 
                                   ? it_nodedeco->second 
                                   : nullptr;
-
-    if(blocknode==nullptr){
-      //printf("BlockNode<%s> not found\n", deco.c_str());
+    if(blocknode!=nullptr){
+      decochildren->_dependencies.push_back(blocknode);
+      _dependencies.push_back(blocknode);
+    }
+    else{
+      printf("BlockNode<%s> not found\n", deco.c_str());
       //OrkAssert(false);
     }
 
     if (auto as_if = std::dynamic_pointer_cast<InterfaceNode>(blocknode)) {
-      decochildren->_interfaceNodes.emplace_back(as_if);
       as_if->_pregen(backend);
     } else if (auto as_lib = std::dynamic_pointer_cast<LibraryBlockNode>(blocknode)) {
       decochildren->_libraryBlocks.emplace_back(as_lib);
@@ -118,6 +120,31 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
     } else if (auto as_ublk = std::dynamic_pointer_cast<UniformBlockNode>(blocknode)) {
       decochildren->_uniformBlocks.emplace_back(as_ublk);
       as_ublk->_pregen(backend);
+    }
+  }
+}
+
+void DecoBlockNode::walkUp(decoblocknode_ptr_t node, unique_deco_set& uset) {
+  for (auto dep : node->_dependencies) {
+    walkUp(dep,uset);
+  }
+  if (uset._uniques.find(node) == uset._uniques.end()) {
+    uset._ordered.push_back(node);
+    uset._uniques.insert(node);
+  }
+}
+
+void DecoChildren::interfaceNodes(unique_deco_set& uset) const {
+  unique_deco_set walk_up_all;
+  for (auto ifnode : _dependencies) {
+    DecoBlockNode::walkUp(ifnode,walk_up_all);
+  }
+  for (auto ifnode : walk_up_all._ordered) {
+    if (auto as_if = std::dynamic_pointer_cast<InterfaceNode>(ifnode)) {
+      if( uset._uniques.find(as_if) == uset._uniques.end() ){
+        uset._ordered.push_back(as_if);
+        uset._uniques.insert(as_if);
+      }
     }
   }
 }

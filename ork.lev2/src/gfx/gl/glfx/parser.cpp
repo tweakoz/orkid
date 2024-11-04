@@ -155,6 +155,7 @@ NodeCollection Program::collectNodes(const NodeSelection& selection) {
     collectNodesOfType<FragmentInterfaceNode>(rval);
 #if defined(ENABLE_COMPUTE_SHADERS)
   collectNodesOfType<ComputeInterfaceNode>(rval);
+  collectNodesOfType<StorageInterfaceNode>(rval);
 #endif
 #if defined(ENABLE_NVMESH_SHADERS)
   collectNodesOfType<NvTaskInterfaceNode>(rval);

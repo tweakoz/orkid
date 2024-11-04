@@ -519,10 +519,12 @@ struct RootContainer {
 ///////////////////////////////////////////////////////
 #if defined(ENABLE_COMPUTE_SHADERS)
   std::unordered_map<std::string, StreamInterface*> _computeInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _storageInterfaces;
   std::unordered_map<std::string, ComputeShader*> _computeShaders;
   ComputeShader* computeShader(const std::string& name) const;
-  StreamInterface* computeInterface(const std::string& name) const;
+  //StreamInterface* computeInterface(const std::string& name) const;
   void addComputeInterface(StreamInterface* sif);
+  void addStorageInterface(StreamInterface* sif);
   void addComputeShader(ComputeShader* pif);
 #endif
   ///////////////////////////////////////////////////////

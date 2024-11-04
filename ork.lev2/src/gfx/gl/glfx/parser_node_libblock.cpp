@@ -65,18 +65,6 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       ScannerView fnview(view, i);
       int j = fnnode->parse(parser,fnview);
       _children.push_back(fnnode);
-
-      #if defined(_XXUSE_ORKSL_LANG)
-
-      /////////////////////////////////
-      // parsedfnnode (testing, wip...)
-      /////////////////////////////////
-      auto parsedfnnode = std::make_shared<OrkSlFunctionNode>(parser);
-      ScannerView pfnview(view, i);
-      int k = parsedfnnode->parse(pfnview);
-      OrkAssert(k==j);
-      /////////////////////////////////
-      #endif
       
       i += j;
     }

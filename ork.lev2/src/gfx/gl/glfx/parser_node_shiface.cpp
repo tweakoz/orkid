@@ -373,6 +373,9 @@ void InterfaceNode::_generate2(shaderbuilder::BackEnd& backend) const {
   bool is_vtx = _gltype == GL_VERTEX_SHADER;
   bool is_geo = _gltype == GL_GEOMETRY_SHADER;
   bool is_frg = _gltype == GL_FRAGMENT_SHADER;
+  bool is_com = _gltype == GL_COMPUTE_SHADER;
+  bool is_tev = _gltype == GL_TESS_EVALUATION_SHADER;
+  bool is_tsc = _gltype == GL_TESS_CONTROL_SHADER;
 
   ////////////////////////
   // interface scoped layouts
@@ -407,41 +410,78 @@ void InterfaceNode::_generate2(shaderbuilder::BackEnd& backend) const {
   // interface inheritance
   /////////////////////////////
 
+  int num_vtx_inherited = 0;
+  int num_geo_inherited = 0;
+  int num_tev_inherited = 0;
+  int num_com_inherited = 0;
+  int num_frg_inherited = 0;
+  int num_sto_inherited = 0;
+
   for (auto decotok : _decorators) {
 
     auto deconame = decotok->text;
 
     auto it_uniformset = c->_uniformSets.find(deconame);
     auto it_uniformblk = c->_uniformBlocks.find(deconame);
+    auto it_iface_geo = c->_geometryInterfaces.find(deconame);
+    auto it_iface_vtx = c->_vertexInterfaces.find(deconame);
+    auto it_iface_tev = c->_tessEvalInterfaces.find(deconame);
+    auto it_iface_com = c->_computeInterfaces.find(deconame);
+    auto it_iface_frg = c->_fragmentInterfaces.find(deconame);
+    auto it_iface_sto = c->_storageInterfaces.find(deconame);
 
-    if (it_uniformset != c->_uniformSets.end()) {
+    if(it_iface_sto!=c->_storageInterfaces.end()){
+      OrkAssert(is_com or is_vtx);
+      _sif->Inherit(*it_iface_sto->second);
+      num_sto_inherited++;
+    }
+    else if(it_iface_com!=c->_computeInterfaces.end()){
+      OrkAssert(is_com);
+      _sif->Inherit(*it_iface_com->second);
+      num_com_inherited++;
+    }
+    else if(it_iface_vtx!=c->_vertexInterfaces.end()){
+      OrkAssert(is_vtx or is_geo);
+      _sif->Inherit(*it_iface_vtx->second);
+      num_vtx_inherited++;
+    }
+    else if(it_iface_geo!=c->_geometryInterfaces.end()){
+      OrkAssert(is_geo);
+      _sif->Inherit(*it_iface_geo->second);
+      num_geo_inherited++;
+    }
+    else if(it_iface_tev!=c->_tessEvalInterfaces.end()){
+      OrkAssert(is_tev or is_geo);
+      _sif->Inherit(*it_iface_tev->second);
+      num_tev_inherited++;
+    }
+    else if(it_iface_frg!=c->_fragmentInterfaces.end()){
+      OrkAssert(is_frg);
+      _sif->Inherit(*it_iface_frg->second);
+      num_frg_inherited++;
+    }
+    else if (it_uniformset != c->_uniformSets.end()) {
       _sif->_uniformSets.push_back(it_uniformset->second);
     } else if (it_uniformblk != c->_uniformBlocks.end()) {
       _sif->_uniformBlocks.push_back(it_uniformblk->second);
-    } else if (is_vtx) {
-      auto it_vi = c->_vertexInterfaces.find(deconame);
-      if(it_vi==c->_vertexInterfaces.end()){
-        printf( "cannot find vertex interface<%s>\n", deconame.c_str() );
-      }
-      assert(it_vi != c->_vertexInterfaces.end());
-      _sif->Inherit(*it_vi->second);
-    } else if (is_geo) {
-      auto it_fig = c->_geometryInterfaces.find(deconame);
-      auto it_fiv = c->_vertexInterfaces.find(deconame);
-      auto it_fie = c->_tessEvalInterfaces.find(deconame);
-      bool is_geo = (it_fig != c->_geometryInterfaces.end());
-      bool is_vtx = (it_fiv != c->_vertexInterfaces.end());
-      bool is_tee = (it_fie != c->_tessEvalInterfaces.end());
-      assert(is_geo || is_vtx || is_tee);
-      auto par = is_geo ? it_fig->second : is_vtx ? it_fiv->second : is_tee ? it_fie->second : nullptr;
-      assert(par != nullptr);
-      _sif->Inherit(*par);
-    } else if (is_frg) {
-      auto it_fi = c->_fragmentInterfaces.find(deconame);
-      assert(it_fi != c->_fragmentInterfaces.end());
-      _sif->Inherit(*it_fi->second);
-    }
+    } 
   } // for (size_t ideco = 0; ideco < inumdecos; ideco++) {
+
+  if(is_com){
+    //OrkAssert(num_com_inherited>=1);
+  }
+  if(is_vtx){
+    //OrkAssert(num_vtx_inherited>=1);
+  }
+  if(is_geo){
+    //OrkAssert(num_geo_inherited>=1);
+  }
+  if(is_tev){
+    //OrkAssert(num_tev_inherited>=1);
+  }
+  if(is_frg){
+    //OrkAssert(num_frg_inherited>=1);
+  }
 
   ////////////////////////
   // attribute scoped layouts
@@ -593,6 +633,18 @@ ComputeInterfaceNode::ComputeInterfaceNode()
 #endif
 }
 
+StorageInterfaceNode::StorageInterfaceNode()
+  : InterfaceNode(0) { //GL_COMPUTE_SHADER
+  }
+
+  void StorageInterfaceNode::_generate1(shaderbuilder::BackEnd& backend) const {
+  _sif->mName          = _name;
+  _sif->mInterfaceType = _gltype;
+  auto c = backend._container;
+#if defined(ENABLE_COMPUTE_SHADERS)
+  c->addStorageInterface(_sif);
+#endif
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

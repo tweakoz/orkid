@@ -141,51 +141,45 @@ libblock typelib_compute_sprites {
     vec2 age_rand; // 48
   };
 }
+///////////////////////////////////////////////////
 uniform_set compute_unis_sprites {
     //layout (binding = 1, r32ui) uimage2D img_depthclusters;
     vec3 xxx;
 }
-compute_interface iface_compute_sprites
-    : typelib_compute_sprites
-    : compute_unis_sprites {
-    inputs {
-        layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
-    }
-    storage {
-        layout(std430, binding = 0) buffer {
-            int          num_vertices;    // 0
-            mat4         v_L;             // 16
-            mat4         v_R;             // 80
-            mat4         mvp_L;           // 144
-            mat4         mvp_R;           // 208
-            vec3         hori;            // 272
-            vec3         vert;            // 288
-            InputVertexSprite  inp_vertex[16384]; // 304
-            OutputVertexSprite out_vertex[65536]; // 720256
-            // final size: 
-        } ssbo_compute;
-    }
-}
-vertex_interface vface_sprite_stereoCI {
+///////////////////////////////////////////////////
+storage_interface iface_compute_sprites_storage {
   storage {
       layout(std430, binding = 0) buffer {
-          int          num_vertices;      // 0
-          mat4         v_L;               // 16
-          mat4         v_R;               // 80
-          mat4         mvp_L;             // 144
-          mat4         mvp_R;             // 208
-          vec3         hori;              // 272
-          vec3         vert;              // 288
+          int          num_vertices;    // 0
+          mat4         v_L;             // 16
+          mat4         v_R;             // 80
+          mat4         mvp_L;           // 144
+          mat4         mvp_R;           // 208
+          vec3         hori;            // 272
+          vec3         vert;            // 288
           InputVertexSprite  inp_vertex[16384]; // 304
           OutputVertexSprite out_vertex[65536]; // 720256
           // final size: 
       } ssbo_compute;
-  }
+}
+///////////////////////////////////////////////////
+compute_interface iface_compute_sprites
+    : typelib_compute_sprites
+    : iface_compute_sprites_storage
+    : compute_unis_sprites {
+    inputs {
+        layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
+    }
+}
+///////////////////////////////////////////////////
+vertex_interface vface_sprite_stereoCI 
+ : iface_compute_sprites_storage {
   outputs {
     vec2 frg_uv;
     vec2 frg_age_rand;
   }
 }
+///////////////////////////////////////////////////
 fragment_interface fface_psys_sprite_stereo : uset_frg {
   inputs {
     vec2 frg_uv;
@@ -200,6 +194,7 @@ fragment_interface fface_psys_sprite_stereo : uset_frg {
 ///////////////////////////////////////////////////////////////
 compute_shader compute_sprites
     : extension(GL_NV_gpu_shader5)
+    : iface_compute_sprites_storage
     : iface_compute_sprites {
 
     int index = int(gl_WorkGroupID.x);
@@ -273,6 +268,7 @@ vertex_shader vs_sprite_stereoCI //
   : extension(GL_NV_stereo_view_rendering) //
   : extension(GL_NV_viewport_array2) //
   : typelib_compute_sprites
+  : iface_compute_sprites_storage
   : vface_sprite_stereoCI {
 
     gl_Position = out_vertex[gl_VertexID].hposL;
