@@ -153,15 +153,16 @@ compute_interface iface_compute_sprites
     }
     storage {
         layout(std430, binding = 0) buffer {
-            int          num_vertices;      // 128
-            mat4         v_L;             // 0
-            mat4         v_R;             // 64
-            mat4         mvp_L;             // 0
-            mat4         mvp_R;             // 64
-            vec3         obj_nrmz;          // 132
-            InputVertexSprite  inp_vertex[16384]; // 152
-            OutputVertexSprite out_vertex[65536]; // 152 + 16384*44
-            // total size = 152 + 16384*40 + 65536*40 = 3276952
+            int          num_vertices;    // 0
+            mat4         v_L;             // 16
+            mat4         v_R;             // 80
+            mat4         mvp_L;           // 144
+            mat4         mvp_R;           // 208
+            vec3         hori;            // 272
+            vec3         vert;            // 288
+            InputVertexSprite  inp_vertex[16384]; // 304
+            OutputVertexSprite out_vertex[65536]; // 720256
+            // final size: 
         } ssbo_compute;
     }
 }
@@ -176,21 +177,23 @@ compute_shader compute_sprites
     vec3 inp_vel  = inp_vertex[index].vel.xyz;      // velocity
     vec2 inp_ar   = inp_vertex[index].age_rand.xy;  // age and random
 
-    mat3 mtxRotL = transpose(mat3(v_L));  // Extract rotation only
-    mat3 mtxRotR = transpose(mat3(v_R));  // Extract rotation only
-    vec3 pxL = mtxRotL[0];
-    vec3 pyL = mtxRotL[1];
-    vec3 pxR = mtxRotR[0];
-    vec3 pyR = mtxRotR[1];
+    //mat3 mtxRotL = transpose(mat3(v_L));  // Extract rotation only
+    //mat3 mtxRotR = transpose(mat3(v_R));  // Extract rotation only
+    //vec3 pxL = mtxRotL[0];
+    //vec3 pyL = mtxRotL[1];
+    //vec3 pxR = mtxRotR[0];
+    //vec3 pyR = mtxRotR[1];
 
     vec2 lw = inp_lw.xy*0.5;
-    vec3 hori = normalize(pxL + pxR)*lw.x;
-    vec3 vert = normalize(pyL + pyR)*lw.y;
+    //vec3 h = hori*lw.x;
+    //vec3 v = vert*lw.y;
+    vec3 h = vec3(lw.x,0,0);
+    vec3 v = vec3(0,lw.y,0);
 
-    vec3 p0 = inp_pos - hori - vert;
-    vec3 p1 = inp_pos + hori - vert;
-    vec3 p2 = inp_pos + hori + vert;
-    vec3 p3 = inp_pos - hori + vert;
+    vec3 p0 = inp_pos - h - v;
+    vec3 p1 = inp_pos + h - v;
+    vec3 p2 = inp_pos + h + v;
+    vec3 p3 = inp_pos - h + v;
 
     vec4 p0L = mvp_L * vec4(p0,1);
     vec4 p1L = mvp_L * vec4(p1,1);

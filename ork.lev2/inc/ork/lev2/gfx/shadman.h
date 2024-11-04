@@ -119,7 +119,7 @@ struct FxShaderParamBufferMapping {
     return *tstar;
   }
   ///////////////////////////////////////////////////
-  template <typename T, typename ... A> T& make(A&&... args) {
+  template <typename T, typename... A> T& make(A&&... args) {
     size_t end = _cursor + sizeof(T);
     OrkAssert(end <= _length);
     auto tstar = (T*)(((char*)_mappedaddr) + _cursor);
@@ -171,31 +171,59 @@ struct FxShaderStorageBufferMapping {
 
   ///////////////////////////////////////////////////
   void align(int quanta) {
-    _cursor = alignTo(_cursor,quanta);
+    _cursor = alignTo(_cursor, quanta);
   }
   ///////////////////////////////////////////////////
-  template <typename T, typename ... A> T& make(A&&... args) {
+  template <typename T, typename... A> T& advance() {
+    T* tstar   = (T*)(((char*)_mappedaddr) + _cursor);
+    size_t end = _cursor + sizeof(T);
+    _cursor    = alignTo(end, 16);
+    return *tstar;
+  }
+  ///////////////////////////////////////////////////
+  template <typename T, typename... A> T& make(A&&... args) {
 
-    switch(sizeof(T)){ // std430 layout rules
-      case 4: { // float
-        _cursor = alignTo(_cursor,4); break;
+    // statically assert T is not int, int32_t is ok 
+    static_assert(std::is_same_v<T, float> ||
+                      std::is_same_v<T, double> ||
+                      std::is_same_v<T, int32_t> ||
+                      std::is_same_v<T, uint32_t> ||
+                      std::is_same_v<T, fvec2> ||
+                      std::is_same_v<T, fvec3> ||
+                      std::is_same_v<T, fvec4> ||
+                      std::is_same_v<T, fmtx3> ||
+                      std::is_same_v<T, fmtx4> , 
+                      "Type T must be one of: float, double, int, int64_t, or uint32_t");
+       
+
+    switch (sizeof(T)) { // std430 layout rules
+      case 4: {          // int32_t, uint32_t, float
+        _cursor = alignTo(_cursor, 4);
+        break;
       }
-      case 8: { // double, int, vec2
-        _cursor = alignTo(_cursor,8); break;
+      case 8: { // double, fvec2
+        _cursor = alignTo(_cursor, 8);
+        break;
       }
       case 12: { // vec3
-        _cursor = alignTo(_cursor,16); break;
+        _cursor = alignTo(_cursor, 16);
+        break;
       }
       case 16: { // vec4
-        _cursor = alignTo(_cursor,16); break;
+        _cursor = alignTo(_cursor, 16);
+        break;
       }
       case 32: {
-        _cursor = alignTo(_cursor,16); break;
+        _cursor = alignTo(_cursor, 16);
+        break;
       }
       case 64: { // mat4
-        _cursor = alignTo(_cursor,16); break;
+        _cursor = alignTo(_cursor, 16);
+        break;
       }
-      default: OrkAssert(false); break;
+      default:
+        OrkAssert(false);
+        break;
     }
 
     size_t end = _cursor + sizeof(T);
@@ -309,7 +337,7 @@ struct FxShader {
   paramblockbynamemap_t _parameterBlockByName;
   computebynamemap_t _computeShaderByName;
   ork::varmap::VarMap _varmap;
-  
+
   bool mAllowCompileFailure = false;
   bool mFailedCompile       = false;
   std::string mName;

@@ -221,8 +221,12 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     size_t mapping_size = 1 << 20;
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
 
+    auto MVPL = stereocams->MVPL(worldmatrix);
+    auto MVPR = stereocams->MVPR(worldmatrix);
     auto VL = stereocams->VL();
     auto VR = stereocams->VR();
+    auto VLI = VL.inverse().transposed();
+    auto VRI = VR.inverse().transposed();
     
     fvec3 pxL = VL.column(0).xyz();
     fvec3 pyL = VL.column(1).xyz();
@@ -231,15 +235,23 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     fvec3 hori = (pxL + pxR).normalized();
     fvec3 vert = (pyL + pyR).normalized();
 
+    printf("pxL<%g %g %g>\n", pxL.x, pxL.y, pxL.z);
+    printf("pyL<%g %g %g>\n", pyL.x, pyL.y, pyL.z);
+    printf("pxR<%g %g %g>\n", pxR.x, pxR.y, pxR.z);
+    printf("pyR<%g %g %g>\n", pyR.x, pyR.y, pyR.z);
+    printf("hori<%g %g %g>\n", hori.x, hori.y, hori.z);
+    printf("vert<%g %g %g>\n", vert.x, vert.y, vert.z);
+
+    OrkAssert(icnt<=16384);
+    
     mapped_storage->seek(0);
-    mapped_storage->make<int32_t>(icnt);                        // 0
-    mapped_storage->make<fmtx4>(VL);                            // 16
-    mapped_storage->make<fmtx4>(VR);                            // 80
-    mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
-    mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
-    mapped_storage->make<fvec4>(obj_nrmz);                      // 144
-    // OrkAssert(mapped_storage->_cursor == 176);
-    mapped_storage->align(16);
+    mapped_storage->make<int32_t>(icnt);    // 0
+    mapped_storage->make<fmtx4>(VL);        // 16
+    mapped_storage->make<fmtx4>(VR);        // 80
+    mapped_storage->make<fmtx4>(MVPL);      // 144
+    mapped_storage->make<fmtx4>(MVPR);      // 208
+    mapped_storage->make<fvec3>(hori);      // 272
+    mapped_storage->make<fvec3>(vert);      // 288
     if (size_is_varying) {
       for (int i = 0; i < icnt; i++) {
         auto ptcl             = get_particle(i);
