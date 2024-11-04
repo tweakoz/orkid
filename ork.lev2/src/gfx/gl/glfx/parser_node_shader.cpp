@@ -279,6 +279,7 @@ template <typename T> struct unique_collection {
         _backend._codegen.formatLine("/// shaderdep adding child<%zu,%s>", index, as_t->_name.c_str());
         _collection.push_back(as_t);
         _uniques.insert(as_t);
+        index++;
       }
     }
   }
@@ -288,7 +289,7 @@ template <typename T> struct unique_collection {
   }
 
   /////////////////////////////////////////////////////
-
+  size_t index = 0;
   set_t _uniques;
   vec_t _collection;
   shaderbuilder::BackEnd& _backend;

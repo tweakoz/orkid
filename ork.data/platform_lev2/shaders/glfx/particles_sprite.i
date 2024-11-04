@@ -161,6 +161,7 @@ storage_interface iface_compute_sprites_storage {
           OutputVertexSprite out_vertex[65536]; // 720256
           // final size: 
       } ssbo_compute;
+  }
 }
 ///////////////////////////////////////////////////
 compute_interface iface_compute_sprites
@@ -194,7 +195,6 @@ fragment_interface fface_psys_sprite_stereo : uset_frg {
 ///////////////////////////////////////////////////////////////
 compute_shader compute_sprites
     : extension(GL_NV_gpu_shader5)
-    : iface_compute_sprites_storage
     : iface_compute_sprites {
 
     int index = int(gl_WorkGroupID.x);

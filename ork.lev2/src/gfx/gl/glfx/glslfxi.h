@@ -51,6 +51,7 @@ constexpr const char* block_regex = "(fxconfig|uniform_set|uniform_block|"
                                     "geometry_interface|fragment_interface|"
                                     "geometry_shader|fragment_shader|"
                                     "compute_shader|compute_interface|"
+                                    "storage_interface|"
                                     "nvtask_shader|nvmesh_shader|"
                                     "nvtask_interface|nvmesh_interface|"
                                     "technique|pass)";
