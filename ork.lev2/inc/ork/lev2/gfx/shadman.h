@@ -137,8 +137,6 @@ struct FxShaderParamBufferMapping {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_SHADER_STORAGE)
-
 struct FxShaderStorageBlock {
   std::string _name;
   svarp_t _impl;
@@ -241,16 +239,12 @@ struct FxShaderStorageBufferMapping {
   void* _mappedaddr = nullptr;
 };
 
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 struct FxComputeShader {
   svar64_t _impl;
   std::string _name;
 };
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -295,9 +289,7 @@ struct FxShader {
   FxShaderParamBlock* FindParamBlockByName(const std::string& named);
   FxShaderTechnique* FindTechniqueByName(const std::string& named);
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* findComputeShader(const std::string& named);
-#endif
 
   void SetAllowCompileFailure(bool bv) {
     mAllowCompileFailure = bv;
@@ -319,7 +311,6 @@ struct FxShader {
   // SSBO support
   ////////////////////////////////////////////////////
 
-#if defined(ENABLE_SHADER_STORAGE)
   typedef orkmap<std::string, const FxShaderStorageBlock*> storageblockbynamemap_t;
   storageblockbynamemap_t _storageBlockByName;
   const storageblockbynamemap_t& namedStorageBlocks(void) const {
@@ -327,7 +318,6 @@ struct FxShader {
   }
   void addStorageBlock(const FxShaderStorageBlock* block);
   FxShaderStorageBlock* storageBlockByName(const std::string& named);
-#endif
 
   ////////////////////////////////////////////////////
 

@@ -924,15 +924,15 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
 void GlGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
+
+
   auto ssb     = SSBO->_impl.get<glslfx::ShaderStorageBuffer*>();
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
+  glBindBuffer(0x90D2, ssb->_glbufid); // GL_SHADER_STORAGE_BUFFER
 
   if (ivcount) {
     GL_ERRORCHECK();
@@ -961,7 +961,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
   }
 }
 
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 // epass thru
 

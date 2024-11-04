@@ -162,9 +162,7 @@ public:
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
   virtual TextureInterface* TXI()        = 0; // Texture Interface
   virtual DrawingInterface* DWI()        = 0; // Drawing Interface
-#if defined(ENABLE_COMPUTE_SHADERS)
   virtual ComputeInterface* CI() = 0; // ComputeShader Interface
-#endif
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)

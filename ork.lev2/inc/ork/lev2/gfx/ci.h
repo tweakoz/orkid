@@ -1,7 +1,5 @@
 #pragma once
 
-#if defined (ENABLE_COMPUTE_SHADERS)
-
 enum ImageBindAccess {
   EIBA_READ_ONLY = 0,
   EIBA_WRITE_ONLY = 1,
@@ -28,5 +26,3 @@ struct ComputeInterface {
   virtual void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {}
 
 };
-
-#endif

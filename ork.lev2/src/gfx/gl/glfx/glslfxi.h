@@ -339,7 +339,6 @@ typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
 typedef std::unordered_map<std::string, Attribute*> attr_map_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
 struct ComputeShader;
 struct ShaderStorageBuffer {
   FxShaderStorageBuffer* _fxssb = nullptr;
@@ -360,11 +359,10 @@ struct PipelineCompute {
 };
 struct ComputeShader : Shader {
   ComputeShader(const std::string& nam = "")
-      : Shader(nam, GL_COMPUTE_SHADER) {
+      : Shader(nam, 0x91B9) { // GL_COMPUTE_SHADER
   }
   PipelineCompute* _computePipe = nullptr;
 };
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Pass {
@@ -518,7 +516,6 @@ struct RootContainer {
 #if defined(ENABLE_SHADER_STORAGE)
 #endif
 ///////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
   std::unordered_map<std::string, StreamInterface*> _computeInterfaces;
   std::unordered_map<std::string, StreamInterface*> _storageInterfaces;
   std::unordered_map<std::string, ComputeShader*> _computeShaders;
@@ -527,7 +524,6 @@ struct RootContainer {
   void addComputeInterface(StreamInterface* sif);
   void addStorageInterface(StreamInterface* sif);
   void addComputeShader(ComputeShader* pif);
-#endif
   ///////////////////////////////////////////////////////
 };
 
@@ -547,12 +543,8 @@ public:
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
-#endif
-#if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
-#endif
 
   void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(const FxShaderParam* hpar, const int ival) final;
@@ -605,8 +597,6 @@ private:
   ContextGL& mTarget;
 };
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
 struct ComputeInterface : public lev2::ComputeInterface {
 
   ComputeInterface(ContextGL& glctx);
@@ -627,7 +617,6 @@ struct ComputeInterface : public lev2::ComputeInterface {
   PipelineCompute* createComputePipe(ComputeShader* csh);
   void bindComputeShader(ComputeShader* csh);
 };
-#endif
 
 rootcontainer_ptr_t LoadFxFromFile(const AssetPath& pth);
 

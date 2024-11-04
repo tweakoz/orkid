@@ -6,17 +6,13 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/lev2/ui/ged/ged.h>
-#include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/gfx/shadman.h>
 #include <utpp/UnitTest++.h>
-#include <ork/kernel/string/deco.inl>
-#include <ork/util/hotkey.h>
 
 using namespace ork;
 using namespace ork::lev2;
-using namespace ork::lev2::ged;
 
-TEST(FxShaderStorageBufferMapping) {
+TEST(test_storage_buffer_mapping) {
 
   std::vector<uint8_t> data;
   data.resize(1<<20);

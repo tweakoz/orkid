@@ -231,13 +231,11 @@ private:
       int ivbase,
       int ivcount) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) final;
-#endif
 
   void
   DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
@@ -555,11 +553,9 @@ public:
   TextureInterface* TXI() final {
     return &mTxI;
   }
-#if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final {
     return &mCI;
   };
-#endif
   DrawingInterface* DWI() final {
     return &mDWI;
   }
@@ -642,10 +638,7 @@ public:
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
   GlDrawingInterface mDWI;
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   glslfx::ComputeInterface mCI;
-#endif
 
   bool mTargetDrawableSizeDirty;
 

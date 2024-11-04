@@ -373,7 +373,7 @@ void InterfaceNode::_generate2(shaderbuilder::BackEnd& backend) const {
   bool is_vtx = _gltype == GL_VERTEX_SHADER;
   bool is_geo = _gltype == GL_GEOMETRY_SHADER;
   bool is_frg = _gltype == GL_FRAGMENT_SHADER;
-  bool is_com = _gltype == GL_COMPUTE_SHADER;
+  bool is_com = _gltype == 0x91B9; //GL_COMPUTE_SHADER;
   bool is_tev = _gltype == GL_TESS_EVALUATION_SHADER;
   bool is_tsc = _gltype == GL_TESS_CONTROL_SHADER;
 
@@ -421,13 +421,7 @@ void InterfaceNode::_generate2(shaderbuilder::BackEnd& backend) const {
 
     auto deconame = decotok->text;
 
-    auto it_uniformset = c->_uniformSets.find(deconame);
-    auto it_uniformblk = c->_uniformBlocks.find(deconame);
-    auto it_iface_geo = c->_geometryInterfaces.find(deconame);
-    auto it_iface_vtx = c->_vertexInterfaces.find(deconame);
-    auto it_iface_tev = c->_tessEvalInterfaces.find(deconame);
     auto it_iface_com = c->_computeInterfaces.find(deconame);
-    auto it_iface_frg = c->_fragmentInterfaces.find(deconame);
     auto it_iface_sto = c->_storageInterfaces.find(deconame);
 
     if(it_iface_sto!=c->_storageInterfaces.end()){
@@ -440,7 +434,14 @@ void InterfaceNode::_generate2(shaderbuilder::BackEnd& backend) const {
       _sif->Inherit(*it_iface_com->second);
       num_com_inherited++;
     }
-    else if(it_iface_vtx!=c->_vertexInterfaces.end()){
+
+    auto it_uniformset = c->_uniformSets.find(deconame);
+    auto it_uniformblk = c->_uniformBlocks.find(deconame);
+    auto it_iface_geo = c->_geometryInterfaces.find(deconame);
+    auto it_iface_vtx = c->_vertexInterfaces.find(deconame);
+    auto it_iface_tev = c->_tessEvalInterfaces.find(deconame);
+    auto it_iface_frg = c->_fragmentInterfaces.find(deconame);
+    if(it_iface_vtx!=c->_vertexInterfaces.end()){
       OrkAssert(is_vtx or is_geo);
       _sif->Inherit(*it_iface_vtx->second);
       num_vtx_inherited++;
@@ -628,9 +629,7 @@ ComputeInterfaceNode::ComputeInterfaceNode()
   _sif->mName          = _name;
   _sif->mInterfaceType = _gltype;
   auto c = backend._container;
-#if defined(ENABLE_COMPUTE_SHADERS)
   c->addComputeInterface(_sif);
-#endif
 }
 
 StorageInterfaceNode::StorageInterfaceNode()
@@ -641,9 +640,7 @@ StorageInterfaceNode::StorageInterfaceNode()
   _sif->mName          = _name;
   _sif->mInterfaceType = _gltype;
   auto c = backend._container;
-#if defined(ENABLE_COMPUTE_SHADERS)
   c->addStorageInterface(_sif);
-#endif
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

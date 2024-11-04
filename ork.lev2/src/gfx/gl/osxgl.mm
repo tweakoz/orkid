@@ -205,6 +205,7 @@ ContextGL::ContextGL()
 	, mFbI( *this )
 	, mTxI( *this )
 	, mDWI(*this)
+  , mCI(*this)
 	, mTargetDrawableSizeDirty(true)
 {
   ContextGL::GLinit();

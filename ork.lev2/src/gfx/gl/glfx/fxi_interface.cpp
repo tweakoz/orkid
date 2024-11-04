@@ -103,7 +103,6 @@ void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader*
     ork_parm->mInternalHandle    = (void*)puni;
     fxh->addParameter(ork_parm);
   }
-#if defined(ENABLE_COMPUTE_SHADERS)
   for (const auto& itp : container->_computeShaders) {
     ComputeShader* csh = itp.second;
     auto fxcsh         = new FxComputeShader;
@@ -111,7 +110,6 @@ void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader*
     fxcsh->_impl.set<ComputeShader*>(csh);
     fxh->addComputeShader(fxcsh);
   }
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -376,8 +374,6 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_SHADER_STORAGE)
-
 const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   const auto& storagemap = hfx->namedStorageBlocks();
@@ -391,10 +387,6 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
   return fxsblock;
 }
 
-#endif
-
-#if defined(ENABLE_COMPUTE_SHADERS)
-
 const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   const auto& cshmap = hfx->namedComputeShaders();
@@ -406,7 +398,5 @@ const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string
 
   return csh;
 }
-
-#endif
 
 } // namespace ork::lev2::glslfx

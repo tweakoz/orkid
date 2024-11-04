@@ -235,7 +235,6 @@ StreamInterface* RootContainer::nvMeshInterface(const std::string& name) const {
 }
 #endif
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 void RootContainer::addComputeInterface(StreamInterface* pif) {
   _computeInterfaces[pif->mName] = pif;
 }
@@ -249,7 +248,6 @@ ComputeShader* RootContainer::computeShader(const std::string& name) const {
   const auto& it = _computeShaders.find(name);
   return (it == _computeShaders.end()) ? nullptr : it->second;
 }
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

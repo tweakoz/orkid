@@ -73,9 +73,7 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
   bool is_nvtask_shader = pshader->mShaderType == GL_TASK_SHADER_NV;
   bool is_nvmesh_shader = pshader->mShaderType == GL_MESH_SHADER_NV;
 #endif
-#if defined(ENABLE_COMPUTE_SHADERS)
-  bool is_compute_shader = pshader->mShaderType == GL_COMPUTE_SHADER;
-#endif
+  bool is_compute_shader = pshader->mShaderType == 0x91B9; // GL_COMPUTE_SHADER;
 
   //////////////////////////////////////////////
   // visit lib blocks
@@ -161,7 +159,6 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
     }
 #endif
     //////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
     //////////////////////////////////////////////////////////////////
     else if (auto as_stif = std::dynamic_pointer_cast<StorageInterfaceNode>(ifnode)) {
       auto it_stif = c->_storageInterfaces.find(named);
@@ -173,7 +170,6 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
       assert(it_cxif != c->_computeInterfaces.end());
       pshader->setInputInterface(it_cxif->second);
     }
-#endif
     //////////////////////////////////////////////////////////////////
     else {
       printf("unknown interface<%s>\n", named.c_str());
@@ -429,13 +425,11 @@ void NvMeshShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
 ComputeShaderNode::ComputeShaderNode() {
 }
 void ComputeShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {
-#if defined(ENABLE_COMPUTE_SHADERS)
   auto pshader = new ComputeShader();
   backend._statemap["curshader"].set<Shader*>(pshader);
   pshader->_rootcontainer = backend._container;
   _generate2Common(backend);
   backend._container->addComputeShader(pshader);
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

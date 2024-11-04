@@ -153,10 +153,8 @@ NodeCollection Program::collectNodes(const NodeSelection& selection) {
     collectNodesOfType<TessEvalInterfaceNode>(rval);
     collectNodesOfType<GeometryInterfaceNode>(rval);
     collectNodesOfType<FragmentInterfaceNode>(rval);
-#if defined(ENABLE_COMPUTE_SHADERS)
   collectNodesOfType<ComputeInterfaceNode>(rval);
   collectNodesOfType<StorageInterfaceNode>(rval);
-#endif
 #if defined(ENABLE_NVMESH_SHADERS)
   collectNodesOfType<NvTaskInterfaceNode>(rval);
   collectNodesOfType<NvMeshInterfaceNode>(rval);
@@ -169,9 +167,7 @@ NodeCollection Program::collectNodes(const NodeSelection& selection) {
     collectNodesOfType<TessEvalShaderNode>(rval);
     collectNodesOfType<GeometryShaderNode>(rval);
     collectNodesOfType<FragmentShaderNode>(rval);
-#if defined(ENABLE_COMPUTE_SHADERS)
     collectNodesOfType<ComputeShaderNode>(rval);
-#endif
 #if defined(ENABLE_NVMESH_SHADERS)
     collectNodesOfType<NvTaskShaderNode>(rval);
     collectNodesOfType<NvMeshShaderNode>(rval);
