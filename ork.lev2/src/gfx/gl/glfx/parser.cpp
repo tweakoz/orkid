@@ -84,7 +84,7 @@ Program::Program(const std::string name) : _name(name) {
 }
 ///////////////////////////////////////////////////////////
 void Program::addBlockNode(decoblocknode_ptr_t node) {
-  printf( "Program<%p:%s>::addBlockNode(%p:%s)\n", 
+  if(0)printf( "Program<%p:%s>::addBlockNode(%p:%s)\n", 
            this, _name.c_str(),
            node.get(), node->_name.c_str() );
   auto it = _blockNodes.find(node->_name);

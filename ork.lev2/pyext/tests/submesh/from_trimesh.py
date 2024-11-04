@@ -47,7 +47,10 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
+    params_dict = {
+      "SkyboxIntensity": 2.0,
+    }
+    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=params_dict)
 
     ###################################
     # create grid
@@ -112,6 +115,7 @@ class SceneGraphApp(object):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
+    return ui.HandlerResult()
 
   ################################################
 

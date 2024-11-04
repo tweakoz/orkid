@@ -67,7 +67,7 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
     if(asset_load_req){
       asset_load_req->_contentHash = hashkey;
     }
-    printf( "image hash<0x%lx>\n", hashkey );
+    //printf( "image hash<0x%lx>\n", hashkey );
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
     /////////////////////////////////////////////
     // cacheCheck load event

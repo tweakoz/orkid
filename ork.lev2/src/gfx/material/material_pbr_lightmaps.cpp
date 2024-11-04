@@ -71,7 +71,7 @@ void PBRMaterial::conformLightmaps() {
     max_h = std::max(max_h, lm->_height);
     retain_lmaps.insert(lm);
     lmap_by_name[name] = lm;
-    printf("conformLightmaps st0 name<%s> fmt<%s>\n", name.c_str(), EBufferFormatToName(lm->_format).c_str());
+    printf("conformLightmaps st0 name<%s> fmt<%s> -> RGB16 \n", name.c_str(), EBufferFormatToName(lm->_format).c_str());
   }
   ////////////////////////////////
   // convert to RGB8

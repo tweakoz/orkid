@@ -26,7 +26,7 @@ extern GLuint gLastBoundNonZeroTex;
 namespace ork::lev2 {
 
 constexpr bool DEBUG_TEXARRAY2D = true;
-static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
