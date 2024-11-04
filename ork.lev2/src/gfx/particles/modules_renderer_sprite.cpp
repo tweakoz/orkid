@@ -235,13 +235,6 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     fvec3 hori = (pxL + pxR).normalized();
     fvec3 vert = (pyL + pyR).normalized();
 
-    printf("pxL<%g %g %g>\n", pxL.x, pxL.y, pxL.z);
-    printf("pyL<%g %g %g>\n", pyL.x, pyL.y, pyL.z);
-    printf("pxR<%g %g %g>\n", pxR.x, pxR.y, pxR.z);
-    printf("pyR<%g %g %g>\n", pyR.x, pyR.y, pyR.z);
-    printf("hori<%g %g %g>\n", hori.x, hori.y, hori.z);
-    printf("vert<%g %g %g>\n", vert.x, vert.y, vert.z);
-
     OrkAssert(icnt<=16384);
     
     mapped_storage->seek(0);
