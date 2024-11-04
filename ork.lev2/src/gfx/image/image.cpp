@@ -46,18 +46,26 @@ Image Image::clone() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 uint8_t* Image::pixel8(int x, int y) {
+  if(x>=_width) x=_width-1;
+  if(y>=_height) y=_height-1;
   int index = (y * _width + x) * _numcomponents;
   return ((uint8_t*)_data->data()) + index;
 }
 const uint8_t* Image::pixel8(int x, int y) const {
+  if(x>=_width) x=_width-1;
+  if(y>=_height) y=_height-1;
   int index = (y * _width + x) * _numcomponents;
   return ((const uint8_t*)_data->data()) + index;
 }
 uint16_t* Image::pixel16(int x, int y) {
+  if(x>=_width) x=_width-1;
+  if(y>=_height) y=_height-1;
   int index = (y * _width + x) * _numcomponents;
   return ((uint16_t*)_data->data()) + index;
 }
 const uint16_t* Image::pixel16(int x, int y) const {
+  if(x>=_width) x=_width-1;
+  if(y>=_height) y=_height-1;
   int index = (y * _width + x) * _numcomponents;
   return ((const uint16_t*)_data->data()) + index;
 }
