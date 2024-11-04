@@ -213,9 +213,9 @@ struct FxShaderStorageBufferMapping {
         _cursor = alignTo(_cursor, 16);
         break;
       }
-      case 32: {
-        _cursor = alignTo(_cursor, 16);
-        break;
+      case 48: { // mat3
+          _cursor = alignTo(_cursor, 16);
+          break;
       }
       case 64: { // mat4
         _cursor = alignTo(_cursor, 16);

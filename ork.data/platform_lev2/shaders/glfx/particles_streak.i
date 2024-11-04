@@ -218,13 +218,13 @@ libblock typelib_compute_streaks {
     vec2 age_rand; // 48
   };
 }
-uniform_set compute_unis {
+uniform_set compute_unis_streaks {
     //layout (binding = 1, r32ui) uimage2D img_depthclusters;
     vec3 xxx;
 }
-compute_interface iface_compute
+compute_interface iface_compute_streaks
     : typelib_compute_streaks
-    : compute_unis {
+    : compute_unis_streaks {
     inputs {
         layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
     }
@@ -244,7 +244,7 @@ compute_interface iface_compute
 }
 compute_shader compute_streaks
     : extension(GL_NV_gpu_shader5)
-    : iface_compute {
+    : iface_compute_streaks {
 
     int index = int(gl_WorkGroupID.x);
     
