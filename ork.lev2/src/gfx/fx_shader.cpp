@@ -29,14 +29,7 @@ FxParamRec::FxParamRec()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderPass::FxShaderPass(void* ih)
-    : mInternalHandle(ih)
-    , mbRestorePass(false) {
-}
-
-FxShaderTechnique::FxShaderTechnique(void* ih)
-    : mInternalHandle(ih)
-    , mbValidated(false) {
+FxShaderPass::FxShaderPass(){
 }
 
 FxShaderParam::FxShaderParam(void* ih)
@@ -65,7 +58,7 @@ void FxShaderParamBufferMapping::unmap() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShader::addTechnique(const FxShaderTechnique* tek) {
-  _techniques[tek->mTechniqueName] = tek;
+  _techniques[tek->_techniqueName] = tek;
 }
 
 void FxShader::addParameter(const FxShaderParam* param) {

@@ -241,7 +241,7 @@ void GfxMaterialUIText::UpdateMVPMatrix(Context* context) {
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& Technique)
-    : mTechniqueName(Technique) {
+    : _techniqueName(Technique) {
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
@@ -273,7 +273,7 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
     _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
 
-    hTek = pTarg->FXI()->technique(_shader, mTechniqueName);
+    hTek = pTarg->FXI()->technique(_shader, _techniqueName);
     hTekStereo = pTarg->FXI()->technique(_shader, "uitextured_stereo");
     //printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", (void*) _shader, (void*) pTarg, (void*) hTek);
 
@@ -287,7 +287,7 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
 
 void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg, const std::string& Technique) {
   if (hTek == nullptr) {
-    mTechniqueName = Technique;
+    _techniqueName = Technique;
     gpuInit(pTarg);
   }
 }

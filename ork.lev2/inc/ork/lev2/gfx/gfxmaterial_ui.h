@@ -147,7 +147,7 @@ protected:
 
   FxShader* _shader = nullptr;
 
-  std::string mTechniqueName;
+  std::string _techniqueName;
 
   fvec4 Color;
 };

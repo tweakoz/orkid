@@ -81,7 +81,7 @@ void FreestyleMaterial::dump() const {
 
     auto name = item.first;
     auto tek  = item.second;
-    printf("  tek<%p:%s> valid<%d>\n", (void*) tek, name.c_str(), int(tek->mbValidated));
+    printf("  tek<%p:%s> valid<%d>\n", (void*) tek, name.c_str(), int(tek->_validated));
   }
   printf("parametersByName count<%zu>\n", _shader->_parameterByName.size());
   for (auto item : _shader->_parameterByName) {
@@ -477,7 +477,7 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, rcfd_ptr_t RCFD) {
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
   rsi->BindRasterState(_rasterstate,true);
-  OrkAssert(tek->mbValidated);
+  OrkAssert(tek->_validated);
  }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(

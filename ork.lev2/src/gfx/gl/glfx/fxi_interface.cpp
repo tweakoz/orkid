@@ -87,11 +87,12 @@ FxShader* Interface::shaderFromShaderText(const std::string& name, const std::st
 void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader* fxh) {
   for (const auto& ittek : container->_techniqueMap) {
     Technique* ptek         = ittek.second;
-    auto ork_tek            = new FxShaderTechnique((void*)ptek);
+    auto ork_tek            = new FxShaderTechnique();
+    ork_tek->_impl.set<Technique*>(ptek);
     ork_tek->_shader        = fxh;
-    ork_tek->mTechniqueName = ittek.first;
+    ork_tek->_techniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
-    ork_tek->mbValidated = fxh != nullptr;
+    ork_tek->_validated = fxh != nullptr;
     fxh->addTechnique(ork_tek);
   }
   for (const auto& itp : container->_uniforms) {
@@ -135,19 +136,19 @@ int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstD
   if (nullptr == tek){
     return 0;
   }
-  auto tek_cont = static_cast<const Technique*>(tek->GetPlatformHandle());
-  OrkAssert(tek_cont != nullptr);
+  auto plat_tek = tek->_impl.get<Technique*>();
+  OrkAssert(plat_tek != nullptr);
   _activeTechnique = tek;
   _activeShader    = tek->_shader;
   auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   OrkAssert(container);
   _active_effect              = container;
-  container->mActiveTechnique = tek_cont;
+  container->mActiveTechnique = plat_tek;
   container->_activePass      = 0;
 
   mTarget.SetRenderContextInstData(&data);
 
-  return tek_cont->mPasses.size();
+  return plat_tek->mPasses.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

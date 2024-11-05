@@ -82,10 +82,10 @@ void pyinit_gfx_shader(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto tek_type = //
       py::class_<pyfxtechnique_ptr_t>(module_lev2, "FxShaderTechnique")
-          .def_property_readonly("name", [](const pyfxtechnique_ptr_t& t) -> std::string { return t->mTechniqueName; })
+          .def_property_readonly("name", [](const pyfxtechnique_ptr_t& t) -> std::string { return t->_techniqueName; })
           .def("__repr__", [](const pyfxtechnique_ptr_t& t) -> std::string {
             fxstring<256> fxs;
-            fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->mTechniqueName.c_str());
+            fxs.format("FxShaderTechnique(%p:%s)", t.get(), t->_techniqueName.c_str());
             return fxs.c_str();
           });
   type_codec->registerRawPtrCodec<pyfxtechnique_ptr_t, fxtechnique_constptr_t>(tek_type);

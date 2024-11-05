@@ -38,33 +38,25 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderPass {
-  std::string mPassName;
-  void* mInternalHandle;
-  bool mbRestorePass;
 
+  FxShaderPass();
+
+  std::string _name;
+  svarp_t _impl;
   RenderQueueSortingData mRenderQueueSortingData;
 
-  FxShaderPass(void* ih = 0);
-  void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderTechnique {
 
-  std::string mTechniqueName;
-  const void* mInternalHandle;
-  orkvector<FxShaderPass*> mPasses;
-  bool mbValidated;
+  bool _validated = false;
   fxshader_ptr_t _shader = nullptr;
+  std::string _techniqueName;
+  orkvector<FxShaderPass*> _passes;
+  svarp_t _impl;
 
-  FxShaderTechnique(void* ih = 0);
-
-  const void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
