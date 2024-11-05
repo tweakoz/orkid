@@ -221,13 +221,15 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // asset json modifiers
     //////////////////////////////////////////////
 
-    auto xgm_dest_model = datablock->_vars->typedValueForKey<lev2::XgmModel*>("xgmmodel").value();
-    const auto& xgm_vars = xgm_dest_model->_varmap;
     lev2::xgmmodelassetmodifiers_ptr_t amods;
-    if( auto try_amods = xgm_vars.typedValueForKey<lev2::xgmmodelassetmodifiers_ptr_t>("mods.json") ){
-      amods = try_amods.value();
+    if( datablock->_vars->hasKey("xgmmodel") ){
+      auto xgm_dest_model = datablock->_vars->typedValueForKey<lev2::XgmModel*>("xgmmodel").value();
+      const auto& xgm_vars = xgm_dest_model->_varmap;
+      if( auto try_amods = xgm_vars.typedValueForKey<lev2::xgmmodelassetmodifiers_ptr_t>("mods.json") ){
+        amods = try_amods.value();
+      }
     }
-    
+
     //////////////////////////////////////////////
 
     gltfmaterialmap_t materialmap;

@@ -162,6 +162,24 @@ vertex_interface iface_vgbuffer : ub_vtx {
     vec4 frg_modcolor;
   }
 }
+vertex_interface vif_PNBVT : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+}
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_instanced : iface_vgbuffer {
   outputs {
@@ -794,7 +812,7 @@ vertex_interface iface_forward_stereo_instanced : iface_vgbuffer_instanced {
   }
 }
 
-vertex_shader vs_forward_test_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_forward_test_vtxcolor : vif_PNBVT : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position = mvp * position;
   frg_clr = vtxcolor;
