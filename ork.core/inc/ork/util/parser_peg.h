@@ -24,6 +24,8 @@ namespace ork::peg {
 enum class TokenClass : uint64_t {
   CrcEnum(WHITESPACE),
   CrcEnum(NEWLINE),
+  CrcEnum(SINGLE_LINE_COMMENT),
+  CrcEnum(MULTI_LINE_COMMENT),
   CrcEnum(COLON),
   CrcEnum(SEMICOLON),
   CrcEnum(L_PAREN),
@@ -43,6 +45,7 @@ enum class TokenClass : uint64_t {
   CrcEnum(QUOTED_REGEX),
   CrcEnum(QUOTED_STRING),
   CrcEnum(LEFT_ARROW),
+  CrcEnum(RIGHT_ARROW),
 };
 
 ////////////////////////////////////////////////////////////////////////

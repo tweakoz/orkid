@@ -13,7 +13,7 @@ namespace ork::peg {
 
 struct PegImpl {
 
-  PegImpl();
+  PegImpl(Parser* user_parser);
   void loadPEGScannerRules();
   void loadPEGGrammar();
 
@@ -30,8 +30,9 @@ struct PegImpl {
 
   match_ptr_t parseUserScannerSpec(std::string inp_string);
   match_ptr_t parseUserParserSpec(std::string inp_string);
-  void attachUser(Parser* user_parser);
   svar64_t findKWORID(std::string kworid);
+
+  template <typename T, typename... A> std::shared_ptr<T> createAstNode(A&&... args);
 
   size_t indent = 0;
   scanner_ptr_t _user_scanner;
@@ -53,9 +54,7 @@ struct PegImpl {
 
   std::vector<AST::scanner_rule_pair_t> _user_scanner_rules_ordered;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
-  std::map<std::string, matcher_notif_t> _user_deferred_notifs;
 
-  std::vector<void_lambda_t> _link_ops;
   AST::rule_ptr_t _current_rule;
   std::vector<AST::astnode_ptr_t> _ast_buildstack;
 
@@ -64,6 +63,12 @@ struct PegImpl {
 };
 
 using pegimpl_ptr_t = std::shared_ptr<PegImpl>;
+
+template <typename T, typename... A> std::shared_ptr<T> PegImpl::createAstNode(A&&... args){
+  auto rval = std::make_shared<T>(std::forward<A>(args)...);
+  _retain_astnodes.insert(rval);
+  return rval;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::peg

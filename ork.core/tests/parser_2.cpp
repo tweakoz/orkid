@@ -6,84 +6,87 @@
 ////////////////////////////////////////////////////////////////
 
 #include "parser_lang.inl"
+#include <utpp/UnitTest++.h>
+#include <ork/util/parser.inl>
 
+namespace ork::unittest::parser2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string scanner_spec = R"xxx(
-    macro(M1)           <- "xyz"
-    MULTI_LINE_COMMENT  <- "\/\*([^*]|\*+[^/*])*\*+\/"
-    SINGLE_LINE_COMMENT <- "\/\/.*[\n\r]"
-    WHITESPACE          <- "\s+"
-    NEWLINE             <- "[\n\r]+"
-    EQUALS              <- "="
-    COMMA               <- ","
-    SEMICOLON           <- ";"
-    L_PAREN             <- "\("
-    R_PAREN             <- "\)"
-    L_CURLY             <- "\{"
-    R_CURLY             <- "\}"
-    STAR                <- "\*"
-    PLUS                <- "\+"
-    MINUS               <- "\-"
-    FLOATING_POINT      <- "-?(\d*\.?)(\d+)([eE][-+]?\d+)?"
-    INTEGER             <- "-?(\d+)"
-    FUNCTION            <- "function"
-    KW_FLOAT            <- "float"
-    KW_INT              <- "int"
-    KW_OR_ID            <- "[a-zA-Z_][a-zA-Z0-9_]*"
+static std::string scanner_spec = R"xxx(
+    macro(M1)           <| "xyz" |>
+    MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
+    SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
+    WHITESPACE          <| "\s+" |>
+    NEWLINE             <| "[\n\r]+" |>
+    EQUALS              <| "=" |>
+    COMMA               <| "," |>
+    SEMICOLON           <| ";" |>
+    L_PAREN             <| "\(" |>
+    R_PAREN             <| "\)" |>
+    L_CURLY             <| "\{" |>
+    R_CURLY             <| "\}" |>
+    STAR                <| "\*" |>
+    PLUS                <| "\+" |>
+    MINUS               <| "\-" |>
+    FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
+    INTEGER             <| "-?(\d+)" |>
+    FUNCTION            <| "function" |>
+    KW_FLOAT            <| "float" |>
+    KW_INT              <| "int" |>
+    KW_OR_ID            <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string parser_spec = R"xxx(
-    datatype <- sel{KW_FLOAT KW_INT}
-    number <- sel{FLOATING_POINT INTEGER}
-    kw_or_id <- KW_OR_ID
-    l_paren <- L_PAREN
-    r_paren <- R_PAREN
-    plus <- PLUS
-    minus <- MINUS
-    star <- STAR
-    l_curly <- L_CURLY
-    r_curly <- R_CURLY
-    semicolon <- SEMICOLON
-    equals <- EQUALS
-    function <- FUNCTION
+static std::string parser_spec = R"xxx(
+    datatype <| sel{KW_FLOAT KW_INT} |>
+    number <| sel{FLOATING_POINT INTEGER} |>
+    kw_or_id <| KW_OR_ID |>
+    l_paren <| L_PAREN |>
+    r_paren <| R_PAREN |>
+    plus <| PLUS |>
+    minus <| MINUS |>
+    star <| STAR |>
+    l_curly <| L_CURLY |>
+    r_curly <| R_CURLY |>
+    semicolon <| SEMICOLON |>
+    equals <| EQUALS |>
+    function <| FUNCTION |>
         
-    argument_decl <- [ datatype kw_or_id opt{COMMA} ]
-    variableDeclaration <- [datatype kw_or_id]
-    variableReference <- kw_or_id
-    funcname <- kw_or_id
+    argument_decl <| [ datatype kw_or_id opt{COMMA} ] |>
+    variableDeclaration <| [datatype kw_or_id] |>
+    variableReference <| kw_or_id |>
+    funcname <| kw_or_id |>
 
-    product <- [ primary opt{ [star primary] } ]
+    product <| [ primary opt{ [star primary] } ] |>
 
-    sum <- sel{
+    sum <| sel{
         [ product plus product ] : "add"
         [ product minus product ] : "sub"
         product : "pro"
-    }
+    } |> 
 
-    expression <- [ sum ]
+    expression <| [ sum ] |>
 
-    term <- [ l_paren expression r_paren ]
+    term <| [ l_paren expression r_paren ] |>
 
-    primary <- sel{ number
+    primary <| sel{ number
                     variableReference
                     term
-    }
+    } |>
 
-    assignment_statement <- [
+    assignment_statement <| [
         sel { variableDeclaration variableReference } : "ass1of"
         equals
         expression
-    ]
+    ] |>
 
-    statement <- sel{ 
+    statement <| sel{ 
         [ assignment_statement semicolon ]
         semicolon
-    }
+    } |>
 
-    funcdef <- [
+    funcdef <| [
         function
         funcname
         l_paren
@@ -92,9 +95,9 @@ std::string parser_spec = R"xxx(
         l_curly
         zom{statement} : "statements"
         r_curly
-    ]
+    ] |>
     
-    funcdefs <- zom{funcdef} : "xxx"
+    funcdefs <| zom{funcdef} : "xxx" |>
 
 )xxx";
 
@@ -113,17 +116,14 @@ template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct MyParser2 : public Parser {
+struct Parser : public ::ork::Parser {
 
-  MyParser2() {
+  Parser() {
     _name              = "p2";
     _DEBUG_MATCH       = true;
     _DEBUG_INFO        = true;
-    auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
-    OrkAssert(scanner_match);
-    auto parser_match = this->loadPEGParserSpec(parser_spec);
-    OrkAssert(parser_match);
-    OrkAssert(_DEBUG_MATCH);
+    bool OK = this->loadPEGSpec(scanner_spec,parser_spec);
+    OrkAssert(OK);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
@@ -380,10 +380,12 @@ struct MyParser2 : public Parser {
 
   matcher_ptr_t _fns_matcher;
   std::vector<MYAST::astnode_ptr_t> _astnodestack;
-}; // struct MyParser
+}; // struct Parser
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+} //namespace ork::unittest::parser2 {
 
 TEST(parser2) {
   printf("P2.TOP.A\n");
@@ -402,7 +404,7 @@ TEST(parser2) {
             float X = (1.0+2.3)*7.0;
         }
     )";
-  auto the_parser = std::make_shared<MyParser2>();
+  auto the_parser = std::make_shared<ork::unittest::parser2::Parser>();
   auto match = the_parser->parseString(parse_str);
   printf(
       "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //

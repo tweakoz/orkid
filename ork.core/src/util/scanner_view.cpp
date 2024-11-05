@@ -23,7 +23,7 @@ ScanViewRegex::ScanViewRegex(const char* pr, bool inverse)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ScanViewRegex::Test(const Token& t) {
+bool ScanViewRegex::Test(const Token& t) const {
   bool match = std::regex_match(t.text, mRegex);
   return match xor mInverse;
 }
@@ -31,7 +31,7 @@ bool ScanViewRegex::Test(const Token& t) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
+ScannerView::ScannerView(const Scanner& s, scanviewfilter_ptr_t f)
     : _filter(f)
     , _scanner(s)
     , _blockTerminators(s._blockregex.c_str())
@@ -114,8 +114,8 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
     bool is_open  = (t.text == "{");
     bool is_close = (t.text == "}");
 
-    if(0)printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
-    		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
+    // printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+    //		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
 
     fflush(stdout);
 
@@ -148,8 +148,13 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
           assert(false == is_close);
           if (is_term)
             assert(i > is);
-          if (_filter.Test(t))
+          if( _filter ){
+            if (_filter->Test(t))
+              _indices.push_back(i);
+          }
+          else{
             _indices.push_back(i);
+          }
         }
         break;
       }
@@ -166,8 +171,13 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
             return;
           }
         } else {
-          if (_filter.Test(t))
+          if( _filter ){
+            if (_filter->Test(t))
+              _indices.push_back(i);
+          }
+          else{
             _indices.push_back(i);
+          }
         }
         break;
     }
@@ -292,7 +302,9 @@ bool ScannerLightView::empty() const{
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Token* ScannerLightView::token(size_t i) const {
-  OrkAssert(not empty());
+  if(empty()){
+    return nullptr;
+  }
   return _input_view.token(i + _start);
 }
 
@@ -307,7 +319,7 @@ void ScannerLightView::dump(const std::string& dumpid) const {
   int i = 0;
   for (int tokidx = _start; tokidx <= _end; ++tokidx) {
     auto t = _input_view.token(tokidx);
-    printf("tok<%d> val<%s>\n", tokidx, t->text.c_str());
+    printf("tok<%d> val<%s> line<%zu>\n", tokidx, t->text.c_str(), t->iline );
   }
 }
 
