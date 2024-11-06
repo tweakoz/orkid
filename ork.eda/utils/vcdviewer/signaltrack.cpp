@@ -287,7 +287,7 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   auto rstate = std::make_shared<RasterState>();
   rstate->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
   rstate->setDepthTest(lev2::EDepthTest::OFF);
-  auto save_rstate = defmtl->swapRasterState(rstate);
+  auto save_rstate = defmtl->_rasterstate;
   mtxi->PushMMatrix(mmatrix);
 
   defmtl->SetUIColorMode(UiColorMode::VTX);
@@ -299,7 +299,7 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       _numvertices);
 
   mtxi->PopMMatrix();
-  defmtl->swapRasterState(save_rstate);
+  defmtl->_rasterstate = save_rstate;
 
   ////////////////////////////////////////
 

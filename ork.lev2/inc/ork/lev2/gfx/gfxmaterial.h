@@ -177,10 +177,6 @@ public:
 
   //virtual fxpipeline_ptr_t createFxPipeline(FxPipelineConfig& cfg) const;
 
-  //////////////////////////////////////////////////////////////////////////////
-  rasterstate_ptr_t swapRasterState(rasterstate_ptr_t rstate);
-  //////////////////////////////////////////////////////////////////////////////
-
   const RenderContextInstData* mRenderContexInstData = nullptr;
 
   rasterstate_ptr_t _rasterstate;

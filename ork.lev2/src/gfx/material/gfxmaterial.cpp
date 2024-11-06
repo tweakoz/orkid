@@ -63,12 +63,6 @@ fxpipelinecache_constptr_t GfxMaterial::pipelineCache(fxpipelinepermutation_set_
   return _doFxPipelineCache(perms);
 }
 
-rasterstate_ptr_t GfxMaterial::swapRasterState(rasterstate_ptr_t rstate) {
-  auto rval    = _rasterstate;
-  _rasterstate = rstate;
-  return rval;
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterial::bindParam(fxparam_constptr_t p, varval_t v){

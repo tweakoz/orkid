@@ -158,7 +158,7 @@ class WaterApp(object):
     gmtl.shaderpath = str(thisdir()/"geoclipmesh_water.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
-    gmtl.blending = tokens.ALPHA
+    gmtl.rasterstate.setBlendingMacro(tokens.ALPHA)
     self.NOISETEX = lev2.Texture.load("src://effect_textures/voltex_pn2.dds")
     self.NOISETEX2 = lev2.Texture.load("src://effect_textures/NoiseKern.dds")
 

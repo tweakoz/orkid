@@ -243,7 +243,7 @@ class BasicUiCamSgApp(object):
         else:
             material.gpuInit(self.context, shaderfile)
         #
-        material.rasterstate.blending = blending
+        material.rasterstate.setBlendingMacro(blending)
         material.rasterstate.culltest = culltest
         material.rasterstate.depthtest = depthtest
         #

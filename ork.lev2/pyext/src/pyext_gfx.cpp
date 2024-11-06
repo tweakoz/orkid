@@ -200,7 +200,7 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RasterState>(module_lev2, "RasterState") //
+  auto rstate_type = py::class_<RasterState,rasterstate_ptr_t>(module_lev2, "RasterState") //
       .def_property(
           "culltest",
           [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
@@ -219,6 +219,9 @@ void pyinit_gfx(py::module& module_lev2) {
           [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
             state->_depthtest = EDepthTest(ctest->hashed());
           })
+          .def("setBlendingMacro", [](rasterstate_ptr_t state, crcstring_ptr_t value) { //
+            state->setBlendingMacro(BlendingMacro(value->hashed()));
+          })
       /*.def_property(
           "blending",
           [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
@@ -233,6 +236,7 @@ void pyinit_gfx(py::module& module_lev2) {
         fxs.format("RasterState()");
         return fxs.c_str();
       });
+  type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
       .def(

@@ -122,7 +122,7 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
     static auto rstate = std::make_shared<RasterState>();
     rstate->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
     rstate->setDepthTest(lev2::EDepthTest::OFF);
-    auto save_rstate = defmtl->swapRasterState(rstate);
+    auto save_rstate = defmtl->_rasterstate;
 
     mtxi->PushMMatrix(genmatrix(192, 0));
     defmtl->SetUIColorMode(UiColorMode::VTX);
@@ -133,7 +133,7 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
         _vtxbase,
         _numvertices);
     mtxi->PopMMatrix();
-    defmtl->swapRasterState(save_rstate);
+    defmtl->_rasterstate = save_rstate;
 
     /////////////////////////////////
     // mouselabel

@@ -581,7 +581,7 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
 template <typename vtx_t>
 void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat)
     const {
-  //lev2::RasterState DefaultRasterState;
+  static auto rstate = std::make_shared<lev2::RasterState>();
   auto mtxi = context->MTXI();
   auto fbi  = context->FBI();
   auto gbi  = context->GBI();
@@ -591,7 +591,7 @@ void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, 
   mtxi->PushPMatrix(fmtx4::Identity());
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  //context->RSI()->BindRasterState(DefaultRasterState, true);
+  context->FXI()->applyRasterState(*rstate);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw primitive with specified material
