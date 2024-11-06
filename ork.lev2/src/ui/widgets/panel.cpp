@@ -41,8 +41,8 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
 
-  //lev2::RasterState defstate;
-  //tgt->RSI()->BindRasterState(defstate);
+  lev2::RasterState defstate;
+  tgt->FXI()->applyRasterState(defstate);
 
   bool has_foc = hasMouseFocus();
 

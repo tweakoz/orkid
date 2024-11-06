@@ -264,8 +264,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   GL_ERRORCHECK();
 
   if (rtgroup->_pseudoRTG) {
-    //static const RasterState defstate;
-    //_target.RSI()->BindRasterState(defstate, true);
+    static auto defstate = std::make_shared<RasterState>();
+    _target.FXI()->applyRasterState(*defstate);
     _currentRtGroup = rtgroup;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     if (rtgroup->_autoclear) {
@@ -734,8 +734,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   GL_ERRORCHECK();
 
-  //static const RasterState defstate;
-  //_target.RSI()->BindRasterState(defstate, true);
+  static auto rstate = std::make_shared<RasterState>();
+  _target.FXI()->applyRasterState(*rstate);
 
   _currentRtGroup = rtgroup;
 
@@ -846,6 +846,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   ViewportRect extents(0, 0, w, h);
   this->pushViewport(extents);
   this->pushScissor(extents);
+  mTargetGL.FXI()->applyRasterState(*(shader->_rasterstate));
   this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
   this->popViewport();
   this->popScissor();
@@ -983,6 +984,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
   ViewportRect extents(0, 0, wd2, hd2);
   this->pushViewport(extents);
   this->pushScissor(extents);
+  _target.FXI()->applyRasterState(*(shader->_rasterstate));
   DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
   this->popViewport();
   this->popScissor();

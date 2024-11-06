@@ -315,7 +315,7 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   }
 
   FXI->CommitParams();
-  //pTarg->RSI()->BindRasterState(_rasterstate);
+  pTarg->FXI()->applyRasterState(*_rasterstate);
   return 0;
 }
 

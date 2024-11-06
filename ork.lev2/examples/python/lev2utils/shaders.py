@@ -19,7 +19,7 @@ def createPipeline( app=None,
     else:
       material.gpuInit(ctx,shaderfile)
     #
-    material.rasterstate.blending = blending
+    material.rasterstate.setBlendingMacro(blending)
     material.rasterstate.culltest = culltest
     material.rasterstate.depthtest = depthtest
     #

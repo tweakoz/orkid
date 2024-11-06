@@ -160,7 +160,7 @@ void FontMan::_endTextBlock(Context* context) {
         RSTATE->setCullTest(ECullTest::OFF);
         RSTATE->setDepthTest(EDepthTest::OFF);
         RSTATE->setBlendingMacro(top_state->_blending);
-        //RSI->BindRasterState(RSTATE);
+        context->FXI()->applyRasterState(*RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
       });
     } else {

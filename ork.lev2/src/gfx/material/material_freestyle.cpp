@@ -37,7 +37,7 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
         auto RCFD        = RCID.rcfd();
         auto context     = RCFD->GetTarget();
         //auto RSI         = context->RSI();
-        //RSI->BindRasterState(_this->_rasterstate);
+        context->FXI()->applyRasterState(*(_this->_rasterstate));
       });
        break;
     }

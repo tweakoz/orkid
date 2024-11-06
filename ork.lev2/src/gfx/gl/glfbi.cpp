@@ -150,8 +150,8 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameB");
 
-  //const RasterState defstate;
-  //_target.RSI()->BindRasterState(defstate, true);
+  static auto rstate = std::make_shared<RasterState>();
+  _target.FXI()->applyRasterState(*rstate);
   // mTargetGL.debugPopGroup();
 
   GL_ERRORCHECK();
