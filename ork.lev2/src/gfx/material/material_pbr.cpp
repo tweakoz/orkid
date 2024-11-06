@@ -103,12 +103,10 @@ PBRMaterial::PBRMaterial(Context* targ)
 PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {
   _vars = std::make_shared<varmap::VarMap>();
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+  _rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _rasterstate->setWriteMaskZ(true);
+  _rasterstate->setCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr";
   // printf( "new PBRMaterial<%p>\n", this );
@@ -376,6 +374,7 @@ int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID)
 
   int numpasses = fxi->BeginBlock(tek, RCID);
   OrkAssert(numpasses == 1);
+  fxi->CommitParams();
   return numpasses;
 }
 
@@ -395,20 +394,9 @@ void PBRMaterial::gpuUpdate(Context* context) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PBRMaterial::BeginPass(Context* targ, int iPass) {
-  auto fxi = targ->FXI();
-  auto rsi = targ->RSI();
-  fxi->BindPass(0);
-  rsi->BindRasterState(_rasterstate);
-  fxi->CommitParams();
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void PBRMaterial::UpdateMVPMatrix(Context* context) {
   auto fxi                           = context->FXI();
-  auto rsi                           = context->RSI();
+  //auto rsi                           = context->RSI();
   auto mtxi                          = context->MTXI();
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
   auto RCFD = context->topRenderContextFrameData();
@@ -430,12 +418,6 @@ void PBRMaterial::UpdateMMatrix(Context* context) {
   auto mtxi         = context->MTXI();
   const auto& world = mtxi->RefMMatrix();
   fxi->BindParamMatrix(_paramM, world);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PBRMaterial::EndPass(Context* targ) {
-  targ->FXI()->EndPass();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

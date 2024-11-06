@@ -208,16 +208,16 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
 
 using namespace ork::lev2; // too many things to add ork::lev2:: in front of in this file...
 
-BeginEnumRegistration(Blending);
-RegisterEnum(Blending, OFF);
-RegisterEnum(Blending, PREMA);
-RegisterEnum(Blending, ALPHA);
-RegisterEnum(Blending, DSTALPHA);
-RegisterEnum(Blending, ADDITIVE);
-RegisterEnum(Blending, ALPHA_ADDITIVE);
-RegisterEnum(Blending, SUBTRACTIVE);
-RegisterEnum(Blending, ALPHA_SUBTRACTIVE);
-RegisterEnum(Blending, MODULATE);
+BeginEnumRegistration(BlendingMacro);
+RegisterEnum(BlendingMacro, OFF);
+RegisterEnum(BlendingMacro, PREMA);
+RegisterEnum(BlendingMacro, ALPHA);
+RegisterEnum(BlendingMacro, DSTALPHA);
+RegisterEnum(BlendingMacro, ADDITIVE);
+RegisterEnum(BlendingMacro, ALPHA_ADDITIVE);
+RegisterEnum(BlendingMacro, SUBTRACTIVE);
+RegisterEnum(BlendingMacro, ALPHA_SUBTRACTIVE);
+RegisterEnum(BlendingMacro, MODULATE);
 EndEnumRegistration();
 
 BeginEnumRegistration(PrimitiveType);
@@ -241,22 +241,6 @@ ECullTest GlobalCullTest = ECullTest::PASS_FRONT;
 ////////////////////////////////////////////////////////////////////////////////
 
 void IManipInterface::Describe() {
-}
-
-/////////////////////////////////////////////////////////////////////////
-SRasterState::SRasterState() {
-  mPointSize = 1;
-  setScissorTest(ESCISSORTEST_OFF);
-  SetAlphaTest(EALPHATEST_OFF, 0);
-  SetBlending(Blending::OFF);
-  SetDepthTest(EDepthTest::LEQUALS);
-  SetShadeModel(ESHADEMODEL_SMOOTH);
-  SetCullTest(ECullTest::PASS_FRONT);
-  SetZWriteMask(true);
-  SetRGBAWriteMask(true, true);
-  SetStencilMode(ESTENCILTEST_OFF, ESTENCILOP_KEEP, ESTENCILOP_KEEP, 0, 0);
-  SetSortID(0);
-  SetTransparent(false);
 }
 
 /////////////////////////////////////////////////////////////////////////

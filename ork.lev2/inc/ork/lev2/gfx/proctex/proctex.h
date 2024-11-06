@@ -473,7 +473,7 @@ public:
   /////////////////////////////////////////
 
   int miNumSides                  = 3;
-  ork::lev2::Blending meBlendMode = lev2::Blending::OFF;
+  ork::lev2::Blending meBlendMode = lev2::BlendingMacro::OFF;
   bool mbAA                       = false;
 
   Periodic mRadiusFunc;

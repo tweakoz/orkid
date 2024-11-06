@@ -29,11 +29,6 @@ public:
   int BeginBlock(const FxShaderTechnique* tek, const RenderContextInstData& data) final {
     return 0;
   }
-  bool BindPass(int ipass) final {
-    return false;
-  }
-  void EndPass() final {
-  }
   void EndBlock() final {
   }
   void CommitParams(void) final {
@@ -94,30 +89,6 @@ public:
   }
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct DuRasterStateInterface : public RasterStateInterface {
-  DuRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce = false) override {
-  }
-  void SetZWriteMask(bool bv) override {
-  }
-  void SetRGBAWriteMask(bool rgb, bool a) override {
-  }
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) override {
-    return _curmask;
-  }
-  void SetBlending(Blending eVal) override {
-  }
-  void SetDepthTest(EDepthTest eVal) override {
-  }
-  void SetCullTest(ECullTest eVal) override {
-  }
-  void setScissorTest(EScissorTest eVal) override {
-  }
-
-public:
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 struct DuComputeInterface : public ComputeInterface {};
@@ -273,9 +244,6 @@ public:
   FxInterface* FXI() final {
     return &mFxI;
   }
-  RasterStateInterface* RSI() final {
-    return &mRsI;
-  }
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
   }
@@ -317,7 +285,6 @@ private:
 private:
   DummyFxInterface mFxI;
   DuMatrixStackInterface mMtxI;
-  DuRasterStateInterface mRsI;
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;

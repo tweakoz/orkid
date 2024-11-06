@@ -22,8 +22,6 @@ public:
   void Update(void) {
   }
   void gpuInit(lev2::Context* context) final;
-  bool BeginPass(lev2::Context* pTARG, int iPass = 0) final;
-  void EndPass(lev2::Context* pTARG) final;
   int BeginBlock(lev2::Context* pTARG, const lev2::RenderContextInstData& MatCtx) final;
   void EndBlock(lev2::Context* pTARG) final;
   /////////////////////////////////////////////////

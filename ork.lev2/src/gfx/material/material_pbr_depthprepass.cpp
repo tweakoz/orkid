@@ -48,18 +48,19 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
         pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
-        pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+        pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
           auto mut = const_cast<PBRMaterial*>(this);
           auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
-          auto RSI     = context->RSI();
-          mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
-          mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-          mut->_rasterstate.SetZWriteMask(true);
-          mut->_rasterstate.SetRGBAWriteMask(false, false);
-          RSI->BindRasterState(this->_rasterstate);
+          //auto RSI     = context->RSI();
+          mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+          mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+          mut->_rasterstate->setWriteMaskZ(true);
+          mut->_rasterstate->setWriteMaskRGB(false);
+          mut->_rasterstate->setWriteMaskA(false);
+          //RSI->BindRasterState(this->_rasterstate);
         });
       }
     } else {
@@ -69,18 +70,19 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_NI_MO;
         pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
-        pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+        pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
           auto mut = const_cast<PBRMaterial*>(this);
           auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
-          auto RSI     = context->RSI();
-          mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
-          mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-          mut->_rasterstate.SetZWriteMask(true);
-          mut->_rasterstate.SetRGBAWriteMask(false, false);
-          RSI->BindRasterState(this->_rasterstate);
+          //auto RSI     = context->RSI();
+          mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+          mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+          mut->_rasterstate->setWriteMaskZ(true);
+          mut->_rasterstate->setWriteMaskRGB(false);
+          mut->_rasterstate->setWriteMaskA(false);
+          //RSI->BindRasterState(this->_rasterstate);
         });
       }
       else{
@@ -96,18 +98,19 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->bindParam(this->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
         pipeline->bindParam(this->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
-        pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+        pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
           auto mut = const_cast<PBRMaterial*>(this);
           auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
-          auto RSI     = context->RSI();
-          mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
-          mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-          mut->_rasterstate.SetZWriteMask(true);
-          mut->_rasterstate.SetRGBAWriteMask(false, false);
-          RSI->BindRasterState(this->_rasterstate);
+          //auto RSI     = context->RSI();
+          mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+          mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+          mut->_rasterstate->setWriteMaskZ(true);
+          mut->_rasterstate->setWriteMaskRGB(false);
+          mut->_rasterstate->setWriteMaskA(false);
+          //RSI->BindRasterState(this->_rasterstate);
         });
       }
     } else {
@@ -116,18 +119,19 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_SK_NI_MO;
         pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
-        pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+        pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
           auto mut = const_cast<PBRMaterial*>(this);
           auto RCFD    = RCID.rcfd();
           auto context = RCFD->GetTarget();
           auto FXI     = context->FXI();
           auto MTXI    = context->MTXI();
-          auto RSI     = context->RSI();
-          mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
-          mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-          mut->_rasterstate.SetZWriteMask(true);
-          mut->_rasterstate.SetRGBAWriteMask(false, false);
-          RSI->BindRasterState(this->_rasterstate);
+          //auto RSI     = context->RSI();
+          mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+          mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+          mut->_rasterstate->setWriteMaskZ(true);
+          mut->_rasterstate->setWriteMaskRGB(false);
+          mut->_rasterstate->setWriteMaskA(false);
+          //RSI->BindRasterState(this->_rasterstate);
         });
       }
     }
@@ -137,23 +141,28 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
       pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_IN_MO;
       pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
       pipeline->addStateLambda(createBasicStateLambda(this));
-      pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+      pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
         auto mut = const_cast<PBRMaterial*>(this);
         auto RCFD    = RCID.rcfd();
         auto context = RCFD->GetTarget();
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
-        mut->_rasterstate.SetCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
-        mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-        mut->_rasterstate.SetZWriteMask(true);
-        mut->_rasterstate.SetRGBAWriteMask(false, false);
-        RSI->BindRasterState(this->_rasterstate);
+        //auto RSI     = context->RSI();
+        mut->_rasterstate->setCullTest(this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT);
+        mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+        mut->_rasterstate->setWriteMaskZ(true);
+        mut->_rasterstate->setWriteMaskRGB(false);
+        mut->_rasterstate->setWriteMaskA(false);
+        //RSI->BindRasterState(this->_rasterstate);
       });
     }
   }
   if(nullptr==pipeline){
     logchan_pbr_unl->log( "mtl<%s> NO DEPTH PREPASS\n", mMaterialName.c_str() );
+  }
+  if(pipeline){
+    pipeline->_material_ptr = (GfxMaterial*) this;
+    pipeline->_rasterstate = this->_rasterstate;
   }
   return pipeline;
 }

@@ -291,7 +291,8 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
       ///////////////////////////////
       float time = skin->_timer.SecsSinceStart();
       auto RCFD = std::make_shared<RenderContextFrameData>(pTARG);
-      skin->_material->_rasterstate.SetRGBAWriteMask(true, true);
+      skin->_material->_rasterstate->setWriteMaskRGB(true);
+      skin->_material->_rasterstate->setWriteMaskA(true);
       skin->_material->begin(skin->_tekcolorwheel, RCFD);
       skin->_material->bindParamMatrix(skin->_parmvp, skin->_uiMVPMatrix);
       skin->_material->bindParamFloat(skin->_partime, time);

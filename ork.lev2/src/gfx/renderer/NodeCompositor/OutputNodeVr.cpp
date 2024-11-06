@@ -44,7 +44,7 @@ struct VRIMPL {
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
       _blit2screenmtl.gpuInit(context, "orkshader://solid");
-      _blit2screenmtl._rasterstate.SetCullTest(ECullTest::OFF);
+      _blit2screenmtl._rasterstate->setCullTest(ECullTest::OFF);
       _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
       _fxtechnique2x2       = _blit2screenmtl.technique("downsample_2x2");
       _fxtechnique3x3       = _blit2screenmtl.technique("downsample_3x3");
@@ -335,7 +335,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
           }
 
-          mtl._rasterstate.SetBlending(Blending::OFF);
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, impl->_out_width, impl->_out_height);
@@ -365,7 +365,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           // vrdev->__composite(context, tex);
           mtl.begin(impl->_fxtechnique1x1, framedata);
 
-          mtl._rasterstate.SetBlending(Blending::OFF);
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());

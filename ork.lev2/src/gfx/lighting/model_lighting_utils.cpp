@@ -168,12 +168,12 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
 
   auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
-  material->_rasterstate.SetCullTest(ECullTest::OFF);
+  material->_rasterstate->setCullTest(ECullTest::OFF);
   material->begin(tek_posnrm, RCFD);
   material->bindParamMatrix(fxparameterMVP, fmtx4::Identity());
   // material->bindParamCTex(fxparameterTexture, mesh_tex.get());
   // material->bindParamInt(fxparameterNumPolys, num_verts/3);
-  ctx->RSI()->BindRasterState(material->_rasterstate, true);
+  //ctx->RSI()->BindRasterState(material->_rasterstate, true);
   ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num_verts);
   material->end(RCFD);
 
@@ -235,14 +235,14 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
     auto matrices = camdat.computeMatrices(1.0f);
     auto VP       = matrices.GetVPMatrix();
     auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
-    material->_rasterstate.SetCullTest(ECullTest::OFF);
+    material->_rasterstate->setCullTest(ECullTest::OFF);
 
     ctx->beginFrame();
     ctx->FBI()->PushRtGroup(dep_buffer.get());
 
     material->begin(tek_depmap, RCFD);
     material->bindParamMatrix(fxparameterMVP, VP);
-    ctx->RSI()->BindRasterState(material->_rasterstate, true);
+    //ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->DrawPrimitiveEML(vw2, PrimitiveType::TRIANGLES, num_verts);
     material->end(RCFD);
     ctx->FBI()->PopRtGroup();
@@ -261,8 +261,8 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
     material->bindParamMatrix(fxparameterPTMTX, VP);
     material->bindParamCTex(fxparameterTextureDMAP, rtb_dep->texture());
     material->bindParamCTex(fxparameterTexturePOS, rtb_pos->texture());
-    material->_rasterstate.SetBlending(Blending::ADDITIVE);
-    ctx->RSI()->BindRasterState(material->_rasterstate, true);
+    material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
+    //ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num_verts);
 
     ctx->FBI()->PopRtGroup();

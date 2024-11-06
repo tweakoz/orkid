@@ -64,9 +64,8 @@ void CompositingMaterial::gpuInit(lev2::Context* pTarg) {
     hTekBsolo = fxi->technique(_shader, "Bsolo");
     hTekCsolo = fxi->technique(_shader, "Csolo");
 
-    _rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    _rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    _rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
+    _rasterstate->setCullTest(ECullTest::OFF);
+    _rasterstate->setDepthTest(EDepthTest::OFF);
   }
 }
 /////////////////////////////////////////////////
@@ -91,11 +90,9 @@ void CompositingMaterial::SetTechnique(const std::string& tek) {
     hTekCurrent = hTekCsolo;
 }
 /////////////////////////////////////////////////
-bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
-  // printf("CompositorMtl draw\n");
+int CompositingMaterial::BeginBlock(lev2::Context* pTarg, const lev2::RenderContextInstData& MatCtx) {
+  int inumpasses = pTarg->FXI()->BeginBlock(hTekCurrent, MatCtx);
 
-  pTarg->RSI()->BindRasterState(_rasterstate);
-  pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 
   pTarg->FXI()->BindParamVect4(hLevelA, mLevelA);
@@ -117,15 +114,6 @@ bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
   }
 
   pTarg->FXI()->CommitParams();
-  return true;
-}
-/////////////////////////////////////////////////
-void CompositingMaterial::EndPass(lev2::Context* pTarg) {
-  pTarg->FXI()->EndPass();
-}
-/////////////////////////////////////////////////
-int CompositingMaterial::BeginBlock(lev2::Context* pTarg, const lev2::RenderContextInstData& MatCtx) {
-  int inumpasses = pTarg->FXI()->BeginBlock(hTekCurrent, MatCtx);
   return inumpasses;
 }
 /////////////////////////////////////////////////

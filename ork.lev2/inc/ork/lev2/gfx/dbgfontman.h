@@ -118,7 +118,7 @@ struct TextBlockState {
   std::stack<const Font*> _fontstack;
   bool _stereo_3d_text = false;
   rcid_ptr_t _overrideRCID;
-  Blending _blending = Blending::ALPHA_ADDITIVE;
+  BlendingMacro _blending = BlendingMacro::ALPHA_ADDITIVE;
 };
 
 using textblockstate_ptr_t = std::shared_ptr<TextBlockState>;

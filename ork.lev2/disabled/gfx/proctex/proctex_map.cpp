@@ -71,7 +71,7 @@ void Colorize::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -148,7 +148,7 @@ void UvMap::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -217,7 +217,7 @@ void SphMap::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(lev2::ECullTest::OFF);
-        mtl._rasterstate.SetBlending(lev2::Blending::OFF);
+        mtl._rasterstate.SetBlending(lev2::BlendingMacro::OFF);
         mtl._rasterstate.SetDepthTest(lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -291,7 +291,7 @@ void SphRefract::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         mtl.SetTexture(cpa->GetValue().GetTexture(ptex));
         mtl.SetTexture2(cpb->GetValue().GetTexture(ptex));
@@ -357,7 +357,7 @@ H2N::H2N()
 
   mMTL._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   mMTL._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-  mMTL._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+  mMTL._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
   mMTL._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
   mMTL._rasterstate.SetZWriteMask(false);
   mMTL.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
@@ -467,7 +467,7 @@ void Kaled::compute(ProcTex& ptex) {
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
     gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     gridmat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
     auto inptexa = conplug->GetValue().GetTexture(ptex);
 

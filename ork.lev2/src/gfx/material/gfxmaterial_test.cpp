@@ -26,12 +26,11 @@ bool gearlyhack = true;
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
     : meColorMode(EMODE_MOD_COLOR) {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::OFF);
+  //_rasterstate->setShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _rasterstate->setWriteMaskZ(true);
+  _rasterstate->setCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -53,12 +52,11 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
     , mUserTekName(pusertek)
     , mAllowCompileFailure(allowcompilefailure) {
 
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::OFF);
+  //_rasterstate->setShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _rasterstate->setWriteMaskZ(true);
+  _rasterstate->setCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -164,12 +162,16 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 /////////////////////////////////////////////////////////////////////////
 
+static bool gbskip = false;
+
 int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
 
   auto RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
+  auto MTXI = pTarg->MTXI();
+  auto FXI  = pTarg->FXI();
 
   if (is_picking and _enablePick and hTekPick) {
     return pTarg->FXI()->BeginBlock(hTekPick, RCID);
@@ -209,38 +211,14 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
         return pTarg->FXI()->BeginBlock(is_stereo ? hTekUserStereo : hTekUser, RCID);
         break;
     }
-  return 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void GfxMaterial3DSolid::EndBlock(Context* pTarg) {
-  pTarg->FXI()->EndBlock();
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-static bool gbskip = false;
-
-bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   if (gbskip)
-    return false;
+    return 0;
 
-  const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
-  auto RCFD = pTarg->topRenderContextFrameData();
-  const auto& CPD                    = RCFD->topCPD();
-  bool is_picking                    = CPD.isPicking();
-  bool is_stereo                     = CPD.isStereoOnePass();
-
-  pTarg->FXI()->BindPass(iPass);
 
   if (_shader->GetFailedCompile()) {
     assert(false);
-    return false;
+    return 0;
   }
-
-  auto MTXI = pTarg->MTXI();
-  auto FXI  = pTarg->FXI();
 
   FXI->BindParamMatrix(hMatM, MTXI->RefMMatrix());
   FXI->BindParamMatrix(hMatMV, MTXI->RefMVMatrix());
@@ -337,15 +315,14 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   }
 
   FXI->CommitParams();
-  pTarg->RSI()->BindRasterState(_rasterstate);
-  return true;
+  //pTarg->RSI()->BindRasterState(_rasterstate);
+  return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 
-void GfxMaterial3DSolid::EndPass(Context* pTarg) {
-  if (false == gbskip)
-    pTarg->FXI()->EndPass();
+void GfxMaterial3DSolid::EndBlock(Context* pTarg) {
+  pTarg->FXI()->EndBlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

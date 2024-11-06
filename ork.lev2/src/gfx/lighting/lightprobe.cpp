@@ -47,15 +47,13 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
 
   material->gpuInit(ctx, "orkshader://cube2equirectangular");
 
-  material->_rasterstate._blending  = Blending::OFF;
-  material->_rasterstate._culltest  = ECullTest::OFF;
-  material->_rasterstate._depthtest = EDepthTest::OFF;
+  material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  material->_rasterstate->_culltest  = ECullTest::OFF;
+  material->_rasterstate->_depthtest = EDepthTest::OFF;
 
   auto tek_c2e = material->technique("tek_cube2equi");
   auto p_mrot   = material->param("mrot");
   auto p_cube  = material->param("cube_sampler");
-
-  material->_rasterstate.SetCullTest(ECullTest::OFF);
 
   auto FBI = ctx->FBI();
 
@@ -73,7 +71,7 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
 
     material->bindParamMatrix(p_mrot, mtxrot);
     material->bindParamCTex(p_cube, _cubeTexture.get());
-    ctx->RSI()->BindRasterState(material->_rasterstate, true);
+    //ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->render2dQuadEML(); // full screen quad
     material->end(RCFD);
   }

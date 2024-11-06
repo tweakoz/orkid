@@ -39,7 +39,7 @@ static logchannel_ptr_t logchan_pbr_fwd = logger()->createChannel("mtlpbrFWD", f
 
 FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
-  auto L = [mtl](const RenderContextInstData& RCID, int ipass) {
+  auto L = [mtl](const RenderContextInstData& RCID) {
 
     //printf( "LIGHTINGLAMBDA\n");
     auto RCFD             = RCID.rcfd();
@@ -253,12 +253,12 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
   ////////////////////////////////////////////////
   // set raster state
   ////////////////////////////////////////////////
-  auto l_rsi = [this](const RenderContextInstData& RCID, int ipass) {
+  auto l_rsi = [this](const RenderContextInstData& RCID) {
     auto mut = const_cast<PBRMaterial*>(this);
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
-    auto RSI     = context->RSI();
-    //this->_rasterstate.SetBlending(Blending::ADDITIVE);
+    //auto RSI     = context->RSI();
+    //this->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
     bool is_rendering_PROBE = RCFD->userPropertyAs<bool>("renderingPROBE"_crcu);
 
     ECullTest culltest = this->_doubleSided ? ECullTest::OFF : ECullTest::PASS_FRONT;
@@ -266,16 +266,17 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       culltest = ECullTest::OFF;
     }
 
-    mut->_rasterstate.SetCullTest(culltest);
-    mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-    mut->_rasterstate.SetZWriteMask(true);
-    mut->_rasterstate.SetRGBAWriteMask(true, true);
-    RSI->BindRasterState(this->_rasterstate);
+    mut->_rasterstate->setCullTest(culltest);
+    mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+    mut->_rasterstate->setWriteMaskZ(true);
+    mut->_rasterstate->setWriteMaskRGB(true);
+    mut->_rasterstate->setWriteMaskA(true);
+    //RSI->BindRasterState(this->_rasterstate);
   };
   ////////////////////////////////////////////////
   // ssao lambda
   ////////////////////////////////////////////////
-  auto l_ssao = [this](const RenderContextInstData& RCID, int ipass) {
+  auto l_ssao = [this](const RenderContextInstData& RCID) {
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
     auto FXI              = context->FXI();
@@ -431,7 +432,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
       pipeline->addStateLambda(l_ssao);
     }
   }
-
+  if(pipeline){
+    pipeline->_material_ptr = (GfxMaterial*) this;
+    pipeline->_rasterstate = this->_rasterstate;
+  }
   // OrkAssert(pipeline->_technique != nullptr);
   return pipeline;
 }

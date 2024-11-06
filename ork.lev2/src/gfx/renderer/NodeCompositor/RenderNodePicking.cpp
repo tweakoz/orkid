@@ -67,7 +67,6 @@ struct IMPL {
     auto CIMPL        = drawdata._cimpl;
     auto FBI          = context->FBI();
     auto this_buf     = FBI->GetThisBuffer();
-    auto RSI          = context->RSI();
     const auto TOPCPD = CIMPL->topCPD();
     auto tgt_rect     = context->mainSurfaceRectAtOrigin();
     //////////////////////////////////////////////////////

@@ -141,7 +141,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   auto pbase             = render_buffer->_particles;
   bool do_sort           = _srd->_sort;
   fetcher_t get_particle = [&](size_t index) -> const particle::BasicParticle* { return pbase + index; };
-  // if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+  // if (meBlendMode >= BlendingMacro::ADDITIVE && meBlendMode <= BlendingMacro::ALPHA_SUBTRACTIVE) {
   // bsort = false;
   //}
   ///////////////////////////////////////////////////////////////
@@ -373,7 +373,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       material->update(RCID);
       //printf( ">>>>>>>\n");
       pipeline->wrappedDrawCall(RCID, [&]() {
-        context->RSI()->BindRasterState(material->_material->_rasterstate);
+        //context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
         //printf( "HI... icnt<%d> variant<%d>\n", icnt, variant );
       });

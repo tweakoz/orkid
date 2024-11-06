@@ -104,7 +104,7 @@ struct IMPL {
             _rtg_out->Resize(finalw,finalh);
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_tek_hsvg,framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpHue, _node->_hue);
             _freestyle_mtl->bindParamFloat(_fxpSaturation, _node->_saturation );
             _freestyle_mtl->bindParamFloat(_fxpValue, _node->_value );

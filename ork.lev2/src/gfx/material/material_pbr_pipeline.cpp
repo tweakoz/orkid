@@ -61,12 +61,11 @@ PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
-  return [mtl](const RenderContextInstData& RCID, int ipass) {
+  return [mtl](const RenderContextInstData& RCID) {
     //printf( "BASICLAMBDA\n");
     auto context          = RCID.rcfd()->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
-    auto RSI              = context->RSI();
     const auto& CPD       = RCID.rcfd()->topCPD();
     const auto& RCFDPROPS = RCID.rcfd()->userProperties();
     bool is_picking       = CPD.isPicking();
@@ -290,8 +289,6 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
     pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
 
-    pipeline->_material             = (GfxMaterial*)mtl;
-
     for (auto l : mtl->_state_lambdas) {
       pipeline->addStateLambda(l);
     }
@@ -361,6 +358,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     printf("permu-instanced<%d> skinned<%d> stereo<%d> picking<%d> vtxcolors<%d>\n", int(permu._instanced), int(permu._skinned), int(permu._stereo), int(permu._is_picking), int(permu._has_vtxcolors));
     printf("permu-forced_technique<%p>\n", (void*) permu._forced_technique );
     OrkAssert(false);
+  }
+  if(pipeline){
+    pipeline->_material_ptr = (GfxMaterial*) mtl;
+    pipeline->_rasterstate = mtl->_rasterstate;
   }
 
   return pipeline;

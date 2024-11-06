@@ -101,7 +101,7 @@ struct IMPL {
             _rtg_out->Resize(inputw,inputh);
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_technique,framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             for( auto item : _node->_bindings ) {
               auto p = _freestyle_mtl->param(item.first);
               _freestyle_mtl->bindParam(p, item.second);

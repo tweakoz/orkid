@@ -44,7 +44,6 @@ using ctx_t               = ork::python::unmanaged_ptr<Context>;
 using fbi_t               = ork::python::unmanaged_ptr<FrameBufferInterface>;
 using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;
-using rsi_t               = ork::python::unmanaged_ptr<RasterStateInterface>;
 using txi_t               = ork::python::unmanaged_ptr<TextureInterface>;
 using font_t              = ork::python::unmanaged_ptr<Font>;
 using capbuf_t            = ork::python::unmanaged_ptr<CaptureBuffer>;

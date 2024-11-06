@@ -18,11 +18,10 @@ namespace ork::lev2 {
 struct CtxBaseProgressPimpl { //
   CtxBaseProgressPimpl(Context* context) {
     _material      = std::make_shared<GfxMaterialUITextured>(context);
-    auto& rasstate = _material->_rasterstate;
-    rasstate.SetDepthTest(EDepthTest::OFF);
-    rasstate.SetBlending(Blending::OFF);
-    rasstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
-    rasstate.SetDepthTest(EDepthTest::ALWAYS);
+    auto rasstate = _material->_rasterstate;
+    rasstate->setDepthTest(EDepthTest::OFF);
+    rasstate->setBlendingMacro(BlendingMacro::OFF);
+    rasstate->setDepthTest(EDepthTest::ALWAYS);
     auto txi                                                    = context->TXI();
     _loadingtex                                                 = std::make_shared<Texture>();
     _loadingtex->_vars->makeValueForKey<bool>("loadimmediate") = true;

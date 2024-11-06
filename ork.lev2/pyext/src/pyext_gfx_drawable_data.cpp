@@ -350,7 +350,7 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
                 return crcstr;
               },
               [](billboard_string_drawabledata_ptr_t drw, crcstring_ptr_t ctest) { //
-                drw->_blendmode = Blending(ctest->hashed());
+                drw->_blendmode = BlendingMacro(ctest->hashed());
               });
   type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////

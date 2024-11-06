@@ -39,24 +39,25 @@ namespace ork::lev2 {
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
   auto basic_lambda  = createBasicStateLambda(this);
-  auto skybox_lambda = [this, basic_lambda](const RenderContextInstData& RCID, int ipass) {
+  auto skybox_lambda = [this, basic_lambda](const RenderContextInstData& RCID) {
     auto mut       = (PBRMaterial*)this;
     auto RCFD      = RCID.rcfd();
     auto context   = RCFD->GetTarget();
     auto FXI       = context->FXI();
     auto MTXI      = context->MTXI();
-    auto RSI       = context->RSI();
+    //auto RSI       = context->RSI();
     auto pbrcommon = RCFD->_pbrcommon;
     auto envtex    = pbrcommon->envSpecularTexture();
 
     FXI->BindParamCTex(this->_parMapSpecularEnv, envtex.get());
 
-    basic_lambda(RCID, ipass);
-    mut->_rasterstate.SetCullTest(ECullTest::OFF);
-    mut->_rasterstate.SetZWriteMask(false);
-    mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-    mut->_rasterstate.SetRGBAWriteMask(true, true);
-    RSI->BindRasterState(this->_rasterstate);
+    basic_lambda(RCID);
+    mut->_rasterstate->setCullTest(ECullTest::OFF);
+    mut->_rasterstate->setWriteMaskZ(false);
+    mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+    mut->_rasterstate->setWriteMaskRGB(true);
+    mut->_rasterstate->setWriteMaskA(true);
+    //RSI->BindRasterState(this->_rasterstate);
   };
   //////////////////////////////////////////////////////////
   OrkAssert(permu._instanced == false);
@@ -68,17 +69,18 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
     pipeline_stereo->bindParam(this->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
     pipeline_stereo->bindParam(this->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
     pipeline_stereo->addStateLambda(skybox_lambda);
-    pipeline_stereo->_material = (GfxMaterial*)this;
     pipeline                   = pipeline_stereo;
   } else if (this->_tek_FWD_SKYBOX_MO) {
     auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
     pipeline_stereo->_technique = this->_tek_FWD_SKYBOX_MO;
     pipeline_stereo->bindParam(this->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
     pipeline_stereo->addStateLambda(skybox_lambda);
-    pipeline_stereo->_material = (GfxMaterial*)this;
     pipeline                   = pipeline_stereo;
   }
-
+  if(pipeline){
+    pipeline->_material_ptr = (GfxMaterial*) this;
+    pipeline->_rasterstate = this->_rasterstate;
+  }
   return pipeline;
 }
 
@@ -86,18 +88,18 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
 
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
-  auto no_cull_stateblock = [this](const RenderContextInstData& RCID, int ipass) {
+  auto no_cull_stateblock = [this](const RenderContextInstData& RCID) {
     auto mut   = (PBRMaterial*)this;
     auto RCFD    = RCID.rcfd();
     auto context = RCFD->GetTarget();
     auto FXI     = context->FXI();
     auto MTXI    = context->MTXI();
-    auto RSI     = context->RSI();
-    mut->_rasterstate.SetCullTest(ECullTest::OFF);
-    mut->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    mut->_rasterstate.SetZWriteMask(true);
-    mut->_rasterstate.SetRGBAWriteMask(true, false);
-    RSI->BindRasterState(this->_rasterstate);
+    //auto RSI     = context->RSI();
+    mut->_rasterstate->setCullTest(ECullTest::OFF);
+    mut->_rasterstate->setDepthTest(EDepthTest::OFF);
+    mut->_rasterstate->setWriteMaskZ(true);
+    mut->_rasterstate->setWriteMaskRGB(true);
+    mut->_rasterstate->setWriteMaskA(false);
   };
   switch (permu._rendering_model) {
     case "FORWARD_PBR"_crcu: {
@@ -140,6 +142,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineVTX(const FxPipelinePermutation& 
     }
     default:
       break;
+  }
+  if(pipeline){
+    pipeline->_material_ptr = (GfxMaterial*) this;
+    pipeline->_rasterstate = this->_rasterstate;
   }
   return pipeline;
 }

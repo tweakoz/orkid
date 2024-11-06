@@ -38,7 +38,7 @@ void pyinit_gfx_particles(py::module& module_lev2) {
           return crcstr;
         },
         [](ptc::basematerial_ptr_t  m, crcstring_ptr_t blend) { //
-          m->_blending = Blending(blend->hashed());
+          m->_blending = BlendingMacro(blend->hashed());
         })
       .def_property("depthtest", 
         [](ptc::basematerial_ptr_t  m) -> crcstring_ptr_t { //

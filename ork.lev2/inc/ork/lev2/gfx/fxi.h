@@ -22,8 +22,6 @@ public:
   virtual int BeginBlock(
       const FxShaderTechnique* tek, //
       const RenderContextInstData& data) = 0;
-  virtual bool BindPass(int ipass)       = 0;
-  virtual void EndPass()                 = 0;
   virtual void EndBlock()                = 0;
   virtual void CommitParams(void)        = 0;
   virtual void reset() {}
@@ -77,8 +75,14 @@ public:
   virtual ~FxInterface() {
   }
 
+  void pushRasterState(rasterstate_ptr_t rs);
+  rasterstate_ptr_t popRasterState();
+  virtual void _doPushRasterState(rasterstate_ptr_t rs) {}
+  virtual rasterstate_ptr_t _doPopRasterState() { return nullptr; }
+
   bool _debugDrawCall = false;
 
+  virtual void applyRasterState(const RasterState& rstate) {}
   inline FxShader* activeShader() const {
     return _activeShader;
   }

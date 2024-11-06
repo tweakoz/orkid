@@ -226,7 +226,7 @@ void GedSkin0::End(Context* pTARG) {
     int inumcusts = (int)primcontainer->mCustomPrims.size();
 
     // uimat.SetUIColorMode(UiColorMode::VTX);
-    // uimat._rasterstate.SetBlending(lev2::Blending::OFF);
+    // uimat._rasterstate.SetBlending(lev2::BlendingMacro::OFF);
 
     const float fZ = 0.0f;
 

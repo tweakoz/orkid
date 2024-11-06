@@ -29,7 +29,7 @@ struct BillboardRenderImpl {
     _material       = new GfxMaterialUITextured();
     _material->SetTexture(ETEXDEST_DIFFUSE,_colortexture.get());
     _material->gpuInit(ctx,"uitextured");
-    _material->_rasterstate.SetBlending(Blending::ALPHA);
+    _material->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -46,7 +46,7 @@ struct BillboardRenderImpl {
 
     auto mtxi = context->MTXI();
     auto gbi  = context->GBI();
-    auto rsi  = context->RSI();
+    //auto rsi  = context->RSI();
     auto fbi  = context->FBI();
 
     mtxi->PushMMatrix(fmtx4::Identity());
@@ -56,8 +56,8 @@ struct BillboardRenderImpl {
     fbi->pushScissor(0,0,3840,1920);
     fvec4 modcolor = fcolor4::Green();
     context->PushModColor(modcolor);
-    rsi->SetDepthTest(lev2::EDepthTest::OFF);
-    rsi->SetCullTest(lev2::ECullTest::OFF);
+    //rsi->SetDepthTest(lev2::EDepthTest::OFF);
+    //rsi->SetCullTest(lev2::ECullTest::OFF);
 
     auto& VB = GfxEnv::GetSharedDynamicVB2();
 

@@ -275,11 +275,12 @@ struct ForwardPbrNodeImpl {
 
       RenderContextInstData RCID(RCFD);
 
-      _ssao_material->_rasterstate.SetBlending(Blending::OFF);
-      _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
-      _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
-      _ssao_material->_rasterstate.SetZWriteMask(false);
-      _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
+      _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+      _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
+      _ssao_material->_rasterstate->setWriteMaskZ(false);
+      _ssao_material->_rasterstate->setWriteMaskRGB(true);
+      _ssao_material->_rasterstate->setWriteMaskA(true);
 
       _ssao_material->begin(_tek_lindepth, RCFD);
 
@@ -358,11 +359,12 @@ struct ForwardPbrNodeImpl {
 
       RenderContextInstData RCID(RCFD);
 
-      _ssao_material->_rasterstate.SetBlending(Blending::OFF);
-      _ssao_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
-      _ssao_material->_rasterstate.SetCullTest(ECullTest::OFF);
-      _ssao_material->_rasterstate.SetZWriteMask(false);
-      _ssao_material->_rasterstate.SetRGBAWriteMask(true, true);
+      _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+      _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+      _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
+      _ssao_material->_rasterstate->setWriteMaskZ(false);
+      _ssao_material->_rasterstate->setWriteMaskRGB(true);
+      _ssao_material->_rasterstate->setWriteMaskA(true);
 
       _ssao_material->begin(_tek_ssao, RCFD);
 

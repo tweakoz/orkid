@@ -74,7 +74,7 @@ struct PbrNodeImpl {
     auto CIMPL        = drawdata._cimpl;
     auto FBI          = targ->FBI();
     auto this_buf     = FBI->GetThisBuffer();
-    auto RSI          = targ->RSI();
+    //auto RSI          = targ->RSI();
     auto DWI          = targ->DWI();
     const auto TOPCPD = CIMPL->topCPD();
     /////////////////////////////////////////////////
@@ -126,9 +126,9 @@ struct PbrNodeImpl {
     // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context->_lightingmtl->_rasterstate.SetBlending(Blending::OFF);
-    _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    _context->_lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
+    _context->_lightingmtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    _context->_lightingmtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+    _context->_lightingmtl->_rasterstate->setCullTest(ECullTest::OFF);
 
     int pbr_model = RCFD->getUserProperty("pbr_model"_crc).get<int>();
 
@@ -205,9 +205,8 @@ struct PbrNodeImpl {
       _context->_lightingmtl->bindParamFloat(_context->_parEnvironmentMipScale, pbrcommon->environmentMipScale() * num_mips);
       _context->_lightingmtl->bindParamFloat(_context->_parSpecularMipBias, pbrcommon->_specularMipBias);
       /////////////////////////
-      _context->_lightingmtl->_rasterstate.SetZWriteMask(false);
-      _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-      _context->_lightingmtl->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
+      _context->_lightingmtl->_rasterstate->setWriteMaskZ(false);
+      _context->_lightingmtl->_rasterstate->setDepthTest(EDepthTest::OFF);
 
       _context->bindViewParams(VD);
 
@@ -243,7 +242,7 @@ struct PbrNodeImpl {
       //////////////////////////////////////////////////////
 
       _context->_lightingmtl->commit();
-      RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
+      //RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
 
       DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
     });

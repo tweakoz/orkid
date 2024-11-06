@@ -26,8 +26,6 @@ public:
 
   void gpuInit(Context* context) override;
 
-  bool BeginPass(Context* pTARG, int iPass = 0) override;
-  void EndPass(Context* pTARG) override;
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 
@@ -89,8 +87,6 @@ public:
   }
   void gpuInit(Context* context) override;
 
-  bool BeginPass(Context* pTARG, int iPass = 0) override;
-  void EndPass(Context* pTARG) override;
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 
@@ -126,8 +122,6 @@ public:
   void gpuInit(Context* context, const std::string& Technique);
   void Update(void) override {
   }
-  bool BeginPass(Context* pTARG, int iPass = 0) override;
-  void EndPass(Context* pTARG) override;
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 

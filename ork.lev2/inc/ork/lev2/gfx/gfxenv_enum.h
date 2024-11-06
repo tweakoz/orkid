@@ -164,7 +164,41 @@ enum EAlphaTest {
 
 //////////////////////////////////////
 
-enum struct Blending : crc_enum_t {
+enum struct BlendingOp : crc_enum_t {
+  CrcEnum(ADD),
+  CrcEnum(SUBTRACT),
+  CrcEnum(REVSUBTRACT),
+  CrcEnum(MIN),
+  CrcEnum(MAX),
+};
+
+enum struct BlendingFactor : crc_enum_t {
+  CrcEnum(ZERO),
+  CrcEnum(ONE),
+  CrcEnum(SRC_COLOR),
+  CrcEnum(ONE_MINUS_SRC_COLOR),
+  CrcEnum(DST_COLOR),
+  CrcEnum(ONE_MINUS_DST_COLOR),
+  CrcEnum(SRC_ALPHA),
+  CrcEnum(ONE_MINUS_SRC_ALPHA),
+  CrcEnum(DST_ALPHA),
+  CrcEnum(ONE_MINUS_DST_ALPHA),
+  CrcEnum(CONSTANT_COLOR),
+  CrcEnum(ONE_MINUS_CONSTANT_COLOR),
+  CrcEnum(CONSTANT_ALPHA),
+  CrcEnum(ONE_MINUS_CONSTANT_ALPHA),
+  CrcEnum(SRC_ALPHA_SATURATE),
+};
+
+enum struct EPolygonMode : crc_enum_t {
+  CrcEnum(FILL),
+  CrcEnum(LINE),
+  CrcEnum(POINT),
+};
+
+//////////////////////////////////////
+
+enum struct BlendingMacro : crc_enum_t {
   CrcEnum(OFF),
   CrcEnum(PREMA),             // (SrcClr) + (FBClr*(1-SrcAlpha))
   CrcEnum(ALPHA),             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
@@ -226,6 +260,11 @@ enum EShadeModel {
 }; // 1 bit
 
 //////////////////////////////////////
+
+enum struct EFrontFace : crc_enum_t {
+  CrcEnum(CLOCKWISE),
+  CrcEnum(COUNTER_CLOCKWISE),
+}; 
 
 enum struct ECullTest : crc_enum_t {
   CrcEnum(OFF),

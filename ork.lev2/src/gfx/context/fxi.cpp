@@ -24,6 +24,13 @@ FxInterface::FxInterface()
     : _activeShader(0) {
 }
 
+void FxInterface::pushRasterState(rasterstate_ptr_t rs){
+  _doPushRasterState(rs);
+}
+rasterstate_ptr_t FxInterface::popRasterState(){
+  return _doPopRasterState();
+}
+
 void FxInterface::BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {
   auto texture = (texasset != nullptr) ? texasset->GetTexture().get() : nullptr;
   if (texture)

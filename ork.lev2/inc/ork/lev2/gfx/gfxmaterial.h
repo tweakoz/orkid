@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/lev2/gfx/rasterstate.h>
 #include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/kernel/varmap.inl>
 
@@ -131,8 +131,6 @@ public:
       _doinit = false;
     }
   }
-  virtual bool BeginPass(Context* pTARG, int iPass = 0)                                                        = 0;
-  virtual void EndPass(Context* pTARG)                                                                         = 0;
   virtual int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx = RenderContextInstData::Default) = 0;
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
   fxpipelinecache_constptr_t pipelineCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
@@ -180,12 +178,12 @@ public:
   //virtual fxpipeline_ptr_t createFxPipeline(FxPipelineConfig& cfg) const;
 
   //////////////////////////////////////////////////////////////////////////////
-  SRasterState swapRasterState(SRasterState rstate);
+  rasterstate_ptr_t swapRasterState(rasterstate_ptr_t rstate);
   //////////////////////////////////////////////////////////////////////////////
 
   const RenderContextInstData* mRenderContexInstData = nullptr;
 
-  SRasterState _rasterstate;
+  rasterstate_ptr_t _rasterstate;
 
   int miNumPasses = 0; ///< Number Of Render Passes in this Material (platform specific)
   std::string mMaterialName;

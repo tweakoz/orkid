@@ -68,26 +68,68 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
-    if(_debugBreak){
-        OrkBreak();
-    }
+  if(_debugBreak){
+      OrkBreak();
+  }
   int inumpasses = beginBlock(RCID);
   if(_debugPrint){
     printf( "FxPipeline<%p:%s> wrappedDrawCall inumpasses<%d>\n", this, _debugName.c_str(), inumpasses );
   }
-  for (int ipass = 0; ipass < inumpasses; ipass++) {
-    if (beginPass(RCID, ipass)) {
-      drawcall();
-      endPass(RCID);
-    }
-  }
+  drawcall();
   endBlock(RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID.rcfd()->GetTarget();
   auto FXI        = context->FXI();
-  return FXI->BeginBlock(_technique, RCID);
+  int rval = FXI->BeginBlock(_technique, RCID);
+
+  if( _debugBreak ){
+    OrkBreak();
+  }
+
+  FXI->_debugDrawCall = _debugPrint;
+  //bool OK = FXI->BindPass(ipass);
+  FXI->_debugDrawCall = false;
+  //if (not OK)
+    //return OK;
+
+  ///////////////////////////////
+  // run state lambdas
+  ///////////////////////////////
+
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s>::beginBlock num_statelambdas<%zu>\n", this, _debugName.c_str(), _statelambdas.size() );
+  }
+
+  for( auto& item: _statelambdas ){
+    item(RCID);
+  }
+
+  ///////////////////////////////
+  // run individual state items
+  ///////////////////////////////
+
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s>::beginBlock num_params<%zu>\n", this, _debugName.c_str(), _params.size() );
+  }
+
+  for (auto item : _params) {
+    fxparam_constptr_t param = item.first;
+    const auto& val          = item.second;
+    _set_typed_param(RCID,param,val);
+  }
+
+  ///////////////////////////////
+  // apply raster state
+  ///////////////////////////////
+  if(_rasterstate){
+    FXI->applyRasterState(*_rasterstate);
+  }
+
+  ///////////////////////////////
+
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val){
@@ -98,7 +140,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   int W = CPD._width;
   int H = CPD._height;
   auto MTXI             = context->MTXI();
-  auto RSI              = context->RSI();
   const auto& RCFDPROPS = RCID.rcfd()->userProperties();
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();
@@ -319,57 +360,6 @@ void FxPipeline::dump() const {
   printf( "FxPipeline<%p:%s>\n", (void*) this, _debugName.c_str() );
   __permutation.dump();
   printf( "  debugtext<%s>\n", (void*) _debugText.c_str() );
-}
-///////////////////////////////////////////////////////////////////////////////
-bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
-  auto context          = RCID.rcfd()->GetTarget();
-  auto FXI              = context->FXI();
-
-  if( _debugBreak ){
-    OrkBreak();
-  }
-
-  FXI->_debugDrawCall = _debugPrint;
-  bool OK = FXI->BindPass(ipass);
-  FXI->_debugDrawCall = false;
-  if (not OK)
-    return OK;
-
-  if(_debugPrint){
-    printf( "FxPipeline<%p:%s>::beginPass index<%d> OK<%d>\n", this, _debugName.c_str(), ipass, int(OK) );
-  }
-
-  ///////////////////////////////
-  // run state lambdas
-  ///////////////////////////////
-
-  if(_debugPrint){
-    printf( "FxPipeline<%p:%s>::beginPass num_statelambdas<%zu>\n", this, _debugName.c_str(), _statelambdas.size() );
-  }
-
-  for( auto& item: _statelambdas ){
-    item(RCID,ipass);
-  }
-
-  ///////////////////////////////
-  // run individual state items
-  ///////////////////////////////
-
-  if(_debugPrint){
-    printf( "FxPipeline<%p:%s>::beginPass num_params<%zu>\n", this, _debugName.c_str(), _params.size() );
-  }
-
-  for (auto item : _params) {
-    fxparam_constptr_t param = item.first;
-    const auto& val          = item.second;
-    _set_typed_param(RCID,param,val);
-  }
-  return OK;
-}
-///////////////////////////////////////////////////////////////////////////////
-void FxPipeline::endPass(const RenderContextInstData& RCID) {
-  auto context = RCID.rcfd()->GetTarget();
-  context->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::endBlock(const RenderContextInstData& RCID) {

@@ -534,8 +534,6 @@ public:
   void _doBeginFrame() final;
 
   int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) final;
-  bool BindPass(int ipass) final;
-  void EndPass() final;
   void EndBlock() final;
   void CommitParams(void) final;
   void reset() final;
@@ -584,6 +582,8 @@ public:
   parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
   void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+
+  void applyRasterState(const RasterState& rstate) final;
 
 private:
   typedef std::function<void(int iloc, GLenum checktype)> stdparambinder_t;

@@ -49,7 +49,7 @@ public:
   fvec4 _color;
   fvec4 _averageColor;
   EDepthTest _depthtest = EDepthTest::OFF;
-  Blending _blending = Blending::OFF;
+  BlendingMacro _blending = BlendingMacro::OFF;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   FxShaderStorageBuffer* _cu_vertex_io_buffer    = nullptr;

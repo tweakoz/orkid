@@ -41,8 +41,8 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
 
-  lev2::SRasterState defstate;
-  tgt->RSI()->BindRasterState(defstate);
+  //lev2::RasterState defstate;
+  //tgt->RSI()->BindRasterState(defstate);
 
   bool has_foc = hasMouseFocus();
 
@@ -84,11 +84,11 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     if (has_foc)
       clr = _focuscolor;
 
-    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     tgt->PushModColor(clr);
     ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
-    defmtl->_rasterstate.SetBlending(lev2::Blending::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
 
     /////////////
 

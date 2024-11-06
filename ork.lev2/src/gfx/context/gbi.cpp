@@ -92,15 +92,8 @@ void GeometryBufferInterface::DrawPrimitive(
     int ivcount) {
   int imax = VBuf.GetMax();
   if (imax) {
-    int inumpasses = mtl->BeginBlock(&_context);
-    for (int ipass = 0; ipass < inumpasses; ipass++) {
-      bool bDRAW = mtl->BeginPass(&_context, ipass);
-      if (bDRAW) {
-        DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
-        mtl->EndPass(&_context);
-      }
-    }
-
+    mtl->BeginBlock(&_context);
+    DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
     mtl->EndBlock(&_context);
   }
 }
@@ -117,15 +110,8 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
   int imax = VBuf.GetMax();
 
   if (imax) {
-    int inumpasses = mtl->BeginBlock(&_context);
-
-    for (int ipass = 0; ipass < inumpasses; ipass++) {
-      if (mtl->BeginPass(&_context, ipass)) {
-        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
-        mtl->EndPass(&_context);
-      }
-    }
-
+    mtl->BeginBlock(&_context);
+    DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
     mtl->EndBlock(&_context);
   }
 }

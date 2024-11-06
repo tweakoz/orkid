@@ -31,7 +31,7 @@ void XgmModel::RenderSkinned(
 
   auto fxcache  = RCID._pipeline_cache;
   auto pipeline = fxcache->findPipeline(RCID);
-  auto pmat     = pipeline->_material;
+  auto pmat     = pipeline->_material_ptr;
 
   auto R           = RCID.GetRenderer();
   auto RCFD        = context->topRenderContextFrameData();

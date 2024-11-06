@@ -79,8 +79,8 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
     tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::PrimitiveType::LINES);
   };
 
-  lev2::SRasterState defstate;
-  tgt->RSI()->BindRasterState(defstate);
+  //lev2::RasterState defstate;
+  //tgt->RSI()->BindRasterState(defstate);
 
   bool has_foc = hasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::White() : fcolor4::Red());
@@ -113,11 +113,11 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
         break;
     }
 
-    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     tgt->PushModColor(clr);
     ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
-    defmtl->_rasterstate.SetBlending(lev2::Blending::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
 
     /////////////
     // close button

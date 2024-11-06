@@ -138,8 +138,8 @@ void GridDrawableImpl::_render(const RenderContextInstData& RCID) {
 
     if (_griddata->_shader_suffix == "_V3") {
       // set additive
-      _pbrmaterial->_rasterstate.SetBlending(Blending::ALPHA);
-      context->RSI()->BindRasterState(_pbrmaterial->_rasterstate, true);
+      _pbrmaterial->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
+      //context->RSI()->BindRasterState(_pbrmaterial->_rasterstate, true);
     }
     gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
   });

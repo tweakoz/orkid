@@ -39,6 +39,7 @@ struct PickBuffer;
 struct GpuEvent;
 struct GpuEventSink;
 struct CompressedImage;
+struct RasterState;
 
 //
 using loadingphase_ptr_t = std::shared_ptr<LoadingPhase>;
@@ -60,6 +61,7 @@ using gpueventsink_ptr_t = std::shared_ptr<GpuEventSink>;
 using compressedimg_ptr_t = std::shared_ptr<CompressedImage>;
 
 using pickvariant_t = svar128_t;
+using rasterstate_ptr_t = std::shared_ptr<RasterState>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

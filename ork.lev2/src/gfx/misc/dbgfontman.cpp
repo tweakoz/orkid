@@ -137,7 +137,7 @@ void FontMan::_endTextBlock(Context* context) {
   const auto& CPD = RCFD->topCPD();
   auto stereocams = CPD._stereoCameraMatrices;
   auto GBI        = context->GBI();
-  auto RSI        = context->RSI();
+  //auto RSI        = context->RSI();
   auto the_font   = currentFont();
   auto top_state = _currentTextBlockState;
   if (bdraw) {
@@ -155,12 +155,12 @@ void FontMan::_endTextBlock(Context* context) {
         };
       }
       auto font_material = the_font->_fs_material;
-      auto& RSTATE       = font_material->_rasterstate;
+      auto RSTATE       = font_material->_rasterstate;
       the_font->_pipe_stereo->wrappedDrawCall(*RCID, [&]() { //
-        RSTATE.SetCullTest(ECullTest::OFF);
-        RSTATE.SetDepthTest(EDepthTest::OFF);
-        RSTATE.SetBlending(top_state->_blending);
-        RSI->BindRasterState(RSTATE);
+        RSTATE->setCullTest(ECullTest::OFF);
+        RSTATE->setDepthTest(EDepthTest::OFF);
+        RSTATE->setBlendingMacro(top_state->_blending);
+        //RSI->BindRasterState(RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
       });
     } else {
@@ -298,24 +298,20 @@ void FontMan::DrawTextItems(Context* context, const textitem_vect& items) {
   font->_materialDeferred->_variant = "font-instanced"_crcu;
 
   int inumpasses = material->BeginBlock(context);
-  bool bDRAW     = material->BeginPass(context, 0);
-  if (bDRAW) {
 
-    fmtx4 matscale;
-    matscale.setScale(0.25f);
+  fmtx4 matscale;
+  matscale.setScale(0.25f);
 
-    for (size_t i = 0; i < items.size(); i++) {
-      const auto& item    = items[i];
-      auto vw             = fontman->_writers[i];
-      const auto& wmatrix = item._wmatrix;
-      mtxi->PushMMatrix(fmtx4::multiply_ltor(matscale, wmatrix));
-      material->UpdateMMatrix(context);
-      gbi->DrawPrimitiveEML(*vw, ork::lev2::PrimitiveType::TRIANGLES);
-      mtxi->PopMMatrix();
-    }
-
-    material->EndPass(context);
+  for (size_t i = 0; i < items.size(); i++) {
+    const auto& item    = items[i];
+    auto vw             = fontman->_writers[i];
+    const auto& wmatrix = item._wmatrix;
+    mtxi->PushMMatrix(fmtx4::multiply_ltor(matscale, wmatrix));
+    material->UpdateMMatrix(context);
+    gbi->DrawPrimitiveEML(*vw, ork::lev2::PrimitiveType::TRIANGLES);
+    mtxi->PopMMatrix();
   }
+
   material->EndBlock(context);
 }
 

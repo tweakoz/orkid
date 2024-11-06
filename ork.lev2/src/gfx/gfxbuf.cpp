@@ -180,7 +180,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
     float fv1,
     float* uv2,
     const fcolor4& clr) {
-  static SRasterState DefaultRasterState;
+  static RasterState DefaultRasterState;
   auto ctx  = context();
   auto mtxi = ctx->MTXI();
   auto fbi  = ctx->FBI();
@@ -204,7 +204,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
   mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  ctx->RSI()->BindRasterState(DefaultRasterState, true);
+  //ctx->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
@@ -225,12 +225,8 @@ void DisplayBuffer::RenderMatOrthoQuad(
       vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
       vw.UnLock(context());
 
-      int inumpasses = pmat->BeginBlock(ctx);
-      for (int ipass = 0; ipass < inumpasses; ipass++) {
-        bool bDRAW = pmat->BeginPass(ctx, ipass);
-        ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
-        pmat->EndPass(ctx);
-      }
+      pmat->BeginBlock(ctx);
+      ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       pmat->EndBlock(ctx);
     }
     ctx->PopModColor();
@@ -253,7 +249,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
     fvec2 uv2,
     fvec2 uv3,
     const fcolor4& clr) {
-  static SRasterState DefaultRasterState;
+  static RasterState DefaultRasterState;
   auto ctx  = context();
   auto mtxi = ctx->MTXI();
   auto fbi  = ctx->FBI();
@@ -273,7 +269,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
   mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  ctx->RSI()->BindRasterState(DefaultRasterState, true);
+  //ctx->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
@@ -294,12 +290,8 @@ void DisplayBuffer::RenderMatOrthoQuad(
       vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, uv3.x, uv3.y, 0.0f, 0.0f, uc));
       vw.UnLock(context());
 
-      int inumpasses = pmat->BeginBlock(ctx);
-      for (int ipass = 0; ipass < inumpasses; ipass++) {
-        bool bDRAW = pmat->BeginPass(ctx, ipass);
-        ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
-        pmat->EndPass(ctx);
-      }
+      pmat->BeginBlock(ctx);
+      ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       pmat->EndBlock(ctx);
     }
     ctx->PopModColor();

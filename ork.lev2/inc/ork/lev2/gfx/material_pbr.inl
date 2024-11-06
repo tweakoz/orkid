@@ -96,8 +96,6 @@ public:
 
   ////////////////////////////////////////////
 
-  bool BeginPass(Context* targ, int iPass = 0) final;
-  void EndPass(Context* targ) final;
   int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
   void EndBlock(Context* targ) final;
   void gpuInit(Context* targ) final;

@@ -197,7 +197,6 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   auto RCFD      = drawdata.RCFD();
   auto targ      = drawdata.context();
   auto FBI       = targ->FBI();
-  auto RSI       = targ->RSI();
   auto& ddprops  = drawdata._properties;
   auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
 
@@ -253,10 +252,10 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     /////////////////////////////////////////////////
     auto MTXI = targ->MTXI();
     targ->debugPushGroup("Deferred::gbuffer pass");
-    auto newmask = RGBAMask{true, true, true, false};
-    auto oldmask = RSI->SetRGBAWriteMask(newmask);
+    //auto newmask = RGBAMask{true, true, true, false};
+    //auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
-    RSI->SetRGBAWriteMask(oldmask);
+    //RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
     irenderer->resetQueue();
@@ -303,9 +302,9 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     _lightingmtl->bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
     _lightingmtl->bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl->bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
-    _lightingmtl->_rasterstate.SetBlending(Blending::OFF);
-    _lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    _lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
+    _lightingmtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    _lightingmtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+    _lightingmtl->_rasterstate->setCullTest(ECullTest::OFF);
     _lightingmtl->commit();
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _lightingmtl->end(RCFD);
@@ -391,11 +390,11 @@ void DeferredContext::bindViewParams(const ViewData& VD) {
   _lightingmtl->bindParamFloat(_parTime, VD._time);
 }
 
-void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending) {
-  _lightingmtl->_rasterstate.SetBlending(blending);
-  _lightingmtl->_rasterstate.SetDepthTest(depthtest);
-  _lightingmtl->_rasterstate.SetCullTest(culltest);
-  ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
+void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, BlendingMacro blending) {
+  _lightingmtl->_rasterstate->setBlendingMacro(blending);
+  _lightingmtl->_rasterstate->setDepthTest(depthtest);
+  _lightingmtl->_rasterstate->setCullTest(culltest);
+  //ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -409,7 +408,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   auto targ         = drawdata.context();
   auto FBI          = targ->FBI();
   auto this_buf     = FBI->GetThisBuffer();
-  auto RSI          = targ->RSI();
+  //auto RSI          = targ->RSI();
   auto DWI          = targ->DWI();
   const auto TOPCPD = CIMPL->topCPD();
   _accumCPD         = TOPCPD;
@@ -441,7 +440,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
       RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
@@ -466,7 +465,7 @@ void DeferredContext::beginPointLighting(
   auto targ  = drawdata.context();
   auto FBI   = targ->FBI();
   auto FXI   = targ->FXI();
-  auto RSI   = targ->RSI();
+  //auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -479,7 +478,7 @@ void DeferredContext::beginPointLighting(
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
@@ -520,7 +519,7 @@ void DeferredContext::beginSpotLighting(
   auto targ  = drawdata.context();
   auto FBI   = targ->FBI();
   auto FXI   = targ->FXI();
-  auto RSI   = targ->RSI();
+  //auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -533,7 +532,7 @@ void DeferredContext::beginSpotLighting(
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
@@ -574,7 +573,7 @@ void DeferredContext::beginShadowedSpotLighting(
   auto targ  = drawdata.context();
   auto FBI   = targ->FBI();
   auto FXI   = targ->FXI();
-  auto RSI   = targ->RSI();
+  //auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(_rtgLbuffer.get());
@@ -584,7 +583,7 @@ void DeferredContext::beginShadowedSpotLighting(
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
@@ -624,7 +623,7 @@ void DeferredContext::beginSpotDecaling(
   auto targ  = drawdata.context();
   auto FBI   = targ->FBI();
   auto FXI   = targ->FXI();
-  auto RSI   = targ->RSI();
+  //auto RSI   = targ->RSI();
   targ->debugPushGroup("Deferred::SpotDecaling");
   CIMPL->pushCPD(_decalCPD);
   FBI->PushRtGroup(_rtgDecal.get());
@@ -637,7 +636,7 @@ void DeferredContext::beginSpotDecaling(
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   ///////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());

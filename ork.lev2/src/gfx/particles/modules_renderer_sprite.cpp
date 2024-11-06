@@ -166,7 +166,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   auto pbase             = render_buffer->_particles;
   bool do_sort           = _srd->_sort;
   fetcher_t get_particle = [&](size_t index) -> const particle::BasicParticle* { return pbase + index; };
-  // if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+  // if (meBlendMode >= BlendingMacro::ADDITIVE && meBlendMode <= BlendingMacro::ALPHA_SUBTRACTIVE) {
   // bsort = false;
   //}
   ///////////////////////////////////////////////////////////////
@@ -281,7 +281,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     material->update(RCID);
     auto pipeline = material->pipeline(RCID, false);
     pipeline->wrappedDrawCall(RCID, [&]() {
-      context->RSI()->BindRasterState(material->_material->_rasterstate);
+      //context->RSI()->BindRasterState(material->_material->_rasterstate);
       context->GBI()->DrawPrimitiveEML(
           storage,                             //
           ork::lev2::PrimitiveType::TRIANGLES, //
@@ -335,7 +335,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         pipeline->_debugPrint = false;
         material->update(RCID);
       pipeline->wrappedDrawCall(RCID, [&]() {
-        context->RSI()->BindRasterState(material->_material->_rasterstate);
+        //context->RSI()->BindRasterState(material->_material->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       });
     }

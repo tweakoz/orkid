@@ -581,7 +581,7 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
 template <typename vtx_t>
 void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat)
     const {
-  lev2::SRasterState DefaultRasterState;
+  //lev2::RasterState DefaultRasterState;
   auto mtxi = context->MTXI();
   auto fbi  = context->FBI();
   auto gbi  = context->GBI();
@@ -591,22 +591,18 @@ void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, 
   mtxi->PushPMatrix(fmtx4::Identity());
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  context->RSI()->BindRasterState(DefaultRasterState, true);
+  //context->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw primitive with specified material
     int inumpasses = pmat->BeginBlock(context);
-    for (int ipass = 0; ipass < inumpasses; ipass++) {
-      bool bDRAW = pmat->BeginPass(context, ipass);
-      for (auto& cluster : _gpuClusters) {
-        for (auto& primgroup : cluster->_primgroups) {
-          gbi->DrawIndexedPrimitiveEML(
-              *cluster->_vtxbuffer.get(), //
-              *primgroup->_idxbuffer.get(),
-              primgroup->_primtype);
-        }
+    for (auto& cluster : _gpuClusters) {
+      for (auto& primgroup : cluster->_primgroups) {
+        gbi->DrawIndexedPrimitiveEML(
+            *cluster->_vtxbuffer.get(), //
+            *primgroup->_idxbuffer.get(),
+            primgroup->_primtype);
       }
-      pmat->EndPass(context);
     }
     pmat->EndBlock(context);
   }

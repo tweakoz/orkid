@@ -104,10 +104,10 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material                                          = std::make_shared<FreestyleMaterial>();
   _material->_varmap["tflatparticle_streaks_stereo"] = std::string("dump_and_exit");
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(Blending::ADDITIVE);
-  _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _material->_rasterstate.SetZWriteMask(true);
+  _material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _material->_rasterstate->setWriteMaskZ(true);
 
   auto fxparameterIV    = _material->param("MatIV");
   auto fxparameterMVP   = _material->param("MatMVP");
@@ -115,6 +115,9 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto pipeline_cache   = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
+  _pipeline->_rasterstate = _material->_rasterstate;
+  _pipeline->_material_ptr = _material.get();
+
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t { return _color; };
@@ -139,7 +142,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
-  _material->_rasterstate.SetBlending(_blending);
+  _material->_rasterstate->setBlendingMacro(_blending);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,11 +233,11 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   ////////////////////////////////////////////////////////////////////
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(_blending);
-  _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(_depthtest);
-  _material->_rasterstate.SetZWriteMask(false);
-  //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+  _material->_rasterstate->setBlendingMacro(_blending);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(_depthtest);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setDepthTest(EDepthTest::OFF);
 
   auto fxparameterIV          = _material->param("MatIV");
   auto fxparameterMVP         = _material->param("MatMVP");
@@ -245,9 +248,13 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto pipeline_cache         = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
+  _pipeline->_rasterstate = _material->_rasterstate;
+  _pipeline->_material_ptr = _material.get();
+
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
+
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_modulation_texture_asset);
     // TODO move to deserializer post actions
@@ -312,11 +319,12 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
         0,   //
         256, //
         1);
-    _grad_render_mtl->_rasterstate.SetBlending(Blending::OFF);
-    _grad_render_mtl->_rasterstate.SetRGBAWriteMask(true, true);
-    _grad_render_mtl->_rasterstate.SetZWriteMask(true);
-    _grad_render_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    _grad_render_mtl->_rasterstate.SetCullTest(ECullTest::OFF);
+    _grad_render_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    _grad_render_mtl->_rasterstate->setWriteMaskRGB(true);
+    _grad_render_mtl->_rasterstate->setWriteMaskA(true);
+    _grad_render_mtl->_rasterstate->setWriteMaskZ(true);
+    _grad_render_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+    _grad_render_mtl->_rasterstate->setCullTest(ECullTest::OFF);
     /////////////////////////////////////////
     // ensure this operation is not stereo
     //  as that will mess up viewport settings
@@ -337,9 +345,9 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     /////////////////////////////////////////
   }
   ///////////////////////////////
-  _material->_rasterstate.SetBlending(_blending);
-  _material->_rasterstate.SetZWriteMask(false);
-  _material->_rasterstate.SetDepthTest(_depthtest);
+  _material->_rasterstate->setBlendingMacro(_blending);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setDepthTest(_depthtest);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -367,9 +375,9 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   _material    = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(Blending::ADDITIVE);
-  _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(_depthtest);
+  _material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(_depthtest);
   auto fxparameterM      = _material->param("MatM");
   auto fxparameterMVP    = _material->param("MatMVP");
   auto fxparameterIV     = _material->param("MatIV");
@@ -381,13 +389,14 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto pipeline_cache = _material->pipelineCache();
   _pipeline           = pipeline_cache->findPipeline(RCID);
+  _pipeline->_material_ptr = _material.get();
+  _pipeline->_rasterstate = _material->_rasterstate;
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
-
   _tek_sprites = _material->technique("ttexparticle_sprites");
   _tek_streaks = _material->technique("ttexparticle_streaks");
 }
@@ -418,9 +427,9 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   _material    = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
-  _material->_rasterstate.SetBlending(_blending);
-  _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(_depthtest);
+  _material->_rasterstate->setBlendingMacro(_blending);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(_depthtest);
   auto fxparameterM      = _material->param("MatM");
   auto fxparameterMVP    = _material->param("MatMVP");
   auto fxparameterIV     = _material->param("MatIV");
@@ -433,6 +442,9 @@ void TexGridMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto pipeline_cache = _material->pipelineCache();
   _pipeline           = pipeline_cache->findPipeline(RCID);
+  _pipeline->_rasterstate = _material->_rasterstate;
+  _pipeline->_material_ptr = _material.get();
+
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
   _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
@@ -497,11 +509,11 @@ void VolTexMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   /*_material->SetVolumeTexture(_texture);
   _material->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-  _material->_rasterstate.SetAlphaTest(lev2::EALPHATEST_GREATER, 0.0f);
-  _material->_rasterstate.SetDepthTest(lev2::EDepthTest::LEQUALS);
-  _material->_rasterstate.SetZWriteMask(false);
-  _material->_rasterstate.SetCullTest(lev2::ECullTest::OFF);
-  _material->_rasterstate.SetPointSize(32.0f);*/
+  _material->_rasterstate->setAlphaTest(lev2::EALPHATEST_GREATER, 0.0f);
+  _material->_rasterstate->setDepthTest(lev2::EDepthTest::LEQUALS);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setCullTest(lev2::ECullTest::OFF);
+  _material->_rasterstate->setPointSize(32.0f);*/
 }
 /////////////////////////////////////////
 } // namespace ork::lev2::particle

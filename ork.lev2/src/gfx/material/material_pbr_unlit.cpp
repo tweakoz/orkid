@@ -43,24 +43,25 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineUNL(const FxPipelinePermutation& 
     pipeline             = std::make_shared<FxPipeline>(permu);
     pipeline->_technique = this->_tek_FWD_UNLIT_NI_MO;
     //////////////////////////////////
-    pipeline->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+    pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
       auto mut = const_cast<PBRMaterial*>(this);
       auto RCFD        = RCID.rcfd();
       auto context     = RCFD->GetTarget();
       auto FXI         = context->FXI();
       auto MTXI        = context->MTXI();
-      auto RSI         = context->RSI();
+      //auto RSI         = context->RSI();
       const auto& CPD  = RCFD->topCPD();
       auto monocams    = CPD._cameraMatrices;
       auto worldmatrix = RCID.worldMatrix();
       auto modcolor    = context->RefModColor();
       FXI->BindParamVect4(this->_parModColor, modcolor * this->_baseColor);
       FXI->BindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
-      mut->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-      mut->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-      mut->_rasterstate.SetZWriteMask(true);
-      mut->_rasterstate.SetRGBAWriteMask(true, true);
-      RSI->BindRasterState(this->_rasterstate);
+      mut->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
+      mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+      mut->_rasterstate->setWriteMaskZ(true);
+      mut->_rasterstate->setWriteMaskRGB(true);
+      mut->_rasterstate->setWriteMaskA(true);
+      //RSI->BindRasterState(this->_rasterstate);
     });
   }
   return pipeline;

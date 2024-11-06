@@ -194,7 +194,8 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
 
   ///////////////////////////////
 
-  _material->_rasterstate.SetRGBAWriteMask(true, true);
+  _material->_rasterstate->setWriteMaskRGB(true);
+  _material->_rasterstate->setWriteMaskA(true);
   _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw0, lev2::PrimitiveType::TRIANGLES);
@@ -234,7 +235,8 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
 
   ///////////////////////////////
 
-  _material->_rasterstate.SetRGBAWriteMask(true, true);
+  _material->_rasterstate->setWriteMaskRGB(true);
+  _material->_rasterstate->setWriteMaskA(true);
   _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw1, lev2::PrimitiveType::TRIANGLES);
@@ -279,7 +281,8 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   vw2.UnLock(context);
 
   ///////////////////////////////
-  _material->_rasterstate.SetRGBAWriteMask(true, true);
+  _material->_rasterstate->setWriteMaskRGB(true);
+  _material->_rasterstate->setWriteMaskA(true);
   _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw2, lev2::PrimitiveType::TRIANGLES);

@@ -10,12 +10,10 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 FreestyleMaterial::FreestyleMaterial() {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+  _rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _rasterstate->setWriteMaskZ(true);
+  _rasterstate->setCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,12 +32,12 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
     case 0: { // free-freestyle
       pipeline             = std::make_shared<FxPipeline>(permu);
 
-      pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+      pipeline->addStateLambda([mtl](const RenderContextInstData& RCID) {
         auto _this       = (FreestyleMaterial*)mtl;
         auto RCFD        = RCID.rcfd();
         auto context     = RCFD->GetTarget();
-        auto RSI         = context->RSI();
-        RSI->BindRasterState(_this->_rasterstate);
+        //auto RSI         = context->RSI();
+        //RSI->BindRasterState(_this->_rasterstate);
       });
        break;
     }
@@ -50,6 +48,9 @@ fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutatio
   }
   if(permu._forced_technique){
     pipeline->_technique = permu._forced_technique;
+  }
+  if(pipeline){
+    pipeline->_rasterstate = mtl->_rasterstate;
   }
   return pipeline;
 }
@@ -107,14 +108,6 @@ void FreestyleMaterial::dump() const {
 // legacy methods
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::Update() { // final
-}
-///////////////////////////////////////////////////////////////////////////////
-bool FreestyleMaterial::BeginPass(Context* targ, int iPass) { // final
-  return targ->FXI()->BindPass(iPass);
-}
-///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::EndPass(Context* targ) { // final
-  targ->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
 int FreestyleMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) { // final
@@ -471,12 +464,11 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, rcfd_ptr_t RCFD) {
   OrkAssert(tek != nullptr);
  auto targ = RCFD->GetTarget();
   auto fxi  = targ->FXI();
-  auto rsi  = targ->RSI();
+  //auto rsi  = targ->RSI();
   RenderContextInstData RCID(RCFD);
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
-  fxi->BindPass(0);
-  rsi->BindRasterState(_rasterstate,true);
+  fxi->applyRasterState(*_rasterstate);
   OrkAssert(tek->_validated);
  }
 ///////////////////////////////////////////////////////////////////////////////
@@ -490,7 +482,6 @@ void FreestyleMaterial::begin(
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::end(rcfd_ptr_t RCFD) {
   auto targ = RCFD->GetTarget();
-  this->EndPass(targ);
   this->EndBlock(targ);
 }
 ////////////////////////////////////////////////////////////////////////////////

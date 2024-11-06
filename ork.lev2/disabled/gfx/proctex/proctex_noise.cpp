@@ -110,7 +110,7 @@ void Octaves::compute(ProcTex& ptex) {
     mOctMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     mOctMaterial._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mOctMaterial._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    mOctMaterial._rasterstate.SetBlending(ork::lev2::Blending::ADDITIVE);
+    mOctMaterial._rasterstate.SetBlending(ork::lev2::BlendingMacro::ADDITIVE);
     mOctMaterial._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
     mOctMaterial._rasterstate.SetZWriteMask(false);
 
@@ -434,7 +434,7 @@ void Cells::compute(ProcTex& ptex) {
       stdmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
       stdmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       stdmat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-      stdmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+      stdmat._rasterstate.SetBlending(ork::lev2::BlendingMacro::OFF);
       stdmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
       stdmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 

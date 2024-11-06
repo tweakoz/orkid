@@ -29,10 +29,6 @@ void DummyContextInit() {
   GfxEnv::setContextClass(clazz);
 }
 
-DuRasterStateInterface::DuRasterStateInterface(Context& target)
-    : RasterStateInterface(target) {
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 DummyDrawingInterface::DummyDrawingInterface(ContextDummy& ctx)
@@ -76,7 +72,6 @@ ContextDummy::~ContextDummy() {
 ContextDummy::ContextDummy()
     : Context()
     , mMtxI(*this)
-    , mRsI(*this)
     , mGbI(*this)
     , mFbI(*this)
     , mDWI(*this) {

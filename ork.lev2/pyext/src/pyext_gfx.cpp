@@ -55,7 +55,6 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
           .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
           .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
-          .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
           .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { 
             _g_post_swap_wait_time = wt;
           })
@@ -201,41 +200,35 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rsi_t>(module_lev2, "RasterStateInterface").def("__repr__", [](const rsi_t& rsi) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("RSI(%p)", rsi.get());
-    return fxs.c_str();
-  });
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SRasterState>(module_lev2, "RasterState") //
+  py::class_<RasterState>(module_lev2, "RasterState") //
       .def_property(
           "culltest",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_culltest));
             return crcstr;
           },
-          [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._culltest = ECullTest(ctest->hashed());
+          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+            state->_culltest = ECullTest(ctest->hashed());
           })
       .def_property(
           "depthtest",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_depthtest));
             return crcstr;
           },
-          [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._depthtest = EDepthTest(ctest->hashed());
+          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+            state->_depthtest = EDepthTest(ctest->hashed());
           })
-      .def_property(
+      /*.def_property(
           "blending",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_blending));
             return crcstr;
           },
-          [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._blending = Blending(ctest->hashed());
-          })
-      .def("__repr__", [](const SRasterState& state) -> std::string {
+          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+            state->setBlendingMacro(ctest->hashed());
+          })*/
+      .def("__repr__", [](rasterstate_ptr_t state) -> std::string {
         fxstring<256> fxs;
         fxs.format("RasterState()");
         return fxs.c_str();

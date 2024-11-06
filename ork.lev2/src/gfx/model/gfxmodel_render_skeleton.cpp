@@ -374,11 +374,11 @@ void XgmModel::RenderSkeleton(
   context->MTXI()->PushMMatrix(fmtx4::Identity());
   //RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
   RCIDCOPY._pickID = fvec4(1, 1, 0, 1);
-  use_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-  use_mtl->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-  use_mtl->_rasterstate.SetZWriteMask(false);
+  use_mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+  use_mtl->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
+  use_mtl->_rasterstate->setWriteMaskZ(false);
   pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
-    context->RSI()->BindRasterState(use_mtl->_rasterstate);
+    //context->RSI()->BindRasterState(use_mtl->_rasterstate);
     context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
   });
   context->MTXI()->PopMMatrix();

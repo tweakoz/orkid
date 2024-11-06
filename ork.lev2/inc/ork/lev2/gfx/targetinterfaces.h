@@ -27,7 +27,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/mutex.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
-#include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/lev2/gfx/rasterstate.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/math/TransformNode.h>
@@ -109,7 +109,6 @@ struct CaptureBuffer {
 #include "gbi.h"
 #include "fbi.h"
 #include "txi.h"
-#include "rsi.h"
 #include "ci.h"
 #include "dwi.h"
 

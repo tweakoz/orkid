@@ -114,8 +114,6 @@ public:
     mMatAux2 = mtx;
   }
 
-  bool BeginPass(Context* pTARG, int iPass = 0) final;
-  void EndPass(Context* pTARG) final;
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) final;
   void EndBlock(Context* pTARG) final;
   void gpuInit(Context* context) final;

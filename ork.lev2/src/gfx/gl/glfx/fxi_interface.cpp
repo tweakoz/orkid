@@ -39,6 +39,7 @@ Interface::Interface(ContextGL& glctx)
 
 void Interface::_doBeginFrame() {
   mLastPass = 0;
+  mTarget._RSI.beginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,23 +149,10 @@ int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstD
 
   mTarget.SetRenderContextInstData(&data);
 
-  return plat_tek->mPasses.size();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Interface::EndBlock() {
-  _activeShader    = nullptr;
-  _activeTechnique = nullptr;
-  glUseProgram(0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Interface::BindPass(int ipass) {
+  int rval = plat_tek->mPasses.size();
 
   if(_debugDrawCall){
-    printf( "FxInterface::BindPass ipass<%d>\n", ipass );
+    printf( "FxInterface::BindPass\n" );
     printf( "FxInterface::BindPass mShaderCompileFailed<%d>\n", int(_active_effect->mShaderCompileFailed) );
   }
   if (_active_effect->mShaderCompileFailed)
@@ -172,7 +160,7 @@ bool Interface::BindPass(int ipass) {
 
   OrkAssert(_active_effect->mActiveTechnique != nullptr);
 
-  _active_effect->_activePass = _active_effect->mActiveTechnique->mPasses[ipass];
+  _active_effect->_activePass = _active_effect->mActiveTechnique->mPasses[0];
   GL_ERRORCHECK();
 
   static Timer top_timer;
@@ -186,7 +174,7 @@ bool Interface::BindPass(int ipass) {
     was_compiled = true;
   }
   if(_debugDrawCall){
-    printf( "FxInterface::BindPass ipass<%d>\n", ipass );
+    printf( "FxInterface::BindPass\n" );
     printf( "FxInterface::BindPass _programObjectId<%d>\n", _active_effect->_activePass->_programObjectId );
     printf( "FxInterface::BindPass was_compiled<%d>\n", int(was_compiled) );
   }
@@ -200,12 +188,15 @@ bool Interface::BindPass(int ipass) {
     //printf( "toptimer_time<%f>\n", toptimer_time );
   }
 
-  return true;
+  return true;  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::EndPass() {
+void Interface::EndBlock() {
+  _activeShader    = nullptr;
+  _activeTechnique = nullptr;
+  glUseProgram(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -233,7 +224,7 @@ void Interface::CommitParams(void) {
     for (const auto& item : items) {
       item(&mTarget);
     }
-    // const SRasterState& rstate =
+    // const RasterState& rstate =
     // _active_effect->_activePass->_stateBlock->mState;
     // mTarget.RSI()->BindRasterState(rstate);
   }
@@ -398,6 +389,11 @@ const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string
   // auto ublk      = container->storageBlock(name);
 
   return csh;
+}
+
+
+void Interface::applyRasterState(const RasterState& rstate) {
+  mTarget._RSI.apply(rstate);
 }
 
 } // namespace ork::lev2::glslfx

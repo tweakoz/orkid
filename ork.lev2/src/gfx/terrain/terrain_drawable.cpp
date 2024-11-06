@@ -1043,7 +1043,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   auto tek_viz  = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   auto tek_pick = _tekPick;
 
-  _terrainMaterial->_rasterstate.SetCullTest(ECullTest::OFF);
+  _terrainMaterial->_rasterstate->setCullTest(ECullTest::OFF);
 
   _terrainMaterial->begin(bpick ? tek_pick : tek_viz, RCFD);
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);

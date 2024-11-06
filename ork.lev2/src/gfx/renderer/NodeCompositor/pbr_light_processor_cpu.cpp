@@ -76,7 +76,6 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   /////////////////////////////////////////////////////////////////
   auto gfxctx                 = drawdata.context();
   auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
   auto this_buf                = gfxctx->FBI()->GetThisBuffer();
 
   /////////////////////////////////////

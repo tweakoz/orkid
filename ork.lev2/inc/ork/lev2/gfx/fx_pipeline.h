@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/gfxrasterstate.h>
+#include <ork/lev2/gfx/rasterstate.h>
 #include <ork/kernel/varmap.inl>
 
 namespace ork::lev2 {
@@ -63,14 +63,12 @@ struct FxPipeline {
   FxPipeline(const FxPipelinePermutation& config);
 
   int beginBlock(const RenderContextInstData& RCID);
-  bool beginPass(const RenderContextInstData& RCID, int ipass);
-  void endPass(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
   using varval_t = varmap::VarMap::value_type;
-  using statelambda_t = std::function<void(const RenderContextInstData& RCID, int ipass)>;
+  using statelambda_t = std::function<void(const RenderContextInstData& RCID)>;
 
   void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
@@ -80,7 +78,8 @@ struct FxPipeline {
   void bindParam(fxparam_constptr_t p, varval_t v);
   void dump() const;
 
-  GfxMaterial* _material = nullptr;
+  GfxMaterial* _material_ptr = nullptr;
+  rasterstate_ptr_t _rasterstate = nullptr;
   material_ptr_t _sharedMaterial = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
   const FxPipelinePermutation __permutation;

@@ -166,18 +166,12 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GlRasterStateInterface : public RasterStateInterface {
-
+struct GlRasterStateInterface  {
   GlRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce) final;
-
-  void SetZWriteMask(bool bv) final;
-  void SetRGBAWriteMask(bool rgb, bool a) final;
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final;
-  void SetBlending(Blending eVal) final;
-  void SetDepthTest(EDepthTest eVal) final;
-  void SetCullTest(ECullTest eVal) final;
-  void setScissorTest(EScissorTest eVal) final;
+  void apply(const RasterState& newstate);
+  void beginFrame();
+  Context& _context;
+  RasterState _currentState;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -538,9 +532,9 @@ public:
   ImmInterface* IMI() final {
     return &mImI;
   }
-  RasterStateInterface* RSI() final {
-    return &mRsI;
-  }
+  //RasterStateInterface* RSI() final {
+    //return &mRsI;
+  //}
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
   }
@@ -632,7 +626,7 @@ public:
 
   GlImiInterface mImI;
   glslfx::Interface mFxI;
-  GlRasterStateInterface mRsI;
+  GlRasterStateInterface _RSI;
   GlMatrixStackInterface mMtxI;
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
