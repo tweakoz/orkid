@@ -100,6 +100,7 @@ ELSEIF(${UNIX})
       list(APPEND libs openvr_api )
       target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
+      target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
       list(APPEND libs vulkan )
 
       IF(CMAKE_BUILD_TYPE STREQUAL "Debug")

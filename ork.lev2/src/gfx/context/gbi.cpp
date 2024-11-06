@@ -93,6 +93,7 @@ void GeometryBufferInterface::DrawPrimitive(
   int imax = VBuf.GetMax();
   if (imax) {
     mtl->BeginBlock(&_context);
+    _context.FXI()->applyRasterState(*(mtl->_rasterstate));
     DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
     mtl->EndBlock(&_context);
   }
@@ -111,6 +112,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
 
   if (imax) {
     mtl->BeginBlock(&_context);
+    _context.FXI()->applyRasterState(*(mtl->_rasterstate));
     DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
     mtl->EndBlock(&_context);
   }

@@ -238,6 +238,7 @@ void FontMan::DrawTextItems(Context* context, const textitem_vect& items) {
   auto mtxi             = context->MTXI();
   auto gbi              = context->GBI();
   auto imi              = context->IMI();
+  auto fxi              = context->FXI();
   auto font             = currentFont();
   auto material         = font->material();
   const FontDesc& fdesc = font->GetFontDesc();
@@ -308,6 +309,7 @@ void FontMan::DrawTextItems(Context* context, const textitem_vect& items) {
     const auto& wmatrix = item._wmatrix;
     mtxi->PushMMatrix(fmtx4::multiply_ltor(matscale, wmatrix));
     material->UpdateMMatrix(context);
+    fxi->applyRasterState(*(material->_rasterstate));
     gbi->DrawPrimitiveEML(*vw, ork::lev2::PrimitiveType::TRIANGLES);
     mtxi->PopMMatrix();
   }
