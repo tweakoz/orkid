@@ -113,8 +113,8 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
   //pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
+  pTarg->FXI()->applyRasterState(*_rasterstate);
   pTarg->FXI()->CommitParams();
-  //pTarg->RSI()->BindRasterState(_rasterstate);
   return inumpasses;
 }
 
@@ -185,6 +185,7 @@ int GfxMaterialUIText::BeginBlock(Context* pTarg, const RenderContextInstData& M
   pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
+  pTarg->FXI()->applyRasterState(*_rasterstate);
   return inumpasses;
 }
 
@@ -276,7 +277,7 @@ int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstDat
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->BindParamCTex(hColorMap, texture);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
-  //pTarg->RSI()->BindRasterState(_rasterstate);
+  pTarg->FXI()->applyRasterState(*_rasterstate);
   pTarg->FXI()->CommitParams();
   return inumpasses;
 }
