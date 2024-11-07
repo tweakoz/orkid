@@ -569,7 +569,7 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
   auto gbi = context->GBI();
   for (auto& cluster : _gpuClusters) {
     for (auto& primgroup : cluster->_primgroups) {
-      //context->_validateAllStates();
+      //context->stateDebugger();
       gbi->DrawIndexedPrimitiveEML(
           *cluster->_vtxbuffer.get(), //
           *primgroup->_idxbuffer.get(),

@@ -89,6 +89,9 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   GL_ERRORCHECK();
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(texture_target, glto->_textureObject);
+
+  _texture_set[glto->_textureObject] = array_tex;
+
   if (array_tex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, array_tex->_debugName);
   }

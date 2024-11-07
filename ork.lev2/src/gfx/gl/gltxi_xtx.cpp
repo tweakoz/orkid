@@ -96,6 +96,8 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   auto glto = req.ptex->_impl.get<gltexobj_ptr_t>();
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
+  _texture_set[glto->_textureObject] = req.ptex.get();
+
   GL_ERRORCHECK();
   req.ptex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
   if (req.ptex->_debugName.length()) {

@@ -130,12 +130,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     }
   }
   ///////////////////////////////////////
-  lev2::RasterState defstate;
-  fxi->applyRasterState(defstate);
 
   lev2::material_ptr_t ui_material = lev2::defaultUIMaterial();
   lev2::material_ptr_t material = ui_material;
-  ;
+
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();
@@ -147,6 +145,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   bool has_foc = hasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
   mtxi->PushUIMatrix();
+
+  printf("wTf...\n");
   {
     int ix_root = 0;
     int iy_root = 0;

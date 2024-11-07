@@ -65,6 +65,174 @@ std::string _glTypeToString(GLenum type){
     return type_str;
 }
 
+std::string _glBlendFuncTermToString(GLenum blendfunc){
+    std::string blend_str;
+    switch (blendfunc) {
+      case GL_ZERO:
+        blend_str = "ZERO";
+        break;
+      case GL_ONE:
+        blend_str = "ONE";
+        break;
+      case GL_SRC_COLOR:
+        blend_str = "SRC_COLOR";
+        break;
+      case GL_ONE_MINUS_SRC_COLOR:
+        blend_str = "ONE_MINUS_SRC_COLOR";
+        break;
+      case GL_DST_COLOR:
+        blend_str = "DST_COLOR";
+        break;
+      case GL_ONE_MINUS_DST_COLOR:
+        blend_str = "ONE_MINUS_DST_COLOR";
+        break;
+      case GL_SRC_ALPHA:
+        blend_str = "SRC_ALPHA";
+        break;
+      case GL_ONE_MINUS_SRC_ALPHA:
+        blend_str = "ONE_MINUS_SRC_ALPHA";
+        break;
+      case GL_DST_ALPHA:
+        blend_str = "DST_ALPHA";
+        break;
+      case GL_ONE_MINUS_DST_ALPHA:
+        blend_str = "ONE_MINUS_DST_ALPHA";
+        break;
+      case GL_CONSTANT_COLOR:
+        blend_str = "CONSTANT_COLOR";
+        break;
+      case GL_ONE_MINUS_CONSTANT_COLOR:
+        blend_str = "ONE_MINUS_CONSTANT_COLOR";
+        break;
+      case GL_CONSTANT_ALPHA:
+        blend_str = "CONSTANT_ALPHA";
+        break;
+      case GL_ONE_MINUS_CONSTANT_ALPHA:
+        blend_str = "ONE_MINUS_CONSTANT_ALPHA";
+        break;
+      case GL_SRC_ALPHA_SATURATE:
+        blend_str = "SRC_ALPHA_SATURATE";
+        break;
+      default:
+        blend_str = FormatString("unknown<%x>", blendfunc);
+        break;
+    }
+    return blend_str;
+}
+
+std::string _glBlendOpToString(GLenum blendop){
+    std::string blend_str;
+    switch (blendop) {
+      case GL_FUNC_ADD:
+        blend_str = "FUNC_ADD";
+        break;
+      case GL_FUNC_SUBTRACT:
+        blend_str = "FUNC_SUBTRACT";
+        break;
+      case GL_FUNC_REVERSE_SUBTRACT:
+        blend_str = "FUNC_REVERSE_SUBTRACT";
+        break;
+      case GL_MIN:
+        blend_str = "MIN";
+        break;
+      case GL_MAX:
+        blend_str = "MAX";
+        break;
+      default:
+        blend_str = FormatString("unknown<%x>", blendop);
+        break;
+    }
+    return blend_str;
+}
+
+std::string _glDepthFuncToString(GLenum depthfunc){
+    std::string depth_str;
+    switch (depthfunc) {
+      case GL_NEVER:
+        depth_str = "NEVER";
+        break;
+      case GL_LESS:
+        depth_str = "LESS";
+        break;
+      case GL_EQUAL:
+        depth_str = "EQUAL";
+        break;
+      case GL_LEQUAL:
+        depth_str = "LEQUAL";
+        break;
+      case GL_GREATER:
+        depth_str = "GREATER";
+        break;
+      case GL_NOTEQUAL:
+        depth_str = "NOTEQUAL";
+        break;
+      case GL_GEQUAL:
+        depth_str = "GEQUAL";
+        break;
+      case GL_ALWAYS:
+        depth_str = "ALWAYS";
+        break;
+      default:
+        depth_str = FormatString("unknown<%x>", depthfunc);
+        break;
+    }
+    return depth_str;
+}
+
+std::string _glStencilFuncToString(GLenum stencilfunc){
+    std::string stencil_str;
+    switch (stencilfunc) {
+      case GL_NEVER:
+        stencil_str = "NEVER";
+        break;
+      case GL_LESS:
+        stencil_str = "LESS";
+        break;
+      case GL_EQUAL:
+        stencil_str = "EQUAL";
+        break;
+      case GL_LEQUAL:
+        stencil_str = "LEQUAL";
+        break;
+      case GL_GREATER:
+        stencil_str = "GREATER";
+        break;
+      case GL_NOTEQUAL:
+        stencil_str = "NOTEQUAL";
+        break;
+      case GL_GEQUAL:
+        stencil_str = "GEQUAL";
+        break;
+      case GL_ALWAYS:
+        stencil_str = "ALWAYS";
+        break;
+      default:
+        stencil_str = FormatString("unknown<%x>", stencilfunc);
+        break;
+    }
+    return stencil_str;
+}
+
+std::string _glCullModeToString(GLenum cullfacemode){
+    std::string cull_str;
+    switch (cullfacemode) {
+      case GL_FRONT:
+        cull_str = "FRONT";
+        break;
+      case GL_BACK:
+        cull_str = "BACK";
+        break;
+      case GL_FRONT_AND_BACK:
+        cull_str = "FRONT_AND_BACK";
+        break;
+      default:
+        cull_str = FormatString("unknown<%x>", cullfacemode);
+        break;
+    }
+    return cull_str;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////

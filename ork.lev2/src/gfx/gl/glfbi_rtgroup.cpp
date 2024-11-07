@@ -323,6 +323,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     dtex->_debugName    = "RtgDepth";
     auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
+    mTargetGL.mTxI._texture_set[depth_glto->_textureObject] = dtex.get();
+
     GL_ERRORCHECK();
 
     // printf("RtGroup<%p> GenFBO<%d>\n", rtgroup, int(impl->_standard->_fbo));
@@ -350,6 +352,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         GL_ERRORCHECK();
         glGenTextures(1, (GLuint*)&color_glto->_textureObject);
         glBindTexture(texture_target, color_glto->_textureObject);
+
+        mTargetGL.mTxI._texture_set[color_glto->_textureObject] = ptex;
 
         if (pB->_debugName.length()) {
           mTargetGL.debugLabel(GL_TEXTURE, color_glto->_textureObject, pB->_debugName);

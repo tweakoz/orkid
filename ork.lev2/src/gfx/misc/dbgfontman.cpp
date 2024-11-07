@@ -164,17 +164,16 @@ void FontMan::_endTextBlock(Context* context) {
         GBI->DrawPrimitiveEML(mTextWriter, PrimitiveType::TRIANGLES);
       });
     } else {
-      auto material                         = the_font->material();
-      auto RSTATE       = material->_rasterstate;
+      auto material = the_font->material();
+      auto RSTATE   = material->_rasterstate;
       the_font->_materialDeferred->_variant = "font"_crcu;
-        material->BeginBlock(context);
-        RSTATE->setCullTest(ECullTest::OFF);
-        RSTATE->setDepthTest(EDepthTest::OFF);
-        RSTATE->setBlendingMacro(top_state->_blending);
-        context->FXI()->applyRasterState(*RSTATE);
-        GBI->DrawPrimitiveEML(mTextWriter, PrimitiveType::TRIANGLES);
-        material->EndBlock(context);
-        //GBI->DrawPrimitive(material, mTextWriter, PrimitiveType::TRIANGLES);
+      material->BeginBlock(context);
+      RSTATE->setCullTest(ECullTest::OFF);
+      RSTATE->setDepthTest(EDepthTest::OFF);
+      RSTATE->setBlendingMacro(top_state->_blending);
+      context->FXI()->applyRasterState(*RSTATE);
+      GBI->DrawPrimitiveEML(mTextWriter, PrimitiveType::TRIANGLES);
+      material->EndBlock(context);
     }
   }
 }

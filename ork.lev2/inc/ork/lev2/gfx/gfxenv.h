@@ -310,7 +310,7 @@ public:
   virtual void TakeThreadOwnership() {
   }
 
-  virtual void _validateAllStates() const {}
+  virtual void stateDebugger() const {}
 
   void* BeginLoad();
   void EndLoad(void* ploadtok);

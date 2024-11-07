@@ -182,7 +182,7 @@ int GetGlError(void) {
   if (err != GL_NO_ERROR) {
     std::string errstr = GetGlErrorString(err);
     orkprintf("GLERROR [%s] cctx<%p>\n", errstr.c_str(), _gcurrentContext);
-    //_gcurrentContext->_validateAllStates();
+    //_gcurrentContext->stateDebugger();
     check_debug_log();
   }
 

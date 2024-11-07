@@ -435,6 +435,7 @@ struct GlTextureInterface : public TextureInterface {
 
   std::map<size_t, pbosetptr_t> _pbosets;
   ContextGL& mTargetGL;
+  std::map<GLuint, const Texture*> _texture_set;
 };
 
 struct texcfg {
@@ -516,11 +517,7 @@ public:
   void _doEndFrame() final;
   void* _doClonePlatformHandle() const final;
 
-  void _validateCurrentShaderProgram() const;
-  void _validateCurrentFramebuffer() const;
-  void _validateCurrentGeomBuffers() const;
-  void _validateTextureState() const;
-  void _validateAllStates() const final;
+  void stateDebugger() const final;
 
 public:
   //////////////////////////////////////////////
@@ -642,6 +639,11 @@ public:
 bool _checkTexture(GLuint texID, const std::string& name);
 
 std::string _glTypeToString(GLenum type);
+std::string _glBlendFuncTermToString(GLenum type);
+std::string _glDepthFuncToString(GLenum type);
+std::string _glStencilFuncToString(GLenum type);
+std::string _glCullModeToString(GLenum cullfacemode);
+std::string _glBlendOpToString(GLenum blendop);
 
 }} // namespace ork::lev2
 

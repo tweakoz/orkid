@@ -161,6 +161,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   glGenTextures(1, &pTEXOBJ->_textureObject);
   glBindTexture(TARGET, pTEXOBJ->_textureObject);
   GL_ERRORCHECK();
+
+  _texture_set[pTEXOBJ->_textureObject] = ptex.get();
+
   if (ptex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->_textureObject, ptex->_debugName);
   }

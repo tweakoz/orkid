@@ -885,6 +885,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     GL_ERRORCHECK();
     glGenTextures(1, &glto->_textureObject);
+    _texture_set[glto->_textureObject] = ptex;
     glBindTexture(texture_target, glto->_textureObject);
     GL_ERRORCHECK();
     if (ptex->_debugName.length()) {
@@ -1013,6 +1014,8 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
+
+  _texture_set[glto->_textureObject] = tex;
 
   if (from_chain->_debugName.length()) {
     tex->_debugName = from_chain->_debugName;
