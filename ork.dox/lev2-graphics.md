@@ -37,9 +37,11 @@
      * Metallic-Roughness workflow.
      * Supports monoscopic and stereo-VR. 
      * Point lights.
+     * Irradiance Probes
      * Spot lights (textured and untextured).
      * Directional lights.
      * Shadowing support
+     * Lightmapping support (including lightmap blending)
      * Hybrid permutations pending (eg. Forward+).
      * Deferred 
        * Tiled Deferred Shading (Deferred only).
