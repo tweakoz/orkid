@@ -644,6 +644,7 @@ std::string _glDepthFuncToString(GLenum type);
 std::string _glStencilFuncToString(GLenum type);
 std::string _glCullModeToString(GLenum cullfacemode);
 std::string _glBlendOpToString(GLenum blendop);
+std::string _glFaceWindingToString(GLenum winding);
 
 }} // namespace ork::lev2
 

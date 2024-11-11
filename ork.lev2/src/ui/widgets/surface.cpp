@@ -174,7 +174,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
           0.0f,
           1.0f, // u0, u1
           1.0f,
-          0.0f // v0, v1
+          0.0f, // v0, v1
+          true // debug
       );
 
      tgt->PopModColor();
@@ -202,7 +203,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
             u0,
             u1,
             v0,
-            v1);
+            v1,
+            true ); // debug
 
       } else {
         int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
@@ -220,7 +222,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
             u0,
             u1,
             v0,
-            v1);
+            v1,
+            true ); // debug
       }
     } else {
       primi.RenderQuadAtZ(
@@ -234,8 +237,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
           0.0f,
           1.0f, // u0, u1
           1.0f,
-          0.0f // v0, v1
-      );
+          0.0f, // v0, v1
+          true ); // debug
     }
   }
   mtxi->PopUIMatrix();

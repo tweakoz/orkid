@@ -55,6 +55,15 @@ std::string _glTypeToString(GLenum type){
       case GL_SAMPLER_2D_ARRAY:
         type_str = "sampler2DArray";
         break;
+      case GL_UNSIGNED_BYTE:
+        type_str = "U8";
+        break;
+      case GL_UNSIGNED_SHORT:
+        type_str = "U16";
+        break;
+      case GL_UNSIGNED_INT:
+        type_str = "U32";
+        break;
       case GL_NONE:
         type_str = "none";
         break;
@@ -232,6 +241,21 @@ std::string _glCullModeToString(GLenum cullfacemode){
     return cull_str;
 }
 
+std::string _glFaceWindingToString(GLenum cullfacemode){
+    std::string cull_str;
+    switch (cullfacemode) {
+      case GL_CW:
+        cull_str = "CW";
+        break;
+      case GL_CCW:
+        cull_str = "CCW";
+        break;
+      default:
+        cull_str = FormatString("unknown<%x>", cullfacemode);
+        break;
+    }
+    return cull_str;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {

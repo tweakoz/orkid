@@ -843,6 +843,9 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+
   ////////////////////////////////////////////////////////////////////
   GL_ERRORCHECK();
   bool bOK = BindVertexStreamSource(VBuf);
@@ -852,6 +855,9 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
   }
   ////////////////////////////////////////////////////////////////////
 
+  if(should_debug){
+    _context.stateDebugger();
+  }
   // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
   int inum = (ivcount == 0) ? VBuf.GetNumVertices() : ivcount;
@@ -930,9 +936,16 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+
 
   auto ssb     = SSBO->_impl.get<glslfx::ShaderStorageBuffer*>();
   glBindBuffer(0x90D2, ssb->_glbufid); // GL_SHADER_STORAGE_BUFFER
+
+  if(should_debug){
+    _context.stateDebugger();
+  }
 
   if (ivcount) {
     GL_ERRORCHECK();
@@ -974,6 +987,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
   ////////////////////////////////////////////////////////////////////
 
   BindStreamSources(VBuf, IdxBuf);
+
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
 
   int iNum = IdxBuf.GetNumIndices();
 
@@ -1040,6 +1059,14 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   GL_ERRORCHECK();
   ////////////////////////////////////////////////////////////////////
   BindStreamSources(VBuf, IdxBuf);
+
+
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
+
   int iNum          = IdxBuf.GetNumIndices();
   auto plat_handle  = static_cast<const GLIdxBufHandle*>(IdxBuf.GetHandle());
   int imin          = plat_handle->mMinIndex;
@@ -1172,14 +1199,29 @@ void GlGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
 #if defined(ENABLE_NVMESH_SHADERS)
 
 void GlGeometryBufferInterface::DrawMeshTasksNV(uint32_t first, uint32_t count) {
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
   glDrawMeshTasksNV((GLuint)first, (GLuint)count);
 }
 
 void GlGeometryBufferInterface::DrawMeshTasksIndirectNV(int32_t* indirect) {
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
   glDrawMeshTasksIndirectNV((GLintptr)indirect);
 }
 
 void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectNV(int32_t* indirect, uint32_t drawcount, uint32_t stride) {
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
   glMultiDrawMeshTasksIndirectNV((GLintptr)indirect, (GLsizei)drawcount, (GLsizei)stride);
 }
 
@@ -1188,6 +1230,11 @@ void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV(
     int32_t* drawcount,
     uint32_t maxdrawcount,
     uint32_t stride) {
+  bool should_debug = _debugNextPrimitive;
+  _debugNextPrimitive = false;
+  if(should_debug){
+    _context.stateDebugger();
+  }
   glMultiDrawMeshTasksIndirectCountNV((GLintptr)indirect, (GLintptr)drawcount, (GLsizei)maxdrawcount, (GLsizei)stride);
 }
 

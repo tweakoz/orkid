@@ -9,11 +9,22 @@
 #include <ork/kernel/tempstring.h>
 #include <ork/kernel/string/deco.inl>
 #include <execinfo.h>
-#if defined(LINUX)
 #include <cxxabi.h>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <cctype>
+
+#if defined(LINUX)
 #include <dlfcn.h>
+#else
+#include "_demangler.inl"
 #endif
+
+
 namespace ork {
+
+
 std::string get_backtrace() {
   std::string rval;
   static const int kmaxdepth = 64;
@@ -77,7 +88,25 @@ std::string get_backtrace() {
 			          demangled_name.c_str(),
 			          reset_footer.c_str());
 #else
-    tstr.format("%02d: %s\n", int(i), btstrings[i]);
+		int status = -1;
+		std::string out_line = btstrings[i];
+			std::vector<std::string> parts;
+			// split on whitespace
+			std::istringstream iss(out_line);
+			for(std::string s; iss >> s; ) {
+		    try{
+
+		        Demangler demangler(s);
+		        auto c = demangler.computeTop();
+		        //c->ast_dump();
+		        tstr += c->dump().c_str() ;
+		    }
+		    catch(const std::exception& e){
+		        tstr += s.c_str();
+		    }
+				tstr += " ";
+			}
+		tstr += "\n";
 #endif
     rval += tstr.c_str();
   }

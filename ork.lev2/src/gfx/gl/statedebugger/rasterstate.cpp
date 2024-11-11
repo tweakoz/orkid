@@ -85,13 +85,35 @@ void _FtxGlDebugger::_validateRaster() {
 
   GLboolean cull_enabled;
   GLint cull_mode;
+  GLint front_face;
+
   glGetBooleanv(GL_CULL_FACE, &cull_enabled);
   glGetIntegerv(GL_CULL_FACE_MODE, &cull_mode);
+  glGetIntegerv(GL_FRONT_FACE, &front_face);
 
   auto cullstr = _glCullModeToString(cull_mode);
   auto cullstr_ena = cull_enabled ? "ON" : "OFF";
+  auto winding_str = _glFaceWindingToString(front_face);
 
-  _colortext(NODES, WHI, BLU1, "%-16s: %-6s Mode: %s\n", "FaceCulling", cullstr_ena, cullstr.c_str() );
+  _colortext(NODES, YEL, BLU1, "%-16s: %-6s Mode: %s\n", "CullTest", cullstr_ena, cullstr.c_str());
+  _colortext(NODES, YEL, BLU1, "%-16s: %s\n", "CullFrontFace", winding_str.c_str());
+
+  /////////////////////////////////////
+  // query write masks
+  /////////////////////////////////////
+
+  GLboolean depth_mask;
+  GLboolean color_mask[4];
+  glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask);
+  glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
+
+  auto depthstr_mask = depth_mask ? "ON" : "OFF";
+  auto colorstr_mask = FormatString("R: %s G: %s B: %s A: %s", color_mask[0] ? "ON" : "OFF", color_mask[1] ? "ON" : "OFF", color_mask[2] ? "ON" : "OFF", color_mask[3] ? "ON" : "OFF");
+
+  _colortext(NODES, YEL, BLU1, "%-16s: %-6s\n", "DepthWriteMask", depthstr_mask);
+  _colortext(NODES, YEL, GR1, "%-16s: %s\n", "ColorWriteMask", colorstr_mask.c_str());
+  
+  /////////////////////////////////////
 
   _node_raster = vbox({
       text("Raster State"),

@@ -105,7 +105,8 @@ public:
       f32 iminU,
       f32 imaxU,
       f32 iminV,
-      f32 imaxV);
+      f32 imaxV,
+      bool debug = false);
   static void RenderQuadAtZV16T16C16(
       GfxMaterial* mtl, //
       Context* pTarg,

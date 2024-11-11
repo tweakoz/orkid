@@ -130,6 +130,8 @@ public:
     return miTrianglesRendered;
   }
 
+  bool _debugNextPrimitive = false;
+  
 protected:
   int miTrianglesRendered;
   Context& _context;

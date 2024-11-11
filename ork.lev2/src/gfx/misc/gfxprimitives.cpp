@@ -1503,7 +1503,8 @@ void GfxPrimitives::RenderQuadAtZ(
     f32 iminU,
     f32 imaxU,
     f32 iminV,
-    f32 imaxV) {
+    f32 imaxV,
+    bool debug) {
   auto vb = &GfxEnv::GetSharedDynamicVB();
 
   ///////////////////////////////////////////
@@ -1523,7 +1524,10 @@ void GfxPrimitives::RenderQuadAtZ(
   vw.UnLock(pTarg);
 
   ///////////////////////////////////////////
-
+  if (debug) {
+    pTarg->GBI()->_debugNextPrimitive = true;
+  }
+  
   pTarg->GBI()->DrawPrimitive(mtl, vw, PrimitiveType::TRIANGLES);
 
   ///////////////////////////////////////////

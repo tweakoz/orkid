@@ -93,7 +93,6 @@ void GeometryBufferInterface::DrawPrimitive(
   int imax = VBuf.GetMax();
   if (imax) {
     mtl->BeginBlock(&_context);
-    _context.stateDebugger();
     DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
     mtl->EndBlock(&_context);
   }
