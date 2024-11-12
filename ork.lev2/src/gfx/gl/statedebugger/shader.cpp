@@ -62,6 +62,7 @@ ftxui::component_ptr_t code_viewer(std::vector<std::string> lines) {
           return true;
         }
       }
+      return false;
     }
   };
   return Make<CodeViewerImpl>(lines);

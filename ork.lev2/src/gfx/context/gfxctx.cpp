@@ -27,19 +27,14 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-loadingphase_ptr_t Context::newLoadingPhase(){
+loadingphase_ptr_t Context::newLoadingPhase() {
   auto phase = std::make_shared<LoadingPhase>();
-  _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked){
-    unlocked.push_back(phase);
-  });
+  _loadingPhases.atomicOp([phase](loadingphase_list_t& unlocked) { unlocked.push_back(phase); });
   return phase;
 }
 
-void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l){
-  _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked){
-    unlocked.push_back(l);
-  });
-
+void LoadingPhase::enqueueOperation(gfxcontext_lambda_t l) {
+  _load_operations.atomicOp([l](gfxcontext_lambda_list_t& unlocked) { unlocked.push_back(l); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,9 +43,7 @@ void Context::enqueueGpuEvent(gpuevent_ptr_t evt) {
   _gpuEventQueue.push(evt);
 }
 void Context::registerGpuEventSink(gpueventsink_ptr_t sink) {
-  _gpuEventSinks.atomicOp([sink](gpueventsink_map_t& unlocked){
-    unlocked.insert(std::make_pair(sink->_eventID,sink));
-  });
+  _gpuEventSinks.atomicOp([sink](gpueventsink_map_t& unlocked) { unlocked.insert(std::make_pair(sink->_eventID, sink)); });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,7 +59,7 @@ float Context::currentDPI() const {
 void Context::describeX(class_t* clazz) {
 }
 
-void Context::triggerFrameDebugCapture(){
+void Context::triggerFrameDebugCapture() {
   _isFrameDebugCapture = true;
   _doTriggerFrameDebugCapture();
 }
@@ -83,17 +76,17 @@ void Context::beginFrame(void) {
   /////////////////////////////////////
 
   bool keep_going = true;
-  while(keep_going) {
+  while (keep_going) {
     keep_going = false;
-    auto it = _stickyCallbacks.begin();
-    if( it != _stickyCallbacks.end() ){
-      auto cb = *it;
+    auto it    = _stickyCallbacks.begin();
+    if (it != _stickyCallbacks.end()) {
+      auto cb        = *it;
       bool processed = cb();
-      if(processed){
+      if (processed) {
         _stickyCallbacks.erase(it);
         keep_going = true;
       }
-    }   
+    }
   }
 
   /////////////////////////////////////
@@ -101,20 +94,20 @@ void Context::beginFrame(void) {
   /////////////////////////////////////
 
   loadingphase_ptr_t phase = nullptr;
-  _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked){
-    if( unlocked.size() ){
+  _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
+    if (unlocked.size()) {
       phase = unlocked.front();
       unlocked.pop_front();
     }
   });
-  if(phase){
+  if (phase) {
     static gfxcontext_lambda_list_t ops;
-    phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked){
+    phase->_load_operations.atomicOp([phase](gfxcontext_lambda_list_t& unlocked) {
       ops = unlocked;
       unlocked.clear();
     });
 
-    for( auto op : ops ){
+    for (auto op : ops) {
       op(this);
     }
     ops.clear();
@@ -150,21 +143,20 @@ void Context::beginFrame(void) {
 
   /////////////////////////////////////
 
-  _gpuEventSinks.atomicOp([this](gpueventsink_map_t& unlocked){
-    while(not _gpuEventQueue.empty() ){
+  _gpuEventSinks.atomicOp([this](gpueventsink_map_t& unlocked) {
+    while (not _gpuEventQueue.empty()) {
       auto event = _gpuEventQueue.front();
-      auto it = unlocked.find(event->_eventID);
-      if( it != unlocked.end() ){
+      auto it    = unlocked.find(event->_eventID);
+      if (it != unlocked.end()) {
         auto sink = it->second;
-        if(sink->_onEvent){
+        if (sink->_onEvent) {
           sink->_onEvent(event);
         }
-        //it->second->onGpuEvent(event);
+        // it->second->onGpuEvent(event);
       }
       _gpuEventQueue.pop();
     }
   });
-  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,8 +165,6 @@ void Context::endFrame(void) {
 
   for (auto l : _onEndFrameCallbacks)
     l();
-
-
 
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
@@ -198,6 +188,72 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass) {
+  return _beginRecordCommandBuffer(rpass);
+}
+void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  _endRecordCommandBuffer(cmdbuf);
+}
+
+void Context::beginRenderPass(renderpass_ptr_t pass) {
+  _beginRenderPass(pass);
+}
+void Context::endRenderPass(renderpass_ptr_t pass) {
+  _endRenderPass(pass);
+}
+void Context::beginSubPass(rendersubpass_ptr_t pass) {
+  _beginSubPass(pass);
+}
+void Context::endSubPass(rendersubpass_ptr_t pass) {
+  _endSubPass(pass);
+}
+
+RenderSubPass::RenderSubPass() {
+  _commandbuffer = std::make_shared<CommandBuffer>();
+}
+
+void Context::pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
+  _cmdbuf_stack.push(cmdbuf);
+  _current_cmdbuf = cmdbuf;
+  _doPushCommandBuffer(cmdbuf, rtg);
+}
+commandbuffer_ptr_t Context::popCommandBuffer() {
+  _doPopCommandBuffer();
+  _cmdbuf_stack.pop();
+  commandbuffer_ptr_t next = nullptr;
+  if (not _cmdbuf_stack.empty()) {
+    next = _cmdbuf_stack.top();
+  }
+  _current_cmdbuf = next;
+  return next;
+}
+void Context::enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  _doEnqueueSecondaryCommandBuffer(cmdbuf);
+}
+
+commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
+  return nullptr;
+}
+void Context::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+}
+void Context::_beginRenderPass(renderpass_ptr_t) {
+}
+void Context::_endRenderPass(renderpass_ptr_t) {
+}
+void Context::_beginSubPass(rendersubpass_ptr_t) {
+}
+void Context::_endSubPass(rendersubpass_ptr_t) {
+}
+
+void Context::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
+}
+void Context::_doPopCommandBuffer() {
+}
+void Context::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 Context::Context()
     : meTargetType(TargetType::NONE)
     , miW(0)
@@ -210,9 +266,9 @@ Context::Context()
 
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();
-  auto RCFD   = std::make_shared<RenderContextFrameData>(this);
+  auto RCFD          = std::make_shared<RenderContextFrameData>(this);
   RCFD->pushCompositor(_gimpl);
-  _defaultrcfd       = RCFD;
+  _defaultrcfd = RCFD;
   pushRenderContextFrameData(RCFD);
 }
 

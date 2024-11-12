@@ -60,23 +60,20 @@ struct FxPipelinePermutationSet {
 
 struct FxPipeline {
 
+  using varval_t = varmap::VarMap::value_type;
+  using statelambda_t = std::function<void(const RenderContextInstData& RCID)>;
+  using varval_generator_t = std::function<varval_t()>;
+
   FxPipeline(const FxPipelinePermutation& config);
+  void dump() const;
 
   int beginBlock(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
-
+  void bindParam(fxparam_constptr_t p, varval_t v);
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
-
-  using varval_t = varmap::VarMap::value_type;
-  using statelambda_t = std::function<void(const RenderContextInstData& RCID)>;
 
   void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
-
-  using varval_generator_t = std::function<varval_t()>;
-
-  void bindParam(fxparam_constptr_t p, varval_t v);
-  void dump() const;
 
   GfxMaterial* _material_ptr = nullptr;
   rasterstate_ptr_t _rasterstate = nullptr;

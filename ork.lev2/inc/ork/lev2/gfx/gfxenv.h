@@ -28,6 +28,7 @@
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/lev2_types.h>
 #include <ork/util/Context.h>
+#include <ork/kernel/shared_pool.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -45,12 +46,12 @@ struct GpuEvent {
 };
 
 using gpuevent_queue_t = std::queue<gpuevent_ptr_t>;
-using gpuevent_cb_t = std::function<void(gpuevent_ptr_t)>;
+using gpuevent_cb_t    = std::function<void(gpuevent_ptr_t)>;
 struct GpuEventSink {
   std::string _eventID;
   gpuevent_cb_t _onEvent;
 };
-using gpueventsink_map_t = std::unordered_map<std::string,gpueventsink_ptr_t>;
+using gpueventsink_map_t = std::unordered_map<std::string, gpueventsink_ptr_t>;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -95,7 +96,6 @@ struct LoadingPhase {
   void enqueueOperation(gfxcontext_lambda_t l);
 
   LockedResource<gfxcontext_lambda_list_t> _load_operations;
-
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -161,13 +161,14 @@ public:
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
   virtual TextureInterface* TXI()        = 0; // Texture Interface
   virtual DrawingInterface* DWI()        = 0; // Drawing Interface
-  virtual ComputeInterface* CI() = 0; // ComputeShader Interface
+  virtual ComputeInterface* CI()         = 0; // ComputeShader Interface
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
   ///////////////////////////////////////////////////////////////////////
   void triggerFrameDebugCapture();
-  virtual void _doTriggerFrameDebugCapture() {}
+  virtual void _doTriggerFrameDebugCapture() {
+  }
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPushGroup(const std::string str) {
@@ -190,7 +191,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   virtual void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) = 0;
-  virtual void initializeOffscreenContext(DisplayBuffer* pBuf)        = 0;
+  virtual void initializeOffscreenContext(DisplayBuffer* pBuf)          = 0;
   virtual void initializeLoaderContext()                                = 0;
 
   ///////////////////////////////////////////////////////////////////////
@@ -218,6 +219,33 @@ public:
 
   void beginFrame(void);
   void endFrame(void);
+
+  ///////////////////////////////////////////////////////////////////////
+  // command buffers / renderpasses
+  ///////////////////////////////////////////////////////////////////////
+
+  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass = nullptr);
+  void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
+  commandbuffer_ptr_t popCommandBuffer();
+  void enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
+
+  void beginRenderPass(renderpass_ptr_t);
+  void endRenderPass(renderpass_ptr_t);
+  void beginSubPass(rendersubpass_ptr_t);
+  void endSubPass(rendersubpass_ptr_t);
+
+  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
+  virtual void _doPopCommandBuffer();
+  virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass);
+  virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+
+  virtual void _beginRenderPass(renderpass_ptr_t);
+  virtual void _endRenderPass(renderpass_ptr_t);
+  virtual void _beginSubPass(rendersubpass_ptr_t);
+  virtual void _endSubPass(rendersubpass_ptr_t);
+
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -310,21 +338,20 @@ public:
   virtual void TakeThreadOwnership() {
   }
 
-  virtual void stateDebugger() const {}
+  virtual void stateDebugger() const {
+  }
 
   void* BeginLoad();
   void EndLoad(void* ploadtok);
 
-
-  template <typename vtx_t> std::shared_ptr<DynamicVertexBuffer<vtx_t>> miscVertexBuffer(uint32_t id,uint32_t numverts) {
-    using vtxbuf_t = DynamicVertexBuffer<vtx_t>;
+  template <typename vtx_t> std::shared_ptr<DynamicVertexBuffer<vtx_t>> miscVertexBuffer(uint32_t id, uint32_t numverts) {
+    using vtxbuf_t     = DynamicVertexBuffer<vtx_t>;
     using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
-    auto it = _miscVBs.find(id);
+    auto it            = _miscVBs.find(id);
     if (it != _miscVBs.end()) {
       return it->second.get<vtxbuf_ptr_t>();
-    }
-    else{
-      auto vbp = std::make_shared<vtxbuf_t>(numverts,0);
+    } else {
+      auto vbp = std::make_shared<vtxbuf_t>(numverts, 0);
       vbp->SetRingLock(true);
 
       _miscVBs[id] = vbp;
@@ -350,8 +377,15 @@ public:
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
-  std::unordered_map<uint32_t,svar64_t> _miscVBs;
+  std::unordered_map<uint32_t, svar64_t> _miscVBs;
   std::vector<sticky_cb_t> _stickyCallbacks;
+
+  commandbuffer_ptr_t _recordCommandBuffer;
+  commandbuffer_ptr_t _defaultCommandBuffer;
+  shared_pool::fixed_pool<CommandBuffer, 4> _cmdbuf_pool;
+  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
+  commandbuffer_ptr_t _current_cmdbuf;
+
   bool hiDPI() const;
   float currentDPI() const;
 
@@ -369,7 +403,8 @@ public:
     _onEndFrameCallbacks.push_back(l);
   }
 
-  virtual void swapBuffers(CTXBASE* ctxbase) {}
+  virtual void swapBuffers(CTXBASE* ctxbase) {
+  }
 
   void enqueueGpuEvent(gpuevent_ptr_t evt);
   void registerGpuEventSink(gpueventsink_ptr_t sink);
@@ -378,7 +413,6 @@ public:
   LockedResource<loadingphase_list_t> _loadingPhases;
 
 private:
-
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
   std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;
@@ -555,11 +589,11 @@ public:
   virtual void initContext();
 
   context_ptr_t _sharedcontext;
-  uiwidget_ptr_t _rootWidget  = nullptr;
-  Texture* _texture        = nullptr;
-  DisplayBuffer* _parent = nullptr;
-  RtGroup* _parentRtGroup  = nullptr;
-  void* _IMPL              = nullptr;
+  uiwidget_ptr_t _rootWidget = nullptr;
+  Texture* _texture          = nullptr;
+  DisplayBuffer* _parent     = nullptr;
+  RtGroup* _parentRtGroup    = nullptr;
+  void* _IMPL                = nullptr;
 
   int miWidth;
   int miHeight;
@@ -616,7 +650,6 @@ class GfxEnv : public NoRttiSingleton<GfxEnv> {
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-
   recursive_mutex& GetGlobalLock() {
     return mGfxEnvMutex;
   }
@@ -673,7 +706,7 @@ public:
   static bool initialized();
   static void initializeWithContext(context_ptr_t ctx);
 
-  using lockset_t = std::unordered_set<uint64_t>;
+  using lockset_t      = std::unordered_set<uint64_t>;
   using locknotifset_t = std::vector<void_lambda_t>;
 
   static uint64_t createLock();
@@ -689,7 +722,7 @@ protected:
   //////////////////////////////////////////////////////////////////////////////
 
   static bool _bc7Disabled;
-  
+
   Window* mpMainWindow;
 
   orkvector<DisplayBuffer*> mvActivePBuffers;
@@ -704,8 +737,7 @@ protected:
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
 
-
-  struct WaitLockData{
+  struct WaitLockData {
     lockset_t _locks;
     locknotifset_t _notifs;
   };
@@ -746,6 +778,36 @@ public:
 private:
   Context* mTarget;
   int mCameraNumber;
+};
+
+struct RenderPass {
+  svarp_t _impl;
+  std::vector<rendersubpass_ptr_t> _subpasses;
+  bool _immutable        = false;
+  bool _allow_clear      = true;
+  std::string _debugName = "RenderPass";
+};
+
+struct RenderSubPass {
+
+  RenderSubPass();
+
+  std::vector<rendersubpass_ptr_t> _subpass_dependencies;
+  rtgroup_ptr_t _rtg_input;
+  rtgroup_ptr_t _rtg_output;
+  svarp_t _impl;
+  std::string _debugName;
+  commandbuffer_ptr_t _commandbuffer;
+};
+
+struct CommandBuffer {
+  CommandBuffer(std::string name = "---")
+      : _debugName(name) {
+  }
+  svarp_t _impl;
+  std::string _debugName;
+  bool _is_primary = false;
+  bool _no_draw    = false;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

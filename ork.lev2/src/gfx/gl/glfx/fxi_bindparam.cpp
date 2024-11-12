@@ -23,7 +23,7 @@ void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
 void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t& binder) {
   auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   OrkAssert(hpar != nullptr);
-  Uniform* puni  = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  auto puni  = hpar->_impl.get<Uniform*>();
   assert(container->_activePass != nullptr);
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
@@ -210,7 +210,7 @@ void Interface::BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat
 
 void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   auto container               = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
-  auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  auto puni  = hpar->_impl.get<Uniform*>();
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   //printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {
@@ -251,7 +251,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
 void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t texlist) {
   auto container               = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
-  auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  auto puni  = hpar->_impl.get<Uniform*>();
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
 
   if (pinst && !texlist.empty()) {

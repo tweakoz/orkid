@@ -66,20 +66,19 @@ struct FxShaderParamInBlockInfo {
 };
 
 struct FxShaderParam {
+
+  FxShaderParam();
+
   std::string _name;
   std::string mParameterSemantic;
   std::string mParameterType;
   EPropType meParamType;
-  void* mInternalHandle;
+  svarp_t _impl;
   bool mBindable;
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam* mChildParam;
 
   orklut<std::string, std::string> _annotations;
-  FxShaderParam(void* ih = 0);
-  void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
 };
 
 struct FxShaderParamBlock {

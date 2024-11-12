@@ -32,9 +32,8 @@ FxParamRec::FxParamRec()
 FxShaderPass::FxShaderPass(){
 }
 
-FxShaderParam::FxShaderParam(void* ih)
+FxShaderParam::FxShaderParam()
     : meParamType(EPROPTYPE_END)
-    , mInternalHandle(ih)
     , mBindable(true)
     , mChildParam(0) {
 }

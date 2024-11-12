@@ -102,7 +102,7 @@ void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader*
     ork_parm->_name              = itp.first;
     ork_parm->mParameterSemantic = puni->_semantic;
     ork_parm->mParameterType     = puni->_typeName;
-    ork_parm->mInternalHandle    = (void*)puni;
+    ork_parm->_impl.set<Uniform*>(puni);
     fxh->addParameter(ork_parm);
   }
   for (const auto& itp : container->_computeShaders) {
@@ -356,7 +356,7 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
       auto p                         = new FxShaderParam;
       p->_blockinfo                  = new FxShaderParamInBlockInfo;
       p->_blockinfo->_parent         = fxsblock;
-      p->mInternalHandle             = (void*)u;
+      p->_impl.set<Uniform*>(u);
       p->_name                       = u->_name;
       fxsblock->_subparams[p->_name] = p;
     }
