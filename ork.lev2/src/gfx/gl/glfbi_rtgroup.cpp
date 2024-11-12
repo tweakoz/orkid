@@ -585,7 +585,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
         auto glto     = tex->_impl.get<gltexobj_ptr_t>();
         GLuint texobj = glto->_textureObject;
-
+        tex->_width   = iw;
+        tex->_height  = ih;
         if (tex->_formatSupportsFiltering) {
           tex->mTexSampleMode.PresetTrilinearWrap();
         } else {

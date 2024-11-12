@@ -10,6 +10,8 @@
 
 namespace ork { namespace ui {
 
+constexpr bool DEBUG_BLIT = false;
+
 /////////////////////////////////////////////////////////////////////////
 
 Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth)
@@ -175,7 +177,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
           1.0f, // u0, u1
           1.0f,
           0.0f, // v0, v1
-          true // debug
+          DEBUG_BLIT // debug
       );
 
      tgt->PopModColor();
@@ -204,7 +206,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
             u1,
             v0,
             v1,
-            true ); // debug
+            DEBUG_BLIT ); // debug
 
       } else {
         int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
@@ -223,7 +225,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
             u1,
             v0,
             v1,
-            true ); // debug
+            DEBUG_BLIT ); // debug
       }
     } else {
       primi.RenderQuadAtZ(
@@ -238,7 +240,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
           1.0f, // u0, u1
           1.0f,
           0.0f, // v0, v1
-          true ); // debug
+          DEBUG_BLIT ); // debug
     }
   }
   mtxi->PopUIMatrix();

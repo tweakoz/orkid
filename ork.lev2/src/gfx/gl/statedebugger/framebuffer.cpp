@@ -25,12 +25,33 @@ void _FtxGlDebugger::_validateCurrentFramebuffer() {
   GLint fbo_w = 0;
   GLint fbo_h = 0;
   GLint fbo_d = 0;
-  GLenum format = GL_NONE;
-  GLint numattachments = 0;
-  // get w 
-
 
   _colortext(NODES, WHI, BLK, "currentFBO<%d> status<%x> complete<%d>\n", currentFBO, status, int(complete));
+
+  // get number of attachments
+  for( int a=0; a<8; a++ ){
+    GLint attached_obj_type = GL_NONE;
+    glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+a, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attached_obj_type);
+    switch(attached_obj_type){
+      case GL_NONE: {
+        _colortext(NODES, WHI, BLK, "  attached<%d> is_none", a);
+        break;
+      }
+      case GL_FRAMEBUFFER_DEFAULT: {
+        _colortext(NODES, WHI, BLK, "  attached<%d> is_framebuffer_default", a);
+        break;
+      }
+      case GL_TEXTURE: {
+        _colortext(NODES, WHI, BLK, "  attached<%d> is_texture", a);
+        break;
+      }
+      case GL_RENDERBUFFER: {
+        _colortext(NODES, WHI, BLK, "  attached<%d> is_renderbuffer\n", a);
+        break;
+      }
+    }
+  }
+
   _node_framebuffer = vbox({
       text("Framebuffer State"),
       separator(),
