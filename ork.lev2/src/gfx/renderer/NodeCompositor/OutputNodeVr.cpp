@@ -305,6 +305,12 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           fbi->PushRtGroup(downRTG.get());
 
           auto& mtl     = impl->_blit2screenmtl;
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+          mtl._rasterstate->setCullTest(ECullTest::OFF);
+          mtl._rasterstate->_force = true;
+
+
           switch (this->_supersample) {
             case 0:
               drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<0>");
@@ -335,7 +341,6 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
           }
 
-          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, impl->_out_width, impl->_out_height);
@@ -354,7 +359,9 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         }
 
         if (_distorion_lambda and (not _monoviewer)) {
+          drawdata.context()->debugPushGroup("VrCompositingNode::distortion_lambda");
           _distorion_lambda(framedata, tex);
+          drawdata.context()->debugPopGroup();
         } else {
           drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
           const auto& vrdev = orkidvr::device();
@@ -365,7 +372,6 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
           // vrdev->__composite(context, tex);
           mtl.begin(impl->_fxtechnique1x1, framedata);
 
-          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
