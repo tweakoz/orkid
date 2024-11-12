@@ -48,8 +48,13 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return node->_dqxfdata._modcolor;
               },
               [](node_ptr_t node, fvec4 color) { //
-                node->_dqxfdata._modcolor     = color;
-                node->_dqxfdata._use_modcolor = true;
+                auto as_drw_node = std::dynamic_pointer_cast<DrawableNode>(node);
+                if(as_drw_node){
+                  as_drw_node->_modcolor     = color;
+                  //node->_dqxfdata._modcolor     = color;
+                  as_drw_node->_dqxfdata._use_modcolor = true;
+
+                }
               })
           .def_property(
               "enabled",                    //
