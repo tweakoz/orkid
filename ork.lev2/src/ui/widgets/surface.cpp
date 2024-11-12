@@ -148,7 +148,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
   mtxi->PushUIMatrix();
 
-  printf("wTf...\n");
+  tgt->debugPushGroup("Surface::Draw");
   {
     int ix_root = 0;
     int iy_root = 0;
@@ -157,6 +157,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
     if (_decouple_from_ui_size and _aspect_from_rtgroup) {
+      tgt->debugPushGroup("Surface::Draw::1");
 
       float u0 = 0.0f;
       float u1 = 1.0f;
@@ -227,7 +228,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
             v1,
             DEBUG_BLIT ); // debug
       }
+      tgt->debugPopGroup();
+
     } else {
+      tgt->debugPushGroup("Surface::Draw::2");
       primi.RenderQuadAtZ(
           material.get(),
           tgt,
@@ -241,8 +245,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
           1.0f,
           0.0f, // v0, v1
           DEBUG_BLIT ); // debug
+      tgt->debugPopGroup();
     }
   }
+  tgt->debugPopGroup();
   mtxi->PopUIMatrix();
   tgt->PopModColor();
 }

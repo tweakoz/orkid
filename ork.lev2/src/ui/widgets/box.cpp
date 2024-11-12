@@ -105,7 +105,7 @@ EvTestBox::EvTestBox(
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
   _colorsel = Ev->_eventcode;
-  printf( "EvTestBox::DoOnUiEvent<%s> code<%d>\n", _name.c_str(), int(Ev->_eventcode) );
+  //printf( "EvTestBox::DoOnUiEvent<%s> code<%d>\n", _name.c_str(), int(Ev->_eventcode) );
   return HandlerResult();
 }
 ///////////////////////////////////////////////////////////////////////////////

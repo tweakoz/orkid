@@ -30,7 +30,7 @@ void GlRasterStateInterface::beginFrame(){
 
 void GlRasterStateInterface::apply(const RasterState& newstate) {
 
-  bool force = _currentState._force;
+  bool force = true; //_currentState._force;
 
   bool do_write_z = force or (newstate._writemaskZ != _currentState._writemaskZ);
   bool do_write_a = force or (newstate._writemaskA != _currentState._writemaskA);

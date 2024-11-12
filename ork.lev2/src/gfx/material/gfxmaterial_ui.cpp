@@ -43,7 +43,6 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate->setWriteMaskRGB(true);
   _rasterstate->setWriteMaskA(true);
   _rasterstate->setCullTest(ECullTest::OFF);
-  _rasterstate->setCullTest(ECullTest::OFF);
 
   auto mtl_load_req = std::make_shared<asset::LoadRequest>();
   mtl_load_req->_asset_path = "orkshader://ui";
@@ -211,6 +210,7 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   _rasterstate->setBlendingMacro(BlendingMacro::OFF);
   _rasterstate->setDepthTest(EDepthTest::OFF);
   _rasterstate->setCullTest(ECullTest::OFF);
+  _rasterstate->_force = true;
 
   if (pTarg) {
     gpuInit(pTarg);

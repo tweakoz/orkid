@@ -167,9 +167,11 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         assert(src_buffer != nullptr);
         auto tex = src_buffer->texture();
         auto& mtl     = impl->_blit2screenmtl;
+        mtl._rasterstate->_force = true;
         mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+        mtl._rasterstate->setDepthTest(EDepthTest::LEQUALS);
         // TODO: set cull test to pass front and change winding order of primitives
-        mtl._rasterstate->setCullTest(ECullTest::PASS_BACK);
+        mtl._rasterstate->setCullTest(ECullTest::OFF);
         switch (this->supersample()) {
           case 0:
             mtl.begin(impl->_fxtechnique1x1, framedata);
