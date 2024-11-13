@@ -233,6 +233,9 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
+    mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+    mtl->_rasterstate->setCullTest(ECullTest::OFF);
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
     // logchan_pbrgen->log("filterenv mtl<%p> tekFilterSpecMap<%p>", mtl.get(), tekFilterSpecMap);
@@ -403,6 +406,9 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
 
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
+    mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    mtl->_rasterstate->setDepthTest(EDepthTest::OFF);
+    mtl->_rasterstate->setCullTest(ECullTest::OFF);
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
     param_mvp = mtl->param("mvp");
