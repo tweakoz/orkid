@@ -158,14 +158,12 @@ class UiTestApp(object):
     griditems = lg_group.makeGrid( width = 2,
                                    height = 1,
                                    margin = 1,
-                                   uiclass = lev2.ui.LambdaBox,
-                                   args = ["box",vec4(1,0,1,1)] )
+                                   uiclass = lev2.ui.Box,
+                                   args = ["box",vec4(0,0,0,1)] )
 
     print(griditems)
 
     # set up event handlers for the grid items
-    griditems[0].widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
-    griditems[1].widget.onPressed(lambda: print("GRIDITEM1 PUSHED"))
     
     self.griditems = griditems
     
