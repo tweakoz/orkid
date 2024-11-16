@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "krzio.h"
-#include <audiofile.h>
+//#include <audiofile.h>
 
 // extern gig::File dls_file;
 namespace ork::audio::singularity::krzio {
@@ -106,7 +106,7 @@ void SampleFile::WriteSample(const std::string& fname, const SampleOpts& opts) {
   assert(inumframes < (8 << 20));
 
   bool looped = opts.loopstart >= 0;
-
+  #if 0
   auto af_setup = afNewFileSetup();
 
   afInitFileFormat(af_setup, AF_FILE_AIFF);
@@ -201,6 +201,7 @@ void SampleFile::WriteSample(const std::string& fname, const SampleOpts& opts) {
   // file.write (buffer, inumframes) ;
 
   afCloseFile(af_file);
+  #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
