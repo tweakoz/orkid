@@ -61,6 +61,8 @@ public:
   }
   virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {
   }
+  virtual void initTextureFromImage(Texture* ptex, image_ptr_t img) {
+  }
   virtual void initTextureArray1DFromData(Texture* ptex, TextureArrayInitData tid) {
   }
   virtual void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) {
@@ -68,6 +70,8 @@ public:
   virtual void initTextureArray3DFromData(Texture* ptex, TextureArrayInitData tid) {
   }
   virtual void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) {
+  }
+  virtual void initTextureFromImage(Texture* ptex, int slice, image_ptr_t img) {
   }
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;

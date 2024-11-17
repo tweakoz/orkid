@@ -427,6 +427,7 @@ struct GlTextureInterface : public TextureInterface {
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
+  void initTextureFromImage(Texture* ptex, image_ptr_t img) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) final;
   void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) final;
