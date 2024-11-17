@@ -78,6 +78,20 @@ public:
         _count -= count;
     }
 
+    void pop_many(std::vector<T>& output, size_t count) {
+        if (count > _count) {
+            throw std::runtime_error("Not enough data in RingBuffer");
+        }
+        size_t first_chunk = std::min(count, _size - _read_index);
+        output.insert(output.end(), _buffer.begin() + _read_index, _buffer.begin() + _read_index + first_chunk);
+        size_t second_chunk = count - first_chunk;
+        if (second_chunk > 0) {
+            output.insert(output.end(), _buffer.begin(), _buffer.begin() + second_chunk);
+        }
+        _read_index = (_read_index + count) % _size;
+        _count -= count;
+    }
+
     size_t size() const {
         return _count;
     }

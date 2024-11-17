@@ -147,8 +147,13 @@ void StateMachine::_performStateChange(state_ptr_t pto) {
     for (auto iten : enter_vect)
       if (iten == pex)
         brun = false;
-    if (brun)
+    if (brun){
+      //printf("exit:1 state<%s>\n", pex->_name.c_str());
       pex->onExit();
+    }
+    else{
+      //printf("exit:2 state<%s>\n", pex->_name.c_str());
+    }
   }
 
   //////////////////////////////////////////////////
@@ -163,8 +168,13 @@ void StateMachine::_performStateChange(state_ptr_t pto) {
     for (auto itex : exit_vect)
       if (itex == pen)
         brun = false;
-    if (brun)
+    if (brun){
+      //printf("enter:1 state<%s>\n", pen->_name.c_str()); 
       pen->onEnter();
+    }
+    else{
+      //printf("enter:2 state<%s>\n", pen->_name.c_str());
+    }
   }
 
   //////////////////////////////////////////////////
@@ -198,12 +208,25 @@ void StateMachine::update() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LambdaState::LambdaState(StateMachine* machine, state_ptr_t p)
-    : State(machine, p) {
+State::State(StateMachine* machine, state_ptr_t p, std::string name)
+    : _parent(p)
+    , _name(name)
+    , _machine(machine) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LambdaState::LambdaState(StateMachine* machine, state_ptr_t p, std::string name)
+    : State(machine, p, name)
+    , _onenter(nullptr)
+    , _onexit(nullptr)
+    , _onupdate(nullptr) {
 }
 void LambdaState::onEnter() {
-  if (_onenter)
+  //printf("LambdaState::onEnter<%s:%d>\n",_name.c_str(),int(bool(_onenter)));
+  if (_onenter){
     _onenter();
+  }
 }
 void LambdaState::onExit() {
   if (_onexit)

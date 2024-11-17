@@ -59,10 +59,7 @@ template <typename T> const std::type_info* trans_key() {
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct State {
-  State(StateMachine* machine, state_ptr_t p = nullptr)
-      : _parent(p)
-      , _machine(machine) {
-  }
+  State(StateMachine* machine, state_ptr_t p = nullptr, std::string name = "");
   virtual ~State() {}
 
   typedef const std::type_info* event_key_t;
@@ -77,13 +74,14 @@ struct State {
 
   trans_map_t _transitions;
   state_ptr_t _parent;
+  std::string _name;
   StateMachine* _machine = nullptr;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct LambdaState : public State {
-  LambdaState(StateMachine* machine, state_ptr_t p);
+  LambdaState(StateMachine* machine, state_ptr_t p, std::string name = "");
   void onEnter() final;
   void onExit() final;
   void onUpdate() final;
@@ -107,7 +105,7 @@ struct StateMachine {
   StateMachine();
   ~StateMachine();
 
-  template <typename T> std::shared_ptr<T> newState(state_ptr_t par);
+  template <typename T> std::shared_ptr<T> newState(state_ptr_t par, std::string name = "");
   template <typename T> std::shared_ptr<T> newState();
   void addState(state_ptr_t pst);
   void addTransition(state_ptr_t pfr, State::event_key_t k, state_ptr_t pto);
@@ -135,8 +133,8 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> std::shared_ptr<T> StateMachine::newState(state_ptr_t par) {
-  auto pst = std::make_shared<T>(this, par);
+template <typename T> std::shared_ptr<T> StateMachine::newState(state_ptr_t par, std::string name) {
+  auto pst = std::make_shared<T>(this, par, name);
   addState(pst);
   return pst;
 }
