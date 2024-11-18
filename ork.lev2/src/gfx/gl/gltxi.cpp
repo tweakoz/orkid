@@ -826,7 +826,24 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         src_buffer = rgb_buffer;
         break;
       }
-      case EBufferFormat::RGB8: 
+      case EBufferFormat::R8: {
+        if( tid._dst_format == EBufferFormat::RGB8 ){
+          for (int row = 0; row < srch; row++) {
+            auto row_base = row * srcw;
+            auto row_base_rgb = row * srcw * 3;
+            auto row_ybase = src_buffer + row_base;
+            auto ptr = rgb_buffer + row_base_rgb;
+            for (int col = 0; col < srcw; col++) {
+              auto yy = row_ybase[col];
+              *ptr++ = yy;
+              *ptr++ = yy;
+              *ptr++ = yy;
+            }
+          }
+          src_buffer = rgb_buffer;
+        }
+        break;
+      }      case EBufferFormat::RGB8: 
       case EBufferFormat::BGR8: {
         break;
       }
