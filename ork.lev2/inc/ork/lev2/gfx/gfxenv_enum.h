@@ -126,6 +126,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(S3TC_DXT1),
   CrcEnum(S3TC_DXT3),
   CrcEnum(S3TC_DXT5),
+  CrcEnum(YCBCR_420_888),
   CrcEnum(NONE)
 };
 
