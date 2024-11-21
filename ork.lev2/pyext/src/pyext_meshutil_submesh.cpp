@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/lev2/gfx/meshutil/igl.h>
+#include <pybind11/numpy.h>
 
 
 namespace ork::meshutil {
@@ -79,6 +80,67 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     face_vertices.push_back(inserted_vertices[idx]);
                   }
                   rval->mergePoly(Polygon(face_vertices));
+                }
+                return rval;
+              })
+          .def_static(
+              "createFromDict2",
+              [](py::dict the_dict) -> submesh_ptr_t { //
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                auto pyverts       = the_dict["vertices"].cast<py::array>();
+                auto pyfaces       = the_dict["faces"].cast<py::array>();
+                std::vector<vertex_ptr_t> inserted_vertices;
+
+                 py::buffer_info verts_info  = pyverts.request();
+                OrkAssert(verts_info.format == py::format_descriptor<float>::format());
+                int data_len = verts_info.size;
+
+                auto data_ptr = static_cast<const float*>(verts_info.ptr);
+                auto shape = verts_info.shape;
+                OrkAssert(shape.size() == 2);
+                OrkAssert(shape[1] == 3);
+                OrkAssert(shape[0] == data_len/3);
+                OrkAssert(data_len % 3 == 0);
+                size_t stride = verts_info.strides[0];
+                for(int i=0; i<data_len; i+=3){
+                  float x = data_ptr[i];
+                  float y = data_ptr[i+1];
+                  float z = data_ptr[i+2];
+                  vertex vinp;
+                  vinp.mPos = dvec3(x,y,z);
+                  auto vmerge = rval->mergeVertex(vinp);
+                  inserted_vertices.push_back(vmerge);
+                }
+
+                //printf( "got good verts bufferdata <%p>\n", data_ptr );
+                //printf( "  numverts<%d>\n", data_len/3 );
+                //printf( "  format<%s>\n", verts_info.format.c_str() );
+
+                // print out index buffer
+                py::buffer_info faces_info  = pyfaces.request();
+
+                auto faces_array_check = py::array_t<int64_t, py::array::c_style | py::array::forcecast>::ensure(pyfaces);
+
+                OrkAssert(bool(faces_array_check));
+                auto data_ptr2 = static_cast<int64_t*>(faces_info.ptr);
+
+                int num_indices = faces_info.size;
+                int i=0;
+                int iface=0;
+                vertex vinpa, vinpb, vinpc;
+
+                while(i<num_indices){
+                  int numv = data_ptr2[i];
+                  OrkAssert(numv==3);
+                  int i0 = data_ptr2[i+1];
+                  int i1 = data_ptr2[i+2];
+                  int i2 = data_ptr2[i+3];
+                  auto v0 = inserted_vertices[i0];
+                  auto v1 = inserted_vertices[i1];
+                  auto v2 = inserted_vertices[i2];
+                  rval->mergeTriangle(v0,v1,v2);
+                  i += numv+1;
+                  iface++;
                 }
                 return rval;
               })
