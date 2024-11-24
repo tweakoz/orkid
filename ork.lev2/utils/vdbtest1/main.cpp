@@ -62,14 +62,23 @@ template <class GridType> void makeSphere(GridType& grid, float radius, const op
 int main(int argc, char** argv) {
 
   openvdb::initialize();
-  // Create a FloatGrid and populate it with a narrow-band
-  // signed distance field of a sphere.
-  // set the point density to 0.5
-  openvdb::FloatGrid::Ptr grid = openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
-      /*radius=*/50.0,
-      /*center=*/openvdb::Vec3f(1.5, 2, 3),
-      /*voxelSize=*/0.5,
-      /*width=*/1.1);
+ // Desired number of points
+    const double desiredPoints = 1000000; // Adjust this value as needed
+
+    // Sphere parameters
+    const double radius = 50.0;
+    const openvdb::Vec3f center(1.5, 2, 3);
+
+    // Calculate the voxel size
+    const double voxelSize = radius / std::cbrt(desiredPoints);
+
+    // Create the level set sphere with the calculated voxel size
+    openvdb::FloatGrid::Ptr grid = openvdb::tools::createLevelSetSphere<openvdb::FloatGrid>(
+        /*radius=*/radius,
+        /*center=*/center,
+        /*voxelSize=*/voxelSize,
+        /*width=*/3.0 // Adjust the width as needed
+    );
 
   // Associate some metadata with the grid.
   grid->insertMeta("radius", openvdb::FloatMetadata(50.0));

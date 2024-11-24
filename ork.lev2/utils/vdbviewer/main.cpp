@@ -81,11 +81,11 @@ fragment_interface iface_frg_points : ublock_frg {
 vertex_shader vs_points : iface_vtx_points {
   frg_col = col.xyz;
   gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
-  gl_PointSize = 2.0;
+  gl_PointSize = 3.0;
 }
 ////////////////////////////////////////
 fragment_shader ps_points : iface_frg_points {
-  out_clr = vec4(1,1,1,1);
+  out_clr = vec4(frg_col.xyz,1);
 }
 
 ////////////////////////////////////////
@@ -187,6 +187,8 @@ struct Resources {
         bgra |= (uint32_t(value * 255.0f) & 0xff) << 8;
         bgra |= (uint32_t(value * 255.0f) & 0xff) << 0;
 
+        points[point_index].color = bgra;
+
         point_index++;
       }
     }
@@ -221,7 +223,8 @@ int main(int argc, char** argv, char** envp) {
   auto desc = init_data->commandLineOptions("minimal3d example Options");
   desc->add_options()                  //
       ("help", "produce help message") //
-      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*0,1,2,3,4)")("vdb", po::value<std::string>(), "vdb file to load");
+      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*0,1,2,3,4)") //
+      ("vdb", po::value<std::string>(), "vdb file to load");
 
   auto vars = *init_data->parse();
 
