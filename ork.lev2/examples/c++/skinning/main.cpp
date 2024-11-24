@@ -57,7 +57,7 @@ int main(int argc, char** argv, char** envp) {
     gpurec->_uicamera->_fov = 45.0 * DTOR;
     gpurec->_uicamera->updateMatrices();
 
-    (*gpurec->_camdata) = gpurec->_uicamera->_camcamdata;
+    (*gpurec->_camdata) = *(gpurec->_uicamera->_camcamdata);
 
     ////////////////////////////////////////
     // update active test

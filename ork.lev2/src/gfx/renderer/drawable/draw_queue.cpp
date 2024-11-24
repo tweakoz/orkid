@@ -69,8 +69,10 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
   bool do_all = (LayerName == "All");
   target->debugMarker(FormatString("DrawQueue::enqueueLayerToRenderQueue do_all<%d>", int(do_all)));
   target->debugMarker(FormatString("DrawQueue::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
-
-  //printf( "rendering <%s> do_all<%d>\n", LayerName.c_str(), int(do_all) );
+  if( renderer->_debugLog ){
+    printf("DrawQueue::enqueueLayerToRenderQueue do_all<%d>\n", int(do_all));
+    printf("DrawQueue::enqueueLayerToRenderQueue numlayers<%zu>\n", mLayerLut.size());
+    }
   //////////////////////////////////////////////////////////////////////////////////////////////
   auto do_layer = [target,renderer,&numdrawables,LayerName](const lev2::DrawQueueLayer* player){
       player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName](const DrawQueueLayer::itemvect_t& unlocked){
@@ -79,6 +81,9 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
           auto item = unlocked[id];
           const lev2::Drawable* pdrw        = item->_drawable;
           target->debugMarker(FormatString("DrawQueue::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
+          if( renderer->_debugLog ){
+            printf("DrawQueue::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw);
+          }
           if (pdrw) {
             numdrawables++;
             pdrw->enqueueToRenderQueue(item, renderer);

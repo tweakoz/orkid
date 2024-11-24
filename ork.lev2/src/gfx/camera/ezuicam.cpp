@@ -149,8 +149,8 @@ EzUiCam::EzUiCam()
     , mDoPan(false)
     , mDoZoom(false)
     , _constrainZ(false)  {
-  _camcamdata.Persp(1.0f, 1000.0f, 70.0f);
-  _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
+  _camcamdata->Persp(1.0f, 1000.0f, 70.0f);
+  _camcamdata->Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
   type_name     = "Perspective";
   instance_name = "Default";
 
@@ -192,9 +192,9 @@ void EzUiCam::draw(Context* context) const {
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.x, mvCenter.y, mvCenter.z);
     FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.x, CamLoc.y, CamLoc.z);
-    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
-    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
-    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata->GetFar()));
+    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata->GetNear()));
+    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata->GetFar() / _camcamdata->GetNear()));
     FontMan::DrawText(context, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
     FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
     FontMan::DrawText(context, 41, 93, "Aper %f", _fov);
@@ -206,9 +206,9 @@ void EzUiCam::draw(Context* context) const {
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.x, mvCenter.y, mvCenter.z);
     FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.x, CamLoc.y, CamLoc.z);
-    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
-    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
-    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
+    FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata->GetFar()));
+    FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata->GetNear()));
+    FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata->GetFar() / _camcamdata->GetNear()));
     FontMan::DrawText(context, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
     FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
     FontMan::DrawText(context, 41, 93, "Aper %f", aper);
@@ -221,7 +221,7 @@ void EzUiCam::draw(Context* context) const {
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
   float aspect = float(context->mainSurfaceWidth()) / float(context->mainSurfaceHeight());
-  //_curMatrices = _camcamdata.computeMatrices(aspect);
+  //_curMatrices = _camcamdata->computeMatrices(aspect);
   auto RCFD    = context->topRenderContextFrameData();
   lev2::RenderContextInstData RCID(RCFD);
   fmtx4 worldmtx;
@@ -380,12 +380,12 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         _pushNX = fvec3(1,0,0);
         _pushNY = fvec3(0,1,0);
         //_pushNZ = fvec3(0,0,1);
-        _pushNZ = _camcamdata.zNormal();
+        _pushNZ = _camcamdata->zNormal();
       }
       else{
-        _pushNX = _camcamdata.xNormal();
-        _pushNY = _camcamdata.yNormal();
-        _pushNZ = _camcamdata.zNormal();
+        _pushNX = _camcamdata->xNormal();
+        _pushNY = _camcamdata->yNormal();
+        _pushNZ = _camcamdata->zNormal();
       }
 
       // printf( "nx <%g %g %g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
@@ -785,8 +785,8 @@ void EzUiCam::updateMatrices(void) {
   veye += _position_offset;
   vtarget += _position_offset;
 
-  _camcamdata.Persp(fnear, ffar, _fov);
-  _camcamdata.Lookat(veye, vtarget, vup);
+  _camcamdata->Persp(fnear, ffar, _fov);
+  _camcamdata->Lookat(veye, vtarget, vup);
 
   // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);
   // printf("mvCenter<%g %g %g>\n", mvCenter.x, mvCenter.y, mvCenter.z);
@@ -795,7 +795,7 @@ void EzUiCam::updateMatrices(void) {
   // printf("vup<%g %g %g>\n", vup.x, vup.y, vup.z);
 
   ///////////////////////////////////////////////////////////////
-  // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
+  // CameraMatrices ctx = _camcamdata->computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
   

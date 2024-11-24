@@ -52,9 +52,9 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   size_t renderQueueSize = _unsortedNodes.Size();
   _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
-  //if(_debugLog){
-    //printf( "renderQueueSize<%zu>\n", renderQueueSize);
-  //}
+  if(_debugLog){
+    printf( "renderQueueSize<%zu>\n", renderQueueSize);
+  }
 
   if (renderQueueSize == 0) {
     _target->debugPopGroup();

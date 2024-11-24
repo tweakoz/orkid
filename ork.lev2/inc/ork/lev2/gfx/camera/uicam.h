@@ -99,7 +99,7 @@ public:
 
   callback_drawable_ptr_t createOverlayDrawable();
 
-  CameraData _camcamdata;
+  cameradata_ptr_t _camcamdata;
   mutable CameraMatrices _curMatrices;
   fvec2 _vpdim;
 
@@ -150,10 +150,10 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
   CameraData& cameraMatrices() {
-    return _camcamdata;
+    return *_camcamdata;
   }
   const CameraData& cameraMatrices() const {
-    return _camcamdata;
+    return *_camcamdata;
   }
 
   //////////////////////////////////////////////////////////////////////////////

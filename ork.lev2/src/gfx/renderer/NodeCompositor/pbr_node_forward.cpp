@@ -420,12 +420,14 @@ struct ForwardPbrNodeImpl {
     // main color pass
     ///////////////////////////////////////////////////////////////////////////
 
+    printf("WTF\n");
+    
     context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
     DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
 
     RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
     context->debugPushGroup("ForwardPBR::color pass");
-    // irenderer->_debugLog = true;
+     irenderer->_debugLog = true;
     rtg_out->_autoclear      = false;
     rtg_out->_depthOnly      = false;
     rtg_out->_clearMaskDepth = false; // not clearing anyway ...

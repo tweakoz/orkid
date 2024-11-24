@@ -81,6 +81,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
           _nodes2draw.push_back(item);
         }
       }
+      if (RENDER_DEBUG_LOG){
+        logchan_sgrender->log("layer<%s> drawable_nodes<%d>", drawable_layer->_name.c_str(), int(unlocked.size()));
+      }
     });
 
   } // for (auto l : layers) {
@@ -194,7 +197,6 @@ EASY_END_BLOCK;
   if (1) {
     EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
 
-    // printf( "SceneGraph::_renderIMPL\n");
     context->beginFrame();
     CompositorDrawData drawdata(RCFD);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);

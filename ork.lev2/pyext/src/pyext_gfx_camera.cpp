@@ -71,11 +71,7 @@ void pyinit_gfx_camera(py::module& module_lev2) {
           .def_property_readonly(
               "cameradata",
               [](ezuicam_ptr_t uic) -> cameradata_ptr_t { //
-                // TODO: this is not efficient
-                //  get ezuicam to use shared ptrs instead of by value
-                auto camdata = std::make_shared<CameraData>();
-                *camdata = uic->_camcamdata;
-                return camdata;
+                return uic->_camcamdata;
               })
           .def_property(
               "base_zmoveamt",

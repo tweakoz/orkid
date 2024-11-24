@@ -48,7 +48,7 @@ class InstanceSet(object):
       pos = vec3(random.uniform(-2.5,2.5)*Z,
                  random.uniform(-2.5,2.5)*Z,
                  Z)
-      sca = random.uniform(0.1,0.65)
+      sca = random.uniform(0.01,0.065)
       as_mtx4.compose(pos,quat(),sca)
       self.instancematrices[i]=as_mtx4
   ################################################

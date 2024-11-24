@@ -37,7 +37,8 @@ UiCamera::UiCamera()
     , locscale(1.0f)
     , mbInMotion(false) {
   other_info = (std::string) "";
-  _camcamdata.setUiCamera(this);
+  _camcamdata = std::make_shared<CameraData>();
+  _camcamdata->setUiCamera(this);
   //printf("SETLEV2CAM<%p>\n", (void*)this);
 }
 
@@ -51,7 +52,7 @@ std::string UiCamera::get_full_name(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool UiCamera::IsXVertical() const {
-  const fvec3& yn = _camcamdata.yNormal();
+  const fvec3& yn = _camcamdata->yNormal();
   float dotY      = yn.dotWith(fvec3(1.0f, 0.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
@@ -59,7 +60,7 @@ bool UiCamera::IsXVertical() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool UiCamera::IsYVertical() const {
-  const fvec3& yn = _camcamdata.yNormal();
+  const fvec3& yn = _camcamdata->yNormal();
   float dotY      = yn.dotWith(fvec3(0.0f, 1.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
@@ -67,7 +68,7 @@ bool UiCamera::IsYVertical() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool UiCamera::IsZVertical() const {
-  const fvec3& yn = _camcamdata.yNormal();
+  const fvec3& yn = _camcamdata->yNormal();
   float dotY      = yn.dotWith(fvec3(0.0f, 0.0f, 1.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
@@ -81,7 +82,7 @@ fquat UiCamera::VerticalRot(float amt) const {
     fvec4 aarot(1.0f, 0.0f, 0.0f, amt);
     qrot.fromAxisAngle(aarot);
   } else if (IsYVertical()) {
-    const fvec3& yn = _camcamdata.yNormal();
+    const fvec3& yn = _camcamdata->yNormal();
     float dotY      = yn.dotWith(fvec3(0.0f, 1.0f, 0.0f));
     float fsign     = (dotY > 0.0f) ? 1.0f : (dotY < 0.0f) ? -1.0f : 0.0f;
 
@@ -152,7 +153,7 @@ void UiCamera::CommonPostSetup(void) {
   bool bad_aspect = (_vpdim.x==0 and _vpdim.y==0 );
 
   float aspect = bad_aspect ? 1.0f : (_vpdim.x / _vpdim.y);
-  _curMatrices = _camcamdata.computeMatrices(aspect);
+  _curMatrices = _camcamdata->computeMatrices(aspect);
 
   fmtx4 ivmtx = _curMatrices.GetIVMatrix();
 
@@ -184,13 +185,13 @@ void UiCamera::CommonPostSetup(void) {
   // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
   // we generate the frustum points, we should also generate plane eqns
 
-  _camcamdata.setXNormal(v3up);
-  _camcamdata.setYNormal(v3rt);
-  _camcamdata.setZNormal(v3in);
+  _camcamdata->setXNormal(v3up);
+  _camcamdata->setYNormal(v3rt);
+  _camcamdata->setZNormal(v3in);
 
   ///////////////////////////////
 
-  CamLoc = mvCenter + (_camcamdata.zNormal() * (-mfLoc));
+  CamLoc = mvCenter + (_camcamdata->zNormal() * (-mfLoc));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
