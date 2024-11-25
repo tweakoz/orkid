@@ -39,6 +39,8 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 
+float pointsize = 3.0f;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 using floatgrid_t       = openvdb::FloatGrid;
@@ -81,7 +83,7 @@ fragment_interface iface_frg_points : ublock_frg {
 vertex_shader vs_points : iface_vtx_points {
   frg_col = col.xyz;
   gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
-  gl_PointSize = 3.0;
+  gl_PointSize = pointsize;
 }
 ////////////////////////////////////////
 fragment_shader ps_points : iface_frg_points {
@@ -123,10 +125,11 @@ struct Resources {
     _material = std::make_shared<FreestyleMaterial>();
     _material->gpuInitFromShaderText(ctx, "yo", shadertext);
     auto fxtechnique    = _material->technique("tek_points_fwd");
-    auto fxparameterMVP = _material->param("mvp");
+    auto param_mvp = _material->param("mvp");
+    auto param_pntsize = _material->param("pointsize");
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
-    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
+    deco::printf(fvec3::Yellow(), "  param_mvp<%p>\n", param_mvp);
     _material->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
 
     ///////////////////////////////////////////////////
@@ -155,7 +158,8 @@ struct Resources {
     permu._rendering_model = "FORWARD_PBR"_crcu;
     permu._forced_technique = fxtechnique;
     _pipeline                          = fxcache->findPipeline(permu);
-    _pipeline->_params[fxparameterMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+    _pipeline->_params[param_mvp] = "RCFD_Camera_MVP_Mono"_crcsh;
+    _pipeline->_params[param_pntsize] = pointsize;
 
     ///////////////////////////////////////////////////
     // init points primitive
@@ -223,8 +227,9 @@ int main(int argc, char** argv, char** envp) {
   auto desc = init_data->commandLineOptions("minimal3d example Options");
   desc->add_options()                  //
       ("help", "produce help message") //
-      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*0,1,2,3,4)") //
-      ("vdb", po::value<std::string>(), "vdb file to load");
+      ("ssaa,s", po::value<int>()->default_value(1), "ssaa samples(*0,1,2,3,4)") //
+      ("vdb,v", po::value<std::string>(), "vdb file to load")
+      ("pointsize,p", po::value<float>()->default_value(3.0f), "pointsize");
 
   auto vars = *init_data->parse();
 
@@ -234,6 +239,8 @@ int main(int argc, char** argv, char** envp) {
   }
 
   init_data->_ssaa_samples = vars["ssaa"].as<int>();
+  
+  pointsize = vars["pointsize"].as<float>();
 
   ///////////////////////////////////////////////////
   // load VDB file
