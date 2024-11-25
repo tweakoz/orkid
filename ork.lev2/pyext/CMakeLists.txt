@@ -27,7 +27,7 @@ target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 #enable_python_on_target(_lev2)
 
 
-target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
+target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 openvdb )
 
 #target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 #target_link_options(_lev2 PUBLIC -Wl,-rpath )

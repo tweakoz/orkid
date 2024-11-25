@@ -145,24 +145,12 @@ void pyinit_primitives(py::module& module_lev2) {
 
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);
   /////////////////////////////////////////////////////////////////////////////////
-  // openvdb::FloatGrid is already bound by nanobind in OpenVdb
-  //  but we probably need it here also for lev2 gfx access
-  /////////////////////////////////////////////////////////////////////////////////
-  //auto ovdb_fgrid_type = 
-    //  py::class_<openvdb::FloatGrid, vdb_floatgrid_ptr_t>(primitives, "OpenVdbFloatGrid");
-  //type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
-  /////////////////////////////////////////////////////////////////////////////////
   auto pointsprim_type = //
       py::class_<primitives::PointsPrimitive<VtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveV12C4")
           .def("create", [](int numpoints){
             return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints);
           })
-          .def("createFromVDB", [](py::handle grid_obj, ctx_t context) -> primitives::points_v12c4_ptr_t {
-
-            printf("grid_obj<%p>\n",grid_obj);
-            auto grid = grid_obj.cast<vdb_floatgrid_ptr_t>();
-            //auto grid = *((openvdb::FloatGrid::Ptr*)(grid_obj));
-            OrkAssert(grid);
+          .def("createFromVdbFloatGrid", [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
 
             int num_points   = grid->tree().activeLeafVoxelCount();
             auto prim = std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(num_points);

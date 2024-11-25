@@ -1,11 +1,11 @@
 #!/usr/bin/env ork.python
 
 import math, sys
-import openvdb as vdb
+#import openvdb as vdb
 from obt import path as obt_path 
 from ork import path as ork_path
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec2,vec3
+from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 from cameras import *
 from shaders import *
@@ -13,24 +13,25 @@ from primitives import createPointsPrimV12C4, createGridData
 from scenegraph import createSceneGraph
 
 radius = 50.0 
-desired_num_points = 10000
+desired_num_points = 1000000
 voxel_size = radius / math.cbrt(desired_num_points);
-sphere = vdb.createLevelSetSphere(radius=radius, center=(0,0,0), voxelSize=voxel_size, halfWidth = 3.0)
-sphere['radius'] = radius
-sphere.transform = vdb.createLinearTransform(voxelSize=0.5)
-sphere.name = 'sphere'
+sphere = ork_vdb.FloatGrid.createLevelSetSphere(radius, vec3(0,0,0), voxel_size, 3.0)
+#sphere['radius'] = radius
+#sphere.transform = ork_vdb.createLinearTransform(voxelSize=0.5)
+#sphere.name = 'sphere'
 #############################
 outside = sphere.background
 width = 1.1 * outside
-for iter in sphere.iterOnValues():
-  dist = iter.value
-  iter.value = (outside - dist) / width
-for iter in sphere.iterOffValues():
-  if iter.value < 0.0:
-    iter.value = 1.0
-    iter.active = False
-sphere.background = 0.0
-sphere.gridClass = vdb.GridClass.FOG_VOLUME
+#for iter in sphere.onValueSequence:
+#  print(iter)
+#  dist = iter.value
+#  iter.value = (outside - dist) / width
+#for iter in sphere.iterOffValues():
+#  if iter.value < 0.0:
+#    iter.value = 1.0
+#    iter.active = False
+#sphere.background = 0.0
+#sphere.gridClass = ork_vdb.GridClass.FOG_VOLUME
 #############################
 
 ################################################################################
@@ -123,30 +124,8 @@ class PointsPrimApp(object):
     ###################################
     # create points primitive 
     ###################################
-
-    self.NUMPOINTS = sphere.activeVoxelCount()
     
-    self.points_prim = createPointsPrimV12C4(ctx=ctx,numpoints=self.NUMPOINTS)
-
-    data_ptr = self.points_prim.lock(ctx) # return V12C4 array view
-
-    index = 0  # Initialize an index counter
-
-    sph_acc = sphere.getAccessor()
-
-    for iter in sphere.iterOnValues():
-      if iter.active:
-        value = iter.value
-        uvalue = int(value*255.0)
-        abgr_uint32 = (uvalue<<16) | (uvalue<<8) | (uvalue<<0)
-        
-        pos = iter.min 
-        data_ptr['color'][index] = abgr_uint32
-        data_ptr['x'][index] = pos[0]
-        data_ptr['y'][index] = pos[1]
-        data_ptr['z'][index] = pos[2]
-        index += 1
-    self.points_prim.unlock(ctx) # unlock array view (writes to GPU)
+    self.points_prim = primitives.PointsPrimitiveV12C4.createFromVdbFloatGrid(sphere,ctx)
 
     ##################
     # create shading pipeline
@@ -162,7 +141,7 @@ class PointsPrimApp(object):
 
     def _pointsize():
       val = float(float(2.0+math.sin(self.phi*2.0)*2.0))
-      return val
+      return 1.0
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
     pipeline.bindParam( pointsize_param, lambda : _pointsize() ) # set pointsize
