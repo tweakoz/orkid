@@ -16,7 +16,9 @@
 #include <openvdb/tools/SignedFloodFill.h>
 #include <openvdb/tools/ChangeBackground.h>
 #include <openvdb/util/NullInterrupter.h>
-#include <ork/python/obind/nanobind.h>
+#include <openvdb_ax/compiler/Logger.h>
+#include <openvdb_ax/compiler/VolumeExecutable.h>
+#include <openvdb_ax/compiler/Compiler.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +28,8 @@ using vdb_basegrid_t       = openvdb::GridBase;
 using vdb_basegrid_ptr_t   = std::shared_ptr<vdb_basegrid_t>;
 using vdb_floatgrid_t       = openvdb::FloatGrid;
 using vdb_floatgrid_ptr_t   = std::shared_ptr<vdb_floatgrid_t>;
-
+using vdb_volume_exec_t = openvdb::ax::VolumeExecutable;
+using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -69,8 +72,9 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_fgrid_type = 
     py::class_<vdb_floatgrid_t, vdb_basegrid_t, vdb_floatgrid_ptr_t>(ovdb, "FloatGrid")
-    .def_static("createLevelSetSphere", [](float radius, fvec3 center, float vxlsize, float hwidth ) -> vdb_floatgrid_ptr_t {
+    .def_static("createLevelSetSphere", []( std::string name, float radius, fvec3 center, float vxlsize, float hwidth ) -> vdb_floatgrid_ptr_t {
       auto grid = openvdb::tools::createLevelSetSphere<vdb_floatgrid_t>(radius, openvdb::Vec3f(center.x,center.y,center.z), vxlsize, hwidth);
+      grid->setName(name);
       //createLevelSetSphere (float radius, const openvdb::Vec3f &center, float voxelSize, float halfWidth=float(LEVEL_SET_HALF_WIDTH), InterruptT *interrupt=nullptr, bool threaded=true)
       return grid;
     })
@@ -85,7 +89,19 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       return iter;
     });
   type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
-
+  /////////////////////////////////////////////////////////////////////////////////
+  // AX volume executable
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ovdb_ax_ve_type = 
+    py::class_<vdb_volume_exec_t, vdb_volume_exec_ptr_t>(ovdb, "AxVolumeExecutable")
+    .def_static("compile", [](std::string code) -> vdb_volume_exec_ptr_t {
+      openvdb::ax::Compiler compiler;
+      return compiler.compile<vdb_volume_exec_t>(code);
+    })
+    .def("executeOnGrid", [](vdb_volume_exec_ptr_t ve, vdb_floatgrid_ptr_t grid) {
+      ve->execute(*grid);
+    });
+    type_codec->registerStdCodec<vdb_volume_exec_ptr_t>(ovdb_ax_ve_type);
 }
 
 } //namespace ork::lev2 {

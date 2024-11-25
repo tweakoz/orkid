@@ -153,6 +153,7 @@ void pyinit_primitives(py::module& module_lev2) {
           .def("createFromVdbFloatGrid", [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
 
             int num_points   = grid->tree().activeLeafVoxelCount();
+            printf("num_points<%d>\n", num_points);
             auto prim = std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(num_points);
             VtxV12C4* points = prim->lock(context.get());
             int point_index = 0;

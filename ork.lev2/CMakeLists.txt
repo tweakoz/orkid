@@ -121,6 +121,7 @@ IF(PROFILER)
 ENDIF()
 
 list(APPEND libs  mpfr gmp )
+list(APPEND libs  openvdb openvdb_ax )
 
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )

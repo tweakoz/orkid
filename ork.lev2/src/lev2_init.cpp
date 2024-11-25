@@ -66,6 +66,19 @@
 #include <ork/lev2/ui/ged/ged_test_objects.h>
 #include <ork/lev2/ui/ged/ged_factory.h>
 
+#include <openvdb/openvdb.h>
+#include <openvdb/points/PointDataGrid.h>
+#include <openvdb/tools/PointIndexGrid.h>
+#include <openvdb/tools/PointScatter.h>
+#include <openvdb/tools/LevelSetSphere.h>
+#include <openvdb/tools/SignedFloodFill.h>
+#include <openvdb/tools/ChangeBackground.h>
+#include <openvdb/util/NullInterrupter.h>
+#include <openvdb_ax/compiler/Logger.h>
+#include <openvdb_ax/compiler/VolumeExecutable.h>
+#include <openvdb_ax/compiler/Compiler.h>
+#include <llvm/Support/TargetSelect.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -431,6 +444,17 @@ struct ModuleInit {
     registerEnums();
 
     ///////////////////////////////////////////////////////////////
+
+    /*
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+    */
+    
+     openvdb::initialize();
+     openvdb::ax::initialize();
   }
 };
 

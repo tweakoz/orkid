@@ -198,6 +198,8 @@ function(ork_std_target_set_defs the_target)
     list(APPEND def_list -DBUILD_WITH_EASY_PROFILER)
   ENDIF()
 
+  message(STATUS "ARCHITECTURE: ${ARCHITECTURE}")
+
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
     list(APPEND def_list -DORK_ARCHITECTURE_X86_64)
   ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )

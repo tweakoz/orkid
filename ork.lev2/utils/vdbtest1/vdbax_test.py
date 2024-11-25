@@ -4,88 +4,51 @@ import math, sys
 #import openvdb as vdb
 from obt import path as obt_path 
 from ork import path as ork_path
-from orkengine.core import vec2,vec3
+from orkengine.core import vec2,vec3,CrcStringProxy
 from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 from cameras import *
-from shaders import *
+from shaders import POINTCLOUD_SHADERTEXT, createPipeline
 from primitives import createPointsPrimV12C4, createGridData
 from scenegraph import createSceneGraph
 
-radius = 50.0 
-desired_num_points = 1000000
-voxel_size = radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere(radius, vec3(0,0,0), voxel_size, 3.0)
-#sphere['radius'] = radius
-#sphere.transform = ork_vdb.createLinearTransform(voxelSize=0.5)
-#sphere.name = 'sphere'
+tokens = CrcStringProxy()
+
 #############################
+# create levelset sphere
+#############################
+
+radius = 50.0 
+desired_num_points = 10000000
+voxel_size = radius / math.cbrt(desired_num_points);
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 3.0)
 outside = sphere.background
 width = 1.1 * outside
-#for iter in sphere.onValueSequence:
-#  print(iter)
-#  dist = iter.value
-#  iter.value = (outside - dist) / width
-#for iter in sphere.iterOffValues():
-#  if iter.value < 0.0:
-#    iter.value = 1.0
-#    iter.active = False
-#sphere.background = 0.0
-#sphere.gridClass = ork_vdb.GridClass.FOG_VOLUME
+
+#############################
+# execute AX "voxel shader"
 #############################
 
-################################################################################
+voxel_shader = f"""
 
-SHADERTEXT = """
-////////////////////////////////////////
-fxconfig fxcfg_default { glsl_version = "330"; }
-////////////////////////////////////////
-uniform_set ublock_vtx {
-  mat4 mvp;
-  float pointsize;
-}
-////////////////////////////////////////
-uniform_set ublock_frg {
-  vec4 modcolor;
-}
-////////////////////////////////////////
-vertex_interface iface_vtx_points : ublock_vtx {
-  inputs {
-    vec4 pos : POSITION;
-    vec4 col : COLOR0;
-  }
-  outputs {
-    vec3 frg_col;
-  }
-}
-////////////////////////////////////////
-fragment_interface iface_frg_points : ublock_frg {
-  inputs {
-    vec3 frg_col;
-  }
-  outputs { layout(location = 0) vec4 out_clr; }
-}
-////////////////////////////////////////
-vertex_shader vs_points : iface_vtx_points {
-  frg_col = col.xyz;
-  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
-  gl_PointSize = pointsize;
-}
-////////////////////////////////////////
-fragment_shader ps_points : iface_frg_points {
-  out_clr = vec4(frg_col.xyz, 1);
-}
+int@ix = getcoordx();
+int@iy = getcoordy();
+int@iz = getcoordz();
+float@fx = int@ix;
+float@fy = int@iy;
+float@fz = int@iz;
+vec3f@pos = float@fx, float@fy, float@fz;
+float@dist = length(vec3f@pos);
+float@phi = atan2(float@fz,float@fx);
+float@theta = atan2(float@fy,float@fz);
 
-////////////////////////////////////////
-technique tek_points_fwd {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_points;
-    fragment_shader = ps_points;
-    state_block     = default;
-  }
-}
+f@a = sin(float@phi*8.0)*0.5+0.5;
+f@a = f@a * cos(float@theta*8.0)*0.5+0.5;
+
 """
+ve = ork_vdb.AxVolumeExecutable.compile(voxel_shader)
+ve.executeOnGrid(sphere)
+
 
 ################################################################################
 
@@ -111,7 +74,12 @@ class PointsPrimApp(object):
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
+    sg_params = {
+      "SkyboxIntensity": 1.0, 
+      "DiffuseIntensity": 6.0, 
+    }
+    
+    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=sg_params)
 
     ###################################
     # create grid
@@ -133,9 +101,9 @@ class PointsPrimApp(object):
 
     pipeline = createPipeline( app = self,
                                ctx = ctx,
-                               shadertext = SHADERTEXT,
-                               blending=tokens.ADDITIVE,
-                               depthtest=tokens.LEQUALS,
+                               shadertext = POINTCLOUD_SHADERTEXT,
+                               blending=tokens.OFF,
+                               depthtest=tokens.LESS,
                                techname = "tek_points_fwd",
                                rendermodel = "ForwardPBR" )
 

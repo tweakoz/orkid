@@ -296,6 +296,57 @@ technique tek_lines {
 ///////////////////////////////////////////////////////////////
 """
 
+POINTCLOUD_SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float pointsize;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface iface_vtx_points : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec4 col : COLOR0;
+  }
+  outputs {
+    vec3 frg_col;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg_points : ublock_frg {
+  inputs {
+    vec3 frg_col;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_points : iface_vtx_points {
+  frg_col = col.xyz;
+  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+  gl_PointSize = pointsize;
+}
+////////////////////////////////////////
+fragment_shader ps_points : iface_frg_points {
+  out_clr = vec4(frg_col.xyz, 1);
+}
+
+////////////////////////////////////////
+technique tek_points_fwd {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_points;
+    fragment_shader = ps_points;
+    state_block     = default;
+  }
+}
+"""
+
 class Shader(object):
   def __init__(self,ctx):
     super().__init__()
