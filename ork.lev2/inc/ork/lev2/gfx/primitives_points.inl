@@ -42,7 +42,6 @@ struct PointsPrimitive {
   inline void renderEML(Context* context) {
     auto gbi = context->GBI();
     gbi->DrawPrimitiveEML(*_vertexBuffer, PrimitiveType::POINTS,0,_numpoints);
-                                 printf( "renderEML\n");
   }
 
   //////////////////////////////////////////////////////////////////////////////

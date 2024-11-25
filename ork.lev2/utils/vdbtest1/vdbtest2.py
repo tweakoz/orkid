@@ -12,18 +12,16 @@ from shaders import *
 from primitives import createPointsPrimV12C4, createGridData
 from scenegraph import createSceneGraph
 
-cube = vdb.FloatGrid()
-cube.fill(min=(100, 100, 100), max=(199, 199, 199), value=1.0)
-cube.name = 'cube'
 radius = 50.0 
 desired_num_points = 10000
 voxel_size = radius / math.cbrt(desired_num_points);
-sphere = vdb.createLevelSetSphere(radius=radius, center=(1.5, 2, 3), voxelSize=voxel_size, halfWidth = 3.0)
+sphere = vdb.createLevelSetSphere(radius=radius, center=(0,0,0), voxelSize=voxel_size, halfWidth = 3.0)
 sphere['radius'] = radius
 sphere.transform = vdb.createLinearTransform(voxelSize=0.5)
 sphere.name = 'sphere'
+#############################
 outside = sphere.background
-width = 2.0 * outside
+width = 1.1 * outside
 for iter in sphere.iterOnValues():
   dist = iter.value
   iter.value = (outside - dist) / width
@@ -33,7 +31,7 @@ for iter in sphere.iterOffValues():
     iter.active = False
 sphere.background = 0.0
 sphere.gridClass = vdb.GridClass.FOG_VOLUME
-# Write both grids to a VDB file.
+#############################
 
 ################################################################################
 
@@ -98,7 +96,8 @@ class PointsPrimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-  
+    self.phi = 0.0
+    
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
@@ -138,14 +137,14 @@ class PointsPrimApp(object):
     for iter in sphere.iterOnValues():
       if iter.active:
         value = iter.value
-        bgra = int(value*255.0)
-        bgra_uint32 = (bgra<<24) | (bgra<<16) | (bgra<<8) | 0xff
+        uvalue = int(value*255.0)
+        abgr_uint32 = (uvalue<<16) | (uvalue<<8) | (uvalue<<0)
         
         pos = iter.min 
-        data_ptr['color'][index] = bgra_uint32
-        data_ptr['x'][index] = pos[0]*0.125
-        data_ptr['y'][index] = pos[1]*0.125
-        data_ptr['z'][index] = pos[2]*0.125
+        data_ptr['color'][index] = abgr_uint32
+        data_ptr['x'][index] = pos[0]
+        data_ptr['y'][index] = pos[1]
+        data_ptr['z'][index] = pos[2]
         index += 1
     self.points_prim.unlock(ctx) # unlock array view (writes to GPU)
 
@@ -161,8 +160,12 @@ class PointsPrimApp(object):
                                techname = "tek_points_fwd",
                                rendermodel = "ForwardPBR" )
 
+    def _pointsize():
+      val = float(float(2.0+math.sin(self.phi*2.0)*2.0))
+      return val
+
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
-    pipeline.bindParam( pointsize_param, float(2.0) ) # set pointsize
+    pipeline.bindParam( pointsize_param, lambda : _pointsize() ) # set pointsize
 
     ##################
     # create points sg node
@@ -177,7 +180,8 @@ class PointsPrimApp(object):
   def onUpdate(self,updinfo):
     self.abstime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-
+    self.phi = self.abstime
+    
   ################################################
 
   def onDraw(self,drawevent):
