@@ -87,6 +87,43 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     .def_property_readonly("onValueSequence", [](vdb_floatgrid_ptr_t grid ) -> citer_proxy_ptr {
       auto iter = std::make_shared<citer_proxy>(grid->cbeginValueOn());
       return iter;
+    })
+    .def("setVoxel", [](vdb_floatgrid_ptr_t grid, fvec3 coord, float value) {
+      grid->tree().setValue(openvdb::Coord(coord.x,coord.y,coord.z), value);
+    })
+    .def("worldToIndex", [](vdb_floatgrid_ptr_t grid, fvec3 coord) -> fvec3 {
+      auto index = grid->transform().worldToIndex(openvdb::Vec3f(coord.x,coord.y,coord.z));
+      return fvec3(index.x(),index.y(),index.z());
+    })
+    .def("drawLineI", [](vdb_floatgrid_ptr_t grid, fvec3 start, fvec3 end, float value) {
+      // Calculate differences
+      float dx = end.x - start.x;
+      float dy = end.y - start.y;
+      float dz = end.z - start.z;
+
+      // Determine the number of steps needed
+      float steps = std::max({std::fabs(dx), std::fabs(dy), std::fabs(dz)});
+
+      // Calculate the increment in each coordinate
+      float Xinc = dx / steps;
+      float Yinc = dy / steps;
+      float Zinc = dz / steps;
+
+      // Initialize starting point
+      float x = start.x;
+      float y = start.y;
+      float z = start.z;
+
+      // Generate points along the line
+      for (int i = 0; i <= steps; i++) {
+        int ix = static_cast<int>(std::round(x));
+        int iy = static_cast<int>(std::round(y));
+        int iz = static_cast<int>(std::round(z));
+        grid->tree().setValue(openvdb::Coord(ix,iy,iz), value);
+        x += Xinc;
+        y += Yinc;
+        z += Zinc;
+      }
     });
   type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
   /////////////////////////////////////////////////////////////////////////////////

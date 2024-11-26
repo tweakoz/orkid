@@ -1,6 +1,6 @@
 #!/usr/bin/env ork.python
 
-import math, sys
+import math, sys, random
 #import openvdb as vdb
 from obt import path as obt_path 
 from ork import path as ork_path
@@ -18,37 +18,84 @@ tokens = CrcStringProxy()
 # create levelset sphere
 #############################
 
-radius = 50.0 
+radius = 10.0 
 desired_num_points = 10000000
-voxel_size = radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 3.0)
+voxel_size = 0.01 #radius / math.cbrt(desired_num_points);
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.01)
 outside = sphere.background
-width = 1.1 * outside
+
+print(f"voxel_size:{voxel_size}")
 
 #############################
 # execute AX "voxel shader"
 #############################
 
-voxel_shader = f"""
+voxel_shader = """
 
-int@ix = getcoordx();
-int@iy = getcoordy();
-int@iz = getcoordz();
-float@fx = int@ix;
-float@fy = int@iy;
-float@fz = int@iz;
-vec3f@pos = float@fx, float@fy, float@fz;
+vec3f@pos = getvoxelpws();
 float@dist = length(vec3f@pos);
-float@phi = atan2(float@fz,float@fx);
-float@theta = atan2(float@fy,float@fz);
+float@phi = atan2(vec3f@pos.z,vec3f@pos.x);
+float@theta = atan2(vec3f@pos.y,vec3f@pos.x);
+float@omega = atan2(vec3f@pos.z,vec3f@pos.y);
 
-f@a = sin(float@phi*8.0)*0.5+0.5;
+f@a = cos(float@phi*8.0)*0.5+0.5;
 f@a = f@a * cos(float@theta*8.0)*0.5+0.5;
+f@a = f@a * cos(float@omega*8.0)*0.5+0.5;
+
+//if (f@a<0.5) {
+//  deletepoint(); // only for point grids, not volume grids
+//}
 
 """
+
 ve = ork_vdb.AxVolumeExecutable.compile(voxel_shader)
 ve.executeOnGrid(sphere)
 
+#############################
+# draw dda lines in volume
+#############################
+
+def _draw_line(p1,p2,value):
+  p1 = sphere.worldToIndex(p1)
+  p2 = sphere.worldToIndex(p2)
+  sphere.drawLine(p1,p2,value)
+
+nx = vec3(-radius,0,0)
+px = vec3(+radius,0,0)
+ny = vec3(0,-radius,0)
+py = vec3(0,+radius,0)
+nz = vec3(0,0,-radius)
+pz = vec3(0,0,+radius)
+
+_draw_line(nx,px,1.0)
+_draw_line(ny,py,1.0)
+_draw_line(nz,pz,1.0)
+
+_draw_line(nx+ny+nz,px+ny+nz,1.0)
+_draw_line(nx+py+nz,px+py+nz,1.0)
+_draw_line(nx+ny+pz,px+ny+pz,1.0)
+_draw_line(nx+py+pz,px+py+pz,1.0)
+
+_draw_line(nx+ny+nz,nx+ny+pz,1.0)
+_draw_line(px+ny+nz,px+ny+pz,1.0)
+_draw_line(nx+py+nz,nx+py+pz,1.0)
+_draw_line(px+py+nz,px+py+pz,1.0)
+
+_draw_line(nx+ny+nz,nx+py+nz,1.0)
+_draw_line(px+ny+nz,px+py+nz,1.0)
+_draw_line(nx+ny+pz,nx+py+pz,1.0)
+_draw_line(px+ny+pz,px+py+pz,1.0)
+
+#############################
+# pset random voxels
+##############################
+
+for i in range(1000):
+  rx = random.uniform(-radius,radius)
+  ry = random.uniform(-radius,radius)
+  rz = random.uniform(-radius,radius)
+  p = sphere.worldToIndex(vec3(rx,ry,rz)*0.1)
+  sphere.setVoxel(p,1.0)
 
 ################################################################################
 
@@ -109,7 +156,7 @@ class PointsPrimApp(object):
 
     def _pointsize():
       val = float(float(2.0+math.sin(self.phi*2.0)*2.0))
-      return 1.0
+      return 1.5
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
     pipeline.bindParam( pointsize_param, lambda : _pointsize() ) # set pointsize
