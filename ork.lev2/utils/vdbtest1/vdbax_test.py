@@ -58,7 +58,7 @@ ve.executeOnGrid(sphere)
 def _draw_line(p1,p2,value):
   p1 = sphere.worldToIndex(p1)
   p2 = sphere.worldToIndex(p2)
-  sphere.drawLine(p1,p2,value)
+  sphere.drawLineI(p1,p2,value)
 
 nx = vec3(-radius,0,0)
 px = vec3(+radius,0,0)
