@@ -22,14 +22,23 @@ struct PointsPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline PointsPrimitive(int numpoints){
-    _numpoints = numpoints;
-    _vertexBuffer = std::make_shared<vtx_buf_t>(numpoints,0);
+  inline PointsPrimitive(int maxpoints){
+    _numpoints = maxpoints;
+    _capacity = maxpoints;
+    _vertexBuffer = std::make_shared<vtx_buf_t>(maxpoints,0);
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  inline vtx_t* lock(Context* context) {
+  inline vtx_t* lock(Context* context, int num_points=0) {
+    if(0==num_points){
+      _numpoints = _capacity;
+      num_points = _capacity;
+    }
+    else{
+      _numpoints = num_points;
+      OrkAssert(num_points<=_capacity);
+    }
     return (vtx_t*) context->GBI()->LockVB(*_vertexBuffer,0,_numpoints);
   }
 
@@ -67,6 +76,7 @@ struct PointsPrimitive {
   //////////////////////////////////////////////////////////////////////////////
 
   int _numpoints = 0;
+  int _capacity = 0;
   fxpipeline_ptr_t _pipeline;
   std::shared_ptr<vtx_buf_t> _vertexBuffer;
 };

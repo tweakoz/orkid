@@ -19,6 +19,7 @@
 #include <openvdb_ax/compiler/Logger.h>
 #include <openvdb_ax/compiler/VolumeExecutable.h>
 #include <openvdb_ax/compiler/Compiler.h>
+#include <openvdb_ax/compiler/CustomData.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,11 +31,14 @@ using vdb_floatgrid_t       = openvdb::FloatGrid;
 using vdb_floatgrid_ptr_t   = std::shared_ptr<vdb_floatgrid_t>;
 using vdb_volume_exec_t = openvdb::ax::VolumeExecutable;
 using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
+using vdb_custom_data_t = openvdb::ax::CustomData;
+using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb = module_lev2.def_submodule("vdb", "OrkidOpenVDBBridge");
+  auto ax = ovdb.def_submodule("ax", "OrkidOpenVDBAxBridge");
 
   auto grid_type = 
     py::class_<vdb_basegrid_t, vdb_basegrid_ptr_t>(ovdb, "BaseGrid")
@@ -42,7 +46,6 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       return grid->activeVoxelCount();
     });
   type_codec->registerStdCodec<vdb_basegrid_ptr_t>(grid_type);
-
   /////////////////////////////////////////////////////////////////////////////////
   struct citer_proxy {
     openvdb::FloatGrid::ValueOnCIter iter;
@@ -130,15 +133,32 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   // AX volume executable
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_ax_ve_type = 
-    py::class_<vdb_volume_exec_t, vdb_volume_exec_ptr_t>(ovdb, "AxVolumeExecutable")
-    .def_static("compile", [](std::string code) -> vdb_volume_exec_ptr_t {
+    py::class_<vdb_volume_exec_t, vdb_volume_exec_ptr_t>(ax, "VolumeExecutable")
+    .def_static("compile", [](std::string code, vdb_custom_data_ptr_t cdata=nullptr) -> vdb_volume_exec_ptr_t {
       openvdb::ax::Compiler compiler;
-      return compiler.compile<vdb_volume_exec_t>(code);
+      return compiler.compile<vdb_volume_exec_t>(code,cdata);
     })
     .def("executeOnGrid", [](vdb_volume_exec_ptr_t ve, vdb_floatgrid_ptr_t grid) {
       ve->execute(*grid);
     });
     type_codec->registerStdCodec<vdb_volume_exec_ptr_t>(ovdb_ax_ve_type);
-}
+  /////////////////////////////////////////////////////////////////////////////////
+  auto cdata_type = 
+    py::class_<vdb_custom_data_t, vdb_custom_data_ptr_t>(ax, "CustomData")
+    .def(py::init<>())
+    .def("set", [](vdb_custom_data_ptr_t cdata, std::string key, py::object value) {
+      if (py::isinstance<py::int_>(value)) {
+        auto typed = cdata->getOrInsertData<openvdb::TypedMetadata<int>>(key);
+        typed->setValue(py::cast<int>(value));
+      } else if (py::isinstance<py::float_>(value)) {
+        auto typed = cdata->getOrInsertData<openvdb::TypedMetadata<float>>(key);
+        //printf("set float key<%s> value<%f>\n", key.c_str(), py::cast<float>(value));
+        typed->setValue(py::cast<float>(value));
+      } else {
+        OrkAssert(false); // unsupported type
+      }
+    });
+    type_codec->registerStdCodec<vdb_custom_data_ptr_t>(cdata_type);
 
+} 
 } //namespace ork::lev2 {

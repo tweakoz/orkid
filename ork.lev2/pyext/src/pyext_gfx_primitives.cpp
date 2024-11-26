@@ -147,7 +147,7 @@ void pyinit_primitives(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pointsprim_type = //
       py::class_<primitives::PointsPrimitive<VtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveV12C4")
-          .def("create", [](int numpoints){
+          .def("create", [](int numpoints) -> primitives::points_v12c4_ptr_t {
             return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints);
           })
           .def("createFromVdbFloatGrid", [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
@@ -156,6 +156,42 @@ void pyinit_primitives(py::module& module_lev2) {
             printf("num_points<%d>\n", num_points);
             auto prim = std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(num_points);
             VtxV12C4* points = prim->lock(context.get());
+            int point_index = 0;
+            for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+              const auto& leaf = *leafIter;
+
+              // Iterate over active voxels within the leaf
+              for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+                // Get the voxel coordinates and value
+                openvdb::Coord coord = voxelIter.getCoord();
+                float value          = *voxelIter;
+
+                // Convert voxel coordinates to world coordinates
+                openvdb::Vec3f worldPosition = grid->transform().indexToWorld(coord);
+
+                // Populate the points array (adapt as necessary)
+                points[point_index].x = worldPosition.x();
+                points[point_index].y = worldPosition.y();
+                points[point_index].z = worldPosition.z();
+                uint32_t bgra         = 0;
+                bgra |= (uint32_t(value * 255.0f) & 0xff) << 16;
+                bgra |= (uint32_t(value * 255.0f) & 0xff) << 8;
+                bgra |= (uint32_t(value * 255.0f) & 0xff) << 0;
+
+                points[point_index].color = bgra;
+
+                point_index++;
+              }
+            }
+            prim->unlock(context.get());
+            return prim;
+          })
+          .def("updateWithVdbFloatGrid", [](primitives::points_v12c4_ptr_t prim, vdb_floatgrid_ptr_t grid, ctx_t context)  {
+
+            int num_points   = grid->tree().activeLeafVoxelCount();
+            OrkAssert(num_points<prim->_capacity)
+            //printf("num_points<%d>\n", num_points);
+            VtxV12C4* points = prim->lock(context.get(),num_points);
             int point_index = 0;
             for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
               const auto& leaf = *leafIter;
