@@ -112,31 +112,40 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     })
     ///////////////////////////////////////////////////////
     .def("scatterVoxels2", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
+      struct FloatVoxel {
+        openvdb::Coord coord;
+        float value;
+      };
+      using cq_t = ork::MpMcBoundedQueue<FloatVoxel,16<<20>;
+      auto cq = std::make_shared<cq_t>();
+      std::atomic<int> count = 1;
+      auto op = [grid,cq,&count]() {
+        for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+          const auto& leaf = *leafIter;
+            FloatVoxel fv;
+            for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+              int itx = (rand() % 3)-1;
+              int ity = (rand() % 3)-1;
+              int itz = (rand() % 3)-1;
+              fv.coord = voxelIter.getCoord() + openvdb::Coord(itx,ity,itz);
+              fv.value = *voxelIter;
+              cq->push(fv);
+              count++;
+            }
+        }
+        count--;
+      };
+      opq::concurrentQueue()->enqueue(op);
       auto result = grid->copyWithNewTree();
-      std::atomic<int> count(0);
-      ork::mutex write_mutex("write2VDB");
-      for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
-        count++;
-        const auto& leaf = *leafIter;
-        auto op = [leaf,&result,&count,&write_mutex]() {
-          for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
-            float value = *voxelIter;
-            auto icoord = voxelIter.getCoord();
-            int itx = (rand() % 3)-1;
-            int ity = (rand() % 3)-1;
-            int itz = (rand() % 3)-1;
-            icoord = icoord + openvdb::Coord(itx,ity,itz);
-            // TODO : increase lock granularity (or use parallel accessor)
-            write_mutex.Lock();
-            result->tree().setValueOn(icoord, value);
-            write_mutex.UnLock();
-          }
-          count--;
-        };
-        opq::concurrentQueue()->enqueue(op);
-      }
       while(count.load()>0) {
-        usleep(1000);
+        FloatVoxel fv;
+        if(cq->try_pop(fv)) {
+          result->tree().setValueOn(fv.coord, fv.value);
+          count--;
+        }
+        else{
+          ::usleep(100);
+        }
       }
       return result;
     })
