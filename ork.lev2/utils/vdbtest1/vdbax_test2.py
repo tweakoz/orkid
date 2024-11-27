@@ -20,7 +20,7 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.05 #radius / math.cbrt(desired_num_points);
+voxel_size = 0.06 #radius / math.cbrt(desired_num_points);
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.01)
 outside = sphere.background
 
@@ -39,7 +39,7 @@ float@theta = atan2(vec3f@pos.y,vec3f@pos.x);
 float@omega = atan2(vec3f@pos.z,vec3f@pos.y);
 
 f@a = 1.0;
-f@a = f@a * cos(float@phi*8.0)*0.5+0.5;
+f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
 
@@ -56,10 +56,6 @@ ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader,cdata)
 # draw dda lines in volume
 #############################
 
-def _draw_line(p1,p2,value):
-  p1 = sphere.worldToIndex(p1)
-  p2 = sphere.worldToIndex(p2)
-  sphere.drawLineI(p1,p2,value)
 
 nx = vec3(-radius,0,0)
 px = vec3(+radius,0,0)
@@ -68,24 +64,32 @@ py = vec3(0,+radius,0)
 nz = vec3(0,0,-radius)
 pz = vec3(0,0,+radius)
 
-_draw_line(nx,px,1.0)
-_draw_line(ny,py,1.0)
-_draw_line(nz,pz,1.0)
+def _draw_line(sph,p1,p2,value):
+  p1 = sph.worldToIndex(p1)
+  p2 = sph.worldToIndex(p2)
+  sph.drawLineI(p1,p2,value)
 
-_draw_line(nx+ny+nz,px+ny+nz,1.0)
-_draw_line(nx+py+nz,px+py+nz,1.0)
-_draw_line(nx+ny+pz,px+ny+pz,1.0)
-_draw_line(nx+py+pz,px+py+pz,1.0)
+def draw_lines(sph):
+  _draw_line(sph,nx,px,1.0)
+  _draw_line(sph,ny,py,1.0)
+  _draw_line(sph,nz,pz,1.0)
 
-_draw_line(nx+ny+nz,nx+ny+pz,1.0)
-_draw_line(px+ny+nz,px+ny+pz,1.0)
-_draw_line(nx+py+nz,nx+py+pz,1.0)
-_draw_line(px+py+nz,px+py+pz,1.0)
+  _draw_line(sph,nx+ny+nz,px+ny+nz,1.0)
+  _draw_line(sph,nx+py+nz,px+py+nz,1.0)
+  _draw_line(sph,nx+ny+pz,px+ny+pz,1.0)
+  _draw_line(sph,nx+py+pz,px+py+pz,1.0)
 
-_draw_line(nx+ny+nz,nx+py+nz,1.0)
-_draw_line(px+ny+nz,px+py+nz,1.0)
-_draw_line(nx+ny+pz,nx+py+pz,1.0)
-_draw_line(px+ny+pz,px+py+pz,1.0)
+  _draw_line(sph,nx+ny+nz,nx+ny+pz,1.0)
+  _draw_line(sph,px+ny+nz,px+ny+pz,1.0)
+  _draw_line(sph,nx+py+nz,nx+py+pz,1.0)
+  _draw_line(sph,px+py+nz,px+py+pz,1.0)
+
+  _draw_line(sph,nx+ny+nz,nx+py+nz,1.0)
+  _draw_line(sph,px+ny+nz,px+py+nz,1.0)
+  _draw_line(sph,nx+ny+pz,nx+py+pz,1.0)
+  _draw_line(sph,px+ny+pz,px+py+pz,1.0)
+
+draw_lines(sphere)
 
 #############################
 # pset random voxels
@@ -115,12 +119,16 @@ class PointsPrimApp(object):
     self.ok_to_exit = False
     
     def upd_sphere_fn():
+      counter = 0
       while not self.ok_to_exit:
-        self.sphere = self.sphere.scatterVoxels()
+        self.sphere = self.sphere.scatterVoxels2()
+        if counter % 60 == 0:
+          draw_lines(self.sphere)
         cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         self.next_sphere = self.sphere
-        #time.sleep(1.0/60.0)
+        counter += 1
+        time.sleep(1.0/120.0)
 
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()

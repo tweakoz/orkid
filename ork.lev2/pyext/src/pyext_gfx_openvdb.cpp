@@ -20,7 +20,6 @@
 #include <openvdb_ax/compiler/VolumeExecutable.h>
 #include <openvdb_ax/compiler/Compiler.h>
 #include <openvdb_ax/compiler/CustomData.h>
-#include <tbb/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +38,7 @@ struct FloatVoxel {
   openvdb::Coord coord;
   float value;
 };
-using cq_t = tbb::concurrent_queue<FloatVoxel>;
+using cq_t = MpMcBoundedQueue<FloatVoxel,1<<20>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -121,41 +120,37 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     })
     ///////////////////////////////////////////////////////
     .def("scatterVoxels2", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
+      py::gil_scoped_release release;
       auto result = grid->copyWithNewTree();
-      auto cq = std::make_shared<cq_t>();
-      std::atomic<int> count = 1;
-      auto op = [=,&count]() {
-        //printf("grid<%p>\n", grid.get());
-        for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
-          const auto& leaf = *leafIter;
-            for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
-              int itx = (rand() % 3)-1;
-              int ity = (rand() % 3)-1;
-              int itz = (rand() % 3)-1;
-              FloatVoxel fv;
-              fv.coord = voxelIter.getCoord() + openvdb::Coord(itx,ity,itz);
-              fv.value = *voxelIter;
-              cq->push(fv);
-              count++;
+      static auto cq = std::make_shared<cq_t>();
+      int num_points   = grid->tree().activeLeafVoxelCount();
+      std::atomic<int> count = num_points;
+      for (auto itl0 = grid->tree().cbeginRootChildren(); itl0; ++itl0) {
+        auto op = [=]() {
+          FloatVoxel fv;
+          for (auto itl1 = itl0->cbeginChildOn(); itl1; ++itl1) {
+            for (auto itl2 = itl1->cbeginChildOn(); itl2; ++itl2) {
+              for (auto it_vox = itl2->cbeginValueOn(); it_vox; ++it_vox) {
+                int itx = (rand() % 3)-1;
+                int ity = (rand() % 3)-1;
+                int itz = (rand() % 3)-1;
+                fv.coord = it_vox.getCoord() + openvdb::Coord(itx,ity,itz);
+                fv.value = it_vox.getValue();
+                cq->push(fv);
+              }
             }
-        }
-        count--;
-      };
-      int icount = count.load();
-      opq::concurrentQueue()->enqueue(op);
-      while(icount>0) {
-        //printf("scatterVoxels2 count<%d>\n", icount);
-        FloatVoxel fv;
-        if(cq->try_pop(fv)){
-          printf("scatterVoxels2 fv<%d %d %d> value<%f>\n", fv.coord.x(),fv.coord.y(),fv.coord.z(),fv.value);
-          result->tree().setValueOn(fv.coord, fv.value);
-          icount = count.fetch_sub(1);
-          if(icount==1){
-            icount--;
           }
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      FloatVoxel fv;
+      while((count.load()>0)){
+        if(cq->try_pop(fv)){
+          result->tree().setValueOn(fv.coord, fv.value);
+          count--;
         }
         else{
-          usleep(100);
+          sched_yield();
         }
       }
       return result;

@@ -193,30 +193,21 @@ void pyinit_primitives(py::module& module_lev2) {
             //printf("num_points<%d>\n", num_points);
             VtxV12C4* points = prim->lock(context.get(),num_points);
             int point_index = 0;
+            auto& xform = grid->transform();
             for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
               const auto& leaf = *leafIter;
 
               // Iterate over active voxels within the leaf
               for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
-                // Get the voxel coordinates and value
-                openvdb::Coord coord = voxelIter.getCoord();
-                float value          = *voxelIter;
-
-                // Convert voxel coordinates to world coordinates
-                openvdb::Vec3f worldPosition = grid->transform().indexToWorld(coord);
-
-                // Populate the points array (adapt as necessary)
-                points[point_index].x = worldPosition.x();
-                points[point_index].y = worldPosition.y();
-                points[point_index].z = worldPosition.z();
-                uint32_t bgra         = 0;
-                bgra |= (uint32_t(value * 255.0f) & 0xff) << 16;
-                bgra |= (uint32_t(value * 255.0f) & 0xff) << 8;
-                bgra |= (uint32_t(value * 255.0f) & 0xff) << 0;
-
-                points[point_index].color = bgra;
-
-                point_index++;
+                openvdb::Coord icoord = voxelIter.getCoord();
+                openvdb::Vec3f wpos = xform.indexToWorld(icoord);
+                float value          = (*voxelIter)*255.0f;
+                auto grey = uint32_t(value) & 0xff;
+                auto& out_point = points[point_index++];
+                out_point.x = wpos.x();
+                out_point.y = wpos.y();
+                out_point.z = wpos.z();
+                out_point.color = (grey << 16)|(grey << 8)|(grey << 0);
               }
             }
             prim->unlock(context.get());
