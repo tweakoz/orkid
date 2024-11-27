@@ -131,16 +131,54 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 
                 while(i<num_indices){
                   int numv = data_ptr2[i];
-                  OrkAssert(numv==3);
-                  int i0 = data_ptr2[i+1];
-                  int i1 = data_ptr2[i+2];
-                  int i2 = data_ptr2[i+3];
-                  auto v0 = inserted_vertices[i0];
-                  auto v1 = inserted_vertices[i1];
-                  auto v2 = inserted_vertices[i2];
-                  rval->mergeTriangle(v0,v1,v2);
-                  i += numv+1;
-                  iface++;
+                  switch(numv){
+                    case 3:{
+                      int i0 = data_ptr2[i+1];
+                      int i1 = data_ptr2[i+2];
+                      int i2 = data_ptr2[i+3];
+                      auto v0 = inserted_vertices[i0];
+                      auto v1 = inserted_vertices[i1];
+                      auto v2 = inserted_vertices[i2];
+
+                      // compute normal
+                      dvec3 nml = cross(v1->mPos-v0->mPos,v2->mPos-v0->mPos);
+                      nml = normalize(nml);
+                      v0->mNrm = nml;
+                      v1->mNrm = nml;
+                      v2->mNrm = nml;
+                      rval->mergeTriangle(v0,v1,v2);
+                      i += numv+1;
+                      iface++;
+                      break;
+                    }
+                    case 4:{
+                      int i0 = data_ptr2[i+1];
+                      int i1 = data_ptr2[i+2];
+                      int i2 = data_ptr2[i+3];
+                      int i3 = data_ptr2[i+4];
+                      auto v0 = inserted_vertices[i0];
+                      auto v1 = inserted_vertices[i1];
+                      auto v2 = inserted_vertices[i2];
+                      auto v3 = inserted_vertices[i3];
+                      // compute normal
+                      dvec3 nml = cross(v1->mPos-v0->mPos,v2->mPos-v0->mPos);
+                      nml = normalize(nml);
+                      v0->mNrm = nml;
+                      v1->mNrm = nml;
+                      v2->mNrm = nml;
+                      v3->mNrm = nml;
+                      fvec3 nmlf = fvec3(nml.x,nml.y,nml.z);
+                      v0->mCol[0] = fvec4(fvec3(0.5)+nmlf*0.5,1);
+                      rval->mergeQuad(v0,v1,v2,v3);
+                      i += numv+1;
+                      iface++;
+                      break;
+                    }
+                    default:
+                      printf("numv<%d>\n",numv);
+                      OrkAssert(false);
+                      break;
+                  }
                 }
                 return rval;
               })

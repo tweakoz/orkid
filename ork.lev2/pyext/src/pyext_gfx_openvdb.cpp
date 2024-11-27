@@ -15,6 +15,7 @@
 #include <openvdb/tools/LevelSetSphere.h>
 #include <openvdb/tools/SignedFloodFill.h>
 #include <openvdb/tools/ChangeBackground.h>
+#include <openvdb/tools/VolumeToMesh.h>
 #include <openvdb/util/NullInterrupter.h>
 #include <openvdb_ax/compiler/Logger.h>
 #include <openvdb_ax/compiler/VolumeExecutable.h>
@@ -38,7 +39,7 @@ struct FloatVoxel {
   openvdb::Coord coord;
   float value;
 };
-using cq_t = MpMcBoundedQueue<FloatVoxel,1<<20>;
+using cq_t = MpMcBoundedQueue<FloatVoxel,4<<20>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -104,14 +105,17 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     .def("scatterVoxels", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
       py::gil_scoped_release release;
       auto result = grid->copyWithNewTree();
+      std::random_device rand_dev;
+      std::default_random_engine e1(rand_dev());
+      std::uniform_int_distribution<int> uniform_dist(0, 2);
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
         const auto& leaf = *leafIter;
         for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
           float value = *voxelIter;
           auto icoord = voxelIter.getCoord();
-          int itx = (rand() % 3)-1;
-          int ity = (rand() % 3)-1;
-          int itz = (rand() % 3)-1;
+          int itx = uniform_dist(e1)-1;
+          int ity = uniform_dist(e1)-1;
+          int itz = uniform_dist(e1)-1;
           icoord = icoord + openvdb::Coord(itx,ity,itz);
           result->tree().setValueOn(icoord, value);
         }
@@ -125,17 +129,23 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       static auto cq = std::make_shared<cq_t>();
       int num_points   = grid->tree().activeLeafVoxelCount();
       std::atomic<int> count = num_points;
+      std::random_device rand_dev;
+
       for (auto itl0 = grid->tree().cbeginRootChildren(); itl0; ++itl0) {
-        auto op = [=]() {
+        auto op = [=,&rand_dev]() {
+          std::default_random_engine e1(rand_dev());
+          std::uniform_int_distribution<int> uniform_dist(0, 2);
           FloatVoxel fv;
           for (auto itl1 = itl0->cbeginChildOn(); itl1; ++itl1) {
             for (auto itl2 = itl1->cbeginChildOn(); itl2; ++itl2) {
+              const float* src_data = itl2->buffer().data();
               for (auto it_vox = itl2->cbeginValueOn(); it_vox; ++it_vox) {
-                int itx = (rand() % 3)-1;
-                int ity = (rand() % 3)-1;
-                int itz = (rand() % 3)-1;
+                int itx = uniform_dist(e1)-1;
+                int ity = uniform_dist(e1)-1;
+                int itz = uniform_dist(e1)-1;
                 fv.coord = it_vox.getCoord() + openvdb::Coord(itx,ity,itz);
-                fv.value = it_vox.getValue();
+                auto idx = it_vox.pos();
+                fv.value = src_data[idx];
                 cq->push(fv);
               }
             }
@@ -212,6 +222,32 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
         y += Yinc;
         z += Zinc;
       }
+    })
+    ///////////////////////////////////////////////////////
+    .def("toQuads", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+      std::vector< openvdb::Vec3s > points;
+      std::vector< openvdb::Vec4I > quads;
+      {
+          py::gil_scoped_release release;
+          openvdb::tools::volumeToMesh(*grid, points, quads,isovalue);
+      }
+      auto vertices = py::list();
+      auto indices = py::list();
+      for (auto& point : points) {
+        auto world = grid->transform().indexToWorld(point);
+        vertices.append(fvec3(world.x(),world.y(),world.z()));
+      }
+      for (auto& quad : quads) {
+        indices.append(4);
+        indices.append(quad[3]);
+        indices.append(quad[2]);
+        indices.append(quad[1]);
+        indices.append(quad[0]);
+      }
+      auto result = py::dict();
+      result["vertices"] = vertices;
+      result["faces"] = indices;
+      return result;
     });
   type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
   /////////////////////////////////////////////////////////////////////////////////

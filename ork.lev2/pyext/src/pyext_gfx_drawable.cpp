@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -216,6 +217,114 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
       .def(
           "fromSubMesh",
           [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
+      .def(
+          "fromVertsAndFacesDict",
+          [](rigidprim_ptr_t prim, py::list verts, py::list faces, ctx_t context) { //
+            //auto primdata = std::make_shared<meshutil::RigidPrimitiveData>();
+            //auto vtxlist  = primdata->_vertices;
+            //auto idxlist  = primdata->_indices;
+            auto GBI = context->GBI();
+            prim->_gpuClusters.clear();
+            auto cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
+            auto vtxbuf = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(verts.size(),0);
+            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint16_t>>(faces.size());
+            cluster->_vtxbuffer = vtxbuf;
+            auto PG = std::make_shared<rigidprim_t::PrimitiveGroup>();
+            cluster->_primgroups.push_back(PG);
+            PG->_primtype = lev2::PrimitiveType::TRIANGLES;
+            PG->_idxbuffer = idxbuf;
+            prim->_gpuClusters.push_back(cluster);
+            //////////////////////////////////////////////////////////////
+            auto vtxptr = GBI->LockVB(*vtxbuf.get(), 0, verts.size());
+            int ivtx = 0;
+            auto typed_vertex_base = (SVtxV12N12B12T8C4*) vtxptr;
+            for (auto vtx_in : verts) {
+              auto& vertex_out = typed_vertex_base[ivtx++];
+              vertex_out._position = vtx_in.cast<fvec3>();
+            }
+            //////////////////////////////////////////////////////////////
+            int iidx = 0;
+            int oidx = 0;
+            bool done_with_faces = false;
+            int numface_values = faces.size();
+            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, 1<<20);
+            auto typed_index_base = (uint16_t*) idxptr;
+
+            using pos_list_t = std::vector<fvec3>;
+            std::unordered_map<int, pos_list_t> p2n_map;
+            while(not done_with_faces ){
+              //printf("iidx<%d> numface_values<%d>\n", iidx, numface_values);
+              int face_size = faces[iidx++].cast<int>();
+              switch(face_size){
+                case 3:{
+                  auto i0 = faces[iidx+0].cast<int>();
+                  auto i1 = faces[iidx+1].cast<int>();
+                  auto i2 = faces[iidx+2].cast<int>();
+                  iidx += 3;
+                  typed_index_base[oidx++] = i0;
+                  typed_index_base[oidx++] = i1;
+                  typed_index_base[oidx++] = i2;
+                  break;
+                }
+                case 4:{
+                  auto i0 = faces[iidx+0].cast<int>();
+                  auto i1 = faces[iidx+1].cast<int>();
+                  auto i2 = faces[iidx+2].cast<int>();
+                  auto i3 = faces[iidx+3].cast<int>();
+                  iidx += 4;
+
+                  // compute normal
+                  auto& v0 = typed_vertex_base[i0];
+                  auto& v1 = typed_vertex_base[i1];
+                  auto& v2 = typed_vertex_base[i2];
+                  auto& v3 = typed_vertex_base[i3];
+                  fvec3 nml = cross(v1._position-v0._position,v2._position-v0._position);
+                  nml = normalize(nml);
+                  v0._normal = nml;
+                  v1._normal = nml;
+                  v2._normal = nml;
+                  v3._normal = nml;
+
+                  uint32_t color = 0x0;
+                  color |= uint32_t(v0._normal.x*127.5f+127.5f) << 16;
+                  color |= uint32_t(v0._normal.y*127.5f+127.5f) << 8;
+                  color |= uint32_t(v0._normal.z*127.5f+127.5f) << 0;
+                  v0._color = color;
+
+                  color = 0x0;
+                  color |= uint32_t(v1._normal.x*127.5f+127.5f) << 16;
+                  color |= uint32_t(v1._normal.y*127.5f+127.5f) << 8;
+                  color |= uint32_t(v1._normal.z*127.5f+127.5f) << 0;
+                  v1._color = color;
+
+                  color = 0x0;
+                  color |= uint32_t(v2._normal.x*127.5f+127.5f) << 16;
+                  color |= uint32_t(v2._normal.y*127.5f+127.5f) << 8;
+                  color |= uint32_t(v2._normal.z*127.5f+127.5f) << 0;
+                  v2._color = color;
+
+                  color = 0x0;
+                  color |= uint32_t(v3._normal.x*127.5f+127.5f) << 16;
+                  color |= uint32_t(v3._normal.y*127.5f+127.5f) << 8;
+                  color |= uint32_t(v3._normal.z*127.5f+127.5f) << 0;
+                  v3._color = color;
+
+                  typed_index_base[oidx++] = i0;
+                  typed_index_base[oidx++] = i1;
+                  typed_index_base[oidx++] = i2;
+                  typed_index_base[oidx++] = i0;
+                  typed_index_base[oidx++] = i2;
+                  typed_index_base[oidx++] = i3;
+                  break;
+                }
+              }
+              done_with_faces = (iidx >= numface_values);
+            }
+            GBI->UnLockIB(*idxbuf.get());
+            GBI->UnLockVB(*vtxbuf.get());
+            //////////////////////////////////////////////////////////////
+            //prim->fromData(primdata, context.get());
+          })
       .def("renderEML", [](rigidprim_ptr_t prim, ctx_t context) { prim->renderEML(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   auto grid_drawimpl_type = //

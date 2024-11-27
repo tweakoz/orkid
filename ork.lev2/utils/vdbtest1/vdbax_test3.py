@@ -1,16 +1,18 @@
 #!/usr/bin/env ork.python
 
 import math, sys, random, threading, time, signal
-#import openvdb as vdb
+import numpy as np
 from obt import path as obt_path 
 from ork import path as ork_path
-from orkengine.core import vec2,vec3,CrcStringProxy
-from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives
+from orkengine.core import vec2,vec3,CrcStringProxy, lev2_pyexdir
+from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives, RigidPrimitive, meshutil
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
+lev2_pyexdir.addToSysPath()
 from cameras import *
-from shaders import POINTCLOUD_SHADERTEXT, createPipeline
+from shaders import POINTCLOUD_SHADERTEXT, createPipeline, pseudowire_pipeline
 from primitives import createPointsPrimV12C4, createGridData
 from scenegraph import createSceneGraph
+#from _boilerplate import BasicUiCamSgApp
 
 tokens = CrcStringProxy()
 
@@ -20,8 +22,8 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.05 #radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.01)
+voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 10.01)
 outside = sphere.background
 
 print(f"voxel_size:{voxel_size}")
@@ -40,8 +42,8 @@ float@omega = atan2(vec3f@pos.z,vec3f@pos.y);
 
 f@a = 1.0;
 f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
-f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
-f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
+//f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
+//f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
 
 //if (f@a<0.5) {
 //  deletepoint(); // only for point grids, not volume grids
@@ -51,56 +53,6 @@ f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
 
 cdata = ork_vdb.ax.CustomData()
 ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader,cdata)
-
-#############################
-# draw dda lines in volume
-#############################
-
-
-nx = vec3(-radius,0,0)
-px = vec3(+radius,0,0)
-ny = vec3(0,-radius,0)
-py = vec3(0,+radius,0)
-nz = vec3(0,0,-radius)
-pz = vec3(0,0,+radius)
-
-def _draw_line(sph,p1,p2,value):
-  p1 = sph.worldToIndex(p1)
-  p2 = sph.worldToIndex(p2)
-  sph.drawLineI(p1,p2,value)
-
-def draw_lines(sph):
-  _draw_line(sph,nx,px,1.0)
-  _draw_line(sph,ny,py,1.0)
-  _draw_line(sph,nz,pz,1.0)
-
-  _draw_line(sph,nx+ny+nz,px+ny+nz,1.0)
-  _draw_line(sph,nx+py+nz,px+py+nz,1.0)
-  _draw_line(sph,nx+ny+pz,px+ny+pz,1.0)
-  _draw_line(sph,nx+py+pz,px+py+pz,1.0)
-
-  _draw_line(sph,nx+ny+nz,nx+ny+pz,1.0)
-  _draw_line(sph,px+ny+nz,px+ny+pz,1.0)
-  _draw_line(sph,nx+py+nz,nx+py+pz,1.0)
-  _draw_line(sph,px+py+nz,px+py+pz,1.0)
-
-  _draw_line(sph,nx+ny+nz,nx+py+nz,1.0)
-  _draw_line(sph,px+ny+nz,px+py+nz,1.0)
-  _draw_line(sph,nx+ny+pz,nx+py+pz,1.0)
-  _draw_line(sph,px+ny+pz,px+py+pz,1.0)
-
-draw_lines(sphere)
-
-#############################
-# pset random voxels
-##############################
-
-for i in range(1000):
-  rx = random.uniform(-radius,radius)
-  ry = random.uniform(-radius,radius)
-  rz = random.uniform(-radius,radius)
-  p = sphere.worldToIndex(vec3(rx,ry,rz)*0.1)
-  sphere.setVoxel(p,1.0)
 
 ################################################################################
 
@@ -117,18 +69,27 @@ class PointsPrimApp(object):
     self.next_sphere = None 
     self.this_sphere = None
     self.ok_to_exit = False
+    self.result_submesh = None
+    self.next_submesh = None
+    self.this_submesh = None
     
     def upd_sphere_fn():
-      counter = 0
+      #counter = 0
       while not self.ok_to_exit:
-        self.sphere = self.sphere.scatterVoxels()
-        if counter % 120 == 0:
-          draw_lines(self.sphere)
-        cdata.set("freq",float(3.0+math.sin(self.phi)*2.0))
+        #self.sphere = self.sphere.scatterVoxels()
+        cdata.set("freq",float(4.5+math.sin(self.phi*0.1)*4.25))
+        #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
-        self.next_sphere = self.sphere
-        counter += 1
-        time.sleep(1.0/120.0)
+        mesh_dict = self.sphere.toQuads(0.85)
+        #print(mesh_dict)
+        num_verts = len(mesh_dict["vertices"])
+        num_faces = len(mesh_dict["faces"])
+        if (num_verts>0) and (num_faces>0):
+          self.result_submesh = mesh_dict #meshutil.SubMesh.createFromDict2(mesh_dict)
+        else:
+          self.result_submesh = None
+        self.next_submesh = self.result_submesh
+        time.sleep(0.05)
 
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()
@@ -175,6 +136,15 @@ class PointsPrimApp(object):
     self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
     self.points_prim.updateWithVdbFloatGrid(self.sphere,ctx)
 
+    ###################################
+    # create mesh primitive 
+    ###################################
+
+    self.mesh_pipe = createPipeline( app = self, ctx=ctx, rendermodel = "ForwardPBR", techname="std_mono_forward_lit" )
+    #self.mesh_pipe = pseudowire_pipeline( app = self, ctx=ctx )
+    self.mesh_prim = RigidPrimitive()
+    self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, self.mesh_pipe)
+    
     ##################
     # create shading pipeline
     ##################
@@ -215,9 +185,14 @@ class PointsPrimApp(object):
     context = drawevent.context
     self.ezapp.processMainSerialQueue()
     
-    if self.this_sphere != self.next_sphere:
-      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
-      self.this_sphere = self.next_sphere
+    if self.this_submesh != self.next_submesh:
+      #self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
+      if self.next_submesh is not None:
+        v = self.next_submesh["vertices"]
+        f = self.next_submesh["faces"]
+        self.mesh_prim.fromVertsAndFacesDict(v,f,context)
+
+      self.this_submesh = self.next_submesh
 
     self.scene.renderOnContext(context);
 

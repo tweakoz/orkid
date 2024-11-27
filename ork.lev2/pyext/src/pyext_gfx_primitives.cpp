@@ -187,7 +187,7 @@ void pyinit_primitives(py::module& module_lev2) {
             return prim;
           })
           .def("updateWithVdbFloatGrid", [](primitives::points_v12c4_ptr_t prim, vdb_floatgrid_ptr_t grid, ctx_t context)  {
-
+            py::gil_scoped_release release;
             int num_points   = grid->tree().activeLeafVoxelCount();
             OrkAssert(num_points<prim->_capacity)
             //printf("num_points<%d>\n", num_points);
