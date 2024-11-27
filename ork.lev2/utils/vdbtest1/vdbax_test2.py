@@ -1,6 +1,6 @@
 #!/usr/bin/env ork.python
 
-import math, sys, random
+import math, sys, random, threading, time, signal
 #import openvdb as vdb
 from obt import path as obt_path 
 from ork import path as ork_path
@@ -109,7 +109,29 @@ class PointsPrimApp(object):
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
     self.phi = 0.0
-    self.sphere = sphere
+    self.sphere = sphere 
+    self.next_sphere = None 
+    self.this_sphere = None
+    self.ok_to_exit = False
+    
+    def upd_sphere_fn():
+      while not self.ok_to_exit:
+        self.sphere = self.sphere.scatterVoxels()
+        cdata.set("freq",float(self.phi))
+        ve.executeOnGrid(self.sphere)
+        self.next_sphere = self.sphere
+        #time.sleep(1.0/60.0)
+
+    self.thr = threading.Thread(target=upd_sphere_fn)
+    self.thr.start()
+
+    def onCtrlC(signum, frame):
+      print("signaling EXIT to ezapp")
+      self.ezapp.signalExit()
+      self.ok_to_exit = True
+
+    signal.signal(signal.SIGINT, onCtrlC)
+
     
   ################################################
   # gpu data init:
@@ -184,13 +206,11 @@ class PointsPrimApp(object):
   def onDraw(self,drawevent):
     context = drawevent.context
     self.ezapp.processMainSerialQueue()
-    cdata.set("freq",float(self.phi))
-    sgn = math.sin(self.phi*0.5)
-    sgn = 1 if sgn>0.0 else -1
-    self.sphere = self.sphere.scatterVoxels2()
-    #self.sphere = self.sphere.translatedVoxels(vec3(0,sgn,0))
-    ve.executeOnGrid(self.sphere)
-    self.points_prim.updateWithVdbFloatGrid(self.sphere,context)
+    
+    if self.this_sphere != self.next_sphere:
+      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
+      self.this_sphere = self.next_sphere
+
     self.scene.renderOnContext(context);
 
   ##############################################
@@ -200,6 +220,26 @@ class PointsPrimApp(object):
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
+    
+  ##############################################
+
+  def onGpuExit(self,ctx):
+    print("onGpuExit")
+    self.ok_to_exit = True
+    self.thr.join()
+
+  ##############################################
+
+  def onUpdateExit(self):
+    print("onUpdateExit")
+    self.ok_to_exit = True
+    self.thr.join()
+
 ###############################################################################
 
-PointsPrimApp().ezapp.mainThreadLoop()
+def onRunLoopIteration():
+  pass
+
+###############################################################################
+
+PointsPrimApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)

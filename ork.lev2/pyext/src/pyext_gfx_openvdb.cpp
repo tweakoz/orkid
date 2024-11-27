@@ -20,6 +20,7 @@
 #include <openvdb_ax/compiler/VolumeExecutable.h>
 #include <openvdb_ax/compiler/Compiler.h>
 #include <openvdb_ax/compiler/CustomData.h>
+#include <tbb/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +34,12 @@ using vdb_volume_exec_t = openvdb::ax::VolumeExecutable;
 using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
 using vdb_custom_data_t = openvdb::ax::CustomData;
 using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
+
+struct FloatVoxel {
+  openvdb::Coord coord;
+  float value;
+};
+using cq_t = tbb::concurrent_queue<FloatVoxel>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -76,6 +83,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto ovdb_fgrid_type = 
     py::class_<vdb_floatgrid_t, vdb_basegrid_t, vdb_floatgrid_ptr_t>(ovdb, "FloatGrid")
     .def_static("createLevelSetSphere", []( std::string name, float radius, fvec3 center, float vxlsize, float hwidth ) -> vdb_floatgrid_ptr_t {
+      py::gil_scoped_release release;
       auto grid = openvdb::tools::createLevelSetSphere<vdb_floatgrid_t>(radius, openvdb::Vec3f(center.x,center.y,center.z), vxlsize, hwidth);
       grid->setName(name);
       //createLevelSetSphere (float radius, const openvdb::Vec3f &center, float voxelSize, float halfWidth=float(LEVEL_SET_HALF_WIDTH), InterruptT *interrupt=nullptr, bool threaded=true)
@@ -95,6 +103,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     })
     ///////////////////////////////////////////////////////
     .def("scatterVoxels", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
+      py::gil_scoped_release release;
       auto result = grid->copyWithNewTree();
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
         const auto& leaf = *leafIter;
@@ -112,21 +121,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     })
     ///////////////////////////////////////////////////////
     .def("scatterVoxels2", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
-      struct FloatVoxel {
-        openvdb::Coord coord;
-        float value;
-      };
-      using cq_t = ork::MpMcBoundedQueue<FloatVoxel,16<<20>;
+      auto result = grid->copyWithNewTree();
       auto cq = std::make_shared<cq_t>();
       std::atomic<int> count = 1;
-      auto op = [grid,cq,&count]() {
+      auto op = [=,&count]() {
+        //printf("grid<%p>\n", grid.get());
         for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
           const auto& leaf = *leafIter;
-            FloatVoxel fv;
             for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
               int itx = (rand() % 3)-1;
               int ity = (rand() % 3)-1;
               int itz = (rand() % 3)-1;
+              FloatVoxel fv;
               fv.coord = voxelIter.getCoord() + openvdb::Coord(itx,ity,itz);
               fv.value = *voxelIter;
               cq->push(fv);
@@ -135,22 +141,28 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
         }
         count--;
       };
+      int icount = count.load();
       opq::concurrentQueue()->enqueue(op);
-      auto result = grid->copyWithNewTree();
-      while(count.load()>0) {
+      while(icount>0) {
+        //printf("scatterVoxels2 count<%d>\n", icount);
         FloatVoxel fv;
-        if(cq->try_pop(fv)) {
+        if(cq->try_pop(fv)){
+          printf("scatterVoxels2 fv<%d %d %d> value<%f>\n", fv.coord.x(),fv.coord.y(),fv.coord.z(),fv.value);
           result->tree().setValueOn(fv.coord, fv.value);
-          count--;
+          icount = count.fetch_sub(1);
+          if(icount==1){
+            icount--;
+          }
         }
         else{
-          ::usleep(100);
+          usleep(100);
         }
       }
       return result;
     })
     ///////////////////////////////////////////////////////
     .def("translatedVoxels", [](vdb_floatgrid_ptr_t grid, fvec3 trans) -> vdb_floatgrid_ptr_t {
+      py::gil_scoped_release release;
       auto result = grid->copyWithNewTree();
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
         const auto& leaf = *leafIter;
@@ -165,15 +177,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     })
     ///////////////////////////////////////////////////////
     .def("setVoxel", [](vdb_floatgrid_ptr_t grid, fvec3 coord, float value) {
+      py::gil_scoped_release release;
       grid->tree().setValue(openvdb::Coord(coord.x,coord.y,coord.z), value);
     })
     ///////////////////////////////////////////////////////
     .def("worldToIndex", [](vdb_floatgrid_ptr_t grid, fvec3 coord) -> fvec3 {
+      py::gil_scoped_release release;
       auto index = grid->transform().worldToIndex(openvdb::Vec3f(coord.x,coord.y,coord.z));
       return fvec3(index.x(),index.y(),index.z());
     })
     ///////////////////////////////////////////////////////
     .def("drawLineI", [](vdb_floatgrid_ptr_t grid, fvec3 start, fvec3 end, float value) {
+      py::gil_scoped_release release;
       // Calculate differences
       float dx = end.x - start.x;
       float dy = end.y - start.y;
@@ -210,10 +225,12 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto ovdb_ax_ve_type = 
     py::class_<vdb_volume_exec_t, vdb_volume_exec_ptr_t>(ax, "VolumeExecutable")
     .def_static("compile", [](std::string code, vdb_custom_data_ptr_t cdata=nullptr) -> vdb_volume_exec_ptr_t {
+      py::gil_scoped_release release;
       openvdb::ax::Compiler compiler;
       return compiler.compile<vdb_volume_exec_t>(code,cdata);
     })
     .def("executeOnGrid", [](vdb_volume_exec_ptr_t ve, vdb_floatgrid_ptr_t grid) {
+      py::gil_scoped_release release;
       ve->execute(*grid);
     });
     type_codec->registerStdCodec<vdb_volume_exec_ptr_t>(ovdb_ax_ve_type);
