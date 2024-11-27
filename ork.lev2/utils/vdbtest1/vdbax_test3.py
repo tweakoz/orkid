@@ -22,8 +22,8 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.05)
+voxel_size = 0.3 #radius / math.cbrt(desired_num_points);
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 2.05)
 outside = sphere.background
 
 print(f"voxel_size:{voxel_size}")
@@ -42,8 +42,8 @@ float@omega = atan2(vec3f@pos.z,vec3f@pos.y);
 
 f@a = 1.0;
 f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
-//f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
-//f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
+f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
+f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
 
 //if (f@a<0.5) {
 //  deletepoint(); // only for point grids, not volume grids
@@ -82,7 +82,7 @@ class PointsPrimApp(object):
         ve.executeOnGrid(self.sphere)
         
         iso_parm = float(0.5+math.sin(self.phi*3.81)*0.45)
-        print(f"iso_parm:{iso_parm}")
+        #print(f"iso_parm:{iso_parm}")
         mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
         num_verts = len(mesh_dict["vertices"])

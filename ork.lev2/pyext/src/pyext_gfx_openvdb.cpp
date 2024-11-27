@@ -235,7 +235,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       auto indices = py::list();
       for (auto& point : points) {
         auto world = grid->transform().indexToWorld(point);
-        vertices.append(fvec3(world.x(),world.y(),world.z()));
+        vertices.append(fvec3(point.x(),point.y(),point.z()));
       }
       for (auto& quad : quads) {
         indices.append(4);
