@@ -81,23 +81,89 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       //createLevelSetSphere (float radius, const openvdb::Vec3f &center, float voxelSize, float halfWidth=float(LEVEL_SET_HALF_WIDTH), InterruptT *interrupt=nullptr, bool threaded=true)
       return grid;
     })
+    ///////////////////////////////////////////////////////
     .def_property("background", [](vdb_floatgrid_ptr_t grid ) -> float {
       return grid->background();
     }, [](vdb_floatgrid_ptr_t grid, float value) {
       size_t grainSize = 32;
       openvdb::tools::changeLevelSetBackground (grid->tree(), value, true, grainSize);
     })
+    ///////////////////////////////////////////////////////
     .def_property_readonly("onValueSequence", [](vdb_floatgrid_ptr_t grid ) -> citer_proxy_ptr {
       auto iter = std::make_shared<citer_proxy>(grid->cbeginValueOn());
       return iter;
     })
+    ///////////////////////////////////////////////////////
+    .def("scatterVoxels", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
+      auto result = grid->copyWithNewTree();
+      for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+        const auto& leaf = *leafIter;
+        for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+          float value = *voxelIter;
+          auto icoord = voxelIter.getCoord();
+          int itx = (rand() % 3)-1;
+          int ity = (rand() % 3)-1;
+          int itz = (rand() % 3)-1;
+          icoord = icoord + openvdb::Coord(itx,ity,itz);
+          result->tree().setValueOn(icoord, value);
+        }
+      }
+      return result;
+    })
+    ///////////////////////////////////////////////////////
+    .def("scatterVoxels2", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
+      auto result = grid->copyWithNewTree();
+      std::atomic<int> count(0);
+      ork::mutex write_mutex("write2VDB");
+      for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+        count++;
+        const auto& leaf = *leafIter;
+        auto op = [leaf,&result,&count,&write_mutex]() {
+          for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+            float value = *voxelIter;
+            auto icoord = voxelIter.getCoord();
+            int itx = (rand() % 3)-1;
+            int ity = (rand() % 3)-1;
+            int itz = (rand() % 3)-1;
+            icoord = icoord + openvdb::Coord(itx,ity,itz);
+            // TODO : increase lock granularity (or use parallel accessor)
+            write_mutex.Lock();
+            result->tree().setValueOn(icoord, value);
+            write_mutex.UnLock();
+          }
+          count--;
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      while(count.load()>0) {
+        usleep(1000);
+      }
+      return result;
+    })
+    ///////////////////////////////////////////////////////
+    .def("translatedVoxels", [](vdb_floatgrid_ptr_t grid, fvec3 trans) -> vdb_floatgrid_ptr_t {
+      auto result = grid->copyWithNewTree();
+      for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+        const auto& leaf = *leafIter;
+        for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+          float value = *voxelIter;
+          auto icoord = voxelIter.getCoord();
+          icoord = icoord + openvdb::Coord(trans.x,trans.y,trans.z);
+          result->tree().setValueOn(icoord, value);
+        }
+      }
+      return result;
+    })
+    ///////////////////////////////////////////////////////
     .def("setVoxel", [](vdb_floatgrid_ptr_t grid, fvec3 coord, float value) {
       grid->tree().setValue(openvdb::Coord(coord.x,coord.y,coord.z), value);
     })
+    ///////////////////////////////////////////////////////
     .def("worldToIndex", [](vdb_floatgrid_ptr_t grid, fvec3 coord) -> fvec3 {
       auto index = grid->transform().worldToIndex(openvdb::Vec3f(coord.x,coord.y,coord.z));
       return fvec3(index.x(),index.y(),index.z());
     })
+    ///////////////////////////////////////////////////////
     .def("drawLineI", [](vdb_floatgrid_ptr_t grid, fvec3 start, fvec3 end, float value) {
       // Calculate differences
       float dx = end.x - start.x;

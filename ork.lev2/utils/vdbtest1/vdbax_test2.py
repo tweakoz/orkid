@@ -109,6 +109,7 @@ class PointsPrimApp(object):
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
     self.phi = 0.0
+    self.sphere = sphere
     
   ################################################
   # gpu data init:
@@ -142,7 +143,7 @@ class PointsPrimApp(object):
     ###################################
     
     self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
-    self.points_prim.updateWithVdbFloatGrid(sphere,ctx)
+    self.points_prim.updateWithVdbFloatGrid(self.sphere,ctx)
 
     ##################
     # create shading pipeline
@@ -184,8 +185,12 @@ class PointsPrimApp(object):
     context = drawevent.context
     self.ezapp.processMainSerialQueue()
     cdata.set("freq",float(self.phi))
-    ve.executeOnGrid(sphere)
-    self.points_prim.updateWithVdbFloatGrid(sphere,context)
+    sgn = math.sin(self.phi*0.5)
+    sgn = 1 if sgn>0.0 else -1
+    self.sphere = self.sphere.scatterVoxels2()
+    #self.sphere = self.sphere.translatedVoxels(vec3(0,sgn,0))
+    ve.executeOnGrid(self.sphere)
+    self.points_prim.updateWithVdbFloatGrid(self.sphere,context)
     self.scene.renderOnContext(context);
 
   ##############################################
