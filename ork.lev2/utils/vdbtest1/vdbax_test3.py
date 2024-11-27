@@ -23,7 +23,7 @@ tokens = CrcStringProxy()
 radius = 10.0 
 desired_num_points = 10000000
 voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 10.01)
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 1.05)
 outside = sphere.background
 
 print(f"voxel_size:{voxel_size}")
@@ -80,7 +80,10 @@ class PointsPrimApp(object):
         cdata.set("freq",float(4.5+math.sin(self.phi*0.1)*4.25))
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
-        mesh_dict = self.sphere.toQuads(0.85)
+        
+        iso_parm = float(0.5+math.sin(self.phi*3.81)*0.45)
+        print(f"iso_parm:{iso_parm}")
+        mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
         num_verts = len(mesh_dict["vertices"])
         num_faces = len(mesh_dict["faces"])
@@ -89,7 +92,8 @@ class PointsPrimApp(object):
         else:
           self.result_submesh = None
         self.next_submesh = self.result_submesh
-        time.sleep(0.05)
+        self.next_sphere = self.sphere
+        time.sleep(0.01)
 
     self.thr = threading.Thread(target=upd_sphere_fn)
     self.thr.start()
@@ -186,13 +190,14 @@ class PointsPrimApp(object):
     self.ezapp.processMainSerialQueue()
     
     if self.this_submesh != self.next_submesh:
-      #self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
+      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
         self.mesh_prim.fromVertsAndFacesDict(v,f,context)
 
       self.this_submesh = self.next_submesh
+      self.this_sphere = self.next_sphere
 
     self.scene.renderOnContext(context);
 
