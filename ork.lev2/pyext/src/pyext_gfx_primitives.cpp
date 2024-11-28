@@ -203,6 +203,7 @@ void pyinit_primitives(py::module& module_lev2) {
                 openvdb::Vec3f wpos = xform.indexToWorld(icoord);
                 float value          = (*voxelIter)*255.0f;
                 auto grey = uint32_t(value) & 0xff;
+                OrkAssert(point_index<num_points);
                 auto& out_point = points[point_index++];
                 out_point.x = wpos.x();
                 out_point.y = wpos.y();

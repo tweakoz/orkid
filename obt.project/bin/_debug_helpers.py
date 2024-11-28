@@ -41,7 +41,7 @@ def get_exec_and_args(parse_args):
   exec_args = parse_args.exec_args
 
   if is_python_script(executable_path):
-    python_path = find_executable("python3")
+    python_path = find_executable("ork.python")
     if not python_path:
       print("python3 not found.")
       exit(1)

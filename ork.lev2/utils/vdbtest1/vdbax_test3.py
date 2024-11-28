@@ -22,7 +22,7 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.25 #radius / math.cbrt(desired_num_points);
+voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 2.05)
 outside = sphere.background
 
