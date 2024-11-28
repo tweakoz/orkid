@@ -22,7 +22,7 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.125 #radius / math.cbrt(desired_num_points);
+voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 5.05)
 outside = sphere.background
 
@@ -77,7 +77,7 @@ class PointsPrimApp(object):
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         
-        iso_parm = 0.25 #float(0.5+math.sin(self.phi*0.81)*0.45)
+        iso_parm = 0.75 #float(0.5+math.sin(self.phi*0.81)*0.45)
         #print(f"iso_parm:{iso_parm}")
         mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
@@ -191,7 +191,7 @@ class PointsPrimApp(object):
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
-        self.mesh_prim.fromVertsAndFacesDict(v,f,context)
+        self.mesh_prim.fromVertsAndFacesDict(v,f,True,context)
 
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere

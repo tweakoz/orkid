@@ -231,7 +231,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       {
           py::gil_scoped_release release;
 
-          bool relax = true;
+          bool relax = false;
           float adaptivity = 0.0f;
 
           openvdb::tools::volumeToMesh( *grid, 
@@ -261,6 +261,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
         indices.append(tri[1]);
         indices.append(tri[0]);
       }
+
       auto result = py::dict();
       result["vertices"] = vertices;
       result["faces"] = indices;

@@ -219,7 +219,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
       .def(
           "fromVertsAndFacesDict",
-          [](rigidprim_ptr_t prim, py::list verts, py::list faces, ctx_t context) { //
+          [](rigidprim_ptr_t prim, py::list verts, py::list faces, bool smooth, ctx_t context) { //
             //auto primdata = std::make_shared<meshutil::RigidPrimitiveData>();
             //auto vtxlist  = primdata->_vertices;
             //auto idxlist  = primdata->_indices;
@@ -228,15 +228,39 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             int iidx = 0;
             int num_tris = 0;
             int num_quads = 0;
+            using vertlist_t = std::vector<int>;
+            std::unordered_map<int, vertlist_t> v2v_map; // vertex<>vertex map (for normal computation and smoothing)
             while(not done_with_faces ){
               int face_size = faces[iidx++].cast<int>();
               switch(face_size){
                 case 3:{
+                  if(smooth){
+                  v2v_map[faces[iidx+0].cast<int>()].push_back(faces[iidx+1].cast<int>());
+                  v2v_map[faces[iidx+0].cast<int>()].push_back(faces[iidx+2].cast<int>());
+                  v2v_map[faces[iidx+1].cast<int>()].push_back(faces[iidx+0].cast<int>());
+                  v2v_map[faces[iidx+1].cast<int>()].push_back(faces[iidx+2].cast<int>());
+                  v2v_map[faces[iidx+2].cast<int>()].push_back(faces[iidx+0].cast<int>());
+                  v2v_map[faces[iidx+2].cast<int>()].push_back(faces[iidx+1].cast<int>());
+                  }
                   iidx += 3;
                   num_tris++;
                   break;
                 }
                 case 4:{
+                  if(smooth){
+                  v2v_map[faces[iidx+0].cast<int>()].push_back(faces[iidx+1].cast<int>());
+                  v2v_map[faces[iidx+0].cast<int>()].push_back(faces[iidx+2].cast<int>());
+                  v2v_map[faces[iidx+0].cast<int>()].push_back(faces[iidx+3].cast<int>());
+                  v2v_map[faces[iidx+1].cast<int>()].push_back(faces[iidx+0].cast<int>());
+                  v2v_map[faces[iidx+1].cast<int>()].push_back(faces[iidx+2].cast<int>());
+                  v2v_map[faces[iidx+1].cast<int>()].push_back(faces[iidx+3].cast<int>());
+                  v2v_map[faces[iidx+2].cast<int>()].push_back(faces[iidx+0].cast<int>());
+                  v2v_map[faces[iidx+2].cast<int>()].push_back(faces[iidx+1].cast<int>());
+                  v2v_map[faces[iidx+2].cast<int>()].push_back(faces[iidx+3].cast<int>());
+                  v2v_map[faces[iidx+3].cast<int>()].push_back(faces[iidx+0].cast<int>());
+                  v2v_map[faces[iidx+3].cast<int>()].push_back(faces[iidx+1].cast<int>());
+                  v2v_map[faces[iidx+3].cast<int>()].push_back(faces[iidx+2].cast<int>());
+                  }
                   iidx += 4;
                   num_quads++;
                   break;
@@ -267,11 +291,58 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             prim->_gpuClusters.push_back(cluster);
             //////////////////////////////////////////////////////////////
             auto vtxptr = GBI->LockVB(*vtxbuf.get(), 0, verts.size());
-            int ivtx = 0;
             auto typed_vertex_base = (SVtxV12N12B12T8C4*) vtxptr;
-            for (auto vtx_in : verts) {
-              auto& vertex_out = typed_vertex_base[ivtx++];
-              vertex_out._position = vtx_in.cast<fvec3>();
+            if(smooth){
+              std::vector<fvec3> original_verts;
+              for (auto vtx_in : verts) {
+                original_verts.push_back(vtx_in.cast<fvec3>());
+              }
+              for(int ismooth=0; ismooth<8; ismooth++){
+                int ivtx = 0;
+                for (auto vtx_in : verts) {
+                  auto& vertex_out = typed_vertex_base[ivtx];
+                  // smooth vertex by pulling the point to the average of its neighbors
+                  auto& v2v = v2v_map[ivtx];
+                  fvec3 avg = fvec3(0.0f);
+                  for(auto vidx : v2v){
+                    avg += original_verts[vidx];
+                  }
+                  avg = avg * (1.0f / float(v2v.size()));
+                  vertex_out._position = avg;
+                  ivtx++;
+                }
+                for (int i=0; i<verts.size(); i++) {
+                  original_verts[i] = typed_vertex_base[i]._position;
+                }
+              }
+              // compute normals
+              for(int ivtx=0; ivtx<verts.size(); ivtx++){
+                auto& vertex_out = typed_vertex_base[ivtx];
+                const auto& v2v = v2v_map[ivtx];
+                // compute normal (via cross product of two edges)
+                fvec3 nml = fvec3(0.0f);
+                size_t v2size = v2v.size();
+                const auto& v0 = vertex_out._position;
+                for(int i=0; i<v2v.size(); i++){
+                  const auto& v1 = typed_vertex_base[v2v[(i+0)%v2size]]._position;
+                  const auto& v2 = typed_vertex_base[v2v[(i+1)%v2size]]._position;
+                  nml += cross(v1-v0,v2-v0);
+                }
+                nml = normalize(nml);
+                vertex_out._normal = nml;
+                uint32_t color = 0x0;
+                color |= uint32_t(nml.x*127.5f+127.5f) << 16;
+                color |= uint32_t(nml.y*127.5f+127.5f) << 8;
+                color |= uint32_t(nml.z*127.5f+127.5f) << 0;
+                vertex_out._color = color;
+              }
+            }
+            else{
+              int ivtx = 0;
+              for (auto vtx_in : verts) {
+                auto& vertex_out = typed_vertex_base[ivtx++];
+                vertex_out._position = vtx_in.cast<fvec3>();
+              }
             }
             //////////////////////////////////////////////////////////////
             iidx = 0;
@@ -306,41 +377,44 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                   auto i3 = faces[iidx+3].cast<int>();
                   iidx += 4;
 
-                  // compute normal
-                  auto& v0 = typed_vertex_base[i0];
-                  auto& v1 = typed_vertex_base[i1];
-                  auto& v2 = typed_vertex_base[i2];
-                  auto& v3 = typed_vertex_base[i3];
-                  fvec3 nml = cross(v1._position-v0._position,v2._position-v0._position);
-                  nml = normalize(nml);
-                  v0._normal = nml;
-                  v1._normal = nml;
-                  v2._normal = nml;
-                  v3._normal = nml;
+                  if(true) { //not smooth){
+                    // compute normal
+                    
+                    auto& v0 = typed_vertex_base[i0];
+                    auto& v1 = typed_vertex_base[i1];
+                    auto& v2 = typed_vertex_base[i2];
+                    auto& v3 = typed_vertex_base[i3];
+                    fvec3 nml = cross(v1._position-v0._position,v2._position-v0._position);
+                    nml = normalize(nml);
+                    v0._normal = nml;
+                    v1._normal = nml;
+                    v2._normal = nml;
+                    v3._normal = nml;
 
-                  uint32_t color = 0x0;
-                  color |= uint32_t(v0._normal.x*127.5f+127.5f) << 16;
-                  color |= uint32_t(v0._normal.y*127.5f+127.5f) << 8;
-                  color |= uint32_t(v0._normal.z*127.5f+127.5f) << 0;
-                  v0._color = color;
+                    uint32_t color = 0x0;
+                    color |= uint32_t(v0._normal.x*127.5f+127.5f) << 16;
+                    color |= uint32_t(v0._normal.y*127.5f+127.5f) << 8;
+                    color |= uint32_t(v0._normal.z*127.5f+127.5f) << 0;
+                    v0._color = color;
 
-                  color = 0x0;
-                  color |= uint32_t(v1._normal.x*127.5f+127.5f) << 16;
-                  color |= uint32_t(v1._normal.y*127.5f+127.5f) << 8;
-                  color |= uint32_t(v1._normal.z*127.5f+127.5f) << 0;
-                  v1._color = color;
+                    color = 0x0;
+                    color |= uint32_t(v1._normal.x*127.5f+127.5f) << 16;
+                    color |= uint32_t(v1._normal.y*127.5f+127.5f) << 8;
+                    color |= uint32_t(v1._normal.z*127.5f+127.5f) << 0;
+                    v1._color = color;
 
-                  color = 0x0;
-                  color |= uint32_t(v2._normal.x*127.5f+127.5f) << 16;
-                  color |= uint32_t(v2._normal.y*127.5f+127.5f) << 8;
-                  color |= uint32_t(v2._normal.z*127.5f+127.5f) << 0;
-                  v2._color = color;
+                    color = 0x0;
+                    color |= uint32_t(v2._normal.x*127.5f+127.5f) << 16;
+                    color |= uint32_t(v2._normal.y*127.5f+127.5f) << 8;
+                    color |= uint32_t(v2._normal.z*127.5f+127.5f) << 0;
+                    v2._color = color;
 
-                  color = 0x0;
-                  color |= uint32_t(v3._normal.x*127.5f+127.5f) << 16;
-                  color |= uint32_t(v3._normal.y*127.5f+127.5f) << 8;
-                  color |= uint32_t(v3._normal.z*127.5f+127.5f) << 0;
-                  v3._color = color;
+                    color = 0x0;
+                    color |= uint32_t(v3._normal.x*127.5f+127.5f) << 16;
+                    color |= uint32_t(v3._normal.y*127.5f+127.5f) << 8;
+                    color |= uint32_t(v3._normal.z*127.5f+127.5f) << 0;
+                    v3._color = color;
+                  }
 
                   typed_index_base[oidx++] = i0;
                   typed_index_base[oidx++] = i1;
