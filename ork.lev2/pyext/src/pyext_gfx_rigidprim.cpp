@@ -32,6 +32,7 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
   auto micromesh_type = py::class_<MicroMesh,micromesh_ptr_t>(module_lev2, "MicroMesh")
     //////////////////////////////////////////////////
     .def_static("fromVertAndFaceLists", [](py::list vert_list, py::list face_list) -> micromesh_ptr_t {
+      py::gil_scoped_release release;
       return std::make_shared<MicroMesh>(vert_list, face_list);
     })
     //////////////////////////////////////////////////
@@ -60,7 +61,30 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
     })
     //////////////////////////////////////////////////
     .def_property_readonly("vertexConnectivity", [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
+      py::gil_scoped_release release;
       return mesh->computeVertexConnectivity();
+    })
+    //////////////////////////////////////////////////
+    .def_property_readonly("smoothed", [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn) -> micromesh_ptr_t {
+      py::gil_scoped_release release;
+      return mesh->smoothed(conn);
+    })
+    //////////////////////////////////////////////////
+    .def("asyncSmoothed", [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn, py::object on_complete) {
+      struct WTF {
+        WTF(py::object on_complete) : _on_complete(on_complete) {}
+        py::object _on_complete;
+      };
+      //auto wtf = std::make_shared<WTF>(on_complete);
+      py::gil_scoped_release release;
+
+      auto op = [mesh,conn](){
+        auto smoothed = mesh->smoothed(conn);
+        //py::gil_scoped_acquire acquire;
+        //auto as_fn = wtf->_on_complete.cast<py::function>();
+        //as_fn(smoothed);
+      };
+      opq::concurrentQueue()->enqueue(op);
     });
   /////////////////////////////////////////////////////////////////////////////////
   auto micromesh_conn_type = py::class_<MicroMeshConnectivity,micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
@@ -128,16 +152,10 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
           [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
       .def(
           "fromVertsAndFacesDict",
-          [](rigidprim_ptr_t prim, py::list verts, py::list faces, bool smooth, ctx_t context) { //
+          [](rigidprim_ptr_t prim, py::list verts, py::list faces, ctx_t context) { //
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto conn      = micromesh->computeVertexConnectivity();
-            ////////////////////////////////////////////
-            if(smooth){
-              for(int i=0; i<8; i++ ){
-                micromesh = micromesh->smoothed(conn);
-              }
-            }
             ////////////////////////////////////////////
             int num_verts = micromesh->_vertices.size();
             int num_tris = micromesh->_tris.size();

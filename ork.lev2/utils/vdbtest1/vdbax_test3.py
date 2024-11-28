@@ -5,7 +5,7 @@ import numpy as np
 from obt import path as obt_path 
 from ork import path as ork_path
 from orkengine.core import vec2,vec3,CrcStringProxy, lev2_pyexdir
-from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives, RigidPrimitive, meshutil
+from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives, RigidPrimitive, meshutil, MicroMesh
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 lev2_pyexdir.addToSysPath()
 from cameras import *
@@ -22,7 +22,7 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 1.5 #radius / math.cbrt(desired_num_points);
+voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 5.05)
 outside = sphere.background
 
@@ -68,6 +68,12 @@ class PointsPrimApp(object):
     self.result_submesh = None
     self.next_submesh = None
     self.this_submesh = None
+    self.smoothed = [
+      None,
+      None,
+      None,
+      None,
+    ]
     
     def upd_sphere_fn():
       #counter = 0
@@ -191,7 +197,12 @@ class PointsPrimApp(object):
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
-        self.mesh_prim.fromVertsAndFacesDict(v,f,True,context)
+        as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
+        conn = as_micromesh.vertexConnectivity
+        def stage_0(mm):
+          print("stage_0_complete", mm)
+        as_micromesh.asyncSmoothed(conn,stage_0)
+        self.mesh_prim.fromVertsAndFacesDict(v,f,context)
 
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere
