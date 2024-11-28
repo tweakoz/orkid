@@ -12,6 +12,8 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 
+
+
 /////////////////////////////////////////////////////////////////////////
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
 /////////////////////////////////////////////////////////////////////////
@@ -19,6 +21,18 @@ bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
 ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
 
 namespace ork { namespace lev2 {
+
+
+struct IndexBufferImpl {
+  int miNumIndices = 0;
+  void* mpIndices = nullptr;
+  bool mbLocked = false;
+  ~IndexBufferImpl(){
+    if( mpIndices )
+      std::free(mpIndices);
+  }
+};
+
 
 void ContextDummy::describeX(class_t* clazz) {
 }
@@ -106,50 +120,68 @@ DuGeometryBufferInterface::DuGeometryBufferInterface(ContextDummy& ctx)
 }
 
 void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
-  if (0 == IdxBuf.GetHandle()) {
-    IdxBuf.SetHandle((void*)std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize()));
+  if (not IdxBuf._impl.isSet()) {
+    auto impl = IdxBuf._impl.makeShared<IndexBufferImpl>();
+    impl->miNumIndices = IdxBuf.GetNumIndices();
+    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
   }
-  char* pch = (char*)IdxBuf.GetHandle();
+  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  char* pch = (char*)impl->mpIndices;
+  impl->mbLocked     = true;
   return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
+  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  impl->mbLocked = false;
 }
 
 const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int ibase, int icount) {
-  if (0 == IdxBuf.GetHandle()) {
-    IdxBuf.SetHandle((void*)std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize()));
+  if (not IdxBuf._impl.isSet()) {
+    auto impl = IdxBuf._impl.makeShared<IndexBufferImpl>();
+    impl->miNumIndices = IdxBuf.GetNumIndices();
+    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
   }
-  const char* pch = (const char*)IdxBuf.GetHandle();
-  return (const void*)(pch + ibase);
+  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  char* pch = (char*)impl->mpIndices;
+  impl->mbLocked     = true;
+  return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
+  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  impl->mbLocked = false;
 }
 
 void DuGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
-  std::free(IdxBuf.GetHandle());
-  IdxBuf.SetHandle(0);
+
 }
+
+struct VertexBufferImpl {
+  ~VertexBufferImpl(){
+    if( _pmemory )
+      std::free(_pmemory);
+  }
+
+  void* _pmemory = nullptr;
+};
 
 void* DuGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int icount) {
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
-  if (0 == VBuf.GetHandle()) {
-    void* pdata = std::malloc(iVBlen);
-    // orkprintf( "DuGeometryBufferInterface::LockVB() malloc_vblen<%d>\n", iVBlen );
-    VBuf.SetHandle(pdata);
+  if(not VBuf._impl.isSet()){ 
+    auto impl = VBuf._impl.makeShared<VertexBufferImpl>();
+    impl->_pmemory = std::malloc(iVBlen);
   }
   VBuf.Lock();
-  // VBuf.Reset();
-  return VBuf.GetHandle();
+  auto impl = VBuf._impl.getShared<VertexBufferImpl>();
+  return impl->_pmemory;
 }
 
 const void* DuGeometryBufferInterface::LockVB(const VertexBufferBase& VBuf, int ibase, int icount) {
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
   VBuf.Lock();
-  const void* pdata = VBuf.GetHandle();
-  OrkAssert(pdata != 0);
-  return pdata;
+  auto impl = VBuf._impl.getShared<VertexBufferImpl>();
+  return impl->_pmemory;
 }
 
 void DuGeometryBufferInterface::UnLockVB(VertexBufferBase& VBuf) {
@@ -161,7 +193,7 @@ void DuGeometryBufferInterface::UnLockVB(const VertexBufferBase& VBuf) {
   VBuf.Unlock();
 }
 void DuGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
-  std::free((void*)VBuf.GetHandle());
+  VBuf._impl = nullptr;
 }
 
 bool ContextDummy::SetDisplayMode(DisplayMode* mode) {

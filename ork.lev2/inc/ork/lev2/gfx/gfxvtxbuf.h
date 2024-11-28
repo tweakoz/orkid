@@ -30,14 +30,11 @@ public:
 
   int GetNumIndices() const;
   void SetNumIndices(int inum);
-  void* GetHandle(void) const;
-  void SetHandle(void* ph) const;
   virtual int GetIndexSize() const = 0;
   virtual bool IsStatic() const    = 0;
   
-protected:
   int miNumIndices;
-  mutable void* mhIndexBuf;
+  mutable svar64_t _impl;
   void* mpIndices;
   bool mbLocked;
 
@@ -89,8 +86,6 @@ public:
   int GetMax(void) const;
   int GetNumVertices(void) const;
   int GetVtxSize(void) const;
-  void SetHandle(void* hVB);
-  void* GetHandle(void) const;
   void Reset(void);
   void SetNumVertices(int inum);
   EVtxStreamFormat GetStreamFormat(void) const;
@@ -108,9 +103,8 @@ public:
 
   virtual bool IsStatic() const = 0;
 
-protected:
   void* _vertices = nullptr;
-  void* _IMPL     = nullptr;
+  svar64_t _impl;
 
   int miNumVerts;
   int miMaxVerts;

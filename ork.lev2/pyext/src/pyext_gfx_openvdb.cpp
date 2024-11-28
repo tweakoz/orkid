@@ -257,9 +257,9 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       }
       for (auto& tri : tris) {
         indices.append(3);
-        indices.append(tri[0]);
-        indices.append(tri[1]);
         indices.append(tri[2]);
+        indices.append(tri[1]);
+        indices.append(tri[0]);
       }
       auto result = py::dict();
       result["vertices"] = vertices;

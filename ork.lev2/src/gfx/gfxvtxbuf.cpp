@@ -15,7 +15,6 @@ namespace ork { namespace lev2 {
 
 IndexBufferBase::IndexBufferBase()
     : miNumIndices(0)
-    , mhIndexBuf(0)
     , mpIndices(0) {
 }
 
@@ -30,12 +29,6 @@ IndexBufferBase::~IndexBufferBase() {
   }
   void IndexBufferBase::SetNumIndices(int inum) {
     miNumIndices = inum;
-  }
-  void* IndexBufferBase::GetHandle(void) const {
-    return (mhIndexBuf);
-  }
-  void IndexBufferBase::SetHandle(void* ph) const {
-    mhIndexBuf = ph;
   }
 
 
@@ -132,13 +125,6 @@ VertexBufferBase::~VertexBufferBase() {
   int VertexBufferBase::GetVtxSize(void) const {
     return int(miVtxSize);
   }
-  void VertexBufferBase::SetHandle(void* hVB) {
-    _IMPL = hVB;
-  }
-  void* VertexBufferBase::GetHandle(void) const {
-    return _IMPL;
-  }
-
   void VertexBufferBase::Reset(void) {
     miNumVerts = 0;
   }
