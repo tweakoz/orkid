@@ -22,8 +22,8 @@ tokens = CrcStringProxy()
 
 radius = 10.0 
 desired_num_points = 10000000
-voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 2.05)
+voxel_size = 0.125 #radius / math.cbrt(desired_num_points);
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 5.05)
 outside = sphere.background
 
 print(f"voxel_size:{voxel_size}")
@@ -44,10 +44,6 @@ f@a = 1.0;
 f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
-//f@a = 0.75+f@a*0.25;
-//if (f@a<0.5) {
-//  deletepoint(); // only for point grids, not volume grids
-//}
 
 """
 
@@ -77,11 +73,11 @@ class PointsPrimApp(object):
       #counter = 0
       while not self.ok_to_exit:
         #self.sphere = self.sphere.scatterVoxels()
-        cdata.set("freq",float(4.5+math.sin(self.phi*0.25)*4.25))
+        cdata.set("freq",float(2.0+math.sin(self.phi*0.25)*1.0))
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         
-        iso_parm = 0.5 #float(0.5+math.sin(self.phi*3.81)*0.45)
+        iso_parm = 0.25 #float(0.5+math.sin(self.phi*0.81)*0.45)
         #print(f"iso_parm:{iso_parm}")
         mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
@@ -164,7 +160,7 @@ class PointsPrimApp(object):
 
     def _pointsize():
       val = float(float(2.0+math.sin(self.phi*2.0)*2.0))
-      return 1.5
+      return 1.0
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
     pipeline.bindParam( pointsize_param, lambda : _pointsize() ) # set pointsize

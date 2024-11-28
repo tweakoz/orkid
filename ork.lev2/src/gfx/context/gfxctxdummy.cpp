@@ -23,11 +23,11 @@ ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
 namespace ork { namespace lev2 {
 
 
-struct IndexBufferImpl {
+struct DuIndexBufferImpl {
   int miNumIndices = 0;
   void* mpIndices = nullptr;
   bool mbLocked = false;
-  ~IndexBufferImpl(){
+  ~DuIndexBufferImpl(){
     if( mpIndices )
       std::free(mpIndices);
   }
@@ -121,33 +121,33 @@ DuGeometryBufferInterface::DuGeometryBufferInterface(ContextDummy& ctx)
 
 void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
   if (not IdxBuf._impl.isSet()) {
-    auto impl = IdxBuf._impl.makeShared<IndexBufferImpl>();
+    auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
     impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
   }
-  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   char* pch = (char*)impl->mpIndices;
   impl->mbLocked     = true;
   return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
-  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   impl->mbLocked = false;
 }
 
 const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int ibase, int icount) {
   if (not IdxBuf._impl.isSet()) {
-    auto impl = IdxBuf._impl.makeShared<IndexBufferImpl>();
+    auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
     impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
   }
-  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   char* pch = (char*)impl->mpIndices;
   impl->mbLocked     = true;
   return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
-  auto impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   impl->mbLocked = false;
 }
 
@@ -155,8 +155,8 @@ void DuGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
 
 }
 
-struct VertexBufferImpl {
-  ~VertexBufferImpl(){
+struct DuVertexBufferImpl {
+  ~DuVertexBufferImpl(){
     if( _pmemory )
       std::free(_pmemory);
   }
@@ -168,11 +168,11 @@ void* DuGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
   if(not VBuf._impl.isSet()){ 
-    auto impl = VBuf._impl.makeShared<VertexBufferImpl>();
+    auto impl = VBuf._impl.makeShared<DuVertexBufferImpl>();
     impl->_pmemory = std::malloc(iVBlen);
   }
   VBuf.Lock();
-  auto impl = VBuf._impl.getShared<VertexBufferImpl>();
+  auto impl = VBuf._impl.getShared<DuVertexBufferImpl>();
   return impl->_pmemory;
 }
 
@@ -180,7 +180,7 @@ const void* DuGeometryBufferInterface::LockVB(const VertexBufferBase& VBuf, int 
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
   VBuf.Lock();
-  auto impl = VBuf._impl.getShared<VertexBufferImpl>();
+  auto impl = VBuf._impl.getShared<DuVertexBufferImpl>();
   return impl->_pmemory;
 }
 

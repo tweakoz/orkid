@@ -113,7 +113,7 @@ static void RetBufMapPool(GlVtxBufMapPool* p) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-struct IndexBufferImpl {
+struct GlIndexBufferImpl {
 
   static std::atomic<int> _gidxbufcount;
 
@@ -125,15 +125,15 @@ struct IndexBufferImpl {
   int mMaxIndex = 0;
   GLenum _indexGlType = GL_NONE;
 
-  IndexBufferImpl(){
+  GlIndexBufferImpl(){
     opq::assertOnQueue(opq::mainSerialQueue());
     _gidxbufcount.fetch_add(1);
   }
 
-  ~IndexBufferImpl(){
+  ~GlIndexBufferImpl(){
     opq::assertOnQueue(opq::mainSerialQueue());
     int icount = _gidxbufcount.fetch_add(-1);
-    printf( "IndexBufferImpl::~IndexBufferImpl icount<%d>\n", icount );
+    //printf( "GlIndexBufferImpl::~GlIndexBufferImpl icount<%d>\n", icount );
     if (_IBO) {
       glDeleteBuffers(1, &_IBO);
     }
@@ -143,10 +143,10 @@ struct IndexBufferImpl {
   }
 };
 
-std::atomic<int> IndexBufferImpl::_gidxbufcount = 0;
+std::atomic<int> GlIndexBufferImpl::_gidxbufcount = 0;
 
 struct GLVaoHandle {
-  const IndexBufferImpl* _IBO = nullptr;
+  const GlIndexBufferImpl* _IBO = nullptr;
 
   GLuint _VAO = 0;
   bool mInited = false;
@@ -162,7 +162,7 @@ struct GLVaoHandle {
   }
 };
 
-struct VertexBufferImpl {
+struct GlVertexBufferImpl {
 
   static std::atomic<int> _gvtxbufcount;
   static std::atomic<size_t> _gvtxbufbytes;
@@ -174,15 +174,15 @@ struct VertexBufferImpl {
   GlVtxBufMapData* _mappedRegion = nullptr;
   std::unordered_map<size_t, GLVaoHandle*> _VAOMAP;
 
-  VertexBufferImpl(){
+  GlVertexBufferImpl(){
     opq::assertOnQueue(opq::mainSerialQueue());
     int icount = _gvtxbufcount.fetch_add(1);
-    printf( "VertexBufferImpl::VertexBufferImpl icount<%d>\n", icount );
+    //printf( "GlVertexBufferImpl::GlVertexBufferImpl icount<%d>\n", icount );
   }
-  ~VertexBufferImpl() {
+  ~GlVertexBufferImpl() {
     opq::assertOnQueue(opq::mainSerialQueue());
     int icount = _gvtxbufcount.fetch_add(-1);
-    printf( "VertexBufferImpl::~VertexBufferImpl icount<%d>\n", icount );
+    //printf( "GlVertexBufferImpl::~GlVertexBufferImpl icount<%d>\n", icount );
 
     //int ibytes = _gvtxbufbytes.fetch_add(iVBlen);
     //printf( "VBO bytes used: %d\n", ibytes );
@@ -231,7 +231,7 @@ struct VertexBufferImpl {
     GL_ERRORCHECK();
     int iVBlen = vtxbuf.GetVtxSize() * vtxbuf.GetMax();
 
-    // orkprintf( "CreateVBO<%p> len<%d> ID<%d>\n", & vtxbuf, iVBlen, int(_VBO) );
+    //printf( "GlVertexBufferImpl<%p> CreateVBO<%p> len<%d> ID<%d>\n", (void*) this, & vtxbuf, iVBlen, int(_VBO) );
 
     bool bSTATIC = vtxbuf.IsStatic();
 
@@ -242,7 +242,7 @@ struct VertexBufferImpl {
 
     _gvtxbufbytes.fetch_add(iVBlen);
     int ibytes = _gvtxbufbytes.load();
-    printf( "VBO bytes used: %d\n", ibytes );
+    //printf( "GlVertexBufferImpl<%p> VBO bytes used: %d\n", (void*) this, ibytes );
 
     GL_ERRORCHECK();
 
@@ -276,8 +276,8 @@ struct VertexBufferImpl {
   }
 };
 
-std::atomic<int> VertexBufferImpl::_gvtxbufcount = 0;
-std::atomic<size_t> VertexBufferImpl::_gvtxbufbytes = 0;
+std::atomic<int> GlVertexBufferImpl::_gvtxbufcount = 0;
+std::atomic<size_t> GlVertexBufferImpl::_gvtxbufbytes = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -304,10 +304,10 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& vtxbuf, int ibase, int
 
   void* rVal           = 0;
   if( not vtxbuf._impl.isSet() ){
-    auto impl = vtxbuf._impl.makeShared<VertexBufferImpl>();
+    auto impl = vtxbuf._impl.makeShared<GlVertexBufferImpl>();
     impl->CreateVbo(vtxbuf);
   }
-  auto impl = vtxbuf._impl.getShared<VertexBufferImpl>();
+  auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
 
   int iMax = vtxbuf.GetMax();
 
@@ -346,7 +346,7 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& vtxbuf, int ibase, int
       impl->_lockBase  = ibase;
       impl->_lockCount = icount;
 
-      printf("LOCKVB<WRITE> VB<%p> vboid<%d> ibase<%d> icount<%d> isizebytes<%d> _bufferSize<%d>\n", &vtxbuf, int(impl->_VBO), ibase, icount, isizebytes, int(impl->_bufferSize));
+      //printf("LOCKVB<WRITE> VB<%p> vboid<%d> ibase<%d> icount<%d> isizebytes<%d> _bufferSize<%d>\n", &vtxbuf, int(impl->_VBO), ibase, icount, isizebytes, int(impl->_bufferSize));
       switch (gDynVboPath) {
 #if defined(__APPLE__)
         case EVB_APPLE_FLUSH_RANGE:
@@ -397,7 +397,7 @@ const void* GlGeometryBufferInterface::LockVB(const VertexBufferBase& vtxbuf, in
   OrkAssert(false == vtxbuf.IsLocked());
 
   void* rVal           = 0;
-  auto impl = vtxbuf._impl.getShared<VertexBufferImpl>();
+  auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
 
   int iMax = vtxbuf.GetMax();
 
@@ -427,7 +427,7 @@ const void* GlGeometryBufferInterface::LockVB(const VertexBufferBase& vtxbuf, in
     rVal = glMapBufferRange(GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_READ_BIT); // MAP_UNSYNCHRONIZED_BIT?
     OrkAssert(rVal);
     OrkAssert(rVal != (void*)0xffffffff);
-    printf( "LOCKVB<READ> VB<%p> vboid<%d> ibase<%d> icount<%d> isizebytes<%d> _bufferSize<%d>\n", & vtxbuf, int(impl->_VBO), ibase, icount, isizebytes, int(impl->_bufferSize) );
+    //printf( "LOCKVB<READ> VB<%p> vboid<%d> ibase<%d> icount<%d> isizebytes<%d> _bufferSize<%d>\n", & vtxbuf, int(impl->_VBO), ibase, icount, isizebytes, int(impl->_bufferSize) );
     impl->_lockBase  = ibase;
     impl->_lockCount = icount;
   }
@@ -446,7 +446,7 @@ const void* GlGeometryBufferInterface::LockVB(const VertexBufferBase& vtxbuf, in
 void GlGeometryBufferInterface::UnLockVB(VertexBufferBase& vtxbuf) {
   OrkAssert(vtxbuf.IsLocked());
 
-  auto impl = vtxbuf._impl.getShared<VertexBufferImpl>();
+  auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
 
   if (vtxbuf.IsStatic()) {
     GL_ERRORCHECK();
@@ -460,7 +460,7 @@ void GlGeometryBufferInterface::UnLockVB(VertexBufferBase& vtxbuf) {
     int basebytes  = vtxbuf.GetVtxSize() * impl->_lockBase;
     int countbytes = vtxbuf.GetVtxSize() * impl->_lockCount;
 
-    printf( "UNLOCK VB<%p> lockbase<%d> base<%d> count<%d>\n", & vtxbuf, impl->_lockBase, basebytes, countbytes );
+    //printf( "UNLOCK VB<%p> lockbase<%d> base<%d> count<%d>\n", & vtxbuf, impl->_lockBase, basebytes, countbytes );
 
     GL_ERRORCHECK();
     glBindBuffer(GL_ARRAY_BUFFER, impl->_VBO);
@@ -497,7 +497,7 @@ void GlGeometryBufferInterface::UnLockVB(VertexBufferBase& vtxbuf) {
 
 void GlGeometryBufferInterface::UnLockVB(const VertexBufferBase& vtxbuf) {
   OrkAssert(vtxbuf.IsLocked());
-  auto impl = vtxbuf._impl.getShared<VertexBufferImpl>();
+  auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
   GL_ERRORCHECK();
 
   GL_ERRORCHECK();
@@ -776,7 +776,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& v
   evb_priv.set<const glslfx::Pass*>(pfxpass);
   ////////////////////////////////////////////////////////////////////
   // setup VBO or DL
-  auto impl = vtxbuf._impl.getShared<VertexBufferImpl>();
+  auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
   OrkAssert(impl);
   GL_ERRORCHECK();
 
@@ -815,13 +815,13 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
 
   ////////////////////////////////////////////////////////////////////
 
-  auto vbuf_impl = VBuf._impl.getShared<VertexBufferImpl>();
+  auto vbuf_impl = VBuf._impl.getShared<GlVertexBufferImpl>();
   OrkAssert(vbuf_impl);
   GL_ERRORCHECK();
 
   void* plat_h = mTargetGL.GetPlatformHandle();
 
-  auto ibuf_impl = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto ibuf_impl = IdxBuf._impl.getShared<GlIndexBufferImpl>();
 
   size_t k1    = size_t(ibuf_impl.get());
   size_t k2    = size_t(pfxpass);
@@ -1012,7 +1012,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   int iNum = IdxBuf.GetNumIndices();
 
-  auto plat_handle = IdxBuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = IdxBuf._impl.getShared<GlIndexBufferImpl>();
 
   int imin = plat_handle->mMinIndex;
   int imax = plat_handle->mMaxIndex;
@@ -1085,7 +1085,7 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   }
 
   int iNum          = idxbuf.GetNumIndices();
-  auto plat_handle = idxbuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
   int imin          = plat_handle->mMinIndex;
   int imax          = plat_handle->mMaxIndex;
   GLenum glprimtype = 0;
@@ -1132,15 +1132,15 @@ void* GlGeometryBufferInterface::LockIB(IndexBufferBase& idxbuf, int ibase, int 
   if (icount == 0)
     icount = idxbuf.GetNumIndices();
 
-  IndexBufferImpl* plat_handle = nullptr;
+  GlIndexBufferImpl* plat_handle = nullptr;
 
   if (not idxbuf._impl.isSet() ) {
-    auto new_plat_handle = idxbuf._impl.makeShared<IndexBufferImpl>();
+    auto new_plat_handle = idxbuf._impl.makeShared<GlIndexBufferImpl>();
     new_plat_handle->mNumIndices = icount;
     new_plat_handle->_buffer = malloc(idxbuf.GetIndexSize()*icount);
     plat_handle = new_plat_handle.get();
   } else {
-    plat_handle = idxbuf._impl.getShared<IndexBufferImpl>().get();
+    plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>().get();
   }
   rval = plat_handle->_buffer;
   return rval;    
@@ -1150,7 +1150,7 @@ void* GlGeometryBufferInterface::LockIB(IndexBufferBase& idxbuf, int ibase, int 
 
 void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
 
-  auto plat_handle = idxbuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
   const void* src_data = plat_handle->_buffer;
   int iblen            = plat_handle->mNumIndices * idxbuf.GetIndexSize();
 
@@ -1202,7 +1202,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 const void* GlGeometryBufferInterface::LockIB(const IndexBufferBase& idxbuf, int ibase, int icount) {
-  auto plat_handle = idxbuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
   const void* rval = plat_handle->_buffer;
   return rval;
 }
@@ -1210,13 +1210,13 @@ const void* GlGeometryBufferInterface::LockIB(const IndexBufferBase& idxbuf, int
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlGeometryBufferInterface::UnLockIB(const IndexBufferBase& idxbuf) {
-  auto plat_handle = idxbuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlGeometryBufferInterface::ReleaseIB(IndexBufferBase& idxbuf) {
-  auto plat_handle = idxbuf._impl.getShared<IndexBufferImpl>();
+  auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
   idxbuf._impl = nullptr;
 }
 

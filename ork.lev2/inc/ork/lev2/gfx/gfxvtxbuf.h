@@ -104,7 +104,7 @@ public:
   virtual bool IsStatic() const = 0;
 
   void* _vertices = nullptr;
-  svar64_t _impl;
+  svar16_t _impl;
 
   int miNumVerts;
   int miMaxVerts;

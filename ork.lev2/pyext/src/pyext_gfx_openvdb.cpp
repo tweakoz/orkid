@@ -231,7 +231,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       {
           py::gil_scoped_release release;
 
-          bool relax = false;
+          bool relax = true;
           float adaptivity = 0.0f;
 
           openvdb::tools::volumeToMesh( *grid, 
