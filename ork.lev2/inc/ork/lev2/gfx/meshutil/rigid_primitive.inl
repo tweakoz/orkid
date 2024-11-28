@@ -36,8 +36,10 @@ struct XgmClusterizerStd;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RigidPrimitiveBase {
-  using idxbuf_t     = lev2::StaticIndexBuffer<uint16_t>;
-  using idxbuf_ptr_t = std::shared_ptr<idxbuf_t>;
+  using idxbuf_t     = lev2::StaticIndexBuffer<uint32_t>;
+  using idxbuf_ptr_t = lev2::idxbufferbase_ptr_t; //std::shared_ptr<>;
+
+  struct IPrimitiveGroup {};
 
   struct PrimitiveGroup {
     idxbuf_ptr_t _idxbuffer;
@@ -251,10 +253,10 @@ void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& c
       gpu_prim->_primtype = src_PG->GetPrimType();
       out_cluster->_primgroups.push_back(gpu_prim);
       size_t numindices    = src_PG->GetNumIndices();
-      auto src_indexdata   = (const uint16_t*)context->GBI()->LockIB(*src_PG->GetIndexBuffer());
+      auto src_indexdata   = (const uint32_t*)context->GBI()->LockIB(*src_PG->GetIndexBuffer());
       gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
       auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, src_indexdata, numindices * sizeof(uint16_t));
+      memcpy(gpuindexptr, src_indexdata, numindices * sizeof(uint32_t));
       context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
       context->GBI()->UnLockIB(*src_PG->GetIndexBuffer());
     }
@@ -344,7 +346,7 @@ void RigidPrimitive<vtx_t>::writeToChunks(
       hdrstream->AddItem<size_t>(ibufoffset);
       geostream->Write(
           (const uint8_t*)indexdata, //
-          numindices * sizeof(uint16_t));
+          numindices * sizeof(uint32_t));
       DummyTarget.GBI()->UnLockIB(*PG->mpIndices);
     }
     ////////////////////////////////////////////////////////////////
@@ -411,10 +413,10 @@ void RigidPrimitive<vtx_t>::clusterizerToChunks(
       hdrstream->AddItem<size_t>(numindices);
       hdrstream->AddItem<size_t>(ibufoffset);
 
-      auto src_indexdata = (const uint16_t*)DummyTarget.GBI()->LockIB(*src_PG->GetIndexBuffer());
+      auto src_indexdata = (const uint32_t*)DummyTarget.GBI()->LockIB(*src_PG->GetIndexBuffer());
       geostream->Write(
           (const uint8_t*)src_indexdata, //
-          numindices * sizeof(uint16_t));
+          numindices * sizeof(uint32_t));
 
       DummyTarget.GBI()->UnLockIB(*src_PG->GetIndexBuffer());
     }
@@ -475,7 +477,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
       hdrstream->GetItem<lev2::PrimitiveType>(primtype);
       hdrstream->GetItem<size_t>(numindices);
       hdrstream->GetItem<size_t>(indexdataoffset);
-      auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
+      auto indexbufferdata = (const uint32_t*)geostream->GetDataAt(indexdataoffset);
 
       auto gpu_prim = std::make_shared<PrimitiveGroup>();
       gpu_cluster->_primgroups.push_back(gpu_prim);
@@ -483,7 +485,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
       gpu_prim->_primtype  = primtype;
       gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
       auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
+      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint32_t));
       context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
     }
     hdrstream->GetItem<size_t>(end_lod_marker);
@@ -549,7 +551,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunksA(
       // printf( "ipg<%zu> primtype<%d> numindices<%zu> indexdataoffset<%zu>\n",
       //       ipg, int(primtype), numindices, indexdataoffset );
 
-      auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);
+      auto indexbufferdata = (const uint32_t*)geostream->GetDataAt(indexdataoffset);
 
       auto gpu_prim = std::make_shared<PrimitiveGroup>();
       gpu_cluster->_primgroups.push_back(gpu_prim);
@@ -557,7 +559,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunksA(
       gpu_prim->_primtype  = primtype;
       gpu_prim->_idxbuffer = std::make_shared<idxbuf_t>(numindices);
       auto gpuindexptr     = (void*)context->GBI()->LockIB(*gpu_prim->_idxbuffer.get());
-      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint16_t));
+      memcpy(gpuindexptr, indexbufferdata, numindices * sizeof(uint32_t));
       context->GBI()->UnLockIB(*gpu_prim->_idxbuffer.get());
     }
     hdrstream->GetItem<size_t>(end_lod_marker);

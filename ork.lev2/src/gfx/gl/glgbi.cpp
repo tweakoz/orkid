@@ -118,6 +118,7 @@ struct GLIdxBufHandle {
   int mNumIndices;
   int mMinIndex;
   int mMaxIndex;
+  GLenum _indexGlType;
 
   GLIdxBufHandle()
       : mIBO(0)
@@ -1032,15 +1033,16 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         OrkAssert(false);
         break;
     }
+    auto indextype = plat_handle->_indexGlType;
     if (glprimtype != 0) {
       if (ivbase != 0){
         //printf("A\n");
-        glDrawElementsBaseVertex(glprimtype, iNum, GL_UNSIGNED_SHORT, nullptr, ivbase);
+        glDrawElementsBaseVertex(glprimtype, iNum, indextype, nullptr, ivbase);
       }
       else{
         int vblen = VBuf.GetNumVertices();
         //printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
-        glDrawRangeElements(glprimtype, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr);
+        glDrawRangeElements(glprimtype, imin, imax, iNum, indextype, nullptr);
       }
     }
     GL_ERRORCHECK();
@@ -1072,6 +1074,9 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   int imin          = plat_handle->mMinIndex;
   int imax          = plat_handle->mMaxIndex;
   GLenum glprimtype = 0;
+
+  auto indextype = plat_handle->_indexGlType;
+
   if (iNum) {
     GL_ERRORCHECK();
     switch (eType) {
@@ -1097,7 +1102,7 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
         break;
     }
     if (glprimtype != 0) {
-      glDrawElementsInstanced(glprimtype, iNum, GL_UNSIGNED_SHORT, nullptr, instance_count);
+      glDrawElementsInstanced(glprimtype, iNum, indextype, nullptr, instance_count);
     }
     GL_ERRORCHECK();
   }
@@ -1135,27 +1140,54 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
   auto plat_handle = (GLIdxBufHandle*)IdxBuf.GetHandle();
   assert(plat_handle != nullptr);
   {
+
+    
+
     const void* src_data = plat_handle->mBuffer;
-    int iblen            = plat_handle->mNumIndices * sizeof(U16);
+    int iblen            = plat_handle->mNumIndices * IdxBuf.GetIndexSize();
 
     // printf( "UNLOCKIBO\n");
     glGenBuffers(1, (GLuint*)&plat_handle->mIBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, plat_handle->mIBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, iblen, src_data, GL_STATIC_DRAW);
 
-    auto p16 = static_cast<const uint16_t*>(src_data);
 
-    uint16_t umin = 65535;
-    uint16_t umax = 0;
-    for (int i = 0; i < plat_handle->mNumIndices; i++) {
-      uint16_t u = p16[i];
-      if (u > umax)
-        umax = u;
-      if (u < umin)
-        umin = u;
+    switch (IdxBuf.GetIndexSize()) {
+      case 2:{
+        uint16_t umin = 65535;
+        uint16_t umax = 0;
+        auto p16 = static_cast<const uint16_t*>(src_data);
+        for (int i = 0; i < plat_handle->mNumIndices; i++) {
+          uint16_t u = p16[i];
+          if (u > umax)
+            umax = u;
+          if (u < umin)
+            umin = u;
+        }
+        plat_handle->mMinIndex = int(umin);
+        plat_handle->mMaxIndex = int(umax);
+        plat_handle->_indexGlType = GL_UNSIGNED_SHORT;
+        break;
+      }
+      case 4:{
+        uint32_t umin = 0xffffffff;
+        uint32_t umax = 0;
+        auto p32 = static_cast<const uint32_t*>(src_data);
+        for (int i = 0; i < plat_handle->mNumIndices; i++) {
+          uint32_t u = p32[i];
+          if (u > umax)
+            umax = u;
+          if (u < umin)
+            umin = u;
+        }
+        plat_handle->mMinIndex = int(umin);
+        plat_handle->mMaxIndex = int(umax);
+        plat_handle->_indexGlType = GL_UNSIGNED_INT;
+        break;
+        break;
+      }
     }
-    plat_handle->mMinIndex = int(umin);
-    plat_handle->mMaxIndex = int(umax);
+
 
     // printf( "umin<%d> umax<%d>\n", int(umin), int(umax) );
     // glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );

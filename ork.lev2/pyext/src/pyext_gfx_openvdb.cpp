@@ -227,9 +227,20 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
     .def("toQuads", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
       std::vector< openvdb::Vec3s > points;
       std::vector< openvdb::Vec4I > quads;
+      std::vector< openvdb::Vec3I > tris;
       {
           py::gil_scoped_release release;
-          openvdb::tools::volumeToMesh(*grid, points, quads,isovalue);
+
+          bool relax = false;
+          float adaptivity = 0.0f;
+
+          openvdb::tools::volumeToMesh( *grid, 
+                                        points, 
+                                        tris,
+                                        quads,
+                                        isovalue,
+                                        adaptivity,
+                                        relax   );
       }
       auto vertices = py::list();
       auto indices = py::list();
@@ -243,6 +254,12 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
         indices.append(quad[2]);
         indices.append(quad[1]);
         indices.append(quad[0]);
+      }
+      for (auto& tri : tris) {
+        indices.append(3);
+        indices.append(tri[0]);
+        indices.append(tri[1]);
+        indices.append(tri[2]);
       }
       auto result = py::dict();
       result["vertices"] = vertices;

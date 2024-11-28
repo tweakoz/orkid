@@ -227,7 +227,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             prim->_gpuClusters.clear();
             auto cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
             auto vtxbuf = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(verts.size(),0);
-            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint16_t>>(faces.size());
+            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(faces.size());
             cluster->_vtxbuffer = vtxbuf;
             auto PG = std::make_shared<rigidprim_t::PrimitiveGroup>();
             cluster->_primgroups.push_back(PG);
@@ -248,7 +248,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             bool done_with_faces = false;
             int numface_values = faces.size();
             auto idxptr = GBI->LockIB(*idxbuf.get(), 0, 1<<20);
-            auto typed_index_base = (uint16_t*) idxptr;
+            auto typed_index_base = (uint32_t*) idxptr;
 
             using pos_list_t = std::vector<fvec3>;
             std::unordered_map<int, pos_list_t> p2n_map;

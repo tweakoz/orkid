@@ -89,6 +89,7 @@ class VertexBufferBase;
 class IndexBufferBase;
 //
 using vtxbufferbase_ptr_t    = std::shared_ptr<VertexBufferBase>;
+using idxbufferbase_ptr_t    = std::shared_ptr<IndexBufferBase>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // RenderPass

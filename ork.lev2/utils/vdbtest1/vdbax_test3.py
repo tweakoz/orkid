@@ -44,7 +44,7 @@ f@a = 1.0;
 f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
 f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
-
+f@a = 0.75;//+f@a*0.25;
 //if (f@a<0.5) {
 //  deletepoint(); // only for point grids, not volume grids
 //}
@@ -81,12 +81,13 @@ class PointsPrimApp(object):
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         
-        iso_parm = float(0.5+math.sin(self.phi*3.81)*0.45)
-        #print(f"iso_parm:{iso_parm}")
+        iso_parm = 0.001 #float(0.5+math.sin(self.phi*3.81)*0.45)
+        print(f"iso_parm:{iso_parm}")
         mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
         num_verts = len(mesh_dict["vertices"])
         num_faces = len(mesh_dict["faces"])
+        print(f"num_verts:{num_verts} num_faces:{num_faces}")
         if (num_verts>0) and (num_faces>0):
           self.result_submesh = mesh_dict #meshutil.SubMesh.createFromDict2(mesh_dict)
         else:
