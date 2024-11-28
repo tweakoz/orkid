@@ -89,7 +89,7 @@ class PointsPrimApp(object):
         num_faces = len(mesh_dict["faces"])
         print(f"num_verts:{num_verts} num_faces:{num_faces}")
         if (num_verts>0) and (num_faces>0):
-          self.result_submesh = mesh_dict #meshutil.SubMesh.createFromDict2(mesh_dict)
+          self.result_submesh = mesh_dict 
         else:
           self.result_submesh = None
         self.next_submesh = self.result_submesh
@@ -195,20 +195,6 @@ class PointsPrimApp(object):
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
-        # convert faces from [numv v0 v1 v2 numv v0 v1 v2] to [[v0 v1 v2] [v0 v1 v2]]
-        #faces_2 = []
-        #count = len(f)
-        #i = 0
-        #while(i<count):
-        #  numv = f[i]
-        #  i+=1
-        #  face = f[i:i+numv]
-        #  faces_2.append(face)
-        #  i+=numv
-        # write to obj with trimesh
-        #import trimesh
-        #mesh = trimesh.Trimesh(vertices=v,faces=faces_2)
-        #mesh.export("dump.obj")
         self.mesh_prim.fromVertsAndFacesDict(v,f,context)
 
       self.this_submesh = self.next_submesh

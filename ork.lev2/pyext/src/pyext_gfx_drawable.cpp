@@ -248,13 +248,17 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               done_with_faces = (iidx >= numface_values);
             }
             int num_triangles_total = num_tris + num_quads*2;
+            int num_indices_required = num_triangles_total*3;
 
+            printf("num_tris<%d> num_quads<%d>\n", num_tris, num_quads);
+            printf("num_triangles_total<%d>\n", num_triangles_total);
+            printf("num_indices_required<%d>\n", num_indices_required);
 
             auto GBI = context->GBI();
             prim->_gpuClusters.clear();
             auto cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
             auto vtxbuf = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(verts.size(),0);
-            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_triangles_total*3);
+            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_indices_required);
             cluster->_vtxbuffer = vtxbuf;
             auto PG = std::make_shared<rigidprim_t::PrimitiveGroup>();
             cluster->_primgroups.push_back(PG);
@@ -273,17 +277,18 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             iidx = 0;
             done_with_faces = false;
             int oidx = 0;
-            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, num_triangles_total*3);
+            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, num_indices_required);
             auto typed_index_base = (uint32_t*) idxptr;
 
             using pos_list_t = std::vector<fvec3>;
             std::unordered_map<int, pos_list_t> p2n_map;
+            printf("writing indices\n");
             while(not done_with_faces ){
               //printf("iidx<%d> numface_values<%d>\n", iidx, numface_values);
               int face_size = faces[iidx++].cast<int>();
               switch(face_size){
                 case 3:{
-                  OrkAssert((oidx+3) <= (num_triangles_total*3));
+                  OrkAssert((oidx+3) <= num_indices_required);
                   auto i0 = faces[iidx+0].cast<int>();
                   auto i1 = faces[iidx+1].cast<int>();
                   auto i2 = faces[iidx+2].cast<int>();
@@ -294,7 +299,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                   break;
                 }
                 case 4:{
-                  OrkAssert((oidx+6) <= (num_triangles_total*3));
+                  OrkAssert((oidx+6) <= num_indices_required);
                   auto i0 = faces[iidx+0].cast<int>();
                   auto i1 = faces[iidx+1].cast<int>();
                   auto i2 = faces[iidx+2].cast<int>();
@@ -348,6 +353,8 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               }
               done_with_faces = (iidx >= numface_values);
             }
+            OrkAssert(oidx == num_indices_required);
+            printf("oidx<%d> num_indices_required<%d>\n", oidx, num_indices_required);
             GBI->UnLockIB(*idxbuf.get());
             GBI->UnLockVB(*vtxbuf.get());
             //////////////////////////////////////////////////////////////
