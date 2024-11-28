@@ -223,11 +223,38 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
             //auto primdata = std::make_shared<meshutil::RigidPrimitiveData>();
             //auto vtxlist  = primdata->_vertices;
             //auto idxlist  = primdata->_indices;
+            const int numface_values = faces.size();
+            bool done_with_faces = false;
+            int iidx = 0;
+            int num_tris = 0;
+            int num_quads = 0;
+            while(not done_with_faces ){
+              int face_size = faces[iidx++].cast<int>();
+              switch(face_size){
+                case 3:{
+                  iidx += 3;
+                  num_tris++;
+                  break;
+                }
+                case 4:{
+                  iidx += 4;
+                  num_quads++;
+                  break;
+                }
+                default:
+                  OrkAssert(false);
+                  break;
+              }
+              done_with_faces = (iidx >= numface_values);
+            }
+            int num_triangles_total = num_tris + num_quads*2;
+
+
             auto GBI = context->GBI();
             prim->_gpuClusters.clear();
             auto cluster = std::make_shared<rigidprim_t::PrimGroupCluster>();
             auto vtxbuf = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(verts.size(),0);
-            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(faces.size());
+            auto idxbuf = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_triangles_total*3);
             cluster->_vtxbuffer = vtxbuf;
             auto PG = std::make_shared<rigidprim_t::PrimitiveGroup>();
             cluster->_primgroups.push_back(PG);
@@ -243,11 +270,10 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               vertex_out._position = vtx_in.cast<fvec3>();
             }
             //////////////////////////////////////////////////////////////
-            int iidx = 0;
+            iidx = 0;
+            done_with_faces = false;
             int oidx = 0;
-            bool done_with_faces = false;
-            int numface_values = faces.size();
-            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, 1<<20);
+            auto idxptr = GBI->LockIB(*idxbuf.get(), 0, num_triangles_total*3);
             auto typed_index_base = (uint32_t*) idxptr;
 
             using pos_list_t = std::vector<fvec3>;
@@ -257,6 +283,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               int face_size = faces[iidx++].cast<int>();
               switch(face_size){
                 case 3:{
+                  OrkAssert((oidx+3) <= (num_triangles_total*3));
                   auto i0 = faces[iidx+0].cast<int>();
                   auto i1 = faces[iidx+1].cast<int>();
                   auto i2 = faces[iidx+2].cast<int>();
@@ -267,6 +294,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                   break;
                 }
                 case 4:{
+                  OrkAssert((oidx+6) <= (num_triangles_total*3));
                   auto i0 = faces[iidx+0].cast<int>();
                   auto i1 = faces[iidx+1].cast<int>();
                   auto i2 = faces[iidx+2].cast<int>();
