@@ -622,5 +622,7 @@ using rigidprim_V12_ptr_t           = std::shared_ptr<rigidprim_V12_t>;
 using rigidprim_V12T8_ptr_t         = std::shared_ptr<rigidprim_V12T8_t>;
 using rigidprim_V12C4T16_ptr_t      = std::shared_ptr<rigidprim_V12C4T16_t>;
 using rigidprim_SVtxV12N12T16_ptr_t = std::shared_ptr<rigidprim_SVtxV12N12T16_t>;
+using rigidprim_V12N12B12T8C4_t     = meshutil::RigidPrimitive<lev2::SVtxV12N12B12T8C4>;
+using rigidprim_V12N12B12T8C4_ptr_t = std::shared_ptr<rigidprim_V12N12B12T8C4_t>;
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

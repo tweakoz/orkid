@@ -8,6 +8,7 @@
 #include "pyext.h"
 
 #include <ork/math/cvector3.h>
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,11 +30,17 @@ struct MicroMeshConnectivity {
 
 ///////////////////////////////////////
 
+using umesh_rprim_t = meshutil::rigidprim_V12N12B12T8C4_t;
+using umesh_rprim_ptr_t = std::shared_ptr<umesh_rprim_t>;
 struct MicroMesh {
+  MicroMesh() {}
   MicroMesh(py::list vert_list, py::list face_list);
   micromesh_connectivity_ptr_t computeVertexConnectivity() const;
   micromesh_ptr_t smoothed(micromesh_connectivity_ptr_t conn) const;
   std::vector<fvec3> computeNormals(micromesh_connectivity_ptr_t conn) const;
+  void updateRigidPrim(umesh_rprim_ptr_t prim, 
+                       micromesh_connectivity_ptr_t conn, 
+                       ctx_t context) const;
   std::vector<fvec3> _vertices;
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
@@ -110,7 +117,7 @@ inline micromesh_connectivity_ptr_t MicroMesh::computeVertexConnectivity() const
 ///////////////////////////////////////
 
 inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) const {
-  auto result = std::make_shared<MicroMesh>(py::list(),py::list());
+  auto result = std::make_shared<MicroMesh>();
   for( size_t iv=0; iv<_vertices.size(); iv++ ){
     const auto& vtx = _vertices[iv];
     const auto& connlist = conn->_connectivity.at(iv);
@@ -124,6 +131,70 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
   result->_tris = _tris;
   result->_quads = _quads;
   return result;
+}
+
+void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim, 
+                                micromesh_connectivity_ptr_t conn, 
+                                ctx_t context) const {
+  ////////////////////////////////////////////
+  int num_verts = _vertices.size();
+  int num_tris = _tris.size();
+  int num_quads = _quads.size();
+  int num_indices_required = num_tris * 3 + num_quads * 6;
+  ////////////////////////////////////////////
+  auto GBI = context->GBI();
+  prim->_gpuClusters.clear();
+  auto cluster        = std::make_shared<umesh_rprim_t::PrimGroupCluster>();
+  auto vtxbuf         = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(num_verts, 0);
+  auto idxbuf         = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_indices_required);
+  cluster->_vtxbuffer = vtxbuf;
+  auto PG             = std::make_shared<umesh_rprim_t::PrimitiveGroup>();
+  cluster->_primgroups.push_back(PG);
+  PG->_primtype  = lev2::PrimitiveType::TRIANGLES;
+  PG->_idxbuffer = idxbuf;
+  prim->_gpuClusters.push_back(cluster);
+  //////////////////////////////////////////////////////////////
+  auto normals = computeNormals(conn);
+  //////////////////////////////////////////////////////////////
+  auto vtxptr            = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
+  auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
+  int ivtx = 0;
+  for (auto vtx_in : _vertices) {
+    auto& vertex_out     = typed_vertex_base[ivtx];
+    vertex_out._position = vtx_in;
+    const auto& N   = normals[ivtx];
+    vertex_out._normal   = N;
+    uint32_t color       = 0;
+    color |= uint32_t((N.x * 0.5f + 0.5f) * 255.0f);
+    color |= uint32_t((N.y * 0.5f + 0.5f) * 255.0f) << 8;
+    color |= uint32_t((N.z * 0.5f + 0.5f) * 255.0f) << 16;
+    vertex_out._color = color;
+    ivtx++;
+  }
+  //////////////////////////////////////////////////////////////
+  int oidx              = 0;
+  auto idxptr           = GBI->LockIB(*idxbuf.get(), 0, num_indices_required);
+  auto typed_indices = (uint32_t*)idxptr;
+
+  for( auto t : _tris ){
+    typed_indices[oidx++] = t[2];
+    typed_indices[oidx++] = t[1];
+    typed_indices[oidx++] = t[0];
+  }
+  for( auto q : _quads ){
+    typed_indices[oidx++] = q[2];
+    typed_indices[oidx++] = q[1];
+    typed_indices[oidx++] = q[0];
+    typed_indices[oidx++] = q[2];
+    typed_indices[oidx++] = q[0];
+    typed_indices[oidx++] = q[3];
+  }
+  OrkAssert(oidx == num_indices_required);
+  // printf("oidx<%d> num_indices_required<%d>\n", oidx, num_indices_required);
+  GBI->UnLockIB(*idxbuf.get());
+  GBI->UnLockVB(*vtxbuf.get());
+  //////////////////////////////////////////////////////////////
+  // prim->fromData(primdata, context.get());
 }
 
 ///////////////////////////////////////

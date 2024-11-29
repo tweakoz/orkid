@@ -60,6 +60,23 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
       return quads;
     })
     //////////////////////////////////////////////////
+    .def_property_readonly("faces", [](micromesh_ptr_t mesh) -> py::list {
+      auto faces = py::list();
+      for( auto& q : mesh->_quads ){
+        faces.append(int(4));
+        for( auto& idx : q ){
+          faces.append(idx);
+        }
+      }
+      for( auto& t : mesh->_tris ){
+        faces.append(int(3));
+        for( auto& idx : t ){
+          faces.append(idx);
+        }
+      }
+      return faces;
+    })
+    //////////////////////////////////////////////////
     .def_property_readonly("vertexConnectivity", [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
       py::gil_scoped_release release;
       return mesh->computeVertexConnectivity();
@@ -70,21 +87,47 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
       return mesh->smoothed(conn);
     })
     //////////////////////////////////////////////////
-    .def("asyncSmoothed", [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn, py::object on_complete) {
-      struct WTF {
-        WTF(py::object on_complete) : _on_complete(on_complete) {}
-        py::object _on_complete;
-      };
-      //auto wtf = std::make_shared<WTF>(on_complete);
-      py::gil_scoped_release release;
+    .def("asyncSmoothed", [](micromesh_ptr_t mesh, //
+                             micromesh_connectivity_ptr_t conn, //
+                             umesh_rprim_ptr_t prim,
+                             ctx_t context) { //
 
-      auto op = [mesh,conn](){
-        auto smoothed = mesh->smoothed(conn);
-        //py::gil_scoped_acquire acquire;
-        //auto as_fn = wtf->_on_complete.cast<py::function>();
-        //as_fn(smoothed);
+      auto st1 = [=](){
+        auto mesh_st1 = mesh->smoothed(conn);
+        auto st2 = [=](){
+          auto mesh_st2 = mesh_st1->smoothed(conn);
+          auto st3 = [=](){
+            auto mesh_st3 = mesh_st2->smoothed(conn);
+            auto st4 = [=](){
+              auto mesh_st4 = mesh_st3->smoothed(conn);
+              auto st5 = [=](){
+                auto mesh_st5 = mesh_st4->smoothed(conn);
+                auto st6 = [=](){
+                  auto mesh_st6 = mesh_st5->smoothed(conn);
+                  auto st7 = [=](){
+                    auto mesh_st7 = mesh_st6->smoothed(conn);
+                    auto st8 = [=](){
+                      auto mesh_st8 = mesh_st7->smoothed(conn);
+                      auto st9 = [=](){
+                        mesh_st8->updateRigidPrim(prim, conn, context.get());
+                      };
+                      opq::mainSerialQueue()->enqueue(st9);
+                    };
+                    opq::mainSerialQueue()->enqueue(st8);
+                  };
+                  opq::mainSerialQueue()->enqueue(st7);
+                };
+                opq::mainSerialQueue()->enqueue(st6);
+              };
+              opq::mainSerialQueue()->enqueue(st5);
+            };
+            opq::mainSerialQueue()->enqueue(st4);
+          };
+          opq::concurrentQueue()->enqueue(st3);
+        };
+        opq::concurrentQueue()->enqueue(st2);        
       };
-      opq::concurrentQueue()->enqueue(op);
+      opq::concurrentQueue()->enqueue(st1);
     });
   /////////////////////////////////////////////////////////////////////////////////
   auto micromesh_conn_type = py::class_<MicroMeshConnectivity,micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
@@ -138,85 +181,40 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<meshutil::rigidprimitive_ptr_t>(rprimbase_t);
   /////////////////////////////////////////////////////////////////////////////////
-  using rigidprim_t     = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
-  using rigidprim_ptr_t = std::shared_ptr<rigidprim_t>;
-  py::class_<rigidprim_t, meshutil::RigidPrimitiveBase, rigidprim_ptr_t>(module_lev2, "RigidPrimitive")
+  py::class_<meshutil::rigidprim_V12N12B12T8C4_t, meshutil::RigidPrimitiveBase, meshutil::rigidprim_V12N12B12T8C4_ptr_t>(module_lev2, "RigidPrimitive")
       .def(py::init<>())
       .def(py::init([](meshutil::submesh_ptr_t submesh, ctx_t context) {
-        auto prim = std::make_shared<rigidprim_t>();
+        auto prim = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t>();
         prim->fromSubMesh(*submesh, context.get());
         return prim;
       }))
       .def(
-          "fromSubMesh",
-          [](rigidprim_ptr_t prim, meshutil::submesh_ptr_t submesh, ctx_t context) { prim->fromSubMesh(*submesh, context.get()); })
+          "fromSubMesh", //
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
+             meshutil::submesh_ptr_t submesh, //
+             ctx_t context) { //
+              prim->fromSubMesh(*submesh, context.get());
+          })
       .def(
-          "fromVertsAndFacesDict",
-          [](rigidprim_ptr_t prim, py::list verts, py::list faces, ctx_t context) { //
+          "fromMicroMesh", //
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
+             meshutil::submesh_ptr_t submesh, //
+             micromesh_connectivity_ptr_t conn, //
+             ctx_t context) { //
+            //prim->fromSubMesh(*submesh, context.get());
+          })
+      .def(
+          "fromVertsAndFacesDict", //
+          [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
+             py::list verts, //
+             py::list faces, //
+             ctx_t context) { //
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto conn      = micromesh->computeVertexConnectivity();
-            ////////////////////////////////////////////
-            int num_verts = micromesh->_vertices.size();
-            int num_tris = micromesh->_tris.size();
-            int num_quads = micromesh->_quads.size();
-            int num_indices_required = num_tris * 3 + num_quads * 6;
-            ////////////////////////////////////////////
-            auto GBI = context->GBI();
-            prim->_gpuClusters.clear();
-            auto cluster        = std::make_shared<rigidprim_t::PrimGroupCluster>();
-            auto vtxbuf         = std::make_shared<lev2::StaticVertexBuffer<SVtxV12N12B12T8C4>>(num_verts, 0);
-            auto idxbuf         = std::make_shared<lev2::StaticIndexBuffer<uint32_t>>(num_indices_required);
-            cluster->_vtxbuffer = vtxbuf;
-            auto PG             = std::make_shared<rigidprim_t::PrimitiveGroup>();
-            cluster->_primgroups.push_back(PG);
-            PG->_primtype  = lev2::PrimitiveType::TRIANGLES;
-            PG->_idxbuffer = idxbuf;
-            prim->_gpuClusters.push_back(cluster);
-            //////////////////////////////////////////////////////////////
-            auto normals = micromesh->computeNormals(conn);
-            //////////////////////////////////////////////////////////////
-            auto vtxptr            = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
-            auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
-            int ivtx = 0;
-            for (auto vtx_in : micromesh->_vertices) {
-              auto& vertex_out     = typed_vertex_base[ivtx];
-              vertex_out._position = vtx_in;
-              const auto& N   = normals[ivtx];
-              vertex_out._normal   = N;
-              uint32_t color       = 0;
-              color |= uint32_t((N.x * 0.5f + 0.5f) * 255.0f);
-              color |= uint32_t((N.y * 0.5f + 0.5f) * 255.0f) << 8;
-              color |= uint32_t((N.z * 0.5f + 0.5f) * 255.0f) << 16;
-              vertex_out._color = color;
-              ivtx++;
-            }
-            //////////////////////////////////////////////////////////////
-            int oidx              = 0;
-            auto idxptr           = GBI->LockIB(*idxbuf.get(), 0, num_indices_required);
-            auto typed_indices = (uint32_t*)idxptr;
-
-            for( auto t : micromesh->_tris ){
-              typed_indices[oidx++] = t[2];
-              typed_indices[oidx++] = t[1];
-              typed_indices[oidx++] = t[0];
-            }
-            for( auto q : micromesh->_quads ){
-              typed_indices[oidx++] = q[2];
-              typed_indices[oidx++] = q[1];
-              typed_indices[oidx++] = q[0];
-              typed_indices[oidx++] = q[2];
-              typed_indices[oidx++] = q[0];
-              typed_indices[oidx++] = q[3];
-            }
-            OrkAssert(oidx == num_indices_required);
-            // printf("oidx<%d> num_indices_required<%d>\n", oidx, num_indices_required);
-            GBI->UnLockIB(*idxbuf.get());
-            GBI->UnLockVB(*vtxbuf.get());
-            //////////////////////////////////////////////////////////////
-            // prim->fromData(primdata, context.get());
+            micromesh->updateRigidPrim(prim, conn, context.get());
           })
-      .def("renderEML", [](rigidprim_ptr_t prim, ctx_t context) { //
+      .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());
       });
 } // void pyinit_gfx_rigidprim(py::module& module_lev2) {

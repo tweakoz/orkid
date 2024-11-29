@@ -199,11 +199,7 @@ class PointsPrimApp(object):
         f = self.next_submesh["faces"]
         as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
         conn = as_micromesh.vertexConnectivity
-        def stage_0(mm):
-          print("stage_0_complete", mm)
-        as_micromesh.asyncSmoothed(conn,stage_0)
-        self.mesh_prim.fromVertsAndFacesDict(v,f,context)
-
+        as_micromesh.asyncSmoothed(conn,self.mesh_prim,context)
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere
 
