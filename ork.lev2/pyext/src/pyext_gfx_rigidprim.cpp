@@ -25,112 +25,141 @@
 
 namespace ork::lev2 {
 
+/////////////////////////////////////////////////
+
+struct SmoothingStage;
+using stage_ptr_t = std::shared_ptr<SmoothingStage>;
+
+/////////////////////////////////////////////////
+
+struct SmoothingStage {
+  micromesh_ptr_t mesh_inp;
+  micromesh_connectivity_ptr_t conn;
+  umesh_rprim_ptr_t prim;
+  ctx_t context;
+  size_t count = 0;
+  static void enqueue(stage_ptr_t inp_stage);
+};
+
+/////////////////////////////////////////////////
+
+void SmoothingStage::enqueue(stage_ptr_t inp_stage){
+  if (inp_stage->count > 0) {
+    auto op = [=]() {
+      auto mesh_out = inp_stage->mesh_inp->smoothed(inp_stage->conn);
+      auto next_stage = std::make_shared<SmoothingStage>();
+      next_stage->mesh_inp = mesh_out;
+      next_stage->conn = inp_stage->conn;
+      next_stage->prim = inp_stage->prim;
+      next_stage->context = inp_stage->context;
+      next_stage->count = inp_stage->count - 1;
+      enqueue(next_stage);
+    };
+    opq::concurrentQueue()->enqueue(op);
+  } else {
+    auto op = [=]() {
+      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, inp_stage->context.get());
+    };
+    opq::mainSerialQueue()->enqueue(op);
+  }
+}
+
+/////////////////////////////////////////////////
+
 void pyinit_gfx_rigidprim(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto micromesh_type = py::class_<MicroMesh,micromesh_ptr_t>(module_lev2, "MicroMesh")
-    //////////////////////////////////////////////////
-    .def_static("fromVertAndFaceLists", [](py::list vert_list, py::list face_list) -> micromesh_ptr_t {
-      py::gil_scoped_release release;
-      return std::make_shared<MicroMesh>(vert_list, face_list);
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("vertices", [](micromesh_ptr_t mesh) -> py::list {
-      auto verts = py::list();
-      for( auto& vtx : mesh->_vertices ){
-        verts.append(fvec3(vtx.x,vtx.y,vtx.z));
-      }
-      return verts;
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("tris", [](micromesh_ptr_t mesh) -> py::list {
-      auto tris = py::list();
-      for( auto& face : mesh->_tris ){
-        tris.append(face);
-      }
-      return tris;
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("quads", [](micromesh_ptr_t mesh) -> py::list {
-      auto quads = py::list();
-      for( auto& face : mesh->_quads ){
-        quads.append(face);
-      }
-      return quads;
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("faces", [](micromesh_ptr_t mesh) -> py::list {
-      auto faces = py::list();
-      for( auto& q : mesh->_quads ){
-        faces.append(int(4));
-        for( auto& idx : q ){
-          faces.append(idx);
-        }
-      }
-      for( auto& t : mesh->_tris ){
-        faces.append(int(3));
-        for( auto& idx : t ){
-          faces.append(idx);
-        }
-      }
-      return faces;
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("vertexConnectivity", [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
-      py::gil_scoped_release release;
-      return mesh->computeVertexConnectivity();
-    })
-    //////////////////////////////////////////////////
-    .def_property_readonly("smoothed", [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn) -> micromesh_ptr_t {
-      py::gil_scoped_release release;
-      return mesh->smoothed(conn);
-    })
-    //////////////////////////////////////////////////
-    .def("asyncSmoothed", [](micromesh_ptr_t mesh, //
-                             micromesh_connectivity_ptr_t conn, //
-                             umesh_rprim_ptr_t prim,
-                             ctx_t context) { //
+  auto micromesh_type = py::class_<MicroMesh, micromesh_ptr_t>(module_lev2, "MicroMesh")
+                            //////////////////////////////////////////////////
+                            .def_static(
+                                "fromVertAndFaceLists",
+                                [](py::list vert_list, py::list face_list) -> micromesh_ptr_t {
+                                  py::gil_scoped_release release;
+                                  return std::make_shared<MicroMesh>(vert_list, face_list);
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "vertices",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto verts = py::list();
+                                  for (auto& vtx : mesh->_vertices) {
+                                    verts.append(fvec3(vtx.x, vtx.y, vtx.z));
+                                  }
+                                  return verts;
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "tris",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto tris = py::list();
+                                  for (auto& face : mesh->_tris) {
+                                    tris.append(face);
+                                  }
+                                  return tris;
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "quads",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto quads = py::list();
+                                  for (auto& face : mesh->_quads) {
+                                    quads.append(face);
+                                  }
+                                  return quads;
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "faces",
+                                [](micromesh_ptr_t mesh) -> py::list {
+                                  auto faces = py::list();
+                                  for (auto& q : mesh->_quads) {
+                                    faces.append(int(4));
+                                    for (auto& idx : q) {
+                                      faces.append(idx);
+                                    }
+                                  }
+                                  for (auto& t : mesh->_tris) {
+                                    faces.append(int(3));
+                                    for (auto& idx : t) {
+                                      faces.append(idx);
+                                    }
+                                  }
+                                  return faces;
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "vertexConnectivity",
+                                [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
+                                  py::gil_scoped_release release;
+                                  return mesh->computeVertexConnectivity();
+                                })
+                            //////////////////////////////////////////////////
+                            .def_property_readonly(
+                                "smoothed",
+                                [](micromesh_ptr_t mesh, micromesh_connectivity_ptr_t conn) -> micromesh_ptr_t {
+                                  py::gil_scoped_release release;
+                                  return mesh->smoothed(conn);
+                                })
+                            //////////////////////////////////////////////////
+                            .def(
+                                "asyncSmoothed",
+                                [](micromesh_ptr_t mesh,              //
+                                   micromesh_connectivity_ptr_t conn, //
+                                   int num_stages,                    //
+                                   umesh_rprim_ptr_t prim,
+                                   ctx_t context) { //
 
-      auto st1 = [=](){
-        auto mesh_st1 = mesh->smoothed(conn);
-        auto st2 = [=](){
-          auto mesh_st2 = mesh_st1->smoothed(conn);
-          auto st3 = [=](){
-            auto mesh_st3 = mesh_st2->smoothed(conn);
-            auto st4 = [=](){
-              auto mesh_st4 = mesh_st3->smoothed(conn);
-              auto st5 = [=](){
-                auto mesh_st5 = mesh_st4->smoothed(conn);
-                auto st6 = [=](){
-                  auto mesh_st6 = mesh_st5->smoothed(conn);
-                  auto st7 = [=](){
-                    auto mesh_st7 = mesh_st6->smoothed(conn);
-                    auto st8 = [=](){
-                      auto mesh_st8 = mesh_st7->smoothed(conn);
-                      auto st9 = [=](){
-                        mesh_st8->updateRigidPrim(prim, conn, context.get());
-                      };
-                      opq::mainSerialQueue()->enqueue(st9);
-                    };
-                    opq::mainSerialQueue()->enqueue(st8);
-                  };
-                  opq::mainSerialQueue()->enqueue(st7);
-                };
-                opq::mainSerialQueue()->enqueue(st6);
-              };
-              opq::mainSerialQueue()->enqueue(st5);
-            };
-            opq::mainSerialQueue()->enqueue(st4);
-          };
-          opq::concurrentQueue()->enqueue(st3);
-        };
-        opq::concurrentQueue()->enqueue(st2);        
-      };
-      opq::concurrentQueue()->enqueue(st1);
-    });
+                                  auto stage = std::make_shared<SmoothingStage>();
+                                  stage->mesh_inp = mesh;
+                                  stage->conn = conn;
+                                  stage->prim = prim;
+                                  stage->context = context;
+                                  stage->count = num_stages;
+                                  SmoothingStage::enqueue(stage);
+                                });
   /////////////////////////////////////////////////////////////////////////////////
-  auto micromesh_conn_type = py::class_<MicroMeshConnectivity,micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
+  auto micromesh_conn_type = py::class_<MicroMeshConnectivity, micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
   /////////////////////////////////////////////////////////////////////////////////
   auto rprimbase_t =
       py::class_<meshutil::RigidPrimitiveBase, meshutil::rigidprimitive_ptr_t>(module_lev2, "meshutil::RigidPrimitiveBase")
@@ -181,7 +210,8 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<meshutil::rigidprimitive_ptr_t>(rprimbase_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<meshutil::rigidprim_V12N12B12T8C4_t, meshutil::RigidPrimitiveBase, meshutil::rigidprim_V12N12B12T8C4_ptr_t>(module_lev2, "RigidPrimitive")
+  py::class_<meshutil::rigidprim_V12N12B12T8C4_t, meshutil::RigidPrimitiveBase, meshutil::rigidprim_V12N12B12T8C4_ptr_t>(
+      module_lev2, "RigidPrimitive")
       .def(py::init<>())
       .def(py::init([](meshutil::submesh_ptr_t submesh, ctx_t context) {
         auto prim = std::make_shared<meshutil::rigidprim_V12N12B12T8C4_t>();
@@ -189,26 +219,26 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
         return prim;
       }))
       .def(
-          "fromSubMesh", //
+          "fromSubMesh",                                   //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             meshutil::submesh_ptr_t submesh, //
-             ctx_t context) { //
-              prim->fromSubMesh(*submesh, context.get());
+             meshutil::submesh_ptr_t submesh,              //
+             ctx_t context) {                              //
+            prim->fromSubMesh(*submesh, context.get());
           })
       .def(
-          "fromMicroMesh", //
+          "fromMicroMesh",                                 //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             meshutil::submesh_ptr_t submesh, //
-             micromesh_connectivity_ptr_t conn, //
-             ctx_t context) { //
-            //prim->fromSubMesh(*submesh, context.get());
+             meshutil::submesh_ptr_t submesh,              //
+             micromesh_connectivity_ptr_t conn,            //
+             ctx_t context) {                              //
+            // prim->fromSubMesh(*submesh, context.get());
           })
       .def(
-          "fromVertsAndFacesDict", //
+          "fromVertsAndFacesDict",                         //
           [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, //
-             py::list verts, //
-             py::list faces, //
-             ctx_t context) { //
+             py::list verts,                               //
+             py::list faces,                               //
+             ctx_t context) {                              //
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto conn      = micromesh->computeVertexConnectivity();

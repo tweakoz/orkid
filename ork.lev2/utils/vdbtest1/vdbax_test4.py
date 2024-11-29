@@ -20,10 +20,10 @@ tokens = CrcStringProxy()
 # create levelset sphere
 #############################
 
-radius = 10.0 
+radius = 5.0 
 desired_num_points = 10000000
 voxel_size = 0.5 #radius / math.cbrt(desired_num_points);
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 5.05)
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", radius, vec3(0,0,0), voxel_size, 9.5)
 outside = sphere.background
 
 print(f"voxel_size:{voxel_size}")
@@ -35,15 +35,17 @@ print(f"voxel_size:{voxel_size}")
 voxel_shader = """
 
 vec3f@pos = getvoxelpws();
-float@dist = length(vec3f@pos);
-float@phi = atan2(vec3f@pos.z,vec3f@pos.x);
-float@theta = atan2(vec3f@pos.y,vec3f@pos.x);
-float@omega = atan2(vec3f@pos.z,vec3f@pos.y);
+vec3f@timeshift = { 0,f$time*-1.0,0 };
 
-f@a = 1.0;
-f@a = f@a * cos(float@phi*f$freq)*0.5+0.5;
-f@a = f@a * cos(float@theta*f$freq)*0.5+0.5;
-f@a = f@a * cos(float@omega*f$freq)*0.5+0.5;
+vec3f@pos_a = vec3f@pos * 0.1 * f$freq + vec3f@timeshift * 1.0;
+vec3f@pos_b = vec3f@pos * 0.17 * f$freq + vec3f@timeshift * 0.7;
+vec3f@pos_c = vec3f@pos * 0.37 * f$freq + vec3f@timeshift * 0.46;
+vec3f@pos_d = vec3f@pos * 0.57 * f$freq + vec3f@timeshift * 0.27;
+
+f@a  = simplexnoise(vec3f@pos_a)*1.0;
+f@a += simplexnoise(vec3f@pos_b)*0.5;
+f@a += simplexnoise(vec3f@pos_c)*0.25;
+f@a += simplexnoise(vec3f@pos_d)*0.125;
 
 """
 
@@ -56,7 +58,7 @@ class PointsPrimApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,msaa=1)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
@@ -80,10 +82,11 @@ class PointsPrimApp(object):
       while not self.ok_to_exit:
         #self.sphere = self.sphere.scatterVoxels()
         cdata.set("freq",float(2.0+math.sin(self.phi*0.25)*1.0))
+        cdata.set("time",self.phi*0.5)
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         
-        iso_parm = 0.75 #float(0.5+math.sin(self.phi*0.81)*0.45)
+        iso_parm = 0.87 #float(0.5+math.sin(self.phi*0.81)*0.45)
         #print(f"iso_parm:{iso_parm}")
         mesh_dict = self.sphere.toQuads(iso_parm)
         #print(mesh_dict)
@@ -140,8 +143,8 @@ class PointsPrimApp(object):
     # create points primitive 
     ###################################
     
-    #self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
-    #self.points_prim.updateWithVdbFloatGrid(self.sphere,ctx)
+    self.points_prim = primitives.PointsPrimitiveV12C4.create(40<<20)
+    self.points_prim.updateWithVdbFloatGrid(self.sphere,ctx)
 
     ###################################
     # create mesh primitive 
@@ -175,8 +178,8 @@ class PointsPrimApp(object):
     # create points sg node
     ##################
 
-    #self.primnode = self.points_prim.createNode("node1",self.layer1,pipeline)
-    #self.primnode.sortkey = 2;
+    self.primnode = self.points_prim.createNode("node1",self.layer1,pipeline)
+    self.primnode.sortkey = 2;
 
 
   ################################################
@@ -193,13 +196,13 @@ class PointsPrimApp(object):
     self.ezapp.processMainSerialQueue()
     
     if self.this_submesh != self.next_submesh:
-      #self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
+      self.points_prim.updateWithVdbFloatGrid(self.next_sphere,context)
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
         as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
         conn = as_micromesh.vertexConnectivity
-        as_micromesh.asyncSmoothed(conn,self.mesh_prim,context)
+        as_micromesh.asyncSmoothed(conn,6,self.mesh_prim,context)
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere
 
