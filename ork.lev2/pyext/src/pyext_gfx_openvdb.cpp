@@ -34,6 +34,8 @@ using vdb_volume_exec_t = openvdb::ax::VolumeExecutable;
 using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
 using vdb_custom_data_t = openvdb::ax::CustomData;
 using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
+using vdb_transform_t = openvdb::math::Transform;
+using vdb_transform_ptr_t = std::shared_ptr<vdb_transform_t>;
 
 struct FloatVoxel {
   openvdb::Coord coord;
@@ -77,17 +79,46 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
       return next;
     });
   /////////////////////////////////////////////////////////////////////////////////
+  // openvdb::Transform
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ovdb_xform_type = 
+    py::class_<vdb_transform_t, vdb_transform_ptr_t>(ovdb, "Transform")
+    .def_static("create", []( float scale ) -> vdb_transform_ptr_t {
+      py::gil_scoped_release release;
+      auto xform = std::make_shared<openvdb::math::Transform>();
+      xform->postScale(scale);
+      return xform;
+    });
+  type_codec->registerStdCodec<vdb_transform_ptr_t>(ovdb_xform_type);
+  /////////////////////////////////////////////////////////////////////////////////
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
   //  but we probably need it here also for lev2 gfx access
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_fgrid_type = 
     py::class_<vdb_floatgrid_t, vdb_basegrid_t, vdb_floatgrid_ptr_t>(ovdb, "FloatGrid")
+    .def_static("create", []( std::string name, vdb_transform_ptr_t xform, float background ) -> vdb_floatgrid_ptr_t {
+      py::gil_scoped_release release;
+      auto grid = std::make_shared<openvdb::FloatGrid>(background);
+      grid->setName(name);
+      grid->setTransform(xform);
+      grid->setGridClass(openvdb::GRID_LEVEL_SET);
+      return grid;
+    })
     .def_static("createLevelSetSphere", []( std::string name, float radius, fvec3 center, float vxlsize, float hwidth ) -> vdb_floatgrid_ptr_t {
       py::gil_scoped_release release;
       auto grid = openvdb::tools::createLevelSetSphere<vdb_floatgrid_t>(radius, openvdb::Vec3f(center.x,center.y,center.z), vxlsize, hwidth);
       grid->setName(name);
       //createLevelSetSphere (float radius, const openvdb::Vec3f &center, float voxelSize, float halfWidth=float(LEVEL_SET_HALF_WIDTH), InterruptT *interrupt=nullptr, bool threaded=true)
       return grid;
+    })
+    ///////////////////////////////////////////////////////
+    .def("fill", []( vdb_floatgrid_ptr_t grid, fvec3 center, float radius, float value ) {
+      py::gil_scoped_release release;
+      openvdb::CoordBBox bbox;
+      bbox.expand(openvdb::Coord(center.x-radius,center.y-radius,center.z-radius));
+      bbox.expand(openvdb::Coord(center.x+radius,center.y+radius,center.z+radius));
+      grid->fill(bbox, value);
+
     })
     ///////////////////////////////////////////////////////
     .def_property("background", [](vdb_floatgrid_ptr_t grid ) -> float {

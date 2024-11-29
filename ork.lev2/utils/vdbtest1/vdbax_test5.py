@@ -21,38 +21,16 @@ tokens = CrcStringProxy()
 #############################
 
 RADIUS1 = 5.0 
-VOXEL_SIZE = RADIUS1/10.0
-WIDTH = 4.0/VOXEL_SIZE
-RADIUS2 = 10.0 
-ISO_PARM = 0.87 #float(0.5+math.sin(self.phi*0.81)*0.45)
-TIME_RATE = 1.0
+VOXEL_SIZE = RADIUS1/20.0
+WIDTH = 1.0/VOXEL_SIZE
+ISO_PARM = 0.95 #float(0.5+math.sin(self.phase*0.81)*0.45)
+TIME_RATE = 4.5
+STROKE_DIST = 5.5/VOXEL_SIZE
+STROKE_RADIUS = 0.5/VOXEL_SIZE
+xform = ork_vdb.Transform.create(1.0)
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", RADIUS1, vec3(0,0,0), VOXEL_SIZE, WIDTH)
-SMOOTHING_PASSES = 2
+SMOOTHING_PASSES = 8
 outside = sphere.background
-
-#############################
-# execute AX "voxel shader"
-#############################
-
-voxel_shader = """
-
-vec3f@pos = getvoxelpws();
-vec3f@timeshift = { 0,f$time*-1.0,0 };
-
-vec3f@pos_a = vec3f@pos * 0.1 * f$freq + vec3f@timeshift * 1.0;
-vec3f@pos_b = vec3f@pos * 0.17 * f$freq + vec3f@timeshift * 0.7;
-vec3f@pos_c = vec3f@pos * 0.37 * f$freq + vec3f@timeshift * 0.46;
-vec3f@pos_d = vec3f@pos * 0.57 * f$freq + vec3f@timeshift * 0.27;
-
-f@a  = simplexnoise(vec3f@pos_a)*1.0;
-f@a += simplexnoise(vec3f@pos_b)*0.5;
-f@a += simplexnoise(vec3f@pos_c)*0.25;
-f@a += simplexnoise(vec3f@pos_d)*0.125;
-
-"""
-
-cdata = ork_vdb.ax.CustomData()
-ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader,cdata)
 
 ################################################################################
 
@@ -64,7 +42,7 @@ class PointsPrimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    self.phi = 0.0
+    self.phase = 0.0
     self.sphere = sphere 
     self.next_sphere = None 
     self.this_sphere = None
@@ -79,14 +57,29 @@ class PointsPrimApp(object):
       None,
     ]
     
+    def latlon_to_xyz(latitude_degrees, longitude_degrees, radius):
+        # Convert latitude and longitude from degrees to radians
+        latitude = math.radians(latitude_degrees)
+        longitude = math.radians(longitude_degrees)
+        
+        # Calculate Cartesian coordinates
+        x = radius * math.cos(latitude) * math.cos(longitude)
+        y = radius * math.cos(latitude) * math.sin(longitude)
+        z = radius * math.sin(latitude)
+        return vec3(x,y,z)
+        
     def upd_sphere_fn():
       #counter = 0
       while not self.ok_to_exit:
-        #self.sphere = self.sphere.scatterVoxels()
-        cdata.set("freq",float(2.0+math.sin(self.phi*0.25)*1.0))
-        cdata.set("time",self.phi*0.5)
-        #cdata.set("freq",float(self.phi))
-        ve.executeOnGrid(self.sphere)
+                
+        long = self.phase*TIME_RATE
+        lat = self.phase*2.7*TIME_RATE
+        center = latlon_to_xyz(lat,long,STROKE_DIST)
+
+        radius = STROKE_RADIUS
+        self.sphere.fill(center,radius,1.0)
+        #print(center)
+        
         
         mesh_dict = self.sphere.toQuads(ISO_PARM)
         #print(mesh_dict)
@@ -183,7 +176,7 @@ class PointsPrimApp(object):
   def onUpdate(self,updinfo):
     self.abstime = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-    self.phi = self.abstime*TIME_RATE
+    self.phase = self.abstime*TIME_RATE
     
   ################################################
 
@@ -196,6 +189,7 @@ class PointsPrimApp(object):
       if self.next_submesh is not None:
         v = self.next_submesh["vertices"]
         f = self.next_submesh["faces"]
+        #self.mesh_prim.fromVertsAndFacesDict(v,f,context)
         as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
         conn = as_micromesh.vertexConnectivity
         as_micromesh.asyncSmoothed(conn,SMOOTHING_PASSES,self.mesh_prim,context)

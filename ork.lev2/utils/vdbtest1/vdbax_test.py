@@ -48,7 +48,7 @@ f@a = f@a * cos(float@omega*8.0)*0.5+0.5;
 
 """
 
-ve = ork_vdb.AxVolumeExecutable.compile(voxel_shader)
+ve = ork_vdb.ax.VolumeExecutable.compile(voxel_shader,None)
 ve.executeOnGrid(sphere)
 
 #############################
