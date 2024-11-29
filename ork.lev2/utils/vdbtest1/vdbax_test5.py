@@ -25,8 +25,8 @@ VOXEL_SIZE = RADIUS1/20.0
 WIDTH = 1.0/VOXEL_SIZE
 ISO_PARM = 0.95 #float(0.5+math.sin(self.phase*0.81)*0.45)
 TIME_RATE = 4.5
-STROKE_DIST = 5.5/VOXEL_SIZE
-STROKE_RADIUS = 0.5/VOXEL_SIZE
+STROKE_DIST = 5.7/VOXEL_SIZE
+STROKE_RADIUS = 0.3/VOXEL_SIZE
 xform = ork_vdb.Transform.create(1.0)
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", RADIUS1, vec3(0,0,0), VOXEL_SIZE, WIDTH)
 SMOOTHING_PASSES = 8
@@ -128,9 +128,10 @@ class PointsPrimApp(object):
     # create grid
     ###################################
 
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+    if False:
+      self.grid_data = createGridData()
+      self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+      self.grid_node.sortkey = 1
 
     ###################################
     # create points primitive 
