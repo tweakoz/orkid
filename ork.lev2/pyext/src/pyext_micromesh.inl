@@ -9,6 +9,7 @@
 
 #include <ork/math/cvector3.h>
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
+#include "_vdb_impl.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,9 +40,11 @@ struct MicroMesh {
   micromesh_ptr_t smoothed(micromesh_connectivity_ptr_t conn) const;
   std::vector<fvec3> computeNormals(micromesh_connectivity_ptr_t conn) const;
   void updateRigidPrim(umesh_rprim_ptr_t prim, 
-                       micromesh_connectivity_ptr_t conn, 
+                       micromesh_connectivity_ptr_t conn,
+                       vdb_vec3grid_ptr_t colorgrid, 
                        ctx_t context) const;
   std::vector<fvec3> _vertices;
+  std::vector<fvec3> _colors;
   std::vector<indexlist_t> _tris;
   std::vector<indexlist_t> _quads;
 };
@@ -51,6 +54,7 @@ struct MicroMesh {
 inline MicroMesh::MicroMesh(py::list vert_list, py::list face_list) {
   for( const auto& vtx : vert_list ){
     _vertices.push_back(vtx.cast<fvec3>());
+    _colors.push_back(fvec3(1.0f,1.0f,1.0f));
   }
   bool done_with_faces     = false;
   int iidx                 = 0;
@@ -118,6 +122,9 @@ inline micromesh_connectivity_ptr_t MicroMesh::computeVertexConnectivity() const
 
 inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) const {
   auto result = std::make_shared<MicroMesh>();
+  size_t num_verts = _vertices.size();
+  result->_vertices.reserve(num_verts);
+  result->_colors.reserve(num_verts);
   for( size_t iv=0; iv<_vertices.size(); iv++ ){
     const auto& vtx = _vertices[iv];
     const auto& connlist = conn->_connectivity.at(iv);
@@ -127,6 +134,7 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
     }
     fvec3 avg = sum / float(connlist.size());
     result->_vertices.push_back(avg);
+    result->_colors.push_back(_colors[iv]);
   }
   result->_tris = _tris;
   result->_quads = _quads;
@@ -135,6 +143,7 @@ inline micromesh_ptr_t MicroMesh::smoothed(micromesh_connectivity_ptr_t conn) co
 
 void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim, 
                                 micromesh_connectivity_ptr_t conn, 
+                                vdb_vec3grid_ptr_t colorgrid,
                                 ctx_t context) const {
   ////////////////////////////////////////////
   int num_verts = _vertices.size();
@@ -159,17 +168,35 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
   auto vtxptr            = GBI->LockVB(*vtxbuf.get(), 0, num_verts);
   auto typed_vertex_base = (SVtxV12N12B12T8C4*)vtxptr;
   int ivtx = 0;
-  for (auto vtx_in : _vertices) {
+  fvec3 updir(0.0f, 1.0f, 0.0f);
+  for (size_t ivtx = 0; ivtx < num_verts; ivtx++) {
     auto& vertex_out     = typed_vertex_base[ivtx];
-    vertex_out._position = vtx_in;
-    const auto& N   = normals[ivtx];
-    vertex_out._normal   = N;
-    uint32_t color       = 0;
-    color |= uint32_t((N.x * 0.5f + 0.5f) * 255.0f);
-    color |= uint32_t((N.y * 0.5f + 0.5f) * 255.0f) << 8;
-    color |= uint32_t((N.z * 0.5f + 0.5f) * 255.0f) << 16;
-    vertex_out._color = color;
-    ivtx++;
+    vertex_out._position = _vertices[ivtx];
+    vertex_out._normal   = normals[ivtx];
+    // compute binormal (towards up direction)
+    fvec3 binormal = vertex_out._normal.crossWith(updir);
+    fvec3 x2 = binormal.crossWith(vertex_out._normal);
+    vertex_out._binormal = x2;
+    vertex_out._color = _colors[ivtx].ARGBU32();
+  }
+  if(colorgrid){
+    auto accessor = colorgrid->getAccessor();
+    for (size_t ivtx = 0; ivtx < num_verts; ivtx++) {
+      auto& vertex_out     = typed_vertex_base[ivtx];
+      const auto& pos = _vertices[ivtx];
+      auto coord_w = openvdb::Vec3f(pos.x, pos.y, pos.z);
+      auto coord_i = colorgrid->worldToIndex(coord_w);
+      auto coord_ii = openvdb::Coord(coord_w.x(), coord_w.y(), coord_w.z());
+      auto color = accessor.getValue(coord_ii);
+      if(0)printf("pos<%f %f %f> coord_w<%f %f %f> coord_i<%f %f %f> color<%f %f %f>\n",
+             pos.x, pos.y, pos.z,
+             coord_w.x(), coord_w.y(), coord_w.z(),
+             coord_i.x(), coord_i.y(), coord_i.z(),
+             color.x(), color.y(), color.z());
+      //printf("color %d <%f %f %f>\n", ivtx, color.x(), color.y(), color.z());
+      auto as_orkv3 = fvec3(color.x(), color.y(), color.z());
+      vertex_out._color = as_orkv3.ABGRU32();
+    }
   }
   //////////////////////////////////////////////////////////////
   int oidx              = 0;

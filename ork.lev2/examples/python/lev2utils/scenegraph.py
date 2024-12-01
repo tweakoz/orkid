@@ -1,8 +1,9 @@
 from orkengine.core import *
 from orkengine.lev2 import *
 
+###############################################################################
 
-def createParams( rendermodel = "ForwardPBR" ):
+def createParams( rendermodel : str = "ForwardPBR" ):
 
   sceneparams = VarMap()
   sceneparams.preset = rendermodel
@@ -20,10 +21,13 @@ def createParams( rendermodel = "ForwardPBR" ):
 
   return sceneparams
 
-def createSceneGraph( app=None, 
-                      rendermodel = None,
-                      params_dict = None,
-                      layer_name = None):
+###############################################################################
+
+def createSceneGraph( app : object = None, 
+                      rendermodel : str = None,
+                      params_dict : dict = None,
+                      layer_name : str = None,
+                      use_float_buffer : bool = False ):
 
 
     sceneparams = VarMap()
@@ -58,4 +62,8 @@ def createSceneGraph( app=None,
     app.std_layers = [app.layer_std,app.layer_dpp]
     app.rendernode = app.scene.compositorrendernode
 
+    app.scene.pbr_common.useFloatColorBuffer = use_float_buffer
+
     return app.scene
+  
+  ###############################################################################

@@ -20,6 +20,7 @@
 
 #include "pyext.h"
 #include "pyext_micromesh.inl"
+#include "_vdb_impl.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,12 +39,12 @@ struct SmoothingStage {
   umesh_rprim_ptr_t prim;
   ctx_t context;
   size_t count = 0;
-  static void enqueue(stage_ptr_t inp_stage);
+  static void enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid);
 };
 
 /////////////////////////////////////////////////
 
-void SmoothingStage::enqueue(stage_ptr_t inp_stage){
+void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid) {
   if (inp_stage->count > 0) {
     auto op = [=]() {
       auto mesh_out = inp_stage->mesh_inp->smoothed(inp_stage->conn);
@@ -53,12 +54,12 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage){
       next_stage->prim = inp_stage->prim;
       next_stage->context = inp_stage->context;
       next_stage->count = inp_stage->count - 1;
-      enqueue(next_stage);
+      enqueue(next_stage,colorgrid);
     };
     opq::concurrentQueue()->enqueue(op);
   } else {
     auto op = [=]() {
-      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, inp_stage->context.get());
+      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, colorgrid, inp_stage->context.get());
     };
     opq::mainSerialQueue()->enqueue(op);
   }
@@ -75,7 +76,6 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
                             .def_static(
                                 "fromVertAndFaceLists",
                                 [](py::list vert_list, py::list face_list) -> micromesh_ptr_t {
-                                  py::gil_scoped_release release;
                                   return std::make_shared<MicroMesh>(vert_list, face_list);
                                 })
                             //////////////////////////////////////////////////
@@ -131,7 +131,6 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
                             .def_property_readonly(
                                 "vertexConnectivity",
                                 [](micromesh_ptr_t mesh) -> micromesh_connectivity_ptr_t {
-                                  py::gil_scoped_release release;
                                   return mesh->computeVertexConnectivity();
                                 })
                             //////////////////////////////////////////////////
@@ -156,7 +155,25 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
                                   stage->prim = prim;
                                   stage->context = context;
                                   stage->count = num_stages;
-                                  SmoothingStage::enqueue(stage);
+                                  SmoothingStage::enqueue(stage,nullptr);
+                                })
+                            //////////////////////////////////////////////////
+                            .def(
+                                "asyncSmoothedWithColorGrid",
+                                [](micromesh_ptr_t mesh,              //
+                                   micromesh_connectivity_ptr_t conn, //
+                                   vdb_vec3grid_ptr_t colorgrid,      //
+                                   int num_stages,                    //
+                                   umesh_rprim_ptr_t prim,
+                                   ctx_t context) { //
+
+                                  auto stage = std::make_shared<SmoothingStage>();
+                                  stage->mesh_inp = mesh;
+                                  stage->conn = conn;
+                                  stage->prim = prim;
+                                  stage->context = context;
+                                  stage->count = num_stages;
+                                  SmoothingStage::enqueue(stage,colorgrid);
                                 });
   /////////////////////////////////////////////////////////////////////////////////
   auto micromesh_conn_type = py::class_<MicroMeshConnectivity, micromesh_connectivity_ptr_t>(module_lev2, "MicroMeshConnectivity");
@@ -242,7 +259,7 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto conn      = micromesh->computeVertexConnectivity();
-            micromesh->updateRigidPrim(prim, conn, context.get());
+            micromesh->updateRigidPrim(prim, conn, nullptr, context.get());
           })
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());

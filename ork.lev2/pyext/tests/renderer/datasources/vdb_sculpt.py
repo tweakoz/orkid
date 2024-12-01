@@ -4,12 +4,14 @@ import math, sys, random, threading, time, signal
 import numpy as np
 from obt import path as obt_path 
 from ork import path as ork_path
-from orkengine.core import vec2,vec3,CrcStringProxy, lev2_pyexdir
-from orkengine.lev2 import vdb as ork_vdb, OrkEzApp, RefreshFastest, ui, primitives, RigidPrimitive, meshutil, MicroMesh
+from orkengine.core import vec2,vec3,vec4,CrcStringProxy, lev2_pyexdir
+from orkengine.lev2 import vdb as ork_vdb
+from orkengine.lev2 import OrkEzApp, RefreshFastest, ui, PBRMaterial, FxPipelinePermutation
+from orkengine.lev2 import primitives, RigidPrimitive, meshutil, MicroMesh, Image
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
 lev2_pyexdir.addToSysPath()
 from cameras import *
-from shaders import POINTCLOUD_SHADERTEXT, createPipeline, pseudowire_pipeline
+import shaders
 from primitives import createPointsPrimV12C4, createGridData
 from scenegraph import createSceneGraph
 #from _boilerplate import BasicUiCamSgApp
@@ -20,16 +22,27 @@ tokens = CrcStringProxy()
 # create levelset sphere
 #############################
 
+CENTER = vec3(0,0,0)
 RADIUS1 = 5.0 
-VOXEL_SIZE = RADIUS1/20.0
-WIDTH = 1.0/VOXEL_SIZE
+VOXEL_SIZE = RADIUS1/30.0
+HALF_WIDTH = 1.0/VOXEL_SIZE
 ISO_PARM = 0.95 #float(0.5+math.sin(self.phase*0.81)*0.45)
-TIME_RATE = 4.5
+TIME_RATE = 2.5
 STROKE_DIST = 5.7/VOXEL_SIZE
 STROKE_RADIUS = 0.3/VOXEL_SIZE
-xform = ork_vdb.Transform.create(1.0)
-sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a", RADIUS1, vec3(0,0,0), VOXEL_SIZE, WIDTH)
-SMOOTHING_PASSES = 8
+
+sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a",         # element name
+                                                 RADIUS1,     # world units
+                                                 CENTER,      # world units 
+                                                 VOXEL_SIZE,  # world units
+                                                 HALF_WIDTH)  # voxel units
+
+#sphere.background = 0.0
+
+xform = sphere.xform # ork_vdb.Transform.create(1.0)
+#print(xform)
+colorgrid = ork_vdb.Vec3FGrid.create( "rgb", xform, vec3(1,1,1))
+SMOOTHING_PASSES = 1
 outside = sphere.background
 
 ################################################################################
@@ -78,6 +91,13 @@ class PointsPrimApp(object):
 
         radius = STROKE_RADIUS
         self.sphere.fill(center,radius,1.0)
+        self.sphere.fill(center*0.95,radius,1.0)
+        
+        paint_color = vec3(0.5,0,0)
+        color_radius = 0.05
+        center2 = latlon_to_xyz(lat,long,4.8)
+        #colorgrid.fill(center2,color_radius,paint_color)
+        colorgrid.fill(center2*0.97,color_radius,paint_color)
         #print(center)
         
         
@@ -87,7 +107,8 @@ class PointsPrimApp(object):
         num_faces = len(mesh_dict["faces"])
         #print(f"num_verts:{num_verts} num_faces:{num_faces}")
         if (num_verts>0) and (num_faces>0):
-          self.result_submesh = mesh_dict 
+          self.result_submesh = mesh_dict
+          self.next_colorgrid = colorgrid.clone 
         else:
           self.result_submesh = None
         self.next_submesh = self.result_submesh
@@ -118,11 +139,15 @@ class PointsPrimApp(object):
     ###################################
 
     sg_params = {
-      "SkyboxIntensity": 1.0, 
-      "DiffuseIntensity": 6.0, 
+      "SkyboxIntensity": 2.0, 
+      "DiffuseIntensity": 1.0, 
+      "SpecularIntensity": 1.0, 
     }
     
-    createSceneGraph(app=self,rendermodel="ForwardPBR",params_dict=sg_params)
+    createSceneGraph( app=self,
+                      rendermodel="ForwardPBR",
+                      params_dict=sg_params,
+                      use_float_buffer=True )
 
     ###################################
     # create grid
@@ -144,22 +169,24 @@ class PointsPrimApp(object):
     # create mesh primitive 
     ###################################
 
-    self.mesh_pipe = createPipeline( app = self, ctx=ctx, rendermodel = "ForwardPBR", techname="std_mono_forward_lit" )
-    #self.mesh_pipe = pseudowire_pipeline( app = self, ctx=ctx )
+    mtl = shaders.createPbrMaterialWithColor( ctx=ctx, 
+                                              color = vec4(1,.5,.5,1)*1.5,
+                                              metallic = 0.25,
+                                              roughness = 0.5 )
     self.mesh_prim = RigidPrimitive()
-    self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, self.mesh_pipe)
+    self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, mtl)
     
     ##################
     # create shading pipeline
     ##################
 
-    pipeline = createPipeline( app = self,
-                               ctx = ctx,
-                               shadertext = POINTCLOUD_SHADERTEXT,
-                               blending=tokens.OFF,
-                               depthtest=tokens.LESS,
-                               techname = "tek_points_fwd",
-                               rendermodel = "ForwardPBR" )
+    pipeline = shaders.createPipeline( app = self,
+                                       ctx = ctx,
+                                       shadertext = shaders.POINTCLOUD_SHADERTEXT,
+                                       blending=tokens.OFF,
+                                       depthtest=tokens.LESS,
+                                       techname = "tek_points_fwd",
+                                       rendermodel = "ForwardPBR" )
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
     pipeline.bindParam( pointsize_param, 1.0 ) # set pointsize
@@ -168,8 +195,8 @@ class PointsPrimApp(object):
     # create points sg node
     ##################
 
-    self.primnode = self.points_prim.createNode("node1",self.layer1,pipeline)
-    self.primnode.sortkey = 2;
+    #self.points_node = self.points_prim.createNode("node1",self.layer1,pipeline)
+    #self.points_node.sortkey = 2;
 
 
   ################################################
@@ -193,7 +220,8 @@ class PointsPrimApp(object):
         #self.mesh_prim.fromVertsAndFacesDict(v,f,context)
         as_micromesh = MicroMesh.fromVertAndFaceLists(v,f)
         conn = as_micromesh.vertexConnectivity
-        as_micromesh.asyncSmoothed(conn,SMOOTHING_PASSES,self.mesh_prim,context)
+        #as_micromesh.asyncSmoothed(conn,SMOOTHING_PASSES,self.mesh_prim,context)
+        as_micromesh.asyncSmoothedWithColorGrid(conn,self.next_colorgrid,SMOOTHING_PASSES,self.mesh_prim,context)
       self.this_submesh = self.next_submesh
       self.this_sphere = self.next_sphere
 

@@ -97,7 +97,10 @@ class SceneGraphApp(object):
       "SSAOPower": 0.3,
     }
     
-    createSceneGraph(app=self,params_dict=params_dict,rendermodel="PBRVR" if vrmode else "DeferredPBR")
+    createSceneGraph( app=self,
+                      params_dict=params_dict,
+                      use_float_buffer=True,
+                      rendermodel="PBRVR" if vrmode else "DeferredPBR")
     self.pbr_common = self.scene.pbr_common
 
     models = []

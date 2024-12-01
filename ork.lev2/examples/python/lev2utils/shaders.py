@@ -1,7 +1,51 @@
 from orkengine.core import *
 from orkengine import lev2
+
 ################################################################################
+
 tokens = CrcStringProxy()
+
+###############################################################################
+
+def createPbrMaterialWithImages( ctx=None,
+                                 colorimgpath=None,
+                                 normalimgpath=None,
+                                 mtlrufimgpath=None ):
+  material = lev2.PBRMaterial()
+  img_color = lev2.Image.createFromFile(colorimgpath) 
+  img_normal = lev2.Image.createFromFile(normalimgpath)
+  img_mtlruf = lev2.Image.createFromFile(mtlrufimgpath)
+  material.assignImages( ctx,
+                         color=img_color,
+                         normal=img_normal,
+                         mtlruf=img_mtlruf,
+                         doConform=True) 
+  material.gpuInit(ctx)
+  return material
+
+###############################################################################
+
+def createPbrMaterialWithColor( ctx=None,
+                                color : vec4  = None,
+                                metallic : float = 0.0,
+                                roughness : float = 1.0 ):
+  material = lev2.PBRMaterial()
+  img_color = lev2.Image.createFromFile("src://effect_textures/white_64.dds") 
+  img_normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+  img_mtlruf = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+  material.assignImages( ctx,
+                         color=img_color,
+                         normal=img_normal,
+                         mtlruf=img_mtlruf,
+                         doConform=True) 
+
+  material.metallicFactor = metallic
+  material.roughnessFactor = roughness
+  material.baseColor = color
+  material.gpuInit(ctx)
+  return material
+
+###############################################################################
 
 def createPipeline( app=None,
                     ctx=None,
@@ -121,6 +165,8 @@ technique tek_pseudowire {
   }
 }
 """
+
+###############################################################################
 
 def pseudowire_pipeline(app = None,ctx=None):
     pipeline = createPipeline( app = app,
@@ -346,6 +392,8 @@ technique tek_points_fwd {
   }
 }
 """
+
+###############################################################################
 
 class Shader(object):
   def __init__(self,ctx):

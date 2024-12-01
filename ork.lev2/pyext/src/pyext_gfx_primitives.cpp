@@ -15,7 +15,6 @@
 #include <openvdb/tools/LevelSetSphere.h>
 #include <openvdb/tools/SignedFloodFill.h>
 #include <openvdb/util/NullInterrupter.h>
-#include <ork/python/obind/nanobind.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -153,7 +152,7 @@ void pyinit_primitives(py::module& module_lev2) {
           .def("createFromVdbFloatGrid", [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
 
             int num_points   = grid->tree().activeLeafVoxelCount();
-            printf("num_points<%d>\n", num_points);
+            //printf("num_points<%d>\n", num_points);
             auto prim = std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(num_points);
             VtxV12C4* points = prim->lock(context.get());
             int point_index = 0;
@@ -192,7 +191,7 @@ void pyinit_primitives(py::module& module_lev2) {
             py::gil_scoped_release release;
             int num_points   = grid->tree().activeLeafVoxelCount();
             OrkAssert(num_points<prim->_capacity)
-            printf("num_points<%d>\n", num_points);
+            //printf("num_points<%d>\n", num_points);
             VtxV12C4* points = prim->lock(context.get(),num_points);
             int point_index = 0;
             auto& xform = grid->transform();
