@@ -14,6 +14,34 @@
 
 namespace ork::lev2 {
 
+  template <typename T> struct VoxelMap {
+
+    VoxelMap(int width, int height, int depth)
+        : _width(width)
+        , _height(height)
+        , _depth(depth) {
+      _data.resize(width * height * depth);
+    }
+
+    void pset(int x, int y, int z, T value) {
+      OrkAssert(x >= 0 && x < _width);
+      OrkAssert(y >= 0 && y < _height);
+      OrkAssert(z >= 0 && z < _depth);
+      _data[x + y * _width + z * _width * _height] = value;
+    }
+
+    int _width = 0;
+    int _height = 0;
+    int _depth = 0;
+    std::vector<T> _data;
+  };
+
+  using vmapf_t = VoxelMap<float>;
+  using vmapf_ptr_t = std::shared_ptr<vmapf_t>;
+  using vmapv3_t = VoxelMap<fvec3>;
+  using vmapv3_ptr_t = std::shared_ptr<vmapv3_t>;
+
+
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +51,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto grid_type = py::class_<vdb_basegrid_t, vdb_basegrid_ptr_t>(ovdb, "BaseGrid")
                        .def("activeVoxelCount", [](vdb_basegrid_ptr_t grid) -> uint64_t { return grid->activeVoxelCount(); });
   type_codec->registerStdCodec<vdb_basegrid_ptr_t>(grid_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto vmapf_type = py::class_<vmapf_t, vmapf_ptr_t>(ovdb, "VoxelMapF")
+                        .def(py::init<int, int, int>())
+                        .def("pset", &vmapf_t::pset);
+  auto vmapv3_type = py::class_<vmapv3_t, vmapv3_ptr_t>(ovdb, "VoxelMapV3")
+                         .def(py::init<int, int, int>())
+                         .def("pset", &vmapv3_t::pset);
   /////////////////////////////////////////////////////////////////////////////////
   struct citer_proxy {
     openvdb::FloatGrid::ValueOnCIter iter;
@@ -104,6 +139,44 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 bbox.expand(openvdb::Coord(coord_va.x(), coord_va.y(), coord_va.z()));
                 bbox.expand(openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z()));
                 grid->fill(bbox, value);
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "blitWithBrush",
+              [](vdb_floatgrid_ptr_t grid, fvec3 center, vmapf_ptr_t vmap) {
+                py::gil_scoped_release release;
+                int width = vmap->_width;
+                int height = vmap->_height;
+                int depth = vmap->_depth;
+                int w_start = -width / 2;
+                int h_start = -height / 2;
+                int d_start = -depth / 2;
+
+                auto xform = grid->transform();
+                auto bbox = grid->evalActiveVoxelBoundingBox();
+                for( int ix=0; ix<width; ix++ ){
+                  int ibipx = ix - width / 2;
+                  int jx = ibipx + int(center.x);
+                  if(jx >= bbox.min().x() and jx <= bbox.max().x()){
+                    for( int iy=0; iy<height; iy++ ){
+                      int ibipy = iy - height / 2;
+                      int jy = ibipy + int(center.y);
+                      if(jy >= bbox.min().y() and jy <= bbox.max().y()){
+                        for( int iz=0; iz<depth; iz++ ){
+                          int ibipz = iz - depth / 2;
+                          int jz = ibipz + int(center.z);
+                          if(jz >= bbox.min().z() and jz <= bbox.max().z()){
+                            auto coord_vb = openvdb::Vec3f(center.x + ibipx, center.y + ibipy, center.z + ibipz);
+                            auto coord_ib = grid->worldToIndex(coord_vb);
+                            float value = vmap->_data[ix + iy * width + iz * width * height];
+                            auto coord = openvdb::Coord(coord_ib.x(), coord_ib.y(), coord_ib.z());
+                            grid->tree().setValue(coord, value);
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               })
           ///////////////////////////////////////////////////////
           .def_property(
@@ -385,5 +458,9 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 return std::make_shared<vdb_vec3grid_t>(*grid);
               });
   type_codec->registerStdCodec<vdb_vec3grid_ptr_t>(ovdb_v3grid_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
 }
+
+
 } // namespace ork::lev2

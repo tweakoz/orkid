@@ -37,6 +37,18 @@ sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a",         # element name
                                                  VOXEL_SIZE,  # world units
                                                  HALF_WIDTH)  # voxel units
 
+
+
+voxel_brush_dim = 7
+voxel_brush = ork_vdb.VoxelMapF(voxel_brush_dim,voxel_brush_dim,voxel_brush_dim)
+for ix in range(voxel_brush_dim):
+  for iy in range(voxel_brush_dim):
+    for iz in range(voxel_brush_dim):
+      x = float(ix)/float(voxel_brush_dim)
+      y = float(iy)/float(voxel_brush_dim)
+      z = float(iz)/float(voxel_brush_dim)
+      val = math.sqrt(x*x + y*y + z*z)
+      voxel_brush.pset(ix,iy,iz,val)
 #sphere.background = 0.0
 
 xform = sphere.xform # ork_vdb.Transform.create(1.0)
@@ -92,7 +104,7 @@ class PointsPrimApp(object):
         radius = STROKE_RADIUS
         self.sphere.fill(center,radius,1.0)
         self.sphere.fill(center*0.95,radius,1.0)
-        
+        #self.sphere.blitWithBrush(center,voxel_brush)
         paint_color = vec3(0.5,0,0)
         color_radius = 0.05
         center2 = latlon_to_xyz(lat,long,4.8)
