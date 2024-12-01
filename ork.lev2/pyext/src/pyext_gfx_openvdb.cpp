@@ -153,27 +153,24 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 int d_start = -depth / 2;
 
                 auto xform = grid->transform();
-                auto bbox = grid->evalActiveVoxelBoundingBox();
+                auto& tree = grid->tree();
                 for( int ix=0; ix<width; ix++ ){
-                  int ibipx = ix - width / 2;
-                  int jx = ibipx + int(center.x);
-                  if(jx >= bbox.min().x() and jx <= bbox.max().x()){
-                    for( int iy=0; iy<height; iy++ ){
-                      int ibipy = iy - height / 2;
-                      int jy = ibipy + int(center.y);
-                      if(jy >= bbox.min().y() and jy <= bbox.max().y()){
-                        for( int iz=0; iz<depth; iz++ ){
-                          int ibipz = iz - depth / 2;
-                          int jz = ibipz + int(center.z);
-                          if(jz >= bbox.min().z() and jz <= bbox.max().z()){
-                            auto coord_vb = openvdb::Vec3f(center.x + ibipx, center.y + ibipy, center.z + ibipz);
-                            auto coord_ib = grid->worldToIndex(coord_vb);
-                            float value = vmap->_data[ix + iy * width + iz * width * height];
-                            auto coord = openvdb::Coord(coord_ib.x(), coord_ib.y(), coord_ib.z());
-                            grid->tree().setValue(coord, value);
-                          }
-                        }
-                      }
+                  int ibipx = ix + w_start;
+                  for( int iy=0; iy<height; iy++ ){
+                    int ibipy = iy + h_start;
+                    for( int iz=0; iz<depth; iz++ ){
+                      int ibipz = iz + d_start;
+                      auto coord_vb = openvdb::Vec3f(center.x + ibipx, 
+                                                     center.y + ibipy, 
+                                                     center.z + ibipz);
+                      //auto coord_ib = grid->worldToIndex(coord_vb); dont need this ?
+                      float value = vmap->_data[ix + iy * width + iz * width * height];
+                      auto coord = openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z());
+                      float prev = tree.getValue(coord);
+                      float newval = value*prev;
+                      // prevent NAN's
+                      newval = newval+1e-6f;
+                      tree.setValue(coord, newval);
                     }
                   }
                 }

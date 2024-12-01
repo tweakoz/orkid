@@ -24,12 +24,13 @@ tokens = CrcStringProxy()
 
 CENTER = vec3(0,0,0)
 RADIUS1 = 5.0 
-VOXEL_SIZE = RADIUS1/30.0
-HALF_WIDTH = 1.0/VOXEL_SIZE
+VOXEL_SIZE = RADIUS1/40.0
+HALF_WIDTH = 3.0/VOXEL_SIZE
 ISO_PARM = 0.95 #float(0.5+math.sin(self.phase*0.81)*0.45)
 TIME_RATE = 2.5
 STROKE_DIST = 5.7/VOXEL_SIZE
-STROKE_RADIUS = 0.3/VOXEL_SIZE
+STROKE_RADIUS = 0.5/VOXEL_SIZE
+SMOOTHING_PASSES = 4
 
 sphere = ork_vdb.FloatGrid.createLevelSetSphere( "a",         # element name
                                                  RADIUS1,     # world units
@@ -44,17 +45,21 @@ voxel_brush = ork_vdb.VoxelMapF(voxel_brush_dim,voxel_brush_dim,voxel_brush_dim)
 for ix in range(voxel_brush_dim):
   for iy in range(voxel_brush_dim):
     for iz in range(voxel_brush_dim):
-      x = float(ix)/float(voxel_brush_dim)
-      y = float(iy)/float(voxel_brush_dim)
-      z = float(iz)/float(voxel_brush_dim)
-      val = math.sqrt(x*x + y*y + z*z)
-      voxel_brush.pset(ix,iy,iz,val)
+      x = -0.5+float(ix)/float(voxel_brush_dim)
+      y = -0.5+float(iy)/float(voxel_brush_dim)
+      z = -0.5+float(iz)/float(voxel_brush_dim)
+      val = math.sqrt(x*x + y*y + z*z)/math.sqrt(3.0)
+      val = math.sqrt(3.0)-val
+      print(x,y,z,val)
+      voxel_brush.pset(ix,iy,iz,1.02*val)
+      
+      
+#assert(False)
 #sphere.background = 0.0
 
 xform = sphere.xform # ork_vdb.Transform.create(1.0)
 #print(xform)
 colorgrid = ork_vdb.Vec3FGrid.create( "rgb", xform, vec3(1,1,1))
-SMOOTHING_PASSES = 1
 outside = sphere.background
 
 ################################################################################
@@ -102,14 +107,13 @@ class PointsPrimApp(object):
         center = latlon_to_xyz(lat,long,STROKE_DIST)
 
         radius = STROKE_RADIUS
-        self.sphere.fill(center,radius,1.0)
-        self.sphere.fill(center*0.95,radius,1.0)
-        #self.sphere.blitWithBrush(center,voxel_brush)
-        paint_color = vec3(0.5,0,0)
-        color_radius = 0.05
-        center2 = latlon_to_xyz(lat,long,4.8)
-        #colorgrid.fill(center2,color_radius,paint_color)
-        colorgrid.fill(center2*0.97,color_radius,paint_color)
+        #self.sphere.fill(center,radius,1.0)
+        #self.sphere.fill(center*0.95,radius,1.0)
+        self.sphere.blitWithBrush(center,voxel_brush)
+        paint_color = vec3(1.0,0,0)
+        color_radius = 0.001
+        center2 = latlon_to_xyz(lat,long,5.3)
+        colorgrid.fill(center2,color_radius,paint_color)
         #print(center)
         
         
@@ -183,8 +187,8 @@ class PointsPrimApp(object):
 
     mtl = shaders.createPbrMaterialWithColor( ctx=ctx, 
                                               color = vec4(1,.5,.5,1)*1.5,
-                                              metallic = 0.25,
-                                              roughness = 0.5 )
+                                              metallic = 0.0,
+                                              roughness = 0.9 )
     self.mesh_prim = RigidPrimitive()
     self.mesh_node = self.mesh_prim.createNode("mesh-node",self.layer1, mtl)
     
