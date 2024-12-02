@@ -15,6 +15,8 @@
 #include <openvdb_ax/compiler/CustomData.h>
 #include <openvdb/tools/Merge.h>
 #include <openvdb/tools/Composite.h>
+#include <openvdb/tools/Interpolation.h>
+
 #include <ork/kernel/concurrent_queue.h>
 
 namespace ork::lev2 {

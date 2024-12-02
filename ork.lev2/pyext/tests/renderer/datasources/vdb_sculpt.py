@@ -27,7 +27,7 @@ RADIUS1 = 5.0
 VOXEL_SIZE = .1
 HALF_WIDTH = 1.0/VOXEL_SIZE
 ISO_PARM = 0.0 #float(0.5+math.sin(self.phase*0.81)*0.45)
-TIME_RATE = 1.5
+TIME_RATE = 2.5
 STROKE_DIST = RADIUS1
 STROKE_RADIUS = 0.25/VOXEL_SIZE
 SMOOTHING_PASSES = 16
@@ -87,7 +87,8 @@ class PointsPrimApp(object):
         lat = self.phase*2.7*TIME_RATE
         
         depth = 0.25+math.sin(self.phase*0.5)*0.25
-        center = latlon_to_xyz(lat,long,STROKE_DIST-0.25+depth*0.5)
+        stroke_dist = STROKE_DIST-0.25+depth*0.5
+        center = latlon_to_xyz(lat,long,stroke_dist)
         
         spherex = ork_vdb.FloatGrid.createLevelSetSphere( "a", 
                                                           STROKE_RADIUS*0.1, 
@@ -97,10 +98,16 @@ class PointsPrimApp(object):
         
         self.sphere = self.sphere.csgDifference(spherex)
 
-        paint_color = vec3(1.0,0,0)
-        color_radius = 0.001
-        center2 = latlon_to_xyz(lat,long,5.3)
-        #colorgrid.fill(center2,color_radius,paint_color)
+        color_radius = 1.0
+        center2 = latlon_to_xyz(lat,long,stroke_dist)
+        
+        H = 0.5+0.5*math.sin(self.phase*0.1)
+        S = 1.0
+        V = 0.5+0.5*math.sin(self.phase*0.03)
+        paint_color_hsv = vec3(H,S,V)
+        paint_color = paint_color_hsv.hsv2rgb()
+        
+        colorgrid.fill(center2*10.0,color_radius,paint_color)
         #print(center)
         
         

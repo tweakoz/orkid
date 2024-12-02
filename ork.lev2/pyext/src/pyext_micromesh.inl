@@ -180,14 +180,19 @@ void MicroMesh::updateRigidPrim(umesh_rprim_ptr_t prim,
     vertex_out._color = _colors[ivtx].ARGBU32();
   }
   if(colorgrid){
-    auto accessor = colorgrid->getAccessor();
+    auto accessor = colorgrid->getConstAccessor();
+    using sampler_t = openvdb::tools::GridSampler<openvdb::Vec3SGrid::ConstAccessor,openvdb::tools::BoxSampler>;
+    auto color_sampler = sampler_t(accessor,colorgrid->transform());
     for (size_t ivtx = 0; ivtx < num_verts; ivtx++) {
       auto& vertex_out     = typed_vertex_base[ivtx];
       const auto& pos = _vertices[ivtx];
       auto coord_w = openvdb::Vec3f(pos.x, pos.y, pos.z);
       auto coord_i = colorgrid->worldToIndex(coord_w);
-      auto coord_ii = openvdb::Coord(coord_w.x(), coord_w.y(), coord_w.z());
-      auto color = accessor.getValue(coord_ii);
+      auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
+
+      //auto color = openvdb::tools::PointSampler::sample(colorgrid->tree(), coord_i);
+      auto color = color_sampler.wsSample(coord_w);
+      //auto color = accessor.getValue(coord_ii);
       if(0)printf("pos<%f %f %f> coord_w<%f %f %f> coord_i<%f %f %f> color<%f %f %f>\n",
              pos.x, pos.y, pos.z,
              coord_w.x(), coord_w.y(), coord_w.z(),
