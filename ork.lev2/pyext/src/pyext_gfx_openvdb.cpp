@@ -370,6 +370,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
             result["vertices"] = vertices;
             result["faces"]    = indices;
             return result;
+          })
+          .def("saveToVDB", [](vdb_floatgrid_ptr_t grid, py::object path) {
+
+            auto as_str = py::str(path);
+            auto as_std_str = as_str.cast<std::string>();
+            py::gil_scoped_release release;
+
+            openvdb::io::File file(as_std_str);
+            openvdb::GridPtrVec grids;
+            grids.push_back(grid);
+            file.write(grids);
+            file.close();
           });
   type_codec->registerStdCodec<vdb_floatgrid_ptr_t>(ovdb_fgrid_type);
   /////////////////////////////////////////////////////////////////////////////////

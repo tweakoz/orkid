@@ -246,8 +246,16 @@ class PointsPrimApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
+    handled = None
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      KC = uievent.keycode
+      print(f"key down {KC}")
+      if KC == ord("S"):
+        self.next_sphere.saveToVDB(obt_path.stage()/"test.vdb")
+        handled = ui.HandlerResult()
+    if handled == None:
+      handled = self.uicam.uiEventHandler(uievent)
+    if handled != None:
       self.camera.copyFrom( self.uicam.cameradata )
     return ui.HandlerResult()
     
