@@ -95,7 +95,15 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                              })
                              .def("__repr__", [](vdb_transform_ptr_t xform) -> std::string {
                                std::ostringstream oss;
-                               //oss << "Transform(" << xform->getAffineMap() << ")";
+                               bool uni_scale = xform->hasUniformScale();
+                               bool is_linear = xform->isLinear();
+                               auto voxel_size = xform->voxelSize();
+                               //double determinant = xform->determinant();
+                                oss << "Transform:" << std::endl;
+                                oss << "  UniformScale: " << uni_scale << std::endl;
+                                oss << "  IsLinear: " << is_linear << std::endl;  
+                                oss << "  VoxelSize: " << voxel_size << std::endl;
+                                //oss << "  Determinant: " << determinant << std::endl;
                                return oss.str();
                              });
   type_codec->registerStdCodec<vdb_transform_ptr_t>(ovdb_xform_type);
@@ -175,6 +183,24 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                   }
                 }
               })
+          ///////////////////////////////////////////////////////
+          .def("csgDifference", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+            py::gil_scoped_release release;
+            auto diff = openvdb::tools::csgDifferenceCopy(*grid, *other);
+            return diff;
+          })
+          ///////////////////////////////////////////////////////
+          .def("csgUnion", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+            py::gil_scoped_release release;
+            auto diff = openvdb::tools::csgUnionCopy(*grid, *other);
+            return diff;
+          })
+          ///////////////////////////////////////////////////////
+          .def("csgIntersection", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+            py::gil_scoped_release release;
+            auto diff = openvdb::tools::csgIntersectionCopy(*grid, *other);
+            return diff;
+          })
           ///////////////////////////////////////////////////////
           .def_property(
               "background",
@@ -334,7 +360,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 }
               })
           ///////////////////////////////////////////////////////
-          .def("toQuads", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+          .def("toMesh", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
             std::vector<openvdb::Vec3s> points;
             std::vector<openvdb::Vec4I> quads;
             std::vector<openvdb::Vec3I> tris;
@@ -366,6 +392,37 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               indices.append(tri[0]);
             }
 
+            auto result        = py::dict();
+            result["vertices"] = vertices;
+            result["faces"]    = indices;
+            return result;
+          })
+          ///////////////////////////////////////////////////////
+          .def("toTriMesh", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+            std::vector<openvdb::Vec3s> points;
+            std::vector<openvdb::Vec4I> quads;
+            std::vector<openvdb::Vec3I> tris;
+            {
+              py::gil_scoped_release release;
+              openvdb::tools::volumeToMesh(*grid, points, quads, isovalue);
+            }
+            auto vertices = py::list();
+            auto indices  = py::list();
+            for (auto& point : points) {
+              auto world = grid->transform().indexToWorld(point);
+              vertices.append(fvec3(point.x(), point.y(), point.z()));
+            }
+            for (auto& quad : quads) {
+              indices.append(3);
+              indices.append(quad[0]);
+              indices.append(quad[2]);
+              indices.append(quad[1]);
+
+              indices.append(3);
+              indices.append(quad[3]);
+              indices.append(quad[2]);
+              indices.append(quad[0]);
+            }
             auto result        = py::dict();
             result["vertices"] = vertices;
             result["faces"]    = indices;

@@ -13,6 +13,8 @@
 #include <openvdb_ax/compiler/VolumeExecutable.h>
 #include <openvdb_ax/compiler/Compiler.h>
 #include <openvdb_ax/compiler/CustomData.h>
+#include <openvdb/tools/Merge.h>
+#include <openvdb/tools/Composite.h>
 #include <ork/kernel/concurrent_queue.h>
 
 namespace ork::lev2 {
