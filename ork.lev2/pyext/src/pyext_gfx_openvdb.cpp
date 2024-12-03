@@ -506,6 +506,27 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 bbox.expand(openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z()));
                 grid->fill(bbox, openvdb::Vec3f(value.x, value.y, value.z));
               })
+          .def( "insertPoints", []( vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points ){
+            py::gil_scoped_release release;
+
+            OrkAssert(points->_format == EVtxStreamFormat::V12C4);
+            auto dblock = points->_datablock;
+            auto typed_points = (const VtxV12C4*) dblock->data();
+            size_t num_points = points->_num_points;
+
+            auto& tree = grid->tree();
+            static size_t total_points = 0;
+
+            total_points += num_points;
+            printf("insertPoints num_points<%zu> total_points<%zu>\n", num_points, total_points);
+            
+            for(size_t i=0; i<num_points; i++){
+              auto& vtx = typed_points[i];
+              openvdb::Vec3f worldPosition(vtx.x,vtx.y,vtx.z);
+              auto ipos = grid->worldToIndex(worldPosition);
+              tree.setValue( openvdb::Coord(ipos.x(),ipos.y(),ipos.z()), openvdb::Vec3f(vtx.x, vtx.y, vtx.z));
+            }
+          })
           ///////////////////////////////////////////////////////
           .def_property(
               "background",

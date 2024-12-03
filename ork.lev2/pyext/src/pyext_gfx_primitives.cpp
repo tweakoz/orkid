@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <pybind11/numpy.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
+#include <ork/lev2/gfx/image.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
 #include <openvdb/tools/PointIndexGrid.h>
@@ -41,6 +42,22 @@ void pyinit_primitives(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto primitives = module_lev2.def_submodule("primitives", "BuiltIn Primitives");
+  /////////////////////////////////////////////////////////////////////////////////
+  auto pointdata_type = py::class_<primitives::PointsData,primitives::pointsdata_ptr_t>(primitives, "PointsData")
+      .def(py::init<>([](datablock_ptr_t db, int num_points, crcstring_ptr_t format) {
+        auto typed_fmt = (EVtxStreamFormat) format->hashed();
+        return std::make_shared<primitives::PointsData>(db, num_points, typed_fmt);
+      }))
+      .def("transformInPlace", [](primitives::pointsdata_ptr_t prim, const fmtx4& mtx) { //
+        prim->transformInPlace(mtx);
+      })
+      .def("transformed", [](primitives::pointsdata_ptr_t prim, const fmtx4& mtx) -> primitives::pointsdata_ptr_t { //
+        return prim->transformed(mtx);
+      })
+      .def("convertToV12C4", [](primitives::pointsdata_ptr_t prim, image_ptr_t image) -> primitives::pointsdata_ptr_t { //
+        return prim->convertToV12C4(image);
+      });
+  type_codec->registerStdCodec<primitives::pointsdata_ptr_t>(pointdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cubeprim_type = //
     py::class_<primitives::CubePrimitive,primitives::cube_ptr_t>(primitives, "CubePrimitive")

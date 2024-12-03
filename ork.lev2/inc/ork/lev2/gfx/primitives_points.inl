@@ -9,8 +9,23 @@
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/fx_pipeline.h>
+#include <ork/kernel/datablock.h>
 
 namespace ork::lev2::primitives {
+
+//////////////////////////////////////////////////////////////////////////////
+struct PointsData;
+using pointsdata_ptr_t = std::shared_ptr<PointsData>;
+
+struct PointsData {
+  PointsData(datablock_ptr_t db, int num_points, EVtxStreamFormat format);
+  datablock_ptr_t _datablock;
+  int _num_points = 0;
+  EVtxStreamFormat _format = EVtxStreamFormat::NONE;
+  void transformInPlace(const fmtx4& mtx);
+  pointsdata_ptr_t transformed(const fmtx4& mtx) const;
+  pointsdata_ptr_t convertToV12C4(image_ptr_t image) const;
+};
 
 //////////////////////////////////////////////////////////////////////////////
 

@@ -9,7 +9,7 @@ from orkengine.lev2 import primitives, RigidPrimitive, meshutil, MicroMesh, Imag
 
 CENTER = vec3(0,0,0)
 RADIUS1 = 5.0 
-VOXEL_SIZE = .1
+VOXEL_SIZE = .033
 HALF_WIDTH = 3.0/VOXEL_SIZE
 
 time1 = time.time()
