@@ -777,6 +777,10 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& v
   ////////////////////////////////////////////////////////////////////
   // setup VBO or DL
   auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
+  if(not impl){
+    return false;
+  }
+
   OrkAssert(impl);
   GL_ERRORCHECK();
 
@@ -866,7 +870,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
   GL_ERRORCHECK();
   bool bOK = BindVertexStreamSource(VBuf);
   if (false == bOK){
-    OrkAssert(false);
     return;
   }
   ////////////////////////////////////////////////////////////////////

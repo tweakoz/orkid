@@ -14,33 +14,32 @@
 
 namespace ork::lev2 {
 
-  template <typename T> struct VoxelMap {
+template <typename T> struct VoxelMap {
 
-    VoxelMap(int width, int height, int depth)
-        : _width(width)
-        , _height(height)
-        , _depth(depth) {
-      _data.resize(width * height * depth);
-    }
+  VoxelMap(int width, int height, int depth)
+      : _width(width)
+      , _height(height)
+      , _depth(depth) {
+    _data.resize(width * height * depth);
+  }
 
-    void pset(int x, int y, int z, T value) {
-      OrkAssert(x >= 0 && x < _width);
-      OrkAssert(y >= 0 && y < _height);
-      OrkAssert(z >= 0 && z < _depth);
-      _data[x + y * _width + z * _width * _height] = value;
-    }
+  void pset(int x, int y, int z, T value) {
+    OrkAssert(x >= 0 && x < _width);
+    OrkAssert(y >= 0 && y < _height);
+    OrkAssert(z >= 0 && z < _depth);
+    _data[x + y * _width + z * _width * _height] = value;
+  }
 
-    int _width = 0;
-    int _height = 0;
-    int _depth = 0;
-    std::vector<T> _data;
-  };
+  int _width  = 0;
+  int _height = 0;
+  int _depth  = 0;
+  std::vector<T> _data;
+};
 
-  using vmapf_t = VoxelMap<float>;
-  using vmapf_ptr_t = std::shared_ptr<vmapf_t>;
-  using vmapv3_t = VoxelMap<fvec3>;
-  using vmapv3_ptr_t = std::shared_ptr<vmapv3_t>;
-
+using vmapf_t      = VoxelMap<float>;
+using vmapf_ptr_t  = std::shared_ptr<vmapf_t>;
+using vmapv3_t     = VoxelMap<fvec3>;
+using vmapv3_ptr_t = std::shared_ptr<vmapv3_t>;
 
 void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -52,12 +51,9 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                        .def("activeVoxelCount", [](vdb_basegrid_ptr_t grid) -> uint64_t { return grid->activeVoxelCount(); });
   type_codec->registerStdCodec<vdb_basegrid_ptr_t>(grid_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto vmapf_type = py::class_<vmapf_t, vmapf_ptr_t>(ovdb, "VoxelMapF")
-                        .def(py::init<int, int, int>())
-                        .def("pset", &vmapf_t::pset);
-  auto vmapv3_type = py::class_<vmapv3_t, vmapv3_ptr_t>(ovdb, "VoxelMapV3")
-                         .def(py::init<int, int, int>())
-                         .def("pset", &vmapv3_t::pset);
+  auto vmapf_type = py::class_<vmapf_t, vmapf_ptr_t>(ovdb, "VoxelMapF").def(py::init<int, int, int>()).def("pset", &vmapf_t::pset);
+  auto vmapv3_type =
+      py::class_<vmapv3_t, vmapv3_ptr_t>(ovdb, "VoxelMapV3").def(py::init<int, int, int>()).def("pset", &vmapv3_t::pset);
   /////////////////////////////////////////////////////////////////////////////////
   struct citer_proxy {
     openvdb::FloatGrid::ValueOnCIter iter;
@@ -87,23 +83,25 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   // openvdb::Transform
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_xform_type = py::class_<vdb_transform_t, vdb_transform_ptr_t>(ovdb, "Transform")
-                             .def_static("create", [](float scale) -> vdb_transform_ptr_t {
-                               py::gil_scoped_release release;
-                               auto xform = std::make_shared<openvdb::math::Transform>();
-                               xform->postScale(scale);
-                               return xform;
-                             })
+                             .def_static(
+                                 "create",
+                                 [](float scale) -> vdb_transform_ptr_t {
+                                   py::gil_scoped_release release;
+                                   auto xform = std::make_shared<openvdb::math::Transform>();
+                                   xform->postScale(scale);
+                                   return xform;
+                                 })
                              .def("__repr__", [](vdb_transform_ptr_t xform) -> std::string {
                                std::ostringstream oss;
-                               bool uni_scale = xform->hasUniformScale();
-                               bool is_linear = xform->isLinear();
+                               bool uni_scale  = xform->hasUniformScale();
+                               bool is_linear  = xform->isLinear();
                                auto voxel_size = xform->voxelSize();
-                               //double determinant = xform->determinant();
-                                oss << "Transform:" << std::endl;
-                                oss << "  UniformScale: " << uni_scale << std::endl;
-                                oss << "  IsLinear: " << is_linear << std::endl;  
-                                oss << "  VoxelSize: " << voxel_size << std::endl;
-                                //oss << "  Determinant: " << determinant << std::endl;
+                               // double determinant = xform->determinant();
+                               oss << "Transform:" << std::endl;
+                               oss << "  UniformScale: " << uni_scale << std::endl;
+                               oss << "  IsLinear: " << is_linear << std::endl;
+                               oss << "  VoxelSize: " << voxel_size << std::endl;
+                               // oss << "  Determinant: " << determinant << std::endl;
                                return oss.str();
                              });
   type_codec->registerStdCodec<vdb_transform_ptr_t>(ovdb_xform_type);
@@ -140,8 +138,8 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               [](vdb_floatgrid_ptr_t grid, fvec3 center, float radius, float value) {
                 py::gil_scoped_release release;
                 openvdb::CoordBBox bbox;
-                auto coord_va = openvdb::Vec3f(center.x-radius, center.y-radius, center.z-radius);
-                auto coord_vb = openvdb::Vec3f(center.x+radius, center.y+radius, center.z+radius);
+                auto coord_va = openvdb::Vec3f(center.x - radius, center.y - radius, center.z - radius);
+                auto coord_vb = openvdb::Vec3f(center.x + radius, center.y + radius, center.z + radius);
                 auto coord_ia = grid->worldToIndex(coord_va);
                 auto coord_ib = grid->worldToIndex(coord_vb);
                 bbox.expand(openvdb::Coord(coord_va.x(), coord_va.y(), coord_va.z()));
@@ -153,54 +151,58 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               "blitWithBrush",
               [](vdb_floatgrid_ptr_t grid, fvec3 center, vmapf_ptr_t vmap) {
                 py::gil_scoped_release release;
-                int width = vmap->_width;
-                int height = vmap->_height;
-                int depth = vmap->_depth;
+                int width   = vmap->_width;
+                int height  = vmap->_height;
+                int depth   = vmap->_depth;
                 int w_start = -width / 2;
                 int h_start = -height / 2;
                 int d_start = -depth / 2;
 
                 auto xform = grid->transform();
                 auto& tree = grid->tree();
-                for( int ix=0; ix<width; ix++ ){
+                for (int ix = 0; ix < width; ix++) {
                   int ibipx = ix + w_start;
-                  for( int iy=0; iy<height; iy++ ){
+                  for (int iy = 0; iy < height; iy++) {
                     int ibipy = iy + h_start;
-                    for( int iz=0; iz<depth; iz++ ){
-                      int ibipz = iz + d_start;
-                      auto coord_vb = openvdb::Vec3f(center.x + ibipx, 
-                                                     center.y + ibipy, 
-                                                     center.z + ibipz);
-                      //auto coord_ib = grid->worldToIndex(coord_vb); dont need this ?
-                      float value = vmap->_data[ix + iy * width + iz * width * height];
-                      auto coord = openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z());
-                      float prev = tree.getValue(coord);
-                      float newval = value*prev;
+                    for (int iz = 0; iz < depth; iz++) {
+                      int ibipz     = iz + d_start;
+                      auto coord_vb = openvdb::Vec3f(center.x + ibipx, center.y + ibipy, center.z + ibipz);
+                      // auto coord_ib = grid->worldToIndex(coord_vb); dont need this ?
+                      float value  = vmap->_data[ix + iy * width + iz * width * height];
+                      auto coord   = openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z());
+                      float prev   = tree.getValue(coord);
+                      float newval = value * prev;
                       // prevent NAN's
-                      newval = newval+1e-6f;
+                      newval = newval + 1e-6f;
                       tree.setValue(coord, newval);
                     }
                   }
                 }
               })
           ///////////////////////////////////////////////////////
-          .def("csgDifference", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
-            py::gil_scoped_release release;
-            auto diff = openvdb::tools::csgDifferenceCopy(*grid, *other);
-            return diff;
-          })
+          .def(
+              "csgDifference",
+              [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+                py::gil_scoped_release release;
+                auto diff = openvdb::tools::csgDifferenceCopy(*grid, *other);
+                return diff;
+              })
           ///////////////////////////////////////////////////////
-          .def("csgUnion", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
-            py::gil_scoped_release release;
-            auto diff = openvdb::tools::csgUnionCopy(*grid, *other);
-            return diff;
-          })
+          .def(
+              "csgUnion",
+              [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+                py::gil_scoped_release release;
+                auto diff = openvdb::tools::csgUnionCopy(*grid, *other);
+                return diff;
+              })
           ///////////////////////////////////////////////////////
-          .def("csgIntersection", [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
-            py::gil_scoped_release release;
-            auto diff = openvdb::tools::csgIntersectionCopy(*grid, *other);
-            return diff;
-          })
+          .def(
+              "csgIntersection",
+              [](vdb_floatgrid_ptr_t grid, vdb_floatgrid_ptr_t other) -> vdb_floatgrid_ptr_t {
+                py::gil_scoped_release release;
+                auto diff = openvdb::tools::csgIntersectionCopy(*grid, *other);
+                return diff;
+              })
           ///////////////////////////////////////////////////////
           .def_property(
               "background",
@@ -216,16 +218,9 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 auto iter = std::make_shared<citer_proxy>(grid->cbeginValueOn());
                 return iter;
               })
-           .def_property_readonly(
-              "xform",
-              [](vdb_floatgrid_ptr_t grid) -> vdb_transform_ptr_t {
-                return grid->transformPtr();
-              })
-           .def_property_readonly(
-              "clone",
-              [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t {
-                return std::make_shared<vdb_floatgrid_t>(*grid);
-              })
+          .def_property_readonly("xform", [](vdb_floatgrid_ptr_t grid) -> vdb_transform_ptr_t { return grid->transformPtr(); })
+          .def_property_readonly(
+              "clone", [](vdb_floatgrid_ptr_t grid) -> vdb_floatgrid_ptr_t { return std::make_shared<vdb_floatgrid_t>(*grid); })
           ///////////////////////////////////////////////////////
           .def(
               "scatterVoxels",
@@ -360,77 +355,80 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 }
               })
           ///////////////////////////////////////////////////////
-          .def("toMesh", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
-            std::vector<openvdb::Vec3s> points;
-            std::vector<openvdb::Vec4I> quads;
-            std::vector<openvdb::Vec3I> tris;
-            {
-              py::gil_scoped_release release;
+          .def(
+              "toMesh",
+              [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+                std::vector<openvdb::Vec3s> points;
+                std::vector<openvdb::Vec4I> quads;
+                std::vector<openvdb::Vec3I> tris;
+                {
+                  py::gil_scoped_release release;
 
-              bool relax       = false;
-              float adaptivity = 0.0f;
+                  bool relax       = false;
+                  float adaptivity = 0.0f;
 
-              openvdb::tools::volumeToMesh(*grid, points, tris, quads, isovalue, adaptivity, relax);
-            }
-            auto vertices = py::list();
-            auto indices  = py::list();
-            for (auto& point : points) {
-              auto world = grid->transform().indexToWorld(point);
-              vertices.append(fvec3(point.x(), point.y(), point.z()));
-            }
-            for (auto& quad : quads) {
-              indices.append(4);
-              indices.append(quad[3]);
-              indices.append(quad[2]);
-              indices.append(quad[1]);
-              indices.append(quad[0]);
-            }
-            for (auto& tri : tris) {
-              indices.append(3);
-              indices.append(tri[2]);
-              indices.append(tri[1]);
-              indices.append(tri[0]);
-            }
+                  openvdb::tools::volumeToMesh(*grid, points, tris, quads, isovalue, adaptivity, relax);
+                }
+                auto vertices = py::list();
+                auto indices  = py::list();
+                for (auto& point : points) {
+                  auto world = grid->transform().indexToWorld(point);
+                  vertices.append(fvec3(point.x(), point.y(), point.z()));
+                }
+                for (auto& quad : quads) {
+                  indices.append(4);
+                  indices.append(quad[3]);
+                  indices.append(quad[2]);
+                  indices.append(quad[1]);
+                  indices.append(quad[0]);
+                }
+                for (auto& tri : tris) {
+                  indices.append(3);
+                  indices.append(tri[2]);
+                  indices.append(tri[1]);
+                  indices.append(tri[0]);
+                }
 
-            auto result        = py::dict();
-            result["vertices"] = vertices;
-            result["faces"]    = indices;
-            return result;
-          })
+                auto result        = py::dict();
+                result["vertices"] = vertices;
+                result["faces"]    = indices;
+                return result;
+              })
           ///////////////////////////////////////////////////////
-          .def("toTriMesh", [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
-            std::vector<openvdb::Vec3s> points;
-            std::vector<openvdb::Vec4I> quads;
-            std::vector<openvdb::Vec3I> tris;
-            {
-              py::gil_scoped_release release;
-              openvdb::tools::volumeToMesh(*grid, points, quads, isovalue);
-            }
-            auto vertices = py::list();
-            auto indices  = py::list();
-            for (auto& point : points) {
-              auto world = grid->transform().indexToWorld(point);
-              vertices.append(fvec3(point.x(), point.y(), point.z()));
-            }
-            for (auto& quad : quads) {
-              indices.append(3);
-              indices.append(quad[0]);
-              indices.append(quad[2]);
-              indices.append(quad[1]);
+          .def(
+              "toTriMesh",
+              [](vdb_floatgrid_ptr_t grid, float isovalue) -> py::dict {
+                std::vector<openvdb::Vec3s> points;
+                std::vector<openvdb::Vec4I> quads;
+                std::vector<openvdb::Vec3I> tris;
+                {
+                  py::gil_scoped_release release;
+                  openvdb::tools::volumeToMesh(*grid, points, quads, isovalue);
+                }
+                auto vertices = py::list();
+                auto indices  = py::list();
+                for (auto& point : points) {
+                  auto world = grid->transform().indexToWorld(point);
+                  vertices.append(fvec3(point.x(), point.y(), point.z()));
+                }
+                for (auto& quad : quads) {
+                  indices.append(3);
+                  indices.append(quad[0]);
+                  indices.append(quad[2]);
+                  indices.append(quad[1]);
 
-              indices.append(3);
-              indices.append(quad[3]);
-              indices.append(quad[2]);
-              indices.append(quad[0]);
-            }
-            auto result        = py::dict();
-            result["vertices"] = vertices;
-            result["faces"]    = indices;
-            return result;
-          })
+                  indices.append(3);
+                  indices.append(quad[3]);
+                  indices.append(quad[2]);
+                  indices.append(quad[0]);
+                }
+                auto result        = py::dict();
+                result["vertices"] = vertices;
+                result["faces"]    = indices;
+                return result;
+              })
           .def("saveToVDB", [](vdb_floatgrid_ptr_t grid, py::object path) {
-
-            auto as_str = py::str(path);
+            auto as_str     = py::str(path);
             auto as_std_str = as_str.cast<std::string>();
             py::gil_scoped_release release;
 
@@ -487,7 +485,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 auto grid = std::make_shared<vdb_vec3grid_t>(bg);
                 grid->setName(name);
                 grid->setTransform(xform);
-                //grid->setGridClass(openvdb::GRID_LEVEL_SET);
+                // grid->setGridClass(openvdb::GRID_LEVEL_SET);
                 return grid;
               })
           ///////////////////////////////////////////////////////
@@ -496,9 +494,10 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               [](vdb_vec3grid_ptr_t grid, fvec3 center, float radius, fvec3 value) {
                 py::gil_scoped_release release;
                 openvdb::CoordBBox bbox;
-                //printf("fill center<%f %f %f> radius<%f> value<%f %f %f>\n", center.x, center.y, center.z, radius, value.x, value.y, value.z);
-                auto coord_va = openvdb::Vec3f(center.x-radius, center.y-radius, center.z-radius);
-                auto coord_vb = openvdb::Vec3f(center.x+radius, center.y+radius, center.z+radius);
+                // printf("fill center<%f %f %f> radius<%f> value<%f %f %f>\n", center.x, center.y, center.z, radius, value.x,
+                // value.y, value.z);
+                auto coord_va = openvdb::Vec3f(center.x - radius, center.y - radius, center.z - radius);
+                auto coord_vb = openvdb::Vec3f(center.x + radius, center.y + radius, center.z + radius);
                 auto coord_ia = grid->worldToIndex(coord_va);
                 auto coord_ib = grid->worldToIndex(coord_vb);
 
@@ -506,27 +505,38 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 bbox.expand(openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z()));
                 grid->fill(bbox, openvdb::Vec3f(value.x, value.y, value.z));
               })
-          .def( "insertPoints", []( vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points ){
-            py::gil_scoped_release release;
+          .def(
+              "insertPoints",
+              [](vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points) {
+                py::gil_scoped_release release;
 
-            OrkAssert(points->_format == EVtxStreamFormat::V12C4);
-            auto dblock = points->_datablock;
-            auto typed_points = (const VtxV12C4*) dblock->data();
-            size_t num_points = points->_num_points;
+                OrkAssert(points->_format == EVtxStreamFormat::V12C4);
+                auto dblock       = points->_datablock;
+                auto typed_points = (const VtxV12C4*)dblock->data();
+                size_t num_points = points->_num_points;
 
-            auto& tree = grid->tree();
-            static size_t total_points = 0;
+                auto& tree                 = grid->tree();
+                static size_t total_points = 0;
 
-            total_points += num_points;
-            printf("insertPoints num_points<%zu> total_points<%zu>\n", num_points, total_points);
-            
-            for(size_t i=0; i<num_points; i++){
-              auto& vtx = typed_points[i];
-              openvdb::Vec3f worldPosition(vtx.x,vtx.y,vtx.z);
-              auto ipos = grid->worldToIndex(worldPosition);
-              tree.setValue( openvdb::Coord(ipos.x(),ipos.y(),ipos.z()), openvdb::Vec3f(vtx.x, vtx.y, vtx.z));
-            }
-          })
+                total_points += num_points;
+
+                size_t leafCount        = tree.leafCount();
+                size_t activeVoxelCount = grid->activeVoxelCount();
+
+                if(0)printf(
+                    "insertPoints num_points<%zu> total_points<%zu> activeVoxelCount<%zu> leafCount<%zu>\n",
+                    num_points,
+                    total_points,
+                    activeVoxelCount,
+                    leafCount);
+
+                for (size_t i = 0; i < num_points; i++) {
+                  auto& vtx = typed_points[i];
+                  openvdb::Vec3f worldPosition(vtx.x, vtx.y, vtx.z);
+                  auto ipos = grid->worldToIndex(worldPosition);
+                  tree.setValue(openvdb::Coord(ipos.x(), ipos.y(), ipos.z()), openvdb::Vec3f(vtx.x, vtx.y, vtx.z));
+                }
+              })
           ///////////////////////////////////////////////////////
           .def_property(
               "background",
@@ -537,17 +547,29 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               [](vdb_vec3grid_ptr_t grid, fvec3 value) {
                 size_t grainSize = 32;
                 auto as_vec3f    = openvdb::Vec3f(value.x, value.y, value.z);
-                //openvdb::tools::changeLevelSetBackground(grid->tree(), as_vec3f, true, grainSize);
+                // openvdb::tools::changeLevelSetBackground(grid->tree(), as_vec3f, true, grainSize);
               })
-           .def_property_readonly(
+          ///////////////////////////////////////////////////////
+          .def_property_readonly(
               "clone",
-              [](vdb_vec3grid_ptr_t grid) -> vdb_vec3grid_ptr_t {
-                return std::make_shared<vdb_vec3grid_t>(*grid);
-              });
+              [](vdb_vec3grid_ptr_t grid) -> vdb_vec3grid_ptr_t { //
+                return std::make_shared<vdb_vec3grid_t>(*grid);   //
+              })
+          ///////////////////////////////////////////////////////
+          .def("exportToOpenVdbFile", [](vdb_vec3grid_ptr_t grid, py::object path) {
+            auto as_str     = py::str(path);
+            auto as_std_str = as_str.cast<std::string>();
+            py::gil_scoped_release release;
+
+            openvdb::io::File file(as_std_str);
+            openvdb::GridPtrVec grids;
+            grids.push_back(grid);
+            file.write(grids);
+            file.close();
+          });
   type_codec->registerStdCodec<vdb_vec3grid_ptr_t>(ovdb_v3grid_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 }
-
 
 } // namespace ork::lev2

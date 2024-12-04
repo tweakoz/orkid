@@ -9,13 +9,7 @@
 #include <pybind11/numpy.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/image.h>
-#include <openvdb/openvdb.h>
-#include <openvdb/points/PointDataGrid.h>
-#include <openvdb/tools/PointIndexGrid.h>
-#include <openvdb/tools/PointScatter.h>
-#include <openvdb/tools/LevelSetSphere.h>
-#include <openvdb/tools/SignedFloodFill.h>
-#include <openvdb/util/NullInterrupter.h>
+#include <ork/lev2/gfx/openvdb.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -231,6 +225,42 @@ void pyinit_primitives(py::module& module_lev2) {
                 }
               }
             }
+            prim->unlock(context.get());
+            return prim;
+          })
+          .def("updateWithVdbVec3Grid", [](primitives::points_v12c4_ptr_t prim, //
+                                            vdb_vec3grid_ptr_t grid, //
+                                            ctx_t context)  {
+            py::gil_scoped_release release;
+            int num_points   = grid->tree().activeLeafVoxelCount();
+            OrkAssert(num_points<prim->_capacity)
+            //printf("updateWithVdbVec3Grid:num_points<%d>\n", num_points);
+            VtxV12C4* points = prim->lock(context.get(),num_points);
+            int point_index = 0;
+            auto& xform = grid->transform();
+            //ork::Timer timer;
+            //timer.Start();
+            for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
+              const auto& leaf = *leafIter;
+
+              // Iterate over active voxels within the leaf
+              for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+                openvdb::Coord icoord = voxelIter.getCoord();
+                openvdb::Vec3f wpos = xform.indexToWorld(icoord);
+                auto value          = (*voxelIter)*255.0f;
+                auto color = fvec3(1,1,1);
+                if(point_index<num_points){
+                  //OrkAssert(point_index<num_points);
+                  auto& out_point = points[point_index++];
+                  out_point.x = wpos.x();
+                  out_point.y = wpos.y();
+                  out_point.z = wpos.z();
+                  out_point.color = 0xffffffff;
+                }
+              }
+            }
+            //float elapsed = timer.SecsSinceStart();
+            //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);
             prim->unlock(context.get());
             return prim;
           })
