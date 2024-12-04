@@ -70,9 +70,14 @@ void PointsData::transformInPlace(const fmtx4& mtx) {
       auto p_v12t8 = (VtxV12T8*) _datablock->data(); 
       for(int i=0; i<_num_points; i++){
         auto& vtx = p_v12t8[i];
-        fvec4 pos(vtx.pos,1.0f);
-        pos = pos.transform(mtx);
-        vtx.pos = pos.xyz();
+        if(vtx.pos.magnitude()>0.0f){
+          fvec4 pos(vtx.pos,1.0f);
+          pos = pos.transform(mtx);
+          vtx.pos = pos.xyz();
+        }
+        else{
+          vtx.pos = fvec3(0);
+        }
       }
       break;
     }
@@ -91,6 +96,35 @@ pointsdata_ptr_t PointsData::transformed(const fmtx4& mtx) const {
   memcpy_fast(dest,_datablock->data(),_datablock->length());
   rval->transformInPlace(mtx);
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+pointsdata_ptr_t PointsData::depthClamped(float min_depth, float max_depth) const {
+  switch(_format){
+    case EVtxStreamFormat::V12T8: {
+      auto src_typed = (VtxV12T8*)_datablock->data();
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12T8);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12T8*)dest;
+      for(int i=0; i<_num_points; i++){
+        auto& src = src_typed[i];
+        auto& dst = dest_typed[i];
+        dst.uv0 = src.uv0;
+        float depth = src.pos.z;
+        if(depth<min_depth or depth>max_depth){
+          dst.pos = fvec3(0);
+        }
+        else{
+          dst.pos = src.pos;
+        }
+      }
+      return rval;
+    }
+  }
+  OrkAssert(false);
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,10 +152,10 @@ pointsdata_ptr_t PointsData::convertToV12C4(image_ptr_t image) const {
           int iv = int(v*float(image->_height-1));
           const uint8_t* pixel = image->pixel8(iu,iv);
           // todo sample image
-          uint32_t r = uint32_t(pixel[0]);
-          uint32_t g = uint32_t(pixel[1]);
-          uint32_t b = uint32_t(pixel[2]);
-          dst.color = r<<0|(g<<8)|(b<<16);
+          uint32_t r = uint32_t(255-pixel[0]);
+          uint32_t g = uint32_t(255-pixel[1]);
+          uint32_t b = uint32_t(255-pixel[2]);
+          dst.color = b<<0|(g<<8)|(r<<16);
         }
         else {
           dst.color = 0xffffffff;

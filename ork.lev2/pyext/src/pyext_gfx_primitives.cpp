@@ -48,6 +48,9 @@ void pyinit_primitives(py::module& module_lev2) {
       .def("transformed", [](primitives::pointsdata_ptr_t prim, const fmtx4& mtx) -> primitives::pointsdata_ptr_t { //
         return prim->transformed(mtx);
       })
+      .def("depthClamped", [](primitives::pointsdata_ptr_t prim, float zmin, float zmax) -> primitives::pointsdata_ptr_t { //
+        return prim->depthClamped(zmin,zmax);
+      })
       .def("convertToV12C4", [](primitives::pointsdata_ptr_t prim, image_ptr_t image) -> primitives::pointsdata_ptr_t { //
         return prim->convertToV12C4(image);
       });
