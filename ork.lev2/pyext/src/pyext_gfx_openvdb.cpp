@@ -510,35 +510,46 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               [](vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points) {
                 py::gil_scoped_release release;
 
-                OrkAssert(points->_format == EVtxStreamFormat::V12C4);
                 auto dblock       = points->_datablock;
-                auto typed_points = (const VtxV12C4*)dblock->data();
                 size_t num_points = points->_num_points;
-
                 auto& tree                 = grid->tree();
                 static size_t total_points = 0;
-
                 total_points += num_points;
-
                 size_t leafCount        = tree.leafCount();
                 size_t activeVoxelCount = grid->activeVoxelCount();
 
-                if(0)printf(
-                    "insertPoints num_points<%zu> total_points<%zu> activeVoxelCount<%zu> leafCount<%zu>\n",
-                    num_points,
-                    total_points,
-                    activeVoxelCount,
-                    leafCount);
-
-                for (size_t i = 0; i < num_points; i++) {
-                  auto& vtx = typed_points[i];
-                  openvdb::Vec3f worldPosition(vtx.x, vtx.y, vtx.z);
-                  auto ipos = grid->worldToIndex(worldPosition);
-                  uint32_t abgr = vtx.color;
-                  float b       = (abgr >> 16) & 0xff;
-                  float g       = (abgr >> 8) & 0xff;
-                  float r       = (abgr >> 0) & 0xff;
-                  tree.setValue(openvdb::Coord(ipos.x(), ipos.y(), ipos.z()), openvdb::Vec3f(r,g,b));
+                switch(points->_format){
+                  case EVtxStreamFormat::V12C4:{
+                    OrkAssert(dblock->length() == (num_points * sizeof(VtxV12C4)));
+                    auto typed_points = (const VtxV12C4*)dblock->data();
+                    for (size_t i = 0; i < num_points; i++) {
+                      const auto& vtx = typed_points[i];
+                      openvdb::Vec3f wpos(vtx.x, vtx.y, vtx.z);
+                      auto ipos = grid->worldToIndex(wpos);
+                      auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                      uint32_t abgr = vtx.color;
+                      float r       = (abgr >> 16) & 0xff;
+                      float g       = (abgr >> 8) & 0xff;
+                      float b       = (abgr >> 0) & 0xff;
+                      tree.setValue(icoord, openvdb::Vec3f(r,g,b));
+                    }
+                    break;
+                  }
+                  case EVtxStreamFormat::V12T8:{
+                    auto typed_points = (const VtxV12T8*)dblock->data();
+                    OrkAssert(dblock->length() == (num_points * sizeof(VtxV12T8)));
+                    for (size_t i = 0; i < num_points; i++) {
+                      const auto& vtx = typed_points[i];
+                      openvdb::Vec3f wpos(vtx.pos.x, vtx.pos.y, vtx.pos.z);
+                      auto ipos = grid->worldToIndex(wpos);
+                      auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                      tree.setValue(icoord, openvdb::Vec3f(1,0,0));
+                    }
+                    break;
+                  }
+                  default:
+                    OrkAssert(false);
+                    break;
                 }
               })
           ///////////////////////////////////////////////////////

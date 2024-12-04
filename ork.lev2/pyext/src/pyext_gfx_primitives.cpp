@@ -240,11 +240,7 @@ void pyinit_primitives(py::module& module_lev2) {
             auto& xform = grid->transform();
             //ork::Timer timer;
             //timer.Start();
-            for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
-              const auto& leaf = *leafIter;
-
-              // Iterate over active voxels within the leaf
-              for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
+            for (auto voxelIter = grid->cbeginValueOn(); voxelIter; ++voxelIter) {
                 openvdb::Coord icoord = voxelIter.getCoord();
                 openvdb::Vec3f wpos = xform.indexToWorld(icoord);
                 auto value          = (*voxelIter);
@@ -263,7 +259,6 @@ void pyinit_primitives(py::module& module_lev2) {
                   uint32_t b8 = uint32_t(b) & 0xff;
                   out_point.color = (b8 << 16)|(g8 << 8)|(r8 << 0);
                 }
-              }
             }
             //float elapsed = timer.SecsSinceStart();
             //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);

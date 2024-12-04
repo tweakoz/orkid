@@ -53,6 +53,7 @@ PointsData::PointsData( datablock_ptr_t db,
 void PointsData::transformInPlace(const fmtx4& mtx) {
   switch(_format){
     case EVtxStreamFormat::V12C4: {
+      OrkAssert(_datablock->length() == sizeof(VtxV12C4)*_num_points);
       auto p_v12c4 = (VtxV12C4*) _datablock->data();
       for(int i=0; i<_num_points; i++){
         auto& vtx = p_v12c4[i];
@@ -65,6 +66,7 @@ void PointsData::transformInPlace(const fmtx4& mtx) {
       break;
     }
     case EVtxStreamFormat::V12T8: {
+      OrkAssert(_datablock->length() == sizeof(VtxV12T8)*_num_points);
       auto p_v12t8 = (VtxV12T8*) _datablock->data(); 
       for(int i=0; i<_num_points; i++){
         auto& vtx = p_v12t8[i];
@@ -96,11 +98,12 @@ pointsdata_ptr_t PointsData::transformed(const fmtx4& mtx) const {
 pointsdata_ptr_t PointsData::convertToV12C4(image_ptr_t image) const {
   switch(_format){
     case EVtxStreamFormat::V12T8: {
+      auto src_typed = (VtxV12T8*)_datablock->data();
+
       auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
       auto dblock_dest = rval->_datablock;
       auto dest = dblock_dest->data();
       auto dest_typed = (VtxV12C4*)dest;
-      auto src_typed = (VtxV12T8*)_datablock->data();
 
       for(int i=0; i<_num_points; i++){
         auto& src = src_typed[i];
@@ -118,7 +121,7 @@ pointsdata_ptr_t PointsData::convertToV12C4(image_ptr_t image) const {
           uint32_t r = uint32_t(pixel[0]);
           uint32_t g = uint32_t(pixel[1]);
           uint32_t b = uint32_t(pixel[2]);
-          dst.color = r<<8|(g<<16)|(b<<24);
+          dst.color = r<<0|(g<<8)|(b<<16);
         }
         else {
           dst.color = 0xffffffff;
