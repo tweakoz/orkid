@@ -268,6 +268,37 @@ void pyinit_primitives(py::module& module_lev2) {
             prim->unlock(context.get());
             return prim;
           })
+          .def("updateWithVdbTestGrid", [](primitives::points_v12c4_ptr_t prim, //
+                                            vdb_grid_test_ptr_t grid, //
+                                            float colorscale,
+                                            ctx_t context)  {
+            py::gil_scoped_release release;
+            int num_points   = grid->tree().activeLeafVoxelCount();
+            OrkAssert(num_points<prim->_capacity)
+            //printf("updateWithVdbVec3Grid:num_points<%d>\n", num_points);
+            VtxV12C4* points = prim->lock(context.get(),num_points);
+            int point_index = 0;
+            auto& xform = grid->transform();
+            //ork::Timer timer;
+            //timer.Start();
+            for (auto voxelIter = grid->cbeginValueOn(); voxelIter; ++voxelIter) {
+                openvdb::Coord icoord = voxelIter.getCoord();
+                openvdb::Vec3f wpos = xform.indexToWorld(icoord);
+                const TestGridCell& TGC          = (*voxelIter);
+                if(point_index<num_points){
+                  //OrkAssert(point_index<num_points);
+                  auto& out_point = points[point_index++];
+                  out_point.x = wpos.x();
+                  out_point.y = wpos.y();
+                  out_point.z = wpos.z();
+                  out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
+                }
+            }
+            //float elapsed = timer.SecsSinceStart();
+            //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);
+            prim->unlock(context.get());
+            return prim;
+          })
           .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> py::array_t<VtxV12C4> {
             auto buffer = prim->lock(context.get());
             return py::array_t<VtxV12C4>(prim->_numpoints,buffer,py::none());

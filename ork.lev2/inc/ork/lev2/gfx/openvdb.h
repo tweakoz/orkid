@@ -1,5 +1,7 @@
 #pragma once
 
+
+#include <ork/math/cvector3.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/points/PointDataGrid.h>
 #include <openvdb/tools/PointIndexGrid.h>
@@ -17,6 +19,7 @@
 #include <openvdb/tools/Composite.h>
 #include <openvdb/tools/Interpolation.h>
 #include <openvdb/openvdb.h>
+#include <openvdb/math/Math.h>
 
 #include <ork/kernel/concurrent_queue.h>
 
@@ -29,6 +32,71 @@ using vdb_floatgrid_ptr_t = std::shared_ptr<vdb_floatgrid_t>;
 using vdb_vec3grid_t      = openvdb::Vec3SGrid;
 using vdb_vec3grid_ptr_t  = std::shared_ptr<vdb_vec3grid_t>;
 
+struct TestGridCell {
+  TestGridCell(float val=0.0f)
+      : _level(val) {
+    //_writeCount = std::make_shared<counter_t>(0);
+  }
+  TestGridCell(const TestGridCell& oth)
+      : _abc(oth._abc)
+      , _rgb(oth._rgb)
+      , _level(oth._level) {
+    //_writeCount = std::make_shared<counter_t>(0);
+  }
+  TestGridCell operator-() const {
+    TestGridCell rval = *this;
+    rval._level = -rval._level;
+    return rval;
+  }
+  TestGridCell operator-(const TestGridCell& rhs) const {
+    TestGridCell rval = *this;
+    rval._level = this->_level-rhs._level;
+    return rval;
+  }
+  TestGridCell operator+(const TestGridCell& rhs) const {
+    TestGridCell rval = *this;
+    rval._level = this->_level+rhs._level;
+    return rval;
+  }
+  bool operator==(const TestGridCell& rhs) const {
+    return _level == rhs._level;
+  }
+  bool operator<(const TestGridCell& rhs) const {
+    return _level < rhs._level;
+  }
+  bool operator>(const TestGridCell& rhs) const {
+    return _level > rhs._level;
+  }
+  bool operator<=(const TestGridCell& rhs) const {
+    return _level <= rhs._level;
+  }
+  bool operator>=(const TestGridCell& rhs) const {
+    return _level >= rhs._level;
+  }
+
+  fvec3 _abc;
+  fvec3 _rgb;
+  float _level;
+  using counter_t = std::atomic<int>;
+  using counter_ptr_t = std::shared_ptr<counter_t>;
+  //counter_ptr_t _writeCount;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const TestGridCell& cell) {
+    os << cell._level;
+    return os;
+}
+
+inline TestGridCell Abs(const TestGridCell& cell) {
+  TestGridCell rval = cell;
+  rval._level = fabs(rval._level);
+  return rval;
+}
+
+using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,5, 4, 3>::Type;
+using vdb_grid_test = openvdb::Grid<vdb_tree_test>;
+using vdb_grid_test_ptr_t  = std::shared_ptr<vdb_grid_test>;
+
 using vdb_volume_exec_t     = openvdb::ax::VolumeExecutable;
 using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
 using vdb_custom_data_t     = openvdb::ax::CustomData;
@@ -36,10 +104,22 @@ using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
 using vdb_transform_t       = openvdb::math::Transform;
 using vdb_transform_ptr_t   = std::shared_ptr<vdb_transform_t>;
 
+
 struct FloatVoxel {
   openvdb::Coord coord;
   float value;
 };
 using cq_t = MpMcBoundedQueue<FloatVoxel, 4 << 20>;
 
+} // namespace ork::lev2
+
+/*template<> inline ork::lev2::TestGridCell openvdb::math::negative(const ork::lev2::TestGridCell& cell) {
+  ork::lev2::TestGridCell rval = cell;
+  rval._level = -rval._level;
+  return rval;
 }
+template<> inline ork::lev2::TestGridCell openvdb::math::zeroVal<ork::lev2::TestGridCell>() {
+  ork::lev2::TestGridCell rval;
+  rval._level = 0.0f;
+  return rval;
+}*/

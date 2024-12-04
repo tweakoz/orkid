@@ -109,6 +109,93 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
   //  but we probably need it here also for lev2 gfx access
   /////////////////////////////////////////////////////////////////////////////////
+  auto ovdb_test_grid_type =
+      py::class_<vdb_grid_test, vdb_basegrid_t, vdb_grid_test_ptr_t>(ovdb, "TestGrid")
+          .def_static(
+              "create",
+              [](std::string name, vdb_transform_ptr_t xform, float background_level ) -> vdb_grid_test_ptr_t {
+                py::gil_scoped_release release;
+                TestGridCell background;
+                background._level = background_level;
+                auto grid = std::make_shared<vdb_grid_test>(background);
+                grid->setName(name);
+                grid->setTransform(xform);
+                grid->setGridClass(openvdb::GRID_LEVEL_SET);
+                return grid;
+              })
+          ///////////////////////////////////////////////////////
+          .def_property_readonly(
+              "clone", [](vdb_grid_test_ptr_t grid) -> vdb_grid_test_ptr_t { return std::make_shared<vdb_grid_test>(*grid); })
+          ///////////////////////////////////////////////////////
+          .def(
+              "fill",
+              [](vdb_grid_test_ptr_t grid, fvec3 center, float radius, float value) {
+                py::gil_scoped_release release;
+                openvdb::CoordBBox bbox;
+                fvec3 bbmin = center - fvec3(radius);
+                fvec3 bbmax = center + fvec3(radius);
+                bbox.expand(openvdb::Coord(bbmin.x, bbmin.y, bbmin.z));
+                bbox.expand(openvdb::Coord(bbmax.x, bbmax.y, bbmax.z));
+                grid->fill(bbox, TestGridCell(value));
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "setVoxel",
+              [](vdb_grid_test_ptr_t grid, fvec3 coord, float value) {
+                py::gil_scoped_release release;
+                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
+                auto tgc = grid->tree().getValue(coord_ii);
+                tgc._level = value;
+                tgc._rgb = fvec3(value);
+                //tgc._writeCount->fetch_add(1);
+                grid->tree().setValue(coord_ii, tgc);
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "accumVoxel",
+              [](vdb_grid_test_ptr_t grid, fvec3 coord, float value) {
+                py::gil_scoped_release release;
+                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
+                auto tgc = grid->tree().getValue(coord_ii);
+                tgc._level += value;
+                tgc._rgb = fvec3(value);
+                //tgc._writeCount->fetch_add(1);
+                grid->tree().setValue(coord_ii, tgc);
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "accumVoxelRGB",
+              [](vdb_grid_test_ptr_t grid, fvec3 coord, fvec3 value) {
+                py::gil_scoped_release release;
+                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
+                auto tgc = grid->tree().getValue(coord_ii);
+                tgc._level = 1.0;
+                tgc._rgb += value;
+                /*int icount = tgc._writeCount->fetch_add(1);
+                if((icount%16)==15){
+                  printf("accumVoxelRGB<%d> _rgb<%g %g %g>\n", icount, tgc._rgb.x, tgc._rgb.y, tgc._rgb.z);
+                }*/
+                grid->tree().setValue(coord_ii, tgc);
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "csgDifference",
+              [](vdb_grid_test_ptr_t grid, vdb_grid_test_ptr_t other) -> vdb_grid_test_ptr_t {
+                py::gil_scoped_release release;
+                auto diff = openvdb::tools::csgDifferenceCopy(*grid, *other);
+                return diff;
+              });
+  type_codec->registerStdCodec<vdb_grid_test_ptr_t>(ovdb_test_grid_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // openvdb::FloatGrid is already bound by nanobind in OpenVdb
+  //  but we probably need it here also for lev2 gfx access
+  /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_fgrid_type =
       py::class_<vdb_floatgrid_t, vdb_basegrid_t, vdb_floatgrid_ptr_t>(ovdb, "FloatGrid")
           .def_static(

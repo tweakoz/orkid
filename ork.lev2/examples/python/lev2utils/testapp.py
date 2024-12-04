@@ -57,14 +57,9 @@ class TestApp(object):
 
     def onCtrlC(signum, frame):
       print("signaling EXIT to ezapp")
-
-      for pri in range(PRIORITY_COUNT):
-        for sys in self.systems_for_gpu[pri]:
-          sys.onTerminate()
+      self.onTerminate()
 
 
-      self.ezapp.signalExit()
-      self.ok_to_exit = True
 
     signal.signal(signal.SIGINT, onCtrlC)
 
@@ -72,7 +67,17 @@ class TestApp(object):
     sys = clazz(self,**kwargs)
     self.systems_for_update[sys.update_priority].append(sys)
     self.systems_for_gpu[sys.gpu_priority].append(sys)
+    return sys
        
+  ################################################
+
+  def onTerminate(self):
+    for pri in range(PRIORITY_COUNT):
+      for sys in self.systems_for_gpu[pri]:
+        sys.onTerminate()
+    self.ezapp.signalExit()
+    self.ok_to_exit = True
+
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
