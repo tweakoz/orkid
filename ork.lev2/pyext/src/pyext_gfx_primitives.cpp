@@ -247,15 +247,21 @@ void pyinit_primitives(py::module& module_lev2) {
               for (auto voxelIter = leaf.cbeginValueOn(); voxelIter; ++voxelIter) {
                 openvdb::Coord icoord = voxelIter.getCoord();
                 openvdb::Vec3f wpos = xform.indexToWorld(icoord);
-                auto value          = (*voxelIter)*255.0f;
-                auto color = fvec3(1,1,1);
+                auto value          = (*voxelIter);
                 if(point_index<num_points){
                   //OrkAssert(point_index<num_points);
                   auto& out_point = points[point_index++];
                   out_point.x = wpos.x();
                   out_point.y = wpos.y();
                   out_point.z = wpos.z();
-                  out_point.color = 0xffffffff;
+
+                  float r = value.x()*255.0f;
+                  float g = value.y()*255.0f;
+                  float b = value.z()*255.0f;
+                  uint32_t r8 = uint32_t(r) & 0xff;
+                  uint32_t g8 = uint32_t(g) & 0xff;
+                  uint32_t b8 = uint32_t(b) & 0xff;
+                  out_point.color = (b8 << 16)|(g8 << 8)|(r8 << 0);
                 }
               }
             }

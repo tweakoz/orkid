@@ -534,7 +534,11 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                   auto& vtx = typed_points[i];
                   openvdb::Vec3f worldPosition(vtx.x, vtx.y, vtx.z);
                   auto ipos = grid->worldToIndex(worldPosition);
-                  tree.setValue(openvdb::Coord(ipos.x(), ipos.y(), ipos.z()), openvdb::Vec3f(vtx.x, vtx.y, vtx.z));
+                  uint32_t abgr = vtx.color;
+                  float b       = (abgr >> 16) & 0xff;
+                  float g       = (abgr >> 8) & 0xff;
+                  float r       = (abgr >> 0) & 0xff;
+                  tree.setValue(openvdb::Coord(ipos.x(), ipos.y(), ipos.z()), openvdb::Vec3f(r,g,b));
                 }
               })
           ///////////////////////////////////////////////////////

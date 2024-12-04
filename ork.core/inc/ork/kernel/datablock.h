@@ -92,6 +92,9 @@ struct DataBlock {
   /////////////////////////////////////////////
   static datablock_ptr_t createFromPath(std::string path);
   /////////////////////////////////////////////
+  datablock_ptr_t clone() const;
+
+  /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";

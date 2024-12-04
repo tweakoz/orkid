@@ -229,5 +229,12 @@ datablock_ptr_t DataBlock::createFromPath(std::string path){
   return nullptr;
 }
 
+datablock_ptr_t DataBlock::clone() const {
+  auto rval = std::make_shared<DataBlock>();
+  rval->_name = _name;
+  rval->_vars = _vars;
+  rval->_storage = _storage;
+  return rval;
+}
 //////////////////////////////////////////////////////////////////////
 } // namespace ork
