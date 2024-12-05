@@ -112,28 +112,13 @@ struct TiledPointsPrimitive {
     int _numpoints = 0;
     int _capacity = 0;
     int _version = -2;
+    int _update_priority = 0;
+    svarp_t _userdata;
+
     vtx_buf_ptr_t _vertexBuffer;
   };
 
   using tile_ptr_t = std::shared_ptr<Tile>;
-
-  //////////////////////////////////////////////////////////////////////////////
-  /*
-  inline vtx_t* lock(Context* context, int num_points=0) {
-    if(0==num_points){
-      _numpoints = _capacity;
-      num_points = _capacity;
-    }
-    else{
-      _numpoints = num_points;
-      OrkAssert(num_points<=_capacity);
-    }
-    return (vtx_t*) context->GBI()->LockVB(*_vertexBuffer,0,_numpoints);
-  }
-
-  inline void unlock(Context* context) {
-    context->GBI()->UnLockVB(*_vertexBuffer);
-  }*/
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -170,12 +155,14 @@ struct TiledPointsPrimitive {
 
   fxpipeline_ptr_t _pipeline;
   std::unordered_map<uint64_t,tile_ptr_t> _tiles;
+  using tileptr_list = std::vector<tile_ptr_t>;
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using tiled_points_v12c4_ptr_t = std::shared_ptr<TiledPointsPrimitive<VtxV12C4>>;
+using tiled_points_v12c4_t = TiledPointsPrimitive<VtxV12C4>;
+using tiled_points_v12c4_ptr_t = std::shared_ptr<tiled_points_v12c4_t>;
 using points_v12c4_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12C4>>;
 using points_v12t8_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12T8>>;
 

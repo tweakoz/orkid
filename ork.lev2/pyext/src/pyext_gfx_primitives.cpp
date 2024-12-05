@@ -318,57 +318,112 @@ void pyinit_primitives(py::module& module_lev2) {
                                             float colorscale,
                                             ctx_t context)  {
             py::gil_scoped_release release;
-            return;
+
             auto& tree = grid->tree();
-            for (auto iter = tree.beginNode(); iter; ++iter) {
-              switch (iter.getDepth()) { //
-                case 2: { //
-                  vdb_tree_test_int2_t* node = nullptr; 
-                  iter.getNode(node); 
-                  if (node) { //
+            auto& xform = grid->transform();
+            int i2_dim = vdb_tree_test_int2_t::DIM;
+            auto i2_wdim = grid->indexToWorld(openvdb::Vec3f(i2_dim,i2_dim,i2_dim));
 
-                  }; 
-                  break; 
+            auto& root = tree.root();
+            std::vector<const vdb_tree_test_int2_t*> l2_nodes;
+            root.getNodes(l2_nodes);
+            int num_l2_tiles = l2_nodes.size(); 
+
+            //////////////////////////////////////////////////////
+            // collect tiles to be updated
+            //////////////////////////////////////////////////////
+
+            for( auto l2_node : l2_nodes ){
+              uint64_t hash = l2_node->hash();
+
+              primitives::tiled_points_v12c4_t::tile_ptr_t prim_tile;
+
+              auto it = prim->_tiles.find(hash);
+              if(it != prim->_tiles.end() ){
+                prim_tile = it->second;
+                prim_tile->_userdata.set<const vdb_tree_test_int2_t*>(l2_node);
+              }
+              else{
+                prim_tile = std::make_shared<primitives::tiled_points_v12c4_t::Tile>();
+                prim_tile->_capacity = i2_dim*i2_dim*i2_dim;
+                prim_tile->_vertexBuffer = std::make_shared<primitives::tiled_points_v12c4_t::vtx_buf_t>(prim_tile->_capacity ,0);
+                prim_tile->_userdata.set<const vdb_tree_test_int2_t*>(l2_node);
+                prim->_tiles[hash] = prim_tile;
+              }
+
+              int version = l2_node->getVersion();
+              if( prim_tile->_version != version ){
+                prim_tile->_update_priority++;
+              }
+
+            } // for( auto l2_node : l2_nodes ){
+
+            //////////////////////////////////////////////////////
+            // prioritize tiles to be updated
+            //////////////////////////////////////////////////////
+
+            using tile_list_t = std::vector<primitives::tiled_points_v12c4_t::tile_ptr_t>;
+            std::map<int,tile_list_t> tiles_to_update;
+
+            for( auto tile : prim->_tiles ){
+              int pri = tile.second->_update_priority;
+              tiles_to_update[pri].push_back(tile.second);
+            }
+
+            //////////////////////////////////////////////////////
+            // update the tiles
+            //////////////////////////////////////////////////////
+
+            constexpr int max_tiles_to_update = 20;
+
+            int updated_tile_counter = 0;
+            for( auto it = tiles_to_update.rbegin(); it != tiles_to_update.rend(); ++it ){
+
+              auto& tile_list = it->second;
+
+              for( auto prim_tile : tile_list ){
+
+                auto l2_node = prim_tile->_userdata.get<const vdb_tree_test_int2_t*>();
+
+                auto points = (VtxV12C4*) context->GBI()->LockVB(*(prim_tile->_vertexBuffer),0,prim_tile->_capacity);
+                int voxel_index = 0;
+                const int numvoxels = l2_node->onVoxelCount();
+                for( auto it = l2_node->cbeginChildOn(); it; ++it ){
+                  const auto& leafnode = *it;
+                  for( auto it_leaf = leafnode.cbeginValueOn(); it_leaf; ++it_leaf ){
+                    auto icoord = it_leaf.getCoord();
+                    auto wpos = xform.indexToWorld(icoord);
+                    const TestGridCell& TGC = (*it_leaf);
+                    auto& out_point = points[voxel_index++];
+                    out_point.x = wpos.x();
+                    out_point.y = wpos.y();
+                    out_point.z = wpos.z();
+                    out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
+                    voxel_index++;
+                  }
                 }
-                case 3: { //
-                  vdb_tree_test_leaf_t* node = nullptr; 
-                  iter.getNode(node); 
-                  if (node) { //
+                OrkAssert(voxel_index<prim_tile->_capacity);
+                prim_tile->_numpoints = voxel_index;
 
-                  }; 
+                prim_tile->_version = l2_node->getVersion();
+                prim_tile->_update_priority = 0; // reset update priority
+
+                context->GBI()->UnLockVB(*(prim_tile->_vertexBuffer));
+
+                updated_tile_counter++;
+
+                if( updated_tile_counter >= max_tiles_to_update ){
                   break;
                 }
-                default:
-                  break;
+
+              }
+              if( updated_tile_counter >= max_tiles_to_update ){
+                break;
               }
             }
 
-            /*
-            int num_points   = grid->tree().activeLeafVoxelCount();
-            OrkAssert(num_points<prim->_capacity)
-            //printf("updateWithVdbVec3Grid:num_points<%d>\n", num_points);
-            VtxV12C4* points = prim->lock(context.get(),num_points);
-            int point_index = 0;
-            auto& xform = grid->transform();
-            //ork::Timer timer;
-            //timer.Start();
-            for (auto voxelIter = grid->cbeginValueOn(); voxelIter; ++voxelIter) {
-                openvdb::Coord icoord = voxelIter.getCoord();
-                openvdb::Vec3f wpos = xform.indexToWorld(icoord);
-                const TestGridCell& TGC          = (*voxelIter);
-                if(point_index<num_points){
-                  //OrkAssert(point_index<num_points);
-                  auto& out_point = points[point_index++];
-                  out_point.x = wpos.x();
-                  out_point.y = wpos.y();
-                  out_point.z = wpos.z();
-                  out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
-                }
-            }
-            //float elapsed = timer.SecsSinceStart();
-            //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);
-            prim->unlock(context.get());
-            */
+            //////////////////////////////////////////////////////
+
           })
           .def( "createNode", createNodeLambdaFromPrimType<primitives::tiled_points_v12c4_ptr_t>() );
       type_codec->registerStdCodec<primitives::tiled_points_v12c4_ptr_t>(tiled_pointsprim_type);

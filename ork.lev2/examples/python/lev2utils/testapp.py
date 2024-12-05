@@ -91,7 +91,7 @@ class TestApp(object):
     ###################################
 
     sg_params = {
-      "SkyboxIntensity": 1.0, 
+      "SkyboxIntensity": 2.0, 
       "DiffuseIntensity": 6.0, 
     }
     

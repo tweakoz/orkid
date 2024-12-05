@@ -109,6 +109,7 @@ class System (TestSystem):
         i = i + 1
 
         if (i % 100000 == 0):
+          self.voxel_grid.tileStats()
           self.voxel_grid_gpu_upd = self.voxel_grid.clone
 
 

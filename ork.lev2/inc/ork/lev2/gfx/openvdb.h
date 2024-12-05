@@ -32,6 +32,15 @@ using vdb_floatgrid_ptr_t = std::shared_ptr<vdb_floatgrid_t>;
 using vdb_vec3grid_t      = openvdb::Vec3SGrid;
 using vdb_vec3grid_ptr_t  = std::shared_ptr<vdb_vec3grid_t>;
 
+using vdb_volume_exec_t     = openvdb::ax::VolumeExecutable;
+using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
+using vdb_custom_data_t     = openvdb::ax::CustomData;
+using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
+using vdb_transform_t       = openvdb::math::Transform;
+using vdb_transform_ptr_t   = std::shared_ptr<vdb_transform_t>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct TestGridCell {
   TestGridCell(float val=0.0f)
       : _level(val) {
@@ -97,18 +106,12 @@ using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,5, 4, 3>::Type;
 using vdb_grid_test = openvdb::Grid<vdb_tree_test>;
 using vdb_grid_test_ptr_t  = std::shared_ptr<vdb_grid_test>;
 
-using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;
-using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;
-using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,4>;
-using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,5>;
+using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;                                  // L3 (   8^3 [512] voxels )
+using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,4>;   // L2 ( 128^3 [2M]  voxels )
+using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,5>;   // L1 (4096^3 [64G] voxels )
+using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;                                  // L0 ??? voxels
 
-using vdb_volume_exec_t     = openvdb::ax::VolumeExecutable;
-using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
-using vdb_custom_data_t     = openvdb::ax::CustomData;
-using vdb_custom_data_ptr_t = std::shared_ptr<vdb_custom_data_t>;
-using vdb_transform_t       = openvdb::math::Transform;
-using vdb_transform_ptr_t   = std::shared_ptr<vdb_transform_t>;
-
+///////////////////////////////////////////////////////////////////////////////
 
 struct FloatVoxel {
   openvdb::Coord coord;
@@ -117,14 +120,3 @@ struct FloatVoxel {
 using cq_t = MpMcBoundedQueue<FloatVoxel, 4 << 20>;
 
 } // namespace ork::lev2
-
-/*template<> inline ork::lev2::TestGridCell openvdb::math::negative(const ork::lev2::TestGridCell& cell) {
-  ork::lev2::TestGridCell rval = cell;
-  rval._level = -rval._level;
-  return rval;
-}
-template<> inline ork::lev2::TestGridCell openvdb::math::zeroVal<ork::lev2::TestGridCell>() {
-  ork::lev2::TestGridCell rval;
-  rval._level = 0.0f;
-  return rval;
-}*/

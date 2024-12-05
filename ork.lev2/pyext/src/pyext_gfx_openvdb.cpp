@@ -205,7 +205,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 tgc._level = value;
                 tgc._rgb = fvec3(value);
                 //tgc._writeCount->fetch_add(1);
-                grid->tree().setValue(coord_ii, tgc);
+                grid->tree().setValueOn(coord_ii, tgc);
               })
           ///////////////////////////////////////////////////////
           .def(
@@ -219,7 +219,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 tgc._level += value;
                 tgc._rgb = fvec3(value);
                 //tgc._writeCount->fetch_add(1);
-                grid->tree().setValue(coord_ii, tgc);
+                grid->tree().setValueOn(coord_ii, tgc);
               })
           ///////////////////////////////////////////////////////
           .def(
@@ -236,7 +236,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 if((icount%16)==15){
                   printf("accumVoxelRGB<%d> _rgb<%g %g %g>\n", icount, tgc._rgb.x, tgc._rgb.y, tgc._rgb.z);
                 }*/
-                grid->tree().setValue(coord_ii, tgc);
+                grid->tree().setValueOn(coord_ii, tgc);
               })
           ///////////////////////////////////////////////////////
           .def(
