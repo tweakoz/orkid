@@ -97,6 +97,11 @@ using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,5, 4, 3>::Type;
 using vdb_grid_test = openvdb::Grid<vdb_tree_test>;
 using vdb_grid_test_ptr_t  = std::shared_ptr<vdb_grid_test>;
 
+using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;
+using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;
+using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,4>;
+using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,5>;
+
 using vdb_volume_exec_t     = openvdb::ax::VolumeExecutable;
 using vdb_volume_exec_ptr_t = std::shared_ptr<vdb_volume_exec_t>;
 using vdb_custom_data_t     = openvdb::ax::CustomData;

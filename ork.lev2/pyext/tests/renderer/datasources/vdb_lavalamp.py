@@ -88,7 +88,7 @@ class PointsPrimApp(object):
         #cdata.set("freq",float(self.phi))
         ve.executeOnGrid(self.sphere)
         
-        mesh_dict = self.sphere.toQuads(ISO_PARM)
+        mesh_dict = self.sphere.toTriMesh(ISO_PARM)
         #print(mesh_dict)
         num_verts = len(mesh_dict["vertices"])
         num_faces = len(mesh_dict["faces"])

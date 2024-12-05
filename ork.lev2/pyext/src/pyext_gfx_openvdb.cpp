@@ -51,6 +51,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                        .def("activeVoxelCount", [](vdb_basegrid_ptr_t grid) -> uint64_t { return grid->activeVoxelCount(); });
   type_codec->registerStdCodec<vdb_basegrid_ptr_t>(grid_type);
   /////////////////////////////////////////////////////////////////////////////////
+  using coord_t = openvdb::Coord;
+  auto coord_type = py::class_<coord_t>(ovdb, "Coord").def(py::init<int, int, int>())
+  .def_property("x", [](const coord_t& coord) -> int { return coord.x(); }, [](coord_t& coord, int val) { coord.setX(val); })
+  .def_property("y", [](const coord_t& coord) -> int { return coord.y(); }, [](coord_t& coord, int val) { coord.setY(val); })
+  .def_property("z", [](const coord_t& coord) -> int { return coord.z(); }, [](coord_t& coord, int val) { coord.setZ(val); })
+  .def( "__repr__", [](const coord_t& coord) -> std::string {
+    std::ostringstream oss;
+    oss << "Coord(" << coord.x() << "," << coord.y() << "," << coord.z() << ")";
+    return oss.str();
+  });
+  type_codec->registerStdCodec<coord_t>(coord_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto vmapf_type = py::class_<vmapf_t, vmapf_ptr_t>(ovdb, "VoxelMapF").def(py::init<int, int, int>()).def("pset", &vmapf_t::pset);
   auto vmapv3_type =
       py::class_<vmapv3_t, vmapv3_ptr_t>(ovdb, "VoxelMapV3").def(py::init<int, int, int>()).def("pset", &vmapv3_t::pset);
@@ -106,11 +118,32 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                              });
   type_codec->registerStdCodec<vdb_transform_ptr_t>(ovdb_xform_type);
   /////////////////////////////////////////////////////////////////////////////////
+  using int2_ptr_t = ork::python::unmanaged_ptr<vdb_tree_test_int2_t>;
+  using int2_const_ptr_t = ork::python::unmanaged_ptr<const vdb_tree_test_int2_t>;
+  auto ovdb_test_grid_int2_type = py::class_<int2_ptr_t>(ovdb, "TestGridInt2Node")
+    .def_property_readonly("origin", [](int2_ptr_t node) -> coord_t { return node->origin(); })
+    .def_property_readonly("version", [](int2_ptr_t node) -> int { return node->getVersion(); })
+    .def( "__repr__", [](int2_ptr_t node) -> std::string {
+      std::ostringstream oss;
+      auto origin = node->origin();
+      oss << "TGINT2(" << origin.x() << "," << origin.y() << "," << origin.z() << ")";
+      return oss.str();
+    });        
+  type_codec->registerStdCodec<int2_ptr_t>(ovdb_test_grid_int2_type);
+  /////////////////////////////////////////////////////////////////////////////////
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
   //  but we probably need it here also for lev2 gfx access
   /////////////////////////////////////////////////////////////////////////////////
   auto ovdb_test_grid_type =
       py::class_<vdb_grid_test, vdb_basegrid_t, vdb_grid_test_ptr_t>(ovdb, "TestGrid")
+          ///////////////////////////////////////////////////////
+          .def_property_readonly_static("leaf_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_leaf_t::DIM; })
+          .def_property_readonly_static("int1_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int1_t::DIM; })
+          .def_property_readonly_static("int2_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int2_t::DIM; })
+          .def_property_readonly_static("leaf_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_leaf_t::NUM_VALUES; })
+          .def_property_readonly_static("int1_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int1_t::NUM_VOXELS; })
+          .def_property_readonly_static("int2_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int2_t::NUM_VOXELS; })
+          ///////////////////////////////////////////////////////
           .def_static(
               "create",
               [](std::string name, vdb_transform_ptr_t xform, float background_level ) -> vdb_grid_test_ptr_t {
@@ -126,6 +159,27 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
           ///////////////////////////////////////////////////////
           .def_property_readonly(
               "clone", [](vdb_grid_test_ptr_t grid) -> vdb_grid_test_ptr_t { return std::make_shared<vdb_grid_test>(*grid); })
+          ///////////////////////////////////////////////////////
+          .def_property_readonly(
+              "nonLeafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().nonLeafCount(); })
+          .def_property_readonly(
+              "leafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().leafCount(); })
+          ///////////////////////////////////////////////////////
+          .def( "worldToIndex", [](vdb_grid_test_ptr_t grid, fvec3 wpos) -> coord_t {
+            py::gil_scoped_release release;
+            auto& xform = grid->transform();
+            auto ipos = xform.worldToIndex(openvdb::Vec3f(wpos.x, wpos.y, wpos.z));
+            auto as_coord = coord_t(ipos.x(), ipos.y(), ipos.z());
+            return as_coord;
+          })
+          ///////////////////////////////////////////////////////
+          .def( "indexToWorld", [](vdb_grid_test_ptr_t grid, coord_t ipos) -> fvec3 {
+            py::gil_scoped_release release;
+            auto& xform = grid->transform();
+            auto wpos = xform.indexToWorld(openvdb::Vec3f(ipos.x(), ipos.y(), ipos.z()));
+            auto as_fvec3 = fvec3(wpos.x(), wpos.y(), wpos.z());
+            return as_fvec3;
+          })
           ///////////////////////////////////////////////////////
           .def(
               "fill",
@@ -182,6 +236,75 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                   printf("accumVoxelRGB<%d> _rgb<%g %g %g>\n", icount, tgc._rgb.x, tgc._rgb.y, tgc._rgb.z);
                 }*/
                 grid->tree().setValue(coord_ii, tgc);
+              })
+          ///////////////////////////////////////////////////////
+          .def(
+              "tileStats",
+              [](vdb_grid_test_ptr_t grid) {
+                auto& tree = grid->tree();
+                size_t num_l0_tiles = 0;
+                size_t num_l1_tiles = 0;
+                size_t num_l2_tiles = 0;
+                size_t num_l3_tiles = 0;
+                for (auto iter = tree.beginNode(); iter; ++iter) {
+                  switch (iter.getDepth()) { //
+                    case 0: { //
+                      vdb_tree_test_root_t* node = nullptr;
+                      iter.getNode(node);
+                      if (node) { //
+                        num_l0_tiles++;
+                      };
+                      break; 
+                    }
+                    case 1: { //
+                      vdb_tree_test_int1_t* node = nullptr; 
+                      iter.getNode(node); 
+                      if (node) { //
+                        num_l1_tiles++;
+                      }; 
+                      break; 
+                    }
+                    case 2: { //
+                      vdb_tree_test_int2_t* node = nullptr; 
+                      iter.getNode(node); 
+                      if (node) { //
+                        num_l2_tiles++;
+                      }; 
+                      break; 
+                    }
+                    case 3: { //
+                      vdb_tree_test_leaf_t* node = nullptr; 
+                      iter.getNode(node); 
+                      if (node) {
+                        num_l3_tiles++;
+                      }; 
+                      break; 
+                    }
+                  }
+                }
+                printf("num_l0_tiles<%zu> num_l1_tiles<%zu> num_l2_tiles<%zu> num_l3_tiles<%zu>\n", num_l0_tiles, num_l1_tiles, num_l2_tiles, num_l3_tiles);                  
+              })
+          ///////////////////////////////////////////////////////
+          .def_property_readonly(
+              "int2nodes",
+              [](vdb_grid_test_ptr_t grid) -> py::list {
+                py::list int2nodes;
+                auto& tree = grid->tree();
+                for (auto iter = tree.beginNode(); iter; ++iter) {
+                  switch (iter.getDepth()) { //
+                    case 2: { //
+                      vdb_tree_test_int2_t* node = nullptr; 
+                      iter.getNode(node); 
+                      if (node) { //
+                        int2nodes.append(int2_ptr_t(node));
+                      }; 
+                      break; 
+                    }
+                    default:
+                      break;
+                  }
+                }
+                return int2nodes;
               })
           ///////////////////////////////////////////////////////
           .def(

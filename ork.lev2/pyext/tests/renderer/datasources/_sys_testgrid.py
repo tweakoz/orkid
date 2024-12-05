@@ -21,9 +21,18 @@ tokens = CrcStringProxy()
 #############################################
 
 CLEAR_GRID_PER_FRAME = False
-VOXEL_GRID_SIZE = 0.025
-POINT_SIZE = 5.0
+VOXEL_GRID_SIZE = 0.0125
+POINT_SIZE = 1.0
   
+  
+print( "LEAF_DIM: ", lev2.vdb.TestGrid.leaf_dim )
+print( "INT2_DIM: ", lev2.vdb.TestGrid.int2_dim )
+print( "INT1_DIM: ", lev2.vdb.TestGrid.int1_dim )
+print( "LEAF_MAX_VOXELS: ", lev2.vdb.TestGrid.leaf_dim )
+print( "INT2_MAX_VOXELS: ", lev2.vdb.TestGrid.int2_max_voxels )
+print( "INT1_MAX_VOXELS: ", lev2.vdb.TestGrid.int1_max_voxels )
+
+
 #############################################
 # main
 #############################################
@@ -83,16 +92,37 @@ class System (TestSystem):
         y = sign_y * y
         z = sign_z * z
         
-        pos = vec3(x,y,z)
         scale = 4.0
-        self.voxel_grid.accumVoxelRGB(pos*scale,c*0.05)
+        pos = vec3(x,y,z)*scale
+        #coord = self.voxel_grid.worldToIndex(pos)
+        #leaf_count = self.voxel_grid.leafCount
+        #nonleaf_count = self.voxel_grid.nonLeafCount
+        #print("pos<%s> coord<%s> leafcount<%d> nonleafcount<%d>" % (pos,coord,leaf_count,nonleaf_count))
+        self.voxel_grid.accumVoxelRGB(pos,c*0.05)
+        
 
         if (None == self.voxel_grid_gpu_upd):
-          self.voxel_grid_gpu_upd = self.voxel_grid.clone
+          #self.voxel_grid_gpu_upd = self.voxel_grid.clone
           if CLEAR_GRID_PER_FRAME: # clear previous grid ?
             self.newGrid()
             
         i = i + 1
+
+        if (i % 100000 == 0):
+          nodes = self.voxel_grid.int2nodes
+          #origins_w = list()
+          print("int2nodes.V: [",end="")
+          for n in nodes:
+            #o = n.origin
+            #w = self.voxel_grid.indexToWorld(o)
+            #print(win,end=",")
+            print(n.version,end=" ")
+          print("]")
+
+        if (i % 100000 == 0):
+          self.voxel_grid_gpu_upd = self.voxel_grid.clone
+
+
 
       print("thread ended")
 
