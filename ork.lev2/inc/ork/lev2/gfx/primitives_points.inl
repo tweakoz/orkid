@@ -156,6 +156,7 @@ struct TiledPointsPrimitive {
   fxpipeline_ptr_t _pipeline;
   std::unordered_map<uint64_t,tile_ptr_t> _tiles;
   using tileptr_list = std::vector<tile_ptr_t>;
+  int _max_tile_update_rate = 10;
 
 };
 

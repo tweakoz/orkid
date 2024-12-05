@@ -102,14 +102,18 @@ inline TestGridCell Abs(const TestGridCell& cell) {
   return rval;
 }
 
-using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,5, 4, 3>::Type;
+static constexpr size_t L3_SIZE = 2;
+static constexpr size_t L2_SIZE = 4;
+static constexpr size_t L1_SIZE = 6;
+
+using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,L1_SIZE, L2_SIZE, L3_SIZE>::Type;
 using vdb_grid_test = openvdb::Grid<vdb_tree_test>;
 using vdb_grid_test_ptr_t  = std::shared_ptr<vdb_grid_test>;
 
-using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;                                  // L3 (   8^3 [512] voxels )
-using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,4>;   // L2 ( 128^3 [2M]  voxels )
-using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,5>;   // L1 (4096^3 [64G] voxels )
-using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;                                  // L0 ??? voxels
+using vdb_tree_test_leaf_t = vdb_tree_test::LeafNodeType;                                        // L3 (   8^3 [512] voxels )
+using vdb_tree_test_int2_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_leaf_t,L2_SIZE>;   // L2 ( 128^3 [2M]  voxels )
+using vdb_tree_test_int1_t = openvdb::v12_0::tree::InternalNode<vdb_tree_test_int2_t,L1_SIZE>;   // L1 (4096^3 [64G] voxels )
+using vdb_tree_test_root_t = vdb_tree_test::RootNodeType;                                        // L0 ??? voxels
 
 ///////////////////////////////////////////////////////////////////////////////
 

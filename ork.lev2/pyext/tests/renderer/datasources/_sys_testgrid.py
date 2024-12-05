@@ -23,7 +23,7 @@ tokens = CrcStringProxy()
 CLEAR_GRID_PER_FRAME = False
 VOXEL_GRID_SIZE = 0.0125
 POINT_SIZE = 1.0
-  
+MAX_TILE_UPDATE_RATE = 8
   
 print( "LEAF_DIM: ", lev2.vdb.TestGrid.leaf_dim )
 print( "INT2_DIM: ", lev2.vdb.TestGrid.int2_dim )
@@ -108,8 +108,8 @@ class System (TestSystem):
             
         i = i + 1
 
-        if (i % 100000 == 0):
-          self.voxel_grid.tileStats()
+        if (i % 10000 == 0):
+          #self.voxel_grid.tileStats()
           self.voxel_grid_gpu_upd = self.voxel_grid.clone
 
 
@@ -125,6 +125,7 @@ class System (TestSystem):
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.points_prim = lev2.primitives.TiledPointsPrimitiveV12C4.create(100<<20)
+    self.points_prim.max_tile_update_rate = MAX_TILE_UPDATE_RATE
     self.gpu_upd_timer = -10
 
     ##################

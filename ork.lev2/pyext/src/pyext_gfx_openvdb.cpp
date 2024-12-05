@@ -52,15 +52,20 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   type_codec->registerStdCodec<vdb_basegrid_ptr_t>(grid_type);
   /////////////////////////////////////////////////////////////////////////////////
   using coord_t = openvdb::Coord;
-  auto coord_type = py::class_<coord_t>(ovdb, "Coord").def(py::init<int, int, int>())
-  .def_property("x", [](const coord_t& coord) -> int { return coord.x(); }, [](coord_t& coord, int val) { coord.setX(val); })
-  .def_property("y", [](const coord_t& coord) -> int { return coord.y(); }, [](coord_t& coord, int val) { coord.setY(val); })
-  .def_property("z", [](const coord_t& coord) -> int { return coord.z(); }, [](coord_t& coord, int val) { coord.setZ(val); })
-  .def( "__repr__", [](const coord_t& coord) -> std::string {
-    std::ostringstream oss;
-    oss << "Coord(" << coord.x() << "," << coord.y() << "," << coord.z() << ")";
-    return oss.str();
-  });
+  auto coord_type =
+      py::class_<coord_t>(ovdb, "Coord")
+          .def(py::init<int, int, int>())
+          .def_property(
+              "x", [](const coord_t& coord) -> int { return coord.x(); }, [](coord_t& coord, int val) { coord.setX(val); })
+          .def_property(
+              "y", [](const coord_t& coord) -> int { return coord.y(); }, [](coord_t& coord, int val) { coord.setY(val); })
+          .def_property(
+              "z", [](const coord_t& coord) -> int { return coord.z(); }, [](coord_t& coord, int val) { coord.setZ(val); })
+          .def("__repr__", [](const coord_t& coord) -> std::string {
+            std::ostringstream oss;
+            oss << "Coord(" << coord.x() << "," << coord.y() << "," << coord.z() << ")";
+            return oss.str();
+          });
   type_codec->registerStdCodec<coord_t>(coord_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto vmapf_type = py::class_<vmapf_t, vmapf_ptr_t>(ovdb, "VoxelMapF").def(py::init<int, int, int>()).def("pset", &vmapf_t::pset);
@@ -118,18 +123,18 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                              });
   type_codec->registerStdCodec<vdb_transform_ptr_t>(ovdb_xform_type);
   /////////////////////////////////////////////////////////////////////////////////
-  using int2_ptr_t = ork::python::unmanaged_ptr<vdb_tree_test_int2_t>;
-  using int2_const_ptr_t = ork::python::unmanaged_ptr<const vdb_tree_test_int2_t>;
+  using int2_ptr_t              = ork::python::unmanaged_ptr<vdb_tree_test_int2_t>;
+  using int2_const_ptr_t        = ork::python::unmanaged_ptr<const vdb_tree_test_int2_t>;
   auto ovdb_test_grid_int2_type = py::class_<int2_ptr_t>(ovdb, "TestGridInt2Node")
-    .def_property_readonly("origin", [](int2_ptr_t node) -> coord_t { return node->origin(); })
-    .def_property_readonly("version", [](int2_ptr_t node) -> int { return node->getVersion(); })
-    .def_property_readonly("hash", [](int2_ptr_t node) -> uint64_t { return node->hash(); }) //
-    .def( "__repr__", [](int2_ptr_t node) -> std::string {
-      std::ostringstream oss;
-      auto origin = node->origin();
-      oss << "TGINT2(" << origin.x() << "," << origin.y() << "," << origin.z() << ")";
-      return oss.str();
-    });        
+                                      .def_property_readonly("origin", [](int2_ptr_t node) -> coord_t { return node->origin(); })
+                                      .def_property_readonly("version", [](int2_ptr_t node) -> int { return node->getVersion(); })
+                                      .def_property_readonly("hash", [](int2_ptr_t node) -> uint64_t { return node->hash(); }) //
+                                      .def("__repr__", [](int2_ptr_t node) -> std::string {
+                                        std::ostringstream oss;
+                                        auto origin = node->origin();
+                                        oss << "TGINT2(" << origin.x() << "," << origin.y() << "," << origin.z() << ")";
+                                        return oss.str();
+                                      });
   type_codec->registerStdCodec<int2_ptr_t>(ovdb_test_grid_int2_type);
   /////////////////////////////////////////////////////////////////////////////////
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
@@ -141,17 +146,20 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
           .def_property_readonly_static("leaf_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_leaf_t::DIM; })
           .def_property_readonly_static("int1_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int1_t::DIM; })
           .def_property_readonly_static("int2_dim", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int2_t::DIM; })
-          .def_property_readonly_static("leaf_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_leaf_t::NUM_VALUES; })
-          .def_property_readonly_static("int1_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int1_t::NUM_VOXELS; })
-          .def_property_readonly_static("int2_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int2_t::NUM_VOXELS; })
+          .def_property_readonly_static(
+              "leaf_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_leaf_t::NUM_VALUES; })
+          .def_property_readonly_static(
+              "int1_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int1_t::NUM_VOXELS; })
+          .def_property_readonly_static(
+              "int2_max_voxels", [](py::object /* clazz */) -> size_t { return vdb_tree_test_int2_t::NUM_VOXELS; })
           ///////////////////////////////////////////////////////
           .def_static(
               "create",
-              [](std::string name, vdb_transform_ptr_t xform, float background_level ) -> vdb_grid_test_ptr_t {
+              [](std::string name, vdb_transform_ptr_t xform, float background_level) -> vdb_grid_test_ptr_t {
                 py::gil_scoped_release release;
                 TestGridCell background;
                 background._level = background_level;
-                auto grid = std::make_shared<vdb_grid_test>(background);
+                auto grid         = std::make_shared<vdb_grid_test>(background);
                 grid->setName(name);
                 grid->setTransform(xform);
                 grid->setGridClass(openvdb::GRID_LEVEL_SET);
@@ -161,26 +169,28 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
           .def_property_readonly(
               "clone", [](vdb_grid_test_ptr_t grid) -> vdb_grid_test_ptr_t { return std::make_shared<vdb_grid_test>(*grid); })
           ///////////////////////////////////////////////////////
-          .def_property_readonly(
-              "nonLeafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().nonLeafCount(); })
-          .def_property_readonly(
-              "leafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().leafCount(); })
+          .def_property_readonly("nonLeafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().nonLeafCount(); })
+          .def_property_readonly("leafCount", [](vdb_grid_test_ptr_t grid) -> size_t { return grid->tree().leafCount(); })
           ///////////////////////////////////////////////////////
-          .def( "worldToIndex", [](vdb_grid_test_ptr_t grid, fvec3 wpos) -> coord_t {
-            py::gil_scoped_release release;
-            auto& xform = grid->transform();
-            auto ipos = xform.worldToIndex(openvdb::Vec3f(wpos.x, wpos.y, wpos.z));
-            auto as_coord = coord_t(ipos.x(), ipos.y(), ipos.z());
-            return as_coord;
-          })
+          .def(
+              "worldToIndex",
+              [](vdb_grid_test_ptr_t grid, fvec3 wpos) -> coord_t {
+                py::gil_scoped_release release;
+                auto& xform   = grid->transform();
+                auto ipos     = xform.worldToIndex(openvdb::Vec3f(wpos.x, wpos.y, wpos.z));
+                auto as_coord = coord_t(ipos.x(), ipos.y(), ipos.z());
+                return as_coord;
+              })
           ///////////////////////////////////////////////////////
-          .def( "indexToWorld", [](vdb_grid_test_ptr_t grid, coord_t ipos) -> fvec3 {
-            py::gil_scoped_release release;
-            auto& xform = grid->transform();
-            auto wpos = xform.indexToWorld(openvdb::Vec3f(ipos.x(), ipos.y(), ipos.z()));
-            auto as_fvec3 = fvec3(wpos.x(), wpos.y(), wpos.z());
-            return as_fvec3;
-          })
+          .def(
+              "indexToWorld",
+              [](vdb_grid_test_ptr_t grid, coord_t ipos) -> fvec3 {
+                py::gil_scoped_release release;
+                auto& xform   = grid->transform();
+                auto wpos     = xform.indexToWorld(openvdb::Vec3f(ipos.x(), ipos.y(), ipos.z()));
+                auto as_fvec3 = fvec3(wpos.x(), wpos.y(), wpos.z());
+                return as_fvec3;
+              })
           ///////////////////////////////////////////////////////
           .def(
               "fill",
@@ -198,13 +208,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               "setVoxel",
               [](vdb_grid_test_ptr_t grid, fvec3 coord, float value) {
                 py::gil_scoped_release release;
-                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
-                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_w  = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i  = grid->worldToIndex(coord_w);
                 auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
-                auto tgc = grid->tree().getValue(coord_ii);
-                tgc._level = value;
-                tgc._rgb = fvec3(value);
-                //tgc._writeCount->fetch_add(1);
+                auto tgc      = grid->tree().getValue(coord_ii);
+                tgc._level    = value;
+                tgc._rgb      = fvec3(value);
+                // tgc._writeCount->fetch_add(1);
                 grid->tree().setValueOn(coord_ii, tgc);
               })
           ///////////////////////////////////////////////////////
@@ -212,13 +222,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               "accumVoxel",
               [](vdb_grid_test_ptr_t grid, fvec3 coord, float value) {
                 py::gil_scoped_release release;
-                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
-                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_w  = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i  = grid->worldToIndex(coord_w);
                 auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
-                auto tgc = grid->tree().getValue(coord_ii);
+                auto tgc      = grid->tree().getValue(coord_ii);
                 tgc._level += value;
                 tgc._rgb = fvec3(value);
-                //tgc._writeCount->fetch_add(1);
+                // tgc._writeCount->fetch_add(1);
                 grid->tree().setValueOn(coord_ii, tgc);
               })
           ///////////////////////////////////////////////////////
@@ -226,11 +236,11 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
               "accumVoxelRGB",
               [](vdb_grid_test_ptr_t grid, fvec3 coord, fvec3 value) {
                 py::gil_scoped_release release;
-                auto coord_w = openvdb::Vec3f(coord.x, coord.y, coord.z);
-                auto coord_i = grid->worldToIndex(coord_w);
+                auto coord_w  = openvdb::Vec3f(coord.x, coord.y, coord.z);
+                auto coord_i  = grid->worldToIndex(coord_w);
                 auto coord_ii = openvdb::Coord(coord_i.x(), coord_i.y(), coord_i.z());
-                auto tgc = grid->tree().getValue(coord_ii);
-                tgc._level = 1.0;
+                auto tgc      = grid->tree().getValue(coord_ii);
+                tgc._level    = 1.0;
                 tgc._rgb += value;
                 /*int icount = tgc._writeCount->fetch_add(1);
                 if((icount%16)==15){
@@ -242,48 +252,53 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
           .def(
               "tileStats",
               [](vdb_grid_test_ptr_t grid) {
-                auto& tree = grid->tree();
+                auto& tree          = grid->tree();
                 size_t num_l0_tiles = 0;
                 size_t num_l1_tiles = 0;
                 size_t num_l2_tiles = 0;
                 size_t num_l3_tiles = 0;
                 for (auto iter = tree.beginNode(); iter; ++iter) {
                   switch (iter.getDepth()) { //
-                    case 0: { //
+                    case 0: {                //
                       vdb_tree_test_root_t* node = nullptr;
                       iter.getNode(node);
                       if (node) { //
                         num_l0_tiles++;
                       };
-                      break; 
+                      break;
                     }
                     case 1: { //
-                      vdb_tree_test_int1_t* node = nullptr; 
-                      iter.getNode(node); 
+                      vdb_tree_test_int1_t* node = nullptr;
+                      iter.getNode(node);
                       if (node) { //
                         num_l1_tiles++;
-                      }; 
-                      break; 
+                      };
+                      break;
                     }
                     case 2: { //
-                      vdb_tree_test_int2_t* node = nullptr; 
-                      iter.getNode(node); 
+                      vdb_tree_test_int2_t* node = nullptr;
+                      iter.getNode(node);
                       if (node) { //
                         num_l2_tiles++;
-                      }; 
-                      break; 
+                      };
+                      break;
                     }
                     case 3: { //
-                      vdb_tree_test_leaf_t* node = nullptr; 
-                      iter.getNode(node); 
+                      vdb_tree_test_leaf_t* node = nullptr;
+                      iter.getNode(node);
                       if (node) {
                         num_l3_tiles++;
-                      }; 
-                      break; 
+                      };
+                      break;
                     }
                   }
                 }
-                printf("num_l0_tiles<%zu> num_l1_tiles<%zu> num_l2_tiles<%zu> num_l3_tiles<%zu>\n", num_l0_tiles, num_l1_tiles, num_l2_tiles, num_l3_tiles);                  
+                printf(
+                    "num_l0_tiles<%zu> num_l1_tiles<%zu> num_l2_tiles<%zu> num_l3_tiles<%zu>\n",
+                    num_l0_tiles,
+                    num_l1_tiles,
+                    num_l2_tiles,
+                    num_l3_tiles);
               })
           ///////////////////////////////////////////////////////
           .def_property_readonly(
@@ -293,13 +308,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 auto& tree = grid->tree();
                 for (auto iter = tree.beginNode(); iter; ++iter) {
                   switch (iter.getDepth()) { //
-                    case 2: { //
-                      vdb_tree_test_int2_t* node = nullptr; 
-                      iter.getNode(node); 
+                    case 2: {                //
+                      vdb_tree_test_int2_t* node = nullptr;
+                      iter.getNode(node);
                       if (node) { //
                         int2nodes.append(int2_ptr_t(node));
-                      }; 
-                      break; 
+                      };
+                      break;
                     }
                     default:
                       break;
@@ -314,7 +329,61 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 py::gil_scoped_release release;
                 auto diff = openvdb::tools::csgDifferenceCopy(*grid, *other);
                 return diff;
-              });
+              })
+          .def("insertPoints", [](vdb_grid_test_ptr_t grid, primitives::pointsdata_ptr_t points) {
+            py::gil_scoped_release release;
+
+            auto dblock                = points->_datablock;
+            size_t num_points          = points->_num_points;
+            auto& tree                 = grid->tree();
+            static size_t total_points = 0;
+            total_points += num_points;
+            size_t leafCount        = tree.leafCount();
+            size_t activeVoxelCount = grid->activeVoxelCount();
+
+            switch (points->_format) {
+              case EVtxStreamFormat::V12C4: {
+                OrkAssert(dblock->length() == (num_points * sizeof(VtxV12C4)));
+                auto typed_points = (const VtxV12C4*)dblock->data();
+                for (size_t i = 0; i < num_points; i++) {
+                  const auto& vtx = typed_points[i];
+                  openvdb::Vec3f wpos(vtx.x, vtx.y, vtx.z);
+                  auto ipos     = grid->worldToIndex(wpos);
+                  auto icoord   = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                  uint32_t abgr = vtx.color;
+                  float r       = (abgr >> 16) & 0xff;
+                  float g       = (abgr >> 8) & 0xff;
+                  float b       = (abgr >> 0) & 0xff;
+
+                  auto tgc      = grid->tree().getValue(icoord);
+                  tgc._level    = 1.0;
+                  tgc._rgb      = fvec3(r,g,b);
+                  grid->tree().setValueOn(icoord, tgc);
+                }
+                break;
+              }
+              case EVtxStreamFormat::V12T8: {
+                auto typed_points = (const VtxV12T8*)dblock->data();
+                OrkAssert(dblock->length() == (num_points * sizeof(VtxV12T8)));
+                for (size_t i = 0; i < num_points; i++) {
+                  const auto& vtx = typed_points[i];
+                  openvdb::Vec3f wpos(vtx.pos.x, vtx.pos.y, vtx.pos.z);
+                  auto ipos   = grid->worldToIndex(wpos);
+                  auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                 
+                  auto tgc      = grid->tree().getValue(icoord);
+                  tgc._level    = 1.0;
+                  tgc._rgb      = fvec3(1);
+                  grid->tree().setValueOn(icoord, tgc);
+
+                }
+                break;
+              }
+              default:
+                OrkAssert(false);
+                break;
+            }
+          });
   type_codec->registerStdCodec<vdb_grid_test_ptr_t>(ovdb_test_grid_type);
   /////////////////////////////////////////////////////////////////////////////////
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
@@ -686,113 +755,112 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
   //  but we probably need it here also for lev2 gfx access
   /////////////////////////////////////////////////////////////////////////////////
-  auto ovdb_v3grid_type =
-      py::class_<vdb_vec3grid_t, vdb_basegrid_t, vdb_vec3grid_ptr_t>(ovdb, "Vec3FGrid")
-          .def_static(
-              "create",
-              [](std::string name, vdb_transform_ptr_t xform, fvec3 background) -> vdb_vec3grid_ptr_t {
-                py::gil_scoped_release release;
-                auto bg   = openvdb::Vec3f(background.x, background.y, background.z);
-                auto grid = std::make_shared<vdb_vec3grid_t>(bg);
-                grid->setName(name);
-                grid->setTransform(xform);
-                // grid->setGridClass(openvdb::GRID_LEVEL_SET);
-                return grid;
-              })
-          ///////////////////////////////////////////////////////
-          .def(
-              "fill",
-              [](vdb_vec3grid_ptr_t grid, fvec3 center, float radius, fvec3 value) {
-                py::gil_scoped_release release;
-                openvdb::CoordBBox bbox;
-                // printf("fill center<%f %f %f> radius<%f> value<%f %f %f>\n", center.x, center.y, center.z, radius, value.x,
-                // value.y, value.z);
-                auto coord_va = openvdb::Vec3f(center.x - radius, center.y - radius, center.z - radius);
-                auto coord_vb = openvdb::Vec3f(center.x + radius, center.y + radius, center.z + radius);
-                auto coord_ia = grid->worldToIndex(coord_va);
-                auto coord_ib = grid->worldToIndex(coord_vb);
+  auto ovdb_v3grid_type = py::class_<vdb_vec3grid_t, vdb_basegrid_t, vdb_vec3grid_ptr_t>(ovdb, "Vec3FGrid")
+                              .def_static(
+                                  "create",
+                                  [](std::string name, vdb_transform_ptr_t xform, fvec3 background) -> vdb_vec3grid_ptr_t {
+                                    py::gil_scoped_release release;
+                                    auto bg   = openvdb::Vec3f(background.x, background.y, background.z);
+                                    auto grid = std::make_shared<vdb_vec3grid_t>(bg);
+                                    grid->setName(name);
+                                    grid->setTransform(xform);
+                                    // grid->setGridClass(openvdb::GRID_LEVEL_SET);
+                                    return grid;
+                                  })
+                              ///////////////////////////////////////////////////////
+                              .def(
+                                  "fill",
+                                  [](vdb_vec3grid_ptr_t grid, fvec3 center, float radius, fvec3 value) {
+                                    py::gil_scoped_release release;
+                                    openvdb::CoordBBox bbox;
+                                    // printf("fill center<%f %f %f> radius<%f> value<%f %f %f>\n", center.x, center.y, center.z,
+                                    // radius, value.x, value.y, value.z);
+                                    auto coord_va = openvdb::Vec3f(center.x - radius, center.y - radius, center.z - radius);
+                                    auto coord_vb = openvdb::Vec3f(center.x + radius, center.y + radius, center.z + radius);
+                                    auto coord_ia = grid->worldToIndex(coord_va);
+                                    auto coord_ib = grid->worldToIndex(coord_vb);
 
-                bbox.expand(openvdb::Coord(coord_va.x(), coord_va.y(), coord_va.z()));
-                bbox.expand(openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z()));
-                grid->fill(bbox, openvdb::Vec3f(value.x, value.y, value.z));
-              })
-          .def(
-              "insertPoints",
-              [](vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points) {
-                py::gil_scoped_release release;
+                                    bbox.expand(openvdb::Coord(coord_va.x(), coord_va.y(), coord_va.z()));
+                                    bbox.expand(openvdb::Coord(coord_vb.x(), coord_vb.y(), coord_vb.z()));
+                                    grid->fill(bbox, openvdb::Vec3f(value.x, value.y, value.z));
+                                  })
+                              .def(
+                                  "insertPoints",
+                                  [](vdb_vec3grid_ptr_t grid, primitives::pointsdata_ptr_t points) {
+                                    py::gil_scoped_release release;
 
-                auto dblock       = points->_datablock;
-                size_t num_points = points->_num_points;
-                auto& tree                 = grid->tree();
-                static size_t total_points = 0;
-                total_points += num_points;
-                size_t leafCount        = tree.leafCount();
-                size_t activeVoxelCount = grid->activeVoxelCount();
+                                    auto dblock                = points->_datablock;
+                                    size_t num_points          = points->_num_points;
+                                    auto& tree                 = grid->tree();
+                                    static size_t total_points = 0;
+                                    total_points += num_points;
+                                    size_t leafCount        = tree.leafCount();
+                                    size_t activeVoxelCount = grid->activeVoxelCount();
 
-                switch(points->_format){
-                  case EVtxStreamFormat::V12C4:{
-                    OrkAssert(dblock->length() == (num_points * sizeof(VtxV12C4)));
-                    auto typed_points = (const VtxV12C4*)dblock->data();
-                    for (size_t i = 0; i < num_points; i++) {
-                      const auto& vtx = typed_points[i];
-                      openvdb::Vec3f wpos(vtx.x, vtx.y, vtx.z);
-                      auto ipos = grid->worldToIndex(wpos);
-                      auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
-                      uint32_t abgr = vtx.color;
-                      float r       = (abgr >> 16) & 0xff;
-                      float g       = (abgr >> 8) & 0xff;
-                      float b       = (abgr >> 0) & 0xff;
-                      tree.setValue(icoord, openvdb::Vec3f(r,g,b));
-                    }
-                    break;
-                  }
-                  case EVtxStreamFormat::V12T8:{
-                    auto typed_points = (const VtxV12T8*)dblock->data();
-                    OrkAssert(dblock->length() == (num_points * sizeof(VtxV12T8)));
-                    for (size_t i = 0; i < num_points; i++) {
-                      const auto& vtx = typed_points[i];
-                      openvdb::Vec3f wpos(vtx.pos.x, vtx.pos.y, vtx.pos.z);
-                      auto ipos = grid->worldToIndex(wpos);
-                      auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
-                      tree.setValue(icoord, openvdb::Vec3f(1,0,0));
-                    }
-                    break;
-                  }
-                  default:
-                    OrkAssert(false);
-                    break;
-                }
-              })
-          ///////////////////////////////////////////////////////
-          .def_property(
-              "background",
-              [](vdb_vec3grid_ptr_t grid) -> fvec3 { //
-                auto bg = grid->background();
-                return fvec3(bg.x(), bg.y(), bg.z());
-              },
-              [](vdb_vec3grid_ptr_t grid, fvec3 value) {
-                size_t grainSize = 32;
-                auto as_vec3f    = openvdb::Vec3f(value.x, value.y, value.z);
-                // openvdb::tools::changeLevelSetBackground(grid->tree(), as_vec3f, true, grainSize);
-              })
-          ///////////////////////////////////////////////////////
-          .def_property_readonly(
-              "clone",
-              [](vdb_vec3grid_ptr_t grid) -> vdb_vec3grid_ptr_t { //
-                return std::make_shared<vdb_vec3grid_t>(*grid);   //
-              })
-          ///////////////////////////////////////////////////////
-          .def("exportToOpenVdbFile", [](vdb_vec3grid_ptr_t grid, py::object path) {
-            auto as_str     = py::str(path);
-            auto as_std_str = as_str.cast<std::string>();
-            py::gil_scoped_release release;
+                                    switch (points->_format) {
+                                      case EVtxStreamFormat::V12C4: {
+                                        OrkAssert(dblock->length() == (num_points * sizeof(VtxV12C4)));
+                                        auto typed_points = (const VtxV12C4*)dblock->data();
+                                        for (size_t i = 0; i < num_points; i++) {
+                                          const auto& vtx = typed_points[i];
+                                          openvdb::Vec3f wpos(vtx.x, vtx.y, vtx.z);
+                                          auto ipos     = grid->worldToIndex(wpos);
+                                          auto icoord   = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                                          uint32_t abgr = vtx.color;
+                                          float r       = (abgr >> 16) & 0xff;
+                                          float g       = (abgr >> 8) & 0xff;
+                                          float b       = (abgr >> 0) & 0xff;
+                                          tree.setValue(icoord, openvdb::Vec3f(r, g, b));
+                                        }
+                                        break;
+                                      }
+                                      case EVtxStreamFormat::V12T8: {
+                                        auto typed_points = (const VtxV12T8*)dblock->data();
+                                        OrkAssert(dblock->length() == (num_points * sizeof(VtxV12T8)));
+                                        for (size_t i = 0; i < num_points; i++) {
+                                          const auto& vtx = typed_points[i];
+                                          openvdb::Vec3f wpos(vtx.pos.x, vtx.pos.y, vtx.pos.z);
+                                          auto ipos   = grid->worldToIndex(wpos);
+                                          auto icoord = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
+                                          tree.setValue(icoord, openvdb::Vec3f(1, 0, 0));
+                                        }
+                                        break;
+                                      }
+                                      default:
+                                        OrkAssert(false);
+                                        break;
+                                    }
+                                  })
+                              ///////////////////////////////////////////////////////
+                              .def_property(
+                                  "background",
+                                  [](vdb_vec3grid_ptr_t grid) -> fvec3 { //
+                                    auto bg = grid->background();
+                                    return fvec3(bg.x(), bg.y(), bg.z());
+                                  },
+                                  [](vdb_vec3grid_ptr_t grid, fvec3 value) {
+                                    size_t grainSize = 32;
+                                    auto as_vec3f    = openvdb::Vec3f(value.x, value.y, value.z);
+                                    // openvdb::tools::changeLevelSetBackground(grid->tree(), as_vec3f, true, grainSize);
+                                  })
+                              ///////////////////////////////////////////////////////
+                              .def_property_readonly(
+                                  "clone",
+                                  [](vdb_vec3grid_ptr_t grid) -> vdb_vec3grid_ptr_t { //
+                                    return std::make_shared<vdb_vec3grid_t>(*grid);   //
+                                  })
+                              ///////////////////////////////////////////////////////
+                              .def("exportToOpenVdbFile", [](vdb_vec3grid_ptr_t grid, py::object path) {
+                                auto as_str     = py::str(path);
+                                auto as_std_str = as_str.cast<std::string>();
+                                py::gil_scoped_release release;
 
-            openvdb::io::File file(as_std_str);
-            openvdb::GridPtrVec grids;
-            grids.push_back(grid);
-            file.write(grids);
-            file.close();
-          });
+                                openvdb::io::File file(as_std_str);
+                                openvdb::GridPtrVec grids;
+                                grids.push_back(grid);
+                                file.write(grids);
+                                file.close();
+                              });
   type_codec->registerStdCodec<vdb_vec3grid_ptr_t>(ovdb_v3grid_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
