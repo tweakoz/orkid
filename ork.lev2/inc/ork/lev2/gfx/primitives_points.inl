@@ -97,8 +97,85 @@ struct PointsPrimitive {
   std::shared_ptr<vtx_buf_t> _vertexBuffer;
 };
 
+//////////////////////////////////////////////////////////////////////////////
+
+template <typename VertexType>
+struct TiledPointsPrimitive {
+
+  using vtx_t = VertexType;
+  using vtx_buf_t = DynamicVertexBuffer<vtx_t>;
+  using vtx_buf_ptr_t = std::shared_ptr<vtx_buf_t>;
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  struct Tile {
+    int _numpoints = 0;
+    int _capacity = 0;
+    int _version = -2;
+    vtx_buf_ptr_t _vertexBuffer;
+  };
+
+  using tile_ptr_t = std::shared_ptr<Tile>;
+
+  //////////////////////////////////////////////////////////////////////////////
+  /*
+  inline vtx_t* lock(Context* context, int num_points=0) {
+    if(0==num_points){
+      _numpoints = _capacity;
+      num_points = _capacity;
+    }
+    else{
+      _numpoints = num_points;
+      OrkAssert(num_points<=_capacity);
+    }
+    return (vtx_t*) context->GBI()->LockVB(*_vertexBuffer,0,_numpoints);
+  }
+
+  inline void unlock(Context* context) {
+    context->GBI()->UnLockVB(*_vertexBuffer);
+  }*/
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline void renderEML(Context* context) {
+    auto gbi = context->GBI();
+    for( auto item : _tiles ){
+      size_t num_points = item.second->_numpoints;
+      auto vtxbuf = item.second->_vertexBuffer;
+      gbi->DrawPrimitiveEML(*vtxbuf, PrimitiveType::POINTS,0,num_points);
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  inline scenegraph::drawable_node_ptr_t createNode(
+      std::string named, //
+      scenegraph::layer_ptr_t layer,
+      fxpipeline_ptr_t pipeline) {
+
+    OrkAssert(pipeline);
+
+    _pipeline = pipeline;
+
+    auto drw = std::make_shared<CallbackDrawable>(nullptr);
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      _pipeline->wrappedDrawCall(RCID, //
+                                 [this, context]() { //
+                                  this->renderEML(context); //
+                                });
+    });
+    return layer->createDrawableNode(named, drw);
+  }
+  //////////////////////////////////////////////////////////////////////////////
+
+  fxpipeline_ptr_t _pipeline;
+  std::unordered_map<uint64_t,tile_ptr_t> _tiles;
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
+using tiled_points_v12c4_ptr_t = std::shared_ptr<TiledPointsPrimitive<VtxV12C4>>;
 using points_v12c4_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12C4>>;
 using points_v12t8_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12T8>>;
 

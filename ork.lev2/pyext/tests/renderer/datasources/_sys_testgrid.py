@@ -109,17 +109,6 @@ class System (TestSystem):
         i = i + 1
 
         if (i % 100000 == 0):
-          nodes = self.voxel_grid.int2nodes
-          #origins_w = list()
-          print("int2nodes.V: [",end="")
-          for n in nodes:
-            #o = n.origin
-            #w = self.voxel_grid.indexToWorld(o)
-            #print(win,end=",")
-            print(n.version,end=" ")
-          print("]")
-
-        if (i % 100000 == 0):
           self.voxel_grid_gpu_upd = self.voxel_grid.clone
 
 
@@ -134,7 +123,7 @@ class System (TestSystem):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
-    self.points_prim = lev2.primitives.PointsPrimitiveV12C4.create(100<<20)
+    self.points_prim = lev2.primitives.TiledPointsPrimitiveV12C4.create(100<<20)
     self.gpu_upd_timer = -10
 
     ##################

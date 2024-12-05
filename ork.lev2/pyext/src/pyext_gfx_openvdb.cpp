@@ -123,6 +123,7 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
   auto ovdb_test_grid_int2_type = py::class_<int2_ptr_t>(ovdb, "TestGridInt2Node")
     .def_property_readonly("origin", [](int2_ptr_t node) -> coord_t { return node->origin(); })
     .def_property_readonly("version", [](int2_ptr_t node) -> int { return node->getVersion(); })
+    .def_property_readonly("hash", [](int2_ptr_t node) -> uint64_t { return node->hash(); }) //
     .def( "__repr__", [](int2_ptr_t node) -> std::string {
       std::ostringstream oss;
       auto origin = node->origin();

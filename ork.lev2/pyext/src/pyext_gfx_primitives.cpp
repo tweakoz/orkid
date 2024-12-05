@@ -297,7 +297,6 @@ void pyinit_primitives(py::module& module_lev2) {
             //float elapsed = timer.SecsSinceStart();
             //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);
             prim->unlock(context.get());
-            return prim;
           })
           .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> py::array_t<VtxV12C4> {
             auto buffer = prim->lock(context.get());
@@ -308,6 +307,71 @@ void pyinit_primitives(py::module& module_lev2) {
           })
           .def( "createNode", createNodeLambdaFromPrimType<primitives::points_v12c4_ptr_t>() );
   type_codec->registerStdCodec<primitives::points_v12c4_ptr_t>(pointsprim_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto tiled_pointsprim_type = //
+      py::class_<primitives::TiledPointsPrimitive<VtxV12C4>, primitives::tiled_points_v12c4_ptr_t>(primitives, "TiledPointsPrimitiveV12C4")
+          .def("create", [](int numpoints) -> primitives::tiled_points_v12c4_ptr_t {
+            return std::make_shared<primitives::TiledPointsPrimitive<VtxV12C4>>();
+          })
+          .def("updateWithVdbTestGrid", [](primitives::tiled_points_v12c4_ptr_t prim, //
+                                            vdb_grid_test_ptr_t grid, //
+                                            float colorscale,
+                                            ctx_t context)  {
+            py::gil_scoped_release release;
+            return;
+            auto& tree = grid->tree();
+            for (auto iter = tree.beginNode(); iter; ++iter) {
+              switch (iter.getDepth()) { //
+                case 2: { //
+                  vdb_tree_test_int2_t* node = nullptr; 
+                  iter.getNode(node); 
+                  if (node) { //
+
+                  }; 
+                  break; 
+                }
+                case 3: { //
+                  vdb_tree_test_leaf_t* node = nullptr; 
+                  iter.getNode(node); 
+                  if (node) { //
+
+                  }; 
+                  break;
+                }
+                default:
+                  break;
+              }
+            }
+
+            /*
+            int num_points   = grid->tree().activeLeafVoxelCount();
+            OrkAssert(num_points<prim->_capacity)
+            //printf("updateWithVdbVec3Grid:num_points<%d>\n", num_points);
+            VtxV12C4* points = prim->lock(context.get(),num_points);
+            int point_index = 0;
+            auto& xform = grid->transform();
+            //ork::Timer timer;
+            //timer.Start();
+            for (auto voxelIter = grid->cbeginValueOn(); voxelIter; ++voxelIter) {
+                openvdb::Coord icoord = voxelIter.getCoord();
+                openvdb::Vec3f wpos = xform.indexToWorld(icoord);
+                const TestGridCell& TGC          = (*voxelIter);
+                if(point_index<num_points){
+                  //OrkAssert(point_index<num_points);
+                  auto& out_point = points[point_index++];
+                  out_point.x = wpos.x();
+                  out_point.y = wpos.y();
+                  out_point.z = wpos.z();
+                  out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
+                }
+            }
+            //float elapsed = timer.SecsSinceStart();
+            //printf("updateWithVdbVec3Grid:elapsed<%f>\n", elapsed);
+            prim->unlock(context.get());
+            */
+          })
+          .def( "createNode", createNodeLambdaFromPrimType<primitives::tiled_points_v12c4_ptr_t>() );
+      type_codec->registerStdCodec<primitives::tiled_points_v12c4_ptr_t>(tiled_pointsprim_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2
