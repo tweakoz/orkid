@@ -326,7 +326,6 @@ void pyinit_primitives(py::module& module_lev2) {
             auto& xform = grid->transform();
             constexpr int i2_dim = vdb_tree_test_int2_t::DIM;
             constexpr int i3_dim = vdb_tree_test_leaf_t::DIM;
-            constexpr int DIM = i3_dim*8;
             auto i2_wdim = grid->indexToWorld(openvdb::Vec3f(i2_dim,i2_dim,i2_dim));
             auto i3_wdim = grid->indexToWorld(openvdb::Vec3f(i3_dim,i3_dim,i3_dim));
 
@@ -352,7 +351,7 @@ void pyinit_primitives(py::module& module_lev2) {
               }
               else{
                 prim_tile = std::make_shared<primitives::tiled_points_v12c4_t::Tile>();
-                prim_tile->_capacity = 4096;
+                prim_tile->_capacity = 1024;
                 prim_tile->_vertexBuffer = std::make_shared<primitives::tiled_points_v12c4_t::vtx_buf_t>(prim_tile->_capacity ,0);
                 prim_tile->_userdata.set<const vdb_tree_test_int2_t*>(l2_node);
                 prim->_tiles[hash] = prim_tile;
@@ -395,13 +394,14 @@ void pyinit_primitives(py::module& module_lev2) {
                 ////////////////////////////////////////////////////////
 
                 auto cur_vtxbuf = prim_tile->_vertexBuffer;
-                auto points = (VtxV12C4*) context->GBI()->LockVB(*cur_vtxbuf,0,prim_tile->_capacity);
+                size_t capacity = prim_tile->_capacity;
+                auto points = (VtxV12C4*) context->GBI()->LockVB(*cur_vtxbuf,0,capacity);
 
                 ////////////////////////////////////////////////////////
                 // write into vtxbuf until full
                 ////////////////////////////////////////////////////////
 
-                int voxel_index = 0;
+                int voxels_needed = 0;
                 int voxels_actually_written = 0;
                 const int numvoxels = l2_node->onVoxelCount();
                 for( auto it = l2_node->cbeginChildOn(); it; ++it ){
@@ -410,15 +410,14 @@ void pyinit_primitives(py::module& module_lev2) {
                     auto icoord = it_leaf.getCoord();
                     auto wpos = xform.indexToWorld(icoord);
                     const TestGridCell& TGC = (*it_leaf);
-                    if(voxel_index<prim_tile->_capacity){
-                      auto& out_point = points[voxel_index++];
+                    if(voxels_needed<capacity){
+                      auto& out_point = points[voxels_actually_written++];
                       out_point.x = wpos.x();
                       out_point.y = wpos.y();
                       out_point.z = wpos.z();
                       out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
-                      voxels_actually_written++;
                     }
-                    voxel_index++;
+                    voxels_needed++;
                   }
                 }
 
@@ -436,8 +435,8 @@ void pyinit_primitives(py::module& module_lev2) {
                 //  replace current with new
                 ////////////////////////////////////////////////////////
 
-                if(voxel_index>prim_tile->_capacity){
-                  int voxtimes2 = voxel_index<<1;
+                if(voxels_needed>prim_tile->_capacity){
+                  int voxtimes2 = voxels_needed<<1;
                   if(prim_tile->_capacity<voxtimes2){
                     prim_tile->_capacity = voxtimes2;
                   }
@@ -448,11 +447,13 @@ void pyinit_primitives(py::module& module_lev2) {
                                voxels_actually_written*sizeof(VtxV12C4) );
                   // clear rest of new buffer
                   size_t num_points_not_written = (voxtimes2-voxels_actually_written);
-                  memset( points2+voxels_actually_written, 0, num_points_not_written*sizeof(VtxV12C4) );
+                  if(0) memset( points2+voxels_actually_written,           // dest
+                                0,                                         // value
+                                num_points_not_written*sizeof(VtxV12C4) ); // count
                   context->GBI()->UnLockVB(*new_vtxbuf);
                   prim_tile->_vertexBuffer = new_vtxbuf;
                   prim_tile->_update_priority = 1<<20; // reset update priority
-                  prim_tile->_version = -2;
+                  prim_tile->_version = -2;            // mark dirty again, since we could not update all...
                 }
 
                 ////////////////////////////////////////////////////////

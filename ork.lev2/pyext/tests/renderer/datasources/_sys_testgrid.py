@@ -23,7 +23,7 @@ tokens = CrcStringProxy()
 CLEAR_GRID_PER_FRAME = False
 VOXEL_GRID_SIZE = 0.0125
 POINT_SIZE = 1.0
-MAX_TILE_UPDATE_RATE = 8
+MAX_TILE_UPDATE_RATE = 1
   
 print( "LEAF_DIM: ", lev2.vdb.TestGrid.leaf_dim )
 print( "INT2_DIM: ", lev2.vdb.TestGrid.int2_dim )

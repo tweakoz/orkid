@@ -102,8 +102,8 @@ inline TestGridCell Abs(const TestGridCell& cell) {
   return rval;
 }
 
-static constexpr size_t L3_SIZE = 2;
-static constexpr size_t L2_SIZE = 4;
+static constexpr size_t L3_SIZE = 4;
+static constexpr size_t L2_SIZE = 2;
 static constexpr size_t L1_SIZE = 6;
 
 using vdb_tree_test = openvdb::tree::Tree4<TestGridCell,L1_SIZE, L2_SIZE, L3_SIZE>::Type;
