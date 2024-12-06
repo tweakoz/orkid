@@ -12,13 +12,16 @@
 #include <ork/asset/Asset.h>
 #include <ork/dataflow/all.h>
 #include <ork/object/COM.h>
+#include <ork/application/application.h>
+#include <ork/kernel/timer.h>
 
 namespace dflow = ork::dataflow;
 
 namespace ork {
 
-struct ClassToucher {
-  ClassToucher() {
+struct CoreAppInit {
+  CoreAppInit(ork::appinitdata_ptr_t init_data) {
+
     COM::GetClassStatic();
     HotKeyConfiguration::GetClassStatic();
     HotKey::GetClassStatic();
@@ -72,11 +75,20 @@ struct ClassToucher {
     //dflow::nullpassthrudata::GetClassStatic();
     //dflow::floatxfpassthrudata::GetClassStatic();
     //dflow::fvec3xfpassthrudata::GetClassStatic();
+
+    printf( "ork.core classes registered...\n");
+
+    Timer::staticInit();
+
+    init_data->enqueuePostInitOp(AppInitOrder::REFLECTION_LINK,[init_data] { 
+      printf( "ork.core postinit...\n");
+      rtti::Class::InitializeClasses(); // init/link all classes
+    });
   }
 };
 
-void TouchCoreClasses() {
-  static ork::ClassToucher toucher;
+void initModule(ork::appinitdata_ptr_t init_data) {
+  static ork::CoreAppInit g_core_class_toucher(init_data);
 }
 
 } // namespace ork

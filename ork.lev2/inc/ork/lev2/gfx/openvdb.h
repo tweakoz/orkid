@@ -47,8 +47,8 @@ struct TestGridCell {
     //_writeCount = std::make_shared<counter_t>(0);
   }
   TestGridCell(const TestGridCell& oth)
-      : _abc(oth._abc)
-      , _rgb(oth._rgb)
+      //: _abc(oth._abc)
+      : _rgb(oth._rgb)
       , _level(oth._level) {
     //_writeCount = std::make_shared<counter_t>(0);
   }
@@ -83,7 +83,7 @@ struct TestGridCell {
     return _level >= rhs._level;
   }
 
-  fvec3 _abc;
+  //fvec3 _abc;
   fvec3 _rgb;
   float _level;
   using counter_t = std::atomic<int>;

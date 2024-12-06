@@ -379,7 +379,7 @@ vertex_shader vs_points : iface_vtx_points {
 }
 ////////////////////////////////////////
 fragment_shader ps_points : iface_frg_points {
-  out_clr = vec4(frg_col.xyz, 1);
+  out_clr = vec4(frg_col.zyx, 1);
 }
 
 ////////////////////////////////////////

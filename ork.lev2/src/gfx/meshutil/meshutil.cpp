@@ -20,6 +20,8 @@ static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil", f
 void planar_clip_init();
 
 void misc_init() {
+  printf("initialize meshutil....\n");
+
   // register var -> string encoders
 
   auto he_type = TypeId::of<halfedge_ptr_t>();

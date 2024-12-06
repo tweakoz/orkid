@@ -41,6 +41,12 @@ struct StdFileSystemInitalizer {
 
 using stdfilesysinit_p = std::shared_ptr<StdFileSystemInitalizer>;
 
+enum class AppInitOrder : uint64_t {
+  REFLECTION_CLASS_REGISTRATION = 0,
+  REFLECTION_LINK = 100,
+  GRAPHICS_INIT = 200
+};
+
 struct AppInitData{
 
   using opts_desc_t = po::options_description;
@@ -48,9 +54,9 @@ struct AppInitData{
   using opts_var_map_t = po::variables_map;
   using opts_var_map_ptr_t = std::shared_ptr<po::variables_map>;
 
-  void enqueuePreInitOp(void_lambda_t l) { _preinitoperations.push_back(l); }
-  void enqueuePostInitOp(void_lambda_t l) { _postinitoperations.push_back(l); }
-
+  void enqueuePreInitOp(AppInitOrder order, void_lambda_t l);
+  void enqueuePostInitOp(AppInitOrder order, void_lambda_t l);
+  
   opts_desc_ptr_t commandLineOptions(const char* header_text);
 
   opts_var_map_ptr_t parse();
@@ -59,7 +65,8 @@ struct AppInitData{
   AppInitData(int argc=0, char** argv=nullptr, char** envp = nullptr);
   ~AppInitData();
 
-
+  void executePreInitOps();
+  void executePostInitOps();
 
   int _argc = 0;
   char** _argv = nullptr;
@@ -88,8 +95,8 @@ struct AppInitData{
   bool _disableMouseCursor = false;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
-  std::vector<void_lambda_t> _preinitoperations;
-  std::vector<void_lambda_t> _postinitoperations;
+  std::multimap<uint64_t,void_lambda_t> _preinitoperations;
+  std::multimap<uint64_t,void_lambda_t> _postinitoperations;
 };
 
 struct StringPoolContext {

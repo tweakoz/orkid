@@ -34,6 +34,33 @@ AppInitData::~AppInitData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void AppInitData::enqueuePreInitOp(AppInitOrder order, void_lambda_t l) { //
+  _preinitoperations.insert(std::pair(uint64_t(order),l));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AppInitData::enqueuePostInitOp(AppInitOrder order, void_lambda_t l) { //
+  _postinitoperations.insert(std::pair(uint64_t(order),l));
+}
+
+void AppInitData::executePreInitOps(){
+  for (auto item : _preinitoperations){
+    uint64_t order = item.first;
+    auto operation = item.second;
+    operation();
+  }
+}
+void AppInitData::executePostInitOps(){
+  for (auto item : _postinitoperations){
+    uint64_t order = item.first;
+    auto operation = item.second;
+    operation();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_text) {
   _commandline_desc = std::make_shared<opts_desc_t>(header_text);
   _commandline_vars = std::make_shared<opts_var_map_t>();

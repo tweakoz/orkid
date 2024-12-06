@@ -20,7 +20,6 @@
 
 namespace ork {
 template class orklut<PoolString, rtti::Class*>;
-void TouchCoreClasses();
 } // namespace ork
 
 namespace ork { namespace rtti {
@@ -61,7 +60,6 @@ void Class::Initialize() {
 }
 
 void Class::InitializeClasses() {
-  TouchCoreClasses();
   counter++;
   std::set<Class*> _pendingclasses;
   for (Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass) {

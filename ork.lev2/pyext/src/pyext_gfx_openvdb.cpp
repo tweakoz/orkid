@@ -351,13 +351,13 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                   auto ipos     = grid->worldToIndex(wpos);
                   auto icoord   = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
                   uint32_t abgr = vtx.color;
-                  float r       = (abgr >> 16) & 0xff;
-                  float g       = (abgr >> 8) & 0xff;
-                  float b       = (abgr >> 0) & 0xff;
+                  float r       = float((abgr >> 0) & 0xff)/255.0f;
+                  float g       = float((abgr >> 8) & 0xff)/255.0f;
+                  float b       = float((abgr >> 16) & 0xff)/255.0f;
 
                   auto tgc      = grid->tree().getValue(icoord);
                   tgc._level    = 1.0;
-                  tgc._rgb      = fvec3(r,g,b);
+                  tgc._rgb      = fvec3(1.0f-r,1.0f-g,1.0f-b);
                   grid->tree().setValueOn(icoord, tgc);
                 }
                 break;
@@ -807,10 +807,10 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                                           auto ipos     = grid->worldToIndex(wpos);
                                           auto icoord   = openvdb::Coord(ipos.x(), ipos.y(), ipos.z());
                                           uint32_t abgr = vtx.color;
-                                          float r       = (abgr >> 16) & 0xff;
-                                          float g       = (abgr >> 8) & 0xff;
-                                          float b       = (abgr >> 0) & 0xff;
-                                          tree.setValue(icoord, openvdb::Vec3f(r, g, b));
+                                          float r       = ((abgr >> 0) & 0xff)/255.0f;
+                                          float g       = ((abgr >> 8) & 0xff)/255.0f;
+                                          float b       = ((abgr >> 16) & 0xff)/255.0f;
+                                          tree.setValue(icoord, openvdb::Vec3f(1.0-r, 1.0-g, 1.0-b));
                                         }
                                         break;
                                       }

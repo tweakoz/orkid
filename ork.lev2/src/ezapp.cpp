@@ -18,6 +18,10 @@
 
 using namespace std::string_literals;
 
+namespace ork {
+  void initModule(ork::appinitdata_ptr_t init_data);
+}
+
 namespace ork::lev2{
   extern appinitdata_ptr_t _ginitdata;
 }
@@ -55,7 +59,7 @@ ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
   if (nullptr == initdata) {
     initdata = std::make_shared<AppInitData>();
   }
-  initModule(initdata);
+  //initModule(initdata);
   static auto app = std::shared_ptr<EzAppContext>(new EzAppContext(initdata));
   return app;
 }
@@ -69,11 +73,7 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
   _mainq  = ork::opq::mainSerialQueue();
   _trackq = new opq::TrackCurrent(_mainq);
   /////////////////////////////////////////////
-  for (auto item : initdata->_preinitoperations)
-    item();
-  /////////////////////////////////////////////
-  ork::rtti::Class::InitializeClasses();
-  ork::lev2::GfxInit("");
+  initdata->executePreInitOps();
   /////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,7 +165,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
 ///////////////////////////////////////////////////////////////////////////////
 orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   auto initdata = std::make_shared<AppInitData>();
-  initModule(initdata);
+  //initModule(initdata);
   auto rval                           = std::make_shared<OrkEzApp>(initdata);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
@@ -226,18 +226,19 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     , _mainWindow(0) 
     , _updateThread("updatethread") {
   __priv_gapp.store(this);
+  /////////////////////////////////////////////
+  for (auto op_item : _initdata->_postinitoperations) {
+    int order = op_item.first;
+    auto operation = op_item.second;
+    operation();
+  }
+  /////////////////////////////////////////////
   atexit(atexit_app);
-
   _vars = std::make_shared<varmap::VarMap>();
-
   /////////////////////////////////////////////
   std::string orkdirstr;
   genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
   _orkidWorkspaceDir = file::Path(orkdirstr);
-  /////////////////////////////////////////////
-  for (auto op : _initdata->_postinitoperations) {
-    op();
-  }
   //////////////////////////////////////////////////////////
 
   _uicontext   = std::make_shared<ui::Context>();

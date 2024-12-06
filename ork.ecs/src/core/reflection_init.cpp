@@ -65,6 +65,9 @@
 #include "../misc/Skybox.h"
 #include "../misc/VrSystem.h"
 #endif
+namespace ork::lev2 {
+  void initModule(ork::appinitdata_ptr_t init_data);
+}
 
 namespace ork::ecs {
 using namespace ::ork;
@@ -111,71 +114,66 @@ std::string detokenize(token_t token){
 
 void FnBallArchetypeTouch();
 
-void ClassInit() {
 
-  RegisterClassX(Archetype);
-  RegisterClassX(DagNodeData);
-  RegisterClassX(SpawnData);
-  RegisterClassX(SceneObject);
-  RegisterClassX(SceneData);
-  RegisterClassX(ComponentData);
-  RegisterClassX(ComponentFragmentData);
+struct EcsAppInit {
 
-  RegisterClassX(Component);
-  RegisterClassX(ComponentFragment);
-  //RegisterClassX(SystemFragment);
+  EcsAppInit(ork::appinitdata_ptr_t init_data) {
 
-  RegisterClassX(InterpComponentData);
-  RegisterClassX(InterpComponent);
-  RegisterClassX(InterpSystemData);
+    RegisterClassX(Archetype);
+    RegisterClassX(DagNodeData);
+    RegisterClassX(SpawnData);
+    RegisterClassX(SceneObject);
+    RegisterClassX(SceneData);
+    RegisterClassX(ComponentData);
+    RegisterClassX(ComponentFragmentData);
 
-  RegisterClassX(LuaComponentData);
-  RegisterClassX(LuaComponent);
-  RegisterClassX(LuaSystemData);
+    RegisterClassX(Component);
+    RegisterClassX(ComponentFragment);
+    //RegisterClassX(SystemFragment);
 
-  RegisterClassX(PythonComponentData);
-  RegisterClassX(PythonSystemData);
-  RegisterClassX(PythonComponent);
+    RegisterClassX(InterpComponentData);
+    RegisterClassX(InterpComponent);
+    RegisterClassX(InterpSystemData);
 
-  RegisterClassX(SceneGraphComponentData);
-  RegisterClassX(SceneGraphSystemData);
-  RegisterClassX(SceneGraphComponent);
-  RegisterClassX(SceneGraphSystem);
-  RegisterClassX(SceneGraphNodeItemData);
+    RegisterClassX(LuaComponentData);
+    RegisterClassX(LuaComponent);
+    RegisterClassX(LuaSystemData);
 
-  RegisterClassX(BulletSystemData);
-  RegisterClassX(BulletShapeCapsuleData);
-  RegisterClassX(BulletShapePlaneData);
-  RegisterClassX(BulletShapeSphereData);
-  RegisterClassX(BulletShapeMeshData);
-  RegisterClassX(BulletShapeCapsuleData);
-  RegisterClassX(BulletShapeTerrainData);
-  RegisterClassX(BulletObjectComponentData);
-  RegisterClassX(BulletObjectForceControllerData);
-  RegisterClassX(DirectionalForceData);
+    RegisterClassX(PythonComponentData);
+    RegisterClassX(PythonSystemData);
+    RegisterClassX(PythonComponent);
 
-  RegisterClassX(BulletObjectComponent);
-  RegisterClassX(BulletSystem);
+    RegisterClassX(SceneGraphComponentData);
+    RegisterClassX(SceneGraphSystemData);
+    RegisterClassX(SceneGraphComponent);
+    RegisterClassX(SceneGraphSystem);
+    RegisterClassX(SceneGraphNodeItemData);
 
-  RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
-  RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
-  RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
-  RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
-  RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
+    RegisterClassX(BulletSystemData);
+    RegisterClassX(BulletShapeCapsuleData);
+    RegisterClassX(BulletShapePlaneData);
+    RegisterClassX(BulletShapeSphereData);
+    RegisterClassX(BulletShapeMeshData);
+    RegisterClassX(BulletShapeCapsuleData);
+    RegisterClassX(BulletShapeTerrainData);
+    RegisterClassX(BulletObjectComponentData);
+    RegisterClassX(BulletObjectForceControllerData);
+    RegisterClassX(DirectionalForceData);
 
-}
+    RegisterClassX(BulletObjectComponent);
+    RegisterClassX(BulletSystem);
+
+    RegisterFamily<LuaComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<PythonComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<InterpComponentData>(ork::AddPooledLiteral("control"));
+    RegisterFamily<SceneGraphComponentData>(ork::AddPooledLiteral("render"));
+    RegisterFamily<BulletObjectComponentData>(ork::AddPooledLiteral("")); // no update
+  }
+};
 
 void initModule(ork::appinitdata_ptr_t init_data){
-  auto it = init_data->_miscvars.find("ecs_init");
-  if(it == init_data->_miscvars.end() ){
-    init_data->enqueuePreInitOp([]{
-      ClassInit();
-    });
-    init_data->_miscvars["ecs_init"] = nullptr;
-  }
-}
-
-void Init2() {
+  ork::lev2::initModule(init_data);
+  static EcsAppInit ginit(init_data);
 }
 
 } //namespace ork::ecs {

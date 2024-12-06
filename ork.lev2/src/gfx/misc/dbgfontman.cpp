@@ -20,7 +20,11 @@ namespace ork { namespace lev2 {
 const int Font::kMaxChars = 16384;
 
 FontMan* FontMan::instance() {
-  struct PublicFontMan : public FontMan {};
+  struct PublicFontMan : public FontMan {
+    PublicFontMan() {
+      printf("PublicFontMan instantiated<%p>...\n", this);
+    }
+  };
   static std::shared_ptr<PublicFontMan> _instance = std::make_shared<PublicFontMan>();
   // printf("FontMan::instance<%p>\n", _instance.get());
   return _instance.get();

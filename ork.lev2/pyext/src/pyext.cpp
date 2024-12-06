@@ -11,6 +11,11 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ork {
+  void initModule(appinitdata_ptr_t init_data);
+  void postInitModule(appinitdata_ptr_t init_data);
+}
+
 namespace ork::audio::singularity{
   void pyinit_aud_singularity(py::module& module_lev2);
 }
@@ -103,11 +108,7 @@ orkezapp_ptr_t lev2appinit() {
   }
   auto ezapp = OrkEzApp::create(init_data);
 
-
-  lev2::ClassInit();
-  rtti::Class::InitializeClasses();
-  lev2::GfxInit("");
-  lev2::FontMan::GetRef();
+  lev2::initModule(init_data);
 
   _gthreadgfxctx = std::make_shared<lev2::ThreadGfxContext>(gloadercontext.get());
 

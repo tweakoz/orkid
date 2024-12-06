@@ -30,9 +30,10 @@ struct Timer {
   void setCurrentTime(float value);
   static float get_sync_time();
 
+  static void staticInit();
+
 private:
   static svar64_t _gimpl;
-  static void staticInit();
 
   float mStartTime;
   float mEndTime;

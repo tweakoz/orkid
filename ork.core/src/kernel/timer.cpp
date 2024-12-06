@@ -106,14 +106,14 @@ svar64_t Timer::_gimpl;
 #if defined(ORK_OSX)
 ///////////////////////////////////////////////////////////////////////////////
 struct TimerGlobalImpl {
-	mach_timebase_info_data_t _timebase;
+	mach_timebase_info_data_t _timebase_info;
 	double _resolution = 0.0;
 	uint64_t _timebase = 0;
 };
 void Timer::staticInit() {
 	auto gimpl = _gimpl.makeShared<TimerGlobalImpl>();
-	mach_timebase_info(&gimpl->timebase);
-	gimpl->_resolution = (double)gimpl->timebase.numer / (double)gimpl->timebase.denom / 1000000.0;
+	mach_timebase_info(&gimpl->_timebase_info);
+	gimpl->_resolution = (double)gimpl->_timebase_info.numer / (double)gimpl->_timebase_info.denom / 1000000.0;
 	uint64_t tms_now = mach_absolute_time();
 	gimpl->_timebase = ((tms_now>>16)<<16);
 }

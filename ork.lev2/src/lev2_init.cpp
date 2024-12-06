@@ -80,11 +80,11 @@
 #include <llvm/Support/TargetSelect.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-//#define WIIEMU
+// #define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
-
+void initModule(appinitdata_ptr_t init_data);
 namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
@@ -144,7 +144,6 @@ struct ClassToucher {
     ged::GedPlugNode::GetClassStatic();
     ged::GedEnumNode::GetClassStatic();
     ged::GedColorNode::GetClassStatic();
-
 
     ged::GedNodeFactory::GetClassStatic();
     ged::GedNodeFactoryCurve1D::GetClassStatic();
@@ -245,7 +244,6 @@ struct ClassToucher {
     proctex::UvMap::GetClassStatic();
     proctex::Kaled::GetClassStatic();
     */
-
 
     RegisterClassX(PointLightData);
 
@@ -405,11 +403,13 @@ struct ClassToucher {
 
 void ClassInit() {
   static ClassToucher toucher;
+  printf( "ork.lev2 classes registered...\n");
 }
 
 ork::lev2::context_ptr_t gloadercontext;
 
 void GfxInit(const std::string& gfxlayer) {
+  printf( "ork.lev2 gfxinit...\n");
 
 #if defined(ENABLE_VULKAN)
   // vk::init();
@@ -426,25 +426,16 @@ void GfxInit(const std::string& gfxlayer) {
   auto def_vrdev = std::make_shared<ork::lev2::orkidvr::novr::NoVrDevice>();
   ork::lev2::orkidvr::setDevice(def_vrdev);
 }
-struct ModuleInit {
+struct Lev2AppInit {
 
-  ModuleInit(ork::appinitdata_ptr_t init_data) {
+  Lev2AppInit(ork::appinitdata_ptr_t init_data) {
+    ///////////////////////////////////////////////////////////////
     _ginitdata = init_data;
-
-    auto it = init_data->_miscvars.find("lev2_init");
-
-    if (it == init_data->_miscvars.end()) {
-      init_data->enqueuePreInitOp([] { ClassInit(); });
-      init_data->_miscvars["lev2_init"] = nullptr;
-    }
-
-    ///////////////////////////////////////////////////////////////
-
-    meshutil::misc_init();
+    ClassInit(); //
+    meshutil::misc_init();    
     registerEnums();
-
     ///////////////////////////////////////////////////////////////
-
+    printf("initialize OpenVDB....\n");
     /*
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -452,165 +443,22 @@ struct ModuleInit {
     llvm::InitializeAllAsmParsers();
     llvm::InitializeAllAsmPrinters();
     */
-    
-     openvdb::initialize();
-     openvdb::ax::initialize();
+    openvdb::initialize();
+    openvdb::ax::initialize();
+    ///////////////////////////////////////////////////////////////
+    init_data->enqueuePostInitOp(
+        AppInitOrder::GRAPHICS_INIT,
+        [] { //
+          GfxInit("");
+          lev2::FontMan::GetRef();
+        });
   }
 };
 
 void initModule(ork::appinitdata_ptr_t init_data) {
-  static ModuleInit initer(init_data);
+  ork::initModule(init_data);
+  static Lev2AppInit ginit(init_data);
 }
 
 } // namespace lev2
-
-///////////////////////////////////////////////////////////////////////////////
-
-class sortperfpred {
-public:
-  bool operator()(const PerformanceItem* t1, const PerformanceItem* t2) const // comparison predicate for map sorting
-  {
-    bool bval = true;
-
-    const PerformanceItem* RootU = PerformanceTracker::GetRef().mRoots[PerformanceTracker::EPS_UPDTHREAD];
-    const PerformanceItem* RootG = PerformanceTracker::GetRef().mRoots[PerformanceTracker::EPS_GFXTHREAD];
-
-    if ((t1 == RootU) || (t1 == RootG)) {
-      return true;
-    } else if ((t2 == RootU) || (t2 == RootG)) {
-      return false;
-    }
-
-    if (t1->miAvgCycle <= t2->miAvgCycle) {
-      bval = false;
-    }
-
-    return bval;
-  }
-};
-
-#if 0
-void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
-  // return; //
-  // orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
-  /*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
-
-  int itX = pTARG->x;
-  int itY = pTARG->y;
-  int itW = pTARG->width();
-  int itH = pTARG->height();
-
-  int iih = 16;
-
-  int ipY2 = itH-8;
-  int ipY = ipY2-iih;
-  int iSX = 8;
-  int iSW = itW-iSX;
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  ork::lev2::GfxMaterial3DSolid Material(pTARG);
-  Material._rasterstate.SetDepthTest( ork::lev2::EDepthTest::ALWAYS );
-  Material._rasterstate.SetBlending( ork::lev2::BlendingMacro::ADDITIVE );
-  Material.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-  Material._rasterstate.SetZWriteMask( false );
-  pTARG->BindMaterial( & Material );
-
-  pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );
-
-  //////////////////////////////////////////////////////////////////////
-  orkstack<PerformanceItem*> PerfItemStack;
-  PerfItemStack.push(PerformanceTracker::GetRef().mpRoot);
-  orkvector<PerformanceItem*> SortedPerfVect;
-  while( false == PerfItemStack.empty() )
-  {
-      PerformanceItem* pItem = PerfItemStack.top();
-      PerfItemStack.pop();
-
-      SortedPerfVect.push_back( pItem );
-      orklist<PerformanceItem*>* ChildList = pItem->GetChildrenList();
-      for( orklist<PerformanceItem*>::iterator itc=ChildList->begin(); itc!=ChildList->end(); itc++ )
-      {
-          PerfItemStack.push(*itc);
-      }
-  }
-
-  std::sort( SortedPerfVect.begin(), SortedPerfVect.end(), sortperfpred() );
-
-  //////////////////////////////////////////////////////////////////////
-
-  for( int i=0; i<int(SortedPerfVect.size()); i++ )
-  {
-      PerformanceItem* pItem = SortedPerfVect[i];
-
-      s64 fvalue = pItem->miAvgCycle;
-
-      if( fvalue )
-      {
-          std::string name = pItem->GetName();
-
-          f64 fpercent = 0.0;
-          if(PerfTotal)
-              fpercent = f64(fvalue) / f64(PerfTotal);
-
-          f32 fx = (f32) iSX+1;
-          f32 fx2 = (f32) (iSX + (fpercent*iSW))-1;
-          fvec4 Vertices[6];
-          Vertices[0].SetXYZ( fx, (f32) ipY+1, 0.5f );
-          Vertices[1].SetXYZ( fx, (f32) ipY2-1, 0.5f );
-          Vertices[2].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
-          Vertices[3].SetXYZ( fx, (f32) ipY+1, 0.5f );
-          Vertices[4].SetXYZ( fx2, (f32) ipY+1, 0.5f );
-          Vertices[5].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
-
-          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::PrimitiveType::TRIANGLES );
-
-          ipY -= iih;
-          ipY2 -= iih;
-      }
-
-  }
-  pTARG->IMI()->QueFlush();
-  pTARG->PopModColor();
-
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  ipY2 = (itH-8)+2;
-  ipY = ipY2-iih;
-
-  pTARG->PushModColor( fcolor4::White() );
-  for( int i=0; i<int(SortedPerfVect.size()); i++ )
-  {
-      PerformanceItem* pItem = SortedPerfVect[i];
-
-      s64 fvalue = pItem->miAvgCycle;
-
-      if( fvalue )
-      {
-          std::string name = pItem->GetName();
-
-          f64 fpercent = 0.0;
-          if(PerfTotal)
-              fpercent = f64(fvalue) / f64(PerfTotal);
-
-          f64 ftime = fvalue/OldSchool::GetRef().mfClockRate;
-          int ix = iSX+4;
-
-          int fps = int(1.0f/ftime);
-#ifndef WII
-          ork::lev2::FontMan::DrawText( pTARG, ix, ipY, (char*) CreateFormattedString( "%s <%02d fps> <%2.2f msec>", (char *)
-name.c_str(), fps, ftime*1000.0f ).c_str() ); #endif
-
-          ipY -= iih;
-          ipY2 -= iih;
-      }
-  }
-
-  pTARG->IMI()->QueFlush();
-  pTARG->PopModColor();*/
-}
-#endif
-
 } // namespace ork
-
-template class ork::Plane<float>; // explicit template instantiation

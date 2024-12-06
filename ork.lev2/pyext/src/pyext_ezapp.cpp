@@ -13,6 +13,13 @@
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
+namespace ork {
+  void initModule(appinitdata_ptr_t init_data);
+}
+namespace ork::lev2 {
+  void initModule(appinitdata_ptr_t init_data);
+}
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
 
@@ -97,12 +104,15 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 }
               }
             }
-
-            auto rval                                              = OrkEzApp::create(appinitdata);
-            
-            auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
+            /////////////////////////////
+            ::ork::lev2::initModule(appinitdata);
+            initdata->executePreInitOps();
+            initdata->executePostInitOps();
+            /////////////////////////////
+            auto rval                                                 = OrkEzApp::create(appinitdata);
+            auto d_ev                                                 = std::make_shared<ui::DrawEvent>(nullptr);
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
-            rval->_vars->makeValueForKey<py::object>("appinstance") = appinstance;
+            rval->_vars->makeValueForKey<py::object>("appinstance")   = appinstance;
             rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {

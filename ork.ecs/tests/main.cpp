@@ -20,12 +20,8 @@
 #include "ecstest.inl"
 
 using namespace ork;
-namespace ork::lev2 {
-void ClassInit();
-void GfxInit(const std::string& gfxlayer);
-} // namespace ork::lev2
 namespace ork::ecs {
-void ClassInit();
+void initModule(appinitdata_ptr_t init_data);
 }
 
 ///////////////////////////////////////////////////////////
@@ -35,11 +31,9 @@ struct TestApplication {
   TestApplication(appinitdata_ptr_t initdata) {
     _stringpoolctx = std::make_shared<StringPoolContext>();
     StringPoolStack::push(_stringpoolctx);
-
-    ecs::ClassInit();
-    ecstest::ClassInit();
-
-    rtti::Class::InitializeClasses();
+    ecs::initModule(initdata);
+    initdata->executePreInitOps();
+    initdata->executePostInitOps();
   }
 
   ~TestApplication() {

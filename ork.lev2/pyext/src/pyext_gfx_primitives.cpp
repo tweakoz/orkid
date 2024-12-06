@@ -380,6 +380,8 @@ void pyinit_primitives(py::module& module_lev2) {
             // update the tiles
             //////////////////////////////////////////////////////
 
+            int maxrate = prim->_max_tile_update_rate;
+
             int updated_tile_counter = 0;
             for( auto it = tiles_to_update.rbegin(); it != tiles_to_update.rend(); ++it ){
 
@@ -409,15 +411,18 @@ void pyinit_primitives(py::module& module_lev2) {
                   for( auto it_leaf = leafnode.cbeginValueOn(); it_leaf; ++it_leaf ){
                     auto icoord = it_leaf.getCoord();
                     auto wpos = xform.indexToWorld(icoord);
-                    const TestGridCell& TGC = (*it_leaf);
-                    if(voxels_needed<capacity){
-                      auto& out_point = points[voxels_actually_written++];
-                      out_point.x = wpos.x();
-                      out_point.y = wpos.y();
-                      out_point.z = wpos.z();
-                      out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
+                    if(wpos.length()>0.01f){
+                      const TestGridCell& TGC = (*it_leaf);
+                      if(voxels_needed<capacity){
+
+                        auto& out_point = points[voxels_actually_written++];
+                        out_point.x = wpos.x();
+                        out_point.y = wpos.y();
+                        out_point.z = wpos.z();
+                        out_point.color = (TGC._rgb*colorscale).saturated().ABGRU32();
+                      }
+                      voxels_needed++;
                     }
-                    voxels_needed++;
                   }
                 }
 
@@ -466,12 +471,12 @@ void pyinit_primitives(py::module& module_lev2) {
 
                 updated_tile_counter++;
 
-                if( updated_tile_counter >= prim->_max_tile_update_rate ){
+                if( (maxrate>0) and (updated_tile_counter >= prim->_max_tile_update_rate) ){
                   break;
                 }
 
               }
-              if( updated_tile_counter >= prim->_max_tile_update_rate ){
+              if( (maxrate>0) and (updated_tile_counter >= prim->_max_tile_update_rate) ){
                 break;
               }
             }

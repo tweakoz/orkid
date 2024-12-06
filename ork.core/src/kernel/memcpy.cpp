@@ -124,8 +124,8 @@ struct ParallelMemoryCopier {
         op._async_op->_async_counter.fetch_add(-1);
       }
       else{
-        std::this_thread::yield();
-        //::usleep(0);
+        //std::this_thread::yield();
+        ::usleep(10);
       }
     }
     pmc->_run_state++;

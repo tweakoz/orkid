@@ -27,6 +27,8 @@ struct CorePythonApplication {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
+  void initModule(ork::appinitdata_ptr_t init_data);
+
 extern bool _ENABLE_LOGGING;
 
 namespace python {
@@ -79,7 +81,7 @@ static void _coreappinit() {
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
-  rtti::Class::InitializeClasses();
+  ork::initModule(init_data);
 }
 
 static file::Path _thispath() {

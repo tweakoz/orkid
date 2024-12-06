@@ -20,8 +20,6 @@
 
 using namespace ork;
 namespace ork::lev2 {
-void ClassInit();
-void GfxInit(const std::string& gfxlayer);
 extern context_ptr_t gloadercontext;
 } // namespace ork::lev2
 
@@ -36,11 +34,10 @@ struct TestApplication {
     _spctx = std::make_shared<StringPoolContext>();
     StringPoolStack::push(_spctx);
     /////////////////////////////////////////////
-    for (auto item : initdata->_preinitoperations)
-      item();
+    ::ork::lev2::initModule(initdata);
+    initdata->executePreInitOps();
+    initdata->executePostInitOps();
     /////////////////////////////////////////////
-    rtti::Class::InitializeClasses();
-    lev2::GfxInit("");
     auto target = lev2::gloadercontext.get();
     OrkAssert(target!=nullptr);
     _l2ctx_track = std::make_shared<lev2::ThreadGfxContext>(target);
