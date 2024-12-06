@@ -61,6 +61,15 @@ void AppInitData::executePostInitOps(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void AppInitData::finalizeInitialization(){
+  executePreInitOps();
+  executePostInitOps();
+  _preinitoperations.clear();
+  _postinitoperations.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_text) {
   _commandline_desc = std::make_shared<opts_desc_t>(header_text);
   _commandline_vars = std::make_shared<opts_var_map_t>();

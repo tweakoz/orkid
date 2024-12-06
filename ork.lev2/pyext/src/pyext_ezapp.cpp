@@ -106,8 +106,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             /////////////////////////////
             ::ork::lev2::initModule(appinitdata);
-            initdata->executePreInitOps();
-            initdata->executePostInitOps();
+            appinitdata->finalizeInitialization();
             /////////////////////////////
             auto rval                                                 = OrkEzApp::create(appinitdata);
             auto d_ev                                                 = std::make_shared<ui::DrawEvent>(nullptr);

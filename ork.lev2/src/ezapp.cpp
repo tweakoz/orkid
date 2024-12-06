@@ -26,16 +26,8 @@ namespace ork::lev2{
   extern appinitdata_ptr_t _ginitdata;
 }
 
-namespace ork::lev2::editor::imgui {
-void initModule(appinitdata_ptr_t initdata) {
-  initdata->_imgui = true;
-}
-} // namespace ork::imgui
-
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
-void ClassInit();
-void GfxInit(const std::string& gfxlayer);
 
 static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 
@@ -73,7 +65,8 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
   _mainq  = ork::opq::mainSerialQueue();
   _trackq = new opq::TrackCurrent(_mainq);
   /////////////////////////////////////////////
-  initdata->executePreInitOps();
+  ork::lev2::initModule(initdata);
+  initdata->finalizeInitialization();
   /////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////

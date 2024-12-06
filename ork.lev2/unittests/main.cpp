@@ -35,8 +35,7 @@ struct TestApplication {
     StringPoolStack::push(_spctx);
     /////////////////////////////////////////////
     ::ork::lev2::initModule(initdata);
-    initdata->executePreInitOps();
-    initdata->executePostInitOps();
+    initdata->finalizeInitialization();
     /////////////////////////////////////////////
     auto target = lev2::gloadercontext.get();
     OrkAssert(target!=nullptr);

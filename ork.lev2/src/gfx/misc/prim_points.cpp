@@ -129,6 +129,32 @@ pointsdata_ptr_t PointsData::depthClamped(float min_depth, float max_depth) cons
 
 ///////////////////////////////////////////////////////////////////////////////
 
+pointsdata_ptr_t PointsData::stochasticSample(float probability) const {
+  OrkAssert(probability>=0.0f and probability<=1.0f);
+  switch(_format){
+    case EVtxStreamFormat::V12T8: {
+      auto src_typed = (VtxV12T8*)_datablock->data();
+      size_t num_samples_stoch = size_t(float(_num_points)*probability);
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12T8);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12T8*)dest;
+      for(int i=0; i<num_samples_stoch; i++){
+        int j = rand() % _num_points;
+        auto& src = src_typed[j];
+        auto& dst = dest_typed[i];
+        dst.uv0 = src.uv0;
+        dst.pos = src.pos;
+      }
+      return rval;
+    }
+  }
+  OrkAssert(false);
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 pointsdata_ptr_t PointsData::convertToV12C4(image_ptr_t image) const {
   switch(_format){
     case EVtxStreamFormat::V12T8: {

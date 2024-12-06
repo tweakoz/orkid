@@ -67,6 +67,7 @@ struct AppInitData{
 
   void executePreInitOps();
   void executePostInitOps();
+  void finalizeInitialization();
 
   int _argc = 0;
   char** _argv = nullptr;

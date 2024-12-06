@@ -52,6 +52,9 @@ void pyinit_primitives(py::module& module_lev2) {
       .def("depthClamped", [](primitives::pointsdata_ptr_t prim, float zmin, float zmax) -> primitives::pointsdata_ptr_t { //
         return prim->depthClamped(zmin,zmax);
       })
+      .def("stochasticSample", [](primitives::pointsdata_ptr_t prim, float probablity) -> primitives::pointsdata_ptr_t { //
+        return prim->stochasticSample(probablity);
+      })
       .def("convertToV12C4", [](primitives::pointsdata_ptr_t prim, image_ptr_t image) -> primitives::pointsdata_ptr_t { //
         return prim->convertToV12C4(image);
       });

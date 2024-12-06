@@ -32,8 +32,7 @@ struct TestApplication {
     _stringpoolctx = std::make_shared<StringPoolContext>();
     StringPoolStack::push(_stringpoolctx);
     ecs::initModule(initdata);
-    initdata->executePreInitOps();
-    initdata->executePostInitOps();
+    initdata->finalizeInitialization();
   }
 
   ~TestApplication() {
