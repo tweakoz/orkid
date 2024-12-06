@@ -106,6 +106,9 @@ void CompositingImpl::gpuInit(lev2::Context* ctx){
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
+
+  bool rval = false;
+
   EASY_BLOCK("assemble-ci", profiler::colors::Red);
   auto& ddprops                      = drawdata._properties;
     auto RCFD = drawdata.RCFD();
@@ -137,33 +140,36 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   int cullcamindex    = ddprops["cullcamindex"_crcu].get<int>();
   auto DB             = ddprops["DB"_crcu].get<const DrawQueue*>();
 
-  /////////////////////////////////////////////////////////////////////////////
-  // default camera selection
-  //  todo - create actual camera mgr and select default camera there
-  /////////////////////////////////////////////////////////////////////////////
+  if(DB){
+    /////////////////////////////////////////////////////////////////////////////
+    // default camera selection
+    //  todo - create actual camera mgr and select default camera there
+    /////////////////////////////////////////////////////////////////////////////
 
-  auto the_camera = DB->cameraData(_cameraName);
+    auto the_camera = DB->cameraData(_cameraName);
 
-  //printf( "CAMNAME<%s> CAM<%p>\n", _cameraName.c_str(), (void*) the_camera.get() );
+    //printf( "CAMNAME<%s> CAM<%p>\n", _cameraName.c_str(), (void*) the_camera.get() );
 
-  target->debugMarker(FormatString("the_camera<%p>", (void*) the_camera.get()));
+    target->debugMarker(FormatString("the_camera<%p>", (void*) the_camera.get()));
 
-  if (the_camera) {
-    (*_defaultCameraMatrices) = the_camera->computeMatrices(aspectratio);
+    if (the_camera) {
+      (*_defaultCameraMatrices) = the_camera->computeMatrices(aspectratio);
+    }
+
+    target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
+    ddprops["defcammtx"_crcu].set<const CameraMatrices*>(_defaultCameraMatrices);
+
+    if (the_camera and the_camera->getUiCamera()) {
+      target->debugMarker(FormatString("seleditcam<%p>", (void*) the_camera.get() ));
+      ddprops["seleditcam"_crcu].set<cameradata_constptr_t>(the_camera);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+
+    DB->invokePreRenderCallbacks(RCFD);
+    rval = _compcontext->assemble(drawdata);
   }
-
-  target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
-  ddprops["defcammtx"_crcu].set<const CameraMatrices*>(_defaultCameraMatrices);
-
-  if (the_camera and the_camera->getUiCamera()) {
-    target->debugMarker(FormatString("seleditcam<%p>", (void*) the_camera.get() ));
-    ddprops["seleditcam"_crcu].set<cameradata_constptr_t>(the_camera);
-  }
-
-  /////////////////////////////////////////////////////////////////////////////
-
-  DB->invokePreRenderCallbacks(RCFD);
-  return _compcontext->assemble(drawdata);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

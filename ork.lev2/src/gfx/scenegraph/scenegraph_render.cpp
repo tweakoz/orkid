@@ -13,26 +13,25 @@
 using namespace std::string_literals;
 using namespace ork;
 
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
-static constexpr bool RENDER_DEBUG_LOG = false;
+static constexpr bool RENDER_DEBUG_LOG   = false;
 static logchannel_ptr_t logchan_sgrender = logger()->createChannel("SGRENDER", fvec3(0.9, 0.2, 0.9));
 
 ///////////////////////////////////////////////////////////////////////////////
 // enqueue scenegraph to renderer (update thread)
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Scene::okToRender() const{
+bool Scene::okToRender() const {
   return _loadSynchro->isComplete();
 }
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_enqueue) {
 
-  if(not okToRender())
+  if (not okToRender())
     return;
-  
+
   EASY_BLOCK("Scene::enqueueToRenderer", 0xffa02020);
 
   if (_synchro) {
@@ -81,7 +80,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
           _nodes2draw.push_back(item);
         }
       }
-      if (RENDER_DEBUG_LOG){
+      if (RENDER_DEBUG_LOG) {
         logchan_sgrender->log("layer<%s> drawable_nodes<%d>", drawable_layer->_name.c_str(), int(unlocked.size()));
       }
     });
@@ -96,17 +95,19 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras, on_enqueue_fn_t on_en
       auto n               = item._drwnode;
       if (RENDER_DEBUG_LOG) {
         fvec3 pos = n->_dqxfdata._worldTransform->_translation;
-        
+
         logchan_sgrender->log(
             "enqueue drawable<%s> on layer<%s> pos<%g %g %g>", //
-            (void*)n->_drawable->_name.c_str(),  //
+            (void*)n->_drawable->_name.c_str(),                //
             drawable_layer->_name.c_str(),
-            pos.x, pos.y, pos.z );
+            pos.x,
+            pos.y,
+            pos.z);
       }
-      n->_drawable->_pickable = n->_pickable;
-      n->_dqxfdata._modcolor = n->_modcolor;
+      n->_drawable->_pickable    = n->_pickable;
+      n->_dqxfdata._modcolor     = n->_modcolor;
       n->_dqxfdata._use_modcolor = true;
-      //printf( "modcolor<%g %g %g %g>\n", n->_modcolor.x, n->_modcolor.y, n->_modcolor.z, n->_modcolor.w );
+      // printf( "modcolor<%g %g %g %g>\n", n->_modcolor.x, n->_modcolor.y, n->_modcolor.z, n->_modcolor.w );
       if (n->_viewRelative) {
         n->_dqxfdata._worldTransform->_viewRelative = true;
       }
@@ -140,10 +141,10 @@ void Scene::enablePickHud() {
 }
 
 void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
-  if(not okToRender())
+  if (not okToRender())
     return;
-  //OrkBreak();
-    EASY_BLOCK("sg::Scene::_renderIMPL", profiler::colors::Red);
+  // OrkBreak();
+  EASY_BLOCK("sg::Scene::_renderIMPL", profiler::colors::Red);
 
   if (_dogpuinit) {
     gpuInit(context);
@@ -157,44 +158,45 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     }
   }
 
-    EASY_BLOCK("sg::Scene::_renderIMPL::acquiredb", profiler::colors::Red);
+  EASY_BLOCK("sg::Scene::_renderIMPL::acquiredb", profiler::colors::Red);
   auto DB = _dbufcontext_SG->acquireForReadLocked();
-EASY_END_BLOCK;
+  EASY_END_BLOCK;
+  if (DB) {
 
-  RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-  RCFD->setUserProperty("time"_crc, _currentTime);
+    RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    RCFD->setUserProperty("time"_crc, _currentTime);
 
-  auto pick_mvp_matrix = std::make_shared<fmtx4>();
+    auto pick_mvp_matrix = std::make_shared<fmtx4>();
 
-  RCFD->setUserProperty("pickbufferMvpMatrix"_crc, pick_mvp_matrix);
+    RCFD->setUserProperty("pickbufferMvpMatrix"_crc, pick_mvp_matrix);
 
-  RCFD->pushCompositor(_compositorImpl);
+    RCFD->pushCompositor(_compositorImpl);
 
-  _renderer->setContext(context);
+    _renderer->setContext(context);
 
-  context->pushRenderContextFrameData(RCFD);
-  auto fbi  = context->FBI();  // FrameBufferInterface
-  auto fxi  = context->FXI();  // FX Interface
-  auto mtxi = context->MTXI(); // matrix Interface
-  auto gbi  = context->GBI();  // GeometryBuffer Interface
-  auto dwi  = context->DWI();  // GeometryBuffer Interface
-  ///////////////////////////////////////
-  // compositor setup
-  ///////////////////////////////////////
-  float TARGW = fbi->GetVPW();
-  float TARGH = fbi->GetVPH();
-  lev2::UiViewportRenderTarget rt(nullptr);
-  auto tgtrect            = ViewportRect(0, 0, TARGW, TARGH);
-  _topCPD->_irendertarget = &rt;
-  _topCPD->SetDstRect(tgtrect);
-  _compositorImpl->pushCPD(*_topCPD);
-  ///////////////////////////////////////
-  // Draw!
-  ///////////////////////////////////////
-  fbi->SetClearColor(fvec4(0, 0, 0, 1));
-  fbi->setViewport(tgtrect);
-  fbi->setScissor(tgtrect);
-  if (1) {
+    context->pushRenderContextFrameData(RCFD);
+    auto fbi  = context->FBI();  // FrameBufferInterface
+    auto fxi  = context->FXI();  // FX Interface
+    auto mtxi = context->MTXI(); // matrix Interface
+    auto gbi  = context->GBI();  // GeometryBuffer Interface
+    auto dwi  = context->DWI();  // GeometryBuffer Interface
+    ///////////////////////////////////////
+    // compositor setup
+    ///////////////////////////////////////
+    float TARGW = fbi->GetVPW();
+    float TARGH = fbi->GetVPH();
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect            = ViewportRect(0, 0, TARGW, TARGH);
+    _topCPD->_irendertarget = &rt;
+    _topCPD->SetDstRect(tgtrect);
+    _compositorImpl->pushCPD(*_topCPD);
+    ///////////////////////////////////////
+    // Draw!
+    ///////////////////////////////////////
+    fbi->SetClearColor(fvec4(0, 0, 0, 1));
+    fbi->setViewport(tgtrect);
+    fbi->setScissor(tgtrect);
+
     EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
 
     context->beginFrame();
@@ -222,7 +224,7 @@ EASY_END_BLOCK;
       // auto val = pickWithRay(r);
       //  printf("%zx\n", val);
     }
-    ////////////////////////////////////////////////////////////////////////////
+
     if (_enable_pick_hud) {
       static bool gpuinit                   = true;
       static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
@@ -245,6 +247,7 @@ EASY_END_BLOCK;
         par_pickidmap    = pickhudmat->param("PickIdMap");
         par_mvp          = pickhudmat->param("MatMVP");
       }
+
       auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
       context->debugPushGroup("pickhud");
       size_t DIM = 200;
@@ -297,13 +300,14 @@ EASY_END_BLOCK;
         pickhudmat->end(RCFD);
       }
       context->debugPopGroup();
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    context->endFrame();
-  }
-  _dbufcontext_SG->releaseFromReadLocked(DB);
 
-  RCFD->popCompositor();
+    } // if (_enable_pick_hud) {
+
+    context->endFrame();
+    _dbufcontext_SG->releaseFromReadLocked(DB);
+    RCFD->popCompositor();
+  
+  } // if (DB) {
 
   if (_synchro) {
     _synchro->endRender();
@@ -313,7 +317,7 @@ EASY_END_BLOCK;
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t acqbuf) {
-  if(not okToRender())
+  if (not okToRender())
     return;
   auto DB      = acqbuf->_DB;
   auto rcfd    = acqbuf->_RCFD;
@@ -369,15 +373,14 @@ void Scene::_renderWithAcquiredDrawQueueForRendering(acqdrawbuffer_constptr_t ac
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe) {
-  if(not okToRender())
+  if (not okToRender())
     return;
   auto context = sframe->_drawEvent->GetTarget();
   if (_dogpuinit) {
     sframe->attachDrawQueueContext(_dbufcontext_SG);
     gpuInit(context);
   }
- 
- 
+
   _renderer->setContext(context);
   sframe->compositor = _compositorImpl;
   sframe->renderer   = _renderer;
@@ -388,7 +391,7 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
-  if(not okToRender())
+  if (not okToRender())
     return;
   _renderIMPL(context, RCFD);
 }
@@ -396,11 +399,11 @@ void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
-  if(not okToRender())
+  if (not okToRender())
     return;
   // from SceneGraphSystem::_onRender
   auto rcfd = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
-  if(_compositorImpl and _doResizeFromMainSurface){
+  if (_compositorImpl and _doResizeFromMainSurface) {
     int w = context->mainSurfaceWidth();
     int h = context->mainSurfaceHeight();
     _compositorImpl->compositingContext().Resize(w, h);
@@ -409,4 +412,4 @@ void Scene::renderOnContext(Context* context) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::scenegraph {
+} // namespace ork::lev2::scenegraph
