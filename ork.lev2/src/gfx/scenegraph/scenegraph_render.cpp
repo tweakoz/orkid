@@ -157,151 +157,156 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
     EASY_BLOCK("sg::Scene::_renderIMPL::acquiredb", profiler::colors::Red);
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 EASY_END_BLOCK;
+  if(DB){
 
-  RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-  RCFD->setUserProperty("time"_crc, _currentTime);
+    RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    RCFD->setUserProperty("time"_crc, _currentTime);
 
-  auto pick_mvp_matrix = std::make_shared<fmtx4>();
+    auto pick_mvp_matrix = std::make_shared<fmtx4>();
 
-  RCFD->setUserProperty("pickbufferMvpMatrix"_crc, pick_mvp_matrix);
+    RCFD->setUserProperty("pickbufferMvpMatrix"_crc, pick_mvp_matrix);
 
-  RCFD->pushCompositor(_compositorImpl);
+    RCFD->pushCompositor(_compositorImpl);
 
-  _renderer->setContext(context);
+    _renderer->setContext(context);
 
-  context->pushRenderContextFrameData(RCFD);
-  auto fbi  = context->FBI();  // FrameBufferInterface
-  auto fxi  = context->FXI();  // FX Interface
-  auto mtxi = context->MTXI(); // matrix Interface
-  auto gbi  = context->GBI();  // GeometryBuffer Interface
-  auto dwi  = context->DWI();  // GeometryBuffer Interface
-  ///////////////////////////////////////
-  // compositor setup
-  ///////////////////////////////////////
-  float TARGW = fbi->GetVPW();
-  float TARGH = fbi->GetVPH();
-  lev2::UiViewportRenderTarget rt(nullptr);
-  auto tgtrect            = ViewportRect(0, 0, TARGW, TARGH);
-  _topCPD->_irendertarget = &rt;
-  _topCPD->SetDstRect(tgtrect);
-  _compositorImpl->pushCPD(*_topCPD);
-  ///////////////////////////////////////
-  // Draw!
-  ///////////////////////////////////////
-  fbi->SetClearColor(fvec4(0, 0, 0, 1));
-  fbi->setViewport(tgtrect);
-  fbi->setScissor(tgtrect);
-  if (1) {
-    EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
+    context->pushRenderContextFrameData(RCFD);
+    auto fbi  = context->FBI();  // FrameBufferInterface
+    auto fxi  = context->FXI();  // FX Interface
+    auto mtxi = context->MTXI(); // matrix Interface
+    auto gbi  = context->GBI();  // GeometryBuffer Interface
+    auto dwi  = context->DWI();  // GeometryBuffer Interface
+    ///////////////////////////////////////
+    // compositor setup
+    ///////////////////////////////////////
+    float TARGW = fbi->GetVPW();
+    float TARGH = fbi->GetVPH();
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect            = ViewportRect(0, 0, TARGW, TARGH);
+    _topCPD->_irendertarget = &rt;
+    _topCPD->SetDstRect(tgtrect);
+    _compositorImpl->pushCPD(*_topCPD);
+    ///////////////////////////////////////
+    // Draw!
+    ///////////////////////////////////////
+    fbi->SetClearColor(fvec4(0, 0, 0, 1));
+    fbi->setViewport(tgtrect);
+    fbi->setScissor(tgtrect);
+    if (1) {
+      EASY_BLOCK("sg::Scene::_renderIMPL::draw", profiler::colors::Red);
 
-    // printf( "SceneGraph::_renderIMPL\n");
-    context->beginFrame();
-    CompositorDrawData drawdata(RCFD);
-    drawdata._properties["primarycamindex"_crcu].set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
-    drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
-    drawdata._cimpl = _compositorImpl;
-    _compositorImpl->assemble(drawdata);
-    _compositorImpl->composite(drawdata);
-    _compositorImpl->popCPD();
-    context->popRenderContextFrameData();
-
-    if (_on_render_complete) {
-      _on_render_complete(context);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // debug picking here, so it shows up in renderdoc (within frame boundaries)
-    ////////////////////////////////////////////////////////////////////////////
-    if (0) {
-      // auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
-      // auto val = pickWithRay(r);
-      //  printf("%zx\n", val);
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    if (_enable_pick_hud) {
-      static bool gpuinit                   = true;
-      static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
-      static fxtechnique_constptr_t tek_texcolor;
-      static fxtechnique_constptr_t tek_texcolorpik;
-      static fxtechnique_constptr_t tek_texcolormod1;
-      static fxtechnique_constptr_t tek_texcolornrm;
-      static fxparam_constptr_t par_colormap;
-      static fxparam_constptr_t par_pickidmap;
-      static fxparam_constptr_t par_mvp;
-
-      if (gpuinit) {
-        gpuinit = false;
-        pickhudmat->gpuInit(context, "orkshader://solid");
-        tek_texcolor     = pickhudmat->technique("texcolor");
-        tek_texcolorpik  = pickhudmat->technique("texcolorpik");
-        tek_texcolormod1 = pickhudmat->technique("texcolormod1");
-        tek_texcolornrm  = pickhudmat->technique("texcolornrm");
-        par_colormap     = pickhudmat->param("ColorMap");
-        par_pickidmap    = pickhudmat->param("PickIdMap");
-        par_mvp          = pickhudmat->param("MatMVP");
+      // printf( "SceneGraph::_renderIMPL\n");
+      context->beginFrame();
+      CompositorDrawData drawdata(RCFD);
+      drawdata._properties["primarycamindex"_crcu].set<int>(0);
+      drawdata._properties["cullcamindex"_crcu].set<int>(0);
+      drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+      drawdata._properties["simrunning"_crcu].set<bool>(true);
+      drawdata._properties["DB"_crcu].set<const DrawQueue*>(DB);
+      drawdata._cimpl = _compositorImpl;
+      bool assembled = _compositorImpl->assemble(drawdata);
+      if(assembled){
+        _compositorImpl->composite(drawdata);
       }
-      auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
-      context->debugPushGroup("pickhud");
-      size_t DIM = 200;
-      if (_sgpickbuffer->_pickIDtexture) {
-        pickhudmat->begin(tek_texcolorpik, RCFD);
-        fxi->BindParamCTex(par_pickidmap, _sgpickbuffer->_pickIDtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
-        dwi->quad2DEML(
-            fvec4(0, 0, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),    // uvrect
-            fvec4(1, 0, -1, 1),    // uvrect2
-            0.0f);                 // depth
+      _compositorImpl->popCPD();
+      context->popRenderContextFrameData();
 
-        pickhudmat->end(RCFD);
+      if (_on_render_complete) {
+        _on_render_complete(context);
       }
-      if (_sgpickbuffer->_pickPOStexture) {
-        pickhudmat->begin(tek_texcolormod1, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickPOStexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
-        dwi->quad2DEML(
-            fvec4(0, DIM, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),      // uvrect
-            fvec4(1, 0, -1, 1),      // uvrect2
-            0.0f);                   // depth
 
-        pickhudmat->end(RCFD);
+      ////////////////////////////////////////////////////////////////////////////
+      // debug picking here, so it shows up in renderdoc (within frame boundaries)
+      ////////////////////////////////////////////////////////////////////////////
+      if (0) {
+        // auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
+        // auto val = pickWithRay(r);
+        //  printf("%zx\n", val);
       }
-      if (_sgpickbuffer->_pickNRMtexture) {
-        pickhudmat->begin(tek_texcolornrm, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickNRMtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
-        dwi->quad2DEML(
-            fvec4(0, DIM * 2, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),          // uvrect
-            fvec4(1, 0, -1, 1),          // uvrect2
-            0.0f);                       // depth
+      ////////////////////////////////////////////////////////////////////////////
+      if (_enable_pick_hud) {
+        static bool gpuinit                   = true;
+        static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
+        static fxtechnique_constptr_t tek_texcolor;
+        static fxtechnique_constptr_t tek_texcolorpik;
+        static fxtechnique_constptr_t tek_texcolormod1;
+        static fxtechnique_constptr_t tek_texcolornrm;
+        static fxparam_constptr_t par_colormap;
+        static fxparam_constptr_t par_pickidmap;
+        static fxparam_constptr_t par_mvp;
 
-        pickhudmat->end(RCFD);
-      }
-      if (_sgpickbuffer->_pickUVtexture) {
-        pickhudmat->begin(tek_texcolor, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickUVtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
-        dwi->quad2DEML(
-            fvec4(0, DIM * 3, DIM, DIM), // quadrect
-            fvec4(1, 0, -1, 1),          // uvrect
-            fvec4(1, 0, -1, 1),          // uvrect2
-            0.0f);                       // depth
+        if (gpuinit) {
+          gpuinit = false;
+          pickhudmat->gpuInit(context, "orkshader://solid");
+          tek_texcolor     = pickhudmat->technique("texcolor");
+          tek_texcolorpik  = pickhudmat->technique("texcolorpik");
+          tek_texcolormod1 = pickhudmat->technique("texcolormod1");
+          tek_texcolornrm  = pickhudmat->technique("texcolornrm");
+          par_colormap     = pickhudmat->param("ColorMap");
+          par_pickidmap    = pickhudmat->param("PickIdMap");
+          par_mvp          = pickhudmat->param("MatMVP");
+        }
+        auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
+        context->debugPushGroup("pickhud");
+        size_t DIM = 200;
+        if (_sgpickbuffer->_pickIDtexture) {
+          pickhudmat->begin(tek_texcolorpik, RCFD);
+          fxi->BindParamCTex(par_pickidmap, _sgpickbuffer->_pickIDtexture);
+          fxi->BindParamMatrix(par_mvp, uimatrix);
+          dwi->quad2DEML(
+              fvec4(0, 0, DIM, DIM), // quadrect
+              fvec4(1, 0, -1, 1),    // uvrect
+              fvec4(1, 0, -1, 1),    // uvrect2
+              0.0f);                 // depth
 
-        pickhudmat->end(RCFD);
+          pickhudmat->end(RCFD);
+        }
+        if (_sgpickbuffer->_pickPOStexture) {
+          pickhudmat->begin(tek_texcolormod1, RCFD);
+          fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickPOStexture);
+          fxi->BindParamMatrix(par_mvp, uimatrix);
+          dwi->quad2DEML(
+              fvec4(0, DIM, DIM, DIM), // quadrect
+              fvec4(1, 0, -1, 1),      // uvrect
+              fvec4(1, 0, -1, 1),      // uvrect2
+              0.0f);                   // depth
+
+          pickhudmat->end(RCFD);
+        }
+        if (_sgpickbuffer->_pickNRMtexture) {
+          pickhudmat->begin(tek_texcolornrm, RCFD);
+          fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickNRMtexture);
+          fxi->BindParamMatrix(par_mvp, uimatrix);
+          dwi->quad2DEML(
+              fvec4(0, DIM * 2, DIM, DIM), // quadrect
+              fvec4(1, 0, -1, 1),          // uvrect
+              fvec4(1, 0, -1, 1),          // uvrect2
+              0.0f);                       // depth
+
+          pickhudmat->end(RCFD);
+        }
+        if (_sgpickbuffer->_pickUVtexture) {
+          pickhudmat->begin(tek_texcolor, RCFD);
+          fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickUVtexture);
+          fxi->BindParamMatrix(par_mvp, uimatrix);
+          dwi->quad2DEML(
+              fvec4(0, DIM * 3, DIM, DIM), // quadrect
+              fvec4(1, 0, -1, 1),          // uvrect
+              fvec4(1, 0, -1, 1),          // uvrect2
+              0.0f);                       // depth
+
+          pickhudmat->end(RCFD);
+        }
+        context->debugPopGroup();
       }
-      context->debugPopGroup();
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    context->endFrame();
+      ////////////////////////////////////////////////////////////////////////////
+      context->endFrame();
+    } // if(1) {
+    _dbufcontext_SG->releaseFromReadLocked(DB);
+
+    RCFD->popCompositor();
   }
-  _dbufcontext_SG->releaseFromReadLocked(DB);
 
-  RCFD->popCompositor();
 
   if (_synchro) {
     _synchro->endRender();
