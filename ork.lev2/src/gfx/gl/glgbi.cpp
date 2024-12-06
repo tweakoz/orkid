@@ -776,6 +776,9 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& v
   evb_priv.set<const glslfx::Pass*>(pfxpass);
   ////////////////////////////////////////////////////////////////////
   // setup VBO or DL
+  if( not vtxbuf._impl.isSet() ){
+    return false;
+  }
   auto impl = vtxbuf._impl.getShared<GlVertexBufferImpl>();
   if(not impl){
     return false;

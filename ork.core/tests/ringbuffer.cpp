@@ -81,7 +81,7 @@ template <typename queue_type> struct yo {
       }
     };
 
-    double fsynctime = ork::get_sync_time();
+    double fsynctime = ork::Timer::get_sync_time();
 
     ork::Thread thr_p(l_producer, this);
     ork::Thread thr_c(l_consumer, this);
@@ -89,7 +89,7 @@ template <typename queue_type> struct yo {
     thr_p.join();
     thr_c.join();
 
-    double fsynctime2 = ork::get_sync_time();
+    double fsynctime2 = ork::Timer::get_sync_time();
 
     double elapsed  = (fsynctime2 - fsynctime);
     double mps      = 2.0 * double(knummsgs) / elapsed;

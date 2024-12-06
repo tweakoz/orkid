@@ -38,8 +38,6 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-float get_sync_time();
-
 void OldSchool::SetGlobalFloatVariable(const std::string& variable, f32 value) {
   GetRef()._variables.makeValueForKey<float>(variable) = value;
 }
@@ -207,8 +205,8 @@ f32 OldSchool::GetLoResTime( void )
 ///////////////////////////////////////////////
 f32 OldSchool::GetLoResTime( void )
 {
-  static const float kbasetime = get_sync_time();
-  return get_sync_time()-kbasetime;
+  static const float kbasetime = Timer::get_sync_time();
+  return Timer::get_sync_time()-kbasetime;
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////

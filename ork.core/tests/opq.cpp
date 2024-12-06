@@ -26,7 +26,7 @@ using namespace ork::opq;
 
 #if 1
 TEST(opq_serialized_ops) {
-  float fsynctime = ork::get_sync_time();
+  float fsynctime = ork::Timer::get_sync_time();
 
   srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
@@ -119,7 +119,7 @@ TEST(opq_serialized_ops) {
   }
 }
 TEST(opq_serialized_ops2) {
-  float fsynctime = ork::get_sync_time();
+  float fsynctime = ork::Timer::get_sync_time();
 
   srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
@@ -213,7 +213,7 @@ TEST(opq_serialized_ops2) {
 #endif
 #if 1
 TEST(opq_maxinflight) {
-  float fsynctime = ork::get_sync_time();
+  float fsynctime = ork::Timer::get_sync_time();
 
   srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
@@ -295,7 +295,7 @@ TEST(opq_maxinflight) {
 #if 1
 
 TEST(opq_ballsout) {
-  float fsynctime = ork::get_sync_time();
+  float fsynctime = ork::Timer::get_sync_time();
 
   srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
@@ -352,7 +352,7 @@ TEST(opq_ballsout) {
 }
 
 TEST(opq_real_load) {
-  float fsynctime = ork::get_sync_time();
+  float fsynctime = ork::Timer::get_sync_time();
 
   srand(u32(fsynctime * 100.0f)); // so we dont get the same thread count seqeuence every run
 
