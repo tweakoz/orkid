@@ -34,7 +34,7 @@ FontManager.gpuInit(ctx)
 ###################################
 
 material = FreestyleMaterial()
-material.gpuInit(ctx,Path("orkshader://solid"))
+material.gpuInit(ctx,"orkshader://solid")
 tek = material.shader.technique("vtxcolor")
 par_mvp = material.shader.param("MatMVP")
 

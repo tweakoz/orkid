@@ -27,7 +27,7 @@ ctx.makeCurrent()
 ###################################
 ctx.debugPushGroup("init")
 mtl = FreestyleMaterial()
-mtl.gpuInit(ctx,Path("orkshader://solid"))
+mtl.gpuInit(ctx,"orkshader://solid")
 tek_vtxcolor = mtl.shader.technique("vtxcolor")
 
 par_float = mtl.shader.param("Time")
