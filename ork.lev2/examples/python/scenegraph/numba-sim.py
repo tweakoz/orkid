@@ -45,7 +45,7 @@ class instance_set_class(_simsetup.InstanceSet):
     matrix_update(self.instancematrices,self.delta_rots)
     matrix_update(self.instancematrices,self.delta_tras)
     index = random.randint(0,numinstances-1)
-    self.instancecolors[index] = color
+    self.instancecolors[index] = vec4(1,0,1,1)
 ################################################################################
 class NumbaSimApp(_simsetup.SimApp):
   ################################################
