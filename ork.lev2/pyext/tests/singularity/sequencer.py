@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 
 ################################################################################
 # singularity test for timestamps

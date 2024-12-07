@@ -78,7 +78,7 @@ void BuildXgmClusterPrimGroups(
     ork::lev2::IndexBufferBase* pidxbuf = nullptr;
     if(inumidx<65536){
       auto typed = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
+      U16* pidx                                  = (U16*)context.GBI()->LockIB(*typed);
       OrkAssert(pidx != 0);
       for (int ii = 0; ii < inumidx; ii++) {
         pidx[ii] = U16(TriangleIndices[ii]);
@@ -87,7 +87,7 @@ void BuildXgmClusterPrimGroups(
     }
     else{
       auto typed = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
-      U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+      U32* pidx                                  = (U32*)context.GBI()->LockIB(*typed);
       OrkAssert(pidx != 0);
       for (int ii = 0; ii < inumidx; ii++) {
         pidx[ii] = U32(TriangleIndices[ii]);
@@ -160,7 +160,7 @@ void BuildXgmClusterPrimGroups(
       }
       else{
         auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
-        U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+        U32* pidx                                  = (U32*)context.GBI()->LockIB(*typed_idxbuf);
         OrkAssert(pidx != 0);
         {
           for (int ii = 0; ii < inumidx; ii++) {
@@ -194,7 +194,7 @@ void BuildXgmClusterPrimGroups(
     ork::lev2::IndexBufferBase* pidxbuf = nullptr;
     if(inumidx<65536){
       auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
+      U16* pidx                                  = (U16*)context.GBI()->LockIB(*typed_idxbuf);
       OrkAssert(pidx != 0);
       for (int ii = 0; ii < inumidx; ii++) {
         pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
@@ -203,7 +203,7 @@ void BuildXgmClusterPrimGroups(
     }
     else{
       auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
-      U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+      U32* pidx                                  = (U32*)context.GBI()->LockIB(*typed_idxbuf);
       OrkAssert(pidx != 0);
       for (int ii = 0; ii < inumidx; ii++) {
         pidx[ii] = U32(MyStripper.GetTriIndices()[ii]);

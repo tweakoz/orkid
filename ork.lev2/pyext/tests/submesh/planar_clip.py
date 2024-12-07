@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 
 ################################################################################
 # Copyright 1996-2023, Michael T. Mayers.
@@ -188,7 +188,7 @@ class SceneGraphApp(object):
     pipeline = createPipeline( app = self,
                                ctx = ctx,
                                rendermodel = "ForwardPBR",
-                               shaderfile=Path("orkshader://basic"),
+                               shaderfile="orkshader://basic",
                                techname="tek_fnormal_wire" )
 
     material = pipeline.sharedMaterial

@@ -231,7 +231,7 @@ class BasicUiCamSgApp(object):
                        depthtest=tokens.LEQUALS,
                        blending=tokens.OFF,
                        culltest=tokens.PASS_FRONT,
-                       shaderfile=Path("orkshader://manip"),
+                       shaderfile="orkshader://manip",
                        shadertext=None,
                        techname="std_mono_fwd"):
 
@@ -298,11 +298,11 @@ class BasicUiCamSgApp(object):
 
     def createBaryWirePipeline(self):
         return self.createPipeline(rendermodel="ForwardPBR",
-                                   shaderfile=Path("orkshader://basic"),
+                                   shaderfile="orkshader://basic",
                                    techname="tek_fnormal_wire")
     def createVtxColorPipeline(self):
         return self.createPipeline(rendermodel="ForwardPBR",
-                                   shaderfile=Path("orkshader://basic"),
+                                   shaderfile="orkshader://basic",
                                    techname="tek_vtxcolor")
     def createPointsPipeline(self):
         pipeline =  self.createPipeline( shadertext = SHADERTEXT_POINTS,

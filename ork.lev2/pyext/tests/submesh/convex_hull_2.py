@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ################################################################################
 # Copyright 1996-2023, Michael T. Mayers.
 # Distributed under the MIT License

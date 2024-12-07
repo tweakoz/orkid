@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env ork.python 
 
 import unittest, math, sys, os
 from orkengine.core import vec2, vec3, vec4, quat, mtx3, mtx4

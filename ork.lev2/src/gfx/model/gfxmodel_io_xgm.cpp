@@ -372,24 +372,41 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             cluster->_primgroups.push_back(newprimgroup);
             int32_t ipgindex    = -1;
             int32_t ipgprimtype = -1;
+            int32_t ipindexsize = -1;
             HeaderStream->GetItem<int32_t>(ipgindex);
             OrkAssert(ipgindex == ipg);
 
             HeaderStream->GetItem<PrimitiveType>(newprimgroup->mePrimType);
+            HeaderStream->GetItem<int32_t>(ipindexsize);
             HeaderStream->GetItem<int32_t>(newprimgroup->miNumIndices);
 
             int32_t idxdataoffset = -1;
             HeaderStream->GetItem<int32_t>(idxdataoffset);
 
-            U16* pidx = (U16*)ModelDataStream->GetDataAt(idxdataoffset);
+            switch(ipindexsize){
+              case 2: {
+                auto pidx = (U16*)ModelDataStream->GetDataAt(idxdataoffset);
+                auto pidxbuf = new StaticIndexBuffer<U16>(newprimgroup->miNumIndices);
 
-            auto pidxbuf = new StaticIndexBuffer<U16>(newprimgroup->miNumIndices);
+                void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
+                memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
+                context->GBI()->UnLockIB(*pidxbuf);
+                newprimgroup->mpIndices = pidxbuf;
+                break;
+              }
+              case 4: {
+                auto pidx = (U16*)ModelDataStream->GetDataAt(idxdataoffset);
+                auto pidxbuf = new StaticIndexBuffer<U32>(newprimgroup->miNumIndices);
 
-            void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
-            { memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16)); }
-            context->GBI()->UnLockIB(*pidxbuf);
+                void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
+                memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U32));
+                context->GBI()->UnLockIB(*pidxbuf);
+                newprimgroup->mpIndices = pidxbuf;
+                break;
+              }
+              default: OrkAssert(false); break;
+            }
 
-            newprimgroup->mpIndices = pidxbuf;
           }
           ////////////////////////////////////////////////////////////////////////
           cluster->_jointPaths.resize(inumbb);

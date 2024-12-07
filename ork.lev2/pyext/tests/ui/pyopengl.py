@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 
 ################################################################################
 # lev2 sample which renders a UI to a window, 

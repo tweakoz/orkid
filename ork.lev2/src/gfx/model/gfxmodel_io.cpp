@@ -564,11 +564,13 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           auto PG = cluster->primgroup(ipg);
 
           int32_t inumidx = PG->GetNumIndices();
+          int32_t indexsize = PG->GetIndexBuffer()->indexSize();
 
           logchan_mioW->log("WritePG<%d> NumIndices<%d>", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
           HeaderStream->AddItem<PrimitiveType>(PG->GetPrimType());
+          HeaderStream->AddItem<int32_t>(indexsize);
           HeaderStream->AddItem<int32_t>(inumidx);
           HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
 
