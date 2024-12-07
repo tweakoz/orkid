@@ -559,7 +559,7 @@ fragment_shader ps_gbuffer : iface_fgbuffer : lib_pbr_frg {
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_rigid_gbuffer_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_rigid_gbuffer_vtxcolor : vif_PNBVT : lib_pbr_vtx {
   frg_clr     = vtxcolor;
   gl_Position = mvp * position;
 }
