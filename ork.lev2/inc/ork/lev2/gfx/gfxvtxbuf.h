@@ -30,7 +30,7 @@ public:
 
   int GetNumIndices() const;
   void SetNumIndices(int inum);
-  virtual int GetIndexSize() const = 0;
+  virtual size_t indexSize() const = 0;
   virtual bool IsStatic() const    = 0;
   
   int miNumIndices;
@@ -50,7 +50,7 @@ class IdxBuffer //
 public:
   IdxBuffer();
   ~IdxBuffer();
-  int GetIndexSize() const final;
+  size_t indexSize() const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

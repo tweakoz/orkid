@@ -1143,7 +1143,7 @@ void* GlGeometryBufferInterface::LockIB(IndexBufferBase& idxbuf, int ibase, int 
   if (not idxbuf._impl.isSet() ) {
     auto new_plat_handle = idxbuf._impl.makeShared<GlIndexBufferImpl>();
     new_plat_handle->mNumIndices = icount;
-    new_plat_handle->_buffer = malloc(idxbuf.GetIndexSize()*icount);
+    new_plat_handle->_buffer = malloc(idxbuf.indexSize()*icount);
     plat_handle = new_plat_handle.get();
   } else {
     plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>().get();
@@ -1158,7 +1158,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
 
   auto plat_handle = idxbuf._impl.getShared<GlIndexBufferImpl>();
   const void* src_data = plat_handle->_buffer;
-  int iblen            = plat_handle->mNumIndices * idxbuf.GetIndexSize();
+  int iblen            = plat_handle->mNumIndices * idxbuf.indexSize();
 
   // printf( "UNLOCKIBO\n");
   glGenBuffers(1, (GLuint*)&plat_handle->_IBO);
@@ -1166,7 +1166,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, iblen, src_data, GL_STATIC_DRAW);
 
 
-  switch (idxbuf.GetIndexSize()) {
+  switch (idxbuf.indexSize()) {
     case 2:{
       uint16_t umin = 65535;
       uint16_t umax = 0;
@@ -1181,6 +1181,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
       plat_handle->mMinIndex = int(umin);
       plat_handle->mMaxIndex = int(umax);
       plat_handle->_indexGlType = GL_UNSIGNED_SHORT;
+      printf("created U16 IBO<%d> min<%d> max<%d>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
       break;
     }
     case 4:{
@@ -1197,9 +1198,12 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
       plat_handle->mMinIndex = int(umin);
       plat_handle->mMaxIndex = int(umax);
       plat_handle->_indexGlType = GL_UNSIGNED_INT;
-      break;
+      printf("created U32 IBO<%d> min<%08x> max<%08x>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
       break;
     }
+    default:
+      OrkAssert(false);
+      break;
   }
 
 

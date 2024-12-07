@@ -75,11 +75,24 @@ void BuildXgmClusterPrimGroups(
     int inumidx = TriangleIndices.size();
 
     /////////////////////////////////////////////////////
-    ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-    U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
-    OrkAssert(pidx != 0);
-    for (int ii = 0; ii < inumidx; ii++) {
-      pidx[ii] = U16(TriangleIndices[ii]);
+    ork::lev2::IndexBufferBase* pidxbuf = nullptr;
+    if(inumidx<65536){
+      auto typed = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
+      OrkAssert(pidx != 0);
+      for (int ii = 0; ii < inumidx; ii++) {
+        pidx[ii] = U16(TriangleIndices[ii]);
+      }
+      pidxbuf = typed;
+    }
+    else{
+      auto typed = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
+      U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+      OrkAssert(pidx != 0);
+      for (int ii = 0; ii < inumidx; ii++) {
+        pidx[ii] = U32(TriangleIndices[ii]);
+      }
+      pidxbuf = typed;
     }
     context.GBI()->UnLockIB(*pidxbuf);
     /////////////////////////////////////////////////////
@@ -130,16 +143,35 @@ void BuildXgmClusterPrimGroups(
 
       /////////////////////////////////
 
-      ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
-      OrkAssert(pidx != 0);
-      {
-        for (int ii = 0; ii < inumidx; ii++) {
-          int index = StripIndices[ii];
-          OrkAssert(index < imaxvtx);
-          pidx[ii] = U16(index);
+      ork::lev2::IndexBufferBase* pidxbuf = nullptr;
+
+      if(imaxvtx<65536){
+        auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+        U16* pidx                                  = (U16*)context.GBI()->LockIB(*typed_idxbuf);
+        OrkAssert(pidx != 0);
+        {
+          for (int ii = 0; ii < inumidx; ii++) {
+            int index = StripIndices[ii];
+            OrkAssert(index < imaxvtx);
+            pidx[ii] = U16(index);
+          }
         }
+        pidxbuf = typed_idxbuf;
       }
+      else{
+        auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
+        U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+        OrkAssert(pidx != 0);
+        {
+          for (int ii = 0; ii < inumidx; ii++) {
+            int index = StripIndices[ii];
+            OrkAssert(index < imaxvtx);
+            pidx[ii] = U32(index);
+          }
+        }
+        pidxbuf = typed_idxbuf;
+      }
+
       context.GBI()->UnLockIB(*pidxbuf);
 
       /////////////////////////////////
@@ -159,11 +191,24 @@ void BuildXgmClusterPrimGroups(
     int inumidx = MyStripper.GetTriIndices().size();
 
     /////////////////////////////////////////////////////
-    ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
-    U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
-    OrkAssert(pidx != 0);
-    for (int ii = 0; ii < inumidx; ii++) {
-      pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
+    ork::lev2::IndexBufferBase* pidxbuf = nullptr;
+    if(inumidx<65536){
+      auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+      U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
+      OrkAssert(pidx != 0);
+      for (int ii = 0; ii < inumidx; ii++) {
+        pidx[ii] = U16(MyStripper.GetTriIndices()[ii]);
+      }
+      pidxbuf = typed_idxbuf;
+    }
+    else{
+      auto typed_idxbuf = new ork::lev2::StaticIndexBuffer<U32>(inumidx);
+      U32* pidx                                  = (U32*)context.GBI()->LockIB(*pidxbuf);
+      OrkAssert(pidx != 0);
+      for (int ii = 0; ii < inumidx; ii++) {
+        pidx[ii] = U32(MyStripper.GetTriIndices()[ii]);
+      }
+      pidxbuf = typed_idxbuf;
     }
     context.GBI()->UnLockIB(*pidxbuf);
     /////////////////////////////////////////////////////

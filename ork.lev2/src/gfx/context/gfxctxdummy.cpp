@@ -123,7 +123,7 @@ void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int 
   if (not IdxBuf._impl.isSet()) {
     auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
-    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
+    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.indexSize());
   }
   auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   char* pch = (char*)impl->mpIndices;
@@ -139,7 +139,7 @@ const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int
   if (not IdxBuf._impl.isSet()) {
     auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
-    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
+    impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.indexSize());
   }
   auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
   char* pch = (char*)impl->mpIndices;

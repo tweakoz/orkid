@@ -10,7 +10,7 @@
 import math, sys, os
 from pathlib import Path
 from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine import lev2
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from lev2utils.cameras import *
 from lev2utils.shaders import *
@@ -23,8 +23,8 @@ class MinimalSceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
@@ -40,7 +40,7 @@ class MinimalSceneGraphApp(object):
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="DeferredPBR")
+    createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     ###################################
     # create frustum primitive / sgnode
@@ -54,12 +54,22 @@ class MinimalSceneGraphApp(object):
 
     frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
 
-    pipeline = createPipeline( app = self,
-                               ctx = ctx,
-                               techname = "std_mono",
-                               rendermodel = "DeferredPBR" )
+    ###################################
 
-    self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
+    white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
+    normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
+    material = lev2.PBRMaterial()
+    material.assignImages(ctx,
+                          color=white,
+                          normal=normal,
+                          mtlruf = white,
+                          doConform=True)
+    material.gpuInit(ctx)
+    self.material = material
+
+    ###################################
+
+    self.primnode = frustum_prim.createNodeWithMaterial("node1",self.layer1,self.material)
 
     ###################################
     # create grid
@@ -105,7 +115,7 @@ class MinimalSceneGraphApp(object):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return ui.HandlerResult()
+    return lev2.ui.HandlerResult()
 
 ###############################################################################
 

@@ -21,7 +21,7 @@ IdxBuffer<T>::IdxBuffer()
 
 template <typename T> IdxBuffer<T>::~IdxBuffer() {
 }
-template <typename T> int IdxBuffer<T>::GetIndexSize() const { // final
+template <typename T> size_t IdxBuffer<T>::indexSize() const { // final
   return sizeof(T);
 }
 
