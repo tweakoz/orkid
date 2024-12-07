@@ -26,6 +26,7 @@ inline void _init_crcstring(typename ADAPTER::module_t& module_core, typename AD
                 return int(s->hashed());
               })
           .def(initor<ADAPTER>([](std::string str) -> crcstring_ptr_t { return std::make_shared<CrcString>(str.c_str()); }))
+          .def("__eq__", [](crcstring_ptr_t s, crcstring_ptr_t o) -> bool { return s->hashed() == o->hashed(); })
           .def(
               "__repr__",
               [](crcstring_ptr_t s) -> std::string {

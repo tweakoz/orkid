@@ -383,7 +383,31 @@ void pyinit_gfx_openvdb(py::module& module_lev2) {
                 OrkAssert(false);
                 break;
             }
+          })
+          .def("saveToVDB", [](vdb_grid_test_ptr_t grid, py::object path) {
+            auto as_str     = py::str(path);
+            auto as_std_str = as_str.cast<std::string>();
+            py::gil_scoped_release release;
+
+            openvdb::io::File file(as_std_str);
+            openvdb::GridPtrVec grids;
+            grids.push_back(grid);
+            file.write(grids);
+            file.close();
+          })
+          .def_static("loadFromVDB", [](std::string name, py::object path) -> vdb_grid_test_ptr_t {
+            auto as_str     = py::str(path);
+            auto as_std_str = as_str.cast<std::string>();
+            py::gil_scoped_release release;
+
+            openvdb::io::File file(as_std_str);
+            file.open();
+            openvdb::GridBase::Ptr base_grid = file.readGrid(name);
+            file.close();
+            auto test_grid = openvdb::gridPtrCast<vdb_grid_test>(base_grid);
+            return test_grid;
           });
+
   type_codec->registerStdCodec<vdb_grid_test_ptr_t>(ovdb_test_grid_type);
   /////////////////////////////////////////////////////////////////////////////////
   // openvdb::FloatGrid is already bound by nanobind in OpenVdb
