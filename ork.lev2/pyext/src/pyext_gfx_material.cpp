@@ -339,9 +339,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
   auto freestyle_type = //
       py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
           .def(py::init<>())
-          .def(py::init([](ctx_t context, file::Path asset) -> freestyle_mtl_ptr_t { //
+          .def(py::init([](ctx_t context, py::object asset_path) -> freestyle_mtl_ptr_t { //
+            auto as_py_str = py::cast<std::string>(asset_path);
+            auto as_path = file::Path(as_py_str);
             auto rval = std::make_shared<FreestyleMaterial>();
-            rval->gpuInit(context.get(), asset);
+            rval->gpuInit(context.get(), as_path);
             return rval;
           }))
           .def_property_readonly(
@@ -351,8 +353,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "gpuInit",
-              [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {
-                m->gpuInit(c.get(), path);
+              [](freestyle_mtl_ptr_t m, ctx_t& c, py::object asset_path) {
+                auto as_py_str = py::cast<std::string>(asset_path);
+                auto as_path = file::Path(as_py_str);
+                m->gpuInit(c.get(), as_path);
                 m->_rasterstate->setCullTest(ECullTest::OFF);
               })
           .def(
