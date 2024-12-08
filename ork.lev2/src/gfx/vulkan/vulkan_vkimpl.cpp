@@ -318,6 +318,7 @@ VkFormatConverter::VkFormatConverter() {
     _inv_fmtmap[vk_fmt] = ork_fmt;
   };
 
+  do_format(EBufferFormat::RGB8, VK_FORMAT_R8G8B8_UNORM);
   do_format(EBufferFormat::RGBA8, VK_FORMAT_R8G8B8A8_UNORM);
   do_format(EBufferFormat::S3TC_DXT1, VK_FORMAT_BC1_RGBA_UNORM_BLOCK);
   do_format(EBufferFormat::S3TC_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
@@ -352,7 +353,11 @@ VkFormatConverter::VkFormatConverter() {
 }
 VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
   auto it = _instance._fmtmap.find(fmt_in);
-  OrkAssert(it != _instance._fmtmap.end());
+  if( it == _instance._fmtmap.end() ){
+    auto fmtname = EBufferFormatToName(fmt_in);
+    printf("format<%s> conversion not present\n", fmtname.c_str());
+    OrkAssert(false);
+  }
   return it->second;
 }
 EBufferFormat VkFormatConverter::convertBufferFormat(VkFormat fmt_in) {
