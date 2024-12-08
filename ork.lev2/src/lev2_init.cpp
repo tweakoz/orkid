@@ -145,6 +145,7 @@ struct ClassToucher {
     switch(GRAPHICS_API){
       case "DUMMY"_crcu:{
         gloadercontext = dummy::createLoaderContext();
+        //GfxEnv::setContextClass(clazz);
         OrkAssert(false);
         break;
       }

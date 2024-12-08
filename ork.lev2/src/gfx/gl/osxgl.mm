@@ -162,20 +162,6 @@ void ContextGL::GLinit()
 
 std::string GetGlErrorString( void );
 
-context_ptr_t OpenGlContextInit() {
-	///////////////////////////////////////////////////////////
-	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	///////////////////////////////////////////////////////////
-
-  auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
-	GfxEnv::setContextClass(clazz);
-  ContextGL::GLinit();
-  auto target = std::make_shared<ContextGL>();
-  target->initializeLoaderContext();
-  GfxEnv::initializeWithContext(target);
-  return target;
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 ContextGL::ContextGL()

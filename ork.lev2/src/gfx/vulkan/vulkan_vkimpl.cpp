@@ -303,7 +303,7 @@ context_ptr_t createLoaderContext() {
   _GVI       = std::make_shared<VulkanInstance>();
   auto clazz = dynamic_cast<object::ObjectClass*>(VkContext::GetClassStatic());
   GfxEnv::setContextClass(clazz);
-  auto target = VkContext::makeShared();
+  auto target = std::make_shared<VkContext>();
   target->initializeLoaderContext();
   GfxEnv::initializeWithContext(target);
   return target;

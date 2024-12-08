@@ -74,13 +74,6 @@ namespace dummy {
 
 /////////////////////////////////////////////////////////////////////////
 
-void DummyContextInit() {
-  auto clazz = dynamic_cast<const object::ObjectClass*>(ContextDummy::GetClassStatic());
-  GfxEnv::setContextClass(clazz);
-}
-
-/////////////////////////////////////////////////////////////////////////
-
 DummyDrawingInterface::DummyDrawingInterface(ContextDummy& ctx)
     : DrawingInterface(ctx) {
 }
@@ -127,7 +120,7 @@ ContextDummy::ContextDummy()
     , mTxI(*this) 
     , mFbI(*this)
     , mDWI(*this) {
-  DummyContextInit();
+
   static bool binit = true;
 
   if (true == binit) {

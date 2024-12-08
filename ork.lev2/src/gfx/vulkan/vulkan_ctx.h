@@ -1174,13 +1174,12 @@ struct VkComputeInterface : public ComputeInterface {
 
 struct VkContext : public Context {
 
-  DeclareAbstractX(VkContext, Context);
+  DeclareConcreteX(VkContext, Context);
 
-private:
   VkContext();
 
 public:
-  static vkcontext_ptr_t makeShared();
+  //static vkcontext_ptr_t makeShared();
   static bool HaveExtension(const std::string& extname);
   static const CClass* gpClass;
   // static orkvector<std::string> gVKExtensions;

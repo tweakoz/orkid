@@ -85,7 +85,7 @@ set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
 set(ENV{VK_LAYER_PATH}=$ENV{OBT_VULKAN_ROOT}/etc/vulkan/explicit_layer.d)
 
 IF(${APPLE})
-    list(APPEND libs MoltenVK )
+    list(APPEND libs vulkan.1 )
     list(APPEND libs "-framework OpenGL" "-framework Metal" "-framework IOSurface"  )
     list(APPEND libs "-framework CoreMIDI" "-framework CoreAudio" "-framework QuartzCore" )
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )

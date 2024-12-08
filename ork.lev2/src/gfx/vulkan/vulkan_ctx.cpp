@@ -19,7 +19,8 @@ rtgroup_ptr_t VkSwapChain::currentRTG(){
 
 void VkContext::describeX(class_t* clazz) {
 
-  clazz->annotateTyped<context_factory_t>("context_factory", []() { return VkContext::makeShared(); });
+  clazz->annotateTyped<context_factory_t>("context_factory", []() { //
+    return std::make_shared<VkContext>(); });
 }
 
 ///////////////////////////////////////////////////////
@@ -30,6 +31,7 @@ bool VkContext::HaveExtension(const std::string& extname) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 vkcontext_ptr_t VkContext::makeShared() {
   struct VkContextX : public VkContext {
     VkContextX()
@@ -38,7 +40,7 @@ vkcontext_ptr_t VkContext::makeShared() {
   };
   auto ctx = std::make_shared<VkContextX>();
   return ctx;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {

@@ -9,6 +9,8 @@ from obt.command import Command, run
 from obt import buildtrace
 import obt._globals as _glob
 
+#ln -s libMoltenVk.dylib libvulkan.1.dylib
+
 parser = argparse.ArgumentParser(description='orkid build')
 parser.add_argument('--clean', action="store_true", help='force clean build' )
 parser.add_argument('--verbose', action="store_true", help='verbose build' )
