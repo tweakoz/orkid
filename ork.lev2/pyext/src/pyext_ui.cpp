@@ -550,9 +550,9 @@ void pyinit_ui(py::module& module_lev2) {
           .def_property(
               "clearColor",
               [](uisurface_ptr_t surface) -> fvec3 { //
-                return surface->GetClearColorRef();
+                return surface->_clearColor;
               },
-              [](uisurface_ptr_t surface, fvec3 c) { return surface->GetClearColorRef() = c; });
+              [](uisurface_ptr_t surface, fvec3 c) { surface->_clearColor = c; });
   type_codec->registerStdCodec<uisurface_ptr_t>(surface_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto viewport_type = //

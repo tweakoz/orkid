@@ -5,8 +5,8 @@ include (GenerateExportHeader)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src/ftxui )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/include )
 
-message( ${SRCD} )
-message( ${INCD} )
+#message( ${SRCD} )
+#message( ${INCD} )
 
 ###################################
 
@@ -14,13 +14,13 @@ file(GLOB_RECURSE src_component ${SRCD}/component/*.cpp)
 file(GLOB_RECURSE src_dom ${SRCD}/dom/*.cpp)
 file(GLOB_RECURSE src_screen ${SRCD}/screen/*.cpp)
 
-message( ${src_component})
-message( ${src_dom})
-message( ${src_screen})
+#message( ${src_component})
+#message( ${src_dom})
+#message( ${src_screen})
 
 set( ftxuisrc ${src_component} ${src_dom} ${src_screen} )
 
-message( ${ftxuisrc})
+#message( ${ftxuisrc})
 ###################################
 
 add_library (ork_ftxui SHARED ${ftxuisrc} )

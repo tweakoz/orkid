@@ -31,7 +31,7 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   mTargetGL.makeCurrentContext();
   mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart",fvec4::White());
 
-  printf("GlTextureInterface : Loading compressed texture...\n");
+  //printf("GlTextureInterface : Loading compressed texture...\n");
   auto ptex = req->ptex;
   auto GLTO = ptex->_impl.makeShared<GLTextureObject>(this);
   GLTO->_txi = this;
@@ -70,7 +70,7 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
     int level_depth    = level._depth;
     auto level_data     = level._data->data(0);
     size_t level_length = level._data->length();
-    printf("  level<%d> w<%d> h<%d> d<%d> len<%zu>\n", ilevel, level_width, level_height, level_depth, level_length);
+    //printf("  level<%d> w<%d> h<%d> d<%d> len<%zu>\n", ilevel, level_width, level_height, level_depth, level_length);
 
     if( is_volume_texture){
       switch(format){

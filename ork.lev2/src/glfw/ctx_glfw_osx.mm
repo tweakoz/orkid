@@ -27,7 +27,7 @@ void recomputeHIDPI(GLFWwindow *window){
   float xscale, yscale;
   glfwGetWindowContentScale(window, &xscale, &yscale);
   _macosUseHIDPI = (xscale > 1.0f || yscale > 1.0f);
-
+  printf("w<%d> h<%d> xscale<%f> yscale<%f>\n", width, height, xscale, yscale);
   // determine the DPI
   _DPI = 95.0f;
 }
@@ -36,7 +36,7 @@ float _currentDPI() {
 }
 bool _HIDPI() {
   // determine if we are on a retina display
-  return true;
+  return false;
 }
 void setAlwaysOnTop(GLFWwindow *window) {
     id glfwWindow = glfwGetCocoaWindow(window);

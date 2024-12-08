@@ -61,8 +61,8 @@ bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-  printf("fname<%s>\n", fname.c_str());
-  printf("final_fname<%s>\n", final_fname.c_str());
+  //printf("fname<%s>\n", fname.c_str());
+  //printf("final_fname<%s>\n", final_fname.c_str());
   if (auto dblock = datablockFromFileAtPath(final_fname))
     return LoadTexture(ptex, dblock);
   else

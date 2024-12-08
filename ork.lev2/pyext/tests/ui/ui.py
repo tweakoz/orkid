@@ -27,13 +27,14 @@ class UiTestApp(object):
                                    uiclass = ui.LambdaBox,
                                    args = ["box",vec4(1,0,1,1)] )
 
-    print(griditems)
+    #print(griditems)
 
     griditems[0].widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
     griditems[1].widget.onPressed(lambda: print("GRIDITEM1 PUSHED"))
     griditems[2].widget.onPressed(lambda: print("GRIDITEM2 PUSHED"))
     griditems[3].widget.onPressed(lambda: print("GRIDITEM3 PUSHED"))
-    
+
+    """    
     print(self.ezapp.mainwin)
     print(self.ezapp.mainwin.appwin)
     print(self.ezapp.topWidget)
@@ -48,6 +49,7 @@ class UiTestApp(object):
     print(lg_group.layout.centerH)
     print(lg_group.layout.centerV)
     print(self.ezapp.uicontext)
+    """
 
 ###############################################################################
 

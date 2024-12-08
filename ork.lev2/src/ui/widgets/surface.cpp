@@ -108,6 +108,9 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   if (mNeedsSurfaceRepaint || IsDirty()) {
+    _rtgroup->_autoclear = true;
+    _rtgroup->_clearColor = _clearColor;
+    _rtgroup->_clearDepth = mfClearDepth;
     fbi->PushRtGroup(_rtgroup.get());
     RePaintSurface(drwev);
     fbi->PopRtGroup();
@@ -284,15 +287,6 @@ SRect VPRect( 0, 0, pIT->width(), pIT->height() );
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::RenderCached() {
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void Surface::Clear() {
-  // const fcolor3 &rCol = (surf!=nullptr) ? surf->GetClearColorRef() : fcolor3::Black();
-  auto fbi = _target->FBI();
-
-  //fbi->Clear(GetClearColorRef(), 1.0f);
 }
 
 /////////////////////////////////////////////////////////////////////////

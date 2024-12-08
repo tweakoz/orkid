@@ -35,8 +35,6 @@ static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
-float content_scale_x = 1.0f;
-float content_scale_y = 1.0f;
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
 struct ApiImpl {};
@@ -108,17 +106,23 @@ inline int to_qtmillis(RefreshPolicyItem policy) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_refresh(GLFWwindow* window) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_refresh();
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
 #if defined(__APPLE__)
   if (_macosUseHIDPI) {
-    w *= content_scale_x;
-    h *= content_scale_y;
+    w *= ctxbase->_contentScaleX;
+    h *= ctxbase->_contentScaleY;
   }
 #endif
 
@@ -127,20 +131,23 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
 
   logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h);
 
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_winresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
 #if defined(__APPLE__)
   if (_macosUseHIDPI) {
-    w *= content_scale_x;
-    h *= content_scale_y;
+    w *= ctxbase->_contentScaleX;
+    h *= ctxbase->_contentScaleY;
   }
 #endif
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_fbresized(w, h);
@@ -148,6 +155,11 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
   logchan_glfw->log("fb contentscale<%p %f %f>", window, sw, sh);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  ctxbase->_contentScaleX = sw;
+  ctxbase->_contentScaleY = sh;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
@@ -161,7 +173,10 @@ static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_keyboard(key, scancode, action, modifiers);
@@ -186,14 +201,20 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_mousebuttons(GLFWwindow* window, int button, int action, int modifiers) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_mousebuttons(button, action, modifiers);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yoffset) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_scroll(xoffset, yoffset);
@@ -209,7 +230,10 @@ void CtxGLFW::_on_callback_scroll(double xoffset, double yoffset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yoffset) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_cursor(xoffset, yoffset);
@@ -270,7 +294,10 @@ void fillEventCursor(
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
-  auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
+  if (nullptr == ctxbase)
+    return;
+  auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
   sink->_on_callback_enterleave(entered);
@@ -366,7 +393,7 @@ void CtxGLFW::Show() {
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
-    }
+    } // fullscreen
 
 #if defined(__APPLE__)
     glfwWindowHint(
@@ -388,6 +415,8 @@ void CtxGLFW::Show() {
 
     auto global = globalOffscreenContext();
 
+    logchan_glfw->log("glfwCreateWindow _width<%d> _height<%d>", _width, _height);
+
     _glfwWindow = glfwCreateWindow(
         _width,             //
         _height,            //
@@ -397,7 +426,7 @@ void CtxGLFW::Show() {
     );
 
     OrkAssert(_glfwWindow != nullptr);
-    glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
+    glfwSetWindowUserPointer(_glfwWindow, (void*)this);
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -417,6 +446,20 @@ void CtxGLFW::Show() {
     glfwSetCursorPosCallback(_glfwWindow, _glfw_callback_cursor);
     glfwSetCursorEnterCallback(_glfwWindow, _glfw_callback_enterleave);
   }
+  if (selected_monitor == nullptr) {
+    selected_monitor = monitorForWindow(_glfwWindow);
+    recomputeHIDPI(_glfwWindow);
+    // OrkAssert(selected_monitor != nullptr);
+  }
+  _glfwMonitor = selected_monitor;
+
+  glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+
+  //_appinitdata->_width  = (_appinitdata->_width* content_scale_x);
+  //_appinitdata->_height  = (_appinitdata->_height* content_scale_x);
+  //_width = _appinitdata->_width;
+  //_height = _appinitdata->_height;
+
 
   if (_appinitdata->_fullscreen) {
 
@@ -451,15 +494,7 @@ void CtxGLFW::Show() {
     glfwShowWindow(_glfwWindow);
   }
 
-  if (selected_monitor == nullptr) {
-    selected_monitor = monitorForWindow(_glfwWindow);
-    recomputeHIDPI(_glfwWindow);
-    // OrkAssert(selected_monitor != nullptr);
-  }
 
-  _glfwMonitor = selected_monitor;
-
-  glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -947,6 +982,8 @@ struct PopupImpl {
     _h = h;
 
     _window = win;
+    auto ctx_glfw = new CtxGLFW(_window);
+    _window->mpCTXBASE = ctx_glfw;
 
     auto global = CtxGLFW::globalOffscreenContext();
 
@@ -965,8 +1002,8 @@ struct PopupImpl {
     glfwSetWindowPos(_glfwPopupWindow, x, y);
     setAlwaysOnTop(_glfwPopupWindow);
     //////////////////////////////////////////////////
-    _eventSINK                            = std::make_shared<EventSinkGLFW>();
-    _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
+    auto eventSINK = ctx_glfw->_eventSINK;
+    eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
       auto uiev = std::make_shared<ui::Event>();
 
       bool DOWN = (action == GLFW_PRESS);
@@ -1001,7 +1038,7 @@ struct PopupImpl {
       _fireEvent(uiev);
     };
     //////////////////////////////////////////////////
-    _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
+    eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
       if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
         if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
@@ -1019,7 +1056,7 @@ struct PopupImpl {
       }
     };
     //////////////////////////////////////////////////
-    _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { //
+    eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { //
       auto uiev = std::make_shared<ui::Event>();
       fillEventCursor(uiev, nullptr, nullptr, xoffset, yoffset, _w, _h);
 
@@ -1035,7 +1072,7 @@ struct PopupImpl {
       }
     };
     //////////////////////////////////////////////////
-    _eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) {
+    eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) {
       auto uiev        = std::make_shared<ui::Event>();
       uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
 
@@ -1045,7 +1082,7 @@ struct PopupImpl {
       _fireEvent(uiev);
     };
     ///////////////////////////////////////////////////////////////////////////////
-    _eventSINK->_on_callback_enterleave = [=](int entered) {
+    eventSINK->_on_callback_enterleave = [=](int entered) {
       auto uiev        = std::make_shared<ui::Event>();
       bool was_entered = bool(entered);
       uiev->_eventcode = was_entered                       //
@@ -1060,7 +1097,7 @@ struct PopupImpl {
       _fireEvent(uiev);
     };
     //////////////////////////////////////////////////
-    glfwSetWindowUserPointer(_glfwPopupWindow, (void*)_eventSINK.get());
+    glfwSetWindowUserPointer(_glfwPopupWindow, (void*)this);
     glfwSetMouseButtonCallback(_glfwPopupWindow, _glfw_callback_mousebuttons);
     glfwSetCursorPosCallback(_glfwPopupWindow, _glfw_callback_cursor);
     glfwSetKeyCallback(_glfwPopupWindow, _glfw_callback_keyboard);
@@ -1149,7 +1186,6 @@ struct PopupImpl {
   //////////////////////////////////////////////////
   GLFWwindow* _glfwPopupWindow = nullptr;
   PopupWindow* _window;
-  eventsink_glfw_ptr_t _eventSINK;
   lev2::Context* _parent_context = nullptr;
   ui::context_ptr_t _uicontext;
   rtgroup_ptr_t _rtgroup;

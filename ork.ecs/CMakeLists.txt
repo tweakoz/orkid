@@ -37,8 +37,8 @@ ELSEIF(${UNIX})
 ENDIF()
 list(APPEND libs luajit-5.1 )
 
-message( WTF )
-message( ${Python3_LIBRARIES} )
+#message( WTF )
+#message( ${Python3_LIBRARIES} )
 
 enable_python_on_target(ork_ecs)
 

@@ -21,14 +21,6 @@ public:
   Surface(const std::string& name, int x, int y, int w, int h, fcolor3 color, F32 depth);
 
   void SurfaceRender(lev2::RenderContextFrameData& fd, const std::function<void()>& l);
-  void Clear();
-
-  fcolor3& GetClearColorRef(void) {
-    return _clearColor;
-  }
-  F32 GetClearDepth(void) {
-    return mfClearDepth;
-  }
 
   void BeginSurface(lev2::Context* ptarg);
   void EndSurface(lev2::Context* ptarg);

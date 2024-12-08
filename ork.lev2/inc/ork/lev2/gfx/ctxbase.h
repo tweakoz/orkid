@@ -94,11 +94,12 @@ public:
   ui::event_ptr_t _uievent;
   bool _needsInitialize = true;
   svar16_t _pimpl_progress;
+  svarshp_t _implEV;
   varmap::varmap_constptr_t _vars;
-
   RefreshPolicyItem _curpolicy;
-
   object::autoslot_ptr_t _slotRepaint;
+  float _contentScaleX = 1.0f;
+  float _contentScaleY = 1.0f;
 
   protected:
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);
