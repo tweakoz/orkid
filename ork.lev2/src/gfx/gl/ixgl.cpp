@@ -72,18 +72,6 @@ struct GlIxPlatformObject : public GlPlatformObject {
   GlIxPlatformObject() {
     _bindop = [=]() {};
   }
-/////////////////////////////////////
-  void makeCurrent() {
-    _current = this;
-    if( _ctxbase ){
-      glfwMakeContextCurrent(_ctxbase->_glfwWindow);
-    }
-  }
-  void swapBuffers() {
-    if( _ctxbase ){
-      glfwSwapBuffers(_ctxbase->_glfwWindow);
-    }
-  }
   /////////////////////////////////////
 };
 
