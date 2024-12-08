@@ -428,20 +428,10 @@ struct GlTextureInterface : public TextureInterface {
 
   void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
-  //bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  //bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  //void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
-  //void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
-  //bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-  //bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  //bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-  //bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
-  //bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  //void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
-
   void TexManInit() final;
   bool destroyTexture(texture_ptr_t ptex) final;
   void generateMipMaps(Texture* ptex) final;
+  void _createFromCompressedLoadReq(texloadreq_ptr_t tlr) final;
 
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;

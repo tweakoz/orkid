@@ -221,7 +221,6 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     cmc->_format = EBufferFormat::BGRA8;
     cmc->_numcomponents = 4;
     proc_mips(4, 0);
-    //_createFromCompressedLoadReq(req);
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
       // assert(false);
