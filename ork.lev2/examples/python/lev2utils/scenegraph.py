@@ -62,7 +62,8 @@ def createSceneGraph( app : object = None,
     app.std_layers = [app.layer_std,app.layer_dpp]
     app.rendernode = app.scene.compositorrendernode
 
-    app.scene.pbr_common.useFloatColorBuffer = use_float_buffer
+    if hasattr(app.scene,"pbr_common") and app.scene.pbr_common != None:
+      app.scene.pbr_common.useFloatColorBuffer = use_float_buffer
 
     return app.scene
   

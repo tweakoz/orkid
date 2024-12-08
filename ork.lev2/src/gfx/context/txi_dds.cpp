@@ -20,11 +20,6 @@
 
 namespace ork::lev2 {
 
-constexpr uint16_t kRGB_DXT1  = 0x83F0;
-constexpr uint16_t kRGBA_DXT1 = 0x83F1;
-constexpr uint16_t kRGBA_DXT3 = 0x83F2;
-constexpr uint16_t kRGBA_DXT5 = 0x83F3;
-//constexpr GLuint PBOOBJBASE   = 0x12340000;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -174,7 +169,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   cmc->_depth = idepth;
     cmc->_levels.resize(NumMips);
 
-  OrkAssert(not bVOLUMETEX);
+  //OrkAssert(not bVOLUMETEX);
 
   auto proc_mips = [&](size_t block_bytes, size_t dim_shift){
     for (int imip = 0; imip < NumMips; imip++) {

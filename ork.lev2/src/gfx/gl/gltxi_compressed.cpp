@@ -71,18 +71,33 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
     auto level_data     = level._data->data(0);
     size_t level_length = level._data->length();
     printf("  level<%d> w<%d> h<%d> d<%d> len<%zu>\n", ilevel, level_width, level_height, level_depth, level_length);
-    
+
     if( is_volume_texture){
       switch(format){
         case EBufferFormat::S3TC_DXT1:
-          glCompressedTexImage3D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, level_width, level_height, level_depth, 0, level_length, level_data);
+          glCompressedTexImage3D(TARGET, ilevel, kRGBA_DXT1, level_width, level_height, level_depth, 0, level_length, level_data);
           break;
         case EBufferFormat::S3TC_DXT3:
-          glCompressedTexImage3D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, level_width, level_height, level_depth, 0, level_length, level_data);
+          glCompressedTexImage3D(TARGET, ilevel, kRGBA_DXT3, level_width, level_height, level_depth, 0, level_length, level_data);
           break;
         case EBufferFormat::S3TC_DXT5:
-          glCompressedTexImage3D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, level_width, level_height, level_depth, 0, level_length, level_data);
+          glCompressedTexImage3D(TARGET, ilevel, kRGBA_DXT5, level_width, level_height, level_depth, 0, level_length, level_data);
           break;
+        case EBufferFormat::R8:
+          glTexImage3D(TARGET, ilevel, GL_RED, level_width, level_height, level_depth, 0, GL_RED, GL_UNSIGNED_BYTE, level_data);
+          break;
+        case EBufferFormat::RGBA8:
+          glTexImage3D(TARGET, ilevel, GL_RGBA, level_width, level_height, level_depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, level_data);
+          break;
+        case EBufferFormat::BGRA8:
+          glTexImage3D(TARGET, ilevel, GL_RGBA, level_width, level_height, level_depth, 0, GL_BGRA, GL_UNSIGNED_BYTE, level_data);
+          break;
+        case EBufferFormat::RGB8:
+          glTexImage3D(TARGET, ilevel, GL_RGB, level_width, level_height, level_depth, 0, GL_RGB, GL_UNSIGNED_BYTE, level_data);
+          break;
+        case EBufferFormat::BGR8:
+          glTexImage3D(TARGET, ilevel, GL_RGB, level_width, level_height, level_depth, 0, GL_BGR, GL_UNSIGNED_BYTE, level_data);
+          break;            
         default:
           OrkAssert(false);
           break;
@@ -91,13 +106,13 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
     else{
       switch(format){
         case EBufferFormat::S3TC_DXT1:
-          glCompressedTexImage2D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, level_width, level_height, 0, level_length, level_data);
+          glCompressedTexImage2D(TARGET, ilevel, kRGBA_DXT1, level_width, level_height, 0, level_length, level_data);
           break;
         case EBufferFormat::S3TC_DXT3:
-          glCompressedTexImage2D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, level_width, level_height, 0, level_length, level_data);
+          glCompressedTexImage2D(TARGET, ilevel, kRGBA_DXT3, level_width, level_height, 0, level_length, level_data);
           break;
         case EBufferFormat::S3TC_DXT5:
-          glCompressedTexImage2D(TARGET, ilevel, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, level_width, level_height, 0, level_length, level_data);
+          glCompressedTexImage2D(TARGET, ilevel, kRGBA_DXT5, level_width, level_height, 0, level_length, level_data);
           break;
         case EBufferFormat::RGBA_BPTC_UNORM:
           #if defined(__APPLE__)
