@@ -135,29 +135,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   }
   pTEXOBJ->mTarget = TARGET;
 
-  if (0) {
-    auto dbgname = ptex->_debugName;
-    printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
-    printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);
-    printf("  tex<%s> height<%d>\n", dbgname.c_str(), iheight);
-    printf("  tex<%s> depth<%d>\n", dbgname.c_str(), idepth);
-    printf("  tex<%s> nummips<%d>\n", dbgname.c_str(), NumMips);
-    printf("  tex<%s> flgs<%x>\n", dbgname.c_str(), int(ddsh->dwFlags));
-    printf("  tex<%s> 4cc<%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwFourCC));
-    printf("  tex<%s> bitcnt<%d>\n", dbgname.c_str(), int(ddsh->ddspf.dwRGBBitCount));
-    printf("  tex<%s> rmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwRBitMask));
-    printf("  tex<%s> gmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwGBitMask));
-    printf("  tex<%s> bmask<0x%x>\n", dbgname.c_str(), int(ddsh->ddspf.dwBBitMask));
-  }
-
   //////////////////
 
   GL_ERRORCHECK();
-
-  // GLuint sampler_obj = 0;
-  // glGenSamplers(1,&sampler_obj);
-  // assert(sampler_obj!=0);
-  // printf( "sampler_obj<%d>\n", int(sampler_obj));
 
   glGenTextures(1, &pTEXOBJ->_textureObject);
   glBindTexture(TARGET, pTEXOBJ->_textureObject);
@@ -173,8 +153,6 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
 
   auto infname = req._texname;
-
-  // printf("  tex<%p:%s> ORKTEXOBJECT<%p> GLTEXOBJECT<%d>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ, int(pTEXOBJ->_textureObject));
 
   ////////////////////////////////////////////////////////////////////
   //

@@ -52,6 +52,7 @@ struct TexLoadReq {
   std::string _texname;
   DataBlockInputStream _inpstream;
   compressedmipchain_ptr_t _cmipchain;
+  asset::loadrequest_ptr_t _assetloadreq;
 };
 
 using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;

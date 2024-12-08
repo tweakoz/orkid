@@ -36,7 +36,7 @@ float _currentDPI() {
 }
 bool _HIDPI() {
   // determine if we are on a retina display
-  return false;
+  return true;
 }
 void setAlwaysOnTop(GLFWwindow *window) {
     id glfwWindow = glfwGetCocoaWindow(window);
