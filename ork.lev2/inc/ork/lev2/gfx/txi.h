@@ -83,7 +83,7 @@ public:
   virtual bool destroyTexture(texture_ptr_t ptex) = 0;
   virtual void generateMipMaps(Texture* ptex)     = 0;
 
-  virtual void _createFromCompressedLoadReq(texloadreq_ptr_t req) {}
+  virtual void _createFromLoadReq(texloadreq_ptr_t req) {}
 
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   }

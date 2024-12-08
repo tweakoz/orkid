@@ -431,7 +431,7 @@ struct GlTextureInterface : public TextureInterface {
   void TexManInit() final;
   bool destroyTexture(texture_ptr_t ptex) final;
   void generateMipMaps(Texture* ptex) final;
-  void _createFromCompressedLoadReq(texloadreq_ptr_t tlr) final;
+  void _createFromLoadReq(texloadreq_ptr_t tlr) final;
 
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;

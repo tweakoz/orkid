@@ -20,7 +20,7 @@
 
 namespace ork::lev2 {
 
-void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
+void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   auto assreq = req->_assetloadreq;
 
@@ -43,6 +43,11 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   int iheight      = chain->_height;
   int idepth       = chain->_depth;
 
+  ptex->_width = iwidth;
+  ptex->_height = iheight;
+  ptex->_depth = idepth;
+  ptex->_texFormat = format;
+
   bool is_volume_texture = (idepth > 1);
 
   GLuint TARGET = is_volume_texture ? GL_TEXTURE_3D : GL_TEXTURE_2D;
@@ -53,6 +58,7 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   glBindTexture(TARGET, GLTO->_textureObject);
   GL_ERRORCHECK();
 
+  
   _texture_set[GLTO->_textureObject] = ptex.get();
 
   if (ptex->_debugName.length()) {
@@ -62,6 +68,8 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   ptex->_vars->makeValueForKey<GLuint>("gltexobj") = GLTO->_textureObject;
 
   auto infname = req->_texname;
+  auto fmt = EBufferFormatToName(format);
+  //printf("COMPTEX w<%d> h<%d> d<%d> fmt<%s>\n", iwidth, iheight, idepth, fmt.c_str());
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     auto& level         = chain->_levels[ilevel];
@@ -156,10 +164,14 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   }
   this->ApplySamplingMode(ptex.get());
 
-  ptex->_dirty = false;
-
   glBindTexture(TARGET, 0);
   GL_ERRORCHECK();
+
+  ////////////////////////////////////////////////
+
+  GLTO->_maxmip = num_mips - 1;
+  ptex->_num_mips = num_mips;
+  ptex->_dirty = false;
 
   ////////////////////////////////////////////////
   // done loading texture,
@@ -186,6 +198,7 @@ void GlTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
     data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
     assreq->_on_event("loadComplete"_crcu,data);
   }
+  ptex->_residenceState.fetch_or(1);
 }
 
 } //namespace ork::lev2 {

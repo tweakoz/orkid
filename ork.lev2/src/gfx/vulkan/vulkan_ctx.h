@@ -1040,7 +1040,7 @@ struct VkTextureInterface final : public TextureInterface {
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
-  void _createFromCompressedLoadReq(texloadreq_ptr_t tlr) final;
+  void _createFromLoadReq(texloadreq_ptr_t tlr) final;
   void _initTextureFromRtBuffer(RtBuffer* rtb);
 
   // std::map<size_t, pbosetptr_t> _pbosets;

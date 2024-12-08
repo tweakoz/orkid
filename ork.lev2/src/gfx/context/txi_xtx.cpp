@@ -75,7 +75,7 @@ void TextureInterface::_loadXTXTextureMainThreadPart(texloadreq_ptr_t req) {
   OrkAssert(inummips > 0);
   //GL_ERRORCHECK();
   //printf("inummips<%d>\n", inummips);
-  _createFromCompressedLoadReq(req); 
+  _createFromLoadReq(req); 
   req->ptex->_num_mips = inummips;
   req->ptex->TexSamplingMode().PresetTrilinearWrap();
   //this->ApplySamplingMode(req->ptex.get());

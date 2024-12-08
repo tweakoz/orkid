@@ -195,14 +195,13 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
       }
     }
     req->_cmipchain = cmc;
-    _createFromCompressedLoadReq(req);
+    _createFromLoadReq(req);
   };
 
   if (dds::IsLUM(ddsh->ddspf)) {
     ptex->_texFormat = EBufferFormat::R8;
   } else if (dds::IsBGR5A1(ddsh->ddspf)) {
     /////////////////////////////////////////////////////////////
-    ptex->_texFormat = EBufferFormat::BGR5A1;
     const dds::DdsLoadInfo& li = dds::loadInfoBGR5A1;
     ptex->_texFormat = EBufferFormat::BGRA8;
     cmc->_format = EBufferFormat::BGR5A1;
@@ -229,6 +228,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
     }
+    proc_mips(3, 0);
     /////////////////////////////////////////////////////////////
   }
   //////////////////////////////////////////////////////////
@@ -240,6 +240,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     ptex->_texFormat = EBufferFormat::S3TC_DXT5;
     cmc->_format = EBufferFormat::S3TC_DXT5;
     cmc->_numcomponents = 4;
+    proc_mips(li.blockBytes, 2);
     /////////////////////////////////////////////////////////////
   }
   //////////////////////////////////////////////////////////
