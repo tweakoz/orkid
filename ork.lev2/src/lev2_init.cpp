@@ -96,7 +96,8 @@ namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
 
-uint64_t GRAPHICS_API = "VULKAN"_crcu;
+uint64_t GRAPHICS_API = "OPENGL"_crcu;
+//uint64_t GRAPHICS_API = "VULKAN"_crcu;
 
 namespace vulkan{
   lev2::context_ptr_t createLoaderContext();
@@ -112,7 +113,6 @@ namespace opengl{
 }
 
 void registerEnums();
-void DummyContextInit();
 
 ork::lev2::context_ptr_t gloadercontext;
 
@@ -123,6 +123,7 @@ struct ClassToucher {
     Context::GetClassStatic();
     vulkan::touchClasses();
     dummy::touchClasses();
+    opengl::touchClasses();
 
     ////////////////////////////////////////
 
@@ -144,6 +145,7 @@ struct ClassToucher {
     switch(GRAPHICS_API){
       case "DUMMY"_crcu:{
         gloadercontext = dummy::createLoaderContext();
+        OrkAssert(false);
         break;
       }
       case "OPENGL"_crcu:{
@@ -156,11 +158,6 @@ struct ClassToucher {
         break;
       }
     }
-
-    ////////////////////////////////////////
-
-    GfxEnv::GetRef();
-    GfxPrimitives::GetRef();
 
     //////////////////////////////////////////
     // touch of class
@@ -430,12 +427,6 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::Fdn8ReverbData);
     RegisterClassX(audio::singularity::Fdn4ReverbXData);
     RegisterClassX(audio::singularity::Fdn4ReverbData);
-
-    //////////////////////////////////////////
-    // register lev2 graphics target classes
-    //////////////////////////////////////////
-
-    DummyContextInit();
 
     //////////////////////////////////////////
   }

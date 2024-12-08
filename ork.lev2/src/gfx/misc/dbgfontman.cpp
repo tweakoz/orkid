@@ -609,7 +609,7 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
 
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, _texture.get());
   _texture->TexSamplingMode().PresetPointAndClamp();
-  context->TXI()->ApplySamplingMode(_texture.get());
+  //context->TXI()->ApplySamplingMode(_texture.get());
   mFontDesc = fdesc;
 
   //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);

@@ -86,6 +86,7 @@ DummyDrawingInterface::DummyDrawingInterface(ContextDummy& ctx)
 }
 
 bool DummyFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
+  OrkAssert(false);
   AssetPath assetname = pth;
   assetname.setExtension("fxml");
   FxShader* shader = new FxShader;

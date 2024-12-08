@@ -42,11 +42,13 @@ void GlPlatformObject::swapBuffers() {
 
 }
 
-void touchClasses() {
-  ContextGL::GetClassStatic();
-}
 
 namespace opengl{
+
+  void touchClasses() {
+    ContextGL::GetClassStatic();
+  }
+
   context_ptr_t createLoaderContext() {
 
     ///////////////////////////////////////////////////////////

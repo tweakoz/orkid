@@ -27,6 +27,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_GLFW)
 namespace ork::lev2 {
+int _g_post_swap_wait_time = 0;
 extern int GLFW_MODIFIER_OSCTRL;
 extern bool _macosUseHIDPI;
 extern uint64_t GRAPHICS_API;

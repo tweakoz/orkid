@@ -283,7 +283,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     ptex->TexSamplingMode().PresetTrilinearWrap();
   }
 
-  this->ApplySamplingMode(ptex.get());
+  //this->ApplySamplingMode(ptex.get());
 
   ptex->_dirty = false;
   //glBindTexture(TARGET, 0);
