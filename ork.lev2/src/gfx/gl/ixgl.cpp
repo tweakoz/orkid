@@ -94,8 +94,6 @@ void setAlwaysOnTop(GLFWwindow *window) {
                SubstructureRedirectMask | SubstructureNotifyMask, &event);
 }
 
-extern std::atomic<int> __FIND_IT;
-
 bool g_allow_HIDPI = false;
 
 using x11_window_t = ::Window; // contained alias of X11 Window Class (conflicts with lev2::Window)

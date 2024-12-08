@@ -250,9 +250,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
-  _paramInstanceBlock  = fxi->parameterBlock(_shader, "ub_instancing");
+  _paramInstanceBlock  = fxi->uniformBlock(_shader, "ub_instancing");
 
-  _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
+  _parBoneBlock = fxi->uniformBlock(_shader, "ub_vtx_boneblock");
   // fwd
 
   _paramEyePostion    = fxi->parameter(_shader, "EyePostion");
@@ -290,7 +290,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parDepthFogPower       = fxi->parameter(_shader, "DepthFogPower");
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
-  _parUnTexPointLightsData  = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
+  _parUnTexPointLightsData  = fxi->uniformBlock(_shader, "ub_frg_fwd_lighting");
 
   _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
 
@@ -475,7 +475,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   size_t fmtx4_stride                = sizeof(fmtx4);
 
   auto bones_buffer = PBRMaterial::boneDataBuffer(context);
-  auto bones_mapped = fxi->mapParamBuffer(bones_buffer, 0, inumbones * sizeof(fmtx4));
+  auto bones_mapped = fxi->mapUniformBuffer(bones_buffer, 0, inumbones * sizeof(fmtx4));
 
   // printf( "inumbones<%d>\n", inumbones );
 
@@ -488,7 +488,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   bones_mapped->unmap();
 
   if (_pbrmaterial->_parBoneBlock) {
-    fxi->bindParamBlockBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
+    fxi->bindUniformBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
   }
 }
 

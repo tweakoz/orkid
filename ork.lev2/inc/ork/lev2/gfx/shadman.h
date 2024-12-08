@@ -13,6 +13,14 @@
 
 namespace ork { namespace lev2 {
 
+using fxuniformset_byname_map_t   = std::unordered_map<std::string, const FxUniformBlock*>;
+using fxsamplerset_byname_map_t   = std::unordered_map<std::string, fxsamplerset_constptr_t>;
+using fxuniformblock_byname_map_t = std::unordered_map<std::string, fxuniformblock_constptr_t>;
+using parambynamemap_t            = std::map<std::string, fxparam_constptr_t>;
+using techniquebynamemap_t        = std::map<std::string, fxtechnique_constptr_t>;
+using fxcompute_byname_map_t      = std::map<std::string, const FxComputeShader*>;
+using fxstorageblock_byname_map_t = std::unordered_map<std::string, const FxShaderStorageBlock*>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class FxParamRec {
@@ -42,27 +50,25 @@ struct FxShaderPass {
   FxShaderPass();
 
   std::string _name;
-  svarp_t _impl;
+  svarshp_t _impl;
   RenderQueueSortingData mRenderQueueSortingData;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderTechnique {
 
-  bool _validated = false;
+  bool _validated        = false;
   fxshader_ptr_t _shader = nullptr;
   std::string _techniqueName;
   orkvector<FxShaderPass*> _passes;
-  svarp_t _impl;
-
+  svarshp_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderParamInBlockInfo {
-  FxShaderParamBlock* _parent = nullptr;
+  FxUniformBlock* _parent = nullptr;
 };
 
 struct FxShaderParam {
@@ -73,7 +79,7 @@ struct FxShaderParam {
   std::string mParameterSemantic;
   std::string mParameterType;
   EPropType meParamType;
-  svarp_t _impl;
+  svarshp_t _impl;
   bool mBindable;
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam* mChildParam;
@@ -81,27 +87,35 @@ struct FxShaderParam {
   orklut<std::string, std::string> _annotations;
 };
 
-struct FxShaderParamBlock {
+struct FxUniformBlock {
   std::string _name;
   FxShaderParam* param(const std::string& name) const;
   std::map<std::string, FxShaderParam*> _subparams;
-  svarp_t _impl;
+  svarshp_t _impl;
   FxInterface* _fxi = nullptr;
 };
-struct FxShaderParamBuffer {
-  size_t _length = 0;
-  svarp_t _impl;
+struct FxUniformSet {
+  std::map<std::string, fxparam_constptr_t> _parametersByName;
 };
-struct FxShaderParamBufferMapping {
-  FxShaderParamBufferMapping();
-  ~FxShaderParamBufferMapping();
+struct FxSamplerSet {
+  std::map<std::string, fxparam_constptr_t> _parametersByName;
+};
+
+struct FxUniformBuffer {
+  size_t _length = 0;
+  svarshp_t _impl;
+};
+
+struct FxUniformBufferMapping {
+  FxUniformBufferMapping();
+  ~FxUniformBufferMapping();
   void unmap();
-  FxShaderParamBuffer* _buffer = nullptr;
-  FxInterface* _fxi            = nullptr;
-  size_t _offset               = 0;
-  size_t _cursor               = 0;
-  size_t _length               = 0;
-  svarp_t _impl;
+  FxUniformBuffer* _buffer = nullptr;
+  FxInterface* _fxi        = nullptr;
+  size_t _offset           = 0;
+  size_t _cursor           = 0;
+  size_t _length           = 0;
+  svarshp_t _impl;
   ///////////////////////////////////////////////////
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
@@ -130,11 +144,11 @@ struct FxShaderParamBufferMapping {
 
 struct FxShaderStorageBlock {
   std::string _name;
-  svarp_t _impl;
+  svarshp_t _impl;
 };
 struct FxShaderStorageBuffer {
   size_t _length = 0;
-  svarp_t _impl;
+  svarshp_t _impl;
 };
 struct FxShaderStorageBufferMapping {
   FxShaderStorageBufferMapping();
@@ -145,7 +159,7 @@ struct FxShaderStorageBufferMapping {
   size_t _offset                 = 0;
   size_t _cursor                 = 0;
   size_t _length                 = 0;
-  svarp_t _impl;
+  svarshp_t _impl;
 
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
@@ -172,18 +186,12 @@ struct FxShaderStorageBufferMapping {
   ///////////////////////////////////////////////////
   template <typename T, typename... A> T& make(A&&... args) {
 
-    // statically assert T is not int, int32_t is ok 
-    static_assert(std::is_same_v<T, float> ||
-                      std::is_same_v<T, double> ||
-                      std::is_same_v<T, int32_t> ||
-                      std::is_same_v<T, uint32_t> ||
-                      std::is_same_v<T, fvec2> ||
-                      std::is_same_v<T, fvec3> ||
-                      std::is_same_v<T, fvec4> ||
-                      std::is_same_v<T, fmtx3> ||
-                      std::is_same_v<T, fmtx4> , 
-                      "Type T must be one of: float, double, int, int64_t, or uint32_t");
-       
+    // statically assert T is not int, int32_t is ok
+    static_assert(
+        std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t> ||
+            std::is_same_v<T, fvec2> || std::is_same_v<T, fvec3> || std::is_same_v<T, fvec4> || std::is_same_v<T, fmtx3> ||
+            std::is_same_v<T, fmtx4>,
+        "Type T must be one of: float, double, int, int64_t, or uint32_t");
 
     switch (sizeof(T)) { // std430 layout rules
       case 4: {          // int32_t, uint32_t, float
@@ -203,8 +211,8 @@ struct FxShaderStorageBufferMapping {
         break;
       }
       case 48: { // mat3
-          _cursor = alignTo(_cursor, 16);
-          break;
+        _cursor = alignTo(_cursor, 16);
+        break;
       }
       case 64: { // mat4
         _cursor = alignTo(_cursor, 16);
@@ -231,6 +239,24 @@ struct FxShaderStorageBufferMapping {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// TODO : implement descriptor sets at public API level
+//  so we can hoist static descriptor binding code out of rendering loop
+///////////////////////////////////////////////////////////////////////////////
+
+struct FxShaderDescriptorSet {
+  std::unordered_map<std::string, fxdescriptorsetitem_ptr_t> _items_by_name;
+  std::unordered_map<fxparam_constptr_t, fxdescriptorsetitem_ptr_t> _items_by_param;
+  std::unordered_map<int, fxdescriptorsetitem_ptr_t> _items_by_binding;
+  svarshp_t _impl;
+};
+struct FxShaderDescriptorSetItem {
+  svarshp_t _impl;
+};
+struct FxShaderDescriptorSetBindPoint {
+  svarshp_t _impl;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct FxComputeShader {
   svar64_t _impl;
@@ -242,7 +268,7 @@ struct FxComputeShader {
 struct FxShader {
 
   using parambynamemap_t      = std::map<std::string, fxparam_constptr_t>;
-  using paramblockbynamemap_t = std::map<std::string, const FxShaderParamBlock*>;
+  using uniformblockbynamemap_t = std::map<std::string, const FxUniformBlock*>;
   using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
   using computebynamemap_t    = std::map<std::string, const FxComputeShader*>;
 
@@ -260,7 +286,7 @@ struct FxShader {
 
   void addTechnique(fxtechnique_constptr_t tek);
   void addParameter(fxparam_constptr_t param);
-  void addParameterBlock(const FxShaderParamBlock* block);
+  void addUniformBlock(const FxUniformBlock* block);
   void addComputeShader(const FxComputeShader* csh);
 
   const techniquebynamemap_t& techniques(void) const {
@@ -269,15 +295,15 @@ struct FxShader {
   const parambynamemap_t& namedParams(void) const {
     return _parameterByName;
   }
-  const paramblockbynamemap_t& namedParamBlocks(void) const {
-    return _parameterBlockByName;
+  const uniformblockbynamemap_t& namedUniformBlocks(void) const {
+    return _uniformBlockByName;
   }
   const computebynamemap_t& namedComputeShaders(void) const {
     return _computeShaderByName;
   }
 
   FxShaderParam* FindParamByName(const std::string& named);
-  FxShaderParamBlock* FindParamBlockByName(const std::string& named);
+  FxUniformBlock* FindParamBlockByName(const std::string& named);
   FxShaderTechnique* FindTechniqueByName(const std::string& named);
 
   FxComputeShader* findComputeShader(const std::string& named);
@@ -302,11 +328,7 @@ struct FxShader {
   // SSBO support
   ////////////////////////////////////////////////////
 
-  typedef orkmap<std::string, const FxShaderStorageBlock*> storageblockbynamemap_t;
-  storageblockbynamemap_t _storageBlockByName;
-  const storageblockbynamemap_t& namedStorageBlocks(void) const {
-    return _storageBlockByName;
-  }
+  const fxstorageblock_byname_map_t& namedStorageBlocks() const;
   void addStorageBlock(const FxShaderStorageBlock* block);
   FxShaderStorageBlock* storageBlockByName(const std::string& named);
 
@@ -315,8 +337,15 @@ struct FxShader {
   svar16_t _internalHandle;
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
-  paramblockbynamemap_t _parameterBlockByName;
+
+  uniformblockbynamemap_t _uniformBlockByName; // TODO : aka _uniformBlocks
   computebynamemap_t _computeShaderByName;
+
+  fxuniformset_byname_map_t _uniformSets;
+  fxsamplerset_byname_map_t _samplerSets;
+  fxuniformblock_byname_map_t _uniformBlocks;
+  fxstorageblock_byname_map_t _storageBlockByName;
+
   ork::varmap::VarMap _varmap;
 
   bool mAllowCompileFailure = false;

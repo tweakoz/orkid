@@ -11,7 +11,7 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/util/stl_ext.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -206,4 +206,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+} // namespace ork::lev2

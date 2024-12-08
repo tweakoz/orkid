@@ -293,7 +293,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
       auto handler = [this](opq::progressdata_ptr_t data) { //
         if (_eztopwidget->_initstate.load() == 1) {
-          _mainWindow->_ctqt->progressHandler(data);
         } else {
         }
       };
@@ -429,9 +428,7 @@ int OrkEzApp::mainThreadLoop() {
 
   auto glfw_ctx = _mainWindow->_ctqt;
 
-  glfw_ctx->_gpu_misc_updates.push_back([this](lev2::Context* context) {
-    this->_gpuFrameCounter++;
-  });
+  this->_gpuFrameCounter++;
   ///////////////////////////////
   // update thread implementation
   ///////////////////////////////

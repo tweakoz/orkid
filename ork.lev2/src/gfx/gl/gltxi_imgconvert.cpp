@@ -19,7 +19,7 @@
 #include <ork/kernel/datacache.h>
 
 namespace ork::lev2 {
-
+/*
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock) {
@@ -172,6 +172,6 @@ bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t s
   }
   return rval;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

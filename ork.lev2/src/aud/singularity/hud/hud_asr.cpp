@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 #include <ork/kernel/string/string.h>
 
 namespace ork::audio::singularity {

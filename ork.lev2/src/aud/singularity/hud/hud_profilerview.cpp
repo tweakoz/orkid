@@ -11,6 +11,7 @@
 #include <ork/util/triple_buffer.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 
 using namespace ork;
 using namespace ork::lev2;

@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/environment.h>
 #include <ork/dataflow/all.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -95,35 +96,68 @@ namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
 
-#if !defined(ORK_OSX)
-namespace vk {
-void init();
+uint64_t GRAPHICS_API = "VULKAN"_crcu;
+
+namespace vulkan{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
+};
+namespace dummy{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
 }
-#endif
-
-#if defined(_WIN32)
-static bool gbPREFEROPENGL = false;
-#else
-static bool gbPREFEROPENGL = true;
-#endif
-
-context_ptr_t OpenGlContextInit();
-void DummyContextInit();
-
-void PreferOpenGL() {
-  static auto ctx = ork::lev2::OpenGlContextInit();
-  gbPREFEROPENGL  = true;
+namespace opengl{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
 }
 
 void registerEnums();
+void DummyContextInit();
+
+ork::lev2::context_ptr_t gloadercontext;
 
 struct ClassToucher {
   ClassToucher() {
     AllocationLabel label("ork::lev2::Init");
 
     Context::GetClassStatic();
+    vulkan::touchClasses();
+    dummy::touchClasses();
 
-    PreferOpenGL();
+    ////////////////////////////////////////
+
+    std::string gfx_api_str;
+    if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
+      if(gfx_api_str=="VULKAN"){
+        GRAPHICS_API  = "VULKAN"_crcu;
+      }     
+      else if(gfx_api_str=="OPENGL"){
+        GRAPHICS_API  = "OPENGL"_crcu;
+      }     
+      else if(gfx_api_str=="DUMMY"){
+        GRAPHICS_API  = "DUMMY"_crcu;
+      }     
+    }
+
+    ////////////////////////////////////////
+
+    switch(GRAPHICS_API){
+      case "DUMMY"_crcu:{
+        gloadercontext = dummy::createLoaderContext();
+        break;
+      }
+      case "OPENGL"_crcu:{
+        gloadercontext = opengl::createLoaderContext();
+        break;
+      }
+      case "VULKAN"_crcu:
+      default: {
+        gloadercontext = vulkan::createLoaderContext();
+        break;
+      }
+    }
+
+    ////////////////////////////////////////
 
     GfxEnv::GetRef();
     GfxPrimitives::GetRef();
@@ -412,21 +446,7 @@ void ClassInit() {
   printf( "ork.lev2 classes registered...\n");
 }
 
-ork::lev2::context_ptr_t gloadercontext;
-
 void GfxInit(const std::string& gfxlayer) {
-  printf( "ork.lev2 gfxinit...\n");
-
-#if defined(ENABLE_VULKAN)
-  // vk::init();
-#endif
-
-  if (gfxlayer != "dummy") {
-#if defined(ORK_CONFIG_OPENGL)
-    gloadercontext = OpenGlContextInit();
-    // FontMan::gpuInit(gloadercontext.get());
-#endif
-  }
   opq::init();
 
   auto def_vrdev = std::make_shared<ork::lev2::orkidvr::novr::NoVrDevice>();

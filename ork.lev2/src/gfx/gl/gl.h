@@ -45,6 +45,7 @@
 #include <ork/file/chunkfile.inl>
 #include <ork/kernel/datablock.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(RENDERDOC_API_ENABLED)
@@ -80,6 +81,21 @@ struct DDS_HEADER;
 
 namespace ork { namespace lev2 {
 
+struct GlPlatformObject {
+  GlPlatformObject();
+  virtual ~GlPlatformObject();
+  void makeCurrent();
+  void swapBuffers();
+
+  void_lambda_t _bindop;
+  CtxGLFW* _ctxbase = nullptr;
+	ContextGL*		_context = nullptr;
+  bool _needsInit       = true;
+
+  static GlPlatformObject* _current;
+};
+using glplato_ptr_t = std::shared_ptr<GlPlatformObject>;
+
 
 class ContextGL;
 class GlslFxInterface;
@@ -87,8 +103,6 @@ struct GLTextureObject;
 struct GlTextureInterface;
 
 using gltexobj_ptr_t = std::shared_ptr<GLTextureObject>;
-
-extern ContextGL* _gcurrentContext;
 
 struct GLTextureAsyncTask{
   GLTextureAsyncTask();
@@ -130,7 +144,7 @@ struct GlFboObject {
 using glfbo_ptr_t = std::shared_ptr<GlFboObject>;
 
 struct GlRtBufferImpl {
-  svar64_t _teximpl;
+  svarshp_t _teximpl;
   bool _init                = true;
 };
 
@@ -232,7 +246,7 @@ private:
       int ivcount          = 0) final;
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
       final;
 
   void DrawInstancedIndexedPrimitiveEML(
@@ -275,9 +289,13 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  void SetRtGroup(RtGroup* Base) final;
-  void Clear(const fcolor4& rCol, float fdepth) final;
-  void clearDepth(float fdepth) final;
+  void __setRtGroup(RtGroup* Base);
+
+  void _pushRtGroup(RtGroup* Base) final;
+  void _popRtGroup(bool continue_render) final;
+
+  //void Clear(const fcolor4& rCol, float fdepth) final;
+  //void clearDepth(float fdepth) final;
   void _setViewport(int iX, int iY, int iW, int iH) final;
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame() final;
@@ -403,7 +421,6 @@ constexpr GLuint PBOOBJBASE   = 0x12340000;
 
 struct GlTextureInterface : public TextureInterface {
 
-  void TexManInit() override;
 
   pboptr_t _getPBO(size_t isize);
   void _returnPBO(pboptr_t pbo);
@@ -411,27 +428,27 @@ struct GlTextureInterface : public TextureInterface {
 
   void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
-  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  //bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  //bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  //void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
+  //void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
+  //bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
+  //bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  //bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
+  //bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
+  //bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
+  //void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
 
-  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
-
-  void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
-  bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-
-  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
+  void TexManInit() final;
   bool destroyTexture(texture_ptr_t ptex) final;
-  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
+  void generateMipMaps(Texture* ptex) final;
+
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromImage(Texture* ptex, image_ptr_t img) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) final;
   void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) final;
-  void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
   std::map<size_t, pbosetptr_t> _pbosets;
@@ -516,7 +533,9 @@ public:
   void _doResizeMainSurface(int iw, int ih) final;
   void _doBeginFrame() final;
   void _doEndFrame() final;
-  void* _doClonePlatformHandle() const final;
+  ctx_platform_handle_t _doClonePlatformHandle() const final;
+  load_token_t _doBeginLoad() final;
+  void _doEndLoad(load_token_t ploadtok) final; // virtual
 
   void stateDebugger() const final;
 
@@ -583,14 +602,14 @@ public:
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;        // make a pbuffer
   void initializeLoaderContext() final;
 
-  void debugPushGroup(const std::string str) final;
+  void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugMarker(const std::string str) final;
+  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final {}
+  void debugPopGroup(commandbuffer_ptr_t cb) final {}
+  void debugMarker(const std::string str,const fvec4& color) final;
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void* _doBeginLoad() final;
-  void _doEndLoad(void* ploadtok) final; // virtual
 
   void* mhHWND;
   void* mGLXContext;
@@ -607,7 +626,7 @@ public:
 
   //////////////////////////////////////////////
 
-  static ork::MpMcBoundedQueue<void*> _loadTokens;
+  static ork::MpMcBoundedQueue<load_token_t> _loadTokens;
 
   ///////////////////////////////////////////////////////////////////////////
   // Rendering State Info

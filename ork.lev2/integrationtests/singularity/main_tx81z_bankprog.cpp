@@ -9,6 +9,8 @@
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 
 int main(int argc, char** argv,char**envp) {
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);

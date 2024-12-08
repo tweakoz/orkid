@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
+#include <GLFW/glfw3native.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
@@ -21,37 +22,36 @@
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
-#include <ork/profiling.inl>
 ///////////////////////////////////////////////////////////////////////////////
+#include "../gfx/vulkan/vulkan_ctx.h"
+///////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_GLFW)
 namespace ork::lev2 {
+extern int GLFW_MODIFIER_OSCTRL;
+extern bool _macosUseHIDPI;
+extern uint64_t GRAPHICS_API;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
+void recomputeHIDPI(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
 float content_scale_y = 1.0f;
-#if defined(__APPLE__)
-extern bool _macosUseHIDPI;
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
-#else
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
-#endif
-bool _mouseCursorDisabled = false;
-
-int _g_post_swap_wait_time = 0;
-
+static CtxGLFW* _gctx = nullptr;
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl {};
+using apiimpl_ptr_t = std::shared_ptr<ApiImpl>;
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl_GL : public ApiImpl {};
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl_VK : public ApiImpl {};
 ///////////////////////////////////////////////////////////////////////////////
 static fvec2 gpos;
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_ptr_t CtxGLFW::uievent() {
   return _uievent;
 }
-void CtxGLFW::hideMouseCursor() {
-  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-}
 void CtxGLFW::disableMouseCursor() {
-  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-  _mouseCursorDisabled = true;
+  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,11 +121,10 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
-int x, y;
-glfwGetWindowPos(window, &x, &y);
+  int x, y;
+  glfwGetWindowPos(window, &x, &y);
 
-logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h );
-
+  logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h);
 
   auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == sink)
@@ -171,7 +170,7 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
   uiev->mbALT     = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL    = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT   = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbSUPER   = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER    = (modifiers & GLFW_MOD_SUPER);
   switch (action) {
     case GLFW_PRESS:
       uiev->_eventcode = ui::EventCode::KEY_DOWN;
@@ -234,7 +233,7 @@ void fillEventCursor(
   //}
 
 #if defined(__APPLE__)
-  if (false and _macosUseHIDPI) {
+  if (_macosUseHIDPI) {
     xoffset *= 2;
     yoffset *= 2;
   }
@@ -255,8 +254,6 @@ void fillEventCursor(
   uiev->mfUnitY     = unitY;
   uiev->miScreenWidth = w;
   uiev->miScreenHeight = h;
-
-  //printf("CURSOR x<%d> y<%d> unitx<%g> unity<%g>\n", uiev->miX, uiev->miY, unitX, unitY);
 
   if (monitor) {
     int winX, winY;                         // window position
@@ -281,7 +278,7 @@ static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
 CtxGLFW::CtxGLFW(Window* ork_win)
     : CTXBASE(ork_win) {
 
-  _onRunLoopIteration = [] {};
+  _onRunLoopIteration = []() {};
 
   _uievent = std::make_shared<ui::Event>();
 
@@ -307,8 +304,6 @@ CtxGLFW::CtxGLFW(Window* ork_win)
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-  logchan_glfw->log( "set swap interval to<%d>", aid->_swap_interval );
-  glfwSwapInterval(aid->_swap_interval);
   glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -316,11 +311,6 @@ void CtxGLFW::Show() {
 
   GLFWmonitor* fullscreen_monitor = nullptr;
   GLFWmonitor* selected_monitor   = nullptr;
-
-  glfwWindowHint(GLFW_RED_BITS, 10);
-  glfwWindowHint(GLFW_GREEN_BITS, 10);
-  glfwWindowHint(GLFW_BLUE_BITS, 10);
-  glfwWindowHint(GLFW_ALPHA_BITS, 2);
 
   if (_orkwindow) {
     _orkwindow->SetDirty(true);
@@ -331,7 +321,6 @@ void CtxGLFW::Show() {
     if (_appinitdata->_fullscreen) {
 
       fullscreen_monitor = glfwGetPrimaryMonitor();
-
 
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
@@ -351,10 +340,10 @@ void CtxGLFW::Show() {
         int d = abs(mon_x - l);
 
         if (d < idiff) {
-          fullscreen_monitor = monitor;
-          idiff              = d;
+          fullscreen_monitor      = monitor;
+          idiff                   = d;
           const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
-          logchan_glfw->log( "USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName );
+          logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
         }
 
         /////////////////////////////////
@@ -364,54 +353,36 @@ void CtxGLFW::Show() {
       // technically "windowed fullscreen"
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
-      glfwWindowHint(GLFW_RED_BITS, 10);
-      glfwWindowHint(GLFW_GREEN_BITS, 10);
-      glfwWindowHint(GLFW_BLUE_BITS, 10);
+      glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+      glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+      glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
       glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-
-      float contentScaleX = 1.0f;
-      float contentScaleY = 1.0f;
-      // fetch content scale
-      glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
-
-
-      _width  = mode->width*contentScaleX;
-      _height = mode->height*contentScaleY;
+      _width  = mode->width;
+      _height = mode->height;
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
-      logchan_glfw->log("USING GLFW redbits<%d> ", mode->redBits);
-      logchan_glfw->log("USING GLFW greenbits<%d> ", mode->greenBits);
-      logchan_glfw->log("USING GLFW bluebits<%d> ", mode->blueBits);
-      logchan_glfw->log("USING GLFW contentScaleX<%f> ", contentScaleX);
-      logchan_glfw->log("USING GLFW contentScaleY<%f> ", contentScaleY);
-
-      _appinitdata->_width  = _width;
-      _appinitdata->_height = _height;
-      
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
-
-
-      this->onResize(_width, _height);
-
     }
 
 #if defined(__APPLE__)
     glfwWindowHint(
         GLFW_COCOA_RETINA_FRAMEBUFFER, //
-        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
+        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
 #endif
 
-    if (_appinitdata->_offscreen) {
-      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    } else {
-      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        break;
+      default:
+        break;
     }
 
     auto global = globalOffscreenContext();
@@ -426,10 +397,10 @@ void CtxGLFW::Show() {
 
     OrkAssert(_glfwWindow != nullptr);
     glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
-    glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+      // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
       glfwFocusWindow(_glfwWindow);
     }
@@ -452,30 +423,26 @@ void CtxGLFW::Show() {
     _glfw_callback_fbresized(_glfwWindow, _width, _height);
 
   } else {
-    logchan_glfw->log("WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
-                      _appinitdata->_top, //
-                      _appinitdata->_left, //
-                      _appinitdata->_width, //
-                      _appinitdata->_height);
+    logchan_glfw->log(
+        "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
+        _appinitdata->_top,                     //
+        _appinitdata->_left,                    //
+        _appinitdata->_width,                   //
+        _appinitdata->_height);
 
-      if(_glfwWindow){
-          glfwSetWindowPos(
-                           _glfwWindow,
-                           _appinitdata->_left, //
-                           _appinitdata->_top);
-          glfwSetWindowSize(
-                            _glfwWindow,
-                            _appinitdata->_width, //
-                            _appinitdata->_height);
-      }
+    glfwSetWindowPos(
+        _glfwWindow,
+        _appinitdata->_left, //
+        _appinitdata->_top);
+    glfwSetWindowSize(
+        _glfwWindow,
+        _appinitdata->_width, //
+        _appinitdata->_height);
   }
 
   if (_needsInitialize) {
     // printf("CreateCONTEXT");
     _orkwindow->initContext();
-      if( _appinitdata->_fullscreen ){
-          _target->resizeMainSurface(_width, _height);
-      }
     _orkwindow->OnShow();
     _needsInitialize = false;
   }
@@ -485,16 +452,13 @@ void CtxGLFW::Show() {
 
   if (selected_monitor == nullptr) {
     selected_monitor = monitorForWindow(_glfwWindow);
-    //OrkAssert(selected_monitor != nullptr);
+    recomputeHIDPI(_glfwWindow);
+    // OrkAssert(selected_monitor != nullptr);
   }
 
   _glfwMonitor = selected_monitor;
-    if(_glfwWindow){
-        glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
-    }
-    
 
-  logchan_glfw->log( "content_scale_x<%f> content_scale_y<%f>\n", content_scale_x, content_scale_y );
+  glfwGetWindowContentScale(_glfwWindow, &content_scale_x, &content_scale_y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -505,16 +469,8 @@ CtxGLFW::~CtxGLFW() {
   _runstate = 2;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::makeCurrent() {
-  // printf( "CtxGLFW makeCurrent<%p> glfw_win<%p> isglobal<%d>", this, _glfwWindow, int(isGlobal()) );
-  glfwMakeContextCurrent(_glfwWindow);
-}
-///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::swapBuffers() {
-  glfwSwapBuffers(_glfwWindow);
-  if(_g_post_swap_wait_time>0){
-    usleep(_g_post_swap_wait_time);
-  }
+void CtxGLFW::present() {
+  // todo remove
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SetAlwaysRun(bool brun) {
@@ -545,61 +501,43 @@ int CtxGLFW::runloop() {
 
   while (_runstate == 1) {
 
-    EASY_BLOCK("ctx_glfw::render::pollev", profiler::colors::Red);
-
     //////////////////////////////
     // poll UI/windowing system events
     //////////////////////////////
 
     // glfwWaitEvents();
     glfwPollEvents();
-    
-    EASY_END_BLOCK;
 
     //////////////////////////////
     // run main thread app logic
     //////////////////////////////
 
-    EASY_BLOCK("ctx_glfw::render::rli", profiler::colors::Red);
-
     _onRunLoopIteration();
-
-    EASY_END_BLOCK;
 
     //////////////////////////////
     // redraw ?
     //////////////////////////////
 
-    EASY_BLOCK("ctx_glfw::render::gpuu", profiler::colors::Red);
-
     if (_onGpuUpdate) {
       _onGpuUpdate(_target);
     }
-
-    EASY_END_BLOCK;
-
-    EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
+    
+    //EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
 
     if (_onGpuPreFrame) {
       _onGpuPreFrame(_target);
     }
 
-    EASY_END_BLOCK;
+    //for( auto fn : _gpu_misc_updates ){
+      //fn(_target);
+    //}
 
-    for( auto fn : _gpu_misc_updates ){
-      fn(_target);
-    }
-
-    EASY_BLOCK("ctx_glfw::render::repaint", profiler::colors::Red);
     SlotRepaint();
-    EASY_END_BLOCK;
 
-    EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
+    //EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
     if (_onGpuPostFrame) {
       _onGpuPostFrame(_target);
     }
-    EASY_END_BLOCK;
-
     //////////////////////////////
     // check for closed window
     //////////////////////////////
@@ -680,8 +618,9 @@ void CtxGLFW::SlotRepaint() {
     auto drwev         = std::make_shared<ui::DrawEvent>(this->_target);
 
     auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-    if (widget)
+    if (widget) {
       widget->draw(drwev);
+    }
   }
   //}
   // this->mDrawLock--;
@@ -712,15 +651,106 @@ void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void error_callback(int error, const char* msg) {
   logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
+  OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+GLFWwindow* CtxGLFW::_apiInitGL() {
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+
+  std::set<int> _try_minors;
+  _try_minors.insert(0);
+
+#if defined(OPENGL_46)
+  _try_minors.insert(6);
+  _try_minors.insert(5);
+  _try_minors.insert(3);
+#elif defined(OPENGL_41)
+  _try_minors.insert(1);
+#endif
+
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#if defined(__APPLE__)
+  // wtf ?
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+  // this can fail on nvidia aarch64 devices
+  //  see: https://github.com/isl-org/Open3D/issues/2549
+
+  GLFWwindow* offscreen_window = nullptr;
+
+  bool done = false;
+
+  auto it_minor = _try_minors.rbegin();
+
+  auto ctx_vars = std::make_shared<varmap::VarMap>();
+
+  int MINOR = 0;
+
+  while (not done) {
+
+    int this_minor = *it_minor;
+
+    ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
+    ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
+    MINOR = this_minor;
+
+    offscreen_window = glfwCreateWindow(
+        32,      //
+        32,      //
+        "",      //
+        nullptr, //
+        nullptr);
+
+    it_minor++;
+    done |= (offscreen_window != nullptr);
+    done |= (it_minor == _try_minors.rend());
+
+    logchan_glfw->log("try<OpenGL-Core-4.%d> done<%d>", this_minor, int(done));
+  }
+
+  _gctx->_vars       = ctx_vars;
+  _gctx->_glfwWindow = offscreen_window;
+
+  int minor_api_version = _gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
+  logchan_glfw->log("GL: offscreen_window<%p>", offscreen_window);
+  logchan_glfw->log(
+      "GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
+  OrkAssert(offscreen_window != nullptr);
+  //glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  return offscreen_window;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+GLFWwindow* CtxGLFW::_apiInitVK() {
+  OrkAssert(glfwVulkanSupported());
+  OrkAssert(vulkan::_GVI);
+  auto ctx_vars = std::make_shared<varmap::VarMap>();
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* offscreen_window = glfwCreateWindow(
+      32,      //
+      32,      //
+      "",      //
+      nullptr, //
+      nullptr);
+  logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  return offscreen_window;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 CtxGLFW* CtxGLFW::globalOffscreenContext() {
-  static CtxGLFW* gctx = nullptr;
-  if (nullptr == gctx) {
+  if (nullptr == _gctx) {
 
     glfwSetErrorCallback(error_callback);
 
-    gctx = new CtxGLFW(nullptr);
+    _gctx = new CtxGLFW(nullptr);
 
     bool ok = glfwInit();
     assert(ok);
@@ -743,74 +773,26 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    std::set<int> _try_minors;
-    _try_minors.insert(0);
-
-#if defined(OPENGL_46)
-    _try_minors.insert(6);
-    _try_minors.insert(5);
-    _try_minors.insert(3);
-#elif defined(OPENGL_41)
-    _try_minors.insert(1);
-#endif
-
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // this can fail on nvidia aarch64 devices
-    //  see: https://github.com/isl-org/Open3D/issues/2549
-
     GLFWwindow* offscreen_window = nullptr;
 
-    bool done = false;
-
-    auto it_minor = _try_minors.rbegin();
-
-    auto ctx_vars = std::make_shared<varmap::VarMap>();
-
-    int MINOR = 0;
-
-    while (not done) {
-
-      int this_minor = *it_minor;
-
-      ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
-      ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
-
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
-      #if defined(__APPLE__)
-      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-      #endif
-      MINOR = this_minor;
-
-      offscreen_window = glfwCreateWindow(
-          32,      //
-          32,      //
-          "",      //
-          nullptr, //
-          nullptr);
-
-      it_minor++;
-      done |= (offscreen_window != nullptr);
-      done |= (it_minor == _try_minors.rend());
-
-      logchan_glfw->log("try minor<%d> offscreen_window<%p> done<%d>", this_minor, (void*) offscreen_window, int(done));
+    switch(GRAPHICS_API){
+      case "OPENGL"_crcu:{
+        offscreen_window = _gctx->_apiInitGL();
+        break;
+      }
+      case "VULKAN"_crcu:{
+        offscreen_window = _gctx->_apiInitVK();
+        break;
+      }
+      default:{
+        OrkAssert(false);
+        break;
+      }
     }
 
-    gctx->_vars       = ctx_vars;
-    gctx->_glfwWindow = offscreen_window;
-
-    int minor_api_version = gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
-    logchan_glfw->log("offscreen_window<%p>", offscreen_window);
-    logchan_glfw->log("global_ctxbase<%p> vars<%p> minor version<%d : %d>", gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
-    OrkAssert(offscreen_window != nullptr);
-    glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwSetWindowUserPointer(offscreen_window, (void*)gctx);
-    glfwSwapInterval(0);
+    glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
   }
-  return gctx;
+  return _gctx;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
@@ -823,7 +805,6 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   // ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
 
   ////////////////////////
-  opq::mainSerialQueue()->enqueue( [=](){
 
   auto uiev = this->uievent();
 
@@ -854,7 +835,6 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
                          : ork::ui::EventCode::RELEASE;
 
   _fire_ui_event();
-  });
 
   /////////////////////////
 }
@@ -873,24 +853,19 @@ void CtxGLFW::_on_callback_refresh() {
   gictr++;
 }
 void CtxGLFW::_on_callback_winresized(int w, int h) {
-  opq::mainSerialQueue()->enqueue( [=](){
-    this->onResize(w, h);
-    auto uiev = this->uievent();
-    uiev->_eventcode  = ui::EventCode::RESIZED;
-    uiev->miScreenWidth = w;
-    uiev->miScreenHeight = h;
-    _fire_ui_event();
-  });
+  this->onResize(w, h);
+  auto uiev = this->uievent();
+  uiev->_eventcode  = ui::EventCode::RESIZED;
+  uiev->miScreenWidth = w;
+  uiev->miScreenHeight = h;
+  _fire_ui_event();
 }
 void CtxGLFW::_on_callback_fbresized(int w, int h) {
-  opq::mainSerialQueue()->enqueue( [=](){
   this->onResize(w, h);
-  });
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
-  opq::mainSerialQueue()->enqueue( [=](){
   auto uiev = this->uievent();
-  /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+  if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
     const char* clipboardText = glfwGetClipboardString(_glfwWindow);
     if (clipboardText) {
       uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -898,32 +873,27 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
       _fire_ui_event();
       return;
     }
-  }*/
+  }
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
-  });
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
-  EASY_BLOCK("ctx_glfw::render::OCC", profiler::colors::Red);
-  opq::mainSerialQueue()->enqueue( [=](){
-    auto uiev = this->uievent();
-    fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
-    //printf( "xoffset<%d> yoffset<%d>\n", xoffset, yoffset);
-    if (this->_buttonState == 0) {
-      uiev->_eventcode = ui::EventCode::MOVE; //
-      _fire_ui_event();
-    } else {
-      uiev->_eventcode = ui::EventCode::DRAG; //
-      _fire_ui_event();
-    }
-  });
+  auto uiev = this->uievent();
+  //printf( "_width<%d> _height<%d>\n", _width, _height);
+  fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
+  if (this->_buttonState == 0) {
+    uiev->_eventcode = ui::EventCode::MOVE; //
+    _fire_ui_event();
+  } else {
+    uiev->_eventcode = ui::EventCode::DRAG; //
+    _fire_ui_event();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_enterleave(int entered) {
   // printf("_glfw_callback_enterleave<%p> entered<%d>", window, entered);
 
   // ImGui_ImplGlfw_CursorEnterCallback(window, entered);
-  opq::mainSerialQueue()->enqueue( [=](){
 
   bool was_entered = bool(entered);
 
@@ -943,24 +913,18 @@ void CtxGLFW::_on_callback_enterleave(int entered) {
     }
   }
   _fire_ui_event();
-  });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_fire_ui_event() {
-  EASY_BLOCK("ctx_glfw::render::FUE", profiler::colors::Red);
   auto uiev        = this->uievent();
   auto gfxwin      = uiev->mpGfxWin;
   auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev->_uicontext = root ? root->_uicontext : nullptr;
-  auto op = [=]() {
-    if (root) {
-      uiev->setvpDim(root);
-      ui::Event::sendToContext(uiev);
-      //_pushTimer.Start();
-    }
-  };
-  op();
-  //opq::mainSerialQueue()->enqueue(op);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
+    //_pushTimer.Start();
+  }
   // this->SlotRepaint(); // refresh UI after button event
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -986,6 +950,13 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        break;
+      default:
+        break;
+    }
     if (win->_useTransparency) {
       glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     }
@@ -1032,7 +1003,7 @@ struct PopupImpl {
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
       if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
-        /*if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+        if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
           const char* clipboardText = glfwGetClipboardString(_glfwPopupWindow);
           if (clipboardText) {
             uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
@@ -1040,8 +1011,7 @@ struct PopupImpl {
             _fireEvent(uiev);
             return;
           }
-        } else */
-        {
+        } else {
           fillEventKeyboard(uiev, key, scancode, action, modifiers);
           _fireEvent(uiev);
         }
@@ -1102,7 +1072,7 @@ struct PopupImpl {
     _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
     _rtgroup->_pseudoRTG = true;
     _rtgroup->mNumMrts   = 1;
-    _rtgroup->_autoclear = true;
+    _rtgroup->_autoclear = false;
 
     _cloned_plato = _parent_context->clonePlatformHandle();
   }
@@ -1129,34 +1099,33 @@ struct PopupImpl {
     if (_uicontext->_top) {
       _uicontext->_top->gpuInit(_parent_context);
       _uicontext->_top->SetRect(0, 0, _w, _h);
+      OrkAssert(false);
     }
 
     ork::Timer timer;
     timer.Start();
-    double prev_time = timer.SecsSinceStart();
+    double prev_time            = timer.SecsSinceStart();
     ui::updatedata_ptr_t updata = std::make_shared<ui::UpdateData>();
 
     while (not _terminate) {
 
       double this_time = timer.SecsSinceStart();
       double dt        = this_time - prev_time;
-      prev_time = this_time;
-      updata->_dt = dt;
+      prev_time        = this_time;
+      updata->_dt      = dt;
       updata->_abstime = this_time;
 
       glfwPollEvents();
-      glfwMakeContextCurrent(_glfwPopupWindow);
 
       _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
-      glfwMakeContextCurrent(_glfwPopupWindow);
 
-      void* plato = (void*)_parent_context->GetPlatformHandle();
+      auto plato_saved = _parent_context->_impl;
 
-      _parent_context->SetPlatformHandle(_cloned_plato);
+      _parent_context->_impl = _cloned_plato;
 
       _uicontext->tick(updata);
 
@@ -1165,23 +1134,16 @@ struct PopupImpl {
         _uicontext->draw(drwev);
       }
 
-      _parent_context->SetPlatformHandle(plato);
+      _parent_context->_impl = plato_saved;
 
       _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();
       _parent_context->FBI()->popViewport();
-      glfwMakeContextCurrent(_glfwPopupWindow);
-
-      glFinish();
-
-      glfwSwapBuffers(_glfwPopupWindow);
 
       usleep(1000 * 16);
     }
 
-    glfwMakeContextCurrent(ctxbase->_glfwWindow);
     glfwFocusWindow(ctxbase->_glfwWindow);
-
   }
   //////////////////////////////////////////////////
   GLFWwindow* _glfwPopupWindow = nullptr;
@@ -1191,11 +1153,11 @@ struct PopupImpl {
   ui::context_ptr_t _uicontext;
   rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
-  bool _terminate     = false;
-  void* _cloned_plato = nullptr;
-  int _buttonState    = 0;
-  int _mouseX         = 0;
-  int _mouseY         = 0;
+  bool _terminate = false;
+  ctx_platform_handle_t _cloned_plato;
+  int _buttonState = 0;
+  int _mouseX      = 0;
+  int _mouseY      = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1226,3 +1188,4 @@ PopupWindow::~PopupWindow() {
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+#endif // #if defined(ENABLE_GLFW)

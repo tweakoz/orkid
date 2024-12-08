@@ -41,6 +41,8 @@ void Interface::_doBeginFrame() {
   mLastPass = 0;
   mTarget._RSI.beginFrame();
 }
+void Interface::_doEndFrame() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -252,10 +254,10 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
 // UBO mgmt
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* Interface::createParamBuffer(size_t length) {
+FxUniformBuffer* Interface::createUniformBuffer(size_t length) {
   assert(length <= 65536);
   auto ub    = new UniformBuffer;
-  ub->_fxspb = new FxShaderParamBuffer;
+  ub->_fxspb = new FxUniformBuffer;
   ub->_fxspb->_impl.set<UniformBuffer*>(ub);
   ub->_length         = length;
   ub->_fxspb->_length = length;
@@ -279,8 +281,8 @@ struct UniformBufferMapping {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) {
-  auto mapping = std::make_shared<FxShaderParamBufferMapping>();
+parambuffermappingptr_t Interface::mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) {
+  auto mapping = std::make_shared<FxUniformBufferMapping>();
   auto ub      = b->_impl.get<UniformBuffer*>();
   if (length == 0) {
     assert(base == 0);
@@ -312,7 +314,7 @@ parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+void Interface::unmapUniformBuffer(FxUniformBufferMapping* mapping) {
   assert(mapping->_impl.isA<UniformBufferMapping>());
   auto ub = mapping->_buffer->_impl.get<UniformBuffer*>();
   GL_ERRORCHECK();
@@ -327,7 +329,7 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+void Interface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   auto uniblock  = block->_impl.get<UniformBlock*>();
   auto unibuffer = buffer->_impl.get<UniformBuffer*>();
   OrkAssert(uniblock != nullptr);
@@ -339,16 +341,16 @@ void Interface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderPa
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
+const FxUniformBlock* Interface::uniformBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  auto& parammap = hfx->_parameterBlockByName;
+  auto& parammap = hfx->_uniformBlockByName;
   auto it        = parammap.find(name);
-  auto fxsblock  = (FxShaderParamBlock*)((it != parammap.end()) ? it->second : nullptr);
+  auto fxsblock  = (FxUniformBlock*)((it != parammap.end()) ? it->second : nullptr);
   auto container = hfx->_internalHandle.get<rootcontainer_ptr_t>();
 
   auto ublock = container->uniformBlock(name);
   if (ublock != nullptr and fxsblock == nullptr) {
-    fxsblock       = new FxShaderParamBlock;
+    fxsblock       = new FxUniformBlock;
     fxsblock->_fxi = this;
     fxsblock->_impl.set<UniformBlock*>(ublock);
     parammap[name] = fxsblock;
@@ -361,6 +363,15 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
       fxsblock->_subparams[p->_name] = p;
     }
   }
+  return fxsblock;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fxsamplerset_constptr_t Interface::samplerSet(FxShader* hfx, const std::string& name) {
+  auto& sampsets = hfx->_samplerSets;
+  auto it        = sampsets.find(name);
+  auto fxsblock  = (FxSamplerSet*)((it != sampsets.end()) ? it->second : nullptr);
   return fxsblock;
 }
 

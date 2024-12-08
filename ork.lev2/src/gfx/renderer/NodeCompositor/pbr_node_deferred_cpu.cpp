@@ -60,8 +60,8 @@ struct CpuNodeImpl {
   void init(lev2::Context* target) {
     _context.gpuInit(target);
     if (nullptr == _lightbuffer) {
-      _lightbuffer = target->FXI()->createParamBuffer(65536);
-      auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
+      _lightbuffer = target->FXI()->createUniformBuffer(65536);
+      auto mapped  = target->FXI()->mapUniformBuffer(_lightbuffer);
       size_t base  = 0;
       for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
@@ -107,7 +107,7 @@ struct CpuNodeImpl {
     auto this_buf = context->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
     _context.beginPointLighting(_node, drawdata, VD, nullptr);
-    FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
+    FXI->bindUniformBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
@@ -182,7 +182,7 @@ struct CpuNodeImpl {
       // process a chunk
       /////////////////////////////////////
       bool chunk_done     = false;
-      auto mapping        = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+      auto mapping        = FXI->mapUniformBuffer(_lightbuffer, 0, 65536);
       int chunksize       = 0;
       size_t chunk_offset = 0;
       _chunktiles_pos.clear();
@@ -240,7 +240,7 @@ struct CpuNodeImpl {
       /////////////////////////////////////
       // chunk ready, fire it off..
       /////////////////////////////////////
-      FXI->unmapParamBuffer(mapping.get());
+      FXI->unmapUniformBuffer(mapping.get());
       //////////////////////////////////////////////////
       // set number of lights for tile
       //////////////////////////////////////////////////
@@ -288,7 +288,7 @@ struct CpuNodeImpl {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-  FxShaderParamBuffer* _lightbuffer = nullptr;
+  FxUniformBuffer* _lightbuffer = nullptr;
   std::atomic<int> _pendingtilecounter;
 }; // CpuNodeImpl
 

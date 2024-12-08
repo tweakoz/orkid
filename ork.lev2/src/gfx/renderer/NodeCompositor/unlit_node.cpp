@@ -75,8 +75,10 @@ struct IMPL {
     targ->debugPushGroup("Forward::render");
     RtGroupRenderTarget rt(_rtg);
     {
+      _rtg->_clearColor = node->_clearColor;
+      _rtg->_clearDepth = 1.0f;
+      _rtg->_autoclear  = true;
       targ->FBI()->PushRtGroup(_rtg);
-      targ->FBI()->SetAutoClear(true); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB  = RCFD->GetDB();
@@ -101,7 +103,6 @@ struct IMPL {
         auto MTXI            = targ->MTXI();
         CIMPL->pushCPD(CPD);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
-        targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         targ->debugPopGroup();
         CIMPL->popCPD();

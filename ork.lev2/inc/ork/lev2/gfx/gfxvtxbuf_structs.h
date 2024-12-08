@@ -7,6 +7,9 @@
 
 #pragma once 
 
+#include <ork/lev2/gfx/gfxenv_enum.h>
+#include <ork/util/endian.h>
+
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////

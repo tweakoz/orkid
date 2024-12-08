@@ -107,6 +107,8 @@ struct InputStream {
 
   std::string ReadIndexedString(const Reader& reader);
 
+  std::vector<uint8_t> readData(size_t length);
+
   const void* GetCurrent();
   void* GetDataAt(size_t idx);
   size_t GetLength() const {
@@ -115,6 +117,7 @@ struct InputStream {
   void advance(size_t l) {
     midx += l;
   }
+  void dump() const;
   const void* mpbase;
   size_t midx;
   size_t milength;

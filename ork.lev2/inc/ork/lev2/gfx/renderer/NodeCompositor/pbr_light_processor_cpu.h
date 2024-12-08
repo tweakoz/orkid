@@ -56,7 +56,7 @@ struct CpuLightProcessor {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
   std::atomic<int> _lightjobcount;
   std::atomic<int> _pendingtilecounter;
-  FxShaderParamBuffer* _lightbuffer = nullptr;
+  FxUniformBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
   const uint32_t* _depthClusterBase = nullptr;
   DeferredCompositingNodePbr* _defcompnode;

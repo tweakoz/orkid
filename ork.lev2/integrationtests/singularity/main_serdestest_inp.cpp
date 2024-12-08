@@ -17,6 +17,8 @@
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/environment.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 
 using namespace ork;
 using namespace ork::lev2;

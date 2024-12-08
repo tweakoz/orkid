@@ -9,6 +9,8 @@
 
 #include <ork/lev2/lev2_types.h>
 
+namespace ork::lev2 {
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// FxInterface (interface for dealing with FX materials)
@@ -27,7 +29,8 @@ public:
   virtual void reset() {}
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
-  virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) = 0;
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
@@ -53,6 +56,21 @@ public:
 
   void BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
+  //////////////////////////////////////////
+  // new descriptorset api
+  //////////////////////////////////////////
+
+  virtual size_t numDescriptorSetBindPoints(fxtechnique_constptr_t tek) {
+    return 0;
+  }
+  virtual fxdescriptorsetbindpoint_constptr_t descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index) {
+    return nullptr;
+  }
+  virtual void bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set) {
+  }
+
+  //////////////////////////////////////////
+
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;
   virtual FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) {
     return nullptr;
@@ -60,15 +78,15 @@ public:
 
   static void Reset();
 
-  virtual FxShaderParamBuffer* createParamBuffer(size_t length) {
+  virtual FxUniformBuffer* createUniformBuffer(size_t length) {
     return nullptr;
   }
-  virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base = 0, size_t length = 0) {
+  virtual parambuffermappingptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base = 0, size_t length = 0) {
     return nullptr;
   }
-  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+  virtual void unmapUniformBuffer(FxUniformBufferMapping* mapping) {
   }
-  virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  virtual void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   }
 
   FxInterface();
@@ -93,6 +111,9 @@ protected:
 
 private:
   virtual void _doBeginFrame() = 0;
+  virtual void _doEndFrame() = 0;
   virtual void DoOnReset() {
   }
 };
+
+} // namespace ork::lev2 {

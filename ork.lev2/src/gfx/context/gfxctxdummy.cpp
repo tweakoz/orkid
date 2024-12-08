@@ -11,8 +11,28 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 
+/////////////////////////////////////////////////////////////////////////
 
+struct DuIndexBufferImpl {
+  int miNumIndices = 0;
+  void* mpIndices  = nullptr;
+  bool _locked    = false;
+  ~DuIndexBufferImpl() {
+    if (mpIndices)
+      std::free(mpIndices);
+  }
+};
+struct DuVertexBufferImpl {
+  ~DuVertexBufferImpl() {
+    if (_pmemory)
+      std::free(_pmemory);
+  }
+
+  void* _pmemory = nullptr;
+};
 
 /////////////////////////////////////////////////////////////////////////
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
@@ -22,20 +42,36 @@ ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
 
 namespace ork { namespace lev2 {
 
-
-struct DuIndexBufferImpl {
-  int miNumIndices = 0;
-  void* mpIndices = nullptr;
-  bool mbLocked = false;
-  ~DuIndexBufferImpl(){
-    if( mpIndices )
-      std::free(mpIndices);
-  }
-};
-
-
 void ContextDummy::describeX(class_t* clazz) {
+  clazz->annotateTyped<context_factory_t>("context_factory", []() { return std::make_shared<ContextDummy>(); });
 }
+
+/////////////////////////////////////////////////////////////////////////
+
+namespace dummy {
+  void touchClasses() {
+    ContextDummy::GetClassStatic();
+  }
+  context_ptr_t createLoaderContext() {
+    auto clazz = dynamic_cast<const object::ObjectClass*>(ContextDummy::GetClassStatic());
+    GfxEnv::setContextClass(clazz);
+
+    auto loader = std::make_shared<FxShaderLoader>();
+    FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+    auto shadctx = FileEnv::contextForUriProto("orkshader://");
+    auto democtx = FileEnv::contextForUriProto("demo://");
+    loader->addLocation(shadctx, ".fxml"); // for glsl targets
+    if (democtx) {
+      loader->addLocation(democtx, ".fxml"); // for glsl targets
+    }
+    asset::registerLoader<FxShaderAsset>(loader);
+
+    auto ctx = std::make_shared<ContextDummy>();
+    // FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+    return ctx;
+  }
+}; // namespace dummy
+
 /////////////////////////////////////////////////////////////////////////
 
 void DummyContextInit() {
@@ -87,6 +123,7 @@ ContextDummy::ContextDummy()
     : Context()
     , mMtxI(*this)
     , mGbI(*this)
+    , mTxI(*this) 
     , mFbI(*this)
     , mDWI(*this) {
   DummyContextInit();
@@ -121,54 +158,44 @@ DuGeometryBufferInterface::DuGeometryBufferInterface(ContextDummy& ctx)
 
 void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
   if (not IdxBuf._impl.isSet()) {
-    auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
+    auto impl          = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
     impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.indexSize());
   }
-  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
-  char* pch = (char*)impl->mpIndices;
-  impl->mbLocked     = true;
+  auto impl      = IdxBuf._impl.getShared<DuIndexBufferImpl>();
+  char* pch      = (char*)impl->mpIndices;
+  impl->_locked = true;
   return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
-  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
-  impl->mbLocked = false;
+  auto impl      = IdxBuf._impl.getShared<DuIndexBufferImpl>();
+  impl->_locked = false;
 }
 
 const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int ibase, int icount) {
   if (not IdxBuf._impl.isSet()) {
-    auto impl = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
+    auto impl          = IdxBuf._impl.makeShared<DuIndexBufferImpl>();
     impl->miNumIndices = IdxBuf.GetNumIndices();
     impl->mpIndices    = std::malloc(IdxBuf.GetNumIndices() * IdxBuf.indexSize());
   }
-  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
-  char* pch = (char*)impl->mpIndices;
-  impl->mbLocked     = true;
+  auto impl      = IdxBuf._impl.getShared<DuIndexBufferImpl>();
+  char* pch      = (char*)impl->mpIndices;
+  impl->_locked = true;
   return (void*)(pch + ibase);
 }
 void DuGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
-  auto impl = IdxBuf._impl.getShared<DuIndexBufferImpl>();
-  impl->mbLocked = false;
+  auto impl      = IdxBuf._impl.getShared<DuIndexBufferImpl>();
+  impl->_locked = false;
 }
 
 void DuGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
-
 }
-
-struct DuVertexBufferImpl {
-  ~DuVertexBufferImpl(){
-    if( _pmemory )
-      std::free(_pmemory);
-  }
-
-  void* _pmemory = nullptr;
-};
 
 void* DuGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int icount) {
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
-  if(not VBuf._impl.isSet()){ 
-    auto impl = VBuf._impl.makeShared<DuVertexBufferImpl>();
+  if (not VBuf._impl.isSet()) {
+    auto impl      = VBuf._impl.makeShared<DuVertexBufferImpl>();
     impl->_pmemory = std::malloc(iVBlen);
   }
   VBuf.Lock();
@@ -203,9 +230,7 @@ bool ContextDummy::SetDisplayMode(DisplayMode* mode) {
 void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType,
-    int ivbase,
-    int ivcount) {
+    PrimitiveType eType) {
 }
 void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
 }
@@ -224,19 +249,8 @@ void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     size_t instance_count) {
 }
 
-bool DuTextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
-  ///////////////////////////////////////////////
-  AssetPath Filename = fname;
-  bool bHasExt       = Filename.hasExtension();
-  if (false == bHasExt) {
-    Filename.setExtension("dds");
-  }
-  ///////////////////////////////////////////////
-  File TextureFile(Filename, ork::EFM_READ);
-  if (false == TextureFile.IsOpen()) {
-    return false;
-  }
-  return true;
+DuTextureInterface::DuTextureInterface(Context& ctx)
+    : TextureInterface(&ctx) {
 }
 
 }} // namespace ork::lev2

@@ -114,7 +114,7 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
-    _lightblock = _lightingmtl->paramBlock("ub_light");
+    _lightblock = _lightingmtl->uniformBlock("ub_light");
     //////////////////////////////////////////////////////////////
     _parMatIVPArray         = _lightingmtl->param("IVPArray");
     _parMatVArray           = _lightingmtl->param("VArray");

@@ -66,7 +66,9 @@ void Context::triggerFrameDebugCapture() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::beginFrame(void) {
+void Context::beginFrame(bool visual) {
+
+  _is_visual_frame = visual;
 
   makeCurrentContext();
 
@@ -188,8 +190,8 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass) {
-  return _beginRecordCommandBuffer(rpass);
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string named) {
+  return _beginRecordCommandBuffer(rpass,named);
 }
 void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   _endRecordCommandBuffer(cmdbuf);
@@ -231,7 +233,7 @@ void Context::enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   _doEnqueueSecondaryCommandBuffer(cmdbuf);
 }
 
-commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
+commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
   return nullptr;
 }
 void Context::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
@@ -289,12 +291,20 @@ bool Context::SetDisplayMode(unsigned int index) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void* Context::BeginLoad() {
+load_token_t Context::beginLoad() {
   return _doBeginLoad();
 }
-void Context::EndLoad(void* ploadtok) {
+void Context::endLoad(load_token_t ploadtok) {
   _doEndLoad(ploadtok);
 }
+void Context::debugPushGroup(const std::string str) {
+  debugPushGroup(str, fvec4::Red());
+}
+void Context::debugMarker(const std::string str){
+  debugMarker(str, fvec4::Red());
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -80,20 +80,20 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // glFinish();
   GL_ERRORCHECK();
 
-  RtGroup* rtg = mTargetGL.FBI()->GetRtGroup();
+  RtGroup* rtg = _active_rtgroup;
 
   if (mTargetGL._defaultRTG and (rtg != nullptr)) {
-    SetRtGroup(mTargetGL._defaultRTG);
+    __setRtGroup(mTargetGL._defaultRTG);
     rtGroupClear(mTargetGL._defaultRTG);
     rtg = mTargetGL._defaultRTG;
   }
 
   if (rtg) {
     glDepthRange(0.0, 1.0f);
-    float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->x;
-    float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->y;
-    float fw = GetRtGroup()->width();
-    float fh = GetRtGroup()->height();
+    float fx = 0.0f; 
+    float fy = 0.0f; 
+    float fw = rtg->width();
+    float fh = rtg->height();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     ViewportRect extents(fx, fy, fw, fh);
     // SRect extents( _target.x, _target.y, _target.width(), _target.height() );
@@ -169,16 +169,6 @@ void GlFrameBufferInterface::_doEndFrame(void) {
 
   // glFinish();
 
-  ////////////////////////////////
-  auto rtg = mTargetGL.FBI()->GetRtGroup();
-
-  if (rtg) {
-    int inumtargets     = rtg->GetNumTargets();
-    // printf( "ENDFRAME<RtGroup>\n" );
-  } else {
-    //glFinish();
-    //mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
-  }
   ////////////////////////////////
   popViewport();
   popScissor();
@@ -298,16 +288,9 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
 void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   glClearColor(color.x, color.y, color.z, color.w);
-
-  /*GLuint clearColor[4] = { 
-    GLuint(color.x * 65535.0f),
-    GLuint(color.y * 65535.0f),
-    GLuint(color.z * 65535.0f),
-    GLuint(color.w * 65535.0f)
-  };
-  glClearBufferuiv(GL_COLOR, 0, clearColor);*/
 
   // printf("GlFrameBufferInterface::ClearViewport() color<%g %g %g %g>\n", color.x, color.y, color.z, color.w);
   GL_ERRORCHECK();
@@ -326,7 +309,7 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
   glClear(GL_DEPTH_BUFFER_BIT);
   GL_ERRORCHECK();
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {

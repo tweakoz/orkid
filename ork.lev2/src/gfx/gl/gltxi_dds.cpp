@@ -18,6 +18,7 @@
 #include <ork/kernel/debug.h>
 
 namespace ork::lev2 {
+  /*
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
@@ -322,6 +323,6 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   }
 
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

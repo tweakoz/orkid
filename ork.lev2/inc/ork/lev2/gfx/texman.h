@@ -241,7 +241,7 @@ struct Texture {
   mutable bool _dirty           = true;
   const void* _data             = nullptr;
   TextureAnimationBase* _anim   = nullptr;
-  mutable svar64_t _impl        = nullptr;
+  mutable svarshp_t _impl        = nullptr;
   Context* _creatingTarget      = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;

@@ -118,6 +118,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(Z16),
   CrcEnum(Z24S8),
   CrcEnum(Z32),
+  CrcEnum(Z32S8),
   CrcEnum(DEPTH),
   CrcEnum(RGBA_BPTC_UNORM),
   CrcEnum(SRGB_ALPHA_BPTC_UNORM),
@@ -130,7 +131,6 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(NONE)
 };
 
-std::string EBufferFormatToName(EBufferFormat fmt);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum struct PrimitiveType : crc_enum_t {
@@ -322,5 +322,8 @@ enum struct EVtxStreamFormat : crc_enum_t {
 
   CrcEnum(NONE)
 };
+///////////////////////////////////////////////////////////////////////////////
+std::string EBufferFormatToName(EBufferFormat fmt);
+std::string EVtxStreamFormatToName(EVtxStreamFormat fmt);
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -128,8 +128,8 @@ struct CameraMatrices {
   fmtx4 VPMONO() const;
   fmtx4 MVPMONO(const fmtx4& M) const;
   ////////////////////////////////////////////////////////////////////
-  void setCustomView(const ork::fmtx4& view);
-  void setCustomProjection(const ork::fmtx4& proj);
+  void setCustomView(const fmtx4& view);
+  void setCustomProjection(const fmtx4& proj);
   ////////////////////////////////////////////////////////////////////
   void _updateInternal();
   ////////////////////////////////////////////////////////////////////

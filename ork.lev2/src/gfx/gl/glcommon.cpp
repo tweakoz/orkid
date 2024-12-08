@@ -9,6 +9,8 @@
 
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 
 #include "gl.h"
 
@@ -20,12 +22,64 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-ContextGL* _gcurrentContext = nullptr;
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
 
-std::atomic<int> __FIND_IT;
+GlPlatformObject* GlPlatformObject::_current = nullptr;
+
+void GlPlatformObject::makeCurrent() {
+    _current = this;
+    if(_ctxbase){
+      auto window = _ctxbase->_glfwWindow;
+      printf( "_glfwWindow<%p> made current\n", (void*) window );
+      glfwMakeContextCurrent(window);
+    }
+    else{
+      OrkAssert(false);
+    }
+    //_ctxbase->makeCurrent();
+}
+void GlPlatformObject::swapBuffers() {
+
+}
+
+void touchClasses() {
+  ContextGL::GetClassStatic();
+}
+
+namespace opengl{
+  context_ptr_t createLoaderContext() {
+
+    ///////////////////////////////////////////////////////////
+    auto loader = std::make_shared<FxShaderLoader>();
+    FxShader::RegisterLoaders("shaders/glfx/", "glfx");
+    auto shadctx = FileEnv::contextForUriProto("orkshader://");
+    auto democtx = FileEnv::contextForUriProto("demo://");
+    loader->addLocation(shadctx, ".glfx"); // for glsl targets
+    if (democtx) {
+      loader->addLocation(democtx, ".glfx"); // for glsl targets
+    }
+    ///////////////////////////////////////////////////////////
+
+    asset::registerLoader<FxShaderAsset>(loader);
+
+    //_GVI       = std::make_shared<VulkanInstance>();
+    auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
+    GfxEnv::setContextClass(clazz);
+    auto target = std::make_shared<ContextGL>();
+    target->initializeLoaderContext();
+    GfxEnv::initializeWithContext(target);
+    return target;
+  }  
+}
+
+GlPlatformObject::GlPlatformObject(): _bindop([=](){}) {}
+GlPlatformObject::~GlPlatformObject() {}
+
 
 void ContextGL::describeX(class_t* clazz) {
-  __FIND_IT.store(0);
+  clazz->annotateTyped<context_factory_t>("context_factory", []() { //
+    return std::make_shared<ContextGL>();
+  });
 }
 
 std::string indent(int count) {
@@ -42,8 +96,7 @@ static thread_local std::stack<std::string> _groupstack;
 #if defined(__APPLE__)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-void ContextGL::debugPushGroup(const std::string str) {
-  _gcurrentContext = this;
+void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
   int level = _dbglevel++;
   auto mstr = indent(level) + str;
   // printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", this, level, mstr.c_str() );
@@ -63,7 +116,7 @@ void ContextGL::debugPopGroup() {
   _dbglevel--;
 }
 /////////////////////////////////////////////////////////////////////////
-void ContextGL::debugMarker(const std::string str) {
+void ContextGL::debugMarker(const std::string str,const fvec4& color) {
 }
 /////////////////////////////////////////////////////////////////////////
 void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
@@ -90,7 +143,6 @@ void ContextGL::debugPushGroup(const std::string str) {
   GL_ERRORCHECK();
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, mstr.length(), mstr.c_str());
   GL_ERRORCHECK();
-  __FIND_IT.fetch_add(1);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -99,9 +151,6 @@ void ContextGL::debugPopGroup() {
   std::string top = _groupstack.top();
   _groupstack.pop();
   // printf( "POPGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, _dbglevel, top.c_str() );
-  if (__FIND_IT.exchange(0) == 1) {
-    // OrkAssert(false);
-  }
   GL_ERRORCHECK();
   glPopDebugGroup();
   GL_ERRORCHECK();
@@ -181,7 +230,7 @@ int GetGlError(void) {
 
   if (err != GL_NO_ERROR) {
     std::string errstr = GetGlErrorString(err);
-    orkprintf("GLERROR [%s] cctx<%p>\n", errstr.c_str(), _gcurrentContext);
+    orkprintf("GLERROR [%s]\n", errstr.c_str());
     //_gcurrentContext->stateDebugger();
     check_debug_log();
   }

@@ -103,9 +103,9 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   {
 
     if (pickstate == 0) {
-      fbi->Clear(fvec4(0, 0, 0, 0), 1.0f);
+      //fbi->Clear(fvec4(0, 0, 0, 0), 1.0f);
     } else {
-      fbi->Clear(fvec4(0, 0, 0.5, 0), 1.0f);
+      //fbi->Clear(fvec4(0, 0, 0.5, 0), 1.0f);
       // printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
     }
 

@@ -10,6 +10,8 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 
 using namespace ork;
 using namespace ork::lev2;

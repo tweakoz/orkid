@@ -8,10 +8,11 @@
 #pragma once
 
 #include "gfxenv.h"
+#include "txi.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 class ContextDummy;
 
@@ -24,6 +25,8 @@ struct DummyDrawingInterface : public DrawingInterface {
 class DummyFxInterface : public FxInterface {
 public:
   void _doBeginFrame() final {
+  }
+  void _doEndFrame() final {
   }
 
   int BeginBlock(const FxShaderTechnique* tek, const RenderContextInstData& data) final {
@@ -40,7 +43,7 @@ public:
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final {
+  const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final {
@@ -84,6 +87,9 @@ public:
   }
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
+
+  fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) { return nullptr; }
+
 
   DummyFxInterface() {
   }
@@ -137,7 +143,7 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       int ivcount) override;
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
       override;
 
   void DrawPrimitiveEML(
@@ -165,19 +171,16 @@ class DuFrameBufferInterface : public FrameBufferInterface {
 public:
   DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
-
-  void SetRtGroup(RtGroup* Base) final {
+  void _pushRtGroup(RtGroup* Base) final {
+    _active_rtgroup = Base;
   }
-
+  void _popRtGroup(bool continue_render) final {
+  }
   ///////////////////////////////////////////////////////
 
   void _setViewport(int iX, int iY, int iW, int iH) final {
   }
   void _setScissor(int iX, int iY, int iW, int iH) final {
-  }
-  void Clear(const fcolor4& rCol, float fdepth) final {
-  }
-  void clearDepth(float fdepth) final {
   }
 
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final {
@@ -201,18 +204,14 @@ protected:
 
 class DuTextureInterface : public TextureInterface {
 public:
+  DuTextureInterface(Context& ctx);
   void TexManInit(void) final {
   }
 
   bool destroyTexture(texture_ptr_t ptex) final {
     return false;
   }
-  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final {
-    return false;
-  }
-  void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {
-  }
+
   void generateMipMaps(Texture* ptex) final {
   }
 };
@@ -296,4 +295,4 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+} // namespace ork::lev2

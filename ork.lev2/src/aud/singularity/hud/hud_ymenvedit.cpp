@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/label.h>
 #include <ork/lev2/ui/dial.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 
 using namespace ork;
 using namespace ork::lev2;

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/util/triple_buffer.h>

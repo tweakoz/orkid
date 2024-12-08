@@ -16,8 +16,8 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CompositingScene : public ork::Object {
-  DeclareConcreteX(CompositingScene, ork::Object);
+struct CompositingScene : public ::ork::Object {
+  DeclareConcreteX(CompositingScene, ::ork::Object);
 public:
   CompositingScene();
   compositingsceneitem_constptr_t findItem(const std::string& named) const;
@@ -27,8 +27,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CompositingSceneItem : public ork::Object {
-  DeclareConcreteX(CompositingSceneItem, ork::Object);
+struct CompositingSceneItem : public ::ork::Object {
+  DeclareConcreteX(CompositingSceneItem, ::ork::Object);
 
 public:
   CompositingSceneItem();
@@ -54,8 +54,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CompositingTechnique : public ork::Object {
-  RttiDeclareAbstract(CompositingTechnique, ork::Object);
+struct CompositingTechnique : public ::ork::Object {
+  RttiDeclareAbstract(CompositingTechnique, ::ork::Object);
 
 public:
   virtual void gpuInit(lev2::Context* pTARG, int w, int h) = 0;
@@ -71,10 +71,10 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-class CompositingBuffer : public ork::Object {
+class CompositingBuffer : public ::ork::Object {
   int miWidth;
   int miHeight;
-  ork::lev2::EBufferFormat meBufferFormat;
+  EBufferFormat meBufferFormat;
 
   CompositingBuffer();
   ~CompositingBuffer();
@@ -152,12 +152,12 @@ struct CompositingPassData {
   IRenderTarget* _irendertarget        = nullptr;
   bool mbDrawSource                    = true;
   std::string _cameraName;
-  ork::fvec4 _clearColor;
+  fvec4 _clearColor;
   bool _stereo1pass                                 = false;
   const CameraMatrices* _cameraMatrices             = nullptr;
   cameramatrices_ptr_t _shared_cameraMatrices  = nullptr;
   const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
-  ork::svarp_t _var;
+  svarp_t _var;
   ViewportRect mDstRect;
   ViewportRect mMrtRect;
   uint32_t _passID = 0;
@@ -227,8 +227,8 @@ using render_preset_data_ptr_t = std::shared_ptr<RenderPresetData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CompositingData : public ork::Object {
-  DeclareConcreteX(CompositingData, ork::Object);
+struct CompositingData : public ::ork::Object {
+  DeclareConcreteX(CompositingData, ::ork::Object);
 
 public:
   ///////////////////////////////////////////////////////

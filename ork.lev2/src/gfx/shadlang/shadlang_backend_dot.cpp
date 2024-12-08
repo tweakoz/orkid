@@ -39,6 +39,8 @@ struct DotBackend {
     addThemeItem<Extension>("#3f4f5f", "white");
     addThemeItem<Dependency>("#5f7f7f", "white");
     addThemeItem<ObjectName>("#8f4f4f", "white", 1);
+    addThemeItem<SamplerDeclarations>("#5f3f5f", "white");
+    addThemeItem<SamplerDeclaration>("#7f3f7f", "white", 1);
     addThemeItem<DataDeclarations>("#5f3f5f", "white");
     addThemeItem<DataDeclaration>("#7f3f7f", "white", 1);
     addThemeItem<ArrayDeclaration>("#7f3f7f", "white", 1);
@@ -77,6 +79,7 @@ struct DotBackend {
     addThemeItem<SemaInheritFragmentInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritGeometryInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritComputeInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritSamplerSet>("#f0c040", "black", 1);
     addThemeItem<SemaInheritUniformSet>("#f0c040", "black", 1);
     addThemeItem<SemaInheritUniformBlk>("#f0c040", "black", 1);
     addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);

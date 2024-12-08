@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <ork/file/path.h>
+#include <ork/gfx/dds.h>
+
+namespace ork::lev2 {
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// Texture Interface
@@ -41,20 +45,45 @@ struct TextureInitData {
   bool _allow_async = false;
 };
 
+struct TexLoadReq {
+  texture_ptr_t ptex;
+  const dds::DDS_HEADER* _ddsheader = nullptr;
+  svar16_t _impl;
+  std::string _texname;
+  DataBlockInputStream _inpstream;
+  compressedmipchain_ptr_t _cmipchain;
+};
+
+using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;
+
 class TextureInterface {
 public:
 
-  virtual void TexManInit(void) = 0;
+  TextureInterface(context_rawptr_t ctx);
+
+  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex);
+  void SaveTexture(const AssetPath& fname, Texture* ptex);
 
   texture_ptr_t createColorTexture(fvec4 color, int w, int h);
   texture_ptr_t createColorTextureV3(fvec3 color, int w, int h);
   texture_ptr_t createColorCubeTexture(fvec4 color, int w, int h);
   texture_ptr_t createColorTextureV3Array(fvec3 color, int w, int h, int d);
 
-  virtual bool destroyTexture(texture_ptr_t ptex)                           = 0;
-  virtual bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex)      = 0;
-  virtual bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata)      = 0;
-  virtual void SaveTexture(const ork::AssetPath& fname, Texture* ptex) = 0;
+  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock);
+  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  void _loadXTXTextureMainThreadPart(texloadreq_ptr_t req);
+  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
+  void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
+
+
+  virtual void TexManInit()                       = 0;
+  virtual bool destroyTexture(texture_ptr_t ptex) = 0;
+  virtual void generateMipMaps(Texture* ptex)     = 0;
+
+  virtual void _createFromCompressedLoadReq(texloadreq_ptr_t req) {}
+
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   }
   virtual void ApplySamplingMode(Texture* ptex) {
@@ -76,5 +105,8 @@ public:
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;
   }
-  virtual void generateMipMaps(Texture* ptex) = 0;
+
+  context_rawptr_t _ctx;
 };
+
+} //namespace ork::lev2 {

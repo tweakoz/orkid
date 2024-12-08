@@ -115,6 +115,26 @@ void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+std::string _smp_extract_type(smp_ptr_t smp_node, match_ptr_t dt_match) {
+  auto seq     = dt_match->asShared<Sequence>();
+  auto dt_name = seq->itemAsShared<OneOf>(0)->_selected;
+  auto dt_cm   = dt_name->asShared<ClassMatch>();
+
+  auto type_name = dt_cm->_token->text;
+  return type_name;
+}
+void _semaNameSamplerTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<SamplerType>(top);
+  for (auto id_node : nodes) {
+    dumpAstNode(id_node);
+    auto match     = slp->matchForAstNode(id_node);
+    auto sampler_type = _smp_extract_type(id_node, match);
+    id_node->setValueForKey<std::string>("sampler_type", sampler_type);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<IDENTIFIER>(top);
   for (auto id_node : nodes) {
@@ -127,6 +147,7 @@ void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     slp->replaceInParent(id_node, sema_id);
   }
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -163,9 +184,19 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
       type_name = as_cm.value()->_token->text;
     } else { // its a DataTypeNode
       auto seq  = sel->asShared<Sequence>();
-      auto sel2 = seq->itemAsShared<OneOf>(2)->_selected;
-      auto cm   = sel2->asShared<ClassMatch>();
-      type_name = cm->_token->text;
+      auto sel0 = seq->tryItemAsShared<OneOf>(0);
+      auto sel2 = seq->tryItemAsShared<OneOf>(2);
+      if(sel0){ // SamplerType ?
+        auto cm   = sel0.value()->_selected->asShared<ClassMatch>();
+        type_name = cm->_token->text;
+      }
+      else if(sel2){ // DataType ?
+        auto cm   = sel2.value()->_selected->asShared<ClassMatch>();
+        type_name = cm->_token->text;
+      }
+      else{
+        OrkAssert(false);
+      }
     }
 
     // tid_node->_name += FormatString("type: %s\n", type_name.c_str());
@@ -287,6 +318,8 @@ void _semaCollectNamedOfType(
       }
 
       outmap[the_name] = n;
+
+      printf( "cache: objname: %s\n", the_name.c_str() );
 
       auto it2 = slp->_slp_cache->_translatables.find(the_name);
       if (it != slp->_slp_cache->_translatables.end()) {
@@ -413,6 +446,14 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<LibraryBlock>(name, as_lib_block, slp->_slp_cache->_library_blocks);
         } 
         ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_typ_block = std::dynamic_pointer_cast<TypeBlock>(translatable)) {
+          slp->importTranslatable<TypeBlock>(name, as_typ_block, slp->_slp_cache->_type_blocks);
+        } 
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_smpset = std::dynamic_pointer_cast<SamplerSet>(translatable)) {
+          slp->importTranslatable<SamplerSet>(name, as_smpset, slp->_slp_cache->_sampler_sets);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_uniset = std::dynamic_pointer_cast<UniformSet>(translatable)) {
           slp->importTranslatable<UniformSet>(name, as_uniset, slp->_slp_cache->_uniform_sets);
         }
@@ -426,12 +467,12 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<VertexInterface>(name, as_vif, slp->_slp_cache->_vertex_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
-        else if (auto as_fif = std::dynamic_pointer_cast<FragmentInterface>(translatable)) {
-          slp->importTranslatable<FragmentInterface>(name, as_fif, slp->_slp_cache->_fragment_interfaces);
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_gif = std::dynamic_pointer_cast<GeometryInterface>(translatable)) {
           slp->importTranslatable<GeometryInterface>(name, as_gif, slp->_slp_cache->_geometry_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_fif = std::dynamic_pointer_cast<FragmentInterface>(translatable)) {
+          slp->importTranslatable<FragmentInterface>(name, as_fif, slp->_slp_cache->_fragment_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_cif = std::dynamic_pointer_cast<ComputeInterface>(translatable)) {
@@ -444,12 +485,12 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<VertexShader>(name, as_vsh, slp->_slp_cache->_vertex_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
-        else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(translatable)) {
-          slp->importTranslatable<FragmentShader>(name, as_fsh, slp->_slp_cache->_fragment_shaders);
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(translatable)) {
           slp->importTranslatable<GeometryShader>(name, as_gsh, slp->_slp_cache->_geometry_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(translatable)) {
+          slp->importTranslatable<FragmentShader>(name, as_fsh, slp->_slp_cache->_fragment_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(translatable)) {
@@ -501,6 +542,17 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
     auto name       = cm->_token->text;
     mao_node->_name = FormatString("MemberAccess: %s", name.c_str());
     mao_node->setValueForKey<std::string>("member_name", name);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaExtractDescriptorSetIds(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<DescriptorSetId>(top);
+  for (auto did_node : nodes) {
+    auto intnode = AstNode::collectNodesOfType<SemaIntegerLiteral>(did_node)[0];
+    auto literal_val = intnode->typedValueForKey<std::string>("literal_value").value();
+    did_node->setValueForKey<int>("descriptor_set_id", atoi(literal_val.c_str()));
   }
 }
 
@@ -751,13 +803,25 @@ void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t t
    printf("  num_inputs<%zu>\n", inputs.size());
   for (auto input : inputs) {
     auto tid = input->childAs<TypedIdentifier>(0);
-    OrkAssert(tid);
-    auto colon = input->childAs<COLON>(1);
-    auto semantic = input->childAs<SemaIdentifier>(2);
-    if( colon and semantic ){
-      auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
-      printf( "sema_id<%s>\n", sema_id.c_str() );
-      input->setValueForKey<std::string>("semantic", sema_id);
+    if(tid){
+      auto colon = input->childAs<COLON>(1);
+      auto semantic = input->childAs<SemaIdentifier>(2);
+      if( colon and semantic ){
+        auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
+        printf( "sema_id<%s>\n", sema_id.c_str() );
+        input->setValueForKey<std::string>("semantic", sema_id);
+      }
+    }
+    else { 
+      // try layout(local_size_x = ?, local_size_y = ?, local_size_z = ?); ?
+      auto layout = input->childAs<InterfaceLayout>(0);
+      if(layout){
+        //OrkAssert(false);
+      }
+      else{
+        dumpAstNode(input);
+        OrkAssert(false);
+      }
     }
   }
 }
@@ -773,9 +837,12 @@ int _semaLinkToInheritances(
     astnode_ptr_t inh_item;
     auto objname = n->template typedValueForKey<std::string>("object_name").value();
     /////////////////////////////////
-    auto check_inheritance = [](std::string inh_name, SHAST::astnode_map_t& in_map) -> bool { //
+    auto check_inheritance = [](std::string inh_name, std::string set_name, SHAST::astnode_map_t& in_map) -> bool { //
       auto it    = in_map.find(inh_name);
       bool found = (it != in_map.end());
+      if(not found){
+        //printf( "check_inheritance<%s> in set<%s> not found\n", inh_name.c_str(), set_name.c_str() );
+      }
       return found;
     };
     /////////////////////////////////
@@ -801,6 +868,8 @@ int _semaLinkToInheritances(
         }
         /////////////////////////////////
         bool check_lib_blocks  = false;
+        bool check_typ_blocks  = false;
+        bool check_smp_sets    = false;
         bool check_uni_sets    = false;
         bool check_uni_blks    = false;
         bool check_vtx_iface   = false;
@@ -813,6 +882,13 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
+          check_uni_sets   = true;
+          check_uni_blks   = true;
+        }
+        else if constexpr (std::is_same<node_t, TypeBlock>::value) {
+          check_typ_blocks = true;
           //check_uni_sets   = true;
           //check_uni_blks   = true;
         }
@@ -821,6 +897,8 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, VertexShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
@@ -830,9 +908,11 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, GeometryShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
-          check_vtx_iface  = true;
+          //check_vtx_iface  = true;
           check_geo_iface  = true;
         }
         /////////////////////////////////
@@ -840,6 +920,8 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, FragmentShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
@@ -847,10 +929,12 @@ int _semaLinkToInheritances(
           check_frg_iface  = true;
         }
         /////////////////////////////////
-        // FragmentShaders
+        // ComputeShaders
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, ComputeShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          check_smp_sets   = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_com_iface  = true;
@@ -859,6 +943,7 @@ int _semaLinkToInheritances(
         // PipelineInterfaces
         /////////////////////////////////
         else if constexpr (std::is_base_of<PipelineInterface, node_t>::value) {
+          check_smp_sets  = true;
           check_uni_sets  = true;
           check_uni_blks  = true;
           check_vtx_iface = true;
@@ -873,62 +958,73 @@ int _semaLinkToInheritances(
           check_stateblocks = true;
         }
         /////////////////////////////////
-        if constexpr (std::is_same<node_t, LibraryBlock>::value) {
-          bool check = check_inheritance(inh_name, slp->_slp_cache->_library_blocks);
-          if(check==false){
-            printf("XXX cannot find %s |  %s << %s\n", n->_type_name.c_str(), objname.c_str(), inh_name.c_str());
-            impl::implStackDump(slp->_slp_cache);
-            OrkAssert(false);
-          }
-        }
         /////////////////////////////////
-        if (check_lib_blocks and check_inheritance(inh_name, slp->_slp_cache->_library_blocks)) {
-          auto semalib   = std::make_shared<SemaInheritLibrary>();
-          semalib->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        /////////////////////////////////
+        /////////////////////////////////
+        if (check_typ_blocks and check_inheritance(inh_name, "typ", slp->_slp_cache->_type_blocks)) {
+          auto typelib   = std::make_shared<SemaInheritTypeBlock>();
+          typelib->_name = FormatString("SemaInheritTypeBlock: %s", inh_name.c_str());
+          typelib->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, typelib);
           count++;
-        } else if (check_uni_sets and check_inheritance(inh_name, slp->_slp_cache->_uniform_sets)) {
-          auto semalib   = std::make_shared<SemaInheritUniformSet>();
-          semalib->_name = FormatString("SemaInheritUniformSet: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        }
+        else if (check_lib_blocks and check_inheritance(inh_name, "lib", slp->_slp_cache->_library_blocks)) {
+          auto semanode   = std::make_shared<SemaInheritLibrary>();
+          semanode->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_uni_blks and check_inheritance(inh_name, slp->_slp_cache->_uniform_blocks)) {
-          auto semalib   = std::make_shared<SemaInheritUniformBlk>();
-          semalib->_name = FormatString("SemaInheritUniformBlk: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_smp_sets and check_inheritance(inh_name, "sset", slp->_slp_cache->_sampler_sets)) {
+          auto semanode   = std::make_shared<SemaInheritSamplerSet>();
+          semanode->_name = FormatString("SemaInheritSamplerSet: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_vtx_iface and check_inheritance(inh_name, slp->_slp_cache->_vertex_interfaces)) {
-          auto semalib   = std::make_shared<SemaInheritVertexInterface>();
-          semalib->_name = FormatString("SemaInheritVertexInterface: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_uni_sets and check_inheritance(inh_name, "uset", slp->_slp_cache->_uniform_sets)) {
+          auto semanode   = std::make_shared<SemaInheritUniformSet>();
+          semanode->_name = FormatString("SemaInheritUniformSet: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_geo_iface and check_inheritance(inh_name, slp->_slp_cache->_geometry_interfaces)) {
-          auto semalib   = std::make_shared<SemaInheritGeometryInterface>();
-          semalib->_name = FormatString("SemaInheritGeometryInterface: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_uni_blks and check_inheritance(inh_name, "ublk", slp->_slp_cache->_uniform_blocks)) {
+          auto semanode   = std::make_shared<SemaInheritUniformBlk>();
+          semanode->_name = FormatString("SemaInheritUniformBlk: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_frg_iface and check_inheritance(inh_name, slp->_slp_cache->_fragment_interfaces)) {
-          auto semalib   = std::make_shared<SemaInheritFragmentInterface>();
-          semalib->_name = FormatString("SemaInheritFragmentInterface: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_vtx_iface and check_inheritance(inh_name, "vif", slp->_slp_cache->_vertex_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritVertexInterface>();
+          semanode->_name = FormatString("SemaInheritVertexInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_com_iface and check_inheritance(inh_name, slp->_slp_cache->_compute_interfaces)) {
-          auto semalib   = std::make_shared<SemaInheritComputeInterface>();
-          semalib->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
-          semalib->setValueForKey<std::string>("inherit_id", inh_name);
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_geo_iface and check_inheritance(inh_name, "gif", slp->_slp_cache->_geometry_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritGeometryInterface>();
+          semanode->_name = FormatString("SemaInheritGeometryInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
-        } else if (check_stateblocks and check_inheritance(inh_name, slp->_stateblocks)) {
-          auto semalib   = std::make_shared<SemaInheritStateBlock>();
-          semalib->_name = FormatString("SemaInheritStateBlock: %s", inh_name.c_str());
-          slp->replaceInParent(inh_item, semalib);
+        } else if (check_frg_iface and check_inheritance(inh_name, "fif", slp->_slp_cache->_fragment_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritFragmentInterface>();
+          semanode->_name = FormatString("SemaInheritFragmentInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
           count++;
+        } else if (check_com_iface and check_inheritance(inh_name, "cif", slp->_slp_cache->_compute_interfaces)) {
+          auto semanode   = std::make_shared<SemaInheritComputeInterface>();
+          semanode->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
+          semanode->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, semanode);
+          count++;
+        } else if (check_stateblocks and check_inheritance(inh_name, "sblk", slp->_stateblocks)) {
+          auto semanode   = std::make_shared<SemaInheritStateBlock>();
+          semanode->_name = FormatString("SemaInheritStateBlock: %s", inh_name.c_str());
+          slp->replaceInParent(inh_item, semanode);
+          count++;
+        }
+        else if( inh_name!="default" ){
+          printf( "check_inheritance<%s> not found\n", inh_name.c_str() );
+          OrkAssert(false);
         }
       } // if (as_inh_item) {
       return true;
@@ -1026,6 +1122,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   if (1) {
     _semaNameBuiltInDataTypes(this, top);
+    _semaNameSamplerTypes(this, top);
     _semaNormalizeDtUserTypes(this, top);
 
     _semaNameIdentifers(this, top);
@@ -1041,6 +1138,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   if (1) {
     _semaIntegerLiterals(this, top);
     _semaFloatLiterals(this, top);
+    _semaExtractDescriptorSetIds(this, top);
   }
 
   printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
@@ -1052,8 +1150,8 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   if (1) {
     _semaCollectNamedOfType<VertexInterface>(this, top, _slp_cache->_vertex_interfaces);
-    _semaCollectNamedOfType<FragmentInterface>(this, top, _slp_cache->_fragment_interfaces);
     _semaCollectNamedOfType<GeometryInterface>(this, top, _slp_cache->_geometry_interfaces);
+    _semaCollectNamedOfType<FragmentInterface>(this, top, _slp_cache->_fragment_interfaces);
     _semaCollectNamedOfType<ComputeInterface>(this, top, _slp_cache->_compute_interfaces);
 
     _semaCollectNamedOfType<VertexShader>(this, top, _slp_cache->_vertex_shaders);
@@ -1061,9 +1159,11 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaCollectNamedOfType<GeometryShader>(this, top, _slp_cache->_geometry_shaders);
     _semaCollectNamedOfType<ComputeShader>(this, top, _slp_cache->_compute_shaders);
 
+    _semaCollectNamedOfType<SamplerSet>(this, top, _slp_cache->_sampler_sets);
     _semaCollectNamedOfType<UniformSet>(this, top, _slp_cache->_uniform_sets);
     _semaCollectNamedOfType<UniformBlk>(this, top, _slp_cache->_uniform_blocks);
     _semaCollectNamedOfType<LibraryBlock>(this, top, _slp_cache->_library_blocks);
+    _semaCollectNamedOfType<TypeBlock>(this, top, _slp_cache->_type_blocks);
 
     _semaCollectNamedOfType<StructDecl>(this, top, _structs);
     _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
@@ -1115,6 +1215,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   while (keep_going) {
     int count = 0;
     count += _semaLinkToInheritances<LibraryBlock>(this, top);
+    count += _semaLinkToInheritances<TypeBlock>(this, top);
 
     count += _semaLinkToInheritances<VertexInterface>(this, top);
     count += _semaLinkToInheritances<GeometryInterface>(this, top);

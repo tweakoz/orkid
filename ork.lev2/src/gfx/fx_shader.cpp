@@ -40,18 +40,18 @@ FxShaderParam::FxShaderParam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParam* FxShaderParamBlock::param(const std::string& name) const {
+FxShaderParam* FxUniformBlock::param(const std::string& name) const {
   auto it = _subparams.find(name);
   return (it != _subparams.end()) ? it->second : nullptr;
 }
 
-FxShaderParamBufferMapping::FxShaderParamBufferMapping() {
+FxUniformBufferMapping::FxUniformBufferMapping() {
 }
-FxShaderParamBufferMapping::~FxShaderParamBufferMapping() {
+FxUniformBufferMapping::~FxUniformBufferMapping() {
   assert(_mappedaddr == nullptr);
 }
-void FxShaderParamBufferMapping::unmap() {
-  _fxi->unmapParamBuffer(this);
+void FxUniformBufferMapping::unmap() {
+  _fxi->unmapUniformBuffer(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,8 +63,8 @@ void FxShader::addTechnique(const FxShaderTechnique* tek) {
 void FxShader::addParameter(const FxShaderParam* param) {
   _parameterByName[param->_name] = param;
 }
-void FxShader::addParameterBlock(const FxShaderParamBlock* block) {
-  _parameterBlockByName[block->_name] = block;
+void FxShader::addUniformBlock(const FxUniformBlock* block) {
+  _uniformBlockByName[block->_name] = block;
 }
 void FxShader::addComputeShader(const FxComputeShader* csh) {
   _computeShaderByName[csh->_name] = csh;
@@ -72,6 +72,9 @@ void FxShader::addComputeShader(const FxComputeShader* csh) {
 FxComputeShader* FxShader::findComputeShader(const std::string& named) {
   auto it = _computeShaderByName.find(named);
   return const_cast<FxComputeShader*>((it != _computeShaderByName.end()) ? it->second : nullptr);
+}
+const fxstorageblock_byname_map_t& FxShader::namedStorageBlocks() const {
+  return _storageBlockByName;
 }
 void FxShader::addStorageBlock(const FxShaderStorageBlock* block) {
   _storageBlockByName[block->_name] = block;

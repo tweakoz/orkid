@@ -90,8 +90,8 @@ void FreestyleMaterial::dump() const {
     auto par  = item.second;
     printf("  par<%p:%s> type<%s>\n", (void*) par, name.c_str(), par->mParameterType.c_str());
   }
-  printf(" parameterBlocksByName count<%zu>\n", _shader->_parameterBlockByName.size());
-  for (auto item : _shader->_parameterBlockByName) {
+  printf(" uniformBlocksByName count<%zu>\n", _shader->_uniformBlockByName.size());
+  for (auto item : _shader->_uniformBlockByName) {
     auto name   = item.first;
     auto parblk = item.second;
     printf("  parblk<%p:%s>\n", (void*) parblk, name.c_str());
@@ -167,11 +167,11 @@ const FxShaderParam* FreestyleMaterial::param(std::string named) {
   return par;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const FxShaderParamBlock* FreestyleMaterial::paramBlock(std::string named) {
+const FxUniformBlock* FreestyleMaterial::uniformBlock(std::string named) {
   auto fxi = _initialTarget->FXI();
-  auto par = fxi->parameterBlock(_shader, named);
+  auto par = fxi->uniformBlock(_shader, named);
   if (par != nullptr)
-    _paramBlocks.insert(par);
+    _uniformBlocks.insert(par);
   return par;
 }
 ////////////////////////////////////////////

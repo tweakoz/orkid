@@ -7,6 +7,8 @@
 
 #pragma once
 
+namespace ork::lev2 {
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// Frame/Buffer / Control Interface
@@ -56,13 +58,10 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  virtual void SetRtGroup(RtGroup* Base) = 0;
-  RtGroup* GetRtGroup() const {
-    return _currentRtGroup;
-  }
-
+  virtual void _pushRtGroup(RtGroup* Base) = 0;
+  virtual void _popRtGroup(bool continue_render) = 0;
   void PushRtGroup(RtGroup* Base);
-  void PopRtGroup();
+  void PopRtGroup(bool continue_render = true);
 
   virtual void rtGroupClear(RtGroup* rtg) {
   }
@@ -87,8 +86,8 @@ public:
 
   virtual void _setViewport(int iX, int iY, int iW, int iH)   = 0;
   virtual void _setScissor(int iX, int iY, int iW, int iH)    = 0;
-  virtual void Clear(const fcolor4& rCol, float fdepth)       = 0;
-  virtual void clearDepth(float fdepth)                       = 0;
+  //virtual void Clear(const fcolor4& rCol, float fdepth)       = 0;
+  //virtual void clearDepth(float fdepth)                       = 0;
   virtual void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) = 0;
   virtual void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
   virtual void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
@@ -149,7 +148,6 @@ public:
   Context& _target;
   Texture* _bufferTex          = nullptr;
   DisplayBuffer* _thisBuffer = nullptr;
-  RtGroup* _currentRtGroup     = nullptr;
   PickBuffer* _pickbuffer      = nullptr;
 
   bool _enableVSync;
@@ -164,4 +162,10 @@ public:
   fcolor4 _clearColor;
   int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
+
+  RtGroup* _active_rtgroup = nullptr;
+  rtgroup_ptr_t _main_rtg;
+
 };
+
+} // namespace ork::lev2

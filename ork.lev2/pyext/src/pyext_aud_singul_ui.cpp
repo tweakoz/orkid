@@ -19,6 +19,7 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {

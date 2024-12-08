@@ -9,6 +9,8 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 
 using namespace ork::audio::singularity;
 

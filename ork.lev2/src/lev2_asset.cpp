@@ -254,15 +254,6 @@ FxShaderAsset::~FxShaderAsset() {
   if (_shader)
     delete _shader;
 }
-class FxShaderLoader final : public FileAssetLoader {
-public:
-  FxShaderLoader();
-
-  asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) override;
-  void destroy(asset_ptr_t asset) override {
-    auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
-  }
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -297,11 +288,15 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   return pshader;
 }
 
+  void FxShaderLoader::destroy(asset_ptr_t asset) {
+    auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShaderAsset::describeX(class_t* clazz) {
-  auto loader = std::make_shared<FxShaderLoader>();
-  registerLoader<FxShaderAsset>(loader);
+  //auto loader = std::make_shared<FxShaderLoader>();
+  //registerLoader<FxShaderAsset>(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

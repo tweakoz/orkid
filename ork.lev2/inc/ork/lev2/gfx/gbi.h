@@ -7,6 +7,8 @@
 
 #pragma once
 
+namespace ork::lev2 {
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// Geometry Buffer Interface
@@ -55,9 +57,7 @@ public:
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType,
-      int ivbase           = 0,
-      int ivcount          = 0);
+      PrimitiveType eType);
 
   ///////////////////////////////////////////////////////
 
@@ -76,9 +76,7 @@ public:
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType,
-      int ivbase           = 0,
-      int ivcount          = 0) = 0;
+      PrimitiveType eType) = 0;
 
   virtual void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -142,3 +140,5 @@ private:
   virtual void _doEndFrame() {
   }
 };
+
+} // namespace ork::lev2

@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage = 0);
 
   Texture* texture() const {
     return _texture.get();
@@ -46,16 +46,17 @@ struct RtBuffer final {
   texture_ptr_t _texture;
   //RtgSlot mType;
   EBufferFormat mFormat;
-  svarp_t _impl;
+  svarshp_t _impl;
   bool mSizeDirty;
   EMipGen _mipgen;
+  uint64_t _usage = 0;
   std::string _debugName;
 };
 
 struct RtGroup final {
 
   /////////////////////////////////////////
-  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X);
+  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,bool needs_depth = true);
   ~RtGroup();
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
@@ -65,7 +66,7 @@ struct RtGroup final {
     return mMrt[idx];
   }
   /////////////////////////////////////////
-  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt);
+  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
   int GetNumTargets(void) const {
@@ -104,8 +105,10 @@ struct RtGroup final {
   int _cubeRenderFace = 0;
   MsaaSamples _msaa_samples;
   bool mbSizeDirty;
-  svar16_t _impl;
+  svarshp_t _impl;
   fvec4 _clearColor;
+  float _clearDepth = 1.0f;
+  bool _needsDepth = true;
   bool _depthOnly = false;
   bool _autoclear  = true;
   bool _clearMaskColor = true;

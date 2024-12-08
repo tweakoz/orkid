@@ -48,6 +48,8 @@ using gfxcontext_lambda_t = std::function<void(Context*)>;
 using gfxcontext_lambda_list_t = std::vector<gfxcontext_lambda_t>;
 
 using context_ptr_t          = std::shared_ptr<Context>;
+using context_rawptr_t       = Context*;
+using context_factory_t      = std::function<context_ptr_t()>;
 using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
 using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;
 using window_ptr_t           = std::shared_ptr<Window>;
@@ -142,28 +144,42 @@ using rcid_lambda_t = std::function<void(const RenderContextInstData&)>;
 struct FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
-struct FxShaderParamBlock;
-struct FxShaderParamBlockMapping;
-struct FxShaderParamBufferMapping;
+struct FxUniformBlock;
+struct FxUniformBlockMapping;
+struct FxUniformBufferMapping;
 struct FxShaderStorageBlock;
 struct FxShaderStorageBuffer;
 struct FxShaderStorageBufferMapping;
-using storagebuffermappingptr_t = std::shared_ptr<FxShaderStorageBufferMapping>;
 struct FxComputeShader;
-struct FxShaderParamBuffer;
+struct FxUniformBuffer;
 struct FxPipeline;
 struct FxPipelineCache;
 struct FxPipelinePermutation;
 struct FxPipelinePermutationSet;
+struct FxUniformSet;
+struct FxSamplerSet;
+
+struct FxDescriptorSet;
+struct FxDescriptorSetItem;
+struct FxShaderDescriptorSetBindPoint;
+
+// port vulkan branch to develop (WIP)
+using fxuniformset_constptr_t     = const FxUniformSet*;
+using fxsamplerset_constptr_t     = const FxSamplerSet*;
+using fxuniformblock_constptr_t     = const FxUniformBlock*;
+using fxuniformbuffer_ptr_t = std::shared_ptr<FxUniformBuffer>;
+using fxuniformbuffer_constptr_t = std::shared_ptr<const FxUniformBuffer>;
+using fxuniformbuffermapping_ptr_t = std::shared_ptr<FxUniformBufferMapping>;
 //
-using parambuffermappingptr_t = std::shared_ptr<FxShaderParamBufferMapping>;
+using storagebuffermappingptr_t = std::shared_ptr<FxShaderStorageBufferMapping>;
+using parambuffermappingptr_t = std::shared_ptr<FxUniformBufferMapping>;
 using fxshader_ptr_t         = FxShader*;
 using fxparam_ptr_t          = FxShaderParam*;
 using fxtechnique_ptr_t      = FxShaderTechnique*;
 using fxshader_constptr_t    = const FxShader*;
 using fxparam_constptr_t     = const FxShaderParam*;
 using fxtechnique_constptr_t = const FxShaderTechnique*;
-using fxparamblock_constptr_t     = const FxShaderParamBlock*;
+using fxparamblock_constptr_t     = const FxUniformBlock*;
 using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
 using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 using fxpipeline_ptr_t = std::shared_ptr<FxPipeline>;
@@ -173,6 +189,13 @@ using fxpipelinepermutation_ptr_t = std::shared_ptr<FxPipelinePermutation>;
 using fxpipelinepermutation_constptr_t = std::shared_ptr<const FxPipelinePermutation>;
 using fxpipelinepermutation_set_ptr_t = std::shared_ptr<FxPipelinePermutationSet>;
 using fxpipelinepermutation_set_constptr_t = std::shared_ptr<const FxPipelinePermutationSet>;
+
+using fxdescriptorset_ptr_t = std::shared_ptr<FxDescriptorSet>;
+using fxdescriptorset_constptr_t = std::shared_ptr<const FxDescriptorSet>;
+using fxdescriptorsetitem_ptr_t = std::shared_ptr<FxDescriptorSetItem>;
+using fxdescriptorsetitem_constptr_t = std::shared_ptr<const FxDescriptorSetItem>;
+using fxdescriptorsetbindpoint_ptr_t = std::shared_ptr<FxShaderDescriptorSetBindPoint>;
+using fxdescriptorsetbindpoint_constptr_t = std::shared_ptr<const FxShaderDescriptorSetBindPoint>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Material
@@ -545,6 +568,7 @@ namespace ork::ui{
   struct Group;
   struct LayoutGroup;
   struct Surface;
+  struct Panel;
   struct Viewport;
   struct Box;
   struct EvTestBox;
@@ -553,6 +577,7 @@ namespace ork::ui{
   struct LayoutItemBase;
   namespace anchor {
     struct Layout;
+    struct Bounds;
 	struct Guide;
   }
 }
@@ -563,6 +588,7 @@ using uigroup_ptr_t = std::shared_ptr<::ork::ui::Group>;
 using uilayoutgroup_ptr_t = std::shared_ptr<::ork::ui::LayoutGroup>;
 using uilayoutitem_ptr_t = std::shared_ptr<::ork::ui::LayoutItemBase>;
 using uisurface_ptr_t = std::shared_ptr<::ork::ui::Surface>;
+using uipanel_ptr_t = std::shared_ptr<::ork::ui::Panel>;
 using uiviewport_ptr_t = std::shared_ptr<::ork::ui::Viewport>;
 using uisgviewport_ptr_t = std::shared_ptr<::ork::ui::SceneGraphViewport>;
 using uibox_ptr_t = std::shared_ptr<::ork::ui::Box>;

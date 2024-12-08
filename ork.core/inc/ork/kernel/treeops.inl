@@ -31,6 +31,18 @@ template <typename treenode_type> struct Ops {
     return ret;
   }
 
+  template <typename T> //
+  bool hasChildOfType() const {
+    for( auto ch : _root->_children ){
+      auto typed = std::dynamic_pointer_cast<T>(ch);
+      if (typed) {
+        return true;
+        break;
+      }
+    }
+    return false;
+  }
+
   /////////////////////////////////////////////////////////////////////////////
 
   static inline void replaceInParent(
@@ -109,6 +121,22 @@ template <typename treenode_type> struct ConstOps {
     for (auto c : _root->_children) {
       c->visit(level + 1, vfn);
     }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  template <typename T> //
+  bool hasAncestorOfType() const {
+    if(_root->_parent){
+     auto typed = std::dynamic_pointer_cast<T>(_root->_parent);
+      if (typed) {
+        return true;
+      }
+      else{
+        return _root->_parent->template hasAncestorOfType<T>();
+      }
+    }
+    return false;
   }
 
   /////////////////////////////////////////////////////////////////////////////

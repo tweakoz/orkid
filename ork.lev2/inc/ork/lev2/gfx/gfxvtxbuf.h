@@ -17,6 +17,7 @@
 namespace ork::lev2 {
 
 class GeometryBufferInterface;
+using buffer_impl_t = svar64_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,9 +35,9 @@ public:
   virtual bool IsStatic() const    = 0;
   
   int miNumIndices;
-  mutable svar64_t _impl;
+  mutable buffer_impl_t _impl;
   void* mpIndices;
-  bool mbLocked;
+  bool _locked;
 
 
   void Release(void);
@@ -104,7 +105,7 @@ public:
   virtual bool IsStatic() const = 0;
 
   void* _vertices = nullptr;
-  svar16_t _impl;
+  buffer_impl_t _impl;
 
   int miNumVerts;
   int miMaxVerts;
@@ -112,13 +113,13 @@ public:
   mutable int miLockWriteIndex;
   int miFlushSize;
   EVtxStreamFormat meStreamFormat;
-  mutable bool mbLocked;
+  mutable bool _locked;
   bool mbInited;
   bool mbRingLock;
 
 private:
   void SetLock(bool bLock) const {
-    mbLocked = bLock;
+    _locked = bLock;
   }
 };
 

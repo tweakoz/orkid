@@ -165,7 +165,7 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   auto rtb_normal       = pos_buffer->createRenderTarget(EBufferFormat::RGBA32F);
   ctx->beginFrame();
   ctx->FBI()->PushRtGroup(pos_buffer.get());
-  ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
+  //ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
 
   auto RCFD = std::make_shared<RenderContextFrameData>(ctx);
   material->_rasterstate->setCullTest(ECullTest::OFF);
@@ -207,7 +207,7 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   auto rtb_acc    = acc_buffer->createRenderTarget(EBufferFormat::R32F);
 
     ctx->FBI()->PushRtGroup(acc_buffer.get());
-   ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
+   //ctx->FBI()->Clear(fvec4(0, 0, 0, 0), 1.0);
     ctx->FBI()->PopRtGroup();
 
   for (int i = 0; i < numsamples; i++) {

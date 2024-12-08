@@ -14,6 +14,7 @@
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/kernel/memcpy.inl>
+#include <ork/util/hexdump.inl>
 
 using namespace std::literals;
 
@@ -200,6 +201,14 @@ void* InputStream::GetDataAt(size_t idx) {
   const char* pchbase = (const char*)mpbase;
   return (void*)&pchbase[idx];
 }
+std::vector<uint8_t> InputStream::readData(size_t length){
+  std::vector<uint8_t> data;
+  data.resize(length);
+  memcpy_fast(data.data(), GetCurrent(), length);
+  midx += length;
+  return data;
+}
+
 void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   size_t mkr_beginvarmap = 0;
   size_t mkr_endvarmap   = 0;
@@ -306,7 +315,9 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   GetItem<size_t>(mkr_endvarmap);
   OrkAssert(mkr_endvarmap == "EndVarMap"_crcu);
 }
-
+void InputStream::dump() const{
+  hexdumpbytes((const uint8_t*) mpbase, milength);
+}
 ////////////////////////////////////////////////////////////////////////////////////
 
 std::string InputStream::ReadIndexedString(const Reader& reader){

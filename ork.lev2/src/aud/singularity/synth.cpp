@@ -17,6 +17,7 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/util/logger.h>
+#include <ork/kernel/opq.h>
 
 namespace ork::audio::singularity {
 static logchannel_ptr_t logchan_synth = logger()->createChannel("singul.syn", fvec3(1, 0.6, .8), true);

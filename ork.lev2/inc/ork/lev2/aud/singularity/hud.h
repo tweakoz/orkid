@@ -17,13 +17,9 @@
 #include "synthdata.h"
 #include "synth.h"
 #include "fft.h"
-#include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/ui/surface.h>
-#include <ork/lev2/ui/viewport.h>
-#include <ork/lev2/ui/panel.h>
-#include <ork/lev2/ui/layoutgroup.inl>
-#include <ork/lev2/ui/event.h>
-#include <ork/lev2/ezapp.h>
+#include <ork/lev2/lev2_types.h>
+#include <ork/lev2/gfx/gfxvtxbuf_structs.h>
+#include <ork/lev2/gfx/gfxvtxbuf.h>
 
 namespace ork::audio::singularity {
 
@@ -32,15 +28,8 @@ int hud_lineheight();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using vtx_t        = lev2::SVtxV16T16C16;
-using vtxbuf_t     = lev2::DynamicVertexBuffer<vtx_t>;
-using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
-vtxbuf_ptr_t get_vertexbuffer(lev2::Context* context);
-lev2::freestyle_mtl_ptr_t hud_material(lev2::Context* context);
-
-///////////////////////////////////////////////////////////////////////////////
-
 typedef ork::svar1024_t svar_t;
+
 void drawtext(
     ui::Surface* surface, //
     lev2::Context* ctx,   //
@@ -58,6 +47,7 @@ struct HudLine {
   fvec2 _to;
   fvec3 _color;
 };
+
 using hudlines_t = std::vector<HudLine>;
 
 void drawHudLines(
@@ -98,11 +88,11 @@ struct ItemDrawReq {
 ///////////////////////////////////////////////////////////////////////////////
 struct HudPanel {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
-  ui::anchor::layout_ptr_t _panelLayout;
-  ui::layoutgroup_ptr_t _layoutgroup;
-  ui::layoutitem_ptr_t _layoutitem;
-  ui::panel_ptr_t _uipanel;
-  ui::surface_ptr_t _uisurface;
+  uilayout_ptr_t _panelLayout;
+  uilayoutgroup_ptr_t _layoutgroup;
+  uilayoutitem_ptr_t _layoutitem;
+  uipanel_ptr_t _uipanel;
+  uisurface_ptr_t _uisurface;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct ScopeBuffer {
@@ -147,7 +137,7 @@ struct SignalScope {
     return _vars.typedValueForKey<T>(key).value();
   }
   ///////////////////////////////////////////////////////////////////////////
-  ui::layoutitem_ptr_t _layoutitem;
+  uilayoutitem_ptr_t _layoutitem;
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
   varmap::VarMap _vars;
@@ -197,19 +187,6 @@ hudpanel_ptr_t createPmxEditView(
     fvec4 color,
     dspblkdata_ptr_t dbdata,
     const ui::anchor::Bounds& bounds);
-///////////////////////////////////////////////////////////////////////////////
-struct HudLayoutGroup final : public ui::LayoutGroup {
-  HudLayoutGroup();
-  void onUpdateThreadTick(ui::updatedata_ptr_t updata);
-  std::unordered_set<hudpanel_ptr_t> _hudpanels;
-  std::map<char, int> _notemap;
-  std::map<char, int> _handledkeymap;
-  std::map<int, programInst*> _activenotes;
-  lev2::orkezapp_ptr_t _ezapp;
-  int _updcount    = 0;
-  int _velocity    = 127;
-  int _octaveshift = 0;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -226,18 +203,6 @@ float ENVX(float vpw, float vph);
 float DSPW(float vpw, float vph);
 float DSPX(float vpw, float vph);
 void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color = 0);
-///////////////////////////////////////////////////////////////////////////////
-struct ProgramView final : public ui::Surface {
-  ProgramView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void _doGpuInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-  int _updatecount             = 0;
-  prgdata_constptr_t _curprogram;
-  int _octaveshift = 0;
-  int _velocity    = 127;
-};
 ///////////////////////////////////////////////////////////////////////////////
 
 static const float fontscale = 0.125;

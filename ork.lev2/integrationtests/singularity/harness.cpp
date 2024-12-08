@@ -10,6 +10,7 @@
 #include <iostream>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>

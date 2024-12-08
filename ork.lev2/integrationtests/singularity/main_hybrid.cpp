@@ -13,6 +13,8 @@
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_filters.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 #include <ork/math/audiomath.h>
 #include <random>
 

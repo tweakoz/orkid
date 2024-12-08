@@ -228,9 +228,23 @@ static void _validateRtGroup(RtGroup* rtg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
+void GlFrameBufferInterface::_pushRtGroup(RtGroup* Base) { // final
+  RtGroup* prev = mRtGroupStack.top();
+  __setRtGroup(Base);
+}
+
+void GlFrameBufferInterface::_popRtGroup(bool continue_render) { // final
+  RtGroup* prev = mRtGroupStack.top();
+  __setRtGroup(prev);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
 
   // printf("FBI<%p> SetRTG<%p>\n", this, rtgroup );
+
+  _active_rtgroup = rtgroup;
 
   if (0 == rtgroup) {
 
@@ -242,7 +256,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     // on xbox, happens after resolve
     ////////////////////////////////////////////////
     _setAsRenderTarget();
-    _currentRtGroup = nullptr;
     return;
   }
 
@@ -266,7 +279,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   if (rtgroup->_pseudoRTG) {
     static auto defstate = std::make_shared<RasterState>();
     _target.FXI()->applyRasterState(*defstate);
-    _currentRtGroup = rtgroup;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     if (rtgroup->_autoclear) {
       rtGroupClear(rtgroup);
@@ -593,7 +606,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
           tex->mTexSampleMode.PresetPointAndClamp();
         }
 
-        mTargetGL.debugPushGroup("init-rt-tex");
+        mTargetGL.debugPushGroup("init-rt-tex", fvec4::Magenta());
 
         glBindTexture(texture_target, texobj);
         GL_ERRORCHECK();
@@ -742,9 +755,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   static auto rstate = std::make_shared<RasterState>();
   _target.FXI()->applyRasterState(*rstate);
 
-  _currentRtGroup = rtgroup;
-
-  //_validateRtGroup(_currentRtGroup);
+  //_validateRtGroup(_active_rtgroup);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

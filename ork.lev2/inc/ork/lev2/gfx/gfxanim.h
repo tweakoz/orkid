@@ -40,8 +40,8 @@ struct DecompMatrix{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmAnimChannel : public ork::Object {
-  DeclareAbstractX(XgmAnimChannel, ork::Object);
+struct XgmAnimChannel : public ::ork::Object {
+  DeclareAbstractX(XgmAnimChannel, ::ork::Object);
 public:
 
   enum EChannelType {
@@ -196,9 +196,9 @@ public:
 
 struct XgmAnim {
 
-  using joint_channels_lut_t = ork::orklut<std::string, animdecompmatrixchannel_ptr_t>;
-  using material_channels_lut_t = ork::orklut<std::string, animchannel_ptr_t>;
-  using matrix_lut_t = ork::orklut<std::string,DecompMatrix>;
+  using joint_channels_lut_t = orklut<std::string, animdecompmatrixchannel_ptr_t>;
+  using material_channels_lut_t = orklut<std::string, animchannel_ptr_t>;
+  using matrix_lut_t = orklut<std::string,DecompMatrix>;
 
   void AddChannel(const std::string& Name, animchannel_ptr_t pchan);
 
@@ -387,7 +387,7 @@ struct XgmSkelNode {
   fmtx4 _jointMatrix;
   fmtx4 _nodeMatrix;
   fmtx4 _assimpOffsetMatrix;
-  ork::varmap::VarMap _varmap;
+  varmap::VarMap _varmap;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////

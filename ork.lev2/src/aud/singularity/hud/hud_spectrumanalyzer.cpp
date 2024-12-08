@@ -7,6 +7,7 @@
 
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/util/triple_buffer.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
 
 using namespace ork;
 using namespace ork::lev2;

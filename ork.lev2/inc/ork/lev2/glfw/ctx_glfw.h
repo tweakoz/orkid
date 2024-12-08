@@ -58,10 +58,14 @@ using eventsink_glfw_ptr_t = std::shared_ptr<EventSinkGLFW>;
 
 struct CtxGLFW : public CTXBASE {
 
+  GLFWwindow* _apiInitGL();
+#if defined(ENABLE_VULKAN)
+  GLFWwindow* _apiInitVK();
+#endif
+
   static CtxGLFW* globalOffscreenContext();
 
   void disableMouseCursor() final;
-  void hideMouseCursor() final;
 
   void SlotRepaint() final;
   int runloop();
@@ -78,8 +82,7 @@ struct CtxGLFW : public CTXBASE {
   void onResize(int W, int H);
   void SetAlwaysRun(bool brun);
   fvec2 MapCoordToGlobal(const fvec2& v) const override;
-  void makeCurrent() final;
-  void swapBuffers();
+  void present();
   void signalExit();
   void pollEvents();
   void _doEnqueueWindowResize( int w, int h ) final;
@@ -117,10 +120,10 @@ struct CtxGLFW : public CTXBASE {
   gpuupdfn_t _onGpuPreFrame;
   gpuupdfn_t _onGpuPostFrame;
   gpuupdfn_t _onGpuExit;
-  std::vector<gpuupdfn_t> _gpu_misc_updates;
 
   GLFWmonitor* _glfwMonitor = nullptr;
   eventsink_glfw_ptr_t _eventSINK;
+  svar64_t _apiIMPL;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

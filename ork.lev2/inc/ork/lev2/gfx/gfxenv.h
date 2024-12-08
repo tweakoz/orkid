@@ -14,6 +14,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
+#include <ork/object/Object.h>
 
 #include <ork/lev2/gfx/config.h>
 
@@ -141,9 +142,11 @@ struct DisplayMode {
 ///////////////////////////////////////////////////////////////////////////////
 
 using sticky_cb_t = std::function<bool()>;
+using load_token_t = svar32_t;
+using ctx_platform_handle_t = svar32_t;
 
-struct Context : public ork::Object {
-  DeclareAbstractX(Context, ork::Object);
+struct Context : public ::ork::Object {
+  DeclareAbstractX(Context, ::ork::Object);
 
   ///////////////////////////////////////////////////////////////////////
 public:
@@ -171,15 +174,20 @@ public:
   }
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
-  virtual void debugPushGroup(const std::string str) {
+  void debugPushGroup(const std::string str);
+  virtual void debugPushGroup(const std::string str, const fvec4& color) {
   }
   ///////////////////////////////////////////////////////////////////////
   /// pop command group from debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPopGroup() {
   }
   ///////////////////////////////////////////////////////////////////////
+  virtual void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {}
+  virtual void debugPopGroup(commandbuffer_ptr_t cb) {}
+  ///////////////////////////////////////////////////////////////////////
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
-  virtual void debugMarker(const std::string str) {
+  void debugMarker(const std::string str);
+  virtual void debugMarker(const std::string str, const fvec4& color) {
   }
 
   ///////////////////////////////////////////////////////////////////////
@@ -217,14 +225,14 @@ public:
 
   //////////////////////////////////////////////
 
-  void beginFrame(void);
-  void endFrame(void);
+  void beginFrame(bool visual = true);
+  void endFrame();
 
   ///////////////////////////////////////////////////////////////////////
   // command buffers / renderpasses
   ///////////////////////////////////////////////////////////////////////
 
-  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass = nullptr);
+  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
   void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
   void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
   commandbuffer_ptr_t popCommandBuffer();
@@ -238,7 +246,7 @@ public:
   virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
   virtual void _doPopCommandBuffer();
   virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass);
+  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
   virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
 
   virtual void _beginRenderPass(renderpass_ptr_t);
@@ -276,10 +284,10 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  const ork::rtti::ICastable* GetCurrentObject(void) const {
+  const ::ork::rtti::ICastable* GetCurrentObject(void) const {
     return mpCurrentObject;
   }
-  void SetCurrentObject(const ork::rtti::ICastable* pobj) {
+  void SetCurrentObject(const ::ork::rtti::ICastable* pobj) {
     mpCurrentObject = pobj;
   }
   TargetType GetTargetType(void) const {
@@ -323,26 +331,21 @@ public:
   bool SetDisplayMode(unsigned int index);
   virtual bool SetDisplayMode(DisplayMode* mode) = 0;
 
-  void* GetPlatformHandle() const {
-    return mPlatformHandle;
-  }
-  void SetPlatformHandle(void* ph) {
-    mPlatformHandle = ph;
-  }
-  void* clonePlatformHandle() const {
+  ctx_platform_handle_t clonePlatformHandle() const {
     return _doClonePlatformHandle();
   }
-  virtual void* _doClonePlatformHandle() const {
+  virtual ctx_platform_handle_t _doClonePlatformHandle() const {
     return nullptr;
   }
+
   virtual void TakeThreadOwnership() {
   }
 
   virtual void stateDebugger() const {
   }
 
-  void* BeginLoad();
-  void EndLoad(void* ploadtok);
+  load_token_t beginLoad();
+  void endLoad(load_token_t ploadtok);
 
   template <typename vtx_t> std::shared_ptr<DynamicVertexBuffer<vtx_t>> miscVertexBuffer(uint32_t id, uint32_t numverts) {
     using vtxbuf_t     = DynamicVertexBuffer<vtx_t>;
@@ -359,39 +362,8 @@ public:
     }
   }
 
-  static const int kiModColorStackMax = 8;
-
-  CTXBASE* mCtxBase                                   = nullptr;
-  void* mPlatformHandle                               = nullptr;
-  const RenderContextInstData* mRenderContextInstData = nullptr;
-  const ork::rtti::ICastable* mpCurrentObject         = nullptr;
-  RtGroup* _defaultRTG                                = nullptr;
-
-  TargetType meTargetType;
-  int miW, miH;
-  int miModColorStackIndex;
-  int miTargetFrame;
-  int miDrawLock;
-  bool mbPostInitializeContext;
-  bool _isFrameDebugCapture = false;
-  fvec4 maModColorStack[kiModColorStackMax];
-  fvec4 mvModColor;
-  PerformanceItem mFramePerfItem;
-  std::unordered_map<uint32_t, svar64_t> _miscVBs;
-  std::vector<sticky_cb_t> _stickyCallbacks;
-
-  commandbuffer_ptr_t _recordCommandBuffer;
-  commandbuffer_ptr_t _defaultCommandBuffer;
-  shared_pool::fixed_pool<CommandBuffer, 4> _cmdbuf_pool;
-  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
-  commandbuffer_ptr_t _current_cmdbuf;
-
   bool hiDPI() const;
   float currentDPI() const;
-
-  static orkvector<DisplayMode*> mDisplayModes;
-
-  std::stack<rcfd_ptr_t> _rcfdstack;
 
   void scheduleOnBeginFrame(void_lambda_t l) {
     _onBeginFrameCallbacks.push_back(l);
@@ -410,7 +382,42 @@ public:
   void registerGpuEventSink(gpueventsink_ptr_t sink);
 
   loadingphase_ptr_t newLoadingPhase();
+  
+  //////////////////////////////////////////////////////////
+
+  static orkvector<DisplayMode*> mDisplayModes;
+
+  std::stack<rcfd_ptr_t> _rcfdstack;
+
   LockedResource<loadingphase_list_t> _loadingPhases;
+
+  static const int kiModColorStackMax = 8;
+
+  CTXBASE* mCtxBase                                   = nullptr;
+  ctx_platform_handle_t                               _impl;
+  const RenderContextInstData* mRenderContextInstData = nullptr;
+  const ::ork::rtti::ICastable* mpCurrentObject         = nullptr;
+  RtGroup* _defaultRTG                                = nullptr;
+
+  TargetType meTargetType;
+  int miW, miH;
+  int miModColorStackIndex;
+  int miTargetFrame;
+  int miDrawLock;
+  bool mbPostInitializeContext;
+  bool _is_visual_frame = false;
+  bool _isFrameDebugCapture = false;
+  fvec4 maModColorStack[kiModColorStackMax];
+  fvec4 mvModColor;
+  PerformanceItem mFramePerfItem;
+  std::unordered_map<uint32_t, svar64_t> _miscVBs;
+  std::vector<sticky_cb_t> _stickyCallbacks;
+
+  commandbuffer_ptr_t _recordCommandBuffer;
+  commandbuffer_ptr_t _defaultCommandBuffer;
+  shared_pool::fixed_pool<CommandBuffer, 4> _cmdbuf_pool;
+  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
+  commandbuffer_ptr_t _current_cmdbuf;
 
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
@@ -421,10 +428,10 @@ private:
 
   virtual void _doBeginFrame(void) = 0;
   virtual void _doEndFrame(void)   = 0;
-  virtual void* _doBeginLoad() {
+  virtual load_token_t _doBeginLoad() {
     return nullptr;
   }
-  virtual void _doEndLoad(void* ploadtok) {
+  virtual void _doEndLoad(load_token_t ploadtok) {
   }
 
   virtual void _doResizeMainSurface(int iw, int ih) = 0;
@@ -448,7 +455,7 @@ Context* contextForCurrentThread();
 struct OrthoQuad {
   OrthoQuad();
 
-  ork::fcolor4 mColor;
+  fcolor4 mColor;
   SRect mQrect;
   float mfu0a;
   float mfv0a;
@@ -461,8 +468,8 @@ struct OrthoQuad {
   float mfrot;
 };
 
-struct DisplayBuffer : public ork::Object {
-  DeclareAbstractX(DisplayBuffer, ork::Object);
+struct DisplayBuffer : public ::ork::Object {
+  DeclareAbstractX(DisplayBuffer, ::ork::Object);
 
 public:
   //////////////////////////////////////////////
@@ -584,8 +591,8 @@ public:
 
   //////////////////////////////////////////////
 
-  virtual void BeginFrame(void);
-  virtual void EndFrame(void);
+  virtual void BeginFrame();
+  virtual void EndFrame();
   virtual void initContext();
 
   context_ptr_t _sharedcontext;
@@ -753,7 +760,7 @@ protected:
 ///
 /// ////////////////////////////////////////////////////////////////////////////
 
-class DrawHudEvent : public ork::event::Event {
+class DrawHudEvent : public ::ork::event::Event {
 
 public:
   DrawHudEvent(Context* target = NULL, int camera_number = 1)
@@ -781,7 +788,7 @@ private:
 };
 
 struct RenderPass {
-  svarp_t _impl;
+  svarshp_t _impl;
   std::vector<rendersubpass_ptr_t> _subpasses;
   bool _immutable        = false;
   bool _allow_clear      = true;
@@ -795,7 +802,7 @@ struct RenderSubPass {
   std::vector<rendersubpass_ptr_t> _subpass_dependencies;
   rtgroup_ptr_t _rtg_input;
   rtgroup_ptr_t _rtg_output;
-  svarp_t _impl;
+  svarshp_t _impl;
   std::string _debugName;
   commandbuffer_ptr_t _commandbuffer;
 };
@@ -804,7 +811,7 @@ struct CommandBuffer {
   CommandBuffer(std::string name = "---")
       : _debugName(name) {
   }
-  svarp_t _impl;
+  svarshp_t _impl;
   std::string _debugName;
   bool _is_primary = false;
   bool _no_draw    = false;

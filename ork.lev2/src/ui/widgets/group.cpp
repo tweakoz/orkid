@@ -207,11 +207,11 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
     vrect._y = y();
     vrect._w = width();
     vrect._h = height();
-    FBI->pushScissor(vrect);
-    FBI->pushViewport(vrect);
-    FBI->Clear(_clearColor, 1);
-    FBI->popViewport();
-    FBI->popScissor();
+    //FBI->pushScissor(vrect);
+    //FBI->pushViewport(vrect);
+    //FBI->Clear(_clearColor, 1);
+    //FBI->popViewport();
+    //FBI->popScissor();
     //_clear = false;
   }
   drawChildren(drwev);

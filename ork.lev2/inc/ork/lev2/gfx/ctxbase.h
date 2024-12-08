@@ -52,7 +52,6 @@ struct RefreshPolicyItem {
 class CTXBASE : public ork::Object {
   RttiDeclareAbstract(CTXBASE, ork::Object);
 
-  //DeclarePublicAutoSlot(Repaint);
 
 public:
 
@@ -60,8 +59,6 @@ public:
   virtual void hideMouseCursor() {}
 
   bool isGlobal() const;
-
-  void progressHandler(opq::progressdata_ptr_t data);
 
   void pushRefreshPolicy(RefreshPolicyItem policy);
   void popRefreshPolicy();
@@ -72,8 +69,6 @@ public:
   Window* GetWindow() const;
   void setContext(Context* ctx);
   void SetWindow(Window* pw);
-
-  virtual void makeCurrent(){}
   
   virtual void SlotRepaint(void) {
   }
@@ -94,6 +89,7 @@ public:
 
   std::stack<RefreshPolicyItem> _policyStack;
 
+  Context* _target = nullptr;
   Window* _orkwindow = nullptr;
   ui::event_ptr_t _uievent;
   bool _needsInitialize = true;
@@ -105,7 +101,6 @@ public:
   object::autoslot_ptr_t _slotRepaint;
 
   protected:
-    Context* _target = nullptr;
     void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);
     CTXBASE(Window* pwin);
     virtual ~CTXBASE();

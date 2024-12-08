@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ork::lev2 {
+
 enum ImageBindAccess {
   EIBA_READ_ONLY = 0,
   EIBA_WRITE_ONLY = 1,
@@ -26,3 +28,5 @@ struct ComputeInterface {
   virtual void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {}
 
 };
+
+} //namespace ork::lev2 {

@@ -17,8 +17,8 @@
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/debug.h>
-
 namespace ork::lev2 {
+/*
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
@@ -331,6 +331,6 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.debugPopGroup();
   req.ptex->_residenceState.fetch_or(1);
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -500,10 +500,12 @@ struct ForwardPbrNodeImpl {
 
         context->debugMarker(FormatString("ForwardPBR::preclear"));
 
-        rtg_main->_autoclear = false;
-        FBI->SetAutoClear(false); // explicit clear
-        FBI->PushRtGroup(rtg_main.get());
-        FBI->Clear(_node->_pbrcommon->_clearColor, 1.0f);
+        rtg_main->_autoclear = true;
+        rtg_main->_clearMaskDepth = true;
+        rtg_main->_clearMaskColor = true;
+        rtg_main->_clearDepth = 1.0f;
+        rtg_main->_clearColor = _node->_pbrcommon->_clearColor;
+        FBI->PushRtGroup(rtg_main.get()); // creates and clears...
         FBI->PopRtGroup();
 
         CIMPL->pushCPD(CPD);

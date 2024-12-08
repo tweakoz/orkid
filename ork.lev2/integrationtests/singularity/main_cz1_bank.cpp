@@ -8,6 +8,8 @@
 #include "harness.h"
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/hud_widgets.h>
+#include <ork/lev2/ui/anchor.h>
 
 int main(int argc, char** argv,char**envp) {
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);

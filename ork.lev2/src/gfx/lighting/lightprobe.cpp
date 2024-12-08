@@ -59,7 +59,7 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
 
   ctx->beginFrame();
   FBI->PushRtGroup(_equiRenderRTG.get());
-  FBI->Clear(fvec4(1, 0, 0, 0), 1.0);
+  //FBI->Clear(fvec4(1, 0, 0, 0), 1.0);
 
   fmtx3 mtxrot;
   mtxrot.fromQuaternion(rot);

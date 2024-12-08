@@ -109,7 +109,7 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, /*PrimitiveT
     , miFlushSize(iFlush)
     //, mePrimType(eType)
     , meStreamFormat(eFmt)
-    , mbLocked(false)
+    , _locked(false)
     , mbRingLock(false) {
 }
 
@@ -137,7 +137,7 @@ VertexBufferBase::~VertexBufferBase() {
   }
 
   bool VertexBufferBase::IsLocked(void) const {
-    return mbLocked;
+    return _locked;
   }
   void VertexBufferBase::Lock() const {
     miLockWriteIndex = 0;

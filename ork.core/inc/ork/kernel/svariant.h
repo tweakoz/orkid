@@ -313,6 +313,10 @@ public:
     return descriptor._curlength;
   }
 
+  const void* data() const {
+    return _buffer;
+  }
+
   bool canConvertFrom(const static_variant_base& oth) const {
     return capacity() >= oth.size();
   }
@@ -611,6 +615,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 static const int kptrsize = sizeof(void*);
+static const int kshptrsize = sizeof(std::shared_ptr<char>);
 
 typedef static_variant<4> svar4_t;
 typedef static_variant<8> svar8_t;
@@ -627,5 +632,6 @@ typedef static_variant<1024> svar1024_t;
 typedef static_variant<2048> svar2048_t;
 typedef static_variant<4096> svar4096_t;
 typedef static_variant<kptrsize> svarp_t;
+typedef static_variant<kshptrsize> svarshp_t;
 
 } // namespace ork

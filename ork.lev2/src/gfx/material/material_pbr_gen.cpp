@@ -33,8 +33,6 @@ namespace ork::lev2 {
 
 static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3(0.8, 0.8, 0.5), true);
 
-extern std::atomic<int> __FIND_IT;
-
 float roughness_power = 1.0f;
 int _SALT() {
   // return rand();
@@ -43,8 +41,8 @@ int _SALT() {
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
-  FxShaderParamBuffer* _buffer;
+static FxUniformBuffer* _getPointLightDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
 
   uint64_t LOCK = lev2::GfxEnv::createLock();
   context->makeCurrentContext();
@@ -52,8 +50,8 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
   std::vector<uint8_t> initial_bytes;
   initial_bytes.resize(16384);
 
-  _buffer     = context->FXI()->createParamBuffer(16384);
-  auto mapped = context->FXI()->mapParamBuffer(_buffer);
+  _buffer     = context->FXI()->createUniformBuffer(16384);
+  auto mapped = context->FXI()->mapUniformBuffer(_buffer);
   // size_t base  = 0;
   // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
   // mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
@@ -68,20 +66,20 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
-  static FxShaderParamBuffer* _buffer = _getPointLightDataBuffer(targ);
+FxUniformBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getPointLightDataBuffer(targ);
   return _buffer;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
-  FxShaderParamBuffer* _buffer;
+static FxUniformBuffer* _getBoneDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
   uint64_t LOCK = lev2::GfxEnv::createLock();
   { //
     context->makeCurrentContext();
-    _buffer     = context->FXI()->createParamBuffer(65536);
-    auto mapped = context->FXI()->mapParamBuffer(_buffer);
+    _buffer     = context->FXI()->createUniformBuffer(65536);
+    auto mapped = context->FXI()->mapUniformBuffer(_buffer);
     mapped->unmap();
   }
   lev2::GfxEnv::releaseLock(LOCK);
@@ -90,8 +88,8 @@ static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
-  static FxShaderParamBuffer* _buffer = _getBoneDataBuffer(targ);
+FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getBoneDataBuffer(targ);
   return _buffer;
 }
 
@@ -229,7 +227,6 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   static const FxShaderParam* param_imgdim = nullptr;
 
   targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
-  __FIND_IT.store(1);
 
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
@@ -380,7 +377,6 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
-  __FIND_IT.store(0);
   targ->debugPopGroup();
 
   return alt_tex;
@@ -401,7 +397,6 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   static const FxShaderParam* param_pfm = nullptr;
   static const FxShaderParam* param_ruf = nullptr;
 
-  __FIND_IT.store(1);
   targ->debugPushGroup("PBRMaterial::filterDiffuseEnvMap");
 
   if (not mtl) {
@@ -539,7 +534,6 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   txi->LoadTexture(alt_tex, cmipchain_datablock);
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 
-  __FIND_IT.store(0);
   targ->debugPopGroup();
 
   return alt_tex;

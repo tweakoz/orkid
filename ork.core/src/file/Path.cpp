@@ -498,11 +498,17 @@ Path Path::toAbsoluteFolderX() const{
       while(as_abs.string().back() == '.'){
         as_abs = as_abs.parent_path();
       }
-
-      while(as_abs.string().back() == '..'){
-        as_abs = as_abs.parent_path().parent_path();
+      bool keep_removing_parent = true;
+      while(keep_removing_parent){
+        auto it_end = as_abs.string().find("..");
+        bool is_at_end = (it_end == as_abs.string().size() - 2);
+        if(is_at_end){
+          as_abs = as_abs.parent_path().parent_path();
+        }
+        else{
+          keep_removing_parent = false;
+        }
       }
-
     }
     Path rval;
     rval.fromBFS(as_abs);

@@ -82,8 +82,8 @@ public:
 
   ////////////////////////////////////////////
 
-  static FxShaderParamBuffer* pointLightDataBuffer(Context* targ);
-  static FxShaderParamBuffer* boneDataBuffer(Context* targ);
+  static FxUniformBuffer* pointLightDataBuffer(Context* targ);
+  static FxUniformBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ);
   static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
@@ -214,7 +214,7 @@ public:
   fxparam_constptr_t _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
   fxparam_constptr_t _paramInstanceIdMap     = nullptr; // 1k*1k texture containing instance pickids
   fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
-  const FxShaderParamBlock* _paramInstanceBlock = nullptr;
+  const FxUniformBlock* _paramInstanceBlock = nullptr;
   ///////////////////////////////////////////
   image_ptr_t _image_color;
   image_ptr_t _image_normal;

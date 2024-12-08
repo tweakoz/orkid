@@ -16,13 +16,14 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH)
+RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage)
     : _rtgroup(rtg)
     , _width(iW)
     , _height(iH)
     , _slot(slot)
     , mFormat(efmt)
-    , _mipgen(EMG_NONE) {
+    , _mipgen(EMG_NONE)
+    , _usage(usage) {
   _texture = std::make_shared<Texture>();
   _texture->_texFormat = efmt;
   _texture->_width     = iW;
@@ -32,13 +33,14 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples)
+RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, bool needs_depth)
     : _parentTarget(ptgt)
     , mNumMrts(0)
     , miW(iW)
     , miH(iH)
     , _msaa_samples(msaa_samples)
-    , mbSizeDirty(true){
+    , mbSizeDirty(true)
+    , _needsDepth(needs_depth) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,11 +67,11 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt) {
+rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
 
   int islot = mNumMrts++;
 
-  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH);
+  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage);
   OrkAssert(islot < kmaxmrts);
   mMrt[islot] = rtb;
   return rtb;

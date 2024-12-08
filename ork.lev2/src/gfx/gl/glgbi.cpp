@@ -194,9 +194,9 @@ struct GlVertexBufferImpl {
       delete item.second;
     }
   }
-  GLVaoHandle* GetVAO(const void* plat_h, const void* vao_key) {
+  GLVaoHandle* GetVAO(ctx_platform_handle_t plat_h, const void* vao_key) {
     GLVaoHandle* rval = nullptr;
-    size_t k1         = size_t(plat_h);
+    size_t k1         = size_t(plat_h.getShared<GlPlatformObject>().get());
     size_t k2         = size_t(vao_key);
     size_t key        = k1 xor k2 xor size_t(this);
     const auto& it    = _VAOMAP.find(key);
@@ -209,7 +209,7 @@ struct GlVertexBufferImpl {
       rval = it->second;
     return rval;
   }
-  GLVaoHandle* BindVao(const void* plat_h, const void* vao_key) {
+  GLVaoHandle* BindVao(ctx_platform_handle_t plat_h, const void* vao_key) {
     GLVaoHandle* r = GetVAO(plat_h, vao_key);
     assert(r != nullptr);
     glBindVertexArray(r->_VAO);
@@ -787,7 +787,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& v
   OrkAssert(impl);
   GL_ERRORCHECK();
 
-  void* plat_h = (void*)mTargetGL.GetPlatformHandle();
+  ctx_platform_handle_t plat_h = mTargetGL._impl;
   auto vao_key = (void*)pfxpass;
 
   GLVaoHandle* vao_obj = impl->BindVao(plat_h, vao_key);
@@ -826,15 +826,13 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
   OrkAssert(vbuf_impl);
   GL_ERRORCHECK();
 
-  void* plat_h = mTargetGL.GetPlatformHandle();
-
   auto ibuf_impl = IdxBuf._impl.getShared<GlIndexBufferImpl>();
 
   size_t k1    = size_t(ibuf_impl.get());
   size_t k2    = size_t(pfxpass);
   auto vao_key = (void*)(k1 xor k2);
 
-  GLVaoHandle* vao_container = vbuf_impl->BindVao(plat_h, vao_key);
+  GLVaoHandle* vao_container = vbuf_impl->BindVao(mTargetGL._impl, vao_key);
 
   // printf( "vao_container<%p> ibo<%p>\n", vao_container, vao_container->_IBO );
 
@@ -1002,9 +1000,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
 void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType,
-    int ivbase,
-    int ivcount) {
+    PrimitiveType eType) {
   GL_ERRORCHECK();
   ////////////////////////////////////////////////////////////////////
 
@@ -1056,15 +1052,9 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
     }
     auto indextype = plat_handle->_indexGlType;
     if (glprimtype != 0) {
-      if (ivbase != 0){
-        //printf("A\n");
-        glDrawElementsBaseVertex(glprimtype, iNum, indextype, nullptr, ivbase);
-      }
-      else{
-        int vblen = VBuf.GetNumVertices();
-        //printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
-        glDrawRangeElements(glprimtype, imin, imax, iNum, indextype, nullptr);
-      }
+      int vblen = VBuf.GetNumVertices();
+      //printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
+      glDrawRangeElements(glprimtype, imin, imax, iNum, indextype, nullptr);
     }
     GL_ERRORCHECK();
   }

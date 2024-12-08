@@ -41,7 +41,7 @@ struct Resources {
     _fxparameterTexture = _material->param("ColorMap");
 
 
-    _UBO = FXI->createParamBuffer(BUFSIZE);
+    _UBO = FXI->createUniformBuffer(BUFSIZE);
 
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, _fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", _fxtechnique);
@@ -89,7 +89,7 @@ struct Resources {
   const FxShaderTechnique* _fxtechnique    = nullptr;
   const FxShaderParam* _fxparameterMVP     = nullptr;
   const FxShaderParam* _fxparameterTexture = nullptr;
-  FxShaderParamBuffer* _UBO = nullptr;
+  FxUniformBuffer* _UBO = nullptr;
   texture_ptr_t _texture;
   std::shared_ptr<float_vect_t> _texturedata;
   uint32_t _appstate = "INIT_THREAD"_crcu;
@@ -140,9 +140,9 @@ int main(int argc, char** argv,char** envp) {
 
     //txi->initTextureFromData(resources->_texture.get(), tid);
 
-    auto mapping = fxi->mapParamBuffer( resources->_UBO, 0, BUFSIZE );
+    auto mapping = fxi->mapUniformBuffer( resources->_UBO, 0, BUFSIZE );
     memcpy_fast(mapping->_mappedaddr, resources->_texturedata->data(), BUFSIZE);
-    fxi->unmapParamBuffer(mapping.get());
+    fxi->unmapUniformBuffer(mapping.get());
 
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);

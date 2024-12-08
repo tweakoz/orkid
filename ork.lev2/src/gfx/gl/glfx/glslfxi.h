@@ -143,7 +143,7 @@ struct UniformBlockItem {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBuffer {
-  FxShaderParamBuffer* _fxspb = nullptr;
+  FxUniformBuffer* _fxspb = nullptr;
   GLuint _glbufid             = 0;
   size_t _length              = 0;
 };
@@ -532,6 +532,7 @@ struct RootContainer {
 class Interface final : public FxInterface {
 public:
   void _doBeginFrame() final;
+  void _doEndFrame() final;
 
   int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) final;
   void EndBlock() final;
@@ -540,7 +541,8 @@ public:
 
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+  const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) final;
+  fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) final;
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 
@@ -578,10 +580,10 @@ public:
   bool compilePipelineNVTM(rootcontainer_ptr_t container);
 
   // ubo
-  FxShaderParamBuffer* createParamBuffer(size_t length) final;
-  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
-  void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+  FxUniformBuffer* createUniformBuffer(size_t length) final;
+  parambuffermappingptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) final;
+  void unmapUniformBuffer(FxUniformBufferMapping* mapping) final;
+  void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) final;
 
   void applyRasterState(const RasterState& rstate) final;
 

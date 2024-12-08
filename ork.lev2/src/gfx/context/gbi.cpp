@@ -104,15 +104,13 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
     GfxMaterial* mtl,
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType,
-    int ivbase,
-    int ivcount) {
+    PrimitiveType eType) {
   int imax = VBuf.GetMax();
 
   if (imax) {
     mtl->BeginBlock(&_context);
     _context.FXI()->applyRasterState(*(mtl->_rasterstate));
-    DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
+    DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType);
     mtl->EndBlock(&_context);
   }
 }

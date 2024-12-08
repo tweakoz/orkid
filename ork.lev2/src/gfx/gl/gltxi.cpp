@@ -139,7 +139,8 @@ GLTextureObject::~GLTextureObject() {
 static ork::Timer _proftimer;
 
 GlTextureInterface::GlTextureInterface(ContextGL& tgt)
-    : mTargetGL(tgt) {
+    : TextureInterface(&tgt)
+    , mTargetGL(tgt) {
   _proftimer.Start();
 }
 
@@ -271,7 +272,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t ptex) {
   AssetPath DdsFilename = infname;
   AssetPath PngFilename = infname;
@@ -312,7 +313,7 @@ bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablo
     ok = _loadImageTexture(ptex, datablock);
   return ok;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
@@ -455,11 +456,6 @@ void GlTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::SaveTexture(const ork::AssetPath& fname, Texture* ptex) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 static auto addrlamb = [](TextureAddressMode inp) -> GLenum {
   switch (inp) {
     case TextureAddressMode::CLAMP:
@@ -515,8 +511,6 @@ static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern std::atomic<int> __FIND_IT;
-
 void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   int numsamples = msaaEnumToInt(ptex->_msaa_samples);
   if (numsamples > 1)
@@ -534,8 +528,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     }
 
     mTargetGL.makeCurrentContext();
-    __FIND_IT.store(1);
-    mTargetGL.debugPushGroup("ApplySamplingMode");
+    mTargetGL.debugPushGroup("ApplySamplingMode", fvec4::Magenta());
     GL_ERRORCHECK();
 
     const auto& texmode = ptex->TexSamplingMode();

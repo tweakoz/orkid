@@ -53,7 +53,7 @@ template <typename T> Matrix44<T>::Matrix44(const kln::motor& m) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
-T Matrix44<T>::operator[](int i, int j) const {
+const T& Matrix44<T>::operator[](int i, int j) const {
   return elemXY(i, j);
 }
 template <typename T> 

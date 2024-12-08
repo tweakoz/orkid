@@ -68,19 +68,22 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
+void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
   bool first = mRtGroupStack.empty();
+  mRtGroupStack.push(_active_rtgroup);
+  _pushRtGroup(rtg_top);
 
-  mRtGroupStack.push(_currentRtGroup);
-  SetRtGroup(Base);
+  ////////////////////////////////////////////////////////////////
+  // if first rtgroup, set viewport and scissor to match rtgroup
+  ////////////////////////////////////////////////////////////////
 
   int iw = _target.mainSurfaceWidth();
   int ih = _target.mainSurfaceHeight();
 
-  if (Base != nullptr) {
-    iw = Base->width();
-    ih = Base->height();
+  if (rtg_top != nullptr) {
+    iw = rtg_top->width();
+    ih = rtg_top->height();
   }
 
   ViewportRect r(0, 0, iw, ih);
@@ -88,16 +91,20 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
   pushScissor(r);
   pushViewport(r);
 
-  if (Base->_autoclear) {
-    rtGroupClear(Base);
+  ////////////////////////////////////////////////////////////////
+
+  if (rtg_top->_autoclear) {
+    rtGroupClear(rtg_top);
   }
-  // BeginFrame();
+
 }
-void FrameBufferInterface::PopRtGroup() {
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FrameBufferInterface::PopRtGroup(bool continue_render) {
   RtGroup* prev = mRtGroupStack.top();
+  _popRtGroup(continue_render);
   mRtGroupStack.pop();
-  // EndFrame();
-  SetRtGroup(prev); // Enable Mrt
   popViewport();
   popScissor();
 }

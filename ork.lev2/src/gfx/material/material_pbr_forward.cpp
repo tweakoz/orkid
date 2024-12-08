@@ -75,7 +75,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
     // size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
-    auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+    auto pl_mapped = FXI->mapUniformBuffer(pl_buffer, 0, pl_buffer->_length);
 
     size_t i32_stride  = sizeof(int32_t);
     size_t f32_stride  = sizeof(float);
@@ -153,7 +153,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
     if (mtl->_parUnTexPointLightsData) {
       //printf( "binding lighting UBO\n");
-      FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+      FXI->bindUniformBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
     }
 
     ///////////////////////////////////////////////////////////////////////////
