@@ -76,12 +76,12 @@ struct GlIxPlatformObject : public GlPlatformObject {
   void makeCurrent() {
     _current = this;
     if( _ctxbase ){
-      //_ctxbase->makeCurrent();
+      glfwMakeContextCurrent(_ctxbase->_glfwWindow);
     }
   }
   void swapBuffers() {
     if( _ctxbase ){
-     // _ctxbase->swapBuffers();
+      glfwSwapBuffers(_ctxbase->_glfwWindow);
     }
   }
   /////////////////////////////////////
