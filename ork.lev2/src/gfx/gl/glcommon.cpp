@@ -39,7 +39,9 @@ void GlPlatformObject::makeCurrent() {
     //_ctxbase->makeCurrent();
 }
 void GlPlatformObject::swapBuffers() {
-
+    if( _ctxbase ){
+      glfwSwapBuffers(_ctxbase->_glfwWindow);
+    }
 }
 
 
