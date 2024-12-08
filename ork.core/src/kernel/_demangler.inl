@@ -534,7 +534,7 @@ component_ptr_t Demangler::parseType() {
       _index++;
       done = true;
     } else {
-      printf("%s parseType<%c> not handled\n", indent.c_str(), ch);
+      //printf("%s parseType<%c> not handled\n", indent.c_str(), ch);
         throw std::runtime_error("invalid typecode in parseType");
     }
   }

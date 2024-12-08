@@ -138,6 +138,8 @@ void ContextGL::stateDebugger() const {
 
   auto debugger = _debugger.makeShared<_FtxGlDebugger>(this);
 
+  printf("GL StateDebugger collecting state....\n");
+
   /////////////////////////////
   {
     using namespace ftxui;
