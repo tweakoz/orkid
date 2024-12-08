@@ -232,7 +232,6 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     ptex->_texFormat = EBufferFormat::BGR8;
     cmc->_format = EBufferFormat::BGR8;
     cmc->_numcomponents = 3;
-    OrkAssert(false);
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
     }
@@ -259,8 +258,6 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     cmc->_format = EBufferFormat::S3TC_DXT3;
     cmc->_numcomponents = 4;
     proc_mips(li.blockBytes, 2);
-    OrkAssert(false);
-
   }
   //////////////////////////////////////////////////////////
   // DXT1: texturing fast path (4 bits per pixel true color)
