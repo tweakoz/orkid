@@ -78,7 +78,7 @@ class SceneGraphApp(object):
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
     self.modelinsts=[]
-    self.ssaamode = True
+    self.ssaamode = False
 
   ##############################################
 
@@ -100,7 +100,7 @@ class SceneGraphApp(object):
     createSceneGraph( app=self,
                       params_dict=params_dict,
                       use_float_buffer=True,
-                      rendermodel="PBRVR" if vrmode else "DeferredPBR")
+                      rendermodel="PBRVR" if vrmode else "ForwardPBR")
     self.pbr_common = self.scene.pbr_common
 
     models = []

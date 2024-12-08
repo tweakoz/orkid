@@ -39,6 +39,7 @@ parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')
+parser.add_argument('-S', '--stateDebugger', type=bool, default=False, help='Graphics state debugger')
 
 ################################################################################
 
@@ -57,6 +58,7 @@ ssaa = args["ssaa"]
 ssao = args["ssao"]
 lightmap = args["lightmap"]
 rendermodel = args["rendermodel"]
+statedebug = args["stateDebugger"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -143,7 +145,8 @@ class SceneGraphApp(object):
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)
     self.pbr_common = self.scene.pbr_common
-    
+    self.model.debugState = statedebug
+
     ######################
     # override shader ?
     ######################

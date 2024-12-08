@@ -431,6 +431,7 @@ struct XgmModel final {
   bool mbSkinned;
   asset::vars_t _varmap;
   XgmModelAsset* _asset = nullptr;
+  bool _stateDebugger = false;
 };
 
 

@@ -36,18 +36,7 @@ bool TextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datab
   ptex->_texFormat = load_req->_cmipchain->_format;
   ///////////////////////////////////////////////
    auto keys = load_req->_cmipchain->_varmap.dumpkeys();
-   //printf("\nxtx w<%lu>\n", ptex->_width);
-   //printf("xtx h<%lu>\n", ptex->_height);
-   //printf("xtx d<%lu>\n", load_req->_cmipchain->_depth);
-   //printf("xtx fmt<%zx>\n", (uint64_t)load_req->_cmipchain->_format);
-   //for (auto k : keys) {
-    //printf("xtx mipchain varmap-key<%s>\n", k.c_str());
-  //}
-   //for (auto k : ptex->_vars->dumpkeys()) {
-   //printf("xtx ptex varmap-key<%s>\n", k.c_str());
-  //}
   void_lambda_t lamb = [=]() {
-    //printf( "XTX MAINTHREAD<%p>\n",ptex);
     /////////////////////////////////////////////
     // texture preprocssing, if any..
     //  on main thread.
@@ -68,34 +57,13 @@ bool TextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datab
 
 void TextureInterface::_loadXTXTextureMainThreadPart(texloadreq_ptr_t req) {
   OrkAssert(req->_cmipchain.get() != nullptr);
-  if (req->ptex->_debugName.length()) {
-    //mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, req->ptex->_debugName);
-  }
   int inummips = req->_cmipchain->_levels.size();
   OrkAssert(inummips > 0);
-  //GL_ERRORCHECK();
-  //printf("inummips<%d>\n", inummips);
   _createFromLoadReq(req); 
   req->ptex->_num_mips = inummips;
   req->ptex->TexSamplingMode().PresetTrilinearWrap();
   //this->ApplySamplingMode(req->ptex.get());
   req->ptex->_dirty = false;
-  ////////////////////////////////////////////////
-  // done loading texture,
-  //  perform postprocessing, if any..
-  ////////////////////////////////////////////////
-  if(req->ptex->_debugName== "filtenvmap-processed-specular"){
-    //OrkAssert(false);
-  }
-  if (req->ptex->_vars->hasKey("postproc")) {
-    auto dblock    = req->_inpstream._datablock;
-    auto postproc  = req->ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
-    auto postblock = postproc(req->ptex, _ctx, dblock);
-    OrkAssert(postblock);
-  } else {
-    // printf("ptex<%p> no postproc\n", ptex);
-  }
-  req->ptex->_residenceState.fetch_or(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

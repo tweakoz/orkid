@@ -68,7 +68,7 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   ptex->_vars->makeValueForKey<GLuint>("gltexobj") = GLTO->_textureObject;
 
   auto infname = req->_texname;
-  auto fmt = EBufferFormatToName(format);
+  auto fmt_name = EBufferFormatToName(format);
   //printf("COMPTEX w<%d> h<%d> d<%d> fmt<%s>\n", iwidth, iheight, idepth, fmt.c_str());
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
@@ -111,7 +111,7 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
           break;
       }
     }
-    else{
+    else{ // not volume texture
       switch(format){
         case EBufferFormat::S3TC_DXT1:
           glCompressedTexImage2D(TARGET, ilevel, kRGBA_DXT1, level_width, level_height, 0, level_length, level_data);
@@ -148,7 +148,19 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
           OrkAssert(false);
           break;
       }
+    } // volume, or not volume texture
+
+    if(assreq and assreq->_on_event){
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<int>("level") = ilevel;
+      data->makeValueForKey<int>("width") = level._width;
+      data->makeValueForKey<int>("height") = level._height;
+      data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+      data->makeValueForKey<uint32_t>("format") = int(format);
+      data->makeValueForKey<std::string>("format_string") = fmt_name;
+      assreq->_on_event("onMipLoad"_crcu,data);
     }
+
   }
 
   glTexParameteri(TARGET, GL_TEXTURE_BASE_LEVEL, 0);
@@ -178,15 +190,6 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   //  perform postprocessing, if any..
   ////////////////////////////////////////////////
 
-  if (ptex->_vars->hasKey("postproc")) {
-    auto dblock    = req->_inpstream._datablock;
-    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
-    auto postblock = postproc(ptex, &mTargetGL, dblock);
-    OrkAssert(postblock);
-  } else {
-    // printf("ptex<%p> no postproc\n", ptex);
-  }
-
   mTargetGL.debugPopGroup();
 
   if(assreq and assreq->_on_event){
@@ -198,6 +201,22 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
     data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
     assreq->_on_event("loadComplete"_crcu,data);
   }
+  if (ptex->_vars->hasKey("postproc")) {
+    auto dblock    = req->_inpstream._datablock;
+    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
+    if(assreq and assreq->_on_event){
+      assreq->_on_event("beginPostProc"_crcu,nullptr);
+    }
+    auto postblock = postproc(ptex, &mTargetGL, dblock);
+    if(assreq and assreq->_on_event){
+      assreq->_on_event("endPostProc"_crcu,nullptr);
+    }
+    OrkAssert(postblock);
+  } else {
+    // printf("ptex<%p> no postproc\n", ptex);
+  }
+
+
   ptex->_residenceState.fetch_or(1);
 }
 

@@ -58,6 +58,9 @@ void XgmModel::RenderRigid(
       for (int iprim = 0; iprim < inumprim; iprim++) {
         auto primgroup = cluster->primgroup(iprim);
         auto idxbuffer = primgroup->GetIndexBuffer();
+        if(_stateDebugger){
+          context->stateDebugger();
+        }
         context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
       }
     });

@@ -60,6 +60,14 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
             }
             return pyl;
           })
+      .def_property(
+          "debugState",
+          [](xgmmodel_ptr_t model) -> bool {
+            return model->_stateDebugger;
+          },
+          [](xgmmodel_ptr_t model, bool value) {
+            model->_stateDebugger = value;
+          })
       .def(
           "createDrawable",         //
           [](xgmmodel_ptr_t model) -> drawable_ptr_t { //
