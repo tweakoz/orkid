@@ -49,62 +49,7 @@ namespace ork { namespace lev2 {
   static RENDERDOC_API_1_6_0* _glrenderdocAPI = nullptr;
 #endif
 
-void ContextGL::_doTriggerFrameDebugCapture() {
-}
-void ContextGL::_doBeginFrame() {
-#if defined(RENDERDOC_API_ENABLED)
-  if(_glrenderdocAPI and _isFrameDebugCapture){
-    printf( "RENDERDOC BEGIN CAPTURE FRAME\n");
-    _glrenderdocAPI->StartFrameCapture(NULL, NULL);
-  }
-#endif
-}
-void ContextGL::_doEndFrame() {
-#if defined(RENDERDOC_API_ENABLED)
-  if(_glrenderdocAPI and _isFrameDebugCapture ){
-    _glrenderdocAPI->EndFrameCapture(NULL, NULL);
-    uint32_t numcap = _glrenderdocAPI->GetNumCaptures();
-    printf( "RENDERDOC END CAPTURE FRAME numcap<%u>\n", numcap );
-
-  }
-  _isFrameDebugCapture = false;
-#endif
-}
-
-void setAlwaysOnTop(GLFWwindow *window) {
-    Display *display = glfwGetX11Display();
-    auto x11window = glfwGetX11Window(window);
-
-    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
-    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
-
-    XEvent event;
-    memset(&event, 0, sizeof(event));
-    event.type = ClientMessage;
-    event.xclient.window = x11window;
-    event.xclient.message_type = wmState;
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
-    event.xclient.data.l[1] = wmStateAbove;
-    event.xclient.data.l[2] = 0;
-    event.xclient.data.l[3] = 0;
-    event.xclient.data.l[4] = 0;
-
-    XSendEvent(display, DefaultRootWindow(display), False,
-               SubstructureRedirectMask | SubstructureNotifyMask, &event);
-}
-
-bool g_allow_HIDPI = false;
-
-using x11_window_t = ::Window; // contained alias of X11 Window Class (conflicts with lev2::Window)
-
-bool _hakHIDPI       = false;
-bool _hakMixedDPI    = false;
-float _hakCurrentDPI = 95.0f;
-
-ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
-
-struct GlIxPlatformObject {
+struct GlIxPlatformObject : public GlPlatformObject {
   static GlIxPlatformObject* _global_plato;
   static GlIxPlatformObject* _current;
   /////////////////////////////////////
@@ -127,29 +72,79 @@ struct GlIxPlatformObject {
   GlIxPlatformObject() {
     _bindop = [=]() {};
   }
-  /////////////////////////////////////
+/////////////////////////////////////
   void makeCurrent() {
     _current = this;
     if( _ctxbase ){
-      _ctxbase->makeCurrent();
-      GL_ERRORCHECK();
-      glEnable(GL_DEBUG_OUTPUT);
-      GL_ERRORCHECK();
+      //_ctxbase->makeCurrent();
     }
   }
   void swapBuffers() {
     if( _ctxbase ){
-      _ctxbase->swapBuffers();
+     // _ctxbase->swapBuffers();
     }
   }
   /////////////////////////////////////
-  CtxGLFW* _ctxbase = nullptr;
-  bool _needsInit       = true;
-  void_lambda_t _bindop;
-  /////////////////////////////////////
 };
+
+GlIxPlatformObject* GlIxPlatformObject::_current = nullptr;
+
+void ContextGL::_doTriggerFrameDebugCapture() {
+}
+void ContextGL::_doBeginFrame() {
+#if defined(RENDERDOC_API_ENABLED)
+  if(_glrenderdocAPI and _isFrameDebugCapture){
+    printf( "RENDERDOC BEGIN CAPTURE FRAME\n");
+    _glrenderdocAPI->StartFrameCapture(NULL, NULL);
+  }
+#endif
+}
+void ContextGL::_doEndFrame() {
+#if defined(RENDERDOC_API_ENABLED)
+  if(_glrenderdocAPI and _isFrameDebugCapture ){
+    _glrenderdocAPI->EndFrameCapture(NULL, NULL);
+    uint32_t numcap = _glrenderdocAPI->GetNumCaptures();
+    printf( "RENDERDOC END CAPTURE FRAME numcap<%u>\n", numcap );
+
+  }
+  _isFrameDebugCapture = false;
+#endif
+}
+
+/*
+void setAlwaysOnTop(GLFWwindow *window) {
+    Display *display = glfwGetX11Display();
+    auto x11window = glfwGetX11Window(window);
+
+    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
+    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
+
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = ClientMessage;
+    event.xclient.window = x11window;
+    event.xclient.message_type = wmState;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
+    event.xclient.data.l[1] = wmStateAbove;
+    event.xclient.data.l[2] = 0;
+    event.xclient.data.l[3] = 0;
+    event.xclient.data.l[4] = 0;
+
+    XSendEvent(display, DefaultRootWindow(display), False,
+               SubstructureRedirectMask | SubstructureNotifyMask, &event);
+}
+*/
+//bool g_allow_HIDPI = false;
+
+using x11_window_t = ::Window; // contained alias of X11 Window Class (conflicts with lev2::Window)
+
+//bool _hakHIDPI       = false;
+//bool _hakMixedDPI    = false;
+//float _hakCurrentDPI = 95.0f;
+
 GlIxPlatformObject* GlIxPlatformObject::_global_plato = nullptr;
-GlIxPlatformObject* GlIxPlatformObject::_current      = nullptr;
+
 /////////////////////////////////////////////////////////////////////////
 
 struct GlxLoadContext {
@@ -159,9 +154,10 @@ struct GlxLoadContext {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doClonePlatformHandle() const {
-  auto plato = (GlIxPlatformObject*)mPlatformHandle;
-  auto new_plato = new GlIxPlatformObject;
+ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
+  ctx_platform_handle_t rval;
+  auto plato = _impl.getShared<GlIxPlatformObject>();
+  auto new_plato = rval.makeShared<GlIxPlatformObject>();
   new_plato->_ctxbase = nullptr; //plato->_ctxbase;
   //new_plato->_context = plato->_context;
   new_plato->_needsInit   = false;
@@ -169,7 +165,7 @@ void* ContextGL::_doClonePlatformHandle() const {
 
   // TODO : https://github.com/tweakoz/orkid/issues/139
   
-  return new_plato;
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -217,7 +213,7 @@ void ContextGL::GLinit() {
   // load extensions
   ////////////////////////////////////
 
-  global_ctxbase->makeCurrent();
+  GlIxPlatformObject::_global_plato->makeCurrent();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   
   #if defined(RENDERDOC_API_ENABLED)
@@ -313,10 +309,9 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  auto plato = _impl.makeShared<GlIxPlatformObject>();
   plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
-  mPlatformHandle           = (void*)plato;
   ///////////////////////
   plato->makeCurrent();
   mFbI.SetThisBuffer(pWin);
@@ -339,7 +334,7 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 /////////////////////////////////////////////////////////////////////////
 // todo :: recomputeHIDPI on window move event
 /////////////////////////////////////////////////////////////////////////
-
+#if 0
 void recomputeHIDPI(Context* ctx) {
 
   switch (ctx->meTargetType) {
@@ -459,9 +454,11 @@ void recomputeHIDPI(Context* ctx) {
     }
   }
 } // namespace lev2
+#endif
 
 /////////////////////////////////////////////////////////////////////////
 
+/*
 bool _HIDPI() {
   return _hakHIDPI;
 }
@@ -470,7 +467,8 @@ bool _MIXEDDPI() {
 }
 float _currentDPI() {
   return _hakCurrentDPI;
-}
+}*/
+
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
@@ -484,14 +482,13 @@ void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto ixplato = _impl.makeShared<GlIxPlatformObject>();
   mFbI.SetThisBuffer(pBuf);
 
   auto global_plato = GlIxPlatformObject::_global_plato;
 
-  plato->_ctxbase = global_plato->_ctxbase;
-  plato->_needsInit   = false;
+  ixplato->_ctxbase = global_plato->_ctxbase;
+  ixplato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
@@ -510,19 +507,18 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto ixplato = _impl.makeShared<GlIxPlatformObject>();
 
   auto global_plato   = GlIxPlatformObject::_global_plato;
-  plato->_ctxbase = global_plato->_ctxbase;
-  plato->_needsInit   = false;
+  ixplato->_ctxbase = global_plato->_ctxbase;
+  ixplato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
   auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
 
-  plato->_bindop = [=]() {
+  ixplato->_bindop = [=]() {
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
@@ -539,25 +535,24 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext(void) {
-  auto plato = (GlIxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
-  if (plato) {
-    plato->makeCurrent();
-    plato->_bindop();
+  auto ixplato = _impl.getShared<GlIxPlatformObject>();
+  OrkAssert(ixplato);
+  if (ixplato) {
+    ixplato->makeCurrent();
+    ixplato->_bindop();
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
-  GlIxPlatformObject* plato = (GlIxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
-  if (plato && (plato->getXwindowID() > 0)) {
-    plato->makeCurrent();
-    plato->swapBuffers();
+  auto ixplato = _impl.getShared<GlIxPlatformObject>();
+  OrkAssert(ixplato);
+  if (ixplato && (ixplato->getXwindowID() > 0)) {
+    ixplato->makeCurrent();
+    ixplato->swapBuffers();
   }
 }
-
 
 void ContextGL::swapBuffers(CTXBASE* ctxbase) {
   SwapGLContext(ctxbase);
@@ -565,28 +560,28 @@ void ContextGL::swapBuffers(CTXBASE* ctxbase) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doBeginLoad() {
-  void* pvoiddat = nullptr;
+load_token_t ContextGL::_doBeginLoad() {
+  load_token_t loadtoken;
 
-  while (false == _loadTokens.try_pop(pvoiddat)) {
+  while (false == _loadTokens.try_pop(loadtoken)) {
     ork::usleep(1000);
   }
-  GlxLoadContext* loadctx    = (GlxLoadContext*)pvoiddat;
+  auto loadctx    = loadtoken.getShared<GlxLoadContext>();
   GLFWwindow* current_window = glfwGetCurrentContext();
 
   loadctx->_pushedContext = current_window;
   loadctx->_global_plato->makeCurrent();
-  return pvoiddat;
+  return loadtoken;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::_doEndLoad(void* ploadtok) {
-  GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
+void ContextGL::_doEndLoad(load_token_t loadtok) {
+  auto loadctx = loadtok.getShared<GlxLoadContext>();
 
   auto pushed = loadctx->_pushedContext;
   glfwMakeContextCurrent(pushed);
-  _loadTokens.push(ploadtok);
+  _loadTokens.push(loadtok);
 }
 
 /////////////////////////////////////////////////////////////////////////
