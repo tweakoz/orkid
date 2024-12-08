@@ -118,7 +118,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   //}
   //pTEXOBJ->mTarget = TARGET;
 
-  if (1) {
+  if (0) {
     auto dbgname = ptex->_debugName;
     printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
     printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);

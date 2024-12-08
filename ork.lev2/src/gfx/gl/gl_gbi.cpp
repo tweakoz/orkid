@@ -1171,7 +1171,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
       plat_handle->mMinIndex = int(umin);
       plat_handle->mMaxIndex = int(umax);
       plat_handle->_indexGlType = GL_UNSIGNED_SHORT;
-      printf("created U16 IBO<%d> min<%d> max<%d>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
+      //printf("created U16 IBO<%d> min<%d> max<%d>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
       break;
     }
     case 4:{
@@ -1188,7 +1188,7 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idxbuf) {
       plat_handle->mMinIndex = int(umin);
       plat_handle->mMaxIndex = int(umax);
       plat_handle->_indexGlType = GL_UNSIGNED_INT;
-      printf("created U32 IBO<%d> min<%08x> max<%08x>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
+      //printf("created U32 IBO<%d> min<%08x> max<%08x>\n", plat_handle->_IBO, plat_handle->mMinIndex, plat_handle->mMaxIndex);
       break;
     }
     default:

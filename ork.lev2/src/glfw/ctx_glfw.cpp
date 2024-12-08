@@ -119,12 +119,6 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == ctxbase)
     return;
-#if defined(__APPLE__)
-  if (_macosUseHIDPI) {
-    w *= ctxbase->_contentScaleX;
-    h *= ctxbase->_contentScaleY;
-  }
-#endif
 
   int x, y;
   glfwGetWindowPos(window, &x, &y);
@@ -141,12 +135,6 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == ctxbase)
     return;
-#if defined(__APPLE__)
-  if (_macosUseHIDPI) {
-    w *= ctxbase->_contentScaleX;
-    h *= ctxbase->_contentScaleY;
-  }
-#endif
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;

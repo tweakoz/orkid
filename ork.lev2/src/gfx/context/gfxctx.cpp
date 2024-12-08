@@ -25,6 +25,27 @@ ImplementReflectionX(ork::lev2::Context, "Context");
 
 namespace ork { namespace lev2 {
 
+int Context::mainSurfaceWidth() const {
+  float content_scale = mCtxBase ? mCtxBase->_contentScaleX : 1.0f;
+  return int(miW*content_scale);
+}
+int Context::mainSurfaceHeight() const {
+  float content_scale = mCtxBase ? mCtxBase->_contentScaleY : 1.0f;
+  return int(miH*content_scale);
+}
+float Context::mainSurfaceAspectRatio() const {
+  return float(mainSurfaceWidth()) / float(mainSurfaceHeight());
+}
+ViewportRect Context::mainSurfaceRectAtWindowPos() const {
+  return ViewportRect(0, 0, mainSurfaceWidth(), mainSurfaceHeight());
+}
+ViewportRect Context::mainSurfaceRectAtOrigin() const {
+  return ViewportRect(0, 0, mainSurfaceWidth(), mainSurfaceHeight());
+}
+void Context::resizeMainSurface(int iw, int ih) {
+  _doResizeMainSurface(iw, ih);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 loadingphase_ptr_t Context::newLoadingPhase() {

@@ -308,8 +308,6 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
     glGenFramebuffers(1, &rtg_impl->_standard->_fbo);
     GL_ERRORCHECK();
 
-    logchan_rtgroup->log("create new FBO iw<%d> ih<%d> std FBOID<%d>", iw, ih, int(rtg_impl->_standard->_fbo));
-
     //////////////////////////////////////////
     // depth only FBO
     //////////////////////////////////////////
@@ -319,7 +317,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
 
     GL_ERRORCHECK();
 
-    logchan_rtgroup->log("create new FBO iw<%d> ih<%d> donly FBOID<%d>", iw, ih, int(rtg_impl->_depthonly->_fbo));
+    logchan_rtgroup->log("create new FBO iw<%d> ih<%d> stdFBOID<%d> donlyFBOID<%d>", iw, ih, int(rtg_impl->_standard->_fbo), int(rtg_impl->_depthonly->_fbo));
 
     //////////////////////////////////////////
     // depth texture
@@ -347,7 +345,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
     //////////////////////////////////////////
 
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
-    logchan_rtgroup->log("bind std FBOID<%d>", int(rtg_impl->_standard->_fbo));
+    //logchan_rtgroup->log("bind std FBOID<%d>", int(rtg_impl->_standard->_fbo));
 
     for (int it = 0; it < inumtargets; it++) {
       rtbuffer_ptr_t pB = rtgroup->GetMrt(it);
@@ -401,7 +399,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   if (rtgroup->IsSizeDirty()) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
-    logchan_rtgroup->log("resize FBOID<%d> iw<%d> ih<%d> ", int(rtg_impl->_standard->_fbo), iw, ih);
+    //logchan_rtgroup->log("resize FBOID<%d> iw<%d> ih<%d> ", int(rtg_impl->_standard->_fbo), iw, ih);
 
     //////////////////////////////////////////
     // resize depth texture

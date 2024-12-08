@@ -204,24 +204,12 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  inline int mainSurfaceWidth(void) const {
-    return miW;
-  }
-  inline int mainSurfaceHeight(void) const {
-    return miH;
-  }
-  inline float mainSurfaceAspectRatio() const {
-    return float(miW) / float(miH);
-  }
-  inline ViewportRect mainSurfaceRectAtWindowPos() const {
-    return ViewportRect(0, 0, miW, miH);
-  }
-  inline ViewportRect mainSurfaceRectAtOrigin() const {
-    return ViewportRect(0, 0, miW, miH);
-  }
-  inline void resizeMainSurface(int iw, int ih) {
-    _doResizeMainSurface(iw, ih);
-  }
+  int mainSurfaceWidth() const;
+  int mainSurfaceHeight() const;
+  float mainSurfaceAspectRatio() const;
+  ViewportRect mainSurfaceRectAtWindowPos() const;
+  ViewportRect mainSurfaceRectAtOrigin() const;
+  void resizeMainSurface(int iw, int ih);
 
   //////////////////////////////////////////////
 
@@ -276,30 +264,30 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  fvec4& RefModColor(void) {
+  fvec4& RefModColor() {
     return mvModColor;
   }
   void PushModColor(const fvec4& mclr);
-  fvec4& PopModColor(void);
+  fvec4& PopModColor();
 
   ///////////////////////////////////////////////////////////////////////
 
-  const ::ork::rtti::ICastable* GetCurrentObject(void) const {
+  const ::ork::rtti::ICastable* GetCurrentObject() const {
     return mpCurrentObject;
   }
   void SetCurrentObject(const ::ork::rtti::ICastable* pobj) {
     mpCurrentObject = pobj;
   }
-  TargetType GetTargetType(void) const {
+  TargetType GetTargetType() const {
     return meTargetType;
   }
-  int GetTargetFrame(void) const {
+  int GetTargetFrame() const {
     return miTargetFrame;
   }
-  PerformanceItem& GetFramePerfItem(void) {
+  PerformanceItem& GetFramePerfItem() {
     return mFramePerfItem;
   }
-  CTXBASE* GetCtxBase(void) const {
+  CTXBASE* GetCtxBase() const {
     return mCtxBase;
   }
 
@@ -426,8 +414,8 @@ private:
   LockedResource<gpueventsink_map_t> _gpuEventSinks;
   gpuevent_queue_t _gpuEventQueue;
 
-  virtual void _doBeginFrame(void) = 0;
-  virtual void _doEndFrame(void)   = 0;
+  virtual void _doBeginFrame() = 0;
+  virtual void _doEndFrame()   = 0;
   virtual load_token_t _doBeginLoad() {
     return nullptr;
   }
@@ -487,49 +475,49 @@ public:
 
   //////////////////////////////////////////////
 
-  RtGroup* GetParentMrt(void) const {
+  RtGroup* GetParentMrt() const {
     return _parentRtGroup;
   }
-  ui::Widget* GetRootWidget(void) const {
+  ui::Widget* GetRootWidget() const {
     return _rootWidget.get();
   }
-  bool IsDirty(void) const {
+  bool IsDirty() const {
     return mbDirty;
   }
-  bool IsSizeDirty(void) const {
+  bool IsSizeDirty() const {
     return mbSizeIsDirty;
   }
-  const std::string& GetName(void) const {
+  const std::string& GetName() const {
     return _name;
   }
   const fcolor4& GetClearColor() const {
     return mClearColor;
   }
-  DisplayBuffer* GetParent(void) const {
+  DisplayBuffer* GetParent() const {
     return _parent;
   }
-  TargetType GetTargetType(void) const {
+  TargetType GetTargetType() const {
     return meTargetType;
   }
-  EBufferFormat format(void) const {
+  EBufferFormat format() const {
     return meFormat;
   }
   Texture* GetTexture() const {
     return _texture;
   }
-  Context* context(void) const;
+  Context* context() const;
 
-  int GetContextW(void) const {
+  int GetContextW() const {
     return context()->mainSurfaceWidth();
   }
-  int GetContextH(void) const {
+  int GetContextH() const {
     return context()->mainSurfaceHeight();
   }
 
-  int GetBufferW(void) const {
+  int GetBufferW() const {
     return miWidth;
   }
-  int GetBufferH(void) const {
+  int GetBufferH() const {
     return miHeight;
   }
   void SetBufferWidth(int iw) {
@@ -670,7 +658,7 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  DisplayBuffer* GetMainWindow(void) {
+  DisplayBuffer* GetMainWindow() {
     return mpMainWindow;
   }
   void SetMainWindow(Window* pWin) {
@@ -679,7 +667,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////////
 #if defined(_WIN32) && (!(defined(_XBOX)))
-  static HWND GetMainHWND(void) {
+  static HWND GetMainHWND() {
     return GetRef().mpMainWindow->context()->GetHWND();
   }
 #endif
