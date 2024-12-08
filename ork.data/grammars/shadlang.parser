@@ -4,17 +4,20 @@ DataType       <|[
     sel{ KW_FLOAT   KW_UINT KW_INT 
          KW_VEC2    KW_VEC3    KW_VEC4 
          KW_MAT2    KW_MAT3    KW_MAT4 
-         KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
          KW_UVEC2   KW_UVEC3   KW_UVEC4 
          KW_UMAT2   KW_UMAT3   KW_UMAT4 
-         KW_USAMP1D KW_USAMP2D KW_USAMP3D
          KW_IVEC2   KW_IVEC3   KW_IVEC4 
          KW_IMAT2   KW_IMAT3   KW_IMAT4 
-         KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
     }
 ]|>
+SamplerType <|[
+  sel{ KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
+       KW_USAMP1D KW_USAMP2D KW_USAMP3D
+       KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+  }
+]|>
 
-TypedIdentifier      <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
+TypedIdentifier      <|[ sel { SamplerType DataType IDENTIFIER } IDENTIFIER ]|>
 
 FloatLiteral         <| [ FLOATING_POINT ] |>
 IntegerLiteral       <| sel{ HEX_INTEGER INTEGER } |>
@@ -55,6 +58,10 @@ DataDeclaration <| sel {
   [TypedIdentifier] 
 }|>
 
+SamplerDeclaration <| sel {
+  [SamplerType IDENTIFIER]
+}|>
+
 ///////////////////////////////////////////////////////////
 
 WrOnlyOperator <| EQUALS |>
@@ -71,6 +78,7 @@ UnaryOperator  <| sel{
 ///////////////////////////////////////////////////////////
 
 DataDeclarations <| zom{ [ DataDeclaration SEMICOLON ] } |>
+SamplerDeclarations <| zom{ [ SamplerDeclaration SEMICOLON ] } |>
 
 
 UnaryExpression <| sel{
@@ -84,7 +92,7 @@ CastExpression <| sel {
 }|>
 
 ParensExpression <|[
-    [ L_PAREN Expression R_PAREN ]
+    [ L_PAREN opt{Expression} R_PAREN ]
 ]|>
 
 PostfixExpression <|[
@@ -350,8 +358,21 @@ LibraryBlock <|[
     L_CURLY
     zom{ 
         sel{
-            StructDecl
             FunctionDef2
+            [KW_PRAGMA_TYPELIB SEMICOLON]
+        }
+    }
+    R_CURLY
+]|>
+
+TypeBlock <|[
+    KW_TYPEBLOCK
+    [ IDENTIFIER ] : "typeblock_name"
+    zom{InheritListItem} : "typ_dependencies"
+    L_CURLY
+    zom{ 
+        sel{
+            StructDecl
             [KW_PRAGMA_TYPELIB SEMICOLON]
         }
     }
@@ -394,9 +415,26 @@ UniformSet <|[
   R_CURLY
 ]|>
 
+DescriptorSetId <|[
+  L_PAREN 
+  KW_DESCSET
+  IntegerLiteral  
+  R_PAREN 
+]|>
+
+SamplerSet <|[
+  KW_SMPSET
+  [ IDENTIFIER ] : "smpset_name"
+  DescriptorSetId
+  L_CURLY
+  SamplerDeclarations : "smpset_decls"
+  R_CURLY
+]|>
+
 UniformBlk <|[
   KW_UNIBLK
   [ IDENTIFIER ] : "uniblk_name"
+  DescriptorSetId
   L_CURLY
   DataDeclarations : "uniblk_decls"
   R_CURLY
@@ -418,10 +456,11 @@ InterfaceLayout  <|[
 ]|>
 
 InterfaceInput <| sel{
-    [ opt{ InterfaceLayout } TypedIdentifier SEMICOLON ]
-    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ]
-    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ]
-    [ InterfaceLayout SEMICOLON ]
+    [ InterfaceLayout TypedIdentifier SEMICOLON ] // input with layout
+    [ InterfaceLayout SEMICOLON ] // layout only
+    [ TypedIdentifier SEMICOLON ] // input only
+    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ] // input with semantic
+    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ] // unsized array
 }|>
 
 InterfaceInputs <|[
@@ -434,8 +473,9 @@ InterfaceInputs <|[
 ]|>
 
 InterfaceOutput <| sel {
-    [ opt{InterfaceLayout} TypedIdentifier SEMICOLON ]
-    [ InterfaceLayout SEMICOLON ]
+    [ InterfaceLayout TypedIdentifier SEMICOLON ] // output with layout
+    [ InterfaceLayout SEMICOLON ] // layout only
+    [ TypedIdentifier SEMICOLON ] // output only
 }|>
 
 InterfaceOutputs <|[
@@ -608,6 +648,7 @@ Translatable <|
     GeometryShader 
     FragmentShader 
     ComputeShader 
+    SamplerSet 
     UniformSet 
     UniformBlk 
     VertexInterface 
@@ -618,6 +659,7 @@ Translatable <|
     Technique
     FxConfigDecl 
     LibraryBlock
+    TypeBlock
   }
 |>
 

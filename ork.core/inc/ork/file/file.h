@@ -68,6 +68,7 @@ public:
   EFileErrCode Load(std::vector<uint8_t>& bytes);
 
   EFileErrCode Read(void* pTo, size_t iSize);
+  EFileErrCode printF(const char* formatstring, ...);
   EFileErrCode Write(const void* pFrom, size_t iSize);
   EFileErrCode SeekFromStart(size_t iOffset);
   EFileErrCode SeekFromCurrent(size_t iOffset);

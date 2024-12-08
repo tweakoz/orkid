@@ -173,4 +173,19 @@ EFileErrCode File::Load(std::vector<uint8_t>& bytes) {
   return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+EFileErrCode File::printF(const char* formatstring, ...){
+  OrkAssert(mpDevice!=nullptr);
+  OrkAssert(mHandle!=0);
+  char formatbuffer[512];
+  va_list args;
+  va_start(args, formatstring);
+  vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
+  va_end(args);
+  size_t len = strlen(formatbuffer);
+  mpDevice->write(*this,formatbuffer,len);  
+}
+
+
 } // namespace ork

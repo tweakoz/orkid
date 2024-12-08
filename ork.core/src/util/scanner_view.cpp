@@ -323,6 +323,34 @@ void ScannerLightView::dump(const std::string& dumpid) const {
   }
 }
 
+void ScannerLightView::dumpToFile(const file::Path& out_path) const {
+  File out_file(out_path,EFileMode::EFM_WRITE);
+  out_file.printF("ScannerLightView<%p>::Dump()\n", (void*)this);
+
+  out_file.printF(" _start<%d>\n", int(_start));
+  out_file.printF(" _end<%d>\n", int(_end));
+
+  int i = 0;
+  int prev_line = -1;
+  int indent = 0;
+  for (int tokidx = _start; tokidx <= _end; ++tokidx) {
+    auto t = _input_view.token(tokidx);
+    if(t->text=="{"){
+      indent++;
+    }
+    if(t->text=="}"){
+      indent--;
+    }
+    if(t->iline!=prev_line){
+      auto indentstr = std::string(indent*2,' ');
+      out_file.printF("\n line<%zu> tok<%04d> : %s", t->iline, tokidx, indentstr.c_str() );
+    }
+    out_file.printF("%s ", t->text.c_str() );
+    prev_line = t->iline;
+  }
+  out_file.printF("\n" );
+}
+
 void ScannerLightView::validate() const{
   if( not empty() ){
     OrkAssert(_start>=0);

@@ -99,6 +99,7 @@ KW_COMSHADER        <| "compute_shader" |>
 KW_MSHSHADER        <| "mesh_shader" |>
 
 KW_UNISET           <| "uniform_set" |>
+KW_SMPSET           <| "sampler_set" |>
 KW_UNIBLK           <| "uniform_block" |>
 KW_VTXIFACE         <| "vertex_interface" |>
 KW_GEOIFACE         <| "geometry_interface" |>
@@ -119,11 +120,13 @@ KW_DEPTHTEST        <| "DepthTest" |>
 KW_DEPTHMASK        <| "DepthMask" |>
 KW_FXCONFIG         <| "fxconfig" |>
 KW_LIBBLOCK         <| "libblock" |>
+KW_TYPEBLOCK        <| "typeblock" |>
 KW_IMPORT           <| "import" |>
 KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
 KW_CONST            <| "const" |>
 KW_IN               <| "in" |>
 
+KW_DESCSET          <| "descriptor_set" |>
 KW_FUNCTION         <| "function" |>
 KW_LAYOUT           <| "layout" |>
 KW_FOR              <| "for" |>

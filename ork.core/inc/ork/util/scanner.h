@@ -209,6 +209,7 @@ struct ScannerView {
 struct ScannerLightView {
   ScannerLightView(const ScannerView& inp_view);
   ScannerLightView(const ScannerLightView& oth);
+  void dumpToFile(const file::Path& out_path) const;
   void clear();
   void validate() const;
   int numTokens() const;
