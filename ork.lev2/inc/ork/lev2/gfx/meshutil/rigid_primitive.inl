@@ -69,6 +69,7 @@ struct RigidPrimitiveBase {
 
   lev2::fxpipeline_ptr_t _pipeline;
   lev2::material_ptr_t _material;
+  bool _stateDebugger = false;
 };
 
 using rigidprimitive_ptr_t = std::shared_ptr<RigidPrimitiveBase>;
@@ -598,7 +599,9 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
   auto gbi = context->GBI();
   for (auto& cluster : _gpuClusters) {
     for (auto& primgroup : cluster->_primgroups) {
-      //context->stateDebugger();
+      if(_stateDebugger){
+        context->stateDebugger();
+      }
       gbi->DrawIndexedPrimitiveEML(
           *cluster->_vtxbuffer.get(), //
           *primgroup->_idxbuffer.get(),

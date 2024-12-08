@@ -15,7 +15,6 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 
@@ -23,7 +22,6 @@
 
 namespace ork::lev2 {
 
-void pyinit_gfx_rigidprim(py::module& module_lev2);
 
 namespace dflow = dataflow;
 void pyinit_gfx_drawables(py::module& module_lev2) {
@@ -179,7 +177,6 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
       .def_property_readonly("material", [](griddrawableimpl_ptr_t gridimpl) -> pbrmaterial_ptr_t { return gridimpl->_pbrmaterial; });
   type_codec->registerStdCodec<griddrawableimpl_ptr_t>(grid_drawimpl_type);
   /////////////////////////////////////////////////////////////////////////////////
-  pyinit_gfx_rigidprim(module_lev2);
 }
 
 } // namespace ork::lev2

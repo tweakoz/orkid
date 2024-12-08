@@ -67,9 +67,8 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid)
 
 /////////////////////////////////////////////////
 
-void pyinit_gfx_rigidprim(py::module& module_lev2) {
+void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
-
   /////////////////////////////////////////////////////////////////////////////////
   auto micromesh_type = py::class_<MicroMesh, micromesh_ptr_t>(module_lev2, "MicroMesh")
                             //////////////////////////////////////////////////
@@ -224,7 +223,15 @@ void pyinit_gfx_rigidprim(py::module& module_lev2) {
                 drwdata->_pipeline  = pipeline;
                 drwdata->_primitive = prim;
                 return drwdata;
-              });
+              })
+              .def_property(
+                  "debugState",
+                  [](meshutil::rigidprimitive_ptr_t prim) -> bool {
+                    return prim->_stateDebugger;
+                  },
+                  [](meshutil::rigidprimitive_ptr_t prim, bool value) {
+                    prim->_stateDebugger = value;
+                  });
   type_codec->registerStdCodec<meshutil::rigidprimitive_ptr_t>(rprimbase_t);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<meshutil::rigidprim_V12N12B12T8C4_t, meshutil::RigidPrimitiveBase, meshutil::rigidprim_V12N12B12T8C4_ptr_t>(
