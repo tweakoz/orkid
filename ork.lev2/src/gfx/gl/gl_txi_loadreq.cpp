@@ -52,7 +52,6 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   GLuint TARGET = is_volume_texture ? GL_TEXTURE_3D : GL_TEXTURE_2D;
   GLTO->mTarget = TARGET;
-
   GL_ERRORCHECK();
   glGenTextures(1, &GLTO->_textureObject);
   glBindTexture(TARGET, GLTO->_textureObject);
@@ -165,6 +164,7 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   glTexParameteri(TARGET, GL_TEXTURE_BASE_LEVEL, 0);
   glTexParameteri(TARGET, GL_TEXTURE_MAX_LEVEL, num_mips - 1);
+  printf( "MAXLEV inummips<%d>\n", num_mips-1 );
 
   if (is_volume_texture) {
     ptex->TexSamplingMode().PresetTrilinearWrap();

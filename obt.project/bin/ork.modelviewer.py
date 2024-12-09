@@ -35,7 +35,7 @@ parser.add_argument("-o", "--overrideshader", type=str, default="", help='overri
 parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
 parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", help='disable zero area poly check')
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
-parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
+parser.add_argument("-t", "--ssaa", type=int, default=0, help='ssaa')
 parser.add_argument("-u", "--ssao", type=int, default=0, help='SSAO samples')
 parser.add_argument("-L", "--lightmap", type=str, default="", help='set active lightmap')
 parser.add_argument('-r', '--rendermodel', type=str, default='forward', help='rendering model (deferred,forward)')

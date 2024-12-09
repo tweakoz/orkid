@@ -50,9 +50,11 @@ ui::event_ptr_t CtxGLFW::uievent() {
   return _uievent;
 }
 void CtxGLFW::disableMouseCursor() {
+  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+void CtxGLFW::hideMouseCursor() {
   glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
@@ -369,18 +371,29 @@ void CtxGLFW::Show() {
       // technically "windowed fullscreen"
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
-      glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-      glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-      glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+      glfwWindowHint(GLFW_RED_BITS, 10);
+      glfwWindowHint(GLFW_GREEN_BITS, 10);
+      glfwWindowHint(GLFW_BLUE_BITS, 10);
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
       glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-      _width  = mode->width;
-      _height = mode->height;
+
+      float contentScaleX = 1.0f;
+      float contentScaleY = 1.0f;
+      // fetch content scale
+      glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
+
+      _width  = mode->width * contentScaleX;
+      _height = mode->height * contentScaleY;
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
-      //////////////////////////////////////
+      logchan_glfw->log("USING GLFW contentScaleX<%f> ", contentScaleX);
+      logchan_glfw->log("USING GLFW contentScaleY<%f> ", contentScaleY);
+      _appinitdata->_width  = _width;
+      _appinitdata->_height = _height;
+            //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
+this->onResize(_width, _height);
     } // fullscreen
 
 #if defined(__APPLE__)
@@ -441,7 +454,13 @@ void CtxGLFW::Show() {
   }
   _glfwMonitor = selected_monitor;
 
-  glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+  //if(_appinitdata->_allowHIDPI){
+    glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+  //}
+  //else{
+  //  _contentScaleX = 1.0f;
+  //  _contentScaleY = 1.0f;
+  //}
 
   //_appinitdata->_width  = (_appinitdata->_width* content_scale_x);
   //_appinitdata->_height  = (_appinitdata->_height* content_scale_x);
@@ -475,7 +494,10 @@ void CtxGLFW::Show() {
   if (_needsInitialize) {
     // printf("CreateCONTEXT");
     _orkwindow->initContext();
-    _orkwindow->OnShow();
+     if( _appinitdata->_fullscreen ){
+          _target->resizeMainSurface(_width, _height);
+      }
+          _orkwindow->OnShow();
     _needsInitialize = false;
   }
   if (not _appinitdata->_offscreen) {
@@ -724,6 +746,12 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
     MINOR = this_minor;
+
+    #if defined(__APPLE__)
+        glfwWindowHint(
+            GLFW_COCOA_RETINA_FRAMEBUFFER, //
+            _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
+    #endif
 
     offscreen_window = glfwCreateWindow(
         32,      //

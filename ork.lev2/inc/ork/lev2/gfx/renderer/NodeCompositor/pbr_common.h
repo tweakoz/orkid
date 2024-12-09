@@ -108,7 +108,6 @@ struct CommonStuff : public ork::Object {
 
 
   irradiancemaps_ptr_t _irradianceMaps;
-  lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
   std::unordered_map<uint64_t, lev2::texture_ptr_t> _ssaoKernels;
