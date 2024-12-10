@@ -63,7 +63,7 @@ class TestApp(object):
 
     signal.signal(signal.SIGINT, onCtrlC)
 
-  def createSystem(self,clazz,kwargs=dict()):
+  def createSystem(self,clazz,**kwargs):
     sys = clazz(self,**kwargs)
     self.systems_for_update[sys.update_priority].append(sys)
     self.systems_for_gpu[sys.gpu_priority].append(sys)
