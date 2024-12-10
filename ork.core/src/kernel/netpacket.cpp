@@ -663,7 +663,7 @@ void valueFromJson(val_t& outval, const std::string& json_str) {
   rapidjson::Document _document;
   _document.Parse(json_str.c_str());
   bool is_object = _document.IsObject();
-  printf("json_str<%s>\n", json_str.c_str());
+  //printf("json_str<%s>\n", json_str.c_str());
   OrkAssert(is_object);
   __recurse_value_FromJson(outval, _document);
 }
