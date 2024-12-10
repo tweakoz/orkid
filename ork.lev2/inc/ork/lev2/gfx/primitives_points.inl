@@ -21,11 +21,13 @@ struct PointsData {
   PointsData(datablock_ptr_t db, int num_points, EVtxStreamFormat format);
   datablock_ptr_t _datablock;
   int _num_points = 0;
+  bool _invert_color = false;
   EVtxStreamFormat _format = EVtxStreamFormat::NONE;
   void transformInPlace(const fmtx4& mtx);
   pointsdata_ptr_t transformed(const fmtx4& mtx) const;
   pointsdata_ptr_t convertToV12C4(image_ptr_t image) const;
   pointsdata_ptr_t depthClamped(float min_depth, float max_depth) const;
+  pointsdata_ptr_t colorClamped(float min_intens, float max_intens) const;
   pointsdata_ptr_t stochasticSample(float probability) const;
   
 };

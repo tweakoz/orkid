@@ -44,6 +44,11 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 return prim->depthClamped(zmin, zmax);
               })
           .def(
+              "colorClamped",
+              [](primitives::pointsdata_ptr_t prim, float imin, float imax) -> primitives::pointsdata_ptr_t { //
+                return prim->colorClamped(imin, imax);
+              })
+          .def(
               "stochasticSample",
               [](primitives::pointsdata_ptr_t prim, float probablity) -> primitives::pointsdata_ptr_t { //
                 return prim->stochasticSample(probablity);

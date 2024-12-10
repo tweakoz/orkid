@@ -57,11 +57,13 @@ void PointsData::transformInPlace(const fmtx4& mtx) {
       auto p_v12c4 = (VtxV12C4*) _datablock->data();
       for(int i=0; i<_num_points; i++){
         auto& vtx = p_v12c4[i];
-        fvec4 pos(vtx.x,vtx.y,vtx.z,1.0f);
-        pos = pos.transform(mtx);
-        vtx.x = pos.x;
-        vtx.y = pos.y;
-        vtx.z = pos.z;
+        fvec3 pos(vtx.x,vtx.y,vtx.z);
+        if(pos.magnitude()>0.0f){
+          auto v4pos = fvec4(pos,1).transform(mtx);
+          vtx.x = v4pos.x;
+          vtx.y = v4pos.y;
+          vtx.z = v4pos.z;
+        }
       }
       break;
     }
@@ -122,6 +124,67 @@ pointsdata_ptr_t PointsData::depthClamped(float min_depth, float max_depth) cons
       }
       return rval;
     }
+    case EVtxStreamFormat::V12C4: {
+      auto src_typed = (VtxV12C4*)_datablock->data();
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12C4*)dest;
+      for(int i=0; i<_num_points; i++){
+        auto& src = src_typed[i];
+        auto& dst = dest_typed[i];
+        dst.color = src.color;
+        float depth = src.z;
+        if(depth<min_depth or depth>max_depth){
+          dst.x = 0.0f;
+          dst.y = 0.0f;
+          dst.z = 0.0f;
+        }
+        else{
+          dst.x = src.x;
+          dst.y = src.y;
+          dst.z = src.z;
+        }
+      }
+      return rval;
+    }
+  }
+  OrkAssert(false);
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+pointsdata_ptr_t PointsData::colorClamped(float min_intens, float max_intens) const {
+  switch(_format){
+    case EVtxStreamFormat::V12C4: {
+      auto src_typed = (VtxV12C4*)_datablock->data();
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12C4*)dest;
+      for(int i=0; i<_num_points; i++){
+        auto& src = src_typed[i];
+        auto& dst = dest_typed[i];
+        fvec4 color;
+        color.setABGRU32(src.color);
+
+        float intens = color.xyz().magnitude();
+        if(intens<min_intens or intens>max_intens){
+          dst.x = 0.0f;
+          dst.y = 0.0f;
+          dst.z = 0.0f;
+          dst.color = 0;
+        }
+        else{
+          dst.x = src.x;
+          dst.y = src.y;
+          dst.z = src.z;
+          dst.color = src.color;
+        }
+      }
+      return rval;
+    }
   }
   OrkAssert(false);
   return nullptr;
@@ -145,6 +208,24 @@ pointsdata_ptr_t PointsData::stochasticSample(float probability) const {
         auto& dst = dest_typed[i];
         dst.uv0 = src.uv0;
         dst.pos = src.pos;
+      }
+      return rval;
+    }
+    case EVtxStreamFormat::V12C4: {
+      auto src_typed = (VtxV12C4*)_datablock->data();
+      size_t num_samples_stoch = size_t(float(_num_points)*probability);
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12C4*)dest;
+      for(int i=0; i<num_samples_stoch; i++){
+        int j = rand() % _num_points;
+        auto& src = src_typed[j];
+        auto& dst = dest_typed[i];
+        dst.color = src.color;
+        dst.x = src.x;
+        dst.y = src.y;
+        dst.z = src.z;
       }
       return rval;
     }
