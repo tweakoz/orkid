@@ -1,9 +1,9 @@
-from obt import path as ork_path
+from obt import path as obt_path
 import os 
 
 
 def _root():
-	return ork_path.Path(os.environ["ORKID_WORKSPACE_DIR"])
+	return obt_path.Path(os.environ["ORKID_WORKSPACE_DIR"])
 
 def __getattr__(name):
   if name == "root":
@@ -18,4 +18,6 @@ def __getattr__(name):
   	return _root()/"ork.lev2"/"examples"/"python"
   elif name == "py_lev2utils":
   	return _root()/"ork.lev2"/"examples"/"python"/"lev2utils"
+  elif name == "pyvenv":
+  	return obt_path.Path(os.environ["OBT_PYTHONHOME"])
   return None

@@ -5,6 +5,8 @@ import os, argparse
 import obt.host
 import obt.dep
 import obt.path
+import obt.pathtools
+from ork import path as ork_path
 from obt.command import Command, run
 from obt import buildtrace
 import obt._globals as _glob
@@ -186,5 +188,10 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   if rval==0 and obt.host.IsDarwin:
     rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
+
+  if rval==0:
+    src = ork_path.pyvenv/"bin"/"python3.12"
+    dst = obt.path.stage()/"bin"/"ork.python"
+    obt.pathtools.copyfile(src,dst)
 
 sys.exit(rval)
