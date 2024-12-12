@@ -123,14 +123,14 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   if (nullptr == ctxbase)
     return;
 
-  int x, y;
-  glfwGetWindowPos(window, &x, &y);
-
-  logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h);
 
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
+  w = int(w * ctxbase->_contentScaleX);
+  h = int(h * ctxbase->_contentScaleY);
+
+  logchan_glfw->log("WIN RESIZED w<%d> h<%d>", w, h);
   sink->_on_callback_winresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,6 +141,7 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
+  logchan_glfw->log("FB RESIZED w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
   sink->_on_callback_fbresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -463,17 +464,16 @@ this->onResize(_width, _height);
   //  _contentScaleY = 1.0f;
   //}
 
-  //_appinitdata->_width  = (_appinitdata->_width* content_scale_x);
-  //_appinitdata->_height  = (_appinitdata->_height* content_scale_x);
-  //_width = _appinitdata->_width;
-  //_height = _appinitdata->_height;
 
 
   if (_appinitdata->_fullscreen) {
 
-    _glfw_callback_winresized(_glfwWindow, _width, _height);
-    _glfw_callback_fbresized(_glfwWindow, _width, _height);
-
+   // _glfw_callback_winresized(_glfwWindow, _width, _height);
+    //_glfw_callback_fbresized(_glfwWindow, _width, _height);
+    glfwGetWindowSize(_glfwWindow, &_width, &_height);
+    _appinitdata->_width  = _width;
+    _appinitdata->_height = _height;
+    
   } else {
     logchan_glfw->log(
         "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
@@ -504,6 +504,12 @@ this->onResize(_width, _height);
   if (not _appinitdata->_offscreen) {
     glfwShowWindow(_glfwWindow);
   }
+  _appinitdata->_width  = (_appinitdata->_width* _contentScaleX);
+  _appinitdata->_height  = (_appinitdata->_height* _contentScaleY);
+  _width = _appinitdata->_width;
+  _height = _appinitdata->_height;
+
+  onResize(_width, _height);
 
 
 }
