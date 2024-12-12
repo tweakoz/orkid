@@ -394,7 +394,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
         // write to datablock cache
         ///////////////////////////////////
 
-        printf( "WRITING SHADER hash<%016llx> TO CACHE\n", pipeline_hash );
+        //printf( "WRITING SHADER hash<%016llx> TO CACHE\n", pipeline_hash );
 
         pipeline_datablock = std::make_shared<DataBlock>();
         chunkwriter.writeToDataBlock(pipeline_datablock);

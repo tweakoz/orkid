@@ -71,7 +71,7 @@ void PBRMaterial::conformLightmaps() {
     max_h = std::max(max_h, lm->_height);
     retain_lmaps.insert(lm);
     lmap_by_name[name] = lm;
-    printf("conformLightmaps st0 name<%s> fmt<%s> -> RGB16 \n", name.c_str(), EBufferFormatToName(lm->_format).c_str());
+    //printf("conformLightmaps st0 name<%s> fmt<%s> -> RGB16 \n", name.c_str(), EBufferFormatToName(lm->_format).c_str());
   }
   ////////////////////////////////
   // convert to RGB8
@@ -143,7 +143,7 @@ void PBRMaterial::conformLightmaps() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::assignLightmaps(Context* ctx){
-  printf("beg PBRMaterial::assignLightmaps\n");
+  //printf("beg PBRMaterial::assignLightmaps\n");
   conformLightmaps();
   if(_lightmap_image_assets.size()){
     TextureArrayInitData TID;
@@ -162,7 +162,7 @@ void PBRMaterial::assignLightmaps(Context* ctx){
     ctx->TXI()->initTextureArray2DFromData(_texLightMapArray.get(), TID);
     ////////////////////////////////
   }
-  printf("end PBRMaterial::assignLightmaps\n");
+  //printf("end PBRMaterial::assignLightmaps\n");
 }
 
 } //namespace ork::lev2 {

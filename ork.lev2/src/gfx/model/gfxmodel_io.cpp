@@ -43,8 +43,8 @@ static bool FORCE_MODEL_REGEN() {
 static bool ASSET_ENCRYPT_MODE() {
   return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
 }
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD", fvec3(0.8, 0.8, 0.4), true);
-static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE", fvec3(0.8, 0.7, 0.4), true);
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD", fvec3(0.8, 0.8, 0.4), false);
+static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE", fvec3(0.8, 0.7, 0.4), false);
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 
@@ -80,7 +80,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
   /////////////////////
   auto path_asset_modifiers = ActualPath;
   path_asset_modifiers.setExtension(".orkid.json");
-  printf("path_asset_modifiers<%s>\n", path_asset_modifiers.c_str());
+  //printf("path_asset_modifiers<%s>\n", path_asset_modifiers.c_str());
   auto abs_path = path_asset_modifiers.toAbsolute();
 
   if(path_asset_modifiers.exists()){
@@ -102,11 +102,11 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
         auto MTLMOD = std::make_shared<XgmModelAssetMaterialModifiers>();
         MODS->_materials[name] = MTLMOD;
 
-        printf("material<%s>\n", name.c_str());
+        //printf("material<%s>\n", name.c_str());
         auto type = mtl["class"];
         OrkAssert(type.is_string());
         MTLMOD->_material_class = type.get<std::string>();;
-        printf("type<%s>\n", MTLMOD->_material_class.c_str());
+        //printf("type<%s>\n", MTLMOD->_material_class.c_str());
         auto lightmaps = mtl["lightmaps"];
         for(auto lmitem=lightmaps.begin(); lmitem!=lightmaps.end(); ++lmitem){
           auto lmname = lmitem.key();
@@ -114,7 +114,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
 
           auto folder = Filename.toAbsoluteFolderX();
           MTLMOD->_lightmap_paths[lmname] = (folder/lmpath).toAbsolute().c_str();
-          printf("lightmap<%s> path<%s>\n", lmname.c_str(), lmpath.c_str());
+          //printf("lightmap<%s> path<%s>\n", lmname.c_str(), lmpath.c_str());
        }
       }
     }

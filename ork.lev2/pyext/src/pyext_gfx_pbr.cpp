@@ -41,7 +41,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               [](py::object path) -> pbr::irradiancemaps_ptr_t { //
                 auto as_py_str = py::str(path);
                 auto as_str    = as_py_str.cast<std::string>();
-                printf("requestIrradianceMaps<%s>\n", as_str.c_str());
+                //printf("requestIrradianceMaps<%s>\n", as_str.c_str());
                 return pbr::CommonStuff::requestIrradianceMaps(as_str);
               })
           .def(py::init<>())
