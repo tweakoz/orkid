@@ -118,14 +118,16 @@ libblock lib_fwd //
     vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
     vec3 probe_REFL = texture(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
-    float spec_ruf      = pow(roughness, 1.3) * 0.7;
-    float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
+    float spec_ruf      = pow(roughness, 0.5);
     vec3 refl_equi      = vec3(refl.x, -refl.y, refl.z);
-    vec3 spec_env       = env_equirectangular(refl_equi, MapSpecularEnv, spec_miplevel)+probe_REFL;
-    vec3 specular_light = ambient + spec_env * SkyboxLevel;
+    diffuse_env         = env_equirectangular(refl_equi, MapDiffuseEnv, 0);
+    vec3 spec_env       = env_equirectangular(refl_equi, MapSpecularEnv,0);
+    vec3 env = mix(spec_env, diffuse_env, spec_ruf)+probe_REFL;
+    vec3 specular_light = ambient + env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC*ambocc;
+    //specular = specular * pow(1.0-roughness,2.0);
 
     //vec3 probe_REFL = vec3(0);
     // vec3 ambient = invF*AmbientLevel;
@@ -358,9 +360,9 @@ libblock lib_fwd //
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
       //spot_lighting += vec3(specular_lighttex);
        //spot_lighting += pl_c;
-    }
+    } // for (int i = 0; i < spot_light_count; i++) {
+
     //return spot_lighting;
-    //return vec3(metallic, roughness, 0);
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {

@@ -143,7 +143,7 @@ class SkinningApp(object):
 
     self.materials = set()
 
-    self.ezapp = lev2.OrkEzApp.create(self, left=100, top=100, width=960, height=480, ssaa=2)
+    self.ezapp = lev2.OrkEzApp.create(self, left=100, top=100, width=960, height=480, ssaa=1)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     setupUiCamera( app=self, 
                    eye = vec3(0,0,30), 
