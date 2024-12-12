@@ -27,11 +27,11 @@ namespace ork { namespace lev2 {
 
 int Context::mainSurfaceWidth() const {
   float content_scale = mCtxBase ? mCtxBase->_contentScaleX : 1.0f;
-  return int(miW*content_scale);
+  return int(miW);
 }
 int Context::mainSurfaceHeight() const {
   float content_scale = mCtxBase ? mCtxBase->_contentScaleY : 1.0f;
-  return int(miH*content_scale);
+  return int(miH);
 }
 float Context::mainSurfaceAspectRatio() const {
   return float(mainSurfaceWidth()) / float(mainSurfaceHeight());

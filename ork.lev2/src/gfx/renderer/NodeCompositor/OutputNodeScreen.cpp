@@ -71,10 +71,6 @@ struct SCRIMPL {
     Context* targ                = drawdata.context();
     int w                        = CCTX.miWidth;
     int h                        = CCTX.miHeight;
-    if (targ->hiDPI()) {
-      // w /= 2;
-      // h /= 2;
-    }
     int multiplier = 1;
     switch (_node->supersample()) {
       case 0:

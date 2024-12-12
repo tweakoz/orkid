@@ -43,8 +43,8 @@ void MatrixStackInterface::PushUIMatrix() {
     fh        = float(CPD.GetDstRect()._h);
   }
   if (_target.hiDPI()) {
-    fw *= 0.5f;
-    fh *= 0.5f;
+    //fw *= 0.5f;
+    //fh *= 0.5f;
   }
   ork::fmtx4 mtxP = _target.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   PushPMatrix(mtxP);
