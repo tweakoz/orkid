@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/memcpy.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -15,10 +16,21 @@
 
 #include <ork/reflect/properties/registerX.inl>
 
+#include "drawable_instanced_impl.inl"
+
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+InstancedDrawableInstanceData::InstancedDrawableInstanceData(int index)
+    : _index(index) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void InstancedDrawableInstanceData::resize(size_t count) {
+
+  if(count==_count)
+    return;
 
   size_t GPU_SIZE = InstancedModelDrawable::k_max_instances;
   OrkAssert(count<=GPU_SIZE);
@@ -44,11 +56,52 @@ void InstancedDrawableInstanceData::resize(size_t count) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void InstancedDrawableInstanceData::copyFrom(const InstancedDrawableInstanceData& oth){
+
+  if(oth._count!=_count)
+    resize(oth._count);
+
+  std::atomic<int> ctra = 0;
+  std::atomic<int> ctrb = 0;
+  std::atomic<int> ctrc = 0;
+  std::atomic<int> ctrd = 0;
+
+  memcpy_async(_worldmatrices.data(), oth._worldmatrices.data(), _count*sizeof(fmtx4), ctra);
+  memcpy_async(_modcolors.data(), oth._modcolors.data(), _count*sizeof(fvec4), ctrb );
+  if(_uses_picking){
+    memcpy_async(_pickids.data(), oth._pickids.data(), _count*sizeof(uint64_t),ctrc);
+
+  }
+  if(_uses_miscdata){
+    memcpy_async(_miscdata.data(), oth._miscdata.data(), _count*sizeof(svar64_t),ctrd);
+  }
+
+  if(_uses_alloc_free){
+    _instancePool = oth._instancePool;
+  }
+  while (ctra.load()) {
+    ork::usleep(0);
+  }
+  while (ctrb.load()) {
+    ork::usleep(0);
+  }
+  while (ctrc.load()) {
+    ork::usleep(0);
+  }
+  while (ctrd.load()) {
+    ork::usleep(0);
+  }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 int InstancedDrawableInstanceData::allocInstance() {
   OrkAssert(_instancePool.size()>0);
   auto it = _instancePool.begin();
   int ID = *it;
   _instancePool.erase(ID);
+  _uses_alloc_free = true;
   return ID;
 }
 
@@ -56,6 +109,7 @@ int InstancedDrawableInstanceData::allocInstance() {
 
 void InstancedDrawableInstanceData::freeInstance(int instance_id) {
   _instancePool.insert(instance_id);
+  _uses_alloc_free = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,11 +128,10 @@ void InstancedDrawable::resize(size_t count) {
 drawqueueitem_ptr_t InstancedDrawable::enqueueOnLayer(
     const DrawQueueTransferData& xfdata, //
     DrawQueueLayer& buffer) const {
-  auto instances_copy            = std::make_shared<InstancedDrawableInstanceData>();
-  *instances_copy                = *_instancedata;
+  auto instances_copy = _idbuf_pool.begin_push();
+  instances_copy->copyFrom(*_instancedata);
   drawqueueitem_ptr_t dbufitem = Drawable::enqueueOnLayer(xfdata, buffer);
-  dbufitem->_usermap["rtthread_instance_data"_crcu].set<instanceddrawinstancedata_ptr_t>(instances_copy);
-  // printf( "_instancedata.count<%zu>\n", _instancedata->_count );
+  _idbuf_pool.end_push(instances_copy);
   return dbufitem;
 }
 

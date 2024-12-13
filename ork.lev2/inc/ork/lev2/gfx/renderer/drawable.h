@@ -15,11 +15,12 @@
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/semaphore.h>
 #include <ork/kernel/tempstring.h>
+#include <ork/kernel/shared_pool.inl>
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/util/tsl/robin_map.h>
-//#include <ork/util/triple_buffer.h>
+#include <ork/util/triple_buffer.h>
 
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
@@ -465,6 +466,9 @@ struct InstancedDrawable : public Drawable {
   mutable texture_ptr_t _instanceColorTex;
 
   instanceddrawinstancedata_ptr_t _instancedata;
+  //using idb_pool_t = ork::shared_pool::fixed_pool<svarshp_t,8>;
+  //LockedResource<idb_pool_t> _idbuf_pool;
+  mutable concurrent_triple_buffer<InstancedDrawableInstanceData> _idbuf_pool;
   mutable int _drawcount = 0;
   size_t _count;
 };
@@ -489,6 +493,9 @@ struct InstancedModelDrawable final : public InstancedDrawable {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct InstancedDrawableInstanceData {
+  InstancedDrawableInstanceData(int index=-1);
+
+  void copyFrom(const InstancedDrawableInstanceData& oth);
   void resize(size_t count);
   int allocInstance();
   void freeInstance(int index);
@@ -500,6 +507,10 @@ struct InstancedDrawableInstanceData {
   std::vector<svar64_t> _miscdata;
   std::unordered_set<int> _instancePool;
   size_t _count = 0;
+  int _index = -1;
+  bool _uses_alloc_free = false;
+  bool _uses_picking = false;
+  bool _uses_miscdata = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

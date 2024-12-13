@@ -17,6 +17,7 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/profiling.inl>
+#include "drawable_instanced_impl.inl"
 
 ImplementReflectionX(ork::lev2::InstancedModelDrawableData, "InstancedModelDrawableData");
 
@@ -120,8 +121,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetDrawableDataB(GetUserDataB());
   renderable._instanced = true;
   //printf( "dbufitem _serialno<%d>\n", dbufitem->_serialno );
-    auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
-    OrkAssert(it!=dbufitem->_usermap.end());
+    //auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
+    //OrkAssert(it!=dbufitem->_usermap.end());
 
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this,dbufitem](lev2::RenderContextInstData& RCID) { //
@@ -147,9 +148,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     texdata._dst_format  = EBufferFormat::RGBA32F;
     texdata._autogenmips = false;
     //printf( "dbufitem->_usermap size<%zu>\n", dbufitem->_usermap.size() );
-    auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
-    OrkAssert(it!=dbufitem->_usermap.end());
-    auto instances_copy = it->second.get<instanceddrawinstancedata_ptr_t>();
+    //auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
+    //OrkAssert(it!=dbufitem->_usermap.end());
+    auto instances_copy = _idbuf_pool.begin_pull();
     texdata._data        = (const void*) instances_copy->_worldmatrices.data();
     texdata._truncation_length = _count*64;
     OrkAssert(_count <= k_max_instances);
@@ -179,6 +180,11 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     _instanceIdTex->TexSamplingMode().PresetPointAndClamp();
     TXI->ApplySamplingMode(_instanceIdTex.get());
   EASY_END_BLOCK;
+
+    ////////////////////////////////////////////////////////
+    // release pulled instance data
+    ////////////////////////////////////////////////////////
+    _idbuf_pool.end_pull(instances_copy);
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////
@@ -191,7 +197,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto pipeline = fxlut->findPipeline(RCID);
       OrkAssert(pipeline);
       pipeline->wrappedDrawCall(RCID, [&]() {
-        auto idata = instances_copy;
         ////////////////////////////////////
         // bind instancetex to sampler
         ////////////////////////////////////
