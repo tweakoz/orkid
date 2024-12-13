@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 
 ################################################################################
 # ECS (Entity/Component/System) sample for a simple FPS like experience

@@ -8,3 +8,5 @@ ork.python -m pip install noise==1.2.2
 ork.python -m pip install numba==0.60.0
 ork.python -m pip install pyopencl==2024.3
 ork.python -m pip install pyvista==0.44.2
+ork.python -m pip install manifold3d==3.0.0
+ork.python -m pip install trimesh==4.4.0

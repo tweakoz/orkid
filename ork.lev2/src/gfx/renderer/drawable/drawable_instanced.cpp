@@ -73,7 +73,10 @@ void InstancedDrawableInstanceData::copyFrom(const InstancedDrawableInstanceData
 
   }
   if(_uses_miscdata){
-    memcpy_async(_miscdata.data(), oth._miscdata.data(), _count*sizeof(svar64_t),ctrd);
+    // cant memcpy since its not a POD
+    for(size_t i=0; i<_count; i++){
+      _miscdata[i] = oth._miscdata[i];
+    }
   }
 
   if(_uses_alloc_free){

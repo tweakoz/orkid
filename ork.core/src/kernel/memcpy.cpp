@@ -187,6 +187,34 @@ void memcpy_fast(void* dest, const void* src, size_t length) {
   }
 }
 
+void memcpy_async(void* dest, //
+                  const void* src, //
+                  size_t length, //
+                  std::atomic<int>& async_counter) { //
+
+  auto write_base = (uint8_t*)dest;
+  auto read_base  = (const uint8_t*)src;
+
+  size_t nlen  = length;
+  size_t index = 0;
+
+  while (nlen > 0) {
+
+    size_t this_iter = 4<<20;
+    if (this_iter > nlen)
+      this_iter = nlen;
+
+    async_counter.fetch_add(1);
+    auto op = [=, &async_counter]() {
+      memcpy_fast((write_base + index), (read_base + index), this_iter);
+      async_counter.fetch_add(-1);
+    };
+    nlen -= this_iter;
+    index += this_iter;
+    opq::concurrentQueue()->enqueue(op);
+  }
+}
+
 
 #else
 void memcpy_fast(void* dest, const void* src, size_t length) {

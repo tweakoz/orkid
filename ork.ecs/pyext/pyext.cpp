@@ -47,9 +47,12 @@ struct PseudoArgs {
 using pseudoargs_ptr_t = std::shared_ptr<PseudoArgs>;
 
 ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs) {
+  auto stringpoolctx = std::make_shared<StringPoolContext>();
+  StringPoolStack::push(stringpoolctx);
   auto init_data = std::make_shared<ork::AppInitData>();
   lev2::initModule(init_data);
   ecs::initModule(init_data);
+  init_data->finalizeInitialization();
   ////////////////////////////////////////////////////////////////////
   ::ork::python::GlobalState::instance();
   ////////////////////////////////////////////////////////////////////
