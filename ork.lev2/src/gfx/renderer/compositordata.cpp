@@ -92,9 +92,10 @@ compositorimpl_ptr_t CompositingData::createImpl() const {
 
 RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t pdata) {
   rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
+  pbr::commonstuff_ptr_t pbrc = pdata ? pdata->_pbr_common : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
-  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pdata->_pbr_common);
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pbrc);
 
   compositoroutnode_ptr_t selected_output_node = nullptr;
   if(outputgroup){
@@ -131,10 +132,11 @@ RenderPresetContext CompositingData::presetDeferredPBR(render_preset_data_ptr_t 
 
 RenderPresetContext CompositingData::presetPBRVR(render_preset_data_ptr_t pdata) {
   rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
+  pbr::commonstuff_ptr_t pbrc = pdata ? pdata->_pbr_common : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
   auto o1 = t1->createOutputNode<VrCompositingNode>();
-  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pdata->_pbr_common);
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pbrc);
 
   auto pbr_common = r1->_pbrcommon;
 
