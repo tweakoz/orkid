@@ -144,8 +144,9 @@ struct GlxLoadContext {
 
 ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
   ctx_platform_handle_t rval;
-  auto plato = _impl.getShared<GlIxPlatformObject>();
-  auto new_plato = rval.makeShared<GlIxPlatformObject>();
+  auto plato = std::dynamic_pointer_cast<GlIxPlatformObject>(_impl.getShared<GlPlatformObject>());
+  auto new_plato = std::make_shared<GlIxPlatformObject>(*plato);
+  rval.setShared<GlIxPlatformObject>(new_plato);
   new_plato->_ctxbase = nullptr; //plato->_ctxbase;
   //new_plato->_context = plato->_context;
   new_plato->_needsInit   = false;
@@ -285,7 +286,8 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
-  auto plato = _impl.makeShared<GlIxPlatformObject>();
+  auto plato = std::make_shared<GlIxPlatformObject>();
+  _impl.setShared<GlPlatformObject>(plato);
   plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
   ///////////////////////
@@ -458,7 +460,8 @@ void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
 
   mCtxBase = 0;
 
-  auto ixplato = _impl.makeShared<GlIxPlatformObject>();
+  auto ixplato = std::make_shared<GlIxPlatformObject>();
+  _impl.setShared<GlPlatformObject>(ixplato);
   mFbI.SetThisBuffer(pBuf);
 
   auto global_plato = GlIxPlatformObject::_global_plato;
@@ -483,7 +486,8 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  auto ixplato = _impl.makeShared<GlIxPlatformObject>();
+  auto ixplato = std::make_shared<GlIxPlatformObject>();
+  _impl.setShared<GlPlatformObject>(ixplato);
 
   auto global_plato   = GlIxPlatformObject::_global_plato;
   ixplato->_ctxbase = global_plato->_ctxbase;
@@ -511,7 +515,7 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext(void) {
-  auto ixplato = _impl.getShared<GlIxPlatformObject>();
+  auto ixplato = _impl.getShared<GlPlatformObject>();
   OrkAssert(ixplato);
   if (ixplato) {
     ixplato->makeCurrent();
@@ -522,9 +526,10 @@ void ContextGL::makeCurrentContext(void) {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
-  auto ixplato = _impl.getShared<GlIxPlatformObject>();
-  OrkAssert(ixplato);
-  if (ixplato && (ixplato->getXwindowID() > 0)) {
+  auto ixplato = _impl.getShared<GlPlatformObject>();
+  auto typed = std::dynamic_pointer_cast<GlIxPlatformObject>(ixplato);
+  OrkAssert(typed);
+  if (typed && (typed->getXwindowID() > 0)) {
     ixplato->makeCurrent();
     ixplato->swapBuffers();
   }

@@ -493,7 +493,7 @@ this->onResize(_width, _height);
   }
 
   if (_needsInitialize) {
-    // printf("CreateCONTEXT");
+     printf("CreateCONTEXT");
     _orkwindow->initContext();
      if( _appinitdata->_fullscreen ){
           _target->resizeMainSurface(_width, _height);

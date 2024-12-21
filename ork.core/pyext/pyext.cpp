@@ -145,6 +145,8 @@ static void _disableLogging() {
 void pyinit_reflection(py::module& module_core);
 
 PYBIND11_MODULE(_core, module_core) {
+
+  printf("initialize ork.core python bindings\n");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
