@@ -85,6 +85,26 @@ CameraData::CameraData()
     , mNear(100.0f)
     , mFar(750.0f){
 }
+void CameraData::copyFrom(const CameraData& oth){
+  mEye = oth.mEye;
+  mTarget = oth.mTarget;
+  mUp = oth.mUp;
+  _xnormal = oth._xnormal;
+  _ynormal = oth._ynormal;
+  _znormal = oth._znormal;
+  _left = oth._left;
+  _right = oth._right;
+  _top = oth._top;
+  _bottom = oth._bottom;
+  _uiCamera = oth._uiCamera;
+  mAper = oth.mAper;
+  mHorizAper = oth.mHorizAper;
+  mNear = oth.mNear;
+  mFar = oth.mFar;
+  _is_ortho = oth._is_ortho;
+
+}
+  
 ////////////////////////////////////////////////////////////////////////////////
 const fvec3& CameraData::GetEye() const {
   return mEye;

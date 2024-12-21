@@ -25,6 +25,7 @@ struct CameraData {
 
   CameraData();
 
+  void copyFrom(const CameraData& oth);
   CameraMatrices computeMatrices(float faspect = 1.0f) const;
   fmtx4 computeViewMatrix() const;
 
