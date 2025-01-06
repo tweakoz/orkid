@@ -28,6 +28,8 @@ struct PointsData {
   pointsdata_ptr_t convertToV12C4(image_ptr_t image) const;
   pointsdata_ptr_t depthClamped(float min_depth, float max_depth) const;
   pointsdata_ptr_t colorClamped(float min_intens, float max_intens) const;
+  pointsdata_ptr_t hsvScaleBias(fvec2 hue, fvec2 sat, fvec2 val) const;
+  pointsdata_ptr_t swizzleRGB() const;
   pointsdata_ptr_t stochasticSample(float probability) const;
   
 };

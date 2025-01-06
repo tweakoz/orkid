@@ -192,6 +192,71 @@ pointsdata_ptr_t PointsData::colorClamped(float min_intens, float max_intens) co
 
 ///////////////////////////////////////////////////////////////////////////////
 
+pointsdata_ptr_t PointsData::swizzleRGB() const {
+  switch(_format){
+    case EVtxStreamFormat::V12C4: {
+      auto src_typed = (VtxV12C4*)_datablock->data();
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12C4*)dest;
+      memcpy_fast(dest_typed,_datablock->data(),_datablock->length());
+
+      for(int i=0; i<_num_points; i++){
+        auto& src = src_typed[i];
+        auto& dst = dest_typed[i];
+        uint32_t color = src.color;
+        uint32_t r = (color>>16)&0xff;
+        uint32_t g = (color>>8)&0xff;
+        uint32_t b = (color>>0)&0xff;
+        dst.color = (b<<16)|(g<<8)|(r<<0);
+      }
+      return rval;
+    }
+  }
+  OrkAssert(false);
+  return nullptr;
+}
+
+pointsdata_ptr_t PointsData::hsvScaleBias(fvec2 hue, fvec2 sat, fvec2 val) const {
+  switch(_format){
+    case EVtxStreamFormat::V12C4: {
+      auto src_typed = (VtxV12C4*)_datablock->data();
+      auto rval = std::make_shared<PointsData>(nullptr,_num_points,EVtxStreamFormat::V12C4);
+      auto dblock_dest = rval->_datablock;
+      auto dest = dblock_dest->data();
+      auto dest_typed = (VtxV12C4*)dest;
+      memcpy_fast(dest_typed,_datablock->data(),_datablock->length());
+
+      for(int i=0; i<_num_points; i++){
+        auto& src = src_typed[i];
+        auto& dst = dest_typed[i];
+        uint32_t color = src.color;
+        fvec3 color_rgb = fvec3( (color&0xff), ((color>>8)&0xff), ((color>>16)&0xff) ) * (1.0f/255.0f);
+        fvec3 color_hsv = color_rgb.convertRgbToHsv();
+        color_hsv.x = (color_hsv.x*hue.x)+hue.y;
+        color_hsv.y = (color_hsv.y*sat.x)+sat.y;
+        color_hsv.z = (color_hsv.z*val.x)+val.y;
+        color_hsv.x = fmod(color_hsv.x,6.0f);
+        color_hsv.y = std::clamp(color_hsv.y,0.0f,1.0f);
+        color_hsv.z = std::clamp(color_hsv.z,0.0f,1.0f);
+        fvec3 color_rgb2;
+        color_rgb2.setHSV( color_hsv.x, color_hsv.y, color_hsv.z );
+        color_rgb2 = color_rgb2 * 255.0f;
+        uint32_t r = uint32_t(color_rgb2.x) & 0xff;
+        uint32_t g = uint32_t(color_rgb2.y) & 0xff;
+        uint32_t b = uint32_t(color_rgb2.z) & 0xff;
+        dst.color = (b<<16)|(g<<8)|(r<<0);
+      }
+      return rval;
+    }
+  }
+  OrkAssert(false);
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 pointsdata_ptr_t PointsData::stochasticSample(float probability) const {
   OrkAssert(probability>=0.0f and probability<=1.0f);
   switch(_format){

@@ -189,9 +189,9 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   if rval==0 and obt.host.IsDarwin:
     rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
 
-  if rval==0:
-    src = ork_path.pyvenv/"bin"/"python3.12"
-    dst = obt.path.stage()/"bin"/"ork.python"
+  src = ork_path.pyvenv/"bin"/"python3.12"
+  dst = obt.path.stage()/"bin"/"ork.python"
+  if rval==0 and (not dst.exists()):
     obt.pathtools.copyfile(src,dst)
 
 sys.exit(rval)

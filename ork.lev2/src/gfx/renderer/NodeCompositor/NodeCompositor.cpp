@@ -84,6 +84,7 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
+    size_t num_fx_nodes = _postEffectNodes.size();
     for( auto pfxnode : _postEffectNodes ){
       drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
       pfxnode->Render(drawdata);

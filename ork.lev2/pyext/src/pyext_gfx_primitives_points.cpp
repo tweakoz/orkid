@@ -49,9 +49,19 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 return prim->colorClamped(imin, imax);
               })
           .def(
+              "colorHsvScaleBias",
+              [](primitives::pointsdata_ptr_t prim, fvec2 hue, fvec2 sat, fvec2 val) -> primitives::pointsdata_ptr_t { //
+                return prim->hsvScaleBias(hue,sat,val);
+              })
+          .def(
               "stochasticSample",
               [](primitives::pointsdata_ptr_t prim, float probablity) -> primitives::pointsdata_ptr_t { //
                 return prim->stochasticSample(probablity);
+              })
+          .def_property_readonly(
+              "rgbSwizzled",
+              [](primitives::pointsdata_ptr_t prim) -> primitives::pointsdata_ptr_t { //
+                return prim->swizzleRGB();
               })
           .def("convertToV12C4", [](primitives::pointsdata_ptr_t prim, image_ptr_t image) -> primitives::pointsdata_ptr_t { //
             return prim->convertToV12C4(image);
@@ -101,6 +111,45 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 }
                 prim->unlock(context.get());
                 return prim;
+              })
+          .def(
+              "updateWithPointsData",
+              [](primitives::points_v12c4_ptr_t prim, 
+                 primitives::pointsdata_ptr_t pdata, 
+                 ctx_t context) {
+                 py::gil_scoped_release release;
+                 size_t dblock_len = pdata->_datablock->length();
+                 OrkAssert(dblock_len%sizeof(VtxV12C4)==0);
+                 size_t num_points = dblock_len / sizeof(VtxV12C4);
+                 OrkAssert(num_points <= prim->_capacity)
+                 VtxV12C4* points = prim->lock(context.get(), num_points);
+                 memcpy_fast(points, pdata->_datablock->data(), dblock_len);
+                 prim->unlock(context.get());
+              })
+              .def(
+              "updateWithV12C4DataBlock",
+              [](primitives::points_v12c4_ptr_t prim, 
+                 datablock_ptr_t dblock, 
+                 ctx_t context,
+                 bool swizzle_rgb = false) {
+                 py::gil_scoped_release release;
+                 size_t dblock_len = dblock->length();
+                 OrkAssert(dblock_len%sizeof(VtxV12C4)==0);
+                 size_t num_points = dblock_len / sizeof(VtxV12C4);
+                 OrkAssert(num_points <= prim->_capacity)
+                 VtxV12C4* points = prim->lock(context.get(), num_points);
+                 memcpy_fast(points, dblock->data(), dblock_len);
+                 if(swizzle_rgb){
+                   for(size_t i=0; i<num_points; i++){
+                     auto& vtx = points[i];
+                     uint32_t color = vtx.color;
+                     uint32_t r = (color>>16)&0xff;
+                     uint32_t g = (color>>8)&0xff;
+                     uint32_t b = (color>>0)&0xff;
+                     vtx.color = (b<<16)|(g<<8)|(r<<0);
+                   }
+                 }
+                 prim->unlock(context.get());
               })
           .def(
               "updateWithVdbFloatGrid",
