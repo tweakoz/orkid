@@ -116,6 +116,10 @@ Image Image::convertToFormat(EBufferFormat fmt) const {
 
 void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
 
+  printf( "Image::convertFromImageToFormat fmt<%s> inp_fmt<%s>\n", //
+           EBufferFormatToName(fmt).c_str(), //
+           EBufferFormatToName(inp._format).c_str() );
+
   /////////////////////////////
   if (fmt == inp._format) {
     init(inp._width, inp._height, inp._numcomponents, inp._bytesPerChannel);
@@ -191,6 +195,8 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
           int in_elembase          = pixelindex * 3;
           int out_elembase         = pixelindex * 3;
           outptr[out_elembase + 0] = uint8_t(inptr[in_elembase + 0]>>8);
+          outptr[out_elembase + 1] = uint8_t(inptr[in_elembase + 1]>>8);
+          outptr[out_elembase + 2] = uint8_t(inptr[in_elembase + 2]>>8);
         }
       }
     } else {
