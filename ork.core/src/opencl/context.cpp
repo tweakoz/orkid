@@ -182,9 +182,13 @@ Device::Device() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-buffer_ptr_t Context::createBuffer(BufferUsage usage, size_t size, void* initial_data) {
+buffer_ptr_t Context::createBuffer(BufferUsage usage, 
+                                   HostPointerConfig hpconfig, 
+                                   size_t size, 
+                                   void* initial_data) {
 
   cl_mem_flags usage_flags = 0;
+  ////////////////////////////////////////
   switch (usage) {
     case BufferUsage::READ_WRITE:
       usage_flags = CL_MEM_READ_WRITE;
@@ -198,7 +202,23 @@ buffer_ptr_t Context::createBuffer(BufferUsage usage, size_t size, void* initial
     default:
       OrkAssert(false);
   }
-
+  ////////////////////////////////////////
+  if(initial_data){
+    switch(hpconfig){
+      case HostPointerConfig::MAP_TO_HOST_PTR:
+        usage_flags |= CL_MEM_USE_HOST_PTR;
+        break;
+      case HostPointerConfig::INIT_WITH_HOST_PTR:
+        usage_flags |= CL_MEM_COPY_HOST_PTR;
+        break;
+      case HostPointerConfig::NONE:
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
+  ////////////////////////////////////////
 
   auto impl     = _IMPL.getShared<ContextImpl>();
   auto buf      = std::make_shared<Buffer>();

@@ -22,6 +22,11 @@ void pyinit_datablock(py::module& module_core) {
                          ///////////////////
                          .def(py::init<>())
                          ///////////////////
+                         .def_static("createWithSize", [](size_t length) -> datablock_ptr_t { //
+                            auto dblock = std::make_shared<DataBlock>(nullptr, length);
+                            return dblock;
+                          })
+                         ///////////////////
                          .def_static("createFromFile", [](const file::Path& path) -> datablock_ptr_t { //
                             auto dblock = std::make_shared<DataBlock>();
                             ::ork::File infile(path.c_str(), ::ork::EFM_READ);
@@ -38,6 +43,11 @@ void pyinit_datablock(py::module& module_core) {
                            auto as_str = (const char*) db->data();
                            return py::memoryview(py::bytes(as_str, db->length()));
                          })
+                         ///////////////////
+                          .def_property_readonly("mutable_bytes", [](datablock_ptr_t db) -> py::memoryview {
+                              auto ptr = (void*) (db->data());
+                              return py::memoryview::from_memory(ptr, db->length());
+                          })
                          ///////////////////
                          .def(
                              "readByte",

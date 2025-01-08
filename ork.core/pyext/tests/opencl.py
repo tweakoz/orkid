@@ -1,10 +1,11 @@
 #!/usr/bin/env ork.python
 
 from orkengine.core import vec2, vec3, vec4, mtx3, mtx4
-from orkengine.core import CrcStringProxy, coreappinit
+from orkengine.core import coreappinit, CrcStringProxy, DataBlock
 from orkengine.core import opencl as cl
 
 coreappinit()
+
 tokens = CrcStringProxy()
 
 print("OpenCL TEST")
@@ -27,6 +28,14 @@ print(f"dev0 props: {props}")
 
 buf0 = ctx.createBuffer(tokens.READ_WRITE, 65536)
 
+dblock = DataBlock.createWithSize(65536)
+dblock_bytes = dblock.mutable_bytes
+dblock_bytes[5] = 12
+buf1 = ctx.createBufferWithDataBlock( tokens.READ_WRITE, 
+                                      tokens.MAP_TO_HOST_PTR,
+                                      dblock)
+
 print(f"buf0: {buf0}")
+print(f"buf1: {buf1}")
 
 

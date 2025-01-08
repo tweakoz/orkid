@@ -60,13 +60,18 @@ enum class BufferUsage : uint64_t {
   CrcEnum(WRITE_ONLY),
   CrcEnum(READ_ONLY),
 };
+enum class HostPointerConfig : uint64_t {
+  CrcEnum(MAP_TO_HOST_PTR),
+  CrcEnum(INIT_WITH_HOST_PTR),
+  CrcEnum(NONE),
+};
 
 struct Context {
 
   Context();
   ~Context();
 
-  buffer_ptr_t createBuffer(BufferUsage usage, size_t size, void* initial_data = nullptr);
+  buffer_ptr_t createBuffer(BufferUsage usage, HostPointerConfig hpconfig, size_t size, void* initial_data = nullptr);
   void writeBuffer(buffer_ptr_t buffer, size_t size, size_t offset, void* data);
   void readBuffer(buffer_ptr_t buffer, size_t size, size_t offset);
 

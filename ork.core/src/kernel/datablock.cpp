@@ -78,6 +78,9 @@ DataBlock::DataBlock(const void* buffer, size_t len) {
 
   if (buffer and len)
     addData(buffer, len);
+  else if(len){
+    _storage.resize(len);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 datablock_ptr_t DataBlock::encrypt(encryptioncodec_ptr_t codec) const {

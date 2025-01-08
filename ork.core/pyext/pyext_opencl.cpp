@@ -50,7 +50,14 @@ void pyinit_opencl(py::module& module_core) {
   auto context_type = py::class_<Context, context_ptr_t>(module_cl, "Context")
       .def("createBuffer", [](context_ptr_t the_context, crcstring_ptr_t usage, size_t size) -> buffer_ptr_t {
         auto usage_enum = BufferUsage(usage->hashed());
-        return the_context->createBuffer(usage_enum, size, nullptr);
+        auto hpconfig = HostPointerConfig::MAP_TO_HOST_PTR;
+        return the_context->createBuffer(usage_enum, hpconfig, size, nullptr);
+      })
+      .def("createBufferWithDataBlock", [](context_ptr_t the_context, crcstring_ptr_t usage, crcstring_ptr_t hpconfig, datablock_ptr_t dblock) -> buffer_ptr_t {
+        auto usage_enum = BufferUsage(usage->hashed());
+        auto hpconfig_enum = HostPointerConfig(hpconfig->hashed());
+        size_t size = dblock->length();
+        return the_context->createBuffer(usage_enum, hpconfig_enum, size, (void*) dblock->data());
       });
 
   type_codec->registerStdCodec<context_ptr_t>(context_type);
