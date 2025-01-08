@@ -8,8 +8,8 @@
 namespace ork::opencl {
 
 struct GlobalsImpl {
-  GlobalsImpl();
-  std::vector<platform_ptr_t> _platforms;
+  GlobalsImpl(Globals* g);
+  Globals* _globals = nullptr;
 };
 struct PlatformImpl {
   PlatformImpl(Platform* plat, cl_platform_id pid);
@@ -17,9 +17,9 @@ struct PlatformImpl {
   cl_platform_id _platform_id;
 };
 struct DeviceImpl {
-  DeviceImpl(cl_device_id did);
-  cl_device_id _device_id;
+  DeviceImpl(context_ptr_t ctx, cl_device_id did);
   context_ptr_t _ctx;
+  cl_device_id _device_id;
 };
 struct ContextImpl {
   ContextImpl(cl_context ctx, cl_device_id did);
@@ -37,7 +37,8 @@ struct BufferImpl {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-GlobalsImpl::GlobalsImpl() {
+GlobalsImpl::GlobalsImpl(Globals* globals) 
+  : _globals(globals) {
   cl_uint num_platforms = 0;
   cl_int status         = clGetPlatformIDs(0, nullptr, &num_platforms);
   std::vector<cl_platform_id> platform_ids;
@@ -59,7 +60,7 @@ GlobalsImpl::GlobalsImpl() {
     plat->_name = name;
 
     auto plat_impl = plat->_IMPL.makeShared<PlatformImpl>(plat.get(),platform_id);
-    _platforms.push_back(plat);
+    _globals->_platforms.push_back(plat);
   }
 }
 
@@ -77,21 +78,72 @@ PlatformImpl::PlatformImpl(Platform* plat, cl_platform_id pid)
   OrkAssert(status == CL_SUCCESS);
 
   for (auto device_id : devices) {
-    auto dev = std::make_shared<Device>();
-    auto dev_impl = dev->_IMPL.makeShared<DeviceImpl>(device_id);
-   _platform->_devices.push_back(dev);
+    auto ork_dev = std::make_shared<Device>();
+    // get device name
+    size_t name_size = 0;
+    status           = clGetDeviceInfo(device_id, CL_DEVICE_NAME, 0, nullptr, &name_size);
+    OrkAssert(status == CL_SUCCESS);
+    std::string name;
+    name.resize(name_size);
+    status = clGetDeviceInfo(device_id, CL_DEVICE_NAME, name_size, (void*)name.data(), nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    ork_dev->_name = name;
+
+    auto ork_ctx = std::make_shared<Context>();
+    ork_dev->_context = ork_ctx;
+    // Create an OpenCL context
+    cl_int status  = 0;
+    cl_context ctx_handle = clCreateContext(nullptr, 1, &device_id, nullptr, nullptr, &status);
+    OrkAssert(status == CL_SUCCESS);
+
+
+    auto dev_impl = ork_dev->_IMPL.makeShared<DeviceImpl>(ork_ctx,device_id);
+    auto ctx_impl = ork_ctx->_IMPL.makeShared<ContextImpl>(ctx_handle, device_id);
+
+    // query device common properties
+
+    cl_uint max_compute_units = 0;
+    status = clGetDeviceInfo(device_id, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &max_compute_units, nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    ork_dev->_properties->set<size_t>("max_compute_units", max_compute_units);
+
+    cl_uint max_work_item_dimensions = 0;
+    status = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &max_work_item_dimensions, nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    ork_dev->_properties->set<size_t>("max_work_item_dimensions", max_work_item_dimensions);
+
+    std::vector<size_t> max_work_item_sizes;
+    max_work_item_sizes.resize(max_work_item_dimensions);
+    status = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * max_work_item_dimensions, max_work_item_sizes.data(), nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    std::string max_work_item_sizes_str;
+    for (size_t i = 0; i < max_work_item_dimensions; i++) {
+      max_work_item_sizes_str += std::to_string(max_work_item_sizes[i]);
+      if (i < max_work_item_dimensions - 1) {
+        max_work_item_sizes_str += ", ";
+      }
+    }
+    ork_dev->_properties->set<std::string>("max_work_item_sizes", max_work_item_sizes_str);
+
+    size_t max_work_group_size = 0;
+    status = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    ork_dev->_properties->set<size_t>("max_work_group_size", max_work_group_size);
+
+    cl_uint max_clock_frequency = 0;
+    status = clGetDeviceInfo(device_id, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &max_clock_frequency, nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    ork_dev->_properties->set<size_t>("max_clock_frequency", max_clock_frequency);
+
+
+
+   _platform->_devices.push_back(ork_dev);
   }
 }
 
-DeviceImpl::DeviceImpl(cl_device_id did)
-    : _device_id(did) {
-  // Create an OpenCL context
-  cl_int status  = 0;
-  cl_context ctx = clCreateContext(nullptr, 1, &_device_id, nullptr, nullptr, &status);
-  OrkAssert(status == CL_SUCCESS);
-
-  _ctx = std::make_shared<Context>();
-  auto ctx_impl = _ctx->_IMPL.makeShared<ContextImpl>(ctx, did);
+DeviceImpl::DeviceImpl(context_ptr_t ctx, cl_device_id did)
+    : _ctx(ctx)
+    , _device_id(did) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,7 +165,7 @@ ContextImpl::~ContextImpl(){
 ///////////////////////////////////////////////////////////////////////////////
 
 Globals::Globals() {
-  auto impl = _IMPL.makeShared<GlobalsImpl>();
+  auto impl = _IMPL.makeShared<GlobalsImpl>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,7 +177,7 @@ Platform::Platform(){
 
 
 Device::Device() {
-
+  _properties = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

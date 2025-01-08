@@ -221,6 +221,8 @@ template <typename val_t> struct TVarMap {
       return FormatString("double<%g>", as_double.value());
     } else if (auto as_int = val.template tryAs<int>()) {
       return FormatString("int<%d>", as_int.value());
+    } else if (auto as_sizt = val.template tryAs<size_t>()) {
+      return FormatString("size_t<%d>", as_sizt.value());
     } else if (auto as_uint32_t = val.template tryAs<uint32_t>()) {
       return FormatString("uint32_t<0x%x>", as_uint32_t.value());
     } else if (auto as_uint64_t = val.template tryAs<uint64_t>()) {

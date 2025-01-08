@@ -4,6 +4,7 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/kernel/svariant.h>
+#include <ork/kernel/varmap.inl>
 #include <ork/util/crc.h>
 #include <memory>
 #include <unordered_set>
@@ -46,7 +47,10 @@ struct Platform {
 
 struct Device {
   Device();
+  std::string _name;
+  context_ptr_t _context;
   svarshp_t _IMPL;
+  varmap::varmap_ptr_t _properties;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
