@@ -11,12 +11,14 @@
 
 namespace ork::opencl {
 
+struct Globals;
 struct Platform;
 struct Device;
 struct Context;
 struct Buffer;
 struct Kernel;
 
+using globals_ptr_t  = std::shared_ptr<Globals>;
 using platform_ptr_t = std::shared_ptr<Platform>;
 using device_ptr_t   = std::shared_ptr<Device>;
 using context_ptr_t  = std::shared_ptr<Context>;
@@ -28,13 +30,16 @@ using kernel_ptr_t   = std::shared_ptr<Kernel>;
 struct Globals {
   Globals();
   svarshp_t _IMPL;
+  std::vector<platform_ptr_t> _platforms;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Platform {
   Platform();
+  std::vector<device_ptr_t> _devices;
   svarshp_t _IMPL;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

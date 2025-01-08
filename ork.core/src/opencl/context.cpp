@@ -12,8 +12,8 @@ struct GlobalsImpl {
   std::vector<platform_ptr_t> _platforms;
 };
 struct PlatformImpl {
-  PlatformImpl(cl_platform_id pid);
-  std::vector<device_ptr_t> _devices;
+  PlatformImpl(Platform* plat, cl_platform_id pid);
+  Platform* _platform;
   cl_platform_id _platform_id;
 };
 struct DeviceImpl {
@@ -47,14 +47,26 @@ GlobalsImpl::GlobalsImpl() {
 
   for (auto platform_id : platform_ids) {
     auto plat      = std::make_shared<Platform>();
-    auto plat_impl = plat->_IMPL.makeShared<PlatformImpl>(platform_id);
+
+    // get platform name
+    size_t name_size = 0;
+    status           = clGetPlatformInfo(platform_id, CL_PLATFORM_NAME, 0, nullptr, &name_size);
+    OrkAssert(status == CL_SUCCESS);
+    std::string name;
+    name.resize(name_size);
+    status = clGetPlatformInfo(platform_id, CL_PLATFORM_NAME, name_size, (void*)name.data(), nullptr);
+    OrkAssert(status == CL_SUCCESS);
+    plat->_name = name;
+
+    auto plat_impl = plat->_IMPL.makeShared<PlatformImpl>(plat.get(),platform_id);
     _platforms.push_back(plat);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PlatformImpl::PlatformImpl(cl_platform_id pid) {
+PlatformImpl::PlatformImpl(Platform* plat, cl_platform_id pid)
+ : _platform(plat) {
   _platform_id        = pid;
   cl_uint num_devices = 0;
   cl_int status       = clGetDeviceIDs(_platform_id, CL_DEVICE_TYPE_ALL, 0, nullptr, &num_devices);
@@ -67,7 +79,7 @@ PlatformImpl::PlatformImpl(cl_platform_id pid) {
   for (auto device_id : devices) {
     auto dev = std::make_shared<Device>();
     auto dev_impl = dev->_IMPL.makeShared<DeviceImpl>(device_id);
-    _devices.push_back(dev);
+   _platform->_devices.push_back(dev);
   }
 }
 
