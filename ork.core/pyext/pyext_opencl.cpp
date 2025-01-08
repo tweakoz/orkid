@@ -53,11 +53,22 @@ void pyinit_opencl(py::module& module_core) {
         auto hpconfig = HostPointerConfig::MAP_TO_HOST_PTR;
         return the_context->createBuffer(usage_enum, hpconfig, size, nullptr);
       })
-      .def("createBufferWithDataBlock", [](context_ptr_t the_context, crcstring_ptr_t usage, crcstring_ptr_t hpconfig, datablock_ptr_t dblock) -> buffer_ptr_t {
-        auto usage_enum = BufferUsage(usage->hashed());
-        auto hpconfig_enum = HostPointerConfig(hpconfig->hashed());
-        size_t size = dblock->length();
-        return the_context->createBuffer(usage_enum, hpconfig_enum, size, (void*) dblock->data());
+      .def("createBufferWithDataBlock", [](context_ptr_t the_context, py::kwargs kwargs) -> buffer_ptr_t {
+        if (kwargs) {
+          auto dblock = kwargs["datablock"].cast<datablock_ptr_t>();
+          auto hpconfig = kwargs["memconfig"].cast<crcstring_ptr_t>();
+          auto usage = kwargs["access"].cast<crcstring_ptr_t>();
+          auto usage_enum = BufferUsage(usage->hashed());
+          auto hpconfig_enum = HostPointerConfig(hpconfig->hashed());
+          size_t size = dblock->length();
+          return the_context->createBuffer(usage_enum, hpconfig_enum, size, (void*) dblock->data());
+        }
+        else{
+          return nullptr;
+        }
+      })
+      .def("createKernelFromString", [](context_ptr_t the_context, const std::string& name, const std::string& source) -> kernel_ptr_t {
+        return the_context->createKernelFromString(name, source);
       });
 
   type_codec->registerStdCodec<context_ptr_t>(context_type);
