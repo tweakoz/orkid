@@ -55,7 +55,13 @@ add_library (ork_core SHARED ${orksrcs} )
 
 ork_std_target_opts(ork_core)
 enable_python_on_target(ork_core)
-target_link_libraries(ork_core LINK_PRIVATE ork_utpp zmq OpenCL  )
+target_link_libraries(ork_core LINK_PRIVATE ork_utpp zmq  )
+
+IF(${APPLE})
+target_link_libraries(ork_core LINK_PRIVATE "-framework OpenCL" )
+ELSE()
+target_link_libraries(ork_core LINK_PRIVATE OpenCL )
+ENDIF()
 
 target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem xxhash )
 target_link_libraries(ork_core LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
