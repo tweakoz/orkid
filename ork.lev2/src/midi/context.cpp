@@ -67,6 +67,14 @@ void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_call
   rtinpimpl->ignoreTypes(true, true, true);
   // Clean up
 }
+int InputContext::numPorts() const {
+  auto impl      = _impl.get<input_impl_t>();
+  return impl->getPortCount();
+}
+std::string InputContext::portName(int index) const {
+  auto impl      = _impl.get<input_impl_t>();
+  return impl->getPortName(index);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -100,6 +108,14 @@ void OutputContext::openPort(int index) {
 void OutputContext::sendMessage(message_t& message) {
   auto rtoutimpl      = _impl.get<output_impl_t>();
   rtoutimpl->sendMessage( &message );
+}
+int OutputContext::numPorts() const {
+  auto rtoutimpl      = _impl.get<output_impl_t>();
+  return rtoutimpl->getPortCount();
+}
+std::string OutputContext::portName(int index) const {
+  auto rtoutimpl      = _impl.get<output_impl_t>();
+  return rtoutimpl->getPortName(index);
 }
 
 /////////////////////////////////////////////////////////////////////////////
