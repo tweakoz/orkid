@@ -55,7 +55,7 @@ using buffer_t = std::shared_ptr<BUFFER>;
 
 struct PrivateImplementation {
 
-  PrivateImplementation();
+  PrivateImplementation(appinitdata_wkptr_t appinitd);
   ~PrivateImplementation();
   synth_ptr_t _synth;
   ork::Thread _alsaThread;
@@ -71,7 +71,7 @@ using impl_ptr_t = std::shared_ptr<PrivateImplementation>;
 
 ///////////////////////////////////////////////////////
 
-PrivateImplementation::PrivateImplementation() {
+PrivateImplementation::PrivateImplementation(appinitdata_wkptr_t appinitd) {
   _execstate.store(0);
   synth::bringUp();
   _synth = synth::instance();
@@ -184,10 +184,10 @@ PrivateImplementation::~PrivateImplementation() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioDeviceAlsa::AudioDeviceAlsa()
-    : AudioDevice() {
+AudioDeviceAlsa::AudioDeviceAlsa(appinitdata_wkptr_t appinitd)
+    : AudioDevice(appinitd) {
 
-  _impl.makeShared<PrivateImplementation>();
+  _impl.makeShared<PrivateImplementation>(appinitd);
 }
 
 } // namespace ork::lev2

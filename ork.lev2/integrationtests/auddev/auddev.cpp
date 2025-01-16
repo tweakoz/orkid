@@ -25,6 +25,7 @@ int main(int argc, char** argv){
   initdata->_enable_audio_input = true;
   initdata->_enable_audio_synth = false;
   initdata->_enable_graphics = false;
+  initdata->_audio_input_numchannels = 2;
 
   ::ork::initModule(initdata);
   ::ork::lev2::initModule(initdata);
@@ -43,7 +44,6 @@ int main(int argc, char** argv){
   size_t _frame_counter = 0;
   double _energy_accum = 0.0f;
 
-  initdata->_audio_input_numchannels = 1;
 
   if(initdata->_enable_audio_input){
     

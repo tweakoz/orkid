@@ -17,7 +17,7 @@ namespace ork::lev2 {
 
 class AudioDeviceAlsa : public AudioDevice {
 public:
-  AudioDeviceAlsa();
+  AudioDeviceAlsa(appinitdata_wkptr_t appinitd);
 
 protected:
   ork::svar64_t _impl;

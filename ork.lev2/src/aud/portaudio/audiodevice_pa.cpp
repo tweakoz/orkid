@@ -70,7 +70,7 @@ static int patestCallback(
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
     chunk->_num_frames = framesPerBuffer;
     chunk->_chunk_index++;
-    OrkAssert(padev->_num_input_channels == 1);
+    OrkAssert(padev->_num_input_channels >= 1);
     auto& chan0 = chunk->_channels[0];
     const float* in = (const float*)inputBuffer;
     chan0.resize(framesPerBuffer);
@@ -132,7 +132,6 @@ static int patestCallback(
   }
 
   auto paimpl = padev->_impl.makeShared<PaImpl>();
-
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);
   int num_inputs = 0;
