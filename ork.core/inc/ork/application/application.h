@@ -83,6 +83,7 @@ struct AppInitData{
 
   bool _enable_audio = false;
   bool _enable_audio_input = false;
+  bool _enable_audio_output = false;
   bool _enable_audio_synth = false;
   bool _enable_graphics = true;
 
@@ -99,6 +100,10 @@ struct AppInitData{
   bool _update_rendersync = false;
   bool _allowHIDPI = false;
   bool _disableMouseCursor = false;
+  std::string _audio_input_devname = "default";
+  std::string _audio_output_devname = "default";
+  size_t _audio_input_numchannels = 1;
+  size_t _audio_output_numchannels = 2;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;

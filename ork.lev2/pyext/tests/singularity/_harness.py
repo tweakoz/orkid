@@ -42,7 +42,6 @@ class SingulTestApp(object):
                                  top=100, 
                                  height=720,
                                  width=1280,
-                                 enable_audio=True,
                                  enable_audio_synth=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()

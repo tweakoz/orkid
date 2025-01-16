@@ -48,10 +48,13 @@ struct AudioDevice {
   virtual void shutdown();
 
   appinitdata_wkptr_t _appinitdata;
+  svar64_t _impl;
   varmap::varmap_ptr_t _vars;
   audio_input_handler_t _input_handler;
   size_t _num_input_channels = 0;
   size_t _num_output_channels = 0;
+  std::string _inp_dev_name;
+  std::string _out_dev_name;
   //////////////////
 };
 

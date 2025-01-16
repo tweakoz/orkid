@@ -45,6 +45,14 @@ const int DESIRED_NUMFRAMES = 256;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
+struct PaImpl {
+  PaDeviceIndex _input_override = -1;
+  PaDeviceIndex _output_override = -1;
+	PaStream* _stream = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 static int patestCallback(
     const void* inputBuffer,
     void* outputBuffer,
@@ -54,13 +62,10 @@ static int patestCallback(
     void* userData) {
 
   auto padev = (AudioDevicePa*) userData;
+
+  auto paimpl = padev->_impl.getShared<PaImpl>();
   auto the_synth = padev->_the_synth;
 
-
-  /* Cast data passed through stream to our structure. */
-  float* out = (float*)outputBuffer;
-  unsigned int i;
- 
   if(inputBuffer and padev->_input_handler){
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
     chunk->_num_frames = framesPerBuffer;
@@ -69,19 +74,20 @@ static int patestCallback(
     auto& chan0 = chunk->_channels[0];
     const float* in = (const float*)inputBuffer;
     chan0.resize(framesPerBuffer);
-    for (i = 0; i < framesPerBuffer; i++) {
+    for (size_t i = 0; i < framesPerBuffer; i++) {
       chan0[i] = in[i];
     }
     padev->_input_handler(chunk.get());
   }
 
-  if(the_synth){
+  if(the_synth and outputBuffer){
+    auto out = (float*)outputBuffer;
     the_synth->compute(framesPerBuffer, inputBuffer);
     the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
 
     if (false) { // test tone ?
       static int64_t _testtoneph = 0;
-      for (int i = 0; i < framesPerBuffer; i++) {
+      for (size_t i = 0; i < framesPerBuffer; i++) {
         double phase = 440.0 * pi2 * double(_testtoneph) / getSampleRate();
         //printf( "phase<%g>\n", phase );
         float samp   = sinf(phase) * 1.0;
@@ -91,20 +97,21 @@ static int patestCallback(
       }
     } else if (ENABLE_OUTPUT) {
       const auto& obuf = the_synth->_obuf;
-      for (i = 0; i < framesPerBuffer; i++) {
+      for (size_t i = 0; i < framesPerBuffer; i++) {
         *out++ = obuf._leftBuffer[i];  // interleaved
         *out++ = obuf._rightBuffer[i]; // interleaved
       }
     } else {
-      for (i = 0; i < framesPerBuffer; i++) {
+      for (size_t i = 0; i < framesPerBuffer; i++) {
         *out++ = 0.0f; // interleaved
         *out++ = 0.0f; // interleaved
       }
 
     }
   }
-  else { // no synth
-    for (i = 0; i < framesPerBuffer; i++) {
+  else if(outputBuffer) { // no synth
+    auto out = (float*)outputBuffer;
+    for (size_t i = 0; i < framesPerBuffer; i++) {
       *out++ = 0.0f; // interleaved
       *out++ = 0.0f; // interleaved
     }
@@ -112,51 +119,138 @@ static int patestCallback(
   return 0;
 }
 
- static void _startupAudio(AudioDevicePa* dev) {
+ static void _startupAudio(AudioDevicePa* padev) {
 
   logchan_portaudio->log("starting audio");
   
   float SR = getSampleRate();
 
-  if(dev->_the_synth){
-    dev->_the_synth->setSampleRate(SR);
-    printf("SingularitySynth<%p> SR<%g>\n", (void*) dev->_the_synth.get(), SR);
+  if(padev->_the_synth){
+    padev->_the_synth->setSampleRate(SR);
+    printf("SingularitySynth<%p> SR<%g>\n", (void*) padev->_the_synth.get(), SR);
     // loadPrograms();
   }
+
+  auto paimpl = padev->_impl.makeShared<PaImpl>();
 
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);
   int num_inputs = 0;
-  auto aid = dev->_appinitdata.lock();
+  int num_outputs = 0;
+  auto aid = padev->_appinitdata.lock();
   if( aid->_enable_audio_input )
-    num_inputs = 1;
+    num_inputs = padev->_num_input_channels;
+  if( aid->_enable_audio_output )
+    num_outputs = padev->_num_output_channels;
 
-  /* Open an audio I/O stream. */
-  err = Pa_OpenDefaultStream(
-      &pa_stream,
-      num_inputs,// num input channels
-      2,         // stereo output
-      paFloat32, // 32 bit floating point output
-      SR,
-      DESIRED_NUMFRAMES, /* frames per buffer, i.e. the number
-                  of sample frames that PortAudio will
-                  request from the callback. Many apps
-                  may want to use
-                  paFramesPerBufferUnspecified, which
-                  tells PortAudio to pick the best,
-                  possibly changing, buffer size.*/
-      patestCallback,    // this is your callback function
-      (void*) dev );     // user pointer
+  logchan_portaudio->log("req num_inp<%zu> num_out<%zu>", num_inputs, num_outputs);
 
-  OrkAssert(err == paNoError);
+  size_t num_devices = Pa_GetDeviceCount();
+  logchan_portaudio->log("num devices<%zu>", num_devices);
+
+  bool input_default = padev->_inp_dev_name == "default";
+  bool output_default = padev->_out_dev_name == "default";
+  bool got_input = false;
+  bool got_output = false;
+
+  for(size_t c=0; c<num_devices; c++){
+    auto devinfo = Pa_GetDeviceInfo(c);
+    std::string devname = devinfo->name;
+    size_t num_inp = devinfo->maxInputChannels;
+    size_t num_out = devinfo->maxOutputChannels;
+    logchan_portaudio->log("device<%zu> name<%s> num_inp<%zu> num_out<%zu>", c, devinfo->name, num_inp, num_out);
+
+    if( (num_inputs>0) and (num_inp == num_inputs) and paimpl->_input_override == -1 ){
+      if((devname==padev->_inp_dev_name) or input_default){
+        logchan_portaudio->log("using device<%s> for input", devname.c_str());
+        paimpl->_input_override = c;
+        got_input = true;
+      }
+    }
+    if( (num_outputs>0) and (num_out == num_outputs) and paimpl->_output_override == -1 ){
+      if((devname==padev->_out_dev_name) or output_default){
+        logchan_portaudio->log("using device<%s> for output", devname.c_str());
+        paimpl->_output_override = c;
+        got_output = true;
+      }
+    }
+  }
+
+  PaStreamParameters inp_params, out_params;
+  if(num_inputs>0){
+    if(not got_input){
+      logerrchannel()->log("could not open input device<%s>", padev->_inp_dev_name.c_str());
+      OrkAssert(false);
+    }
+    inp_params.device = paimpl->_input_override;
+    inp_params.channelCount = num_inputs;
+    inp_params.sampleFormat = paFloat32;
+    inp_params.suggestedLatency = Pa_GetDeviceInfo(inp_params.device)->defaultLowInputLatency;
+    inp_params.hostApiSpecificStreamInfo = nullptr;
+  }
+
+  if(num_outputs>0){
+    if(not got_output){
+      logerrchannel()->log("could not open output device<%s>", padev->_inp_dev_name.c_str());
+      OrkAssert(false);
+    }
+    out_params.device = paimpl->_output_override;
+    out_params.channelCount = num_outputs;
+    out_params.sampleFormat = paFloat32;
+    out_params.suggestedLatency = Pa_GetDeviceInfo(out_params.device)->defaultLowOutputLatency;
+    out_params.hostApiSpecificStreamInfo = nullptr;
+  }
+
+  if( (num_inputs>0) and (num_outputs>0) ){
+    OrkAssert(got_input);
+    err = Pa_OpenStream(
+        &pa_stream,
+        &inp_params,
+        &out_params,
+        SR,
+        DESIRED_NUMFRAMES,
+        paClipOff,
+        patestCallback,
+        (void*) padev );
+    OrkAssert(err == paNoError);
+  }
+  else if( (num_outputs>0) ){
+    OrkAssert(got_output);
+    err = Pa_OpenStream(
+        &pa_stream,
+        nullptr,
+        &out_params,
+        SR,
+        DESIRED_NUMFRAMES,
+        paClipOff,
+        patestCallback,
+        (void*) padev );
+    OrkAssert(err == paNoError);
+  }
+  else if( (num_inputs>0) ){
+    OrkAssert(got_input);
+    err = Pa_OpenStream(
+        &pa_stream,
+        &inp_params,
+        nullptr,
+        SR,
+        DESIRED_NUMFRAMES,
+        paClipOff,
+        patestCallback,
+        (void*) padev );
+    OrkAssert(err == paNoError);
+  }
+  else{
+    OrkAssert(false);
+  }
 
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
 
   logchan_portaudio->log("have default stream<%p>", pa_stream);
 
-  if(dev->_the_synth){
-    dev->_the_synth->resetFenables();
+  if(padev->_the_synth){
+    padev->_the_synth->resetFenables();
   }
 }
 
@@ -164,14 +258,18 @@ static int patestCallback(
 
 AudioDevicePa::AudioDevicePa(appinitdata_wkptr_t appinitd)
     : AudioDevice(appinitd) {
-
+  
+  
   /////////////////////////////////////
 
   _num_input_channels = 0;
   if(appinitd.lock()->_enable_audio_input){
-    _num_input_channels = 1;
+    _num_input_channels = _appinitdata.lock()->_audio_input_numchannels;
   }
-  _num_output_channels = 2;
+  _num_output_channels = _appinitdata.lock()->_audio_output_numchannels;
+
+  _inp_dev_name = _appinitdata.lock()->_audio_input_devname;
+  _out_dev_name = _appinitdata.lock()->_audio_output_devname;
 
 }
 

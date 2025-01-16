@@ -3,6 +3,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/environment.h>
 
 namespace ork{
   void initModule(ork::appinitdata_ptr_t init_data);
@@ -16,13 +17,15 @@ using namespace ork;
 
 int main(int argc, char** argv){
 
+  ork::genviron.init_from_global_env();
+
   auto initdata = std::make_shared<AppInitData>();
 
   initdata->_enable_audio = true;
   initdata->_enable_audio_input = true;
   initdata->_enable_audio_synth = false;
   initdata->_enable_graphics = false;
-  
+
   ::ork::initModule(initdata);
   ::ork::lev2::initModule(initdata);
   initdata->finalizeInitialization();
@@ -40,7 +43,10 @@ int main(int argc, char** argv){
   size_t _frame_counter = 0;
   double _energy_accum = 0.0f;
 
+  initdata->_audio_input_numchannels = 1;
+
   if(initdata->_enable_audio_input){
+    
     auto input_handler = [&](lev2::audioinputchunk_const_rawptr_t chunk){
       auto num_frames = chunk->_num_frames;
       auto& chan0 = chunk->_channels[0];
