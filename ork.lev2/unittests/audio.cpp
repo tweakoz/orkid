@@ -10,7 +10,8 @@
 #include <utpp/UnitTest++.h>
 
 TEST(Audio1) {
-  auto paudio = ork::lev2::AudioDevice::instance();
-  printf("audiodev<%p>\n", (void*)paudio.get());
-  CHECK(paudio != nullptr);
+  extern ork::appinitdata_ptr_t ginitdata;
+  auto auddev = ork::lev2::AudioDevice::createInstance(ginitdata);
+  printf("audiodev<%p>\n", (void*)auddev.get());
+  CHECK(auddev != nullptr);
 }

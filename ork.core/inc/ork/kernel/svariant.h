@@ -53,9 +53,19 @@
 namespace ork {
 
 struct DemangleCache {
+    
+    DemangleCache(){
+        _sentinel = 0;
+    }
+    ~DemangleCache(){
+        printf("destroying DemangleCache<%p>\n", this );
+        _sentinel = 1;
+    }
   std::unordered_map<std::string, std::string> _impl;
+    int _sentinel = -1;
 
   std::string lookup(const std::string& typestr) {
+    OrkAssert(_sentinel==0);
     std::string rval;
     auto it = _impl.find(typestr);
     if (it != _impl.end()) {
@@ -76,12 +86,12 @@ struct DemangleCache {
   }
 };
 
-using demangle_cache_ptr_t = std::shared_ptr<DemangleCache>;
+using demangle_cache_ptr_t = DemangleCache*;
 
 template <typename T>
 inline std::string demangled_typename() {
     // This is thread-local and static, hence it's initialized only once per thread
-    thread_local static demangle_cache_ptr_t _cache = std::make_shared<DemangleCache>(); 
+    thread_local static demangle_cache_ptr_t _cache = new DemangleCache; // leak until we figure out post main deinit issue.
     auto typestr = typeid(T).name();
     return _cache->lookup(typestr);
 }

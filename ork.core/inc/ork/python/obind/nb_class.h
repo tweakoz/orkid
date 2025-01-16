@@ -13,7 +13,7 @@ namespace ork {
 template <typename... T>
 inline std::string demangled_typename2() {
     // This is thread-local and static, hence it's initialized only once per thread
-    thread_local static demangle_cache_ptr_t _cache = std::make_shared<DemangleCache>(); 
+    thread_local static auto _cache = new DemangleCache; // leak until we figure out post main deinit issue.
     std::vector<std::string> type_names = { _cache->lookup(typeid(T).name())... };
     std::string rval;
     for( auto item : type_names ){

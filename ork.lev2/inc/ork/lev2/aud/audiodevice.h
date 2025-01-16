@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/lev2/config.h>
+#include <ork/lev2/lev2_types.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/asset/Asset.h>
@@ -21,28 +22,36 @@
 #include <ork/math/TransformNode.h>
 #include <ork/math/basicfilters.h>
 #include <ork/kernel/any.h>
+#include <ork/kernel/varmap.inl>
+#include <ork/application/application.h>
 
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDevice;
-using audiodevice_ptr_t = std::shared_ptr<AudioDevice>;
+struct AudioInputChunk {
+  AudioInputChunk(size_t channel_count);
+  std::vector<input_frames_t> _channels;
+  size_t _chunk_index = 0;
+  size_t _num_frames = 0;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDevice {
-public:
-  virtual void ShutdownNow() {
-  }
+struct AudioDevice {
 
-  static audiodevice_ptr_t instance(void);
+  static audiodevice_ptr_t createInstance(appinitdata_wkptr_t appinitd);
 
+  AudioDevice(appinitdata_wkptr_t appinitd);
   virtual ~AudioDevice();
+  virtual void startup();
+  virtual void shutdown();
 
-protected:
-  AudioDevice();
-
+  appinitdata_wkptr_t _appinitdata;
+  varmap::varmap_ptr_t _vars;
+  audio_input_handler_t _input_handler;
+  size_t _num_input_channels = 0;
+  size_t _num_output_channels = 0;
   //////////////////
 };
 

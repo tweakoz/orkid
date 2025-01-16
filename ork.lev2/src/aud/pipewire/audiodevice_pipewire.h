@@ -15,9 +15,9 @@ namespace ork::lev2::pipewire {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDevicePipeWire : public AudioDevice {
+struct AudioDevicePipeWire : public AudioDevice {
 public:
-  AudioDevicePipeWire();
+  AudioDevicePipeWire(appinitdata_wkptr_t appinitd);
 
 protected:
   ork::svar64_t _impl;

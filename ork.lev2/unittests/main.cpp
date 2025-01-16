@@ -52,12 +52,13 @@ struct TestApplication {
 
 ///////////////////////////////////////////////////////////
 
+appinitdata_ptr_t ginitdata;
 int main(int argc, char** argv, char** envp) {
-  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  ork::lev2::initModule(initdata);
-  auto app = std::make_shared<TestApplication>(initdata);
+  ginitdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  ork::lev2::initModule(ginitdata);
+  auto app = std::make_shared<TestApplication>(ginitdata);
   int rval = test::harness(
-      initdata,
+      ginitdata,
       "ork.lev2-unittests",
       [=](test::appvar_t& scoped_var) { //
         // instantiate a TestApplication on the harness's stack

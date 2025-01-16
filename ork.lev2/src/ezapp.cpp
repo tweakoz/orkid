@@ -20,10 +20,13 @@ using namespace std::string_literals;
 
 namespace ork {
   void initModule(ork::appinitdata_ptr_t init_data);
+  void exitModule(ork::appinitdata_ptr_t init_data);
 }
 
 namespace ork::lev2{
   extern appinitdata_ptr_t _ginitdata;
+  void initModule(ork::appinitdata_ptr_t init_data);
+  void exitModule(ork::appinitdata_ptr_t init_data);
 }
 
 namespace ork::lev2 {
@@ -78,6 +81,8 @@ EzAppContext::~EzAppContext() {
   }
 
   StringPoolStack::pop();
+  ork::lev2::exitModule(_initdata);
+  ork::exitModule(_initdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 boost::program_options::options_description_easy_init OrkEzApp::createDefaultOptions( //
@@ -348,14 +353,34 @@ void OrkEzApp::OnTimer() {
     ;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onDraw(EzMainWin::drawcb_t cb) {
+void OrkEzApp::onDraw(EzMainWin::drawcallback_t cb) {
   if(_mainWindow)
     _mainWindow->_onDraw = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onResize(EzMainWin::onresizecb_t cb) {
+void OrkEzApp::onResize(EzMainWin::onresizecallback_t cb) {
   if(_mainWindow)
     _mainWindow->_onResize = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onAudioInit(EzMainWin::onauddevfn_t callback){
+  if(_mainWindow)
+    _mainWindow->_onAudioInit = callback;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onAudioExit(EzMainWin::onauddevfn_t callback){
+  if(_mainWindow)
+    _mainWindow->_onAudioExit = callback;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onSynthInit(EzMainWin::onsynfn_t callback){
+  if(_mainWindow)
+    _mainWindow->_onSynthInit = callback;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onSynthExit(EzMainWin::onsynfn_t callback){
+  if(_mainWindow)
+    _mainWindow->_onSynthExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
@@ -385,7 +410,7 @@ void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
   _moviecontext = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
+void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
   _eztopwidget->_topLayoutGroup->_evhandler = cb;
   //OrkBreak();
   if(_mainWindow)
@@ -415,6 +440,40 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU(){
     bool current = _gpuFrameCounterUP == _gpuFrameCounter;
     _gpuFrameCounterUP = _gpuFrameCounter;
     return not current;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_audioInit(){
+  audiodevice_ptr_t auddev = AudioDevice::createInstance(_initdata);
+  _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(auddev);
+  if(_initdata->_enable_audio_synth){
+    audio::singularity::synth::bringUp();
+    auto synth = audio::singularity::synth::instance();
+    _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(synth);
+    if(synth){
+      synth->mainThreadHandler();
+    }
+    if(_mainWindow and _mainWindow->_onSynthInit){
+      _mainWindow->_onSynthInit(synth);
+    }
+  }
+  if(_mainWindow and _mainWindow->_onAudioInit){
+    _mainWindow->_onAudioInit(auddev);
+  }
+  auddev->startup();
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::_audioExit(){
+  auto it_a = _initdata->_miscvars.find("audiodevice");
+  if(it_a != _initdata->_miscvars.end()){
+    auto auddev = it_a->second.get<audiodevice_ptr_t>();
+    if(auddev){
+      auddev->shutdown();
+      if(_mainWindow and _mainWindow->_onAudioExit){
+        _mainWindow->_onAudioExit(auddev);
+      }
+    }
+    _initdata->_miscvars.erase(it_a);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
@@ -462,13 +521,6 @@ int OrkEzApp::mainThreadLoop() {
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
       double step = 1.0 / 400.0;
-
-      if(_initdata->_audio){
-        static auto auddev = AudioDevice::instance();
-        if(audio::singularity::synth::instance()){
-          audio::singularity::synth::instance()->mainThreadHandler();
-        }
-      }
 
       if(_update_timeaccumulator >= step) {
 
@@ -520,6 +572,7 @@ int OrkEzApp::mainThreadLoop() {
       _mainWindow->_onUpdateExit();
     }
 
+    _audioExit();
     //printf( "update_thread exited.....\n");
   };
 
@@ -535,9 +588,8 @@ int OrkEzApp::mainThreadLoop() {
       ctxbase->disableMouseCursor();
     }
 
-    if(_initdata->_audio){
-      auto the_dev = AudioDevice::instance();
-      auto the_synth = audio::singularity::synth::instance();
+    if(_initdata->_enable_audio){
+      _audioInit();
     }
 
     if (_mainWindow->_onGpuInit) {

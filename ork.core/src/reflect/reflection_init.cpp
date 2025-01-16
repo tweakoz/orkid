@@ -87,8 +87,25 @@ struct CoreAppInit {
   }
 };
 
+using coreappinit_ptr_t = std::shared_ptr<CoreAppInit>;
+static coreappinit_ptr_t g_core_class_toucher = nullptr;
+static mutex ginit_mutex("coreinit");
+
 void initModule(ork::appinitdata_ptr_t init_data) {
-  static ork::CoreAppInit g_core_class_toucher(init_data);
+  ginit_mutex.Lock();
+  if(g_core_class_toucher){
+    ginit_mutex.UnLock();
+    return;
+  }
+  g_core_class_toucher = std::make_shared<ork::CoreAppInit>(init_data);
+  ginit_mutex.UnLock();
 }
+
+void exitModule(ork::appinitdata_ptr_t init_data){
+  ginit_mutex.Lock();
+  g_core_class_toucher = nullptr;
+  ginit_mutex.UnLock();
+}
+
 
 } // namespace ork

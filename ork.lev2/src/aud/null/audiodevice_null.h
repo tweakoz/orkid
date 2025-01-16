@@ -13,9 +13,9 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDeviceNULL : public AudioDevice {
+struct AudioDeviceNULL : public AudioDevice {
 public:
-  AudioDeviceNULL();
+  AudioDeviceNULL(appinitdata_wkptr_t appinitd);
 
 protected:
 };

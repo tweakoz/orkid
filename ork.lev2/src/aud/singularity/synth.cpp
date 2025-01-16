@@ -213,6 +213,8 @@ void synth::setSampleRate(float sr) {
 
 synth::~synth() {
 
+  opq::concurrentQueue()->drain();
+    
   _allVoices.clear();
   _freeVoices.clear();
   _activeVoices.clear();

@@ -52,9 +52,17 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+AudioInputChunk::AudioInputChunk(unsigned long numch) 
+ : _chunk_index(0)
+ , _num_frames(0) {
+ _channels.resize(numch);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct AudioDevFactory{
 
-  AudioDevFactory(){
+  AudioDevFactory(appinitdata_wkptr_t aid){
 
     std::string default_device_type = "PORTAUDIO";
 
@@ -73,22 +81,22 @@ struct AudioDevFactory{
 
 #if defined(ENABLE_ALSA)
     if( default_device_type == "ALSA" ){
-      _device = std::make_shared<AudioDeviceAlsa>();
+      _device = std::make_shared<AudioDeviceAlsa>(aid);
     }
 #endif
 #if defined(ENABLE_PORTAUDIO)
     if( default_device_type == "PORTAUDIO" ){
-      _device = std::make_shared<AudioDevicePa>();
+      _device = std::make_shared<AudioDevicePa>(aid);
     }
 #endif
 #if defined(ENABLE_PIPEWIRE)
     if( default_device_type == "PIPEWIRE" ){
-      _device = std::make_shared<pipewire::AudioDevicePipeWire>();
+      _device = std::make_shared<pipewire::AudioDevicePipeWire>(aid);
     }
 #endif
     
     if(nullptr == _device ){
-      _device = std::make_shared<AudioDeviceNULL>();
+      _device = std::make_shared<AudioDeviceNULL>(aid);
     }
   }
 
@@ -97,18 +105,23 @@ struct AudioDevFactory{
 
 using audiodevfactory_ptr_t = std::shared_ptr<AudioDevFactory>;
 
-audiodevice_ptr_t AudioDevice::instance(void) {
-  static auto devfactory = std::make_shared<AudioDevFactory>();
-  return devfactory->_device;
+audiodevice_ptr_t AudioDevice::createInstance(appinitdata_wkptr_t aid) {
+  AudioDevFactory devf(aid);
+  return devf._device;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioDevice::AudioDevice() {
+AudioDevice::AudioDevice(appinitdata_wkptr_t appinitd)
+  : _appinitdata(appinitd) {
+  _vars = std::make_shared<varmap::VarMap>();
 }
 
 AudioDevice::~AudioDevice() {
 }
+
+void AudioDevice::startup() {}
+void AudioDevice::shutdown() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

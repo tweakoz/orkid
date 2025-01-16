@@ -37,7 +37,13 @@ class SingulTestApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=1280,use_audio=True)
+    self.ezapp = OrkEzApp.create(self,
+                                 left=420, 
+                                 top=100, 
+                                 height=720,
+                                 width=1280,
+                                 enable_audio=True,
+                                 enable_audio_synth=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
@@ -75,11 +81,11 @@ class SingulTestApp(object):
 
   ##############################################
 
-  def onGpuInit(self,ctx):
-    self.context = ctx
+  def onSynthInit(self,synth):
     self.curseq = None
-    self.audiodevice = singularity.device.instance()
-    self.synth = singularity.synth.instance()
+    #self.audiodevice = singularity.device.instance()
+    self.synth = synth
+    assert(self.synth!=None)
     self.synth.system_tempo = 120.0
     self.sequencer = self.synth.sequencer
 
@@ -94,6 +100,47 @@ class SingulTestApp(object):
       self.auxbusses += [self.synth.createOutputBus("aux%d" % (i+1))]
       self.auxbus_sources += [self.auxbusses[i].createScopeSource()]
       self.synth.setEffect(self.auxbusses[i],"none")
+
+    self.program_source = self.mainbus_source
+
+    ######################### 
+
+    self.gain = -24.0
+    self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+    self.sorted_progs = []
+    self.octave = 5
+    self.charts = {}
+    self.chart_events = {}
+
+    # find index of "Bells and Chimes" in sorted_progs
+    self.prog_index = 0
+
+    self.base_notes = {
+        ord("A"): 0,
+        ord("W"): 1,
+        ord("S"): 2,
+        ord("E"): 3,
+        ord("D"): 4,
+        ord("F"): 5,
+        ord("T"): 6,
+        ord("G"): 7,
+        ord("Y"): 8,
+        ord("H"): 9,
+        ord("U"): 10,
+        ord("J"): 11,
+        ord("K"): 12,
+        ord("O"): 13,
+        ord("L"): 14,
+        ord("P"): 15,
+        ord(";"): 16,
+        ord("'"): 17,
+    }
+    self.voices = dict()
+
+  ##############################################
+
+  def onGpuInit(self,ctx):
+    self.context = ctx
 
     lg_group = self.ezapp.topLayoutGroup
 
@@ -151,45 +198,10 @@ class SingulTestApp(object):
     lg_group.replaceChild(self.griditems[4].layout,item)
     item.widget.ignoreEvents = True
 
-
     ######################### 
-
     self.mainbus_source.connect(self.oscope_sink)
     self.mainbus_source.connect(self.spectra_sink)
-    self.program_source = self.mainbus_source
-    ######################### 
 
-    self.gain = -24.0
-    self.synth.masterGain = singularity.decibelsToLinear(self.gain)
-    self.sorted_progs = []
-    self.octave = 5
-    self.charts = {}
-    self.chart_events = {}
-
-    # find index of "Bells and Chimes" in sorted_progs
-    self.prog_index = 0
-
-    self.base_notes = {
-        ord("A"): 0,
-        ord("W"): 1,
-        ord("S"): 2,
-        ord("E"): 3,
-        ord("D"): 4,
-        ord("F"): 5,
-        ord("T"): 6,
-        ord("G"): 7,
-        ord("Y"): 8,
-        ord("H"): 9,
-        ord("U"): 10,
-        ord("J"): 11,
-        ord("K"): 12,
-        ord("O"): 13,
-        ord("L"): 14,
-        ord("P"): 15,
-        ord(";"): 16,
-        ord("'"): 17,
-    }
-    self.voices = dict()
   #####################################
   def onUpdate(self,updinfo):
     self.time = updinfo.absolutetime

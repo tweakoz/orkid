@@ -663,5 +663,25 @@ namespace ork::meshutil{
   using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
 #endif
 
+} // namespace ork::meshutil
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::lev2 {
+  struct AudioDevice;
+  struct AudioInputChunk;
+  using input_frames_t = std::vector<float>;
+  using audiodevice_ptr_t = std::shared_ptr<AudioDevice>;
+  using audioinputchunk_ptr_t = std::shared_ptr<AudioInputChunk>;
+  using audioinputchunk_const_rawptr_t = const AudioInputChunk*;
+  using audio_input_handler_t = std::function<void(audioinputchunk_const_rawptr_t)>;
+} //namespace ork::lev2 {
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::audio::singularity {
+  struct synth;
+  using synth_ptr_t = std::shared_ptr<synth>;
 }
+
 ///////////////////////////////////////////////////////////////////////////////

@@ -24,6 +24,7 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/util/logger.h>
 
 #if defined(ENABLE_PORTAUDIO)
 
@@ -32,6 +33,7 @@ using namespace ork::audio::singularity;
 template class ork::orklut<ork::Char8, float>;
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_portaudio = logger()->createChannel("audio.PA", fvec3(1, 0.6, .8), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
@@ -50,63 +52,89 @@ static int patestCallback(
     const PaStreamCallbackTimeInfo* timeInfo,
     PaStreamCallbackFlags statusFlags,
     void* userData) {
+
+  auto padev = (AudioDevicePa*) userData;
+  auto the_synth = padev->_the_synth;
+
+
   /* Cast data passed through stream to our structure. */
   float* out = (float*)outputBuffer;
   unsigned int i;
-  (void)inputBuffer; /* Prevent unused variable warning. */
-
-  synth_ptr_t the_synth = synth::instance();
-
-  the_synth->compute(framesPerBuffer, inputBuffer);
-
-  the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
-
-  if (false) { // test tone ?
-    static int64_t _testtoneph = 0;
-    for (int i = 0; i < framesPerBuffer; i++) {
-      double phase = 440.0 * pi2 * double(_testtoneph) / getSampleRate();
-      //printf( "phase<%g>\n", phase );
-      float samp   = sinf(phase) * 1.0;
-      *out++       = samp; // interleaved
-      *out++       = samp; // interleaved
-      _testtoneph++;
-    }
-  } else if (ENABLE_OUTPUT) {
-    const auto& obuf = the_synth->_obuf;
+ 
+  if(inputBuffer and padev->_input_handler){
+    static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
+    chunk->_num_frames = framesPerBuffer;
+    chunk->_chunk_index++;
+    OrkAssert(padev->_num_input_channels == 1);
+    auto& chan0 = chunk->_channels[0];
+    const float* in = (const float*)inputBuffer;
+    chan0.resize(framesPerBuffer);
     for (i = 0; i < framesPerBuffer; i++) {
-      *out++ = obuf._leftBuffer[i];  // interleaved
-      *out++ = obuf._rightBuffer[i]; // interleaved
+      chan0[i] = in[i];
     }
-  } else {
+    padev->_input_handler(chunk.get());
+  }
+
+  if(the_synth){
+    the_synth->compute(framesPerBuffer, inputBuffer);
+    the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
+
+    if (false) { // test tone ?
+      static int64_t _testtoneph = 0;
+      for (int i = 0; i < framesPerBuffer; i++) {
+        double phase = 440.0 * pi2 * double(_testtoneph) / getSampleRate();
+        //printf( "phase<%g>\n", phase );
+        float samp   = sinf(phase) * 1.0;
+        *out++       = samp; // interleaved
+        *out++       = samp; // interleaved
+        _testtoneph++;
+      }
+    } else if (ENABLE_OUTPUT) {
+      const auto& obuf = the_synth->_obuf;
+      for (i = 0; i < framesPerBuffer; i++) {
+        *out++ = obuf._leftBuffer[i];  // interleaved
+        *out++ = obuf._rightBuffer[i]; // interleaved
+      }
+    } else {
+      for (i = 0; i < framesPerBuffer; i++) {
+        *out++ = 0.0f; // interleaved
+        *out++ = 0.0f; // interleaved
+      }
+
+    }
+  }
+  else { // no synth
     for (i = 0; i < framesPerBuffer; i++) {
       *out++ = 0.0f; // interleaved
       *out++ = 0.0f; // interleaved
     }
-
   }
   return 0;
 }
 
- static void _startupAudio() {
+ static void _startupAudio(AudioDevicePa* dev) {
 
-  synth::bringUp();
+  logchan_portaudio->log("starting audio");
   
-  synth_ptr_t the_synth = synth::instance();
-
   float SR = getSampleRate();
 
-  the_synth->setSampleRate(SR);
-
-  printf("SingularitySynth<%p> SR<%g>\n", (void*) the_synth.get(), SR);
-  // loadPrograms();
+  if(dev->_the_synth){
+    dev->_the_synth->setSampleRate(SR);
+    printf("SingularitySynth<%p> SR<%g>\n", (void*) dev->_the_synth.get(), SR);
+    // loadPrograms();
+  }
 
   auto err = Pa_Initialize();
   OrkAssert(err == paNoError);
+  int num_inputs = 0;
+  auto aid = dev->_appinitdata.lock();
+  if( aid->_enable_audio_input )
+    num_inputs = 1;
 
   /* Open an audio I/O stream. */
   err = Pa_OpenDefaultStream(
       &pa_stream,
-      0,         // no input channels
+      num_inputs,// num input channels
       2,         // stereo output
       paFloat32, // 32 bit floating point output
       SR,
@@ -118,37 +146,63 @@ static int patestCallback(
                   tells PortAudio to pick the best,
                   possibly changing, buffer size.*/
       patestCallback,    // this is your callback function
-      nullptr);          // This is a pointer that will be passed to
-                         //         your callback
+      (void*) dev );     // user pointer
 
   OrkAssert(err == paNoError);
 
   err = Pa_StartStream(pa_stream);
   OrkAssert(err == paNoError);
 
-  the_synth->resetFenables();
+  logchan_portaudio->log("have default stream<%p>", pa_stream);
+
+  if(dev->_the_synth){
+    dev->_the_synth->resetFenables();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void _tearDownAudio() {
-  auto err = Pa_StopStream(pa_stream);
-  assert(err == paNoError);
-  err = Pa_Terminate();
-  assert(err == paNoError);
-  synth::tearDown();
+AudioDevicePa::AudioDevicePa(appinitdata_wkptr_t appinitd)
+    : AudioDevice(appinitd) {
+
+  /////////////////////////////////////
+
+  _num_input_channels = 0;
+  if(appinitd.lock()->_enable_audio_input){
+    _num_input_channels = 1;
+  }
+  _num_output_channels = 2;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-AudioDevicePa::AudioDevicePa()
-    : AudioDevice() {
-    _startupAudio();
-}
 
 AudioDevicePa::~AudioDevicePa(){
-  _tearDownAudio();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AudioDevicePa::startup(){
+  if(_appinitdata.lock()->_enable_audio_synth){
+    _the_synth = synth::instance();
+  }
+  _startupAudio(this);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AudioDevicePa::shutdown(){
+  logchan_portaudio->log("tearing down audio");
+  auto err = Pa_StopStream(pa_stream);
+  OrkAssert(err == paNoError);
+  err = Pa_Terminate();
+  OrkAssert(err == paNoError);
+  if(_the_synth){
+    synth::tearDown();
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2

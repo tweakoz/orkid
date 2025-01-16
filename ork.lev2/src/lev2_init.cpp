@@ -88,10 +88,13 @@ namespace ork::lev2::editor::imgui {
 void initModule(appinitdata_ptr_t initdata) {
   initdata->_imgui = true;
 }
+void exitModule(appinitdata_ptr_t initdata) {
+}
 } // namespace ork::imgui
 
 namespace ork {
 void initModule(appinitdata_ptr_t init_data);
+void exitModule(appinitdata_ptr_t init_data);
 namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
@@ -117,46 +120,51 @@ void registerEnums();
 ork::lev2::context_ptr_t gloadercontext;
 
 struct ClassToucher {
-  ClassToucher() {
+  ClassToucher(appinitdata_ptr_t aid) {
+
+    printf( "ork.lev2 classes registered...\n");
+
     AllocationLabel label("ork::lev2::Init");
 
     Context::GetClassStatic();
-    vulkan::touchClasses();
-    dummy::touchClasses();
-    opengl::touchClasses();
+    if(aid->_enable_graphics){
+      vulkan::touchClasses();
+      dummy::touchClasses();
+      opengl::touchClasses();
 
-    ////////////////////////////////////////
+      ////////////////////////////////////////
 
-    std::string gfx_api_str;
-    if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
-      if(gfx_api_str=="VULKAN"){
-        GRAPHICS_API  = "VULKAN"_crcu;
-      }     
-      else if(gfx_api_str=="OPENGL"){
-        GRAPHICS_API  = "OPENGL"_crcu;
-      }     
-      else if(gfx_api_str=="DUMMY"){
-        GRAPHICS_API  = "DUMMY"_crcu;
-      }     
-    }
-
-    ////////////////////////////////////////
-
-    switch(GRAPHICS_API){
-      case "DUMMY"_crcu:{
-        gloadercontext = dummy::createLoaderContext();
-        //GfxEnv::setContextClass(clazz);
-        OrkAssert(false);
-        break;
+      std::string gfx_api_str;
+      if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
+        if(gfx_api_str=="VULKAN"){
+          GRAPHICS_API  = "VULKAN"_crcu;
+        }     
+        else if(gfx_api_str=="OPENGL"){
+          GRAPHICS_API  = "OPENGL"_crcu;
+        }     
+        else if(gfx_api_str=="DUMMY"){
+          GRAPHICS_API  = "DUMMY"_crcu;
+        }     
       }
-      case "OPENGL"_crcu:{
-        gloadercontext = opengl::createLoaderContext();
-        break;
-      }
-      case "VULKAN"_crcu:
-      default: {
-        gloadercontext = vulkan::createLoaderContext();
-        break;
+
+      ////////////////////////////////////////
+
+      switch(GRAPHICS_API){
+        case "DUMMY"_crcu:{
+          gloadercontext = dummy::createLoaderContext();
+          //GfxEnv::setContextClass(clazz);
+          OrkAssert(false);
+          break;
+        }
+        case "OPENGL"_crcu:{
+          gloadercontext = opengl::createLoaderContext();
+          break;
+        }
+        case "VULKAN"_crcu:
+        default: {
+          gloadercontext = vulkan::createLoaderContext();
+          break;
+        }
       }
     }
 
@@ -431,12 +439,14 @@ struct ClassToucher {
 
     //////////////////////////////////////////
   }
+
+  ~ClassToucher() {
+    printf( "ork.lev2 classes unregistered...\n");
+  }
+
 };
 
-void ClassInit() {
-  static ClassToucher toucher;
-  printf( "ork.lev2 classes registered...\n");
-}
+using classinit_ptr_t = std::shared_ptr<ClassToucher>;
 
 void GfxInit(const std::string& gfxlayer) {
   opq::init();
@@ -449,7 +459,7 @@ struct Lev2AppInit {
   Lev2AppInit(ork::appinitdata_ptr_t init_data) {
     ///////////////////////////////////////////////////////////////
     _ginitdata = init_data;
-    ClassInit(); //
+    _class_toucher = std::make_shared<ClassToucher>(_ginitdata); //
     meshutil::misc_init();    
     registerEnums();
     ///////////////////////////////////////////////////////////////
@@ -464,20 +474,40 @@ struct Lev2AppInit {
     openvdb::initialize();
     openvdb::ax::initialize();
     ///////////////////////////////////////////////////////////////
-    init_data->enqueuePostInitOp(
-        AppInitOrder::GRAPHICS_INIT,
-        [] { //
-          GfxInit("");
-          lev2::FontMan::GetRef();
-        });
+    if(init_data->_enable_graphics){
+      init_data->enqueuePostInitOp(
+          AppInitOrder::GRAPHICS_INIT,
+          [] { //
+            GfxInit("");
+            lev2::FontMan::GetRef();
+          });
+    }
   }
+  classinit_ptr_t _class_toucher;
 };
 
+using lev2appinit_ptr_t = std::shared_ptr<Lev2AppInit>;
+static lev2appinit_ptr_t g_lev2_initializer = nullptr;
+static mutex ginit_mutex("lev2init");
 
 void initModule(appinitdata_ptr_t init_data) {
   ::ork::initModule(init_data);
-  static Lev2AppInit ginit(init_data);
+  ginit_mutex.Lock();
+  if(g_lev2_initializer){
+    ginit_mutex.UnLock();
+    return;
+  }
+  g_lev2_initializer = std::make_shared<Lev2AppInit>(init_data);
+  ginit_mutex.UnLock();
 }
+
+void exitModule(appinitdata_ptr_t init_data){
+  ::ork::exitModule(init_data);
+  ginit_mutex.Lock();
+  g_lev2_initializer = nullptr;
+  ginit_mutex.UnLock();
+}
+
 
 } // namespace lev2
 } // namespace ork

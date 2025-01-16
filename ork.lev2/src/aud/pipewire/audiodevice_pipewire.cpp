@@ -236,8 +236,8 @@ PrivateImplementation::~PrivateImplementation() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioDevicePipeWire::AudioDevicePipeWire()
-    : AudioDevice() {
+AudioDevicePipeWire::AudioDevicePipeWire(appinitdata_wkptr_t appinitd)
+    : AudioDevice(appinitd) {
 
   _impl.makeShared<PrivateImplementation>();
 }

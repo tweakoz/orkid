@@ -30,6 +30,7 @@ namespace ork {
 struct AppInitData;
 
 using appinitdata_ptr_t = std::shared_ptr<AppInitData>;
+using appinitdata_wkptr_t = std::weak_ptr<AppInitData>;
 
 namespace po = ::boost::program_options;
 
@@ -80,9 +81,13 @@ struct AppInitData{
   opts_desc_ptr_t _commandline_desc;
   opts_var_map_ptr_t _commandline_vars;
 
+  bool _enable_audio = false;
+  bool _enable_audio_input = false;
+  bool _enable_audio_synth = false;
+  bool _enable_graphics = true;
+
   bool _fullscreen = false;
   bool _offscreen = false;
-  bool _audio = false;
   bool _imgui = false;
   int _top = 100;
   int _left = 100;

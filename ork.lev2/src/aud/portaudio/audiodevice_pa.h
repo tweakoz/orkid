@@ -8,17 +8,20 @@
 #pragma once
 
 #include <ork/kernel/orkpool.h>
+#include <ork/lev2/aud/audiodevice.h>
 
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDevicePa final : public AudioDevice {
+struct AudioDevicePa final : public AudioDevice {
 public:
-  AudioDevicePa();
+  AudioDevicePa(appinitdata_wkptr_t appinitd);
   ~AudioDevicePa() final;
+  void startup() final;
+  void shutdown() final;
 
-protected:
+  ::ork::audio::singularity::synth_ptr_t _the_synth;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

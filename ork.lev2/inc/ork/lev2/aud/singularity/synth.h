@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/orktypes.h>
+#include <ork/lev2/lev2_types.h>
 #include <ork/math/audiomath.h>
 #include "krztypes.h"
 #include "synthdata.h"
@@ -64,7 +65,6 @@ struct hudsample {
   float _time;
   float _value;
 };
-using synth_ptr_t = std::shared_ptr<synth>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

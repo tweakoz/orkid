@@ -41,7 +41,6 @@ audiodevice_ptr_t gaudiodevice;
 SingularityTestApp::SingularityTestApp(appinitdata_ptr_t initdata)
     // TODO - get init data with lev2 enabled...
     : OrkEzApp(initdata) {
-  gaudiodevice = AudioDevice::instance();
   // startupAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,6 +55,8 @@ std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
+
+  init_data->_enable_audio = true;
 
   lev2::initModule(init_data);
 

@@ -11,6 +11,8 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/profiling.inl>
 #include <iostream>
+#include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/aud/singularity/synth.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -89,8 +91,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
-                } else if (key == "use_audio") {
-                  appinitdata->_audio = py::cast<bool>(item.second);
+                } else if (key == "enable_graphics") {
+                  appinitdata->_enable_graphics = py::cast<bool>(item.second);
+                } else if (key == "enable_audio") {
+                  appinitdata->_enable_audio = py::cast<bool>(item.second);
+                } else if (key == "enable_audio_input") {
+                  appinitdata->_enable_audio_input = py::cast<bool>(item.second);
+                } else if (key == "enable_audio_synth") {
+                  appinitdata->_enable_audio_synth = py::cast<bool>(item.second);
                 } else if (key == "offscreen") {
                   appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
@@ -113,6 +121,50 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             rval->_vars->makeValueForKey<py::object>("appinstance")   = appinstance;
             rval->_overrideRCFD = override_rcfd;
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onAudioInit")) {
+              auto audinitfn //
+                  = py::cast<py::function>(appinstance.attr("onAudioInit"));
+              rval->_vars->makeValueForKey<py::function>("audinitfn") = audinitfn;
+              rval->onAudioInit([=](audiodevice_ptr_t adev) { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
+                pyfn.value()(adev);
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onAudioExit")) {
+              auto audexitfn //
+                  = py::cast<py::function>(appinstance.attr("onAudioExit"));
+              rval->_vars->makeValueForKey<py::function>("audexitfn") = audexitfn;
+              rval->onAudioExit([=](audiodevice_ptr_t adev) { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
+                pyfn.value()(adev);
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onSynthInit")) {
+              auto syninitfn //
+                  = py::cast<py::function>(appinstance.attr("onSynthInit"));
+              rval->_vars->makeValueForKey<py::function>("syninitfn") = syninitfn;
+              rval->onSynthInit([=](audio::singularity::synth_ptr_t syn) { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("syninitfn");
+                pyfn.value()(syn);
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onSynthExit")) {
+              auto synexitfn //
+                  = py::cast<py::function>(appinstance.attr("onSynthExit"));
+              rval->_vars->makeValueForKey<py::function>("synexitfn") = synexitfn;
+              rval->onSynthExit([=](audio::singularity::synth_ptr_t syn) { //
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("synexitfn");
+                pyfn.value()(syn);
+              });
+            }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -235,6 +287,15 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       ///////////////////////////////////////////////////////
       .def_property_readonly("vars", [](orkezapp_ptr_t ezapp) -> varmap::varmap_ptr_t { //
         return ezapp->_vars;
+      })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("audio_synth", [](orkezapp_ptr_t ezapp) -> audio::singularity::synth_ptr_t { //
+        audio::singularity::synth_ptr_t synth = nullptr;
+        auto it = ezapp->_initdata->_miscvars.find("synth");
+        if (it != ezapp->_initdata->_miscvars.end()) {
+          synth = it->second.get<audio::singularity::synth_ptr_t>();
+        }
+        return synth;  
       })
       ///////////////////////////////////////////////////////
       .def_property_readonly(

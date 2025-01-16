@@ -10,6 +10,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/lev2/lev2_types.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/file/file.h>
@@ -55,9 +56,10 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 struct EzMainWin {
 public:
-  typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
-  typedef std::function<void(int w, int h)> onresizecb_t;
-
+  typedef std::function<void(ui::drawevent_constptr_t)> drawcallback_t;
+  typedef std::function<void(int w, int h)> onresizecallback_t;
+  typedef std::function<void(audiodevice_ptr_t)> onauddevfn_t;
+  typedef std::function<void(audio::singularity::synth_ptr_t)> onsynfn_t;
   typedef std::function<void(Context* ctx)> ongpuinit_t;
   typedef std::function<void(Context* ctx)> ongpuupdate_t;
   typedef std::function<void(Context* ctx)> ongpupreframe_t;
@@ -70,7 +72,7 @@ public:
   typedef std::function<void(Context* ctx, scenegraph::scene_ptr_t)> ongpuinitwitchscene_t;
   typedef std::function<void(ui::updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
 
-  typedef std::function<ui::HandlerResult(ui::event_constptr_t ev)> onuieventcb_t;
+  typedef std::function<ui::HandlerResult(ui::event_constptr_t ev)> onuieventcallback_t;
 
   EzMainWin(OrkEzApp& app);
   ~EzMainWin();
@@ -97,9 +99,13 @@ public:
   Context* _curframecontext                 = nullptr;
   appwindow_ptr_t _appwin                   = nullptr;
   CtxGLFW* _ctqt                            = nullptr;
-  drawcb_t _onDraw                          = nullptr;
-  onresizecb_t _onResize                    = nullptr;
-  onuieventcb_t _onUiEvent                  = nullptr;
+  drawcallback_t _onDraw                    = nullptr;
+  onresizecallback_t _onResize              = nullptr;
+  onuieventcallback_t _onUiEvent            = nullptr;
+  onauddevfn_t _onAudioInit                 = nullptr;
+  onauddevfn_t _onAudioExit                 = nullptr;
+  onsynfn_t _onSynthInit                    = nullptr;
+  onsynfn_t _onSynthExit                    = nullptr;
   ongpuinit_t _onGpuInit                    = nullptr;
   ongpuupdate_t _onGpuUpdate                = nullptr;
   ongpupreframe_t _onGpuPreFrame            = nullptr;
@@ -171,18 +177,25 @@ public:
 
   filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
 
-  void onDraw(EzMainWin::drawcb_t cb);
-  void onResize(EzMainWin::onresizecb_t cb);
-  void onGpuInit(EzMainWin::ongpuinit_t cb);
-  void onGpuUpdate(EzMainWin::ongpuupdate_t cb);
-  void onGpuPreFrame(EzMainWin::ongpupreframe_t cb);
-  void onGpuPostFrame(EzMainWin::ongpupostframe_t cb);
-  void onGpuExit(EzMainWin::ongpuexit_t cb);
-  void onUiEvent(EzMainWin::onuieventcb_t cb);
-  void onUpdateInit(EzMainWin::onupdateinit_t cb);
-  void onUpdateExit(EzMainWin::onupdateexit_t cb);
-  void onUpdate(EzMainWin::onupdate_t cb);
+  void onDraw(EzMainWin::drawcallback_t callback);
+  void onResize(EzMainWin::onresizecallback_t callback);
+  void onAudioInit(EzMainWin::onauddevfn_t callback);
+  void onAudioExit(EzMainWin::onauddevfn_t callback);
+  void onSynthInit(EzMainWin::onsynfn_t callback);
+  void onSynthExit(EzMainWin::onsynfn_t callback);
+  void onGpuInit(EzMainWin::ongpuinit_t callback);
+  void onGpuUpdate(EzMainWin::ongpuupdate_t callback);
+  void onGpuPreFrame(EzMainWin::ongpupreframe_t callback);
+  void onGpuPostFrame(EzMainWin::ongpupostframe_t callback);
+  void onGpuExit(EzMainWin::ongpuexit_t callback);
+  void onUiEvent(EzMainWin::onuieventcallback_t callback);
+  void onUpdateInit(EzMainWin::onupdateinit_t callback);
+  void onUpdateExit(EzMainWin::onupdateexit_t callback);
+  void onUpdate(EzMainWin::onupdate_t callback);
   void setRefreshPolicy(RefreshPolicyItem policy);
+
+  void _audioInit();
+  void _audioExit();
 
   int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
