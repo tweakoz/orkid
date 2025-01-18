@@ -30,7 +30,8 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AudioInputChunk {
-  AudioInputChunk(size_t channel_count);
+  AudioInputChunk(size_t channel_count=1);
+  void setNumChannels(size_t channel_count);
   std::vector<input_frames_t> _channels;
   size_t _chunk_index = 0;
   size_t _num_frames = 0;
