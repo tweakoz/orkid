@@ -6,10 +6,13 @@
 ////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <ork/lev2/lev2_types.h>
+#include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/filters.h>
+#include <ork/util/ringbuffer.inl>
 
 namespace ork::audio::singularity {
 
@@ -288,6 +291,28 @@ struct SAMPLER final : public DspBlock {
   SampleOscillator* _spOsc = nullptr;
   natenvwrapperdata_ptr_t _natenvwrapperdata;
   float _filtp;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct STREAMING_OSCILLATOR_DATA : public DspBlockData {
+  DeclareConcreteX(STREAMING_OSCILLATOR_DATA, DspBlockData);
+  STREAMING_OSCILLATOR_DATA(std::string name="");
+  dspblk_ptr_t createInstance() const override;
+  lev2::audiostreaminginputchunk_source_ptr_t _source;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct StreamingOscillatorBlock final : public DspBlock {
+  using dataclass_t = STREAMING_OSCILLATOR_DATA;
+  StreamingOscillatorBlock(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf);
+  void doKeyOn(const KeyOnInfo& koi);
+  void doKeyOff();
+  const STREAMING_OSCILLATOR_DATA* _streamingdata = nullptr;
+  size_t _counter = 0;
+  RingBuffer<float> _ringBuffer;
 };
 
 } // namespace ork::audio::singularity

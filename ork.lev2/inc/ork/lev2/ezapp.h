@@ -196,6 +196,11 @@ public:
 
   void _audioInit();
   void _audioExit();
+  
+  virtual void _onAudioInit(audiodevice_ptr_t dev);
+  virtual void _onAudioExit(audiodevice_ptr_t dev);
+  virtual void _onSynthInit(audio::singularity::synth_ptr_t synth);
+  virtual void _onSynthExit(audio::singularity::synth_ptr_t synth);
 
   int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);

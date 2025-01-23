@@ -22,6 +22,7 @@ namespace ork::audio::singularity{
 
 namespace ork::lev2 {
 
+void pyinit_aud_device(py::module& lev2_module);
 void pyinit_gfx(py::module& module_lev2);
 void pyinit_gfx_compositor(py::module& module_lev2);
 void pyinit_gfx_material(py::module& module_lev2);
@@ -147,6 +148,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   module_lev2.def("lev2apppoll", &lev2apppoll);
   module_lev2.def("lev2exdir", &lev2exdir);
   //////////////////////////////////////////////////////////////////////////////
+  pyinit_aud_device(module_lev2);
   pyinit_ui(module_lev2);
   pyinit_gfx(module_lev2);
   pyinit_meshutil(module_lev2);

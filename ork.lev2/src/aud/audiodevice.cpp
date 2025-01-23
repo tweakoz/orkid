@@ -55,7 +55,7 @@ namespace ork { namespace lev2 {
 AudioInputChunk::AudioInputChunk(size_t numch) 
  : _chunk_index(0)
  , _num_frames(0) {
- _channels.resize(numch);
+ setNumChannels(numch);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,6 +128,21 @@ AudioDevice::~AudioDevice() {
 
 void AudioDevice::startup() {}
 void AudioDevice::shutdown() {}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void StreamingAudioInputChunkSource::start() {
+
+}
+void StreamingAudioInputChunkSource::stop() {
+
+}
+lev2::audioinputchunk_ptr_t StreamingAudioInputChunkSource::getChunk() {
+  lev2::audioinputchunk_ptr_t chunk = nullptr;
+  _inputqueue.try_pop(chunk);
+  return chunk;
+}
+ // MpMcBoundedQueue<lev2::audioinputchunk_ptr_t,256> _inputqueue;
 
 ///////////////////////////////////////////////////////////////////////////////
 

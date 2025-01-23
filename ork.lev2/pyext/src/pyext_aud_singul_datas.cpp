@@ -364,6 +364,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               });
   type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto streamer_type = py::class_<STREAMING_OSCILLATOR_DATA, DspBlockData, streamerdata_ptr_t>(singmodule, "StreamingOscillator")
+    .def_property("source",[](streamerdata_ptr_t streamer) -> lev2::audiostreaminginputchunk_source_ptr_t { //
+      return streamer->_source;
+    },[](streamerdata_ptr_t streamer, lev2::audiostreaminginputchunk_source_ptr_t src) { //
+      streamer->_source = src;
+    });
+  type_codec->registerStdCodec<streamerdata_ptr_t>(streamer_type);
+  /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
   auto pitchdata_type  = py::class_<PITCH_DATA, DspBlockData, pitchblk_ptr_t>(singmodule, "PitchBlockData");
   type_codec->registerStdCodec<pitchblk_ptr_t>(pitchdata_type);

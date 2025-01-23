@@ -24,6 +24,7 @@
 #include <ork/kernel/any.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/application/application.h>
+#include <ork/kernel/concurrent_queue.h>
 
 namespace ork::lev2 {
 
@@ -35,6 +36,22 @@ struct AudioInputChunk {
   std::vector<input_frames_t> _channels;
   size_t _chunk_index = 0;
   size_t _num_frames = 0;
+};
+
+struct AudioInputChunkSource {
+  virtual ~AudioInputChunkSource() {}
+  virtual void start() = 0;
+  virtual void stop() = 0;
+  virtual audioinputchunk_ptr_t getChunk() = 0;
+};
+
+struct StreamingAudioInputChunkSource : public AudioInputChunkSource {
+
+  void start() final;
+  void stop() final;
+  lev2::audioinputchunk_ptr_t getChunk() final;
+  MpMcBoundedQueue<lev2::audioinputchunk_ptr_t,256> _inputqueue;
+  svar64_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

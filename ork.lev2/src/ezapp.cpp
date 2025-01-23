@@ -445,6 +445,7 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU(){
 void OrkEzApp::_audioInit(){
   audiodevice_ptr_t auddev = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(auddev);
+  _onAudioInit(auddev);
   if(_initdata->_enable_audio_synth){
     audio::singularity::synth::bringUp();
     auto synth = audio::singularity::synth::instance();
@@ -454,12 +455,25 @@ void OrkEzApp::_audioInit(){
     }
     if(_mainWindow and _mainWindow->_onSynthInit){
       _mainWindow->_onSynthInit(synth);
+      _onSynthInit(synth);
     }
   }
   if(_mainWindow and _mainWindow->_onAudioInit){
     _mainWindow->_onAudioInit(auddev);
   }
   auddev->startup();
+}
+void OrkEzApp::_onAudioInit(audiodevice_ptr_t dev){
+
+}
+void OrkEzApp::_onAudioExit(audiodevice_ptr_t dev){
+
+}
+void OrkEzApp::_onSynthInit(audio::singularity::synth_ptr_t synth){
+
+}
+void OrkEzApp::_onSynthExit(audio::singularity::synth_ptr_t synth){
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioExit(){
