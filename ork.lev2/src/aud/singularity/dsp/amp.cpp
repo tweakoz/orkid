@@ -24,6 +24,7 @@ ImplementReflectionX(ork::audio::singularity::BAL_AMP_DATA, "DspAmpBalance");
 ImplementReflectionX(ork::audio::singularity::AMP_MOD_OSC_DATA, "DspAmpModOsc");
 ImplementReflectionX(ork::audio::singularity::XGAIN_DATA, "DspAmpXGain");
 ImplementReflectionX(ork::audio::singularity::XFADE_DATA, "DspAmpXFade");
+ImplementReflectionX(ork::audio::singularity::NOISEGATE_DATA, "DspAmpNoiseGate");
 
 namespace ork::audio::singularity {
 
@@ -658,5 +659,80 @@ void BANGAMP::doKeyOn(const KeyOnInfo& koi) // final
   _smooth = 0.0f;
 }
 
+void NOISEGATE_DATA::describeX(class_t* clazz){
+
+}
+
+NOISEGATE_DATA::NOISEGATE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "NOISEGATE";
+  addParam("thresh")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("attack")->useDefaultEvaluator(); // position: eval: "POS"   
+  addParam("release")->useDefaultEvaluator(); // position: eval: "POS"   
+}
+
+dspblk_ptr_t NOISEGATE_DATA::createInstance() const {
+  return std::make_shared<NOISEGATE>(this);
+}
+
+NOISEGATE::NOISEGATE(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+NOISEGATE::~NOISEGATE() {
+}
+void NOISEGATE::doKeyOn(const KeyOnInfo& koi) // final
+{
+}
+
+void NOISEGATE::compute(DspBuffer& dspbuf) // final
+{
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+
+  auto LD    = _layer->_layerdata;
+  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+
+  // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
+
+  auto my_data = (const NOISEGATE_DATA*) _dbd;
+
+  float attack = my_data->_attack;
+  float release = my_data->_release;
+  float thresh = my_data->_threshold;
+  float inpgain = my_data->_inputgain;
+  float outgain = my_data->_outputgain;
+
+  for (int i = 0; i < inumframes; i++) {
+
+
+
+    float inU = ubuf[i] * _dbd->_inputPad * inpgain;
+    float inL = lbuf[i] * _dbd->_inputPad * inpgain;
+    float res = (inU + inL);
+
+    // measure "energy" of input over last .5 seconds
+    // if energy is below threshold, gate the signal
+
+    float energy = _energy * 0.999f + res * res * 0.001f;
+    _energy     = energy;
+
+    float envelope = _envelope;
+    if (energy > thresh) {
+      envelope = envelope + attack;
+      if(envelope>1.0f) envelope = 1.0f;
+    } else {
+      envelope = envelope * (1.0f - release);
+    }
+    _envelope = envelope;
+
+    res     = res * _envelope * outgain;
+
+    float ae  = _param[1].eval();
+    lbuf[i]   = res;
+    ubuf[i]   = res;
+  }
+  _fval[0] = 0.0f;
+}
 
 } // namespace ork::audio::singularity

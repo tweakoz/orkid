@@ -205,6 +205,25 @@ struct PANNER2D : public DspBlock {
   float _a2 = 1.0f;
   float _ap2 = 0.0f;
 };
+struct NOISEGATE_DATA : public DspBlockData {
+  DeclareConcreteX(NOISEGATE_DATA,DspBlockData);
+  NOISEGATE_DATA(std::string name="DspAmpNoiseGate");
+  dspblk_ptr_t createInstance() const override;
+  float _inputgain = 1.0f;
+  float _outputgain = 1.0f;
+  float _threshold = 0.5f;
+  float _attack = 0.1f;
+  float _release = 0.1f;
+};
+struct NOISEGATE : public DspBlock {
+  using dataclass_t = NOISEGATE_DATA;
+  NOISEGATE(const DspBlockData* dbd);
+  ~NOISEGATE();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  float _envelope = 0.0f;
+  float _energy = 0.0f;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::audio::singularity

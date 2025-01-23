@@ -112,6 +112,7 @@ struct DelayContext;
 struct SAMPLER_DATA;
 struct STREAMING_OSCILLATOR_DATA;
 struct programInst;
+struct NOISEGATE_DATA;
 ///////////////////////////////////////////////////////////////////////////////
 // sequencer
 ///////////////////////////////////////////////////////////////////////////////
@@ -201,6 +202,7 @@ using kmregion_constptr_t = std::shared_ptr<const KmRegionData>;
 using samplerdata_ptr_t = std::shared_ptr<SAMPLER_DATA>;
 using streamerdata_ptr_t = std::shared_ptr<STREAMING_OSCILLATOR_DATA>;
 using programinst_ptr_t = programInst*;
+using noisegatedata_ptr_t = std::shared_ptr<NOISEGATE_DATA>;
 ///////////////////////////////////////////////////////////////////////////////
 using sequencer_ptr_t = std::shared_ptr<Sequencer>;
 using sequence_ptr_t = std::shared_ptr<Sequence>;

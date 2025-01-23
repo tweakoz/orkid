@@ -300,6 +300,7 @@ struct STREAMING_OSCILLATOR_DATA : public DspBlockData {
   STREAMING_OSCILLATOR_DATA(std::string name="");
   dspblk_ptr_t createInstance() const override;
   lev2::audiostreaminginputchunk_source_ptr_t _source;
+  size_t _low_watermark = 24000;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -312,7 +313,8 @@ struct StreamingOscillatorBlock final : public DspBlock {
   void doKeyOff();
   const STREAMING_OSCILLATOR_DATA* _streamingdata = nullptr;
   size_t _counter = 0;
-  RingBuffer<float> _ringBuffer;
+  using rb_t = RingBuffer<float>;
+  rb_t _ringBuffer;
 };
 
 } // namespace ork::audio::singularity

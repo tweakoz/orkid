@@ -34,8 +34,7 @@ dspblk_ptr_t STREAMING_OSCILLATOR_DATA::createInstance() const {
 
 StreamingOscillatorBlock::StreamingOscillatorBlock(const DspBlockData* dbd)
   : DspBlock(dbd)
-  , _ringBuffer(8192) {
-
+  , _ringBuffer(1048576) {
   _streamingdata = dynamic_cast<const STREAMING_OSCILLATOR_DATA*>(dbd);
 }
 void StreamingOscillatorBlock::compute(DspBuffer& dspbuf){
@@ -46,31 +45,58 @@ void StreamingOscillatorBlock::compute(DspBuffer& dspbuf){
 
   auto source = _streamingdata->_source;
   if(source){
-    int num_frames_pushed=0;
-    bool keepgoing = true;
-    size_t failed = 0;
-    while((num_frames_pushed<inumframes) and (failed<10)){
-      lev2::audioinputchunk_ptr_t chunk;
-      if(source->_inputqueue.try_pop(chunk)){
-        auto& chan0 = chunk->_channels[0];
-        size_t num_samples_this_chunk = chan0.size();
-        for (int i = 0; i < num_samples_this_chunk; i++) {
-          int j = i+num_frames_pushed;
-          outputchan[j] = chan0[i];
-        }
-        num_frames_pushed += inumframes;
+
+    ///////////////////////////////
+    // transfer from input chunk queue to ring buffer
+    ///////////////////////////////
+
+    lev2::audioinputchunk_ptr_t chunk;
+    while(source->_inputqueue.try_pop(chunk)){
+      auto& chan0 = chunk->_channels[0];
+      size_t num_samples_this_chunk = chan0.size();
+      const float* src = chan0.data();
+      size_t num_samples = num_samples_this_chunk;
+      _ringBuffer.push_many(src, num_samples);
+    }
+
+    ///////////////////////////////
+    // throttle - attempt to keep the ring buffer somewhat full
+    //  to account for timing instabilities
+    ///////////////////////////////
+
+    if(_ringBuffer.size()<_streamingdata->_low_watermark){
+      for (int i = 0; i < inumframes; i++) {
+        outputchan[i] = 0.0f;
       }
-      else{
-        failed++;
+    }
+    else{
+
+      ///////////////////////////////
+      // ok, we have enough data in the ring buffer
+      //  to fill the output buffer
+      ///////////////////////////////
+
+      int num_frames_pushed=0;
+      size_t failed = 0;
+      while((num_frames_pushed<inumframes) and (failed<10)){
+        size_t num_enqueued = _ringBuffer.size();
+        if(num_enqueued>0){
+          size_t num_frames_to_push = std::min(num_enqueued, size_t(inumframes-num_frames_pushed));
+          _ringBuffer.pop_many(outputchan+num_frames_pushed, num_frames_to_push);
+          num_frames_pushed += num_frames_to_push;
+        }
+        else{
+          failed++;
+        }
       }
     }
   }
   else{
+    // no source, just zero output
     for (int i = 0; i < inumframes; i++) {
       outputchan[i] = 0.0f;
     }
   }
-
 }
 void StreamingOscillatorBlock::doKeyOn(const KeyOnInfo& koi){
 
