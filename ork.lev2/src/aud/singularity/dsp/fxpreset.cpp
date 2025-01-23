@@ -813,7 +813,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("IR-WLANE", fxpreset_IR("WoodruffLane.wav",0.5,-6));
   addpreset("IR-1", fxpreset_IR("TunnelToHeaven.wav",0.25,-18));
   addpreset("IR-2", fxpreset_IR("TunnelToHell.wav",0.1,-24));
-  addpreset("IR-3", fxpreset_IR("SteinmanHall.wav",0.20,-6));
+  addpreset("IR-3", fxpreset_IR("Sound 2.wav",0.20,-6));
   addpreset("IR-4", fxpreset_IR("StorageTankNo7.wav",0.20,-6));
   addpreset("IR-5", fxpreset_IR("PacificHall.wav",0.20,-6));
   addpreset("IR-6", fxpreset_IR("PepperCanyonHall.wav",0.18,-18));
