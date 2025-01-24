@@ -6,7 +6,6 @@ import obt.host
 import obt.dep
 import obt.path
 import obt.pathtools
-from ork import path as ork_path
 from obt.command import Command, run
 from obt import buildtrace
 import obt._globals as _glob
@@ -32,6 +31,9 @@ this_dir = os.path.dirname(this_path)
 this_dir = os.path.dirname(this_dir)
 this_dir = os.path.dirname(this_dir)
 #print(this_dir)
+
+sys.path.append(this_dir+"/obt.project/scripts")
+from ork import path as ork_path
 
 ############################################################################
 
