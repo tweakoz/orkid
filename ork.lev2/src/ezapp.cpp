@@ -239,9 +239,15 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   _orkidWorkspaceDir = file::Path(orkdirstr);
   //////////////////////////////////////////////////////////
 
-  _uicontext   = std::make_shared<ui::Context>();
   _update_data = std::make_shared<ui::UpdateData>();
-  _appstate    = 0;
+  _updq     = ork::opq::updateSerialQueue();
+  _conq     = ork::opq::concurrentQueue();
+  _mainq    = ork::opq::mainSerialQueue();
+
+  if(_initdata->_enable_graphics){
+
+    _uicontext   = std::make_shared<ui::Context>();
+    _appstate    = 0;
 
   //////////////////////////////////////////////
 
@@ -269,13 +275,11 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       _topLayoutGroup->_clipEvents = false;
     }
     /////////////////////////////////////////////
-    _updq     = ork::opq::updateSerialQueue();
-    _conq     = ork::opq::concurrentQueue();
-    _mainq    = ork::opq::mainSerialQueue();
     _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
     /////////////////////////////////////////////
     _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
     _mainWindow->_ctqt->initWithData(_initdata);
+
     /////////////////////////////////////////////
     // mainthread runloop callback
     /////////////////////////////////////////////
@@ -291,7 +295,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       }
       //////////////////////////////
     };
-
     //////////////////////////////////////////////
     _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
     /////////////////////////////////////////////
@@ -305,6 +308,27 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     }
 
     _mainWindow->_ctqt->Show();
+  }
+  else { // no graphics
+    _mainWindow = nullptr;
+    printf("entering no-graphics runloop\n");
+
+    if(_initdata->_enable_audio){
+      printf("initializing audio\n");
+      _audioInit();
+    }
+    /*
+    while(true){
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+
+      if(this->_onRunLoopIteration){
+        this->_onRunLoopIteration();
+      }
+
+    }*/
+
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -313,7 +337,9 @@ OrkEzApp::~OrkEzApp() {
   // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
   // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
   // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
-  DrawQueue::terminateAll();
+  if(_mainWindow){
+    DrawQueue::terminateAll();
+  }
   __priv_gapp.store(nullptr);
 }
 
@@ -363,24 +389,20 @@ void OrkEzApp::onResize(EzMainWin::onresizecallback_t cb) {
     _mainWindow->_onResize = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAudioInit(EzMainWin::onauddevfn_t callback){
-  if(_mainWindow)
-    _mainWindow->_onAudioInit = callback;
+void OrkEzApp::onAudioInit(onauddevfn_t callback){
+  _onAudioInit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onAudioExit(EzMainWin::onauddevfn_t callback){
-  if(_mainWindow)
-    _mainWindow->_onAudioExit = callback;
+void OrkEzApp::onAudioExit(onauddevfn_t callback){
+  _onAudioExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onSynthInit(EzMainWin::onsynfn_t callback){
-  if(_mainWindow)
-    _mainWindow->_onSynthInit = callback;
+void OrkEzApp::onSynthInit(onsynfn_t callback){
+    _onSynthInit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzApp::onSynthExit(EzMainWin::onsynfn_t callback){
-  if(_mainWindow)
-    _mainWindow->_onSynthExit = callback;
+void OrkEzApp::onSynthExit(onsynfn_t callback){
+  _onSynthExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
@@ -411,7 +433,9 @@ void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcallback_t cb) {
-  _eztopwidget->_topLayoutGroup->_evhandler = cb;
+  if(_eztopwidget){
+    _eztopwidget->_topLayoutGroup->_evhandler = cb;
+  }
   //OrkBreak();
   if(_mainWindow)
     _mainWindow->_onUiEvent                  = cb;
@@ -445,7 +469,6 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU(){
 void OrkEzApp::_audioInit(){
   audiodevice_ptr_t auddev = AudioDevice::createInstance(_initdata);
   _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(auddev);
-  _onAudioInit(auddev);
   if(_initdata->_enable_audio_synth){
     audio::singularity::synth::bringUp();
     auto synth = audio::singularity::synth::instance();
@@ -453,27 +476,14 @@ void OrkEzApp::_audioInit(){
     if(synth){
       synth->mainThreadHandler();
     }
-    if(_mainWindow and _mainWindow->_onSynthInit){
-      _mainWindow->_onSynthInit(synth);
+    if(_onSynthInit){
       _onSynthInit(synth);
     }
   }
-  if(_mainWindow and _mainWindow->_onAudioInit){
-    _mainWindow->_onAudioInit(auddev);
+  if(_onAudioInit){
+    _onAudioInit(auddev);
   }
   auddev->startup();
-}
-void OrkEzApp::_onAudioInit(audiodevice_ptr_t dev){
-
-}
-void OrkEzApp::_onAudioExit(audiodevice_ptr_t dev){
-
-}
-void OrkEzApp::_onSynthInit(audio::singularity::synth_ptr_t synth){
-
-}
-void OrkEzApp::_onSynthExit(audio::singularity::synth_ptr_t synth){
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioExit(){
@@ -482,8 +492,8 @@ void OrkEzApp::_audioExit(){
     auto auddev = it_a->second.get<audiodevice_ptr_t>();
     if(auddev){
       auddev->shutdown();
-      if(_mainWindow and _mainWindow->_onAudioExit){
-        _mainWindow->_onAudioExit(auddev);
+      if(_onAudioExit){
+        _onAudioExit(auddev);
       }
     }
     _initdata->_miscvars.erase(it_a);
@@ -496,7 +506,17 @@ int OrkEzApp::mainThreadLoop() {
   EASY_MAIN_THREAD;
   profiler::startListen();
 
-  if(not _mainWindow)
+  if(not _mainWindow){
+    while(true){
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+
+      if(this->_onRunLoopIteration){
+        this->_onRunLoopIteration();
+      }
+
+    }
+  }
     return -1;
 
   auto glfw_ctx = _mainWindow->_ctqt;

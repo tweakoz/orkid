@@ -24,6 +24,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_EZAPP = logger()->createChannel("ezapp", fvec3(1, 0.5, 1), true);
 
 void pyinit_gfx_qtez(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
@@ -78,6 +79,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ork::genviron.init_from_global_env();
             auto appinitdata = std::make_shared<AppInitData>();
             rcfd_ptr_t override_rcfd = nullptr;
+
             if (kwargs) {
               for (auto item : kwargs) {
                 auto key = py::cast<std::string>(item.first);
@@ -93,6 +95,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
                 } else if (key == "enable_graphics") {
                   appinitdata->_enable_graphics = py::cast<bool>(item.second);
+                  printf("enable_graphics<%d>\n", appinitdata->_enable_graphics);
                 } else if (key == "enable_audio") {
                   appinitdata->_enable_audio = py::cast<bool>(item.second);
                   appinitdata->_enable_audio_input = py::cast<bool>(item.second);
@@ -131,22 +134,29 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             /////////////////////////////
             ::ork::lev2::initModule(appinitdata);
             appinitdata->finalizeInitialization();
+            logchan_EZAPP->log("finalizeInitialization done..");
             /////////////////////////////
             auto rval                                                 = OrkEzApp::create(appinitdata);
             auto d_ev                                                 = std::make_shared<ui::DrawEvent>(nullptr);
+            logchan_EZAPP->log("ezapp<%p>",(void*) rval.get() );
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             rval->_vars->makeValueForKey<py::object>("appinstance")   = appinstance;
             rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAudioInit")) {
+              logchan_EZAPP->log("REG onAudioInit");
               auto audinitfn //
                   = py::cast<py::function>(appinstance.attr("onAudioInit"));
               rval->_vars->makeValueForKey<py::function>("audinitfn") = audinitfn;
               rval->onAudioInit([=](audiodevice_ptr_t adev) { //
+                logchan_EZAPP->log("EXE onAudioInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("audinitfn");
                 pyfn.value()(adev);
               });
+            }
+            else{
+              logchan_EZAPP->log("NO onAudioInit");
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onAudioExit")) {
@@ -161,10 +171,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onSynthInit")) {
+              logchan_EZAPP->log("REG onSynthInit");
               auto syninitfn //
                   = py::cast<py::function>(appinstance.attr("onSynthInit"));
               rval->_vars->makeValueForKey<py::function>("syninitfn") = syninitfn;
               rval->onSynthInit([=](audio::singularity::synth_ptr_t syn) { //
+                logchan_EZAPP->log("EXE onSynthInit");
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("syninitfn");
                 pyfn.value()(syn);
@@ -293,6 +305,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
+            logchan_EZAPP->log("app creation complete app: %p", (void*) rval.get());
             return rval;
           })
       ///////////////////////////////////////////////////////

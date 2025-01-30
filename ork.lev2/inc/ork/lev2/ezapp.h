@@ -58,8 +58,6 @@ struct EzMainWin {
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcallback_t;
   typedef std::function<void(int w, int h)> onresizecallback_t;
-  typedef std::function<void(audiodevice_ptr_t)> onauddevfn_t;
-  typedef std::function<void(audio::singularity::synth_ptr_t)> onsynfn_t;
   typedef std::function<void(Context* ctx)> ongpuinit_t;
   typedef std::function<void(Context* ctx)> ongpuupdate_t;
   typedef std::function<void(Context* ctx)> ongpupreframe_t;
@@ -102,10 +100,6 @@ public:
   drawcallback_t _onDraw                    = nullptr;
   onresizecallback_t _onResize              = nullptr;
   onuieventcallback_t _onUiEvent            = nullptr;
-  onauddevfn_t _onAudioInit                 = nullptr;
-  onauddevfn_t _onAudioExit                 = nullptr;
-  onsynfn_t _onSynthInit                    = nullptr;
-  onsynfn_t _onSynthExit                    = nullptr;
   ongpuinit_t _onGpuInit                    = nullptr;
   ongpuupdate_t _onGpuUpdate                = nullptr;
   ongpupreframe_t _onGpuPreFrame            = nullptr;
@@ -164,7 +158,9 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 struct OrkEzApp : public OrkEzAppBase {
   
-public:
+  using onauddevfn_t = std::function<void(audiodevice_ptr_t)>;
+  using onsynfn_t = std::function<void(audio::singularity::synth_ptr_t)>;
+
   ///////////////////////////////////
   OrkEzApp(appinitdata_ptr_t initdata);
   ~OrkEzApp();
@@ -179,10 +175,6 @@ public:
 
   void onDraw(EzMainWin::drawcallback_t callback);
   void onResize(EzMainWin::onresizecallback_t callback);
-  void onAudioInit(EzMainWin::onauddevfn_t callback);
-  void onAudioExit(EzMainWin::onauddevfn_t callback);
-  void onSynthInit(EzMainWin::onsynfn_t callback);
-  void onSynthExit(EzMainWin::onsynfn_t callback);
   void onGpuInit(EzMainWin::ongpuinit_t callback);
   void onGpuUpdate(EzMainWin::ongpuupdate_t callback);
   void onGpuPreFrame(EzMainWin::ongpupreframe_t callback);
@@ -194,14 +186,14 @@ public:
   void onUpdate(EzMainWin::onupdate_t callback);
   void setRefreshPolicy(RefreshPolicyItem policy);
 
+  void onAudioInit(onauddevfn_t callback);
+  void onAudioExit(onauddevfn_t callback);
+  void onSynthInit(onsynfn_t callback);
+  void onSynthExit(onsynfn_t callback);
+
   void _audioInit();
   void _audioExit();
   
-  virtual void _onAudioInit(audiodevice_ptr_t dev);
-  virtual void _onAudioExit(audiodevice_ptr_t dev);
-  virtual void _onSynthInit(audio::singularity::synth_ptr_t synth);
-  virtual void _onSynthExit(audio::singularity::synth_ptr_t synth);
-
   int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
@@ -255,6 +247,12 @@ public:
   int _updateCounter = 0;
   int _gpuFrameCounter = 0;
   int _gpuFrameCounterUP = 0;
+
+  onsynfn_t _onSynthInit                    = nullptr;
+  onauddevfn_t _onAudioInit                 = nullptr;
+  onauddevfn_t _onAudioExit                 = nullptr;
+  onsynfn_t _onSynthExit                    = nullptr;
+
 };
 
 } // namespace ork::lev2
