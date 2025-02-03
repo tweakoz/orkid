@@ -311,23 +311,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   }
   else { // no graphics
     _mainWindow = nullptr;
-    printf("entering no-graphics runloop\n");
-
     if(_initdata->_enable_audio){
       printf("initializing audio\n");
       _audioInit();
     }
-    /*
-    while(true){
-      opq::TrackCurrent opqtest(_mainq);
-      _mainq->Process();
-
-      if(this->_onRunLoopIteration){
-        this->_onRunLoopIteration();
-      }
-
-    }*/
-
   }
 }
 
@@ -517,7 +504,6 @@ int OrkEzApp::mainThreadLoop() {
 
     }
   }
-    return -1;
 
   auto glfw_ctx = _mainWindow->_ctqt;
 
