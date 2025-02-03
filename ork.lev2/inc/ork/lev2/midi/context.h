@@ -20,6 +20,7 @@ struct OutputContext;
 
 using byte_t = unsigned char;
 using message_t = std::vector<byte_t>;
+using message_ptr_t = std::shared_ptr<message_t>;
 using midi_callback_t = void(*)(double deltatime, message_t* message, void* userData);
 
 using inputcontext_ptr_t = std::shared_ptr<InputContext>;

@@ -711,6 +711,8 @@ void NOISEGATE::compute(DspBuffer& dspbuf) // final
     float inL = lbuf[i] * _dbd->_inputPad * inpgain;
     float res = (inU + inL);
 
+    res    = std::clamp(res, -1.0f, 1.0f);
+
     // measure "energy" of input over last .5 seconds
     // if energy is below threshold, gate the signal
 
@@ -727,7 +729,7 @@ void NOISEGATE::compute(DspBuffer& dspbuf) // final
     _envelope = envelope;
 
     res     = res * _envelope * outgain;
-
+    res    = std::clamp(res, -1.0f, 1.0f);
     float ae  = _param[1].eval();
     lbuf[i]   = res;
     ubuf[i]   = res;
