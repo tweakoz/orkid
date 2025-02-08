@@ -159,15 +159,18 @@ static int patestCallback(
     size_t num_out = devinfo->maxOutputChannels;
     logchan_portaudio->log("device<%zu> name<%s> num_inp<%zu> num_out<%zu>", c, devinfo->name, num_inp, num_out);
 
+
     if( (num_inputs>0) and (num_inp == num_inputs) and paimpl->_input_override == -1 ){
-      if((devname==padev->_inp_dev_name) or input_default){
+      bool substr_matched = (devname.find(padev->_inp_dev_name)==0);
+      if(substr_matched or input_default){
         logchan_portaudio->log("using device<%s> for input", devname.c_str());
         paimpl->_input_override = c;
         got_input = true;
       }
     }
     if( (num_outputs>0) and (num_out == num_outputs) and paimpl->_output_override == -1 ){
-      if((devname==padev->_out_dev_name) or output_default){
+      bool substr_matched = (devname.find(padev->_out_dev_name)==0);
+      if(substr_matched or output_default){
         logchan_portaudio->log("using device<%s> for output", devname.c_str());
         paimpl->_output_override = c;
         got_output = true;
