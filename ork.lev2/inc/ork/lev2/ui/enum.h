@@ -47,6 +47,8 @@ enum class EventCode : crc_enum_t {
   CrcEnum(ACTION),
   CrcEnum(PASTE_TEXT),
   CrcEnum(MIDI_CONTROLLER),
+  CrcEnum(MIDI_KEY_DOWN),
+  CrcEnum(MIDI_KEY_UP),
 };
 
 ///////////////////////////////////////////////////////////////////////////////

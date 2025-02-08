@@ -421,7 +421,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               // The main thread is now owned by C++
               //  therefore the main thread has to let go of the GIL
               // it will be reacquired post-runloop()
-              return app->mainThreadLoop();
+              auto RES = app->mainThreadLoop();
+              if( app->_onAppExit ){
+                app->_onAppExit();
+              }
+              return RES;
             };
             int rval = wrapped();
             // GIL reacquired

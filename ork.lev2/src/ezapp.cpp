@@ -201,7 +201,10 @@ OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
-  _mainWindow->_ctqt->signalExit();
+  _onRunLoopIteration = [](){};
+  if( _mainWindow and _mainWindow->_ctqt){
+    _mainWindow->_ctqt->signalExit();
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::enqueueOnRenderer(const void_lambda_t& l) {
@@ -390,6 +393,10 @@ void OrkEzApp::onSynthInit(onsynfn_t callback){
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onSynthExit(onsynfn_t callback){
   _onSynthExit = callback;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onAppExit(void_lambda_t callback){
+    _onAppExit = callback;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
