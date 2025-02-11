@@ -201,7 +201,7 @@ OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::signalExit() {
-  _onRunLoopIteration = [](){};
+  _onRunLoopIteration = nullptr;
   if( _mainWindow and _mainWindow->_ctqt){
     _mainWindow->_ctqt->signalExit();
   }
@@ -501,15 +501,12 @@ int OrkEzApp::mainThreadLoop() {
   profiler::startListen();
 
   if(not _mainWindow){
-    while(true){
+    while(this->_onRunLoopIteration){
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
-
-      if(this->_onRunLoopIteration){
-        this->_onRunLoopIteration();
-      }
-
+      this->_onRunLoopIteration();
     }
+    return 0;
   }
 
   auto glfw_ctx = _mainWindow->_ctqt;

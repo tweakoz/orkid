@@ -396,6 +396,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "signalExit",
           [](orkezapp_ptr_t app) { //
               app->signalExit();
+              app->_onRunLoopIteration = nullptr;
           })
       .def(
           "mainThreadLoop",
