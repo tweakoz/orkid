@@ -60,8 +60,10 @@ void Image::resizedOf(const Image& inp, int w, int h) {
       }
       break;
     }
-    case R16:{
-      OrkAssert(false);
+    case R16UI:
+    case D16UI:
+    case Y16UI:{
+          OrkAssert(false);
       break;
     }
     case R32F:{
@@ -169,7 +171,7 @@ void Image::downsample(Image& imgout) const {
           }
           break;
         }
-        case R16:
+        case R16UI:
         case RGB16:
         case RGBA16: {
           auto outpixel     = imgout.pixel16(x, y);

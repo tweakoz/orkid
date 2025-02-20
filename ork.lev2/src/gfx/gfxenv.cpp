@@ -115,8 +115,14 @@ std::string EBufferFormatToName(EBufferFormat fmt){
     case EBufferFormat::R8:
       rval = "R8";
       break;
-    case EBufferFormat::R16:
-      rval = "R16";
+    case EBufferFormat::R16UI:
+      rval = "R16UI";
+      break;
+    case EBufferFormat::Y16UI:
+      rval = "Y16UI";
+      break;
+    case EBufferFormat::D16UI:
+      rval = "D16UI";
       break;
     case EBufferFormat::R32F:
       rval = "R32F";

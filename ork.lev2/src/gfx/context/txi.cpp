@@ -195,7 +195,7 @@ size_t TextureInitData::computeSrcSize() const {
       length *= 3;
       break;
 
-    case EBufferFormat::R16:
+    case EBufferFormat::R16UI:
       length *= 2;
       break;
 
@@ -236,7 +236,7 @@ size_t TextureInitData::computeDstSize() const {
       length *= 3;
       break;
 
-    case EBufferFormat::R16:
+    case EBufferFormat::R16UI:
       length *= 2;
       break;
 

@@ -88,7 +88,7 @@ namespace ork::lev2 {
         _type           = GL_FLOAT;
         break;
       }
-      case EBufferFormat::R16: {
+      case EBufferFormat::R16UI: {
         _internalFormat = GL_R16UI;
         _format         = GL_RED_INTEGER;
         _type           = GL_UNSIGNED_SHORT;

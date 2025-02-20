@@ -84,7 +84,7 @@ bool Image::initFromInMemoryFile( std::string fmtguess, //
       _bytesPerChannel = 2;
       switch (_numcomponents) {
         case 1:
-          _format = EBufferFormat::R16;
+          _format = EBufferFormat::R16UI;
           break;
         case 3:
           _format = EBufferFormat::RGB16;
@@ -160,7 +160,7 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       spec.nchannels    = 4;
       spec.channelnames = {"B", "G", "R", "A"};
       break;
-    case EBufferFormat::R16:
+    case EBufferFormat::R16UI:
       spec.format       = TypeDesc::UINT16;
       spec.nchannels    = 1;
       spec.channelnames = {"R"};
