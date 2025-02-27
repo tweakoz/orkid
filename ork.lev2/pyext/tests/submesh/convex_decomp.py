@@ -7,15 +7,17 @@
 ################################################################################
 
 import math, random, argparse, sys
-from orkengine.core import *
-from orkengine.lev2 import *
+from orkengine.core import vec3, CrcStringProxy, Path
+from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
-l2exdir = (lev2exdir()/"python").normalized.as_string
+l2exdir = (lev2.lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
 from lev2utils.cameras import *
-from lev2utils.shaders import *
+from lev2utils.shaders import createPipeline
 from lev2utils.misc import *
 from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
@@ -63,7 +65,7 @@ class ConvexDecomp:
     # load model 
     ##################################
 
-    self.mesh = meshutil.Mesh()
+    self.mesh = lev2.meshutil.Mesh()
     self.mesh.readFromWavefrontObj(model_asset_path)
 
     ##################################
@@ -75,7 +77,7 @@ class ConvexDecomp:
 
     # original submesh primitive
 
-    self.ori_prim = RigidPrimitive(self.ori_submesh,context)
+    self.ori_prim = lev2.RigidPrimitive(self.ori_submesh,context)
     self.ori_sgnode = self.ori_prim.createNode("ori",layer,pipeline)
     self.ori_sgnode.enabled = False
 
@@ -100,7 +102,7 @@ class ConvexDecomp:
     self.normals = []
     for item in self.convex_hulls:
       bary = item.withBarycentricUVs()
-      prim = RigidPrimitive(bary,self.context)
+      prim = lev2.RigidPrimitive(bary,self.context)
       prim_node = prim.createNode("%s"%bary,self.layer,self.pipeline)
       self.barys += [bary]
       self.prims += [prim]
@@ -129,8 +131,8 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = lev2.OrkEzApp.create(self)
+    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,1,5),tgt=vec3(0,1,0))
     self.modelinsts=[]
@@ -206,11 +208,11 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    res = ui.HandlerResult()
+    res = lev2.ui.HandlerResult()
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-      res = ui.HandlerResult()
+      res = lev2.ui.HandlerResult()
       res.setHandler(self.ezapp.topWidget)
     return res
 

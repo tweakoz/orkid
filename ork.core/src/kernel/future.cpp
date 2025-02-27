@@ -10,27 +10,27 @@
 namespace ork {
 
 Future::Future()
-    : mID(0)
-    , mResult(nullptr)
-    , mCallback(nullptr){
+    : _ID(0)
+    , _result(nullptr)
+    , _callback(nullptr){
 
-    mState.store(0);
+    _state.store(0);
 }
 
-void Future::Clear()
+void Future::clear()
 {
-    mResult.set<bool>(false);
-    mState.store(0);
+    _result.set<bool>(false);
+    _state.store(0);
 }
 
-void Future::WaitForSignal() const
+void Future::waitForSignal() const
 {
-	while(mState.load()==0) sched_yield();
+	while(_state.load()==0) sched_yield();
 }
-const Future::var_t& Future::GetResult() const
+const Future::var_t& Future::getResult() const
 {
-    WaitForSignal();
-    return mResult;
+    waitForSignal();
+    return _result;
 }
 
 }

@@ -14,44 +14,46 @@
 
 namespace ork {
 
-struct Future
-{
-    typedef svar160_t var_t;
-    typedef int future_id_t;
+struct Future {
+  typedef svar160_t var_t;
+  typedef int future_id_t;
 
-    Future();
-    bool IsSignaled() const { return mState.load()>0; }
-    template <typename T> void Signal( const T& result );
-    void Clear();
-    void WaitForSignal() const;
-    void SetId(future_id_t id) { mID=id; }
-    future_id_t GetId() const { return mID; }
-    const var_t& GetResult() const;
-    ////////////////////
+  Future();
+  bool isSignaled() const {
+    return _state.load() > 0;
+  }
+  template <typename T> void signal(const T& result);
+  void clear();
+  void waitForSignal() const;
+  void setId(future_id_t id) {
+    _ID = id;
+  }
+  future_id_t getId() const {
+    return _ID;
+  }
+  const var_t& getResult() const;
+  ////////////////////
 
-    typedef std::function<void(const Future& fut)> fut_blk_cb_t;
+  typedef std::function<void(const Future& fut)> fut_blk_cb_t;
 
-    ////////////////////
+  ////////////////////
 
-    future_id_t             mID;
-    ork::atomic<int>        mState;
-    var_t                   mResult;
-    var_t                   mCallback;
-    //mutable std::condition_variable mWaitCV;
+  future_id_t _ID;
+  ork::atomic<int> _state;
+  var_t _result;
+  var_t _callback;
+  // mutable std::condition_variable mWaitCV;
 };
 
-template <typename T>
-void Future::Signal( const T& result )
-{
-    mResult.set<T>(result);
+template <typename T> void Future::signal(const T& result) {
+  _result.set<T>(result);
 
-    if( mCallback.isA<fut_blk_cb_t>() )
-    {
-        const fut_blk_cb_t& blk = mCallback.get<fut_blk_cb_t>();
-        blk(*this);
-    }
+  if (_callback.isA<fut_blk_cb_t>()) {
+    const fut_blk_cb_t& blk = _callback.get<fut_blk_cb_t>();
+    blk(*this);
+  }
 
-    mState.fetch_add(1);
+  _state.fetch_add(1);
 }
 
-}
+} // namespace ork

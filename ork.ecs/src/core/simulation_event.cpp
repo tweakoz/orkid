@@ -197,7 +197,7 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
                 posrec._xform = pent->transform();
                 records->push_back(posrec);
               }
-              as_future.value()->Signal<entityposmap_ptr_t>(records);
+              as_future.value()->signal<entityposmap_ptr_t>(records);
             }
             break;
           }

@@ -354,8 +354,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def(
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, py::object asset_path) {
-                auto as_py_str = py::cast<std::string>(asset_path);
-                auto as_path = file::Path(as_py_str);
+
+                file::Path as_path;
+                if( py::isinstance<file::Path>(asset_path) ){
+                  as_path = py::cast<file::Path>(asset_path);
+                }
+                else{
+                  auto as_py_str = py::cast<std::string>(asset_path);
+                  as_path = file::Path(as_py_str);
+                }
                 m->gpuInit(c.get(), as_path);
                 m->_rasterstate->setCullTest(ECullTest::OFF);
               })
