@@ -286,7 +286,7 @@ void IpcMsgQReciever::connect(const std::string& nam) {
     keep_waiting = (shm_id < 0);
   }
 #else
-  while (false == ork::Path(_path).IsFile()) {
+  while (false == file::Path(_path).isFile()) {
     usleep(1 << 18);
   }
   int shm_id = shm_open(_name.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
