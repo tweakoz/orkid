@@ -40,6 +40,7 @@ void pyinit_dataflow(py::module& module_core);
 void pyinit_datablock(py::module& module_core);
 void pyinit_asset(py::module& module_core);
 void pyinit_opencl(py::module& module_core);
+void pyinit_ipcq(py::module& module_core);
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -363,6 +364,7 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_datablock(module_core);
   pyinit_asset(module_core);
   pyinit_opencl(module_core);
+  pyinit_ipcq(module_core);
   /////////////////////////////////////////////////////////////////////////////////
   auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;

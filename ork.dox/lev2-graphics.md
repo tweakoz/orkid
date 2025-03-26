@@ -22,6 +22,7 @@
   * OpenGL 4.6-core (Linux)
   * Pipeline object support pending.
   * Vulkan and Metal pending.
+  * Built in OpenGL state debugging.
   
 2. Mid level renderer building blocks
   * Natively supports update and render on separate threads via async *drawbuffers*.

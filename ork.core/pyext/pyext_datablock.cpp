@@ -11,6 +11,7 @@
 #include <ork/event/Event.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
+#include <ork/util/hexdump.inl>
 
 namespace ork {
 
@@ -149,6 +150,9 @@ void pyinit_datablock(py::module& module_core) {
                            fxstring<512> fxs;
                            fxs.format("DataBlock(%p)", (void*)db.get());
                            return fxs.c_str();
+                         })
+                         .def("hexdump", [](datablock_ptr_t db) -> std::string {
+                           return ork::hexdumptostr(db->data(), db->length());
                          });
   type_codec->registerStdCodec<datablock_ptr_t>(dblock_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -178,10 +182,10 @@ void pyinit_datablock(py::module& module_core) {
     auto typecode = dstream->getItem<uint64_t>();
     OrkAssert(typecode == "string"_crcu);
     auto length = dstream->getItem<uint64_t>();
-    //printf ("readString length<%d>\n", int(length) );
+    printf ("readString length<%d>\n", int(length) );
     auto c_str = (const char*) dstream->current();
     auto as_str = std::string(c_str);
-    //printf ("readString c_str<%s>\n", as_str.c_str() );
+    printf ("readString c_str<%s>\n", as_str.c_str() );
     dstream->advance(length);
     return py::str(as_str);
   });
