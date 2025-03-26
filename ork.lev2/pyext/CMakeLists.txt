@@ -3,10 +3,13 @@ SET( PACKAGE_VERSION "0.1.1" )
 include (GenerateExportHeader)
 
 list( PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/share/cmake/pybind11 )
+#set(Torch_DIR $ENV{OBT_PYPKG}/torch/share/cmake/Torch )
+#list( PREPEND CMAKE_MODULE_PATH $ENV{OBT_PYPKG}/torch/share/cmake )
 
 find_package (Python COMPONENTS Interpreter Development)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package( pybind11 REQUIRED )
+#find_package(Torch REQUIRED)
 
 ###################################
 
@@ -15,6 +18,7 @@ set( ORKPKGBASE $ENV{OBT_PYPKG}/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/lev2 )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 ###################################
 file(GLOB sources ${SRCD}/*.cpp)
@@ -22,12 +26,18 @@ file(GLOB sources ${SRCD}/*.cpp)
 add_library( _lev2 SHARED ${sources} )
 
 ork_std_target_opts(_lev2)
+ork_torch_opts(_lev2)
+
+#target_link_libraries(_lev2 "${TORCH_LIBRARIES}")
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 #enable_python_on_target(_lev2)
 
 
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 openvdb openvdb_ax tbb )
+
+# explitly link torch python lib, so we do not need to set LD_LIBRARY_PATH
+target_link_libraries(_lev2 LINK_PUBLIC $ENV{OBT_PYPKG}/torch/lib/libtorch_python.so ) 
 
 #target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 #target_link_options(_lev2 PUBLIC -Wl,-rpath )
@@ -49,6 +59,11 @@ if( APPLE )
   )
 else()
   target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
+  set_target_properties( _lev2
+    PROPERTIES
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib:$ENV{OBT_PYPKG}/torch/lib"
+      BUILD_WITH_INSTALL_RPATH TRUE
+  )
 endif()
 
 # igl crap again..

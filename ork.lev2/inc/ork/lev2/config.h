@@ -31,6 +31,7 @@
  #define ENABLE_ALSA
  #define ENABLE_PORTAUDIO 
  #define ENABLE_PIPEWIRE
+ #define ENABLE_PYTORCH
 #else 
 #define ENABLE_PORTAUDIO
 #endif

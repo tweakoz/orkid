@@ -93,6 +93,12 @@ class IndexBufferBase;
 using vtxbufferbase_ptr_t    = std::shared_ptr<VertexBufferBase>;
 using idxbufferbase_ptr_t    = std::shared_ptr<IndexBufferBase>;
 
+struct TorchTensor {
+  svar64_t _impl;
+};
+
+using torchtensor_ptr_t = std::shared_ptr<TorchTensor>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // RenderPass
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,9 +177,11 @@ using fxuniformbuffer_ptr_t = std::shared_ptr<FxUniformBuffer>;
 using fxuniformbuffer_constptr_t = std::shared_ptr<const FxUniformBuffer>;
 using fxuniformbuffermapping_ptr_t = std::shared_ptr<FxUniformBufferMapping>;
 //
+using storagebufferptr_t = FxShaderStorageBuffer*;
 using storagebuffermappingptr_t = std::shared_ptr<FxShaderStorageBufferMapping>;
 using parambuffermappingptr_t = std::shared_ptr<FxUniformBufferMapping>;
 using fxshader_ptr_t         = FxShader*;
+using fxcomputeshader_ptr_t  = FxComputeShader*;
 using fxparam_ptr_t          = FxShaderParam*;
 using fxtechnique_ptr_t      = FxShaderTechnique*;
 using fxshader_constptr_t    = const FxShader*;

@@ -188,6 +188,12 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
       _set_typed_param(RCID,param,gen());
     }
     ///////////////////////////////////////////////////////////////////
+    else if (auto as_storage = val.tryAs<FxShaderStorageBuffer*>()) {
+      auto storage = as_storage.value();
+      //FXI->BindParamStorageBuffer(param, storage);
+      OrkAssert(false);
+    }
+    ///////////////////////////////////////////////////////////////////
     else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
 

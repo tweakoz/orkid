@@ -50,6 +50,11 @@ struct PointsPrimitive {
     _vertexBuffer = std::make_shared<vtx_buf_t>(maxpoints,0);
   }
 
+  inline PointsPrimitive(int numpoints, storagebufferptr_t ssbo) : _ssbo(ssbo) {
+    _numpoints = numpoints;
+    _capacity = numpoints;
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   inline vtx_t* lock(Context* context, int num_points=0) {
@@ -72,7 +77,13 @@ struct PointsPrimitive {
 
   inline void renderEML(Context* context) {
     auto gbi = context->GBI();
-    gbi->DrawPrimitiveEML(*_vertexBuffer, PrimitiveType::POINTS,0,_numpoints);
+    gbi->_debugNextPrimitive = _debug;
+    if(_vertexBuffer){
+      gbi->DrawPrimitiveEML(*_vertexBuffer, PrimitiveType::POINTS,0,_numpoints);
+    }
+    else if(_ssbo){
+      gbi->DrawPrimitiveEML(_ssbo,PrimitiveType::POINTS,0,_numpoints);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -101,6 +112,8 @@ struct PointsPrimitive {
   int _capacity = 0;
   fxpipeline_ptr_t _pipeline;
   std::shared_ptr<vtx_buf_t> _vertexBuffer;
+  storagebufferptr_t _ssbo;
+  bool _debug = false;
 };
 
 //////////////////////////////////////////////////////////////////////////////

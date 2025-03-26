@@ -58,6 +58,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 else if( py::isinstance<Texture>(inp_value) ){
                   mtl->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
+                else if( py::isinstance<fxshaderstoragebuffer_ptr_t>(inp_value) ){
+                  mtl->bindParam(param.get(),py::cast<fxshaderstoragebuffer_ptr_t>(inp_value));
+                }
                 else if( py::hasattr(inp_value, "__call__")){
                   auto holdname = FormatString("%s_held",param->_name.c_str());
                   mtl->_varmap.makeValueForKey<py::object>(holdname,inp_value);
@@ -249,6 +252,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   };
                   pipeline->bindParam(param.get(),L);
                 }
+                else if( py::isinstance<fxshaderstoragebuffer_ptr_t>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<fxshaderstoragebuffer_ptr_t>(inp_value));
+                }
                 else{
                   py::print("Bad Param Type: ", inp_value);
                   OrkAssert(false);
@@ -370,8 +376,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](const freestyle_mtl_ptr_t m) -> fxshaderasset_ptr_t { //
                 return fxshaderasset_ptr_t(m->_shaderasset);
               })
-          .def("technique", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxtechnique_ptr_t { return pyfxtechnique_ptr_t(m->technique(name)); })
-          .def("param", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(name)); })
+          .def("technique", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxtechnique_ptr_t { return pyfxtechnique_ptr_t(m->technique(named)); })
+          .def("computeShader", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxcomputeshader_ptr_t { return pyfxcomputeshader_ptr_t(m->computeShader(named)); })
+          .def("param", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(named)); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(
               "bindParamVec2",

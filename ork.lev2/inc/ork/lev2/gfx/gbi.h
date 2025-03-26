@@ -27,6 +27,8 @@ public:
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
+  virtual void copyTensorIntoVertexBuffer(VertexBufferBase& vbuf, torchtensor_ptr_t tensor) { }
+
   void FlushVB(VertexBufferBase& VBuf);
 
   //////////////////////////////////

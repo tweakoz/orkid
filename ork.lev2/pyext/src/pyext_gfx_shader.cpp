@@ -13,7 +13,7 @@ namespace ork::lev2 {
 void pyinit_gfx_shader(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto shader_type = //
+  auto shaderasset_type = //
       py::class_<FxShaderAsset, fxshaderasset_ptr_t>(module_lev2, "FxShaderAsset")
           .def_property_readonly(
               "name",
@@ -61,13 +61,21 @@ void pyinit_gfx_shader(py::module& module_lev2) {
                   rval = pyfxtechnique_ptr_t(it->second);
                 return rval;
               })
+              .def("computeShader", [](const fxshaderasset_ptr_t& shass,cstrref_t named) -> pyfxcomputeshader_ptr_t {
+                auto sh = shass->GetFxShader();
+                return pyfxcomputeshader_ptr_t(sh->findComputeShader(named));
+              })
           .def("__repr__", [](const fxshaderasset_ptr_t& shass) -> std::string {
             auto sh = shass->GetFxShader();
             fxstring<256> fxs;
             fxs.format("FxShader(%p:%s)", sh, sh->mName.c_str());
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fxshaderasset_ptr_t>(shader_type);
+  type_codec->registerStdCodec<fxshaderasset_ptr_t>(shaderasset_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto computeshader_type = //
+      py::class_<pyfxcomputeshader_ptr_t>(module_lev2, "FxComputeShader");
+  type_codec->registerStdCodec<pyfxcomputeshader_ptr_t>(computeshader_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto param_type = //
       py::class_<pyfxparam_ptr_t>(module_lev2, "FxShaderParam")

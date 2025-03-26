@@ -12,13 +12,29 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/pch.h>
 #include <ork/kernel/datacache.h>
+#include <ork/util/logger.h>
+
+#if defined(ENABLE_PYTORCH)
+
+#undef ThreadLocal // conflicts with c10
+
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+#include <torch/extension.h> // for PyTorch C++ extension
+
+#endif
 
 namespace ork::lev2::glslfx {
-///////////////////////////////////////////////////////////////////////////////
+
+  static logchannel_ptr_t logchan_ci = logger()->createChannel("GLCI", fvec3(0.8, 0.8, 0.3));
+
+  ///////////////////////////////////////////////////////////////////////////////
 
 ComputeInterface::ComputeInterface(ContextGL& glctx)
     : _targetGL(glctx) {
   _fxi = dynamic_cast<Interface*>(glctx.FXI());
+
+  _stats_timer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,6 +324,168 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_PYTORCH)
+
+FxShaderStorageBuffer* ComputeInterface::storageBufferFromTensor(torchtensor_ptr_t l2tensor) {
+  return nullptr;
+}
+
+void ComputeInterface::copyTensorIntoStorageBuffer(
+  FxShaderStorageBuffer* ssbo, 
+  torchtensor_ptr_t l2tensor,
+  size_t dest_offset ) {
+
+  /////////////////////////////////////
+  // use CUDA to copy tensor into SSBO
+  /////////////////////////////////////
+
+  auto as_tt = l2tensor->_impl.get<torch::Tensor>();
+  auto ssb   = ssbo->_impl.get<ShaderStorageBuffer*>();
+  size_t ssb_length = ssb->_length;
+  size_t length = as_tt.numel() * as_tt.element_size();
+
+  size_t required_length = length + dest_offset;
+  //OrkAssert((dest_offset + length) <= dst_size);
+
+  /////////////////////////////////////
+  // 1. Check that 'tensor' is on CUDA
+  /////////////////////////////////////
+
+  TORCH_CHECK(as_tt.is_cuda(), "Tensor must be a CUDA tensor.");
+
+  /////////////////////////////////////
+  // check if we need to resize the SSBO
+  /////////////////////////////////////
+
+  bool buffer_needs_realloc = not ssb->_cudaimpl.isSet();
+  buffer_needs_realloc = buffer_needs_realloc or (ssb_length < required_length);
+
+  if (buffer_needs_realloc) {
+
+
+    /////////////////////////////////////
+    // resize the SSBO
+    /////////////////////////////////////
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, required_length, nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    ssb->_length = required_length;
+
+    /////////////////////////////////////
+    // create CUDA resource
+    //  and associate it with the SSBO
+    /////////////////////////////////////
+
+    cudaGraphicsResource* new_cuda_resource = nullptr;
+    cudaGraphicsGLRegisterBuffer(&new_cuda_resource, ssb->_glbufid, cudaGraphicsRegisterFlagsNone);
+
+    /////////////////////////////////////
+    // store the CUDA resource in the SSBO impl
+    /////////////////////////////////////
+
+    ssb->_cudaimpl.set<cudaGraphicsResource*>(new_cuda_resource);
+    printf("SSBO reallocated to required_length<%zu>\n", required_length);
+    buffer_needs_realloc = false;
+
+  }
+
+  auto cudaResource = ssb->_cudaimpl.get<cudaGraphicsResource*>();
+
+  /////////////////////////////////////
+  // Map resources so we can obtain a CUDA device pointer to the SSBO
+  //  do NOT render from GL whilst mapped
+  /////////////////////////////////////
+
+  cudaGraphicsMapResources( 1,             // count
+                            &cudaResource, // resources (array)
+                            0);            // synchronization stream
+  void* dst_base = nullptr;
+  size_t dst_size = 0;
+  cudaGraphicsResourceGetMappedPointer(&dst_base, &dst_size, cudaResource);
+
+  auto dst_ptr = ((char*) dst_base) + dest_offset;
+
+  /////////////////////////////////////
+  // At this point, dst_pointer is a CUDA-accessible pointer associated with the OpenGL SSBO
+  // We can cudaMemcpy from the PyTorch pointer (ptr) into dst_pointer
+  /////////////////////////////////////
+
+  void* src_ptr = as_tt.data_ptr();      // pointer to tensor in CUDA memory (device)
+
+  cudaMemcpy( dst_ptr,                   // destination pointer
+              src_ptr,                   // source pointer
+              length,                    // number of bytes to copy
+              cudaMemcpyDeviceToDevice); // copy flags
+  
+  /////////////////////////////////////
+  // unmap resource (release from CUDA)
+  /////////////////////////////////////
+
+  cudaGraphicsUnmapResources( 1,             // count
+                              &cudaResource, // resources (array)
+                              0);            // synchronization stream
+
+  /////////////////////////////////////
+  // track performance
+  /////////////////////////////////////
+
+  _ssbo_copy_byte_counter += length;
+  _ssbo_copy_counter++;
+  double elapsed = _stats_timer.SecsSinceStart();
+  if (elapsed > 5.0) {
+    double byte_rate = double(_ssbo_copy_byte_counter) / elapsed;
+    double byte_rate_mbps = byte_rate / double(1<<20);
+    double count = double(_ssbo_copy_counter) / elapsed;
+    logchan_ci->log("SSBO copy count<%g> rate<%g MB/s>", count, byte_rate_mbps);
+    _ssbo_copy_byte_counter = 0;
+    _ssbo_copy_counter = 0;
+    _stats_timer.Start();
+  }
+}
+
+#endif
+
+void ComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, 
+                                                   std::vector<uint8_t> data, 
+                                                   size_t dest_offset) { 
+  auto ssb   = ssbo->_impl.get<ShaderStorageBuffer*>();
+  size_t ssb_length = ssb->_length;
+  size_t xfer_length = data.size();
+  size_t required_length = xfer_length + dest_offset;
+
+  bool buffer_needs_realloc = required_length > ssb_length;
+
+  if (buffer_needs_realloc) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, required_length, nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    ssb->_length = required_length;
+    printf("SSBO reallocated to required_length<%zu>\n", required_length);
+    buffer_needs_realloc = false;
+  }
+  
+  auto mapping = mapStorageBuffer(ssbo, dest_offset, xfer_length);
+  memcpy(mapping->_mappedaddr, data.data(), xfer_length);
+  unmapStorageBuffer(mapping.get());
+
+  /////////////////////////////////////
+  // track performance
+  /////////////////////////////////////
+
+  _ssbo_copy_byte_counter += xfer_length;
+  _ssbo_copy_counter++;
+  double elapsed = _stats_timer.SecsSinceStart();
+  if (elapsed > 5.0) {
+    double byte_rate = double(_ssbo_copy_byte_counter) / elapsed;
+    double byte_rate_mbps = byte_rate / double(1<<20);
+    double count = double(_ssbo_copy_counter) / elapsed;
+    logchan_ci->log("SSBO copy count<%g> rate<%g MB/s>", count, byte_rate_mbps);
+    _ssbo_copy_byte_counter = 0;
+    _ssbo_copy_counter = 0;
+    _stats_timer.Start();
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

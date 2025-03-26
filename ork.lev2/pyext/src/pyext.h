@@ -45,8 +45,11 @@ using fbi_t               = ork::python::unmanaged_ptr<FrameBufferInterface>;
 using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;
 using txi_t               = ork::python::unmanaged_ptr<TextureInterface>;
+using ci_t                = ork::python::unmanaged_ptr<ComputeInterface>;
 using font_t              = ork::python::unmanaged_ptr<Font>;
 using capbuf_t            = ork::python::unmanaged_ptr<CaptureBuffer>;
+using pyfxshader_ptr_t    = ork::python::unmanaged_ptr<const FxShader>;
+using pyfxcomputeshader_ptr_t    = ork::python::unmanaged_ptr<const FxComputeShader>;
 using pyfxparam_ptr_t     = ork::python::unmanaged_ptr<const FxShaderParam>;
 using pyfxtechnique_ptr_t = ork::python::unmanaged_ptr<const FxShaderTechnique>;
 using fxparammap_t        = std::map<std::string, pyfxparam_ptr_t>;
@@ -57,6 +60,8 @@ using vw_vtxa_t           = VtxWriter<vtxa_t>;
 using cstrref_t           = const std::string&;
 using rcfd_t              = RenderContextFrameData;
 using decxf_t             = ork::decompxf_ptr_t;
+
+using fxshaderstoragebuffer_ptr_t = ork::python::unmanaged_ptr<FxShaderStorageBuffer>;
 
 
 } // namespace ork::lev2

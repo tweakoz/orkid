@@ -28,10 +28,6 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
   GLint currentVAO = 0;
   glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &currentVAO);
   // get VAO khr_debug name
-  constexpr size_t kMaxNameLength = 256;
-  std::vector<GLchar> vaoName(kMaxNameLength);
-  glGetObjectLabelEXT(GL_VERTEX_ARRAY_OBJECT_EXT, currentVAO, vaoName.size(), nullptr, &vaoName[0]);
-  std::string vaoNameStr(vaoName.begin(), vaoName.end());
 
   struct GeoBuffer{
       GLuint vbo = 0;
@@ -43,8 +39,12 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
   };
   std::vector<GeoBuffer> geoBuffers;
 
-  if(true) { //currentVAO != 0){
-    // validate all bound VBOs are valid
+  if(currentVAO != 0){
+    constexpr size_t kMaxNameLength = 256;
+    std::vector<GLchar> vaoName(kMaxNameLength);
+    //glGetObjectLabelEXT(GL_VERTEX_ARRAY_OBJECT_EXT, currentVAO, vaoName.size(), nullptr, &vaoName[0]);
+    std::string vaoNameStr(vaoName.begin(), vaoName.end());
+      // validate all bound VBOs are valid
     GLint numAttribs = 0;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &numAttribs);
     _colortext(NODES, YEL, BLK, "numAttribs<%d>", numAttribs);
@@ -173,6 +173,50 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
       separator(),
       vbox(std::move(NODES)),
   });
+}
+
+void _FtxGlDebugger::_validateCurrentStorageBuffers(){ // active SSBO
+
+  using namespace ftxui;
+
+  node_vect_t NODES;
+
+  GLint currentSSBO = 0;
+  glGetIntegerv(GL_SHADER_STORAGE_BUFFER_BINDING, &currentSSBO);
+  _colortext(NODES, YEL, BLK, "currentSSBO<%d>", currentSSBO);
+
+  if(currentSSBO!=0){
+    // show the contents of the SSBO (first 128 bytes in hex, rows of 16 bytes)
+    GLint ssbo_size = 0;
+    glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &ssbo_size);
+    _colortext(NODES, YEL, BLK, "SSBO size<%d>", ssbo_size);
+    auto ssbo_data = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    if(ssbo_data){
+      size_t num_bytes = std::min(size_t(256), size_t(ssbo_size));
+      for(size_t i=0; i<num_bytes; i+=16){
+        std::string outstr = FormatString("  %04d: ", i);
+        for(size_t j=0; j<16; j++){
+          outstr += FormatString("%02x ", ((const uint8_t*)ssbo_data)[i+j]);
+        }
+        // also show row as floats
+        outstr += " : ";
+        auto row_as_floats = (const float*)((const uint8_t*)ssbo_data + i);
+        for(size_t j=0; j<4; j++){
+          outstr += FormatString("%0.3f ", row_as_floats[j]);
+        }
+        _colortext(NODES, WHI, BLK, "%s", outstr.c_str());
+      }
+      glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    }
+
+  }
+  _node_ssbo = vbox({
+    text("Storage State"),
+    separator(),
+    vbox(std::move(NODES)),
+});
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

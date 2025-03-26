@@ -70,6 +70,24 @@ void VkComputeInterface::bindImage(const FxComputeShader* shader, uint32_t bindi
 //void VkComputeInterface::bindComputeShader(ComputeShader* csh) {
 //}
 
+#if defined(ENABLE_PYTORCH)
+
+FxShaderStorageBuffer* VkComputeInterface::storageBufferFromTensor(torchtensor_ptr_t tensor) {
+  OrkAssert(false);
+  return nullptr;
+}
+void VkComputeInterface::copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) {
+  OrkAssert(false);
+
+}
+
+#endif
+
+void VkComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> data, size_t dest_offset) { 
+  OrkAssert(false);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

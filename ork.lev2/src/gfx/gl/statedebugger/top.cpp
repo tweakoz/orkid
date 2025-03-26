@@ -77,6 +77,7 @@ void _FtxGlDebugger::run_loop() {
       "FrameBufferState",
       "RasterState",
       "GeometryState",
+      "StorageState",
       "ShaderState",
   };
 
@@ -86,6 +87,7 @@ void _FtxGlDebugger::run_loop() {
   auto content_framebuffer = Renderer([&] { return _node_framebuffer | vscroll_indicator | frame; });
   auto content_raster = Renderer([&] { return _node_raster | vscroll_indicator | frame; });
   auto content_geometry    = Renderer([&] { return _node_geometry | vscroll_indicator | frame; });
+  auto content_storage    = Renderer([&] { return _node_ssbo | vscroll_indicator | frame; });
 
   auto content_shader = Renderer([&] { return _node_shader | vscroll_indicator | frame; });
 
@@ -96,7 +98,8 @@ void _FtxGlDebugger::run_loop() {
   content_components.push_back(content_framebuffer);
   content_components.push_back(content_raster);
   content_components.push_back(content_geometry);
-  content_components.push_back(content_shader);
+  content_components.push_back(content_geometry);
+  content_components.push_back(content_storage);
   for (auto it : _shader_texts) {
     std::string name = it.first;
     const auto& sh_lines = it.second;
@@ -182,6 +185,7 @@ void ContextGL::stateDebugger() const {
   debugger->_validateTextures();
   debugger->_validateCurrentFramebuffer();
   debugger->_validateCurrentGeomBuffers();
+  debugger->_validateCurrentStorageBuffers();
   debugger->_validateRaster();
   debugger->_validateCurrentShaderProgram();
   debugger->_validateTextureBindingState();

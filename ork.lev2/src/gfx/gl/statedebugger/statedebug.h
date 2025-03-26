@@ -101,6 +101,7 @@ struct _FtxGlDebugger {
   void _validateCurrentShaderProgram();
   void _validateCurrentFramebuffer();
   void _validateCurrentGeomBuffers();
+  void _validateCurrentStorageBuffers();
   void _validateTextureBindingState();
   void _validateTextures();
 
@@ -110,6 +111,7 @@ struct _FtxGlDebugger {
   ftxui::node_ptr_t _node_backtrace;
   ftxui::node_ptr_t _node_framebuffer;
   ftxui::node_ptr_t _node_shader;
+  ftxui::node_ptr_t _node_ssbo;
   ftxui::node_ptr_t _node_raster;
   ftxui::node_ptr_t _node_geometry;
   ftxui::node_ptr_t _node_texturebindingstate;

@@ -55,6 +55,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
           .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
           .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
+          .def_property_readonly("CI", [](ctx_t& c) -> ci_t { return ci_t(c.get()->CI()); })
           .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { 
             _g_post_swap_wait_time = wt;
           })
@@ -145,7 +146,36 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
       .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
       .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<ci_t>(module_lev2, "ComputeInterface")
+    .def(
+      "__repr__",
+      [](const ci_t& gbi) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("CI(%p)", gbi.get());
+        return fxs.c_str();
+      })
+      .def("createShaderStorageBufferWithLength", [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
+      .def("createShaderStorageBufferFromTensor", [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t { return ci.get()->storageBufferFromTensor(tensor); })
+      .def("copyTensorIntoShaderStorageBuffer", [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset); })
+      .def("copyDataIntoShaderStorageBuffer", [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
+        if( py::isinstance<py::float_>(data) ) {
+          auto as_float = data.cast<py::float_>();
+          auto datablock = std::make_shared<DataBlock>();
+          datablock->addItem<float>(as_float);
+          ci.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+        }
+        else{
+          auto type_str = data.get_type().attr("__name__").cast<std::string>();
+          printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n",type_str.c_str());
+          OrkAssert(false);
+        }
+      })
+      .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz ) { ci.get()->dispatchCompute(csh.get(), numx,numy,numz); })
+      ;
+
+      /////////////////////////////////////////////////////////////////////////////////
   py::class_<vw_vtxa_t>(module_lev2, "Writer_V12N12B12T8C4")
       .def(
           "__repr__",
@@ -387,6 +417,14 @@ void pyinit_gfx(py::module& module_lev2) {
                         return fxs.c_str();
                       });
   type_codec->registerStdCodec<pixelfetchctx_ptr_t>(pfc_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<fxshaderstoragebuffer_ptr_t>(module_lev2, "FxShaderStorageBuffer")
+      .def_property_readonly("length", [](fxshaderstoragebuffer_ptr_t ssb) -> size_t { return ssb->_length; })
+      .def("__repr__", [](fxshaderstoragebuffer_ptr_t ssb) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("FxShaderStorageBuffer(%p)", ssb.get());
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<VertexBufferBase>(module_lev2, "VertexBufferBase");
   /////////////////////////////////////////////////////////////////////////////////

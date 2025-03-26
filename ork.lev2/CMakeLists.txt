@@ -67,6 +67,7 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 ###################################
 
 ork_std_target_opts(ork_lev2)
+ork_torch_opts(ork_lev2)
 
 set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
@@ -101,7 +102,7 @@ ELSEIF(${UNIX})
     target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
     target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
     target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
-
+    
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       list(APPEND libs openvr_api )
       list(APPEND libs vulkan )

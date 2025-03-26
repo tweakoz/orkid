@@ -344,6 +344,7 @@ struct ShaderStorageBuffer {
   FxShaderStorageBuffer* _fxssb = nullptr;
   GLuint _glbufid               = 0;
   size_t _length                = 0;
+  svar64_t _cudaimpl;
 };
 struct StorageBlockMapping {
 
@@ -610,6 +611,10 @@ struct ComputeInterface : public lev2::ComputeInterface {
 
   void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
 
+  FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) final;
+  void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) final;
+  void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t> buffer, size_t dest_offset) final;
+
   FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
   storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
@@ -618,6 +623,10 @@ struct ComputeInterface : public lev2::ComputeInterface {
 
   PipelineCompute* createComputePipe(ComputeShader* csh);
   void bindComputeShader(ComputeShader* csh);
+
+  size_t _ssbo_copy_byte_counter = 0;
+  size_t _ssbo_copy_counter = 0;
+  Timer _stats_timer;
 };
 
 rootcontainer_ptr_t LoadFxFromFile(const AssetPath& pth);

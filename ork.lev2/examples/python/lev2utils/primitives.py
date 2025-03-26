@@ -34,6 +34,9 @@ def createFrustumPrim( ctx=None, vmatrix=None, pmatrix=None, alpha = 1.0 ):
 def createPointsPrimV12C4(ctx=None,numpoints=0):
   return primitives.PointsPrimitiveV12C4.create(numpoints)
 
+def createPointsPrimSSBO(ctx=None,numpoints=0,ssbo=None):
+  return primitives.PointsPrimitiveV12C4.createWithSSBO(numpoints,ssbo)
+
 def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data = GridDrawableData()
   grid_data.shader_suffix = "_V4"

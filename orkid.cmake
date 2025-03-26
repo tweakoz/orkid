@@ -166,6 +166,7 @@ function(ork_std_target_set_incdirs the_target)
       set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS /usr/include/libdrm )
     ENDIF()
 
+
   ENDIF()
 
   # use homebrew last
@@ -249,6 +250,19 @@ function(ork_std_target_set_opts the_target)
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_OPTIONS ${opt_list} )
 
 endfunction()
+
+#############################################################################################################
+
+function(ork_torch_opts the_target)
+  set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
+  target_include_directories(${the_target} PUBLIC $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
+  #target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
+  # explicitly link to the torch libraries
+  # (so LD_LIBRARY_PATH is not needed)
+  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
+  target_link_libraries(${the_target} LINK_PRIVATE cuda cudart cublas curand )
+  target_link_libraries(${the_target} LINK_PUBLIC ${TORCHLIB_DIR}/libc10.so )
+  endfunction()
 
 #############################################################################################################
 

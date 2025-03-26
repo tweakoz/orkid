@@ -5,6 +5,11 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/config.h>
+
+#if defined(ENABLE_PYTORCH)
+#include <torch/extension.h> // for PyTorch C++ extension (this header is problematic)
+#endif
 #include "pyext.h"
 #include <ork/kernel/environment.h>
 #include <ork/lev2/ui/ged/ged_test_objects.h>
@@ -202,15 +207,30 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto gedtocfg_type =                                                              //
-      py::class_<TestObjectConfiguration,Object,testobjectconfiguration_ptr_t>(module_lev2, "GedTestObjectConfiguration") //
-          .def(py::init<>())
-          .def("createTestObject", [](testobjectconfiguration_ptr_t toc, std::string objname) -> testobject_ptr_t {
-            auto to = std::make_shared<TestObject>();
-            toc->_testobjects.AddSorted(objname,to);
-            return to;
-          });
+    py::class_<TestObjectConfiguration,Object,testobjectconfiguration_ptr_t>(module_lev2, "GedTestObjectConfiguration") //
+        .def(py::init<>())
+        .def("createTestObject", [](testobjectconfiguration_ptr_t toc, std::string objname) -> testobject_ptr_t {
+          auto to = std::make_shared<TestObject>();
+          toc->_testobjects.AddSorted(objname,to);
+          return to;
+        });
   type_codec->registerStdCodec<testobjectconfiguration_ptr_t>(gedtocfg_type);
   //////////////////////////////////////////////////////////////////////////////
+  #if defined(ENABLE_PYTORCH)
+  auto tensor_type = py::class_<TorchTensor,torchtensor_ptr_t>(module_lev2, "TorchTensor")
+    .def(py::init<>([](torch::Tensor src) -> torchtensor_ptr_t {
+      auto tt = std::make_shared<TorchTensor>();
+      tt->_impl.set<torch::Tensor>(src);
+      return tt;
+    }))
+    .def_property_readonly("as_torch", [](torchtensor_ptr_t self) -> torch::Tensor {
+      return self->_impl.get<torch::Tensor>();
+    });
+  type_codec->registerStdCodec<torchtensor_ptr_t>(tensor_type);
+  #endif
+  //////////////////////////////////////////////////////////////////////////////
+
+  
 };
 
 } // namespace ork

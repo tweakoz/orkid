@@ -75,7 +75,19 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
               [](int numpoints) -> primitives::points_v12c4_ptr_t {
                 return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints);
               })
-          .def(
+              .def(
+                "createWithSSBO",
+                [](int numpoints, fxshaderstoragebuffer_ptr_t ssbo) -> primitives::points_v12c4_ptr_t {
+                  return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints,ssbo.get());
+                })
+                .def_property("debug", //
+                              [](primitives::points_v12c4_ptr_t prim) -> bool { //
+                                return prim->_debug;
+                              },
+                              [](primitives::points_v12c4_ptr_t prim, bool bv) { //
+                                prim->_debug = bv;
+                              })
+            .def(
               "createFromVdbFloatGrid",
               [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
                 int num_points = grid->tree().activeLeafVoxelCount();

@@ -209,6 +209,9 @@ private:
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
+  void copyTensorIntoVertexBuffer(VertexBufferBase& vbuf, torchtensor_ptr_t tensor) final;
+
+
   void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) final;
   void UnLockVB(VertexBufferBase& VBuf) final;
 

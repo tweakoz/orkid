@@ -39,6 +39,7 @@ TopNode::TopNode(GlSlFxParser* parser)
                           "int8_t int16_t int32_t int64_t "
                           "uint8_t uint16_t uint32_t uint64_t "
                           "i8vec2 i8vec3 i8vec4 "
+                          "u8vec2 u8vec3 u8vec4 "
                           "i16vec2 i16vec3 i16vec4 "
                           "i32vec2 i32vec3 i32vec4 "
                           "i64vec2 i64vec3 i64vec4 "

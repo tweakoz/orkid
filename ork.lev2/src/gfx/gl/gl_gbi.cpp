@@ -967,6 +967,13 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
     _context.stateDebugger();
   }
 
+  GLuint unit = 0;
+  GLuint binding_index = 0;
+  GLuint current_program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&current_program);
+  glShaderStorageBlockBinding(current_program, unit, binding_index);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssb->_glbufid);
+
   if (ivcount) {
     GL_ERRORCHECK();
     switch (eType) {
@@ -1265,5 +1272,15 @@ void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV(
 }
 
 #endif
+
+void GlGeometryBufferInterface::copyTensorIntoVertexBuffer(VertexBufferBase& vbuf, torchtensor_ptr_t tensor) {
+  auto impl = vbuf._impl.getShared<GlVertexBufferImpl>();
+  if (impl) {
+    glBindBuffer(GL_ARRAY_BUFFER, impl->_VBO);
+    //glBufferData(GL_ARRAY_BUFFER, tensor->nbytes(), tensor->data_ptr(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
