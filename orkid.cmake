@@ -255,7 +255,9 @@ endfunction()
 
 function(ork_torch_opts the_target)
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
+  target_include_directories(${the_target} PUBLIC /usr/local/cuda-12.8/include )
   target_include_directories(${the_target} PUBLIC $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
+  target_link_directories(${the_target} PUBLIC /usr/local/cuda-12.8/lib64 )
   #target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
   # explicitly link to the torch libraries
   # (so LD_LIBRARY_PATH is not needed)

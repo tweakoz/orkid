@@ -21,7 +21,7 @@ from lev2utils.primitives import createFrustumPrim, createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.primitives import createPointsPrimSSBO, createGridData
 
-DIM = 1024
+DIM = 3072
 NUMPOINTS = DIM*DIM
 SIZEOF_FLOAT = 4
 SIZEOF_VEC4F = 4*SIZEOF_FLOAT
@@ -170,7 +170,7 @@ class MinimalSceneGraphApp(object):
     # pytorch test
     ###################################
 
-    torch.cuda.set_device(1)
+    torch.cuda.set_device(0)
 
     # create N dimensional tensor of NUMPOINTS points
     tensor_pos = torch.zeros([NUMPOINTS,4],dtype=torch.float32,device='cuda')
