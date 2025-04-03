@@ -93,6 +93,7 @@
    * Supports ImGui integration direct in c++ (ImGui is embedded in this case)
    * Supports ImGui integration via pyimgui in python (in this case ImGui is embedded in the pyimgui extension)
    * PyOpenGL integration with Orkid's native UI system
+   * PyTorch/CUDA integration (can source shader storage buffers from torch::Tensor without PCIe bus traffic)
 
 ---
 
