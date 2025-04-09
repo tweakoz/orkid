@@ -22,7 +22,7 @@
 #define ThreadLocal __thread
 #define MEMALIGN(x) __attribute__((aligned(x)))
 #define ORK_CONFIG_DEFAULT_SERIALIZE_XML
-
+#define IS_CPP_23 (__STDC_VERSION__ >= 202300L)
 ///////////////////////////////////////////////////////////////////////////////
 
 # if defined(BUILDING_ORKID)

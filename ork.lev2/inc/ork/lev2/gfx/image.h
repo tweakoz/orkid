@@ -40,6 +40,7 @@ inline ::ork::coroutine::generator<MipDimensions> miplevelgen2D(size_t w, size_t
   }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CompressedImage {

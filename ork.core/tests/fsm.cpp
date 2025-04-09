@@ -111,7 +111,7 @@ TEST(hfsm_probalistic_1) {
     the_s3->_onexit   = [] { logstate("s3.exit\n"); };
     the_s3->_onupdate = [] { logstate("s3.update\n"); };
 
-    auto probability_lambda = [] -> bool {
+    auto probability_lambda = []() -> bool {
       int i      = rand() & 0xff;
       bool bprob = i < 0x7f;
       printf("bprob<%d>\n", int(bprob));

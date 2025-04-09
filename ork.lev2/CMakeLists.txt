@@ -103,9 +103,9 @@ ELSEIF(${UNIX})
     target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
     target_link_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/lib)
     
+    list(APPEND libs vulkan )
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       list(APPEND libs openvr_api )
-      list(APPEND libs vulkan )
 
       IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
       IF(EXISTS ENV{RENDERDOC_DIR}/include/)

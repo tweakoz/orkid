@@ -7,11 +7,12 @@
 
 #pragma once 
 
-#include <coroutine>
 #include <exception>
 #include <iostream>
+#include <coroutine>
 
 namespace ork::coroutine {
+
 template<typename T>
 struct generator {
 
@@ -105,4 +106,5 @@ struct generator<T>::promise_type {
     }
 };
 
-} // namespace ork
+} // namespace ork::coroutine
+

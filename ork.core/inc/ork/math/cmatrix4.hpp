@@ -52,6 +52,7 @@ template <typename T> Matrix44<T>::Matrix44(const kln::motor& m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if (IS_CPP_23)
 template <typename T> 
 const T& Matrix44<T>::operator[](int i, int j) const {
   return elemXY(i, j);
@@ -63,6 +64,7 @@ T& Matrix44<T>::operator[](int i, int j) {
   OrkAssert(0<=j and j<4);
   return as_base[i][j];
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -133,8 +135,8 @@ template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::setToIdentity() {
-  base_t& as_base = *this;
-  as_base         = base_t(T(1));
+  base_t* as_base = this;
+ (*as_base)       = base_t(T(1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

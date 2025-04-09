@@ -127,7 +127,7 @@ bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src
         //////////////////////////////
         // BC7 explicit request
         //////////////////////////////
-#if ! defined(__APPLE__)
+#if defined(ENABLE_ISPC)
         case EBufferFormat::RGBA_BPTC_UNORM: {
           auto orig_fmt_str = EBufferFormatToName(img._format);
           auto forc_fmt_str = EBufferFormatToName(forced_format);

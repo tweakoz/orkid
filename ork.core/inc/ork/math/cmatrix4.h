@@ -40,7 +40,7 @@ template <typename T> struct Matrix44 final
   //////////////////////////////////////////////////////
 
   Matrix44(const base_t& m) : base_t(m) {}
-  Matrix44(const Matrix44<T>& m) : base_t(m) {}
+  //Matrix44(const Matrix44<T>& m) : base_t(m) {}
   Matrix44(const Quaternion<T>& q);
   Matrix44(const kln::translator& t);
   Matrix44(const kln::rotor& r);
@@ -185,9 +185,11 @@ template <typename T> struct Matrix44 final
   void setElemXY(int ix, int iy, T val);
   T elemXY(int ix, int iy) const;
 
+  #if (IS_CPP_23)
   const T& operator[](int i, int j) const;
   T& operator[](int i, int j);
-
+  #endif
+  
   ///////////////////////////////////////////////////////////////////////////////
   // Column/Row Accessors
   ///////////////////////////////////////////////////////////////////////////////
