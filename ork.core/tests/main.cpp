@@ -13,15 +13,19 @@
 
 using namespace ork;
 
+namespace ork{
+  void initModule(ork::appinitdata_ptr_t init_data);
+  void exitModule(ork::appinitdata_ptr_t init_data);
+}
 ///////////////////////////////////////////////////////////
 // minimal init, just create an app, put it on the appstack
 //  and initialize the reflection system
 ///////////////////////////////////////////////////////////
 
 struct TestApplication {
-  TestApplication(appinitdata_ptr_t initdata) {
-      _stringpoolctx = std::make_shared<StringPoolContext>();
-    StringPoolStack::push(_stringpoolctx);
+  TestApplication(appinitdata_ptr_t initdata) : _initdata(initdata) {
+
+    ::ork::initModule(_initdata);
 
     SimpleTest::GetClassStatic();
     AssetTest::GetClassStatic();
@@ -34,13 +38,14 @@ struct TestApplication {
     TheTestInterface::GetClassStatic();
     InterfaceTest::GetClassStatic();
 
-    rtti::Class::InitializeClasses();
+    _initdata->finalizeInitialization();
+  
   }
 
   ~TestApplication() {
-    StringPoolStack::pop();
+    ::ork::exitModule(_initdata);
   }
-  stringpoolctx_ptr_t _stringpoolctx;
+  appinitdata_ptr_t _initdata;
 
 };
 
@@ -48,7 +53,6 @@ struct TestApplication {
 
 int main(int argc, char** argv, char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-
     svar128_t var, var2;
     var.set<int>(1);
     var2 = var;
