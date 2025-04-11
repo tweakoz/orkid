@@ -718,9 +718,10 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
   _try_minors.insert(6);
   _try_minors.insert(5);
   _try_minors.insert(3);
-#elif defined(OPENGL_41)
-  _try_minors.insert(1);
 #endif
+
+_try_minors.insert(1);
+_try_minors.insert(0);
 
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
