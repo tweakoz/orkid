@@ -4,7 +4,7 @@
 
 ### Summary
 
-Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports full digital modular synthesis. 
+Orkid's synthesizer is loosely inspired by Kurzweil VAST, in that it supports full digital modular synthesis. 
 
 ---
 
