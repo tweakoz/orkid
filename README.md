@@ -63,6 +63,16 @@ Example Content (most of it old, updates coming soon.)
 
 Other (video) examples of content:
 
+[Python FPS](https://www.youtube.com/watch?v=v56eGoGkSCI)
+
+[OpenVDB Integration 1](https://www.youtube.com/watch?v=cbLzJVn6V0U)
+
+[OpenVDB Integration : Sculpting](https://www.youtube.com/watch?v=6YPNi88nvTI)
+
+[SSAO (wip)](https://www.youtube.com/watch?v=K0LPqbTjxK4)
+
+[Python poser app](https://www.youtube.com/watch?v=-lBU_JCkZLI)
+
 [PBR ShaderBalls](https://www.youtube.com/watch?v=LtlVotV_9vg_)
 
 [SceneGraph-Picking](https://youtu.be/d39JF4ApsVw)
@@ -94,6 +104,10 @@ Other (video) examples of content:
 [Prodigy2-GameDemo](http://tweakoz.com/resources/videos/p2d.mp4)
 
 [OrkidVR-POC](https://www.youtube.com/watch?v=6tOPVw8T_sU)
+
+[Singularity-Live Sequencer](https://www.youtube.com/watch?v=5fouh_9CwZE)
+
+[Singularity-Soundfield Processing](https://www.youtube.com/watch?v=vxivKOwVijI)
 
 [Singularity-NewAudioSynth](https://www.youtube.com/watch?v=irBaba13quQ)
 
