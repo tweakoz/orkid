@@ -72,6 +72,7 @@ void ComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, in
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_SSBO)
 void ComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) {
   #if defined(ENABLE_COMPUTE_SHADERS)
   auto csh = shader->_impl.get<ComputeShader*>();
@@ -90,7 +91,7 @@ void ComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t
   GL_ERRORCHECK();
   #endif
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) {
@@ -245,6 +246,7 @@ void ComputeInterface::bindComputeShader(ComputeShader* csh) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_SSBO)
 FxShaderStorageBuffer* ComputeInterface::createStorageBuffer(size_t length) {
   auto ssb    = new ShaderStorageBuffer;
   ssb->_fxssb = new FxShaderStorageBuffer;
@@ -322,7 +324,7 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
   mapping->_impl.make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_PYTORCH)
 
@@ -358,7 +360,7 @@ void ComputeInterface::copyTensorIntoStorageBuffer(
   /////////////////////////////////////
 
   bool buffer_needs_realloc = not ssb->_cudaimpl.isSet();
-  buffer_needs_realloc = buffer_needs_realloc or (ssb_length < required_length);
+  buffer_needs_realloc |= (ssb_length < required_length);
 
   if (buffer_needs_realloc) {
 
@@ -443,9 +445,8 @@ void ComputeInterface::copyTensorIntoStorageBuffer(
     _stats_timer.Start();
   }
 }
-
 #endif
-
+#if defined(ENABLE_SSBO)
 void ComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, 
                                                    std::vector<uint8_t> data, 
                                                    size_t dest_offset) { 
@@ -486,6 +487,8 @@ void ComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo,
     _stats_timer.Start();
   }
 }
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

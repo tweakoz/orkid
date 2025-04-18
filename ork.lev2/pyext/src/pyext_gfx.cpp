@@ -157,8 +157,11 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       })
       .def("createShaderStorageBufferWithLength", [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
+#if defined(ENABLE_PYTORCH)
       .def("createShaderStorageBufferFromTensor", [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t { return ci.get()->storageBufferFromTensor(tensor); })
       .def("copyTensorIntoShaderStorageBuffer", [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset); })
+#endif
+#if defined(ENABLE_SSBO)
       .def("copyDataIntoShaderStorageBuffer", [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
         if( py::isinstance<py::float_>(data) ) {
           auto as_float = data.cast<py::float_>();
@@ -172,6 +175,7 @@ void pyinit_gfx(py::module& module_lev2) {
           OrkAssert(false);
         }
       })
+      #endif
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz ) { ci.get()->dispatchCompute(csh.get(), numx,numy,numz); })
       ;
 

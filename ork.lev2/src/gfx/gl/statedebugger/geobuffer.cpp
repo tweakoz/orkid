@@ -177,6 +177,7 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
 
 void _FtxGlDebugger::_validateCurrentStorageBuffers(){ // active SSBO
 
+  #if defined(ENABLE_SSBO)
   using namespace ftxui;
 
   node_vect_t NODES;
@@ -216,6 +217,7 @@ void _FtxGlDebugger::_validateCurrentStorageBuffers(){ // active SSBO
     vbox(std::move(NODES)),
 });
 
+#endif
 
 }
 

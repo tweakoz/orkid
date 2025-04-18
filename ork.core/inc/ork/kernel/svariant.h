@@ -457,7 +457,7 @@ public:
       printf("_mtinfo: %p:%s\n", (void*)_mtinfo, _mtinfo->name());
       fflush(stdout);
     }
-    assert(tinfo == *_mtinfo);
+    OrkAssert(tinfo == *_mtinfo);
     const T* pval = (const T*)&_buffer[0];
     return *pval;
   }

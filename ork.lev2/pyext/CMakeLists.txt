@@ -37,7 +37,7 @@ target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 openvdb openvdb_ax tbb )
 
 # explitly link torch python lib, so we do not need to set LD_LIBRARY_PATH
-target_link_libraries(_lev2 LINK_PUBLIC $ENV{OBT_PYPKG}/torch/lib/libtorch_python.so ) 
+#target_link_libraries(_lev2 LINK_PUBLIC $ENV{OBT_PYPKG}/torch/lib/libtorch_python.so ) 
 
 #target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 #target_link_options(_lev2 PUBLIC -Wl,-rpath )

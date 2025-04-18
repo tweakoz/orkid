@@ -28,6 +28,7 @@
  #define ENABLE_PORTAUDIO 
  #define ENABLE_PIPEWIRE
  #define ENABLE_PYTORCH
+ #define ENABLE_SSBO
 #else 
 #define ENABLE_PORTAUDIO
 #endif

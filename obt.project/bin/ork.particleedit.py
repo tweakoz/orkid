@@ -13,9 +13,9 @@ from orkengine.core import *
 from orkengine.lev2 import *
 l2exdir = (lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
-from common.cameras import *
-from common.primitives import createParticleData
-from common.scenegraph import createSceneGraph
+from lev2utils.cameras import *
+from lev2utils.primitives import createParticleData
+from lev2utils.scenegraph import createSceneGraph
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')

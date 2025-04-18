@@ -398,6 +398,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # spawn balls
     ##############################
 
+
     prob = random.randint(0,100)
     if prob < 50 and self.spawncounter < NUM_BALLS:
       i = random.randint(-5,5)
@@ -408,7 +409,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
       SAD.overridexf.scale = 1.0
       SAD.overridexf.translation = vec3(i,15,j)
       self.controller.spawnEntity(SAD)
-      
+
     ##############################
     # camera update
     ##############################
@@ -432,7 +433,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
         EYE = PXF.translation+OFFSET
         TGT = EYE + DIR
         UP = vec3(0,1,0)
-        
+        """
         self.controller.systemNotify( self.sys_sg,
                                       tokens.UpdateCamera,{
                                         tokens.eye: EYE,
@@ -443,6 +444,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                         tokens.fovy: UIC.fovy
                                       }
                                      )
+        """
 
     ##############################
     # tick the simulation

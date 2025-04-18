@@ -252,8 +252,11 @@ function(ork_std_target_set_opts the_target)
 endfunction()
 
 #############################################################################################################
-
-function(ork_torch_opts the_target)
+IF(${APPLE})
+  function(ork_torch_opts the_target)
+  endfunction()
+ELSEIF(${UNIX})
+  function(ork_torch_opts the_target)
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
   target_include_directories(${the_target} PUBLIC /usr/local/cuda-12.8/include )
   target_include_directories(${the_target} PUBLIC $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
@@ -265,6 +268,7 @@ function(ork_torch_opts the_target)
   target_link_libraries(${the_target} LINK_PRIVATE cuda cudart cublas curand )
   target_link_libraries(${the_target} LINK_PUBLIC ${TORCHLIB_DIR}/libc10.so )
   endfunction()
+ENDIF()
 
 #############################################################################################################
 

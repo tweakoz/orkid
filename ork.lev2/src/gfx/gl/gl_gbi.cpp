@@ -950,11 +950,14 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 void GlGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
+
+  #if defined(ENABLE_PYTORCH)
 
   bool should_debug = _debugNextPrimitive;
   _debugNextPrimitive = false;
@@ -999,6 +1002,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
         break;
     }
   }
+  #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////

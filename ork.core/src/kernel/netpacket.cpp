@@ -191,6 +191,10 @@ Serializer::Serializer(bool std_types) {
     msg.writeString("int64");
     msg.template write<int64_t>(value.get<int64_t>());
   });
+  registerType<uint64_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
+    msg.writeString("uint64");
+    msg.template write<uint64_t>(value.get<uint64_t>());
+  });
   registerType<int64vector_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     auto& the_ivect = value.get<int64vector_t>();
     msg.writeString("array.int64");
@@ -407,6 +411,10 @@ Deserializer::Deserializer(bool std_types) {
   registerType("int64", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
     const auto& packet = iter._basepacket;
     packet.template read<int64_t>(out_value.template make<int64_t>(), iter);
+  });
+  registerType("uint64", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<uint64_t>(out_value.template make<uint64_t>(), iter);
   });
   registerType(
       "array.int64", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {

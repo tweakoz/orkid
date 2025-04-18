@@ -88,7 +88,7 @@ class GeoClipMapApp(object):
     gmtl.shaderpath = str(thisdir()/"geoclipmesh_basic.glfx")
     gmtl.addLightingLambda()
     gmtl.gpuInit(ctx)
-    gmtl.blending = tokens.OFF
+    gmtl.rasterstate.setBlendingMacro(tokens.OFF)
 
     #######################################
     # ground drawable

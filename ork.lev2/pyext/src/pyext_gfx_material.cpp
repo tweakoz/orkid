@@ -384,7 +384,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 return fxshaderasset_ptr_t(m->_shaderasset);
               })
           .def("technique", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxtechnique_ptr_t { return pyfxtechnique_ptr_t(m->technique(named)); })
+          #if defined(ENABLE_COMPUTE_SHADERS)
           .def("computeShader", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxcomputeshader_ptr_t { return pyfxcomputeshader_ptr_t(m->computeShader(named)); })
+          #endif
           .def("param", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(named)); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(
