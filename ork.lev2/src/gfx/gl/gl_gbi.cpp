@@ -285,6 +285,7 @@ GlGeometryBufferInterface::GlGeometryBufferInterface(ContextGL& target)
     : GeometryBufferInterface(target)
     , mTargetGL(target)
     , mLastComponentMask(0) {
+
 }
 
 static void ClearVao() {

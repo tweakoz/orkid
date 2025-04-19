@@ -367,7 +367,11 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
-          .def(py::init<>())
+          .def(py::init([](std::string debugname) -> texture_ptr_t { 
+            auto tex = std::make_shared<Texture>();
+            tex->_debugName = debugname;
+            return tex;
+          }))
           .def(
               "__repr__",
               [](texture_ptr_t self) -> std::string {

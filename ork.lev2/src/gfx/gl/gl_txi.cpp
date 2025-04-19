@@ -15,6 +15,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/pch.h>
 #include <ork/util/logger.h>
+#include <ork/util/hexdump.inl>
 
 #include <ork/kernel/memcpy.inl>
 #include <ork/profiling.inl>
@@ -1112,7 +1113,7 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   GL_ERRORCHECK();
 
   gltexobj_ptr_t glto;
-  if( auto as_glto = ptex->_impl.tryAs<gltexobj_ptr_t>() ) {
+  if (auto as_glto = ptex->_impl.tryAs<gltexobj_ptr_t>()) {
     glto = as_glto.value();
   } else {
     glto = std::make_shared<GLTextureObject>(this);
@@ -1131,34 +1132,37 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
 
   // check that tensor dimensions are 2D
   bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
-  if( not dim_ok ) {
+  if (not dim_ok) {
     printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
     OrkAssert(false);
   }
-  size_t tensor_width   = as_tt.size(1);
-  size_t tensor_height  = as_tt.size(0);
+  size_t tensor_width   = as_tt.size(0);
+  size_t tensor_height  = as_tt.size(1);
   size_t tensor_numelem = as_tt.numel();
   size_t texture_width  = ptex->_width;
   size_t texture_height = ptex->_height;
+  size_t num_pixels = tensor_width * tensor_height;
+  //printf("num_pixels<%zu>\n", num_pixels);
 
-  if(0)printf("tensor_width<%zu> tensor_height<%zu> texture_width<%zu> texture_height<%zu> tensor_numelem<%zu>\n",
-         tensor_width,
-         tensor_height,
-         texture_width,
-         texture_height,
-         tensor_numelem);
-  
+  if (0)
+    printf(
+        "tensor_width<%zu> tensor_height<%zu> texture_width<%zu> texture_height<%zu> tensor_numelem<%zu>\n",
+        tensor_width,
+        tensor_height,
+        texture_width,
+        texture_height,
+        tensor_numelem);
+
   // assert tensor on CPU (for now..)
   OrkAssert(as_tt.is_cpu());
 
-  size_t dst_length = tensor_numelem * as_tt.element_size();
-  const void* src_data = as_tt.data_ptr();
-  OrkAssert(src_data != nullptr); 
+  size_t dst_length    = tensor_numelem * as_tt.element_size();
+  auto src_data = (const float*) as_tt.data_ptr();
+  OrkAssert(src_data != nullptr);
+
+  // hexdumpbytes((const uint8_t*)src_data, 256);
   //printf("dst_length<%zu>\n", dst_length);
-  auto pboitem      = this->_getPBO(dst_length);
-  //printf("pboitem<%d> mapped<%p>\n", int(pboitem->_handle), (void*)pboitem->_mapped);
-  pboitem->copyWithTempMapped(TextureInitData(), dst_length, as_tt.data_ptr());
-  GL_ERRORCHECK();
+  // printf("pboitem<%d> mapped<%p>\n", int(pboitem->_handle), (void*)pboitem->_mapped);
 
   bool size_or_fmt_dirty = (texture_width != tensor_width) or   //
                            (texture_height != tensor_height) or //
@@ -1167,54 +1171,80 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
     case EBufferFormat::RGBA32F: {
       OrkAssert(as_tt.dtype() == torch::kFloat32);
       OrkAssert(tensor_numelem == tensor_width * tensor_height * 4);
+      auto pboitem = this->_getPBO(dst_length);
+      pboitem->copyWithTempMapped(TextureInitData(), dst_length, src_data);
+      GL_ERRORCHECK();
       if (size_or_fmt_dirty) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tensor_width, tensor_height, 0, GL_RGBA, GL_FLOAT, nullptr);
       } else {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGBA, GL_FLOAT, nullptr);
       }
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+      this->_returnPBO(pboitem);
+      OrkAssert(false);
       break;
     }
     case EBufferFormat::RGB32F: {
       OrkAssert(as_tt.dtype() == torch::kFloat32);
-      OrkAssert(tensor_numelem == tensor_width * tensor_height * 3);
+      OrkAssert(tensor_numelem == (num_pixels * 3));
+      auto pboitem = this->_getPBO(dst_length);
+      pboitem->copyWithTempMapped(TextureInitData(), dst_length, src_data);
       if (size_or_fmt_dirty) {
-        //printf("glTexImage2D RGB32F\n");
-        glTexImage2D(GL_TEXTURE_2D, // target 
-                     0, // level
-                     GL_RGB32F, // internal format
-                     tensor_width, // width
-                     tensor_height, // height
-                     0, // border
-                     GL_RGB, GL_FLOAT, // format, type
-                     nullptr); // data (source from PBO)
-      } 
-      //printf("glTexSubImage2D RGB32F\n");
-      glTexSubImage2D( GL_TEXTURE_2D, // target
-                       0, // level 
-                       0, 0, // xoffset, yoffset 
-                       tensor_width, tensor_height, // width, height
-                       GL_RGB, GL_FLOAT, // format, type
-                       nullptr); // data (source from PBO)
+        // printf("glTexImage2D RGB32F\n");
+        glTexImage2D(
+            GL_TEXTURE_2D, // target
+            0,             // level
+            GL_RGB32F,     // internal format
+            tensor_width, // width
+            tensor_height,  // height
+            0,             // border
+            GL_RGB, GL_FLOAT, // format, type
+            nullptr);         // data (source from PBO)
+      }
+      GL_ERRORCHECK();
+      if(0)glTexSubImage2D(
+          GL_TEXTURE_2D, // target
+          0,             // level
+          0,
+          0, // xoffset, yoffset
+          tensor_width,
+          tensor_height, // width, height
+          GL_RGB,
+          GL_FLOAT,                            // format, type
+          nullptr);                            // data (source from PBO)
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+      this->_returnPBO(pboitem);
+      GL_ERRORCHECK();
       break;
     }
     case EBufferFormat::RGBA8: {
       OrkAssert(as_tt.dtype() == torch::kByte);
       OrkAssert(tensor_numelem == tensor_width * tensor_height * 4);
+      auto pboitem = this->_getPBO(dst_length);
+      pboitem->copyWithTempMapped(TextureInitData(), dst_length, src_data);
+      GL_ERRORCHECK();
       if (size_or_fmt_dirty) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tensor_width, tensor_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       } else {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
       }
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+      this->_returnPBO(pboitem);
       break;
     }
     case EBufferFormat::RGB8: {
       OrkAssert(as_tt.dtype() == torch::kByte);
       OrkAssert(tensor_numelem == tensor_width * tensor_height * 3);
+      auto pboitem = this->_getPBO(dst_length);
+      pboitem->copyWithTempMapped(TextureInitData(), dst_length, src_data);
+      GL_ERRORCHECK();
       if (size_or_fmt_dirty) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tensor_width, tensor_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
       } else {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
       }
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+      this->_returnPBO(pboitem);
       break;
     }
     default:
@@ -1224,17 +1254,13 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   ptex->_width     = tensor_width;
   ptex->_height    = tensor_height;
   ptex->_texFormat = fmt;
-
+  //_checkTexture(glto->_textureObject, "initTextureFromTensor");
   // set texture parameters
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  ptex->TexSamplingMode().PresetPointAndClamp();
+  ApplySamplingMode(ptex);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  
+
   GL_ERRORCHECK();
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
-  this->_returnPBO(pboitem);
   GL_ERRORCHECK();
 }
 

@@ -77,9 +77,11 @@ void _FtxGlDebugger::run_loop() {
       "FrameBufferState",
       "RasterState",
       "GeometryState",
-      "StorageState",
-      "ShaderState",
   };
+  #if defined(ENABLE_SSBO)
+  menu_entries.push_back("StorageState");
+  #endif
+  menu_entries.push_back("ShaderState");
 
   auto content_backtrace = Renderer([&] { return _node_backtrace | vscroll_indicator | frame; });
   auto content_textures = Renderer([&] { return _node_textures | vscroll_indicator | frame; });
@@ -87,7 +89,9 @@ void _FtxGlDebugger::run_loop() {
   auto content_framebuffer = Renderer([&] { return _node_framebuffer | vscroll_indicator | frame; });
   auto content_raster = Renderer([&] { return _node_raster | vscroll_indicator | frame; });
   auto content_geometry    = Renderer([&] { return _node_geometry | vscroll_indicator | frame; });
+  #if defined(ENABLE_SSBO)
   auto content_storage    = Renderer([&] { return _node_ssbo | vscroll_indicator | frame; });
+  #endif
 
   auto content_shader = Renderer([&] { return _node_shader | vscroll_indicator | frame; });
 
@@ -99,7 +103,9 @@ void _FtxGlDebugger::run_loop() {
   content_components.push_back(content_raster);
   content_components.push_back(content_geometry);
   content_components.push_back(content_geometry);
+  #if defined(ENABLE_SSBO)
   content_components.push_back(content_storage);
+  #endif
   for (auto it : _shader_texts) {
     std::string name = it.first;
     const auto& sh_lines = it.second;

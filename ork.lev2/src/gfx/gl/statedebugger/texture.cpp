@@ -93,6 +93,55 @@ void _FtxGlDebugger::_validateTextures() {
         img.writeToFile(filename);
         break;
       }
+      case EBufferFormat::RGB32F:{
+          // bind texture
+        // get texture data (mip0)
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texid);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &ith);
+        // OrkAssert(itw==width);
+        // OrkAssert(ith==height);
+        int bpc = 4;
+        int numc = 3;
+        int mipsize = itw * ith * bpc*numc;
+        dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+        // std::vector<uint8_t> mipdata;
+        // mipdata.resize(mipsize);
+        //  save to disk
+        std::string filename = FormatString("tex_%d.exr", texid);
+        Image img;
+        img.init(itw, ith, numc, bpc);
+        img._format = the_tex->_texFormat;
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, (void*)img._data->data());
+        img.writeToFile(filename);
+        break;
+      }
+      case EBufferFormat::RGBA32F:{
+        // bind texture
+        // get texture data (mip0)
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texid);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &ith);
+        // OrkAssert(itw==width);
+        // OrkAssert(ith==height);
+        int bpc = 4;
+        int numc = 4;
+        int mipsize = itw * ith * bpc*numc;
+        dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+        // std::vector<uint8_t> mipdata;
+        // mipdata.resize(mipsize);
+        //  save to disk
+        std::string filename = FormatString("tex_%d.exr", texid);
+        Image img;
+        img.init(itw, ith, numc, bpc);
+        img._format = the_tex->_texFormat;
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void*)img._data->data());
+        //
+        img.writeToFile(filename);
+        break;
+      }  
       default:
         break;
     }

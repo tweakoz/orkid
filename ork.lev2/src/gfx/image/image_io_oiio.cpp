@@ -175,13 +175,23 @@ void Image::writeToFile(const ork::file::Path& outpath) const {
       spec.nchannels    = 4;
       spec.channelnames = {"R", "G", "B", "A"};
       break;
-    default:
+      case EBufferFormat::RGB32F:
+      spec.format       = TypeDesc::FLOAT;
+      spec.nchannels    = 3;
+      spec.channelnames = {"R", "G", "B"};
+      break;
+    case EBufferFormat::RGBA32F:
+      spec.format       = TypeDesc::FLOAT;
+      spec.nchannels    = 4;
+      spec.channelnames = {"R", "G", "B", "A"};
+      break;
+      default:
       OrkAssert(false);
       break;
   }
 
   out->open(cstrpath, spec);
-  out->write_image(TypeDesc::UINT8, _data->data());
+  out->write_image(spec.format, _data->data());
   out->close();
 }
 
