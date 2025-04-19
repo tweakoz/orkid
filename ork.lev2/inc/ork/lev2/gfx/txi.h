@@ -106,6 +106,9 @@ public:
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;
   }
+  #if defined(ENABLE_PYTORCH)
+  virtual void initTextureFromTensor(Texture* ptex, torchtensor_ptr_t tensor, EBufferFormat fmt) { }
+  #endif
 
   context_rawptr_t _ctx;
 };

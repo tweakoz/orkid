@@ -14,7 +14,7 @@
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
 
-#if defined(ENABLE_PYTORCH)
+#if defined(ENABLE_PYTORCH) and defined(ENABLE_CUDA)
 
 #undef ThreadLocal // conflicts with c10
 
@@ -326,7 +326,7 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_PYTORCH)
+#if defined(ENABLE_PYTORCH) and defined(ENABLE_CUDA)
 
 FxShaderStorageBuffer* ComputeInterface::storageBufferFromTensor(torchtensor_ptr_t l2tensor) {
   return nullptr;
@@ -337,6 +337,7 @@ void ComputeInterface::copyTensorIntoStorageBuffer(
   torchtensor_ptr_t l2tensor,
   size_t dest_offset ) {
 
+  
   /////////////////////////////////////
   // use CUDA to copy tensor into SSBO
   /////////////////////////////////////

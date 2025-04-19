@@ -957,7 +957,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
-  #if defined(ENABLE_PYTORCH)
+  #if defined(ENABLE_SSBO)
 
   bool should_debug = _debugNextPrimitive;
   _debugNextPrimitive = false;

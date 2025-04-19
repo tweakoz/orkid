@@ -21,100 +21,104 @@
 
 #include "gl.h"
 
+#if defined(ENABLE_PYTORCH)
+#undef ThreadLocal           // conflicts with c10
+#include <torch/extension.h> // for PyTorch C++ extension
+#endif
+
 GLuint gLastBoundNonZeroTex = 0;
 
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
-  GLFormatTriplet::GLFormatTriplet(EBufferFormat inp){
-    switch (inp) {
-      case EBufferFormat::RGB8: {
-        _internalFormat = GL_RGB8;
-        _format         = GL_RGB;
-        _type           = GL_UNSIGNED_BYTE;
-        break;
-      }
-      case EBufferFormat::BGR8: {
-        _internalFormat = GL_RGB8;
-        _format         = GL_BGR;
-        _type           = GL_UNSIGNED_BYTE;
-        break;
-      }
-        case EBufferFormat::BGRA8: {
-          _internalFormat = GL_RGBA8;
-          _format         = GL_BGRA;
-          _type           = GL_UNSIGNED_BYTE;
-          break;
-        }
-      case EBufferFormat::RGBA8: {
-        _internalFormat = GL_RGBA8;
-        _format         = GL_RGBA;
-        _type           = GL_UNSIGNED_BYTE;
-        break;
-      }
-      case EBufferFormat::RGB16: {
-        _internalFormat = GL_RGB16;
-        _format         = GL_RGB;
-        _type           = GL_UNSIGNED_SHORT;
-        break;
-      }
-      case EBufferFormat::RGBA16F: {
-        _internalFormat = GL_RGBA16F;
-        _format         = GL_RGBA;
-        _type           = GL_HALF_FLOAT;
-        break;
-      }
-      case EBufferFormat::RGBA16UI: {
-        _internalFormat = GL_RGBA16UI;
-        _format         = GL_RGBA_INTEGER;
-        _type           = GL_UNSIGNED_SHORT;
-        break;
-      }
-      case EBufferFormat::RGBA32F: {
-        _internalFormat = GL_RGBA32F;
-        _format         = GL_RGBA;
-        _type           = GL_FLOAT;
-        break;
-      }
-      case EBufferFormat::RGB32F: {
-        _internalFormat = GL_RGB32F;
-        _format         = GL_RGB;
-        _type           = GL_FLOAT;
-        break;
-      }
-      case EBufferFormat::R32F: {
-        _internalFormat = GL_R32F;
-        _format         = GL_RED;
-        _type           = GL_FLOAT;
-        break;
-      }
-      case EBufferFormat::R16UI: {
-        _internalFormat = GL_R16UI;
-        _format         = GL_RED_INTEGER;
-        _type           = GL_UNSIGNED_SHORT;
-        break;
-      }
-      case EBufferFormat::R8: {
-        _internalFormat = GL_R8;
-        _format         = GL_RED;
-        _type           = GL_UNSIGNED_BYTE;
-        break;
-      }
-#if ! defined(__APPLE__)
-      case EBufferFormat::RGBA_BPTC_UNORM: {
-        _internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
-        _format         = GL_RGBA;
-        _type           = GL_UNSIGNED_BYTE;
-        break;
-      }
-#endif
-      default:
-        OrkAssert(false);
-        break;
+GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
+  switch (inp) {
+    case EBufferFormat::RGB8: {
+      _internalFormat = GL_RGB8;
+      _format         = GL_RGB;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
     }
+    case EBufferFormat::BGR8: {
+      _internalFormat = GL_RGB8;
+      _format         = GL_BGR;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    case EBufferFormat::BGRA8: {
+      _internalFormat = GL_RGBA8;
+      _format         = GL_BGRA;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    case EBufferFormat::RGBA8: {
+      _internalFormat = GL_RGBA8;
+      _format         = GL_RGBA;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    case EBufferFormat::RGB16: {
+      _internalFormat = GL_RGB16;
+      _format         = GL_RGB;
+      _type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::RGBA16F: {
+      _internalFormat = GL_RGBA16F;
+      _format         = GL_RGBA;
+      _type           = GL_HALF_FLOAT;
+      break;
+    }
+    case EBufferFormat::RGBA16UI: {
+      _internalFormat = GL_RGBA16UI;
+      _format         = GL_RGBA_INTEGER;
+      _type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::RGBA32F: {
+      _internalFormat = GL_RGBA32F;
+      _format         = GL_RGBA;
+      _type           = GL_FLOAT;
+      break;
+    }
+    case EBufferFormat::RGB32F: {
+      _internalFormat = GL_RGB32F;
+      _format         = GL_RGB;
+      _type           = GL_FLOAT;
+      break;
+    }
+    case EBufferFormat::R32F: {
+      _internalFormat = GL_R32F;
+      _format         = GL_RED;
+      _type           = GL_FLOAT;
+      break;
+    }
+    case EBufferFormat::R16UI: {
+      _internalFormat = GL_R16UI;
+      _format         = GL_RED_INTEGER;
+      _type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::R8: {
+      _internalFormat = GL_R8;
+      _format         = GL_RED;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+#if !defined(__APPLE__)
+    case EBufferFormat::RGBA_BPTC_UNORM: {
+      _internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+      _format         = GL_RGBA;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+#endif
+    default:
+      OrkAssert(false);
+      break;
   }
+}
 ///////////////////////////////////////////////////////////////////////////////
-
 
 std::atomic<size_t> GLTextureObject::_glto_count = 0;
 
@@ -148,7 +152,7 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit) {
 
-  //OrkAssert(tex_unit < mTargetGL._MAX_TEXTURE_IMAGE_UNITS);
+  // OrkAssert(tex_unit < mTargetGL._MAX_TEXTURE_IMAGE_UNITS);
 
   gltexobj_ptr_t tex_obj;
 
@@ -238,9 +242,9 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
 
   GLuint texID = tex_obj->_textureObject;
 
-  //if (texID != 0) {
-    //_checkTexture(texID, "");
- // }
+  // if (texID != 0) {
+  //_checkTexture(texID, "");
+  // }
 
   if (0) {
     auto fxi       = mTargetGL.FXI();
@@ -262,8 +266,8 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
         tex->_depth,
         tex,
         texname.c_str());
-  }    
-    
+  }
+
   GL_ERRORCHECK();
   glActiveTexture(GL_TEXTURE0 + tex_unit);
   GL_ERRORCHECK();
@@ -340,7 +344,7 @@ void GlTextureInterface::TexManInit(void) {
 
 PboSet::PboSet(size_t size)
     : _size(size) {
-      //printf( "New PboSet size<%zu>\n", size );
+  // printf( "New PboSet size<%zu>\n", size );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -357,11 +361,11 @@ static std::atomic<int> ipbocount = 0;
 pboptr_t PboSet::alloc(GlTextureInterface* txi) {
   if (_pbos.empty()) {
 
-    #if defined(__APPLE__)
+#if defined(__APPLE__)
     constexpr int num_pbos_per_set = 2;
-    #else
+#else
     constexpr int num_pbos_per_set = 4;
-    #endif
+#endif
     for (int i = 0; i < num_pbos_per_set; i++) {
       auto new_pbo = std::make_shared<PboItem>();
 
@@ -573,11 +577,11 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 }
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
-  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+  auto glto  = ptex->_impl.get<gltexobj_ptr_t>();
   auto gltgt = glto->mTarget;
   GL_ERRORCHECK();
 
-  switch(gltgt){
+  switch (gltgt) {
     case GL_TEXTURE_2D:
     case GL_TEXTURE_CUBE_MAP:
       break;
@@ -627,11 +631,10 @@ void PboItem::copyPersistentMapped(const TextureInitData& tid, size_t length, co
 
 void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data) {
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
-  if(0){
-    glBufferData(GL_PIXEL_UNPACK_BUFFER,_length,src_data,GL_DYNAMIC_DRAW); // orphan ?
-  }
-  else{
-    glBufferData(GL_PIXEL_UNPACK_BUFFER,_length,nullptr,GL_STREAM_DRAW); // orphan ?
+  if (0) {
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, _length, src_data, GL_DYNAMIC_DRAW); // orphan ?
+  } else {
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, _length, nullptr, GL_STREAM_DRAW); // orphan ?
     GL_ERRORCHECK();
     u32 map_flags = GL_MAP_WRITE_BIT;
     map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
@@ -645,96 +648,96 @@ void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, cons
 }
 
 bool _checkTexture(GLuint texID, const std::string& name) {
-    if (texID == 0) {
-        std::cout << "Texture ID is zero, which is not a valid texture object for " << name << "." << std::endl;
-        OrkAssert(false);
-        return false;
-    }
-
-    GLint prevBoundTexture;
-    GLint width, height, depth, internalFormat;
-    GLint minFilter, magFilter, wrapS, wrapT, wrapR;
-    bool isTextureValid = false;
-
-    GLenum targets[] = {GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP};
-    GLenum binding_queries[] = {GL_TEXTURE_BINDING_2D, GL_TEXTURE_BINDING_3D, GL_TEXTURE_BINDING_CUBE_MAP};
-    std::string typeNames[] = {"2D", "3D", "Cubemap"};
-
-    for (int i = 0; i < 3; i++) {
-        printf("Checking texture type %d (%s)\n", i, typeNames[i].c_str());
-        GLenum target = targets[i];
-        glGetIntegerv(binding_queries[i], &prevBoundTexture);
-        glBindTexture(target, texID);
-
-        if (glGetError() == GL_NO_ERROR) {
-            GLenum faces[] = {target,target,target,target,target,target};
-            int faceCount = 1;
-
-            if (target == GL_TEXTURE_CUBE_MAP) {
-                faceCount = 6;
-                faces[0] = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
-                faces[1] = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
-                faces[2] = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
-                faces[3] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
-                faces[4] = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
-                faces[5] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
-            }
-
-            isTextureValid = true; // Assume valid until proven otherwise
-
-            for (int j = 0; j < faceCount; j++) {
-                GLenum face = faces[j];
-                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_WIDTH, &width);
-                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_HEIGHT, &height);
-                glGetTexLevelParameteriv(face, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
-
-                if (target == GL_TEXTURE_3D) {
-                    glGetTexLevelParameteriv(target, 0, GL_TEXTURE_DEPTH, &depth);
-                }
-
-                bool dimensionCheck = width > 0 && height > 0 && (target != GL_TEXTURE_3D || depth > 0);
-                bool formatCheck = internalFormat != 0;
-                bool wrappingCheck = true; // Simplified for clarity
-
-                glGetTexParameteriv(target, GL_TEXTURE_MIN_FILTER, &minFilter);
-                glGetTexParameteriv(target, GL_TEXTURE_MAG_FILTER, &magFilter);
-                glGetTexParameteriv(target, GL_TEXTURE_WRAP_S, &wrapS);
-                glGetTexParameteriv(target, GL_TEXTURE_WRAP_T, &wrapT);
-                if (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_3D) {
-                    glGetTexParameteriv(target, GL_TEXTURE_WRAP_R, &wrapR);
-                }
-
-                wrappingCheck = (wrapS != 0 && wrapT != 0) && ((target != GL_TEXTURE_CUBE_MAP && target != GL_TEXTURE_3D) || wrapR != 0);
-
-                if (!(dimensionCheck && formatCheck && wrappingCheck)) {
-                    std::cout << "Texture " << name << " (" << typeNames[i] << ") is invalid on face " << j << std::endl;
-                    std::cout << "Width: " << width << ", Height: " << height << ", Internal Format: " << internalFormat << std::endl;
-                    std::cout << "Min Filter: " << minFilter << ", Mag Filter: " << magFilter << std::endl;
-                    std::cout << "Wrap S: " << wrapS << ", Wrap T: " << wrapT << (target != GL_TEXTURE_2D ? ", Wrap R: " + std::to_string(wrapR) : "") << std::endl;
-                    OrkAssert(false);
-                    isTextureValid = false;
-                    break;
-                }
-            }
-
-            if (isTextureValid) {
-                std::cout << "Texture " << name << " (" << typeNames[i] << ") is valid." << std::endl;
-                glBindTexture(target, prevBoundTexture);
-                return true;
-            }
-        }
-        glBindTexture(target, prevBoundTexture);
-    }
-
-    std::cout << "Texture " << name << " is not a valid 2D, 3D, or Cubemap texture." << std::endl;
+  if (texID == 0) {
+    std::cout << "Texture ID is zero, which is not a valid texture object for " << name << "." << std::endl;
     OrkAssert(false);
     return false;
+  }
+
+  GLint prevBoundTexture;
+  GLint width, height, depth, internalFormat;
+  GLint minFilter, magFilter, wrapS, wrapT, wrapR;
+  bool isTextureValid = false;
+
+  GLenum targets[]         = {GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP};
+  GLenum binding_queries[] = {GL_TEXTURE_BINDING_2D, GL_TEXTURE_BINDING_3D, GL_TEXTURE_BINDING_CUBE_MAP};
+  std::string typeNames[]  = {"2D", "3D", "Cubemap"};
+
+  for (int i = 0; i < 3; i++) {
+    printf("Checking texture type %d (%s)\n", i, typeNames[i].c_str());
+    GLenum target = targets[i];
+    glGetIntegerv(binding_queries[i], &prevBoundTexture);
+    glBindTexture(target, texID);
+
+    if (glGetError() == GL_NO_ERROR) {
+      GLenum faces[] = {target, target, target, target, target, target};
+      int faceCount  = 1;
+
+      if (target == GL_TEXTURE_CUBE_MAP) {
+        faceCount = 6;
+        faces[0]  = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+        faces[1]  = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+        faces[2]  = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+        faces[3]  = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+        faces[4]  = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+        faces[5]  = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+      }
+
+      isTextureValid = true; // Assume valid until proven otherwise
+
+      for (int j = 0; j < faceCount; j++) {
+        GLenum face = faces[j];
+        glGetTexLevelParameteriv(face, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(face, 0, GL_TEXTURE_HEIGHT, &height);
+        glGetTexLevelParameteriv(face, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+
+        if (target == GL_TEXTURE_3D) {
+          glGetTexLevelParameteriv(target, 0, GL_TEXTURE_DEPTH, &depth);
+        }
+
+        bool dimensionCheck = width > 0 && height > 0 && (target != GL_TEXTURE_3D || depth > 0);
+        bool formatCheck    = internalFormat != 0;
+        bool wrappingCheck  = true; // Simplified for clarity
+
+        glGetTexParameteriv(target, GL_TEXTURE_MIN_FILTER, &minFilter);
+        glGetTexParameteriv(target, GL_TEXTURE_MAG_FILTER, &magFilter);
+        glGetTexParameteriv(target, GL_TEXTURE_WRAP_S, &wrapS);
+        glGetTexParameteriv(target, GL_TEXTURE_WRAP_T, &wrapT);
+        if (target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_3D) {
+          glGetTexParameteriv(target, GL_TEXTURE_WRAP_R, &wrapR);
+        }
+
+        wrappingCheck = (wrapS != 0 && wrapT != 0) && ((target != GL_TEXTURE_CUBE_MAP && target != GL_TEXTURE_3D) || wrapR != 0);
+
+        if (!(dimensionCheck && formatCheck && wrappingCheck)) {
+          std::cout << "Texture " << name << " (" << typeNames[i] << ") is invalid on face " << j << std::endl;
+          std::cout << "Width: " << width << ", Height: " << height << ", Internal Format: " << internalFormat << std::endl;
+          std::cout << "Min Filter: " << minFilter << ", Mag Filter: " << magFilter << std::endl;
+          std::cout << "Wrap S: " << wrapS << ", Wrap T: " << wrapT
+                    << (target != GL_TEXTURE_2D ? ", Wrap R: " + std::to_string(wrapR) : "") << std::endl;
+          OrkAssert(false);
+          isTextureValid = false;
+          break;
+        }
+      }
+
+      if (isTextureValid) {
+        std::cout << "Texture " << name << " (" << typeNames[i] << ") is valid." << std::endl;
+        glBindTexture(target, prevBoundTexture);
+        return true;
+      }
+    }
+    glBindTexture(target, prevBoundTexture);
+  }
+
+  std::cout << "Texture " << name << " is not a valid 2D, 3D, or Cubemap texture." << std::endl;
+  OrkAssert(false);
+  return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img) {
-  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -745,8 +748,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   bool is_3d   = (tid._d > 1);
   bool is_cube = tid._initCubeTexture;
-    EASY_BLOCK("gltxi::itfd:1", profiler::colors::Red);
-
+  EASY_BLOCK("gltxi::itfd:1", profiler::colors::Red);
 
   ///////////////////////////////////
 
@@ -754,7 +756,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   if (is_cube) {
     texture_target = GL_TEXTURE_CUBE_MAP;
   }
-  
+
   ///////////////////////////////////
 
   size_t dst_length = tid.computeDstSize();
@@ -820,23 +822,24 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         break;
       }
       case EBufferFormat::R8: {
-        if( tid._dst_format == EBufferFormat::RGB8 ){
+        if (tid._dst_format == EBufferFormat::RGB8) {
           for (int row = 0; row < srch; row++) {
-            auto row_base = row * srcw;
+            auto row_base     = row * srcw;
             auto row_base_rgb = row * srcw * 3;
-            auto row_ybase = src_buffer + row_base;
-            auto ptr = rgb_buffer + row_base_rgb;
+            auto row_ybase    = src_buffer + row_base;
+            auto ptr          = rgb_buffer + row_base_rgb;
             for (int col = 0; col < srcw; col++) {
               auto yy = row_ybase[col];
-              *ptr++ = yy;
-              *ptr++ = yy;
-              *ptr++ = yy;
+              *ptr++  = yy;
+              *ptr++  = yy;
+              *ptr++  = yy;
             }
           }
           src_buffer = rgb_buffer;
         }
         break;
-      }      case EBufferFormat::RGB8: 
+      }
+      case EBufferFormat::RGB8:
       case EBufferFormat::BGR8: {
         break;
       }
@@ -846,7 +849,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
   }
   EASY_END_BLOCK;
-    EASY_BLOCK("gltxi::itfd:2", profiler::colors::Red);
+  EASY_BLOCK("gltxi::itfd:2", profiler::colors::Red);
 
   if (tid._truncation_length != 0) {
     OrkAssert(src_buffer == tid._data);
@@ -860,7 +863,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     dst_length             = tid._truncation_length;
   }
   EASY_END_BLOCK;
-    EASY_BLOCK("gltxi::itfd:3", profiler::colors::Red);
+  EASY_BLOCK("gltxi::itfd:3", profiler::colors::Red);
 
   ///////////////////////////////////
 #if defined(OPENGL_46)
@@ -886,7 +889,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       mapped);*/
 
   ///////////////////////////////////
-    EASY_BLOCK("gltxi::itfd:4", profiler::colors::Red);
+  EASY_BLOCK("gltxi::itfd:4", profiler::colors::Red);
 
   gltexobj_ptr_t glto;
 
@@ -918,7 +921,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   GL_ERRORCHECK();
   EASY_END_BLOCK;
-    EASY_BLOCK("gltxi::itfd:5", profiler::colors::Red);
+  EASY_BLOCK("gltxi::itfd:5", profiler::colors::Red);
 
   GLFormatTriplet triplet(tid._dst_format);
 
@@ -935,7 +938,16 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     if (size_or_fmt_dirty) { // allocating
       // init all 6 faces with PBO data
       for (int i = 0; i < 6; i++) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, triplet._internalFormat, tid._w, tid._h, 0, triplet._format, triplet._type, nullptr);
+        glTexImage2D(
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+            0,
+            triplet._internalFormat,
+            tid._w,
+            tid._h,
+            0,
+            triplet._format,
+            triplet._type,
+            nullptr);
       }
     } else { // non allocating
       for (int i = 0; i < 6; i++) {
@@ -949,7 +961,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
   } else {
-      if(0) printf( "pboitem<%d> size_or_fmt_dirty<%d> w<%d> h<%d>\n", int(pboitem->_handle), int(size_or_fmt_dirty), tid._w, tid._h );
+    if (0)
+      printf("pboitem<%d> size_or_fmt_dirty<%d> w<%d> h<%d>\n", int(pboitem->_handle), int(size_or_fmt_dirty), tid._w, tid._h);
     if (size_or_fmt_dirty) // allocating
       glTexImage2D(texture_target, 0, triplet._internalFormat, tid._w, tid._h, 0, triplet._format, triplet._type, nullptr);
     else // non allocating
@@ -957,7 +970,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     GL_ERRORCHECK();
   }
   EASY_END_BLOCK;
-    EASY_BLOCK("gltxi::itfd:6", profiler::colors::Red);
+  EASY_BLOCK("gltxi::itfd:6", profiler::colors::Red);
 
   ///////////////////////////////////
   GL_ERRORCHECK();
@@ -1089,6 +1102,143 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   return tex;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_PYTORCH)
+
+void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t l2tensor, EBufferFormat fmt) {
+
+  GL_ERRORCHECK();
+
+  gltexobj_ptr_t glto;
+  if( auto as_glto = ptex->_impl.tryAs<gltexobj_ptr_t>() ) {
+    glto = as_glto.value();
+  } else {
+    glto = std::make_shared<GLTextureObject>(this);
+    ptex->_impl.set<gltexobj_ptr_t>(glto);
+    glGenTextures(1, &glto->_textureObject);
+  }
+
+  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
+
+  glto->_maxmip = 0;
+
+  auto as_tt = l2tensor->_impl.get<torch::Tensor>();
+
+  OrkAssert(as_tt.is_contiguous());
+  // OrkAssert(as_tt.isCuda());
+
+  // check that tensor dimensions are 2D
+  bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
+  if( not dim_ok ) {
+    printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
+    OrkAssert(false);
+  }
+  size_t tensor_width   = as_tt.size(1);
+  size_t tensor_height  = as_tt.size(0);
+  size_t tensor_numelem = as_tt.numel();
+  size_t texture_width  = ptex->_width;
+  size_t texture_height = ptex->_height;
+
+  if(0)printf("tensor_width<%zu> tensor_height<%zu> texture_width<%zu> texture_height<%zu> tensor_numelem<%zu>\n",
+         tensor_width,
+         tensor_height,
+         texture_width,
+         texture_height,
+         tensor_numelem);
+  
+  // assert tensor on CPU (for now..)
+  OrkAssert(as_tt.is_cpu());
+
+  size_t dst_length = tensor_numelem * as_tt.element_size();
+  const void* src_data = as_tt.data_ptr();
+  OrkAssert(src_data != nullptr); 
+  //printf("dst_length<%zu>\n", dst_length);
+  auto pboitem      = this->_getPBO(dst_length);
+  //printf("pboitem<%d> mapped<%p>\n", int(pboitem->_handle), (void*)pboitem->_mapped);
+  pboitem->copyWithTempMapped(TextureInitData(), dst_length, as_tt.data_ptr());
+  GL_ERRORCHECK();
+
+  bool size_or_fmt_dirty = (texture_width != tensor_width) or   //
+                           (texture_height != tensor_height) or //
+                           (ptex->_texFormat != fmt);
+  switch (fmt) {
+    case EBufferFormat::RGBA32F: {
+      OrkAssert(as_tt.dtype() == torch::kFloat32);
+      OrkAssert(tensor_numelem == tensor_width * tensor_height * 4);
+      if (size_or_fmt_dirty) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tensor_width, tensor_height, 0, GL_RGBA, GL_FLOAT, nullptr);
+      } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGBA, GL_FLOAT, nullptr);
+      }
+      break;
+    }
+    case EBufferFormat::RGB32F: {
+      OrkAssert(as_tt.dtype() == torch::kFloat32);
+      OrkAssert(tensor_numelem == tensor_width * tensor_height * 3);
+      if (size_or_fmt_dirty) {
+        //printf("glTexImage2D RGB32F\n");
+        glTexImage2D(GL_TEXTURE_2D, // target 
+                     0, // level
+                     GL_RGB32F, // internal format
+                     tensor_width, // width
+                     tensor_height, // height
+                     0, // border
+                     GL_RGB, GL_FLOAT, // format, type
+                     nullptr); // data (source from PBO)
+      } 
+      //printf("glTexSubImage2D RGB32F\n");
+      glTexSubImage2D( GL_TEXTURE_2D, // target
+                       0, // level 
+                       0, 0, // xoffset, yoffset 
+                       tensor_width, tensor_height, // width, height
+                       GL_RGB, GL_FLOAT, // format, type
+                       nullptr); // data (source from PBO)
+      break;
+    }
+    case EBufferFormat::RGBA8: {
+      OrkAssert(as_tt.dtype() == torch::kByte);
+      OrkAssert(tensor_numelem == tensor_width * tensor_height * 4);
+      if (size_or_fmt_dirty) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tensor_width, tensor_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+      } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+      }
+      break;
+    }
+    case EBufferFormat::RGB8: {
+      OrkAssert(as_tt.dtype() == torch::kByte);
+      OrkAssert(tensor_numelem == tensor_width * tensor_height * 3);
+      if (size_or_fmt_dirty) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, tensor_width, tensor_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+      } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tensor_width, tensor_height, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+      }
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
+  }
+  ptex->_width     = tensor_width;
+  ptex->_height    = tensor_height;
+  ptex->_texFormat = fmt;
+
+  // set texture parameters
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  
+  GL_ERRORCHECK();
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
+  this->_returnPBO(pboitem);
+  GL_ERRORCHECK();
+}
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

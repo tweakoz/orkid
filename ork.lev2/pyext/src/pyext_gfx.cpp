@@ -156,12 +156,8 @@ void pyinit_gfx(py::module& module_lev2) {
         fxs.format("CI(%p)", gbi.get());
         return fxs.c_str();
       })
+      #if defined(ENABLE_SSBO)
       .def("createShaderStorageBufferWithLength", [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
-#if defined(ENABLE_PYTORCH)
-      .def("createShaderStorageBufferFromTensor", [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t { return ci.get()->storageBufferFromTensor(tensor); })
-      .def("copyTensorIntoShaderStorageBuffer", [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset); })
-#endif
-#if defined(ENABLE_SSBO)
       .def("copyDataIntoShaderStorageBuffer", [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
         if( py::isinstance<py::float_>(data) ) {
           auto as_float = data.cast<py::float_>();
@@ -175,6 +171,10 @@ void pyinit_gfx(py::module& module_lev2) {
           OrkAssert(false);
         }
       })
+      #if defined(ENABLE_PYTORCH)
+      .def("createShaderStorageBufferFromTensor", [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t { return ci.get()->storageBufferFromTensor(tensor); })
+      .def("copyTensorIntoShaderStorageBuffer", [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset); })
+      #endif
       #endif
       .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz ) { ci.get()->dispatchCompute(csh.get(), numx,numy,numz); })
       ;
@@ -228,7 +228,17 @@ void pyinit_gfx(py::module& module_lev2) {
               image_ptr_t img) { //
         the_txi->updateTextureArraySlice(ptex.get(), slice, img);
       })
-      .def("__repr__", [](const txi_t& txi) -> std::string {
+      #if defined(ENABLE_PYTORCH)
+      .def("initTextureFromTensor", // 
+            [](const txi_t& the_txi, //
+                texture_ptr_t ptex, //
+                torchtensor_ptr_t tensor, //
+                crcstring_ptr_t fmt) { //
+          auto as_efmt = EBufferFormat(fmt->hashed());
+          the_txi->initTextureFromTensor(ptex.get(), tensor, as_efmt);
+        })
+      #endif
+          .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());
         return fxs.c_str();
@@ -357,6 +367,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
+          .def(py::init<>())
           .def(
               "__repr__",
               [](texture_ptr_t self) -> std::string {

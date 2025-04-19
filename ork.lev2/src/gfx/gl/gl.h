@@ -444,6 +444,10 @@ struct GlTextureInterface : public TextureInterface {
   void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
+  #if defined(ENABLE_PYTORCH)
+  void initTextureFromTensor(Texture* ptex, torchtensor_ptr_t tensor, EBufferFormat fmt) final;
+  #endif
+
   std::map<size_t, pbosetptr_t> _pbosets;
   ContextGL& mTargetGL;
   std::map<GLuint, const Texture*> _texture_set;
