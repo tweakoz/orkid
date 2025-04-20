@@ -1136,8 +1136,8 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
     printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
     OrkAssert(false);
   }
-  size_t tensor_width   = as_tt.size(0);
-  size_t tensor_height  = as_tt.size(1);
+  size_t tensor_width   = as_tt.size(1);
+  size_t tensor_height  = as_tt.size(0);
   size_t tensor_numelem = as_tt.numel();
   size_t texture_width  = ptex->_width;
   size_t texture_height = ptex->_height;
