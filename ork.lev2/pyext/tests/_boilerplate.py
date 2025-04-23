@@ -8,6 +8,8 @@ import math, random, argparse, sys, signal
 from orkengine.core import *
 from orkengine.lev2 import *
 
+print(FxShaderTechnique)
+
 ################################################################################
 
 l2exdir = (lev2exdir()/"python").normalized.as_string
@@ -320,6 +322,7 @@ class BasicUiCamSgApp(object):
     ################################################
 
     def createBaryDrawableFromVertsAndFaces(self, ctx, verts, faces, scale):
+        print(FxShaderTechnique)
         solid_wire_pipeline =  self.createBaryWirePipeline()
         material = solid_wire_pipeline.sharedMaterial
         solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)

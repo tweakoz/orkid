@@ -80,6 +80,6 @@ namespace pybind11::detail {
   struct is_holder_type<base, ork::python::unmanaged_ptr<base>> : std::true_type {};
 
   template <typename base>
-  struct is_holder_type<base, ork::python::unmanaged_ptr<const base>> : std::true_type {};
+  struct is_holder_type<base, ork::python::unmanaged_const_ptr<base>> : std::true_type {};
 
 } // namespace pybind11::detail

@@ -78,7 +78,7 @@ void pyinit_gfx_shader(py::module& module_lev2) {
   type_codec->registerStdCodec<pyfxcomputeshader_ptr_t>(computeshader_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto param_type = //
-      py::class_<FxShaderParam,pyfxparam_ptr_t>(module_lev2, "FxShaderParam")
+      py::class_<pyfxparam_ptr_t>(module_lev2, "FxShaderParam")
           .def_property_readonly("name", [](pyfxparam_ptr_t& p) -> std::string { return p->_name; })
           .def("__repr__", [](pyfxparam_ptr_t& p) -> std::string {
             if(p.get()){
@@ -89,7 +89,7 @@ void pyinit_gfx_shader(py::module& module_lev2) {
   type_codec->registerStdCodec<pyfxparam_ptr_t>(param_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tek_type = //
-      py::class_<FxShaderTechnique,pyfxtechnique_ptr_t>(module_lev2, "FxShaderTechnique")
+      py::class_<pyfxtechnique_ptr_t>(module_lev2, "FxShaderTechnique")
           .def_property_readonly("name", [](pyfxtechnique_ptr_t& t) -> std::string { return t->_techniqueName; })
           .def("__repr__", [](pyfxtechnique_ptr_t& t) -> std::string {
             fxstring<256> fxs;

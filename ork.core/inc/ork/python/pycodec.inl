@@ -74,7 +74,7 @@ void TypeCodec<ADAPTER>::registerRawPtrCodec(const object_t& pytype) {
       [](const varval_t& inpval, ADAPTER::object_t& outval) { // encoder
         auto rawval = inpval.get<ORKTYPE>();
         ptr_wrap_t wrapped = ptr_wrap_t(rawval);
-        outval = ADAPTER::template cast_to_pyobject_mut<ptr_wrap_t>(wrapped);
+        outval = ADAPTER::object_t(wrapped);
       },
       [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
         auto intermediate_val = inpval.template cast<ptr_wrap_t>();
@@ -93,6 +93,40 @@ void TypeCodec<ADAPTER>::registerRawPtrCodec(const object_t& pytype) {
         auto intermediate_val = inpval.template cast<ptr_wrap_t>();
         auto ptr_val          = intermediate_val.get();
         outval.set<ORKTYPE>(ptr_val);
+      });
+}
+
+template <typename ADAPTER>
+template <typename ptr_wrap_t, typename ORKTYPE> //
+
+// 'encoderfn_t' (aka 'function<void (const static_variant<128> &, pybind11::object &)>'
+
+void TypeCodec<ADAPTER>::registerRawConstPtrCodec(const object_t& pytype) {
+  this->registerCodec(
+      pytype, // pytype
+      TypeId::of<const ORKTYPE>(), // orktypeid
+      [](const varval_t& inpval, ADAPTER::object_t& outval) { // encoder
+        auto rawval = inpval.get<const ORKTYPE*>();
+        ptr_wrap_t wrapped = ptr_wrap_t(rawval);
+        outval = ADAPTER::template cast_to_pyobject<ptr_wrap_t>(wrapped);
+      },
+      [](const ADAPTER::object_t& inpval, varval_t& outval) { // decoder
+        auto intermediate_val = inpval.template cast<ptr_wrap_t>();
+        auto ptr_val          = intermediate_val.get();
+        outval.set<const ORKTYPE*>(ptr_val);
+      });
+  this->registerCodec64(
+      pytype, //
+      TypeId::of<const ORKTYPE>(),
+      [](const svar64_t& inpval, ADAPTER::object_t& outval) { // encoder
+        auto rawval = inpval.get<const ORKTYPE*>();
+        ptr_wrap_t wrapped = ptr_wrap_t(rawval);
+        outval = ADAPTER::template cast_to_pyobject<ptr_wrap_t>(wrapped);
+      },
+      [](const ADAPTER::object_t& inpval, svar64_t& outval) { // decoder
+        auto intermediate_val = inpval.template cast<ptr_wrap_t>();
+        auto ptr_val          = intermediate_val.get();
+        outval.set<const ORKTYPE*>(ptr_val);
       });
 }
 

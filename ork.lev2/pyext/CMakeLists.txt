@@ -26,6 +26,7 @@ file(GLOB sources ${SRCD}/*.cpp)
 add_library( _lev2 SHARED ${sources} )
 
 ork_std_target_opts(_lev2)
+ork_torch_opts(_lev2) # torch should go last, so it cannot override the other libs
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 #enable_python_on_target(_lev2)
@@ -62,8 +63,6 @@ endif()
 
 # igl crap again..
 target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
-
-ork_torch_opts(_lev2) # torch should go last, so it cannot override the other libs
 
 ###################################
 

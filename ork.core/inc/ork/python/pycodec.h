@@ -104,6 +104,7 @@ struct pybind11adapter {
   template <typename T> static object_t handle2object(const T& obj);
   template <typename T> static object_t cast_to_pyobject(const T& obj);
   template <typename T> static object_t cast_to_pyobject_mut(T& obj);
+  template <typename T> static object_t capsule(const T& obj);
   template <typename T> static object_t cast_to_pyhandle(const T& obj);
   template <typename T> static void cast_to_var(const object_t& inpval, varval_t& outval);
   template <typename T> static void cast_to_v64(const object_t& inpval, svar64_t& outval);
@@ -482,7 +483,10 @@ template <typename ADAPTER> struct ORK_API TypeCodec {
   template <typename PYREPR, typename ORKTYPE> //
   void registerRawPtrCodec(const object_t& pytype);
 
-protected:
+  template <typename PYREPR, typename ORKTYPE> //
+  void registerRawConstPtrCodec(const object_t& pytype);
+
+  protected:
   TypeCodec();
   svar128_t _impl;
 };
