@@ -59,7 +59,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def(
               "keyOn",                                                                                                          //
               [](synth_ptr_t synth, int note, int vel, prgdata_ptr_t prg, keyonmod_ptr_t kmods = nullptr) -> prginst_rawptr_t { //
-                return synth->liveKeyOn(note, vel, prg, kmods);
+                return prginst_rawptr_t(synth->liveKeyOn(note, vel, prg, kmods));
               })
           .def(
               "keyOff",                                                         //
@@ -121,7 +121,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth, fmtx4 pos) { synth->_listener_matrix = pos; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")
+  auto prgi_type = py::class_<programInst,prginst_rawptr_t>(singmodule, "ProgramInst")
                        .def_property_readonly(
                            "program", //
                            [](prginst_rawptr_t prgi) -> prgdata_constptr_t { return prgi->_progdata; })
@@ -137,7 +137,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                           .def_property("gain", //
                            [](prginst_rawptr_t prgi) -> float { return prgi->_gain; },
                            [](prginst_rawptr_t prgi, float gain) { prgi->_gain = gain; });
-  type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
+  type_codec->registerStdCodec<prginst_rawptr_t>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
                        .def_property_readonly(

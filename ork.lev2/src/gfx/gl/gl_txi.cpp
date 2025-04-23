@@ -1126,7 +1126,7 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   glto->_maxmip = 0;
 
   auto as_tt = l2tensor->_impl.get<torch::Tensor>();
-
+  
   OrkAssert(as_tt.is_contiguous());
   // OrkAssert(as_tt.isCuda());
 

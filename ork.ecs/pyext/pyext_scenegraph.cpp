@@ -162,7 +162,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
      )doc");
   /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
-      py::class_<pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
+      py::class_<SceneGraphSystem,pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
           .def(
               "__repr__",
               [](pysgsystem_ptr_t sgsys) -> std::string {
@@ -173,7 +173,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
           .def_property_readonly(
               "defaultLayer", [](pysgsystem_ptr_t sgsys) -> lev2::scenegraph::layer_ptr_t { return sgsys->_default_layer; })
           .def_property_readonly("defaultCamera", [](pysgsystem_ptr_t sgsys) -> lev2::cameradata_ptr_t { return sgsys->_camera; });
-  type_codec->registerRawPtrCodec<pysgsystem_ptr_t, SceneGraphSystem*>(sgsys_type);
+  type_codec->registerStdCodec<pysgsystem_ptr_t>(sgsys_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_scenegraph(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

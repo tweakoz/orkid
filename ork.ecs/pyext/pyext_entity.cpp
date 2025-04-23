@@ -14,7 +14,7 @@ namespace ork::ecs {
 void pyinit_entity(py::module& module_ecs) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto entity_type = py::class_<pyentity_ptr_t>(module_ecs, "Entity")
+  auto entity_type = py::class_<Entity,pyentity_ptr_t>(module_ecs, "Entity")
       .def(
           "__repr__",
           [](const pyentity_ptr_t& ent) -> std::string {
@@ -26,7 +26,7 @@ void pyinit_entity(py::module& module_ecs) {
           .def_property_readonly("transformNode", [](pyentity_ptr_t ent) -> xfnode_ptr_t { return ent->transformNode(); })
           .def_property_readonly("spawner", [](pyentity_ptr_t ent) -> spawndata_constptr_t { return ent->data(); });
 
-  type_codec->registerRawPtrCodec<pyentity_ptr_t, Entity*>(entity_type);
+  type_codec->registerStdCodec<pyentity_ptr_t>(entity_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // void pyinit_entity(py::module& module_ecs) {
 /////////////////////////////////////////////////////////////////////////////////

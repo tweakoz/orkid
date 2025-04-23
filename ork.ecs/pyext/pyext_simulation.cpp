@@ -27,7 +27,7 @@ void pyinit_simulation(py::module& module_ecs) {
             // sim->updateThreadTick();
           })
       .def("render", [](simulation_ptr_t sim, ui::drawevent_constptr_t drwev) { sim->render(drwev); })
-      .def("sceneGraphSystem", [](simulation_ptr_t sim) -> pysgsystem_ptr_t { return sim->findSystem<SceneGraphSystem>(); })
+      .def("sceneGraphSystem", [](simulation_ptr_t sim) -> pysgsystem_ptr_t { return pysgsystem_ptr_t(sim->findSystem<SceneGraphSystem>()); })
       .def(
           "start",
           [](simulation_ptr_t sim) {

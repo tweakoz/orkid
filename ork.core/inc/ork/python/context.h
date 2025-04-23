@@ -73,3 +73,13 @@ using context2_ptr_t = std::shared_ptr<Context2>;
 
 } // namespace ork::python
 
+#include "wraprawpointer.inl"
+
+namespace pybind11::detail {
+  template <typename base>
+  struct is_holder_type<base, ork::python::unmanaged_ptr<base>> : std::true_type {};
+
+  template <typename base>
+  struct is_holder_type<base, ork::python::unmanaged_ptr<const base>> : std::true_type {};
+
+} // namespace pybind11::detail

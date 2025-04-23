@@ -11,14 +11,31 @@
 namespace ork::python {
 template <class T> struct unmanaged_ptr {
   using value_type = T*;
+
+  ~unmanaged_ptr(){
+    // delete _ptr; NOP
+  }
+
   unmanaged_ptr()
       : _ptr(nullptr) {
   }
-  unmanaged_ptr(T* ptr)
+  explicit unmanaged_ptr(T* ptr)
       : _ptr(ptr) {
   }
   unmanaged_ptr(const unmanaged_ptr& other)
       : _ptr(other._ptr) {
+  }
+  unmanaged_ptr(unmanaged_ptr&& other) noexcept : _ptr(other._ptr) {
+    other._ptr = nullptr;
+  }
+  unmanaged_ptr& operator=(unmanaged_ptr&& other) noexcept {
+    _ptr = other._ptr;
+    other._ptr = nullptr;
+    return *this;
+  }
+
+  operator bool() const {
+    return _ptr != nullptr;
   }
   T& operator*() const {
     return *_ptr;
@@ -43,6 +60,9 @@ template <class T> struct unmanaged_ptr {
   void deallocate() {
     // delete _ptr;
   }
+  void assign(const unmanaged_ptr& other) {
+    _ptr = other._ptr;
+  }
   T& operator[](std::size_t idx) const {
     return _ptr[idx];
   }
@@ -51,3 +71,4 @@ template <class T> struct unmanaged_ptr {
 };
 
 } // namespace ork::python
+

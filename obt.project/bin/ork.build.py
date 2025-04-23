@@ -189,6 +189,12 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   rval = Command(cmd).exec()
 
   if rval==0 and obt.host.IsDarwin:
+    src_spec = PYTHON.site_packages_dir/"torch"/"lib"/"lib*.dylib"
+    dst_spec = obt.path.stage()/"lib/"
+    cmd_str = "cp %s %s/" % (src_spec, dst_spec)
+    print("copying torch dylibs to stage dir")
+    print(cmd_str)
+    os.system(cmd_str)
     rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
 
   src = ork_path.pyvenv/"bin"/"python3.12"
@@ -197,3 +203,4 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
     obt.pathtools.copyfile(src,dst)
 
 sys.exit(rval)
+

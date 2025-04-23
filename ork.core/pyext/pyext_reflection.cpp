@@ -31,7 +31,7 @@ using class_pyptr_t               = unmanaged_ptr<rtti::Class>;
 void pyinit_reflection(py::module& module_core) {
   auto type_codec = python::pb11_typecodec_t::instance();
   /////////////////////////////////////////////////////////////////////////////////
-    auto class_type_t = py::class_<class_pyptr_t>(module_core, "Class") //
+    auto class_type_t = py::class_<rtti::Class,class_pyptr_t>(module_core, "Class") //
       .def_property_readonly("name", [](class_pyptr_t clazz) -> std::string {
         return clazz->Name().c_str();
       });
@@ -39,7 +39,7 @@ void pyinit_reflection(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
     auto icastable_type_t = py::class_<rtti::ICastable,rtti::castable_ptr_t>(module_core, "ICastable") //
       .def_property_readonly("clazz", [](rtti::castable_ptr_t castable) -> class_pyptr_t {
-        return castable->GetClass(); 
+        return class_pyptr_t(castable->GetClass()); 
       });
   type_codec->registerStdCodec<rtti::castable_ptr_t>(icastable_type_t);
   /////////////////////////////////////////////////////////////////////////////////

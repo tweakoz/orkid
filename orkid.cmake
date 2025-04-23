@@ -32,7 +32,7 @@ function(orkid_find_python)
   #set(Python3_FIND_VIRTUALENV ONLY)
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-  find_package(pybind11 REQUIRED)
+  #find_package(pybind11 REQUIRED)
 
   #################################
   # export found python variables
@@ -67,7 +67,7 @@ ENDIF()
 ################################################################################
 
 function(enable_python_on_target the_target)
-  set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
+  set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${Python3_INCLUDE_DIRS})
   target_include_directories(${the_target} PUBLIC ${Python3_INCLUDE_DIRS} )
   target_link_directories(${the_target} PUBLIC ${Python3_RUNTIME_LIBRARY_DIRS} )
   target_link_directories(${the_target} PUBLIC ${Python3_LIBRARY_DIRS} )
@@ -257,7 +257,7 @@ IF(${APPLE})
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
   target_include_directories(${the_target} PUBLIC $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
   target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.dylib ${TORCHLIB_DIR}/libtorch_cpu.dylib)
-  target_link_libraries(${the_target} LINK_PUBLIC ${TORCHLIB_DIR}/libc10.dylib )
+  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libc10.dylib )
   endfunction()
 ELSEIF(${UNIX})
   function(ork_torch_opts the_target)

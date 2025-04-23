@@ -168,7 +168,7 @@ struct ComponentArray {
     : _components(components) {
   }
   inline pycomponent_ptr_t get(int idx) const {
-    return _components[idx];
+    return pycomponent_ptr_t(_components[idx]);
   }
   inline size_t size() const {
     return _components.size();

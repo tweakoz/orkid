@@ -67,7 +67,6 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 ###################################
 
 ork_std_target_opts(ork_lev2)
-ork_torch_opts(ork_lev2)
 
 set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
@@ -139,6 +138,8 @@ target_link_libraries(ork_lev2 PRIVATE assimp sndfile shaderc_shared )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
 target_link_libraries(ork_lev2 LINK_PRIVATE ork_ftxui )
+
+ork_torch_opts(ork_lev2) # torch should go last, so it cannot override the other libs
 
 ###################################
 # intel specific

@@ -144,7 +144,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           )
           .def_property("technique",
               [](fxpipelinepermutation_ptr_t permu) -> pyfxtechnique_ptr_t { //
-                return permu->_forced_technique;
+                return pyfxtechnique_ptr_t(permu->_forced_technique);
               },
               [](fxpipelinepermutation_ptr_t permu, pyfxtechnique_ptr_t tek) { //
                 permu->_forced_technique = tek.get();

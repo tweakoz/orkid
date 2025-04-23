@@ -52,14 +52,14 @@ void SmoothingStage::enqueue(stage_ptr_t inp_stage,vdb_vec3grid_ptr_t colorgrid)
       next_stage->mesh_inp = mesh_out;
       next_stage->conn = inp_stage->conn;
       next_stage->prim = inp_stage->prim;
-      next_stage->context = inp_stage->context;
+      next_stage->context.assign(inp_stage->context);
       next_stage->count = inp_stage->count - 1;
       enqueue(next_stage,colorgrid);
     };
     opq::concurrentQueue()->enqueue(op);
   } else {
     auto op = [=]() {
-      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, colorgrid, inp_stage->context.get());
+      inp_stage->mesh_inp->updateRigidPrim(inp_stage->prim, inp_stage->conn, colorgrid, ctx_t(inp_stage->context.get()));
     };
     opq::mainSerialQueue()->enqueue(op);
   }
@@ -152,7 +152,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   stage->mesh_inp = mesh;
                                   stage->conn = conn;
                                   stage->prim = prim;
-                                  stage->context = context;
+                                  stage->context.assign(context);
                                   stage->count = num_stages;
                                   SmoothingStage::enqueue(stage,nullptr);
                                 })
@@ -170,7 +170,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
                                   stage->mesh_inp = mesh;
                                   stage->conn = conn;
                                   stage->prim = prim;
-                                  stage->context = context;
+                                  stage->context.assign(context);
                                   stage->count = num_stages;
                                   SmoothingStage::enqueue(stage,colorgrid);
                                 });
@@ -266,7 +266,7 @@ void pyinit_gfx_primitives_rigid(py::module& module_lev2) {
             ////////////////////////////////////////////
             auto micromesh = std::make_shared<MicroMesh>(verts, faces);
             auto conn      = micromesh->computeVertexConnectivity();
-            micromesh->updateRigidPrim(prim, conn, nullptr, context.get());
+            micromesh->updateRigidPrim(prim, conn, nullptr, context);
           })
       .def("renderEML", [](meshutil::rigidprim_V12N12B12T8C4_ptr_t prim, ctx_t context) { //
         prim->renderEML(context.get());

@@ -67,7 +67,7 @@ template <typename queue_type> struct yo {
       mStage0Pushed++;
       extstring_t str;
       str.format("to<%d>", i);
-      pv->mVar.template set(str);
+      pv->mVar.template set<extstring_t>(str);
       // ork::usleep(rand()%3);
       mQueue01.EndWrite(pv);
     }
@@ -89,7 +89,7 @@ template <typename queue_type> struct yo {
         auto pv12 = mQueue12.BeginWrite();
         OrkAssert(pv12);
         mStage1Pushed++;
-        pv12->mVar.template set(str);
+        pv12->mVar.template set<extstring_t>(str);
         mQueue12.EndWrite(pv12);
         ////////////////////////////////////////
       } else if (mStage1ExitPlease)

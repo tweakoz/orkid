@@ -32,6 +32,9 @@ template <typename T> pybind11::object pybind11adapter::handle2object(const T& o
 template <typename T> pybind11::object pybind11adapter::cast_to_pyobject(const T& obj) {
   return pybind11::cast<object_t>(obj);
 }
+template <typename T> pybind11::object pybind11adapter::cast_to_pyobject_mut(T& obj) {
+  return pybind11::cast<object_t>(obj);
+}
 template <typename T> pybind11::object pybind11adapter::cast_to_pyhandle(const T& obj) {
   return pybind11::cast<handle_t>(obj);
 }

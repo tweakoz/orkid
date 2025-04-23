@@ -8,11 +8,14 @@
 #include <ork/lev2/config.h>
 
 #if defined(ENABLE_PYTORCH)
+#undef ThreadLocal // conflicts with c10
 #include <torch/extension.h> // for PyTorch C++ extension (this header is problematic)
 #endif
+
 #include "pyext.h"
 #include <ork/kernel/environment.h>
 #include <ork/lev2/ui/ged/ged_test_objects.h>
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -218,14 +221,14 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   #if defined(ENABLE_PYTORCH)
   auto tensor_type = py::class_<TorchTensor,torchtensor_ptr_t>(module_lev2, "TorchTensor")
-    .def(py::init<>([](torch::Tensor src) -> torchtensor_ptr_t {
+    .def(py::init<>([](::torch::Tensor src) -> torchtensor_ptr_t {
       auto tt = std::make_shared<TorchTensor>();
       tt->_impl.set<torch::Tensor>(src);
       return tt;
-    }))
-    .def_property_readonly("as_torch", [](torchtensor_ptr_t self) -> torch::Tensor {
+    }));
+    /*.def_property_readonly("as_torch", [](torchtensor_ptr_t self) -> torch::Tensor {
       return self->_impl.get<torch::Tensor>();
-    });
+    });*/
   type_codec->registerStdCodec<torchtensor_ptr_t>(tensor_type);
   #endif
   //////////////////////////////////////////////////////////////////////////////
