@@ -221,10 +221,10 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   #if defined(ENABLE_PYTORCH)
   auto tensor_type = py::class_<TorchTensor,torchtensor_ptr_t>(module_lev2, "TorchTensor")
-    .def(py::init<>([](py::object src) -> torchtensor_ptr_t {
+    .def(py::init<>([](torch::Tensor src) -> torchtensor_ptr_t {
       auto tt = std::make_shared<TorchTensor>();
       // convert to torch
-      //tt->_impl.set<torch::Tensor>(src);
+      tt->_impl.set<torch::Tensor>(src);
       return tt;
     }));
     /*.def_property_readonly("as_torch", [](torchtensor_ptr_t self) -> torch::Tensor {
