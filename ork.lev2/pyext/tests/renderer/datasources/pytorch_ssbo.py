@@ -170,11 +170,18 @@ class MinimalSceneGraphApp(object):
     # pytorch test
     ###################################
 
-    torch.cuda.set_device(0)
+    torch_device = "cpu"
+    if torch.cuda.is_available():
+      torch_device = "cuda"
+      print("torch device: %s" % torch_device)
+      torch.cuda.set_device(0)
+    elif torch.mps.is_available():
+      torch_device = "mps"
+      print("torch device: %s" % torch_device)
 
     # create N dimensional tensor of NUMPOINTS points
-    tensor_pos = torch.zeros([NUMPOINTS,4],dtype=torch.float32,device='cuda')
-    tensor_col = torch.zeros([NUMPOINTS,4],dtype=torch.float32,device='cuda')
+    tensor_pos = torch.zeros([NUMPOINTS,4],dtype=torch.float32,device=torch_device)
+    tensor_col = torch.zeros([NUMPOINTS,4],dtype=torch.float32,device=torch_device)
     self.l2tensor_pos = lev2.TorchTensor(tensor_pos)    
     self.l2tensor_col = lev2.TorchTensor(tensor_col)    
     self.ssbo = ctx.CI.createShaderStorageBufferWithLength(NUMPOINTS*4*6)
@@ -232,7 +239,7 @@ class MinimalSceneGraphApp(object):
     
     # convert linear point index space to 2d-uv space via modulo
     
-    lspace = torch.arange(0,NUMPOINTS,dtype=torch.float32,device='cuda')
+    lspace = torch.arange(0,NUMPOINTS,dtype=torch.float32,device=torch_device)
     x_coords = lspace % DIM
     y_coords = lspace // DIM
 
