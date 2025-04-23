@@ -23,7 +23,7 @@ known_keys = {
 }
 
 known_locs = {
-  "default": yarl.URL("http://tweakoz.com/resources"),
+  "default": yarl.URL("https://www.tweakoz.com/resources"),
 }
 
 known_dests = {
