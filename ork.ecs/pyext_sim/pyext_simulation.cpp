@@ -46,7 +46,6 @@ void register_simulation(nb::module_& module_ecssim,python::obind_typecodec_ptr_
         auto wrapped = pyentity_ptr_t(ent);
         return wrapped;
       });
-  //ype_codec->registerRawPtrCodec<sim_raw_ptr_t, Simulation*>(sim_type);
   type_codec->registerStdCodec<pysim_ptr_t>(sim_type);
 }
 } // namespace ork::ecssim

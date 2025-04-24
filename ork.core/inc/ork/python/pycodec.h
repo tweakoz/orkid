@@ -480,12 +480,6 @@ template <typename ADAPTER> struct ORK_API TypeCodec {
   template <typename ORKTYPE> //
   void registerStdCodecBIG(const object_t& pytype);
 
-  template <typename PYREPR, typename ORKTYPE> //
-  void registerRawPtrCodec(const object_t& pytype);
-
-  template <typename PYREPR, typename ORKTYPE> //
-  void registerRawConstPtrCodec(const object_t& pytype);
-
   protected:
   TypeCodec();
   svar128_t _impl;

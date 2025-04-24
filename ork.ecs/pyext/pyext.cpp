@@ -112,9 +112,9 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance, py::kwargs kwargs
         = py::cast<py::function>(appinstance.attr("onUpdate"));
     rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
     rval->onUpdate([=](ork::ui::updatedata_ptr_t updata) { //
-      auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
+      py::gil_scoped_acquire acquire;
       try {
-        py::gil_scoped_acquire acquire;
+        auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
         pyfn.value()(updata);
       } catch (py::error_already_set& e) {
         printf( "\n\npython exception in onUpdate\n\n");

@@ -118,7 +118,6 @@ py::object PyCodecImpl::encode64(const svar64_t& val) const {
       return py::none();
     } else {
       printf("UNKNOWNTYPE<%s>\n", val.typeName());
-      OrkAssert(false);
       throw std::runtime_error("pycodec-encode: unregistered type");
     }
   }

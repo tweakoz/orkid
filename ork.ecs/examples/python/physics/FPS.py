@@ -398,7 +398,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     # spawn balls
     ##############################
 
-
     prob = random.randint(0,100)
     if prob < 50 and self.spawncounter < NUM_BALLS:
       i = random.randint(-5,5)

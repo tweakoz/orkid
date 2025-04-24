@@ -13,6 +13,7 @@ from obt import path as obt_path
 from orkengine.core import vec3, vec4, quat, CrcStringProxy, VarMap, Transform
 from orkengine import lev2, ecs
 import trimesh
+import numpy as np
 
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
@@ -205,6 +206,13 @@ class ECS_MINIMAL(object):
 
   def createEnvironmentData(self):
 
+    def clean_mesh(m):
+      meshes = m.split(only_watertight=False)
+      meshes_convex = [i.convex_hull for i in meshes]
+      m = np.sum(meshes_convex)
+      return m
+      
+
     arch_env = self.ecsscene.declareArchetype("RoomArchetype")
     c_scenegraph = arch_env.declareComponent("SceneGraphComponent")
     c_physics = arch_env.declareComponent("BulletObjectComponent")
@@ -216,25 +224,25 @@ class ECS_MINIMAL(object):
     submesh2=fullBoxQuads(20,20)
     q1 = quat(vec3(1,0,0),math.pi*0.25)
     q2 = quat(vec3(0,1,0),math.pi*0.5)
-    tmeshx = submeshToTrimesh(submesh2,vec3(0,25,0),q1,vec3(1))
-    tmeshz = submeshToTrimesh(submesh2,vec3(0,20,0),q1*q2,vec3(1))
+    tmeshx = clean_mesh(submeshToTrimesh(submesh2,vec3(0,25,0),q1,vec3(1)))
+    tmeshz = clean_mesh(submeshToTrimesh(submesh2,vec3(0,20,0),q1*q2,vec3(1)))
 
 
 
     submesh=fullBoxQuads(40,20)
-    tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
+    tmesh = clean_mesh(submeshToTrimesh(submesh,vec3(0),quat(),vec3(1)))
 
     boolean_out = tmesh.difference(tmeshx)
     boolean_out = boolean_out.difference(tmeshz)
     submesh = trimeshToSubmesh(boolean_out)
 
     for i in range(0,4):
-      tmesh = submeshToTrimesh(submesh,vec3(0),quat(),vec3(1))
+      tmesh = clean_mesh(submeshToTrimesh(submesh,vec3(0),quat(),vec3(1)))
       evw = 10+i*10
       evh = 12
       y = 5+i*6
       submesh2=fullBoxQuads(evw,evh)
-      tmesh2 = submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1))
+      tmesh2 = clean_mesh(submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1)))
 
       boolean_out = tmesh.difference(tmesh2)
 

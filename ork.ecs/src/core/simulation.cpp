@@ -300,7 +300,7 @@ Entity* Simulation::_spawnNamedDynamicEntity(const impl::_SpawnAnonDynamic& SAD,
     invocation->_cb = spawn_rec->_onSpawn;
     auto& datatable = *invocation->_data.makeShared<DataTable>();
     EntityRef eref            = {newent->_entref};
-    datatable["entity"_tok] = newent;
+    datatable["entity"_tok] = pyentity_ptr_t(newent);
     datatable["entref"_tok] = eref;
     this->_enqueueDeferredInvokation(invocation);
   }

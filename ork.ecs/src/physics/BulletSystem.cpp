@@ -407,8 +407,8 @@ btScalar OrkContactResultCallback::addSingleResult(
       auto entB                  = (Entity*)body1->getUserPointer();
       EntityRef erefA            = {entA->_entref};
       EntityRef erefB            = {entB->_entref};
-      datatable["entityA"_tok]   = entA;
-      datatable["entityB"_tok]   = entB;
+      datatable["entityA"_tok]   = pyentity_ptr_t(entA);
+      datatable["entityB"_tok]   = pyentity_ptr_t(entB);
       datatable["entrefA"_tok]   = erefA;
       datatable["entrefB"_tok]   = erefB;
       datatable["groupA"_tok]    = group0;

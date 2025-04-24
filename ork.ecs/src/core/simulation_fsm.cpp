@@ -517,7 +517,7 @@ void Simulation::_initializeEntities() {
           invocation->_cb         = spawner->_onSpawn;
           auto& datatable         = *invocation->_data.makeShared<DataTable>();
           EntityRef eref          = {pent->_entref};
-          datatable["entity"_tok] = pent;
+          datatable["entity"_tok] = pyentity_ptr_t(pent);
           datatable["entref"_tok] = eref;
           this->_enqueueDeferredInvokation(invocation);
         }
