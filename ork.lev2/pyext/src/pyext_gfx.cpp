@@ -51,10 +51,10 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
           .def("defaultRTG", [](ctx_t& c) -> rtgroup_ptr_t { return rtgroup_ptr_t(c.get()->_defaultRTG); })
           .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
-          .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
-          .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
-          .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
-          .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
+          .def_property_readonly("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
+          .def_property_readonly("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
+          .def_property_readonly("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
+          .def_property_readonly("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
           .def_property_readonly("CI", [](ctx_t& c) -> ci_t { return ci_t(c.get()->CI()); })
           .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { 
             _g_post_swap_wait_time = wt;

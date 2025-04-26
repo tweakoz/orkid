@@ -95,6 +95,7 @@ using idxbufferbase_ptr_t    = std::shared_ptr<IndexBufferBase>;
 
 struct TorchTensor {
   svar64_t _impl;
+  std::atomic<int> _state = 0;
 };
 
 using torchtensor_ptr_t = std::shared_ptr<TorchTensor>;

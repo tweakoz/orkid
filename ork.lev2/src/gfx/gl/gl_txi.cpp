@@ -642,7 +642,7 @@ void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, cons
     map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
     map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
     void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-    memcpy_fast(mapped, src_data, length);
+    memcpy(mapped, src_data, length);
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     GL_ERRORCHECK();
   }
@@ -1125,9 +1125,16 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
 
   glto->_maxmip = 0;
 
+  /*
+  bool is_cpu = (l2tensor->_state.load()==1);
+  while(not is_cpu) {
+    is_cpu   = (l2tensor->_state.load()==1);
+    if(not is_cpu){
+      ::ork::usleep(10);
+    }
+  }*/
   auto as_tt = l2tensor->_impl.get<torch::Tensor>();
-  
-  OrkAssert(as_tt.is_contiguous());
+  //OrkAssert(as_tt.is_contiguous());
   // OrkAssert(as_tt.isCuda());
 
   // check that tensor dimensions are 2D
@@ -1154,7 +1161,10 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
         tensor_numelem);
 
   // assert tensor on CPU (for now..)
-  OrkAssert(as_tt.is_cpu());
+  if(not as_tt.is_cpu()) {
+    as_tt = as_tt.cpu();
+  }
+  //OrkAssert(as_tt.is_cpu());
 
   size_t dst_length    = tensor_numelem * as_tt.element_size();
   auto src_data = (const float*) as_tt.data_ptr();

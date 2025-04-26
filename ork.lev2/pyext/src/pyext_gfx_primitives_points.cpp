@@ -5,12 +5,21 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/config.h>
+
+#if defined(ENABLE_PYTORCH)
+#undef ThreadLocal           // conflicts with c10
+#include <torch/extension.h> // for PyTorch C++ extension
+#endif
+
 #include "pyext.inl"
 #include <pybind11/numpy.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/openvdb.h>
 #include <ork/kernel/memcpy.inl>
+
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +60,7 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
           .def(
               "colorHsvScaleBias",
               [](primitives::pointsdata_ptr_t prim, fvec2 hue, fvec2 sat, fvec2 val) -> primitives::pointsdata_ptr_t { //
-                return prim->hsvScaleBias(hue,sat,val);
+                return prim->hsvScaleBias(hue, sat, val);
               })
           .def(
               "stochasticSample",
@@ -75,19 +84,20 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
               [](int numpoints) -> primitives::points_v12c4_ptr_t {
                 return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints);
               })
-              .def(
-                "createWithSSBO",
-                [](int numpoints, fxshaderstoragebuffer_ptr_t ssbo) -> primitives::points_v12c4_ptr_t {
-                  return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints,ssbo.get());
-                })
-                .def_property("debug", //
-                              [](primitives::points_v12c4_ptr_t prim) -> bool { //
-                                return prim->_debug;
-                              },
-                              [](primitives::points_v12c4_ptr_t prim, bool bv) { //
-                                prim->_debug = bv;
-                              })
-            .def(
+          .def(
+              "createWithSSBO",
+              [](int numpoints, fxshaderstoragebuffer_ptr_t ssbo) -> primitives::points_v12c4_ptr_t {
+                return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints, ssbo.get());
+              })
+          .def_property(
+              "debug",                                          //
+              [](primitives::points_v12c4_ptr_t prim) -> bool { //
+                return prim->_debug;
+              },
+              [](primitives::points_v12c4_ptr_t prim, bool bv) { //
+                prim->_debug = bv;
+              })
+          .def(
               "createFromVdbFloatGrid",
               [](vdb_floatgrid_ptr_t grid, ctx_t context) -> primitives::points_v12c4_ptr_t {
                 int num_points = grid->tree().activeLeafVoxelCount();
@@ -124,44 +134,78 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 prim->unlock(context.get());
                 return prim;
               })
+#if defined(ENABLE_PYTORCH)
+          .def(
+              "updatePositionWithTorchTensor",
+              [](primitives::points_v12c4_ptr_t prim, torchtensor_ptr_t l2tensor, size_t start, ctx_t context) {
+                /////////////////////////
+                // wait for tensor to be on CPU
+                /////////////////////////
+                if(0){
+                  py::gil_scoped_release release;
+                  bool is_cpu = (l2tensor->_state.load() == 1);
+                  while (not is_cpu) {
+                    is_cpu = (l2tensor->_state.load() == 1);
+                    if (not is_cpu) {
+                      ::ork::usleep(10);
+                    }
+                  }
+                }
+                auto as_tt  = l2tensor->_impl.get<torch::Tensor>();
+                bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
+                if (not dim_ok) {
+                  printf("ERROR: tensor dim<%d> is not 3\n", int(as_tt.dim()));
+                  OrkAssert(false);
+                }
+                //printf("dim_ok<%d>\n", (int) dim_ok);
+                size_t num_points   = as_tt.size(1);
+                OrkAssert(as_tt.is_contiguous());
+                OrkAssert(as_tt.is_cpu());
+                OrkAssert(as_tt.dtype() == torch::kFloat32);
+                OrkAssert((start+num_points) <= prim->_capacity)
+                auto src_data = (const float*) as_tt.data_ptr();
+                auto dst_data = (VtxV12C4*) prim->lock(context.get(), num_points);
+                for( size_t i=0; i<num_points; i++ ){
+                  size_t j = (start+i) * 3;
+                  auto& out = dst_data[i];
+                  out.x = src_data[j+0];
+                  out.y = src_data[j+1];
+                  out.z = src_data[j+2];
+                }
+                prim->unlock(context.get());
+              })
+#endif
           .def(
               "updateWithPointsData",
-              [](primitives::points_v12c4_ptr_t prim, 
-                 primitives::pointsdata_ptr_t pdata, 
-                 ctx_t context) {
-                 py::gil_scoped_release release;
-                 size_t dblock_len = pdata->_datablock->length();
-                 OrkAssert(dblock_len%sizeof(VtxV12C4)==0);
-                 size_t num_points = dblock_len / sizeof(VtxV12C4);
-                 OrkAssert(num_points <= prim->_capacity)
-                 VtxV12C4* points = prim->lock(context.get(), num_points);
-                 memcpy_fast(points, pdata->_datablock->data(), dblock_len);
-                 prim->unlock(context.get());
+              [](primitives::points_v12c4_ptr_t prim, primitives::pointsdata_ptr_t pdata, ctx_t context) {
+                py::gil_scoped_release release;
+                size_t dblock_len = pdata->_datablock->length();
+                OrkAssert(dblock_len % sizeof(VtxV12C4) == 0);
+                size_t num_points                                         = dblock_len / sizeof(VtxV12C4);
+                OrkAssert(num_points <= prim->_capacity) VtxV12C4* points = prim->lock(context.get(), num_points);
+                memcpy_fast(points, pdata->_datablock->data(), dblock_len);
+                prim->unlock(context.get());
               })
-              .def(
+          .def(
               "updateWithV12C4DataBlock",
-              [](primitives::points_v12c4_ptr_t prim, 
-                 datablock_ptr_t dblock, 
-                 ctx_t context,
-                 bool swizzle_rgb = false) {
-                 py::gil_scoped_release release;
-                 size_t dblock_len = dblock->length();
-                 OrkAssert(dblock_len%sizeof(VtxV12C4)==0);
-                 size_t num_points = dblock_len / sizeof(VtxV12C4);
-                 OrkAssert(num_points <= prim->_capacity)
-                 VtxV12C4* points = prim->lock(context.get(), num_points);
-                 memcpy_fast(points, dblock->data(), dblock_len);
-                 if(swizzle_rgb){
-                   for(size_t i=0; i<num_points; i++){
-                     auto& vtx = points[i];
-                     uint32_t color = vtx.color;
-                     uint32_t r = (color>>16)&0xff;
-                     uint32_t g = (color>>8)&0xff;
-                     uint32_t b = (color>>0)&0xff;
-                     vtx.color = (b<<16)|(g<<8)|(r<<0);
-                   }
-                 }
-                 prim->unlock(context.get());
+              [](primitives::points_v12c4_ptr_t prim, datablock_ptr_t dblock, ctx_t context, bool swizzle_rgb = false) {
+                py::gil_scoped_release release;
+                size_t dblock_len = dblock->length();
+                OrkAssert(dblock_len % sizeof(VtxV12C4) == 0);
+                size_t num_points                                         = dblock_len / sizeof(VtxV12C4);
+                OrkAssert(num_points <= prim->_capacity) VtxV12C4* points = prim->lock(context.get(), num_points);
+                memcpy_fast(points, dblock->data(), dblock_len);
+                if (swizzle_rgb) {
+                  for (size_t i = 0; i < num_points; i++) {
+                    auto& vtx      = points[i];
+                    uint32_t color = vtx.color;
+                    uint32_t r     = (color >> 16) & 0xff;
+                    uint32_t g     = (color >> 8) & 0xff;
+                    uint32_t b     = (color >> 0) & 0xff;
+                    vtx.color      = (b << 16) | (g << 8) | (r << 0);
+                  }
+                }
+                prim->unlock(context.get());
               })
           .def(
               "updateWithVdbFloatGrid",

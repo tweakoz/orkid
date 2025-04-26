@@ -223,8 +223,24 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   auto tensor_type = py::class_<TorchTensor,torchtensor_ptr_t>(module_lev2, "TorchTensor")
     .def(py::init<>([](torch::Tensor src) -> torchtensor_ptr_t {
       auto tt = std::make_shared<TorchTensor>();
-      // convert to torch
       tt->_impl.set<torch::Tensor>(src);
+      #if 1 
+      tt->_state.store(1);
+      #else
+      tt->_state.store(0);
+      auto op = [=](){
+        py::gil_scoped_acquire gil;
+        auto _src = tt->_impl.get<torch::Tensor>();
+        if( not _src.is_cpu() ){
+          // move to cpu
+          _src = _src.to(torch::kCPU);
+          tt->_impl.set<torch::Tensor>(_src);
+        }
+        tt->_state.store(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
+      #endif
+      // convert to torch
       return tt;
     }));
     /*.def_property_readonly("as_torch", [](torchtensor_ptr_t self) -> torch::Tensor {
