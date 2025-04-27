@@ -60,7 +60,7 @@ using vw_vtxa_t           = VtxWriter<vtxa_t>;
 using cstrref_t           = const std::string&;
 using rcfd_t              = RenderContextFrameData;
 using decxf_t             = ork::decompxf_ptr_t;
-
+using idxbuf_rawptr_t     = ork::python::unmanaged_ptr<IndexBufferBase>;
 using fxshaderstoragebuffer_ptr_t = ork::python::unmanaged_ptr<FxShaderStorageBuffer>;
 
 

@@ -1046,7 +1046,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
         break;
       }
       case PrimitiveType::TRIANGLES:
-        //printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+        printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
@@ -1065,7 +1065,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
     auto indextype = plat_handle->_indexGlType;
     if (glprimtype != 0) {
       int vblen = VBuf.GetNumVertices();
-      //printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
+      printf("B ibmin<%d> ibmax<%d> vblen<%d>\n", imin, imax, vblen);
       glDrawRangeElements(glprimtype, imin, imax, iNum, indextype, nullptr);
     }
     GL_ERRORCHECK();

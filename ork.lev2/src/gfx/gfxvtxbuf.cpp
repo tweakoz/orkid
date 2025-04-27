@@ -24,13 +24,12 @@ IndexBufferBase::~IndexBufferBase() {
   mpIndices = 0;
 }
 
-  int IndexBufferBase::GetNumIndices() const {
-    return miNumIndices;
-  }
-  void IndexBufferBase::SetNumIndices(int inum) {
-    miNumIndices = inum;
-  }
-
+int IndexBufferBase::GetNumIndices() const {
+  return miNumIndices;
+}
+void IndexBufferBase::SetNumIndices(int inum) {
+  miNumIndices = inum;
+}
 
 /////////////////////////////////////////////////////////////////////////
 template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static) {
@@ -90,9 +89,9 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
     case EVtxStreamFormat::V12N12T8DF12C4:
       pvb = _createvb<SVtxV12N12T8DF12C4>(inumverts, bstatic);
       break;
-      case EVtxStreamFormat::V12N12T16:
-        pvb = _createvb<SVtxV12N12T16>(inumverts, bstatic);
-        break;
+    case EVtxStreamFormat::V12N12T16:
+      pvb = _createvb<SVtxV12N12T16>(inumverts, bstatic);
+      break;
     default:
       OrkAssert(false);
   }
@@ -116,51 +115,51 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, /*PrimitiveT
 VertexBufferBase::~VertexBufferBase() {
 }
 
-  int VertexBufferBase::GetMax(void) const {
-    return int(miMaxVerts);
-  }
-  int VertexBufferBase::GetNumVertices(void) const {
-    return int(miNumVerts);
-  }
-  int VertexBufferBase::GetVtxSize(void) const {
-    return int(miVtxSize);
-  }
-  void VertexBufferBase::Reset(void) {
-    miNumVerts = 0;
-  }
-  void VertexBufferBase::SetNumVertices(int inum) {
-    miNumVerts = inum;
-  }
+int VertexBufferBase::GetMax(void) const {
+  return int(miMaxVerts);
+}
+int VertexBufferBase::GetNumVertices(void) const {
+  return int(miNumVerts);
+}
+int VertexBufferBase::GetVtxSize(void) const {
+  return int(miVtxSize);
+}
+void VertexBufferBase::Reset(void) {
+  miNumVerts = 0;
+}
+void VertexBufferBase::SetNumVertices(int inum) {
+  miNumVerts = inum;
+}
 
-  EVtxStreamFormat VertexBufferBase::GetStreamFormat(void) const {
-    return EVtxStreamFormat(meStreamFormat);
-  }
+EVtxStreamFormat VertexBufferBase::GetStreamFormat(void) const {
+  return EVtxStreamFormat(meStreamFormat);
+}
 
-  bool VertexBufferBase::IsLocked(void) const {
-    return _locked;
-  }
-  void VertexBufferBase::Lock() const {
-    miLockWriteIndex = 0;
-    SetLock(true);
-  }
-  void VertexBufferBase::Unlock() const {
-    // miLockWriteIndex=0;
-    SetLock(false);
-  }
-  void VertexBufferBase::SetRingLock(bool v) {
-    mbRingLock = v;
-  }
-  bool VertexBufferBase::GetRingLock() const {
-    return mbRingLock;
-  }
+bool VertexBufferBase::IsLocked(void) const {
+  return _locked;
+}
+void VertexBufferBase::Lock() const {
+  miLockWriteIndex = 0;
+  SetLock(true);
+}
+void VertexBufferBase::Unlock() const {
+  // miLockWriteIndex=0;
+  SetLock(false);
+}
+void VertexBufferBase::SetRingLock(bool v) {
+  mbRingLock = v;
+}
+bool VertexBufferBase::GetRingLock() const {
+  return mbRingLock;
+}
 /////////////////////////////////////////////////////////////////////////
-  VtxWriterBase::VtxWriterBase()
-      : miWriteBase(0)
-      , miWriteCounter(0)
-      , miWriteMax(0)
-      , mpBase(0)
-      , mpVB(0) {
-  }
+VtxWriterBase::VtxWriterBase()
+    : miWriteBase(0)
+    , miWriteCounter(0)
+    , miWriteMax(0)
+    , mpBase(0)
+    , mpVB(0) {
+}
 
 /////////////////////////////////////////////////////////////////////////
 void VtxWriterBase::Lock(Context* pT, VertexBufferBase* pVB, int icount) {
@@ -180,18 +179,18 @@ void VtxWriterBase::Lock(GeometryBufferInterface* GBI, VertexBufferBase* pVB, in
   if (bringlock) {
     int inewbase = pVB->_ring_lock_index + icount;
 
-
     if (inewbase > imax) {
-      ivbase   = 0;
+      ivbase                = 0;
       pVB->_ring_lock_index = 0;
-      if(0)printf( "ringcyc vb<%p> rli<%d> inewbase<%d> icount<%d> imax<%d> \n",  //
-              pVB, //
-              pVB->_ring_lock_index, //
-              inewbase, //
-              icount, //
-              imax );
-    }
-    else{
+      if (0)
+        printf(
+            "ringcyc vb<%p> rli<%d> inewbase<%d> icount<%d> imax<%d> \n", //
+            pVB,                                                          //
+            pVB->_ring_lock_index,                                        //
+            inewbase,                                                     //
+            icount,                                                       //
+            imax);
+    } else {
       ivbase = pVB->_ring_lock_index;
     }
     pVB->_ring_lock_index += icount;
@@ -216,7 +215,7 @@ void VtxWriterBase::Lock(GeometryBufferInterface* GBI, VertexBufferBase* pVB, in
   void* pdata = GBI->LockVB(*pVB, ivbase, icount);
   OrkAssert(pdata != 0);
   ////////////////////////////////////////////
-  mpBase         = (char*)pdata;
+  mpBase = (char*)pdata;
 }
 void VtxWriterBase::UnLock(Context* pT, u32 ulflgs) {
   UnLock(pT->GBI(), ulflgs);

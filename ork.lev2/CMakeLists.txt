@@ -119,10 +119,6 @@ ELSEIF(${UNIX})
 
 ENDIF()
 
-#IF(PROFILER)
-#  list(APPEND libs easy_profiler)
-#ENDIF()
-
 list(APPEND libs  mpfr gmp )
 list(APPEND libs  openvdb openvdb_ax tbb )
 

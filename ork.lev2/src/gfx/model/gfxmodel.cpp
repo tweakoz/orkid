@@ -82,8 +82,14 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
     : _submesh(submesh)
     , _enabled(true) {
 
-  _fxpipelinecache = submesh->_material->pipelineCache();
-  OrkAssert(_fxpipelinecache);
+        if(submesh->_material){
+            _fxpipelinecache = submesh->_material->pipelineCache();
+            OrkAssert(_fxpipelinecache);
+
+        }
+        else{
+            OrkAssert(submesh->_pipelineOverride);
+        }
 }
 
 material_ptr_t XgmSubMeshInst::material() const {

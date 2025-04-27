@@ -245,7 +245,7 @@ struct MyParser : public Parser {
       auto args    = seq->_items[3]->_impl.get<n_or_more_ptr_t>();
       auto stas    = seq->_items[6]->_impl.get<n_or_more_ptr_t>();
       printf(
-          "MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
+          "MATCHED funcdef<%s> function<%s> numargs<%zu> numstatements<%zu>\n", //
           funcdef->_name.c_str(),                                             //
           fn_name->_token->text.c_str(),                                      //
           args->_items.size(),                                                //

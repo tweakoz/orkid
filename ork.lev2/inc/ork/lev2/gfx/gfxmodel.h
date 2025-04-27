@@ -65,6 +65,7 @@ public:
   int miNumIndices;
 
   IndexBufferBase* mpIndices;
+  idxbufferbase_ptr_t _sharedIndices;
   PrimitiveType mePrimType;
 
   XgmPrimGroup();
@@ -125,6 +126,7 @@ struct XgmSubMesh final // Run Time Cluster Set
 {
 
   material_ptr_t _material;
+  fxpipeline_ptr_t _pipelineOverride;
   xgmcluster_ptr_list_t _clusters;
   XgmMesh* _parentmesh = nullptr;
 

@@ -40,7 +40,6 @@ void _colortext_wrap(ftxui::node_vect_t& NODES, irgb foreground, irgb background
     // remove len from beginning of str
     str = str.substr(len, str.length() - len);
   }
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -77,21 +76,21 @@ void _FtxGlDebugger::run_loop() {
       "FrameBufferState",
       "RasterState",
       "GeometryState",
+      "ShaderState",
   };
-  #if defined(ENABLE_SSBO)
+#if defined(ENABLE_SSBO)
   menu_entries.push_back("StorageState");
-  #endif
-  menu_entries.push_back("ShaderState");
+#endif
 
-  auto content_backtrace = Renderer([&] { return _node_backtrace | vscroll_indicator | frame; });
-  auto content_textures = Renderer([&] { return _node_textures | vscroll_indicator | frame; });
-  auto content_texstate = Renderer([&] { return _node_texturebindingstate | vscroll_indicator | frame; });
+  auto content_backtrace   = Renderer([&] { return _node_backtrace | vscroll_indicator | frame; });
+  auto content_textures    = Renderer([&] { return _node_textures | vscroll_indicator | frame; });
+  auto content_texstate    = Renderer([&] { return _node_texturebindingstate | vscroll_indicator | frame; });
   auto content_framebuffer = Renderer([&] { return _node_framebuffer | vscroll_indicator | frame; });
-  auto content_raster = Renderer([&] { return _node_raster | vscroll_indicator | frame; });
+  auto content_raster      = Renderer([&] { return _node_raster | vscroll_indicator | frame; });
   auto content_geometry    = Renderer([&] { return _node_geometry | vscroll_indicator | frame; });
-  #if defined(ENABLE_SSBO)
-  auto content_storage    = Renderer([&] { return _node_ssbo | vscroll_indicator | frame; });
-  #endif
+#if defined(ENABLE_SSBO)
+  auto content_storage = Renderer([&] { return _node_ssbo | vscroll_indicator | frame; });
+#endif
 
   auto content_shader = Renderer([&] { return _node_shader | vscroll_indicator | frame; });
 
@@ -102,15 +101,15 @@ void _FtxGlDebugger::run_loop() {
   content_components.push_back(content_framebuffer);
   content_components.push_back(content_raster);
   content_components.push_back(content_geometry);
-  content_components.push_back(content_geometry);
-  #if defined(ENABLE_SSBO)
+  content_components.push_back(content_shader);
+#if defined(ENABLE_SSBO)
   content_components.push_back(content_storage);
-  #endif
+#endif
   for (auto it : _shader_texts) {
-    std::string name = it.first;
+    std::string name     = it.first;
     const auto& sh_lines = it.second;
     menu_entries.push_back(name);
-    auto cview     = code_viewer(sh_lines);
+    auto cview = code_viewer(sh_lines);
     content_components.push_back(cview);
   }
 
@@ -155,24 +154,25 @@ void ContextGL::stateDebugger() const {
 
     std::string callstack = ork::get_backtrace();
     std::vector<std::string> lines;
-    size_t pos = 0;
+    size_t pos    = 0;
     size_t length = callstack.length();
     while (pos < length) {
       size_t start = pos;
-      while (pos < length && callstack[pos] != '\n') pos++;
+      while (pos < length && callstack[pos] != '\n')
+        pos++;
 
       std::string line = callstack.substr(start, pos - start);
 
-      int status = 0;
+      int status      = 0;
       char* demangled = abi::__cxa_demangle(line.c_str(), 0, 0, &status);
-      if(status==0){
+      if (status == 0) {
         lines.push_back(demangled);
         free(demangled);
-      }
-      else{
+      } else {
         lines.push_back(line);
       }
-      if (pos < length) pos++;  // Include newline
+      if (pos < length)
+        pos++; // Include newline
     }
 
     node_vect_t NODES;
@@ -198,7 +198,6 @@ void ContextGL::stateDebugger() const {
 
   debugger->run_loop();
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

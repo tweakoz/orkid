@@ -26,7 +26,6 @@ namespace ork::lev2 {
 
 #pragma once
 
-
 enum TokenType {
   Keyword,
   Identifier,
@@ -47,7 +46,7 @@ struct Token {
   std::string text;
 };
 
-struct Keywords{
+struct Keywords {
   Keywords();
   std::unordered_set<std::string> _keywords;
   std::unordered_set<std::string> _builtinmethods;
@@ -56,8 +55,8 @@ struct Keywords{
 
 struct ShaderAttrib {
   std::string _name;
-  GLint _size  = 0;
-  GLenum _type = GL_NONE;
+  GLint _size     = 0;
+  GLenum _type    = GL_NONE;
   GLint _location = -1;
 };
 using shader_attrib_ptr_t = std::shared_ptr<ShaderAttrib>;
@@ -71,21 +70,21 @@ struct irgb {
   int g;
   int b;
 };
-static constexpr irgb RED = irgb{255, 0, 0};
-static constexpr irgb YEL = irgb{255, 255, 0};
-static constexpr irgb BLK = irgb{0, 0, 0};
+static constexpr irgb RED  = irgb{255, 0, 0};
+static constexpr irgb YEL  = irgb{255, 255, 0};
+static constexpr irgb BLK  = irgb{0, 0, 0};
 static constexpr irgb BLU1 = irgb{0, 0, 32};
 static constexpr irgb BLU2 = irgb{0, 0, 64};
 static constexpr irgb BLU3 = irgb{0, 0, 128};
 static constexpr irgb BLU4 = irgb{0, 0, 192};
-static constexpr irgb WHI = irgb{255, 255, 255};
-static constexpr irgb GR1 = irgb{32, 32, 32};
-static constexpr irgb GR2 = irgb{64, 64, 64};
-static constexpr irgb GR3 = irgb{128, 128, 128};
-static constexpr irgb GRN = irgb{0, 255, 0};
-static constexpr irgb CYN = irgb{0, 255, 255};
-static constexpr irgb MAG = irgb{255, 0, 255};
-static constexpr irgb ORA = irgb{255, 192, 32};
+static constexpr irgb WHI  = irgb{255, 255, 255};
+static constexpr irgb GR1  = irgb{32, 32, 32};
+static constexpr irgb GR2  = irgb{64, 64, 64};
+static constexpr irgb GR3  = irgb{128, 128, 128};
+static constexpr irgb GRN  = irgb{0, 255, 0};
+static constexpr irgb CYN  = irgb{0, 255, 255};
+static constexpr irgb MAG  = irgb{255, 0, 255};
+static constexpr irgb ORA  = irgb{255, 192, 32};
 
 void _colortext(ftxui::node_vect_t& NODES, irgb foreground, irgb background, const char* formatstring, ...);
 void _colortext_wrap(ftxui::node_vect_t& NODES, irgb foreground, irgb background, const char* formatstring, ...);
@@ -118,9 +117,9 @@ struct _FtxGlDebugger {
   ftxui::node_ptr_t _node_textures;
   using shader_text_t = std::vector<std::string>;
 
-  std::map<int,shader_attrib_ptr_t> _shader_attribs;
-  std::map<std::string,shader_text_t> _shader_texts;
+  std::map<int, shader_attrib_ptr_t> _shader_attribs;
+  std::map<std::string, shader_text_t> _shader_texts;
 };
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

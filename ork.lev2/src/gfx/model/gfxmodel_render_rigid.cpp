@@ -28,23 +28,24 @@ void XgmModel::RenderRigid(
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
 
-  auto R                       = RCID.GetRenderer();
-  auto RCFD                    = context->topRenderContextFrameData();
-  const auto& CPD              = RCFD->topCPD();
-  bool stereo1pass             = CPD.isStereoOnePass();
-  const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-  auto cluster                 = mdlctx._cluster;
-  const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
-  int inummesh                 = numMeshes();
-  int inumclusset              = XgmMesh.numSubMeshes();
+  auto R                    = RCID.GetRenderer();
+  auto RCFD                 = context->topRenderContextFrameData();
+  const auto& CPD           = RCFD->topCPD();
+  bool stereo1pass          = CPD.isStereoOnePass();
+  const XgmMesh& mesh       = *mdlctx.mMesh;
+  auto cluster              = mdlctx._cluster;
+  const XgmSubMesh& submesh = *mdlctx.mSubMesh;
+  int inummesh              = numMeshes();
 
-  auto fxcache = RCID._pipeline_cache;
-  OrkAssert(fxcache);
-  auto pipeline = fxcache->findPipeline(RCID);
+  fxpipeline_ptr_t pipeline = submesh._pipelineOverride;
+  if (pipeline == nullptr) {
+    auto fxcache = RCID._pipeline_cache;
+    OrkAssert(fxcache);
+    pipeline = fxcache->findPipeline(RCID);
+  }
   OrkAssert(pipeline);
 
-  context->debugPushGroup(
-      FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
+  context->debugPushGroup(FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d>", int(stereo1pass), inummesh));
 
   context->MTXI()->SetMMatrix(WorldMat);
   context->PushModColor(ModColor);
@@ -58,7 +59,7 @@ void XgmModel::RenderRigid(
       for (int iprim = 0; iprim < inumprim; iprim++) {
         auto primgroup = cluster->primgroup(iprim);
         auto idxbuffer = primgroup->GetIndexBuffer();
-        if(_stateDebugger){
+        if (_stateDebugger) {
           context->stateDebugger();
         }
         context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());

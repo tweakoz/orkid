@@ -12,6 +12,7 @@
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
+#include <ork/math/box.h>
 #include <ork/util/endian.h>
 
 namespace ork::lev2 {
@@ -116,6 +117,7 @@ public:
   mutable bool _locked;
   bool mbInited;
   bool mbRingLock;
+  AABox _aabb;
 
 private:
   void SetLock(bool bLock) const {

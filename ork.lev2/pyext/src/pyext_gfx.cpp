@@ -445,17 +445,6 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<VertexBufferBase>(module_lev2, "VertexBufferBase");
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<vtxa_t>(module_lev2, "VtxV12N12B12T8C4")
-      .def(py::init<fvec3, fvec3, fvec3, fvec2, uint32_t>())
-      .def_static(
-          "staticBuffer",
-          [](size_t size) -> vb_static_vtxa_t //
-          { return vb_static_vtxa_t(size, 0); });
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
-  /////////////////////////////////////////////////////////////////////////////////
   py::class_<FontMan>(module_lev2, "FontManager")
       .def_static("gpuInit", [](ctx_t& ctx) { FontMan::gpuInit(ctx.get()); })
       .def_static(
