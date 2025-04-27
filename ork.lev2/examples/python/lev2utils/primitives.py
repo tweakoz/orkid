@@ -33,6 +33,8 @@ def createFrustumPrim( ctx=None, vmatrix=None, pmatrix=None, alpha = 1.0 ):
 
 def createPointsPrimV12C4(ctx=None,numpoints=0):
   return primitives.PointsPrimitiveV12C4.create(numpoints)
+def createPointsPrimV12T8(ctx=None,numpoints=0):
+  return primitives.PointsPrimitiveV12T8.create(numpoints)
 
 def createPointsPrimSSBO(ctx=None,numpoints=0,ssbo=None):
   return primitives.PointsPrimitiveV12C4.createWithSSBO(numpoints,ssbo)
