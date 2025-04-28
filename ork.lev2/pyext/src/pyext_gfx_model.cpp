@@ -200,7 +200,7 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
                 primgroup->_sharedIndices = idxbuf;       // owning
                 primgroup->mpIndices      = idxbuf.get(); // not owning
                 primgroup->mePrimType     = PrimitiveType(primtype->hashed());
-                primgroup->miNumIndices   = idxbuf->GetNumIndices();
+                primgroup->miNumIndices   = idxbuf ? idxbuf->GetNumIndices() : 0;
                 cluster->_primgroups.push_back(primgroup);
                 return primgroup;
               });

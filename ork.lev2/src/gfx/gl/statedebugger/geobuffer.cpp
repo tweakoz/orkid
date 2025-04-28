@@ -153,6 +153,13 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
                 }
                 break;
               }
+              case GL_UNSIGNED_INT: {
+                auto u32data = (const uint32_t*)vdata;
+                for( int j=0; j<gb.size; j++ ) {
+                  outstr += FormatString("0x%08x ", u32data[j]);
+                }
+                break;
+              }
               default:
                 break;
             }

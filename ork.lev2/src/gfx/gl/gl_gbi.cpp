@@ -881,6 +881,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
   ////////////////////////////////////////////////////////////////////
   GL_ERRORCHECK();
   bool bOK = BindVertexStreamSource(VBuf);
+  //printf("DrawPrimitiveEML<%p> <vbo %d> <ivbase %d> <inum %d>\n", &VBuf, int(VBuf._impl.getShared<GlVertexBufferImpl>()->_VBO), ivbase, ivcount);
   if (false == bOK){
     return;
   }

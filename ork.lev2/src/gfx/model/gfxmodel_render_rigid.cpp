@@ -62,7 +62,11 @@ void XgmModel::RenderRigid(
         if (_stateDebugger) {
           context->stateDebugger();
         }
-        context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
+        if(idxbuffer){
+          context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
+        } else {
+          context->GBI()->DrawPrimitiveEML(*vtxbuffer, primgroup->GetPrimType());
+        }
       }
     });
     //////////////////////////////////////////////

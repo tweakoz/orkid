@@ -142,7 +142,27 @@ void pyinit_gfx(py::module& module_lev2) {
             vw.Lock(gbi.get(), &vb, icount);
             return vw;
           })
-      .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
+      .def(
+        "lockVU32",
+        [](gbi_t gbi, vtxbufferbase_ptr_t& vb, int ibase, int icount) -> py::memoryview {
+          OrkAssert(vb->GetVtxSize() == sizeof(SVtxVU32));
+          OrkAssert(vb->GetNumVertices() >= ibase + icount);
+          int ibasebytes = ibase * vb->GetVtxSize();
+          int isizebytes = icount * vb->GetVtxSize();
+          auto pu32 = (uint32_t*)gbi.get()->LockVB(*vb, ibase, icount);
+          OrkAssert(pu32);
+          // create a buffer info object
+          auto b = py::memoryview::from_buffer(
+            pu32,
+            sizeof(uint32_t),
+            py::format_descriptor<uint32_t>::value,
+            /*shape*/ py::detail::any_container<ssize_t>{ icount }, 
+            py::detail::any_container<ssize_t>{ 0 } // strides
+          );
+          return b;
+        })
+        .def("unlockVB", [](gbi_t gbi, vtxbufferbase_ptr_t& vb) { gbi->UnLockVB(*vb); })
+        .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
       .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
       .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
       .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });

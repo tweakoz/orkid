@@ -85,6 +85,7 @@ void pyinit_gfx_buffers(py::module& module_lev2) {
     [](crcstring_ptr_t fmt, size_t count) -> vtxbufferbase_ptr_t {
       auto efmt = EVtxStreamFormat(fmt->hashed());
       auto vb = VertexBufferBase::CreateVertexBuffer(efmt,count,false);
+      vb->miNumVerts = count;
       return vb;
     });
     module_lev2.def(
@@ -92,6 +93,7 @@ void pyinit_gfx_buffers(py::module& module_lev2) {
       [](crcstring_ptr_t fmt, size_t count) -> vtxbufferbase_ptr_t {
         auto efmt = EVtxStreamFormat(fmt->hashed());
         auto vb = VertexBufferBase::CreateVertexBuffer(efmt,count,true);
+        vb->miNumVerts = count;
         return vb;
       });
     /////////////////////////////////////////////////////////////////////////////////
