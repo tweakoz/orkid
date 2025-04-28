@@ -278,6 +278,9 @@ enum struct ECullTest : crc_enum_t {
 ///////////////////////////////////////////////////////////////////////////////
 
 enum struct EVtxStreamFormat : crc_enum_t {
+  CrcEnum(VU16),            // 2 BPV	primarily for texture based sourcing
+  CrcEnum(VU32),            // 4 BPV	primarily for texture based sourcing
+
   CrcEnum(V4T4),            // 8 BPV	2D text (or textured quads) no vtxcolors
   CrcEnum(V4C4),            // 8 BPV	2D Colored
 

@@ -77,7 +77,24 @@ void pyinit_gfx_buffers(py::module& module_lev2) {
       ctx->GBI()->UnLockVB(*vb);
       return vb;
     });
-/////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  //py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
+  /////////////////////////////////////////////////////////////////////////////////
+  module_lev2.def(
+    "createVertexBufferStatic",
+    [](crcstring_ptr_t fmt, size_t count) -> vtxbufferbase_ptr_t {
+      auto efmt = EVtxStreamFormat(fmt->hashed());
+      auto vb = VertexBufferBase::CreateVertexBuffer(efmt,count,false);
+      return vb;
+    });
+    module_lev2.def(
+      "createVertexBufferDynamic",
+      [](crcstring_ptr_t fmt, size_t count) -> vtxbufferbase_ptr_t {
+        auto efmt = EVtxStreamFormat(fmt->hashed());
+        auto vb = VertexBufferBase::CreateVertexBuffer(efmt,count,true);
+        return vb;
+      });
+    /////////////////////////////////////////////////////////////////////////////////
 
   PYBIND11_NUMPY_DTYPE(VtxV12C4, x, y, z, color);
   PYBIND11_NUMPY_DTYPE(_VtxV12T8, x, y, z, u, v);

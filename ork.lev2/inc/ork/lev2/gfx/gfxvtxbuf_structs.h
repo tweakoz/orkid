@@ -12,7 +12,37 @@
 
 namespace ork::lev2 {
 
-///////////////////////////////////////////////////////////////////////////////
+  struct SVtxVU16 { // 4 BPV
+
+    U16 _data; // 2
+  
+    SVtxVU16(U16 d)
+        : _data(d)
+        {
+        }
+  
+    void EndianSwap() {
+    }
+  
+    constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::VU16;
+  };
+
+  struct SVtxVU32 { // 4 BPV
+
+    U32 _data; // 2
+  
+    SVtxVU32(U32 d)
+        : _data(d)
+        {
+        }
+  
+    void EndianSwap() {
+    }
+  
+    constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::VU32;
+  };
+  
+  ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV4T4 // 8 BPV	PreXF 2D (all on top)
 {
