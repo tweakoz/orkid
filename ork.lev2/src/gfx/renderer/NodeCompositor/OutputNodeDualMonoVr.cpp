@@ -72,13 +72,13 @@ struct VRIMPL {
     auto DB       = RCFD->GetDB();
     Context* targ = drawdata.context();
 
-    bool use_vr = (orkidvr::device()->_active);
+    bool use_vr = false; //(orkidvr::device()->_active);
 
     auto VRDEV = orkidvr::device();
     int ssaa   = _vrnode->supersample();
     OrkAssert(ssaa >= 0 and ssaa <= 3);
     _multiplier  = ssaa + 1;
-    _out_width   = VRDEV->_width * 2;
+    _out_width   = VRDEV->_width;// * 2;
     _out_height  = VRDEV->_height;
     _ssaa_width  = _out_width * _multiplier;
     _ssaa_height = _out_height * _multiplier;
@@ -88,7 +88,7 @@ struct VRIMPL {
     /////////////////////////////////////////////////////////////////////////////
 
     fmtx4 rootmatrix;
-    if (use_vr) {
+    if (true) {
       // printf( "WTF active\n");
       auto vrdev_camname = VRDEV->_cameraName;
       if (vrdev_camname != "") {
@@ -131,21 +131,21 @@ struct VRIMPL {
 
     drawdata._properties["OutputWidth"_crcu].set<int>(_ssaa_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_ssaa_height);
-    bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
+    bool doing_stereo = false; //(use_vr and VRDEV->_supportsStereo);
     drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
-    drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
+    //drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
 
     if (use_vr and VRDEV->_supportsStereo) {
       RCFD->setUserProperty("vrroot"_crc, rootmatrix);
       _stereomatrices->_left  = VRDEV->_leftcamera;
       _stereomatrices->_right = VRDEV->_rightcamera;
       _stereomatrices->_mono  = VRDEV->_leftcamera;
-      drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices.get());
+      //drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices.get());
     }
 
     _CPD.defaultSetup(drawdata);
 
-    _CPD._stereoCameraMatrices = _stereomatrices.get();
+    //_CPD._stereoCameraMatrices = _stereomatrices.get();
 
     //////////////////////////////////////////////////////
 
@@ -194,12 +194,13 @@ void DualMonoVrOutputNode::beginAssemble(CompositorDrawData& drawdata) {
   _impl.get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
+///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::endAssemble(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("DualMonoVrOutputNode::endAssemble");
   _impl.get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("DualMonoVrOutputNode::composite");
   auto impl = _impl.get<std::shared_ptr<VRIMPL>>();
@@ -223,14 +224,8 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_screen");
 
-        /////////////////////////////////////////////////////////////////////////////
-        // be nice and composite to main screen as well...
-        /////////////////////////////////////////////////////////////////////////////
-
-        // int num_ssaa_samples = ssaaEnumToInt(tex->_ssaa_samples);
-
+        // downsample
         if (impl->_multiplier != 1) {
-
           // resize ssaadownsamplebuffer
           auto downRTG = impl->_ssaadownsamplebuffer;
           if (downRTG->width() != impl->_out_width || downRTG->height() != impl->_out_height) {
@@ -265,20 +260,19 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           tex = downRTG->GetMrt(0)->texture();
 
           drawdata.context()->debugPopGroup();
-        }
+        } // downsample
 
         if (_distorion_lambda) {
           drawdata.context()->debugPushGroup("DualMonoVrOutputNode::distortion_lambda");
           _distorion_lambda(framedata, tex);
           drawdata.context()->debugPopGroup();
-        } else {
+        } else { // no distortion
           drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_hmd");
           const auto& vrdev = orkidvr::device();
           auto& mtl         = impl->_blit2screenmtl;
           auto inp_rtg      = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
           auto this_buf     = context->FBI()->GetThisBuffer();
-          // fbi->PushRtGroup(nullptr);//impl->_rtg);
-          // vrdev->__composite(context, tex);
+
           mtl.begin(impl->_fxtechnique_downsample[0], framedata);
 
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
@@ -301,9 +295,8 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           fbi->popScissor();
           mtl.end(framedata);
 
-          // fbi->PopRtGroup();
           drawdata.context()->debugPopGroup();
-        }
+        } // no distortion
 
         drawdata.context()->debugPopGroup();
       }
