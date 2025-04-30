@@ -216,7 +216,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     cmc->_numcomponents = 4;
     proc_mips(4, 0);
     if (NumMips > 3) {
-      ptex->TexSamplingMode().PresetTrilinearWrap();
+      ptex->TexSamplingMode().presetTrilinearWrap();
       // assert(false);
     }
     /////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     cmc->_format = EBufferFormat::BGR8;
     cmc->_numcomponents = 3;
     if (NumMips > 3) {
-      ptex->TexSamplingMode().PresetTrilinearWrap();
+      ptex->TexSamplingMode().presetTrilinearWrap();
     }
     proc_mips(3, 0);
     /////////////////////////////////////////////////////////////
@@ -272,7 +272,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   }
 
   if (bVOLUMETEX) {
-    ptex->TexSamplingMode().PresetTrilinearWrap();
+    ptex->TexSamplingMode().presetTrilinearWrap();
   }
 
   //this->ApplySamplingMode(ptex.get());

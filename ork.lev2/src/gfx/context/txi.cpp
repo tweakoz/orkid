@@ -205,6 +205,7 @@ size_t TextureInitData::computeSrcSize() const {
     case EBufferFormat::RGBA8:
     case EBufferFormat::Z32:
     case EBufferFormat::Z24S8:
+    case EBufferFormat::R32UI:
       length *= 4;
       break;
     case EBufferFormat::RG32F:
@@ -246,6 +247,7 @@ size_t TextureInitData::computeDstSize() const {
     case EBufferFormat::RGBA8:
     case EBufferFormat::Z32:
     case EBufferFormat::Z24S8:
+    case EBufferFormat::R32UI:
       length *= 4;
       break;
     case EBufferFormat::RG32F:

@@ -34,27 +34,35 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
   switch (inp) {
+    ////////////////////////////
+    case EBufferFormat::R8: {
+      _internalFormat = GL_R8;
+      _format         = GL_RED;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    case EBufferFormat::R16UI: {
+      _internalFormat = GL_R16UI;
+      _format         = GL_RED_INTEGER;
+      _type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::R32F: {
+      _internalFormat = GL_R32F;
+      _format         = GL_RED;
+      _type           = GL_FLOAT;
+      break;
+    }
+    case EBufferFormat::R32UI: {
+      _internalFormat = GL_R32UI;
+      _format         = GL_RED_INTEGER;
+      _type           = GL_UNSIGNED_INT;
+      break;
+    }
+    ////////////////////////////
     case EBufferFormat::RGB8: {
       _internalFormat = GL_RGB8;
       _format         = GL_RGB;
-      _type           = GL_UNSIGNED_BYTE;
-      break;
-    }
-    case EBufferFormat::BGR8: {
-      _internalFormat = GL_RGB8;
-      _format         = GL_BGR;
-      _type           = GL_UNSIGNED_BYTE;
-      break;
-    }
-    case EBufferFormat::BGRA8: {
-      _internalFormat = GL_RGBA8;
-      _format         = GL_BGRA;
-      _type           = GL_UNSIGNED_BYTE;
-      break;
-    }
-    case EBufferFormat::RGBA8: {
-      _internalFormat = GL_RGBA8;
-      _format         = GL_RGBA;
       _type           = GL_UNSIGNED_BYTE;
       break;
     }
@@ -62,6 +70,19 @@ GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
       _internalFormat = GL_RGB16;
       _format         = GL_RGB;
       _type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::RGB32F: {
+      _internalFormat = GL_RGB32F;
+      _format         = GL_RGB;
+      _type           = GL_FLOAT;
+      break;
+    }
+    ////////////////////////////
+    case EBufferFormat::RGBA8: {
+      _internalFormat = GL_RGBA8;
+      _format         = GL_RGBA;
+      _type           = GL_UNSIGNED_BYTE;
       break;
     }
     case EBufferFormat::RGBA16F: {
@@ -82,38 +103,30 @@ GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
       _type           = GL_FLOAT;
       break;
     }
-    case EBufferFormat::RGB32F: {
-      _internalFormat = GL_RGB32F;
-      _format         = GL_RGB;
-      _type           = GL_FLOAT;
-      break;
-    }
-    case EBufferFormat::R32F: {
-      _internalFormat = GL_R32F;
-      _format         = GL_RED;
-      _type           = GL_FLOAT;
-      break;
-    }
-    case EBufferFormat::R16UI: {
-      _internalFormat = GL_R16UI;
-      _format         = GL_RED_INTEGER;
-      _type           = GL_UNSIGNED_SHORT;
-      break;
-    }
-    case EBufferFormat::R8: {
-      _internalFormat = GL_R8;
-      _format         = GL_RED;
+    ////////////////////////////
+    case EBufferFormat::BGR8: {
+      _internalFormat = GL_RGB8;
+      _format         = GL_BGR;
       _type           = GL_UNSIGNED_BYTE;
       break;
     }
-#if !defined(__APPLE__)
+    ////////////////////////////
+    case EBufferFormat::BGRA8: {
+      _internalFormat = GL_RGBA8;
+      _format         = GL_BGRA;
+      _type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+    ////////////////////////////
+    #if !defined(__APPLE__)
     case EBufferFormat::RGBA_BPTC_UNORM: {
       _internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
       _format         = GL_RGBA;
       _type           = GL_UNSIGNED_BYTE;
       break;
     }
-#endif
+    #endif
+    ////////////////////////////
     default:
       OrkAssert(false);
       break;
@@ -477,11 +490,11 @@ static auto addrlamb = [](TextureAddressMode inp) -> GLenum {
 //////////////////////////////////////////
 static auto magfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
   GLenum rval = GL_NEAREST;
-  switch (inp.GetFiltModeMag()) {
-    case ETEXFILT_POINT:
+  switch (inp._texFiltModeMag) {
+    case ETextureMagnifyFilterMode::NEAREST:
       rval = GL_NEAREST;
       break;
-    case ETEXFILT_LINEAR:
+    case ETextureMagnifyFilterMode::LINEAR:
       rval = GL_LINEAR;
       break;
     default:
@@ -492,23 +505,28 @@ static auto magfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
 //////////////////////////////////////////
 static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
   GLenum rval = GL_NEAREST;
-  switch (inp.GetFiltModeMip()) {
-    case ETEXFILT_POINT:
-      switch (inp.GetFiltModeMin()) {
-        case ETEXFILT_POINT:
-          rval = GL_NEAREST;
-          break;
-        case ETEXFILT_LINEAR:
-          rval = GL_LINEAR;
-          break;
-        default:
-          break;
-      }
+  switch (inp._texFiltModeMin) {
+    case ETextureMinifyFilterMode::NEAREST:
+      rval = GL_NEAREST;
       break;
-    case ETEXFILT_LINEAR:
+    case ETextureMinifyFilterMode::LINEAR:
+      rval = GL_LINEAR;
+      break;
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_NEAREST:
+      rval = GL_LINEAR_MIPMAP_NEAREST;
+      break;
+    case ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR:
       rval = GL_LINEAR_MIPMAP_LINEAR;
       break;
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_NEAREST:
+      rval = GL_NEAREST_MIPMAP_NEAREST;
+      break;
+    case ETextureMinifyFilterMode::NEAREST_MIPMAP_LINEAR:
+      rval = GL_NEAREST_MIPMAP_LINEAR;
+      break;
+
     default:
+      OrkAssert(false);
       break;
   }
   return rval;
@@ -568,9 +586,9 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     GL_ERRORCHECK();
     glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
     GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
+    glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode._texAddrModeS));
     GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
+    glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode._texAddrModeT));
     GL_ERRORCHECK();
 
     mTargetGL.debugPopGroup();
@@ -936,6 +954,9 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                            (ptex->_texFormat != tid._dst_format);
 
   if (is_cube) {
+    //////////////////////////////
+    // CUBE ?
+    //////////////////////////////
     if (size_or_fmt_dirty) { // allocating
       // init all 6 faces with PBO data
       for (int i = 0; i < 6; i++) {
@@ -956,12 +977,18 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       }
     }
   } else if (is_3d) {
+    //////////////////////////////
+    // 3D ?
+    //////////////////////////////
     if (size_or_fmt_dirty) // allocating
       glTexImage3D(texture_target, 0, triplet._internalFormat, tid._w, tid._h, tid._d, 0, triplet._format, triplet._type, nullptr);
     else // non allocating
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
   } else {
+    //////////////////////////////
+    // 2D ?
+    //////////////////////////////
     if (0)
       printf("pboitem<%d> size_or_fmt_dirty<%d> w<%d> h<%d>\n", int(pboitem->_handle), int(size_or_fmt_dirty), tid._w, tid._h);
     if (size_or_fmt_dirty) // allocating
@@ -984,47 +1011,71 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_depth     = tid._d;
   ptex->_texFormat = tid._dst_format;
 
+  auto sampling_mode = tid._samplingMode;
+
   ///////////////////////////////////
-  // update texture parameters
+  // generate mipmaps ?
   ///////////////////////////////////
+
   GL_ERRORCHECK();
 
-  glTexParameterf(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  if (tid._autogenmips)
+  if (tid._autogenmips) {
     glGenerateMipmap(texture_target);
+    // should we notify we are generating mipmaps, yet not using them?
+    // OrkAssert(sampling_mode._texFiltModeMin != ETextureMinifyFilterMode::NEAREST);
+    // OrkAssert(sampling_mode._texFiltModeMin != ETextureMinifyFilterMode::LINEAR);
+  }
+
+  ///////////////////////////////////
+  // update texture sampling parameters
+  ///////////////////////////////////
+
+#if defined(OPENGL_41)
+  glTexParameterf(texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampling_mode._maxAnisotropy);
+#elif defined(OPENGL_46)
+  glTexParameterf(texture_target, GL_TEXTURE_MAX_ANISOTROPY, sampling_mode._maxAnisotropy);
+#endif
+
+  GL_ERRORCHECK();
+  // sampler state..
+  glBindTexture(texture_target, glto->_textureObject);
+  glTexParameterf(texture_target, GL_TEXTURE_MAG_FILTER, magfiltlamb(sampling_mode));
+  GL_ERRORCHECK();
+  glTexParameterf(texture_target, GL_TEXTURE_MIN_FILTER, minfiltlamb(sampling_mode));
+  GL_ERRORCHECK();
+  // glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, inummips);
+  GL_ERRORCHECK();
+  glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, addrlamb(sampling_mode._texAddrModeS));
+  GL_ERRORCHECK();
+  glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, addrlamb(sampling_mode._texAddrModeT));
+  GL_ERRORCHECK();
+  if (is_3d) {
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, addrlamb(sampling_mode._texAddrModeR));
+    GL_ERRORCHECK();
+  }
 
   if (size_or_fmt_dirty) {
-    if ((not is_3d) and tid._autogenmips) {
-      glTexParameterf(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, 3);
+    if (tid._autogenmips) {
+
+      int max_mip = floor(log2(std::max(tid._w, tid._h)));
+
+      if (max_mip > sampling_mode._maxMipLevel) {
+        max_mip = sampling_mode._maxMipLevel;
+      }
+      glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, max_mip);
     } else {
       glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, 0);
     }
-    glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    if (is_3d) {
-      glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    }
-  }
-  if (is_3d) {
-    glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
   }
 
-  if (is_3d) {
-    // ptex->TexSamplingMode().PresetTrilinearWrap();
-    // this->ApplySamplingMode(ptex);
-  }
-
-  glto->mTarget = texture_target;
-
-  //_checkTexture(glto->_textureObject, "");
+  ///////////////////////////////////
+  // mTargetGL.debugPopGroup();
   ///////////////////////////////////
 
   glBindTexture(texture_target, 0);
   GL_ERRORCHECK();
+
+  glto->mTarget = texture_target;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1134,8 +1185,8 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
     }
   }*/
   auto as_tt = l2tensor->_impl.get<torch::Tensor>();
-  //OrkAssert(as_tt.is_contiguous());
-  // OrkAssert(as_tt.isCuda());
+  // OrkAssert(as_tt.is_contiguous());
+  //  OrkAssert(as_tt.isCuda());
 
   // check that tensor dimensions are 2D
   bool dim_ok = (as_tt.dim() == 3); // 3rd dim is channels
@@ -1148,8 +1199,8 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   size_t tensor_numelem = as_tt.numel();
   size_t texture_width  = ptex->_width;
   size_t texture_height = ptex->_height;
-  size_t num_pixels = tensor_width * tensor_height;
-  //printf("num_pixels<%zu>\n", num_pixels);
+  size_t num_pixels     = tensor_width * tensor_height;
+  // printf("num_pixels<%zu>\n", num_pixels);
 
   if (0)
     printf(
@@ -1161,17 +1212,17 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
         tensor_numelem);
 
   // assert tensor on CPU (for now..)
-  if(not as_tt.is_cpu()) {
+  if (not as_tt.is_cpu()) {
     as_tt = as_tt.cpu();
   }
-  //OrkAssert(as_tt.is_cpu());
+  // OrkAssert(as_tt.is_cpu());
 
-  size_t dst_length    = tensor_numelem * as_tt.element_size();
-  auto src_data = (const float*) as_tt.data_ptr();
+  size_t dst_length = tensor_numelem * as_tt.element_size();
+  auto src_data     = (const float*)as_tt.data_ptr();
   OrkAssert(src_data != nullptr);
 
   // hexdumpbytes((const uint8_t*)src_data, 256);
-  //printf("dst_length<%zu>\n", dst_length);
+  // printf("dst_length<%zu>\n", dst_length);
   // printf("pboitem<%d> mapped<%p>\n", int(pboitem->_handle), (void*)pboitem->_mapped);
 
   bool size_or_fmt_dirty = (texture_width != tensor_width) or   //
@@ -1205,23 +1256,25 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
             GL_TEXTURE_2D, // target
             0,             // level
             GL_RGB32F,     // internal format
-            tensor_width, // width
-            tensor_height,  // height
+            tensor_width,  // width
+            tensor_height, // height
             0,             // border
-            GL_RGB, GL_FLOAT, // format, type
-            nullptr);         // data (source from PBO)
+            GL_RGB,
+            GL_FLOAT, // format, type
+            nullptr); // data (source from PBO)
       }
       GL_ERRORCHECK();
-      if(0)glTexSubImage2D(
-          GL_TEXTURE_2D, // target
-          0,             // level
-          0,
-          0, // xoffset, yoffset
-          tensor_width,
-          tensor_height, // width, height
-          GL_RGB,
-          GL_FLOAT,                            // format, type
-          nullptr);                            // data (source from PBO)
+      if (0)
+        glTexSubImage2D(
+            GL_TEXTURE_2D, // target
+            0,             // level
+            0,
+            0, // xoffset, yoffset
+            tensor_width,
+            tensor_height, // width, height
+            GL_RGB,
+            GL_FLOAT,                          // format, type
+            nullptr);                          // data (source from PBO)
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
       this->_returnPBO(pboitem);
       GL_ERRORCHECK();
@@ -1266,7 +1319,7 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   ptex->_texFormat = fmt;
   //_checkTexture(glto->_textureObject, "initTextureFromTensor");
   // set texture parameters
-  ptex->TexSamplingMode().PresetPointAndClamp();
+  ptex->TexSamplingMode().presetPointAndClamp();
   ApplySamplingMode(ptex);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 

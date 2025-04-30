@@ -608,7 +608,7 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
   //////////////////////////////////////////////////////////////////////
 
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, _texture.get());
-  _texture->TexSamplingMode().PresetPointAndClamp();
+  _texture->TexSamplingMode().presetPointAndClamp();
   //context->TXI()->ApplySamplingMode(_texture.get());
   mFontDesc = fdesc;
 

@@ -75,8 +75,8 @@ void Colorize::compute(ProcTex& ptex) {
         mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
-        inptexa->TexSamplingMode().PresetTrilinearWrap();
-        inptexb->TexSamplingMode().PresetTrilinearWrap();
+        inptexa->TexSamplingMode().presetTrilinearWrap();
+        inptexb->TexSamplingMode().presetTrilinearWrap();
         targ->TXI()->ApplySamplingMode(inptexa);
         targ->TXI()->ApplySamplingMode(inptexb);
         mtl.SetTexture(inptexa);
@@ -152,8 +152,8 @@ void UvMap::compute(ProcTex& ptex) {
         mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
-        inptexa->TexSamplingMode().PresetTrilinearWrap();
-        inptexb->TexSamplingMode().PresetTrilinearWrap();
+        inptexa->TexSamplingMode().presetTrilinearWrap();
+        inptexb->TexSamplingMode().presetTrilinearWrap();
         targ->TXI()->ApplySamplingMode(inptexa);
         targ->TXI()->ApplySamplingMode(inptexb);
         mtl.SetTexture(inptexa);
@@ -221,8 +221,8 @@ void SphMap::compute(ProcTex& ptex) {
         mtl._rasterstate.SetDepthTest(lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
-        inptexa->TexSamplingMode().PresetTrilinearWrap();
-        inptexb->TexSamplingMode().PresetTrilinearWrap();
+        inptexa->TexSamplingMode().presetTrilinearWrap();
+        inptexb->TexSamplingMode().presetTrilinearWrap();
         targ->TXI()->ApplySamplingMode(inptexa);
         targ->TXI()->ApplySamplingMode(inptexb);
         mtl.SetTexture(inptexa);
@@ -375,7 +375,7 @@ void H2N::compute(ProcTex& ptex) {
   mtxS.scale(1.0f, fscy, 1.0f);
   ////////////////////////////////////////////////////////////////
   auto inptex = conplug->GetValue().GetTexture(ptex);
-  inptex->TexSamplingMode().PresetPointAndClamp();
+  inptex->TexSamplingMode().presetPointAndClamp();
   pTARG->TXI()->ApplySamplingMode(inptex);
   // printf( "HSNinputtex<%p>\n", inptex );
   mMTL.SetTexture(inptex);
@@ -471,7 +471,7 @@ void Kaled::compute(ProcTex& ptex) {
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
     auto inptexa = conplug->GetValue().GetTexture(ptex);
 
-    inptexa->TexSamplingMode().PresetTrilinearWrap();
+    inptexa->TexSamplingMode().presetTrilinearWrap();
     targ->TXI()->ApplySamplingMode(inptexa);
     gridmat.SetTexture(inptexa);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));

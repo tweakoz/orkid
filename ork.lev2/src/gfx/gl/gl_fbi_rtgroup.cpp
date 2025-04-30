@@ -599,9 +599,9 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
         tex->_width   = iw;
         tex->_height  = ih;
         if (tex->_formatSupportsFiltering) {
-          tex->mTexSampleMode.PresetTrilinearWrap();
+          tex->mTexSampleMode.presetTrilinearWrap();
         } else {
-          tex->mTexSampleMode.PresetPointAndClamp();
+          tex->mTexSampleMode.presetPointAndClamp();
         }
 
         mTargetGL.debugPushGroup("init-rt-tex", fvec4::Magenta());
@@ -792,7 +792,7 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
           GL_ERRORCHECK();
           glBindTexture(GL_TEXTURE_2D, tex_obj);
           glGenerateMipmap(GL_TEXTURE_2D);
-          b->texture()->TexSamplingMode().PresetPointAndClamp();
+          b->texture()->TexSamplingMode().presetPointAndClamp();
           mTargetGL.TXI()->ApplySamplingMode(b->texture());
           GL_ERRORCHECK();
         }

@@ -29,12 +29,12 @@ void invoke_nvcompress(std::string inpath, std::string outpath, std::string othe
 //////////////////////////////////////////////////////////////////////////
 
 struct IpcTexture {
-	int _image_fd = 0;
-  int _image_width = 0;
-  int _image_height = 0;
-  size_t _image_size = 0;
-	int _sema_complete_fd = 0;
-	int _sema_ready_fd = 0;
+  int _image_fd         = 0;
+  int _image_width      = 0;
+  int _image_height     = 0;
+  size_t _image_size    = 0;
+  int _sema_complete_fd = 0;
+  int _sema_ready_fd    = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -50,38 +50,18 @@ enum ETextureUsage {
 //////////////////////////////////////////////////////////////////////////
 
 struct TextureSamplingModeData {
-  TextureSamplingModeData()
-      : mTexAddrModeU(TextureAddressMode::WRAP)
-      , mTexAddrModeV(TextureAddressMode::WRAP)
-      , mTexFiltModeMin(ETEXFILT_POINT)
-      , mTexFiltModeMag(ETEXFILT_POINT)
-      , mTexFiltModeMip(ETEXFILT_POINT) {
-  }
 
-  TextureAddressMode GetAddrModeU() const {
-    return mTexAddrModeU;
-  }
-  TextureAddressMode GetAddrModeV() const {
-    return mTexAddrModeV;
-  }
-  ETextureFilterMode GetFiltModeMin() const {
-    return mTexFiltModeMin;
-  }
-  ETextureFilterMode GetFiltModeMag() const {
-    return mTexFiltModeMag;
-  }
-  ETextureFilterMode GetFiltModeMip() const {
-    return mTexFiltModeMip;
-  }
+  void presetPointAndClamp();
+  void presetTrilinearWrap();
 
-  TextureAddressMode mTexAddrModeU;
-  TextureAddressMode mTexAddrModeV;
-  ETextureFilterMode mTexFiltModeMin;
-  ETextureFilterMode mTexFiltModeMag;
-  ETextureFilterMode mTexFiltModeMip;
-
-  void PresetPointAndClamp();
-  void PresetTrilinearWrap();
+  // STR, huh?
+  TextureAddressMode _texAddrModeS          = TextureAddressMode::WRAP;
+  TextureAddressMode _texAddrModeT          = TextureAddressMode::WRAP;
+  TextureAddressMode _texAddrModeR          = TextureAddressMode::WRAP;
+  ETextureMinifyFilterMode _texFiltModeMin  = ETextureMinifyFilterMode::LINEAR;
+  ETextureMagnifyFilterMode _texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+  float _maxAnisotropy                      = 16.0f;
+  int _maxMipLevel                          = 8;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,23 +210,23 @@ struct Texture {
   ETextureType _texType    = ETEXTYPE_END;
   EBufferFormat _texFormat = EBufferFormat::NONE;
 
-  int _width                    = 0;
-  int _height                   = 0;
-  int _depth                    = 0;
-  int _num_mips                 = 0;
-  MsaaSamples _msaa_samples     = MsaaSamples::MSAA_1X;
-  uint64_t _flags               = 0;
-  uint64_t _contentHash         = 0;
-  MipChain* _chain              = nullptr;
-  mutable bool _dirty           = true;
-  const void* _data             = nullptr;
-  TextureAnimationBase* _anim   = nullptr;
-  mutable svarshp_t _impl        = nullptr;
-  Context* _creatingTarget      = nullptr;
+  int _width                  = 0;
+  int _height                 = 0;
+  int _depth                  = 0;
+  int _num_mips               = 0;
+  MsaaSamples _msaa_samples   = MsaaSamples::MSAA_1X;
+  uint64_t _flags             = 0;
+  uint64_t _contentHash       = 0;
+  MipChain* _chain            = nullptr;
+  mutable bool _dirty         = true;
+  const void* _data           = nullptr;
+  TextureAnimationBase* _anim = nullptr;
+  mutable svarshp_t _impl     = nullptr;
+  Context* _creatingTarget    = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;
   varmap::varmap_ptr_t _vars;
-  const TextureAsset* _asset = nullptr;
+  const TextureAsset* _asset    = nullptr;
   bool _formatSupportsFiltering = true;
   ipctexture_ptr_t _external_memory;
   std::atomic<int> _residenceState;

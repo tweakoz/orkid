@@ -365,7 +365,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
 void FxPipeline::dump() const {
   printf( "FxPipeline<%p:%s>\n", (void*) this, _debugName.c_str() );
   __permutation.dump();
-  printf( "  debugtext<%s>\n", (void*) _debugText.c_str() );
+  printf( "  debugtext<%s>\n", _debugText.c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::endBlock(const RenderContextInstData& RCID) {

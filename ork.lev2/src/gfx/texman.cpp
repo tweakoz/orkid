@@ -25,22 +25,22 @@ std::atomic<size_t> Texture::_texture_count = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TextureSamplingModeData::PresetPointAndClamp() {
-  mTexAddrModeU   = TextureAddressMode::CLAMP;
-  mTexAddrModeV   = TextureAddressMode::CLAMP;
-  mTexFiltModeMin = ETEXFILT_POINT;
-  mTexFiltModeMag = ETEXFILT_POINT;
-  mTexFiltModeMip = ETEXFILT_POINT;
+void TextureSamplingModeData::presetPointAndClamp() {
+  _texAddrModeS   = TextureAddressMode::CLAMP;
+  _texAddrModeT   = TextureAddressMode::CLAMP;
+  _texAddrModeR   = TextureAddressMode::CLAMP;
+  _texFiltModeMin = ETextureMinifyFilterMode::NEAREST;
+  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TextureSamplingModeData::PresetTrilinearWrap() {
-  mTexAddrModeU   = TextureAddressMode::WRAP;
-  mTexAddrModeV   = TextureAddressMode::WRAP;
-  mTexFiltModeMin = ETEXFILT_LINEAR;
-  mTexFiltModeMag = ETEXFILT_LINEAR;
-  mTexFiltModeMip = ETEXFILT_LINEAR;
+void TextureSamplingModeData::presetTrilinearWrap() {
+  _texAddrModeS   = TextureAddressMode::WRAP;
+  _texAddrModeT   = TextureAddressMode::WRAP;
+  _texAddrModeR   = TextureAddressMode::WRAP;
+  _texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

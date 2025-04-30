@@ -177,7 +177,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     if(updatetex)
       TXI->initTextureFromData(_instanceIdTex.get(), texdata);
 
-    _instanceIdTex->TexSamplingMode().PresetPointAndClamp();
+    _instanceIdTex->TexSamplingMode().presetPointAndClamp();
     TXI->ApplySamplingMode(_instanceIdTex.get());
   EASY_END_BLOCK;
 

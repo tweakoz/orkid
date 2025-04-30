@@ -60,11 +60,20 @@ enum class TextureAddressMode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ETextureFilterMode {
-  ETEXFILT_POINT = 0,
-  ETEXFILT_LINEAR,
-  ETEXFILT_ANISO,
-  ETEXFILT_END,
+enum class ETextureMinifyFilterMode : uint64_t {
+  CrcEnum(NEAREST),
+  CrcEnum(LINEAR),
+  CrcEnum(LINEAR_MIPMAP_NEAREST),
+  CrcEnum(LINEAR_MIPMAP_LINEAR),
+  CrcEnum(NEAREST_MIPMAP_NEAREST),
+  CrcEnum(NEAREST_MIPMAP_LINEAR),
+  CrcEnum(END),
+};
+
+enum class ETextureMagnifyFilterMode : uint64_t {
+  CrcEnum(NEAREST),
+  CrcEnum(LINEAR),
+  CrcEnum(END),
 };
 
 ///////////////////////////////////////////////////////////////////////////////

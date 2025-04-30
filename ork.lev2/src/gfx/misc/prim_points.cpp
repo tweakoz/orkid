@@ -148,8 +148,11 @@ pointsdata_ptr_t PointsData::depthClamped(float min_depth, float max_depth) cons
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 
@@ -185,8 +188,11 @@ pointsdata_ptr_t PointsData::colorClamped(float min_intens, float max_intens) co
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 
@@ -213,8 +219,11 @@ pointsdata_ptr_t PointsData::swizzleRGB() const {
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 
@@ -250,8 +259,11 @@ pointsdata_ptr_t PointsData::hsvScaleBias(fvec2 hue, fvec2 sat, fvec2 val) const
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 
@@ -294,8 +306,11 @@ pointsdata_ptr_t PointsData::stochasticSample(float probability) const {
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 
@@ -335,8 +350,11 @@ pointsdata_ptr_t PointsData::convertToV12C4(image_ptr_t image) const {
       }
       return rval;
     }
+    default:{
+      OrkAssert(false);
+      break;
+    }
   }
-  OrkAssert(false);
   return nullptr;
 }
 

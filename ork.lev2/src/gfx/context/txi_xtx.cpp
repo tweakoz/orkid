@@ -61,7 +61,7 @@ void TextureInterface::_loadXTXTextureMainThreadPart(texloadreq_ptr_t req) {
   OrkAssert(inummips > 0);
   _createFromLoadReq(req); 
   req->ptex->_num_mips = inummips;
-  req->ptex->TexSamplingMode().PresetTrilinearWrap();
+  req->ptex->TexSamplingMode().presetTrilinearWrap();
   //this->ApplySamplingMode(req->ptex.get());
   req->ptex->_dirty = false;
 }

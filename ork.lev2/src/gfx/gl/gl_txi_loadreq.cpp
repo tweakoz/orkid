@@ -167,11 +167,11 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   //printf( "MAXLEV inummips<%d>\n", num_mips-1 );
 
   if (is_volume_texture) {
-    ptex->TexSamplingMode().PresetTrilinearWrap();
+    ptex->TexSamplingMode().presetTrilinearWrap();
   }
   else{
     if (num_mips > 3) {
-      ptex->TexSamplingMode().PresetTrilinearWrap();
+      ptex->TexSamplingMode().presetTrilinearWrap();
     }
   }
   this->ApplySamplingMode(ptex.get());

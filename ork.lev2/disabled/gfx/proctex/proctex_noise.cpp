@@ -116,7 +116,7 @@ void Octaves::compute(ProcTex& ptex) {
 
     auto inptex = conplug->GetValue().GetTexture(ptex);
 
-    inptex->TexSamplingMode().PresetTrilinearWrap();
+    inptex->TexSamplingMode().presetTrilinearWrap();
     pTARG->TXI()->ApplySamplingMode(inptex);
 
     mOctMaterial.SetTexture(inptex);

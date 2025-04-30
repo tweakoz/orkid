@@ -20,12 +20,12 @@ namespace ork::lev2 {
 struct MipChainLevel;
 struct MipChain;
 
-struct TextureArrayInitSubItem{
+struct TextureArrayInitSubItem {
   uint32_t _usage = 0;
-  //texture_ptr_t _subtex;
+  // texture_ptr_t _subtex;
   image_ptr_t _subimg;
 };
-struct TextureArrayInitData{
+struct TextureArrayInitData {
   std::vector<TextureArrayInitSubItem> _slices;
 };
 struct TextureInitData {
@@ -33,16 +33,17 @@ struct TextureInitData {
   size_t computeSrcSize() const;
   size_t computeDstSize() const;
 
-  int _w                = 0;
-  int _h                = 0;
-  int _d                = 1;
-  bool _initCubeTexture = false;
-  EBufferFormat _src_format = EBufferFormat::NONE;
-  EBufferFormat _dst_format = EBufferFormat::RGB8;
-  bool _autogenmips     = false;
-  const void* _data     = nullptr;
-  size_t _truncation_length = 0;
-  bool _allow_async = false;
+  int _w                                = 0;
+  int _h                                = 0;
+  int _d                                = 1;
+  bool _initCubeTexture                 = false;
+  EBufferFormat _src_format             = EBufferFormat::NONE;
+  EBufferFormat _dst_format             = EBufferFormat::RGB8;
+  bool _autogenmips                     = false;
+  const void* _data                     = nullptr;
+  size_t _truncation_length             = 0;
+  bool _allow_async                     = false;
+  TextureSamplingModeData               _samplingMode;
 };
 
 struct TexLoadReq {
@@ -59,7 +60,6 @@ using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;
 
 class TextureInterface {
 public:
-
   TextureInterface(context_rawptr_t ctx);
 
   bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
@@ -78,12 +78,12 @@ public:
   bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
   void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
 
-
   virtual void TexManInit()                       = 0;
   virtual bool destroyTexture(texture_ptr_t ptex) = 0;
   virtual void generateMipMaps(Texture* ptex)     = 0;
 
-  virtual void _createFromLoadReq(texloadreq_ptr_t req) {}
+  virtual void _createFromLoadReq(texloadreq_ptr_t req) {
+  }
 
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   }
@@ -106,11 +106,12 @@ public:
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;
   }
-  #if defined(ENABLE_PYTORCH)
-  virtual void initTextureFromTensor(Texture* ptex, torchtensor_ptr_t tensor, EBufferFormat fmt) { }
-  #endif
+#if defined(ENABLE_PYTORCH)
+  virtual void initTextureFromTensor(Texture* ptex, torchtensor_ptr_t tensor, EBufferFormat fmt) {
+  }
+#endif
 
   context_rawptr_t _ctx;
 };
 
-} //namespace ork::lev2 {
+} // namespace ork::lev2

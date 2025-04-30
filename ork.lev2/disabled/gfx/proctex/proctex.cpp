@@ -241,7 +241,7 @@ void ImgModule::Compute(dataflow::workunit* wu) {
   auto& wrbuf   = GetWriteBuffer(*ptex);
   auto ptexture = wrbuf.OutputTexture();
   pTARG->TXI()->generateMipMaps(ptexture);
-  ptexture->TexSamplingMode().PresetPointAndClamp();
+  ptexture->TexSamplingMode().presetPointAndClamp();
   pTARG->TXI()->ApplySamplingMode(ptexture);
 
   if (mExport) {
@@ -789,7 +789,7 @@ void AA16Render::RenderAA() {
 
       auto tex = temp_buffer->OutputTexture();
       downsamplemat.SetTexture(tex);
-      tex->TexSamplingMode().PresetPointAndClamp();
+      tex->TexSamplingMode().presetPointAndClamp();
       txi->ApplySamplingMode(tex);
 
       fmtx4 mtxortho = mtxi->Ortho(l, r, t, b, 0.0f, 1.0f);
