@@ -28,6 +28,11 @@ class CodeAgentRepl(cmd.Cmd):
         self.selected_files = []  # Currently selected files
         self.last_api_call = 0  # Timestamp for rate limiting
         
+        # Conversation state
+        self.conversation = []
+        self.files_sent = False
+        self.session_files = []
+        
         # Initialize by scanning codebase
         self.scan_codebase()
     
@@ -157,6 +162,11 @@ class CodeAgentRepl(cmd.Cmd):
             print(f"{i+1}. {file}")
         if len(self.selected_files) > 5:
             print(f"... and {len(self.selected_files) - 5} more (use 'selected' to see all)")
+            
+        # If selection changed, reset the conversation
+        if self.files_sent and set(self.selected_files) != set(self.session_files):
+            print("Note: Selection changed. Next question will start a new conversation.")
+            self.files_sent = False
     
     def complete_select(self, text, line, begidx, endidx):
         """Provide path completion for the select command."""
@@ -194,10 +204,17 @@ class CodeAgentRepl(cmd.Cmd):
         for i, file in enumerate(self.selected_files):
             print(f"{i+1}. {file}")
     
+    def do_reset(self, arg):
+        """Reset the conversation with Claude (starts fresh)"""
+        self.conversation = []
+        self.files_sent = False
+        print("Conversation reset. The next question will start a new conversation.")
+    
     def do_clear_selection(self, arg):
         """Clear all selected files"""
         self.selected_files = []
-        print("Selected files cleared.")
+        self.files_sent = False
+        print("Selected files cleared. The next question will start a new conversation.")
     
     def do_ask(self, arg):
         """Ask Claude about selected files: ask your question here"""
@@ -216,8 +233,48 @@ class CodeAgentRepl(cmd.Cmd):
             print(f"Rate limiting: waiting {wait_time:.1f} seconds...")
             time.sleep(wait_time)
         
-        # Build the message with code context
-        message = "I'm going to share code from my project, then ask a question. Here's the code:\n\n"
+        # If we haven't sent files yet or the selection changed, start a new conversation
+        if not self.files_sent:
+            self.start_new_conversation()
+        
+        # Add the user's question to the conversation
+        self.conversation.append({
+            "role": "user",
+            "content": arg
+        })
+        
+        print("Sending question to Claude... (this may take a moment)")
+        try:
+            self.last_api_call = time.time()
+            response = self.client.messages.create(
+                model="claude-3-7-sonnet-20250219",
+                max_tokens=4096,
+                messages=self.conversation
+            )
+            
+            answer = response.content[0].text
+            # Add Claude's response to the conversation history
+            self.conversation.append({
+                "role": "assistant",
+                "content": answer
+            })
+            
+            print("\nClaude's response:")
+            print(answer)
+        except Exception as e:
+            print(f"Error communicating with Claude: {e}")
+            if "rate_limit" in str(e):
+                print("\nTIP: You're hitting rate limits. Try:")
+                print("1. Selecting fewer files with 'select'")
+                print("2. Waiting a minute before trying again")
+                print("3. Using 'view' to inspect files locally first")
+    
+    def start_new_conversation(self):
+        """Start a new conversation with Claude, sending all selected files."""
+        self.conversation = []
+        
+        # Build the initial message with code context
+        message = "I'm going to share code from my project, then ask questions about it. Here's the code:\n\n"
         
         # Add selected files
         file_count = 0
@@ -229,7 +286,13 @@ class CodeAgentRepl(cmd.Cmd):
             else:
                 print(f"Warning: Couldn't read {filepath}: {content}")
         
-        message += f"My question is: {arg}"
+        message += "Please analyze these files. I'll ask specific questions next."
+        
+        # Add the message to the conversation
+        self.conversation.append({
+            "role": "user",
+            "content": message
+        })
         
         print(f"Sending {file_count} files to Claude... (this may take a moment)")
         try:
@@ -237,13 +300,21 @@ class CodeAgentRepl(cmd.Cmd):
             response = self.client.messages.create(
                 model="claude-3-7-sonnet-20250219",
                 max_tokens=4096,
-                messages=[
-                    {"role": "user", "content": message}
-                ]
+                messages=self.conversation
             )
             
             answer = response.content[0].text
-            print("\nClaude's response:")
+            # Add Claude's response to the conversation history
+            self.conversation.append({
+                "role": "assistant",
+                "content": answer
+            })
+            
+            # Mark files as sent and save the current selection
+            self.files_sent = True
+            self.session_files = self.selected_files.copy()
+            
+            print("\nClaude's initial analysis:")
             print(answer)
         except Exception as e:
             print(f"Error communicating with Claude: {e}")
@@ -252,6 +323,22 @@ class CodeAgentRepl(cmd.Cmd):
                 print("1. Selecting fewer files with 'select'")
                 print("2. Waiting a minute before trying again")
                 print("3. Using 'view' to inspect files locally first")
+    
+    def do_status(self, arg):
+        """Show current conversation status"""
+        if not self.conversation:
+            print("No active conversation. Ask a question to start one.")
+            return
+        
+        print(f"Active conversation with {len(self.conversation)} messages")
+        print(f"Files sent: {self.files_sent}")
+        if self.files_sent:
+            print(f"Session includes {len(self.session_files)} files")
+        print(f"Selected files: {len(self.selected_files)}")
+        
+        if self.files_sent and set(self.selected_files) != set(self.session_files):
+            print("Warning: Selection has changed since conversation started.")
+            print("Use 'reset' to start a new conversation with the current selection.")
     
     def do_exit(self, arg):
         """Exit the REPL"""
