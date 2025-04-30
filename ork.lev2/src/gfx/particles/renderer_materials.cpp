@@ -330,15 +330,15 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     //  as that will mess up viewport settings
     /////////////////////////////////////////
     auto& CPD        = (CompositingPassData&)RCID.rcfd()->topCPD();
-    bool prev_stereo = CPD.isStereoOnePass();
-    CPD.setStereoOnePass(false);
+    bool prev_stereo = CPD.isSinglePassStereo();
+    CPD.setSinglePassStereo(false);
     /////////////////////////////////////////
     _grad_render_pipeline->_debugPrint = false;
     FBI->PushRtGroup(_gradient_rtgroup.get());
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
       GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     });
-    CPD.setStereoOnePass(prev_stereo);
+    CPD.setSinglePassStereo(prev_stereo);
     FBI->PopRtGroup();
     _averageColor = _gradient->average();
     FXI->reset();

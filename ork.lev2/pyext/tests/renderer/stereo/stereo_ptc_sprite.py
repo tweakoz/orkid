@@ -49,7 +49,9 @@ class StereoApp1(object):
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
 
-    createSceneGraph(app=self,rendermodel="FWDPBRVR")
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")
+    onode = self.outputnode # created by createSceneGraph
+    onode.flipY = False
 
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)

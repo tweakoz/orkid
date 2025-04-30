@@ -36,7 +36,7 @@ void XgmModel::RenderSkinned(
   auto R           = RCID.GetRenderer();
   auto RCFD        = context->topRenderContextFrameData();
   const auto& CPD  = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
+  bool stereo1pass = CPD.isSinglePassStereo();
 
   ///////////////////////////////////
   // apply local pose to world pose

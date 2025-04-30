@@ -48,7 +48,7 @@ ViewData CompositorDrawData::computeViewData() const {
   auto CIMPL        = this->_cimpl;
   const auto TOPCPD = CIMPL->topCPD();
   ViewData VD;
-  VD._isStereo   = TOPCPD.isStereoOnePass();
+  VD._isStereo   = TOPCPD.isSinglePassStereo();
   VD._camposmono = TOPCPD.monoCamPos(fmtx4());
 
   auto nf = TOPCPD.nearAndFar();
@@ -58,9 +58,9 @@ ViewData CompositorDrawData::computeViewData() const {
   VD._time = _RCFD->getUserProperty("time"_crc).get<float>();
 
   if (VD._isStereo) {
-    auto L = TOPCPD._stereoCameraMatrices->_left;
-    auto R = TOPCPD._stereoCameraMatrices->_right;
-    auto M = TOPCPD._stereoCameraMatrices->_mono;
+    auto L = TOPCPD._stereo_cam_matrices->_left;
+    auto R = TOPCPD._stereo_cam_matrices->_right;
+    auto M = TOPCPD._stereo_cam_matrices->_mono;
 
     VD.VM  = M->_vmatrix;
     VD.PM  = M->_pmatrix;
@@ -76,9 +76,11 @@ ViewData CompositorDrawData::computeViewData() const {
     // VR projection matrix
     //[ +0.7842  +0  +0  +0 ] [ +0  +0.7048  +0  +0 ] [ -0.05671  +0.0023  -1  -1 ] [ +0  +0  -0.1  +0 ]   axis<-0.001 -0.04 -0>
   } else {
-    auto M = TOPCPD._cameraMatrices;
-    VD.VM  = M->_vmatrix;
-    VD.PM  = M->_pmatrix;
+    auto M = TOPCPD._mono_cam_matrices;
+    if(M){
+      VD.VM  = M->_vmatrix;
+      VD.PM  = M->_pmatrix;
+    }
     VD.VL  = VD.VM;
     VD.VR  = VD.VM;
     VD.PL  = VD.PM;

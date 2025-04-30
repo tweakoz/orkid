@@ -111,7 +111,7 @@ bool RenderContextFrameData::isStereo() const {
   if (topCompositor() != nullptr) {
     if (topCompositor()->hasCPD()) {
       const auto& CPD = topCPD();
-      stereo          = CPD.isStereoOnePass();
+      stereo          = CPD.isSinglePassStereo();
     }
   }
   return stereo;

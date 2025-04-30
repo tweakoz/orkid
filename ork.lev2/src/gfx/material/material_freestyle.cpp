@@ -224,8 +224,8 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
     /*else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
 
-      auto stereocams = CPD._stereoCameraMatrices;
-      auto monocams   = CPD._cameraMatrices;
+      auto stereocams = CPD._stereo_cam_matrices;
+      auto monocams   = CPD._mono_cam_matrices;
 
       switch (crcstr.hashed()) {
 
@@ -477,7 +477,7 @@ void FreestyleMaterial::begin(
     const FxShaderTechnique* tekStereo,
     rcfd_ptr_t RCFD) {
   const auto& CPD = RCFD->topCPD();
-  begin(CPD.isStereoOnePass() ? tekStereo : tekMono, RCFD);
+  begin(CPD.isSinglePassStereo() ? tekStereo : tekMono, RCFD);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::end(rcfd_ptr_t RCFD) {

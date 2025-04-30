@@ -50,9 +50,9 @@ void pyinit_vr(py::module& module_lev2) {
         dev->_active = active;
       })
       .def_property("camera", [](orkidvr::device_ptr_t dev) -> std::string { //
-        return dev->_cameraName;
+        return dev->_camera_name;
       }, [](orkidvr::device_ptr_t dev, std::string name) { //
-        dev->_cameraName = name;
+        dev->_camera_name = name;
       })
       .def_property("calibstate", [](orkidvr::device_ptr_t dev) -> int { //
         return dev->_calibstate;

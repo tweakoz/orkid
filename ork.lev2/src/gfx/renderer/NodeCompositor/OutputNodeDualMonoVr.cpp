@@ -24,20 +24,20 @@ namespace ork::lev2 {
 void DualMonoVrOutputNode::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-struct VRIMPL {
+struct DMVRIMPL {
   ///////////////////////////////////////
-  VRIMPL(DualMonoVrOutputNode* node)
+  DMVRIMPL(DualMonoVrOutputNode* node)
       : _vrnode(node) {
     _tmpcameramatrices = std::make_shared<CameraMatrices>();
     _stereomatrices    = std::make_shared<StereoCameraMatrices>();
   }
   ///////////////////////////////////////
-  ~VRIMPL() {
+  ~DMVRIMPL() {
   }
   ///////////////////////////////////////
   void gpuInit(lev2::Context* context) {
     if (_doinit) {
-      context->debugPushGroup("VRIMPL::gpuInit");
+      context->debugPushGroup("DMVRIMPL::gpuInit");
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
@@ -49,9 +49,12 @@ struct VRIMPL {
       _fxtechnique_downsample[3] = _blit2screenmtl.technique("downsample_4x4");
       _fxpMVP                    = _blit2screenmtl.param("MatMVP");
       _fxpColorMap               = _blit2screenmtl.param("ColorMap");
-      _ssaadownsamplebuffer      = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
-      auto dsbuf                 = _ssaadownsamplebuffer->createRenderTarget(_vrnode->_format);
-      dsbuf->_debugName          = "MsaaDownsampleBuffer";
+      _ssaadownsamplebufferL      = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      _ssaadownsamplebufferR      = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      auto dsbufL                 = _ssaadownsamplebufferL->createRenderTarget(_vrnode->_format);
+      dsbufL->_debugName          = "MsaaDownsampleBufferL";
+      auto dsbufR                 = _ssaadownsamplebufferR->createRenderTarget(_vrnode->_format);
+      dsbufR->_debugName          = "MsaaDownsampleBufferR";
 
       // printf("A: vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
@@ -64,7 +67,7 @@ struct VRIMPL {
     }
   }
   ///////////////////////////////////////
-  void beginAssemble(CompositorDrawData& drawdata) {
+  void _beginAssembleEye(CompositorDrawData& drawdata, bool is_left_eye) {
     EASY_BLOCK("onodevr-begass");
     auto& ddprops = drawdata._properties;
     auto RCFD     = drawdata.RCFD();
@@ -72,8 +75,7 @@ struct VRIMPL {
     auto DB       = RCFD->GetDB();
     Context* targ = drawdata.context();
 
-    bool use_vr = false; //(orkidvr::device()->_active);
-
+  
     auto VRDEV = orkidvr::device();
     int ssaa   = _vrnode->supersample();
     OrkAssert(ssaa >= 0 and ssaa <= 3);
@@ -83,47 +85,44 @@ struct VRIMPL {
     _ssaa_width  = _out_width * _multiplier;
     _ssaa_height = _out_height * _multiplier;
     float aspect = float(_ssaa_width) / float(_ssaa_height);
+
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
 
     fmtx4 rootmatrix;
-    if (true) {
-      // printf( "WTF active\n");
-      auto vrdev_camname = VRDEV->_cameraName;
-      if (vrdev_camname != "") {
-        cameradata_constptr_t camera;
-        DB->_cameraDataLUT.atomicOp([&](const cameradatalut_ptr_t& unlocked) { camera = unlocked->find(vrdev_camname); });
-        if (camera) {
-          auto camdat           = camera.get();
-          (*_tmpcameramatrices) = camdat->computeMatrices(aspect);
-          rootmatrix            = _tmpcameramatrices->GetVMatrix();
-          // rootmatrix.dump("yo");
-        }
-      } else {
-        auto vrcamprop = RCFD->getUserProperty("vrcam"_crc);
-        if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
-          targ->debugMarker("Vr::gotcamera");
-          auto vrcam = as_cam.value();
-          auto eye   = vrcam->GetEye();
-          auto tgt   = vrcam->GetTarget();
-          auto up    = vrcam->GetUp();
-          rootmatrix.lookAt(eye, tgt, up);
-          rootmatrix.dump("yo");
-        } else {
-          targ->debugMarker("Vr::nocamera");
-          // printf("novrcam\n");
-        }
+    // printf( "WTF active\n");
+    auto vrdev_camname = VRDEV->_camera_name;
+    if (vrdev_camname != "") {
+      cameradata_constptr_t camera;
+      DB->_cameraDataLUT.atomicOp([&](const cameradatalut_ptr_t& unlocked) { camera = unlocked->find(vrdev_camname); });
+      if (camera) {
+        auto camdat           = camera.get();
+        (*_tmpcameramatrices) = camdat->computeMatrices(aspect);
+        rootmatrix            = _tmpcameramatrices->GetVMatrix();
+        // rootmatrix.dump("yo");
       }
-
-      _viewOffsetMatrix = orkidvr::device()->_outputViewOffsetMatrix;
+    } else {
+      auto vrcamprop = RCFD->getUserProperty("vrcam"_crc);
+      if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
+        targ->debugMarker("Vr::gotcamera");
+        auto vrcam = as_cam.value();
+        auto eye   = vrcam->GetEye();
+        auto tgt   = vrcam->GetTarget();
+        auto up    = vrcam->GetUp();
+        rootmatrix.lookAt(eye, tgt, up);
+        rootmatrix.dump("yo");
+      } else {
+        targ->debugMarker("Vr::nocamera");
+        // printf("novrcam\n");
+      }
     }
+
+    _viewOffsetMatrix = orkidvr::device()->_outputViewOffsetMatrix;
 
     /////////////////////////////////////////////////////////////////////////////
 
-    if (use_vr) {
-      orkidvr::device()->gpuUpdate(*RCFD);
-    }
+    orkidvr::device()->gpuUpdate(*RCFD);
 
     ///////////////////////////////////
 
@@ -131,31 +130,71 @@ struct VRIMPL {
 
     drawdata._properties["OutputWidth"_crcu].set<int>(_ssaa_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_ssaa_height);
-    bool doing_stereo = false; //(use_vr and VRDEV->_supportsStereo);
-    drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
-    //drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
+    drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
+    auto mono_cam = is_left_eye ? VRDEV->_leftcamera : VRDEV->_rightcamera;
+    drawdata._properties["defcammtx"_crcu].set<const CameraMatrices*>(mono_cam);
 
-    if (use_vr and VRDEV->_supportsStereo) {
-      RCFD->setUserProperty("vrroot"_crc, rootmatrix);
-      _stereomatrices->_left  = VRDEV->_leftcamera;
-      _stereomatrices->_right = VRDEV->_rightcamera;
-      _stereomatrices->_mono  = VRDEV->_leftcamera;
-      //drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices.get());
-    }
+    RCFD->setUserProperty("vrroot"_crc, rootmatrix);
+    _stereomatrices->_left  = VRDEV->_leftcamera;
+    _stereomatrices->_right = VRDEV->_rightcamera;
+    _stereomatrices->_mono  = VRDEV->_leftcamera;
+    drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices.get());
 
     _CPD.defaultSetup(drawdata);
 
-    //_CPD._stereoCameraMatrices = _stereomatrices.get();
+    _CPD._stereo_cam_matrices = _stereomatrices.get();
 
     //////////////////////////////////////////////////////
 
     CIMPL->pushCPD(_CPD);
   }
   ///////////////////////////////////////
-  void endAssemble(CompositorDrawData& drawdata) {
+  void _endAssembleEye(CompositorDrawData& drawdata,bool is_left_eye) {
     EASY_BLOCK("onodevr-endass");
     auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
+  }
+  ///////////////////////////////////////
+  void _downsample(CompositorDrawData& drawdata,RtBuffer* render_out, bool is_left_eye) {
+    auto context = drawdata.context();
+    auto fbi = context->FBI();
+    auto gbi = context->GBI();
+    auto framedata = drawdata.RCFD();
+    auto tex = render_out->texture();
+    auto this_buf = context->FBI()->GetThisBuffer();
+    // resize ssaadownsamplebuffer
+    auto downRTG = is_left_eye ? _ssaadownsamplebufferL : _ssaadownsamplebufferR;
+    if (downRTG->width() != _out_width || downRTG->height() != _out_height) {
+      downRTG->Resize(_out_width, _out_height);
+    }
+
+    fbi->PushRtGroup(downRTG.get());
+
+    auto& mtl = _blit2screenmtl;
+    mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
+    mtl._rasterstate->setDepthTest(EDepthTest::OFF);
+    mtl._rasterstate->setCullTest(ECullTest::OFF);
+    mtl._rasterstate->_force = true;
+
+    int ssaa = _vrnode->supersample();
+    OrkAssert(ssaa >= 0 and ssaa <= 3);
+
+    auto tek = _fxtechnique_downsample[ssaa];
+    drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<%d>", ssaa);
+
+    mtl.begin(tek, framedata);
+    mtl.bindParamCTex(_fxpColorMap, tex);
+    mtl.bindParamMatrix(_fxpMVP, fmtx4::Identity());
+    ViewportRect extents(0, 0, _out_width, _out_height);
+    fbi->pushViewport(extents);
+    fbi->pushScissor(extents);
+    gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    fbi->popViewport();
+    fbi->popScissor();
+    mtl.end(framedata);
+    fbi->PopRtGroup();
+
+    drawdata.context()->debugPopGroup();
   }
   ///////////////////////////////////////
   std::shared_ptr<StereoCameraMatrices> _stereomatrices;
@@ -175,37 +214,27 @@ struct VRIMPL {
   int _ssaa_height = 0;
   int _out_width   = 0;
   int _out_height  = 0;
-  rtgroup_ptr_t _ssaadownsamplebuffer;
+  rtgroup_ptr_t _ssaadownsamplebufferL;
+  rtgroup_ptr_t _ssaadownsamplebufferR;
 };
+using DMVRIMPL_ptr_t = std::shared_ptr<DMVRIMPL>;
 ///////////////////////////////////////////////////////////////////////////////
 DualMonoVrOutputNode::DualMonoVrOutputNode() {
-  _impl = std::make_shared<VRIMPL>(this);
+  _impl = std::make_shared<DMVRIMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 DualMonoVrOutputNode::~DualMonoVrOutputNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
-}
-///////////////////////////////////////////////////////////////////////////////
-void DualMonoVrOutputNode::beginAssemble(CompositorDrawData& drawdata) {
-  drawdata.context()->debugPushGroup("DualMonoVrOutputNode::beginAssemble");
-  _impl.get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
-  drawdata.context()->debugPopGroup();
-}
-///////////////////////////////////////////////////////////////////////////////
-void DualMonoVrOutputNode::endAssemble(CompositorDrawData& drawdata) {
-  drawdata.context()->debugPushGroup("DualMonoVrOutputNode::endAssemble");
-  _impl.get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
-  drawdata.context()->debugPopGroup();
+  _impl.get<DMVRIMPL_ptr_t>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("DualMonoVrOutputNode::composite");
-  auto impl = _impl.get<std::shared_ptr<VRIMPL>>();
+  auto impl = _impl.get<DMVRIMPL_ptr_t>();
   /////////////////////////////////////////////////////////////////////////////
-  // VR compositor
+  // DMVR compositor
   /////////////////////////////////////////////////////////////////////////////
   Context* context = drawdata.context();
   auto fbi         = context->FBI();
@@ -224,44 +253,6 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_screen");
 
-        // downsample
-        if (impl->_multiplier != 1) {
-          // resize ssaadownsamplebuffer
-          auto downRTG = impl->_ssaadownsamplebuffer;
-          if (downRTG->width() != impl->_out_width || downRTG->height() != impl->_out_height) {
-            downRTG->Resize(impl->_out_width, impl->_out_height);
-          }
-
-          fbi->PushRtGroup(downRTG.get());
-
-          auto& mtl = impl->_blit2screenmtl;
-          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
-          mtl._rasterstate->setDepthTest(EDepthTest::OFF);
-          mtl._rasterstate->setCullTest(ECullTest::OFF);
-          mtl._rasterstate->_force = true;
-
-          int ssaa = supersample();
-          OrkAssert(ssaa >= 0 and ssaa <= 3);
-
-          auto tek = impl->_fxtechnique_downsample[ssaa];
-          drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<%d>", ssaa);
-
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
-          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
-          ViewportRect extents(0, 0, impl->_out_width, impl->_out_height);
-          fbi->pushViewport(extents);
-          fbi->pushScissor(extents);
-          gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-          fbi->popViewport();
-          fbi->popScissor();
-          mtl.end(framedata);
-          fbi->PopRtGroup();
-
-          tex = downRTG->GetMrt(0)->texture();
-
-          drawdata.context()->debugPopGroup();
-        } // downsample
-
         if (_distorion_lambda) {
           drawdata.context()->debugPushGroup("DualMonoVrOutputNode::distortion_lambda");
           _distorion_lambda(framedata, tex);
@@ -272,27 +263,58 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           auto& mtl         = impl->_blit2screenmtl;
           auto inp_rtg      = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
           auto this_buf     = context->FBI()->GetThisBuffer();
+          auto tek_nodownsample = impl->_fxtechnique_downsample[0];
 
-          mtl.begin(impl->_fxtechnique_downsample[0], framedata);
-
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.begin(tek_nodownsample, framedata);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
+
+          ////////////
+          // Left Eye
+          ////////////
+
+          auto tex = impl->_ssaadownsamplebufferL->GetMrt(0)->texture();
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
           if (_flipY) {
             this_buf->Render2dQuadEML(
-                fvec4(-1, -1, 2, 2), // xywh
-                fvec4(0, 0, 1, 1),   // uvrectA
-                fvec4(0, 0, 1, 1));  // uvrectB
+                fvec4(-1, -1, 1, 2), // xywh
+                fvec4(0, 0, 1, 1),   // uvrectA(u,v,w,h)
+                fvec4(0, 0, 1, 1));  // uvrectB(u,v,w,h)
           } else {
             this_buf->Render2dQuadEML(
-                fvec4(-1, -1, 2, 2), // xywh
-                fvec4(0, 1, 1, -1),  // uvrectA
-                fvec4(0, 1, 1, -1)); // uvrectB
+                fvec4(-1, -1, 1, 2), // xywh
+                fvec4(0, 1, 1, -1),  // uvrectA(u,v,w,h)
+                fvec4(0, 1, 1, -1)); // uvrectB(u,v,w,h)
           }
+
+          ////////////
+          // Right Eye
+          ////////////
+
+          tex = impl->_ssaadownsamplebufferR->GetMrt(0)->texture();
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          if (_flipY) {
+            this_buf->Render2dQuadEML(
+                fvec4(0, -1, 1, 2), // xywh
+                fvec4(0, 0, 1, 1),   // uvrectA(u,v,w,h)
+                fvec4(0, 0, 1, 1));  // uvrectB(u,v,w,h)
+          } else {
+            this_buf->Render2dQuadEML(
+                fvec4(0, -1, 1, 2), // xywh
+                fvec4(0, 1, 1, -1),  // uvrectA(u,v,w,h)
+                fvec4(0, 1, 1, -1)); // uvrectB(u,v,w,h)
+          }
+
+          ////////////
+          // done
+          ////////////
+
           fbi->popViewport();
           fbi->popScissor();
+
           mtl.end(framedata);
 
           drawdata.context()->debugPopGroup();
@@ -308,7 +330,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
 assembler_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_ptr_t tek) {
   return [this, tek](CompositorDrawData& drawdata) {
     auto rnode = tek->_renderNode;
-    printf("rendering dual-mono-vr!\n");
+    //printf("rendering dual-mono-vr!\n");
     ////////////////////////////////////////////////////////////////////////////
     // this assembler will run the render and postfx nodes twice,
     //  once for each eye
@@ -317,17 +339,30 @@ assembler_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_ptr
     //  we will stash each eye in a holding buffer for final compositing
     ////////////////////////////////////////////////////////////////////////////
     auto do_for_eye = [&](bool is_left_eye) {
+      auto impl = _impl.get<DMVRIMPL_ptr_t>();
       ////////////////////////////////////////////////////////////////////////////
       bool is_right_eye = not is_left_eye;
+      auto context = drawdata.context();
       ////////////////////////////////////////////////////////////////////////////
       rtgroup_ptr_t render_outg = rnode ? rnode->GetOutputGroup() : nullptr;
       RtBuffer* render_out      = rnode ? rnode->GetOutput().get() : nullptr;
       drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
       drawdata._properties["render_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
       ////////////////////////////////////////////////////////////////////////////
-      this->beginAssemble(drawdata);
+      // assemble (render) the eye
+      ////////////////////////////////////////////////////////////////////////////
+      context->debugPushGroup("DualMonoVrOutputNode::beginAssembleEye");
+      impl->_beginAssembleEye(drawdata,is_left_eye);
+      context->debugPopGroup();
+      ////////////////////////////////////////////////////////////////////////////
       rnode->Render(drawdata);
-      this->endAssemble(drawdata);
+      ////////////////////////////////////////////////////////////////////////////
+      context->debugPushGroup("DualMonoVrOutputNode::endAssembleEye");
+      impl->_endAssembleEye(drawdata,is_left_eye);
+      context->debugPopGroup();
+      ////////////////////////////////////////////////////////////////////////////
+      // postfx nodes for the eye
+      ////////////////////////////////////////////////////////////////////////////
       size_t num_fx_nodes = tek->_postEffectNodes.size();
       for (auto pfxnode : tek->_postEffectNodes) {
         drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
@@ -337,9 +372,25 @@ assembler_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_ptr
       }
       drawdata._properties["final_out"_crcu].set<RtBuffer*>(render_out);
       drawdata._properties["final_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
+      ////////////////////////////////////////////////////////////////////////////
+      // downsample ?
+      ////////////////////////////////////////////////////////////////////////////
+      if(render_out){
+        impl->_downsample(drawdata,render_out,is_left_eye);
+      }
+      ////////////////////////////////////////////////////////////////////////////
     };
+
+
+    if(_onBeginAssemble){
+      _onBeginAssemble(drawdata);
+    }
+  
+    do_for_eye(true);
     do_for_eye(false);
-    // do_for_eye(true);
+    if(_onEndAssemble){
+      _onEndAssemble(drawdata);
+    }
   };
 }
 ///////////////////////////////////////////////////////////////////////////////

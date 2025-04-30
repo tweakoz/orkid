@@ -34,7 +34,7 @@ void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t r
 Device::Device() {
 
   auto imgr      = lev2::InputManager::instance();
-  _cameraName = "";
+  _camera_name = "";
 
   _hmdinputgroup = imgr->inputGroup("hmd");
 
@@ -196,11 +196,11 @@ void Device::_updatePosesCommon() {
   fmtx4 cmv = fmtx4::multiply_ltor(usermtx,relmtx);
 
   if (_calibstate == 2) {
-    deco::printf(fvec3::White(), "_baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());
-    deco::printf(fvec3::White(), "_hmdMatrix: %s\n", _hmdMatrix.dump4x3cn().c_str());
-    deco::printf(fvec3::White(), "relmtx: %s\n", relmtx.dump4x3cn().c_str());
-    deco::printf(fvec3::White(), "usermtx: %s\n", usermtx.dump4x3cn().c_str());
-    deco::printf(fvec3::White(), "cmv: %s\n", cmv.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "[BASEVR] _baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "[BASEVR]  _hmdMatrix: %s\n", _hmdMatrix.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "[BASEVR]      relmtx: %s\n", relmtx.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "[BASEVR]     usermtx: %s\n", usermtx.dump4x3cn().c_str());
+    deco::printf(fvec3::White(), "[BASEVR]         cmv: %s\n", cmv.dump4x3cn().c_str());
   }
 
   fmtx4 lmv = fmtx4::multiply_ltor(cmv,eyeL);

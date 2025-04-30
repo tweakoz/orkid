@@ -61,6 +61,7 @@ def createSceneGraph( app : object = None,
     app.layer_dpp = app.scene.createLayer("depth_prepass")
     app.std_layers = [app.layer_std,app.layer_dpp]
     app.rendernode = app.scene.compositorrendernode
+    app.outputnode = app.scene.compositoroutputnode
 
     if hasattr(app.scene,"pbr_common") and app.scene.pbr_common != None:
       app.scene.pbr_common.useFloatColorBuffer = use_float_buffer

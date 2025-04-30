@@ -92,7 +92,7 @@ struct impl {
     const auto& CPD  = RCFD->topCPD();
     auto cammatrices = CPD.cameraMatrices();
     const auto& FRUS = cammatrices->GetFrustum();
-    bool stereo1pass = CPD.isStereoOnePass();
+    bool stereo1pass = CPD.isSinglePassStereo();
 
     float extent = data.extent();
     fvec3 topl(-extent, 0, -extent);

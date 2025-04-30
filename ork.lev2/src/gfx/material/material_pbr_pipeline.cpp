@@ -69,7 +69,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     const auto& CPD       = RCID.rcfd()->topCPD();
     const auto& RCFDPROPS = RCID.rcfd()->userProperties();
     bool is_picking       = CPD.isPicking();
-    bool is_stereo        = CPD.isStereoOnePass();
+    bool is_stereo        = CPD.isSinglePassStereo();
     auto pbrcommon        = RCID.rcfd()->_pbrcommon;
 
     if(mtl->_commonOverride){
@@ -98,8 +98,8 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
 
     auto worldmatrix = RCID.worldMatrix();
 
-    auto stereocams = CPD._stereoCameraMatrices;
-    auto monocams   = CPD._cameraMatrices;
+    auto stereocams = CPD._stereo_cam_matrices;
+    auto monocams   = CPD._mono_cam_matrices;
 
     FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
 
@@ -131,7 +131,8 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
       FXI->BindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
       FXI->BindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
 
-    } else if (monocams) {
+    }
+    if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
       FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));

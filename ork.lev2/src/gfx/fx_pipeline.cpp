@@ -142,7 +142,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   auto MTXI             = context->MTXI();
   const auto& RCFDPROPS = RCID.rcfd()->userProperties();
   bool is_picking       = CPD.isPicking();
-  bool is_stereo        = CPD.isStereoOnePass();
+  bool is_stereo        = CPD.isSinglePassStereo();
   auto pbrcommon = RCID.rcfd()->_pbrcommon;
   auto modcolor = context->RefModColor();
 
@@ -197,8 +197,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
 
-      auto stereocams = CPD._stereoCameraMatrices;
-      auto monocams   = CPD._cameraMatrices;
+      auto stereocams = CPD._stereo_cam_matrices;
+      auto monocams   = CPD._mono_cam_matrices;
 
       switch (crcstr.hashed()) {
 
@@ -377,7 +377,7 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID
   auto RCFD       = RCID.rcfd();
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
-  bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;
+  bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isSinglePassStereo() : false;
   bool picking = RCFD->hasCPD() ? RCFD->topCPD().isPicking() : false;
   /////////////////
   FxPipelinePermutation permu;

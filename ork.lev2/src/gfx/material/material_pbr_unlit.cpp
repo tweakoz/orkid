@@ -51,7 +51,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineUNL(const FxPipelinePermutation& 
       auto MTXI        = context->MTXI();
       //auto RSI         = context->RSI();
       const auto& CPD  = RCFD->topCPD();
-      auto monocams    = CPD._cameraMatrices;
+      auto monocams    = CPD._mono_cam_matrices;
       auto worldmatrix = RCID.worldMatrix();
       auto modcolor    = context->RefModColor();
       FXI->BindParamVect4(this->_parModColor, modcolor * this->_baseColor);

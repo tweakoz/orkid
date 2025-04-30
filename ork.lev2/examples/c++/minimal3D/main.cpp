@@ -50,7 +50,7 @@ struct Resources {
 
     _compdata = std::make_shared<CompositingData>();
     _compimpl = std::make_shared<CompositingImpl>(*_compdata);
-    _CPD._cameraMatrices = & _cammatrices;
+    _CPD._mono_cam_matrices = & _cammatrices;
     _RCFD->pushCompositor(_compimpl); // bind compositor to _RCFD
 
     ///////////////////////////////////////////////////

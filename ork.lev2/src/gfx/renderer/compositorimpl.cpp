@@ -146,9 +146,9 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
     //  todo - create actual camera mgr and select default camera there
     /////////////////////////////////////////////////////////////////////////////
 
-    auto the_camera = DB->cameraData(_cameraName);
+    auto the_camera = DB->cameraData(_camera_name);
 
-    //printf( "CAMNAME<%s> CAM<%p>\n", _cameraName.c_str(), (void*) the_camera.get() );
+    //printf( "CAMNAME<%s> CAM<%p>\n", _camera_name.c_str(), (void*) the_camera.get() );
 
     target->debugMarker(FormatString("the_camera<%p>", (void*) the_camera.get()));
 

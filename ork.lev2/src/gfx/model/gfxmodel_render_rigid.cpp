@@ -31,7 +31,7 @@ void XgmModel::RenderRigid(
   auto R                    = RCID.GetRenderer();
   auto RCFD                 = context->topRenderContextFrameData();
   const auto& CPD           = RCFD->topCPD();
-  bool stereo1pass          = CPD.isStereoOnePass();
+  bool stereo1pass          = CPD.isSinglePassStereo();
   const XgmMesh& mesh       = *mdlctx.mMesh;
   auto cluster              = mdlctx._cluster;
   const XgmSubMesh& submesh = *mdlctx.mSubMesh;

@@ -41,6 +41,11 @@ public:
   }
 
   bool _flipY = true;
+
+  assembler_fn_t _onBeginAssemble = nullptr;
+  assembler_fn_t _onEndAssemble = nullptr;
+  svar64_t _pyimpl_oba;
+  svar64_t _pyimpl_oea;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

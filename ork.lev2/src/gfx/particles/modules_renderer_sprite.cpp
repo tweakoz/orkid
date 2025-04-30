@@ -208,7 +208,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto FXI = context->FXI();
     auto CI  = context->CI();
     ///////////////////////////////////////////////////////////////
-    auto stereocams  = CPD._stereoCameraMatrices;
+    auto stereocams  = CPD._stereo_cam_matrices;
     auto worldmatrix = RCID.worldMatrix();
     auto SMM         = stereocams->_mono;
     // obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();

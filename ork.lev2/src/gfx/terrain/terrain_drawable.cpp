@@ -968,7 +968,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   Context* targ             = renderer->GetTarget();
   auto RCFD                 = targ->topRenderContextFrameData();
   const auto& CPD           = RCFD->topCPD();
-  bool stereo1pass          = CPD.isStereoOnePass();
+  bool stereo1pass          = CPD.isSinglePassStereo();
   bool bpick                = CPD.isPicking();
   auto mtxi                 = targ->MTXI();
   auto fxi                  = targ->FXI();
@@ -1016,12 +1016,12 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   fvec3 znormal     = CPD.monoCamZnormal();
 
   if (stereo1pass and not bpick) {
-    auto stcams = CPD._stereoCameraMatrices;
+    auto stcams = CPD._stereo_cam_matrices;
     MVPL        = stcams->MVPL(viz_offset);
     MVPR        = stcams->MVPR(viz_offset);
     MVPC        = stcams->MVPMONO(viz_offset);
   } else {
-    auto mcams             = CPD._cameraMatrices;
+    auto mcams             = CPD._mono_cam_matrices;
     const fmtx4& PMTX_mono = mcams->_pmatrix;
     const fmtx4& VMTX_mono = mcams->_vmatrix;
     auto MV_mono           = fmtx4::multiply_ltor(viz_offset,VMTX_mono);

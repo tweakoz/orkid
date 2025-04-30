@@ -68,7 +68,7 @@ struct IMPL {
     auto framedata = target->topRenderContextFrameData();
     auto topcomp = framedata->topCompositor();
     bool was_stereo = framedata->isStereo();
-    topcomp->topCPD()._stereo1pass = false;
+    topcomp->topCPD()._single_pass_stereo = false;
     //////////////////////////////////////////////////////
     FBI->SetAutoClear(false);
     //////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ struct IMPL {
         }
       }
     }
-    topcomp->topCPD()._stereo1pass = was_stereo;
+    topcomp->topCPD()._single_pass_stereo = was_stereo;
   }
   ///////////////////////////////////////
   CompositingMaterial _material;

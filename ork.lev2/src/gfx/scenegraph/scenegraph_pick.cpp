@@ -137,7 +137,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     ///////////////////////////////////////////////////////////////////////////
     lev2::CompositorDrawData drawdata(RCFD);
     drawdata._cimpl = _compimpl;
-    drawdata._properties["StereoEnable"_crcu].set<bool>(false);
+    drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
     drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_scene._renderer.get());

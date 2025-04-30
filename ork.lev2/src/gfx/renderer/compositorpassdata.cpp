@@ -59,26 +59,25 @@ void CompositingPassData::SetMrtRect(const ViewportRect& rect) {
 void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   this->AddLayer("All");
   this->mbDrawSource = true;
-  this->_cameraName  = "";
+  this->_camera_name  = "";
   this->_clearColor  = fvec4(0, 0, 0, 0);
   int w              = drawdata._properties["OutputWidth"_crcu].get<int>();
   int h              = drawdata._properties["OutputHeight"_crcu].get<int>();
   ViewportRect tgt_rect(0, 0, w, h);
   this->SetDstRect(tgt_rect);
-  bool stereo = drawdata._properties["StereoEnable"_crcu].get<bool>();
-  this->setStereoOnePass(stereo);
-  this->_cameraMatrices       = nullptr;
-  this->_stereoCameraMatrices = nullptr;
+  bool stereo_1pass = drawdata._properties["SinglePassStereo"_crcu].get<bool>();
+  this->setSinglePassStereo(stereo_1pass);
+  this->_mono_cam_matrices       = nullptr;
+  this->_stereo_cam_matrices = nullptr;
   if (auto try_scm = drawdata._properties["StereoMatrices"_crcu].tryAs<const StereoCameraMatrices*>()) {
-    this->_stereoCameraMatrices = try_scm.value();
-  } else {
-    // bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
-    if (auto try_def = drawdata._properties["defcammtx"_crcu].tryAs<const CameraMatrices*>()) {
-      this->_cameraMatrices = try_def.value();
-    }
-    if (auto try_sim = drawdata._properties["simcammtx"_crcu].tryAs<const CameraMatrices*>()) {
-      this->_cameraMatrices = try_sim.value();
-    }
+    this->_stereo_cam_matrices = try_scm.value();
+  }
+  // bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
+  if (auto try_def = drawdata._properties["defcammtx"_crcu].tryAs<const CameraMatrices*>()) {
+    this->_mono_cam_matrices = try_def.value();
+  }
+  if (auto try_sim = drawdata._properties["simcammtx"_crcu].tryAs<const CameraMatrices*>()) {
+    this->_mono_cam_matrices = try_sim.value();
   }
 }
 
@@ -87,7 +86,7 @@ void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
 fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   // vizoffsetmtx : use in visual offset cases such as the heightfield
   //   (todo: elaborate on this subject)
-  fmtx4 vmono = isStereoOnePass() ? _stereoCameraMatrices->VMONO() : _cameraMatrices->_vmatrix;
+  fmtx4 vmono = isSinglePassStereo() ? (_stereo_cam_matrices ? _stereo_cam_matrices->VMONO() : fmtx4()): (_mono_cam_matrices ? _mono_cam_matrices->_vmatrix : fmtx4());
   auto mvmono = fmtx4::multiply_ltor(vizoffsetmtx, vmono);
   fmtx4 imvmono;
   imvmono.inverseOf(mvmono);
@@ -95,22 +94,35 @@ fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 fvec2 CompositingPassData::nearAndFar() const {
-  auto mtcs          = isStereoOnePass() ? _stereoCameraMatrices->_mono : _cameraMatrices;
-  const auto& camdat = mtcs->_camdat;
-  return fvec2(camdat.mNear, camdat.mFar);
+  const CameraMatrices* mtcs = nullptr;
+  if(isSinglePassStereo()){
+    if(_stereo_cam_matrices){
+      mtcs = _stereo_cam_matrices->_mono;
+    }
+  }
+  else{
+    mtcs = _mono_cam_matrices;
+  }
+    if(mtcs){
+        const auto& camdat = mtcs->_camdat;
+        return fvec2(camdat.mNear, camdat.mFar);
+    }
+    else{
+        return fvec2(0,1);
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 const Frustum& CompositingPassData::monoCamFrustum() const {
   static const Frustum gfrustum;
-  return _cameraMatrices ? _cameraMatrices->_frustum : gfrustum;
+  return _mono_cam_matrices ? _mono_cam_matrices->_frustum : gfrustum;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const fvec3& CompositingPassData::monoCamZnormal() const {
   static const fvec3 gzn(0, 0, 1);
-  return _cameraMatrices ? _cameraMatrices->_camdat.zNormal() : gzn;
+  return _mono_cam_matrices ? _mono_cam_matrices->_camdat.zNormal() : gzn;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

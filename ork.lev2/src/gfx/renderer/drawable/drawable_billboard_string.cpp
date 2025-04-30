@@ -146,8 +146,8 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
 
-    auto stereocams = CPD._stereoCameraMatrices;
-    auto monocams   = CPD._cameraMatrices;
+    auto stereocams = CPD._stereo_cam_matrices;
+    auto monocams   = CPD._mono_cam_matrices;
     auto renderable      = (CallbackRenderable*)RCID._irenderable;
     auto& current_string = renderable->_drawDataA.get<std::string>();
     auto fontman = FontMan::instance();

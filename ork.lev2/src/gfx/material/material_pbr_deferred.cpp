@@ -82,7 +82,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
         auto FXI         = context->FXI();
         //auto RSI         = context->RSI();
         const auto& CPD  = RCFD->topCPD();
-        auto stereocams  = CPD._stereoCameraMatrices;
+        auto stereocams  = CPD._stereo_cam_matrices;
         auto worldmatrix = RCID.worldMatrix();
         auto modcolor    = context->RefModColor();
         fmtx4 vrroot;
@@ -124,7 +124,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
         auto MTXI        = context->MTXI();
         //auto RSI         = context->RSI();
         const auto& CPD  = RCFD->topCPD();
-        auto monocams    = CPD._cameraMatrices;
+        auto monocams    = CPD._mono_cam_matrices;
         auto worldmatrix = RCID.worldMatrix();
         auto eye_pos     = monocams->_vmatrix.inverse().translation();
         FXI->BindParamVect3(this->_paramEyePostion, eye_pos);

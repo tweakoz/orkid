@@ -401,9 +401,9 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
   auto RCFD = context->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
-  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
+  if (CPD.isSinglePassStereo() and CPD._stereo_cam_matrices) {
   } else {
-    auto mcams        = CPD._cameraMatrices;
+    auto mcams        = CPD._mono_cam_matrices;
     const auto& world = mtxi->RefMMatrix();
     auto MVP          = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
     fxi->BindParamMatrix(_paramV, mcams->_vmatrix);

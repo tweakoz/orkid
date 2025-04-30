@@ -66,7 +66,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     }
 
     auto cimpl = _scenegraph->_compositorImpl;
-    cimpl->_cameraName = _cameraname;
+    cimpl->_camera_name = _cameraname;
     if(_decouple_from_ui_size){
       cimpl->_compcontext->Resize(_decoupled_width,_decoupled_height);
     }

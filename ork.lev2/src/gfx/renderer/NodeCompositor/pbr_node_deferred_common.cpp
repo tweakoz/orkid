@@ -287,9 +287,9 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   CPD._passID = "defcluster"_crcu;
   CPD.SetDstRect(vprect);
   CPD._irendertarget        = _clusterRT;
-  CPD._cameraMatrices       = nullptr;
-  CPD._stereoCameraMatrices = nullptr;
-  CPD._stereo1pass          = false;
+  CPD._mono_cam_matrices       = nullptr;
+  CPD._stereo_cam_matrices = nullptr;
+  CPD._single_pass_stereo          = false;
   CIMPL->pushCPD(CPD); // findclusters
   targ->debugPushGroup("Deferred::findclusters");
   {
@@ -418,14 +418,14 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   auto quadrect = SRect(0, 0, _width, _height);
   _accumCPD.SetDstRect(vprect);
   _accumCPD._irendertarget        = _rtgLbuffer->_rendertarget.get();
-  _accumCPD._cameraMatrices       = nullptr;
-  _accumCPD._stereoCameraMatrices = nullptr;
-  _accumCPD._stereo1pass          = false;
+  _accumCPD._mono_cam_matrices       = nullptr;
+  _accumCPD._stereo_cam_matrices = nullptr;
+  _accumCPD._single_pass_stereo          = false;
   _decalCPD.SetDstRect(vprect);
   _decalCPD._irendertarget        = nullptr;
-  _decalCPD._cameraMatrices       = nullptr;
-  _decalCPD._stereoCameraMatrices = nullptr;
-  _decalCPD._stereo1pass          = false;
+  _decalCPD._mono_cam_matrices       = nullptr;
+  _decalCPD._stereo_cam_matrices = nullptr;
+  _decalCPD._single_pass_stereo          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
   FBI->PushRtGroup(_rtgLbuffer.get());
   FBI->rtGroupClear(_rtgLbuffer.get());

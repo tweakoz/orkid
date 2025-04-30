@@ -152,7 +152,7 @@ struct VRIMPL {
     fmtx4 rootmatrix;
     if (use_vr) {
       // printf( "WTF active\n");
-      auto vrdev_camname = VRDEV->_cameraName;
+      auto vrdev_camname = VRDEV->_camera_name;
       if (vrdev_camname != "") {
         cameradata_constptr_t camera;
         DB->_cameraDataLUT.atomicOp([&](const cameradatalut_ptr_t& unlocked) { camera = unlocked->find(vrdev_camname); });
@@ -194,7 +194,7 @@ struct VRIMPL {
     drawdata._properties["OutputWidth"_crcu].set<int>(_ssaa_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_ssaa_height);
     bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
-    drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
+    drawdata._properties["SinglePassStereo"_crcu].set<bool>(doing_stereo);
     drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
 
     if (use_vr and VRDEV->_supportsStereo) {
@@ -207,7 +207,7 @@ struct VRIMPL {
 
     _CPD.defaultSetup(drawdata);
 
-    _CPD._stereoCameraMatrices = _stereomatrices;
+    _CPD._stereo_cam_matrices = _stereomatrices;
 
     //////////////////////////////////////////////////////
 

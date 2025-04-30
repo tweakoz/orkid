@@ -18,6 +18,7 @@ namespace ork::lev2 {
 
 struct CompositingScene : public ::ork::Object {
   DeclareConcreteX(CompositingScene, ::ork::Object);
+
 public:
   CompositingScene();
   compositingsceneitem_constptr_t findItem(const std::string& named) const;
@@ -85,7 +86,7 @@ class CompositingBuffer : public ::ork::Object {
 struct CompositingContext {
   int miWidth;
   int miHeight;
-  GfxMaterial3DSolid* _utilMaterial           = nullptr;
+  GfxMaterial3DSolid* _utilMaterial               = nullptr;
   compositortechnique_ptr_t _compositingTechnique = nullptr;
 
   CompositingContext();
@@ -105,24 +106,24 @@ struct CompositingPassData {
   }
 
   CompositingPassData clone() const;
-  
+
   ////////////////////////////////////////////////////
 
-  inline void setSharedCameraMatrices(cameramatrices_ptr_t c){
-    _shared_cameraMatrices = c;
-    _cameraMatrices = c.get();
+  inline void setSharedCameraMatrices(cameramatrices_ptr_t c) {
+    _shared_mono_cam_matrices = c;
+    _mono_cam_matrices        = c.get();
   }
 
   ////////////////////////////////////////////////////
 
-  bool isStereoOnePass() const {
-    return _stereo1pass;
+  bool isSinglePassStereo() const {
+    return _single_pass_stereo;
   }
-  void setStereoOnePass(bool ena) {
-    _stereo1pass = ena;
+  void setSinglePassStereo(bool ena) {
+    _single_pass_stereo = ena;
   }
   const CameraMatrices* cameraMatrices() const {
-    return _cameraMatrices;
+    return _mono_cam_matrices;
   }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
   std::vector<std::string> getLayerNames() const;
@@ -138,7 +139,7 @@ struct CompositingPassData {
   void addStandardLayers();
 
   bool isValid() const {
-    return _cameraMatrices or _stereoCameraMatrices;
+    return _mono_cam_matrices or _stereo_cam_matrices;
   }
 
   void defaultSetup(CompositorDrawData& drawdata);
@@ -149,25 +150,25 @@ struct CompositingPassData {
   fvec2 nearAndFar() const;
   ////////////////////////////////////////////////////
 
-  IRenderTarget* _irendertarget        = nullptr;
-  bool mbDrawSource                    = true;
-  std::string _cameraName;
+  IRenderTarget* _irendertarget = nullptr;
+  bool mbDrawSource             = true;
+  std::string _camera_name;
   fvec4 _clearColor;
-  bool _stereo1pass                                 = false;
-  const CameraMatrices* _cameraMatrices             = nullptr;
-  cameramatrices_ptr_t _shared_cameraMatrices  = nullptr;
-  const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
+  bool _single_pass_stereo                         = false;
+  const CameraMatrices* _mono_cam_matrices         = nullptr;
+  cameramatrices_ptr_t _shared_mono_cam_matrices   = nullptr;
+  const StereoCameraMatrices* _stereo_cam_matrices = nullptr;
   svarp_t _var;
   ViewportRect mDstRect;
   ViewportRect mMrtRect;
   uint32_t _passID = 0;
-  float _time = 0.0f;
-  bool _ispicking = false;
+  float _time      = 0.0f;
+  bool _ispicking  = false;
   std::vector<std::string> _layernames;
   std::unordered_set<std::string> _layernameset;
-  int _width = 0;
+  int _width  = 0;
   int _height = 0;
-  
+
   std::string _debugName;
 };
 
@@ -188,7 +189,7 @@ struct ViewData {
   fmtx4 VPL, VPR, VPM;
   fvec2 _zndc2eye;
   float _near = 0.1;
-  float _far = 10.0;
+  float _far  = 10.0;
   float _time = 0.0f;
 };
 
@@ -196,14 +197,16 @@ struct ViewData {
 
 struct CompositorDrawData {
 
-  CompositorDrawData(rcfd_ptr_t rcfd=nullptr);
+  CompositorDrawData(rcfd_ptr_t rcfd = nullptr);
 
   Context* context() const;
   rcfd_ptr_t RCFD() const;
-  //const RenderContextFrameData& RCFD() const;
+  // const RenderContextFrameData& RCFD() const;
   ViewData computeViewData() const;
   const svar16_t& property(uint64_t key) const;
-  template <typename T> svar16_t property(uint64_t key) { return _properties[key]; };
+  template <typename T> svar16_t property(uint64_t key) {
+    return _properties[key];
+  };
   compositorimpl_ptr_t _cimpl;
   std::map<uint64_t, svar16_t> _properties;
   rcfd_ptr_t _RCFD;
@@ -212,8 +215,8 @@ struct CompositorDrawData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderPresetContext {
-  compositortechnique_ptr_t _nodetek = nullptr;
-  compositoroutnode_ptr_t _outputnode = nullptr;
+  compositortechnique_ptr_t _nodetek     = nullptr;
+  compositoroutnode_ptr_t _outputnode    = nullptr;
   compositorrendernode_ptr_t _rendernode = nullptr;
 };
 
@@ -238,12 +241,12 @@ public:
   void presetDefault();
   void presetPicking();
   void presetPickingDebug();
-  RenderPresetContext presetUnlit(render_preset_data_ptr_t pdata=nullptr);
-  RenderPresetContext presetDeferredPBR(render_preset_data_ptr_t pdata=nullptr);
-  RenderPresetContext presetForwardPBR(render_preset_data_ptr_t pdata=nullptr);
-  RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata=nullptr);
-  RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata=nullptr);
-  RenderPresetContext presetForwardPBRVRDM(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetUnlit(render_preset_data_ptr_t pdata = nullptr);
+  RenderPresetContext presetDeferredPBR(render_preset_data_ptr_t pdata = nullptr);
+  RenderPresetContext presetForwardPBR(render_preset_data_ptr_t pdata = nullptr);
+  RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata = nullptr);
+  RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata = nullptr);
+  RenderPresetContext presetForwardPBRVRDM(render_preset_data_ptr_t pdata = nullptr);
 
   compositingscene_constptr_t findScene(const std::string& named) const;
 
@@ -255,15 +258,17 @@ public:
     mToggle = !mToggle;
   }
 
-  template <typename T> std::shared_ptr<T> tryNodeTechnique(std::string scenename, //
-                                                            std::string itemname) const;
+  template <typename T>
+  std::shared_ptr<T> tryNodeTechnique(
+      std::string scenename, //
+      std::string itemname) const;
 
   std::unordered_map<std::string, compositingscene_ptr_t> _scenes;
   mutable std::string _activeScene;
   mutable std::string _activeItem;
   mutable bool mToggle = true;
   bool mbEnable        = true;
-  bool _defaultBG = true;
+  bool _defaultBG      = true;
 
   int _defaultW = 100;
   int _defaultH = 100;
@@ -311,7 +316,7 @@ struct CompositingImpl {
   const CompositingPassData& popCPD();
   bool hasCPD() const;
 
-  std::string _cameraName = "spawncam";
+  std::string _camera_name = "spawncam";
 
   const CompositingData& _compositingData;
   compositordata_constptr_t _shared_compositingData;
@@ -324,17 +329,19 @@ struct CompositingImpl {
   float mfLastTime      = 0.0f;
   int miActiveSceneItem = 0;
 
-  //CompositingMorphable _morphable;
+  // CompositingMorphable _morphable;
   compositorctx_ptr_t _compcontext;
   compositingpassdatastack_t _stack;
   std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique( std::string scenename, //
-                                                                            std::string itemname) const { //
-  std::shared_ptr<T> rval  = nullptr;
-  auto its = _scenes.find(scenename);
+template <typename T>
+std::shared_ptr<T> CompositingData::tryNodeTechnique(
+    std::string scenename,        //
+    std::string itemname) const { //
+  std::shared_ptr<T> rval = nullptr;
+  auto its                = _scenes.find(scenename);
   if (its != _scenes.end()) {
     auto scene = its->second;
     auto iti   = scene->_items.find(itemname);
@@ -352,7 +359,7 @@ struct StandardCompositorFrame {
   void withAcquiredDrawQueueForUpdate(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
   void _updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf);
   void _updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawQueue* dbuf);
-  
+
   void attachDrawQueueContext(dbufcontext_ptr_t dbc);
 
   void render();

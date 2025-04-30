@@ -139,7 +139,7 @@ void FontMan::_endTextBlock(Context* context) {
   bool bdraw      = mTextWriter.miWriteCounter != 0;
   auto RCFD       = context->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
-  auto stereocams = CPD._stereoCameraMatrices;
+  auto stereocams = CPD._stereo_cam_matrices;
   auto GBI        = context->GBI();
   //auto RSI        = context->RSI();
   auto the_font   = currentFont();

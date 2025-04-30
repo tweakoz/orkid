@@ -120,7 +120,7 @@ struct ClipMapRenderImpl {
     auto pipeline = _fxcache->findPipeline(RCID);
     OrkAssert(pipeline);
 
-    auto mcams             = CPD._cameraMatrices;
+    auto mcams             = CPD._mono_cam_matrices;
     const fmtx4& PMTX_mono = mcams->_pmatrix;
     fmtx4 vmtx_mono        = mcams->_vmatrix;
     fmtx4 v_offset;

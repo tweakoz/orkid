@@ -43,7 +43,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def(py::init<>())
           .def_property("cameramatrices",
             [](compositingpassdata_ptr_t cpd) -> cameramatrices_ptr_t {
-              return cpd->_shared_cameraMatrices;
+              return cpd->_shared_mono_cam_matrices;
             },
             [](compositingpassdata_ptr_t cpd, cameramatrices_ptr_t m){
               cpd->setSharedCameraMatrices(m);
@@ -300,6 +300,28 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           },
           [](compositoroutnode_ptr_t n, bool b){
             n->_flipY = b;
+          })
+          .def("onBeginAssemble",[type_codec](compositoroutnode_ptr_t n, py::function f) {
+            pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
+            n->_pyimpl_oba.set<pyfn_ptr_t>(f_ptr); // store the function
+            n->_onBeginAssemble = [n,type_codec](CompositorDrawData& drawdata) {
+              py::gil_scoped_acquire gil;
+              compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
+              auto ddpy = type_codec->encode(ddptr);
+              auto f_ptr = n->_pyimpl_oba.get<pyfn_ptr_t>();
+              (*f_ptr)(ddpy);
+            };
+          })
+          .def("onEndAssemble",[type_codec](compositoroutnode_ptr_t n, py::function f) {
+            pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
+            n->_pyimpl_oea.set<pyfn_ptr_t>(f_ptr); // store the function
+            n->_onEndAssemble = [n,type_codec](CompositorDrawData& drawdata) {
+              py::gil_scoped_acquire gil;
+              compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
+              auto ddpy = type_codec->encode(ddptr);
+              auto f_ptr = n->_pyimpl_oea.get<pyfn_ptr_t>();
+              (*f_ptr)(ddpy);
+            };
           });
   type_codec->registerStdCodec<compositoroutnode_ptr_t>(outputnode_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -389,7 +411,45 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<compositordata_ptr_t>(compositordata_type);
-  /////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+    auto cdd_t = py::class_<compositordrawdata_ptr_t>(module_lev2, "CompositorDrawData")
+    .def_property_readonly("camposmono", [](compositordrawdata_ptr_t cdd) -> fvec3 { //
+      return cdd->computeViewData()._camposmono;
+    })
+    .def_property_readonly("VL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VL;
+    })
+    .def_property_readonly("VR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VR;
+    })
+    .def_property_readonly("VM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VM;
+    })
+    .def_property_readonly("PL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().PL;
+    })
+    .def_property_readonly("PR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().PR;
+    })
+    .def_property_readonly("PM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().PM;
+    })
+    .def_property_readonly("VPL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VPL;
+    })
+    .def_property_readonly("VPR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VPR;
+    })
+    .def_property_readonly("VPM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
+      return cdd->computeViewData().VPM;
+    })
+    .def("__repr__", [](compositordrawdata_ptr_t d) -> std::string {
+      fxstring<64> fxs;
+      fxs.format("CompositorDrawData(%p)", d.get());
+      return fxs.c_str();
+    });
+    type_codec->registerStdCodec<compositordrawdata_ptr_t>(cdd_t);
+    /////////////////////////////////////////////////////////////////////////////////
   auto compositorimpl_type = //
       py::class_<CompositingImpl, compositorimpl_ptr_t>(module_lev2, "CompositingImpl")
           .def(py::init([](compositordata_ptr_t cdata) -> compositorimpl_ptr_t { //

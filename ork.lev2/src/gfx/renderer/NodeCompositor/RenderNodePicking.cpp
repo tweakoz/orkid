@@ -89,7 +89,7 @@ struct IMPL {
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
       CPD._ispicking      = true;
-      CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+      CPD._mono_cam_matrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       CPD.assignLayers(_layername);
       RCFD->_renderingmodel = "PICKING"_crcu;

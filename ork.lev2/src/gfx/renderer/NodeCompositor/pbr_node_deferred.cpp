@@ -100,9 +100,9 @@ struct PbrNodeImpl {
     auto quadrect = SRect(0, 0, _context->_width, _context->_height);
     _context->_accumCPD.SetDstRect(vprect);
     _context->_accumCPD._irendertarget        = rtg_laccum->_rendertarget.get();
-    _context->_accumCPD._cameraMatrices       = nullptr;
-    _context->_accumCPD._stereoCameraMatrices = nullptr;
-    _context->_accumCPD._stereo1pass          = false;
+    _context->_accumCPD._mono_cam_matrices       = nullptr;
+    _context->_accumCPD._stereo_cam_matrices = nullptr;
+    _context->_accumCPD._single_pass_stereo          = false;
     _context->_specularLevel                  = pbrcommon->specularLevel() * pbrcommon->environmentIntensity();
     _context->_diffuseLevel                   = pbrcommon->diffuseLevel() * pbrcommon->environmentIntensity();
     _context->_depthFogDistance               = pbrcommon->depthFogDistance();

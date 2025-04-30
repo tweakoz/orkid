@@ -86,7 +86,7 @@ struct IMPL {
       CPD.assignLayers(_layername);
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
-      CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
+      CPD._mono_cam_matrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       // float t3 = _profile_timer.SecsSinceStart();

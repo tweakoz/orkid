@@ -62,6 +62,9 @@ using rcfd_t              = RenderContextFrameData;
 using decxf_t             = ork::decompxf_ptr_t;
 using idxbuf_rawptr_t     = ork::python::unmanaged_ptr<IndexBufferBase>;
 using fxshaderstoragebuffer_ptr_t = ork::python::unmanaged_ptr<FxShaderStorageBuffer>;
+using compositordrawdata_ptr_t = ork::python::unmanaged_ptr<CompositorDrawData>;
+
+using pyfn_ptr_t = std::shared_ptr<py::function>;
 
 
 } // namespace ork::lev2

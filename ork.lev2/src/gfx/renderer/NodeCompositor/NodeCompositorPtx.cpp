@@ -64,9 +64,9 @@ struct PtxImpl {
     auto CPD    = CIMPL->topCPD();
     auto vprect = target->mainSurfaceRectAtOrigin();
     CPD.SetDstRect(vprect);
-    CPD._cameraMatrices       = nullptr;
-    CPD._stereoCameraMatrices = nullptr;
-    CPD._stereo1pass          = false;
+    CPD._mono_cam_matrices       = nullptr;
+    CPD._stereo_cam_matrices = nullptr;
+    CPD._single_pass_stereo          = false;
 
     lev2::texture_ptr_t input_tex = nullptr;
 

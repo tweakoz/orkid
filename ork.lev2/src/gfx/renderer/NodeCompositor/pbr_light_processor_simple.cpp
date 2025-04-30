@@ -274,9 +274,9 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       CameraMatrices cammtc = lightcamdat.computeMatrices(1.0f);
 
       DEPTHRENDERCPD._irendertarget        = irt;
-      DEPTHRENDERCPD._cameraMatrices       = &cammtc;
-      DEPTHRENDERCPD._stereoCameraMatrices = nullptr;
-      DEPTHRENDERCPD._stereo1pass          = false;
+      DEPTHRENDERCPD._mono_cam_matrices       = &cammtc;
+      DEPTHRENDERCPD._stereo_cam_matrices = nullptr;
+      DEPTHRENDERCPD._single_pass_stereo          = false;
       DEPTHRENDERCPD.SetDstRect(shadowrect);
       irt->_rtgroup->_autoclear = true;
       irt->_rtgroup->_clearDepth = 1.0f;

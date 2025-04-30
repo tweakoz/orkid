@@ -41,7 +41,7 @@ struct ForwardPass {
   const DrawQueue* _DB          = nullptr;
   std::string _fwd_pass_layer   = "std_forward";
   std::string _dpp_pass_layer   = "depth_prepass";
-  bool _stereo                  = false;
+  bool _single_pass_stereo      = false;
   rtgroup_ptr_t _rtg_out;
   rtgroup_ptr_t _rtg_depth_copy;
   rtgroup_ptr_t _rtg_depth_copy_linear;
@@ -186,8 +186,8 @@ struct ForwardPbrNodeImpl {
     // CPD modifications for this set of passes
     ///////////////////////////////////////////////////////////////////////////
 
-    MY_CPD._stereo1pass = fpass->_stereo;
-    // MY_CPD._cameraMatrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
+    MY_CPD._single_pass_stereo = fpass->_single_pass_stereo;
+    // MY_CPD._mono_cam_matrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
     CIMPL->pushCPD(MY_CPD);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -489,7 +489,7 @@ struct ForwardPbrNodeImpl {
         RCFD->_pbrcommon = _node->_pbrcommon;
 
         auto CPD            = CIMPL->topCPD();
-        CPD._cameraMatrices = drawdata.property("defcammtx"_crcu).get<const CameraMatrices*>();
+        CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<const CameraMatrices*>();
         CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
         CPD._clearColor = _node->_pbrcommon->_clearColor;
         RtGroupRenderTarget rt(rtg_main.get());
@@ -532,7 +532,7 @@ struct ForwardPbrNodeImpl {
 
                 CompositingPassData shadowCPD = CPD.clone();
                 CameraMatrices SHADOWCAM;
-                shadowCPD._cameraMatrices           = &SHADOWCAM;
+                shadowCPD._mono_cam_matrices           = &SHADOWCAM;
                 SHADOWCAM._pmatrix                  = as_spotlight->mProjectionMatrix;
                 SHADOWCAM._vmatrix                  = as_spotlight->mViewMatrix;
                 SHADOWCAM._vpmatrix                 = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
@@ -650,10 +650,10 @@ struct ForwardPbrNodeImpl {
                   probe_pass->_rtg_depth_copy            = _rtg_cube1_depth_copy;
                   probe_pass->_renderingPROBE            = true;
                   probe_pass->_fwd_pass_layer            = "probe";
-                  probe_pass->_stereo                    = false;
+                  probe_pass->_single_pass_stereo        = false;
                   probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
-                  cubemapCPD._cameraMatrices = &CUBECAM;
+                  cubemapCPD._mono_cam_matrices = &CUBECAM;
                   topcomp->pushCPD(cubemapCPD);
                   _render_xxx(probe_pass);
                   topcomp->popCPD();
@@ -686,7 +686,7 @@ struct ForwardPbrNodeImpl {
         main_fwd_pass->_rtg_depth_copy        = _rtg_main_depth_copy;
         main_fwd_pass->_rtg_depth_copy_linear = _rtg_main_depth_copy_linear;
         main_fwd_pass->_renderingPROBE        = false;
-        main_fwd_pass->_stereo                = CPD._stereo1pass;
+        main_fwd_pass->_single_pass_stereo    = CPD._single_pass_stereo;
 
         _render_xxx(main_fwd_pass);
 

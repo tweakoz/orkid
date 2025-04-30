@@ -261,7 +261,7 @@ int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstDat
   auto rcfd2 = pTarg->topRenderContextFrameData();
   OrkAssert(rcfd2);
   const auto& CPD = rcfd2->topCPD();
-  auto stereocams = CPD._stereoCameraMatrices;
+  auto stereocams = CPD._stereo_cam_matrices;
   int inumpasses = 0;
   if(stereocams){
     inumpasses = pTarg->FXI()->BeginBlock(hTekStereo, RCID);

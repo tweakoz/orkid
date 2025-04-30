@@ -74,8 +74,6 @@ public:
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
-  void beginAssemble(CompositorDrawData& drawdata) final;
-  void endAssemble(CompositorDrawData& drawdata) final;
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;

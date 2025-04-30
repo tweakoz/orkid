@@ -169,7 +169,7 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   auto RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   bool is_picking                    = CPD.isPicking();
-  bool is_stereo                     = CPD.isStereoOnePass();
+  bool is_stereo                     = CPD.isSinglePassStereo();
   auto MTXI = pTarg->MTXI();
   auto FXI  = pTarg->FXI();
 
@@ -225,14 +225,14 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
   FXI->BindParamMatrix(hMatP, MTXI->RefPMatrix());
 
   const auto& world = MTXI->RefMMatrix();
-  if (is_stereo and CPD._stereoCameraMatrices) {
-    auto stereomtx = CPD._stereoCameraMatrices;
+  if (is_stereo and CPD._stereo_cam_matrices) {
+    auto stereomtx = CPD._stereo_cam_matrices;
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hMatMVPL, MVPL);
     FXI->BindParamMatrix(hMatMVPR, MVPR);
-  } else if (CPD._cameraMatrices) {
-    auto mcams = CPD._cameraMatrices;
+  } else if (CPD._mono_cam_matrices) {
+    auto mcams = CPD._mono_cam_matrices;
     auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
     FXI->BindParamMatrix(hMatMVP, MVP);
   } else {

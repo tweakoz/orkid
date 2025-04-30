@@ -52,9 +52,18 @@ class StereoApp1(object):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
-
-    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")
-
+    self.VPL = mtx4()
+    self.VPR = mtx4()
+    
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")    
+    onode = self.outputnode # created by createSceneGraph
+    def onEndAssemble(cdd):
+      self.VPL = cdd.VPL
+      self.VPR = cdd.VPR
+      print("VPL",self.VPL)
+      print("VPR",self.VPR)
+    onode.onEndAssemble(lambda cdd: onEndAssemble(cdd))
+    onode.flipY = False
     ###################################
 
     self.grid_data = createGridData()
@@ -82,21 +91,25 @@ class StereoApp1(object):
     # stereo viewing setup  
     ########################################
 
-    self.vrdev.FOV = 90
-    self.vrdev.IPD = 0.065
-    self.vrdev.near = 0.1
-    self.vrdev.far = 1e5
+    # projection matrix
+    self.vrdev.FOV = 90    # degrees
+    self.vrdev.IPD = 0.065 # meters
+    self.vrdev.near = 0.1  # meters
+    self.vrdev.far = 1e5   # meters
 
-    self.xf_hmd.lookAt( vec3(0,10,-10)*1.5 # eye
-                      , vec3(0,0,0) # tgt
-                      , vec3(0,1,0) # up
-                      )
+    # view matrix
+    self.xf_hmd.lookAt( vec3(0,15,-15), # eye
+                        vec3(0,0,0),    # tgt
+                        vec3(0,1,0)     # up
+                      ) 
     
     self.vrdev.setPoseMatrix("hmd",self.xf_hmd.composed)
     
     ########################################
 
     self.scene.updateScene(self.cameralut) 
+    
+  ################################################
 
   def onGpuUpdate(self,ctx):
     # just need a mainthread python callback
