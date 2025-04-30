@@ -70,7 +70,6 @@ public:
     _supersample = ss;
   }
 
-  bool _monoviewer = false;
   EBufferFormat _format = EBufferFormat::RGBA8;
 
 private:
