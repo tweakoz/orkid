@@ -22,6 +22,8 @@ struct Resources {
 
   Resources(Context* ctx){
 
+    _cammatrices = std::make_shared<CameraMatrices>();
+
     ///////////////////////////////////////////////////
     // init material
     ///////////////////////////////////////////////////
@@ -50,7 +52,7 @@ struct Resources {
 
     _compdata = std::make_shared<CompositingData>();
     _compimpl = std::make_shared<CompositingImpl>(*_compdata);
-    _CPD._mono_cam_matrices = & _cammatrices;
+    _CPD._mono_cam_matrices = _cammatrices;
     _RCFD->pushCompositor(_compimpl); // bind compositor to _RCFD
 
     ///////////////////////////////////////////////////
@@ -87,7 +89,7 @@ struct Resources {
   compositordata_ptr_t _compdata;
   compositorimpl_ptr_t _compimpl;
   CompositingPassData _CPD;
-  CameraMatrices _cammatrices;
+  cameramatrices_ptr_t _cammatrices;
   freestyle_mtl_ptr_t _material;
   primitives::frustum_ptr_t _frustum_prim;
   fxpipeline_ptr_t _pipeline;
@@ -153,8 +155,8 @@ int main(int argc, char** argv,char** envp) {
     //  to compositor (via CPD's mono cameramatrices)
     ///////////////////////////////////////
 
-    resources->_cammatrices.setCustomView(view);
-    resources->_cammatrices.setCustomProjection(projection);
+    resources->_cammatrices->setCustomView(view);
+    resources->_cammatrices->setCustomProjection(projection);
 
     ///////////////////////////////////////
     // set clear color

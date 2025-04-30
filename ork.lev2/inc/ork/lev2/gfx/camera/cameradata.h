@@ -165,9 +165,9 @@ struct StereoCameraMatrices {
   fmtx4 MVPR(const fmtx4& M) const;
   fmtx4 MVPMONO(const fmtx4& M) const;
   ////////////////////////////////////////////////////////////////////
-  const CameraMatrices* _left  = nullptr;
-  const CameraMatrices* _right = nullptr;
-  const CameraMatrices* _mono  = nullptr;
+  cameramatrices_constptr_t _left  = nullptr;
+  cameramatrices_constptr_t _right = nullptr;
+  cameramatrices_constptr_t _mono  = nullptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

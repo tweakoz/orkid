@@ -73,10 +73,10 @@ void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
     this->_stereo_cam_matrices = try_scm.value();
   }
   // bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
-  if (auto try_def = drawdata._properties["defcammtx"_crcu].tryAs<const CameraMatrices*>()) {
+  if (auto try_def = drawdata._properties["defcammtx"_crcu].tryAs<cameramatrices_ptr_t>()) {
     this->_mono_cam_matrices = try_def.value();
   }
-  if (auto try_sim = drawdata._properties["simcammtx"_crcu].tryAs<const CameraMatrices*>()) {
+  if (auto try_sim = drawdata._properties["simcammtx"_crcu].tryAs<cameramatrices_ptr_t>()) {
     this->_mono_cam_matrices = try_sim.value();
   }
 }
@@ -94,7 +94,7 @@ fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 fvec2 CompositingPassData::nearAndFar() const {
-  const CameraMatrices* mtcs = nullptr;
+  cameramatrices_constptr_t mtcs = nullptr;
   if(isSinglePassStereo()){
     if(_stereo_cam_matrices){
       mtcs = _stereo_cam_matrices->_mono;

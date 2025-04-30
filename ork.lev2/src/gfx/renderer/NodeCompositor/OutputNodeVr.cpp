@@ -195,7 +195,7 @@ struct VRIMPL {
     drawdata._properties["OutputHeight"_crcu].set<int>(_ssaa_height);
     bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(doing_stereo);
-    drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
+    drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera.get());
 
     if (use_vr and VRDEV->_supportsStereo) {
       RCFD->setUserProperty("vrroot"_crc, rootmatrix);

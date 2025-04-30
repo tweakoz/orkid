@@ -42,7 +42,7 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
 
   _cimplcamdat = new CameraData;
 
-  _defaultCameraMatrices = new CameraMatrices;
+  _defaultCameraMatrices = std::make_shared<CameraMatrices>();
 
   _compcontext = std::make_shared<CompositingContext>();
   _compcontext->Resize(data._defaultW,data._defaultH);
@@ -156,8 +156,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
       (*_defaultCameraMatrices) = the_camera->computeMatrices(aspectratio);
     }
 
-    target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
-    ddprops["defcammtx"_crcu].set<const CameraMatrices*>(_defaultCameraMatrices);
+    target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices.get()));
+    ddprops["defcammtx"_crcu].set<cameramatrices_ptr_t>(_defaultCameraMatrices);
 
     if (the_camera and the_camera->getUiCamera()) {
       target->debugMarker(FormatString("seleditcam<%p>", (void*) the_camera.get() ));

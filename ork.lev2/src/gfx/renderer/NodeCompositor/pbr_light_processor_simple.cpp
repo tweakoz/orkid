@@ -271,10 +271,10 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       auto shadowrect       = ViewportRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
       auto shadowmtx        = light->shadowMatrix();
       auto lightcamdat      = light->shadowCamDat();
-      CameraMatrices cammtc = lightcamdat.computeMatrices(1.0f);
+      auto cammtc = std::make_shared<CameraMatrices>(lightcamdat.computeMatrices(1.0f));
 
       DEPTHRENDERCPD._irendertarget        = irt;
-      DEPTHRENDERCPD._mono_cam_matrices       = &cammtc;
+      DEPTHRENDERCPD._mono_cam_matrices       = cammtc;
       DEPTHRENDERCPD._stereo_cam_matrices = nullptr;
       DEPTHRENDERCPD._single_pass_stereo          = false;
       DEPTHRENDERCPD.SetDstRect(shadowrect);

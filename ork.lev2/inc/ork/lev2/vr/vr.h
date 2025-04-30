@@ -112,9 +112,9 @@ struct Device {
   virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
   std::map<std::string, fmtx4> _posemap;
-  CameraMatrices* _leftcamera       = nullptr;
-  CameraMatrices* _centercamera     = nullptr;
-  CameraMatrices* _rightcamera      = nullptr;
+  cameramatrices_ptr_t _leftcamera       = nullptr;
+  cameramatrices_ptr_t _centercamera     = nullptr;
+  cameramatrices_ptr_t _rightcamera      = nullptr;
   usermatrixgenerator_t _usermtxgen = nullptr;
 
   void overrideSize(int w, int h);

@@ -144,7 +144,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
     auto mtxi                   = context->MTXI();
     auto RCFD                   = RCID.rcfd();
     const auto& CPD             = RCFD->topCPD();
-    const CameraMatrices* cmtcs = CPD.cameraMatrices();
+    cameramatrices_constptr_t cmtcs = CPD.cameraMatrices();
 
     auto stereocams = CPD._stereo_cam_matrices;
     auto monocams   = CPD._mono_cam_matrices;
@@ -303,7 +303,7 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable() {
     auto mtxi                   = context->MTXI();
     auto RCFD                   = RCID.rcfd();
     const auto& CPD             = RCFD->topCPD();
-    const CameraMatrices* cmtcs = CPD.cameraMatrices();
+    cameramatrices_constptr_t cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
     auto renderable             = (CallbackRenderable*)RCID._irenderable;
     auto drawable               = renderable->_drawDataB.get<const InstancedBillboardStringDrawable*>();

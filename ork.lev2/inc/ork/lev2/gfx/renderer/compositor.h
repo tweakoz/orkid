@@ -109,9 +109,8 @@ struct CompositingPassData {
 
   ////////////////////////////////////////////////////
 
-  inline void setSharedCameraMatrices(cameramatrices_ptr_t c) {
-    _shared_mono_cam_matrices = c;
-    _mono_cam_matrices        = c.get();
+  inline void setSharedCameraMatrices(cameramatrices_constptr_t c) {
+    _mono_cam_matrices = c;
   }
 
   ////////////////////////////////////////////////////
@@ -122,7 +121,7 @@ struct CompositingPassData {
   void setSinglePassStereo(bool ena) {
     _single_pass_stereo = ena;
   }
-  const CameraMatrices* cameraMatrices() const {
+  cameramatrices_constptr_t cameraMatrices() const {
     return _mono_cam_matrices;
   }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
@@ -155,8 +154,7 @@ struct CompositingPassData {
   std::string _camera_name;
   fvec4 _clearColor;
   bool _single_pass_stereo                         = false;
-  const CameraMatrices* _mono_cam_matrices         = nullptr;
-  cameramatrices_ptr_t _shared_mono_cam_matrices   = nullptr;
+  cameramatrices_constptr_t _mono_cam_matrices     = nullptr;
   const StereoCameraMatrices* _stereo_cam_matrices = nullptr;
   svarp_t _var;
   ViewportRect mDstRect;
@@ -323,7 +321,7 @@ struct CompositingImpl {
 
   LightManager* _lightmgr                = nullptr;
   CameraData* _cimplcamdat               = nullptr;
-  CameraMatrices* _defaultCameraMatrices = nullptr;
+  cameramatrices_ptr_t _defaultCameraMatrices = nullptr;
 
   float mfTimeAccum     = 0.0f;
   float mfLastTime      = 0.0f;

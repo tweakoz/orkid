@@ -55,6 +55,9 @@ struct ForwardPbrNodeImpl {
   ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
       , _camname("Camera") { //
+
+    _SHADOWCAM = std::make_shared<CameraMatrices>();
+    _CUBECAM   = std::make_shared<CameraMatrices>();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
@@ -187,7 +190,7 @@ struct ForwardPbrNodeImpl {
     ///////////////////////////////////////////////////////////////////////////
 
     MY_CPD._single_pass_stereo = fpass->_single_pass_stereo;
-    // MY_CPD._mono_cam_matrices = drawdata->property("defcammtx"_crcu).get<const CameraMatrices*>();
+    // MY_CPD._mono_cam_matrices = drawdata->property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
     CIMPL->pushCPD(MY_CPD);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -489,7 +492,7 @@ struct ForwardPbrNodeImpl {
         RCFD->_pbrcommon = _node->_pbrcommon;
 
         auto CPD            = CIMPL->topCPD();
-        CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<const CameraMatrices*>();
+        CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
         CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
         CPD._clearColor = _node->_pbrcommon->_clearColor;
         RtGroupRenderTarget rt(rtg_main.get());
@@ -531,18 +534,19 @@ struct ForwardPbrNodeImpl {
               if (auto as_spotlight = dynamic_cast<SpotLight*>(light)) {
 
                 CompositingPassData shadowCPD = CPD.clone();
-                CameraMatrices SHADOWCAM;
-                shadowCPD._mono_cam_matrices           = &SHADOWCAM;
-                SHADOWCAM._pmatrix                  = as_spotlight->mProjectionMatrix;
-                SHADOWCAM._vmatrix                  = as_spotlight->mViewMatrix;
-                SHADOWCAM._vpmatrix                 = SHADOWCAM._vmatrix * SHADOWCAM._pmatrix;
-                SHADOWCAM._ivpmatrix                = SHADOWCAM._vpmatrix.inverse();
-                SHADOWCAM._ivmatrix                 = SHADOWCAM._vmatrix.inverse();
-                SHADOWCAM._ipmatrix                 = SHADOWCAM._pmatrix.inverse();
-                SHADOWCAM._frustum                  = as_spotlight->mWorldSpaceLightFrustum;
-                SHADOWCAM._explicitProjectionMatrix = true;
-                SHADOWCAM._explicitViewMatrix       = true;
-                SHADOWCAM._aspectRatio              = 1.0f;
+
+                _SHADOWCAM->_pmatrix                  = as_spotlight->mProjectionMatrix;
+                _SHADOWCAM->_vmatrix                  = as_spotlight->mViewMatrix;
+                _SHADOWCAM->_vpmatrix                 = _SHADOWCAM->_vmatrix * _SHADOWCAM->_pmatrix;
+                _SHADOWCAM->_ivpmatrix                = _SHADOWCAM->_vpmatrix.inverse();
+                _SHADOWCAM->_ivmatrix                 = _SHADOWCAM->_vmatrix.inverse();
+                _SHADOWCAM->_ipmatrix                 = _SHADOWCAM->_pmatrix.inverse();
+                _SHADOWCAM->_frustum                  = as_spotlight->mWorldSpaceLightFrustum;
+                _SHADOWCAM->_explicitProjectionMatrix = true;
+                _SHADOWCAM->_explicitViewMatrix       = true;
+                _SHADOWCAM->_aspectRatio              = 1.0f;
+
+                shadowCPD._mono_cam_matrices           = _SHADOWCAM;
 
                 FBI->validateRtGroup(light->_depthRTG);
                 auto irenderer = drawdata.property("irenderer"_crcu).get<lev2::IRenderer*>();
@@ -591,14 +595,14 @@ struct ForwardPbrNodeImpl {
                 fvec3 position = CMATRIX.translation();
 
                 CompositingPassData cubemapCPD = CPD.clone();
-                CameraMatrices CUBECAM;
+
                 // compute projection matrix
-                CUBECAM._pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
+                _CUBECAM->_pmatrix.perspective(90.0f * DTOR, 1.0f, 0.01f, 1000.0f);
 
                 // flip y on projection matrix
                 fmtx4 flipy;
                 flipy.setScale(1, -1, 1);
-                CUBECAM._pmatrix = flipy * CUBECAM._pmatrix;
+                _CUBECAM->_pmatrix = flipy * _CUBECAM->_pmatrix;
 
                 for (int iface = 0; iface < 6; iface++) {
 
@@ -614,33 +618,33 @@ struct ForwardPbrNodeImpl {
 
                   switch (iface) {
                     case 1:
-                      CUBECAM._vmatrix.lookAt(position, position + POSX, POSY);
+                      _CUBECAM->_vmatrix.lookAt(position, position + POSX, POSY);
                       break;
                     case 0:
-                      CUBECAM._vmatrix.lookAt(position, position - POSX, POSY);
+                      _CUBECAM->_vmatrix.lookAt(position, position - POSX, POSY);
                       break;
                     case 2:
-                      CUBECAM._vmatrix.lookAt(position, position + POSY, POSZ * -1);
+                      _CUBECAM->_vmatrix.lookAt(position, position + POSY, POSZ * -1);
                       break;
                     case 3:
-                      CUBECAM._vmatrix.lookAt(position, position - POSY, POSZ);
+                      _CUBECAM->_vmatrix.lookAt(position, position - POSY, POSZ);
                       break;
                     case 4:
-                      CUBECAM._vmatrix.lookAt(position, position + POSZ, POSY);
+                      _CUBECAM->_vmatrix.lookAt(position, position + POSZ, POSY);
                       break;
                     case 5:
-                      CUBECAM._vmatrix.lookAt(position, position - POSZ, POSY);
+                      _CUBECAM->_vmatrix.lookAt(position, position - POSZ, POSY);
                       break;
                   }
 
-                  CUBECAM._vpmatrix  = CUBECAM._vmatrix * CUBECAM._pmatrix;
-                  CUBECAM._ivpmatrix = CUBECAM._vpmatrix.inverse();
-                  CUBECAM._ivmatrix  = CUBECAM._vmatrix.inverse();
-                  CUBECAM._ipmatrix  = CUBECAM._pmatrix.inverse();
-                  CUBECAM._frustum.set(CUBECAM._vmatrix, CUBECAM._pmatrix);
-                  CUBECAM._explicitProjectionMatrix = true;
-                  CUBECAM._explicitViewMatrix       = true;
-                  CUBECAM._aspectRatio              = 1.0f;
+                  _CUBECAM->_vpmatrix  = _CUBECAM->_vmatrix * _CUBECAM->_pmatrix;
+                  _CUBECAM->_ivpmatrix = _CUBECAM->_vpmatrix.inverse();
+                  _CUBECAM->_ivmatrix  = _CUBECAM->_vmatrix.inverse();
+                  _CUBECAM->_ipmatrix  = _CUBECAM->_pmatrix.inverse();
+                  _CUBECAM->_frustum.set(_CUBECAM->_vmatrix, _CUBECAM->_pmatrix);
+                  _CUBECAM->_explicitProjectionMatrix = true;
+                  _CUBECAM->_explicitViewMatrix       = true;
+                  _CUBECAM->_aspectRatio              = 1.0f;
 
                   auto probe_pass                        = std::make_shared<ForwardPass>();
                   probe_pass->_node                      = node;
@@ -653,7 +657,7 @@ struct ForwardPbrNodeImpl {
                   probe_pass->_single_pass_stereo        = false;
                   probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
-                  cubemapCPD._mono_cam_matrices = &CUBECAM;
+                  cubemapCPD._mono_cam_matrices = _CUBECAM;
                   topcomp->pushCPD(cubemapCPD);
                   _render_xxx(probe_pass);
                   topcomp->popCPD();
@@ -726,7 +730,8 @@ struct ForwardPbrNodeImpl {
   fxpipelinecache_constptr_t _skybox_fxcache;
   fxpipelinecache_constptr_t _ssao_fxcache;
   textureassetptr_t _whiteTexture;
-
+  cameramatrices_ptr_t _SHADOWCAM;
+  cameramatrices_ptr_t _CUBECAM;
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
   const FxShaderParam* _fxpMVP;

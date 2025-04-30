@@ -41,9 +41,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto compositorpassdata_type = //
       py::class_<CompositingPassData, compositingpassdata_ptr_t>(module_lev2, "CompositingPassData")
           .def(py::init<>())
-          .def_property("cameramatrices",
+          .def_property("cameramatrices_clone",
             [](compositingpassdata_ptr_t cpd) -> cameramatrices_ptr_t {
-              return cpd->_shared_mono_cam_matrices;
+              // TODO: cannot return a const shared_ptr yet, due to bindings weirdness
+              // so for now clone it
+              auto clone = std::make_shared<CameraMatrices>(*(cpd->_mono_cam_matrices));
+              return clone;
             },
             [](compositingpassdata_ptr_t cpd, cameramatrices_ptr_t m){
               cpd->setSharedCameraMatrices(m);

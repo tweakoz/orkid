@@ -119,7 +119,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   auto context                = RCID.context();
   auto RCFD                   = context->topRenderContextFrameData();
   const auto& CPD             = RCFD->topCPD();
-  const CameraMatrices* cmtcs = CPD.cameraMatrices();
+  auto cmtcs                  = CPD.cameraMatrices();
   const CameraData& cdata     = cmtcs->_camdat;
   const fmtx4& VP             = context->MTXI()->RefVPMatrix();
   auto M                      = cmtcs->MVPMONO(fmtx4());

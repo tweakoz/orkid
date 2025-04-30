@@ -108,84 +108,90 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               "copyFrom",                                                //
               [](cameradata_ptr_t camera, cameradata_ptr_t src_camera) { //
                 //*camera = *src_camera;
-                camera->mEye    = src_camera->mEye;
-                camera->mTarget = src_camera->mTarget;
-                camera->mUp     = src_camera->mUp;
-                camera->_xnormal = src_camera->_xnormal;
-                camera->_ynormal = src_camera->_ynormal;
-                camera->_znormal = src_camera->_znormal;
-                camera->_left = src_camera->_left;
-                camera->_right = src_camera->_right;
-                camera->_top = src_camera->_top;
-                camera->_bottom = src_camera->_bottom;
-                camera->mAper = src_camera->mAper;
+                camera->mEye       = src_camera->mEye;
+                camera->mTarget    = src_camera->mTarget;
+                camera->mUp        = src_camera->mUp;
+                camera->_xnormal   = src_camera->_xnormal;
+                camera->_ynormal   = src_camera->_ynormal;
+                camera->_znormal   = src_camera->_znormal;
+                camera->_left      = src_camera->_left;
+                camera->_right     = src_camera->_right;
+                camera->_top       = src_camera->_top;
+                camera->_bottom    = src_camera->_bottom;
+                camera->mAper      = src_camera->mAper;
                 camera->mHorizAper = src_camera->mHorizAper;
-                camera->mNear = src_camera->mNear;
-                camera->mFar = src_camera->mFar;
+                camera->mNear      = src_camera->mNear;
+                camera->mFar       = src_camera->mFar;
               })
           .def(
-              "projectDepthRay",                                              //
+              "projectDepthRay",                                                //
               [](cameradata_ptr_t camera, fvec2 pos2d, float aspect) -> fray3 { //
                 auto cammat = camera->computeMatrices(aspect);
                 fray3 rval;
                 cammat.projectDepthRay(pos2d, rval);
                 return rval;
               })
-          .def("computeMatrices", [](cameradata_ptr_t camera, float aspect) -> CameraMatrices { //
-            return camera->computeMatrices(aspect);
-          })
-          .def("pixelLengthVectors", [](cameradata_ptr_t camera, fvec3 inpos, fvec2 vp) -> py::list { //
-              float aspect = vp.x/vp.y;
-              auto cammat = camera->computeMatrices(aspect);
-              fvec3 out_x, out_y;
-              cammat.GetPixelLengthVectors(inpos, vp, out_x, out_y);
-              py::list rval;
-              rval.append(out_x);
-              rval.append(out_y);
-              return rval;
-          })
-          .def("vMatrix", [](cameradata_ptr_t camera) -> fmtx4 { //
-              return camera->computeViewMatrix();
-          })
-          .def("pMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
-              auto matrices = camera->computeMatrices(aspect);
-              return matrices._pmatrix;
-          })
-          .def("vpMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
-              auto matrices = camera->computeMatrices(aspect);
-              return matrices._vpmatrix;
-          })
-          .def("project", [](cameradata_ptr_t camera, float aspect, fvec3 wpos) -> fvec3 { //
-              auto matrices = camera->computeMatrices(aspect);
-              auto VP = matrices._vpmatrix;
-              auto hpos = fvec4(wpos,1).transform(VP);
-              hpos.perspectiveDivideInPlace();
-              return hpos.xyz();
-          })
+          .def(
+              "computeMatrices",
+              [](cameradata_ptr_t camera, float aspect) -> CameraMatrices { //
+                return camera->computeMatrices(aspect);
+              })
+          .def(
+              "pixelLengthVectors",
+              [](cameradata_ptr_t camera, fvec3 inpos, fvec2 vp) -> py::list { //
+                float aspect = vp.x / vp.y;
+                auto cammat  = camera->computeMatrices(aspect);
+                fvec3 out_x, out_y;
+                cammat.GetPixelLengthVectors(inpos, vp, out_x, out_y);
+                py::list rval;
+                rval.append(out_x);
+                rval.append(out_y);
+                return rval;
+              })
+          .def(
+              "vMatrix",
+              [](cameradata_ptr_t camera) -> fmtx4 { //
+                return camera->computeViewMatrix();
+              })
+          .def(
+              "pMatrix",
+              [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
+                auto matrices = camera->computeMatrices(aspect);
+                return matrices._pmatrix;
+              })
+          .def(
+              "vpMatrix",
+              [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
+                auto matrices = camera->computeMatrices(aspect);
+                return matrices._vpmatrix;
+              })
+          .def(
+              "project",
+              [](cameradata_ptr_t camera, float aspect, fvec3 wpos) -> fvec3 { //
+                auto matrices = camera->computeMatrices(aspect);
+                auto VP       = matrices._vpmatrix;
+                auto hpos     = fvec4(wpos, 1).transform(VP);
+                hpos.perspectiveDivideInPlace();
+                return hpos.xyz();
+              })
           .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })
           .def_property_readonly("target", [](cameradata_ptr_t camera) -> fvec3 { return camera->mTarget; })
           .def_property_readonly("up", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })
           .def_property_readonly("xnormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_xnormal; })
           .def_property_readonly("ynormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_ynormal; })
           .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; })
-          .def_property("fovy", [](cameradata_ptr_t camera) -> float { 
-              return camera->mAper;
-              },
-              [](cameradata_ptr_t camera, float fovy_degrees) {
-              camera->mAper = fovy_degrees;
-              })
-          .def_property("near", [](cameradata_ptr_t camera) -> float { 
-              return camera->mNear;
-              },
-              [](cameradata_ptr_t camera, float near) {
-              camera->mNear = near;
-              })
-          .def_property("far", [](cameradata_ptr_t camera) -> float { 
-            return camera->mFar; 
-            },
-            [](cameradata_ptr_t camera, float far) {
-              camera->mFar = far;
-            });
+          .def_property(
+              "fovy",
+              [](cameradata_ptr_t camera) -> float { return camera->mAper; },
+              [](cameradata_ptr_t camera, float fovy_degrees) { camera->mAper = fovy_degrees; })
+          .def_property(
+              "near",
+              [](cameradata_ptr_t camera) -> float { return camera->mNear; },
+              [](cameradata_ptr_t camera, float near) { camera->mNear = near; })
+          .def_property(
+              "far",
+              [](cameradata_ptr_t camera) -> float { return camera->mFar; },
+              [](cameradata_ptr_t camera, float far) { camera->mFar = far; });
   type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////
   auto camdatluttype = //
@@ -212,7 +218,8 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               "setCustomView",                                 //
               [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
                 cammats->setCustomView(matrix);
-              });
-  type_codec->registerStdCodec<cameramatrices_ptr_t>(cammatstype);
+              })
+              .def_property_readonly("aspectRatio", [](cameramatrices_ptr_t cammats) -> float { return cammats->GetAspect(); });
+              type_codec->registerStdCodec<cameramatrices_ptr_t>(cammatstype);
 }
 } // namespace ork::lev2

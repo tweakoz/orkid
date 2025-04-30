@@ -83,7 +83,7 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
                 auto mtxi = context->MTXI();
                 auto RCFD = RCID.rcfd();
                 const auto& CPD             = RCFD->topCPD();
-                const CameraMatrices* cmtcs = CPD.cameraMatrices();
+                cameramatrices_constptr_t cmtcs = CPD.cameraMatrices();
                 const CameraData& cdata     = cmtcs->_camdat;
                 auto renderable = (CallbackRenderable*) RCID._irenderable;
                 //auto& current_string = renderable->_drawDataA.get<std::string>();

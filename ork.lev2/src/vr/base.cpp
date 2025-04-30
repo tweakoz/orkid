@@ -38,9 +38,9 @@ Device::Device() {
 
   _hmdinputgroup = imgr->inputGroup("hmd");
 
-  _leftcamera   = new CameraMatrices;
-  _centercamera = new CameraMatrices;
-  _rightcamera  = new CameraMatrices;
+  _leftcamera   = std::make_shared<CameraMatrices>();
+  _centercamera = std::make_shared<CameraMatrices>();
+  _rightcamera  = std::make_shared<CameraMatrices>();
 
   auto handgroup = imgr->inputGroup("hands");
   handgroup->setChannel("left.button1").as<bool>(false);
@@ -57,9 +57,6 @@ Device::Device() {
 ////////////////////////////////////////////////////////////////////////////////
 
 Device::~Device() {
-  delete _leftcamera;
-  delete _centercamera;
-  delete _rightcamera;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

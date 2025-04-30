@@ -137,7 +137,7 @@ struct DMVRIMPL {
 
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
     auto mono_cam = is_left_eye ? VRDEV->_leftcamera : VRDEV->_rightcamera;
-    drawdata._properties["defcammtx"_crcu].set<const CameraMatrices*>(mono_cam);
+    drawdata._properties["defcammtx"_crcu].set<cameramatrices_ptr_t>(mono_cam);
 
     RCFD->setUserProperty("vrroot"_crc, rootmatrix);
     _stereomatrices->_left  = VRDEV->_leftcamera;
