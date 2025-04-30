@@ -22,7 +22,7 @@ namespace ork::lev2 {
 ///   sinks include things like RtGroups, the screen, Vr-HMD, etc..
 ///////////////////////////////////////////////////////////////////////////////
 
-using assembler_fn_t = std::function<void(CompositorDrawData& drawdata)>;
+using compdrawdata_fn_t = std::function<void(CompositorDrawData& drawdata)>;
 
 class OutputCompositingNode : public ork::Object {
   DeclareAbstractX(OutputCompositingNode, ork::Object);
@@ -42,8 +42,9 @@ public:
 
   bool _flipY = true;
 
-  assembler_fn_t _onBeginAssemble = nullptr;
-  assembler_fn_t _onEndAssemble = nullptr;
+  compdrawdata_fn_t _onBeginAssemble = nullptr;
+  compdrawdata_fn_t _onCameraChange = nullptr;
+  compdrawdata_fn_t _onEndAssemble = nullptr;
   svar64_t _pyimpl_oba;
   svar64_t _pyimpl_oea;
 };
@@ -208,7 +209,7 @@ public:
   compositorrendernode_ptr_t _renderNode;
   postfx_node_chain_t _postEffectNodes;
   compositoroutnode_ptr_t _outputNode;
-  assembler_fn_t _assemblerFn = nullptr;
+  compdrawdata_fn_t _assemblerFn = nullptr;
 };
 
 using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;

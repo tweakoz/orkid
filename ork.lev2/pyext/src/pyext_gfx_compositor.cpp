@@ -322,6 +322,17 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
               auto f_ptr = n->_pyimpl_oea.get<pyfn_ptr_t>();
               (*f_ptr)(ddpy);
             };
+          })
+          .def("onCameraChange",[type_codec](compositoroutnode_ptr_t n, py::function f) {
+            pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
+            n->_pyimpl_oba.set<pyfn_ptr_t>(f_ptr); // store the function
+            n->_onCameraChange = [n,type_codec](CompositorDrawData& drawdata) {
+              py::gil_scoped_acquire gil;
+              compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
+              auto ddpy = type_codec->encode(ddptr);
+              auto f_ptr = n->_pyimpl_oba.get<pyfn_ptr_t>();
+              (*f_ptr)(ddpy);
+            };
           });
   type_codec->registerStdCodec<compositoroutnode_ptr_t>(outputnode_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -412,36 +423,81 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<compositordata_ptr_t>(compositordata_type);
     /////////////////////////////////////////////////////////////////////////////////
+    auto vd_t = py::class_<ViewData,viewdata_ptr_t>(module_lev2, "ViewData")
+    .def_property_readonly("camposmono", [](viewdata_ptr_t vd) -> fvec3 { //
+      return vd->_camposmono;
+    })
+    .def_property_readonly("zndc2eye", [](viewdata_ptr_t vd) -> fvec2 { //
+      return vd->_zndc2eye;
+    })
+    .def_property_readonly("near", [](viewdata_ptr_t vd) -> float { //
+      return vd->_near;
+    })
+    .def_property_readonly("far", [](viewdata_ptr_t vd) -> float { //
+      return vd->_far;
+    })
+    .def_property_readonly("VL", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VL;
+    })
+    .def_property_readonly("VR", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VR;
+    })
+    .def_property_readonly("VM", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VM;
+    })
+    .def_property_readonly("PL", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->PL;
+    })
+    .def_property_readonly("PR", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->PR;
+    })
+    .def_property_readonly("PM", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->PM;
+    })
+    .def_property_readonly("VPL", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VPL;
+    })
+    .def_property_readonly("VPR", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VPR;
+    })
+    .def_property_readonly("VPM", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->VPM;
+    })
+    .def_property_readonly("IVPL", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->IVPL;
+    })
+    .def_property_readonly("IVPR", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->IVPR;
+    })
+    .def_property_readonly("IVPM", [](viewdata_ptr_t vd) -> fmtx4 { //
+      return vd->IVPM;
+    });
+    type_codec->registerStdCodec<viewdata_ptr_t>(vd_t);
+    /////////////////////////////////////////////////////////////////////////////////
     auto cdd_t = py::class_<compositordrawdata_ptr_t>(module_lev2, "CompositorDrawData")
     .def_property_readonly("camposmono", [](compositordrawdata_ptr_t cdd) -> fvec3 { //
       return cdd->computeViewData()._camposmono;
     })
-    .def_property_readonly("VL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VL;
+    .def_property_readonly("viewdata", [](compositordrawdata_ptr_t cdd) -> viewdata_ptr_t { //
+      return std::make_shared<ViewData>(cdd->computeViewData());
     })
-    .def_property_readonly("VR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VR;
-    })
-    .def_property_readonly("VM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VM;
-    })
-    .def_property_readonly("PL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().PL;
-    })
-    .def_property_readonly("PR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().PR;
-    })
-    .def_property_readonly("PM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().PM;
-    })
-    .def_property_readonly("VPL", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VPL;
-    })
-    .def_property_readonly("VPR", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VPR;
-    })
-    .def_property_readonly("VPM", [](compositordrawdata_ptr_t cdd) -> fmtx4 { //
-      return cdd->computeViewData().VPM;
+    .def("rendererProperty", [type_codec](compositordrawdata_ptr_t cdd,crcstring_ptr_t crcstr) -> py::object { //
+      auto it = cdd->_properties.find(crcstr->hashed());
+      if (it != cdd->_properties.end()) {
+        auto svar = it->second;
+        py::object ret_val = py::none();
+        if( auto as_int = svar.tryAs<int>() ) {
+          ret_val = py::int_(as_int.value());
+        } else if( auto as_float = svar.tryAs<float>() ) {
+          ret_val = py::float_(as_float.value());
+        } else if( auto as_vec3 = svar.tryAs<fvec3>() ) {
+          ret_val = type_codec->encode(as_vec3.value());
+        } else if( auto as_vec4 = svar.tryAs<fvec4>() ) {
+          ret_val = type_codec->encode(as_vec4.value());
+        }
+        return ret_val;
+      }
+      return py::none();
     })
     .def("__repr__", [](compositordrawdata_ptr_t d) -> std::string {
       fxstring<64> fxs;

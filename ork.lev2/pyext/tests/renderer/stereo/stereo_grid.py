@@ -52,17 +52,16 @@ class StereoApp1(object):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
-    self.VPL = mtx4()
-    self.VPR = mtx4()
+    self.IVP = mtx4()
     
     createSceneGraph(app=self,rendermodel="FWDPBRVRDM")    
     onode = self.outputnode # created by createSceneGraph
-    def onEndAssemble(cdd):
-      self.VPL = cdd.VPL
-      self.VPR = cdd.VPR
-      print("VPL",self.VPL)
-      print("VPR",self.VPR)
-    onode.onEndAssemble(lambda cdd: onEndAssemble(cdd))
+    def onCameraChange(cdd):
+      eyeindex = cdd.rendererProperty(tokens.eyeindex)
+      viewdata = cdd.viewdata
+      self.IVP = viewdata.IVPM # mono IVP
+      print(f"eyeindex: {eyeindex} IVP {self.IVP}")
+    onode.onCameraChange(lambda cdd: onCameraChange(cdd))
     onode.flipY = False
     ###################################
 

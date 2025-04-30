@@ -55,7 +55,7 @@ class DualMonoVrOutputNode final : public OutputCompositingNode {
 
 public:
 
-  assembler_fn_t createAssembler(nodecompositortechnique_ptr_t tek);
+  compdrawdata_fn_t createAssembler(nodecompositortechnique_ptr_t tek);
 
   DualMonoVrOutputNode();
   ~DualMonoVrOutputNode() final ;
