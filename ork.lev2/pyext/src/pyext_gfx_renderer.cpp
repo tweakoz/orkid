@@ -219,6 +219,26 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
                 cammats->setCustomView(matrix);
               })
+              .def(
+                "projectDepthRay",                                 //
+                [](cameramatrices_ptr_t cammats, fvec2 v2d) -> Ray3<float> { //
+                  Ray3<float> rval;
+                  cammats->projectDepthRay(v2d, rval);
+                  return rval;
+                })
+              .def(
+                "projectDepthRayAsTuple",                                 //
+                [](cameramatrices_ptr_t cammats, fvec2 v2d) -> py::object { //
+                  fvec3 vdir, vori;
+                  cammats->projectDepthRay(v2d, vdir, vori);
+                  py::tuple rval = py::make_tuple(vdir, vori);
+                  return rval;
+                })
+                .def_property_readonly("IV", [](cameramatrices_ptr_t cammats) -> fmtx4 { return cammats->GetIVMatrix(); })
+              .def_property_readonly("IVP", [](cameramatrices_ptr_t cammats) -> fmtx4 { return cammats->GetVMatrix(); })
+              .def_property_readonly("V", [](cameramatrices_ptr_t cammats) -> fmtx4 { return cammats->GetPMatrix(); })
+              .def_property_readonly("P", [](cameramatrices_ptr_t cammats) -> fmtx4 { return cammats->GetIVPMatrix(); })
+              .def_property_readonly("VP", [](cameramatrices_ptr_t cammats) -> fmtx4 { return cammats->GetVPMatrix(); })
               .def_property_readonly("aspectRatio", [](cameramatrices_ptr_t cammats) -> float { return cammats->GetAspect(); });
               type_codec->registerStdCodec<cameramatrices_ptr_t>(cammatstype);
 }

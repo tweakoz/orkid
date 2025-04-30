@@ -486,6 +486,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
     })
     .def("rendererProperty", [type_codec](compositordrawdata_ptr_t cdd,crcstring_ptr_t crcstr) -> py::object { //
       auto it = cdd->_properties.find(crcstr->hashed());
+      // todo - use type codec to decode svar16_t
       if (it != cdd->_properties.end()) {
         auto svar = it->second;
         py::object ret_val = py::none();
@@ -497,6 +498,8 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           ret_val = type_codec->encode(as_vec3.value());
         } else if( auto as_vec4 = svar.tryAs<fvec4>() ) {
           ret_val = type_codec->encode(as_vec4.value());
+        } else if( auto as_camm = svar.tryAs<cameramatrices_ptr_t>() ) {
+          ret_val = type_codec->encode(as_camm.value());
         }
         return ret_val;
       }
