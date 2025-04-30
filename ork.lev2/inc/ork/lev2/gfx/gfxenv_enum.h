@@ -334,7 +334,7 @@ enum struct EVtxStreamFormat : crc_enum_t {
 
   //////////////////////////////
 
-  CrcEnum(NONE)
+  CrcEnum(NONE),
 };
 ///////////////////////////////////////////////////////////////////////////////
 std::string EBufferFormatToName(EBufferFormat fmt);

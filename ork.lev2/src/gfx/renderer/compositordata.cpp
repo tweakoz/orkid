@@ -135,7 +135,7 @@ RenderPresetContext CompositingData::presetPBRVR(render_preset_data_ptr_t pdata)
   pbr::commonstuff_ptr_t pbrc = pdata ? pdata->_pbr_common : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
-  auto o1 = t1->createOutputNode<VrCompositingNode>();
+  auto o1 = t1->createOutputNode<VrOutputNode>();
   auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>(pbrc);
 
   auto pbr_common = r1->_pbrcommon;
@@ -237,8 +237,43 @@ RenderPresetContext CompositingData::presetForwardPBRVR(render_preset_data_ptr_t
   rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
   RenderPresetContext rval;
   auto t1 = std::make_shared<NodeCompositingTechnique>();
-  auto o1 = t1->createOutputNode<VrCompositingNode>();
+  auto o1 = t1->createOutputNode<VrOutputNode>();
   auto r1 = t1->createRenderNode<pbr::ForwardNode>(pdata->_pbr_common);
+
+  o1->setSuperSample(_ginitdata->_ssaa_samples);
+
+  auto load_req = std::make_shared<asset::LoadRequest>("src://envmaps/tozenv_nebula");
+  load_req->_on_load_complete = [=]() {
+    auto as_tex = load_req->assetAs<lev2::TextureAsset>();
+    r1->_pbrcommon->assignEnvTexture(as_tex);
+  };
+  r1->_pbrcommon->requestAndRefSkyboxTexture(load_req);
+
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
+  i1->_technique = t1;
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
+
+  rval._nodetek    = t1;
+  rval._outputnode = o1;
+  rval._rendernode = r1;
+
+  return rval;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+RenderPresetContext CompositingData::presetForwardPBRVRDM(render_preset_data_ptr_t pdata) {
+  rtgroup_ptr_t outputgroup = pdata ? pdata->_outputGroup : nullptr;
+  RenderPresetContext rval;
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<DualMonoVrOutputNode>();
+  auto r1 = t1->createRenderNode<pbr::ForwardNode>(pdata->_pbr_common);
+
+  t1->_assemblerFn = o1->createAssembler(t1);
 
   o1->setSuperSample(_ginitdata->_ssaa_samples);
 

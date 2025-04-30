@@ -53,7 +53,7 @@ class StereoApp1(object):
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
 
-    createSceneGraph(app=self,rendermodel="FWDPBRVR")
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")
 
     ###################################
 

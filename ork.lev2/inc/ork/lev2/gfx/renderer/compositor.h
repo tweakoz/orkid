@@ -243,6 +243,7 @@ public:
   RenderPresetContext presetForwardPBR(render_preset_data_ptr_t pdata=nullptr);
   RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata=nullptr);
   RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata=nullptr);
+  RenderPresetContext presetForwardPBRVRDM(render_preset_data_ptr_t pdata=nullptr);
 
   compositingscene_constptr_t findScene(const std::string& named) const;
 

@@ -294,7 +294,8 @@ struct ClassToucher {
     RegisterClassX(PointLightData);
 
     RegisterClassX(OutputCompositingNode);
-    RegisterClassX(VrCompositingNode);
+    RegisterClassX(VrOutputNode);
+    RegisterClassX(DualMonoVrOutputNode);
     RegisterClassX(ScreenOutputCompositingNode);
 
     RegisterClassX(RenderCompositingNode);

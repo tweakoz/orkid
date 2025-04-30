@@ -48,7 +48,7 @@ def createSceneGraph( app : object = None,
     app.scene = app.ezapp.createScene(sceneparams)
     
     if layer_name == None:
-      if rendermodel in ["ForwardPBR","FWDPBRVR"]:
+      if rendermodel in ["ForwardPBR","FWDPBRVR","FWDPBRVRDM"]:
         layer_name = "std_forward"
       elif rendermodel in ["DeferredPBR","PBRVR"]:
         layer_name = "std_deferred"

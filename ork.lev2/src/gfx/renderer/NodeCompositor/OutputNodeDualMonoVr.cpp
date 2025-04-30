@@ -16,17 +16,17 @@
 #include <ork/profiling.inl>
 #include <ork/reflect/properties/registerX.inl>
 
-ImplementReflectionX(ork::lev2::VrOutputNode, "VrOutputNode");
+ImplementReflectionX(ork::lev2::DualMonoVrOutputNode, "DualMonoVrOutputNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void VrOutputNode::describeX(class_t* c) {
+void DualMonoVrOutputNode::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct VRIMPL {
   ///////////////////////////////////////
-  VRIMPL(VrOutputNode* node)
+  VRIMPL(DualMonoVrOutputNode* node)
       : _vrnode(node) {
 
     _tmpcameramatrices = new CameraMatrices;
@@ -220,7 +220,7 @@ struct VRIMPL {
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
-  VrOutputNode* _vrnode            = nullptr;
+  DualMonoVrOutputNode* _vrnode            = nullptr;
   StereoCameraMatrices* _stereomatrices = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
@@ -244,30 +244,30 @@ struct VRIMPL {
   rtgroup_ptr_t _ssaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrOutputNode::VrOutputNode() {
+DualMonoVrOutputNode::DualMonoVrOutputNode() {
   _impl = std::make_shared<VRIMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-VrOutputNode::~VrOutputNode() {
+DualMonoVrOutputNode::~DualMonoVrOutputNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
+void DualMonoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrOutputNode::beginAssemble(CompositorDrawData& drawdata) {
-  drawdata.context()->debugPushGroup("VrOutputNode::beginAssemble");
+void DualMonoVrOutputNode::beginAssemble(CompositorDrawData& drawdata) {
+  drawdata.context()->debugPushGroup("DualMonoVrOutputNode::beginAssemble");
   _impl.get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
-void VrOutputNode::endAssemble(CompositorDrawData& drawdata) {
-  drawdata.context()->debugPushGroup("VrOutputNode::endAssemble");
+void DualMonoVrOutputNode::endAssemble(CompositorDrawData& drawdata) {
+  drawdata.context()->debugPushGroup("DualMonoVrOutputNode::endAssemble");
   _impl.get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
 
-void VrOutputNode::composite(CompositorDrawData& drawdata) {
-  drawdata.context()->debugPushGroup("VrOutputNode::composite");
+void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
+  drawdata.context()->debugPushGroup("DualMonoVrOutputNode::composite");
   auto impl = _impl.get<std::shared_ptr<VRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
@@ -287,7 +287,7 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
-        drawdata.context()->debugPushGroup("VrOutputNode::to_screen");
+        drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_screen");
 
                 /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
@@ -360,11 +360,11 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
         }
 
         if (_distorion_lambda and (not _monoviewer)) {
-          drawdata.context()->debugPushGroup("VrOutputNode::distortion_lambda");
+          drawdata.context()->debugPushGroup("DualMonoVrOutputNode::distortion_lambda");
           _distorion_lambda(framedata, tex);
           drawdata.context()->debugPopGroup();
         } else {
-          drawdata.context()->debugPushGroup("VrOutputNode::to_hmd");
+          drawdata.context()->debugPushGroup("DualMonoVrOutputNode::to_hmd");
           const auto& vrdev = orkidvr::device();
           auto& mtl         = impl->_blit2screenmtl;
           auto inp_rtg      = drawdata._properties["final_outgroup"_crcu].get<rtgroup_ptr_t>();
@@ -417,6 +417,38 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
     }
   }
   drawdata.context()->debugPopGroup();
+}
+///////////////////////////////////////////////////////////////////////////////
+assembler_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_ptr_t tek){
+  return [this,tek](CompositorDrawData& drawdata) {
+    auto rnode = tek->_renderNode;
+    printf("rendering dual-mono-vr!\n");
+    ////////////////////////////////////////////////////////////////////////////
+    // this assembler will run the render and postfx nodes twice, 
+    //  once for each eye
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    // if we have a postfx_out, then that is the "final" output
+    //  otherwise it is render_out
+    ////////////////////////////////////////////////////////////////////////////
+    rtgroup_ptr_t render_outg = rnode ? rnode->GetOutputGroup() : nullptr;
+    RtBuffer* render_out      = rnode ? rnode->GetOutput().get() : nullptr;
+    drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
+    drawdata._properties["render_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
+    ////////////////////////////////////////////////////////////////////////////
+    this->beginAssemble(drawdata);
+    rnode->Render(drawdata);
+    this->endAssemble(drawdata);
+    size_t num_fx_nodes = tek->_postEffectNodes.size();
+    for (auto pfxnode : tek->_postEffectNodes) {
+      drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
+      pfxnode->Render(drawdata);
+      render_outg = pfxnode->GetOutputGroup();
+      render_out  = pfxnode->GetOutput().get();
+    }
+    drawdata._properties["final_out"_crcu].set<RtBuffer*>(render_out);
+    drawdata._properties["final_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

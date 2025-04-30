@@ -22,10 +22,13 @@ namespace ork::lev2 {
 ///   sinks include things like RtGroups, the screen, Vr-HMD, etc..
 ///////////////////////////////////////////////////////////////////////////////
 
+using assembler_fn_t = std::function<void(CompositorDrawData& drawdata)>;
+
 class OutputCompositingNode : public ork::Object {
   DeclareAbstractX(OutputCompositingNode, ork::Object);
 
 public:
+
   OutputCompositingNode();
   ~OutputCompositingNode();
   virtual void gpuInit(lev2::Context* pTARG, int w, int h) {
@@ -36,6 +39,7 @@ public:
   }
   virtual void composite(CompositorDrawData& drawdata) {
   }
+
   bool _flipY = true;
 };
 
@@ -193,11 +197,13 @@ public:
   template <typename T> std::shared_ptr<T> tryOutputNodeAs() {
     return std::dynamic_pointer_cast<T>(_outputNode);
   }
+  void defaultAssembly();
 
   ork::ObjectMap mBufferMap;
   compositorrendernode_ptr_t _renderNode;
   postfx_node_chain_t _postEffectNodes;
   compositoroutnode_ptr_t _outputNode;
+  assembler_fn_t _assemblerFn = nullptr;
 };
 
 using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;

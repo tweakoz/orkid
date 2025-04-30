@@ -206,6 +206,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
+  } else if (preset == "FWDPBRVRDM") {
+    _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
+    auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
+    auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
   } else if (preset == "PICKTEST") {
     auto cdata = std::make_shared<CompositingData>();
     cdata->presetPickingDebug();

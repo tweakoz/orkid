@@ -599,11 +599,11 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-  using vroutnode_ptr_t = std::shared_ptr<VrCompositingNode>;
+  using vroutnode_ptr_t = std::shared_ptr<VrOutputNode>;
   auto vroutnode_type = //
-      py::class_<VrCompositingNode, OutputCompositingNode, vroutnode_ptr_t>(module_lev2, "VrOutputNode")
+      py::class_<VrOutputNode, OutputCompositingNode, vroutnode_ptr_t>(module_lev2, "VrOutputNode")
           .def(py::init([] -> vroutnode_ptr_t { //
-            return std::make_shared<VrCompositingNode>();
+            return std::make_shared<VrOutputNode>();
           }))
           .def_property("mono",
             [](vroutnode_ptr_t self) -> bool {
@@ -614,7 +614,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             })
           .def("__repr__", [](vroutnode_ptr_t n) -> std::string {
             fxstring<64> fxs;
-            fxs.format("VrCompositingNode(%p)", n.get());
+            fxs.format("VrOutputNode(%p)", n.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);

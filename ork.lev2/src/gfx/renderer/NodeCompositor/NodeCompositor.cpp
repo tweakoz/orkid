@@ -47,30 +47,8 @@ void NodeCompositingTechnique::describeX(class_t* c) {
 NodeCompositingTechnique::NodeCompositingTechnique()
     : _renderNode(nullptr)
     , _outputNode(nullptr) {
-}
-///////////////////////////////////////////////////////////////////////////////
-NodeCompositingTechnique::~NodeCompositingTechnique() {
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
-  pTARG->debugPushGroup("NodeCompositingTechnique::init");
-  if (_renderNode)
-    _renderNode->gpuInit(pTARG, w, h);
-  for( auto pfxnode : _postEffectNodes ){
-    pfxnode->gpuInit(pTARG, w, h);
-  }
-  if (_outputNode)
-    _outputNode->gpuInit(pTARG, w, h);
 
-  pTARG->debugPopGroup();
-}
-///////////////////////////////////////////////////////////////////////////////
-bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
-  EASY_BLOCK("assemble-ctek", profiler::colors::Red);
-  bool rval = false;
-  drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
-  if (_outputNode and _renderNode) {
-    rval = true;
+  _assemblerFn = [this](CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     // if we have a postfx_out, then that is the "final" output
     //  otherwise it is render_out
@@ -85,14 +63,40 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     _renderNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
     size_t num_fx_nodes = _postEffectNodes.size();
-    for( auto pfxnode : _postEffectNodes ){
+    for (auto pfxnode : _postEffectNodes) {
       drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
       pfxnode->Render(drawdata);
       render_outg = pfxnode->GetOutputGroup();
-      render_out      = pfxnode->GetOutput().get();
+      render_out  = pfxnode->GetOutput().get();
     }
     drawdata._properties["final_out"_crcu].set<RtBuffer*>(render_out);
     drawdata._properties["final_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
+  };
+}
+///////////////////////////////////////////////////////////////////////////////
+NodeCompositingTechnique::~NodeCompositingTechnique() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
+  pTARG->debugPushGroup("NodeCompositingTechnique::init");
+  if (_renderNode)
+    _renderNode->gpuInit(pTARG, w, h);
+  for (auto pfxnode : _postEffectNodes) {
+    pfxnode->gpuInit(pTARG, w, h);
+  }
+  if (_outputNode)
+    _outputNode->gpuInit(pTARG, w, h);
+
+  pTARG->debugPopGroup();
+}
+///////////////////////////////////////////////////////////////////////////////
+bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
+  EASY_BLOCK("assemble-ctek", profiler::colors::Red);
+  bool rval = false;
+  drawdata.context()->debugPushGroup("NodeCompositingTechnique::assemble");
+  if (_outputNode and _renderNode) {
+    rval = true;
+    _assemblerFn(drawdata);
   }
   drawdata.context()->debugPopGroup();
   return rval;
