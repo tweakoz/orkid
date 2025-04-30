@@ -23,7 +23,7 @@ from lev2utils.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument("--variant", type=int, default=1, help='grid shader variant (1-3)')
+parser.add_argument("--variant", type=int, default=0, help='grid shader variant (1-3)')
 ################################################################################
 
 args = vars(parser.parse_args())
@@ -39,6 +39,7 @@ class StereoApp1(object):
     self.materials = set()
     self.cameralut = CameraDataLut()
     self.xf_hmd = Transform()
+    setupUiCamera(app=self,eye=vec3(0,12,15))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -54,7 +55,11 @@ class StereoApp1(object):
     self.vrdev.camera = "vrcam"
     self.IVP = mtx4()
     
-    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")    
+    params_dict = {
+      "SkyboxIntensity" : float(1),
+      "DiffuseIntensity" : float(6),
+    }     
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)    
     onode = self.outputnode # created by createSceneGraph
     def onCameraChange(cdd):
       eyeindex = cdd.rendererProperty(tokens.eyeindex)
@@ -63,6 +68,7 @@ class StereoApp1(object):
       print(f"eyeindex: {eyeindex} IVP {self.IVP}")
     onode.onCameraChange(lambda cdd: onCameraChange(cdd))
     onode.flipY = False
+    
     ###################################
 
     self.grid_data = createGridData()
@@ -80,7 +86,10 @@ class StereoApp1(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    return ui.HandlerResult()
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
+    return lev2.ui.HandlerResult()
 
   ################################################
 
@@ -96,12 +105,11 @@ class StereoApp1(object):
     self.vrdev.near = 0.1  # meters
     self.vrdev.far = 1e5   # meters
 
-    # view matrix
-    self.xf_hmd.lookAt( vec3(0,15,-15), # eye
-                        vec3(0,0,0),    # tgt
-                        vec3(0,1,0)     # up
-                      ) 
-    
+    self.xf_hmd.lookAt( vec3(0,1,-1)*5,   # eye
+                        vec3(0,0,0),     # tgt
+                        vec3(0,1,0)      # up
+                      )     
+
     self.vrdev.setPoseMatrix("hmd",self.xf_hmd.composed)
     
     ########################################
