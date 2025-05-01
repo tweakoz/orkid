@@ -110,7 +110,7 @@ class StereoApp1(object):
     self.vrdev.far = 1e5   # meters
 
     x = math.sin(abstime*0.5)
-    z = math.cos(abstime*0.5)
+    z = -math.cos(abstime*0.5)
     self.xf_hmd.lookAt( vec3(x,1,z)*-5,   # eye
                         vec3(0,0,0),     # tgt
                         vec3(0,1,0)      # up

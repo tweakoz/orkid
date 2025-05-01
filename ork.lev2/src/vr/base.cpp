@@ -159,7 +159,7 @@ void Device::_updatePosesCommon() {
       } else {
         if(_do_calibration){
           _calibposvect.push_back(hmdpos);
-          fvec3 nx, ny, nz;
+          fvec3 nx(1,0,0), ny(0,1,0), nz(0,0,1);
           hmd.toNormalVectors(nx, ny, nz);
           _calibnxvect.push_back(nx);
           _calibnyvect.push_back(ny);
@@ -202,11 +202,6 @@ void Device::_updatePosesCommon() {
 
   fmtx4 lmv = fmtx4::multiply_ltor(cmv,eyeL);
   fmtx4 rmv = fmtx4::multiply_ltor(cmv,eyeR);
-
-  msgrouter::content_t c;
-  c.set<fmtx4>(cmv);
-
-  msgrouter::channel("eggytest")->post(c);
 
   _hmdinputgroup->setChannel("leye.matrix").as<fmtx4>(lmv);
   _hmdinputgroup->setChannel("ceye.matrix").as<fmtx4>(cmv);

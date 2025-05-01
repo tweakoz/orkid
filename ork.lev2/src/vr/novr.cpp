@@ -11,41 +11,7 @@ namespace ork::lev2::orkidvr::novr {
 NoVrDevice::NoVrDevice()
     : Device() {
   auto handgroup = lev2::InputManager::instance()->inputGroup("hands");
-  _qtmousesubsc  = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.get<fvec2>(); });
-
   _active       = true;
-  _qtkbdownsubs = msgrouter::channel("qtkeyboard.down")->subscribe([this, handgroup](msgrouter::content_t c) {
-    int key = c.get<int>();
-    switch (key) {
-      case 'w':
-        handgroup->setChannel("left.trigger").as<bool>(true);
-        break;
-      case 'a':
-        handgroup->setChannel("left.thumb").as<bool>(true);
-        break;
-      case 's':
-        break;
-      case 'd':
-        handgroup->setChannel("right.thumb").as<bool>(true);
-        break;
-    }
-  });
-  _qtkbupsubs   = msgrouter::channel("qtkeyboard.up")->subscribe([this, handgroup](msgrouter::content_t c) {
-    int key = c.get<int>();
-    switch (key) {
-      case 'w':
-        handgroup->setChannel("left.trigger").as<bool>(false);
-        break;
-      case 'a':
-        handgroup->setChannel("left.thumb").as<bool>(false);
-        break;
-      case 's':
-        break;
-      case 'd':
-        handgroup->setChannel("right.thumb").as<bool>(false);
-        break;
-    }
-  });
 
   _supportsStereo = true;
   _width          = 2880;
@@ -113,7 +79,6 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // apply display panel rotation, if any..
   ////////////////////////////////////////
 
-  //printf( "_stereoTileRotationDegreesL<%g>\n", _stereoTileRotationDegreesL );
   rotzL.setRotateZ(_stereoTileRotationDegreesL*DTOR);
   rotzR.setRotateZ(_stereoTileRotationDegreesR*DTOR);
 
