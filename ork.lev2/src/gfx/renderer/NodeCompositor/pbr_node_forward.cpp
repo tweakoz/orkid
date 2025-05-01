@@ -183,6 +183,7 @@ struct ForwardPbrNodeImpl {
     bool renderingPROBE        = fpass->_renderingPROBE;
     int W                      = drawdata->property("OutputWidth"_crcu).get<int>();
     int H                      = drawdata->property("OutputHeight"_crcu).get<int>();
+    printf( "FWD PBR W<%d> H<%d>\n", W, H);
     int node_frame             = _node->_frameIndex;
 
     ///////////////////////////////////////////////////////////////////////////

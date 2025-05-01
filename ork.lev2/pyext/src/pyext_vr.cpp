@@ -59,7 +59,17 @@ void pyinit_vr(py::module& module_lev2) {
       }, [](orkidvr::device_ptr_t dev, int state) { //
         dev->_calibstate = state;
       })
-      .def("resetCalibration", &orkidvr::Device::resetCalibration);
+      .def("resetCalibration", &orkidvr::Device::resetCalibration)
+      .def_property("width", [](orkidvr::device_ptr_t dev) -> int { //
+        return dev->_width;
+      }, [](orkidvr::device_ptr_t dev, int w) { //
+        dev->_width = w;
+      })
+      .def_property("height", [](orkidvr::device_ptr_t dev) -> int { //
+        return dev->_height;
+      }, [](orkidvr::device_ptr_t dev, int h) { //
+        dev->_height = h;
+      });
   type_codec->registerStdCodec<orkidvr::device_ptr_t>(vrdevice_type);
   /////////////////////////////////////////////////////////////////////////////////
 }

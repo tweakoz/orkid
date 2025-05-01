@@ -79,10 +79,10 @@ struct DMVRIMPL {
     int ssaa   = _vrnode->supersample();
     OrkAssert(ssaa >= 0 and ssaa <= 3);
     _multiplier  = ssaa + 1;
-    _out_width   = VRDEV->_width; // * 2;
-    _out_height  = VRDEV->_height;
-    _ssaa_width  = _out_width * _multiplier;
-    _ssaa_height = _out_height * _multiplier;
+    _per_eye_width   = VRDEV->_width; // * 2;
+    _per_eye_height  = VRDEV->_height;
+    _ssaa_width  = _per_eye_width * _multiplier;
+    _ssaa_height = _per_eye_height * _multiplier;
     float aspect = float(_ssaa_width) / float(_ssaa_height);
 
     /////////////////////////////////////////////////////////////////////////////
@@ -178,8 +178,9 @@ struct DMVRIMPL {
     auto this_buf  = context->FBI()->GetThisBuffer();
     // resize ssaadownsamplebuffer
     auto downRTG = is_left_eye ? _ssaadownsamplebufferL : _ssaadownsamplebufferR;
-    if (downRTG->width() != _out_width || downRTG->height() != _out_height) {
-      downRTG->Resize(_out_width, _out_height);
+    printf("_per_eye_width<%d> _per_eye_height<%d>\n", _per_eye_width, _per_eye_height);
+    if (downRTG->width() != _per_eye_width || downRTG->height() != _per_eye_height) {
+      downRTG->Resize(_per_eye_width, _per_eye_height);
     }
 
     fbi->PushRtGroup(downRTG.get());
@@ -199,7 +200,7 @@ struct DMVRIMPL {
     mtl.begin(tek, framedata);
     mtl.bindParamCTex(_fxpColorMap, tex);
     mtl.bindParamMatrix(_fxpMVP, fmtx4::Identity());
-    ViewportRect extents(0, 0, _out_width, _out_height);
+    ViewportRect extents(0, 0, _per_eye_width, _per_eye_height);
     fbi->pushViewport(extents);
     fbi->pushScissor(extents);
     gbi->render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
@@ -226,8 +227,8 @@ struct DMVRIMPL {
   int _multiplier  = 1;
   int _ssaa_width  = 0;
   int _ssaa_height = 0;
-  int _out_width   = 0;
-  int _out_height  = 0;
+  int _per_eye_width   = 0;
+  int _per_eye_height  = 0;
   rtgroup_ptr_t _ssaadownsamplebufferL;
   rtgroup_ptr_t _ssaadownsamplebufferR;
 };
@@ -282,7 +283,10 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           mtl.begin(tek_nodownsample, framedata);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
 
-          ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+          int out_surface_width  = context->mainSurfaceWidth();
+          int out_surface_height = context->mainSurfaceHeight();
+          printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
+          ViewportRect extents(0, 0, out_surface_width, out_surface_height);
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
 

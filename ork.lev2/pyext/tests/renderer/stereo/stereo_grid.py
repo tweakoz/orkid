@@ -34,7 +34,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,fullscreen=False)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
@@ -53,10 +53,12 @@ class StereoApp1(object):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
+    self.vrdev.width = 1024
+    self.vrdev.height = 256
     self.IVP = mtx4()
     
     params_dict = {
-      "SkyboxIntensity" : float(1),
+      "SkyboxIntensity" : float(1.5),
       "DiffuseIntensity" : float(6),
     }     
     createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)    
@@ -95,6 +97,8 @@ class StereoApp1(object):
 
   def onUpdate(self,updinfo):
 
+    abstime = updinfo.absolutetime
+    
     ########################################
     # stereo viewing setup  
     ########################################
@@ -105,7 +109,9 @@ class StereoApp1(object):
     self.vrdev.near = 0.1  # meters
     self.vrdev.far = 1e5   # meters
 
-    self.xf_hmd.lookAt( vec3(0,1,-1)*5,   # eye
+    x = math.sin(abstime*0.5)
+    z = math.cos(abstime*0.5)
+    self.xf_hmd.lookAt( vec3(x,1,z)*-5,   # eye
                         vec3(0,0,0),     # tgt
                         vec3(0,1,0)      # up
                       )     
