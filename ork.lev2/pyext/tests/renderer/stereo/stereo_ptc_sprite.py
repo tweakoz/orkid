@@ -34,7 +34,7 @@ class StereoApp1(object):
     self.ezapp = OrkEzApp.create(self,fullscreen=fullscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.cameralut = CameraDataLut()
-    self.xf_hmd = Transform()
+    setupUiCamera(app=self,eye=vec3(0,12,15))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -48,10 +48,18 @@ class StereoApp1(object):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
+    self.vrdev.width = 512
+    self.vrdev.height = 512
+    self.IVP = mtx4()
 
-    createSceneGraph(app=self,rendermodel="FWDPBRVRDM")
+    params_dict = {
+      "SkyboxIntensity" : float(1.5),
+      "DiffuseIntensity" : float(6),
+    }     
+
+    createSceneGraph(app=self,rendermodel="FWDPBRVRDM",params_dict=params_dict)
     onode = self.outputnode # created by createSceneGraph
-    onode.flipY = False
+    onode.flipY = True
 
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
@@ -59,16 +67,11 @@ class StereoApp1(object):
 
     createDefaultSpriteSystem(app=self)
 
-  ##############################################
-
-  def onGpuUpdate(self,ctx):
-    # just need a mainthread python callback
-    # so python can process ctrl-c signals...
-    pass 
-
   ################################################
 
   def onUpdate(self,updinfo):
+
+    abstime = updinfo.absolutetime
 
     ########################################
     # stereo viewing setup  
@@ -79,12 +82,15 @@ class StereoApp1(object):
     self.vrdev.near = 0.1
     self.vrdev.far = 1e5
     
-    self.xf_hmd.lookAt( vec3(0,10,-10)*1.5 # eye
-                      , vec3(0,0,0) # tgt
-                      , vec3(0,1,0) # up
-                      )
+    x = math.sin(abstime*0.125)
+    z = -math.cos(abstime*0.125)
+
+    xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*10.0,   # eye
+                          vec3(0,0,0),     # tgt
+                          vec3(0,1,0)      # up
+                        )     
     
-    self.vrdev.setPoseMatrix("hmd",self.xf_hmd.composed)
+    self.vrdev.setPoseMatrix("hmd",xf_hmd)
     
     ########################################
 
@@ -92,8 +98,10 @@ class StereoApp1(object):
 
   ##############################################
 
-  def onUiEvent(self,uievent):
-    return ui.HandlerResult()
+  def onGpuUpdate(self,ctx):
+    # just need a mainthread python callback
+    # so python can process ctrl-c signals...
+    pass 
 
 ###############################################################################
 
