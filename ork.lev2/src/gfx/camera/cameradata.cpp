@@ -251,10 +251,6 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   ///////////////////////////////////////////////////
   rval._camdat = *this;
 
-  printf("camdata compute: eye<%g %g %g> tgt<%g %g %g> up<%g %g %g>\n",
-         mEye.x, mEye.y, mEye.z,
-         mTarget.x, mTarget.y, mTarget.z,
-         mUp.x, mUp.y, mUp.z);
   //deco::prints(rval._vmatrix.dump4x3cn(), true);
   //deco::prints(rval._pmatrix.dump4x3cn(), true);
   return rval;

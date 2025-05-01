@@ -178,7 +178,7 @@ struct DMVRIMPL {
     auto this_buf  = context->FBI()->GetThisBuffer();
     // resize ssaadownsamplebuffer
     auto downRTG = is_left_eye ? _ssaadownsamplebufferL : _ssaadownsamplebufferR;
-    printf("_per_eye_width<%d> _per_eye_height<%d>\n", _per_eye_width, _per_eye_height);
+    //printf("_per_eye_width<%d> _per_eye_height<%d>\n", _per_eye_width, _per_eye_height);
     if (downRTG->width() != _per_eye_width || downRTG->height() != _per_eye_height) {
       downRTG->Resize(_per_eye_width, _per_eye_height);
     }
@@ -285,7 +285,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
 
           int out_surface_width  = context->mainSurfaceWidth();
           int out_surface_height = context->mainSurfaceHeight();
-          printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
+          //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
           ViewportRect extents(0, 0, out_surface_width, out_surface_height);
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);

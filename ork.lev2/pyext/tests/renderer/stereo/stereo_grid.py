@@ -67,7 +67,7 @@ class StereoApp1(object):
       eyeindex = cdd.rendererProperty(tokens.eyeindex)
       viewdata = cdd.viewdata
       self.IVP = viewdata.IVPM # mono IVP
-      print(f"eyeindex: {eyeindex} IVP {self.IVP}")
+      #print(f"eyeindex: {eyeindex} IVP {self.IVP}")
     onode.onCameraChange(lambda cdd: onCameraChange(cdd))
     onode.flipY = False
     
