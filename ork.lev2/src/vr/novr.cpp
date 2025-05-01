@@ -35,13 +35,6 @@ NoVrDevice::~NoVrDevice() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
-  // auto mpos = _qtmousepos;
-  // float r   = mpos.Mag();
-  // float z   = 1.0f - r;
-  // auto v3   = fvec3(-mpos.x, -mpos.y, z).Normal();
-  // fmtx4 w;
-  // w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
-  //_posemap["hmd"] = w;
 
   ///////////////////////////////////////////////////////////////////
   // eye matrices (part of viewing transformation, not including pose)

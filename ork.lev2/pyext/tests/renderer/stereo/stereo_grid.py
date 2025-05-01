@@ -38,7 +38,7 @@ class StereoApp1(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
-    self.xf_hmd = Transform()
+
     setupUiCamera(app=self,eye=vec3(0,12,15))
 
     def onCtrlC(signum, frame):
@@ -111,12 +111,13 @@ class StereoApp1(object):
 
     x = math.sin(abstime*0.5)
     z = -math.cos(abstime*0.5)
-    self.xf_hmd.lookAt( vec3(x,1,z)*-5,   # eye
-                        vec3(0,0,0),     # tgt
-                        vec3(0,1,0)      # up
-                      )     
 
-    self.vrdev.setPoseMatrix("hmd",self.xf_hmd.composed)
+    xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*-5,   # eye
+                          vec3(0,0,0),     # tgt
+                          vec3(0,1,0)      # up
+                        )     
+
+    self.vrdev.setPoseMatrix("hmd",xf_hmd)
     
     ########################################
 
