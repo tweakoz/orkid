@@ -93,6 +93,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "fullscreen_monitor") {
+                  appinitdata->_fullscreen_monitor = py::cast<std::string>(item.second);
                 } else if (key == "enable_graphics") {
                   appinitdata->_enable_graphics = py::cast<bool>(item.second);
                   printf("enable_graphics<%d>\n", appinitdata->_enable_graphics);

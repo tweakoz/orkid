@@ -102,10 +102,12 @@ struct AppInitData{
   bool _disableMouseCursor = false;
   std::string _audio_input_devname = "default";
   std::string _audio_output_devname = "default";
+  std::string _fullscreen_monitor = "";
   size_t _audio_input_numchannels = 1;
   size_t _audio_output_numchannels = 2;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
+  ork::file::Path _default_imgui_path = "";
   std::multimap<uint64_t,void_lambda_t> _preinitoperations;
   std::multimap<uint64_t,void_lambda_t> _postinitoperations;
 };

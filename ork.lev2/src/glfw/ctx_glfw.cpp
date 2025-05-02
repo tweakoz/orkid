@@ -34,7 +34,7 @@ extern uint64_t GRAPHICS_API;
 extern appinitdata_ptr_t _ginitdata;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
-void recomputeHIDPI(GLFWwindow *window);
+void recomputeHIDPI(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,6 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   if (nullptr == ctxbase)
     return;
 
-
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
@@ -178,7 +177,7 @@ void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, 
   uiev->mbALT     = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL    = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT   = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbSUPER    = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER   = (modifiers & GLFW_MOD_SUPER);
   switch (action) {
     case GLFW_PRESS:
       uiev->_eventcode = ui::EventCode::KEY_DOWN;
@@ -265,11 +264,11 @@ void fillEventCursor(
   float unitX = xoffset / float(w);
   float unitY = yoffset / float(h);
 
-  uiev->mfLastUnitX = uiev->mfUnitX;
-  uiev->mfLastUnitY = uiev->mfUnitY;
-  uiev->mfUnitX     = unitX;
-  uiev->mfUnitY     = unitY;
-  uiev->miScreenWidth = w;
+  uiev->mfLastUnitX    = uiev->mfUnitX;
+  uiev->mfLastUnitY    = uiev->mfUnitY;
+  uiev->mfUnitX        = unitX;
+  uiev->mfUnitY        = unitY;
+  uiev->miScreenWidth  = w;
   uiev->miScreenHeight = h;
 
   if (monitor) {
@@ -340,33 +339,45 @@ void CtxGLFW::Show() {
 
     if (_appinitdata->_fullscreen) {
 
-      fullscreen_monitor = glfwGetPrimaryMonitor();
+      std::string desired_monitor_name = _appinitdata->_fullscreen_monitor;
+      fullscreen_monitor               = glfwGetPrimaryMonitor();
 
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
 
-      int idiff = 100000;
-
-      for (int i = 0; i < monitor_count; i++) {
-        GLFWmonitor* monitor = monitors[i];
-        int mon_x            = 0;
-        int mon_y            = 0;
-        glfwGetMonitorPos(monitor, &mon_x, &mon_y);
-
-        /////////////////////////////////
-        // select monitor whose left edge is the closest to the appinitdata's left
-        /////////////////////////////////
-
-        int d = abs(mon_x - l);
-
-        if (d < idiff) {
-          fullscreen_monitor      = monitor;
-          idiff                   = d;
-          const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
-          logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
+      if (desired_monitor_name != "") {
+        for (int i = 0; i < monitor_count; i++) {
+          GLFWmonitor* monitor    = monitors[i];
+          const char* monitorName = glfwGetMonitorName(monitor);
+          if (desired_monitor_name == std::string(monitorName)) {
+            fullscreen_monitor = monitor;
+            logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
+          }
         }
+      } else { // by position
+        int idiff = 100000;
+        for (int i = 0; i < monitor_count; i++) {
+          GLFWmonitor* monitor    = monitors[i];
+          const char* monitorName = glfwGetMonitorName(monitor);
+          int mon_x               = 0;
+          int mon_y               = 0;
+          glfwGetMonitorPos(monitor, &mon_x, &mon_y);
+          printf("monitor<%d> %s mon_x<%d> mon_y<%d>\n", i, monitorName, mon_x, mon_y);
 
-        /////////////////////////////////
+          /////////////////////////////////
+          // select monitor whose left edge is the closest to the appinitdata's left
+          /////////////////////////////////
+
+          int d = abs(mon_x - l);
+
+          if (d < idiff) {
+            fullscreen_monitor = monitor;
+            idiff              = d;
+            logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
+          }
+
+          /////////////////////////////////
+        }
       }
 
       //////////////////////////////////////
@@ -393,9 +404,9 @@ void CtxGLFW::Show() {
       logchan_glfw->log("USING GLFW contentScaleY<%f> ", contentScaleY);
       _appinitdata->_width  = _width;
       _appinitdata->_height = _height;
-            //////////////////////////////////////
+      //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
-this->onResize(_width, _height);
+      this->onResize(_width, _height);
     } // fullscreen
 
 #if defined(__APPLE__)
@@ -408,7 +419,7 @@ this->onResize(_width, _height);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 
-    switch(GRAPHICS_API){
+    switch (GRAPHICS_API) {
       case "VULKAN"_crcu:
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         break;
@@ -456,24 +467,22 @@ this->onResize(_width, _height);
   }
   _glfwMonitor = selected_monitor;
 
-  //if(_appinitdata->_allowHIDPI){
-    glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+  // if(_appinitdata->_allowHIDPI){
+  glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
   //}
-  //else{
+  // else{
   //  _contentScaleX = 1.0f;
   //  _contentScaleY = 1.0f;
   //}
 
-
-
   if (_appinitdata->_fullscreen) {
 
-   // _glfw_callback_winresized(_glfwWindow, _width, _height);
+    // _glfw_callback_winresized(_glfwWindow, _width, _height);
     //_glfw_callback_fbresized(_glfwWindow, _width, _height);
     glfwGetWindowSize(_glfwWindow, &_width, &_height);
     _appinitdata->_width  = _width;
     _appinitdata->_height = _height;
-    
+
   } else {
     logchan_glfw->log(
         "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
@@ -493,25 +502,23 @@ this->onResize(_width, _height);
   }
 
   if (_needsInitialize) {
-     printf("CreateCONTEXT");
+    printf("CreateCONTEXT");
     _orkwindow->initContext();
-     if( _appinitdata->_fullscreen ){
-          _target->resizeMainSurface(_width, _height);
-      }
-          _orkwindow->OnShow();
+    if (_appinitdata->_fullscreen) {
+      _target->resizeMainSurface(_width, _height);
+    }
+    _orkwindow->OnShow();
     _needsInitialize = false;
   }
   if (not _appinitdata->_offscreen) {
     glfwShowWindow(_glfwWindow);
   }
-  _appinitdata->_width  = (_appinitdata->_width* _contentScaleX);
-  _appinitdata->_height  = (_appinitdata->_height* _contentScaleY);
-  _width = _appinitdata->_width;
-  _height = _appinitdata->_height;
+  _appinitdata->_width  = (_appinitdata->_width * _contentScaleX);
+  _appinitdata->_height = (_appinitdata->_height * _contentScaleY);
+  _width                = _appinitdata->_width;
+  _height               = _appinitdata->_height;
 
   onResize(_width, _height);
-
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -574,20 +581,20 @@ int CtxGLFW::runloop() {
     if (_onGpuUpdate) {
       _onGpuUpdate(_target);
     }
-    
-    //EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
+
+    // EASY_BLOCK("ctx_glfw::render::gpupre", profiler::colors::Red);
 
     if (_onGpuPreFrame) {
       _onGpuPreFrame(_target);
     }
 
-    //for( auto fn : _gpu_misc_updates ){
-      //fn(_target);
+    // for( auto fn : _gpu_misc_updates ){
+    // fn(_target);
     //}
 
     SlotRepaint();
 
-    //EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
+    // EASY_BLOCK("ctx_glfw::render::gpupos", profiler::colors::Red);
     if (_onGpuPostFrame) {
       _onGpuPostFrame(_target);
     }
@@ -720,8 +727,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
   _try_minors.insert(3);
 #endif
 
-_try_minors.insert(1);
-_try_minors.insert(0);
+  _try_minors.insert(1);
+  _try_minors.insert(0);
 
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
@@ -755,11 +762,11 @@ _try_minors.insert(0);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
     MINOR = this_minor;
 
-    #if defined(__APPLE__)
-        glfwWindowHint(
-            GLFW_COCOA_RETINA_FRAMEBUFFER, //
-            _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
-    #endif
+#if defined(__APPLE__)
+    glfwWindowHint(
+        GLFW_COCOA_RETINA_FRAMEBUFFER, //
+        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
+#endif
 
     offscreen_window = glfwCreateWindow(
         32,      //
@@ -783,7 +790,7 @@ _try_minors.insert(0);
   logchan_glfw->log(
       "GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
   OrkAssert(offscreen_window != nullptr);
-  //glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  // glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   return offscreen_window;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -835,19 +842,19 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     GLFWwindow* offscreen_window = nullptr;
 
-    switch(GRAPHICS_API){
-      case "OPENGL"_crcu:{
-          if(_gctx->_appinitdata==nullptr){
-              _gctx->_appinitdata=_ginitdata;
-          }
+    switch (GRAPHICS_API) {
+      case "OPENGL"_crcu: {
+        if (_gctx->_appinitdata == nullptr) {
+          _gctx->_appinitdata = _ginitdata;
+        }
         offscreen_window = _gctx->_apiInitGL();
         break;
       }
-      case "VULKAN"_crcu:{
+      case "VULKAN"_crcu: {
         offscreen_window = _gctx->_apiInitVK();
         break;
       }
-      default:{
+      default: {
         OrkAssert(false);
         break;
       }
@@ -891,7 +898,7 @@ void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
   uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
   uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
   uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
+  uiev->mbSUPER = (modifiers & GLFW_MOD_SUPER);
 
   uiev->_eventcode = DOWN                           //
                          ? ork::ui::EventCode::PUSH //
@@ -917,9 +924,9 @@ void CtxGLFW::_on_callback_refresh() {
 }
 void CtxGLFW::_on_callback_winresized(int w, int h) {
   this->onResize(w, h);
-  auto uiev = this->uievent();
-  uiev->_eventcode  = ui::EventCode::RESIZED;
-  uiev->miScreenWidth = w;
+  auto uiev            = this->uievent();
+  uiev->_eventcode     = ui::EventCode::RESIZED;
+  uiev->miScreenWidth  = w;
   uiev->miScreenHeight = h;
   _fire_ui_event();
 }
@@ -942,7 +949,7 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
-  //printf( "_width<%d> _height<%d>\n", _width, _height);
+  // printf( "_width<%d> _height<%d>\n", _width, _height);
   fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
   if (this->_buttonState == 0) {
     uiev->_eventcode = ui::EventCode::MOVE; //
@@ -1008,14 +1015,14 @@ struct PopupImpl {
     _w = w;
     _h = h;
 
-    _window = win;
-    auto ctx_glfw = new CtxGLFW(_window);
+    _window            = win;
+    auto ctx_glfw      = new CtxGLFW(_window);
     _window->mpCTXBASE = ctx_glfw;
 
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    switch(GRAPHICS_API){
+    switch (GRAPHICS_API) {
       case "VULKAN"_crcu:
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         break;
@@ -1029,7 +1036,7 @@ struct PopupImpl {
     glfwSetWindowPos(_glfwPopupWindow, x, y);
     setAlwaysOnTop(_glfwPopupWindow);
     //////////////////////////////////////////////////
-    auto eventSINK = ctx_glfw->_eventSINK;
+    auto eventSINK                       = ctx_glfw->_eventSINK;
     eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
       auto uiev = std::make_shared<ui::Event>();
 
@@ -1053,7 +1060,7 @@ struct PopupImpl {
       uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
       uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
       uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-      uiev->mbSUPER  = (modifiers & GLFW_MOD_SUPER);
+      uiev->mbSUPER = (modifiers & GLFW_MOD_SUPER);
 
       uiev->_eventcode = DOWN                           //
                              ? ork::ui::EventCode::PUSH //

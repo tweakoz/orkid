@@ -120,14 +120,26 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
     Environment env;
     std::string home_out;
     static file::Path imgui_ini_path;
-    if (env.get("HOME", home_out)) {
+    if (env.get("OBT_STAGE", home_out)) {
       auto base      = file::Path(home_out);
       imgui_ini_path = base / FormatString(".%s-imgui.ini", initdata->_application_name.c_str());
       logchan_ezapp->log("imgui_ini_path<%s>", imgui_ini_path.c_str());
     } else {
       OrkAssert(false); // HOME not set ???
     }
-
+    if( not imgui_ini_path.doesPathExist() ){
+      file::Path try_this_path = file::Path(initdata->_default_imgui_path);
+      if( try_this_path.isFile() ){
+        // copy default imgui ini file
+        auto src = try_this_path.toAbsolute();
+        auto dst = imgui_ini_path.toAbsolute();
+        std::string cmd_str = FormatString("cp %s %s", src.c_str(), dst.c_str());
+        printf( "copying default imgui ini file <%s> to <%s>\n", src.c_str(), dst.c_str());
+        int ret = system(cmd_str.c_str());
+        OrkAssert(ret == 0);
+        OrkAssert(dst.doesPathExist());
+      }      
+    }
     io.IniFilename = strdup(imgui_ini_path.c_str());
 
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
