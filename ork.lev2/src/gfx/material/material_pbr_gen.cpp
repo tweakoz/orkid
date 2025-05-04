@@ -384,6 +384,11 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
           im_combined.writeToFile(outpath);          
         }
   
+        // TODO: 2D texture array
+        //   slice : roughness level
+        //   mip   : mip level for anti-alias filtering
+        //   will have to interpolate across slices
+
         pending.fetch_sub(1);
       };
       opq::concurrentQueue()->enqueue(op);
