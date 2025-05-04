@@ -146,6 +146,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _params = params;
 
+  bool use_float_buffer = false;
+
   if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {
     _dbufcontext_SG = try_dbufcontext.value();
   }
@@ -158,6 +160,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   std::string preset = "DeferredPBR";
   // std::string output = "SCREEN";
+
+  if( auto try_use_float_buffer = params->typedValueForKey<bool>("UseFloatBuffer") ) {
+    use_float_buffer = try_use_float_buffer.value();
+  }
 
   if (auto try_preset = params->typedValueForKey<std::string>("preset"))
     preset = try_preset.value();
@@ -287,7 +293,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       else if(texture_path == "sunset") {
         texture_path = "src://envmaps/blender_sunset";
       }
-
+      _pbr_common->_useFloatColorBuffer = use_float_buffer;
 
       _compositorData->_defaultBG = false;
       auto load_req               = std::make_shared<asset::LoadRequest>(texture_path);

@@ -84,23 +84,31 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    params_dict = {
-      "SkyboxIntensity": 2.0,
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0),
-      "SSAONumSamples": 96,
-      "SSAONumSteps": 2,
-      "SSAOBias": -1e-5,
-      "SSAORadius": 3.0*2.54/100,
-      "SSAOWeight": 1.0,
-      "SSAOPower": 0.3,
-    }
-    
-    createSceneGraph( app=self,
-                      params_dict=params_dict,
-                      use_float_buffer=True,
-                      rendermodel="PBRVR" if vrmode else "ForwardPBR")
+    ###################################
+    sceneparams = VarMap() 
+    sceneparams.preset = "PBRVR" if vrmode else "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(2)
+    sceneparams.SpecularIntensity = float(1)
+    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.DepthFogDistance = float(1e6)
+    sceneparams.UseFloatBuffer = True
+    ###################################
+    # post fx node
+    ###################################
+    postNode = PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.65
+    postNode.value = 1.0
+    postNode.gamma = 1.2
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node = postNode
+    ###################################
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
 
     models = []
@@ -112,12 +120,12 @@ class SceneGraphApp(object):
 
     for i in range(numinstances):
       model = models[i%len(models)]
-      self.modelinsts += [modelinst(model,self.layer1,i)]
+      self.modelinsts += [modelinst(model,self.layer_fwd,i)]
 
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
   ##############################################
