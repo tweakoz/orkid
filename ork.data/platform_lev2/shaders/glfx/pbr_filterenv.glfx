@@ -97,17 +97,39 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
   vec3 v  = r;
   vec3 o  = vec3(0, 0, 0);
   float w = 0;
-  //////////////////////////////////
-  for (uint i = 0; i < 8192; i++) {
-    vec2 e      = hammersley(i, 8192);
+
+  vec2 blueNoiseOffset = fract(vec2(rand(fcoord), rand(fcoord.yx)) * 1000.0);
+
+  const int num_samples = 32768;
+
+  for (uint i = 0; i < num_samples; i++) {
+    uint sqrtSamples = uint(sqrt(num_samples));
+    uint ix          = i % sqrtSamples;
+    uint iy          = i / sqrtSamples;
+
+    // Stratified coordinates with jitter
+    vec2 stratifiedPos = vec2(float(ix) + 0.5, float(iy) + 0.5) / float(sqrtSamples);
+    vec2 jitter        = vec2(rand(stratifiedPos + blueNoiseOffset), rand(stratifiedPos.yx + blueNoiseOffset)) * 0.9;
+
+    vec2 e = stratifiedPos + jitter * vec2(1.0 / float(sqrtSamples));
+
+    // Modified sampling approach
     vec3 h      = importanceSampleGGXN(e, n, roughness);
     vec3 l      = normalize(2.0 * dot(v, h) * h - v);
     float ndotl = satdot(n, l);
+
     if (ndotl > 0.0) {
+      // Add Fresnel factor for energy conservation
+      float cosTheta = ndotl;
+      float F        = 0.04 + 0.96 * pow(1.0 - cosTheta, 5.0);
+
+      // Adjust weight to account for multiple scattering
+      float msWeight = mix(1.0, 1.0 / (1.0 - F), roughness * roughness);
+
       vec2 luv = env_equirectangularN2UV(l);
       luv      = clamp(luv, 0, 1);
-      o += textureLod(prefiltmap, luv, 0).rgb * ndotl;
-      w += ndotl;
+      o += textureLod(prefiltmap, luv, 0).rgb * ndotl * msWeight;
+      w += ndotl * msWeight;
     }
   }
   //////////////////////////////////
@@ -122,12 +144,12 @@ fragment_shader ps_filterDiffuseEnvMapSTD : iface_fyo : lib_math : lib_envmappin
   fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // Normalize coordinates
 
   // Assuming 'n' is the normal in world space for the fragment
-  vec3 n  = vec3(0, 1, 0); // Define this function based on your application
-  vec3 r  = n;
-  vec3 v  = r;
-  vec3 o  = vec3(0, 0, 0);
-  float w = 0;
-	float RUF = 1;
+  vec3 n    = vec3(0, 1, 0); // Define this function based on your application
+  vec3 r    = n;
+  vec3 v    = r;
+  vec3 o    = vec3(0, 0, 0);
+  float w   = 0;
+  float RUF = 1;
   for (uint i = 0; i < 16384; i++) {
     vec2 e = hammersley(i, 16384);
 
@@ -145,7 +167,6 @@ fragment_shader ps_filterDiffuseEnvMapSTD : iface_fyo : lib_math : lib_envmappin
   //////////////////////////////////
   o       = o / w; // Normalize the output color by the total weight
   out_clr = vec4(o, 1);
-
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_filterDiffuseEnvMapEQUI : iface_fyo : lib_math : lib_envmapping : lib_brdf {

@@ -216,6 +216,209 @@ void Image::uncompressed(CompressedImage& imgout) const {
   logchan_image->log("// compression time<%g> MPPS<%g>", time, MPPS);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void Image::gaussianBlur(Image& imgout, float kernel_size) const {
+  imgout._format = _format;
+  imgout._bytesPerChannel = _bytesPerChannel;
+  imgout._numcomponents = _numcomponents;
+  imgout._width = _width;
+  imgout._height = _height;
+  imgout._data = std::make_shared<DataBlock>();
+  imgout._data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
+  
+  // Compute Gaussian kernel
+  int radius = int(kernel_size * 2.0f);
+  float sigma = kernel_size / 2.0f;
+  float sigma2 = sigma * sigma;
+  float coeff = 1.0f / (2.0f * M_PI * sigma2);
+  
+  // Create kernel weights
+  std::vector<float> kernel;
+  std::vector<float> weights;
+  float totalWeight = 0.0f;
+  
+  for (int y = -radius; y <= radius; y++) {
+    for (int x = -radius; x <= radius; x++) {
+      float dist2 = float(x*x + y*y);
+      float weight = coeff * expf(-dist2 / (2.0f * sigma2));
+      kernel.push_back(weight);
+      weights.push_back(weight);
+      totalWeight += weight;
+    }
+  }
+  
+  // Normalize weights
+  for (auto& w : weights) {
+    w /= totalWeight;
+  }
+  
+  // Apply filter
+  int kernel_dim = 2 * radius + 1;
+  uint8_t* dst_data = (uint8_t*)imgout._data->data();
+  auto conq = opq::concurrentQueue();
+  auto group = opq::createCompletionGroup(conq, "GaussianBlur");
+  for (int y = 0; y < _height; y++) {
+    group->enqueue([=](){
+      for (int x = 0; x < _width; x++) {
+        std::vector<float> sum(_numcomponents, 0.0f);
+        int weight_idx = 0;
+        
+        for (int ky = -radius; ky <= radius; ky++) {
+          for (int kx = -radius; kx <= radius; kx++) {
+            int sx = std::max(0, std::min(int(_width) - 1, x + kx));
+            int sy = std::max(0, std::min(int(_height) - 1, y + ky));
+            
+            const uint8_t* src_pixel = pixel8(sx, sy);
+            float weight = weights[weight_idx++];
+            
+            for (size_t c = 0; c < _numcomponents; c++) {
+              sum[c] += float(src_pixel[c]) * weight;
+            }
+          }
+        }
+        
+        // Write blurred pixel
+        uint8_t* dst_pixel = dst_data + ((y * _width + x) * _numcomponents);
+        for (size_t c = 0; c < _numcomponents; c++) {
+          dst_pixel[c] = uint8_t(std::min(255.0f, std::max(0.0f, sum[c])));
+        }
+      }
+    });
+  }
+  group->join();
+}
+
+void Image::lerp(const Image& a, const Image& b, float index) {
+  // Clamp interpolation index to [0,1]
+  float t = std::max(0.0f, std::min(1.0f, index));
+  
+  // Verify images have same dimensions and format
+  if (a._width != b._width || a._height != b._height || 
+      a._numcomponents != b._numcomponents || 
+      a._bytesPerChannel != b._bytesPerChannel) {
+    OrkAssert(false && "Images must have same dimensions and format");
+    return;
+  }
+  
+  // Initialize this image with same properties
+  _format = a._format;
+  _bytesPerChannel = a._bytesPerChannel;
+  _numcomponents = a._numcomponents;
+  _width = a._width;
+  _height = a._height;
+  _data = std::make_shared<DataBlock>();
+  _data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
+  
+  // Only handle 8-bit per channel case for simplicity
+  if (_bytesPerChannel == 1) {
+    uint8_t* dst_data = (uint8_t*)_data->data();
+    const uint8_t* src_a = (const uint8_t*)a._data->data();
+    const uint8_t* src_b = (const uint8_t*)b._data->data();
+    
+    size_t total_pixels = _width * _height;
+    size_t total_elements = total_pixels * _numcomponents;
+    
+    for (size_t i = 0; i < total_elements; i++) {
+      float val_a = float(src_a[i]);
+      float val_b = float(src_b[i]);
+      float blended = val_a * (1.0f - t) + val_b * t;
+      dst_data[i] = uint8_t(std::min(255.0f, std::max(0.0f, blended)));
+    }
+  }
+  // Handle 16-bit per channel case if needed
+  else if (_bytesPerChannel == 2) {
+    uint16_t* dst_data = (uint16_t*)_data->data();
+    const uint16_t* src_a = (const uint16_t*)a._data->data();
+    const uint16_t* src_b = (const uint16_t*)b._data->data();
+    
+    size_t total_pixels = _width * _height;
+    size_t total_elements = total_pixels * _numcomponents;
+    
+    for (size_t i = 0; i < total_elements; i++) {
+      float val_a = float(src_a[i]);
+      float val_b = float(src_b[i]);
+      float blended = val_a * (1.0f - t) + val_b * t;
+      dst_data[i] = uint16_t(std::min(65535.0f, std::max(0.0f, blended)));
+    }
+  }
+  else {
+    OrkAssert(false && "Unsupported bytes per channel");
+  }
+}
+
+void Image::fullBlurOf(const Image& a) {
+  // Make sure this image has the same dimensions and format as input
+  _format = a._format;
+  _bytesPerChannel = a._bytesPerChannel;
+  _numcomponents = a._numcomponents;
+  _width = a._width;
+  _height = a._height;
+  _data = std::make_shared<DataBlock>();
+  _data->allocateBlock(_width * _height * _numcomponents * _bytesPerChannel);
+  
+  // Compute average color
+  std::vector<float> avg_color(_numcomponents, 0.0f);
+  size_t total_pixels = a._width * a._height;
+  
+  // For 8-bit per channel
+  if (a._bytesPerChannel == 1) {
+    const uint8_t* src_data = (const uint8_t*)a._data->data();
+    
+    // Sum up all values for each component
+    for (size_t y = 0; y < a._height; y++) {
+      for (size_t x = 0; x < a._width; x++) {
+        const uint8_t* pixel = a.pixel8(x, y);
+        for (size_t c = 0; c < _numcomponents; c++) {
+          avg_color[c] += float(pixel[c]);
+        }
+      }
+    }
+    
+    // Calculate average
+    for (size_t c = 0; c < _numcomponents; c++) {
+      avg_color[c] /= float(total_pixels);
+    }
+    
+    // Fill this image with the average color
+    uint8_t* dst_data = (uint8_t*)_data->data();
+    for (size_t i = 0; i < total_pixels; i++) {
+      for (size_t c = 0; c < _numcomponents; c++) {
+        dst_data[i * _numcomponents + c] = uint8_t(avg_color[c]);
+      }
+    }
+  }
+  // For 16-bit per channel
+  else if (a._bytesPerChannel == 2) {
+    const uint16_t* src_data = (const uint16_t*)a._data->data();
+    
+    // Sum up all values for each component
+    for (size_t y = 0; y < a._height; y++) {
+      for (size_t x = 0; x < a._width; x++) {
+        const uint16_t* pixel = a.pixel16(x, y);
+        for (size_t c = 0; c < _numcomponents; c++) {
+          avg_color[c] += float(pixel[c]);
+        }
+      }
+    }
+    
+    // Calculate average
+    for (size_t c = 0; c < _numcomponents; c++) {
+      avg_color[c] /= float(total_pixels);
+    }
+    
+    // Fill this image with the average color
+    uint16_t* dst_data = (uint16_t*)_data->data();
+    for (size_t i = 0; i < total_pixels; i++) {
+      for (size_t c = 0; c < _numcomponents; c++) {
+        dst_data[i * _numcomponents + c] = uint16_t(avg_color[c]);
+      }
+    }
+  }
+  else {
+    OrkAssert(false && "Unsupported bytes per channel");
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

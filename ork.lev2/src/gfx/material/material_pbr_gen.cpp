@@ -31,13 +31,14 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3(0.8, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3(0.8, 0.8, 0.5), true);
 
-float roughness_power = 1.0f;
+float roughness_power = 0.5f;
 int _SALT() {
   // return rand();
-  return 19;
+  return 45;
 }
+bool force_pbrgen_spec = false;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -268,7 +269,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   basehasher.accumulateItem<uint32_t>(this_hash());
   basehasher.finish();
   uint64_t cmipchain_hashkey = basehasher.result();
-  auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
+  datablock_ptr_t cmipchain_datablock   = force_pbrgen_spec ? nullptr : DataBlockCache::findDataBlock(cmipchain_hashkey);
+
   ///////////////////////////////////////////////
   if (cmipchain_datablock) {
     // logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
@@ -299,7 +301,12 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     numpix                   = w * h;
     std::atomic<int> pending = 0;
     std::vector<compressedimg_ptr_t> cimgs;
+
+    auto src_tex = rawenvmap;
+
     for (int imip = 0; imip < nummips; imip++) {
+
+      bool last_mip = (imip == nummips - 1);
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
@@ -315,12 +322,13 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       ///////////////////////////////////////////////
       float roughness = float(imip) / float(nummips - 1);
       roughness       = powf(roughness, roughness_power);
+      roughness = roughness;
       ///////////////////////////////////////////////
       logchan_pbrgen->log("filterenv imip<%d> nummips<%d> w<%d> h<%d> roughness<%g>", imip, nummips, w, h, roughness);
       logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap.get());
+      mtl->bindParamCTex(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
       mtl->commit();
@@ -340,15 +348,42 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
         out->open(outpath.c_str(), spec);
         out->write_image(TypeDesc::FLOAT, captureb->_data);
         out->close();
+  
       }
+
 
       pending.fetch_add(1);
       auto cimg = std::make_shared<CompressedImage>();
       cimgs.push_back(cimg);
       auto op = [=, &pending]() {
-        Image im;
-        im.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-        im.compressDefault(*cimg);
+        Image im_inp, im_combined, im_fullblur;
+        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im_fullblur.fullBlurOf(im_inp);
+        if(last_mip){ // last mip should have a uniform color
+          im_fullblur.compressDefault(*cimg);
+          im_combined = im_fullblur;
+        }
+        else{
+          Image im_orig, im_blurred, im_blurred2;
+          im_orig = im_inp;
+          // blur based on mip level        
+          for(int iter=0; iter<1; iter++ ){
+            im_inp.gaussianBlur(im_blurred, 3.0);
+            im_blurred.gaussianBlur(im_blurred2, 3.0);
+            im_inp = im_blurred2;
+          }
+          float lerp_index = float(imip) / float(nummips - 1);
+          lerp_index = powf(lerp_index, 1.3f);
+          im_blurred.lerp(im_orig, im_blurred2, lerp_index);
+          im_combined.lerp(im_blurred, im_fullblur, lerp_index);
+          im_combined.compressDefault(*cimg);
+        }
+
+        if (1) {
+          auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmapC-mip%d.exr", imip);
+          im_combined.writeToFile(outpath);          
+        }
+  
         pending.fetch_sub(1);
       };
       opq::concurrentQueue()->enqueue(op);

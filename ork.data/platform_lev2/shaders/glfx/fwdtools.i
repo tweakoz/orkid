@@ -1,12 +1,11 @@
 ///////////////////////////////////////////////////////////////
-libblock lib_fwd //
-  : lib_math //
-  : lib_brdf //
-  : lib_envmapping //
-  : lib_def 
-  : lib_ssao {
+libblock lib_fwd     //
+    : lib_math       //
+    : lib_brdf       //
+    : lib_envmapping //
+    : lib_def : lib_ssao {
   /////////////////////////////////////////////////////////
-  LightCtx lcalc_forward(vec3 wpos, PbrData pbd,vec3 eyepos) {
+  LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;
     const vec3 metalbase = vec3(0.04);
     float metallic       = clamp(pbd._metallic, 0.02, 0.99);
@@ -23,9 +22,8 @@ libblock lib_fwd //
   }
   /////////////////////////////////////////////////////////
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
-    float dist2light =
-        sqrt(plc._lightdel.x * plc._lightdel.x + plc._lightdel.y * plc._lightdel.y + plc._lightdel.z * plc._lightdel.z);
-    float atten         = 1.0 / max(.05, dist2light * dist2light);
+    float dist2light    = length(plc._lightdel);
+    float atten         = 1.0 / max(.05, dist2light * dist2light); // prevent infinite light
     vec3 lightdir       = normalize(plc._lightdel);
     vec3 halfdir        = normalize(plc._viewdir + lightdir);
     float angularRadius = atan(lightRadius, dist2light);
@@ -52,9 +50,9 @@ libblock lib_fwd //
 
     vec3 out_color;
 
-    vec3 wpos = pbd._wpos;
-    // vec3 metalbase = vec3(0.04);
-    vec3 metalbase = vec3(0.2);
+    vec3 wpos      = pbd._wpos;
+    vec3 metalbase = vec3(0.04);
+    // vec3 metalbase = vec3(0.2);
     /////////////////////////
     // vec3 albedo = gbd._wnrm;
     vec3 albedo = pbd._albedo;
@@ -96,49 +94,53 @@ libblock lib_fwd //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    //vec2 uv = gl_FragCoord.xy * InvViewportSize;
-    //float ambocc = texture(SSAOMap, uv).x;
-    // filter sample ambocc
-    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc = vec3(1); //texture(LightMapA, pbd.).xyz;
-    float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;
-    //dambocc = pow(dambocc, SSAOPower);
-    //dambocc = mix(1.0,dambocc,SSAOWeight);
-    float ambocc = 1.0;//(sambocc * dambocc);
-    //ambocc = 1.0;//
+    // vec2 uv = gl_FragCoord.xy * InvViewportSize;
+    // float ambocc = texture(SSAOMap, uv).x;
+    //  filter sample ambocc
+    vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
+    vec3 sambocc  = vec3(1); // texture(LightMapA, pbd.).xyz;
+    float dambocc = 1.0;     // texture(SSAOMap, ssao_uv).x;
+    // dambocc = pow(dambocc, SSAOPower);
+    // dambocc = mix(1.0,dambocc,SSAOWeight);
+    float ambocc = 1.0; //(sambocc * dambocc);
+    // ambocc = 1.0;//
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * ambientshade*ambocc;
-    vec3 diffuse_env   = env_equirectangular(diffn, MapDiffuseEnv, 0) * DiffuseLevel * SkyboxLevel;
+    vec3 ambient       = AmbientLevel * ambientshade * ambocc;
+    vec3 diffuse_env   = env_equirectangular2(diffn, MapDiffuseEnv) * DiffuseLevel * SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
     /////////////////////////
     vec3 diffuse = clamp(basecolor * diffuse_light * dialetric * ambocc, 0, 1);
     /////////////////////////
     // rotate refl by 180 degrees on y to get refl_probe_coord
     vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
-    vec3 probe_REFL = texture(reflectionPROBE, refl_probe_coord).xyz;
+    vec3 probe_REFL       = texture(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
-    float spec_ruf      = pow(roughness, 0.5);
-    vec3 refl_equi      = vec3(refl.x, -refl.y, refl.z);
-    diffuse_env         = env_equirectangular(refl_equi, MapDiffuseEnv, 0);
-    vec3 spec_env       = env_equirectangular(refl_equi, MapSpecularEnv,0);
-    vec3 env = mix(spec_env, diffuse_env, spec_ruf)+probe_REFL;
+    vec3 refl_equi = vec3(refl.x, -refl.y, refl.z);
+    // Use normal for diffuse (irradiance)
+    // vec3 diffuse_env = env_equirectangular(diffn, MapDiffuseEnv, 0);
+    //  Use reflection with appropriate mip level for specular
+    float rl       = roughness * roughness;
+    rl             = pow(rl, 0.5);
+    float mipLevel = rl * 6.0;
+    vec3 spec_env  = env_equirectangular(refl_equi, MapSpecularEnv, mipLevel);
+    vec3 env       = spec_env + probe_REFL;
+
     vec3 specular_light = ambient + env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
-    vec3 specular       = specularMask * specularC*ambocc;
-    //specular = specular * pow(1.0-roughness,2.0);
+    vec3 specular       = specularMask * specularC * ambocc;
+    // specular = specular * pow(1.0-roughness,2.0);
 
-    //vec3 probe_REFL = vec3(0);
-    // vec3 ambient = invF*AmbientLevel;
+    // vec3 probe_REFL = vec3(0);
+    //  vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     vec3 finallitcolor = saturateV(diffuse + specular);
-    //float depth_fogval = saturateF(pow(pbd._fogZ * DepthFogDistance, DepthFogPower));
-    //vec3 skybox_n      = vec3(0, 0, 1);
-    //vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
-
+    // float depth_fogval = saturateF(pow(pbd._fogZ * DepthFogDistance, DepthFogPower));
+    // vec3 skybox_n      = vec3(0, 0, 1);
+    // vec3 skyboxColor   = env_equirectangularFlipV(skybox_n, MapSpecularEnv, 0) * SkyboxLevel;
+    // finallitcolor = finallitcolor;
     return finallitcolor;
-
 
   } // vec3 environmentLighting(){
 
@@ -161,21 +163,21 @@ libblock lib_fwd //
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
     // sample PBR material textures
-    vec3 albedo = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
+    vec3 albedo    = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
     vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
     vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
     vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
 
-    vec3 wpos = frg_wpos.xyz;
-    vec3 N         = TN * 2.0 - vec3(1, 1, 1);
-    vec3 normal    = normalize(frg_tbn * N);
-    vec3 metalbase = vec3(0.2);
+    vec3 wpos       = frg_wpos.xyz;
+    vec3 N          = TN * 2.0 - vec3(1, 1, 1);
+    vec3 normal     = normalize(frg_tbn * N);
+    vec3 metalbase  = vec3(0.04);
     float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
     float roughness = rufmtlamb.y * RoughnessFactor;
-    roughness = pow(roughness, RoughnessPower);
+    roughness       = pow(roughness, RoughnessPower);
     float dialetric = 1.0 - metallic;
-    vec3 basecolor = albedo;
-    vec3 diffcolor = mix(basecolor, vec3(0), metallic);
+    vec3 basecolor  = albedo;
+    vec3 diffcolor  = mix(basecolor, vec3(0), metallic);
     /////////////////////////
     vec3 edir = normalize(wpos - eyepos);
     vec3 refl = normalize(reflect(edir, normal));
@@ -183,20 +185,20 @@ libblock lib_fwd //
     /////////////////////////
     // light maps
     /////////////////////////
-    vec3 light_maps = texture(LightMapArray, vec3(frg_uv0,0)).xyz*LightMapColors[0];
-    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,1)).xyz*LightMapColors[1];
-    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,2)).xyz*LightMapColors[2];
-    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,3)).xyz*LightMapColors[3];
-    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,4)).xyz*LightMapColors[4];
-    light_maps = light_maps + texture(LightMapArray, vec3(frg_uv0,5)).xyz*LightMapColors[5];
+    vec3 light_maps = texture(LightMapArray, vec3(frg_uv0, 0)).xyz * LightMapColors[0];
+    light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 1)).xyz * LightMapColors[1];
+    light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 2)).xyz * LightMapColors[2];
+    light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 3)).xyz * LightMapColors[3];
+    light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 4)).xyz * LightMapColors[4];
+    light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 5)).xyz * LightMapColors[5];
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
-    float dambocc = 1.0; //texture(SSAOMap, ssao_uv).x;  // dynamic AO
-    dambocc = pow(dambocc, SSAOPower);
-    dambocc = mix(1.0,dambocc,SSAOWeight);
-    float ambocc = dambocc;
+    vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
+    float dambocc = 1.0; // texture(SSAOMap, ssao_uv).x;  // dynamic AO
+    dambocc       = pow(dambocc, SSAOPower);
+    dambocc       = mix(1.0, dambocc, SSAOWeight);
+    float ambocc  = dambocc;
     /////////////////////////
     float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade;
@@ -236,12 +238,12 @@ libblock lib_fwd //
 
     vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
     env_lighting += light_maps;
-    
+
     ///////////////////////////////////////////////
     // point lighting
     ///////////////////////////////////////////////
 
-    LightCtx plc        = lcalc_forward(wpos, pbd,eyepos);
+    LightCtx plc        = lcalc_forward(wpos, pbd, eyepos);
     vec3 point_lighting = vec3(0, 0, 0);
     for (int i = 0; i < point_light_count; i++) {
       plc._lightdel = _lightpos[i].xyz - wpos;
@@ -287,21 +289,19 @@ libblock lib_fwd //
       vec2 specular_lightuv = light_ndc2.xy * 0.5 + vec2(0.5);
 
       bool _specular_mask = bool(light_ndc2.x >= -1 && light_ndc2.x < 1) && bool(light_ndc2.y >= -1 && light_ndc2.y < 1) &&
-                           bool(light_ndc2.z >= 0.0 && light_ndc2.z <= 1);
+                            bool(light_ndc2.z >= 0.0 && light_ndc2.z <= 1);
 
       vec3 specular_mask = vec3(float(_specular_mask));
 
-      //vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
+      // vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
 
       ////////////////////////////////////////////////////////////
 
       plc._lightdel = lightdel;
       vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
       float LR      = 50;
-      vec3 pl_c = plcalc_forward(plc, pbd, LR) * LC;
-      pl_c = mix(pl_c,vec3(1),0.25);
-
-
+      vec3 pl_c     = plcalc_forward(plc, pbd, LR) * LC;
+      pl_c          = mix(pl_c, vec3(1), 0.25);
 
       ////////////////////////////////////////////////////////////
       // compute wpos in shadow space
@@ -317,11 +317,11 @@ libblock lib_fwd //
       } else {
         float bias             = LSB.y; // Increased bias to help with shadow acne
         float far              = lightrange;
-        float near             = lightrange*0.001;
+        float near             = lightrange * 0.001;
         float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
-        int pcf_width         = 1;            // Size of the PCF kernel
+        int pcf_width         = 1;           // Size of the PCF kernel
         float pcf_filter_size = 1.0 / LSB.z; // Adjust based on your shadow map resolution
 
         for (int x = -pcf_width; x <= pcf_width; x++) {
@@ -339,11 +339,11 @@ libblock lib_fwd //
       ///////////////////////
 
       vec3 lightcol          = _lightcolor[i].xyz;
-      float level            = pbd._roughness*4;
-      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;   // diffuse WIP
+      float level            = pbd._roughness * 4;
+      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;      // diffuse WIP
       vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
 
-      //specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
+      // specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
 
       // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
 
@@ -353,16 +353,15 @@ libblock lib_fwd //
 
       float spec_mix = (1.0 - pow(pbd._roughness, 1.0));
 
-
-      vec3 diffuse = pbd._albedo*diffuse_lighttex * NdotL;// * plc._F0;// * pl_c;// * (1.0 - spec_mix);
-      vec3 lighttex  = diffuse;
+      vec3 diffuse  = pbd._albedo * diffuse_lighttex * NdotL; // * plc._F0;// * pl_c;// * (1.0 - spec_mix);
+      vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      //spot_lighting += vec3(specular_lighttex);
-       //spot_lighting += pl_c;
+      // spot_lighting += vec3(specular_lighttex);
+      // spot_lighting += pl_c;
     } // for (int i = 0; i < spot_light_count; i++) {
 
-    //return spot_lighting;
+    // return spot_lighting;
     return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {

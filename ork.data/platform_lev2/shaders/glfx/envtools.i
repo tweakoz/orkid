@@ -5,29 +5,29 @@
 libblock lib_envmapping {
 
   vec2 spotlightUV(vec3 dir) {
-      // Placeholder function to calculate UV coordinates
-      // You might need the direction vector transformed to the spotlight's local space
-      float u = 0.5 + atan(dir.y, dir.x) / (2.0 * PI);
-      float v = 0.5 - asin(dir.z) / PI;
-      return vec2(u, v);
+    // Placeholder function to calculate UV coordinates
+    // You might need the direction vector transformed to the spotlight's local space
+    float u = 0.5 + atan(dir.y, dir.x) / (2.0 * PI);
+    float v = 0.5 - asin(dir.z) / PI;
+    return vec2(u, v);
   }
-    vec3 spotlightUV2N(vec2 uv) {
-      float phi = uv.x*PI2-PI;
-      float theta = uv.y * PI;
-      vec3 n = sphericalToNormal(phi,theta);
-      return vec3(n.x,n.z,n.y);
-    }
+  vec3 spotlightUV2N(vec2 uv) {
+    float phi   = uv.x * PI2 - PI;
+    float theta = uv.y * PI;
+    vec3 n      = sphericalToNormal(phi, theta);
+    return vec3(n.x, n.z, n.y);
+  }
 
   ////////////////////////////////////////////
   // equirectangular envmap uv from normal
   ////////////////////////////////////////////
 
   vec2 env_equirectangularN2UV(vec3 normal) {
-      vec3 n = vec3(normal.xy,normal.z);
-      vec2 s = normalToSpherical(n) * INV_PI;
-      float u = (s.x+1.0)*0.5;
-      float v = (s.y);
-      return vec2(u,v);
+    vec3 n  = vec3(normal.xy, normal.z);
+    vec2 s  = normalToSpherical(n) * INV_PI;
+    float u = (s.x + 1.0) * 0.5;
+    float v = (s.y);
+    return vec2(u, v);
   }
 
   ////////////////////////////////////////////
@@ -35,10 +35,10 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec3 env_equirectangularUV2N(vec2 tex_uv) {
-    float phi = tex_uv.x*PI2-PI;
+    float phi   = tex_uv.x * PI2 - PI;
     float theta = tex_uv.y * PI;
-    vec3 n = sphericalToNormal(phi,theta);
-    return vec3(n.x,n.z,n.y);
+    vec3 n      = sphericalToNormal(phi, theta);
+    return vec3(n.x, n.z, n.y);
   }
 
   ////////////////////////////////////////////
@@ -46,22 +46,26 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
-    vec3 n = vec3(normal.x,normal.y,normal.z);
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UV(n);
-    return textureLod(envtex, vec2(-uv.x,-uv.y), miplevel).xyz;
+    return textureLod(envtex, vec2(-uv.x, -uv.y), miplevel).xyz;
+  }
+  vec3 env_equirectangular2(vec3 normal, sampler2D envtex) {
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    return texture(envtex, vec2(-uv.x, -uv.y)).xyz;
   }
   vec3 env_equirectangularFlipV(vec3 normal, sampler2D envtex, float miplevel) {
-    vec3 n = vec3(normal.x,normal.y,normal.z);
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UV(n);
-    return textureLod(envtex, vec2(-uv.x,uv.y), miplevel).xyz;
+    return textureLod(envtex, vec2(-uv.x, uv.y), miplevel).xyz;
   }
   vec3 env_equirectangularFlipVBL(vec3 normal, sampler2D envtex_spec, sampler2D envtex_diff, float blend) {
-    vec3 n = vec3(normal.x,normal.y,normal.z);
-    vec2 uv = env_equirectangularN2UV(n);
-    float miplevel = clamp(EnvironmentMipBias + (blend*EnvironmentMipScale), 0, 10);
-    vec3 spec = textureLod(envtex_spec, vec2(-uv.x,uv.y), miplevel).xyz;
-    vec3 diff = textureLod(envtex_diff, vec2(-uv.x,uv.y), miplevel).xyz;
-    return mix(spec,diff,blend);
+    vec3 n         = vec3(normal.x, normal.y, normal.z);
+    vec2 uv        = env_equirectangularN2UV(n);
+    float miplevel = clamp(EnvironmentMipBias + (blend * EnvironmentMipScale), 0, 10);
+    vec3 spec      = textureLod(envtex_spec, vec2(-uv.x, uv.y), miplevel).xyz;
+    vec3 diff      = textureLod(envtex_diff, vec2(-uv.x, uv.y), miplevel).xyz;
+    return mix(spec, diff, blend);
   }
-
 }

@@ -290,49 +290,6 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t ptex) {
-  AssetPath DdsFilename = infname;
-  AssetPath PngFilename = infname;
-  AssetPath XtxFilename = infname;
-  DdsFilename.setExtension("dds");
-  PngFilename.setExtension("png");
-  XtxFilename.setExtension("xtx");
-  ptex->_debugName = infname.toStdString();
-  AssetPath final_fname;
-  if (FileEnv::GetRef().DoesFileExist(PngFilename))
-    final_fname = PngFilename;
-  if (FileEnv::GetRef().DoesFileExist(DdsFilename))
-    final_fname = DdsFilename;
-  if (FileEnv::GetRef().DoesFileExist(XtxFilename))
-    final_fname = XtxFilename;
-
-  //printf("infname<%s>\n", infname.c_str());
-  //printf("final_fname<%s>\n", final_fname.c_str());
-
-  if (auto dblock = datablockFromFileAtPath(final_fname))
-    return LoadTexture(ptex, dblock);
-  else
-    return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
-  DataBlockInputStream checkstream(datablock);
-  uint32_t magic = checkstream.getItem<uint32_t>();
-  bool ok        = false;
-  ptex->_contentHash = datablock->hash();
-  if (Char4("chkf") == Char4(magic))
-    ok = _loadXTXTexture(ptex, datablock);
-  else if (Char4("DDS ") == Char4(magic))
-    ok = _loadDDSTexture(ptex, datablock);
-  else
-    ok = _loadImageTexture(ptex, datablock);
-  return ok;
-}
-*/
-///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
   auto glto = tex->_impl.get<gltexobj_ptr_t>();
@@ -556,7 +513,6 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     const auto& texmode = ptex->TexSamplingMode();
 
-    // printf( "glto<%p> tgt<%p>\n", glto, (void*)glto->mTarget );
 
     // assert(glto->mTarget == GL_TEXTURE_2D );
 
@@ -569,7 +525,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
         minfilt  = GL_LINEAR;
       }
 
-      // printf( "linmiplin inummips<%d>\n", inummips );
+      printf( "glto<%p:%s> tgt<%p> linmiplin inummips<%d>\n", (void*) glto.get(), ptex->_debugName.c_str(), (void*)glto->mTarget,inummips );
     }
 
     GL_ERRORCHECK();

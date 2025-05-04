@@ -156,7 +156,7 @@ template <class... Args> std::unique_ptr<CompletionGroup> createCompletionGroup(
 struct CompletionGroup {
 
   void enqueue(const ork::void_lambda_t& the_op);
-  void join();
+  void join(bool with_progress_handler = false);
   ~CompletionGroup();
   inline void dontReportToUI() {
     _reportToUI = false;

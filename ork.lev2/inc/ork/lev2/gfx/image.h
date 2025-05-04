@@ -106,6 +106,9 @@ struct Image {
 
   void resizedOf(const Image& inp, int w, int h);
   void downsample(Image& imgout) const;
+  void gaussianBlur(Image& imgout, float kernel_size) const;
+  void lerp(const Image& a, const Image& b, float index);
+  void fullBlurOf(const Image& a);
 
   //////////////////////////
 

@@ -62,7 +62,7 @@ void TextureInterface::_loadXTXTextureMainThreadPart(texloadreq_ptr_t req) {
   _createFromLoadReq(req); 
   req->ptex->_num_mips = inummips;
   req->ptex->TexSamplingMode().presetTrilinearWrap();
-  //this->ApplySamplingMode(req->ptex.get());
+  this->ApplySamplingMode(req->ptex.get());
   req->ptex->_dirty = false;
 }
 
