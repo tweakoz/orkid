@@ -17,7 +17,9 @@
 namespace ork {
   namespace chunkfile {
     class OutputStream;
+    class InputStream;
     struct Writer;
+    struct Reader;
   }
 }
 
@@ -81,6 +83,9 @@ struct CompressedImageMipChain {
                 chunkfile::Writer& chunkwriter);
   void readXTX(const file::Path& inppath);
   void readXTX(datablock_ptr_t datablock);
+  void readXTX(chunkfile::InputStream* header_stream,
+               chunkfile::InputStream* image_stream,
+               chunkfile::Reader& chunkreader);
 
   void readDDS(datablock_ptr_t datablock);
 

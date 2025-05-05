@@ -23,17 +23,12 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec2 env_equirectangularN2UV(vec3 normal) {
-    vec3 n  = vec3(normal.xy, normal.z);
+    vec3 n  = normal.xyz;
     vec2 s  = normalToSpherical(n) * INV_PI;
     float u = (s.x + 1.0) * 0.5;
     float v = (s.y);
     return vec2(u, v);
   }
-
-  ////////////////////////////////////////////
-  // equirectangular envmap normal from uv
-  ////////////////////////////////////////////
-
   vec3 env_equirectangularUV2N(vec2 tex_uv) {
     float phi   = tex_uv.x * PI2 - PI;
     float theta = tex_uv.y * PI;
@@ -42,11 +37,32 @@ libblock lib_envmapping {
   }
 
   ////////////////////////////////////////////
+  // equirectangular envmap normal from uv
+  ////////////////////////////////////////////
+
+  vec3 env_equirectangularUV2Na(vec2 tex_uv) {
+    float phi   = tex_uv.x * PI2 - PI;
+    float theta = tex_uv.y * PI;
+    vec3 n      = sphericalToNormal(phi, theta);
+    return vec3(n.x, n.y, n.z);
+  }
+  vec2 env_equirectangularN2UVa(vec3 normal) {
+    vec3 n  = normal.xzy;
+    vec2 s  = normalToSpherical(n) * INV_PI;
+    float u = (s.x + 1.0) * 0.5;
+    float v = (s.y);
+    return vec2(u, v);
+  }
+
+  ////////////////////////////////////////////
   // equirectangular envmap texture sample
   ////////////////////////////////////////////
 
+  vec3 env_equirectangular_cube(samplerCube envtex,vec3 normal) {
+    return texture(envtex, normal).xyz;
+  }
   vec3 env_equirectangular_spec(vec3 normal, sampler2DArray envtex, float slice) {
-    vec3 n  = vec3(normal.x, normal.y, normal.z);
+    vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
     return texture(envtex, vec3(-uv.x, -uv.y,slice)).xyz;
   }

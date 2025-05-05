@@ -99,11 +99,56 @@ void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+void CompressedImageMipChain::readXTX(   //
+  chunkfile::InputStream* header_stream, //
+  chunkfile::InputStream* image_stream,  //
+  chunkfile::Reader& chunkreader) {      //
+  OrkAssert(header_stream);
+  OrkAssert(image_stream);
+
+  size_t xtx_version = 0;
+  size_t numlevels   = 0;
+  header_stream->GetItem<size_t>(xtx_version);
+  OrkAssert(xtx_version == KXTXVERSION);
+  header_stream->GetItem<size_t>(_width);
+  header_stream->GetItem<size_t>(_height);
+  header_stream->GetItem<size_t>(_depth);
+  header_stream->GetItem<size_t>(_numcomponents);
+  header_stream->GetItem<EBufferFormat>(_format);
+  header_stream->GetItem<size_t>(numlevels);
+  header_stream->getVarMap(_varmap, chunkreader);
+  //////////////////////////////////////////
+  OrkAssert(_depth == 1); // only 2D for now..
+  //////////////////////////////////////////
+  for (size_t levidx = 0; levidx < numlevels; levidx++) {
+    CompressedImage level;
+    size_t lidx      = 0;
+    size_t mipbase   = 0;
+    size_t miplength = 0;
+    header_stream->GetItem<size_t>(lidx);
+    header_stream->GetItem<size_t>(level._width);
+    header_stream->GetItem<size_t>(level._height);
+    header_stream->GetItem<size_t>(mipbase);
+    header_stream->GetItem<size_t>(miplength);
+    auto mipdata = image_stream->GetDataAt(mipbase);
+    level._data  = std::make_shared<DataBlock>(mipdata, miplength);
+    level._format = _format;
+    level._blocked_width = ((level._width+3)/4)*4;
+    level._blocked_height = ((level._height+3)/4)*4;
+    level._depth = _depth;
+    level._numcomponents = _numcomponents;
+    _levels.push_back(level);
+  }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::readXTX(const file::Path& inppath) {
   auto dblock = datablockFromFileAtPath(inppath);
-  if (dblock)
+  if (dblock) {
     readXTX(dblock);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,40 +162,10 @@ void CompressedImageMipChain::readXTX(datablock_ptr_t datablock) {
   if (chunkreader.IsOk()) {
     auto hdrstream     = chunkreader.GetStream("header");
     auto imgstream     = chunkreader.GetStream("image");
-    size_t xtx_version = 0;
-    size_t numlevels   = 0;
-    hdrstream->GetItem<size_t>(xtx_version);
-    OrkAssert(xtx_version == KXTXVERSION);
-    hdrstream->GetItem<size_t>(_width);
-    hdrstream->GetItem<size_t>(_height);
-    hdrstream->GetItem<size_t>(_depth);
-    hdrstream->GetItem<size_t>(_numcomponents);
-    hdrstream->GetItem<EBufferFormat>(_format);
-    hdrstream->GetItem<size_t>(numlevels);
-    hdrstream->getVarMap(_varmap, chunkreader);
-    //////////////////////////////////////////
-    OrkAssert(_depth == 1); // only 2D for now..
-    //////////////////////////////////////////
-    for (size_t levidx = 0; levidx < numlevels; levidx++) {
-      CompressedImage level;
-      size_t lidx      = 0;
-      size_t mipbase   = 0;
-      size_t miplength = 0;
-      hdrstream->GetItem<size_t>(lidx);
-      hdrstream->GetItem<size_t>(level._width);
-      hdrstream->GetItem<size_t>(level._height);
-      hdrstream->GetItem<size_t>(mipbase);
-      hdrstream->GetItem<size_t>(miplength);
-      auto mipdata = imgstream->GetDataAt(mipbase);
-      level._data  = std::make_shared<DataBlock>(mipdata, miplength);
-      level._format = _format;
-      level._blocked_width = ((level._width+3)/4)*4;
-      level._blocked_height = ((level._height+3)/4)*4;
-      level._depth = _depth;
-      level._numcomponents = _numcomponents;
-      _levels.push_back(level);
-    }
+    readXTX(hdrstream, imgstream, chunkreader);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 } //namespace ork::lev2 {

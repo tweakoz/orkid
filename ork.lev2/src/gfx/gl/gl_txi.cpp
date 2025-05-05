@@ -260,7 +260,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, int loc, GLenum t
   //_checkTexture(texID, "");
   // }
 
-  if (1) {
+  if (0) {
     auto fxi       = mTargetGL.FXI();
     auto container = fxi->activeShader()->_internalHandle.get<glslfx::rootcontainer_ptr_t>();
     auto pass      = container->_activePass;

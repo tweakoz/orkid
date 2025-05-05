@@ -31,12 +31,14 @@ SSAO_NUM_SAMPLES = 64
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
+parser.add_argument("-i", "--intensity", type=float, default=1.5, help='envmap intensity')
 
 
 ################################################################################
 
 args = vars(parser.parse_args())
 envmap = args["envmap"]
+inten = args["intensity"]
 
 ################################################################################
 
@@ -71,7 +73,7 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(1.5),
+      "SkyboxIntensity": float(inten),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.0),
@@ -154,6 +156,7 @@ class SceneGraphApp(object):
 
       self.nodes += [node]
 
+    """
     cookie3 = MyCookie("src://effect_textures/knob2.png")
     
     #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
@@ -172,7 +175,7 @@ class SceneGraphApp(object):
                                   fovbase=65,
                                   voffset=16,
                                   vscale=14)
-
+    """
     ###################################
 
     self.grid_data = createGridData()
@@ -211,7 +214,8 @@ class SceneGraphApp(object):
   ################################################
 
   def onGpuUpdate(self,ctx):
-    self.spotlight3.update(self.lighttime)
+    #self.spotlight3.update(self.lighttime)
+    pass 
 
   ################################################
 

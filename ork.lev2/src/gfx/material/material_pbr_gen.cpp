@@ -36,9 +36,9 @@ static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3
 float roughness_power = 0.5f;
 int _SALT() {
   // return rand();
-  return 45;
+  return 47;
 }
-bool force_pbrgen_spec = true;
+bool force_pbrgen_spec = false;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -276,37 +276,20 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   TextureArrayInitData array_init;
 
   ///////////////////////////////////////////////
+  constexpr size_t num_ruf_levels = 16;
+  ///////////////////////////////////////////////
   if( not cmipchain_datablock ) { // recompute datablock
     auto RCFD = std::make_shared<RenderContextFrameData>(targ);
 
     ////////////////////////////////////
-    // count mips
-    ////////////////////////////////////
 
-    /*
-    int numpix = w * h;
-    int imip   = 0;
-    while ((w > 4) and (h > 4)) {
-      numpix = w * h;
-      w >>= 1;
-      h >>= 1;
-      imip++;
-    }
-
-    int nummips = imip;*/
-
-    ////////////////////////////////////
-
-    //imip = 0;
     CompressedImageMipChain::miplevels_t compressed_levels;
     w                        = rawenvmap->_width;
     h                        = rawenvmap->_height;
-    //numpix                   = w * h;
     std::atomic<int> pending = 0;
     cimg_array_t cimgs;
 
     auto src_tex = rawenvmap;
-    size_t num_ruf_levels = 8;
     cmipchain_datablock = std::make_shared<DataBlock>();
     chunkfile::Writer chunkwriter("xtx-array");
     for (int irough = 0; irough < (num_ruf_levels<<1); irough++) {
@@ -345,32 +328,25 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       fbi->capture(outbuffr.get(), captureb.get());
 
       if (irough&1) {
+        Image im_inp;
+        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+
         int index = irough / 2;
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
-        auto out     = ImageOutput::create(outpath.c_str());
-        logchan_pbrgen->log("filterenv write dbgout<%s> <%p>", outpath.c_str(), out.get());
-        OrkAssert(out != nullptr);
-        ImageSpec spec(w, h, 4, TypeDesc::FLOAT);
-        out->open(outpath.c_str(), spec);
-        out->write_image(TypeDesc::FLOAT, captureb->_data);
-        out->close();
-  
+        logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
+        im_inp.writeToFile(outpath);
+
+        TextureArrayInitSubItem slice;
+        slice._cmipchain = im_inp.uncompressedMipChain();
+
+        auto hdr_stream_name = FormatString("header-%d", irough);
+        auto img_stream_name = FormatString("image-%d", irough);
+        auto hdr_stream = chunkwriter.AddStream(hdr_stream_name);
+        auto img_stream = chunkwriter.AddStream(img_stream_name);
+        slice._cmipchain->writeXTX(hdr_stream,img_stream,chunkwriter);
+        array_init._slices.push_back(slice);
       }
-
       src_tex = outbuffr->_texture;
-      Image im_inp;
-      im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-
-      TextureArrayInitSubItem array_init_sub;
-      array_init_sub._cmipchain = im_inp.uncompressedMipChain();
-      array_init._slices.push_back(array_init_sub);
-
-      auto hdr_stream_name = FormatString("header-%d", irough);
-      auto img_stream_name = FormatString("image-%d", irough);
-      auto hdr_stream = chunkwriter.AddStream(hdr_stream_name);
-      auto img_stream = chunkwriter.AddStream(img_stream_name);
-      array_init_sub._cmipchain->writeXTX(hdr_stream,img_stream,chunkwriter);
-
 
     } // for (int irough = 0; irough < 10; irough++) {
     while (pending.load() > 0) {
@@ -381,7 +357,23 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   }
   else { // datablock already exists
     logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
-    OrkAssert(false);
+    chunkfile::DefaultLoadAllocator load_alloc;
+    chunkfile::Reader chunkreader(cmipchain_datablock,load_alloc);
+    for (int irough = 0; irough < (num_ruf_levels<<1); irough++) {
+      if (irough&1) {
+        auto hdr_stream_name = FormatString("header-%d", irough);
+        auto img_stream_name = FormatString("image-%d", irough);
+        auto hdr_stream = chunkreader.GetStream(hdr_stream_name.c_str());
+        auto img_stream = chunkreader.GetStream(img_stream_name.c_str());
+        if (hdr_stream and img_stream) {
+          auto cmipchain = std::make_shared<CompressedImageMipChain>();
+          cmipchain->readXTX(hdr_stream,img_stream,chunkreader);
+          TextureArrayInitSubItem slice;
+          slice._cmipchain = cmipchain;
+          array_init._slices.push_back(slice);
+        }
+      }
+    }
   }
   
   auto alt_tex        = std::make_shared<Texture>();

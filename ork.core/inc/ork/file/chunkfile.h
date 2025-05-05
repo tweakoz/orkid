@@ -158,7 +158,7 @@ struct Reader {
     return mbOk;
   }
 
-  static const int kmaxstreams = 16;
+  static const int kmaxstreams = 64;
   InputStream mStreamBank[kmaxstreams];
   typedef ork::fixedlut<ork::PoolString, InputStream*, kmaxstreams> StreamLut;
 

@@ -114,7 +114,7 @@ libblock lib_fwd     //
     /////////////////////////
     // rotate refl by 180 degrees on y to get refl_probe_coord
     vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
-    vec3 probe_REFL       = texture(reflectionPROBE, refl_probe_coord).xyz;
+    vec3 probe_REFL       = env_equirectangular_cube(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
     vec3 refl_equi = vec3(refl.x, -refl.y, refl.z);
     // Use normal for diffuse (irradiance)

@@ -973,7 +973,8 @@ fragment_shader ps_forward_skybox_mono //
   // environment map
   ///////////////////////
 
-  vec3 rgb  = env_equirectangular_spec_flipv_lod(VN, MapSpecularEnv, 0.0, EnvironmentMipBias) * SkyboxLevel;
+  vec2 uv = env_equirectangularN2UV(vec3(VN.x, VN.z, VN.y));
+  vec3 rgb  = textureLod(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0),EnvironmentMipBias).xyz;
   out_color = vec4(rgb, 1);
 
   ///////////////////////

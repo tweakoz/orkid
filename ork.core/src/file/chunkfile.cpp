@@ -425,6 +425,7 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
     size_t offset     = dblockstream.getItem<size_t>();
     size_t chunklen   = dblockstream.getItem<size_t>();
     PoolString psname   = AddPooledString(GetString(ichunkid));
+      printf("read chunk<%s>\n", psname.c_str() );
     InputStream* stream = &mStreamBank[ic];
     OrkHeapCheck();
     if (chunklen) {
@@ -475,6 +476,8 @@ Writer::Writer(const char* file_type) {
 OutputStream* Writer::AddStream(std::string stream_name) {
   OutputStream* nstream = new OutputStream;
   int ichunkid          = _stringblock.AddString(stream_name.c_str()).Index();
+  auto it = mOutputStreams.find(ichunkid);
+  OrkAssert(it == mOutputStreams.end());
   mOutputStreams.insert(std::make_pair(ichunkid, nstream));
   return nstream;
 }
