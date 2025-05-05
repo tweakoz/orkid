@@ -17,7 +17,12 @@ namespace ork::lev2 {
 ///   implies stereo rendering..
 ///////////////////////////////////////////////////////////////////////////////
 
-using distortion_lambda_t = std::function<void(rcfd_ptr_t RCFD,Texture*lrtexture)>;
+struct DistortionRect {
+  Texture* _inp_tex;
+  SRect _out_vprect;
+};
+
+using distortion_lambda_t = std::function<void(rcfd_ptr_t RCFD,DistortionRect drect)>;
 
 class VrOutputNode final : public OutputCompositingNode {
   DeclareConcreteX(VrOutputNode, OutputCompositingNode);

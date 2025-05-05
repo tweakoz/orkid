@@ -34,7 +34,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,fullscreen=True,ssaa=3)
+    self.ezapp = OrkEzApp.create(self,fullscreen=True,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
@@ -53,8 +53,8 @@ class StereoApp1(object):
 
     self.vrdev = orkidvr.novr_device()
     self.vrdev.camera = "vrcam"
-    self.vrdev.width = 512
-    self.vrdev.height = 512
+    self.vrdev.width = 1280
+    self.vrdev.height = 1280
     self.IVP = mtx4()
     
     params_dict = {
@@ -67,9 +67,9 @@ class StereoApp1(object):
       eyeindex = cdd.rendererProperty(tokens.eyeindex)
       viewdata = cdd.viewdata
       self.IVP = viewdata.IVPM # mono IVP
-      print(f"eyeindex: {eyeindex} IVP {self.IVP}")
+      #print(f"eyeindex: {eyeindex} IVP {self.IVP}")
     onode.onCameraChange(lambda cdd: onCameraChange(cdd))
-    onode.flipY = False
+    onode.flipY = True
     
     ###################################
 
@@ -115,7 +115,6 @@ class StereoApp1(object):
     xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*-5,   # eye
                           vec3(0,0,0),        # tgt
                           vec3(0,1,0))        # up
-                        )     
 
     self.vrdev.setPoseMatrix("hmd",xf_hmd)
     

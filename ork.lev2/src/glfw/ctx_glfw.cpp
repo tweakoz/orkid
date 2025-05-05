@@ -384,11 +384,6 @@ void CtxGLFW::Show() {
       // technically "windowed fullscreen"
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
-      glfwWindowHint(GLFW_RED_BITS, 10);
-      glfwWindowHint(GLFW_GREEN_BITS, 10);
-      glfwWindowHint(GLFW_BLUE_BITS, 10);
-      glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-      glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
       float contentScaleX = 1.0f;
       float contentScaleY = 1.0f;
@@ -406,7 +401,19 @@ void CtxGLFW::Show() {
       _appinitdata->_height = _height;
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
+      glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+      glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+      glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+      glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+      glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+      glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+      glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+      glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+
       this->onResize(_width, _height);
+      fullscreen_monitor = nullptr; // disable actual fullscreen
     } // fullscreen
 
 #if defined(__APPLE__)
@@ -415,9 +422,6 @@ void CtxGLFW::Show() {
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
 #endif
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
 
     switch (GRAPHICS_API) {
       case "VULKAN"_crcu:
@@ -519,6 +523,9 @@ void CtxGLFW::Show() {
   _height               = _appinitdata->_height;
 
   onResize(_width, _height);
+
+  setAlwaysOnTop(_glfwWindow);
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {

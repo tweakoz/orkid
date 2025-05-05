@@ -425,7 +425,7 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
     size_t offset     = dblockstream.getItem<size_t>();
     size_t chunklen   = dblockstream.getItem<size_t>();
     PoolString psname   = AddPooledString(GetString(ichunkid));
-      printf("read chunk<%s>\n", psname.c_str() );
+    //printf("read chunk<%s>\n", psname.c_str() );
     InputStream* stream = &mStreamBank[ic];
     OrkHeapCheck();
     if (chunklen) {
