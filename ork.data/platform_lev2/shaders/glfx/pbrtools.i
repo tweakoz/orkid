@@ -90,6 +90,7 @@ uniform_set ub_frg_fwd {
   mat4 inv_vp_l;
   mat4 inv_vp_r;
 
+  float RoughnessLevels;
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -973,8 +974,8 @@ fragment_shader ps_forward_skybox_mono //
   // environment map
   ///////////////////////
 
-  vec2 uv = env_equirectangularN2UV(vec3(VN.x, VN.z, VN.y));
-  vec3 rgb  = textureLod(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0),EnvironmentMipBias).xyz;
+  vec2 uv = env_equirectangularN2UVa(vec3(VN.x, VN.y, -VN.z));
+  vec3 rgb  = texture(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0)).xyz;
   out_color = vec4(rgb, 1);
 
   ///////////////////////

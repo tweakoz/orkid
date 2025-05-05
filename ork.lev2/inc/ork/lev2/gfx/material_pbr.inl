@@ -67,6 +67,8 @@ public:
     _textureBaseName = basename;
   }
 
+  static constexpr float roughnessLevels = 16.0f;
+
   ////////////////////////////////////////////
 
   static material_ptr_t _xgmReader( chunkfile::XgmMaterialReaderContext& ctx );
@@ -187,6 +189,7 @@ public:
   fxparam_constptr_t _paramNearFar      = nullptr;
 
   fxparam_constptr_t _parMapSpecularEnv      = nullptr;
+  fxparam_constptr_t _parMapSpecularRufLevels= nullptr;
   fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
   fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
   fxparam_constptr_t _parEnvironmentMipBias  = nullptr;

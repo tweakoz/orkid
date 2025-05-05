@@ -75,8 +75,8 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     if(mtl->_commonOverride){
       pbrcommon = mtl->_commonOverride;
     }
-
-    float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
+    auto spec_tex = pbrcommon->envSpecularTexture();
+    float num_mips = spec_tex->_num_mips;
 
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
     FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
@@ -84,9 +84,11 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
 
-    FXI->BindParamCTex(mtl->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+    FXI->BindParamCTex(mtl->_parMapSpecularEnv, spec_tex.get());
     FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());    
-    
+
+    FXI->BindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);
+
     FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMap.get());
     FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
     FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);

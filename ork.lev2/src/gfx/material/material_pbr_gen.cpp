@@ -276,7 +276,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   TextureArrayInitData array_init;
 
   ///////////////////////////////////////////////
-  constexpr size_t num_ruf_levels = 16;
+  size_t num_ruf_levels = size_t(PBRMaterial::roughnessLevels);
   ///////////////////////////////////////////////
   if( not cmipchain_datablock ) { // recompute datablock
     auto RCFD = std::make_shared<RenderContextFrameData>(targ);
@@ -288,16 +288,18 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     h                        = rawenvmap->_height;
     std::atomic<int> pending = 0;
     cimg_array_t cimgs;
-
+    while(w<512 and h<512){
+      w *= 2;
+      h *= 2;
+    }
     auto src_tex = rawenvmap;
     cmipchain_datablock = std::make_shared<DataBlock>();
     chunkfile::Writer chunkwriter("xtx-array");
-    for (int irough = 0; irough < (num_ruf_levels<<1); irough++) {
-      float ir = float(irough>>1)/float(num_ruf_levels-1);
-      float roughness       = powf(ir, 2.0f)*0.5f;
+    for (int irough = 0; irough < num_ruf_levels; irough++) {
+      float ir = float(irough)/float(num_ruf_levels-1);
+      float ir2 = float(irough+1)/float(num_ruf_levels);
+      float roughness       = powf(ir, 0.75)*0.5f;
  
-      bool last_rough = (irough == 31);
-
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
 
@@ -317,7 +319,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->bindParamCTex(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
-      mtl->bindParamU32(param_numsamples, 8192 );
+      int numsamples = int(pow(ir2,0.5f)*4096.0);
+      mtl->bindParamU32(param_numsamples, numsamples );
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       ///////////////////////////////////////////////
@@ -327,25 +330,24 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       auto captureb = std::make_shared<CaptureBuffer>();
       fbi->capture(outbuffr.get(), captureb.get());
 
-      if (irough&1) {
-        Image im_inp;
-        im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+      Image im_inp;
+      im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
 
-        int index = irough / 2;
-        auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
-        logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
-        im_inp.writeToFile(outpath);
+      int index = irough;
+      auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
+      logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
+      im_inp.writeToFile(outpath);
 
-        TextureArrayInitSubItem slice;
-        slice._cmipchain = im_inp.uncompressedMipChain();
+      TextureArrayInitSubItem slice;
+      slice._cmipchain = im_inp.uncompressedMipChain();
 
-        auto hdr_stream_name = FormatString("header-%d", irough);
-        auto img_stream_name = FormatString("image-%d", irough);
-        auto hdr_stream = chunkwriter.AddStream(hdr_stream_name);
-        auto img_stream = chunkwriter.AddStream(img_stream_name);
-        slice._cmipchain->writeXTX(hdr_stream,img_stream,chunkwriter);
-        array_init._slices.push_back(slice);
-      }
+      auto hdr_stream_name = FormatString("header-%d", irough);
+      auto img_stream_name = FormatString("image-%d", irough);
+      auto hdr_stream = chunkwriter.AddStream(hdr_stream_name);
+      auto img_stream = chunkwriter.AddStream(img_stream_name);
+      slice._cmipchain->writeXTX(hdr_stream,img_stream,chunkwriter);
+      array_init._slices.push_back(slice);
+
       src_tex = outbuffr->_texture;
 
     } // for (int irough = 0; irough < 10; irough++) {
@@ -359,19 +361,17 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
     chunkfile::DefaultLoadAllocator load_alloc;
     chunkfile::Reader chunkreader(cmipchain_datablock,load_alloc);
-    for (int irough = 0; irough < (num_ruf_levels<<1); irough++) {
-      if (irough&1) {
-        auto hdr_stream_name = FormatString("header-%d", irough);
-        auto img_stream_name = FormatString("image-%d", irough);
-        auto hdr_stream = chunkreader.GetStream(hdr_stream_name.c_str());
-        auto img_stream = chunkreader.GetStream(img_stream_name.c_str());
-        if (hdr_stream and img_stream) {
-          auto cmipchain = std::make_shared<CompressedImageMipChain>();
-          cmipchain->readXTX(hdr_stream,img_stream,chunkreader);
-          TextureArrayInitSubItem slice;
-          slice._cmipchain = cmipchain;
-          array_init._slices.push_back(slice);
-        }
+    for (int irough = 0; irough < num_ruf_levels; irough++) {
+      auto hdr_stream_name = FormatString("header-%d", irough);
+      auto img_stream_name = FormatString("image-%d", irough);
+      auto hdr_stream = chunkreader.GetStream(hdr_stream_name.c_str());
+      auto img_stream = chunkreader.GetStream(img_stream_name.c_str());
+      if (hdr_stream and img_stream) {
+        auto cmipchain = std::make_shared<CompressedImageMipChain>();
+        cmipchain->readXTX(hdr_stream,img_stream,chunkreader);
+        TextureArrayInitSubItem slice;
+        slice._cmipchain = cmipchain;
+        array_init._slices.push_back(slice);
       }
     }
   }
@@ -379,7 +379,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
   txi->initTextureArray2DFromData(alt_tex.get(), array_init);
-
+  //alt_tex->mTexSampleMode.presetTrilinearWrap();
+  //txi->ApplySamplingMode(alt_tex.get());
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
   targ->debugPopGroup();

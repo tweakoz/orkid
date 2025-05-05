@@ -282,6 +282,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parSpecularMipBias = fxi->parameter(_shader, "SpecularMipBias");
 
   _parMapSpecularEnv      = fxi->parameter(_shader, "MapSpecularEnv");
+  _parMapSpecularRufLevels = fxi->parameter(_shader, "RoughnessLevels");
   _parMapDiffuseEnv       = fxi->parameter(_shader, "MapDiffuseEnv");
   _parMapBrdfIntegration  = fxi->parameter(_shader, "MapBrdfIntegration");
   _parEnvironmentMipBias  = fxi->parameter(_shader, "EnvironmentMipBias");
