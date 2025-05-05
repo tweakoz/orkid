@@ -298,7 +298,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     for (int irough = 0; irough < num_ruf_levels; irough++) {
       float ir = float(irough)/float(num_ruf_levels-1);
       float ir2 = float(irough+1)/float(num_ruf_levels);
-      float roughness       = powf(ir, 0.75)*0.5f;
+      float roughness       = powf(ir, 0.85)*0.5f;
  
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
@@ -319,7 +319,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->bindParamCTex(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
-      int numsamples = int(pow(ir2,0.5f)*4096.0);
+      int numsamples = int(pow(ir2,0.25f)*4096.0);
       mtl->bindParamU32(param_numsamples, numsamples );
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
@@ -379,8 +379,9 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
   txi->initTextureArray2DFromData(alt_tex.get(), array_init);
-  //alt_tex->mTexSampleMode.presetTrilinearWrap();
-  //txi->ApplySamplingMode(alt_tex.get());
+  //alt_tex->mTexSampleMode.presetTrilinearClamp();
+  alt_tex->mTexSampleMode.presetTrilinearWrap();
+  txi->ApplySamplingMode(alt_tex.get());
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
   targ->debugPopGroup();

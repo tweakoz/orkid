@@ -45,6 +45,16 @@ void TextureSamplingModeData::presetTrilinearWrap() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void TextureSamplingModeData::presetTrilinearClamp() {
+  _texAddrModeS   = TextureAddressMode::CLAMP;
+  _texAddrModeT   = TextureAddressMode::CLAMP;
+  _texAddrModeR   = TextureAddressMode::CLAMP;
+  _texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Texture::RegisterLoaders(void) {
 }
 

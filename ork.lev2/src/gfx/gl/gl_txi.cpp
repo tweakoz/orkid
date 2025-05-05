@@ -546,7 +546,10 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     GL_ERRORCHECK();
     glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode._texAddrModeT));
     GL_ERRORCHECK();
-
+    if(tgt == GL_TEXTURE_CUBE_MAP) {
+      glTexParameterf(tgt, GL_TEXTURE_WRAP_R, addrlamb(texmode._texAddrModeR));
+      GL_ERRORCHECK();
+    }
     mTargetGL.debugPopGroup();
   }
 }

@@ -98,7 +98,7 @@ class SceneGraphApp(object):
     ###################################
     postNode = PostFxNodeHSVG()
     postNode.hue = 0.0
-    postNode.saturation = 0.65
+    postNode.saturation = 0.85
     postNode.value = 1.0
     postNode.gamma = 1.2
     postNode.gpuInit(ctx,8,8);

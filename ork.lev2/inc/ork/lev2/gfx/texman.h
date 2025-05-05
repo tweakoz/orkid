@@ -53,6 +53,7 @@ struct TextureSamplingModeData {
 
   void presetPointAndClamp();
   void presetTrilinearWrap();
+  void presetTrilinearClamp();
 
   // STR, huh?
   TextureAddressMode _texAddrModeS          = TextureAddressMode::WRAP;
