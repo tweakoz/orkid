@@ -26,7 +26,7 @@ extern GLuint gLastBoundNonZeroTex;
 namespace ork::lev2 {
 
 constexpr bool DEBUG_TEXARRAY2D = true;
-static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +54,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
   for (int i = 0; i < num_slices; i++) {
     const auto& slice = tid._slices[i];
     auto subimg       = slice._subimg;
+    auto mipchain     = slice._cmipchain;
     if (subimg) {
       array_tex->_images.push_back(subimg);
       formats.insert(subimg->_format);
@@ -63,6 +64,16 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
       max_levels = std::max(max_levels, subimg_cmipc->_levels.size());
       max_w      = std::max(max_w, subimg_cmipc->_width);
       max_h      = std::max(max_h, subimg_cmipc->_height);
+    }
+    else if (mipchain) {
+      subimagedata[i] = mipchain;
+      max_levels = std::max(max_levels, mipchain->_levels.size());
+      max_w      = std::max(max_w, mipchain->_width);
+      max_h      = std::max(max_h, mipchain->_height);
+      formats.insert(mipchain->_format);
+    }
+    else {
+      OrkAssert(false);
     }
   }
   if(formats.size()>1){
@@ -315,6 +326,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
 
   array_tex->_residenceState.fetch_or(1);
   // OrkAssert(num_slices==0);
+  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

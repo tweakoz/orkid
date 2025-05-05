@@ -24,6 +24,7 @@ struct TextureArrayInitSubItem {
   uint32_t _usage = 0;
   // texture_ptr_t _subtex;
   image_ptr_t _subimg;
+  compressedmipchain_ptr_t _cmipchain;
 };
 struct TextureArrayInitData {
   std::vector<TextureArrayInitSubItem> _slices;

@@ -45,6 +45,21 @@ libblock lib_envmapping {
   // equirectangular envmap texture sample
   ////////////////////////////////////////////
 
+  vec3 env_equirectangular_spec(vec3 normal, sampler2DArray envtex, float slice) {
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    return texture(envtex, vec3(-uv.x, -uv.y,slice)).xyz;
+  }
+  vec3 env_equirectangular_spec_flipv(vec3 normal, sampler2DArray envtex, float slice) {
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    return texture(envtex, vec3(-uv.x, uv.y,slice)).xyz;
+  }
+  vec3 env_equirectangular_spec_flipv_lod(vec3 normal, sampler2DArray envtex, float slice, float miplevel) {
+    vec3 n  = vec3(normal.x, normal.y, normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    return textureLod(envtex, vec3(-uv.x, uv.y,slice),miplevel).xyz;
+  }
   vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UV(n);

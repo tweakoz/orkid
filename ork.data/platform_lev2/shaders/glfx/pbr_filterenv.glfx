@@ -23,6 +23,7 @@ uniform_set ub_frg {
   float roughness;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
+  uint numsamples;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -100,10 +101,8 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
 
   vec2 blueNoiseOffset = fract(vec2(rand(fcoord), rand(fcoord.yx)) * 1000.0);
 
-  const int num_samples = 32768;
-
-  for (uint i = 0; i < num_samples; i++) {
-    uint sqrtSamples = uint(sqrt(num_samples));
+  for (uint i = 0; i < numsamples; i++) {
+    uint sqrtSamples = uint(sqrt(numsamples));
     uint ix          = i % sqrtSamples;
     uint iy          = i / sqrtSamples;
 

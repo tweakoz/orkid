@@ -53,15 +53,15 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
-  sampler2DArray CNMREA;        // 0
-  sampler2DArray LightMapArray; // 1
+  sampler2DArray CNMREA;         // 0
+  sampler2DArray LightMapArray;  // 1
+  sampler2DArray MapSpecularEnv; // 2
 
-  sampler2D SSAOMap;            // 2
-  sampler2D SSAOKernel;         // 3
-  sampler2D SSAOScrNoise;       // 4
+  sampler2D SSAOMap;            // 3
+  sampler2D SSAOKernel;         // 4
+  sampler2D SSAOScrNoise;       // 5
 
-  sampler2D MapBrdfIntegration; // 5
-  sampler2D MapSpecularEnv;     // 6
+  sampler2D MapBrdfIntegration; // 6
   sampler2D MapDiffuseEnv;      // 7
   sampler2D MapDepth;           // 8
   sampler2D MapLinearDepth;     // 9
@@ -973,7 +973,7 @@ fragment_shader ps_forward_skybox_mono //
   // environment map
   ///////////////////////
 
-  vec3 rgb  = env_equirectangularFlipV(VN, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
+  vec3 rgb  = env_equirectangular_spec_flipv_lod(VN, MapSpecularEnv, 0.0, EnvironmentMipBias) * SkyboxLevel;
   out_color = vec4(rgb, 1);
 
   ///////////////////////

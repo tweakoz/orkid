@@ -61,6 +61,7 @@ using pixelfetchctx_ptr_t = std::shared_ptr<PixelFetchContext>;
 using gpuevent_ptr_t = std::shared_ptr<GpuEvent>;
 using gpueventsink_ptr_t = std::shared_ptr<GpuEventSink>;
 using compressedimg_ptr_t = std::shared_ptr<CompressedImage>;
+using cimg_array_t = std::vector<compressedimg_ptr_t>;
 
 using pickvariant_t = svar128_t;
 using rasterstate_ptr_t = std::shared_ptr<RasterState>;

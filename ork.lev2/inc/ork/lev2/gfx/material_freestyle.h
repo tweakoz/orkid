@@ -77,6 +77,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   void bindParamVec2Array(fxparam_constptr_t par, const fvec2* v, size_t len);
   void bindParamVec3Array(fxparam_constptr_t par, const fvec3* v, size_t len);
   void bindParamVec4Array(fxparam_constptr_t par, const fvec4* v, size_t len);
+  void bindParamU32(fxparam_constptr_t par, uint64_t v); // binds as uvec4 (4 32bit uint vector)
   void bindParamU64(fxparam_constptr_t par, uint64_t v); // binds as uvec4 (4 32bit uint vector)
   void bindParamMatrix(fxparam_constptr_t par, const fmtx4& m);
   void bindParamMatrix(fxparam_constptr_t par, const fmtx3& m);
