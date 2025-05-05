@@ -99,7 +99,7 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = "DeferredPBR"
+    rendermodel = "ForwardPBR"
     if rendermodel == "deferred":
       rendermodel = "DeferredPBR"
     elif rendermodel == "forward":
