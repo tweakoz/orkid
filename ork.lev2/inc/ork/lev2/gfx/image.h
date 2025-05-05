@@ -17,7 +17,7 @@
 namespace ork {
   namespace chunkfile {
     class OutputStream;
-    class InputStream;
+    struct InputStream;
     struct Writer;
     struct Reader;
   }

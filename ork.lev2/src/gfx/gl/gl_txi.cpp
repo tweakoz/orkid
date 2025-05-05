@@ -525,7 +525,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
         minfilt  = GL_LINEAR;
       }
 
-      printf( "glto<%p:%s> tgt<%p> linmiplin inummips<%d>\n", (void*) glto.get(), ptex->_debugName.c_str(), (void*)glto->mTarget,inummips );
+      printf( "glto<%p:%s> tgt<%u> linmiplin inummips<%d>\n", (void*) glto.get(), ptex->_debugName.c_str(), (uint32_t)glto->mTarget,inummips );
     }
 
     GL_ERRORCHECK();
