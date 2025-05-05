@@ -122,9 +122,10 @@ libblock lib_fwd     //
     //  Use reflection with appropriate mip level for specular
     float rl       = roughness * roughness;
     rl             = pow(rl, 0.25);
-    float mipLevel = rl * RoughnessLevels;
+    float mipLevel = rl * RoughnessLevels*0.8;
     vec3 spec_env  = env_equirectangular_spec(refl_equi, MapSpecularEnv, mipLevel);
     vec3 env       = spec_env + probe_REFL;
+    env = env * (1.0+(pow(dialetric,2.0))*0.33);
 
     vec3 specular_light = ambient + env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
