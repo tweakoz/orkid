@@ -14,6 +14,13 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/util/generator.inl>
 
+namespace ork {
+  namespace chunkfile {
+    class OutputStream;
+    struct Writer;
+  }
+}
+
 namespace ork::lev2 {
 
 struct Image;
@@ -69,6 +76,9 @@ struct CompressedImageMipChain {
 
   void writeXTX(const file::Path& outpath);
   void writeXTX(datablock_ptr_t& out_datablock);
+  void writeXTX(chunkfile::OutputStream* header_stream, 
+                chunkfile::OutputStream* image_stream,
+                chunkfile::Writer& chunkwriter);
   void readXTX(const file::Path& inppath);
   void readXTX(datablock_ptr_t datablock);
 

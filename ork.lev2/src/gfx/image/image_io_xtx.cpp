@@ -22,36 +22,44 @@ namespace ork::lev2 {
 
 constexpr size_t KXTXVERSION = "xtx-ver0"_crcu;
 
-void CompressedImageMipChain::writeXTX(datablock_ptr_t& out_datablock) {
-  //////////////////////////////////////////
-  chunkfile::Writer chunkwriter("xtx");
-  auto hdrstream = chunkwriter.AddStream("header");
-  auto imgstream = chunkwriter.AddStream("image");
-  hdrstream->AddItem<size_t>(KXTXVERSION);
-  hdrstream->AddItem<size_t>(_width);
-  hdrstream->AddItem<size_t>(_height);
-  hdrstream->AddItem<size_t>(_depth);
-  hdrstream->AddItem<size_t>(_numcomponents);
-  hdrstream->AddItem<EBufferFormat>(_format);
-  hdrstream->AddItem<size_t>(_levels.size());
-  hdrstream->addVarMap(_varmap, chunkwriter);
+void CompressedImageMipChain::writeXTX(chunkfile::OutputStream* header_stream, //
+                                       chunkfile::OutputStream* image_stream,  //
+                                       chunkfile::Writer& chunkwriter) {       //
+  header_stream->AddItem<size_t>(KXTXVERSION);
+  header_stream->AddItem<size_t>(_width);
+  header_stream->AddItem<size_t>(_height);
+  header_stream->AddItem<size_t>(_depth);
+  header_stream->AddItem<size_t>(_numcomponents);
+  header_stream->AddItem<EBufferFormat>(_format);
+  header_stream->AddItem<size_t>(_levels.size());
+  header_stream->addVarMap(_varmap, chunkwriter);
   //////////////////////////////////////////
   OrkAssert(_depth == 1); // only 2D for now..
   //////////////////////////////////////////
   for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
     const auto& level = _levels[levidx];
-    hdrstream->AddItem<size_t>(levidx);
-    hdrstream->AddItem<size_t>(level._width);
-    hdrstream->AddItem<size_t>(level._height);
+    header_stream->AddItem<size_t>(levidx);
+    header_stream->AddItem<size_t>(level._width);
+    header_stream->AddItem<size_t>(level._height);
 
-    size_t mipbase   = imgstream->GetSize();
+    size_t mipbase   = image_stream->GetSize();
     auto mipdata     = (const void*)level._data->data();
     size_t miplength = level._data->length();
 
-    hdrstream->AddItem<size_t>(mipbase);
-    hdrstream->AddItem<size_t>(miplength);
-    imgstream->AddData(mipdata, miplength);
+    header_stream->AddItem<size_t>(mipbase);
+    header_stream->AddItem<size_t>(miplength);
+    image_stream->AddData(mipdata, miplength);
   }
+}
+  
+///////////////////////////////////////////////////////////////////////////////
+
+void CompressedImageMipChain::writeXTX(datablock_ptr_t& out_datablock) {
+  //////////////////////////////////////////
+  chunkfile::Writer chunkwriter("xtx");
+  auto hdrstream = chunkwriter.AddStream("header");
+  auto imgstream = chunkwriter.AddStream("image");
+  writeXTX(hdrstream, imgstream,chunkwriter);
   chunkwriter.writeToDataBlock(out_datablock);
 }
 
