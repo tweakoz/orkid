@@ -36,7 +36,7 @@ uniform_set ub_deferred_frg {
   sampler2D MapDepthCluster;
   sampler2D MapLinearDepth;
   sampler2D MapDepth;
-  sampler2D MapSpecularEnv;
+  sampler2DArray MapSpecularEnv;
   sampler2D MapDiffuseEnv;
   sampler2D MapBrdfIntegration;
   sampler2D MapLightingCookie;
@@ -389,7 +389,7 @@ libblock lib_deferred
     vec3 view_epos1 = posatdepth(wpd,1.0);
     vec3 VIEW_N = normalize(view_epos1-view_epos0);
     vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
-    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+    vec3 skyboxColor = env_equirectangular_spec_flipv_lod(skybox_n,MapSpecularEnv,0,EnvironmentMipBias)*SkyboxLevel;
 
     vec3 out_color;
 
@@ -448,7 +448,7 @@ libblock lib_deferred
       float spec_ruf = pow(roughness,1.3)*0.7;
       float spec_miplevel = SpecularMipBias + (spec_ruf * EnvironmentMipScale);
       refl = vec3(refl.x,-refl.y,refl.z);
-      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+      vec3 spec_env = env_equirectangular_spec_flipv(refl,MapSpecularEnv,spec_miplevel);
       vec3 specular_light = spec_env*SkyboxLevel;
       vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
       vec3 specularMask = (F*brdf.x+brdf.y);
@@ -458,7 +458,7 @@ libblock lib_deferred
       /////////////////////////
       vec3 finallitcolor = saturateV(diffuse+specular);
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
-      vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
+      vec3 skyboxColor = env_equirectangular_spec_flipv_lod(skybox_n,MapSpecularEnv,0,0)*SkyboxLevel;
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
       out_color += ambient + gbd._emissive;
 
