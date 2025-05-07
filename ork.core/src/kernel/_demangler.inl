@@ -72,6 +72,7 @@ struct Type : public Component {
   std::string dump(int index = 0) const final;
 };
 struct Namespace : public Component {
+  static std::atomic<int> _nest_counter;
   Namespace() {
     _node_type = "Namespace";
   }
@@ -184,6 +185,10 @@ std::string Identifier::dump(int index) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string Namespace::dump(int index) const {
+  int count = _nest_counter.fetch_add(1);
+  if(count>32){
+    return "";
+  }
   std::stringstream ss;
   // ss << "Namespace(";
   if (_parent_namespace) {
@@ -194,6 +199,7 @@ std::string Namespace::dump(int index) const {
     ss << child->dump(0);
   }
   // ss << ")";
+  _nest_counter.fetch_add(-1);
   return ss.str();
 }
 

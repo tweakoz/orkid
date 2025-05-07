@@ -22,8 +22,9 @@
 #endif
 
 
-namespace ork {
+std::atomic<int> Namespace::_nest_counter = 0;
 
+namespace ork {
 
 std::string get_backtrace() {
   std::string rval;

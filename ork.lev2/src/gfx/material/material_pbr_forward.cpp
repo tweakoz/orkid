@@ -166,14 +166,22 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
 
       size_t num_cookies = num_texspotlights;
-      auto tex_color0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlack.get();
+      auto tex_color0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlackArray.get();
       auto tex_depth0 = (num_cookies > 0) ? texlist[1] : mtl->_texBlack.get();
-      auto tex_color1 = (num_cookies > 1) ? texlist[2] : mtl->_texBlack.get();
+      auto tex_color1 = (num_cookies > 1) ? texlist[2] : mtl->_texBlackArray.get();
       auto tex_depth1 = (num_cookies > 1) ? texlist[3] : mtl->_texBlack.get();
-      FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
-      FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
-      FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
-      FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
+      if(tex_color0 and tex_color0->_texType == ETEXTYPE_2D_ARRAY){
+        FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
+      }
+      if(tex_depth0 and tex_depth0->_texType == ETEXTYPE_2D){
+        FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
+      }
+      if(tex_color1 and tex_color1->_texType == ETEXTYPE_2D_ARRAY){
+        FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
+      }
+      if(tex_depth1 and tex_depth1->_texType == ETEXTYPE_2D){
+        FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
+      }
       
     }
     

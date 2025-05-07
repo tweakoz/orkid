@@ -524,7 +524,7 @@ void CtxGLFW::Show() {
 
   onResize(_width, _height);
 
-  setAlwaysOnTop(_glfwWindow);
+  //setAlwaysOnTop(_glfwWindow);
 
 }
 ///////////////////////////////////////////////////////////////////////////////

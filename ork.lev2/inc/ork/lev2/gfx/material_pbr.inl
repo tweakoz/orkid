@@ -232,6 +232,7 @@ public:
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
+  texture_ptr_t _texBlackArray;
   texture_ptr_t _texCubeBlack;
   texture_ptr_t _texWhiteLightMapArray;
 
