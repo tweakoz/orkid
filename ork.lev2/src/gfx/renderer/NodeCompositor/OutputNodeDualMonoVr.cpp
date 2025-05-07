@@ -358,7 +358,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
               impl->_ssaadownsamplebufferR->GetMrt(0)->texture(),
               SRect(wd2, 0, wd2*2, h),
           };
-          printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
+          //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
           _distorion_lambda(framedata, drectL);
           _distorion_lambda(framedata, drectR);
           drawdata.context()->debugPopGroup();
