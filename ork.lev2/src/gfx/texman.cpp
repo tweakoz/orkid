@@ -30,7 +30,7 @@ void TextureSamplingModeData::presetPointAndClamp() {
   _texAddrModeT   = TextureAddressMode::CLAMP;
   _texAddrModeR   = TextureAddressMode::CLAMP;
   _texFiltModeMin = ETextureMinifyFilterMode::NEAREST;
-  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
+  _texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ void TextureSamplingModeData::presetTrilinearWrap() {
   _texAddrModeT   = TextureAddressMode::WRAP;
   _texAddrModeR   = TextureAddressMode::WRAP;
   _texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
-  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
+  _texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
