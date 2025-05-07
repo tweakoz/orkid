@@ -352,11 +352,11 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           int h = out_surface_height;
           DistortionRect drectL = {
               impl->_ssaadownsamplebufferL->GetMrt(0)->texture(),
-              SRect(0, 0, wd2, h),
+              SRect(wd2, 0, wd2*2, h),
           };
           DistortionRect drectR = {
               impl->_ssaadownsamplebufferR->GetMrt(0)->texture(),
-              SRect(wd2, 0, wd2*2, h),
+              SRect(0, 0, wd2, h),
           };
           //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
           _distorion_lambda(framedata, drectL);
