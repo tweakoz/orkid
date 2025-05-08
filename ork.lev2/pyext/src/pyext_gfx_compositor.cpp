@@ -261,6 +261,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def("gpuInit",[](postnode_user_ptr_t dcnode, ctx_t ctx, int w, int h) {
             dcnode->gpuInit(ctx.get(), w, h);
           })
+          .def_property("disabled", //
+            [](postnode_user_ptr_t dcnode) -> bool {
+              return dcnode->_disabled;
+            },
+            [](postnode_user_ptr_t dcnode, bool disabled) {
+              dcnode->_disabled = disabled;
+            })
           .def_property("shader_path", //
             [](postnode_user_ptr_t dcnode) -> std::string {
               return dcnode->_shader_path;

@@ -284,6 +284,9 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
       ////////////////////////////////////////////////////////////////////////////
       size_t num_fx_nodes = tek->_postEffectNodes.size();
       for (auto pfxnode : tek->_postEffectNodes) {
+        if (pfxnode->_disabled) {
+          continue;
+        }
         drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
         pfxnode->Render(drawdata);
         render_outg = pfxnode->GetOutputGroup();
