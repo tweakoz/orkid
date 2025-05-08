@@ -30,7 +30,7 @@ void TextureSamplingModeData::presetPointAndClamp() {
   _texAddrModeT   = TextureAddressMode::CLAMP;
   _texAddrModeR   = TextureAddressMode::CLAMP;
   _texFiltModeMin = ETextureMinifyFilterMode::NEAREST;
-  _texFiltModeMag = ETextureMagnifyFilterMode::LINEAR;
+  _texFiltModeMag = ETextureMagnifyFilterMode::NEAREST;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
