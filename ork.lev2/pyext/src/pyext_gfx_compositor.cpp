@@ -611,6 +611,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
         [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
           self->_var.setShared<Texture>(texture);
         })
+      .def_property("bool",
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> bool { //
+          return self->_var.get<bool>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, bool val) { //
+          self->_var.set<bool>(val);
+        })
       .def_property("float", 
         [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
           return self->_var.get<float>();

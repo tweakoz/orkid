@@ -160,8 +160,9 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
       auto texture = as_texture.value();
       FXI->BindParamCTex(param, texture.get());
-    }
-    else if (auto as_float_ = val.tryAs<float>()) {
+    } else if (auto as_bool_ = val.tryAs<bool>()) {
+      FXI->BindParamBool(param, as_bool_.value());
+    } else if (auto as_float_ = val.tryAs<float>()) {
       FXI->BindParamFloat(param, as_float_.value());
     } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
       FXI->BindParamVect4(param, as_fvec4_.value());
