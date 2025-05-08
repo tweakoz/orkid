@@ -363,7 +363,7 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
     }*/
  }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::bindParamBool(const FxShaderParam* par, int value) {
+void FreestyleMaterial::bindParamBool(const FxShaderParam* par, bool value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
   fxi->BindParamBool(par, value);
