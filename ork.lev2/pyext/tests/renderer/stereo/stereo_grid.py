@@ -34,7 +34,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,fullscreen=True,ssaa=2)
+    self.ezapp = OrkEzApp.create(self,fullscreen=False,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
@@ -69,7 +69,7 @@ class StereoApp1(object):
       self.IVP = viewdata.IVPM # mono IVP
       #print(f"eyeindex: {eyeindex} IVP {self.IVP}")
     onode.onCameraChange(lambda cdd: onCameraChange(cdd))
-    onode.flipY = True
+    onode.flipY = False
     
     ###################################
 

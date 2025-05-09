@@ -142,7 +142,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       }
     }
 
-    // printf( "texlistsize<%d>\n", texlist.size() );
+    printf( "texlistsize<%d>\n", texlist.size() );
     pl_mapped->unmap();
 
     ///////////////////////////////////////////////////////////////////////////
@@ -166,22 +166,36 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
 
       size_t num_cookies = num_texspotlights;
-      auto tex_color0 = (num_cookies > 0) ? texlist[0] : mtl->_texBlackArray.get();
-      auto tex_depth0 = (num_cookies > 0) ? texlist[1] : mtl->_texBlack.get();
-      auto tex_color1 = (num_cookies > 1) ? texlist[2] : mtl->_texBlackArray.get();
-      auto tex_depth1 = (num_cookies > 1) ? texlist[3] : mtl->_texBlack.get();
-      if(tex_color0 and tex_color0->_texType == ETEXTYPE_2D_ARRAY){
-        FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
+      auto tex_color0 = mtl->_texBlackArray.get();
+      auto tex_color1 = mtl->_texBlackArray.get();
+      auto tex_depth0 = mtl->_texBlack.get();
+      auto tex_depth1 = mtl->_texBlack.get();
+      if(num_cookies > 0){
+        if(texlist[0]){
+          tex_color0 = texlist[0];  
+        }
+        if(texlist[1]){
+          tex_depth0 = texlist[1];
+        }
       }
-      if(tex_depth0 and tex_depth0->_texType == ETEXTYPE_2D){
-        FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
+      if(num_cookies > 1){
+        if(texlist[2]){
+          tex_color1 = texlist[2];
+        }
+        if(texlist[3]){
+          tex_depth1 = texlist[3];
+        }
       }
-      if(tex_color1 and tex_color1->_texType == ETEXTYPE_2D_ARRAY){
-        FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
-      }
-      if(tex_depth1 and tex_depth1->_texType == ETEXTYPE_2D){
-        FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
-      }
+      OrkAssert(tex_color0->_texType == ETEXTYPE_2D_ARRAY);
+      OrkAssert(tex_color1->_texType == ETEXTYPE_2D_ARRAY);
+      OrkAssert(tex_depth0->_texType == ETEXTYPE_2D);
+      OrkAssert(tex_depth1->_texType == ETEXTYPE_2D);
+
+      FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
+      FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
+
+      FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
+      FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
       
     }
     

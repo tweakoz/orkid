@@ -254,7 +254,7 @@ void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_
   auto puni  = hpar->_impl.get<Uniform*>();
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
 
-  if (pinst && !texlist.empty()) {
+  if (pinst and not texlist.empty()) {
     OrkAssert(pinst->_is_array); // only array uniforms are supported (for now
     auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
     auto pass     = container->_activePass;
@@ -267,7 +267,7 @@ void Interface::bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_
         int uniloc   = pinst->_locations[i];
         int itexunit = pass->assignSampler(uniloc);
         texunits[i]  = itexunit;
-        //printf("aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit);
+        printf("aryidx<%d> loc<%d> unit<%d> ", i, uniloc, itexunit);
         GLTXI->bindTextureToUnit(pTex, uniloc, textgt, itexunit);
         glUniform1i(uniloc, itexunit);
         GL_ERRORCHECK();

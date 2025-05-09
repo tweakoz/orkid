@@ -332,6 +332,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
     dtex->_msaa_samples = rtgroup->_msaa_samples;
     dtex->_texFormat    = EBufferFormat::Z32;
     dtex->_debugName    = "RtgDepth";
+    dtex->_texType      = ETEXTYPE_2D;
     auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
     mTargetGL.mTxI._texture_set[depth_glto->_textureObject] = dtex.get();

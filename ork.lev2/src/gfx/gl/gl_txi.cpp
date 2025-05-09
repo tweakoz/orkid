@@ -935,6 +935,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, 0, 0, tid._w, tid._h, triplet._format, triplet._type, nullptr);
       }
     }
+    ptex->_texType        = ETEXTYPE_CUBE;
+
   } else if (is_3d) {
     //////////////////////////////
     // 3D ?
@@ -944,6 +946,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     else // non allocating
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
+    ptex->_texType        = ETEXTYPE_3D;
+
   } else {
     //////////////////////////////
     // 2D ?
@@ -955,6 +959,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     else // non allocating
       glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, triplet._format, triplet._type, nullptr);
     GL_ERRORCHECK();
+    ptex->_texType        = ETEXTYPE_2D;
+
   }
   EASY_END_BLOCK;
   EASY_BLOCK("gltxi::itfd:6", profiler::colors::Red);
@@ -1110,6 +1116,7 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   glBindTexture(GL_TEXTURE_2D, 0);
+  tex->_texType        = ETEXTYPE_2D;
 
   return tex;
 }

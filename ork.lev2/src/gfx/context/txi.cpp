@@ -173,7 +173,6 @@ texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h
   tid._data = (const void*) data;
 
   initTextureFromData(rval.get(),tid);
-
   delete[] data;
 
   return rval;

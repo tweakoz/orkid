@@ -7,6 +7,9 @@
 
 #include "statedebug.h"
 
+namespace ork{
+  extern bool _ENABLE_LOGGING;
+}
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,7 +69,8 @@ _FtxGlDebugger::_FtxGlDebugger(const ContextGL* glctx)
 
 void _FtxGlDebugger::run_loop() {
   using namespace ftxui;
-
+  _ENABLE_LOGGING = false;
+  
   int num_shader_texts = _shader_texts.size();
 
   std::vector<std::string> menu_entries = {
