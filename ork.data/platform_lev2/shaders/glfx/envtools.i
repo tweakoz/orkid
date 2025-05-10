@@ -61,6 +61,12 @@ libblock lib_envmapping {
   vec3 env_equirectangular_cube(samplerCube envtex,vec3 normal) {
     return texture(envtex, normal).xyz;
   }
+  vec3 env_equirectangular_spec_wbias(vec3 normal, sampler2DArray envtex, float slice, float bias) {
+    vec3 n  = vec3(normal.x, normal.z, normal.y);
+    vec2 uv = env_equirectangularN2UV(n);
+    //float level = textureQueryLod(envtex, uv).x+bias;
+    return texture(envtex, vec3(-uv.x, -uv.y,slice+3)).xyz;
+  }
   vec3 env_equirectangular_spec(vec3 normal, sampler2DArray envtex, float slice) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);
     vec2 uv = env_equirectangularN2UV(n);
@@ -76,7 +82,10 @@ libblock lib_envmapping {
     vec2 uv = env_equirectangularN2UV(n);
     return textureLod(envtex, vec3(-uv.x, uv.y,slice),miplevel).xyz;
   }
-  vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
+  vec3 env_equirectangular_skybox(vec3 normal, sampler2DArray envtex, float miplevel) {
+    return env_equirectangular_spec_flipv_lod(normal, envtex, 0, miplevel);
+  }
+    vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n  = vec3(normal.x, normal.y, normal.z);
     vec2 uv = env_equirectangularN2UV(n);
     return textureLod(envtex, vec2(-uv.x, -uv.y), miplevel).xyz;

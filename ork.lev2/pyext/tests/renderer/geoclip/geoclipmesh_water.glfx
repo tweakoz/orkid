@@ -246,14 +246,14 @@ fragment_shader ps_fwd_ground_mono
   vec3 eye_delta   = frg_wpos.xyz - EyePostion;
   vec3 eye_dir     = normalize(eye_delta);
   vec3 skybox_n    = vec3(eye_dir.x, eye_dir.y, eye_dir.z) * -1;
-  vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
+  vec3 skyboxColor = env_equirectangular_skybox(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
 
   float fogZ   = length(eye_delta);
   float radius = 0.0;
 
   float depth_fogval      = 1.0 - clamp(pow(fogZ / DepthFogDistance, DepthFogPower), 0, 1);
   vec3 skybox_refract_n   = reflect(skybox_n * -1.0, normal * -1.0);
-  vec3 skyboxRefractColor = (vec3(1) - env_equirectangular(skybox_refract_n, MapSpecularEnv, 0.8)) * 1.5;
+  vec3 skyboxRefractColor = (vec3(1) - env_equirectangular_skybox(skybox_refract_n, MapSpecularEnv, 0.8)) * 1.5;
   skyboxRefractColor.x    = pow(skyboxRefractColor.x, 0.65);
   skyboxRefractColor.y    = pow(skyboxRefractColor.y, 0.55);
   skyboxRefractColor.z    = pow(skyboxRefractColor.z, 0.45);
