@@ -96,7 +96,7 @@ FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-static texture_ptr_t _getbrdfintmap(Context* targ) {
+static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
   texture_ptr_t _map;
 
   targ->makeCurrentContext();
@@ -119,6 +119,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
   ///////////////////////////////
   auto brdfhasher = DataBlock::createHasher();
   brdfhasher->accumulateString(_map->_debugName); // identifier
+  brdfhasher->accumulateItem<uint64_t>(type);         // version code
   brdfhasher->accumulateItem<float>(1.0);         // version code
   brdfhasher->accumulateItem<float>(DIM);         // dimension
   brdfhasher->finish();
@@ -133,13 +134,44 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
     dblock        = std::make_shared<DataBlock>();
     float* texels = dblock->allocateItems<float>(DIM * DIM * 4);
     auto group    = opq::createCompletionGroup(opq::concurrentQueue(), "BRDFMAPGEN");
+
+    using gen_t     = std::function<dvec2(double, double)>;
+    gen_t generator = [](double fx, double fy) -> dvec2 { return brdf::integrateGGX<4096>(fx, fy); };
+    switch(type) {
+      case "BLINN"_crcu: {
+        printf( "GENERATING BLINN BRDF INTEGRATION MAP\n");
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integrateBlinn<4096>(fx, fy); };
+        break;
+      }
+      case "GGX"_crcu: {
+        printf( "GENERATING GGX BRDF INTEGRATION MAP\n");
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integrateGGX<4096>(fx, fy); };
+        break;
+      }
+      case "GGXVELVET"_crcu: {
+        printf( "GENERATING GGXVELVET BRDF INTEGRATION MAP\n");
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integrateGGXVelvet<4096>(fx, fy); };
+        break;
+      }
+      case "GGXRIM"_crcu: {
+        printf( "GENERATING GGXRIM BRDF INTEGRATION MAP\n");
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integrateGGXStrongRim<4096>(fx, fy); };
+        break;
+      }
+      case "PHONG"_crcu: {
+        printf( "GENERATING PHONG BRDF INTEGRATION MAP\n");
+        generator = [](double fx, double fy) -> dvec2 { return brdf::integratePhongLike<4096>(fx, fy); };
+        break;
+      }
+    }
+
     for (int y = 0; y < DIM; y++) {
       float fy  = float(y) / float(DIM - 1);
       int ybase = y * DIM;
       group->enqueue([=]() {
         for (int x = 0; x < DIM; x++) {
-          float fx               = float(x) / float(DIM - 1);
-          dvec3 output           = brdf::integrateGGX<4096>(fx, fy);
+          float fx = float(x) / float(DIM - 1);
+          dvec3 output = generator(fx, fy);
           int texidxbase         = (ybase + x) * 4;
           texels[texidxbase + 0] = float(output.x);
           texels[texidxbase + 1] = float(output.y);
@@ -185,9 +217,17 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ) {
-  static texture_ptr_t _map = _getbrdfintmap(targ);
-  return _map;
+texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,uint64_t type) {
+  static std::unordered_map<uint64_t,texture_ptr_t> _maps;
+  auto it = _maps.find(type);
+  if( it != _maps.end() ){
+    return it->second;
+  }
+  else{
+    auto new_tex = _getbrdfintmap(targ,type);
+    _maps[type] = new_tex;
+    return new_tex;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -222,12 +262,11 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   int h    = rawenvmap->_height;
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
-  static const FxShaderParam* param_mvp    = nullptr;
-  static const FxShaderParam* param_pfm    = nullptr;
-  static const FxShaderParam* param_ruf    = nullptr;
-  static const FxShaderParam* param_imgdim = nullptr;
+  static const FxShaderParam* param_mvp        = nullptr;
+  static const FxShaderParam* param_pfm        = nullptr;
+  static const FxShaderParam* param_ruf        = nullptr;
+  static const FxShaderParam* param_imgdim     = nullptr;
   static const FxShaderParam* param_numsamples = nullptr;
-  
 
   targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
 
@@ -239,10 +278,10 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, filterenv_shader_path());
     // logchan_pbrgen->log("filterenv mtl<%p> tekFilterSpecMap<%p>", mtl.get(), tekFilterSpecMap);
-    param_mvp    = mtl->param("mvp");
-    param_pfm    = mtl->param("prefiltmap");
-    param_ruf    = mtl->param("roughness");
-    param_imgdim = mtl->param("imgdim");
+    param_mvp        = mtl->param("mvp");
+    param_pfm        = mtl->param("prefiltmap");
+    param_ruf        = mtl->param("roughness");
+    param_imgdim     = mtl->param("imgdim");
     param_numsamples = mtl->param("numsamples");
   }
   const FxShaderTechnique* tekFilterSpecMap = nullptr;
@@ -271,14 +310,14 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   basehasher.accumulateItem<uint32_t>(shader_hash());
   basehasher.accumulateItem<uint32_t>(this_hash());
   basehasher.finish();
-  uint64_t cmipchain_hashkey = basehasher.result();
-  datablock_ptr_t cmipchain_datablock   = force_pbrgen_spec ? nullptr : DataBlockCache::findDataBlock(cmipchain_hashkey);
+  uint64_t cmipchain_hashkey          = basehasher.result();
+  datablock_ptr_t cmipchain_datablock = force_pbrgen_spec ? nullptr : DataBlockCache::findDataBlock(cmipchain_hashkey);
   TextureArrayInitData array_init;
 
   ///////////////////////////////////////////////
   size_t num_ruf_levels = size_t(PBRMaterial::roughnessLevels);
   ///////////////////////////////////////////////
-  if( not cmipchain_datablock ) { // recompute datablock
+  if (not cmipchain_datablock) { // recompute datablock
     auto RCFD = std::make_shared<RenderContextFrameData>(targ);
 
     ////////////////////////////////////
@@ -288,18 +327,18 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     h                        = rawenvmap->_height;
     std::atomic<int> pending = 0;
     cimg_array_t cimgs;
-    while(w<512 and h<512){
+    while (w < 512 and h < 512) {
       w *= 2;
       h *= 2;
     }
-    auto src_tex = rawenvmap;
+    auto src_tex        = rawenvmap;
     cmipchain_datablock = std::make_shared<DataBlock>();
     chunkfile::Writer chunkwriter("xtx-array");
     for (int irough = 0; irough < num_ruf_levels; irough++) {
-      float ir = float(irough)/float(num_ruf_levels-1);
-      float ir2 = float(irough+1)/float(num_ruf_levels);
-      float roughness       = powf(ir, 0.85)*0.5f;
- 
+      float ir        = float(irough) / float(num_ruf_levels - 1);
+      float ir2       = float(irough + 1) / float(num_ruf_levels);
+      float roughness = powf(ir, 0.85) * 0.5f;
+
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
 
@@ -312,15 +351,16 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
       ///////////////////////////////////////////////
-      logchan_pbrgen->log("filterenv iruf<%d> num_ruf_levels<%d> w<%d> h<%d> roughness<%g>", irough, num_ruf_levels, w, h, roughness);
+      logchan_pbrgen->log(
+          "filterenv iruf<%d> num_ruf_levels<%d> w<%d> h<%d> roughness<%g>", irough, num_ruf_levels, w, h, roughness);
       logchan_pbrgen->log("filterenv iruf<%d> outgroup<%p> outbuf<%p>", irough, outgroup.get(), outbuffr.get());
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
       mtl->bindParamCTex(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
-      int numsamples = int(pow(ir2,0.25f)*4096.0);
-      mtl->bindParamU32(param_numsamples, numsamples );
+      int numsamples = int(pow(ir2, 0.25f) * 4096.0);
+      mtl->bindParamU32(param_numsamples, numsamples);
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       ///////////////////////////////////////////////
@@ -333,7 +373,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       Image im_inp;
       im_inp.initRGBA8WithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
 
-      int index = irough;
+      int index    = irough;
       auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-ruf%d.exr", index);
       logchan_pbrgen->log("filterenv write dbgout<%s>", outpath.c_str());
       im_inp.writeToFile(outpath);
@@ -343,9 +383,9 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
 
       auto hdr_stream_name = FormatString("header-%d", irough);
       auto img_stream_name = FormatString("image-%d", irough);
-      auto hdr_stream = chunkwriter.AddStream(hdr_stream_name);
-      auto img_stream = chunkwriter.AddStream(img_stream_name);
-      slice._cmipchain->writeXTX(hdr_stream,img_stream,chunkwriter);
+      auto hdr_stream      = chunkwriter.AddStream(hdr_stream_name);
+      auto img_stream      = chunkwriter.AddStream(img_stream_name);
+      slice._cmipchain->writeXTX(hdr_stream, img_stream, chunkwriter);
       array_init._slices.push_back(slice);
 
       src_tex = outbuffr->_texture;
@@ -356,30 +396,29 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     }
     chunkwriter.writeToDataBlock(cmipchain_datablock);
     DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
-  }
-  else { // datablock already exists
+  } else { // datablock already exists
     logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
     chunkfile::DefaultLoadAllocator load_alloc;
-    chunkfile::Reader chunkreader(cmipchain_datablock,load_alloc);
+    chunkfile::Reader chunkreader(cmipchain_datablock, load_alloc);
     for (int irough = 0; irough < num_ruf_levels; irough++) {
       auto hdr_stream_name = FormatString("header-%d", irough);
       auto img_stream_name = FormatString("image-%d", irough);
-      auto hdr_stream = chunkreader.GetStream(hdr_stream_name.c_str());
-      auto img_stream = chunkreader.GetStream(img_stream_name.c_str());
+      auto hdr_stream      = chunkreader.GetStream(hdr_stream_name.c_str());
+      auto img_stream      = chunkreader.GetStream(img_stream_name.c_str());
       if (hdr_stream and img_stream) {
         auto cmipchain = std::make_shared<CompressedImageMipChain>();
-        cmipchain->readXTX(hdr_stream,img_stream,chunkreader);
+        cmipchain->readXTX(hdr_stream, img_stream, chunkreader);
         TextureArrayInitSubItem slice;
         slice._cmipchain = cmipchain;
         array_init._slices.push_back(slice);
       }
     }
   }
-  
+
   auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
   txi->initTextureArray2DFromData(alt_tex.get(), array_init);
-  //alt_tex->mTexSampleMode.presetTrilinearClamp();
+  // alt_tex->mTexSampleMode.presetTrilinearClamp();
   alt_tex->mTexSampleMode.presetTrilinearWrap();
   txi->ApplySamplingMode(alt_tex.get());
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
@@ -451,8 +490,8 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     // logchan_pbrgen->log("filterenv-diff tex<%p> loading precomputed!", rawenvmap);
   } else {
     auto RCFD = std::make_shared<RenderContextFrameData>(targ);
-    int w = rawenvmap->_width;
-    int h = rawenvmap->_height;
+    int w     = rawenvmap->_width;
+    int h     = rawenvmap->_height;
 
     int numpix      = w * h;
     int imip        = 0;

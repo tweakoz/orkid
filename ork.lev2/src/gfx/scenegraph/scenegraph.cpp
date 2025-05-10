@@ -192,6 +192,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorPreset = _compositorData->presetForwardPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
+    _pbr_common     = outrnode->_pbrcommon;
   } else if (preset == "DeferredPBR") {
     _compositorPreset = _compositorData->presetDeferredPBR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -204,18 +205,23 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       }
     }
     OrkAssert(outrnode);
+    _pbr_common     = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
+    _pbr_common     = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
+    _pbr_common     = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVRDM") {
     _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
+    _pbr_common     = outrnode->_pbrcommon;
+    OrkAssert(_pbr_common);
   } else if (preset == "PICKTEST") {
     auto cdata = std::make_shared<CompositingData>();
     cdata->presetPickingDebug();
@@ -292,6 +298,21 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       }
       else if(texture_path == "sunset") {
         texture_path = "src://envmaps/blender_sunset";
+      }
+      else if(texture_path == "arena") {
+        texture_path = "src://envmaps/arena4k";
+      }
+      else if(texture_path == "club") {
+        texture_path = "src://envmaps/club4k";
+      }
+      else if(texture_path == "crossroads") {
+        texture_path = "src://envmaps/crossroads4k";
+      }
+      else if(texture_path == "ethereal") {
+        texture_path = "src://envmaps/ethereal4k";
+      }
+      else if(texture_path == "futcity") {
+        texture_path = "src://envmaps/futcity4k";
       }
       _pbr_common->_useFloatColorBuffer = use_float_buffer;
 

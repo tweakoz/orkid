@@ -190,7 +190,7 @@ struct FxShaderStorageBufferMapping {
     static_assert(
         std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t> ||
             std::is_same_v<T, fvec2> || std::is_same_v<T, fvec3> || std::is_same_v<T, fvec4> || std::is_same_v<T, fmtx3> ||
-            std::is_same_v<T, fmtx4>,
+            std::is_same_v<T, fmtx4> || std::is_same_v<T, bool>,
         "Type T must be one of: float, double, int, int64_t, or uint32_t");
 
     switch (sizeof(T)) { // std430 layout rules

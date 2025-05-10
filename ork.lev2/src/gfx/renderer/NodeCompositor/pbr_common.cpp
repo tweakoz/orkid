@@ -87,16 +87,28 @@ static asset::vars_ptr_t _irradianceVars() {
 
       auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
       auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
-      auto brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
+      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX"_crcu);
+      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET"_crcu);
+      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM"_crcu);
+      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN"_crcu);
+      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG"_crcu);
 
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;
-      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_map") = brdfIntegrationMap;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapGGX") = brdfIntegrationMapGGX;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapVELVET") = brdfIntegrationMapVelvet;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapGGXRIM") = brdfIntegrationMapRim;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapBLINN") = brdfIntegrationMapBlinn;
+      load_req->_asset_vars->makeValueForKey<texture_ptr_t>("brdf_mapPHONG") = brdfIntegrationMapPhong;
 
       auto irrmaps = load_req->_asset_vars->typedValueForKey<irradiancemaps_ptr_t>("irrmaps").value();
       irrmaps->_filtenvSpecularMap = filtenvSpecularMap;
       irrmaps->_filtenvDiffuseMap  = filtenvDiffuseMap;
-      irrmaps->_brdfIntegrationMap = brdfIntegrationMap;
+      irrmaps->_brdfIntegrationMapGGX = brdfIntegrationMapGGX;
+      irrmaps->_brdfIntegrationMapVelvet = brdfIntegrationMapVelvet;
+      irrmaps->_brdfIntegrationMapGGXRIM = brdfIntegrationMapRim;
+      irrmaps->_brdfIntegrationMapBlinn = brdfIntegrationMapBlinn;
+      irrmaps->_brdfIntegrationMapPhong = brdfIntegrationMapPhong;
       //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
       //////////////////////////////////////////////////////////////
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);

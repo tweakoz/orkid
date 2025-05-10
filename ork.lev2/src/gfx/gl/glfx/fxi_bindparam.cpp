@@ -15,11 +15,6 @@ namespace ork::lev2::glslfx {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t& binder) {
   auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   OrkAssert(hpar != nullptr);
@@ -45,6 +40,17 @@ void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t&
       binder(iloc, etyp);
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
+    _stdbindparam(hpar, [&](int iloc, GLenum checktype)    {
+        OrkAssert(checktype == GL_BOOL);
+        GL_ERRORCHECK();
+        glUniform1i(iloc, static_cast<GLint>(bv));
+        GL_ERRORCHECK();
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -219,7 +225,7 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
 
     int uniloc = pinst->_locations[0];
 
-    if(true and pTex){
+    if(false and pTex){
       const char* texnam = pTex->_debugName.c_str();
       const char* teknam = container->mActiveTechnique->_name.c_str();
       const char* parname = hpar->_name.c_str();

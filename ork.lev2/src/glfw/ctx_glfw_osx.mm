@@ -26,7 +26,7 @@ void recomputeHIDPI(GLFWwindow *window){
   glfwGetFramebufferSize(window, &width, &height);
   float xscale, yscale;
   glfwGetWindowContentScale(window, &xscale, &yscale);
-  _macosUseHIDPI = (xscale > 1.0f || yscale > 1.0f);
+  _macosUseHIDPI = false; //(xscale > 1.0f || yscale > 1.0f);
   //printf("w<%d> h<%d> xscale<%f> yscale<%f>\n", width, height, xscale, yscale);
   // determine the DPI
   _DPI = 95.0f;

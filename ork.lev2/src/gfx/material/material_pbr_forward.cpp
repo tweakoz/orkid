@@ -142,7 +142,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       }
     }
 
-    printf( "texlistsize<%d>\n", texlist.size() );
+    //printf( "texlistsize<%d>\n", texlist.size() );
     pl_mapped->unmap();
 
     ///////////////////////////////////////////////////////////////////////////

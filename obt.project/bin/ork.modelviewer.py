@@ -109,6 +109,9 @@ class SceneGraphApp(object):
     self.ssaamode = False
     if ssao>0:
       self.ssaamode = True
+    self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
+    self.curbrdfi = 0
+    
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -239,6 +242,15 @@ class SceneGraphApp(object):
           self.ssaamode = True
         print("SSAO MODE",self.ssaamode)
         return res
+      if uievent.keycode == ord("B"):
+        brdfi = self.curbrdfi+1
+        if brdfi >= len(self.brdfset):
+          brdfi = 0
+        self.curbrdfi = brdfi
+        brdf = self.brdfset[self.curbrdfi]
+        print("BRDF",brdf[0])
+        self.pbr_common.setBRDF(brdf[1])
+        pass
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )

@@ -52,7 +52,11 @@ struct IrradianceMaps {
 
   texture_ptr_t _filtenvSpecularMap;
   texture_ptr_t _filtenvDiffuseMap;
-  texture_ptr_t _brdfIntegrationMap;
+  texture_ptr_t _brdfIntegrationMapGGX;
+  texture_ptr_t _brdfIntegrationMapVelvet;
+  texture_ptr_t _brdfIntegrationMapGGXRIM;
+  texture_ptr_t _brdfIntegrationMapBlinn;
+  texture_ptr_t _brdfIntegrationMapPhong;
   asset::loadrequest_ptr_t _loadRequest;
 
 };
@@ -133,7 +137,9 @@ struct CommonStuff : public ork::Object {
   float _ssaoPower = 1.0;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
+  uint64_t _brdftype = 0;
 
+  std::string _name;
 };
 
 

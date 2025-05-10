@@ -80,7 +80,7 @@ void DeferredContext::gpuInit(Context* target) {
   target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgs_gbuffer) {
-    _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
+    _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target,"GGX"_crcu);
     //////////////////////////////////////////////////////////////
     //printf("LOADING DeferredContext SHADER<%s>\n", _shadername.c_str());
     _lightingmtl = std::make_shared<FreestyleMaterial>();

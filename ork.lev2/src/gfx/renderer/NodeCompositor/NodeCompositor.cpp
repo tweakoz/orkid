@@ -65,6 +65,9 @@ NodeCompositingTechnique::NodeCompositingTechnique()
     ////////////////////////////////////////////////////////////////////////////
     size_t num_fx_nodes = _postEffectNodes.size();
     for (auto pfxnode : _postEffectNodes) {
+      if (pfxnode->_disabled) {
+        continue;
+      }
       drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
       pfxnode->Render(drawdata);
       render_outg = pfxnode->GetOutputGroup();

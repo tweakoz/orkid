@@ -25,7 +25,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def(py::init<>())
           .def_property_readonly("specular", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvSpecularMap; })
           .def_property_readonly("diffuse", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_filtenvDiffuseMap; })
-          .def_property_readonly("brdf", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMap; })
+          .def_property_readonly("brdf_ggx", [](pbr::irradiancemaps_ptr_t m) -> texture_ptr_t { return m->_brdfIntegrationMapGGX; })
           .def_property_readonly(
               "loadRequest", [](pbr::irradiancemaps_ptr_t m) -> asset::loadrequest_ptr_t { return m->_loadRequest; })
           .def("__repr__", [](pbr::irradiancemaps_ptr_t d) -> std::string {
@@ -68,6 +68,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
 
                 return load_req;
               })
+          .def("setBRDF",
+               [](pbr::commonstuff_ptr_t pbc, crcstring_ptr_t fmt) { //
+                pbc->_brdftype = fmt->hashed();
+               })
           .def_property(
               "environmentIntensity",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentIntensity; },

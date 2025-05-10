@@ -284,6 +284,9 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
       ////////////////////////////////////////////////////////////////////////////
       size_t num_fx_nodes = tek->_postEffectNodes.size();
       for (auto pfxnode : tek->_postEffectNodes) {
+        if (pfxnode->_disabled) {
+          continue;
+        }
         drawdata._properties["postfx_in"_crcu].set<rtgroup_ptr_t>(render_outg);
         pfxnode->Render(drawdata);
         render_outg = pfxnode->GetOutputGroup();
@@ -346,14 +349,19 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
         if (_distorion_lambda) { // Lens distortion ?
         /////////////////////////////////////////////////////
           drawdata.context()->debugPushGroup("DualMonoVrOutputNode::distortion_lambda");
+          int out_surface_width  = context->mainSurfaceWidth();
+          int out_surface_height = context->mainSurfaceHeight();
+          int wd2 = out_surface_width>>1;
+          int h = out_surface_height;
           DistortionRect drectL = {
               impl->_ssaadownsamplebufferL->GetMrt(0)->texture(),
-              SRect(0, 0, impl->_per_eye_width, impl->_per_eye_height),
+              SRect(wd2, 0, wd2*2, h),
           };
           DistortionRect drectR = {
               impl->_ssaadownsamplebufferR->GetMrt(0)->texture(),
-              SRect(impl->_per_eye_width, 0, impl->_per_eye_width*2, impl->_per_eye_height),
+              SRect(0, 0, wd2, h),
           };
+          //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
           _distorion_lambda(framedata, drectL);
           _distorion_lambda(framedata, drectR);
           drawdata.context()->debugPopGroup();

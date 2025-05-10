@@ -62,7 +62,7 @@ PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
   return [mtl](const RenderContextInstData& RCID) {
-    //printf( "BASICLAMBDA\n");
+    // printf( "BASICLAMBDA\n");
     auto context          = RCID.rcfd()->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
@@ -72,10 +72,10 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     bool is_stereo        = CPD.isSinglePassStereo();
     auto pbrcommon        = RCID.rcfd()->_pbrcommon;
 
-    if(mtl->_commonOverride){
+    if (mtl->_commonOverride) {
       pbrcommon = mtl->_commonOverride;
     }
-    auto spec_tex = pbrcommon->envSpecularTexture();
+    auto spec_tex  = pbrcommon->envSpecularTexture();
     float num_mips = spec_tex->_num_mips;
 
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
@@ -83,13 +83,36 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
     FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-
+    // printf("pbrcommon<%s> _skyboxLevel<%f>\n", pbrcommon->_name.c_str(), pbrcommon->_skyboxLevel);
     FXI->BindParamCTex(mtl->_parMapSpecularEnv, spec_tex.get());
-    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());    
+    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
     FXI->BindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);
 
-    FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMap.get());
+    switch (pbrcommon->_brdftype) {
+      case "BLINN"_crcu:
+        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapBlinn.get());
+        // printf("PBRMaterial<%p> using BLINN brdf integration map\n", mtl);
+        break;
+      case "PHONG"_crcu:
+        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapPhong.get());
+        // printf("PBRMaterial<%p> using PHONG brdf integration map\n", mtl);
+        break;
+      case "GGXVELVET"_crcu:
+        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapVelvet.get());
+        // printf("PBRMaterial<%p> using GGXVELVET brdf integration map\n", mtl);
+        break;
+      case "GGXRIM"_crcu:
+        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGXRIM.get());
+        // printf("PBRMaterial<%p> using GGXRIM brdf integration map\n", mtl);
+        break;
+      case "GGX"_crcu:
+      default:
+        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get());
+        // printf("PBRMaterial<%p> using GGX brdf integration map\n", mtl);
+        break;
+    }
+
     FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
     FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
     FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
@@ -132,7 +155,6 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
 
       FXI->BindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
       FXI->BindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
-
     }
     if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
@@ -180,14 +202,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
 
   mtl->_vars->makeValueForKey<bool>("requirePBRparams") = true;
 
-  if( auto as_bool = mtl->_vars->typedValueForKey<bool>("from_xgm") ){
-    //print("hello\n");
-    //OrkBreak();
+  if (auto as_bool = mtl->_vars->typedValueForKey<bool>("from_xgm")) {
+    // print("hello\n");
+    // OrkBreak();
   }
 
-
   switch (mtl->_variant) {
-    case 0: { 
+    case 0: {
       //////////////////////////////////////////
       // STANDARD VARIANT
       //  standard variant just means
@@ -232,9 +253,9 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
           OrkAssert(false);
           break;
           //////////////////////////////////////////
-      } 
+      }
       break;
-    } 
+    }
     //////////////////////////////////////////
     // special variants
     //////////////////////////////////////////
@@ -266,7 +287,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
   }
 
   /////////////////////////////////////////////////////////////////////////////
-  // 
+  //
   /////////////////////////////////////////////////////////////////////////////
 
   if (pipeline and pipeline->_technique) {
@@ -276,13 +297,13 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
     auto require_pbr = mtl->_vars->typedValueForKey<bool>("requirePBRparams");
 
     if (require_pbr and require_pbr.value()) {
-      //printf("WTF\n");
-      //pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
-      //pipeline->bindParam(mtl->_paramMapColor, mtl->_texAmbOcc);
-      //printf("_texAmbOcc<%p>\n", mtl->_texAmbOcc.get());
-      //pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
-      //pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
-      //pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
+      // printf("WTF\n");
+      // pipeline->bindParam(mtl->_paramMapColor, mtl->_texColor);
+      // pipeline->bindParam(mtl->_paramMapColor, mtl->_texAmbOcc);
+      // printf("_texAmbOcc<%p>\n", mtl->_texAmbOcc.get());
+      // pipeline->bindParam(mtl->_paramMapNormal, mtl->_texNormal);
+      // pipeline->bindParam(mtl->_paramMapMtlRuf, mtl->_texMtlRuf);
+      // pipeline->bindParam(mtl->_paramMapEmissive, mtl->_texEmissive);
 
       pipeline->bindParam(mtl->_parMetallicFactor, mtl->_metallicFactor);
       pipeline->bindParam(mtl->_parRoughnessFactor, mtl->_roughnessFactor);
@@ -303,7 +324,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
   /////////////////////////////////////////////////////////////////////////////
   // DEBUG pipeline creation failure
   /////////////////////////////////////////////////////////////////////////////
-   else {
+  else {
     std::string rmodelstr, variantstr;
 
     switch (permu._rendering_model) { // rendering/lighting model of frame
@@ -358,17 +379,23 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipeline(const FxPipelinePermutation& per
         variantstr.c_str(),
         mtl->_shader_suffix.c_str());
     printf("permu-renderingmodel<%08x:%s>\n", permu._rendering_model, rmodelstr.c_str());
-    printf("permu-instanced<%d> skinned<%d> stereo<%d> picking<%d> vtxcolors<%d>\n", int(permu._instanced), int(permu._skinned), int(permu._stereo), int(permu._is_picking), int(permu._has_vtxcolors));
-    printf("permu-forced_technique<%p>\n", (void*) permu._forced_technique );
+    printf(
+        "permu-instanced<%d> skinned<%d> stereo<%d> picking<%d> vtxcolors<%d>\n",
+        int(permu._instanced),
+        int(permu._skinned),
+        int(permu._stereo),
+        int(permu._is_picking),
+        int(permu._has_vtxcolors));
+    printf("permu-forced_technique<%p>\n", (void*)permu._forced_technique);
     OrkAssert(false);
   }
-  if(pipeline){
-    pipeline->_material_ptr = (GfxMaterial*) mtl;
-    pipeline->_rasterstate = mtl->_rasterstate;
+  if (pipeline) {
+    pipeline->_material_ptr = (GfxMaterial*)mtl;
+    pipeline->_rasterstate  = mtl->_rasterstate;
   }
 
   return pipeline;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2 {
+} // namespace ork::lev2

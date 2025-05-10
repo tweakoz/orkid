@@ -98,6 +98,7 @@ public:
     return nullptr;
   }
 
+  bool _disabled = false;
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
   virtual void DoRender(CompositorDrawData& drawdata)        = 0;

@@ -975,7 +975,7 @@ fragment_shader ps_forward_skybox_mono //
   ///////////////////////
 
   vec2 uv = env_equirectangularN2UVa(vec3(VN.x, VN.y, -VN.z));
-  vec3 rgb  = texture(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0)).xyz;
+  vec3 rgb  = texture(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0)).xyz * SkyboxLevel;
   out_color = vec4(rgb, 1);
 
   ///////////////////////

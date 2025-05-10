@@ -129,4 +129,259 @@ template <size_t numsamples> inline dvec2 integrateGGX(double n_dot_v, double ro
   return dvec2(accum_scale / double(numsamples), accum_bias / double(numsamples));
 }
 
+template <size_t numsamples> inline dvec2 integrateGGXVelvet(double n_dot_v, double roughness) {
+  n_dot_v = saturate(n_dot_v);
+  dvec3 v(sqrt(1.0 - n_dot_v * n_dot_v), 0, n_dot_v);
+  double accum_scale = 0.0;
+  double accum_bias  = 0.0;
+  
+  // Velvet-specific parameters
+  const double asperity_density = 0.5;  // Controls density of microfibers
+  const double backscatter_gain = 2.5;  // Enhances retro-reflection
+  const double rim_strength = 3.0;      // Enhances grazing angle response
+  
+  // Modify roughness for velvet (velvet appears rougher)
+  double velvet_roughness = saturate(roughness * 1.5);
+  
+  for (int i = 0; i < numsamples; i++) {
+    dvec2 e = hammersley(i, numsamples);
+    dvec3 h = importanceSampleGGX(e, velvet_roughness);
+    double v_dot_h = v.dotWith(h);
+    dvec3 l = ((h * 2.0 * v_dot_h) - v).normalized();
+    double n_dot_h_sat = saturate(h.z);
+    double n_dot_l_sat = saturate(l.z);
+    double v_dot_h_sat = saturate(v_dot_h);
+    
+    if (l.z > 0.0) {
+      // Modified geometry term for velvet
+      double gsmith = geometrySmith(dvec3(0, 0, 1), v, l, velvet_roughness);
+      
+      // Asperity scattering - characteristic of velvet-like materials
+      double asperity_term = exp(-asperity_density * (1.0 - n_dot_l_sat));
+      
+      // Backscattering component (stronger when light and view are aligned)
+      double backscatter = backscatter_gain * pow(std::max(0.0, v.dotWith(l)), 2.0);
+      
+      // Rim lighting enhancement (stronger at grazing angles)
+      double rim_term = rim_strength * pow(1.0 - n_dot_v, 4.0);
+      
+      // Combine terms
+      double gvis = (gsmith * v_dot_h) / (n_dot_h_sat * n_dot_v);
+      gvis = gvis * (asperity_term + backscatter + rim_term);
+      
+      // Modify Fresnel for velvet (less metallic-looking Fresnel)
+      double fc = pow(1.0 - v_dot_h_sat, 3.0); // Softened Fresnel exponent
+      
+      // Accumulate results
+      accum_scale += (1.0 - fc) * gvis;
+      accum_bias += fc * gvis * (1.0 + rim_term); // Enhanced rim effect for bias term
+    }
+  }
+  
+  // Apply overall scaling to match energy conservation
+  const double energy_normalization = 0.8;
+  return dvec2((accum_scale / double(numsamples)) * energy_normalization, 
+               (accum_bias / double(numsamples)) * energy_normalization);
+}
+
+template <size_t numsamples> inline dvec2 integrateGGXStrongRim(double n_dot_v, double roughness) {
+  n_dot_v = saturate(n_dot_v);
+  dvec3 v(sqrt(1.0 - n_dot_v * n_dot_v), 0, n_dot_v);
+  double accum_scale = 0.0;
+  double accum_bias = 0.0;
+  
+  // CRITICAL DIFFERENCE: Make the center of the material almost completely dark
+  // This is the key to making it visually distinct from velvet
+  const double center_darkness = 0.01;  // Almost no reflection in the center areas
+  
+  // Extreme rim parameters - far beyond velvet
+  const double rim_power = 16.0;        // Much higher than velvet's power
+  const double rim_intensity = 50.0;    // Extremely intense rim (5x velvet's intensity)
+  const double rim_width = 0.15;        // Control width of the rim (smaller = thinner rim)
+  
+  // Define the rim curve to create a sharp, well-defined edge
+  auto rimFalloff = [rim_power, rim_width](double ndotv) -> double {
+    // This creates a much narrower, more defined rim than velvet
+    double rimFactor = pow(1.0 - ndotv, rim_power);
+    
+    // Apply a sigmoid curve to create a sharp cutoff (not in velvet)
+    // This creates a more "toon-like" rim rather than a gradual falloff
+    double sharpening = 1.0 / (1.0 + exp(-(1.0 - ndotv - rim_width) * 30.0));
+    
+    return rimFactor * sharpening;
+  };
+  
+  for (int i = 0; i < numsamples; i++) {
+    dvec2 e = hammersley(i, numsamples);
+    dvec3 h = importanceSampleGGX(e, roughness);
+    double v_dot_h = v.dotWith(h);
+    dvec3 l = ((h * 2.0 * v_dot_h) - v).normalized();
+    double n_dot_h_sat = saturate(h.z);
+    double n_dot_l_sat = saturate(l.z);
+    double v_dot_h_sat = saturate(v_dot_h);
+    
+    if (l.z > 0.0) {
+      // Calculate standard geometry term
+      double gsmith = geometrySmith(dvec3(0, 0, 1), v, l, roughness);
+      double standard_gvis = (gsmith * v_dot_h) / (n_dot_h_sat * n_dot_v);
+      
+      // DISTINCTLY DIFFERENT FROM VELVET:
+      // 1. Dark center with almost no reflection in non-rim areas
+      // 2. Sharp, well-defined rim rather than a gradual falloff
+      
+      // Apply center darkness to standard response - extreme attenuation unlike velvet
+      double center_factor = center_darkness;
+      
+      // Calculate rim factor - using a much sharper function than velvet
+      double rim_factor = rimFalloff(n_dot_v) * rim_intensity;
+      
+      // Create light direction dependence (optional)
+      double light_factor = pow(n_dot_l_sat, 0.5); // Less dependence on light dir than velvet
+      
+      // Combine to create the dramatic rim effect
+      double rim_contribution = rim_factor * light_factor;
+      
+      // Use standard Fresnel
+      double fc = pow(1.0 - v_dot_h_sat, 5.0);
+      
+      // Combine central component (nearly black) with rim component
+      // Scale component (dielectric/non-metallic)
+      accum_scale += (standard_gvis * center_factor * (1.0 - fc)) + (rim_contribution * (1.0 - fc));
+      
+      // Bias component (metallic)
+      // Create even more extreme rim effect for metals
+      accum_bias += (standard_gvis * center_factor * fc) + (rim_contribution * fc * 2.0);
+    }
+  }
+  
+  // No energy normalization - we want the extreme non-physical effect
+  // This deliberately breaks energy conservation for artistic effect
+  return dvec2(accum_scale / double(numsamples), 
+               accum_bias / double(numsamples));
+}
+
+// Helper function for Phong-like importance sampling
+// Note: This function would need to be implemented
+inline dvec3 importanceSamplePhong(dvec2 e, double shininess) {
+  // Convert uniform random samples to a cosine power distribution
+  double phi = 2.0 * 3.14159265359 * e.x;
+  double cos_theta = pow(e.y, 1.0 / (shininess + 1.0));
+  double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+  
+  // Convert to cartesian coordinates on hemisphere
+  return dvec3(
+    sin_theta * cos(phi),
+    sin_theta * sin(phi),
+    cos_theta
+  );
+}
+
+template <size_t numsamples> inline dvec2 integratePhongLike(double n_dot_v, double roughness) {
+  n_dot_v = saturate(n_dot_v);
+  dvec3 v(sqrt(1.0 - n_dot_v * n_dot_v), 0, n_dot_v);
+  double accum_scale = 0.0;
+  double accum_bias  = 0.0;
+  
+  // Convert GGX roughness to a Phong-like shininess exponent
+  // Roughness of 0 should give a very high shininess, roughness of 1 should give low shininess
+  double phong_exponent = std::max(2.0, (1.0 - roughness) * 128.0);
+  
+  // Use a sharper, more Phong-like specular distribution
+  for (int i = 0; i < numsamples; i++) {
+    dvec2 e = hammersley(i, numsamples);
+    
+    // Instead of using GGX importance sampling, use a distribution closer to Phong
+    // This is a key change to make the result more Phong-like
+    dvec3 h = importanceSamplePhong(e, phong_exponent);
+    
+    double v_dot_h = v.dotWith(h);
+    dvec3 l = ((h * 2.0 * v_dot_h) - v).normalized();
+    double n_dot_h_sat = saturate(h.z);
+    double n_dot_l_sat = saturate(l.z);
+    double v_dot_h_sat = saturate(v_dot_h);
+    
+    if (l.z > 0.0) {
+      // We'll need to compensate for the fact we're still using the GGX-based shader
+      // Amplify the specular highlight's intensity to match Phong's sharper appearance
+      double phong_factor = pow(n_dot_h_sat, phong_exponent);
+      
+      // Scale by the Phong normalization factor to conserve energy
+      double phong_normalization = (phong_exponent + 2.0) / (2.0 * 3.14159265359);
+      phong_factor *= phong_normalization;
+      
+      // Calculate a simple visibility term (Phong doesn't use the same geometry term as GGX)
+      double visibility = 1.0 / (n_dot_v * n_dot_l_sat);
+      
+      // Combine to create a Phong-like response that will work with the existing shader
+      double gvis = phong_factor * visibility;
+      
+      // Use standard Fresnel
+      double fc = pow(1.0 - v_dot_h_sat, 5.0);
+      
+      // Accumulate results
+      accum_scale += (1.0 - fc) * gvis;
+      accum_bias += fc * gvis;
+    }
+  }
+  
+  // Apply scaling to ensure energy conservation
+  // Phong tends to have brighter, more concentrated highlights
+  const double energy_adjustment = 0.8;
+  
+  return dvec2(accum_scale / double(numsamples) * energy_adjustment, 
+               accum_bias / double(numsamples) * energy_adjustment);
+}
+
+template <size_t numsamples> inline dvec2 integrateBlinn(double n_dot_v, double roughness) {
+  n_dot_v = saturate(n_dot_v);
+  dvec3 v(sqrt(1.0 - n_dot_v * n_dot_v), 0, n_dot_v);
+  double accum_scale = 0.0;
+  double accum_bias  = 0.0;
+  
+  // Convert GGX roughness to a Blinn-like exponent
+  // Use a higher exponent multiplier to match GGX brightness
+  double blinn_exponent = std::max(2.0, (1.0 - roughness) * 256.0); // Increased from 128 to 256
+  
+  for (int i = 0; i < numsamples; i++) {
+    dvec2 e = hammersley(i, numsamples);
+    dvec3 h = importanceSampleBlinn(e, roughness); // Use roughness for sampling
+    
+    double v_dot_h = v.dotWith(h);
+    dvec3 l = ((h * 2.0 * v_dot_h) - v).normalized();
+    double n_dot_h_sat = saturate(h.z);
+    double n_dot_l_sat = saturate(l.z);
+    double v_dot_h_sat = saturate(v_dot_h);
+    
+    if (l.z > 0.0) {
+      // Use the correct roughness for the geometry term, not the exponent
+      // The geometry term expects roughness in the range [0,1]
+      double gsmith = geometrySmith(dvec3(0, 0, 1), v, l, roughness);
+      
+      // Add Blinn-specific specular term
+      double blinn_specular = pow(n_dot_h_sat, blinn_exponent);
+      
+      // Proper normalization factor for Blinn-Phong
+      double normalization = (blinn_exponent + 8.0) / (8.0 * PI);
+      blinn_specular *= normalization;
+      
+      // Combine with geometry term - adjust weighting for energy match
+      double gvis = (gsmith * v_dot_h * blinn_specular) / (n_dot_h_sat * n_dot_v);
+      
+      // Use standard Fresnel
+      double fc = pow(1.0 - v_dot_h_sat, 5.0);
+      
+      // Accumulate results
+      accum_scale += (1.0 - fc) * gvis;
+      accum_bias += fc * gvis;
+    }
+  }
+  
+  // Apply scaling to ensure energy conservation
+  // Increase this value to brighten the result
+  const double energy_adjustment = 1.5; // Increased from 0.8 to 1.5
+  
+  return dvec2(accum_scale / double(numsamples) * energy_adjustment, 
+               accum_bias / double(numsamples) * energy_adjustment);
+}
+
 } // namespace ork::brdf

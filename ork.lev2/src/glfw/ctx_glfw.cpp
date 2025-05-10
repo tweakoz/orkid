@@ -337,6 +337,12 @@ void CtxGLFW::Show() {
     int l = _appinitdata->_left;
     int t = _appinitdata->_top;
 
+    #if defined(__APPLE__)
+    glfwWindowHint(
+        GLFW_COCOA_RETINA_FRAMEBUFFER, //
+        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
+#endif
+
     if (_appinitdata->_fullscreen) {
 
       std::string desired_monitor_name = _appinitdata->_fullscreen_monitor;
@@ -388,7 +394,7 @@ void CtxGLFW::Show() {
       float contentScaleX = 1.0f;
       float contentScaleY = 1.0f;
       // fetch content scale
-      glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
+      //glfwGetMonitorContentScale(fullscreen_monitor, &contentScaleX, &contentScaleY);
 
       _width  = mode->width * contentScaleX;
       _height = mode->height * contentScaleY;
@@ -416,11 +422,6 @@ void CtxGLFW::Show() {
       fullscreen_monitor = nullptr; // disable actual fullscreen
     } // fullscreen
 
-#if defined(__APPLE__)
-    glfwWindowHint(
-        GLFW_COCOA_RETINA_FRAMEBUFFER, //
-        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
-#endif
 
 
     switch (GRAPHICS_API) {
@@ -472,7 +473,7 @@ void CtxGLFW::Show() {
   _glfwMonitor = selected_monitor;
 
   // if(_appinitdata->_allowHIDPI){
-  glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
+  //glfwGetWindowContentScale(_glfwWindow, &_contentScaleX, &_contentScaleY);
   //}
   // else{
   //  _contentScaleX = 1.0f;
@@ -524,7 +525,7 @@ void CtxGLFW::Show() {
 
   onResize(_width, _height);
 
-  //setAlwaysOnTop(_glfwWindow);
+  setAlwaysOnTop(_glfwWindow);
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -772,7 +773,7 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 #if defined(__APPLE__)
     glfwWindowHint(
         GLFW_COCOA_RETINA_FRAMEBUFFER, //
-        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
+        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
 #endif
 
     offscreen_window = glfwCreateWindow(

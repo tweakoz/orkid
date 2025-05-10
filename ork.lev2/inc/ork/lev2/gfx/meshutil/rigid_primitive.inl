@@ -618,7 +618,7 @@ void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, 
   auto gbi  = context->GBI();
 
   lev2::ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
-
+  //printf("vprect<%d %d %d %d>\n", vprect.miX, vprect.miY, vprect.miX2, vprect.miY2);
   mtxi->PushPMatrix(fmtx4::Identity());
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());

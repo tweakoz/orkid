@@ -261,6 +261,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def("gpuInit",[](postnode_user_ptr_t dcnode, ctx_t ctx, int w, int h) {
             dcnode->gpuInit(ctx.get(), w, h);
           })
+          .def_property("disabled", //
+            [](postnode_user_ptr_t dcnode) -> bool {
+              return dcnode->_disabled;
+            },
+            [](postnode_user_ptr_t dcnode, bool disabled) {
+              dcnode->_disabled = disabled;
+            })
           .def_property("shader_path", //
             [](postnode_user_ptr_t dcnode) -> std::string {
               return dcnode->_shader_path;
@@ -610,6 +617,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
         },
         [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
           self->_var.setShared<Texture>(texture);
+        })
+      .def_property("bool",
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> bool { //
+          return self->_var.get<bool>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, bool val) { //
+          self->_var.set<bool>(val);
         })
       .def_property("float", 
         [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
