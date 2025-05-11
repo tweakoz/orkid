@@ -18,7 +18,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderingModel {
-  RenderingModel(uint32_t id="NONE"_crcu);
+  RenderingModel(uint32_t id = "NONE"_crcu);
   bool isDeferred() const;
   bool isForward() const;
   bool isDeferredPBR() const;
@@ -57,27 +57,27 @@ struct RenderContextInstData {
   // material interface
   //////////////////////////////////////
 
-  inline void forceTechnique(fxtechnique_constptr_t technique){
+  inline void forceTechnique(fxtechnique_constptr_t technique) {
     _forced_technique = technique;
   }
 
   void SetMaterialInst(const XgmMaterialStateInst* mi);
 
-  int GetMaterialIndex(void) const;               // deprecated
-  int GetMaterialPassIndex(void) const;           // deprecated
-  void SetMaterialIndex(int idx);                 // deprecated
-  void SetMaterialPassIndex(int idx);             // deprecated
+  int GetMaterialIndex(void) const;     // deprecated
+  int GetMaterialPassIndex(void) const; // deprecated
+  void SetMaterialIndex(int idx);       // deprecated
+  void SetMaterialPassIndex(int idx);   // deprecated
 
-  bool _isSkinned                           = false;
-  bool _isInstanced = false;
-  int miMaterialIndex                       = 0;
-  int miMaterialPassIndex                   = 0;
-  const IRenderer* mpActiveRenderer         = nullptr;
-  const IRenderable* _irenderable         = nullptr;
+  bool _isSkinned                   = false;
+  bool _isInstanced                 = false;
+  int miMaterialIndex               = 0;
+  int miMaterialPassIndex           = 0;
+  const IRenderer* mpActiveRenderer = nullptr;
+  const IRenderable* _irenderable   = nullptr;
 
   fxtechnique_constptr_t _forced_technique = nullptr;
   matrix_lamda_t _genMatrix;
-  rcfd_ptr_t                    _held_rcfd  = nullptr;
+  rcfd_ptr_t _held_rcfd                     = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;
   pickvariant_t _pickID;
@@ -88,13 +88,11 @@ struct RenderContextInstData {
 //  render modes, target, etc....
 ///////////////////////////////////////////////////////////////////////////////
 
-//typedef svar64_t rendervar_t;
-
 struct RenderContextFrameData {
 
-  RenderContextFrameData(Context* ptarg=nullptr);
+  RenderContextFrameData(Context* ptarg = nullptr);
 
-  RenderContextFrameData(const RenderContextFrameData&) = delete;
+  RenderContextFrameData(const RenderContextFrameData&)            = delete;
   RenderContextFrameData& operator=(const RenderContextFrameData&) = delete;
 
   Context* GetTarget(void) const {
@@ -102,13 +100,6 @@ struct RenderContextFrameData {
   }
   Context* context(void) const {
     return _target;
-  }
-  LightManager* GetLightManager() const {
-    return _lightmgr;
-  }
-
-  void SetLightManager(LightManager* lmgr) {
-    _lightmgr = lmgr;
   }
 
   typedef orklut<CrcString, rendervar_t> usermap_t;
@@ -124,8 +115,7 @@ struct RenderContextFrameData {
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
 
-  template <typename T>
-  T userPropertyAs(CrcString prop) const{
+  template <typename T> T userPropertyAs(CrcString prop) const {
     return getUserProperty(prop).get<T>();
   }
 
@@ -138,14 +128,13 @@ struct RenderContextFrameData {
 
   //////////////////////////////////////
 
-  void pushCompositor(compositorimpl_ptr_t c);  
-  compositorimpl_ptr_t popCompositor();  
+  void pushCompositor(compositorimpl_ptr_t c);
+  compositorimpl_ptr_t popCompositor();
   compositorimpl_ptr_t topCompositor() const;
 
   //////////////////////////////////////
 
   std::stack<compositorimpl_ptr_t> __cimplstack;
-  LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
   Context* _target = nullptr;
   const IRenderer* _renderer;

@@ -288,11 +288,12 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               [](pbrmaterial_ptr_t mtl, pbr::commonstuff_ptr_t irr) { //
                 mtl->_commonOverride = irr;
               })
-          .def_property_readonly("texArrayCNMREA", [](pbrmaterial_ptr_t m) -> texture_ptr_t { return m->_texArrayCNMREA; })
+          .def_property_readonly("texArrayCNMREA", [](pbrmaterial_ptr_t m) -> texturearray_ptr_t { return m->_texArrayCNMREA; })
           .def("setColorImage", [](pbrmaterial_ptr_t mtl, ctx_t context, image_ptr_t img) {
             auto txi = context->TXI();
-            auto tex = mtl->_texArrayCNMREA;
-            txi->updateTextureArraySlice(tex.get(), 0, img);
+            auto array = mtl->_texArrayCNMREA;
+            auto slice = array->slice(0);
+            txi->updateTextureArraySlice(slice.get(), img);
           });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
 }

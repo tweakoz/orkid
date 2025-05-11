@@ -149,14 +149,12 @@ libblock lib_fwd     //
 
   vec3 _sample_cookie_lod(int index, vec2 uv, float lod) {
     vec3 rval = vec3(0);
-    if (index == 0) {
-      rval = textureLod(light_cookie_color_0, vec3(uv,0), lod).xyz;
-    } else if (index == 1) {
-      rval = textureLod(light_cookie_depth_0, uv, lod).xyz;
-    } else if (index == 2) {
-      rval = textureLod(light_cookie_color_1, vec3(uv,0), lod).xyz;
-    } else if (index == 3) {
-      rval = textureLod(light_cookie_depth_1, uv, lod).xyz;
+    int cookie = index >> 1;
+    bool is_odd = (index & 1) == 1;
+    if (is_odd) { // depth cookie
+      rval = textureLod(light_cookie_depths, vec3(uv,cookie), lod).xyz;
+    } else { // color cookie
+      rval = textureLod(light_cookie_colors, vec3(uv,cookie), lod).xyz;
     }
     return rval;
   }

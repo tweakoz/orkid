@@ -93,10 +93,6 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
   _context->pushRenderContextFrameData(RCFD);
   ViewportRect tgt_rect(0, 0, PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
-  // auto irenderer = _scenevp->GetRenderer();
-  // irenderer->setContext(_context);
-  RCFD->SetLightManager(nullptr);
-  ///////////////////////////////////////////////////////////////////////////
   auto DB = _scene._dbufcontext_SG->acquireForReadLocked();
   if (DB) {
 

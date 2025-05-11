@@ -133,7 +133,7 @@ texture_ptr_t TextureInterface::createColorTextureV3(fvec3 color, int w, int h){
   return rval;
 }
 
-texture_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int w, int h, int d){
+texturearray_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int w, int h, int d){
 
   auto image = std::make_shared<Image>();
   image->initRGB8WithColor(w,h,color,EBufferFormat::RGB8);
@@ -145,11 +145,12 @@ texture_ptr_t TextureInterface::createColorTextureV3Array(fvec3 color, int w, in
   for(uint32_t i=0; i<d; i++){
     TID._slices[i] = TextureArrayInitSubItem{i, image};
   }
-  auto rval = std::make_shared<Texture>();
-  rval->_debugName = "tidtexarray";
-  initTextureArray2DFromData(rval.get(), TID);
+  auto array = std::make_shared<TextureArray>();
+  auto tex = array->_tex;
+  tex->_debugName = "tidtexarray";
+  initTextureArray2DFromData(array.get(), TID);
 
-  return rval;
+  return array;
 }
 
 texture_ptr_t TextureInterface::createColorCubeTexture(fvec4 color, int w, int h){

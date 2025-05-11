@@ -290,4 +290,50 @@ asset::loadrequest_ptr_t Texture::loadRequest() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+TextureArray::TextureArray() {
+  _width  = 0;
+  _height = 0;
+  _maxslices = 0;
+  _tex = std::make_shared<Texture>();
+}
+TextureArray::~TextureArray() {
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void TextureArray::resize(size_t w, size_t h, size_t maxslices) {
+  _width     = w;
+  _height    = h;
+  _maxslices = maxslices;
+  for(size_t i = 0; i < maxslices; i++) {
+    auto slice = std::make_shared<TextureArraySliceRef>(this, i);
+    _free_slices.insert(std::make_pair(i, slice));
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+size_t TextureArray::load(const std::string& path) {
+  auto it = _slices_by_path.find(path);
+  if (it == _slices_by_path.end()) {
+    return -1uz;
+  }
+  return it->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+texturearraysliceref_ptr_t TextureArray::slice(size_t index) {
+  auto slice = std::make_shared<TextureArraySliceRef>(this, index);
+  return slice;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TextureArraySliceRef::TextureArraySliceRef(TextureArray* ary, int slice)
+: _array(ary)
+, _slice(slice) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2

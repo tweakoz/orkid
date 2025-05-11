@@ -154,28 +154,35 @@ class SceneGraphApp(object):
       ######################
 
 
+
       self.nodes += [node]
 
-    """
-    cookie3 = MyCookie("src://effect_textures/knob2.png")
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(4,1024,1024)
+    depth_cookies.resize(4,1024,1024)
+    cookie1 = color_cookies.load("src://effect_textures/knob2.png")
     
-    #self.spotlight1 = MySpotLight(0,self,model,0.17,vec3(0,500,0),cookie1)
-    #self.spotlight2 = MySpotLight(1,self,model,0.37,vec3(500,0,0),cookie2)
+    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(0,500,0),cookie=cookie1,radius=16,voffset=16,fovbase=65)
+    self.spotlight2 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(500,0,0),cookie=cookie1,radius=16,voffset=16,fovbase=65)
     self.spotlight3 = MySpotLight( index=2,
-                                  app=self,
-                                  model=model,
-                                  frq=0.27,
-                                  color=vec3(500,500,400),
-                                  cookie=cookie3,
-                                  radius=16,
-                                  bias=1e-3,
-                                  dim=2048,
-                                  fovamp=0,
-                                  range=200.0,
-                                  fovbase=65,
-                                  voffset=16,
-                                  vscale=14)
-    """
+                                   app=self,
+                                   model=model,
+                                   frq=0.27,
+                                   color=vec3(500,500,400),
+                                   cookie=cookie1,
+                                   radius=16,
+                                   bias=1e-3,
+                                   dim=2048,
+                                   fovamp=0,
+                                   range=200.0,
+                                   fovbase=65,
+                                   voffset=16,
+                                   vscale=14)
+
+    print("LMGR",lmgr)
     ###################################
 
     self.grid_data = createGridData()
@@ -214,7 +221,9 @@ class SceneGraphApp(object):
   ################################################
 
   def onGpuUpdate(self,ctx):
-    #self.spotlight3.update(self.lighttime)
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
     pass 
 
   ################################################

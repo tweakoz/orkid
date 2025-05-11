@@ -56,9 +56,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
           .def_property_readonly("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
           .def_property_readonly("CI", [](ctx_t& c) -> ci_t { return ci_t(c.get()->CI()); })
-          .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { 
-            _g_post_swap_wait_time = wt;
-          })
+          .def("setPostSwapWaitTime", [](ctx_t& c, int wt) { _g_post_swap_wait_time = wt; })
           //////////////////////
           // todo move to mtxi when we add it
           //////////////////////
@@ -143,63 +141,76 @@ void pyinit_gfx(py::module& module_lev2) {
             return vw;
           })
       .def(
-        "lockVU32",
-        [](gbi_t gbi, vtxbufferbase_ptr_t& vb, int ibase, int icount) -> py::memoryview {
-          OrkAssert(vb->GetVtxSize() == sizeof(SVtxVU32));
-          OrkAssert(vb->GetNumVertices() >= ibase + icount);
-          int ibasebytes = ibase * vb->GetVtxSize();
-          int isizebytes = icount * vb->GetVtxSize();
-          auto pu32 = (uint32_t*)gbi.get()->LockVB(*vb, ibase, icount);
-          OrkAssert(pu32);
-          // create a buffer info object
-          auto b = py::memoryview::from_buffer(
-            pu32,
-            sizeof(uint32_t),
-            py::format_descriptor<uint32_t>::value,
-            /*shape*/ py::detail::any_container<ssize_t>{ icount }, 
-            py::detail::any_container<ssize_t>{ 0 } // strides
-          );
-          return b;
-        })
-        .def("unlockVB", [](gbi_t gbi, vtxbufferbase_ptr_t& vb) { gbi->UnLockVB(*vb); })
-        .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
+          "lockVU32",
+          [](gbi_t gbi, vtxbufferbase_ptr_t& vb, int ibase, int icount) -> py::memoryview {
+            OrkAssert(vb->GetVtxSize() == sizeof(SVtxVU32));
+            OrkAssert(vb->GetNumVertices() >= ibase + icount);
+            int ibasebytes = ibase * vb->GetVtxSize();
+            int isizebytes = icount * vb->GetVtxSize();
+            auto pu32      = (uint32_t*)gbi.get()->LockVB(*vb, ibase, icount);
+            OrkAssert(pu32);
+            // create a buffer info object
+            auto b = py::memoryview::from_buffer(
+                pu32,
+                sizeof(uint32_t),
+                py::format_descriptor<uint32_t>::value,
+                /*shape*/ py::detail::any_container<ssize_t>{icount},
+                py::detail::any_container<ssize_t>{0} // strides
+            );
+            return b;
+          })
+      .def("unlockVB", [](gbi_t gbi, vtxbufferbase_ptr_t& vb) { gbi->UnLockVB(*vb); })
+      .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
       .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
       .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
       .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
-      //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
+  //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) {
+  //ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<ci_t>(module_lev2, "ComputeInterface")
-    .def(
-      "__repr__",
-      [](const ci_t& gbi) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("CI(%p)", gbi.get());
-        return fxs.c_str();
-      })
-      #if defined(ENABLE_SSBO)
-      .def("createShaderStorageBufferWithLength", [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
-      .def("copyDataIntoShaderStorageBuffer", [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
-        if( py::isinstance<py::float_>(data) ) {
-          auto as_float = data.cast<py::float_>();
-          auto datablock = std::make_shared<DataBlock>();
-          datablock->addItem<float>(as_float);
-          ci.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
-        }
-        else{
-          auto type_str = data.get_type().attr("__name__").cast<std::string>();
-          printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n",type_str.c_str());
-          OrkAssert(false);
-        }
-      })
-      #if defined(ENABLE_PYTORCH)
-      .def("createShaderStorageBufferFromTensor", [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t { return ci.get()->storageBufferFromTensor(tensor); })
-      .def("copyTensorIntoShaderStorageBuffer", [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset); })
-      #endif
-      #endif
-      .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz ) { ci.get()->dispatchCompute(csh.get(), numx,numy,numz); })
-      ;
+      .def(
+          "__repr__",
+          [](const ci_t& gbi) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("CI(%p)", gbi.get());
+            return fxs.c_str();
+          })
+#if defined(ENABLE_SSBO)
+      .def(
+          "createShaderStorageBufferWithLength",
+          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
+      .def(
+          "copyDataIntoShaderStorageBuffer",
+          [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
+            if (py::isinstance<py::float_>(data)) {
+              auto as_float  = data.cast<py::float_>();
+              auto datablock = std::make_shared<DataBlock>();
+              datablock->addItem<float>(as_float);
+              ci.get()->copyBufferIntoStorageBuffer(buffer.get(), datablock->_storage, dest_offset);
+            } else {
+              auto type_str = data.get_type().attr("__name__").cast<std::string>();
+              printf("copyDataIntoShaderStorageBuffer unknown type<%s>\n", type_str.c_str());
+              OrkAssert(false);
+            }
+          })
+#if defined(ENABLE_PYTORCH)
+      .def(
+          "createShaderStorageBufferFromTensor",
+          [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t {
+            return ci.get()->storageBufferFromTensor(tensor);
+          })
+      .def(
+          "copyTensorIntoShaderStorageBuffer",
+          [](ci_t& ci, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) {
+            ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor, dest_offset);
+          })
+#endif
+#endif
+      .def("dispatch", [](ci_t& ci, pyfxcomputeshader_ptr_t csh, uint32_t numx, uint32_t numy, uint32_t numz) {
+        ci.get()->dispatchCompute(csh.get(), numx, numy, numz);
+      });
 
-      /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<vw_vtxa_t>(module_lev2, "Writer_V12N12B12T8C4")
       .def(
           "__repr__",
@@ -210,16 +221,28 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<TextureInitData,textureinitdata_ptr_t>(module_lev2, "TextureInitData")
+  py::class_<TextureInitData, textureinitdata_ptr_t>(module_lev2, "TextureInitData")
       .def(py::init<>())
-      .def_property("width", [](textureinitdata_ptr_t tid) -> int { return tid->_w; }, [](textureinitdata_ptr_t tid, int w) { tid->_w = w; })
-      .def_property("height", [](textureinitdata_ptr_t tid) -> int { return tid->_h; }, [](textureinitdata_ptr_t tid, int h) { tid->_h = h; })
-      .def_property("depth", [](textureinitdata_ptr_t tid) -> int { return tid->_d; }, [](textureinitdata_ptr_t tid, int d) { tid->_d = d; })
-      .def_property("src_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_src_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_src_format = fmt; })
-      .def_property("dst_format", [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_dst_format; }, [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_dst_format = fmt; })
-      .def_property("autogenmips", [](textureinitdata_ptr_t tid) -> bool { return tid->_autogenmips; }, [](textureinitdata_ptr_t tid, bool b) { tid->_autogenmips = b; });
+      .def_property(
+          "width", [](textureinitdata_ptr_t tid) -> int { return tid->_w; }, [](textureinitdata_ptr_t tid, int w) { tid->_w = w; })
+      .def_property(
+          "height", [](textureinitdata_ptr_t tid) -> int { return tid->_h; }, [](textureinitdata_ptr_t tid, int h) { tid->_h = h; })
+      .def_property(
+          "depth", [](textureinitdata_ptr_t tid) -> int { return tid->_d; }, [](textureinitdata_ptr_t tid, int d) { tid->_d = d; })
+      .def_property(
+          "src_format",
+          [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_src_format; },
+          [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_src_format = fmt; })
+      .def_property(
+          "dst_format",
+          [](textureinitdata_ptr_t tid) -> EBufferFormat { return tid->_dst_format; },
+          [](textureinitdata_ptr_t tid, EBufferFormat fmt) { tid->_dst_format = fmt; })
+      .def_property(
+          "autogenmips",
+          [](textureinitdata_ptr_t tid) -> bool { return tid->_autogenmips; },
+          [](textureinitdata_ptr_t tid, bool b) { tid->_autogenmips = b; });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<TextureArrayInitData,texturearrayinitdata_ptr_t>(module_lev2, "TextureArrayInitData")
+  py::class_<TextureArrayInitData, texturearrayinitdata_ptr_t>(module_lev2, "TextureArrayInitData")
       .def(py::init<>())
       .def(py::init([](py::list list) {
         texturearrayinitdata_ptr_t rval = std::make_shared<TextureArrayInitData>();
@@ -230,7 +253,9 @@ void pyinit_gfx(py::module& module_lev2) {
         return rval;
       }))
       .def_property_readonly("size", [](texturearrayinitdata_ptr_t tid) -> int { return int(tid->_slices.size()); })
-      .def("append", [](texturearrayinitdata_ptr_t tid, image_ptr_t img) { tid->_slices.push_back(TextureArrayInitSubItem{0, img}); });
+      .def("append", [](texturearrayinitdata_ptr_t tid, image_ptr_t img) {
+        tid->_slices.push_back(TextureArrayInitSubItem{0, img});
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<txi_t>(module_lev2, "TextureInterface")
       .def(
@@ -241,65 +266,68 @@ void pyinit_gfx(py::module& module_lev2) {
              int h) -> texture_ptr_t {                       //
             return the_txi->createColorTexture(color, w, h); //
           })
-      .def("updateTextureArraySlice", // 
-           [](const txi_t& the_txi, //
-              texture_ptr_t ptex, //
-              int slice, //
-              image_ptr_t img) { //
-        the_txi->updateTextureArraySlice(ptex.get(), slice, img);
-      })
-      #if defined(ENABLE_PYTORCH)
-      .def("initTextureFromTensor", // 
-            [](const txi_t& the_txi, //
-                texture_ptr_t ptex, //
-                torchtensor_ptr_t tensor, //
-                crcstring_ptr_t fmt) { //
-          auto as_efmt = EBufferFormat(fmt->hashed());
-          the_txi->initTextureFromTensor(ptex.get(), tensor, as_efmt);
-        })
-      #endif
-          .def("__repr__", [](const txi_t& txi) -> std::string {
+      .def(
+          "updateTextureArraySlice", //
+          [](const txi_t& the_txi,   //
+            texturearraysliceref_ptr_t slice,     //
+             image_ptr_t img) {      //
+            the_txi->updateTextureArraySlice(slice.get(), img);
+          })
+#if defined(ENABLE_PYTORCH)
+      .def(
+          "initTextureFromTensor",     //
+          [](const txi_t& the_txi,     //
+             texture_ptr_t ptex,       //
+             torchtensor_ptr_t tensor, //
+             crcstring_ptr_t fmt) {    //
+            auto as_efmt = EBufferFormat(fmt->hashed());
+            the_txi->initTextureFromTensor(ptex.get(), tensor, as_efmt);
+          })
+#endif
+      .def("__repr__", [](const txi_t& txi) -> std::string {
         fxstring<256> fxs;
         fxs.format("TXI(%p)", txi.get());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  auto rstate_type = py::class_<RasterState,rasterstate_ptr_t>(module_lev2, "RasterState") //
-      .def_property(
-          "culltest",
-          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_culltest));
-            return crcstr;
-          },
-          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
-            state->_culltest = ECullTest(ctest->hashed());
-          })
-      .def_property(
-          "depthtest",
-          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_depthtest));
-            return crcstr;
-          },
-          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
-            state->_depthtest = EDepthTest(ctest->hashed());
-          })
-          .def("setBlendingMacro", [](rasterstate_ptr_t state, crcstring_ptr_t value) { //
-            state->setBlendingMacro(BlendingMacro(value->hashed()));
-          })
-      /*.def_property(
-          "blending",
-          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_blending));
-            return crcstr;
-          },
-          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
-            state->setBlendingMacro(ctest->hashed());
-          })*/
-      .def("__repr__", [](rasterstate_ptr_t state) -> std::string {
-        fxstring<256> fxs;
-        fxs.format("RasterState()");
-        return fxs.c_str();
-      });
+  auto rstate_type = py::class_<RasterState, rasterstate_ptr_t>(module_lev2, "RasterState") //
+                         .def_property(
+                             "culltest",
+                             [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+                               auto crcstr = std::make_shared<CrcString>(uint64_t(state->_culltest));
+                               return crcstr;
+                             },
+                             [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+                               state->_culltest = ECullTest(ctest->hashed());
+                             })
+                         .def_property(
+                             "depthtest",
+                             [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+                               auto crcstr = std::make_shared<CrcString>(uint64_t(state->_depthtest));
+                               return crcstr;
+                             },
+                             [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+                               state->_depthtest = EDepthTest(ctest->hashed());
+                             })
+                         .def(
+                             "setBlendingMacro",
+                             [](rasterstate_ptr_t state, crcstring_ptr_t value) { //
+                               state->setBlendingMacro(BlendingMacro(value->hashed()));
+                             })
+                         /*.def_property(
+                             "blending",
+                             [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+                               auto crcstr = std::make_shared<CrcString>(uint64_t(state->_blending));
+                               return crcstr;
+                             },
+                             [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+                               state->setBlendingMacro(ctest->hashed());
+                             })*/
+                         .def("__repr__", [](rasterstate_ptr_t state) -> std::string {
+                           fxstring<256> fxs;
+                           fxs.format("RasterState()");
+                           return fxs.c_str();
+                         });
   type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
@@ -387,8 +415,8 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
-          .def(py::init([](std::string debugname) -> texture_ptr_t { 
-            auto tex = std::make_shared<Texture>();
+          .def(py::init([](std::string debugname) -> texture_ptr_t {
+            auto tex        = std::make_shared<Texture>();
             tex->_debugName = debugname;
             return tex;
           }))
@@ -409,13 +437,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
-          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
-          .def("subimage", [](texture_ptr_t self, int slice) -> image_ptr_t { //
-            OrkAssert(slice >= 0);
-            OrkAssert(slice < self->_images.size());
-            auto rval = self->_images[slice];
-            return rval;
-           });
+          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -576,6 +598,40 @@ void pyinit_gfx(py::module& module_lev2) {
                              })
                          .def_property_readonly("eventID", [](gpueventsink_ptr_t ev) -> std::string { return ev->_eventID; });
   type_codec->registerStdCodec<gpueventsink_ptr_t>(gpuevsink_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto texarray_t = py::class_<TextureArray, texturearray_ptr_t>(module_lev2, "TextureArray");
+  texarray_t
+      .def(py::init([](size_t w, size_t h, size_t maxslices) -> texturearray_ptr_t {
+        auto rval     = std::make_shared<TextureArray>();
+        rval->_width  = w;
+        rval->_height = h;
+        rval->_maxslices = maxslices;
+        return rval;
+      }))
+      .def("resize", [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d) {
+        texarray->resize(w,h,d);
+      })
+      .def("load", [](texturearray_ptr_t texarray, std::string path) -> size_t { return texarray->load(path); })
+      .def_property("needsIrradianceCache", [](texturearray_ptr_t texarray) -> bool { //
+        return texarray->_needsIrradianceCache;
+      }, [](texturearray_ptr_t texarray, bool b) { //
+        texarray->_needsIrradianceCache = b;
+      })
+      .def("subimage", [](texturearray_ptr_t texarray, int slice) -> image_ptr_t { //
+        OrkAssert(slice >= 0);
+        OrkAssert(slice < texarray->_images.size());
+        auto rval = texarray->_images[slice];
+        return rval;
+      })
+    .def("__repr__", [](texturearray_ptr_t texarray) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("TextureArrayLoader(%p)", texarray.get());
+        return fxs.c_str();
+      });
+  type_codec->registerStdCodec<texturearray_ptr_t>(texarray_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto texarrayslice_t = py::class_<TextureArraySliceRef, texturearraysliceref_ptr_t>(module_lev2, "TextureArraySlice");
+  type_codec->registerStdCodec<texturearraysliceref_ptr_t>(texarrayslice_t);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2

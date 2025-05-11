@@ -70,7 +70,7 @@ public:
   texture_ptr_t createColorTexture(fvec4 color, int w, int h);
   texture_ptr_t createColorTextureV3(fvec3 color, int w, int h);
   texture_ptr_t createColorCubeTexture(fvec4 color, int w, int h);
-  texture_ptr_t createColorTextureV3Array(fvec3 color, int w, int h, int d);
+  texturearray_ptr_t createColorTextureV3Array(fvec3 color, int w, int h, int d);
 
   bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock);
   bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
@@ -94,15 +94,15 @@ public:
   }
   virtual void initTextureFromImage(Texture* ptex, image_ptr_t img) {
   }
-  virtual void initTextureArray1DFromData(Texture* ptex, TextureArrayInitData tid) {
+  virtual void initTextureArray1DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
-  virtual void initTextureArray2DFromData(Texture* ptex, TextureArrayInitData tid) {
+  virtual void initTextureArray2DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
-  virtual void initTextureArray3DFromData(Texture* ptex, TextureArrayInitData tid) {
+  virtual void initTextureArray3DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
-  virtual void updateTextureArraySlice(Texture* ptex, int slice, image_ptr_t img) {
+  virtual void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) {
   }
-  virtual void initTextureFromImage(Texture* ptex, int slice, image_ptr_t img) {
+  virtual void initTextureAraySliceFromImage(TextureArraySliceRef* slice, image_ptr_t img) {
   }
   virtual Texture* createFromMipChain(MipChain* from_chain) {
     return nullptr;

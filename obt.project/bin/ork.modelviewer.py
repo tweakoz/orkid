@@ -109,29 +109,27 @@ class SceneGraphApp(object):
     self.ssaamode = False
     if ssao>0:
       self.ssaamode = True
-    self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
     self.curbrdfi = 0
+    self.cursati = 0
+    self.curgami = 0
+    self.brdfset = [("GGX",tokens.GGX),("VELVET",tokens.GGXVELVET),("GGXRIM",tokens.GGXRIM),("BLINN",tokens.BLINN),("PHONG",tokens.PHONG)]
+    self.satset = [0.0,0.1,0.2,0.5,0.75,1.0]
+    self.gamset = [0.8,1.0,1.2,1.4,1.6,1.8,2.0,2.4]
     
   ##############################################
 
   def onGpuInit(self,ctx):
 
-    params_dict = {
-      "SkyboxIntensity": float(lightintens),
-      "AmbientLight": vec3(ambiuintens),
-      "DiffuseIntensity": diffuintens,
-      "SpecularIntensity": specuintens,
-      "depthFogDistance": float(10000),
-      "SSAONumSamples": ssao,
-      "SSAONumSteps": 2,
-      "SSAOBias": -1.0e-5,
-      "SSAORadius": 2.0*25.4/1000.0,
-      "SSAOWeight": 0.75,
-      "SSAOPower": 0.75,
-    }
+    sceneparams = VarMap() 
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(lightintens)
+    sceneparams.SpecularIntensity = float(specuintens)
+    sceneparams.DiffuseIntensity = float(diffuintens)
+    sceneparams.AmbientLight = vec3(ambiuintens)
+    sceneparams.DepthFogDistance = float(1e5)
 
     if envmap != "":
-      params_dict["SkyboxTexPathStr"] = envmap
+      sceneparams.SkyboxTexPathStr = envmap
 
     #rendermodel = "DeferredPBR"
     global rendermodel
@@ -140,13 +138,31 @@ class SceneGraphApp(object):
     elif rendermodel == "forward":
       rendermodel="ForwardPBR"
 
+    sceneparams.preset = rendermodel
 
-    createSceneGraph( app=self,
-                      params_dict=params_dict,
-                      rendermodel=rendermodel )
+    ###################################
+    # post fx node
+    ###################################
+    postNode = PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 1.0
+    postNode.value = 1.0
+    postNode.gamma = 2.2
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node = postNode
+
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.pbr_common = self.scene.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
+
+    ######################
 
     self.model = XgmModel(modelpath)
-    self.sgnode = self.model.createNode("node",self.layer1)
+    self.sgnode = self.model.createNode("node",self.layer_fwd)
     self.pbr_common = self.scene.pbr_common
     self.model.debugState = statedebug
 
@@ -227,7 +243,7 @@ class SceneGraphApp(object):
       self.grid_data = createGridData()
       if rendermodel == "ForwardPBR":
         self.grid_data.shader_suffix = "_V3"
-      self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+      self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
       self.grid_node.sortkey = 1
 
   ##############################################
@@ -235,6 +251,7 @@ class SceneGraphApp(object):
   def onUiEvent(self,uievent):
     res = ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
+      ######################
       if uievent.keycode == ord("A"):
         if self.ssaamode == True:
           self.ssaamode = False
@@ -242,6 +259,7 @@ class SceneGraphApp(object):
           self.ssaamode = True
         print("SSAO MODE",self.ssaamode)
         return res
+      ######################
       if uievent.keycode == ord("B"):
         brdfi = self.curbrdfi+1
         if brdfi >= len(self.brdfset):
@@ -250,7 +268,23 @@ class SceneGraphApp(object):
         brdf = self.brdfset[self.curbrdfi]
         print("BRDF",brdf[0])
         self.pbr_common.setBRDF(brdf[1])
-        pass
+      ######################
+      if uievent.keycode == ord("S"):
+        sati = self.cursati+1
+        if sati >= len(self.satset):
+          sati = 0
+        self.cursati = sati
+        sat = self.satset[self.cursati]
+        self.post_node.saturation = sat
+      ######################
+      if uievent.keycode == ord("G"):
+        gami = self.curgami+1
+        if gami >= len(self.gamset):
+          gami = 0
+        self.curgami = gami
+        gam = self.gamset[self.curgami]
+        self.post_node.gamma = gam
+      ######################
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )

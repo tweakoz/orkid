@@ -46,7 +46,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     auto context    = RCFD->GetTarget();
     auto FXI        = context->FXI();
     bool is_skinned = RCID._isSkinned;
-
+    auto CIMPL = RCFD->topCompositor();
     ///////////////////////////////////////////////////////////////////////////
     // retrieve global RCFD state for PBR materials
     ///////////////////////////////////////////////////////////////////////////
@@ -109,6 +109,10 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     }
 
     texture_rawlist_t texlist;
+    auto lmgr = CIMPL->_lightmgr;
+    OrkAssert(lmgr);
+    auto clr_cookies = lmgr->_cookies_spot_color; 
+    auto dep_cookies = lmgr->_cookies_spot_depth; 
 
     for (auto item : enumlights->_tex2spotlightmap) {
       for (auto light : item.second) {
@@ -166,7 +170,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
 
       size_t num_cookies = num_texspotlights;
-      auto tex_color0 = mtl->_texBlackArray.get();
+      /*auto tex_color0 = mtl->_texBlackArray.get();
       auto tex_color1 = mtl->_texBlackArray.get();
       auto tex_depth0 = mtl->_texBlack.get();
       auto tex_depth1 = mtl->_texBlack.get();
@@ -190,17 +194,16 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       OrkAssert(tex_color1->_texType == ETEXTYPE_2D_ARRAY);
       OrkAssert(tex_depth0->_texType == ETEXTYPE_2D);
       OrkAssert(tex_depth1->_texType == ETEXTYPE_2D);
-
-      FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
-      FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
-
-      FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
-      FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
+      */
+      //FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
+      //FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
+      //FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
+      //FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
       
     }
     
     //printf("HUH <%p> <%p>\n", mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
-    FXI->BindParamCTex( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
+    FXI->BindParamCTex( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA->_tex.get() );
 
     ///////////////////////////////////////////////////////////////////////////
     // bind light/environment probes
@@ -238,14 +241,14 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     if(mtl->_texLightMapArray){
       //printf("binding lightmap array\n");
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
+      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray->_tex.get());
       FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
     else{
       //printf("binding white lightmap array\n");
       //printf("mtl->_parMapLightMapArray<%p>\n", mtl->_parMapLightMapArray);
       //printf("mtl->_texWhiteLightMapArray<%p>\n", mtl->_texWhiteLightMapArray.get());
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray.get());
+      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray->_tex.get());
       FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
       //printf("OK...\n");
     }

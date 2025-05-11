@@ -499,11 +499,16 @@ struct TextureAsset;
 struct XgmModelAsset;
 struct XgmAnimAsset;
 struct FxShaderAsset;
+struct TextureArray;
+struct TextureArraySliceRef;
+
 using textureassetptr_t        = std::shared_ptr<TextureAsset>;
 using xgmmodelassetptr_t       = std::shared_ptr<XgmModelAsset>;
 using xgmanimassetptr_t        = std::shared_ptr<XgmAnimAsset>;
 using fxshaderasset_ptr_t      = std::shared_ptr<FxShaderAsset>;
 using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
+using texturearray_ptr_t = std::shared_ptr<TextureArray>;
+using texturearraysliceref_ptr_t = std::shared_ptr<TextureArraySliceRef>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

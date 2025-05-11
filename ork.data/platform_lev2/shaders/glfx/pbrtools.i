@@ -67,10 +67,8 @@ uniform_set ub_frg_fwd {
   sampler2D MapLinearDepth;     // 9
 
 
-  sampler2DArray light_cookie_color_0;      // 10
-  sampler2DArray light_cookie_color_1;      // 11
-  sampler2D light_cookie_depth_0;      // 12
-  sampler2D light_cookie_depth_1;      // 13
+  sampler2DArray light_cookie_colors;      // 10
+  sampler2DArray light_cookie_depths;      // 12
 
   samplerCube reflectionPROBE; // 14
   samplerCube irradiancePROBE; // 15

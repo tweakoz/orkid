@@ -73,8 +73,8 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
   TID._slices[1] = TextureArrayInitSubItem{"normal"_crcu, _image_normal};
   TID._slices[2] = TextureArrayInitSubItem{"mtlruf"_crcu, _image_mtlruf};
   TID._slices[3] = TextureArrayInitSubItem{"emissive"_crcu, _image_emissive};
-  _texArrayCNMREA = std::make_shared<Texture>();
-  _texArrayCNMREA->_debugName = "pbrtexarray";
+  _texArrayCNMREA = std::make_shared<TextureArray>();
+  _texArrayCNMREA->_tex->_debugName = "pbrtexarray";
   auto txi = ctx->TXI();
   txi->initTextureArray2DFromData(_texArrayCNMREA.get(), TID);
 

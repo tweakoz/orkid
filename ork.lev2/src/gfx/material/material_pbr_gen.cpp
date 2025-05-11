@@ -415,17 +415,17 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     }
   }
 
-  auto alt_tex        = std::make_shared<Texture>();
-  alt_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
-  txi->initTextureArray2DFromData(alt_tex.get(), array_init);
-  // alt_tex->mTexSampleMode.presetTrilinearClamp();
-  alt_tex->mTexSampleMode.presetTrilinearWrap();
-  txi->ApplySamplingMode(alt_tex.get());
-  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
-
+  auto alt_array        = std::make_shared<TextureArray>();
+  alt_array->_tex->_debugName = rawenvmap->_debugName + "[filtenvmap-processed-specular]";
+  txi->initTextureArray2DFromData(alt_array.get(), array_init);
+  // alt_array->_tex->mTexSampleMode.presetTrilinearClamp();
+  alt_array->_tex->mTexSampleMode.presetTrilinearWrap();
+  txi->ApplySamplingMode(alt_array->_tex.get());
+  rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_array->_tex;
+  rawenvmap->_vars->makeValueForKey<texturearray_ptr_t>("alt-tex-specenv-array") = alt_array;
   targ->debugPopGroup();
 
-  return alt_tex;
+  return alt_array->_tex;
 }
 
 /////////////////////////////////////////////////////////////////////////

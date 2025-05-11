@@ -22,6 +22,22 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   type_codec->registerStdCodec<lightmanagerdata_ptr_t>(lmd_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto lm_type_t = py::class_<LightManager, lightmanager_ptr_t>(module_lev2, "LightManager");
+  lm_type_t.def_property(
+      "spot_cookies_color",                             //
+      [](lightmanager_ptr_t lm) -> texturearray_ptr_t { //
+        return lm->_cookies_spot_color;
+      },
+      [](lightmanager_ptr_t lm, texturearray_ptr_t tex) { //
+        lm->_cookies_spot_color = tex;
+      });
+  lm_type_t.def_property(
+      "spot_cookies_depth",                             //
+      [](lightmanager_ptr_t lm) -> texturearray_ptr_t { //
+        return lm->_cookies_spot_depth;
+      },
+      [](lightmanager_ptr_t lm, texturearray_ptr_t tex) { //
+        lm->_cookies_spot_depth = tex;
+      });
   type_codec->registerStdCodec<lightmanager_ptr_t>(lm_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto lc_type_t = py::class_<LightCollector, lightcollector_ptr_t>(module_lev2, "LightCollector");
@@ -39,14 +55,16 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           [](lightdata_ptr_t lightdata, fvec3 color) { //
             lightdata->mColor = color;
           })
-          .def_property("shadowBias",                                 //
+      .def_property(
+          "shadowBias",                            //
           [](lightdata_ptr_t lightdata) -> float { //
             return lightdata->mShadowBias;
           },
           [](lightdata_ptr_t lightdata, float bias) { //
             lightdata->mShadowBias = bias;
           })
-          .def_property("shadowMapSize",                                 //
+      .def_property(
+          "shadowMapSize",                       //
           [](lightdata_ptr_t lightdata) -> int { //
             return lightdata->_shadowMapSize;
           },
@@ -85,19 +103,27 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Light, light_ptr_t>(module_lev2, "Light")
       .def_property_readonly(
-          "matrix",                              //
+          "matrix",                        //
           [](light_ptr_t light) -> fmtx4 { //
             return light->worldMatrix();
           })
       .def_property(
-          "cookieTexture",                         //
-          [](light_ptr_t light) -> texture_ptr_t { //
-            return light->_cookieTexture;
+          "colorCookie",                         //
+          [](light_ptr_t light) -> texturearraysliceref_ptr_t { //
+            return light->_cookieColor;
           },
-          [](light_ptr_t light, texture_ptr_t tex) { //
-            light->_cookieTexture = tex;
+          [](light_ptr_t light, texturearraysliceref_ptr_t tex) { //
+            light->_cookieColor = tex;
           })
-      .def_property(
+          .def_property(
+            "depthCookie",                         //
+            [](light_ptr_t light) -> texturearraysliceref_ptr_t { //
+              return light->_cookieDepth;
+            },
+            [](light_ptr_t light, texturearraysliceref_ptr_t tex) { //
+              light->_cookieDepth = tex;
+            })
+        .def_property(
           "irradianceCookie",                                  //
           [](light_ptr_t light) -> pbr::irradiancemaps_ptr_t { //
             return light->_irradianceCookie;
@@ -106,7 +132,7 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             light->_irradianceCookie = tex;
           })
       .def_property(
-          "shadowCaster",                     //
+          "shadowCaster",                 //
           [](light_ptr_t light) -> bool { //
             return light->_castsShadows;
           },
@@ -151,49 +177,51 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto probe_t = py::class_<LightProbe, lightprobe_ptr_t>(module_lev2, "LightProbe")
-    .def(py::init<>())
-    .def("invalidate", [](lightprobe_ptr_t probe) { probe->_dirty=true; })
-    .def_property("imageDim",                                //
-          [](lightprobe_ptr_t probe) -> int { //
-            return probe->_dim;
-          },
-          [](lightprobe_ptr_t probe, int dim) { //
-            probe->_dim = dim;
-          })
-          .def_property("worldMatrix",                                //
-          [](lightprobe_ptr_t probe) -> fmtx4 { //
-            return probe->_worldMatrix;
-          },
-          [](lightprobe_ptr_t probe, fmtx4 mtx) { //
-            probe->_worldMatrix = mtx;
-          })
-          .def_property("name",                                //
-          [](lightprobe_ptr_t probe) -> std::string { //
-            return probe->_name;
-          },
-          [](lightprobe_ptr_t probe, std::string name) { //
-            probe->_name = name;
-          })
-          .def_property("type",                                //
-          [](lightprobe_ptr_t probe) -> crcstring_ptr_t { //
-            return std::make_shared<CrcString>(uint64_t(probe->_type));
-          },
-          [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
-            probe->_type = LightProbeType(t->hashed());
-          })
-          .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, fquat& qrot, py::object path) {
-            auto path_as_str = py::str(path);
-            auto path_as_std = path_as_str.cast<std::string>();
-            probe->exportEquirectangular(ctx.get(), qrot, path_as_std);
-          });
+                     .def(py::init<>())
+                     .def("invalidate", [](lightprobe_ptr_t probe) { probe->_dirty = true; })
+                     .def_property(
+                         "imageDim",                         //
+                         [](lightprobe_ptr_t probe) -> int { //
+                           return probe->_dim;
+                         },
+                         [](lightprobe_ptr_t probe, int dim) { //
+                           probe->_dim = dim;
+                         })
+                     .def_property(
+                         "worldMatrix",                        //
+                         [](lightprobe_ptr_t probe) -> fmtx4 { //
+                           return probe->_worldMatrix;
+                         },
+                         [](lightprobe_ptr_t probe, fmtx4 mtx) { //
+                           probe->_worldMatrix = mtx;
+                         })
+                     .def_property(
+                         "name",                                     //
+                         [](lightprobe_ptr_t probe) -> std::string { //
+                           return probe->_name;
+                         },
+                         [](lightprobe_ptr_t probe, std::string name) { //
+                           probe->_name = name;
+                         })
+                     .def_property(
+                         "type",                                         //
+                         [](lightprobe_ptr_t probe) -> crcstring_ptr_t { //
+                           return std::make_shared<CrcString>(uint64_t(probe->_type));
+                         },
+                         [](lightprobe_ptr_t probe, crcstring_ptr_t t) { //
+                           probe->_type = LightProbeType(t->hashed());
+                         })
+                     .def("exportEquirectangular", [](lightprobe_ptr_t probe, ctx_t ctx, fquat& qrot, py::object path) {
+                       auto path_as_str = py::str(path);
+                       auto path_as_std = path_as_str.cast<std::string>();
+                       probe->exportEquirectangular(ctx.get(), qrot, path_as_std);
+                     });
   type_codec->registerStdCodec<lightprobe_ptr_t>(probe_t);
   /////////////////////////////////////////////////////////////////////////////////
   module_lev2.def("computeAmbientOcclusion", [](int numsamples, meshutil::mesh_ptr_t model, ctx_t ctx) {
     computeAmbientOcclusion(numsamples, model, ctx.get());
   });
-  module_lev2.def("computeLightMaps", [](meshutil::mesh_ptr_t model, ctx_t ctx) {
-    computeLightMaps(model, ctx.get());
-  });
+  module_lev2.def("computeLightMaps", [](meshutil::mesh_ptr_t model, ctx_t ctx) { computeLightMaps(model, ctx.get()); });
 }
 ///////////////////////////////////////////////////////////////////////////////
 

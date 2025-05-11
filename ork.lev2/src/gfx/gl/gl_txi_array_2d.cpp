@@ -30,15 +30,15 @@ static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureArrayInitData tid) {
+void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
 
   if (DEBUG_TEXARRAY2D) {
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
-    logchan_txia2d->log("// GlTextureInterface::initTextureArray2DFromData ptex<%p>", array_tex);
+    logchan_txia2d->log("// GlTextureInterface::initTextureArray2DFromData array<%p>", array);
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
 
-  array_tex->_texType = ETEXTYPE_2D_ARRAY;
+  array->_tex->_texType = ETEXTYPE_2D_ARRAY;
   int num_slices = int(tid._slices.size());
   std::vector<compressedmipchain_ptr_t> subimagedata;
   subimagedata.resize(num_slices);
@@ -56,7 +56,7 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     auto subimg       = slice._subimg;
     auto mipchain     = slice._cmipchain;
     if (subimg) {
-      array_tex->_images.push_back(subimg);
+      array->_images.push_back(subimg);
       formats.insert(subimg->_format);
       //auto subimg_cmipc = subimg->compressedMipChainDefault();
       auto subimg_cmipc = subimg->uncompressedMipChain();
@@ -87,26 +87,26 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
 
   max_levels -= 1;
   auto format           = *formats.begin();
-  array_tex->_texFormat = format;
+  array->_tex->_texFormat = format;
   GLFormatTriplet triplet(format);
 
   ///////////////////////////
   // generate texture object
   ///////////////////////////
 
-  gltexobj_ptr_t glto = array_tex->_impl.makeShared<GLTextureObject>(this);
+  gltexobj_ptr_t glto = array->_tex->_impl.makeShared<GLTextureObject>(this);
   auto texture_target = GL_TEXTURE_2D_ARRAY;
   glto->mTarget       = GL_TEXTURE_2D_ARRAY;
   GL_ERRORCHECK();
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(texture_target, glto->_textureObject);
 
-  _texture_set[glto->_textureObject] = array_tex;
+  _texture_set[glto->_textureObject] = array->_tex.get();
 
-  if (array_tex->_debugName.length()) {
-    mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, array_tex->_debugName);
+  if (array->_tex->_debugName.length()) {
+    mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, array->_tex->_debugName);
   }
-  array_tex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
+  array->_tex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
   // glTexStorage3D(texture_target, 4, GL_RGBA8, max_w, max_h, num_slices);
 
   //////////////////////////////////////////////////////////////////
@@ -319,36 +319,43 @@ void GlTextureInterface::initTextureArray2DFromData(Texture* array_tex, TextureA
     logchan_txia2d->log("TextureArray maxw<%d> maxh<%d> depth<%d>", max_w, max_h, num_slices);
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
-  array_tex->_width  = max_w;
-  array_tex->_height = max_h;
-  array_tex->_depth  = num_slices;
-  array_tex->_texFormat = format;
+  array->_width  = max_w;
+  array->_height = max_h;
+  array->_maxslices = num_slices;
+  array->_tex->_width  = max_w;
+  array->_tex->_height = max_h;
+  array->_tex->_depth  = num_slices;
+  array->_tex->_texFormat = format;
 
-  array_tex->_residenceState.fetch_or(1);
+  array->_tex->_residenceState.fetch_or(1);
   // OrkAssert(num_slices==0);
   GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::updateTextureArraySlice(Texture* array_tex, int slice, image_ptr_t img) {
+void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref, image_ptr_t img) {
+
+  auto array = slice_ref->_array;
+  int slice_index = slice_ref->_slice;
+
   bool ok = true;
-  ok &= (array_tex->_texType == ETEXTYPE_2D_ARRAY);
-  ok &= (slice < array_tex->_depth);
+  ok &= (array->_tex->_texType == ETEXTYPE_2D_ARRAY);
+  ok &= (slice_index < array->_tex->_depth);
   ok &= (img != nullptr);
-  ok &= (img->_format == array_tex->_texFormat);
-  ok &= (img->_width == array_tex->_width);
-  ok &= (img->_height == array_tex->_height);
+  ok &= (img->_format == array->_tex->_texFormat);
+  ok &= (img->_width == array->_tex->_width);
+  ok &= (img->_height == array->_tex->_height);
   ok &= (img->_depth == 1);
 
   if( not ok ){
     return;
   }
 
-  auto glto = array_tex->_impl.getShared<GLTextureObject>();
+  auto glto = array->_tex->_impl.getShared<GLTextureObject>();
   auto texture_target = GL_TEXTURE_2D_ARRAY;
   glBindTexture(texture_target, glto->_textureObject);
-  auto format = array_tex->_texFormat;
+  auto format = array->_tex->_texFormat;
   GLFormatTriplet triplet(format);
   auto subimg_cmipc = img->uncompressedMipChain();
   int num_levels = int(subimg_cmipc->_levels.size()) - 1;
@@ -368,7 +375,7 @@ void GlTextureInterface::updateTextureArraySlice(Texture* array_tex, int slice, 
             level,                   // level
             0,                       // xoffset
             0,                       // yoffset
-            slice,                   // zoffset (slice)
+            slice_index,             // zoffset (slice)
             mip_w,                   // width
             mip_h,                   // height
             1,                       // depth (of data for slice)
@@ -388,7 +395,7 @@ void GlTextureInterface::updateTextureArraySlice(Texture* array_tex, int slice, 
             level,             // level
             0,                 // xoffset
             0,                 // yoffset
-            slice,             // zoffset (slice)
+            slice_index,       // zoffset (slice)
             mip_w,             // width
             mip_h,             // height
             1,                 // depth (of data for slice)

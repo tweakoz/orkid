@@ -162,16 +162,16 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
         auto txi = context->TXI();
         auto mtl = gridimpl->_pbrmaterial;
         if(mtl){
-          auto tex = mtl->_texArrayCNMREA;
-          txi->updateTextureArraySlice(tex.get(), 0, img);
+          auto slice = mtl->_texArrayCNMREA->slice(0);
+          txi->updateTextureArraySlice(slice.get(), img);
         }
       })
       .def("setMtlRufImage", [](griddrawableimpl_ptr_t gridimpl, ctx_t context, image_ptr_t img) {
         auto txi = context->TXI();
         auto mtl = gridimpl->_pbrmaterial;
         if(mtl){
-          auto tex = mtl->_texArrayCNMREA;
-          txi->updateTextureArraySlice(tex.get(), 2, img);
+          auto slice = mtl->_texArrayCNMREA->slice(2);
+          txi->updateTextureArraySlice(slice.get(), img);
         }
       })
       .def_property_readonly("material", [](griddrawableimpl_ptr_t gridimpl) -> pbrmaterial_ptr_t { return gridimpl->_pbrmaterial; });

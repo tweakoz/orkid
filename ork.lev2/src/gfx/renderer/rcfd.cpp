@@ -34,8 +34,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
-    : _lightmgr(0)
-    , _target(ptarg) {
+    : _target(ptarg) {
     setUserProperty("time"_crc,0.0f);
     setUserProperty("pbr_model"_crc,0);
 }

@@ -145,9 +145,9 @@ struct Light : public Drawable {
   bool _dynamic = false;
   bool _castsShadows = false;
 
-  texture_ptr_t _cookieTexture;
+  texturearraysliceref_ptr_t _cookieColor;
+  texturearraysliceref_ptr_t _cookieDepth;
   rtgroup_ptr_t _depthRTG;
-  texture_ptr_t _depthTexture;
   pbr::irradiancemaps_ptr_t _irradianceCookie;
 };
 
@@ -553,9 +553,7 @@ struct LightManager {
   LightCollector mcollector;
 
 public:
-  LightManager(lightmanagerdata_constptr_t lmd)
-      : _data(lmd) {
-  }
+  LightManager(lightmanagerdata_constptr_t lmd);
 
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights
@@ -569,7 +567,8 @@ public:
   void Clear();
 
   lightmanagerdata_constptr_t _data;
-
+  texturearray_ptr_t _cookies_spot_color;
+  texturearray_ptr_t _cookies_spot_depth;
 };
 
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;

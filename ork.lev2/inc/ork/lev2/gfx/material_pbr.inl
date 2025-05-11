@@ -198,11 +198,8 @@ public:
   fxparam_constptr_t _parDepthFogDistance = nullptr;
   fxparam_constptr_t _parDepthFogPower = nullptr;
 
-  //fxparam_constptr_t _parLightCookies   = nullptr;
-  fxparam_constptr_t _parLightColorCookie0   = nullptr;
-  fxparam_constptr_t _parLightColorCookie1   = nullptr;
-  fxparam_constptr_t _parLightDepthCookie0   = nullptr;
-  fxparam_constptr_t _parLightDepthCookie1   = nullptr;
+  fxparam_constptr_t _parLightColorCookies   = nullptr;
+  fxparam_constptr_t _parLightDepthCookies   = nullptr;
 
   fxparam_constptr_t _parProbeReflection   = nullptr;
   fxparam_constptr_t _parProbeIrradiance   = nullptr;
@@ -232,9 +229,9 @@ public:
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
   texture_ptr_t _texBlack;
-  texture_ptr_t _texBlackArray;
+  texturearray_ptr_t _texBlackArray;
   texture_ptr_t _texCubeBlack;
-  texture_ptr_t _texWhiteLightMapArray;
+  texturearray_ptr_t _texWhiteLightMapArray;
 
   ///////////////////////////////////////////
   // Lightmaps
@@ -246,7 +243,7 @@ public:
 
   fxparam_constptr_t _paramLightMapColors = nullptr; 
   
-  texture_ptr_t _texLightMapArray;
+  texturearray_ptr_t _texLightMapArray;
 
   constexpr static size_t kMaxLightmaps = 8;
   std::unordered_map<std::string, image_ptr_t> _lightmap_image_assets;
@@ -263,7 +260,7 @@ public:
   //pbr::irradiancemaps_ptr_t _irradianceMaps;
   pbr::commonstuff_ptr_t _commonOverride;
 
-  texture_ptr_t _texArrayCNMREA;
+  texturearray_ptr_t _texArrayCNMREA;
   std::string _textureBaseName;
   std::string _shader_suffix;
 

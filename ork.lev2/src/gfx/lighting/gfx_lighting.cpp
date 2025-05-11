@@ -93,11 +93,11 @@ Light::Light(const LightData* ld)
       , mPriority(0.0f)
       , _dynamic(false)
   {
-    if(ld){
+    /*if(ld){
       _cookieTexture = ld->cookie();
-    }
+    }*/
 
-    _xformgenerator = []->fmtx4{
+    _xformgenerator = []->fmtx4 {
       return fmtx4();
     };
   }
@@ -107,9 +107,9 @@ Light::Light(const LightData* ld)
       , _xformgenerator(mtx)
       , mPriority(0.0f)
       , _dynamic(false) {
-    if(ld){
+    /*if(ld){
       _cookieTexture = ld->cookie();
-    }
+    }*/
   }
   Light::~Light() {
   }
@@ -573,17 +573,18 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   for (auto l : out_lights->_alllights) {
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-        auto cookie = as_spot->_cookieTexture;
-        if (cookie)
-          out_lights->_tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
+        //auto cookie = as_spot->_cookieTexture;
+        //if (cookie)
+          //out_lights->_tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      auto cookie = as_point->_cookieTexture;
-      if (cookie)
-        out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
-      else
+      //auto cookie = as_point->_cookieTexture;
+      //if (cookie)
+        //out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
+      //else
         out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
+      /*
       auto cookie = as_spot->_cookieTexture;
       bool decal  = as_spot->decal();
       if (decal) {
@@ -592,9 +593,9 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
       } else {
         if (cookie)
           out_lights->_tex2spotlightmap[cookie.get()].push_back(as_spot);
-        else
+        else*/
           out_lights->_untexturedspotlights.push_back(as_spot);
-      }
+      //}
     }
   }
   ////////////////////////////////////////////////////////////
@@ -676,6 +677,14 @@ LightingGroup::LightingGroup()
     : _manager( nullptr )
     , mLightMap(0)
     , mDPEnvMap(0) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LightManager::LightManager(lightmanagerdata_constptr_t lmd)
+: _data(lmd) {
+  _cookies_spot_color = std::make_shared<TextureArray>();
+  _cookies_spot_depth = std::make_shared<TextureArray>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
