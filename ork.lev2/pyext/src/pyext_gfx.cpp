@@ -611,7 +611,11 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("resize", [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d) {
         texarray->resize(w,h,d);
       })
-      .def("load", [](texturearray_ptr_t texarray, std::string path) -> size_t { return texarray->load(path); })
+      .def("load", [](texturearray_ptr_t texarray, std::string path) -> texturearraysliceref_ptr_t { return texarray->load(path); })
+      .def("conform", [](texturearray_ptr_t texarray, crcstring_ptr_t fmt) -> texturearraysliceref_ptr_t { //
+       
+        texarray->conform(EBufferFormat(fmt->hashed())); //
+       })
       .def_property("needsIrradianceCache", [](texturearray_ptr_t texarray) -> bool { //
         return texarray->_needsIrradianceCache;
       }, [](texturearray_ptr_t texarray, bool b) { //
@@ -631,6 +635,14 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<texturearray_ptr_t>(texarray_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto texarrayslice_t = py::class_<TextureArraySliceRef, texturearraysliceref_ptr_t>(module_lev2, "TextureArraySlice");
+  texarrayslice_t.def_property_readonly("index", [](texturearraysliceref_ptr_t texarrayslice) -> int { //
+    return texarrayslice->_slice;
+  })
+  .def("__repr__", [](texturearraysliceref_ptr_t texarrayslice) -> std::string {
+    fxstring<256> fxs;
+    fxs.format("TextureArraySliceRef(%p)", texarrayslice.get());
+    return fxs.c_str();
+  });
   type_codec->registerStdCodec<texturearraysliceref_ptr_t>(texarrayslice_t);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

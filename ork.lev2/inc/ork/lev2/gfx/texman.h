@@ -240,14 +240,15 @@ struct TextureArray {
 
   TextureArray();
   ~TextureArray();
-  size_t load(const std::string& path);
+  texturearraysliceref_ptr_t load(const std::string& path);
   void resize(size_t w, size_t h, size_t maxslices);
   texturearraysliceref_ptr_t slice(size_t index);
+  void conform(EBufferFormat fmt);
   size_t _width = 0;
   size_t _height = 0;
   size_t _maxslices = 0;
   bool _needsIrradianceCache = false;
-  std::map<std::string,size_t> _slices_by_path;
+  std::map<std::string,texturearraysliceref_ptr_t> _slices_by_path;
   texture_ptr_t _tex;
   varmap::varmap_ptr_t _vars;
   std::unordered_map<size_t,texturearraysliceref_ptr_t> _free_slices;

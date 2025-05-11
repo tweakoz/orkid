@@ -8,8 +8,10 @@
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/kernel/spawner.h>
+#include <ork/kernel/opq.h>
 
 #include <ork/lev2/config.h>
+#include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
@@ -52,8 +54,8 @@ void Texture::RegisterLoaders(void) {
 
 texture_ptr_t Texture::LoadUnManaged(const AssetPath& fname) {
   texture_ptr_t ptex = std::make_shared<Texture>();
-  auto target = lev2::contextForCurrentThread();
-  bool bok      = target->TXI()->LoadTexture(fname, ptex);
+  auto target        = lev2::contextForCurrentThread();
+  bool bok           = target->TXI()->LoadTexture(fname, ptex);
   return ptex;
 }
 
@@ -86,25 +88,25 @@ texture_ptr_t Texture::createBlank(int iw, int ih, EBufferFormat efmt) {
 
 Texture::Texture(const TextureAsset* asset)
     : _asset(asset) {
- _vars = std::make_shared<asset::vars_t>();
- _residenceState.store(0);
- _texture_count.fetch_add(1);
-  //printf( "_texture_count: %zu\n", _texture_count.load() );
+  _vars = std::make_shared<asset::vars_t>();
+  _residenceState.store(0);
+  _texture_count.fetch_add(1);
+  // printf( "_texture_count: %zu\n", _texture_count.load() );
 }
 
 Texture::Texture(ipctexture_ptr_t external_memory)
-  : _asset(nullptr)
-  , _external_memory(external_memory) {
- _vars = std::make_shared<asset::vars_t>();
- _residenceState.store(0);
- _texture_count.fetch_add(1);
-  //printf( "_texture_count: %zu\n", _texture_count.load() );
+    : _asset(nullptr)
+    , _external_memory(external_memory) {
+  _vars = std::make_shared<asset::vars_t>();
+  _residenceState.store(0);
+  _texture_count.fetch_add(1);
+  // printf( "_texture_count: %zu\n", _texture_count.load() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
- _texture_count.fetch_add(-1);
+  _texture_count.fetch_add(-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,10 +293,10 @@ asset::loadrequest_ptr_t Texture::loadRequest() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 TextureArray::TextureArray() {
-  _width  = 0;
-  _height = 0;
+  _width     = 0;
+  _height    = 0;
   _maxslices = 0;
-  _tex = std::make_shared<Texture>();
+  _tex       = std::make_shared<Texture>();
 }
 TextureArray::~TextureArray() {
 }
@@ -304,7 +306,7 @@ void TextureArray::resize(size_t w, size_t h, size_t maxslices) {
   _width     = w;
   _height    = h;
   _maxslices = maxslices;
-  for(size_t i = 0; i < maxslices; i++) {
+  for (size_t i = 0; i < maxslices; i++) {
     auto slice = std::make_shared<TextureArraySliceRef>(this, i);
     _free_slices.insert(std::make_pair(i, slice));
   }
@@ -312,10 +314,74 @@ void TextureArray::resize(size_t w, size_t h, size_t maxslices) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-size_t TextureArray::load(const std::string& path) {
+void TextureArray::conform(EBufferFormat fmt) {
+  /////////////////////
+  // note which images need to be converted
+  /////////////////////
+  std::unordered_set<size_t> images_to_chfmt;
+  std::vector<image_ptr_t> final_images;
+  for (auto img : _images) {
+    final_images.push_back(img);
+  }
+  size_t index = 0;
+  for (auto img : final_images) {
+    if (img->_format != fmt) {
+      images_to_chfmt.insert(index);
+    }
+    index++;
+  }
+  std::atomic<int> sync_chfmt = 0;
+  for (size_t index : images_to_chfmt) {
+    sync_chfmt++;
+    auto prvimg         = final_images[index];
+    auto newimg         = std::make_shared<Image>();
+    final_images[index] = newimg;
+    auto OP             = [=, &sync_chfmt]() {
+      newimg->convertFromImageToFormat(*prvimg, fmt);
+      sync_chfmt--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  while (sync_chfmt > 0) {
+    usleep(1000);
+  }
+  images_to_chfmt.clear();
+  /////////////////////
+  // resize the images
+  /////////////////////
+  std::unordered_set<size_t> images_to_resize;
+  index = 0;
+  for (auto img : _images) {
+    if (img->_width != _width || img->_height != _height) {
+      images_to_resize.insert(index);
+    }
+    index++;
+  }
+  std::atomic<int> sync_resize = 0;
+  for (size_t index : images_to_resize) {
+    auto prvimg         = final_images[index];
+    auto newimg         = std::make_shared<Image>();
+    final_images[index] = newimg;
+    auto OP = [=, &sync_resize]() {
+      newimg->resizedOf(*prvimg, _width, _height);
+      sync_resize--;
+    };
+    opq::concurrentQueue()->enqueue(OP);
+  }
+  while (sync_resize > 0) {
+    usleep(1000);
+  }
+  images_to_resize.clear();
+  //////////////////////////
+  _images = final_images;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
   auto it = _slices_by_path.find(path);
   if (it == _slices_by_path.end()) {
-    return -1uz;
+    return std::make_shared<TextureArraySliceRef>(this, -1zu);
   }
   return it->second;
 }
@@ -330,8 +396,8 @@ texturearraysliceref_ptr_t TextureArray::slice(size_t index) {
 ///////////////////////////////////////////////////////////////////////////////
 
 TextureArraySliceRef::TextureArraySliceRef(TextureArray* ary, int slice)
-: _array(ary)
-, _slice(slice) {
+    : _array(ary)
+    , _slice(slice) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
