@@ -270,7 +270,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
         texture_path = "src://envmaps/tozenv_nebula";
       }
       else if(texture_path == "hellscape") {
-        texture_path = "src://envmaps/toz_hellscape";
+        texture_path = "src://envmaps/tozenv_hellscape";
       }
       else if(texture_path == "caustics") {
         texture_path = "src://envmaps/tozenv_caustic1";

@@ -186,8 +186,8 @@ class SceneGraphApp(object):
                                    fovbase=20,
                                    voffset=16,
                                    vscale=14)
-    self.spotlight4 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(100,100,0),cookie=cookie4,radius=16,voffset=16,fovbase=35)
-    self.spotlight5 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(150,150,150),cookie=cookie5,radius=16,voffset=16,fovbase=35)
+    self.spotlight4 = MySpotLight( index=3,app=self,model=model,frq=-0.17,color=vec3(100,100,0),cookie=cookie4,radius=16,voffset=16,fovbase=35)
+    self.spotlight5 = MySpotLight( index=4,app=self,model=model,frq=0.17,color=vec3(150,150,150),cookie=cookie5,radius=10,voffset=26,fovbase=25)
 
     print("LMGR",lmgr)
     #assert(False)
