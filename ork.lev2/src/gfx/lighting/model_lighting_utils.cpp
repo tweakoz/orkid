@@ -171,7 +171,7 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
   material->_rasterstate->setCullTest(ECullTest::OFF);
   material->begin(tek_posnrm, RCFD);
   material->bindParamMatrix(fxparameterMVP, fmtx4::Identity());
-  // material->bindParamCTex(fxparameterTexture, mesh_tex.get());
+  // material->bindParamTexture(fxparameterTexture, mesh_tex.get());
   // material->bindParamInt(fxparameterNumPolys, num_verts/3);
   //ctx->RSI()->BindRasterState(material->_rasterstate, true);
   ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num_verts);
@@ -259,8 +259,8 @@ void computeAmbientOcclusion(int numsamples, meshutil::mesh_ptr_t model, Context
     material->begin(tek_depacc, RCFD);
     material->bindParamVec2(fxparameterNearFar, fvec2(.1, 100.0f));
     material->bindParamMatrix(fxparameterPTMTX, VP);
-    material->bindParamCTex(fxparameterTextureDMAP, rtb_dep->texture());
-    material->bindParamCTex(fxparameterTexturePOS, rtb_pos->texture());
+    material->bindParamTexture(fxparameterTextureDMAP, rtb_dep->texture());
+    material->bindParamTexture(fxparameterTexturePOS, rtb_pos->texture());
     material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
     //ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num_verts);

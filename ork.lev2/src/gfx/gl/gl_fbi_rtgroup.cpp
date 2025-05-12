@@ -323,14 +323,14 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
     // depth texture
     //////////////////////////////////////////
 
-    rtgroup->_depthBuffer = std::make_shared<RtBuffer>(rtgroup, -1, EBufferFormat::Z32, iw, ih);
+    rtgroup->_depthBuffer = std::make_shared<RtBuffer>(rtgroup, -1, EBufferFormat::Z32F, iw, ih);
     GL_ERRORCHECK();
 
     auto dtex           = rtgroup->_depthBuffer->_texture;
     dtex->_width        = iw;
     dtex->_height       = ih;
     dtex->_msaa_samples = rtgroup->_msaa_samples;
-    dtex->_texFormat    = EBufferFormat::Z32;
+    dtex->_texFormat    = EBufferFormat::Z32F;
     dtex->_debugName    = "RtgDepth";
     dtex->_texType      = ETEXTYPE_2D;
     auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
@@ -422,7 +422,7 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
     dtex2->_width        = iw;
     dtex2->_height       = ih;
     dtex2->_msaa_samples = rtgroup->_msaa_samples;
-    dtex2->_texFormat    = EBufferFormat::Z32;
+    dtex2->_texFormat    = EBufferFormat::Z32F;
     dtex2->_debugName    = "RtgDepth";
     auto depth_glto      = dtex2->_impl.getShared<GLTextureObject>();
 
@@ -856,7 +856,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
   shader->begin(_tek_blit, framedata);
   shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-  shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamTexture(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, w, h);
   this->pushViewport(extents);
@@ -896,9 +896,9 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
     dst_rtg->_depthOnly = true;
 
     // Create new depth buffer and texture as per MSAA settings
-    dst_rtg->_depthBuffer = dst_rtg->createRenderTarget(EBufferFormat::Z32);
+    dst_rtg->_depthBuffer = dst_rtg->createRenderTarget(EBufferFormat::Z32F);
     auto texture = std::make_shared<Texture>();
-    texture->_texFormat = EBufferFormat::Z32;
+    texture->_texFormat = EBufferFormat::Z32F;
     texture->_debugName = "RtgDepthCopy";
     dst_glto = texture->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
     dst_rtg->_depthBuffer->_texture = texture;
@@ -994,7 +994,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
 
   shader->begin(_tek_downsample2x2, framedata);
   shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-  shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamTexture(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, wd2, hd2);
   this->pushViewport(extents);

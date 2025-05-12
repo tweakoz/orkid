@@ -198,7 +198,7 @@ struct DMVRIMPL {
     context->debugPushGroup("ScreenCompositingNode::to_screen<%d>", ssaa);
 
     mtl.begin(tek, framedata);
-    mtl.bindParamCTex(_fxpColorMap, tex);
+    mtl.bindParamTexture(_fxpColorMap, tex);
     mtl.bindParamMatrix(_fxpMVP, fmtx4::Identity());
     ViewportRect extents(0, 0, _per_eye_width, _per_eye_height);
     fbi->pushViewport(extents);
@@ -385,7 +385,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           ////////////
 
           auto tex = impl->_ssaadownsamplebufferL->GetMrt(0)->texture();
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           if (_flipY) {
             this_buf->Render2dQuadEML(
                 fvec4(-1, -1, 1, 2), // xywh
@@ -403,7 +403,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           ////////////
 
           tex = impl->_ssaadownsamplebufferR->GetMrt(0)->texture();
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           if (_flipY) {
             this_buf->Render2dQuadEML(
                 fvec4(0, -1, 1, 2), // xywh

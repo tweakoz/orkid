@@ -151,37 +151,37 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     //  or find a quicker dispatch method
     ////////////////////////////////////////////////////////////
     if (auto as_mtx4 = val.tryAs<fmtx4>()) {
-      FXI->BindParamMatrix(param, as_mtx4.value());
+      FXI->bindParamMatrix(param, as_mtx4.value());
     } else if (auto as_mtx4ptr = val.tryAs<fmtx4_ptr_t>()) {
-      FXI->BindParamMatrix(param, *as_mtx4ptr.value().get());
+      FXI->bindParamMatrix(param, *as_mtx4ptr.value().get());
     } else if (auto as_texture = val.tryAs<Texture*>()) {
       auto texture = as_texture.value();
-      FXI->BindParamCTex(param, texture);
+      FXI->bindParamTexture(param, texture);
     } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
       auto texture = as_texture.value();
-      FXI->BindParamCTex(param, texture.get());
+      FXI->bindParamTexture(param, texture.get());
     } else if (auto as_bool_ = val.tryAs<bool>()) {
-      FXI->BindParamBool(param, as_bool_.value());
+      FXI->bindParamBool(param, as_bool_.value());
     } else if (auto as_float_ = val.tryAs<float>()) {
-      FXI->BindParamFloat(param, as_float_.value());
+      FXI->bindParamFloat(param, as_float_.value());
     } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
-      FXI->BindParamVect4(param, as_fvec4_.value());
+      FXI->bindParamVect4(param, as_fvec4_.value());
     } else if (auto as_fvec3 = val.tryAs<fvec3>()) {
-      FXI->BindParamVect3(param, as_fvec3.value());
+      FXI->bindParamVect3(param, as_fvec3.value());
     } else if (auto as_fvec2 = val.tryAs<fvec2>()) {
-      FXI->BindParamVect2(param, as_fvec2.value());
+      FXI->bindParamVect2(param, as_fvec2.value());
     } else if (auto as_fmtx3 = val.tryAs<fmtx3>()) {
-      FXI->BindParamMatrix(param, as_fmtx3.value());
+      FXI->bindParamMatrix(param, as_fmtx3.value());
     } else if (auto as_instancedata_ = val.tryAs<instanceddrawinstancedata_ptr_t>()) {
       OrkAssert(false);
     } else if (auto as_fquat = val.tryAs<fquat_ptr_t>()) {
       const auto& Q = *as_fquat.value().get();
       fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
-      FXI->BindParamVect4(param, as_vec4);
+      FXI->bindParamVect4(param, as_vec4);
     } else if (auto as_fplane3 = val.tryAs<fplane3_ptr_t>()) {
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
-      FXI->BindParamVect4(param, as_vec4);
+      FXI->bindParamVect4(param, as_vec4);
     } 
     ///////////////////////////////////////////////////////////////////
     else if (auto as_varval_generator = val.tryAs<varval_generator_t>()) {
@@ -191,7 +191,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
     ///////////////////////////////////////////////////////////////////
     else if (auto as_storage = val.tryAs<FxShaderStorageBuffer*>()) {
       auto storage = as_storage.value();
-      //FXI->BindParamStorageBuffer(param, storage);
+      //FXI->bindParamStorageBuffer(param, storage);
       OrkAssert(false);
     }
     ///////////////////////////////////////////////////////////////////
@@ -209,7 +209,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
           auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
           //printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
-          FXI->BindParamU32(param, as_u32);
+          FXI->bindParamU32(param, as_u32);
           break;
         }
         case "RCFD_Camera_Pick"_crcu: {
@@ -218,35 +218,35 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
           const fmtx4& MVP = *(as_mtx4p.get());
           //MVP.dump("pickbufferMvpMatrix");
-          FXI->BindParamMatrix(param, MVP);
+          FXI->bindParamMatrix(param, MVP);
           break;
         }
         case "RCFD_TIME"_crcu: {
           auto RCFD = RCID.rcfd();
           float time = RCFD->getUserProperty("time"_crc).get<float>();
-          FXI->BindParamFloat(param, time);
+          FXI->bindParamFloat(param, time);
           break;
         }
         case "CPD_Rtg_Dim"_crcu: {
-          FXI->BindParamVect2(param, fvec2(W,H));
+          FXI->bindParamVect2(param, fvec2(W,H));
           break;
         }
         case "CPD_Rtg_InvDim"_crcu: {
-          FXI->BindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
+          FXI->bindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
           break;
         }
         case "RCFD_MODCOLOR"_crcu: {
-          FXI->BindParamVect4(param, modcolor);
+          FXI->bindParamVect4(param, modcolor);
           break;
         }
         case "RCFD_M"_crcu: {
-          FXI->BindParamMatrix(param, worldmatrix);
+          FXI->bindParamMatrix(param, worldmatrix);
           break;
         }
         case "RCFD_DEPTH_MAP"_crcu: {
           auto RCFD = RCID.rcfd();
           auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
-          FXI->BindParamCTex(param, depth_tex.get());
+          FXI->bindParamTexture(param, depth_tex.get());
           //OrkAssert(false);
           break;
         }
@@ -254,104 +254,104 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
               //printf( "RCFD_Camera_MVP_Mono: stereocams<%p>\n", (void*)stereocams );
-              FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+              FXI->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
               break;
             }
           #endif
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
-            FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
+            FXI->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_VP_Mono"_crcu: {
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
-              FXI->BindParamMatrix(param, stereocams->VPL());
+              FXI->bindParamMatrix(param, stereocams->VPL());
               break;
             }
           #endif
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->VPMONO());
+            FXI->bindParamMatrix(param, monocams->VPMONO());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_IV_Mono"_crcu: {
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
-              FXI->BindParamMatrix(param, stereocams->VL().inverse());
+              FXI->bindParamMatrix(param, stereocams->VL().inverse());
               break;
             }
           #endif
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->GetIVMatrix());
+            FXI->bindParamMatrix(param, monocams->GetIVMatrix());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_IVP_Mono"_crcu: {
           #if defined(__APPLE__)
             if (is_stereo and stereocams) {
-              FXI->BindParamMatrix(param, stereocams->VPL().inverse());
+              FXI->bindParamMatrix(param, stereocams->VPL().inverse());
               break;
             }
           #endif
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
+            FXI->bindParamMatrix(param, monocams->VPMONO().inverse());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_VP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPL());
+            FXI->bindParamMatrix(param, stereocams->VPL());
           }
           break;
         }
         case "RCFD_Camera_VP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPR());
+            FXI->bindParamMatrix(param, stereocams->VPR());
           }
           break;
         }
         case "RCFD_Camera_IVP_Left"_crcu: {
           if (is_stereo and stereocams) {
             auto m = stereocams->VPL().inverse();
-            FXI->BindParamMatrix(param, m);
+            FXI->bindParamMatrix(param, m);
           }
           break;
         }
         case "RCFD_Camera_IVP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPR().inverse());
+            FXI->bindParamMatrix(param, stereocams->VPR().inverse());
           }
           break;
         }
         case "RCFD_Camera_MVP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+            FXI->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
           }
           break;
         }
         case "RCFD_Camera_MVP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->MVPR(worldmatrix));
+            FXI->bindParamMatrix(param, stereocams->MVPR(worldmatrix));
           }
           break;
         }
         case "RCFD_Model_Rot"_crcu: {
           auto rotmtx = worldmatrix.rotMatrix33();
-          FXI->BindParamMatrix(param, rotmtx);
+          FXI->bindParamMatrix(param, rotmtx);
           break;
         }
         default:

@@ -420,17 +420,6 @@ void GlTextureInterface::_returnPBO(pboptr_t pbo) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
-  // printf( "GlTextureInterface::UpdateAnimatedTexture( ptex<%p> tai<%p> )\n",
-  // ptex, tai );
-  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
-  if (glto && ptex->GetTexAnim()) {
-    ptex->GetTexAnim()->UpdateTexture(this, ptex, tai);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 static auto addrlamb = [](TextureAddressMode inp) -> GLenum {
   switch (inp) {
     case TextureAddressMode::CLAMP:
@@ -525,7 +514,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
         minfilt  = GL_LINEAR;
       }
 
-      printf( "glto<%p:%s> tgt<%u> linmiplin inummips<%d>\n", (void*) glto.get(), ptex->_debugName.c_str(), (uint32_t)glto->mTarget,inummips );
+      //printf( "glto<%p:%s> tgt<%u> linmiplin inummips<%d>\n", (void*) glto.get(), ptex->_debugName.c_str(), (uint32_t)glto->mTarget,inummips );
     }
 
     GL_ERRORCHECK();

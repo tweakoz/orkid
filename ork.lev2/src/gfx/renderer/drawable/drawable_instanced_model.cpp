@@ -200,9 +200,9 @@ void InstancedModelDrawable::enqueueToRenderQueue(
         ////////////////////////////////////
         // bind instancetex to sampler
         ////////////////////////////////////
-        FXI->BindParamCTex(pipeline->_parInstanceMatrixMap, _instanceMatrixTex.get());
-        FXI->BindParamCTex(pipeline->_parInstanceIdMap, _instanceIdTex.get());
-        FXI->BindParamCTex(pipeline->_parInstanceColorMap, _instanceColorTex.get());
+        FXI->bindParamTexture(pipeline->_parInstanceMatrixMap, _instanceMatrixTex.get());
+        FXI->bindParamTexture(pipeline->_parInstanceIdMap, _instanceIdTex.get());
+        FXI->bindParamTexture(pipeline->_parInstanceColorMap, _instanceColorTex.get());
         ////////////////////////////////////
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {

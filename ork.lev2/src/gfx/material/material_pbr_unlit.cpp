@@ -54,8 +54,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineUNL(const FxPipelinePermutation& 
       auto monocams    = CPD._mono_cam_matrices;
       auto worldmatrix = RCID.worldMatrix();
       auto modcolor    = context->RefModColor();
-      FXI->BindParamVect4(this->_parModColor, modcolor * this->_baseColor);
-      FXI->BindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
+      FXI->bindParamVect4(this->_parModColor, modcolor * this->_baseColor);
+      FXI->bindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
       mut->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
       mut->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
       mut->_rasterstate->setWriteMaskZ(true);

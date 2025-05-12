@@ -93,24 +93,24 @@ void CompositingMaterial::SetTechnique(const std::string& tek) {
 int CompositingMaterial::BeginBlock(lev2::Context* pTarg, const lev2::RenderContextInstData& MatCtx) {
   int inumpasses = pTarg->FXI()->BeginBlock(hTekCurrent, MatCtx);
 
-  pTarg->FXI()->BindParamMatrix(hMatMVP, pTarg->MTXI()->RefMVPMatrix());
+  pTarg->FXI()->bindParamMatrix(hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 
-  pTarg->FXI()->BindParamVect4(hLevelA, mLevelA);
-  pTarg->FXI()->BindParamVect4(hLevelB, mLevelB);
-  pTarg->FXI()->BindParamVect4(hLevelC, mLevelC);
+  pTarg->FXI()->bindParamVect4(hLevelA, mLevelA);
+  pTarg->FXI()->bindParamVect4(hLevelB, mLevelB);
+  pTarg->FXI()->bindParamVect4(hLevelC, mLevelC);
 
-  pTarg->FXI()->BindParamVect4(hBiasA, mBiasA);
-  pTarg->FXI()->BindParamVect4(hBiasB, mBiasB);
-  pTarg->FXI()->BindParamVect4(hBiasC, mBiasC);
+  pTarg->FXI()->bindParamVect4(hBiasA, mBiasA);
+  pTarg->FXI()->bindParamVect4(hBiasB, mBiasB);
+  pTarg->FXI()->bindParamVect4(hBiasC, mBiasC);
 
   if (mCurrentTextureA && hMapA) {
-    pTarg->FXI()->BindParamCTex(hMapA, mCurrentTextureA);
+    pTarg->FXI()->bindParamTexture(hMapA, mCurrentTextureA);
   }
   if (mCurrentTextureB && hMapB) {
-    pTarg->FXI()->BindParamCTex(hMapB, mCurrentTextureB);
+    pTarg->FXI()->bindParamTexture(hMapB, mCurrentTextureB);
   }
   if (mCurrentTextureC && hMapC) {
-    pTarg->FXI()->BindParamCTex(hMapC, mCurrentTextureC);
+    pTarg->FXI()->bindParamTexture(hMapC, mCurrentTextureC);
   }
 
   pTarg->FXI()->CommitParams();

@@ -356,7 +356,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       logchan_pbrgen->log("filterenv iruf<%d> outgroup<%p> outbuf<%p>", irough, outgroup.get(), outbuffr.get());
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, src_tex.get());
+      mtl->bindParamTexture(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
       int numsamples = int(pow(ir2, 0.25f) * 4096.0);
@@ -519,7 +519,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap.get());
+      mtl->bindParamTexture(param_pfm, rawenvmap.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));

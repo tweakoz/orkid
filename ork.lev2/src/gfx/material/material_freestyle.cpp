@@ -189,37 +189,37 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
 
 
     if (auto as_mtx4 = val.tryAs<fmtx4>()) {
-      FXI->BindParamMatrix(param, as_mtx4.value());
+      FXI->bindParamMatrix(param, as_mtx4.value());
     } else if (auto as_mtx4ptr = val.tryAs<fmtx4_ptr_t>()) {
-      FXI->BindParamMatrix(param, *as_mtx4ptr.value().get());
+      FXI->bindParamMatrix(param, *as_mtx4ptr.value().get());
     } else if (auto as_texture = val.tryAs<Texture*>()) {
       auto texture = as_texture.value();
-      FXI->BindParamCTex(param, texture);
+      FXI->bindParamTexture(param, texture);
     } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
       auto texture = as_texture.value();
-      FXI->BindParamCTex(param, texture.get());
+      FXI->bindParamTexture(param, texture.get());
     } else if (auto as_bool_ = val.tryAs<bool>()) {
-      FXI->BindParamBool(param, as_bool_.value());
+      FXI->bindParamBool(param, as_bool_.value());
     } else if (auto as_float_ = val.tryAs<float>()) {
-      FXI->BindParamFloat(param, as_float_.value());
+      FXI->bindParamFloat(param, as_float_.value());
     } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
-      FXI->BindParamVect4(param, as_fvec4_.value());
+      FXI->bindParamVect4(param, as_fvec4_.value());
     } else if (auto as_fvec3 = val.tryAs<fvec3>()) {
-      FXI->BindParamVect3(param, as_fvec3.value());
+      FXI->bindParamVect3(param, as_fvec3.value());
     } else if (auto as_fvec2 = val.tryAs<fvec2>()) {
-      FXI->BindParamVect2(param, as_fvec2.value());
+      FXI->bindParamVect2(param, as_fvec2.value());
     } else if (auto as_fmtx3 = val.tryAs<fmtx3>()) {
-      FXI->BindParamMatrix(param, as_fmtx3.value());
+      FXI->bindParamMatrix(param, as_fmtx3.value());
     } else if (auto as_instancedata_ = val.tryAs<instanceddrawinstancedata_ptr_t>()) {
       OrkAssert(false);
     } else if (auto as_fquat = val.tryAs<fquat_ptr_t>()) {
       const auto& Q = *as_fquat.value().get();
       fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
-      FXI->BindParamVect4(param, as_vec4);
+      FXI->bindParamVect4(param, as_vec4);
     } else if (auto as_fplane3 = val.tryAs<fplane3_ptr_t>()) {
       const auto& P = *as_fplane3.value().get();
       fvec4 as_vec4(P.n, P.d);
-      FXI->BindParamVect4(param, as_vec4);
+      FXI->bindParamVect4(param, as_vec4);
     } 
     ///////////////////////////////////////////////////////////////////
     /*else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
@@ -236,7 +236,7 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
           auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
           auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
           //printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
-          FXI->BindParamU32(param, as_u32);
+          FXI->bindParamU32(param, as_u32);
           break;
         }
         case "RCFD_Camera_Pick"_crcu: {
@@ -245,115 +245,115 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
           auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
           const fmtx4& MVP = *(as_mtx4p.get());
           //MVP.dump("pickbufferMvpMatrix");
-          FXI->BindParamMatrix(param, MVP);
+          FXI->bindParamMatrix(param, MVP);
           break;
         }
         case "RCFD_TIME"_crcu: {
           auto RCFD = RCID.rcfd();
           float time = RCFD->getUserProperty("time"_crc).get<float>();
-          FXI->BindParamFloat(param, time);
+          FXI->bindParamFloat(param, time);
           break;
         }
         case "CPD_Rtg_Dim"_crcu: {
-          FXI->BindParamVect2(param, fvec2(W,H));
+          FXI->bindParamVect2(param, fvec2(W,H));
           break;
         }
         case "CPD_Rtg_InvDim"_crcu: {
-          FXI->BindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
+          FXI->bindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
           break;
         }
         case "RCFD_MODCOLOR"_crcu: {
-          FXI->BindParamVect4(param, modcolor);
+          FXI->bindParamVect4(param, modcolor);
           break;
         }
         case "RCFD_M"_crcu: {
-          FXI->BindParamMatrix(param, worldmatrix);
+          FXI->bindParamMatrix(param, worldmatrix);
           break;
         }
         case "RCFD_DEPTH_MAP"_crcu: {
           auto RCFD = RCID.rcfd();
           auto depth_tex = RCFD->getUserProperty("DEPTH_MAP"_crc).get<texture_ptr_t>();
-          FXI->BindParamCTex(param, depth_tex.get());
+          FXI->bindParamTexture(param, depth_tex.get());
           //OrkAssert(false);
           break;
         }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
             //printf("monocams<%p>\n", (void*)monocams);  
-            FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
+            FXI->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_VP_Mono"_crcu: {
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->VPMONO());
+            FXI->bindParamMatrix(param, monocams->VPMONO());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_IV_Mono"_crcu: {
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->GetIVMatrix());
+            FXI->bindParamMatrix(param, monocams->GetIVMatrix());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_IVP_Mono"_crcu: {
           if (monocams) {
-            FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
+            FXI->bindParamMatrix(param, monocams->VPMONO().inverse());
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
-            FXI->BindParamMatrix(param, MVP);
+            FXI->bindParamMatrix(param, MVP);
           }
           break;
         }
         case "RCFD_Camera_VP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPL());
+            FXI->bindParamMatrix(param, stereocams->VPL());
           }
           break;
         }
         case "RCFD_Camera_VP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPR());
+            FXI->bindParamMatrix(param, stereocams->VPR());
           }
           break;
         }
         case "RCFD_Camera_IVP_Left"_crcu: {
           if (is_stereo and stereocams) {
             auto m = stereocams->VPL().inverse();
-            FXI->BindParamMatrix(param, m);
+            FXI->bindParamMatrix(param, m);
           }
           break;
         }
         case "RCFD_Camera_IVP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->VPR().inverse());
+            FXI->bindParamMatrix(param, stereocams->VPR().inverse());
           }
           break;
         }
         case "RCFD_Camera_MVP_Left"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));
+            FXI->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
           }
           break;
         }
         case "RCFD_Camera_MVP_Right"_crcu: {
           if (is_stereo and stereocams) {
-            FXI->BindParamMatrix(param, stereocams->MVPR(worldmatrix));
+            FXI->bindParamMatrix(param, stereocams->MVPR(worldmatrix));
           }
           break;
         }
         case "RCFD_Model_Rot"_crcu: {
           auto rotmtx = worldmatrix.rotMatrix33();
-          FXI->BindParamMatrix(param, rotmtx);
+          FXI->bindParamMatrix(param, rotmtx);
           break;
         }
         default:
@@ -366,111 +366,111 @@ void FreestyleMaterial::bindParam(const FxShaderParam* param, const varval_t& va
 void FreestyleMaterial::bindParamBool(const FxShaderParam* par, bool value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamBool(par, value);
+  fxi->bindParamBool(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamInt(const FxShaderParam* par, int value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamInt(par, value);
+  fxi->bindParamInt(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamFloat(const FxShaderParam* par, float value) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamFloat(par, value);
+  fxi->bindParamFloat(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamFloatArray(const FxShaderParam* par, const float* value, size_t count) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamFloatArray(par, value,count);
+  fxi->bindParamFloatArray(par, value,count);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FreestyleMaterial::bindParamCTex(const FxShaderParam* par, const Texture* tex) {
+void FreestyleMaterial::bindParamTexture(const FxShaderParam* par, const Texture* tex) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamCTex(par, tex);
+  fxi->bindParamTexture(par, tex);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec2(const FxShaderParam* par, const fvec2& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect2(par, v);
+  fxi->bindParamVect2(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec3(const FxShaderParam* par, const fvec3& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect3(par, v);
+  fxi->bindParamVect3(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec4(const FxShaderParam* par, const fvec4& v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect4(par, v);
+  fxi->bindParamVect4(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamQuat(const FxShaderParam* par, const fquat& q) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
   fvec4 V4(q.w,q.x,q.y,q.z);
-  fxi->BindParamVect4(par, V4);
+  fxi->bindParamVect4(par, V4);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamPlane(const FxShaderParam* par, const fplane& p) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
   fvec4 V4(p.n.x,p.n.y,p.n.z,p.d);
-  fxi->BindParamVect4(par, V4);
+  fxi->bindParamVect4(par, V4);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec2Array(const FxShaderParam* par, const fvec2* v, size_t count) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect2Array(par, v, count);
+  fxi->bindParamVect2Array(par, v, count);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec3Array(const FxShaderParam* par, const fvec3* v, size_t count) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect3Array(par, v, count);
+  fxi->bindParamVect3Array(par, v, count);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamVec4Array(const FxShaderParam* par, const fvec4* v, size_t count) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamVect4Array(par, v, count);
+  fxi->bindParamVect4Array(par, v, count);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamU32(const FxShaderParam* par, uint64_t v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamU32(par, v);
+  fxi->bindParamU32(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamU64(const FxShaderParam* par, uint64_t v) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamU64(par, v);
+  fxi->bindParamU64(par, v);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrix(const FxShaderParam* par, const fmtx4& m) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrix(par, m);
+  fxi->bindParamMatrix(par, m);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrix(const FxShaderParam* par, const fmtx3& m) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrix(par, m);
+  fxi->bindParamMatrix(par, m);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
-  fxi->BindParamMatrixArray(par, m, len);
+  fxi->bindParamMatrixArray(par, m, len);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(const FxShaderTechnique* tek, rcfd_ptr_t RCFD) {

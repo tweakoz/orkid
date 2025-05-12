@@ -366,8 +366,8 @@ void TextureMaterial::update(const RenderContextInstData& RCID) {
   if (_texture) {
     auto context = RCID.context();
     auto FXI     = context->FXI();
-    FXI->BindParamCTex(_paramColorMap, _texture.get());
-    FXI->BindParamVect4(_parammodcolor, _color);
+    FXI->bindParamTexture(_paramColorMap, _texture.get());
+    FXI->bindParamVect4(_parammodcolor, _color);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -417,8 +417,8 @@ void TexGridMaterial::update(const RenderContextInstData& RCID) {
   /*if (_texture) {
     auto context = RCID.context();
     auto FXI     = context->FXI();
-    FXI->BindParamCTex(_paramColorMap, _texture.get());
-    FXI->BindParamVect4(_parammodcolor, _color);
+    FXI->bindParamTexture(_paramColorMap, _texture.get());
+    FXI->bindParamVect4(_parammodcolor, _color);
   }*/
 
 }
@@ -494,15 +494,6 @@ std::shared_ptr<VolTexMaterial> VolTexMaterial::createShared() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VolTexMaterial::update(const RenderContextInstData& RCID) {
-  /*if (gtarg && _texture) {
-    lev2::TextureAnimationBase* texanim = _texture->GetTexAnim();
-
-    if (texanim) {
-      TextureAnimationInst tai(texanim);
-      tai.SetCurrentTime(ftexframe);
-      gtarg->TXI()->UpdateAnimatedTexture(_texture, &tai);
-    }
-  }*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VolTexMaterial::gpuInit(const RenderContextInstData& RCID) {

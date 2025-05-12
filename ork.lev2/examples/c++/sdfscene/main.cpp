@@ -343,7 +343,7 @@ int main(int argc, char** argv,char** envp) {
       material.bindParamFloat(sub->_parRepeatPeriod, _sdfsceneparams->_repeatperiod);
       material.bindParamFloat(sub->_parNoisePowerA, _sdfsceneparams->_noisepowera);
       material.bindParamFloat(sub->_parNoisePowerB, _sdfsceneparams->_noisepowerb);
-      material.bindParamCTex(sub->_parMapVolTexA, gpurec->_voltexA->_texture.get());
+      material.bindParamTexture(sub->_parMapVolTexA, gpurec->_voltexA->_texture.get());
 
       material.bindParamVec3(sub->_parColorA, _sdfsceneparams->_colorA);
       material.bindParamVec3(sub->_parColorB, _sdfsceneparams->_colorB);

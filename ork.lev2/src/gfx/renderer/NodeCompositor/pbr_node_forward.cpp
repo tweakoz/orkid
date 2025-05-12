@@ -290,7 +290,7 @@ struct ForwardPbrNodeImpl {
 
       //printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
       _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
-      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
+      _ssao_material->bindParamTexture(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
       _ssao_material->bindParamVec2(_fxpZndc2eye, fvec2(VD._near,VD._far));
       _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
       _ssao_material->bindParamMatrix(_fxpP, VD.PL);
@@ -380,10 +380,10 @@ struct ForwardPbrNodeImpl {
       _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight);
       _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
 
-      _ssao_material->bindParamCTex(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
-      _ssao_material->bindParamCTex(_fxpSSAOKernel, ssao_kernel.get() );
-      _ssao_material->bindParamCTex(_fxpSSAOScrNoise, ssao_scrnoise.get());
-      _ssao_material->bindParamCTex(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
+      _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
+      _ssao_material->bindParamTexture(_fxpSSAOKernel, ssao_kernel.get() );
+      _ssao_material->bindParamTexture(_fxpSSAOScrNoise, ssao_scrnoise.get());
+      _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
       _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
       _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
       _ssao_material->bindParamMatrix(_fxpP, VD.PL);

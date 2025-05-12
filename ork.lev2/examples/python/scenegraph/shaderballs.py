@@ -61,7 +61,7 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,enable_always_on_top=False)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
@@ -161,28 +161,36 @@ class SceneGraphApp(object):
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
     color_cookies.needsIrradianceCache = True
-    color_cookies.resize(4,1024,1024)
-    depth_cookies.resize(4,1024,1024)
+    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+
     cookie1 = color_cookies.load("src://effect_textures/knob2.png")
-    
-    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(0,500,0),cookie=cookie1,radius=16,voffset=16,fovbase=65)
-    self.spotlight2 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(500,0,0),cookie=cookie1,radius=16,voffset=16,fovbase=65)
+    cookie2 = color_cookies.load("src://effect_textures/L0D.png")
+    cookie3 = color_cookies.load("src://effect_textures/panel1_ao.png")
+    cookie4 = color_cookies.load("src://effect_textures/ptc4.png")
+    cookie5 = color_cookies.load("src://effect_textures/adama.png")
+
+    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(600,0,0),cookie=cookie1,radius=16,voffset=16,fovbase=25)
+    self.spotlight2 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(0,1500,0),cookie=cookie2,radius=16,voffset=16,fovbase=35)
     self.spotlight3 = MySpotLight( index=2,
                                    app=self,
                                    model=model,
                                    frq=0.27,
-                                   color=vec3(500,500,400),
-                                   cookie=cookie1,
+                                   color=vec3(000,200,600),
+                                   cookie=cookie3,
                                    radius=16,
                                    bias=1e-3,
                                    dim=2048,
                                    fovamp=0,
                                    range=200.0,
-                                   fovbase=65,
+                                   fovbase=20,
                                    voffset=16,
                                    vscale=14)
+    self.spotlight4 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(100,100,0),cookie=cookie4,radius=16,voffset=16,fovbase=35)
+    self.spotlight5 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(150,150,150),cookie=cookie5,radius=16,voffset=16,fovbase=35)
 
     print("LMGR",lmgr)
+    #assert(False)
     ###################################
 
     self.grid_data = createGridData()
@@ -224,6 +232,8 @@ class SceneGraphApp(object):
     self.spotlight1.update(self.lighttime)
     self.spotlight2.update(self.lighttime)
     self.spotlight3.update(self.lighttime)
+    self.spotlight4.update(self.lighttime)
+    self.spotlight5.update(self.lighttime)
     pass 
 
   ################################################

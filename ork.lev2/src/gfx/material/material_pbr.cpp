@@ -315,7 +315,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
   _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
   _texBlackArray = targ->TXI()->createColorTextureV3Array(fvec3(0, 0, 0), 64, 64, 32);
-  _texWhiteLightMapArray = targ->TXI()->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 4);
+  _texWhiteLightMapArray = targ->TXI()->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 32);
 
   /////////////////////////////////////////////////
 
@@ -405,8 +405,8 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
     auto mcams        = CPD._mono_cam_matrices;
     const auto& world = mtxi->RefMMatrix();
     auto MVP          = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
-    fxi->BindParamMatrix(_paramV, mcams->_vmatrix);
-    fxi->BindParamMatrix(_paramMVP, MVP);
+    fxi->bindParamMatrix(_paramV, mcams->_vmatrix);
+    fxi->bindParamMatrix(_paramMVP, MVP);
   }
 }
 
@@ -416,7 +416,7 @@ void PBRMaterial::UpdateMMatrix(Context* context) {
   auto fxi          = context->FXI();
   auto mtxi         = context->MTXI();
   const auto& world = mtxi->RefMMatrix();
-  fxi->BindParamMatrix(_paramM, world);
+  fxi->bindParamMatrix(_paramM, world);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

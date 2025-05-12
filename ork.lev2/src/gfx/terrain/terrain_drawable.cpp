@@ -1049,8 +1049,8 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
   _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
   _terrainMaterial->bindParamMatrix(_parMatVPR, MVPR);
-  _terrainMaterial->bindParamCTex(_parTexA, _heightmapTextureA);
-  _terrainMaterial->bindParamCTex(_parTexB, _heightmapTextureB);
+  _terrainMaterial->bindParamTexture(_parTexA, _heightmapTextureA);
+  _terrainMaterial->bindParamTexture(_parTexB, _heightmapTextureB);
   _terrainMaterial->bindParamVec3(_parCamPos, campos_mono);
   _terrainMaterial->bindParamVec4(_parModColor, color);
   _terrainMaterial->bindParamFloat(_parTime, 0.0f);

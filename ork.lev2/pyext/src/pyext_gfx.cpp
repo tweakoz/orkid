@@ -608,18 +608,23 @@ void pyinit_gfx(py::module& module_lev2) {
         rval->_maxslices = maxslices;
         return rval;
       }))
-      .def("resize", [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d) {
-        texarray->resize(w,h,d);
+      .def("resize", [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d, crcstring_ptr_t fmt, bool needs_mips) {
+        auto efmt = EBufferFormat(fmt->hashed());
+        texarray->_requires_mips = needs_mips;
+        texarray->resize(w,h,d,efmt);
       })
       .def("load", [](texturearray_ptr_t texarray, std::string path) -> texturearraysliceref_ptr_t { return texarray->load(path); })
-      .def("conform", [](texturearray_ptr_t texarray, crcstring_ptr_t fmt) -> texturearraysliceref_ptr_t { //
-       
-        texarray->conform(EBufferFormat(fmt->hashed())); //
-       })
       .def_property("needsIrradianceCache", [](texturearray_ptr_t texarray) -> bool { //
         return texarray->_needsIrradianceCache;
       }, [](texturearray_ptr_t texarray, bool b) { //
         texarray->_needsIrradianceCache = b;
+      })
+      .def_property("bufferFormat", [](texturearray_ptr_t texarray) -> crcstring_ptr_t { //
+        auto crcstr = std::make_shared<CrcString>(uint64_t(texarray->_format));
+        return crcstr;
+      }, [](texturearray_ptr_t texarray, crcstring_ptr_t v) { //
+        auto fmt = EBufferFormat(v->hashed());
+        texarray->_format = fmt;
       })
       .def("subimage", [](texturearray_ptr_t texarray, int slice) -> image_ptr_t { //
         OrkAssert(slice >= 0);

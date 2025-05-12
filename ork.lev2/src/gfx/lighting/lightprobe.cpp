@@ -70,7 +70,7 @@ void LightProbe::exportEquirectangular(Context* ctx, const fquat& rot, const fil
 
 
     material->bindParamMatrix(p_mrot, mtxrot);
-    material->bindParamCTex(p_cube, _cubeTexture.get());
+    material->bindParamTexture(p_cube, _cubeTexture.get());
     //ctx->RSI()->BindRasterState(material->_rasterstate, true);
     ctx->GBI()->render2dQuadEML(); // full screen quad
     material->end(RCFD);

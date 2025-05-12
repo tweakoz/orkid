@@ -202,14 +202,14 @@ void GlFrameBufferInterface::_initializeContext(DisplayBuffer* pBuf) {
       // efmt = D3DFMT_A32B32G32R32F;
       ibytesperpix = 16;
       break;
-    case EBufferFormat::Z16:
+    case EBufferFormat::Z16F:
       // efmt = D3DFMT_R16F;
       ibytesperpix = 2;
       Zonly        = true;
       break;
-    case EBufferFormat::Z32:
+    case EBufferFormat::Z32F:
       // efmt = D3DFMT_R32F;
-      ibytesperpix = 2;
+      ibytesperpix = 4;
       Zonly        = true;
       break;
     default:
@@ -436,7 +436,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
           glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
           GL_ERRORCHECK();
           break;
-        case EBufferFormat::Z32:
+        case EBufferFormat::Z32F:
           glReadBuffer(GL_COLOR_ATTACHMENT0);
           GL_ERRORCHECK();
           break;

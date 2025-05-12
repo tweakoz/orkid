@@ -342,7 +342,7 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
               break;
           }
 
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, impl->_out_width, impl->_out_height);
           fbi->pushViewport(extents);
@@ -374,7 +374,7 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
           // vrdev->__composite(context, tex);
           mtl.begin(impl->_fxtechnique1x1, framedata);
 
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);

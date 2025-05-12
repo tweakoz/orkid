@@ -340,7 +340,7 @@ void GedSkin1::End(Context* pTARG) {
 
         _material->begin(_is_pickmode ? _tekvtxcolor : _tektexcolor, RCFD);
         _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
-        _material->bindParamCTex(_partexture, texture.get());
+        _material->bindParamTexture(_partexture, texture.get());
         pTARG->FXI()->applyRasterState(*(_material->_rasterstate));
         pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
         _material->end(RCFD);

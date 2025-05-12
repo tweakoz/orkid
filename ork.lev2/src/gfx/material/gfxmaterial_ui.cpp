@@ -110,8 +110,8 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
   ///////////////////////////////
 
   //pTarg->FXI()->BindPass(iPass);
-  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
-  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
+  pTarg->FXI()->bindParamMatrix(hTransform, MatMVP);
+  pTarg->FXI()->bindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->applyRasterState(*_rasterstate);
   pTarg->FXI()->CommitParams();
   return inumpasses;
@@ -177,12 +177,12 @@ int GfxMaterialUIText::BeginBlock(Context* pTarg, const RenderContextInstData& M
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
-  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
+  pTarg->FXI()->bindParamMatrix(hTransform, MatMVP);
 
   ///////////////////////////////
 
-  pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
-  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
+  pTarg->FXI()->bindParamTexture(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
+  pTarg->FXI()->bindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
   pTarg->FXI()->applyRasterState(*_rasterstate);
   return inumpasses;
@@ -198,7 +198,7 @@ void GfxMaterialUIText::EndBlock(Context* pTarg) {
 
 void GfxMaterialUIText::UpdateMVPMatrix(Context* context) {
   const fmtx4& MatMVP = context->MTXI()->RefMVPMatrix();
-  context->FXI()->BindParamMatrix(hTransform, MatMVP);
+  context->FXI()->bindParamMatrix(hTransform, MatMVP);
   context->FXI()->CommitParams();
 }
 
@@ -274,9 +274,9 @@ int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstDat
   auto texture = GetTexture(ETEXDEST_DIFFUSE).mpTexture;
   OrkAssert(texture != nullptr);
   
-  pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
-  pTarg->FXI()->BindParamCTex(hColorMap, texture);
-  pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
+  pTarg->FXI()->bindParamMatrix(hTransform, MatMVP);
+  pTarg->FXI()->bindParamTexture(hColorMap, texture);
+  pTarg->FXI()->bindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->applyRasterState(*_rasterstate);
   pTarg->FXI()->CommitParams();
   return inumpasses;

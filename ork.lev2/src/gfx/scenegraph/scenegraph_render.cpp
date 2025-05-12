@@ -253,8 +253,8 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       size_t DIM = 200;
       if (_sgpickbuffer->_pickIDtexture) {
         pickhudmat->begin(tek_texcolorpik, RCFD);
-        fxi->BindParamCTex(par_pickidmap, _sgpickbuffer->_pickIDtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
+        fxi->bindParamTexture(par_pickidmap, _sgpickbuffer->_pickIDtexture);
+        fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
             fvec4(0, 0, DIM, DIM), // quadrect
             fvec4(1, 0, -1, 1),    // uvrect
@@ -265,8 +265,8 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       }
       if (_sgpickbuffer->_pickPOStexture) {
         pickhudmat->begin(tek_texcolormod1, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickPOStexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickPOStexture);
+        fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
             fvec4(0, DIM, DIM, DIM), // quadrect
             fvec4(1, 0, -1, 1),      // uvrect
@@ -277,8 +277,8 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       }
       if (_sgpickbuffer->_pickNRMtexture) {
         pickhudmat->begin(tek_texcolornrm, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickNRMtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickNRMtexture);
+        fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
             fvec4(0, DIM * 2, DIM, DIM), // quadrect
             fvec4(1, 0, -1, 1),          // uvrect
@@ -289,8 +289,8 @@ void Scene::_renderIMPL(Context* context, rcfd_ptr_t RCFD) {
       }
       if (_sgpickbuffer->_pickUVtexture) {
         pickhudmat->begin(tek_texcolor, RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickUVtexture);
-        fxi->BindParamMatrix(par_mvp, uimatrix);
+        fxi->bindParamTexture(par_colormap, _sgpickbuffer->_pickUVtexture);
+        fxi->bindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(
             fvec4(0, DIM * 3, DIM, DIM), // quadrect
             fvec4(1, 0, -1, 1),          // uvrect

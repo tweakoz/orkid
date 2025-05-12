@@ -28,7 +28,12 @@ image_ptr_t Image::createFromFile(const std::string& inpath) {
 
 bool Image::readFromFile(const ork::file::Path& inpath) {
   auto datablock = ork::File::loadDatablock(inpath);
-  return initFromDataBlock(datablock);
+  bool ok = initFromDataBlock(datablock);
+  _debugName = inpath.c_str();
+  if (not ok) {
+    _debugName += "_error";
+  }
+  return ok;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

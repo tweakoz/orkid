@@ -220,98 +220,98 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
     return 0;
   }
 
-  FXI->BindParamMatrix(hMatM, MTXI->RefMMatrix());
-  FXI->BindParamMatrix(hMatMV, MTXI->RefMVMatrix());
-  FXI->BindParamMatrix(hMatP, MTXI->RefPMatrix());
+  FXI->bindParamMatrix(hMatM, MTXI->RefMMatrix());
+  FXI->bindParamMatrix(hMatMV, MTXI->RefMVMatrix());
+  FXI->bindParamMatrix(hMatP, MTXI->RefPMatrix());
 
   const auto& world = MTXI->RefMMatrix();
   if (is_stereo and CPD._stereo_cam_matrices) {
     auto stereomtx = CPD._stereo_cam_matrices;
     auto MVPL      = stereomtx->MVPL(world);
     auto MVPR      = stereomtx->MVPR(world);
-    FXI->BindParamMatrix(hMatMVPL, MVPL);
-    FXI->BindParamMatrix(hMatMVPR, MVPR);
+    FXI->bindParamMatrix(hMatMVPL, MVPL);
+    FXI->bindParamMatrix(hMatMVPR, MVPR);
   } else if (CPD._mono_cam_matrices) {
     auto mcams = CPD._mono_cam_matrices;
     auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
-    FXI->BindParamMatrix(hMatMVP, MVP);
+    FXI->bindParamMatrix(hMatMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();
-    FXI->BindParamMatrix(hMatMVP, MVP);
+    FXI->bindParamMatrix(hMatMVP, MVP);
   }
 
   if (hMatAux)
-    FXI->BindParamMatrix(hMatAux, mMatAux);
+    FXI->bindParamMatrix(hMatAux, mMatAux);
 
   if (hMatAux2)
-    FXI->BindParamMatrix(hMatAux2, mMatAux2);
+    FXI->bindParamMatrix(hMatAux2, mMatAux2);
 
   if (hMatV) {
-    FXI->BindParamMatrix(hMatV, MTXI->RefVMatrix());
+    FXI->bindParamMatrix(hMatV, MTXI->RefVMatrix());
   }
 
   if (hMatRot)
-    FXI->BindParamMatrix(hMatRot, MTXI->RefR3Matrix());
+    FXI->bindParamMatrix(hMatRot, MTXI->RefR3Matrix());
 
   if (pTarg->FBI()->isPickState()) {
-    FXI->BindParamVect4(hParamModColor, pTarg->RefModColor());
+    FXI->bindParamVect4(hParamModColor, pTarg->RefModColor());
   } else {
     if (meColorMode == EMODE_INTERNAL_COLOR) {
-      FXI->BindParamVect4(hParamModColor, Color);
+      FXI->bindParamVect4(hParamModColor, Color);
     } else {
-      FXI->BindParamVect4(hParamModColor, pTarg->RefModColor());
+      FXI->bindParamVect4(hParamModColor, pTarg->RefModColor());
     }
   }
 
   if (hParamNoiseAmp) {
-    FXI->BindParamVect4(hParamNoiseAmp, mNoiseAmp);
+    FXI->bindParamVect4(hParamNoiseAmp, mNoiseAmp);
   }
   if (hParamNoiseFreq) {
-    FXI->BindParamVect4(hParamNoiseFreq, mNoiseFreq);
+    FXI->bindParamVect4(hParamNoiseFreq, mNoiseFreq);
   }
   if (hParamNoiseShift) {
-    FXI->BindParamVect4(hParamNoiseShift, mNoiseShift);
+    FXI->bindParamVect4(hParamNoiseShift, mNoiseShift);
   }
 
   if (hParamTime) {
     float reltime = fmodf(OldSchool::GetRef().GetLoResRelTime(), 300.0f);
     // printf( "reltime<%f>\n", reltime );
-    FXI->BindParamFloat(hParamTime, reltime);
+    FXI->bindParamFloat(hParamTime, reltime);
   }
 
   if (hParamUser0) {
-    FXI->BindParamVect4(hParamUser0, mUser0);
+    FXI->bindParamVect4(hParamUser0, mUser0);
   }
   if (hParamUser1) {
-    FXI->BindParamVect4(hParamUser1, mUser1);
+    FXI->bindParamVect4(hParamUser1, mUser1);
   }
   if (hParamUser2) {
-    FXI->BindParamVect4(hParamUser2, mUser2);
+    FXI->bindParamVect4(hParamUser2, mUser2);
   }
   if (hParamUser3) {
-    FXI->BindParamVect4(hParamUser3, mUser3);
+    FXI->bindParamVect4(hParamUser3, mUser3);
   }
 
   if (mVolumeTexture && hVolumeMap) {
-    FXI->BindParamCTex(hVolumeMap, mVolumeTexture);
+    FXI->bindParamTexture(hVolumeMap, mVolumeTexture);
   }
 
   if (mCurrentTexture && hColorMap) {
     // if (IsDebug())
     // printf("Binding texmap<%p:%s> to param<%p>\n", mCurrentTexture, mCurrentTexture->_debugName.c_str(), hColorMap);
-    FXI->BindParamCTex(hColorMap, mCurrentTexture);
+    FXI->bindParamTexture(hColorMap, mCurrentTexture);
   }
   if (mCurrentTexture2 && hColorMap2) {
     // printf( "Binding texmap2<%p> to param<%p>\n", mCurrentTexture2, hColorMap2 );
-    FXI->BindParamCTex(hColorMap2, mCurrentTexture2);
+    FXI->bindParamTexture(hColorMap2, mCurrentTexture2);
   }
 
   if (mCurrentTexture3 && hColorMap3) {
-    FXI->BindParamCTex(hColorMap3, mCurrentTexture3);
+    FXI->bindParamTexture(hColorMap3, mCurrentTexture3);
   }
 
   if (mCurrentTexture4 && hColorMap4) {
-    FXI->BindParamCTex(hColorMap4, mCurrentTexture4);
+    FXI->bindParamTexture(hColorMap4, mCurrentTexture4);
   }
 
   FXI->CommitParams();

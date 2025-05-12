@@ -71,7 +71,6 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // logchan_pbr_fwd->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
     int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-    int num_texspotlights          = 0;
 
     auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
     // size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
@@ -86,6 +85,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     size_t base_sizbias  = base_color + vec4_stride * 64;
     size_t base_position = base_sizbias + vec4_stride * 64;
     size_t base_shmtx    = base_position + vec4_stride * 64;
+    size_t base_lighttexid  = base_shmtx + mat4_stride * 64;
 
     if (0) {
       printf("base_color<%zu>\n", base_color);
@@ -108,12 +108,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       index++;
     }
 
-    texture_rawlist_t texlist;
     auto lmgr = CIMPL->_lightmgr;
     OrkAssert(lmgr);
     auto clr_cookies = lmgr->_cookies_spot_color; 
     auto dep_cookies = lmgr->_cookies_spot_depth; 
 
+    int num_texspotlights          = 0;
     for (auto item : enumlights->_tex2spotlightmap) {
       for (auto light : item.second) {
         auto irr = light->_irradianceCookie;
@@ -135,14 +135,14 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
         pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
+        size_t tex_addr = base_lighttexid + (index * vec4_stride);
+        //printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
+
+        int cookie_index = light->_cookieColor->_slice;
+        pl_mapped->ref<uint32_t>(tex_addr) = uint32_t(cookie_index);
         index++;
         num_texspotlights++;
 
-        auto specmap  = irr->_filtenvSpecularMap.get();
-        auto depthmap = light->_depthRTG->_depthBuffer->_texture.get();
-
-        texlist.push_back(specmap);
-        texlist.push_back(depthmap);
       }
     }
 
@@ -154,7 +154,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
 
     if (mtl->_parUnTexPointLightsCount)
-      FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
+      FXI->bindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
     if (mtl->_parUnTexPointLightsData) {
       //printf( "binding lighting UBO\n");
       FXI->bindUniformBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
@@ -165,45 +165,13 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      //printf("binding texspotlights<%d> txlsiz<%d> \n", num_texspotlights, texlist.size() );
-      FXI->BindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
-      // FXI->bindParamTextureList(mtl->_parLightCookies, texlist );
+      FXI->bindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
+      // TODO use dep_cookies (and make sure dep_cookies filled in by depth pass of shadow/lights)
+      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, mtl->_texWhiteLightMapArray.get() );
+      FXI->bindParamTextureArray(mtl->_parLightColorCookies, clr_cookies.get() );
 
-      size_t num_cookies = num_texspotlights;
-      /*auto tex_color0 = mtl->_texBlackArray.get();
-      auto tex_color1 = mtl->_texBlackArray.get();
-      auto tex_depth0 = mtl->_texBlack.get();
-      auto tex_depth1 = mtl->_texBlack.get();
-      if(num_cookies > 0){
-        if(texlist[0]){
-          tex_color0 = texlist[0];  
-        }
-        if(texlist[1]){
-          tex_depth0 = texlist[1];
-        }
-      }
-      if(num_cookies > 1){
-        if(texlist[2]){
-          tex_color1 = texlist[2];
-        }
-        if(texlist[3]){
-          tex_depth1 = texlist[3];
-        }
-      }
-      OrkAssert(tex_color0->_texType == ETEXTYPE_2D_ARRAY);
-      OrkAssert(tex_color1->_texType == ETEXTYPE_2D_ARRAY);
-      OrkAssert(tex_depth0->_texType == ETEXTYPE_2D);
-      OrkAssert(tex_depth1->_texType == ETEXTYPE_2D);
-      */
-      //FXI->BindParamCTex(mtl->_parLightColorCookie0, tex_color0);
-      //FXI->BindParamCTex(mtl->_parLightColorCookie1, tex_color1);
-      //FXI->BindParamCTex(mtl->_parLightDepthCookie0, tex_depth0);
-      //FXI->BindParamCTex(mtl->_parLightDepthCookie1, tex_depth1);
-      
     }
-    
-    //printf("HUH <%p> <%p>\n", mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
-    FXI->BindParamCTex( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA->_tex.get() );
+    FXI->bindParamTextureArray( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
 
     ///////////////////////////////////////////////////////////////////////////
     // bind light/environment probes
@@ -222,16 +190,16 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
       //printf( "BINDING PROBES!  count<%d>\n", num_probes );
       //printf( "binding probetex<%p>\n", probe_tex.get() );
-      FXI->BindParamCTex(mtl->_parProbeReflection, probe_tex.get() );
-      FXI->BindParamCTex(mtl->_parProbeIrradiance, probe_tex.get() );
+      FXI->bindParamTexture(mtl->_parProbeReflection, probe_tex.get() );
+      FXI->bindParamTexture(mtl->_parProbeIrradiance, probe_tex.get() );
 
 
     }
     else{
       OrkAssert(mtl->_texCubeBlack);
       //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
-      FXI->BindParamCTex(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
-      FXI->BindParamCTex(mtl->_parProbeIrradiance, mtl->_texCubeBlack.get() );
+      FXI->bindParamTexture(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
+      FXI->bindParamTexture(mtl->_parProbeIrradiance, mtl->_texCubeBlack.get() );
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -241,22 +209,22 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     if(mtl->_texLightMapArray){
       //printf("binding lightmap array\n");
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texLightMapArray->_tex.get());
-      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      FXI->bindParamTextureArray(mtl->_parMapLightMapArray, mtl->_texLightMapArray.get());
+      FXI->bindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
     }
     else{
       //printf("binding white lightmap array\n");
       //printf("mtl->_parMapLightMapArray<%p>\n", mtl->_parMapLightMapArray);
       //printf("mtl->_texWhiteLightMapArray<%p>\n", mtl->_texWhiteLightMapArray.get());
-      FXI->BindParamCTex(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray->_tex.get());
-      FXI->BindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
+      FXI->bindParamTextureArray(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray.get());
+      FXI->bindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
       //printf("OK...\n");
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
     auto modcolor = context->RefModColor();
-    FXI->BindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);
+    FXI->bindParamVect4(mtl->_parModColor, modcolor * mtl->_baseColor);
   };
   return L;
 }
@@ -306,15 +274,15 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     auto context = RCFD->GetTarget();
     auto FXI              = context->FXI();
       if( RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu ){
-        //FXI->BindParamCTex(this->_paramSSAOTexture, nullptr );
-        FXI->BindParamVect2(this->_parInvViewSize, fvec2(1,1) );
+        //FXI->bindParamTexture(this->_paramSSAOTexture, nullptr );
+        FXI->bindParamVect2(this->_parInvViewSize, fvec2(1,1) );
       }
       else {
           auto pbrcommon = RCFD->userPropertyAs<pbr::commonstuff_ptr_t>("PBR_COMMON"_crcu);
           auto ssaotexture = RCFD->userPropertyAs<texture_ptr_t>("SSAO_MAP"_crcu);
           auto depthtexture = RCFD->userPropertyAs<texture_ptr_t>("DEPTH_MAP"_crcu);
 
-          FXI->BindParamCTex(this->_paramMapDepth, depthtexture.get() );
+          FXI->bindParamTexture(this->_paramMapDepth, depthtexture.get() );
 
           if(RCFD->hasUserProperty("LINEAR_DEPTH_MAP"_crcu)){
             auto lindepthtexture = RCFD->userPropertyAs<texture_ptr_t>("LINEAR_DEPTH_MAP"_crcu);
@@ -327,23 +295,23 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
             auto kernel = RCFD->userPropertyAs<texture_ptr_t>("SSAO_KERNEL"_crcu);
             auto scrnoise = RCFD->userPropertyAs<texture_ptr_t>("SSAO_SCRNOISE"_crcu);
             fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
-            FXI->BindParamCTex(this->_paramMapLinearDepth, lindepthtexture.get() );
-            FXI->BindParamCTex(this->_paramSSAOTexture, ssaotexture.get() );
-            FXI->BindParamCTex(this->_paramSSAOKernel, kernel.get());
-            FXI->BindParamCTex(this->_paramSSAOScrNoise, scrnoise.get());
+            FXI->bindParamTexture(this->_paramMapLinearDepth, lindepthtexture.get() );
+            FXI->bindParamTexture(this->_paramSSAOTexture, ssaotexture.get() );
+            FXI->bindParamTexture(this->_paramSSAOKernel, kernel.get());
+            FXI->bindParamTexture(this->_paramSSAOScrNoise, scrnoise.get());
 
-            FXI->BindParamFloat(this->_paramSSAOPower, ssaoPOWER );
-            FXI->BindParamFloat(this->_paramSSAOWeight, ssaoWEIGHT );
-            FXI->BindParamVect2(this->_parInvViewSize, ivpdim );
-            FXI->BindParamVect2(this->_paramNearFar, near_far );
-            FXI->BindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples);
-            FXI->BindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps);
-            FXI->BindParamFloat(this->_paramSSAOBias, pbrcommon->_ssaoBias);
-            FXI->BindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius);
-            FXI->BindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight);
-            FXI->BindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower);
-            FXI->BindParamMatrix(this->_paramP, pmatrix);
-            FXI->BindParamMatrix(this->_paramIP, ipmatrix);
+            FXI->bindParamFloat(this->_paramSSAOPower, ssaoPOWER );
+            FXI->bindParamFloat(this->_paramSSAOWeight, ssaoWEIGHT );
+            FXI->bindParamVect2(this->_parInvViewSize, ivpdim );
+            FXI->bindParamVect2(this->_paramNearFar, near_far );
+            FXI->bindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples);
+            FXI->bindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps);
+            FXI->bindParamFloat(this->_paramSSAOBias, pbrcommon->_ssaoBias);
+            FXI->bindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius);
+            FXI->bindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight);
+            FXI->bindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower);
+            FXI->bindParamMatrix(this->_paramP, pmatrix);
+            FXI->bindParamMatrix(this->_paramIP, ipmatrix);
             pmatrix.dump("PMATRIX");
             printf( "near<%f> far<%f>\n", near_far.x, near_far.y );
             printf( "ivpdim<%f %f>\n", ivpdim.x, ivpdim.y );

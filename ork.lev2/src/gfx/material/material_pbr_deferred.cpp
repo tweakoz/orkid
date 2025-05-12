@@ -56,7 +56,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
     mut->_rasterstate->setWriteMaskRGB(true);
     mut->_rasterstate->setWriteMaskA(true);
     //RSI->BindRasterState(this->_rasterstate);
-    FXI->BindParamVect4(this->_parModColor, modcolor * this->_baseColor);
+    FXI->bindParamVect4(this->_parModColor, modcolor * this->_baseColor);
   };
   // printf( "OK1..\n");
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,8 +90,8 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
         if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
           vrroot = as_mtx.value();
         }
-        FXI->BindParamMatrix(this->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
-        FXI->BindParamMatrix(this->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
+        FXI->bindParamMatrix(this->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
+        FXI->bindParamMatrix(this->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
       });
     } else {
       OrkAssert(false);
@@ -127,10 +127,10 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDEF(const FxPipelinePermutation& 
         auto monocams    = CPD._mono_cam_matrices;
         auto worldmatrix = RCID.worldMatrix();
         auto eye_pos     = monocams->_vmatrix.inverse().translation();
-        FXI->BindParamVect3(this->_paramEyePostion, eye_pos);
-        FXI->BindParamMatrix(this->_paramM, worldmatrix);
-        FXI->BindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
-        FXI->BindParamCTex(this->_paramMapCNMREA, this->_texArrayCNMREA->_tex.get());
+        FXI->bindParamVect3(this->_paramEyePostion, eye_pos);
+        FXI->bindParamMatrix(this->_paramM, worldmatrix);
+        FXI->bindParamMatrix(this->_paramMVP, monocams->MVPMONO(worldmatrix));
+        FXI->bindParamTexture(this->_paramMapCNMREA, this->_texArrayCNMREA->_tex.get());
       });
     }
   }

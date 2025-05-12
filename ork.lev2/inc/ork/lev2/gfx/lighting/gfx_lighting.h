@@ -532,7 +532,7 @@ using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
 using pointlightlist_t    = std::vector<PointLight*>;
 using spotlightlist_t     = std::vector<SpotLight*>;
 using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
-using tex2spotlightmap_t  = std::map<Texture*, spotlightlist_t>;
+using tex2spotlightmap_t  = std::map<texturearraysliceref_ptr_t, spotlightlist_t>;
 using lightprobeset_t = std::vector<lightprobe_ptr_t>;
 
 struct EnumeratedLights {

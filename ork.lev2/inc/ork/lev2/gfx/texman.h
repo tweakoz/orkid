@@ -67,41 +67,6 @@ struct TextureSamplingModeData {
 
 //////////////////////////////////////////////////////////////////////////
 
-class TextureAnimationBase {
-public:
-  virtual void UpdateTexture(TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim) = 0;
-  virtual float GetLengthOfTime(void) const                                                        = 0;
-  virtual ~TextureAnimationBase() {
-  }
-
-private:
-};
-
-//////////////////////////////////////////////////////////////////////////
-
-class TextureAnimationInst {
-public:
-  TextureAnimationInst(TextureAnimationBase* panim = 0)
-      : mfCurrentTime(0.0f)
-      , mpAnim(panim) {
-  }
-  float GetCurrentTime() const {
-    return mfCurrentTime;
-  }
-  void SetCurrentTime(float fv) {
-    mfCurrentTime = fv;
-  }
-  TextureAnimationBase* GetAnim() const {
-    return mpAnim;
-  }
-
-private:
-  float mfCurrentTime;
-  TextureAnimationBase* mpAnim;
-};
-
-//////////////////////////////////////////////////////////////////////////
-
 struct MipChainLevel {
 
   template <typename T> T& sample(int x, int y) {
@@ -187,15 +152,6 @@ struct Texture {
   static texture_ptr_t createBlank(int iw, int ih, EBufferFormat efmt);
 
   //////////////////////////////////////////////////////////
-
-  TextureAnimationBase* GetTexAnim() const {
-    return _anim;
-  }
-  void SetTexAnim(TextureAnimationBase* ptexanim) {
-    _anim = ptexanim;
-  }
-
-  //////////////////////////////////////////////////////////
   asset::loadrequest_ptr_t loadRequest() const;
   //////////////////////////////////////////////////////////
 
@@ -221,7 +177,6 @@ struct Texture {
   MipChain* _chain            = nullptr;
   mutable bool _dirty         = true;
   const void* _data           = nullptr;
-  TextureAnimationBase* _anim = nullptr;
   mutable svarshp_t _impl     = nullptr;
   Context* _creatingTarget    = nullptr;
   std::string _debugName;
@@ -232,7 +187,6 @@ struct Texture {
   ipctexture_ptr_t _external_memory;
   std::atomic<int> _residenceState;
   datablock_ptr_t _final_datablock;
-  //std::vector<image_ptr_t> _images;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,18 +195,21 @@ struct TextureArray {
   TextureArray();
   ~TextureArray();
   texturearraysliceref_ptr_t load(const std::string& path);
-  void resize(size_t w, size_t h, size_t maxslices);
-  texturearraysliceref_ptr_t slice(size_t index);
-  void conform(EBufferFormat fmt);
+  void resize(size_t w, size_t h, size_t maxslices,EBufferFormat efmt);
+  texturearraysliceref_ptr_t slice(size_t index) const;
+  void _conform(EBufferFormat fmt);
   size_t _width = 0;
   size_t _height = 0;
   size_t _maxslices = 0;
+  bool _requires_mips = false;
   bool _needsIrradianceCache = false;
-  std::map<std::string,texturearraysliceref_ptr_t> _slices_by_path;
+  EBufferFormat _format = EBufferFormat::RGB8;
+  std::map<std::string,size_t> _slices_by_path;
   texture_ptr_t _tex;
   varmap::varmap_ptr_t _vars;
-  std::unordered_map<size_t,texturearraysliceref_ptr_t> _free_slices;
-  std::vector<image_ptr_t> _images;
+  std::set<size_t> _free_slices;
+  mutable std::set<size_t> _dirty_slices;
+  std::unordered_map<size_t,image_ptr_t> _images;
 
 };
 

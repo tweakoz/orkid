@@ -407,7 +407,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
           .def(
               "bindParamTexture",
-              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamCTex(p.get(), value.get()); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamTexture(p.get(), value.get()); })
           .def(
               "begin",
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, rcfd_ptr_t rcfd) { m->begin(tek.get(), rcfd); })

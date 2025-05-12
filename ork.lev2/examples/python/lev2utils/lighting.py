@@ -50,7 +50,7 @@ class MySpotLight:
     self.spot_light.data.range = range
     self.spot_light.data.shadowBias = bias
     self.spot_light.data.shadowMapSize = dim
-    #self.spot_light.cookieTexture = cookie.texSlice
+    self.spot_light.colorCookie = cookie
     #self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
     print(self.spot_light.shadowMatrix)

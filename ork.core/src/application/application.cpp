@@ -36,6 +36,10 @@ AppInitData::AppInitData(int argc, char** argv, char** envp) {
     genviron.get("ORKID_AUDIO_OUTPUT_DEVICE",audiooutputdev);
     _audio_output_devname = audiooutputdev;
   }
+  if (genviron.has("ORKID_DISABLE_ALWAYS_ON_TOP")) {
+    _canalwaysontop = false;
+  }
+
 
 }
 

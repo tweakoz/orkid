@@ -35,26 +35,27 @@ public:
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
 
-  virtual void BindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
-  virtual void BindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;
-  virtual void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec)                        = 0;
-  virtual void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec)                        = 0;
-  virtual void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
-  virtual void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) = 0;
-  virtual void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) = 0;
-  virtual void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) = 0;
-  virtual void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt)   = 0;
-  virtual void BindParamFloat(const FxShaderParam* hpar, float fA)                                = 0;
-  virtual void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)                       = 0;
-  virtual void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat)                       = 0;
-  virtual void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
-  virtual void BindParamU32(const FxShaderParam* hpar, uint32_t uval)                             = 0;
-  virtual void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex)                      = 0;
-  virtual void BindParamU64(const FxShaderParam* hpar, uint64_t uval)                             = 0;
+  virtual void bindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
+  virtual void bindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;
+  virtual void bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec)                        = 0;
+  virtual void bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec)                        = 0;
+  virtual void bindParamVect4(const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
+  virtual void bindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) = 0;
+  virtual void bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) = 0;
+  virtual void bindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) = 0;
+  virtual void bindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt)   = 0;
+  virtual void bindParamFloat(const FxShaderParam* hpar, float fA)                                = 0;
+  virtual void bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat)                       = 0;
+  virtual void bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat)                       = 0;
+  virtual void bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
+  virtual void bindParamU32(const FxShaderParam* hpar, uint32_t uval)                             = 0;
+  virtual void bindParamTexture(const FxShaderParam* hpar, const Texture* pTex)                      = 0;
+  virtual void bindParamTextureArray(const FxShaderParam* hpar, const TextureArray* tex_array)        = 0;
+  virtual void bindParamU64(const FxShaderParam* hpar, uint64_t uval)                             = 0;
 
   virtual void bindParamTextureList(const FxShaderParam* hpar, texture_rawlist_t rawlist) {}
 
-  void BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
+  void bindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
   //////////////////////////////////////////
   // new descriptorset api

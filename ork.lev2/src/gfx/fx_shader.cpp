@@ -123,7 +123,7 @@ void FxShader::OnReset() {
     const FxShaderParam* param = it.second;
     const std::string& type    = param->mParameterType;
     if (param->mParameterType == "sampler" || param->mParameterType == "texture") {
-      target->FXI()->BindParamCTex(param, 0);
+      target->FXI()->bindParamTexture(param, 0);
     }
   }
   //_techniques.clear();

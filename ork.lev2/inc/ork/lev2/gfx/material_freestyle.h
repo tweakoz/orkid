@@ -69,7 +69,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   void bindParamInt(fxparam_constptr_t par, int value);
   void bindParamFloat(fxparam_constptr_t par, float value);
   void bindParamFloatArray(fxparam_constptr_t par, const float* value, size_t len);
-  void bindParamCTex(fxparam_constptr_t par, const Texture* tex);
+  void bindParamTexture(fxparam_constptr_t par, const Texture* tex);
   void bindParamVec2(fxparam_constptr_t par, const fvec2& v);
   void bindParamVec3(fxparam_constptr_t par, const fvec3& v);
   void bindParamVec4(fxparam_constptr_t par, const fvec4& v);

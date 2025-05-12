@@ -345,34 +345,6 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class VdsTextureAnimation : public TextureAnimationBase {
-public:
-  VdsTextureAnimation(const AssetPath& pth);
-  ~VdsTextureAnimation();                                                                   // virtual
-  void UpdateTexture(TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim); // virtual
-  float GetLengthOfTime() const;                                                        // virtual
-
-  void* ReadFromFrameCache(int iframe, int isize);
-
-  int miW, miH;
-  int miNumFrames;
-  File* mpFile;
-  std::string mPath;
-  dds::DDS_HEADER* mpDDSHEADER;
-  int miFrameBaseSize;
-  int miFrameBaseOffset;
-  int miFileLength;
-
-  std::map<int, int> mFrameCache;
-  static const int kframecachesize = 60;
-  void* mFrameBuffers[kframecachesize];
-
-private:
-  void UpdateFBO(GLTextureObject& glto, float ftime);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct PboItem {
 
 #if defined(OPENGL_46)
@@ -437,10 +409,10 @@ struct GlTextureInterface : public TextureInterface {
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;
 
   void ApplySamplingMode(Texture* ptex) final;
-  void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromImage(Texture* ptex, image_ptr_t img) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) final;
+  void initTextureArray2D(TextureArray* ptex) final;
   void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 

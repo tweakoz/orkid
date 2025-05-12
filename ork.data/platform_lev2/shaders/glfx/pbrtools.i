@@ -53,25 +53,23 @@ uniform_set ub_frg {
 
 uniform_set ub_frg_fwd {
 
-  sampler2DArray CNMREA;         // 0
-  sampler2DArray LightMapArray;  // 1
-  sampler2DArray MapSpecularEnv; // 2
+  sampler2DArray CNMREA;                   // 0
+  sampler2DArray LightMapArray;            // 1
+  sampler2DArray MapSpecularEnv;           // 2
+  sampler2DArray light_cookie_colors;      // 3
+  sampler2DArray light_cookie_depths;      // 4
 
-  sampler2D SSAOMap;            // 3
-  sampler2D SSAOKernel;         // 4
-  sampler2D SSAOScrNoise;       // 5
+  sampler2D SSAOMap;            // 5
+  sampler2D SSAOKernel;         // 6
+  sampler2D SSAOScrNoise;       // 7
 
-  sampler2D MapBrdfIntegration; // 6
-  sampler2D MapDiffuseEnv;      // 7
-  sampler2D MapDepth;           // 8
-  sampler2D MapLinearDepth;     // 9
+  sampler2D MapBrdfIntegration; // 8
+  sampler2D MapDiffuseEnv;      // 9
+  sampler2D MapDepth;           // 10
+  sampler2D MapLinearDepth;     // 12
 
-
-  sampler2DArray light_cookie_colors;      // 10
-  sampler2DArray light_cookie_depths;      // 12
-
-  samplerCube reflectionPROBE; // 14
-  samplerCube irradiancePROBE; // 15
+  samplerCube reflectionPROBE; // 13
+  samplerCube irradiancePROBE; // 14
 
   //
 
@@ -135,10 +133,11 @@ uniform_set ub_frg_fwd {
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
-  vec4 _lightcolor[64];
-  vec4 _lightsizbias[64];
-  vec4 _lightpos[64];
-  mat4 _shadowmatrix[64];
+  vec4 _lightcolor[64];    // 1024 : 1024 
+  vec4 _lightsizbias[64];  // 1024 : 2048
+  vec4 _lightpos[64];      // 1024 : 3072
+  mat4 _shadowmatrix[64];  // 4096 : 7168
+  uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces

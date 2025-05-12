@@ -48,11 +48,6 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkTextureInterface::generateMipMaps(Texture* ptex) {
   ptex->_debugName = "VkTextureInterface::generateMipMaps";
   vktexobj_ptr_t vktex;

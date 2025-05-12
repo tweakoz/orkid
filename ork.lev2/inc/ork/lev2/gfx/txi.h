@@ -86,8 +86,6 @@ public:
   virtual void _createFromLoadReq(texloadreq_ptr_t req) {
   }
 
-  virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
-  }
   virtual void ApplySamplingMode(Texture* ptex) {
   }
   virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {
@@ -97,6 +95,8 @@ public:
   virtual void initTextureArray1DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }
   virtual void initTextureArray2DFromData(TextureArray* ptex, TextureArrayInitData tid) {
+  }
+  virtual void initTextureArray2D(TextureArray* ptex) {
   }
   virtual void initTextureArray3DFromData(TextureArray* ptex, TextureArrayInitData tid) {
   }

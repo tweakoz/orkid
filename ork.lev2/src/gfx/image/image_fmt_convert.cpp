@@ -120,6 +120,7 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
            EBufferFormatToName(fmt).c_str(), //
            EBufferFormatToName(inp._format).c_str() );
 
+  _debugName = inp._debugName+"_converted";
   /////////////////////////////
   if (fmt == inp._format) {
     init(inp._width, inp._height, inp._numcomponents, inp._bytesPerChannel);
@@ -145,7 +146,6 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         outptr[elembase + 2] = inptr[elembase + 0];
       }
     }
-    _format = fmt;
   }
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB8) {
@@ -228,7 +228,6 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         outptr[elembase + 2] = uint16_t(inptr[elembase + 2])<<8;
       }
     }
-    _format = fmt;
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA8) {
@@ -245,7 +244,6 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         outptr[elembase_o + 2] = uint16_t(inptr[elembase_i + 2])<<8;
       }
     }
-    _format = fmt;
   }  
   /////////////////////////////
   else if (fmt == EBufferFormat::RGB16 and inp._format == EBufferFormat::RGBA16) {
@@ -262,11 +260,11 @@ void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
         outptr[elembase_o + 2] = uint16_t(inptr[elembase_i + 2]);
       }
     }
-    _format = fmt;
   }  
   else {
     OrkAssert(false);
   }
+  _format = fmt;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

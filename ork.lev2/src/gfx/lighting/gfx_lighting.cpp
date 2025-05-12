@@ -573,9 +573,11 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
   for (auto l : out_lights->_alllights) {
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-        //auto cookie = as_spot->_cookieTexture;
-        //if (cookie)
-          //out_lights->_tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
+        auto cookie = as_spot->_cookieColor;
+        if (cookie){
+          out_lights->_tex2shadowedspotlightmap[cookie].push_back(as_spot);
+          OrkAssert(false);
+        }
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       //auto cookie = as_point->_cookieTexture;
@@ -584,18 +586,21 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
       //else
         out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-      /*
-      auto cookie = as_spot->_cookieTexture;
+      auto cookie = as_spot->_cookieColor;
       bool decal  = as_spot->decal();
       if (decal) {
-        if (cookie)
-          out_lights->_tex2spotdecalmap[cookie.get()].push_back(as_spot);
+        if (cookie){
+          out_lights->_tex2spotdecalmap[cookie].push_back(as_spot);
+        }
+        OrkAssert(false);
       } else {
-        if (cookie)
-          out_lights->_tex2spotlightmap[cookie.get()].push_back(as_spot);
-        else*/
+        if (cookie){
+          out_lights->_tex2spotlightmap[cookie].push_back(as_spot);
+        }
+        else{
           out_lights->_untexturedspotlights.push_back(as_spot);
-      //}
+        }
+      }
     }
   }
   ////////////////////////////////////////////////////////////

@@ -160,17 +160,17 @@ struct PbrNodeImpl {
 
       /////////////////////////
 
-      _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
 
-      _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
 
-      _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-      _context->_lightingmtl->bindParamCTex(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
       OrkAssert(_context->brdfIntegrationTexture() != nullptr);
-      _context->_lightingmtl->bindParamCTex(_context->_parMapBrdfIntegration, _context->brdfIntegrationTexture().get());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapBrdfIntegration, _context->brdfIntegrationTexture().get());
 
-      _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
 
       /////////////////////////
       // SSAO
@@ -186,8 +186,8 @@ struct PbrNodeImpl {
           _context->_lightingmtl->bindParamFloat(_context->_parSSAOWeight, pbrcommon->_ssaoWeight);
           _context->_lightingmtl->bindParamFloat(_context->_parSSAOPower, pbrcommon->_ssaoPower);
           if (pbrcommon->_ssaoNumSamples >= 8) {
-            _context->_lightingmtl->bindParamCTex(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ, node_frame).get());
-            _context->_lightingmtl->bindParamCTex(
+            _context->_lightingmtl->bindParamTexture(_context->_parSSAOKernel, pbrcommon->ssaoKernel(targ, node_frame).get());
+            _context->_lightingmtl->bindParamTexture(
                 _context->_parSSAOScrNoise, pbrcommon->ssaoScrNoise(targ, node_frame, _context->_width, _context->_height).get());
           }
         }
@@ -224,7 +224,7 @@ struct PbrNodeImpl {
         OrkAssert(mappingdata->_param != nullptr);
         auto param = mappingdata->_param;
         if (auto as_tex = mappingdata->_var.tryAsShared<Texture>()) {
-          _context->_lightingmtl->bindParamCTex(param, as_tex.value().get());
+          _context->_lightingmtl->bindParamTexture(param, as_tex.value().get());
         } else if (auto as_mtx4 = mappingdata->_var.tryAs<fmtx4>()) {
           _context->_lightingmtl->bindParamMatrix(param, as_mtx4.value());
         } else if (auto as_float = mappingdata->_var.tryAs<float>()) {

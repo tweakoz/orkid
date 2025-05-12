@@ -147,6 +147,12 @@ libblock lib_fwd     //
 
   /////////////////////////////////////////////////////////
 
+  vec3 _sample_color_cookie(uint slice, vec2 uv, float lod) {
+    return textureLod(light_cookie_colors, vec3(uv,slice), lod).xyz;
+  }
+  vec3 _sample_depth_cookie(uint slice, vec2 uv, float lod) {
+    return textureLod(light_cookie_depths, vec3(uv,slice), lod).xyz;
+  }
   vec3 _sample_cookie_lod(int index, vec2 uv, float lod) {
     vec3 rval = vec3(0);
     int cookie = index >> 1;
@@ -260,9 +266,6 @@ libblock lib_fwd     //
     for (int i = 0; i < spot_light_count; i++) {
       int j = i + point_light_count;
 
-      int LCI_STD = j * 2 + 0;
-      int LCI_DEP = j * 2 + 1;
-
       vec4 LSB = _lightsizbias[i];
 
       mat4 shmtx           = _shadowmatrix[i];
@@ -317,7 +320,7 @@ libblock lib_fwd     //
         float bias             = LSB.y; // Increased bias to help with shadow acne
         float far              = lightrange;
         float near             = lightrange * 0.001;
-        float shadow_depth_ndc = _sample_cookie_lod(LCI_DEP, shadow_uv, 0).x * 2.0 - 1.0;
+        float shadow_depth_ndc = _sample_depth_cookie(j, shadow_uv, 0).x * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
         int pcf_width         = 1;           // Size of the PCF kernel
@@ -326,7 +329,7 @@ libblock lib_fwd     //
         for (int x = -pcf_width; x <= pcf_width; x++) {
           for (int y = -pcf_width; y <= pcf_width; y++) {
             vec2 pcf_uv     = shadow_uv + vec2(x, y) * pcf_filter_size;
-            float pcf_depth = _sample_cookie_lod(LCI_DEP, pcf_uv, 0).x * 2.0 - 1.0;
+            float pcf_depth = _sample_depth_cookie(j, pcf_uv, 0).x * 2.0 - 1.0;
             shadow_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
           }
         }
@@ -339,8 +342,9 @@ libblock lib_fwd     //
 
       vec3 lightcol          = _lightcolor[i].xyz;
       float level            = pbd._roughness * 4;
-      vec3 diffuse_lighttex  = _sample_cookie_lod(LCI_STD, diffuse_lightuv, 0).xyz;      // diffuse WIP
-      vec3 specular_lighttex = _sample_cookie_lod(LCI_STD, specular_lightuv, level).xyz; // specular WIP
+      uint light_tex_slice    = _lightTexSlice[i];
+      vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, diffuse_lightuv, 0).xyz;      // diffuse WIP
+      vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, specular_lightuv, level).xyz; // specular WIP
 
       // specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
 

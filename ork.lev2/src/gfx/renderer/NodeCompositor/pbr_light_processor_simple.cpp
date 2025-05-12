@@ -203,7 +203,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
   for (auto texture_item : enumlights->_tex2spotlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
-    _deferredContext.beginSpotLighting(_defcompnode, drawdata, VD, texture);
+    //_deferredContext.beginSpotLighting(_defcompnode, drawdata, VD, texture);
     _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
@@ -232,7 +232,7 @@ void SimpleLightProcessor::_renderTexturedSpotDecals(
   for (auto texture_item : enumlights->_tex2spotdecalmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
-    _deferredContext.beginSpotDecaling(_defcompnode, drawdata, VD, texture);
+    //_deferredContext.beginSpotDecaling(_defcompnode, drawdata, VD, texture);
     _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
@@ -309,7 +309,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     auto cookie  = texture_item.first;
     auto& lights = texture_item.second;
 
-    _deferredContext.beginShadowedSpotLighting(_defcompnode, drawdata, VD, cookie);
+    //_deferredContext.beginShadowedSpotLighting(_defcompnode, drawdata, VD, cookie);
 
     lightmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
     lightmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
@@ -338,7 +338,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
       FXI->unmapUniformBuffer(mapping.get());
       FXI->bindUniformBuffer(_deferredContext._lightblock, _lightbuffer);
-      lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex.get());
+      lightmtl->bindParamTexture(_deferredContext._parMapShadowDepth, shadowtex.get());
       fvec4 shadowp;
       shadowp.x = (1.0f / float(light->_shadowmapDim));
       shadowp.y = (1.0f / 9.0f);

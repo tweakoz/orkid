@@ -147,7 +147,7 @@ int main(int argc, char** argv,char** envp) {
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
-    resources->_material->bindParamCTex(resources->_fxparameterTexture, resources->_texture.get());
+    resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
     appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     resources->_material->end(RCFD);
     context->endFrame();

@@ -1035,7 +1035,6 @@ struct VkTextureInterface final : public TextureInterface {
   //
   bool destroyTexture(texture_ptr_t ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
-  void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
@@ -1070,22 +1069,23 @@ struct VkFxInterface final : public FxInterface {
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 
-  void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
-  void BindParamInt(const FxShaderParam* hpar, const int ival) final;
-  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) final;
-  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) final;
-  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) final;
-  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) final;
-  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) final;
-  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
-  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final;
-  void BindParamFloat(const FxShaderParam* hpar, float fA) final;
-  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) final;
-  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) final;
-  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
-  void BindParamU32(const FxShaderParam* hpar, uint32_t uval) final;
-  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final;
-  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) final;
+  void bindParamBool(const FxShaderParam* hpar, const bool bval) final;
+  void bindParamInt(const FxShaderParam* hpar, const int ival) final;
+  void bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) final;
+  void bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) final;
+  void bindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) final;
+  void bindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) final;
+  void bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) final;
+  void bindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
+  void bindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final;
+  void bindParamFloat(const FxShaderParam* hpar, float fA) final;
+  void bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) final;
+  void bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) final;
+  void bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
+  void bindParamU32(const FxShaderParam* hpar, uint32_t uval) final;
+  void bindParamTexture(const FxShaderParam* hpar, const Texture* pTex) final;
+  void bindParamTextureArray(const FxShaderParam* hpar, const TextureArray* tex_array) final;
+  void bindParamU64(const FxShaderParam* hpar, uint64_t uval) final;
 
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;

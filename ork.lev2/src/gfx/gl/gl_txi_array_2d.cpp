@@ -26,12 +26,13 @@ extern GLuint gLastBoundNonZeroTex;
 namespace ork::lev2 {
 
 constexpr bool DEBUG_TEXARRAY2D = true;
-static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("GLTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
 
+  bool DEBUG_TEXARRAY2D = false;
   if (DEBUG_TEXARRAY2D) {
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
     logchan_txia2d->log("// GlTextureInterface::initTextureArray2DFromData array<%p>", array);
@@ -56,7 +57,7 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     auto subimg       = slice._subimg;
     auto mipchain     = slice._cmipchain;
     if (subimg) {
-      array->_images.push_back(subimg);
+      array->_images[i] = subimg;
       formats.insert(subimg->_format);
       //auto subimg_cmipc = subimg->compressedMipChainDefault();
       auto subimg_cmipc = subimg->uncompressedMipChain();
@@ -330,6 +331,11 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   array->_tex->_residenceState.fetch_or(1);
   // OrkAssert(num_slices==0);
   GL_ERRORCHECK();
+
+  array->_tex->_dirty = false;
+  array->_dirty_slices.clear();
+  array->_free_slices.clear();
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,9 +355,25 @@ void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
   ok &= (img->_depth == 1);
 
   if( not ok ){
+    printf("not ok\n");
+    printf("array<%p> slice<%d> img<%p>\n", array, slice_index, img.get());
+    printf("img->_format<%d>\n", int(img->_format));
+    printf("img->_width<%d>\n", int(img->_width));
+    printf("img->_height<%d>\n", int(img->_height));
+    printf("img->_depth<%d>\n", int(img->_depth));
+    printf("array->_tex->_texFormat<%d>\n", int(array->_tex->_texFormat));
+    printf("array->_tex->_width<%d>\n", int(array->_tex->_width));
+    printf("array->_tex->_height<%d>\n", int(array->_tex->_height));
+    printf("array->_tex->_depth<%d>\n", int(array->_tex->_depth));
+    printf("array->_tex->_texType<%d>\n", int(array->_tex->_texType));
     return;
   }
 
+  if (DEBUG_TEXARRAY2D) {
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+    logchan_txia2d->log("// GlTextureInterface::updateTextureArraySlice array<%p> slice<%d> img<%p:%s>", array, slice_index, img.get(), img->_debugName.c_str());
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+  }
   auto glto = array->_tex->_impl.getShared<GLTextureObject>();
   auto texture_target = GL_TEXTURE_2D_ARRAY;
   glBindTexture(texture_target, glto->_textureObject);
@@ -365,6 +387,23 @@ void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
     auto mip_w    = mip._width;
     auto mip_h    = mip._height;
     auto mip_data = mip._data;
+
+    if (DEBUG_TEXARRAY2D) {
+      logchan_txia2d->log(
+          "//   target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%zu> data<%p>",
+          texture_target,
+          level,
+          0,
+          0,
+          slice_index,
+          mip_w,
+          mip_h,
+          1,
+          triplet._internalFormat,
+          mip_data->length(),
+          mip_data->data());
+    }
+
     switch (format) {
       case EBufferFormat::RGBA_BPTC_UNORM: {
         GL_ERRORCHECK();
@@ -409,6 +448,242 @@ void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
         OrkAssert(false);
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// initialize a texture array with blank data
+///////////////////////////////////////////////////////////////////////////////
+
+void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
+  bool w_mips = texture_array->_requires_mips;
+  int w = texture_array->_width;
+  int h = texture_array->_height;
+  int num_slices = texture_array->_maxslices;
+  EBufferFormat format = texture_array->_format;
+
+  OrkAssert(num_slices > 0);
+  if (DEBUG_TEXARRAY2D) {
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+    logchan_txia2d->log("// GlTextureInterface::initTextureArray2D array<%p> w<%d> h<%d> d<%d> fmt<%s>", texture_array, w, h, num_slices, EBufferFormatToName(format).c_str());
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+  }
+
+  texture_array->_tex->_texType = ETEXTYPE_2D_ARRAY;
+  texture_array->_tex->_texFormat = format;
+  texture_array->_tex->_width = w;
+  texture_array->_tex->_height = h;
+  texture_array->_tex->_depth = num_slices;
+  auto glto = texture_array->_tex->_impl.makeShared<GLTextureObject>(this);
+  auto texture_target = GL_TEXTURE_2D_ARRAY;
+  glto->mTarget       = GL_TEXTURE_2D_ARRAY;
+  GL_ERRORCHECK();
+  glGenTextures(1, &glto->_textureObject);
+  glBindTexture(texture_target, glto->_textureObject);
+
+  _texture_set[glto->_textureObject] = texture_array->_tex.get();
+
+  if (texture_array->_tex->_debugName.length()) {
+    mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, texture_array->_tex->_debugName);
+  }
+  texture_array->_tex->_vars->makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
+
+  GLFormatTriplet triplet(format);
+
+  //////////////////////////////////////////////////////////////////
+  // allocate
+  //////////////////////////////////////////////////////////////////
+
+  int num_levels = 1;
+  int lw = w;
+  int lh = h;
+  while( (lw>=8) and (lh>=8) ){
+    lw = lw>>1;
+    lh = lh>>1;
+    num_levels++;
+  }
+
+  for (int level = 0; level < num_levels; level++) {
+    int w1 = w >> level;
+    int h1 = h >> level;
+    switch (format) {
+      case EBufferFormat::RGBA_BPTC_UNORM: {
+        int blocked_width  = (w1 + 3) & 0xfffffffc;
+        int blocked_height = (h1 + 3) & 0xfffffffc;
+        size_t size        = blocked_width * blocked_height * num_slices;
+        GL_ERRORCHECK();
+        glCompressedTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w1,                      // width
+            h1,                      // height
+            num_slices,         // depth
+            0,                       // border
+            size,                    // size
+            nullptr);         // data
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Da target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w1,
+              h1,
+              num_slices,
+              triplet._internalFormat,
+              blocked_width * blocked_height * num_slices,
+              nullptr);
+        }
+        break;
+      }
+      case EBufferFormat::RGB8: {
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w1,
+              h1,
+              num_slices,
+              triplet._internalFormat,
+              w1 * h1 * num_slices,
+              nullptr);
+        }
+        glTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w1,                      // width
+            h1,                      // height
+            num_slices,         // depth
+            0,                       // border
+            triplet._format,         // format
+            triplet._type,           // type
+            nullptr);         // data
+        GL_ERRORCHECK();
+        break;
+      }
+      case EBufferFormat::RGBA8:
+      case EBufferFormat::BGRA8: {
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w1,
+              h1,
+              num_slices,
+              triplet._internalFormat,
+              w1 * h1 * num_slices,
+              nullptr);
+        }
+        glTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w1,                      // width
+            h1,                      // height
+            num_slices,         // depth
+            0,                       // border
+            triplet._format,         // format
+            triplet._type,           // type
+            nullptr);         // data
+        GL_ERRORCHECK();
+        break;
+      }
+      case EBufferFormat::RGB16: {
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w1,
+              h1,
+              num_slices,
+              triplet._internalFormat,
+              w1 * h1 * num_slices,
+              nullptr);
+        }
+        glTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w1,                      // width
+            h1,                      // height
+            num_slices,         // depth
+            0,                       // border
+            triplet._format,         // format
+            triplet._type,           // type
+            nullptr);         // data
+        GL_ERRORCHECK();
+        break;
+      }
+      case EBufferFormat::RGBA16: {
+        GL_ERRORCHECK();
+        if (DEBUG_TEXARRAY2D){
+          logchan_txia2d->log(
+              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              texture_target,
+              level,
+              w1,
+              h1,
+              num_slices,
+              triplet._internalFormat,
+              w1 * h1 * num_slices,
+              nullptr);
+        }
+        glTexImage3D(
+            texture_target,          // target
+            level,                   // level
+            triplet._internalFormat, // internal format
+            w1,                      // width
+            h1,                      // height
+            num_slices,         // depth
+            0,                       // border
+            triplet._format,         // format
+            triplet._type,           // type
+            nullptr);         // data
+        GL_ERRORCHECK();
+        break;
+      }
+      default:
+        OrkAssert(false);
+    } // switch (format) {
+  } // for (int level = 0; level < num_slices; level++) {        
+
+  //////////////////////////////////////////////////////////////////
+  // fill in image data
+  //////////////////////////////////////////////////////////////////
+  glTexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, 0);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_slices - 1);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MIN_LOD, 0);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MAX_LOD, num_slices - 1);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_R, GL_RED);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  GL_ERRORCHECK();
+  glTexParameteri(texture_target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

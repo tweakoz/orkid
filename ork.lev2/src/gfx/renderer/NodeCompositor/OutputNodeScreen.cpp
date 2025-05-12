@@ -205,7 +205,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
           }
           mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
@@ -244,7 +244,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           mtl.begin(impl->_fxtechnique1x1, framedata);
           mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
-          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);

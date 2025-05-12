@@ -424,9 +424,9 @@ int main(int argc, char** argv, char** envp) {
       material.bindParamFloat(gpurec->_parNoisePowerA, _sdfsceneparams->_noisepowera);
       material.bindParamFloat(gpurec->_parNoisePowerB, _sdfsceneparams->_noisepowerb);
 
-      material.bindParamCTex(gpurec->_parMapVolTexA, gpurec->_vdbtex.get());
-      material.bindParamCTex(gpurec->_parMapVolTexB, gpurec->_voltexA->_texture.get());
-      material.bindParamCTex(gpurec->_parMapDepth, gbuffer_depth);
+      material.bindParamTexture(gpurec->_parMapVolTexA, gpurec->_vdbtex.get());
+      material.bindParamTexture(gpurec->_parMapVolTexB, gpurec->_voltexA->_texture.get());
+      material.bindParamTexture(gpurec->_parMapDepth, gbuffer_depth);
 
       material.bindParamVec3(gpurec->_parColorA, _sdfsceneparams->_colorA);
       material.bindParamVec3(gpurec->_parColorB, _sdfsceneparams->_colorB);

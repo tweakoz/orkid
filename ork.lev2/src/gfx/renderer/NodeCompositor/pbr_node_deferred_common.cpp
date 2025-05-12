@@ -298,7 +298,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     targ->beginFrame();
     _lightingmtl->begin(_tekDownsampleDepthCluster, RCFD);
     _lightingmtl->bindParamInt(_parTileDim, KTILEDIMXY);
-    _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+    _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
     _lightingmtl->bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
     _lightingmtl->bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl->bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
@@ -442,8 +442,8 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   _lightingmtl->commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
   _lightingmtl->end(RCFD);
@@ -480,13 +480,13 @@ void DeferredContext::beginPointLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
-    _lightingmtl->bindParamCTex(_parLightCookieTexture, cookietexture);
+    _lightingmtl->bindParamTexture(_parLightCookieTexture, cookietexture);
   ///////////////////////////
   _lightingmtl->bindParamFloat(_parSpecularLevel, _specularLevel);
   _lightingmtl->bindParamFloat(_parDiffuseLevel, _diffuseLevel);
@@ -534,13 +534,13 @@ void DeferredContext::beginSpotLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
-    _lightingmtl->bindParamCTex(_parLightCookieTexture, cookietexture);
+    _lightingmtl->bindParamTexture(_parLightCookieTexture, cookietexture);
   ///////////////////////////
   _lightingmtl->bindParamFloat(_parSpecularLevel, _specularLevel);
   _lightingmtl->bindParamFloat(_parDiffuseLevel, _diffuseLevel);
@@ -585,13 +585,13 @@ void DeferredContext::beginShadowedSpotLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
-    _lightingmtl->bindParamCTex(_parLightCookieTexture, cookietexture);
+    _lightingmtl->bindParamTexture(_parLightCookieTexture, cookietexture);
   ///////////////////////////
   _lightingmtl->bindParamFloat(_parSpecularLevel, _specularLevel);
   _lightingmtl->bindParamFloat(_parDiffuseLevel, _diffuseLevel);
@@ -638,10 +638,10 @@ void DeferredContext::beginSpotDecaling(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   ///////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   if (cookietexture)
-    _lightingmtl->bindParamCTex(_parLightCookieTexture, cookietexture);
+    _lightingmtl->bindParamTexture(_parLightCookieTexture, cookietexture);
   //////////////////////////////////////////////////
 }
 

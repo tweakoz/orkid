@@ -78,46 +78,46 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     auto spec_tex  = pbrcommon->envSpecularTexture();
     float num_mips = spec_tex->_num_mips;
 
-    FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
-    FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
-    FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
-    FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
-    FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+    FXI->bindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
+    FXI->bindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
+    FXI->bindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
+    FXI->bindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
+    FXI->bindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
     // printf("pbrcommon<%s> _skyboxLevel<%f>\n", pbrcommon->_name.c_str(), pbrcommon->_skyboxLevel);
-    FXI->BindParamCTex(mtl->_parMapSpecularEnv, spec_tex.get());
-    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    FXI->bindParamTexture(mtl->_parMapSpecularEnv, spec_tex.get());
+    FXI->bindParamTexture(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
-    FXI->BindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);
+    FXI->bindParamFloat(mtl->_parMapSpecularRufLevels, PBRMaterial::roughnessLevels);
 
     switch (pbrcommon->_brdftype) {
       case "BLINN"_crcu:
-        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapBlinn.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapBlinn.get());
         // printf("PBRMaterial<%p> using BLINN brdf integration map\n", mtl);
         break;
       case "PHONG"_crcu:
-        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapPhong.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapPhong.get());
         // printf("PBRMaterial<%p> using PHONG brdf integration map\n", mtl);
         break;
       case "GGXVELVET"_crcu:
-        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapVelvet.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapVelvet.get());
         // printf("PBRMaterial<%p> using GGXVELVET brdf integration map\n", mtl);
         break;
       case "GGXRIM"_crcu:
-        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGXRIM.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGXRIM.get());
         // printf("PBRMaterial<%p> using GGXRIM brdf integration map\n", mtl);
         break;
       case "GGX"_crcu:
       default:
-        FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get());
+        FXI->bindParamTexture(mtl->_parMapBrdfIntegration, pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get());
         // printf("PBRMaterial<%p> using GGX brdf integration map\n", mtl);
         break;
     }
 
-    FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-    FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
-    FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
-    FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
-    FXI->BindParamFloat(mtl->_parRoughnessPower, pbrcommon->_roughnessPower);
+    FXI->bindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
+    FXI->bindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale * num_mips);
+    FXI->bindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
+    FXI->bindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
+    FXI->bindParamFloat(mtl->_parRoughnessPower, pbrcommon->_roughnessPower);
 
     /////////////////////////
 
@@ -126,7 +126,7 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     auto stereocams = CPD._stereo_cam_matrices;
     auto monocams   = CPD._mono_cam_matrices;
 
-    FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
+    FXI->bindParamMatrix(mtl->_paramM, worldmatrix);
 
     if (stereocams) {
       fmtx4 vrroot;
@@ -143,30 +143,30 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
       auto VPL = stereocams->VPL();
       auto VPR = stereocams->VPR();
       if (mtl->_paramVL) {
-        FXI->BindParamMatrix(mtl->_paramVL, VL);
+        FXI->bindParamMatrix(mtl->_paramVL, VL);
       }
       if (mtl->_paramVR) {
-        FXI->BindParamMatrix(mtl->_paramVR, VR);
+        FXI->bindParamMatrix(mtl->_paramVR, VR);
       }
-      FXI->BindParamMatrix(mtl->_paramVPL, VPL);
-      FXI->BindParamMatrix(mtl->_paramVPR, VPR);
-      FXI->BindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
-      FXI->BindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
+      FXI->bindParamMatrix(mtl->_paramVPL, VPL);
+      FXI->bindParamMatrix(mtl->_paramVPR, VPR);
+      FXI->bindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot * worldmatrix));
+      FXI->bindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot * worldmatrix));
 
-      FXI->BindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
-      FXI->BindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
+      FXI->bindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
+      FXI->bindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
     }
     if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
-      FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
-      FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
+      FXI->bindParamVect3(mtl->_paramEyePostion, eye_pos);
+      FXI->bindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
 
       auto VP = monocams->VPMONO();
-      // FXI->BindParamMatrix(mtl->_paramP, monocams->_pmatrix);
-      FXI->BindParamMatrix(mtl->_paramV, monocams->_vmatrix);
-      // FXI->BindParamMatrix(mtl->_paramIV, monocams->_ivmatrix);
-      FXI->BindParamMatrix(mtl->_paramVP, VP);
-      FXI->BindParamMatrix(mtl->_paramIVP, VP.inverse());
+      // FXI->bindParamMatrix(mtl->_paramP, monocams->_pmatrix);
+      FXI->bindParamMatrix(mtl->_paramV, monocams->_vmatrix);
+      // FXI->bindParamMatrix(mtl->_paramIV, monocams->_ivmatrix);
+      FXI->bindParamMatrix(mtl->_paramVP, VP);
+      FXI->bindParamMatrix(mtl->_paramIVP, VP.inverse());
     }
   };
 }

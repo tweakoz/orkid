@@ -106,7 +106,7 @@ struct IMPL {
               auto p = _freestyle_mtl->param(item.first);
               _freestyle_mtl->bindParam(p, item.second);
             }
-            _freestyle_mtl->bindParamCTex(_fxpInputMap, tex);
+            _freestyle_mtl->bindParamTexture(_fxpInputMap, tex);
             rquad(inputw,inputh);
             _freestyle_mtl->end(framedata);
             FBI->PopRtGroup();

@@ -175,8 +175,8 @@ std::string EBufferFormatToName(EBufferFormat fmt){
     case EBufferFormat::YUV420P:
       rval = "YUV420P";
       break;
-    case EBufferFormat::Z32:
-      rval = "Z32";
+    case EBufferFormat::Z32F:
+      rval = "Z32F";
       break;
     case EBufferFormat::RGBA_BPTC_UNORM:
       rval = "RGBA_BPTC_UNORM";

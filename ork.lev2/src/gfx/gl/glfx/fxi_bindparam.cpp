@@ -34,7 +34,7 @@ void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t&
         auto pass = container->_activePass;
         auto tek = container->mActiveTechnique;
         auto tekname = tek->_name.c_str();
-        printf("shader<%s> tek<%s> uni<%p> unistate<%d> BindParam<%s> loc<%d> sem<%s> type<%d>\n", shname, tekname, puni, puni->_state, pnam, iloc, psem, etyp);
+        printf("shader<%s> tek<%s> uni<%p> unistate<%d> bindParam<%s> loc<%d> sem<%s> type<%d>\n", shname, tekname, puni, puni->_state, pnam, iloc, psem, etyp);
         OrkAssert(false);
       }
       binder(iloc, etyp);
@@ -44,7 +44,7 @@ void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
+void Interface::bindParamBool(const FxShaderParam* hpar, const bool bv) {
     _stdbindparam(hpar, [&](int iloc, GLenum checktype)    {
         OrkAssert(checktype == GL_BOOL);
         GL_ERRORCHECK();
@@ -55,7 +55,7 @@ void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamInt(const FxShaderParam* hpar, const int iv) {
+void Interface::bindParamInt(const FxShaderParam* hpar, const int iv) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_INT);
     GL_ERRORCHECK();
@@ -66,7 +66,7 @@ void Interface::BindParamInt(const FxShaderParam* hpar, const int iv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
+void Interface::bindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC2);
     GL_ERRORCHECK();
@@ -77,7 +77,7 @@ void Interface::BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
+void Interface::bindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC3);
     GL_ERRORCHECK();
@@ -88,7 +88,7 @@ void Interface::BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
+void Interface::bindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC4);
     GL_ERRORCHECK();
@@ -99,7 +99,7 @@ void Interface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) {
+void Interface::bindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC2);
     GL_ERRORCHECK();
@@ -110,7 +110,7 @@ void Interface::BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
+void Interface::bindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC3);
     GL_ERRORCHECK();
@@ -121,7 +121,7 @@ void Interface::BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
+void Interface::bindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC4);
     GL_ERRORCHECK();
@@ -132,7 +132,7 @@ void Interface::BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamFloat(const FxShaderParam* hpar, float fA) {
+void Interface::bindParamFloat(const FxShaderParam* hpar, float fA) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT);
     GL_ERRORCHECK();
@@ -143,7 +143,7 @@ void Interface::BindParamFloat(const FxShaderParam* hpar, float fA) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamFloatArray(const FxShaderParam* hpar, const float* pfa, const int icount) {
+void Interface::bindParamFloatArray(const FxShaderParam* hpar, const float* pfa, const int icount) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT);
     GL_ERRORCHECK();
@@ -154,7 +154,7 @@ void Interface::BindParamFloatArray(const FxShaderParam* hpar, const float* pfa,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamU32(const FxShaderParam* hpar, uint32_t uval) {
+void Interface::bindParamU32(const FxShaderParam* hpar, uint32_t uval) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_UNSIGNED_INT);
     GL_ERRORCHECK();
@@ -165,7 +165,7 @@ void Interface::BindParamU32(const FxShaderParam* hpar, uint32_t uval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
+void Interface::bindParamU64(const FxShaderParam* hpar, uint64_t uval) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_UNSIGNED_INT_VEC4);
     GL_ERRORCHECK();
@@ -181,7 +181,7 @@ void Interface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
+void Interface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT4);
     GL_ERRORCHECK();
@@ -192,7 +192,7 @@ void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
+void Interface::bindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT3);
     GL_ERRORCHECK();
@@ -203,7 +203,7 @@ void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
+void Interface::bindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT4);
     GL_ERRORCHECK();
@@ -214,7 +214,42 @@ void Interface::BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
+void Interface::bindParamTextureArray(const FxShaderParam* hpar, const TextureArray* tex_array) {
+  OrkAssert(tex_array);
+
+  //////////////////////////////
+  // update dirty slices
+  //////////////////////////////
+
+  if(tex_array->_dirty_slices.size() > 0) {
+    auto GLTXI    = (GlTextureInterface*)mTarget.TXI();
+    auto mutable_texa = const_cast<TextureArray*>(tex_array);
+    GLTXI->initTextureArray2D(mutable_texa);
+    for (int islice : tex_array->_dirty_slices) {
+      auto slice_ref = tex_array->slice(islice);
+      auto it = tex_array->_images.find(islice);
+      if(it == tex_array->_images.end()) {
+        printf("ERROR TEXARRAY: image not found for dirty slice<%d>\n", islice);
+      }
+      else{
+        auto img       = it->second;
+        OrkAssert(img != nullptr);
+        printf("TEXARRAY: update slice<%d>\n", islice);
+        GLTXI->updateTextureArraySlice(slice_ref.get(), img);  
+      }
+    }
+
+    tex_array->_dirty_slices.clear();
+  }
+
+  //////////////////////////////
+
+  bindParamTexture(hpar, tex_array->_tex.get());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::bindParamTexture(const FxShaderParam* hpar, const Texture* pTex) {
   auto container               = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   auto puni  = hpar->_impl.get<Uniform*>();
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);

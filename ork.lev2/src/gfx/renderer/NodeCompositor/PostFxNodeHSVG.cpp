@@ -109,7 +109,7 @@ struct IMPL {
             _freestyle_mtl->bindParamFloat(_fxpSaturation, _node->_saturation );
             _freestyle_mtl->bindParamFloat(_fxpValue, _node->_value );
             _freestyle_mtl->bindParamFloat(_fxpGamma, _node->_gamma );
-            _freestyle_mtl->bindParamCTex(_fxpInputMap, final_rtg->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpInputMap, final_rtg->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(finalw,finalh);
             _freestyle_mtl->end(framedata);

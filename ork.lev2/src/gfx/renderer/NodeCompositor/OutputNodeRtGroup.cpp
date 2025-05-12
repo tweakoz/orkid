@@ -218,7 +218,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
             mtl.begin(impl->_fxtechnique7x7, framedata);
             break;
         }
-        mtl.bindParamCTex(impl->_fxpColorMap, tex);
+        mtl.bindParamTexture(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
         ViewportRect extents(0, 0, dstw, dsth);
         fbi->pushViewport(extents);
