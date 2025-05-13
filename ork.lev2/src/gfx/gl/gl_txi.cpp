@@ -119,7 +119,7 @@ GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
     }
     ////////////////////////////
     case EBufferFormat::Z32F: {
-      _internalFormat = GL_DEPTH_COMPONENT;
+      _internalFormat = GL_DEPTH_COMPONENT32F;
       _format         = GL_DEPTH_COMPONENT;
       _type           = GL_FLOAT;
       break;

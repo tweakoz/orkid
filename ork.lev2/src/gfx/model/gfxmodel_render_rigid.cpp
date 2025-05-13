@@ -56,16 +56,15 @@ void XgmModel::RenderRigid(
     pipeline->wrappedDrawCall(RCID, [&]() {
       auto vtxbuffer = cluster->_vertexBuffer;
       int inumprim   = cluster->numPrimGroups();
+      auto GBI = context->GBI();
       for (int iprim = 0; iprim < inumprim; iprim++) {
         auto primgroup = cluster->primgroup(iprim);
         auto idxbuffer = primgroup->GetIndexBuffer();
-        if (_stateDebugger) {
-          context->stateDebugger();
-        }
+        GBI->_debugNextPrimitive = _stateDebugger;
         if(idxbuffer){
-          context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
+          GBI->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
         } else {
-          context->GBI()->DrawPrimitiveEML(*vtxbuffer, primgroup->GetPrimType());
+          GBI->DrawPrimitiveEML(*vtxbuffer, primgroup->GetPrimType());
         }
       }
     });

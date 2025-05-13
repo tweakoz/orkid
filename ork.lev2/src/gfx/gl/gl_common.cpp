@@ -244,6 +244,122 @@ int GetGlError(void) {
   return err;
 }
 
+std::string GLenumToString(GLenum e) {
+  switch (e) {
+    case GL_INVALID_ENUM:
+      return "GL_INVALID_ENUM";
+    case GL_INVALID_VALUE:
+      return "GL_INVALID_VALUE";
+    case GL_INVALID_OPERATION:
+      return "GL_INVALID_OPERATION";
+    case GL_OUT_OF_MEMORY:
+      return "GL_OUT_OF_MEMORY";
+    case GL_NONE:
+      return "GL_NONE";
+    case GL_TEXTURE:
+      return "GL_TEXTURE";
+    case GL_TEXTURE_2D:
+      return "GL_TEXTURE_2D";
+    case GL_TEXTURE_3D:
+      return "GL_TEXTURE_3D";
+    case GL_TEXTURE_CUBE_MAP:
+      return "GL_TEXTURE_CUBE_MAP";
+    case GL_TEXTURE_RECTANGLE:
+      return "GL_TEXTURE_RECTANGLE";
+    case GL_TEXTURE_1D:
+      return "GL_TEXTURE_1D";
+    case GL_TEXTURE_2D_ARRAY:
+      return "GL_TEXTURE_2D_ARRAY";
+    case GL_TEXTURE_CUBE_MAP_ARRAY:
+      return "GL_TEXTURE_CUBE_MAP_ARRAY";
+    case GL_TEXTURE_BUFFER:
+      return "GL_TEXTURE_BUFFER";
+    case GL_TEXTURE_2D_MULTISAMPLE:
+      return "GL_TEXTURE_2D_MULTISAMPLE";
+    case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+      return "GL_TEXTURE_2D_MULTISAMPLE_ARRAY";
+    case GL_RENDERBUFFER:
+      return "GL_RENDERBUFFER";
+    case GL_FRAMEBUFFER:
+      return "GL_FRAMEBUFFER";
+    case GL_FRAMEBUFFER_DEFAULT:
+      return "GL_FRAMEBUFFER_DEFAULT";
+    case GL_COLOR_ATTACHMENT0:
+      return "GL_COLOR_ATTACHMENT0";
+    case GL_COLOR_ATTACHMENT1:
+      return "GL_COLOR_ATTACHMENT1";
+    case GL_COLOR_ATTACHMENT2:
+      return "GL_COLOR_ATTACHMENT2";
+    case GL_COLOR_ATTACHMENT3:
+      return "GL_COLOR_ATTACHMENT3";
+    case GL_COLOR_ATTACHMENT4:
+      return "GL_COLOR_ATTACHMENT4";
+    case GL_COLOR_ATTACHMENT5:
+      return "GL_COLOR_ATTACHMENT5";
+    case GL_COLOR_ATTACHMENT6:
+      return "GL_COLOR_ATTACHMENT6";
+    case GL_COLOR_ATTACHMENT7:
+      return "GL_COLOR_ATTACHMENT7";
+    case GL_RGBA:
+      return "GL_RGBA";
+    case GL_RGBA8:
+      return "GL_RGBA8";
+    case GL_RGBA32F:
+      return "GL_RGBA32F";
+    case GL_RGBA16F:
+      return "GL_RGBA32F";
+    case GL_RGB:
+      return "GL_RGB";
+    case GL_RGB8:
+      return "GL_RGB8";
+    case GL_RGB16F:
+      return "GL_RGB16F";
+    case GL_RGB32F:
+      return "GL_RGB32F";
+    case GL_DEPTH_COMPONENT:
+      return "GL_DEPTH_COMPONENT";
+    case GL_DEPTH_COMPONENT32F:
+      return "GL_DEPTH_COMPONENT32F";
+    case GL_DEPTH32F_STENCIL8:
+      return "GL_DEPTH32F_STENCIL8";
+    case GL_DEPTH_STENCIL:
+      return "GL_DEPTH_STENCIL";
+    case GL_UNSIGNED_BYTE:
+      return "GL_UNSIGNED_BYTE";
+    case GL_UNSIGNED_INT:
+      return "GL_UNSIGNED_INT";
+    case GL_UNSIGNED_SHORT:
+      return "GL_UNSIGNED_SHORT";
+    case GL_UNSIGNED_INT_24_8:
+      return "GL_UNSIGNED_INT_24_8";
+    case GL_UNSIGNED_INT_5_9_9_9_REV:
+      return "GL_UNSIGNED_INT_5_9_9_9_REV";
+    case GL_UNSIGNED_INT_2_10_10_10_REV:
+      return "GL_UNSIGNED_INT_2_10_10_10_REV";
+    case GL_FLOAT:
+      return "GL_FLOAT";
+    case GL_FLOAT_VEC2:
+      return "GL_FLOAT_VEC2";
+    case GL_FLOAT_VEC3:
+      return "GL_FLOAT_VEC3";
+    case GL_FLOAT_VEC4:
+      return "GL_FLOAT_VEC4";
+    case GL_INT:
+      return "GL_INT";
+    case GL_INT_VEC2:
+      return "GL_INT_VEC2";
+    case GL_INT_VEC3:
+      return "GL_INT_VEC3";
+    case GL_INT_VEC4:
+      return "GL_INT_VEC4";
+    case GL_BOOL:
+      return "GL_BOOL";
+    default: {
+      return FormatString("GL_ENUM<%zx>", e);
+    }
+  }
+}
+
 /*
 Bind2 Tex<0x12662fa30:src://effect_textures/white.dds[filtenvmap-processed-specular]> par<MapSpecularEnv> uniloc<0>
 teknam<FWD_SKYBOX_MO> Bind3 pass<FWD_SKYBOX_MO_p0> loc<0> unit<0> obj<20> tgt<3553> dim<64x64x1>

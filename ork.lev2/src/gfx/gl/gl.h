@@ -82,6 +82,8 @@ struct DDS_HEADER;
 
 namespace ork { namespace lev2 {
 
+std::string GLenumToString(GLenum e);
+
 struct GlPlatformObject {
   GlPlatformObject();
   virtual ~GlPlatformObject();

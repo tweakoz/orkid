@@ -23,9 +23,10 @@ void _FtxGlDebugger::_validateTextures() {
   auto hdrstr1 = FormatString("TEXOBJ");
   auto hdrstr2 = FormatString("DIM");
   auto hdrstr3 = FormatString("FMT");
-  auto hdrstr4 = FormatString("NAME");
+  auto hdrstr4 = FormatString("IFMT");
+  auto hdrstr5 = FormatString("NAME");
 
-  _colortext(NODES, YEL, BLK, " %-9s %-16s %-12s %-40s\n", hdrstr1.c_str(), hdrstr2.c_str(), hdrstr3.c_str(), hdrstr4.c_str());
+  _colortext(NODES, YEL, BLK, " %-8s %-24s %-24s %-24s %-40s\n", hdrstr1.c_str(), hdrstr2.c_str(), hdrstr3.c_str(), hdrstr4.c_str(), hdrstr5.c_str());
 
   /////////////////////////////////////////////////////////////////////
   size_t index = 0;
@@ -75,7 +76,7 @@ void _FtxGlDebugger::_validateTextures() {
         int bpp = (the_tex->_texFormat==EBufferFormat::RGB8) ? 3 : 4;
         int mipsize = itw * ith * bpp;
 
-        dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
         // std::vector<uint8_t> mipdata;
         // mipdata.resize(mipsize);
         //  save to disk
@@ -105,7 +106,7 @@ void _FtxGlDebugger::_validateTextures() {
         int bpc = 4;
         int numc = 3;
         int mipsize = itw * ith * bpc*numc;
-        dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
         // std::vector<uint8_t> mipdata;
         // mipdata.resize(mipsize);
         //  save to disk
@@ -129,7 +130,7 @@ void _FtxGlDebugger::_validateTextures() {
         int bpc = 4;
         int numc = 4;
         int mipsize = itw * ith * bpc*numc;
-        dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
         // std::vector<uint8_t> mipdata;
         // mipdata.resize(mipsize);
         //  save to disk
@@ -145,8 +146,11 @@ void _FtxGlDebugger::_validateTextures() {
       default:
         break;
     }
-
-    auto texstr = FormatString(" %-9s %-16s %-12s %-40s\n", texobjstr.c_str(), dimstr.c_str(), format.c_str(), namestr.c_str());
+    // get internal format via gl query
+    GLint internalFormat = 0;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+    auto ifmtstr = GLenumToString(GLenum(internalFormat));
+    auto texstr = FormatString(" %-8s %-24s %-24s %-24s %-40s\n", texobjstr.c_str(), dimstr.c_str(), format.c_str(), ifmtstr.c_str(), namestr.c_str());
 
     bool odd = (index % 2) == 0;
     auto BG  = odd ? GR1 : BLU1;

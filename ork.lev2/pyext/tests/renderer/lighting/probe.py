@@ -118,6 +118,7 @@ class LIGHTING_APP(object):
     white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
     normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
+    model.debugState = False
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()

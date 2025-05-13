@@ -212,6 +212,7 @@ struct TextureArray {
   std::unordered_map<size_t,image_ptr_t> _images;
   rtgroup_ptr_t _rtg;
   std::string _debugName;
+  bool _isDirty = true;
 
 };
 

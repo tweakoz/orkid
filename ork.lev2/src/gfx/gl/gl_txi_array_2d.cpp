@@ -134,7 +134,8 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
         GL_ERRORCHECK();
         if (DEBUG_TEXARRAY2D) {
           logchan_txia2d->log(
-              "GLCTI3Da target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              "GLCTI3Da obj<%d> target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              int(glto->_textureObject),
               texture_target,
               level,
               w,
@@ -151,7 +152,8 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
         GL_ERRORCHECK();
         if (DEBUG_TEXARRAY2D) {
           logchan_txia2d->log(
-              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              "GLCTI3Db obj<%d> target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              int(glto->_textureObject),
               texture_target,
               level,
               w,
@@ -181,7 +183,8 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
         GL_ERRORCHECK();
         if (DEBUG_TEXARRAY2D) {
           logchan_txia2d->log(
-              "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              "GLCTI3Db obj<%d> target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
+              int(glto->_textureObject),
               texture_target,
               level,
               w,
@@ -247,7 +250,8 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
               int blocked_height = (mip_h + 3) & 0xfffffffc;
               if (DEBUG_TEXARRAY2D) {
                 logchan_txia2d->log(
-                    "GLCTSI3Da target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%zu> data<%p>",
+                    "GLCTSI3Da obj<%d> target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%zu> data<%p>",
+                    int(glto->_textureObject),
                     texture_target,
                     level,
                     0,
@@ -280,7 +284,8 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
               GL_ERRORCHECK();
               if (DEBUG_TEXARRAY2D) {
                 logchan_txia2d->log(
-                    "GLCTSI3Db target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%zu> h<%zu> d<%d> fmt<0x%08x> size<%zu> data<%p>",
+                    "GLCTSI3Db obj<%s> target<0x%08x> level<%d> x<%d> y<%d> z<%d> w<%zu> h<%zu> d<%d> fmt<0x%08x> size<%zu> data<%p>",
+                    int(glto->_textureObject),
                     texture_target,
                     level,
                     0,
@@ -366,18 +371,20 @@ void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
     return;
   }
 
+  auto glto           = array->_tex->_impl.getShared<GLTextureObject>();
+  auto texture_target = GL_TEXTURE_2D_ARRAY;
+
   if (DEBUG_TEXARRAY2D) {
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
     logchan_txia2d->log(
-        "// GlTextureInterface::updateTextureArraySlice array<%p> slice<%d> img<%p:%s>",
+        "// GlTextureInterface::updateTextureArraySlice obt<%d> array<%p> slice<%d> img<%p:%s>",
+        int(glto->_textureObject),
         array,
         slice_index,
         img.get(),
         img->_debugName.c_str());
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
-  auto glto           = array->_tex->_impl.getShared<GLTextureObject>();
-  auto texture_target = GL_TEXTURE_2D_ARRAY;
   glBindTexture(texture_target, glto->_textureObject);
   auto format = array->_tex->_texFormat;
   GLFormatTriplet triplet(format);
@@ -457,6 +464,11 @@ void GlTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
+
+  if(not texture_array->_isDirty){
+    return; 
+  } 
+
   bool w_mips          = texture_array->_requires_mips;
   int w                = texture_array->_width;
   int h                = texture_array->_height;
@@ -464,17 +476,6 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   EBufferFormat format = texture_array->_format;
 
   OrkAssert(num_slices > 0);
-  if (DEBUG_TEXARRAY2D) {
-    logchan_txia2d->log("///////////////////////////////////////////////////////////");
-    logchan_txia2d->log(
-        "// GlTextureInterface::initTextureArray2D array<%p> w<%d> h<%d> d<%d> fmt<%s>",
-        texture_array,
-        w,
-        h,
-        num_slices,
-        EBufferFormatToName(format).c_str());
-    logchan_txia2d->log("///////////////////////////////////////////////////////////");
-  }
 
   texture_array->_tex->_texType   = ETEXTYPE_2D_ARRAY;
   texture_array->_tex->_texFormat = format;
@@ -487,6 +488,19 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   GL_ERRORCHECK();
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(texture_target, glto->_textureObject);
+
+  if (DEBUG_TEXARRAY2D) {
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+    logchan_txia2d->log(
+        "// GlTextureInterface::initTextureArray2D obj<%d> array<%p> w<%d> h<%d> d<%d> fmt<%s>",
+        int(glto->_textureObject),
+        texture_array,
+        w,
+        h,
+        num_slices,
+        EBufferFormatToName(format).c_str());
+    logchan_txia2d->log("///////////////////////////////////////////////////////////");
+  }
 
   _texture_set[glto->_textureObject] = texture_array->_tex.get();
 
@@ -504,29 +518,47 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   if (format == EBufferFormat::Z32F) {
     GL_ERRORCHECK();
     if (DEBUG_TEXARRAY2D) {
+      auto tgtstr  = GLenumToString(texture_target);
+      auto ifmtstr = GLenumToString(triplet._internalFormat);
       logchan_txia2d->log(
-          "GLCTI3Db Z32F target<0x%08x> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-          texture_target,
+          "GLCTI3Db::Z32F obj<%d> target<%s> fmt<%s> w<%d> h<%d> d<%d> numpix<%d>",
+          int(glto->_textureObject),
+          tgtstr.c_str(),
+          ifmtstr.c_str(),
           w,
           h,
           num_slices,
-          triplet._internalFormat,
-          w * h * num_slices,
-          nullptr);
+          w * h * num_slices);
     }
     glTexImage3D(
         texture_target,          // target
         0,                       // level
         triplet._internalFormat, // internal format
-        w,                      // width
-        h,                      // height
+        w,                       // width
+        h,                       // height
         num_slices,              // depth
         0,                       // border
         triplet._format,         // format
         triplet._type,           // type
         nullptr);                // data
     GL_ERRORCHECK();
-  } else {
+
+    glTexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, 0);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, 0);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  
+  } // Z32F
+  else {
     int num_levels = 1;
     int lw         = w;
     int lh         = h;
@@ -556,14 +588,17 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
               nullptr);                // data
           GL_ERRORCHECK();
           if (DEBUG_TEXARRAY2D) {
+            auto tgtstr  = GLenumToString(texture_target);
+            auto ifmtstr = GLenumToString(triplet._internalFormat);
             logchan_txia2d->log(
-                "GLCTI3Da target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-                texture_target,
+                "GLCTI3Da::RGBA_BPTC_UNORM obj<%d> target<%s> fmt<%s> level<%d> w<%d> h<%d> d<%d> size<%d> data<%p>",
+                int(glto->_textureObject),
+                tgtstr.c_str(),
+                ifmtstr.c_str(),
                 level,
                 w1,
                 h1,
                 num_slices,
-                triplet._internalFormat,
                 blocked_width * blocked_height * num_slices,
                 nullptr);
           }
@@ -572,14 +607,17 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
         case EBufferFormat::RGB8: {
           GL_ERRORCHECK();
           if (DEBUG_TEXARRAY2D) {
+            auto tgtstr  = GLenumToString(texture_target);
+            auto ifmtstr = GLenumToString(triplet._internalFormat);
             logchan_txia2d->log(
-                "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-                texture_target,
+                "GLCTI3Db::RGB8 obj<%d> target<%s> fmt<%s> level<%d> w<%d> h<%d> d<%d> size<%d> data<%p>",
+                int(glto->_textureObject),
+                tgtstr.c_str(),
+                ifmtstr.c_str(),
                 level,
                 w1,
                 h1,
                 num_slices,
-                triplet._internalFormat,
                 w1 * h1 * num_slices,
                 nullptr);
           }
@@ -601,14 +639,17 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
         case EBufferFormat::BGRA8: {
           GL_ERRORCHECK();
           if (DEBUG_TEXARRAY2D) {
+            auto tgtstr  = GLenumToString(texture_target);
+            auto ifmtstr = GLenumToString(triplet._internalFormat);
             logchan_txia2d->log(
-                "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-                texture_target,
+                "GLCTI3Db::RGBA8 obj<%d> target<%s> fmt<%s> level<%d> w<%d> h<%d> d<%d> size<%d> data<%p>",
+                int(glto->_textureObject),
+                tgtstr.c_str(),
+                ifmtstr.c_str(),
                 level,
                 w1,
                 h1,
                 num_slices,
-                triplet._internalFormat,
                 w1 * h1 * num_slices,
                 nullptr);
           }
@@ -629,14 +670,17 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
         case EBufferFormat::RGB16: {
           GL_ERRORCHECK();
           if (DEBUG_TEXARRAY2D) {
+            auto tgtstr  = GLenumToString(texture_target);
+            auto ifmtstr = GLenumToString(triplet._internalFormat);
             logchan_txia2d->log(
-                "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-                texture_target,
+                "GLCTI3Db::RGB16 obj<%d> target<%s> fmt<%s> level<%d> w<%d> h<%d> d<%d> size<%d> data<%p>",
+                int(glto->_textureObject),
+                tgtstr.c_str(),
+                ifmtstr.c_str(),
                 level,
                 w1,
                 h1,
                 num_slices,
-                triplet._internalFormat,
                 w1 * h1 * num_slices,
                 nullptr);
           }
@@ -657,14 +701,17 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
         case EBufferFormat::RGBA16: {
           GL_ERRORCHECK();
           if (DEBUG_TEXARRAY2D) {
+            auto tgtstr  = GLenumToString(texture_target);
+            auto ifmtstr = GLenumToString(triplet._internalFormat);
             logchan_txia2d->log(
-                "GLCTI3Db target<0x%08x> level<%d> w<%d> h<%d> d<%d> fmt<0x%08x> size<%d> data<%p>",
-                texture_target,
+                "GLCTI3Db::RGBA16 obj<%d> target<%s> fmt<%s> level<%d> w<%d> h<%d> d<%d> size<%d> data<%p>",
+                int(glto->_textureObject),
+                tgtstr.c_str(),
+                ifmtstr.c_str(),
                 level,
                 w1,
                 h1,
                 num_slices,
-                triplet._internalFormat,
                 w1 * h1 * num_slices,
                 nullptr);
           }
@@ -685,38 +732,43 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
         default:
           OrkAssert(false);
       } // switch (format) {
-    } // for (int level = 0; level < num_slices; level++) {
-  }
+    } // for (int level = 0; level < num_levels; level++) {
+
+    glTexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, 0);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_levels-1);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_R, GL_RED);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    GL_ERRORCHECK();
+    glTexParameteri(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  
+  } // not Z32F
   //////////////////////////////////////////////////////////////////
   // fill in image data
   //////////////////////////////////////////////////////////////////
-  glTexParameteri(texture_target, GL_TEXTURE_BASE_LEVEL, 0);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_MAX_LEVEL, num_slices - 1);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  GL_ERRORCHECK();
   glTexParameteri(texture_target, GL_TEXTURE_MIN_LOD, 0);
   GL_ERRORCHECK();
   glTexParameteri(texture_target, GL_TEXTURE_MAX_LOD, num_slices - 1);
   GL_ERRORCHECK();
   glTexParameteri(texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
   GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_R, GL_RED);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  GL_ERRORCHECK();
-  glTexParameteri(texture_target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  
+  texture_array->_isDirty = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

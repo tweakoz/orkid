@@ -29,26 +29,32 @@ void _FtxGlDebugger::_validateCurrentFramebuffer() {
   _colortext(NODES, WHI, BLK, "currentFBO<%d> status<%x> complete<%d>\n", currentFBO, status, int(complete));
 
   // get number of attachments
+  GLint attached_obj_type = GL_NONE;
+  std::string attachment_type;
   for( int a=0; a<8; a++ ){
-    GLint attached_obj_type = GL_NONE;
     glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+a, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attached_obj_type);
-    switch(attached_obj_type){
-      case GL_NONE: {
-        _colortext(NODES, WHI, BLK, "  attached<%d> is_none", a);
-        break;
-      }
-      case GL_FRAMEBUFFER_DEFAULT: {
-        _colortext(NODES, WHI, BLK, "  attached<%d> is_framebuffer_default", a);
-        break;
-      }
-      case GL_TEXTURE: {
-        _colortext(NODES, WHI, BLK, "  attached<%d> is_texture", a);
-        break;
-      }
-      case GL_RENDERBUFFER: {
-        _colortext(NODES, WHI, BLK, "  attached<%d> is_renderbuffer\n", a);
-        break;
-      }
+    attachment_type = GLenumToString(attached_obj_type);
+    _colortext(NODES, WHI, BLK, "  CLR attached<%d> is %s", a, attachment_type.c_str());
+  }
+
+  // get depth attachment
+  glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attached_obj_type);
+  attachment_type = GLenumToString(attached_obj_type);
+  switch(attached_obj_type){
+    case GL_TEXTURE: {
+      // get texture id
+      GLint tex_id = 0;
+      glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &tex_id);
+      // get texture format (rgba, depth, etc)
+      GLint tex_format = GL_NONE;
+      glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &tex_format);
+      std::string tex_format_str = GLenumToString(tex_format);
+      _colortext(NODES, WHI, BLK, "  DEPTH attached is texture fmt<%s> id<%d>\n", tex_format_str.c_str(), tex_id);
+      break;
+    }
+    default: {
+      _colortext(NODES, WHI, BLK, "  DEPTH attached %s\n", attachment_type.c_str());
+      break;
     }
   }
 
