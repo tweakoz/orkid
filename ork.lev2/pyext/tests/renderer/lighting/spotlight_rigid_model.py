@@ -123,7 +123,6 @@ class StereoApp1(object):
     color_cookies.needsIrradianceCache = True
     color_cookies.resize(1024,1024,5,tokens.RGB8,True)
     depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
-    rtg = depth_cookies.createRtGroup(ctx)
 
     cookie1 = color_cookies.load("src://effect_textures/L0D.png")
     cookie2 = color_cookies.load("lev2://textures/transponder24.png")

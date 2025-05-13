@@ -61,7 +61,10 @@ void GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup
         0,                   // mip level
         slice_index);        // layer of array
 
+        glDrawBuffers(0, nullptr);
+
       rtg_impl->_bindop = [this, rtgroup, rtg_impl]() {
+        //printf("RTG BINDOP ARRAY DONLY %d\n", int(rtg_impl->_depthonly->_fbo));
         glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
       };
       
@@ -80,6 +83,11 @@ void GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup
       0,                    // mip level
       slice_index);         // layer of array
 
+      GLenum buffers[] = {
+        GL_COLOR_ATTACHMENT0,
+      };
+
+      glDrawBuffers(1, buffers);
 
       rtg_impl->_bindop = [this, rtgroup, rtg_impl]() {
         glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);    

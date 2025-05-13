@@ -139,6 +139,9 @@ class StereoApp1(object):
     color_cookies.needsIrradianceCache = True
     color_cookies.resize(1024,1024,5,tokens.RGB8,True)
     depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+    depth_cookie1 = depth_cookies.slice(0)
+    depth_cookie2 = depth_cookies.slice(1)
+    depth_cookie3 = depth_cookies.slice(2)
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = color_cookies.load("src://effect_textures/knob2.png")
@@ -151,6 +154,7 @@ class StereoApp1(object):
                                   frq=0.3,
                                   color=vec3(intens,0,0),
                                   cookie=self.cookie1,
+                                  depth_cookie=depth_cookie1,
                                   radius=12,
                                   bias=shadow_bias,
                                   dim=shadow_size,
@@ -164,6 +168,7 @@ class StereoApp1(object):
                                   frq=0.7,
                                   color=vec3(0,intens,0),
                                   cookie=self.cookie1,
+                                  depth_cookie=depth_cookie2,
                                   radius=16,
                                   bias=shadow_bias,
                                   dim=shadow_size,
@@ -177,6 +182,7 @@ class StereoApp1(object):
                                   frq=0.9,
                                   color=vec3(0,0,intens),
                                   cookie=self.cookie1,
+                                  depth_cookie=depth_cookie3,
                                   radius=19,
                                   bias=shadow_bias,
                                   dim=shadow_size,

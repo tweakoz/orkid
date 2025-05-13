@@ -306,6 +306,10 @@ libblock lib_fwd     //
       pl_c          = mix(pl_c, vec3(1), 0.25);
 
       ////////////////////////////////////////////////////////////
+
+      uint light_tex_slice    = _lightTexSlice[i];
+
+      ////////////////////////////////////////////////////////////
       // compute wpos in shadow space
       ////////////////////////////////////////////////////////////
 
@@ -320,7 +324,7 @@ libblock lib_fwd     //
         float bias             = LSB.y; // Increased bias to help with shadow acne
         float far              = lightrange;
         float near             = lightrange * 0.001;
-        float shadow_depth_ndc = _sample_depth_cookie(j, shadow_uv, 0).x * 2.0 - 1.0;
+        float shadow_depth_ndc = _sample_depth_cookie(light_tex_slice, shadow_uv, 0).x * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
         int pcf_width         = 1;           // Size of the PCF kernel
@@ -329,7 +333,7 @@ libblock lib_fwd     //
         for (int x = -pcf_width; x <= pcf_width; x++) {
           for (int y = -pcf_width; y <= pcf_width; y++) {
             vec2 pcf_uv     = shadow_uv + vec2(x, y) * pcf_filter_size;
-            float pcf_depth = _sample_depth_cookie(j, pcf_uv, 0).x * 2.0 - 1.0;
+            float pcf_depth = _sample_depth_cookie(light_tex_slice, pcf_uv, 0).x * 2.0 - 1.0;
             shadow_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
           }
         }
@@ -342,7 +346,6 @@ libblock lib_fwd     //
 
       vec3 lightcol          = _lightcolor[i].xyz;
       float level            = pbd._roughness * 4;
-      uint light_tex_slice    = _lightTexSlice[i];
       vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, diffuse_lightuv, 0).xyz;      // diffuse WIP
       vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, specular_lightuv, level).xyz; // specular WIP
 
@@ -360,7 +363,7 @@ libblock lib_fwd     //
       vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      // spot_lighting += vec3(specular_lighttex);
+      //spot_lighting += vec3(shadow_factor*0.1);
       // spot_lighting += pl_c;
     } // for (int i = 0; i < spot_light_count; i++) {
 

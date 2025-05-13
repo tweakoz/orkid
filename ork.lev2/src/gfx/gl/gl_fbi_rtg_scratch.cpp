@@ -121,6 +121,52 @@ void GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rtgroup) {
 
   rtgroup->SetSizeDirty(true);
 
+  if (rtgroup->_depthOnly) {
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
+    glBindTexture(texture_target, rtg_impl->_depthonly->_depthTexObject);
+    glDrawBuffers(0, nullptr);
+  } else if (rtgroup->_cubeMap) {
+
+    auto bufferimpl     = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
+    auto color_glto     = bufferimpl->_teximpl.getShared<GLTextureObject>();
+    color_glto->mTarget = GL_TEXTURE_CUBE_MAP;
+
+    /////////////////////////////////////////////////////////////
+    // bind rtgroup->_cubeRenderFace to
+    // framebuffer color and depth attachment 0
+    /////////////////////////////////////////////////////////////
+
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_COLOR_ATTACHMENT0,                                      // attachment point
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace, // face
+        color_glto->_textureObject,
+        0); // mip
+
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace,
+        rtg_impl->_standard->_depthTexObject,
+        0);
+  } else {
+    glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
+    // glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
+  }
+  GL_ERRORCHECK();
+  GLenum buffers[] = {
+      GL_COLOR_ATTACHMENT0,
+      GL_COLOR_ATTACHMENT1,
+      GL_COLOR_ATTACHMENT2,
+      GL_COLOR_ATTACHMENT3,
+      GL_COLOR_ATTACHMENT4,
+      GL_COLOR_ATTACHMENT5,
+      GL_COLOR_ATTACHMENT6,
+      GL_COLOR_ATTACHMENT7};
+
+  glDrawBuffers(inumtargets, buffers);
+  GL_ERRORCHECK();
   //////////////////////////////////////////////////
   // Bind Operation
   //////////////////////////////////////////////////
@@ -134,50 +180,12 @@ void GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rtgroup) {
     int inumtargets       = rtgroup->GetNumTargets();
     if (rtgroup->_depthOnly) {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
-      glBindTexture(texture_target, rtg_impl->_depthonly->_depthTexObject);
-      glDrawBuffers(0, nullptr);
     } else if (rtgroup->_cubeMap) {
-
-      auto bufferimpl     = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
-      auto color_glto     = bufferimpl->_teximpl.getShared<GLTextureObject>();
-      color_glto->mTarget = GL_TEXTURE_CUBE_MAP;
-
-      /////////////////////////////////////////////////////////////
-      // bind rtgroup->_cubeRenderFace to
-      // framebuffer color and depth attachment 0
-      /////////////////////////////////////////////////////////////
-
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
-      glFramebufferTexture2D(
-          GL_FRAMEBUFFER,
-          GL_COLOR_ATTACHMENT0,                                      // attachment point
-          GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace, // face
-          color_glto->_textureObject,
-          0); // mip
-
-      glFramebufferTexture2D(
-          GL_FRAMEBUFFER,
-          GL_DEPTH_ATTACHMENT,
-          GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace,
-          rtg_impl->_standard->_depthTexObject,
-          0);
-
     } else {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
-      glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
+      // glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
     }
-    GLenum buffers[] = {
-        GL_COLOR_ATTACHMENT0,
-        GL_COLOR_ATTACHMENT1,
-        GL_COLOR_ATTACHMENT2,
-        GL_COLOR_ATTACHMENT3,
-        GL_COLOR_ATTACHMENT4,
-        GL_COLOR_ATTACHMENT5,
-        GL_COLOR_ATTACHMENT6,
-        GL_COLOR_ATTACHMENT7};
-
-    glDrawBuffers(inumtargets, buffers);
-    GL_ERRORCHECK();
   };
 }
 
