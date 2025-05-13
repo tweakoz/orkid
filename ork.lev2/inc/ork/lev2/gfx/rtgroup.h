@@ -51,6 +51,7 @@ struct RtBuffer final {
   EMipGen _mipgen;
   uint64_t _usage = 0;
   std::string _debugName;
+  texturearraysliceref_ptr_t _ta_slice;
 };
 
 struct RtGroup final {
@@ -116,7 +117,7 @@ struct RtGroup final {
   std::string _name;
   bool _pseudoRTG = false;
   rendertarget_rtgroup_ptr_t _rendertarget;
-
+  TextureArraySliceRef* _slice = nullptr;
 };
 
 struct RtgSet {

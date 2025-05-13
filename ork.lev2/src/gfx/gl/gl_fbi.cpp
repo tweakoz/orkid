@@ -30,13 +30,16 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
+logchannel_ptr_t GlFrameBufferInterface::_logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
+logchannel_ptr_t GlFrameBufferInterface::_logchan_fbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
 
 extern int G_MSAASAMPLES;
 
 GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
     : FrameBufferInterface(target)
     , mTargetGL(target) {
+
+
 }
 
 GlFrameBufferInterface::~GlFrameBufferInterface() {
@@ -57,9 +60,9 @@ freestyle_mtl_ptr_t GlFrameBufferInterface::utilshader(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::_setAsRenderTarget(void) {
+void GlFrameBufferInterface::_bindMainSurface(void) {
   mTargetGL.makeCurrentContext();
-  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
+  // mTargetGL.debugPushGroup("GlFrameBufferInterface::_bindMainSurface");
   GL_ERRORCHECK();
   GL_ERRORCHECK();
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -110,7 +113,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   /////////////////////////////////////////////////
   {
     GL_ERRORCHECK();
-    _setAsRenderTarget();
+    _bindMainSurface();
     GL_ERRORCHECK();
 
     if (G_MSAASAMPLES > 1)
@@ -613,7 +616,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  logchan_glfbi->log("GetPixel rtg<%p> numbuf<%d>", (void*)pfc._rtgroup.get(), pfc._rtgroup->mNumMrts );
+  _logchan_fbi->log("GetPixel rtg<%p> numbuf<%d>", (void*)pfc._rtgroup.get(), pfc._rtgroup->mNumMrts );
 
   if (bInBounds) {
     if (pfc._rtgroup) {
@@ -630,7 +633,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
         glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        logchan_glfbi->log("GetPixel<%d %d> w<%d> h<%d> FboMaster<%u> rtg<%s>", sx, sy, W, H, fboobj->_fbo, pfc._rtgroup->_name.c_str());
+        _logchan_fbi->log("GetPixel<%d %d> w<%d> h<%d> FboMaster<%u> rtg<%s>", sx, sy, W, H, fboobj->_fbo, pfc._rtgroup->_name.c_str());
 
         if (fboobj->_fbo) {
 
@@ -641,7 +644,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
           glGetIntegerv(GL_READ_BUFFER, &previous_readbuffer);
           GL_ERRORCHECK();
 
-          logchan_glfbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
+          _logchan_fbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
 
           int pfc_index = 0;
           size_t pfc_size = pfc._pickvalues.size();
@@ -705,7 +708,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                       uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                       /////////////////////////////////////////////////////////////////
                       pfc._pickvalues[MrtIndex].set<uint64_t>(value);
-                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(u16)<%u %u %u %u> value<0x%zx>", 
+                      _logchan_fbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(u16)<%u %u %u %u> value<0x%zx>", 
                                           MrtIndex, sx, sy, 
                                           rgba[0], rgba[1], rgba[2], rgba[3],
                                           value);
@@ -724,7 +727,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                       uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                       /////////////////////////////////////////////////////////////////
                       pfc._pickvalues[MrtIndex].set<uint64_t>(value);
-                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(f32)<%g %g %g %g> value<0x%zx>", 
+                      _logchan_fbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(f32)<%g %g %g %g> value<0x%zx>", 
                                           MrtIndex, sx, sy, 
                                           rgba[0], rgba[1], rgba[2], rgba[3],
                                           value);

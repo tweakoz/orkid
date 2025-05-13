@@ -210,11 +210,14 @@ struct TextureArray {
   std::set<size_t> _free_slices;
   mutable std::set<size_t> _dirty_slices;
   std::unordered_map<size_t,image_ptr_t> _images;
+  rtgroup_ptr_t _rtg;
+  std::string _debugName;
 
 };
 
 struct TextureArraySliceRef {
   TextureArraySliceRef(TextureArray* ary, int slice);
+  rtgroup_ptr_t createRenderTarget(Context* ctx);
   TextureArray* _array;
   int _slice = 0;
 };

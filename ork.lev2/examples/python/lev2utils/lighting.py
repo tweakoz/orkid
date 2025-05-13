@@ -15,6 +15,7 @@ class MySpotLight:
                 frq=1.0,
                 color=vec3(1),
                 cookie=None,
+                depth_cookie=None,
                 fovbase=20.0,
                 fovamp=20.0,
                 voffset=1,
@@ -32,7 +33,6 @@ class MySpotLight:
     self.radius = radius
     self.voffset = voffset
     self.vscale = vscale
-    self.cookie = cookie
     self.frequency = frq
     self.fovamp = fovamp
     self.fovbase = fovbase
@@ -51,6 +51,7 @@ class MySpotLight:
     self.spot_light.data.shadowBias = bias
     self.spot_light.data.shadowMapSize = dim
     self.spot_light.colorCookie = cookie
+    self.spot_light.depthCookie = depth_cookie
     #self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
     print(self.spot_light.shadowMatrix)

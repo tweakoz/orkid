@@ -13,6 +13,7 @@
 #include <ork/lev2/config.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <math.h>
@@ -433,6 +434,15 @@ texturearraysliceref_ptr_t TextureArray::slice(size_t index) const {
 TextureArraySliceRef::TextureArraySliceRef(TextureArray* ary, int slice)
     : _array(ary)
     , _slice(slice) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+rtgroup_ptr_t TextureArraySliceRef::createRenderTarget(Context* ctx) {
+  auto rtg = std::make_shared<RtGroup>(ctx, _array->_width, _array->_height);
+  rtg->_slice = this;
+  rtg->_name  = "TextureArray:" + _array->_debugName;
+  return rtg;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

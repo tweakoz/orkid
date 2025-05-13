@@ -8,8 +8,10 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import vec3, vec4, quat, mtx4, lev2_pyexdir, Transform
+from orkengine.core import vec3, vec4, quat, mtx4, lev2_pyexdir, Transform, CrcStringProxy
 from orkengine import lev2
+
+tokens = CrcStringProxy()
 
 ################################################################################
 
@@ -131,50 +133,57 @@ class StereoApp1(object):
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
+    self.cookie1 = color_cookies.load("src://effect_textures/knob2.png")
 
     shadow_size = 4096
     shadow_bias = 1e-3
-    intens = 450
+    intens = 400
     self.spotlight1 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.3,
-                                 color=vec3(intens,0,0),
-                                 cookie=self.cookie1,
-                                 radius=12,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=45,
-                                 voffset=16,
-                                 vscale=12)
+                                  model=self.ball_model,
+                                  frq=0.3,
+                                  color=vec3(intens,0,0),
+                                  cookie=self.cookie1,
+                                  radius=12,
+                                  bias=shadow_bias,
+                                  dim=shadow_size,
+                                  fovamp=0,
+                                  fovbase=45,
+                                  voffset=16,
+                                  vscale=12)
 
     self.spotlight2 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.7,
-                                 color=vec3(0,intens,0),
-                                 cookie=self.cookie1,
-                                 radius=16,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=65,
-                                 voffset=17,
-                                 vscale=10)
+                                  model=self.ball_model,
+                                  frq=0.7,
+                                  color=vec3(0,intens,0),
+                                  cookie=self.cookie1,
+                                  radius=16,
+                                  bias=shadow_bias,
+                                  dim=shadow_size,
+                                  fovamp=0,
+                                  fovbase=65,
+                                  voffset=17,
+                                  vscale=10)
 
     self.spotlight3 = MySpotLight(app=self,
-                                 model=self.ball_model,
-                                 frq=0.9,
-                                 color=vec3(0,0,intens),
-                                 cookie=self.cookie1,
-                                 radius=19,
-                                 bias=shadow_bias,
-                                 dim=shadow_size,
-                                 fovamp=0,
-                                 fovbase=75,
-                                 voffset=20,
-                                 vscale=10)
+                                  model=self.ball_model,
+                                  frq=0.9,
+                                  color=vec3(0,0,intens),
+                                  cookie=self.cookie1,
+                                  radius=19,
+                                  bias=shadow_bias,
+                                  dim=shadow_size,
+                                  fovamp=0,
+                                  fovbase=75,
+                                  voffset=20,
+                                  vscale=10)
 
   ##############################################
 

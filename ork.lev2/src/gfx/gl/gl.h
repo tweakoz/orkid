@@ -21,6 +21,7 @@
 #include <ftxui/component/screen_interactive.hpp>  
 #include <ftxui/screen/color_info.hpp>  
 #include <ftxui/screen/terminal.hpp> 
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -151,6 +152,9 @@ struct GlRtBufferImpl {
 struct GlRtGroupImpl {
   glfbo_ptr_t _standard;
   glfbo_ptr_t _depthonly;
+  GLenum _target = GL_NONE;
+  int _numsamples = 0;
+  void_lambda_t _bindop = []() {};
 };
 
 using glrtgroupimpl_ptr_t = std::shared_ptr<GlRtGroupImpl>;
@@ -323,10 +327,18 @@ public:
 
   //////////////////////////////////////////////
 
-  void _setAsRenderTarget();
+  void _buildRtgImplFromTextureArraySlice(RtGroup* rtg);
+  void _buildRtgImplFromScratch(RtGroup* rtg);
+  void _regenRtgImplFromScratch(RtGroup* rtg);
+
+  //////////////////////////////////////////////
+
+  void _bindMainSurface();
   void _initializeContext(DisplayBuffer* pBuf);
 
   freestyle_mtl_ptr_t utilshader();
+  static logchannel_ptr_t _logchan_rtgroup;
+  static logchannel_ptr_t _logchan_fbi;
 
 protected:
 
@@ -341,6 +353,7 @@ protected:
   int miCurScissorY;
   int miCurScissorW;
   int miCurScissorH;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

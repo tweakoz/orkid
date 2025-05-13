@@ -169,41 +169,63 @@ class LIGHTING_APP(object):
 
     ###################################
 
-    cookie1 = MyCookie("src://effect_textures/L0D.png")
-    cookie2 = MyCookie("src://effect_textures/knob2.png")
-    cookie3 = MyCookie("src://effect_textures/knob2.png")
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+
+    cookie1 = color_cookies.load("src://effect_textures/L0D.png")
+    cookie2 = color_cookies.load("src://effect_textures/knob2.png")
+    cookie3 = color_cookies.load("src://effect_textures/ptc4.png")
+    depth_cookie1 = depth_cookies.slice(0)
+    depth_cookie2 = depth_cookies.slice(1)
+    depth_cookie3 = depth_cookies.slice(2)
     
     shadow_size = 2048
     shadow_bias = 1e-3
     if True:
-      self.spotlight1 = MySpotLight( index=0,
-                                     app=self,
-                                     model=model,
+      kwargs = {
+        "app":self,
+        "model":model,
+        "bias":shadow_bias,
+        "dim":shadow_size,
+        "layers":COLOR_LAYERS,
+      }
+      self.spotlight1 = MySpotLight( **kwargs, 
+                                     index=0,
                                      frq=0.37,
-                                     color=vec3(0,700,1500)*2,
+                                     color=vec3(0,100,2000),
                                      cookie=cookie1,
+                                     depth_cookie=depth_cookie1,
                                      fovbase=50.0,
                                      fovamp=25.0,
                                      voffset=16,
                                      vscale=8,
-                                     bias=shadow_bias,
-                                     dim=shadow_size,
-                                     radius=8,
-                                     layers = COLOR_LAYERS)
-      self.spotlight2 = MySpotLight( index=1,
-                                     app=self,
-                                     model=model,
+                                     radius=8)
+      self.spotlight2 = MySpotLight( **kwargs, 
+                                     index=1,
                                      frq=0.47,
-                                     color=vec3(500,0,0),
+                                     color=vec3(500,100,100),
                                      cookie=cookie2,
+                                     depth_cookie=depth_cookie2,
                                      fovbase=30.0,
                                      fovamp=35.0,
                                      voffset=12,
                                      vscale=8,
-                                     bias=shadow_bias,
-                                     dim=shadow_size,
-                                     radius=4,
-                                     layers = COLOR_LAYERS)
+                                     radius=4)
+      self.spotlight3 = MySpotLight( **kwargs, 
+                                     index=2,
+                                     frq=-0.19,
+                                     color=vec3(50,100,50),
+                                     cookie=cookie3,
+                                     depth_cookie=depth_cookie3,
+                                     fovbase=30.0,
+                                     fovamp=35.0,
+                                     voffset=12,
+                                     vscale=8,
+                                     radius=4)
    ##############################################
 
     self.probe = lev2.LightProbe()
@@ -266,6 +288,7 @@ class LIGHTING_APP(object):
     if hasattr(self,'spotlight1'):
       self.spotlight1.update(self.lighttime)
       self.spotlight2.update(self.lighttime)
+      self.spotlight3.update(self.lighttime)
 
 ###############################################################################
 

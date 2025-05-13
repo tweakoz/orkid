@@ -614,6 +614,20 @@ void pyinit_gfx(py::module& module_lev2) {
         texarray->resize(w,h,d,efmt);
       })
       .def("load", [](texturearray_ptr_t texarray, std::string path) -> texturearraysliceref_ptr_t { return texarray->load(path); })
+      .def("slice", [](texturearray_ptr_t texarray, size_t index ) -> texturearraysliceref_ptr_t { return texarray->slice(index); })
+      /*.def("createRtGroup", [](texturearray_ptr_t texarray, ctx_t context) -> rtgroup_ptr_t {
+        auto rtg = std::make_shared<RtGroup>(context.get(),texarray->_width, texarray->_height);
+        texarray->_rtg = rtg;
+        rtg->_textureArray = texarray.get();
+        rtg->_name = "TextureArray:"+texarray->_debugName;
+        for(size_t islice=0; islice<texarray->_maxslices; islice++) {
+          auto slice = texarray->slice(islice);
+          uint64_t usage = "texarray"_crcu;
+          auto rtb = rtg->createRenderTarget(texarray->_format,usage);
+          rtb->_ta_slice = slice;
+        }
+        return rtg;
+      })*/
       .def_property("needsIrradianceCache", [](texturearray_ptr_t texarray) -> bool { //
         return texarray->_needsIrradianceCache;
       }, [](texturearray_ptr_t texarray, bool b) { //

@@ -528,9 +528,11 @@ struct ForwardPbrNodeImpl {
                 continue;
 
               if (light->_depthRTG == nullptr) {
-                int dim                      = light->_data->_shadowMapSize;
-                light->_depthRTG             = std::make_shared<RtGroup>(context, dim, dim);
-                light->_depthRTG->_depthOnly = true;
+                auto depcookie = light->_cookieDepth;
+                  OrkAssert(depcookie);
+                  auto rtg = depcookie->createRenderTarget(context);
+                  rtg->_depthOnly  = true;
+                  light->_depthRTG = rtg;
               }
               if (auto as_spotlight = dynamic_cast<SpotLight*>(light)) {
 
