@@ -169,15 +169,21 @@ class SceneGraphApp(object):
     cookie3 = color_cookies.load("src://effect_textures/panel1_ao.png")
     cookie4 = color_cookies.load("src://effect_textures/ptc4.png")
     cookie5 = color_cookies.load("src://effect_textures/adama.png")
+    depth_cookie1 = depth_cookies.slice(0)
+    depth_cookie2 = depth_cookies.slice(1)
+    depth_cookie3 = depth_cookies.slice(2)
+    depth_cookie4 = depth_cookies.slice(3)
+    depth_cookie5 = depth_cookies.slice(4)
 
-    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(600,0,0),cookie=cookie1,radius=16,voffset=16,fovbase=25)
-    self.spotlight2 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(0,1500,0),cookie=cookie2,radius=16,voffset=16,fovbase=35)
+    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(600,0,0),cookie=cookie1,depth_cookie=depth_cookie1, radius=16,voffset=16,fovbase=25)
+    self.spotlight2 = MySpotLight( index=1,app=self,model=model,frq=0.37,color=vec3(0,1500,0),cookie=cookie2,depth_cookie=depth_cookie2, radius=16,voffset=16,fovbase=35)
     self.spotlight3 = MySpotLight( index=2,
                                    app=self,
                                    model=model,
                                    frq=0.27,
                                    color=vec3(000,200,600),
                                    cookie=cookie3,
+                                   depth_cookie=depth_cookie3, 
                                    radius=16,
                                    bias=1e-3,
                                    dim=2048,
@@ -186,8 +192,8 @@ class SceneGraphApp(object):
                                    fovbase=20,
                                    voffset=16,
                                    vscale=14)
-    self.spotlight4 = MySpotLight( index=3,app=self,model=model,frq=-0.17,color=vec3(100,100,0),cookie=cookie4,radius=16,voffset=16,fovbase=35)
-    self.spotlight5 = MySpotLight( index=4,app=self,model=model,frq=0.17,color=vec3(150,150,150),cookie=cookie5,radius=10,voffset=26,fovbase=25)
+    self.spotlight4 = MySpotLight( index=3,app=self,model=model,frq=-0.17,color=vec3(100,100,0),cookie=cookie4,depth_cookie=depth_cookie4, radius=16,voffset=16,fovbase=35)
+    self.spotlight5 = MySpotLight( index=4,app=self,model=model,frq=0.17,color=vec3(150,150,150),cookie=cookie5,depth_cookie=depth_cookie5, radius=10,voffset=26,fovbase=25)
 
     print("LMGR",lmgr)
     #assert(False)
