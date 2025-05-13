@@ -3,9 +3,9 @@
 
 namespace ork::lev2 {
 
-void _validateRtGroup(RtGroup* rtg);
+///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rtgroup) {
+glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rtgroup) {
 
   int iw = rtgroup->width();
   int ih = rtgroup->height();
@@ -187,7 +187,11 @@ void GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rtgroup) {
       // glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);
     }
   };
+
+  return rtg_impl;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
 
@@ -488,7 +492,7 @@ void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
 
   rtgroup->SetSizeDirty(false);
 
-  _validateRtGroup(rtgroup);
+  validateRtGroup(rtgroup);
 
   //_dumpFBOstructure(rtg_impl->_standard->_fbo, "UPDIMPL::" + rtgroup->_name + ".STD",rtgroup);
   //_dumpFBOstructure(rtg_impl->_depthonly->_fbo, "UPDIMPL::" + rtgroup->_name + ".DONLY",rtgroup);

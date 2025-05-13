@@ -19,9 +19,6 @@
 
 namespace ork::lev2 {
 
-bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg);
-void _validateRtGroup(RtGroup* rtg);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 GlFboObject::GlFboObject() {
@@ -44,35 +41,16 @@ void GlFrameBufferInterface::_popRtGroup(bool continue_render) { // final
 
 void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
 
-  // printf("FBI<%p> SetRTG<%p>\n", this, rtgroup );
+  GL_ERRORCHECK();
 
   _active_rtgroup = rtgroup;
 
-  GL_ERRORCHECK();
-
   //////////////////////////////////////////////
-  // bind main surface ?
+  // no rtgroup just means main surface
   //////////////////////////////////////////////
 
   if (nullptr == rtgroup) {
     _bindMainSurface();
-    return;
-  }
-
-  //////////////////////////////////////////////
-  // lazy create mrt's
-  //////////////////////////////////////////////
-
-  //////////////////////////////////////////////
-  if (rtgroup->_pseudoRTG) { // popups ?
-    static auto defstate = std::make_shared<RasterState>();
-    _target.FXI()->applyRasterState(*defstate);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    if (rtgroup->_autoclear) {
-      rtGroupClear(rtgroup);
-    }
-    GL_ERRORCHECK();
     return;
   }
 
@@ -85,25 +63,51 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   if (auto as_impl = rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     rtg_impl = as_impl.value();
   } else {
-    if (rtgroup->_slice) {
-      this->_buildRtgImplFromTextureArraySlice(rtgroup);
+    if (rtgroup->_pseudoRTG) { // popups ?
+      rtg_impl = _buildRtgImplForMainSurface(rtgroup);
+    } else if (rtgroup->_slice) {
+      rtg_impl = _buildRtgImplFromTextureArraySlice(rtgroup);
     } else {
-      this->_buildRtgImplFromScratch(rtgroup);
+      rtg_impl = _buildRtgImplFromScratch(rtgroup);
     }
-    rtg_impl = rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>().value();
   }
+
   //////////////////////////////////////////
   // bind it 
   //////////////////////////////////////////
+
   GL_ERRORCHECK();
   rtg_impl->_bindop();
   GL_ERRORCHECK();
+
+  //////////////////////////////////////////
+  // autoclear, if enabled
+  //////////////////////////////////////////
+
+  if (rtgroup->_autoclear) {
+    rtGroupClear(rtgroup);
+  }
+
   //////////////////////////////////////////
   // apply default raster state
   //////////////////////////////////////////
-  static auto rstate = std::make_shared<RasterState>();
-  _target.FXI()->applyRasterState(*rstate);
+
+  _target.FXI()->applyRasterState(_defaultRasterState);
+
   //////////////////////////////////////////
+
+  GL_ERRORCHECK();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplForMainSurface(RtGroup* rtgroup) {
+  
+  glrtgroupimpl_ptr_t impl = rtgroup->_impl.makeShared<GlRtGroupImpl>();
+  impl->_bindop = [this]() {
+    _bindMainSurface();
+  };
+  return impl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,7 +210,7 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
   // Blit from source to destination
   if (auto try_src_rtg_impl = src_rtg->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     auto src_rtg_impl = try_src_rtg_impl.value();
-    bool is_complete  = _checkFboComplete(src_rtg_impl->_depthonly->_fbo, "clone", src_rtg.get());
+    //bool is_complete  = _checkFboComplete(src_rtg_impl->_depthonly->_fbo, "clone", src_rtg.get());
 
     // Setup and perform the blit operation
     GLint scissor[4];
@@ -218,12 +222,6 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
     glScissor(scissor[0], scissor[1], scissor[2], scissor[3]);
     GL_ERRORCHECK();
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void GlFrameBufferInterface::validateRtGroup(rtgroup_ptr_t rtg) {
-  _validateRtGroup(rtg.get());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

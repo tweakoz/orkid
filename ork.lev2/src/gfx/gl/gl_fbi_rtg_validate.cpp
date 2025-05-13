@@ -24,7 +24,7 @@ static std::string _glFormatToName(GLenum format) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void _handleTextureAttachment(GLint textureID, RtGroup* rtg) {
+static void _handleTextureAttachment(GLint textureID, RtGroup* rtg) {
   if (textureID == 0)
     return; // Early exit if no texture is bound
 
@@ -153,7 +153,7 @@ static void _dumpFBOstructure(GLuint fboID, std::string name, RtGroup* rtg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
+static bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
   bool rval              = false;
   GLuint cache_prior_fbo = 0;
   glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&cache_prior_fbo);
@@ -161,7 +161,8 @@ bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   switch (status) {
     case GL_FRAMEBUFFER_COMPLETE:
-      rval = true;
+    deco::printf(fvec3::Green(), "GL_FRAMEBUFFER_COMPLETE!\n");
+    rval = true;
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
       deco::printf(fvec3::Red(), "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n");
@@ -185,9 +186,9 @@ bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
   return rval;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-void _validateRtGroup(RtGroup* rtg) {
+void GlFrameBufferInterface::validateRtGroup(RtGroup* rtg) {
   auto as_impl = rtg->_impl.tryAs<glrtgroupimpl_ptr_t>();
   if (as_impl) {
     auto rtg_impl = as_impl.value();
@@ -199,6 +200,5 @@ void _validateRtGroup(RtGroup* rtg) {
     }
   }
 }
-
 
 } //namespace ork::lev2 {

@@ -219,7 +219,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   // depth prepass
   ///////////////////////////////////////////////////////////////////////////
   if (RCFD->_pbrcommon->_useDepthPrepass) {
-    FBI->validateRtGroup(_rtgGbuffer);
+    FBI->validateRtGroup(_rtgGbuffer.get());
     targ->debugPushGroup("Deferred::depth-pre pass");
     CPD.assignLayers("depth_prepass");
     CIMPL->pushCPD(CPD); // drawenq

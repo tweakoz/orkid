@@ -167,8 +167,8 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
      if (mtl->_parTexSpotLightsCount) {
       FXI->bindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
       // TODO use dep_cookies (and make sure dep_cookies filled in by depth pass of shadow/lights)
-      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, mtl->_texWhiteLightMapArray.get() );
-      //FXI->bindParamTextureArray(mtl->_parLightDepthCookies, dep_cookies.get() );
+      //FXI->bindParamTextureArray(mtl->_parLightDepthCookies, mtl->_texWhiteLightMapArray.get() );
+      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, dep_cookies.get() );
       FXI->bindParamTextureArray(mtl->_parLightColorCookies, clr_cookies.get() );
 
     }

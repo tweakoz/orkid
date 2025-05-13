@@ -147,23 +147,14 @@ libblock lib_fwd     //
 
   /////////////////////////////////////////////////////////
 
-  vec3 _sample_color_cookie(uint slice, vec2 uv, float lod) {
+  vec3 _sample_color_cookie(uint slice, float lod, vec2 uv) {
     return textureLod(light_cookie_colors, vec3(uv,slice), lod).xyz;
   }
-  vec3 _sample_depth_cookie(uint slice, vec2 uv, float lod) {
-    return textureLod(light_cookie_depths, vec3(uv,slice), lod).xyz;
+  float _sample_depth_cookie(uint slice, float lod, vec2 uv) {
+    return textureLod(light_cookie_depths, vec3(uv,slice), lod).x;
   }
-  vec3 _sample_cookie_lod(int index, vec2 uv, float lod) {
-    vec3 rval = vec3(0);
-    int cookie = index >> 1;
-    bool is_odd = (index & 1) == 1;
-    if (is_odd) { // depth cookie
-      rval = textureLod(light_cookie_depths, vec3(uv,cookie), lod).xyz;
-    } else { // color cookie
-      rval = textureLod(light_cookie_colors, vec3(uv,cookie), lod).xyz;
-    }
-    return rval;
-  }
+
+  /////////////////////////////////////////////////////////
 
   vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
 
@@ -324,7 +315,7 @@ libblock lib_fwd     //
         float bias             = LSB.y; // Increased bias to help with shadow acne
         float far              = lightrange;
         float near             = lightrange * 0.001;
-        float shadow_depth_ndc = _sample_depth_cookie(light_tex_slice, shadow_uv, 0).x * 2.0 - 1.0;
+        float shadow_depth_ndc = _sample_depth_cookie(light_tex_slice, 0, shadow_uv) * 2.0 - 1.0;
 
         // Percentage-Closer Filtering (PCF)
         int pcf_width         = 1;           // Size of the PCF kernel
@@ -333,7 +324,7 @@ libblock lib_fwd     //
         for (int x = -pcf_width; x <= pcf_width; x++) {
           for (int y = -pcf_width; y <= pcf_width; y++) {
             vec2 pcf_uv     = shadow_uv + vec2(x, y) * pcf_filter_size;
-            float pcf_depth = _sample_depth_cookie(light_tex_slice, pcf_uv, 0).x * 2.0 - 1.0;
+            float pcf_depth = _sample_depth_cookie(light_tex_slice, 0, pcf_uv) * 2.0 - 1.0;
             shadow_factor += (pcf_depth + bias) >= lightz ? 1.0 : 0.0;
           }
         }
@@ -346,8 +337,8 @@ libblock lib_fwd     //
 
       vec3 lightcol          = _lightcolor[i].xyz;
       float level            = pbd._roughness * 4;
-      vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, diffuse_lightuv, 0).xyz;      // diffuse WIP
-      vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, specular_lightuv, level).xyz; // specular WIP
+      vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, 0, diffuse_lightuv).xyz;      // diffuse WIP
+      vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, level, specular_lightuv).xyz; // specular WIP
 
       // specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
 
@@ -368,7 +359,7 @@ libblock lib_fwd     //
     } // for (int i = 0; i < spot_light_count; i++) {
 
     // return spot_lighting;
-    return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
+    return spot_lighting; //(env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;

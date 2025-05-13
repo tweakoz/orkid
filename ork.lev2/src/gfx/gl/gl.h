@@ -323,12 +323,13 @@ public:
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void cloneDepthBuffer(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
 
-  void validateRtGroup(rtgroup_ptr_t rtg) final;
+  void validateRtGroup(RtGroup* rtg) final;
 
   //////////////////////////////////////////////
 
-  void _buildRtgImplFromTextureArraySlice(RtGroup* rtg);
-  void _buildRtgImplFromScratch(RtGroup* rtg);
+  glrtgroupimpl_ptr_t _buildRtgImplFromTextureArraySlice(RtGroup* rtg);
+  glrtgroupimpl_ptr_t _buildRtgImplFromScratch(RtGroup* rtg);
+  glrtgroupimpl_ptr_t _buildRtgImplForMainSurface(RtGroup* rtg);
   void _regenRtgImplFromScratch(RtGroup* rtg);
 
   //////////////////////////////////////////////
@@ -353,6 +354,8 @@ protected:
   int miCurScissorY;
   int miCurScissorW;
   int miCurScissorH;
+
+  RasterState _defaultRasterState;
 
 };
 

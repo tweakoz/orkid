@@ -3,9 +3,7 @@
 
 namespace ork::lev2 {
 
-void _validateRtGroup(RtGroup* rtgroup);
-
-void GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup) {
+glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup) {
   auto slice = rtgroup->_slice;
   int slice_index = slice->_slice;
   auto texarray = slice->_array;
@@ -96,8 +94,9 @@ void GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  _validateRtGroup(rtgroup);
+  validateRtGroup(rtgroup);
 
+  return rtg_impl;
 }
 
 } // namespace ork::lev2 {
