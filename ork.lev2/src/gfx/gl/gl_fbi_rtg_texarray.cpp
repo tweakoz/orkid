@@ -88,6 +88,7 @@ void GlFrameBufferInterface::_buildRtgImplFromTextureArraySlice(RtGroup* rtgroup
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+  _validateRtGroup(rtgroup);
 
 }
 
