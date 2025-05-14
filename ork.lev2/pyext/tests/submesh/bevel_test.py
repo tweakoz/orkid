@@ -59,6 +59,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.bary_prim = RigidPrimitive(cub_submesh,ctx)
     self.bary_sgnode = self.bary_prim.createNode("bevel",self.layer1,pbr_pipeline)
     self.bary_sgnode.enabled = True
+    self.bary_prim.debugState = False
 
   ##############################################
   def onUpdate(self,updevent):

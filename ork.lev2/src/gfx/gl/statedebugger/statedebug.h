@@ -103,11 +103,13 @@ struct _FtxGlDebugger {
   void _validateCurrentStorageBuffers();
   void _validateTextureBindingState();
   void _validateTextures();
-
+  void _validateRenderer();
+  
   const ContextGL* _glctx;
   std::shared_ptr<ftxui::ScreenInteractive> _fxtui_screen;
   ftxui::component_ptr_t _comp_top;
   ftxui::node_ptr_t _node_backtrace;
+  ftxui::node_ptr_t _node_renderer;
   ftxui::node_ptr_t _node_framebuffer;
   ftxui::node_ptr_t _node_shader;
   ftxui::node_ptr_t _node_ssbo;

@@ -244,6 +244,15 @@ int GetGlError(void) {
   return err;
 }
 
+std::string renderCrcStringToString(uint64_t crc) {
+  switch(crc) {
+    case "FORWARD_PBR"_crcu:
+      return "FORWARD_PBR";
+    default:
+      return FormatString("RenderCrc<%016llx>", crc);
+  }
+}
+
 std::string GLenumToString(GLenum e) {
   switch (e) {
     case GL_INVALID_ENUM:
@@ -312,12 +321,20 @@ std::string GLenumToString(GLenum e) {
       return "GL_RGB";
     case GL_RGB8:
       return "GL_RGB8";
+    case GL_RGB16:
+      return "GL_RGB16";
+    case GL_RGB16UI:
+      return "GL_RGB16UI";
     case GL_RGB16F:
       return "GL_RGB16F";
     case GL_RGB32F:
       return "GL_RGB32F";
+    case GL_RGB32UI:
+      return "GL_RGB32UI";
     case GL_DEPTH_COMPONENT:
       return "GL_DEPTH_COMPONENT";
+    case GL_DEPTH_COMPONENT32:
+      return "GL_DEPTH_COMPONENT32";
     case GL_DEPTH_COMPONENT32F:
       return "GL_DEPTH_COMPONENT32F";
     case GL_DEPTH32F_STENCIL8:

@@ -447,7 +447,16 @@ void _FtxGlDebugger::_validateCurrentShaderProgram() {
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-        value_str = FormatString("sampler2D(unit: %d tobj: %d dim<%dx%d>)", tex_unit, currentTexture, width, height);
+        auto it = _glctx->mTxI._texture_set.find(currentTexture);
+        std::string texname = "???";
+        if (it != _glctx->mTxI._texture_set.end()) {
+          auto the_tex = it->second;
+          auto glto    = the_tex->_impl.get<gltexobj_ptr_t>();
+          if (glto) {
+          }
+          texname = the_tex->_debugName;
+        }
+        value_str = FormatString("sampler2D(unit: %d dim<%dx%d> tobj: %d<%s>)", tex_unit, width, height, currentTexture, texname.c_str() );
         glActiveTexture(GL_TEXTURE0 + current_active);
         break;
       }
@@ -495,7 +504,16 @@ void _FtxGlDebugger::_validateCurrentShaderProgram() {
         glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_WIDTH, &width);
         glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_HEIGHT, &height);
         glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_DEPTH, &depth);
-        value_str = FormatString("sampler2Darray(unit: %d tobj: %d dim<%dx%dx%d>)", tex_unit, currentTexture, width, height, depth);
+        std::string texname = "???";
+        auto it = _glctx->mTxI._texture_set.find(currentTexture);
+        if (it != _glctx->mTxI._texture_set.end()) {
+          auto the_tex = it->second;
+          auto glto    = the_tex->_impl.get<gltexobj_ptr_t>();
+          if (glto) {
+          }
+          texname = the_tex->_debugName;
+        }
+        value_str = FormatString("sampler2Darray(unit: %d dim<%dx%dx%d> tobj: %d<%s>)", tex_unit, width, height, depth, currentTexture, texname.c_str() );
         glActiveTexture(GL_TEXTURE0 + current_active);
         break;
       }

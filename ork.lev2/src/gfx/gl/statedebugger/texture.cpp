@@ -24,9 +24,18 @@ void _FtxGlDebugger::_validateTextures() {
   auto hdrstr2 = FormatString("DIM");
   auto hdrstr3 = FormatString("FMT");
   auto hdrstr4 = FormatString("IFMT");
-  auto hdrstr5 = FormatString("NAME");
+  auto hdrstr5 = FormatString("TGT");
+  auto hdrstr6 = FormatString("NAME");
 
-  _colortext(NODES, YEL, BLK, " %-8s %-24s %-24s %-24s %-40s\n", hdrstr1.c_str(), hdrstr2.c_str(), hdrstr3.c_str(), hdrstr4.c_str(), hdrstr5.c_str());
+  _colortext (NODES, //
+              YEL, BLK, // 
+              " %-7s %-20s %-16s %-24s %-24s %-40s\n", //
+              hdrstr1.c_str(), // 
+              hdrstr2.c_str(), //
+              hdrstr3.c_str(), // 
+              hdrstr4.c_str(), // 
+              hdrstr5.c_str(), // 
+              hdrstr6.c_str());
 
   /////////////////////////////////////////////////////////////////////
   size_t index = 0;
@@ -36,6 +45,8 @@ void _FtxGlDebugger::_validateTextures() {
     GLuint texid           = item.first;
     const Texture* the_tex = item.second;
     auto format            = EBufferFormatToName(the_tex->_texFormat);
+    auto glto = the_tex->_impl.get<gltexobj_ptr_t>();
+    GLenum texture_target = glto->mTarget;
 
     //////////////////
     // count mip maps (using opengl 4.1 query)
@@ -58,6 +69,9 @@ void _FtxGlDebugger::_validateTextures() {
     // if texture is RGBA8, save it to disk as a png
     ///////////////////////
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(texture_target, texid);
+
     GLint itw = 0;
     GLint ith = 0;
     switch (the_tex->_texFormat) {
@@ -66,81 +80,74 @@ void _FtxGlDebugger::_validateTextures() {
         // bind texture
         // get texture data (mip0)
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texid);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &ith);
-        // OrkAssert(itw==width);
-        // OrkAssert(ith==height);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
 
-        int bpp = (the_tex->_texFormat==EBufferFormat::RGB8) ? 3 : 4;
-        int mipsize = itw * ith * bpp;
+        if(texture_target==GL_TEXTURE_2D){
 
-        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
-        // std::vector<uint8_t> mipdata;
-        // mipdata.resize(mipsize);
-        //  save to disk
-        std::string filename = FormatString("tex_%d.png", texid);
-        Image img;
-        img.init(itw, ith, bpp, 1);
-        img._format = the_tex->_texFormat;
-        if( the_tex->_texFormat == EBufferFormat::RGB8 ){
-          glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)img._data->data());
+          int bpp = (the_tex->_texFormat==EBufferFormat::RGB8) ? 3 : 4;
+          int mipsize = itw * ith * bpp;
+
+          //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+          // std::vector<uint8_t> mipdata;
+          // mipdata.resize(mipsize);
+          //  save to disk
+          std::string filename = FormatString("tex_%d.png", texid);
+          Image img;
+          img.init(itw, ith, bpp, 1);
+          img._format = the_tex->_texFormat;
+          if( the_tex->_texFormat == EBufferFormat::RGB8 ){
+            glGetTexImage(texture_target, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)img._data->data());
+          }
+          else if( the_tex->_texFormat == EBufferFormat::RGBA8 ){
+            glGetTexImage(texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)img._data->data());
+          }
+          //
+          img.writeToFile(filename);
         }
-        else if( the_tex->_texFormat == EBufferFormat::RGBA8 ){
-          glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)img._data->data());
-        }
-        //
-        img.writeToFile(filename);
         break;
       }
       case EBufferFormat::RGB32F:{
           // bind texture
         // get texture data (mip0)
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texid);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &ith);
-        // OrkAssert(itw==width);
-        // OrkAssert(ith==height);
-        int bpc = 4;
-        int numc = 3;
-        int mipsize = itw * ith * bpc*numc;
-        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
-        // std::vector<uint8_t> mipdata;
-        // mipdata.resize(mipsize);
-        //  save to disk
-        std::string filename = FormatString("tex_%d.exr", texid);
-        Image img;
-        img.init(itw, ith, numc, bpc);
-        img._format = the_tex->_texFormat;
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, (void*)img._data->data());
-        img.writeToFile(filename);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
+        if(texture_target==GL_TEXTURE_2D){
+          int bpc = 4;
+          int numc = 3;
+          int mipsize = itw * ith * bpc*numc;
+          std::string filename = FormatString("tex_%d.exr", texid);
+          Image img;
+          img.init(itw, ith, numc, bpc);
+          img._format = the_tex->_texFormat;
+          glGetTexImage(texture_target, 0, GL_RGB, GL_FLOAT, (void*)img._data->data());
+          img.writeToFile(filename);
+        }
         break;
       }
       case EBufferFormat::RGBA32F:{
         // bind texture
         // get texture data (mip0)
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texid);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &ith);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
         // OrkAssert(itw==width);
         // OrkAssert(ith==height);
-        int bpc = 4;
-        int numc = 4;
-        int mipsize = itw * ith * bpc*numc;
-        //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
-        // std::vector<uint8_t> mipdata;
-        // mipdata.resize(mipsize);
-        //  save to disk
-        std::string filename = FormatString("tex_%d.exr", texid);
-        Image img;
-        img.init(itw, ith, numc, bpc);
-        img._format = the_tex->_texFormat;
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void*)img._data->data());
-        //
-        img.writeToFile(filename);
+        if(texture_target==GL_TEXTURE_2D){
+          int bpc = 4;
+          int numc = 4;
+          int mipsize = itw * ith * bpc*numc;
+          //dimstr += FormatString(" [ mip0<%d %d> ]", itw, ith);
+          // std::vector<uint8_t> mipdata;
+          // mipdata.resize(mipsize);
+          //  save to disk
+          std::string filename = FormatString("tex_%d.exr", texid);
+          Image img;
+          img.init(itw, ith, numc, bpc);
+          img._format = the_tex->_texFormat;
+          glGetTexImage(texture_target, 0, GL_RGBA, GL_FLOAT, (void*)img._data->data());
+          //
+          img.writeToFile(filename);
+        }
         break;
       }  
       default:
@@ -148,9 +155,10 @@ void _FtxGlDebugger::_validateTextures() {
     }
     // get internal format via gl query
     GLint internalFormat = 0;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+    glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
     auto ifmtstr = GLenumToString(GLenum(internalFormat));
-    auto texstr = FormatString(" %-8s %-24s %-24s %-24s %-40s\n", texobjstr.c_str(), dimstr.c_str(), format.c_str(), ifmtstr.c_str(), namestr.c_str());
+    auto targetstr = GLenumToString(GLenum(texture_target));
+    auto texstr = FormatString(" %-7s %-20s %-16s %-24s %-24s %-40s\n", texobjstr.c_str(), dimstr.c_str(), format.c_str(), ifmtstr.c_str(), targetstr.c_str(), namestr.c_str());
 
     bool odd = (index % 2) == 0;
     auto BG  = odd ? GR1 : BLU1;

@@ -75,6 +75,7 @@ void _FtxGlDebugger::run_loop() {
 
   std::vector<std::string> menu_entries = {
       "BackTrace",
+      "Renderer",
       "Textures",
       "TextureBindings",
       "FrameBufferState",
@@ -87,6 +88,7 @@ void _FtxGlDebugger::run_loop() {
 #endif
 
   auto content_backtrace   = Renderer([&] { return _node_backtrace | vscroll_indicator | frame; });
+  auto content_renderer    = Renderer([&] { return _node_renderer | vscroll_indicator | frame; });
   auto content_textures    = Renderer([&] { return _node_textures | vscroll_indicator | frame; });
   auto content_texstate    = Renderer([&] { return _node_texturebindingstate | vscroll_indicator | frame; });
   auto content_framebuffer = Renderer([&] { return _node_framebuffer | vscroll_indicator | frame; });
@@ -100,6 +102,7 @@ void _FtxGlDebugger::run_loop() {
 
   std::vector<Component> content_components;
   content_components.push_back(content_backtrace);
+  content_components.push_back(content_renderer);
   content_components.push_back(content_textures);
   content_components.push_back(content_texstate);
   content_components.push_back(content_framebuffer);
@@ -199,6 +202,7 @@ void ContextGL::stateDebugger() const {
   debugger->_validateRaster();
   debugger->_validateCurrentShaderProgram();
   debugger->_validateTextureBindingState();
+  debugger->_validateRenderer();
 
   debugger->run_loop();
 }

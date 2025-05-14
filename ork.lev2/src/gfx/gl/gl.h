@@ -83,6 +83,7 @@ struct DDS_HEADER;
 namespace ork { namespace lev2 {
 
 std::string GLenumToString(GLenum e);
+std::string renderCrcStringToString(uint64_t crc);
 
 struct GlPlatformObject {
   GlPlatformObject();

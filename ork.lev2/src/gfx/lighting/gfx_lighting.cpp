@@ -690,6 +690,8 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
 : _data(lmd) {
   _cookies_spot_color = std::make_shared<TextureArray>();
   _cookies_spot_depth = std::make_shared<TextureArray>();
+  _cookies_spot_color->_tex->_debugName = "cookies_spot_color";
+  _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
