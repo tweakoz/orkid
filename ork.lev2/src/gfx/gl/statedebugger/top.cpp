@@ -195,14 +195,23 @@ void ContextGL::stateDebugger() const {
 
   /////////////////////////////
 
+  GL_ERRORCHECK();
   debugger->_validateTextures();
+  GL_ERRORCHECK();
   debugger->_validateCurrentFramebuffer();
+  GL_ERRORCHECK();
   debugger->_validateCurrentGeomBuffers();
+  GL_ERRORCHECK();
   debugger->_validateCurrentStorageBuffers();
+  GL_ERRORCHECK();
   debugger->_validateRaster();
+  GL_ERRORCHECK();
   debugger->_validateCurrentShaderProgram();
+  GL_ERRORCHECK();
   debugger->_validateTextureBindingState();
+  GL_ERRORCHECK();
   debugger->_validateRenderer();
+  GL_ERRORCHECK();
 
   debugger->run_loop();
 }

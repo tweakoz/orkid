@@ -15,6 +15,7 @@ void _FtxGlDebugger::_validateTextures() {
 
   using namespace ftxui;
   node_vect_t NODES;
+  GL_ERRORCHECK();
 
   size_t num_textures = _glctx->mTxI._texture_set.size();
 
@@ -47,6 +48,10 @@ void _FtxGlDebugger::_validateTextures() {
     auto format            = EBufferFormatToName(the_tex->_texFormat);
     auto glto = the_tex->_impl.get<gltexobj_ptr_t>();
     GLenum texture_target = glto->mTarget;
+    GLenum tex_target_specific = texture_target;
+    if(texture_target==GL_TEXTURE_CUBE_MAP){
+      tex_target_specific = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+    }
 
     //////////////////
     // count mip maps (using opengl 4.1 query)
@@ -69,8 +74,10 @@ void _FtxGlDebugger::_validateTextures() {
     // if texture is RGBA8, save it to disk as a png
     ///////////////////////
 
+    GL_ERRORCHECK();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(texture_target, texid);
+    GL_ERRORCHECK();
 
     GLint itw = 0;
     GLint ith = 0;
@@ -80,8 +87,10 @@ void _FtxGlDebugger::_validateTextures() {
         // bind texture
         // get texture data (mip0)
 
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
 
         if(texture_target==GL_TEXTURE_2D){
 
@@ -97,11 +106,12 @@ void _FtxGlDebugger::_validateTextures() {
           img.init(itw, ith, bpp, 1);
           img._format = the_tex->_texFormat;
           if( the_tex->_texFormat == EBufferFormat::RGB8 ){
-            glGetTexImage(texture_target, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)img._data->data());
+            glGetTexImage(tex_target_specific, 0, GL_RGB, GL_UNSIGNED_BYTE, (void*)img._data->data());
           }
           else if( the_tex->_texFormat == EBufferFormat::RGBA8 ){
-            glGetTexImage(texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)img._data->data());
+            glGetTexImage(tex_target_specific, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)img._data->data());
           }
+          GL_ERRORCHECK();
           //
           img.writeToFile(filename);
         }
@@ -110,8 +120,10 @@ void _FtxGlDebugger::_validateTextures() {
       case EBufferFormat::RGB32F:{
           // bind texture
         // get texture data (mip0)
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
         if(texture_target==GL_TEXTURE_2D){
           int bpc = 4;
           int numc = 3;
@@ -120,7 +132,7 @@ void _FtxGlDebugger::_validateTextures() {
           Image img;
           img.init(itw, ith, numc, bpc);
           img._format = the_tex->_texFormat;
-          glGetTexImage(texture_target, 0, GL_RGB, GL_FLOAT, (void*)img._data->data());
+          glGetTexImage(tex_target_specific, 0, GL_RGB, GL_FLOAT, (void*)img._data->data());
           img.writeToFile(filename);
         }
         break;
@@ -128,8 +140,10 @@ void _FtxGlDebugger::_validateTextures() {
       case EBufferFormat::RGBA32F:{
         // bind texture
         // get texture data (mip0)
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_WIDTH, &itw);
-        glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_WIDTH, &itw);
+        glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_HEIGHT, &ith);
+        GL_ERRORCHECK();
         // OrkAssert(itw==width);
         // OrkAssert(ith==height);
         if(texture_target==GL_TEXTURE_2D){
@@ -144,9 +158,10 @@ void _FtxGlDebugger::_validateTextures() {
           Image img;
           img.init(itw, ith, numc, bpc);
           img._format = the_tex->_texFormat;
-          glGetTexImage(texture_target, 0, GL_RGBA, GL_FLOAT, (void*)img._data->data());
+          glGetTexImage(tex_target_specific, 0, GL_RGBA, GL_FLOAT, (void*)img._data->data());
           //
           img.writeToFile(filename);
+          GL_ERRORCHECK();
         }
         break;
       }  
@@ -155,7 +170,11 @@ void _FtxGlDebugger::_validateTextures() {
     }
     // get internal format via gl query
     GLint internalFormat = 0;
-    glGetTexLevelParameteriv(texture_target, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+    auto tgtstr = GLenumToString(GLenum(texture_target));
+    printf("TEX<%s> TGT<%s> FMT<%s>\n", texobjstr.c_str(), tgtstr.c_str(), format.c_str());
+    GL_ERRORCHECK();
+    glGetTexLevelParameteriv(tex_target_specific, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+    GL_ERRORCHECK();
     auto ifmtstr = GLenumToString(GLenum(internalFormat));
     auto targetstr = GLenumToString(GLenum(texture_target));
     auto texstr = FormatString(" %-7s %-20s %-16s %-24s %-24s %-40s\n", texobjstr.c_str(), dimstr.c_str(), format.c_str(), ifmtstr.c_str(), targetstr.c_str(), namestr.c_str());

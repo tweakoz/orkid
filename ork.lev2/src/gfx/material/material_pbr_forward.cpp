@@ -114,6 +114,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     auto dep_cookies = lmgr->_cookies_spot_depth; 
 
     int num_texspotlights          = 0;
+    for(int i=0; i<64; i++){
+      pl_mapped->ref<uint32_t>(base_lighttexid + (i * vec4_stride)) = i;
+    }
     for (auto item : enumlights->_tex2spotlightmap) {
       for (auto light : item.second) {
         auto irr = light->_irradianceCookie;
@@ -135,11 +138,12 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
         pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
         pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
-        size_t tex_addr = base_lighttexid + (index * vec4_stride);
+        size_t texid_addr = base_lighttexid + (index * vec4_stride);
         //printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
 
         int cookie_index = light->_cookieColor->_slice;
-        pl_mapped->ref<uint32_t>(tex_addr) = uint32_t(cookie_index);
+        cookie_index = rand() % 8;
+        pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
         index++;
         num_texspotlights++;
 

@@ -416,7 +416,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   }
 
   auto alt_array        = std::make_shared<TextureArray>();
-  alt_array->_tex->_debugName = rawenvmap->_debugName + "[fenvmap-specular]";
+  alt_array->_tex->_debugName = rawenvmap->_debugName + "[filter-specenv]";
   txi->initTextureArray2DFromData(alt_array.get(), array_init);
   // alt_array->_tex->mTexSampleMode.presetTrilinearClamp();
   alt_array->_tex->mTexSampleMode.presetTrilinearWrap();
@@ -576,7 +576,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   }
 
   auto alt_tex        = std::make_shared<Texture>();
-  alt_tex->_debugName = rawenvmap->_debugName + "[fenvmap-diffuse]";
+  alt_tex->_debugName = rawenvmap->_debugName + "[filter-diffenv]";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
   rawenvmap->_vars->makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 

@@ -277,331 +277,781 @@ ftxui::Element SyntaxHighlightLine(const std::string& line) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void _FtxGlDebugger::_validateCurrentShaderProgram() {
+// Forward declarations of helper classes and structures
+struct SamplerTypeInfo {
+  GLenum textureTarget;
+  const char* displayName;
+};
 
+// Lookup table for sampler types
+const std::unordered_map<GLenum, SamplerTypeInfo> samplerTypeMap = {
+  { GL_SAMPLER_2D, { GL_TEXTURE_BINDING_2D, "sampler2D" } },
+  { GL_SAMPLER_3D, { GL_TEXTURE_BINDING_3D, "sampler3D" } },
+  { GL_SAMPLER_CUBE, { GL_TEXTURE_BINDING_CUBE_MAP, "samplerCube" } },
+  { GL_SAMPLER_2D_SHADOW, { GL_TEXTURE_BINDING_2D, "sampler2DShadow" } },
+  { GL_SAMPLER_2D_ARRAY, { GL_TEXTURE_BINDING_2D_ARRAY, "sampler2Darray" } },
+  { GL_SAMPLER_2D_ARRAY_SHADOW, { GL_TEXTURE_BINDING_2D_ARRAY, "sampler2DArrayShadow" } },
+  { GL_SAMPLER_2D_MULTISAMPLE, { GL_TEXTURE_BINDING_2D_MULTISAMPLE, "sampler2DMS" } },
+  { GL_SAMPLER_2D_MULTISAMPLE_ARRAY, { GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY, "sampler2DMSArray" } },
+  { GL_SAMPLER_CUBE_SHADOW, { GL_TEXTURE_BINDING_CUBE_MAP, "samplerCubeShadow" } },
+  { GL_SAMPLER_1D, { GL_TEXTURE_BINDING_1D, "sampler1D" } },
+  { GL_SAMPLER_1D_ARRAY, { GL_TEXTURE_BINDING_1D_ARRAY, "sampler1Darray" } },
+  { GL_SAMPLER_1D_SHADOW, { GL_TEXTURE_BINDING_1D, "sampler1DShadow" } },
+  { GL_SAMPLER_BUFFER, { GL_TEXTURE_BINDING_BUFFER, "samplerBuffer" } },
+  { GL_SAMPLER_2D_RECT, { GL_TEXTURE_BINDING_RECTANGLE, "sampler2Drect" } },
+  { GL_SAMPLER_2D_RECT_SHADOW, { GL_TEXTURE_BINDING_RECTANGLE, "samp2DrectSHAD" } },
+  { GL_INT_SAMPLER_1D, { GL_TEXTURE_BINDING_1D, "intsamp1D" } }
+};
+
+// Map of shader type to display name
+const std::unordered_map<GLenum, std::string> shaderTypeNames = {
+  { GL_VERTEX_SHADER, "VtxShader" },
+  { GL_FRAGMENT_SHADER, "FrgShader" },
+  { GL_GEOMETRY_SHADER, "GeoShader" },
+  { GL_TESS_CONTROL_SHADER, "TesCtrlShader" },
+  { GL_TESS_EVALUATION_SHADER, "TesEvalShader" }
+};
+
+// Map GL types to color coding
+const std::unordered_map<GLenum, irgb> typeColorMap = {
+  { GL_FLOAT, WHI },
+  { GL_FLOAT_VEC2, irgb{255, 255, 96} },
+  { GL_FLOAT_VEC3, irgb{255, 255, 128} },
+  { GL_FLOAT_VEC4, irgb{255, 255, 192} },
+  { GL_INT, WHI },
+  { GL_INT_VEC2, WHI },
+  { GL_INT_VEC3, WHI },
+  { GL_UNSIGNED_INT, WHI },
+  { GL_FLOAT_MAT2, irgb{96, 192, 192} },
+  { GL_FLOAT_MAT3, irgb{128, 128, 255} },
+  { GL_FLOAT_MAT4, irgb{128, 192, 192} },
+  { GL_SAMPLER_2D, irgb{255, 128, 255} },
+  { GL_SAMPLER_3D, irgb{255, 128, 255} },
+  { GL_SAMPLER_CUBE, irgb{255, 64, 255} },
+  { GL_SAMPLER_2D_ARRAY, irgb{255, 192, 255} }
+};
+
+// Structure to hold data about a GL uniform
+struct UniformData {
+  GLenum type;
+  GLint size;
+  GLint location;
+  GLint blockIndex;
+  GLuint uniformIndex;
+  std::string name;
+  bool isArray;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions for uniform data extraction
+///////////////////////////////////////////////////////////////////////////////
+
+// Read buffer data for UBO uniform
+template <typename T>
+bool readUboData(GLuint currentProgram, 
+                GLuint uniformIndex, 
+                GLint blockIndex, 
+                GLint offset,
+                T* outData,
+                size_t elementCount = 1,
+                GLint arrayStride = 0) {
+  if (blockIndex == GL_INVALID_INDEX) {
+    return false;
+  }
+  
+  // Get which buffer is bound to this block
+  GLint boundBuffer = 0;
+  glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, blockIndex, &boundBuffer);
+  GL_ERRORCHECK();
+  
+  if (boundBuffer == 0) {
+    return false;
+  }
+  
+  // Bind the buffer to read from it
+  glBindBuffer(GL_UNIFORM_BUFFER, boundBuffer);
+  GL_ERRORCHECK();
+  
+  // Get the buffer size
+  GLint bufferSize = 0;
+  glGetBufferParameteriv(GL_UNIFORM_BUFFER, GL_BUFFER_SIZE, &bufferSize);
+  GL_ERRORCHECK();
+  
+  // Verify the offset is within buffer bounds
+  if (offset < 0 || offset >= bufferSize) {
+    return false;
+  }
+  
+  // Map the buffer
+  void* data = glMapBufferRange(GL_UNIFORM_BUFFER, 0, bufferSize, GL_MAP_READ_BIT);
+  GL_ERRORCHECK();
+  
+  if (!data) {
+    return false;
+  }
+  
+  const size_t dataSize = sizeof(T);
+  
+  if (elementCount == 1) {
+    // Single element case
+    if (offset + dataSize <= bufferSize) {
+      memcpy(outData, (char*)data + offset, dataSize);
+    } else {
+      glUnmapBuffer(GL_UNIFORM_BUFFER);
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+      return false;
+    }
+  } else {
+    // Array case
+    for (size_t i = 0; i < elementCount; i++) {
+      GLint elemOffset = offset + i * arrayStride;
+      if (elemOffset + dataSize <= bufferSize) {
+        memcpy(&outData[i], (char*)data + elemOffset, dataSize);
+      } else {
+        // We've reached the end of valid data
+        glUnmapBuffer(GL_UNIFORM_BUFFER);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        return i > 0; // Return true if we read at least one element
+      }
+    }
+  }
+  
+  glUnmapBuffer(GL_UNIFORM_BUFFER);
+  GL_ERRORCHECK();
+  
+  // Unbind the buffer
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  
+  return true;
+}
+
+// Get array stride for UBO uniform
+GLint getUboArrayStride(GLuint program, GLuint uniformIndex) {
+  GLint arrayStride = 0;
+  glGetActiveUniformsiv(program, 1, &uniformIndex, GL_UNIFORM_ARRAY_STRIDE, &arrayStride);
+  GL_ERRORCHECK();
+  return arrayStride;
+}
+
+// Get offset in UBO for uniform
+GLint getUboOffset(GLuint program, GLuint uniformIndex) {
+  GLint offset = 0;
+  glGetActiveUniformsiv(program, 1, &uniformIndex, GL_UNIFORM_OFFSET, &offset);
+  GL_ERRORCHECK();
+  return offset;
+}
+
+std::string formatFloat(float value) {
+  // Use a buffer large enough for any float representation
+  char buffer[64];
+  
+  // First check if it's actually an integer value
+  if (std::abs(value - std::round(value)) < 1e-7f) {
+      // It's an integer - format as integer
+      snprintf(buffer, sizeof(buffer), "%.0f", value);
+      return buffer;
+  }
+  
+  // Handle reasonable ranges with fixed-point notation
+  if (std::abs(value) < 1e6f && std::abs(value) > 1e-5f || value == 0.0f) {
+      // Try with different precisions, starting with 6 significant digits
+      snprintf(buffer, sizeof(buffer), "%.6f", value);
+      
+      // Trim trailing zeros and decimal point if needed
+      char* end = buffer + strlen(buffer) - 1;
+      while (end > buffer && *end == '0') {
+          *end-- = '\0';
+      }
+      if (end > buffer && *end == '.') {
+          *end = '\0';
+      }
+      
+      // If the result is still too long, try a shorter format
+      if (strlen(buffer) > 8) {
+          snprintf(buffer, sizeof(buffer), "%.3f", value);
+          
+          // Trim trailing zeros and decimal point again
+          end = buffer + strlen(buffer) - 1;
+          while (end > buffer && *end == '0') {
+              *end-- = '\0';
+          }
+          if (end > buffer && *end == '.') {
+              *end = '\0';
+          }
+      }
+  } else {
+      // For very large or small numbers, use scientific notation with 4 significant digits
+      snprintf(buffer, sizeof(buffer), "%.4e", value);
+  }
+  
+  return buffer;
+}
+
+// Format vector data with proper truncation
+template <typename T, size_t N>
+std::string formatVectorArray(const std::vector<T>& values, size_t size, size_t strTruncLen, bool* truncated) {
+  std::string result = FormatString("vec%df[", N);
+  
+  for (size_t i = 0; i < size; i++) {
+    const auto& v = values[i];
+    
+    // Format based on vector dimension
+    if constexpr (N == 2) {
+      result += FormatString("(%s,%s) ", formatFloat(v.x).c_str(), formatFloat(v.y).c_str());
+    } else if constexpr (N == 3) {
+      result += FormatString("(%s,%s,%s) ", formatFloat(v.x).c_str(), formatFloat(v.y).c_str(), formatFloat(v.z).c_str());
+    } else if constexpr (N == 4) {
+      result += FormatString("(%s,%s,%s,%s) ", formatFloat(v.x).c_str(), formatFloat(v.y).c_str(), formatFloat(v.z).c_str(), formatFloat(v.w).c_str());
+    }
+    
+    if (result.length() > strTruncLen) {
+      *truncated = true;
+      break;
+    }
+  }
+  
+  result += *truncated ? " ...]" : "]";
+  return result;
+}
+
+// Format single vector value
+template <typename T>
+std::string formatVector(const T& v) {
+  if constexpr (std::is_same_v<T, fvec2>) {
+    return FormatString("vec2(%s,%s)", formatFloat(v.x).c_str(), formatFloat(v.y).c_str());
+  } else if constexpr (std::is_same_v<T, fvec3>) {
+    return FormatString("vec3(%s,%s,%s)", formatFloat(v.x).c_str(), formatFloat(v.y).c_str(), formatFloat(v.z).c_str());
+  } else if constexpr (std::is_same_v<T, fvec4>) {
+    return FormatString("vec4(%s,%s,%s,%s)", formatFloat(v.x).c_str(), formatFloat(v.y).c_str(), formatFloat(v.z).c_str(), formatFloat(v.w).c_str());
+  /*
+  } else if constexpr (std::is_same_v<T, ivec2>) {
+    return FormatString("int2(%d,%d)", v.x, v.y);
+  } else if constexpr (std::is_same_v<T, ivec3>) {
+    return FormatString("int3(%d,%d,%d)", v.x, v.y, v.z);
+  } else if constexpr (std::is_same_v<T, ivec4>) {
+    return FormatString("int4(%d,%d,%d,%d)", v.x, v.y, v.z, v.w);
+  */
+  }
+  
+  // Fallback for unknown type
+  return "unknown_vector_type";
+}
+
+// Format matrix value
+template <typename MtxType>
+std::string formatMatrix(const MtxType& mtx) {
+  /*
+  if constexpr (std::is_same_v<MtxType, fmtx2>) {
+    return FormatString("mat2(%g,%g,%g,%g)",
+                         mtx.column(0).x, mtx.column(0).y,
+                         mtx.column(1).x, mtx.column(1).y);
+  } else 
+  */
+  if constexpr (std::is_same_v<MtxType, fmtx3>) {
+    return FormatString("mat3(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                         formatFloat(mtx.column(0).x).c_str(), formatFloat(mtx.column(0).y).c_str(), formatFloat(mtx.column(0).z).c_str(),
+                         formatFloat(mtx.column(1).x).c_str(), formatFloat(mtx.column(1).y).c_str(), formatFloat(mtx.column(1).z).c_str(),
+                         formatFloat(mtx.column(2).x).c_str(), formatFloat(mtx.column(2).y).c_str(), formatFloat(mtx.column(2).z).c_str());
+  } else if constexpr (std::is_same_v<MtxType, fmtx4>) {
+    return FormatString("mat4(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                         formatFloat(mtx.column(0).x).c_str(), formatFloat(mtx.column(0).y).c_str(), formatFloat(mtx.column(0).z).c_str(), formatFloat(mtx.column(0).w).c_str(),
+                         formatFloat(mtx.column(1).x).c_str(), formatFloat(mtx.column(1).y).c_str(), formatFloat(mtx.column(1).z).c_str(), formatFloat(mtx.column(1).w).c_str(),
+                         formatFloat(mtx.column(2).x).c_str(), formatFloat(mtx.column(2).y).c_str(), formatFloat(mtx.column(2).z).c_str(), formatFloat(mtx.column(2).w).c_str(),
+                         formatFloat(mtx.column(3).x).c_str(), formatFloat(mtx.column(3).y).c_str(), formatFloat(mtx.column(3).z).c_str(), formatFloat(mtx.column(3).w).c_str());
+  }
+  
+  // Fallback for unknown type
+  return "unknown_matrix_type";
+}
+
+// Helper to get sampler information
+std::string getSamplerInfo(GLuint program, GLint location, GLenum samplerType) {
+  auto it = samplerTypeMap.find(samplerType);
+  if (it == samplerTypeMap.end()) {
+    return FormatString("unknown_sampler_type(%d)", samplerType);
+  }
+  
+  const auto& info = it->second;
+  int tex_unit = 0;
+  int current_active = -1;
+  
+  glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
+  current_active -= GL_TEXTURE0;
+  
+  glGetUniformiv(program, location, &tex_unit);
+  GL_ERRORCHECK();
+  
+  if (location == -1) {
+    return FormatString("%s(invalid_location)", info.displayName);
+  }
+  
+  // Switch to the texture unit the sampler uses
+  glActiveTexture(GL_TEXTURE0 + tex_unit);
+  GL_ERRORCHECK();
+  
+  // Get the texture bound to this unit
+  GLint currentTexture = 0;
+  glGetIntegerv(info.textureTarget, &currentTexture);
+  GL_ERRORCHECK();
+  
+  // Get dimensions (if applicable)
+  GLint width = 0, height = 0, depth = 0;
+  
+  // For cube maps, use the first face
+  GLenum queryTarget = (info.textureTarget == GL_TEXTURE_BINDING_CUBE_MAP) ? 
+                      GL_TEXTURE_CUBE_MAP_POSITIVE_X : 
+                      (info.textureTarget == GL_TEXTURE_BINDING_2D_ARRAY) ? 
+                      GL_TEXTURE_2D_ARRAY : 
+                      (info.textureTarget == GL_TEXTURE_BINDING_3D) ? 
+                      GL_TEXTURE_3D : 
+                      GL_TEXTURE_2D;
+  
+  glGetTexLevelParameteriv(queryTarget, 0, GL_TEXTURE_WIDTH, &width);
+  GL_ERRORCHECK();
+  
+  glGetTexLevelParameteriv(queryTarget, 0, GL_TEXTURE_HEIGHT, &height);
+  GL_ERRORCHECK();
+  
+  // Only query depth for 3D or array textures
+  if (info.textureTarget == GL_TEXTURE_BINDING_2D_ARRAY || info.textureTarget == GL_TEXTURE_BINDING_3D) {
+    glGetTexLevelParameteriv(queryTarget, 0, GL_TEXTURE_DEPTH, &depth);
+    GL_ERRORCHECK();
+  }
+  
+  // Restore previous texture unit
+  glActiveTexture(GL_TEXTURE0 + current_active);
+  GL_ERRORCHECK();
+  
+  // Format string based on whether we have depth dimension
+  std::string result;
+  if (depth > 0) {
+    result = FormatString(
+      "%s(unit: %d dim<%dx%dx%d> tobj: %d)", 
+      info.displayName, tex_unit, width, height, depth, currentTexture);
+  } else {
+    result = FormatString(
+      "%s(unit: %d dim<%dx%d> tobj: %d)", 
+      info.displayName, tex_unit, width, height, currentTexture);
+  }
+  
+  return result;
+}
+
+// Generic function to get uniform value as string
+std::string getUniformValueString(
+    const UniformData& uniformData,
+    GLuint program,
+    size_t strTruncLen) {
+    
+  bool truncated = false;
+  bool isUbo = (uniformData.location == -1);
+  
+  // Handle basic scalar types first
+  if (uniformData.type == GL_FLOAT) {
+    if (isUbo) {
+      GLint offset = getUboOffset(program, uniformData.uniformIndex);
+      float value = 0.0f;
+      if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+        return FormatString("float(%g)", value);
+      }
+      return "float(UBO_read_error)";
+    } else {
+      float value = 0.0f;
+      glGetUniformfv(program, uniformData.location, &value);
+      GL_ERRORCHECK();
+      return FormatString("float(%g)", value);
+    }
+  }
+  else if (uniformData.type == GL_INT) {
+    if (isUbo) {
+      GLint offset = getUboOffset(program, uniformData.uniformIndex);
+      int value = 0;
+      if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+        return FormatString("int(%d)", value);
+      }
+      return "int(UBO_read_error)";
+    } else {
+      int value = 0;
+      glGetUniformiv(program, uniformData.location, &value);
+      GL_ERRORCHECK();
+      return FormatString("int(%d)", value);
+    }
+  }
+  else if (uniformData.type == GL_UNSIGNED_INT) {
+    if (isUbo) {
+      GLint offset = getUboOffset(program, uniformData.uniformIndex);
+      GLuint value = 0;
+      if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+        return FormatString("uint32_t(%u)", value);
+      }
+      return "uint32_t(UBO_read_error)";
+    } else {
+      GLuint value = 0;
+      glGetUniformuiv(program, uniformData.location, &value);
+      GL_ERRORCHECK();
+      return FormatString("uint32_t(%u)", value);
+    }
+  }
+  
+  // Handle vector types
+  else if (uniformData.type == GL_FLOAT_VEC2) {
+    if (uniformData.isArray) {
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        GLint arrayStride = getUboArrayStride(program, uniformData.uniformIndex);
+        std::vector<fvec2> values(uniformData.size);
+        
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, values.data(), uniformData.size, arrayStride)) {
+          return formatVectorArray<fvec2, 2>(values, uniformData.size, strTruncLen, &truncated);
+        }
+        return "vec2f[UBO_read_error]";
+      } else {
+        // Handle regular array of vec2 (non-UBO)
+        std::vector<fvec2> values(uniformData.size);
+        glGetUniformfv(program, uniformData.location, (float*)values.data());
+        GL_ERRORCHECK();
+        return formatVectorArray<fvec2, 2>(values, uniformData.size, strTruncLen, &truncated);
+      }
+    } else {
+      // Single vec2
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        fvec2 value;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+          return formatVector(value);
+        }
+        return "vec2(UBO_read_error)";
+      } else {
+        fvec2 value;
+        glGetUniformfv(program, uniformData.location, value.asArray());
+        GL_ERRORCHECK();
+        return formatVector(value);
+      }
+    }
+  }
+  
+  else if (uniformData.type == GL_FLOAT_VEC3) {
+    if (uniformData.isArray) {
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        GLint arrayStride = getUboArrayStride(program, uniformData.uniformIndex);
+        std::vector<fvec3> values(uniformData.size);
+        
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, values.data(), uniformData.size, arrayStride)) {
+          return formatVectorArray<fvec3, 3>(values, uniformData.size, strTruncLen, &truncated);
+        }
+        return "vec3f[UBO_read_error]";
+      } else {
+        // Handle regular array of vec3 (non-UBO)
+        std::vector<fvec3> values(uniformData.size);
+        glGetUniformfv(program, uniformData.location, (float*)values.data());
+        GL_ERRORCHECK();
+        return formatVectorArray<fvec3, 3>(values, uniformData.size, strTruncLen, &truncated);
+      }
+    } else {
+      // Single vec3
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        fvec3 value;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+          return formatVector(value);
+        }
+        return "vec3(UBO_read_error)";
+      } else {
+        fvec3 value;
+        glGetUniformfv(program, uniformData.location, value.asArray());
+        GL_ERRORCHECK();
+        return formatVector(value);
+      }
+    }
+  }
+  
+  else if (uniformData.type == GL_FLOAT_VEC4) {
+    if (uniformData.isArray) {
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        GLint arrayStride = getUboArrayStride(program, uniformData.uniformIndex);
+        std::vector<fvec4> values(uniformData.size);
+        
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, values.data(), uniformData.size, arrayStride)) {
+          return formatVectorArray<fvec4, 4>(values, uniformData.size, strTruncLen, &truncated);
+        }
+        return "vec4f[UBO_read_error]";
+      } else {
+        // Handle regular array of vec4 (non-UBO)
+        std::vector<fvec4> values(uniformData.size);
+        glGetUniformfv(program, uniformData.location, (float*)values.data());
+        GL_ERRORCHECK();
+        return formatVectorArray<fvec4, 4>(values, uniformData.size, strTruncLen, &truncated);
+      }
+    } else {
+      // Single vec4
+      if (isUbo) {
+        GLint offset = getUboOffset(program, uniformData.uniformIndex);
+        fvec4 value;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+          return formatVector(value);
+        }
+        return "vec4(UBO_read_error)";
+      } else {
+        fvec4 value;
+        glGetUniformfv(program, uniformData.location, value.asArray());
+        GL_ERRORCHECK();
+        return formatVector(value);
+      }
+    }
+  }
+  
+  // Handle integer vector types
+  /*
+  else if (uniformData.type == GL_INT_VEC2 || uniformData.type == GL_INT_VEC3) {
+    if (isUbo) {
+      // UBO handling for int vectors
+      GLint offset = getUboOffset(program, uniformData.uniformIndex);
+      
+      if (uniformData.type == GL_INT_VEC2) {
+        ivec2 value;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+          return FormatString("int2(%d,%d)", value.x, value.y);
+        }
+      } else { // GL_INT_VEC3
+        ivec3 value;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &value)) {
+          return FormatString("int3(%d,%d,%d)", value.x, value.y, value.z);
+        }
+      }
+      return "int_vector(UBO_read_error)";
+    } else {
+      // Non-UBO handling
+      if (uniformData.type == GL_INT_VEC2) {
+        int value[2];
+        glGetUniformiv(program, uniformData.location, value);
+        GL_ERRORCHECK();
+        return FormatString("int2(%d,%d)", value[0], value[1]);
+      } else { // GL_INT_VEC3
+        int value[3];
+        glGetUniformiv(program, uniformData.location, value);
+        GL_ERRORCHECK();
+        return FormatString("int3(%d,%d,%d)", value[0], value[1], value[2]);
+      }
+    }
+  }
+  */
+  
+  // Handle matrix types
+  else if ( //uniformData.type == GL_FLOAT_MAT2 || 
+          uniformData.type == GL_FLOAT_MAT3 || 
+          uniformData.type == GL_FLOAT_MAT4) {
+    if (isUbo) {
+      // UBO matrix handling
+      GLint offset = getUboOffset(program, uniformData.uniformIndex);
+      
+      /*
+      if (uniformData.type == GL_FLOAT_MAT2) {
+        fmtx2 mtx;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &mtx)) {
+          return formatMatrix(mtx);
+        }
+      } 
+      else
+      */
+      if (uniformData.type == GL_FLOAT_MAT3) {
+        fmtx3 mtx;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &mtx)) {
+          return formatMatrix(mtx);
+        }
+      }
+      else if (uniformData.type == GL_FLOAT_MAT4) {
+        fmtx4 mtx;
+        if (readUboData(program, uniformData.uniformIndex, uniformData.blockIndex, offset, &mtx)) {
+          return formatMatrix(mtx);
+        }
+      }
+      return "matrix(UBO_read_error)";
+    } else {
+      // Regular matrix uniform
+      /*
+      if (uniformData.type == GL_FLOAT_MAT2) {
+        fmtx2 mtx;
+        glGetUniformfv(program, uniformData.location, mtx.asArray());
+        GL_ERRORCHECK();
+        return formatMatrix(mtx);
+      }
+      else
+      */ 
+      if (uniformData.type == GL_FLOAT_MAT3) {
+        fmtx3 mtx;
+        glGetUniformfv(program, uniformData.location, mtx.asArray());
+        GL_ERRORCHECK();
+        return formatMatrix(mtx);
+      }
+      else if (uniformData.type == GL_FLOAT_MAT4) {
+        fmtx4 mtx;
+        glGetUniformfv(program, uniformData.location, mtx.asArray());
+        GL_ERRORCHECK();
+        return formatMatrix(mtx);
+      }
+    }
+  }
+  
+  // Handle sampler types
+  else if (samplerTypeMap.find(uniformData.type) != samplerTypeMap.end()) {
+    // Samplers can't be in UBOs, so we don't need separate UBO handling
+    return getSamplerInfo(program, uniformData.location, uniformData.type);
+  }
+  
+  // Unknown type
+  return FormatString("unknown_type(%d)", uniformData.type);
+}
+
+// Get foreground color for a uniform type
+irgb getTypeColor(GLenum type) {
+  auto it = typeColorMap.find(type);
+  if (it != typeColorMap.end()) {
+    return it->second;
+  }
+  
+  // Default to white
+  return WHI;
+}
+
+void _FtxGlDebugger::_validateCurrentShaderProgram() {
   using namespace ftxui;
 
-  // validate that the current shader program is valid
-
+  // validate current shader program
   node_vect_t NODES;
 
+  // Get current program
   GLint currentProgram = 0;
+  GL_ERRORCHECK();
   glGetIntegerv(GL_CURRENT_PROGRAM, &currentProgram);
+  GL_ERRORCHECK();
+  
+  // Validate program
   GLint linkStatus = 0;
   glGetProgramiv(currentProgram, GL_LINK_STATUS, &linkStatus);
+  GL_ERRORCHECK();
+  
   glValidateProgram(currentProgram);
   GLint validateStatus = 0;
+  GL_ERRORCHECK();
+  
   glGetProgramiv(currentProgram, GL_VALIDATE_STATUS, &validateStatus);
   _colortext(NODES, WHI, BLK, "currentProgram<%d> linkStatus<%d> validateStatus<%d>\n", currentProgram, linkStatus, validateStatus);
+  
+  // Check validation status
   if (0 == validateStatus) {
     GLint infolen = 0;
+    GL_ERRORCHECK();
     glGetProgramiv(currentProgram, GL_INFO_LOG_LENGTH, &infolen);
+    GL_ERRORCHECK();
     std::vector<char> infolog(infolen);
+    GL_ERRORCHECK();
     glGetProgramInfoLog(currentProgram, infolen, &infolen, infolog.data());
+    GL_ERRORCHECK();
     _colortext_wrap(NODES, RED, BLK, "ProgramInfoLog<%s>\n", infolog.data());
   }
-  // OrkAssert(linkStatus == GL_TRUE);
-  // OrkAssert(validateStatus == GL_TRUE);
-  //  validate all bound shader parameters are valid
-  GLint numUniforms = 0;
-  glGetProgramiv(currentProgram, GL_ACTIVE_UNIFORMS, &numUniforms);
-  _colortext(NODES, WHI, BLK, "numUniforms<%d>\n", numUniforms);
 
+  // Gather information about attributes
   GLint numActiveAttribs = 0;
+  GL_ERRORCHECK();
   glGetProgramiv(currentProgram, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
+  GL_ERRORCHECK();
 
   for (int i = 0; i < numActiveAttribs; i++) {
-    char nameBuffer[256];   // Buffer for attribute name
-    GLsizei nameLength = 0; // Actual length of the attribute name
+    char nameBuffer[256];
+    GLsizei nameLength = 0;
 
     auto shattrib = std::make_shared<ShaderAttrib>();
-    GLint size    = 0; // Size of the attribute
-    GLenum type   = 0; // Type of the attribute
-
-    // Retrieve attribute information
+    
+    GL_ERRORCHECK();
     glGetActiveAttrib(currentProgram, i, sizeof(nameBuffer), &nameLength, &shattrib->_size, &shattrib->_type, nameBuffer);
-    shattrib->_name                                = nameBuffer;
-    shattrib->_location                            = glGetAttribLocation(currentProgram, nameBuffer);
+    GL_ERRORCHECK();
+    
+    shattrib->_name = nameBuffer;
+    shattrib->_location = glGetAttribLocation(currentProgram, nameBuffer);
     _shader_attribs[shattrib->_location] = shattrib;
   }
 
+  // Gather uniform information
+  GLint numUniforms = 0;
+  GL_ERRORCHECK();
+  glGetProgramiv(currentProgram, GL_ACTIVE_UNIFORMS, &numUniforms);
+  GL_ERRORCHECK();
+  _colortext(NODES, WHI, BLK, "numUniforms<%d>\n", numUniforms);
+
+  // Prepare arrays for uniform information
   std::vector<GLuint> uniformIndices(numUniforms);
   std::vector<GLint> uniformBlockIndices(numUniforms);
 
   for (int i = 0; i < numUniforms; i++) {
     uniformIndices[i] = i;
   }
+  
+  GL_ERRORCHECK();
   glGetActiveUniformsiv(currentProgram, numUniforms, uniformIndices.data(), GL_UNIFORM_BLOCK_INDEX, uniformBlockIndices.data());
+  GL_ERRORCHECK();
 
+  // Process each uniform
+  constexpr size_t str_trunc_len = 72;
   for (int i = 0; i < numUniforms; i++) {
-    irgb fg, bg;
-
-    fg = WHI;
-    bg = BLK;
-
+    // Create uniform data structure
+    UniformData uniformData;
+    uniformData.uniformIndex = uniformIndices[i];
+    uniformData.blockIndex = uniformBlockIndices[i];
+    
+    // Get uniform info
     GLint nameLength = 0;
-    GLint size       = 0;
-    GLenum type      = GL_NONE;
-    GLchar name[256];
-    glGetActiveUniform(currentProgram, i, sizeof(name), &nameLength, &size, &type, name);
-    // print value
-    GLint location = glGetUniformLocation(currentProgram, name);
-    std::string value_str;
-    switch (type) {
-      case GL_FLOAT: {
-        float value = 0.0f;
-        glGetUniformfv(currentProgram, location, &value);
-        value_str = FormatString("float(%g)", value);
-        break;
-      }
-      case GL_FLOAT_VEC2: {
-        fvec2 value;
-        fg = irgb{255, 255, 96};
-        glGetUniformfv(currentProgram, location, value.asArray());
-        value_str = FormatString("vec2(%g %g)", value.x, value.y);
-        break;
-      }
-      case GL_FLOAT_VEC3: {
-        fvec3 value;
-        fg = irgb{255, 255, 128};
-        glGetUniformfv(currentProgram, location, value.asArray());
-        value_str = FormatString("vec3(%g %g %g)", value.x, value.y, value.z);
-        break;
-      }
-      case GL_FLOAT_VEC4: {
-        fvec4 value;
-        fg = irgb{255, 255, 192};
-        glGetUniformfv(currentProgram, location, value.asArray());
-        value_str = FormatString("vec4(%g %g %g %g)", value.x, value.y, value.z, value.w);
-        break;
-      }
-      case GL_FLOAT_MAT4: {
-        fmtx4 mtx;
-        fg = irgb{128, 192, 192};
-        glGetUniformfv(currentProgram, location, mtx.asArray());
-        value_str = FormatString(
-            "mat4(%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g)",
-            mtx.column(0).x,
-            mtx.column(0).y,
-            mtx.column(0).z,
-            mtx.column(0).w,
-            mtx.column(1).x,
-            mtx.column(1).y,
-            mtx.column(1).z,
-            mtx.column(1).w,
-            mtx.column(2).x,
-            mtx.column(2).y,
-            mtx.column(2).z,
-            mtx.column(2).w,
-            mtx.column(3).x,
-            mtx.column(3).y,
-            mtx.column(3).z,
-            mtx.column(3).w);
-        break;
-      }
-      case GL_FLOAT_MAT3: {
-        fmtx3 mtx;
-        fg = irgb{128, 128, 255};
-        glGetUniformfv(currentProgram, location, mtx.asArray());
-        value_str = FormatString(
-            "mat3(%g %g %g %g %g %g %g %g %g)",
-            mtx.column(0).x,
-            mtx.column(0).y,
-            mtx.column(0).z,
-            mtx.column(1).x,
-            mtx.column(1).y,
-            mtx.column(1).z,
-            mtx.column(2).x,
-            mtx.column(2).y,
-            mtx.column(2).z);
-        break;
-      }
-      case GL_INT: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("int(%d)", value);
-        break;
-      }
-      case GL_INT_VEC2: {
-        int value[2];
-        glGetUniformiv(currentProgram, location, value);
-        value_str = FormatString("int2(%d %d)", value[0], value[1]);
-        break;
-      }
-      case GL_INT_VEC3: {
-        int value[3];
-        glGetUniformiv(currentProgram, location, value);
-        value_str = FormatString("int3(%d %d %d)", value[0], value[1], value[2]);
-        break;
-      }
-      case GL_SAMPLER_2D: {
-        fg                 = irgb{255, 128, 255};
-        int tex_unit       = 0;
-        int current_active = -1;
-        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
-        glGetUniformiv(currentProgram, location, &tex_unit);
-        glActiveTexture(GL_TEXTURE0 + tex_unit);
-        GLint currentTexture = 0;
-        GLint width          = 0;
-        GLint height         = 0;
-        glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-        auto it = _glctx->mTxI._texture_set.find(currentTexture);
-        std::string texname = "???";
-        if (it != _glctx->mTxI._texture_set.end()) {
-          auto the_tex = it->second;
-          auto glto    = the_tex->_impl.get<gltexobj_ptr_t>();
-          if (glto) {
-          }
-          texname = the_tex->_debugName;
-        }
-        value_str = FormatString("sampler2D(unit: %d dim<%dx%d> tobj: %d<%s>)", tex_unit, width, height, currentTexture, texname.c_str() );
-        glActiveTexture(GL_TEXTURE0 + current_active);
-        break;
-      }
-      case GL_SAMPLER_3D: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler3D(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_CUBE: {
-        fg                 = irgb{255, 64, 255};
-        int tex_unit       = 0;
-        int current_active = -1;
-        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
-        glGetUniformiv(currentProgram, location, &tex_unit);
-        GLint currentTexture = 0;
-        glGetIntegeri_v(GL_TEXTURE_BINDING_CUBE_MAP, tex_unit, &currentTexture);
-        glActiveTexture(GL_TEXTURE0 + tex_unit);
-        GLint width  = 0;
-        GLint height = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_TEXTURE_HEIGHT, &height);
-        value_str = FormatString("samplerCube(unit: %d tobj: %d dim<%dx%d>)", tex_unit, currentTexture, width, height);
-        glActiveTexture(GL_TEXTURE0 + current_active);
-        break;
-      }
-      case GL_SAMPLER_2D_SHADOW: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler2DShadow(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_2D_ARRAY: {
-        fg                 = irgb{255, 192, 255};
-        int tex_unit       = 0;
-        int current_active = -1;
-        glGetIntegerv(GL_ACTIVE_TEXTURE, &current_active);
-        glGetUniformiv(currentProgram, location, &tex_unit);
-        GLint currentTexture = 0;
-        glActiveTexture(GL_TEXTURE0 + tex_unit);
-        glGetIntegerv(GL_TEXTURE_BINDING_2D_ARRAY, &currentTexture);
-        GLint width  = 0;
-        GLint height = 0;
-        GLint depth  = 0;
-        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_WIDTH, &width);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_HEIGHT, &height);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D_ARRAY, 0, GL_TEXTURE_DEPTH, &depth);
-        std::string texname = "???";
-        auto it = _glctx->mTxI._texture_set.find(currentTexture);
-        if (it != _glctx->mTxI._texture_set.end()) {
-          auto the_tex = it->second;
-          auto glto    = the_tex->_impl.get<gltexobj_ptr_t>();
-          if (glto) {
-          }
-          texname = the_tex->_debugName;
-        }
-        value_str = FormatString("sampler2Darray(unit: %d dim<%dx%dx%d> tobj: %d<%s>)", tex_unit, width, height, depth, currentTexture, texname.c_str() );
-        glActiveTexture(GL_TEXTURE0 + current_active);
-        break;
-      }
-      case GL_SAMPLER_2D_ARRAY_SHADOW: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler2DArrayShadow(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_2D_MULTISAMPLE: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler2DMS(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_2D_MULTISAMPLE_ARRAY: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler2DMSArray(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_CUBE_SHADOW: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samplerCubeArrayShadow(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_1D: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler1D(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_1D_ARRAY: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler1Darray(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_1D_SHADOW: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler1DShadow(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_BUFFER: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samplerBuffer(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_2D_RECT: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("sampler2Drect(%d)", value);
-        break;
-      }
-      case GL_SAMPLER_2D_RECT_SHADOW: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("samp2DrectSHAD(%d)", value);
-        break;
-      }
-      case GL_INT_SAMPLER_1D: {
-        int value = 0;
-        glGetUniformiv(currentProgram, location, &value);
-        value_str = FormatString("intsamp1D(%d)", value);
-        break;
-      }
-
-    } // switch(type){
-
+    GLchar gl_name[256];
+    
+    GL_ERRORCHECK();
+    glGetActiveUniform(currentProgram, i, sizeof(gl_name), &nameLength, &uniformData.size, &uniformData.type, gl_name);
+    GL_ERRORCHECK();
+    
+    printf("gl_name<%s>\n", gl_name);
+    
+    // Get uniform location
+    uniformData.location = glGetUniformLocation(currentProgram, gl_name);
+    GL_ERRORCHECK();
+    
+    uniformData.name = gl_name;
+    uniformData.isArray = (uniformData.size > 1);
+    
+    // Handle array uniforms naming
+    if (uniformData.isArray) {
+      auto array_spec = FormatString("[%d]", uniformData.size);
+      uniformData.name.replace(uniformData.name.find("[0]"), 3, array_spec);
+    }
+    
+    // Get value string using our helper function
+    std::string value_str = getUniformValueString(uniformData, currentProgram, str_trunc_len);
+    
+    // Get colors for display
+    irgb fg = getTypeColor(uniformData.type);
+    irgb bg = uniformData.isArray ? irgb{32, 32, 32} : irgb{0, 0, 0};
+    
+    // Format for UBO or regular uniform
     std::string out_str;
-    if (location == -1) {
-      int block_index = uniformBlockIndices[i];
-      if (block_index == -1) {
+    if (uniformData.location == -1) {
+      if (uniformData.blockIndex == -1) {
         fg = WHI;
         bg = irgb{96, 0, 0};
       } else {
         fg = WHI;
         bg = irgb{96, 0, 96};
       }
-      out_str = FormatString(" %02d BLOCK%02d SIZ%02d : %32s  :  %s\n", i, block_index, size, name, value_str.c_str());
+      out_str = FormatString(" %02d BLOCK%02d SIZ%02d : %32s  :  %s\n", 
+                             i, uniformData.blockIndex, uniformData.size, 
+                             uniformData.name.c_str(), value_str.c_str());
     } else {
-      out_str = FormatString(" %02d LOC%02d   SIZ%02d : %32s  :  %s\n", i, location, size, name, value_str.c_str());
+      out_str = FormatString(" %02d LOC%02d   SIZ%02d : %32s  :  %s\n", 
+                             i, uniformData.location, uniformData.size, 
+                             uniformData.name.c_str(), value_str.c_str());
     }
+    
     _colortext(NODES, fg, bg, "%s", out_str.c_str());
   }
+  
   _node_shader = vbox({
       text("Shader State"),
       separator(),
@@ -616,42 +1066,32 @@ void _FtxGlDebugger::_validateCurrentShaderProgram() {
   glGetProgramiv(currentProgram, GL_ATTACHED_SHADERS, &shaderCount);
   std::vector<GLuint> shaders(shaderCount);
   glGetAttachedShaders(currentProgram, shaderCount, nullptr, shaders.data());
+  GL_ERRORCHECK();
 
   std::vector<GLchar> shaderSource;
   GLint shaderSourceLength = 0;
-  std::vector<component_ptr_t> NODES2;
+  
   for (GLuint shader : shaders) {
     glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
     shaderSource.resize(shaderSourceLength);
     glGetShaderSource(shader, shaderSourceLength, nullptr, shaderSource.data());
     std::string shaderSourceStr(shaderSource.begin(), shaderSource.end());
     auto sh_lines = SplitString(shaderSourceStr, '\n');
-    // get type of shader
+    
+    // Get type of shader
     GLint shaderType = 0;
     glGetShaderiv(shader, GL_SHADER_TYPE, &shaderType);
-    std::string shader_type_str;
-    switch (shaderType) {
-      case GL_VERTEX_SHADER:
-        shader_type_str = "VtxShader";
-        break;
-      case GL_FRAGMENT_SHADER:
-        shader_type_str = "FrgShader";
-        break;
-      case GL_GEOMETRY_SHADER:
-        shader_type_str = "GeoShader";
-        break;
-      case GL_TESS_CONTROL_SHADER:
-        shader_type_str = "TesCtrlShader";
-        break;
-      case GL_TESS_EVALUATION_SHADER:
-        shader_type_str = "TesEvalShader";
-        break;
-      default:
-        break;
+    GL_ERRORCHECK();
+    
+    // Get shader type name from our map
+    std::string shader_type_str = "UnknownShader";
+    auto typeIt = shaderTypeNames.find(shaderType);
+    if (typeIt != shaderTypeNames.end()) {
+      shader_type_str = typeIt->second;
     }
+    
     _shader_texts[shader_type_str] = sh_lines;
   }
-  ////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
