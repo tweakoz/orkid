@@ -174,19 +174,33 @@ class LIGHTING_APP(object):
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
     color_cookies.needsIrradianceCache = True
-    color_cookies.resize(1024,1024,3,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,3,tokens.Z32F,True)
+    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
 
-    cookie1 = color_cookies.load("src://effect_textures/L0D.png")
-    cookie2 = color_cookies.load("src://effect_textures/knob2.png")
-    cookie3 = color_cookies.load("src://effect_textures/ptc4.png")
-    depth_cookie1 = depth_cookies.slice(0)
-    depth_cookie2 = depth_cookies.slice(1)
-    depth_cookie3 = depth_cookies.slice(2)
-    
-    shadow_size = 2048
-    shadow_bias = 1e-3
+    cookie_paths = [
+      "src://effect_textures/L0D.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/ptc4.png",
+      "src://effect_textures/ptc3.png",
+      "src://effect_textures/adama.png",
+    ]
+    ccooks = [color_cookies.load(path) for path in cookie_paths]
+    dcooks = [depth_cookies.slice(i) for i in range(5)]
+    colors = [vec3(0,100,2000), 
+              vec3(500,0,0), 
+              vec3(0,100,0), 
+              vec3(-100,-100,-100), 
+              vec3(100,100,100)]
+    indices = [i for i in range(5)]
+    frqs = [0.17, 0.37, -0.27, 0.07, -0.08]
+    fovbases = [25, 35, 20, 25, 25]
+    fovamps = [25, 35, 25, 25, 25]
+    voffsets = [16, 16, 16, 16, 16]
+    vscales = [8, 8, 14, 8, 8]
+    radii = [16, 16, 16, 16, 10]
     if True:
+      shadow_size = 2048
+      shadow_bias = 1e-3
       kwargs = {
         "app":self,
         "model":model,
@@ -194,39 +208,20 @@ class LIGHTING_APP(object):
         "dim":shadow_size,
         "layers":COLOR_LAYERS,
       }
-      self.spotlight1 = MySpotLight( **kwargs, 
-                                     index=0,
-                                     frq=0.37,
-                                     color=vec3(0,100,2000),
-                                     cookie=cookie1,
-                                     depth_cookie=depth_cookie1,
-                                     fovbase=50.0,
-                                     fovamp=25.0,
-                                     voffset=16,
-                                     vscale=8,
-                                     radius=8)
-      self.spotlight2 = MySpotLight( **kwargs, 
-                                     index=1,
-                                     frq=0.47,
-                                     color=vec3(500,100,100),
-                                     cookie=cookie2,
-                                     depth_cookie=depth_cookie2,
-                                     fovbase=30.0,
-                                     fovamp=35.0,
-                                     voffset=12,
-                                     vscale=8,
-                                     radius=4)
-      self.spotlight3 = MySpotLight( **kwargs, 
-                                     index=2,
-                                     frq=-0.19,
-                                     color=vec3(50,100,50),
-                                     cookie=cookie3,
-                                     depth_cookie=depth_cookie3,
-                                     fovbase=30.0,
-                                     fovamp=35.0,
-                                     voffset=12,
-                                     vscale=8,
-                                     radius=4)
+      self.spotlights = [] 
+      for i in range(5):
+        s = MySpotLight( **kwargs, 
+                         index=indices[i],
+                         frq=frqs[i],
+                         color=colors[i],
+                         cookie=ccooks[i],
+                         depth_cookie=dcooks[i],
+                         fovbase=fovbases[i],
+                         fovamp=fovamps[i],
+                         voffset=voffsets[i],
+                         vscale=vscales[i],
+                         radius=radii[i])
+        self.spotlights.append(s)
    ##############################################
 
     self.probe = lev2.LightProbe()
@@ -286,10 +281,9 @@ class LIGHTING_APP(object):
     #self.probe.worldMatrix = self.node_ctr.modelnode.worldTransform.composed
 
 
-    if hasattr(self,'spotlight1'):
-      self.spotlight1.update(self.lighttime)
-      self.spotlight2.update(self.lighttime)
-      self.spotlight3.update(self.lighttime)
+    if hasattr(self,'spotlights'):
+      for s in self.spotlights:
+        s.update(self.lighttime)
 
 ###############################################################################
 
