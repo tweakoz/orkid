@@ -66,9 +66,15 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
                                 return pyl;
                               })
                           .def_property(
-                              "debugState",
-                              [](xgmmodel_ptr_t model) -> bool { return model->_stateDebugger; },
-                              [](xgmmodel_ptr_t model, bool value) { model->_stateDebugger = value; })
+                              "debugRenderingModel",
+                              [](xgmmodel_ptr_t model) -> crcstring_ptr_t { //
+                                uint32_t id = model->_debugRenderingModel;
+                                auto crc = std::make_shared<CrcString>(uint64_t(id)); //
+                                return crc;
+                              },
+                              [](xgmmodel_ptr_t model, crcstring_ptr_t value) { //
+                                model->_debugRenderingModel = uint32_t(value->hashed()); //
+                              })
                           .def(
                               "createDrawable",                            //
                               [](xgmmodel_ptr_t model) -> drawable_ptr_t { //

@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/orkmath.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include "gl.h"
 #include <stdlib.h>
 #include <ork/lev2/ui/ui.h>
@@ -875,8 +876,15 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
+
+
   bool should_debug = _debugNextPrimitive;
   _debugNextPrimitive = false;
+
+  auto RCFD        = _context.topRenderContextFrameData();
+  if( RCFD and RCFD->renderingModelDebugActive() ) {
+    should_debug = true;
+  }
 
   ////////////////////////////////////////////////////////////////////
   GL_ERRORCHECK();
@@ -974,6 +982,11 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
   bool should_debug = _debugNextPrimitive;
   _debugNextPrimitive = false;
 
+  auto RCFD        = _context.topRenderContextFrameData();
+  if( RCFD and RCFD->renderingModelDebugActive() ) {
+    should_debug = true;
+  }
+
 
   auto ssb     = SSBO->_impl.get<glslfx::ShaderStorageBuffer*>();
   glBindBuffer(0x90D2, ssb->_glbufid); // GL_SHADER_STORAGE_BUFFER
@@ -1031,6 +1044,12 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   bool should_debug = _debugNextPrimitive;
   _debugNextPrimitive = false;
+
+  auto RCFD        = _context.topRenderContextFrameData();
+  if( RCFD and RCFD->renderingModelDebugActive() ) {
+    should_debug = true;
+  }
+
   if(should_debug){
     _context.stateDebugger();
   }

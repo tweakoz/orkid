@@ -126,6 +126,10 @@ struct RenderContextFrameData {
 
   bool isStereo() const;
 
+  bool renderingModelDebugActive() const;
+  void setDebugRenderingModel(uint32_t rmid);
+  uint32_t exchangeDebugRenderingModel(uint32_t rmid);
+
   //////////////////////////////////////
 
   void pushCompositor(compositorimpl_ptr_t c);
@@ -139,6 +143,7 @@ struct RenderContextFrameData {
   Context* _target = nullptr;
   const IRenderer* _renderer;
   RenderingModel _renderingmodel;
+  RenderingModel _renderingmodelForDebug;
   pbr::commonstuff_ptr_t _pbrcommon;
   std::string _name;
 };

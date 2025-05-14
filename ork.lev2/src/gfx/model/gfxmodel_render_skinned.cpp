@@ -93,6 +93,8 @@ void XgmModel::RenderSkinned(
         if (pipeline->_debugBreak) {
           // OrkBreak();
         }
+        auto GBI = context->GBI();
+        uint32_t prev = RCFD->exchangeDebugRenderingModel(_debugRenderingModel);
 
         pipeline->wrappedDrawCall(RCID, [&]() {
           size_t inumjoints = cluster->_jointPaths.size();
@@ -125,14 +127,12 @@ void XgmModel::RenderSkinned(
             for (int iprim = 0; iprim < inumprim; iprim++) {
               auto primgroup = cluster->primgroup(iprim);
               auto idxbuffer = primgroup->GetIndexBuffer();
-              if(_stateDebugger){
-                context->stateDebugger();
-              }
-              context->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
+              GBI->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
             }
           }
           //////////////////////////////////////////////////////
         });
+        RCFD->exchangeDebugRenderingModel(prev);
       }
       context->PopModColor();
       context->MTXI()->PopMMatrix();

@@ -37,15 +37,48 @@ RenderContextFrameData::RenderContextFrameData(Context* ptarg)
     : _target(ptarg) {
     setUserProperty("time"_crc,0.0f);
     setUserProperty("pbr_model"_crc,0);
+    _renderingmodelForDebug._modelID = "NONE"_crcu;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool RenderContextFrameData::renderingModelDebugActive() const {
+  const uint32_t rmid = _renderingmodelForDebug._modelID;
+  bool matched = _renderingmodel._modelID == rmid;
+  matched |= (rmid=="ALL"_crcu);
+  matched &= (not (rmid=="NONE"_crcu));
+  return matched;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void RenderContextFrameData::setDebugRenderingModel(uint32_t rmid) {
+  _renderingmodelForDebug._modelID = rmid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32_t RenderContextFrameData::exchangeDebugRenderingModel(uint32_t rmid) {
+  uint32_t prev = _renderingmodelForDebug._modelID;
+  _renderingmodelForDebug._modelID = rmid;
+  return prev;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void RenderContextFrameData::pushCompositor(compositorimpl_ptr_t c){
   __cimplstack.push(c);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 compositorimpl_ptr_t RenderContextFrameData::popCompositor(){
   __cimplstack.pop();
   return topCompositor();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 compositorimpl_ptr_t RenderContextFrameData::topCompositor() const {
   if(__cimplstack.empty()){
     return nullptr;
@@ -53,10 +86,14 @@ compositorimpl_ptr_t RenderContextFrameData::topCompositor() const {
   return __cimplstack.top();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool RenderContextFrameData::hasUserProperty(CrcString key) const {
   auto it = _userProperties.find(key);
   return (it != _userProperties.end());
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   auto it = _userProperties.find(key);
@@ -65,11 +102,16 @@ void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   else
     it->second = val;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void RenderContextFrameData::unSetUserProperty(CrcString key) {
   auto it = _userProperties.find(key);
   if (it == _userProperties.end())
     _userProperties.erase(it);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
   auto it = _userProperties.find(key);
@@ -97,6 +139,9 @@ const CompositingPassData& RenderContextFrameData::topCPD() const {
   static const CompositingPassData _default;
   return _default;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool RenderContextFrameData::hasCPD() const {
   bool rval = false;
   if (topCompositor() != nullptr) {
@@ -104,6 +149,8 @@ bool RenderContextFrameData::hasCPD() const {
   }
   return rval;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool RenderContextFrameData::isStereo() const {
   bool stereo = false;

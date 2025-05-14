@@ -50,17 +50,18 @@ void XgmModel::RenderRigid(
   context->MTXI()->SetMMatrix(WorldMat);
   context->PushModColor(ModColor);
   {
+
+    auto GBI = context->GBI();
+    uint32_t prev = RCFD->exchangeDebugRenderingModel(_debugRenderingModel);
     //////////////////////////////////////////////
     // pipeline wrapped draw call
     //////////////////////////////////////////////
     pipeline->wrappedDrawCall(RCID, [&]() {
       auto vtxbuffer = cluster->_vertexBuffer;
       int inumprim   = cluster->numPrimGroups();
-      auto GBI = context->GBI();
       for (int iprim = 0; iprim < inumprim; iprim++) {
         auto primgroup = cluster->primgroup(iprim);
         auto idxbuffer = primgroup->GetIndexBuffer();
-        GBI->_debugNextPrimitive = _stateDebugger;
         if(idxbuffer){
           GBI->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
         } else {
@@ -68,6 +69,7 @@ void XgmModel::RenderRigid(
         }
       }
     });
+    RCFD->exchangeDebugRenderingModel(prev);
     //////////////////////////////////////////////
   }
   context->PopModColor();
