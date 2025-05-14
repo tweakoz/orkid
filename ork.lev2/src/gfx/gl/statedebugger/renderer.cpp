@@ -69,17 +69,26 @@ void _FtxGlDebugger::_validateRenderer() {
           BLK, //
           "    LAYER: %s\n",
           l.first.c_str());
-          DrawQueueLayer* layer = l.second;
-          size_t num_items = 0;
-          layer->_items.atomicOp([&](const DrawQueueLayer::itemvect_t& unlocked) {
-            num_items = unlocked.size();
-          });
+      DrawQueueLayer* layer = l.second;
+      layer->_items.atomicOp([&](const DrawQueueLayer::itemvect_t& unlocked) { 
+        size_t num_items = unlocked.size(); 
+        _colortext(
+          NODES, //
+          YEL,
+          BLK, //
+          "      ITEMCOUNT: %zu\n",
+          num_items);
+          std::string itemstr = "";
+          for (size_t i = 0; i < num_items; i++) {
+            auto item = unlocked[i];
+            itemstr += FormatString("(s:%d),", item->_sortkey);
+          }
           _colortext(
-              NODES, //
-              YEL,
-              BLK, //
-              "      ITEMCOUNT: %zu\n",
-              num_items);
+            NODES, //
+            YEL,
+            BLK, //
+            "      ITEMS: [%s]\n", itemstr.c_str());
+        });
     }
 
     _node_renderer = vbox({
