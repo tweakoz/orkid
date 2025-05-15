@@ -142,7 +142,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
         //printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
 
         int cookie_index = light->_cookieColor->_slice;
-        cookie_index = rand() % 8;
+        //cookie_index = rand() % 8;
         pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
         index++;
         num_texspotlights++;
