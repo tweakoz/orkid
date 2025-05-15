@@ -59,7 +59,7 @@ libblock lib_envmapping {
   ////////////////////////////////////////////
 
   vec3 env_equirectangular_cube(samplerCube envtex,vec3 normal) {
-    return texture(envtex, normal).xyz;
+    return textureLod(envtex, normal,0).xyz;
   }
   vec3 env_equirectangular_spec_wbias(vec3 normal, sampler2DArray envtex, float slice, float bias) {
     vec3 n  = vec3(normal.x, normal.z, normal.y);

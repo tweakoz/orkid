@@ -75,7 +75,27 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
                               [](xgmmodel_ptr_t model, crcstring_ptr_t value) { //
                                 model->_debugRenderingModel = uint32_t(value->hashed()); //
                               })
-                          .def(
+                              .def_property(
+                                "debugPassID",
+                                [](xgmmodel_ptr_t model) -> crcstring_ptr_t { //
+                                  uint32_t id = model->_debugPassID;
+                                  auto crc = std::make_shared<CrcString>(uint64_t(id)); //
+                                  return crc;
+                                },
+                                [](xgmmodel_ptr_t model, crcstring_ptr_t value) { //
+                                  model->_debugPassID = uint32_t(value->hashed()); //
+                                })
+                                .def_property(
+                                  "debugSubPassID",
+                                  [](xgmmodel_ptr_t model) -> crcstring_ptr_t { //
+                                    uint32_t id = model->_debugSubPassID;
+                                    auto crc = std::make_shared<CrcString>(uint64_t(id)); //
+                                    return crc;
+                                  },
+                                  [](xgmmodel_ptr_t model, crcstring_ptr_t value) { //
+                                    model->_debugSubPassID = uint32_t(value->hashed()); //
+                                  })
+                                .def(
                               "createDrawable",                            //
                               [](xgmmodel_ptr_t model) -> drawable_ptr_t { //
                                 auto drw        = std::make_shared<ModelDrawable>(nullptr);

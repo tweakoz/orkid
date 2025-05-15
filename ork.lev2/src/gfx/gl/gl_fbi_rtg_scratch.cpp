@@ -182,6 +182,22 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
     } else if (rtgroup->_cubeMap) {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
+      auto bufferimpl     = rtgroup->mMrt[0]->_impl.get<GlRtBufferImpl*>();
+      auto color_glto     = bufferimpl->_teximpl.getShared<GLTextureObject>();
+      //printf("set cube map face<%d>\n", rtgroup->_cubeRenderFace);
+        // set cube map face
+      glFramebufferTexture2D(
+          GL_FRAMEBUFFER,
+          GL_COLOR_ATTACHMENT0,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace,
+          color_glto->_textureObject,
+          0);
+      glFramebufferTexture2D(
+          GL_FRAMEBUFFER,
+          GL_DEPTH_ATTACHMENT,
+          GL_TEXTURE_CUBE_MAP_POSITIVE_X + rtgroup->_cubeRenderFace,
+          rtg_impl->_standard->_depthTexObject,
+          0);
     } else {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_standard->_fbo);
       // glBindTexture(texture_target, rtg_impl->_standard->_depthTexObject);

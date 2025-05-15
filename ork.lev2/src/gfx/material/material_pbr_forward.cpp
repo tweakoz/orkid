@@ -182,6 +182,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     // bind light/environment probes
     ///////////////////////////////////////////////////////////////////////////
 
+    //printf("should_bind_probes<%d> is_rendering_PROBE<%d>\n", int(should_bind_probes), int(is_rendering_PROBE));
     if(should_bind_probes and (not is_rendering_PROBE)){
       size_t num_probes = enumlights->_lightprobes.size();
 

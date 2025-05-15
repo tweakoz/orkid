@@ -14,6 +14,8 @@ namespace ork{
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+static int s_last_selected_page = 0;
+
 void _colortext(ftxui::node_vect_t& NODES, irgb foreground, irgb background, const char* formatstring, ...) {
   using namespace ftxui;
   char out_str[512];
@@ -120,7 +122,10 @@ void _FtxGlDebugger::run_loop() {
     content_components.push_back(cview);
   }
 
-  int menu_selected      = 0;
+  int menu_selected = (s_last_selected_page >= 0 && s_last_selected_page < menu_entries.size()) //
+                    ? s_last_selected_page //
+                    : 0;
+   
   auto content_container = Container::Tab(content_components, &menu_selected);
 
   auto menu = Menu(&menu_entries, &menu_selected);
@@ -137,14 +142,38 @@ void _FtxGlDebugger::run_loop() {
            xflex | size(WIDTH, GREATER_THAN, 40) | border;
   });
 
+  static bool exit_process = false;
+  // Add event handlers for Space and Escape keys
+  _comp_top |= CatchEvent([&](Event event) {
+      if (event == Event::Character(' ')) {
+        if (_fxtui_screen && _fxtui_screen->Active()) {
+          s_last_selected_page = menu_selected;
+          _fxtui_screen->ExitLoopClosure()();
+          return true;
+        }
+      }
+      else if (event == Event::Escape) {
+        if (_fxtui_screen && _fxtui_screen->Active()) {
+          _fxtui_screen->ExitLoopClosure()();
+          exit_process = true;
+          return true;
+        }
+      }
+      return false;
+    });  
   int w           = Dimension::Full().dimx;
   int h           = Dimension::Full().dimy;
   auto fullscreen = ScreenInteractive::Dimension::Fullscreen;
   _fxtui_screen   = std::make_shared<ScreenInteractive>(w, h, fullscreen, false);
 
+  // on spacebar, exit the loop
+  
   _fxtui_screen->Loop(_comp_top);
 
-  OrkAssert(false);
+  if (exit_process) {
+    OrkAssert(false);
+  }
+
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -153,7 +182,7 @@ void ContextGL::stateDebugger() const {
 
   auto debugger = _debugger.makeShared<_FtxGlDebugger>(this);
 
-  printf("GL StateDebugger collecting state....\n");
+  //printf("GL StateDebugger collecting state....\n");
 
   /////////////////////////////
   {

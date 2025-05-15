@@ -171,6 +171,7 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   RCFD->setUserProperty("OutputWidth"_crcu, W);
   RCFD->setUserProperty("OutputHeight"_crcu, H);
 
+  //printf("have_probes<%d>\n", int(have_probes));
   ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it
   ///////////////////////////////////////////////////////////////////////////
@@ -183,6 +184,7 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   rtg_out->_clearMaskColor = true;
 
   RCFD->_renderingmodel = "CUSTOM"_crcu;
+  RCFD->_subpassID = "SKYBOX"_crcu;
   RenderContextInstData RCID(RCFD);
   RCID._pipeline_cache = _skybox_fxcache;
   auto pipeline        = _skybox_fxcache->findPipeline(RCID);
@@ -208,6 +210,7 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
     context->debugPushGroup("ForwardPBR::depth-pre pass");
     DB->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, irenderer);
     RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
+    RCFD->_subpassID = "DEPTH_PREPASS"_crcu;
 
     rtg_out->_autoclear      = true;
     rtg_out->_depthOnly      = true;
@@ -227,6 +230,9 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   /////////////////////////////////
 
   if (is_ssao_active) {
+
+    RCFD->_subpassID = "SSAO_LINDEPTH"_crcu;
+
     auto LDOUT = _rtg_main_depth_copy_linear;
     if (LDOUT->width() != W or LDOUT->height() != H) {
       LDOUT->Resize(W, H);
@@ -301,6 +307,8 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
     OrkAssert(pbrcommon->_useDepthPrepass);
 
     bool DB = (node->_frameIndex & 1);
+
+    RCFD->_subpassID = "SSAO_PREPASS"_crcu;
 
     auto ambocc_accum_w = DB ? _rtg_ambocc_accum : _rtg_ambocc_accum2;
     auto ambocc_accum_r = DB ? _rtg_ambocc_accum2 : _rtg_ambocc_accum;
@@ -389,6 +397,7 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
 
   RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
+  RCFD->_subpassID = "COLOR"_crcu;
   context->debugPushGroup("ForwardPBR::color pass");
   irenderer->_debugLog     = false;
   rtg_out->_autoclear      = false;
@@ -483,6 +492,7 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
       if (1) {
         if (_enumeratedLights) {
           RCFD->_renderingmodel  = "DEPTH_PREPASS"_crcu;
+          RCFD->_passID = "SHADOW"_crcu;
           int num_shadow_casters = 0;
           for (auto light : _enumeratedLights->_alllights) {
             if (not light->_castsShadows)
@@ -623,6 +633,8 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
                 probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
                 cubemapCPD._mono_cam_matrices = _CUBECAM;
+                RCFD->_passID = "PROBE"_crcu;
+
                 topcomp->pushCPD(cubemapCPD);
                 _render_xxx(probe_pass);
                 topcomp->popCPD();
@@ -657,6 +669,8 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
       main_fwd_pass->_renderingPROBE        = false;
       main_fwd_pass->_single_pass_stereo    = CPD._single_pass_stereo;
 
+      RCFD->_passID = "MAIN"_crcu;
+
       _render_xxx(main_fwd_pass);
 
       CIMPL->popCPD();
@@ -670,6 +684,7 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
       if (_rtgs_resolve_msaa) {
         context->debugPushGroup("ForwardPBR::MSAA RESOLVE");
         auto FBI = context->FBI();
+        RCFD->_passID = "MSAARESOLVE"_crcu;
         FBI->msaaBlit(rtg_main, _rtgs_resolve_msaa->fetch(rtg_key));
         context->debugPopGroup();
       }

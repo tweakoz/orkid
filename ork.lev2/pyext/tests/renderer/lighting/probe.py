@@ -118,7 +118,9 @@ class LIGHTING_APP(object):
     white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
     normal = lev2.Image.createFromFile("src://effect_textures/default_normal.dds")
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    model.debugRenderingModel = tokens.NONE # tokens.FORWARD_PBR
+    model.debugRenderingModel = tokens.NONE # NONE FORWARD_PBR
+    model.debugPassID = tokens.PROBE # PROBE MAIN
+    model.debugSubPassID = tokens.COLOR # tokens.FORWARD_PBR
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()

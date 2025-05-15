@@ -434,6 +434,8 @@ struct XgmModel final {
   asset::vars_t _varmap;
   XgmModelAsset* _asset = nullptr;
   uint32_t _debugRenderingModel = "NONE"_crcu;
+  uint32_t _debugPassID = "NONE"_crcu;
+  uint32_t _debugSubPassID = "NONE"_crcu;
 };
 
 

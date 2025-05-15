@@ -44,10 +44,29 @@ RenderContextFrameData::RenderContextFrameData(Context* ptarg)
 
 bool RenderContextFrameData::renderingModelDebugActive() const {
   const uint32_t rmid = _renderingmodelForDebug._modelID;
-  bool matched = _renderingmodel._modelID == rmid;
-  matched |= (rmid=="ALL"_crcu);
-  matched &= (not (rmid=="NONE"_crcu));
-  return matched;
+  ////////////////////
+  // match on rendering model
+  ////////////////////
+  bool matched_rmodel = _renderingmodel._modelID == rmid;
+  matched_rmodel |= (rmid=="ALL"_crcu);
+  matched_rmodel &= (not (rmid=="NONE"_crcu));
+  ////////////////////
+  // match on passID
+  ////////////////////
+  bool matched_passID = (_passID == _debugPassID);
+  matched_passID |= (_debugPassID == "ALL"_crcu);
+  matched_passID &= (not (_debugPassID == "NONE"_crcu));
+  ////////////////////
+  // match on subpassID
+  ////////////////////
+  bool matched_subpassID = (_subpassID == _debugSubPassID);
+  matched_subpassID |= (_debugSubPassID == "ALL"_crcu);     
+  matched_subpassID &= (not (_debugSubPassID == "NONE"_crcu));
+  ////////////////////
+  // final match
+  ////////////////////
+  bool rval = matched_rmodel && matched_passID && matched_subpassID;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,6 +80,22 @@ void RenderContextFrameData::setDebugRenderingModel(uint32_t rmid) {
 uint32_t RenderContextFrameData::exchangeDebugRenderingModel(uint32_t rmid) {
   uint32_t prev = _renderingmodelForDebug._modelID;
   _renderingmodelForDebug._modelID = rmid;
+  return prev;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32_t RenderContextFrameData::exchangeDebugPassID(uint32_t rmid) {
+  uint32_t prev = _debugPassID;
+  _debugPassID = rmid;
+  return prev;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32_t RenderContextFrameData::exchangeDebugSubPassID(uint32_t rmid) {
+  uint32_t prev = _debugSubPassID;
+  _debugSubPassID = rmid;
   return prev;
 }
 

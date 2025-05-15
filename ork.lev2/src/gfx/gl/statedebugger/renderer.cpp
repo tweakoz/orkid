@@ -91,6 +91,22 @@ void _FtxGlDebugger::_validateRenderer() {
         });
     }
 
+    const auto& dbgstack = ContextGL::_debug_group_stack;
+    std::string dbgstack_str;
+    _colortext(
+      NODES, //
+      YEL,
+      BLK, //
+      "GFX DEBUG STACK\n");
+    for (size_t i = 0; i < dbgstack.size(); i++) {
+      auto str = dbgstack[i];
+      _colortext(
+        NODES, //
+        YEL,
+        BLK, //
+        "  %s\n", str.c_str());
+    }
+
     _node_renderer = vbox({
         text("Renderer"),
         separator(),

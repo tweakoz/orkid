@@ -129,6 +129,8 @@ struct RenderContextFrameData {
   bool renderingModelDebugActive() const;
   void setDebugRenderingModel(uint32_t rmid);
   uint32_t exchangeDebugRenderingModel(uint32_t rmid);
+  uint32_t exchangeDebugPassID(uint32_t rmid);
+  uint32_t exchangeDebugSubPassID(uint32_t rmid);
 
   //////////////////////////////////////
 
@@ -146,6 +148,10 @@ struct RenderContextFrameData {
   RenderingModel _renderingmodelForDebug;
   pbr::commonstuff_ptr_t _pbrcommon;
   std::string _name;
+  uint32_t _passID = "NONE"_crcu;
+  uint32_t _debugPassID = "NONE"_crcu;
+  uint32_t _subpassID = "NONE"_crcu;
+  uint32_t _debugSubPassID = "NONE"_crcu;
 };
 
 typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;

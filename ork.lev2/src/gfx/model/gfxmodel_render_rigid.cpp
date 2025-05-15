@@ -52,7 +52,9 @@ void XgmModel::RenderRigid(
   {
 
     auto GBI = context->GBI();
-    uint32_t prev = RCFD->exchangeDebugRenderingModel(_debugRenderingModel);
+    uint32_t prevRMDL = RCFD->exchangeDebugRenderingModel(_debugRenderingModel);
+    uint32_t prevPassID = RCFD->exchangeDebugPassID(_debugPassID);
+    uint32_t prevSubPassID = RCFD->exchangeDebugSubPassID(_debugSubPassID);
     //////////////////////////////////////////////
     // pipeline wrapped draw call
     //////////////////////////////////////////////
@@ -69,7 +71,9 @@ void XgmModel::RenderRigid(
         }
       }
     });
-    RCFD->exchangeDebugRenderingModel(prev);
+    RCFD->exchangeDebugRenderingModel(prevRMDL);
+    RCFD->exchangeDebugPassID(prevPassID);
+    RCFD->exchangeDebugSubPassID(prevSubPassID);
     //////////////////////////////////////////////
   }
   context->PopModColor();

@@ -21,7 +21,7 @@ void _FtxGlDebugger::_validateCurrentGeomBuffers() {
   // validate that the current IBO state is valid
   GLint currentIBO = 0;
   glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &currentIBO);
-  printf("currentIBO<%d>\n", currentIBO);
+  //printf("currentIBO<%d>\n", currentIBO);
   _colortext(NODES, YEL, BLK, "currentIBO<%d>", currentIBO);
   //OrkAssert(currentIBO != 0);
   // validate that the current VAO state is valid

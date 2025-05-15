@@ -1008,7 +1008,7 @@ void _FtxGlDebugger::_validateCurrentShaderProgram() {
     glGetActiveUniform(currentProgram, i, sizeof(gl_name), &nameLength, &uniformData.size, &uniformData.type, gl_name);
     GL_ERRORCHECK();
     
-    printf("gl_name<%s>\n", gl_name);
+    //printf("gl_name<%s>\n", gl_name);
     
     // Get uniform location
     uniformData.location = glGetUniformLocation(currentProgram, gl_name);

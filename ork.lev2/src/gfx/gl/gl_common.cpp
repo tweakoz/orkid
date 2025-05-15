@@ -23,6 +23,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
+thread_local std::vector<std::string> ContextGL::_debug_group_stack;
 
 GlPlatformObject* GlPlatformObject::_current = nullptr;
 
@@ -93,7 +94,6 @@ std::string indent(int count) {
   return rval;
 }
 static thread_local int _dbglevel = 0;
-static thread_local std::stack<std::string> _groupstack;
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
@@ -104,16 +104,15 @@ void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
   int level = _dbglevel++;
   auto mstr = indent(level) + str;
   // printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", this, level, mstr.c_str() );
-  _groupstack.push(mstr);
+  _debug_group_stack.push_back(mstr);
   GL_ERRORCHECK();
   glPushGroupMarkerEXT(mstr.length(), mstr.c_str());
 }
 /////////////////////////////////////////////////////////////////////////
 void ContextGL::debugPopGroup() {
-  std::string top = _groupstack.top();
   // printf( "POPGRP CTX<%p> lev<%d> name<%s>\n", this,  _dbglevel, top.c_str() );
   //  auto mstr = indent(_dbglevel--) + _prevgroup;
-  _groupstack.pop();
+  _debug_group_stack.pop_back();
   GL_ERRORCHECK();
   glPopGroupMarkerEXT();
   GL_ERRORCHECK();
@@ -143,7 +142,7 @@ void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
   int level = _dbglevel++;
   auto mstr = indent(level) + str;
   // printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, level, mstr.c_str() );
-  _groupstack.push(mstr);
+  _debug_group_stack.push_back(mstr);
   GL_ERRORCHECK();
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, mstr.length(), mstr.c_str());
   GL_ERRORCHECK();
@@ -152,8 +151,7 @@ void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::debugPopGroup() {
-  std::string top = _groupstack.top();
-  _groupstack.pop();
+  _debug_group_stack.pop_back();
   // printf( "POPGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, _dbglevel, top.c_str() );
   GL_ERRORCHECK();
   glPopDebugGroup();

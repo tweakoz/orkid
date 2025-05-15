@@ -344,7 +344,9 @@ public:
   static logchannel_ptr_t _logchan_rtgroup;
   static logchannel_ptr_t _logchan_fbi;
 
-protected:
+  std::string _debug_marker;
+
+  protected:
 
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
@@ -598,6 +600,8 @@ public:
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
+
+  static thread_local std::vector<std::string> _debug_group_stack;
 
   void* mhHWND;
   void* mGLXContext;
