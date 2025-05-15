@@ -318,8 +318,18 @@ load_token_t Context::beginLoad() {
 void Context::endLoad(load_token_t ploadtok) {
   _doEndLoad(ploadtok);
 }
-void Context::debugPushGroup(const std::string str) {
+
+DebugGroup::DebugGroup(Context* ctx) : _context(ctx) {
+}
+DebugGroup::~DebugGroup(){
+  if(_context){
+    _context->debugPopGroup();
+  }
+}
+
+DebugGroup Context::debugPushGroup(const std::string str, bool autorelease) {
   debugPushGroup(str, fvec4::Red());
+  return DebugGroup(autorelease ? this : nullptr);
 }
 void Context::debugMarker(const std::string str){
   debugMarker(str, fvec4::Red());

@@ -145,6 +145,12 @@ using sticky_cb_t = std::function<bool()>;
 using load_token_t = svar32_t;
 using ctx_platform_handle_t = svar32_t;
 
+struct DebugGroup {
+  DebugGroup(Context*);
+  ~DebugGroup();
+  Context* _context = nullptr;
+};
+
 struct Context : public ::ork::Object {
   DeclareAbstractX(Context, ::ork::Object);
 
@@ -174,7 +180,7 @@ public:
   }
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
-  void debugPushGroup(const std::string str);
+  DebugGroup debugPushGroup(const std::string str, bool autorelease = false);
   virtual void debugPushGroup(const std::string str, const fvec4& color) {
   }
   ///////////////////////////////////////////////////////////////////////

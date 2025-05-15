@@ -34,7 +34,7 @@ void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
-  impl->_render_top(this, drawdata);
+  impl->_render_top(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
