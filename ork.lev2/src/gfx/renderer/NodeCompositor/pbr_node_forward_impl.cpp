@@ -124,32 +124,303 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
+void ForwardPbrNodeImpl::_render_dpp(forward_pass_ptr_t fpass) {
+  auto node      = fpass->_node;
+  auto drawdata  = fpass->_drawdata;
+  auto DB        = fpass->_DB;
+  auto rtg_out   = fpass->_rtg_out;
+  auto RCFD      = drawdata->RCFD();
+  auto context   = drawdata->context();
+  auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
+  auto FBI       = context->FBI();
+
+  context->debugPushGroup("ForwardPBR::depth-pre pass");
+  DB->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, irenderer);
+  RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
+  RCFD->_subpassID      = "DEPTH_PREPASS"_crcu;
+
+  rtg_out->_autoclear      = true;
+  rtg_out->_depthOnly      = true;
+  rtg_out->_clearMaskDepth = true;
+  rtg_out->_clearMaskColor = false;
+  FBI->PushRtGroup(rtg_out.get());
+
+  irenderer->drawEnqueuedRenderables(true);
+  FBI->PopRtGroup();
+  context->debugPopGroup();
+
+  FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
+  auto drawdata = fpass->_drawdata;
+  auto context  = drawdata->context();
+  auto rtg_out  = fpass->_rtg_out;
+  auto RCFD     = drawdata->RCFD();
+  auto FBI      = context->FBI();
+  auto GBI      = context->GBI();
+
+  context->debugPushGroup("ForwardPBR::skybox pass");
+
+  rtg_out->_depthOnly      = false;
+  rtg_out->_autoclear      = true;
+  rtg_out->_clearMaskDepth = true;
+  rtg_out->_clearMaskColor = true;
+
+  RCFD->_renderingmodel = "CUSTOM"_crcu;
+  RCFD->_subpassID      = "SKYBOX"_crcu;
+  RenderContextInstData RCID(RCFD);
+  RCID._pipeline_cache = _skybox_fxcache;
+  auto pipeline        = _skybox_fxcache->findPipeline(RCID);
+  FBI->PushRtGroup(rtg_out.get());
+  pipeline->wrappedDrawCall(RCID, [GBI]() {
+    GBI->render2dQuadEML(
+        fvec4(-1, -1, 2, 2), //
+        fvec4(0, 0, 1, 1),   //
+        fvec4(0, 0, 1, 1),   //
+        0.9999f);            // full screen quad
+  });
+  context->debugPopGroup();
+  FBI->PopRtGroup();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SSAO (Linearize Depth) pass
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_render_ssao_linearize_depth(forward_pass_ptr_t fpass) {
+  auto node      = fpass->_node;
+  auto drawdata  = fpass->_drawdata;
+  auto DB        = fpass->_DB;
+  auto rtg_out   = fpass->_rtg_out;
+  auto VD        = drawdata->computeViewData();
+  auto RCFD      = drawdata->RCFD();
+  auto context   = drawdata->context();
+  auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
+  auto FBI       = context->FBI();
+  auto GBI       = context->GBI();
+  int W          = drawdata->property("OutputWidth"_crcu).get<int>();
+  int H          = drawdata->property("OutputHeight"_crcu).get<int>();
+
+  RCFD->_subpassID = "SSAO_LINDEPTH"_crcu;
+
+  auto LDOUT = _rtg_main_depth_copy_linear;
+  if (LDOUT->width() != W or LDOUT->height() != H) {
+    LDOUT->Resize(W, H);
+  }
+
+  context->debugPushGroup("ForwardPBR::depth-linearize pass");
+
+  LDOUT->_autoclear      = false;
+  LDOUT->_depthOnly      = false;
+  LDOUT->_clearMaskDepth = false;
+  LDOUT->_clearMaskColor = false;
+
+  FBI->PushRtGroup(LDOUT.get());
+
+  RenderContextInstData RCID(RCFD);
+
+  _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+  _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
+  _ssao_material->_rasterstate->setWriteMaskZ(false);
+  _ssao_material->_rasterstate->setWriteMaskRGB(true);
+  _ssao_material->_rasterstate->setWriteMaskA(true);
+
+  _ssao_material->begin(_tek_lindepth, RCFD);
+
+  // printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
+  _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
+  _ssao_material->bindParamTexture(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
+  _ssao_material->bindParamVec2(_fxpZndc2eye, fvec2(VD._near, VD._far));
+  _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
+  _ssao_material->bindParamMatrix(_fxpP, VD.PL);
+
+  fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
+
+  _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
+
+  ViewportRect extents(0, 0, W, H);
+  FBI->pushViewport(extents);
+  FBI->pushScissor(extents);
+
+  GBI->render2dQuadEML(); // full screen quad
+  FBI->popViewport();
+  FBI->popScissor();
+
+  _ssao_material->end(RCFD);
+
+  FBI->PopRtGroup();
+  context->debugPopGroup();
+
+  RCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
+  RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(VD._near, VD._far));
+  RCFD->setUserProperty("PMATRIX"_crcu, VD.PL);
+  RCFD->setUserProperty("IPMATRIX"_crcu, VD.PL.inverse());
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SSAO (AO cpmpute) pass
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
+  auto node      = fpass->_node;
+  auto drawdata  = fpass->_drawdata;
+  auto DB        = fpass->_DB;
+  auto rtg_out   = fpass->_rtg_out;
+  auto RCFD      = drawdata->RCFD();
+  auto context   = drawdata->context();
+  auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
+  auto FBI       = context->FBI();
+  auto GBI       = context->GBI();
+  auto pbrcommon = _node->_pbrcommon;
+  int node_frame = _node->_frameIndex;
+  int W          = drawdata->property("OutputWidth"_crcu).get<int>();
+  int H          = drawdata->property("OutputHeight"_crcu).get<int>();
+  auto VD        = drawdata->computeViewData();
+
+  auto ssao_kernel   = pbrcommon->ssaoKernel(context, node_frame);
+  auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
+  RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
+  RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
+
+  OrkAssert(pbrcommon->_useDepthPrepass);
+
+  bool buf_select = (node->_frameIndex & 1);
+
+  RCFD->_subpassID = "SSAO_PREPASS"_crcu;
+
+  auto ambocc_accum_w = buf_select ? _rtg_ambocc_accum : _rtg_ambocc_accum2;
+  auto ambocc_accum_r = buf_select ? _rtg_ambocc_accum2 : _rtg_ambocc_accum;
+
+  if (ambocc_accum_w->width() != W or ambocc_accum_w->height() != H) {
+    ambocc_accum_w->Resize(W, H);
+  }
+  if (ambocc_accum_r->width() != W or ambocc_accum_r->height() != H) {
+    ambocc_accum_r->Resize(W, H);
+  }
+
+  // FBI->validateRtGroup(ambocc_accum_w);
+  context->debugPushGroup("ForwardPBR::ssao-pre pass");
+
+  ambocc_accum_w->_autoclear      = false;
+  ambocc_accum_w->_depthOnly      = false;
+  ambocc_accum_w->_clearMaskDepth = false;
+  ambocc_accum_w->_clearMaskColor = false;
+
+  FBI->PushRtGroup(ambocc_accum_w.get());
+
+  RenderContextInstData RCID(RCFD);
+
+  _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
+  _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+  _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
+  _ssao_material->_rasterstate->setWriteMaskZ(false);
+  _ssao_material->_rasterstate->setWriteMaskRGB(true);
+  _ssao_material->_rasterstate->setWriteMaskA(true);
+
+  _ssao_material->begin(_tek_ssao, RCFD);
+
+  _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
+  _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
+  _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps);
+  _ssao_material->bindParamFloat(_fxpSSAOBias, pbrcommon->_ssaoBias);
+  _ssao_material->bindParamFloat(_fxpSSAORadius, pbrcommon->_ssaoRadius);
+  _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight);
+  _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
+
+  _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
+  _ssao_material->bindParamTexture(_fxpSSAOKernel, ssao_kernel.get());
+  _ssao_material->bindParamTexture(_fxpSSAOScrNoise, ssao_scrnoise.get());
+  _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
+  _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
+  _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
+  _ssao_material->bindParamMatrix(_fxpP, VD.PL);
+
+  fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
+
+  _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
+
+  ViewportRect extents(0, 0, W, H);
+  FBI->pushViewport(extents);
+  FBI->pushScissor(extents);
+
+  GBI->render2dQuadEML(); // full screen quad
+  FBI->popViewport();
+  FBI->popScissor();
+
+  _ssao_material->end(RCFD);
+
+  FBI->PopRtGroup();
+  context->debugPopGroup();
+
+  RCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
+  fvec2 ssao_dim = fvec2(ambocc_accum_w->width(), ambocc_accum_w->height());
+  RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
+  RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
+  RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Color pass
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
+
+  auto drawdata  = fpass->_drawdata;
+  auto context   = drawdata->context();
+  auto rtg_out   = fpass->_rtg_out;
+  auto RCFD      = drawdata->RCFD();
+  auto FBI       = context->FBI();
+  auto GBI       = context->GBI();
+  auto DB        = fpass->_DB;
+  auto irenderer = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
+
+  context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
+  DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
+
+  RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
+  RCFD->_subpassID      = "COLOR"_crcu;
+  context->debugPushGroup("ForwardPBR::color pass");
+  irenderer->_debugLog     = false;
+  rtg_out->_autoclear      = false;
+  rtg_out->_depthOnly      = false;
+  rtg_out->_clearMaskDepth = false; // not clearing anyway ...
+  rtg_out->_clearMaskColor = false; // not clearing anyway ...
+  FBI->PushRtGroup(rtg_out.get());
+  irenderer->drawEnqueuedRenderables(true);
+  context->debugPopGroup();
+
+  FBI->PopRtGroup();
+
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// render, from a given view (supplied externally)
+//    the dpp, sky, ssao, color passes into a render target
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   auto node     = fpass->_node;
   auto drawdata = fpass->_drawdata;
   auto VD       = drawdata->computeViewData();
   auto DB       = fpass->_DB;
   auto rtg_out  = fpass->_rtg_out;
+  auto& ddprops = drawdata->_properties;
 
   /////////////////////////////////////////////////////////////////////////////////////////
 
   RtGroupRenderTarget rt(rtg_out.get());
 
   auto RCFD                  = drawdata->RCFD();
-  auto context               = drawdata->context();
-  auto FBI                   = context->FBI();
-  auto GBI                   = context->GBI();
-  auto& ddprops              = drawdata->_properties;
-  auto irenderer             = drawdata->property("irenderer"_crcu).get<lev2::IRenderer*>();
   auto CIMPL                 = drawdata->_cimpl;
   CompositingPassData MY_CPD = CIMPL->topCPD(); // copy top CPD
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
   int W                      = drawdata->property("OutputWidth"_crcu).get<int>();
   int H                      = drawdata->property("OutputHeight"_crcu).get<int>();
-  // printf( "FWD PBR W<%d> H<%d>\n", W, H);
-  int node_frame = _node->_frameIndex;
 
   ///////////////////////////////////////////////////////////////////////////
   // CPD modifications for this set of passes
@@ -171,123 +442,35 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   RCFD->setUserProperty("OutputWidth"_crcu, W);
   RCFD->setUserProperty("OutputHeight"_crcu, H);
 
-  //printf("have_probes<%d>\n", int(have_probes));
   ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it
   ///////////////////////////////////////////////////////////////////////////
 
-  context->debugPushGroup("ForwardPBR::skybox pass");
-
-  rtg_out->_depthOnly      = false;
-  rtg_out->_autoclear      = true;
-  rtg_out->_clearMaskDepth = true;
-  rtg_out->_clearMaskColor = true;
-
-  RCFD->_renderingmodel = "CUSTOM"_crcu;
-  RCFD->_subpassID = "SKYBOX"_crcu;
-  RenderContextInstData RCID(RCFD);
-  RCID._pipeline_cache = _skybox_fxcache;
-  auto pipeline        = _skybox_fxcache->findPipeline(RCID);
-  FBI->PushRtGroup(rtg_out.get());
-  pipeline->wrappedDrawCall(RCID, [GBI]() {
-    GBI->render2dQuadEML(
-        fvec4(-1, -1, 2, 2), //
-        fvec4(0, 0, 1, 1),   //
-        fvec4(0, 0, 1, 1),   //
-        0.9999f);            // full screen quad
-  });
-  context->debugPopGroup();
-  FBI->PopRtGroup();
-
-  bool is_ssao_active = (pbrcommon->_ssaoNumSamples >= 8);
+  _render_skybox(fpass);
 
   ///////////////////////////////////////////////////////////////////////////
   // depth prepass
   ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
-    // FBI->validateRtGroup(rtg_out);
-    context->debugPushGroup("ForwardPBR::depth-pre pass");
-    DB->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, irenderer);
-    RCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
-    RCFD->_subpassID = "DEPTH_PREPASS"_crcu;
-
-    rtg_out->_autoclear      = true;
-    rtg_out->_depthOnly      = true;
-    rtg_out->_clearMaskDepth = true;
-    rtg_out->_clearMaskColor = false;
-    FBI->PushRtGroup(rtg_out.get());
-
-    irenderer->drawEnqueuedRenderables(true);
-    FBI->PopRtGroup();
-    context->debugPopGroup();
-
-    FBI->cloneDepthBuffer(rtg_out, fpass->_rtg_depth_copy);
+    // depth prepass
+    _render_dpp(fpass);
   }
 
-  /////////////////////////////////
-  // linearize depth -> fpass->_rtg_depth_copy_linear
-  /////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  // SSAO Linearize depth
+  ///////////////////////////////////////////////////////////////////////////
+
+  bool is_ssao_active = (pbrcommon->_ssaoNumSamples >= 8);
 
   if (is_ssao_active) {
-
-    RCFD->_subpassID = "SSAO_LINDEPTH"_crcu;
-
-    auto LDOUT = _rtg_main_depth_copy_linear;
-    if (LDOUT->width() != W or LDOUT->height() != H) {
-      LDOUT->Resize(W, H);
-    }
-
-    context->debugPushGroup("ForwardPBR::depth-linearize pass");
-
-    LDOUT->_autoclear      = false;
-    LDOUT->_depthOnly      = false;
-    LDOUT->_clearMaskDepth = false;
-    LDOUT->_clearMaskColor = false;
-
-    FBI->PushRtGroup(LDOUT.get());
-
-    RenderContextInstData RCID(RCFD);
-
-    _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-    _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
-    _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
-    _ssao_material->_rasterstate->setWriteMaskZ(false);
-    _ssao_material->_rasterstate->setWriteMaskRGB(true);
-    _ssao_material->_rasterstate->setWriteMaskA(true);
-
-    _ssao_material->begin(_tek_lindepth, RCFD);
-
-    // printf( "VD._near<%g> VD._far<%g>\n", VD._near, VD._far );
-    _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
-    _ssao_material->bindParamTexture(_fxpSSAOMapDepth, rtg_out->_depthBuffer->_texture.get());
-    _ssao_material->bindParamVec2(_fxpZndc2eye, fvec2(VD._near, VD._far));
-    _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
-    _ssao_material->bindParamMatrix(_fxpP, VD.PL);
-
-    fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
-
-    _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
-
-    ViewportRect extents(0, 0, W, H);
-    FBI->pushViewport(extents);
-    FBI->pushScissor(extents);
-
-    GBI->render2dQuadEML(); // full screen quad
-    FBI->popViewport();
-    FBI->popScissor();
-
-    _ssao_material->end(RCFD);
-
-    FBI->PopRtGroup();
-    context->debugPopGroup();
-
-    RCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
-    RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(VD._near, VD._far));
-    RCFD->setUserProperty("PMATRIX"_crcu, VD.PL);
-    RCFD->setUserProperty("IPMATRIX"_crcu, VD.PL.inverse());
+    // linearize depth -> fpass->_rtg_depth_copy_linear
+    _render_ssao_linearize_depth(fpass);
   }
-  //
+
+  ///////////////////////////////////////////////////////////////////////////
+  // store depth buffer in RCFD
+  ///////////////////////////////////////////////////////////////////////////
 
   if (pbrcommon->_useDepthPrepass) {
     RCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
@@ -298,90 +481,9 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   ///////////////////////////////////////////////////////////////////////////
 
   if (is_ssao_active) {
-
-    auto ssao_kernel   = pbrcommon->ssaoKernel(context, node_frame);
-    auto ssao_scrnoise = pbrcommon->ssaoScrNoise(context, node_frame, W, H);
-    RCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
-    RCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
-
-    OrkAssert(pbrcommon->_useDepthPrepass);
-
-    bool DB = (node->_frameIndex & 1);
-
-    RCFD->_subpassID = "SSAO_PREPASS"_crcu;
-
-    auto ambocc_accum_w = DB ? _rtg_ambocc_accum : _rtg_ambocc_accum2;
-    auto ambocc_accum_r = DB ? _rtg_ambocc_accum2 : _rtg_ambocc_accum;
-
-    if (ambocc_accum_w->width() != W or ambocc_accum_w->height() != H) {
-      ambocc_accum_w->Resize(W, H);
-    }
-    if (ambocc_accum_r->width() != W or ambocc_accum_r->height() != H) {
-      ambocc_accum_r->Resize(W, H);
-    }
-
-    // FBI->validateRtGroup(ambocc_accum_w);
-    context->debugPushGroup("ForwardPBR::ssao-pre pass");
-
-    ambocc_accum_w->_autoclear      = false;
-    ambocc_accum_w->_depthOnly      = false;
-    ambocc_accum_w->_clearMaskDepth = false;
-    ambocc_accum_w->_clearMaskColor = false;
-
-    FBI->PushRtGroup(ambocc_accum_w.get());
-
-    RenderContextInstData RCID(RCFD);
-
-    _ssao_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-    _ssao_material->_rasterstate->setDepthTest(EDepthTest::OFF);
-    _ssao_material->_rasterstate->setCullTest(ECullTest::OFF);
-    _ssao_material->_rasterstate->setWriteMaskZ(false);
-    _ssao_material->_rasterstate->setWriteMaskRGB(true);
-    _ssao_material->_rasterstate->setWriteMaskA(true);
-
-    _ssao_material->begin(_tek_ssao, RCFD);
-
-    _ssao_material->bindParamMatrix(_fxpSSAOMVP, fmtx4::Identity());
-    _ssao_material->bindParamInt(_fxpSSAONumSamples, pbrcommon->_ssaoNumSamples);
-    _ssao_material->bindParamInt(_fxpSSAONumSteps, pbrcommon->_ssaoNumSteps);
-    _ssao_material->bindParamFloat(_fxpSSAOBias, pbrcommon->_ssaoBias);
-    _ssao_material->bindParamFloat(_fxpSSAORadius, pbrcommon->_ssaoRadius);
-    _ssao_material->bindParamFloat(_fxpSSAOWeight, pbrcommon->_ssaoWeight);
-    _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
-
-    _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_main_depth_copy_linear->GetMrt(0)->_texture.get());
-    _ssao_material->bindParamTexture(_fxpSSAOKernel, ssao_kernel.get());
-    _ssao_material->bindParamTexture(_fxpSSAOScrNoise, ssao_scrnoise.get());
-    _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
-    _ssao_material->bindParamVec2(_fxpZndc2eye, VD._zndc2eye);
-    _ssao_material->bindParamMatrix(_fxpInvP, VD.PL.inverse());
-    _ssao_material->bindParamMatrix(_fxpP, VD.PL);
-
-    fvec2 ivpsize = fvec2(1.0f / W, 1.0f / H);
-
-    _ssao_material->bindParamVec2(_fxpSSAOInvViewportSize, ivpsize);
-
-    ViewportRect extents(0, 0, W, H);
-    FBI->pushViewport(extents);
-    FBI->pushScissor(extents);
-
-    GBI->render2dQuadEML(); // full screen quad
-    FBI->popViewport();
-    FBI->popScissor();
-
-    _ssao_material->end(RCFD);
-
-    FBI->PopRtGroup();
-    context->debugPopGroup();
-
-    RCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
-    fvec2 ssao_dim = fvec2(ambocc_accum_w->width(), ambocc_accum_w->height());
-    RCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
-    RCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
-    RCFD->setUserProperty("SSAO_WEIGHT"_crcu, pbrcommon->_ssaoWeight);
-
+    _render_ssao_prepass(fpass);
   } else {
-    // set to white..
+    // set SSAO to white..
     RCFD->setUserProperty("SSAO_MAP"_crcu, _whiteTexture->GetTexture());
     RCFD->setUserProperty("SSAO_DIM"_crcu, fvec2(8, 8));
     RCFD->setUserProperty("SSAO_POWER"_crcu, 1.0f);
@@ -393,29 +495,15 @@ void ForwardPbrNodeImpl::_render_xxx(forward_pass_ptr_t fpass) {
   // main color pass
   ///////////////////////////////////////////////////////////////////////////
 
-  context->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
-  DB->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, irenderer);
+  _render_colorpass(fpass);
 
-  RCFD->_renderingmodel = "FORWARD_PBR"_crcu;
-  RCFD->_subpassID = "COLOR"_crcu;
-  context->debugPushGroup("ForwardPBR::color pass");
-  irenderer->_debugLog     = false;
-  rtg_out->_autoclear      = false;
-  rtg_out->_depthOnly      = false;
-  rtg_out->_clearMaskDepth = false; // not clearing anyway ...
-  rtg_out->_clearMaskColor = false; // not clearing anyway ...
-  FBI->PushRtGroup(rtg_out.get());
-  irenderer->drawEnqueuedRenderables(true);
-  context->debugPopGroup();
-
-  FBI->PopRtGroup();
-
+  ///////////////////////////////////////////////////////////////////////////
   CIMPL->popCPD();
-
   ddprops["depthbuffer"_crcu].set<rtbuffer_ptr_t>(rtg_out->_depthBuffer);
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata) {
+void ForwardPbrNodeImpl::_render_top(ForwardNode* node, CompositorDrawData& drawdata) {
   EASY_BLOCK("pbr-_render");
 
   auto context = drawdata.context();
@@ -492,7 +580,7 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
       if (1) {
         if (_enumeratedLights) {
           RCFD->_renderingmodel  = "DEPTH_PREPASS"_crcu;
-          RCFD->_passID = "SHADOW"_crcu;
+          RCFD->_passID          = "SHADOW"_crcu;
           int num_shadow_casters = 0;
           for (auto light : _enumeratedLights->_alllights) {
             if (not light->_castsShadows)
@@ -633,10 +721,10 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
                 probe->_cubeRenderRTG->_cubeRenderFace = iface;
 
                 cubemapCPD._mono_cam_matrices = _CUBECAM;
-                RCFD->_passID = "PROBE"_crcu;
+                RCFD->_passID                 = "PROBE"_crcu;
 
                 topcomp->pushCPD(cubemapCPD);
-                _render_xxx(probe_pass);
+                _render_dppskyssaocolor(probe_pass);
                 topcomp->popCPD();
 
                 context->debugPopGroup();
@@ -671,7 +759,7 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
 
       RCFD->_passID = "MAIN"_crcu;
 
-      _render_xxx(main_fwd_pass);
+      _render_dppskyssaocolor(main_fwd_pass);
 
       CIMPL->popCPD();
 
@@ -683,7 +771,7 @@ void ForwardPbrNodeImpl::_render(ForwardNode* node, CompositorDrawData& drawdata
 
       if (_rtgs_resolve_msaa) {
         context->debugPushGroup("ForwardPBR::MSAA RESOLVE");
-        auto FBI = context->FBI();
+        auto FBI      = context->FBI();
         RCFD->_passID = "MSAARESOLVE"_crcu;
         FBI->msaaBlit(rtg_main, _rtgs_resolve_msaa->fetch(rtg_key));
         context->debugPopGroup();

@@ -38,8 +38,13 @@ namespace ork::lev2::pbr {
     ForwardPbrNodeImpl(ForwardNode* node);
     ~ForwardPbrNodeImpl();
     void init(lev2::Context* context, int iw, int ih);
-    void _render(ForwardNode* node, CompositorDrawData& drawdata);
-    void _render_xxx(forward_pass_ptr_t fpass);
+    void _render_top(ForwardNode* node, CompositorDrawData& drawdata);
+    void _render_dppskyssaocolor(forward_pass_ptr_t fpass);
+    void _render_dpp(forward_pass_ptr_t fpass);
+    void _render_skybox(forward_pass_ptr_t fpass);
+    void _render_ssao_linearize_depth(forward_pass_ptr_t fpass);
+    void _render_ssao_prepass(forward_pass_ptr_t fpass);
+    void _render_colorpass(forward_pass_ptr_t fpass);
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ForwardNode* _node;
     std::string _camname;
