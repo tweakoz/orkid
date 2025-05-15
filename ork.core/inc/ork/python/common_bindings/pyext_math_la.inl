@@ -225,7 +225,15 @@ void pyinit_math_la_t_vec(
                 RGB.setHSV(hsv.x, hsv.y, hsv.z);
                 return RGB;
               })
-          .def("set", [](vec3_t& me, const vec3_t& other) { me = other; })
+              .def(
+                "fromHsv",
+                [](float h, float s, float v) -> vec3_t { //
+                  vec3_t RGB;
+                  RGB.setHSV(h,s,v);
+                  printf("fromHsv<%f,%f,%f> -> %f,%f,%f\n", h, s, v, RGB.x, RGB.y, RGB.z);
+                  return RGB;
+                })
+            .def("set", [](vec3_t& me, const vec3_t& other) { me = other; })
           .def(
               "__str__",
               [](const vec3_t& v) -> std::string {

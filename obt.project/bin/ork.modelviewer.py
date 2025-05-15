@@ -164,7 +164,9 @@ class SceneGraphApp(object):
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer_fwd)
     self.pbr_common = self.scene.pbr_common
-    self.model.debugState = statedebug
+    self.model.debugRenderingModel = tokens.ALL if statedebug else tokens.NONE
+    self.model.debugPassID = tokens.ALL # PROBE MAIN
+    self.model.debugSubPassID = tokens.ALL # tokens.FORWARD_PBR
 
     ######################
     # override shader ?

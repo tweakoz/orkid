@@ -124,7 +124,7 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(2)
+    self.grid_data.modcolor = vec3(1)
     self.grid_data.intensityA = 1.0
     self.grid_data.intensityB = 0.97
     self.grid_data.intensityC = 0.9
@@ -145,60 +145,22 @@ class StereoApp1(object):
     color_cookies.resize(1024,1024,NUM_SPOTS,tokens.RGB8,True)
     depth_cookies.resize(1024,1024,NUM_SPOTS,tokens.Z32F,True)
 
-    cookie_paths = [
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/L0D.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/knob2.png",
-      "src://effect_textures/L0D.png",
-    ]
-    assert len(cookie_paths) == NUM_SPOTS
+    texset = ["knob2", "L0D"]
+    cookie_paths = []
+    for i in range(NUM_SPOTS):
+      val = random.randint(0,10)
+      index = (val<3)
+      cookie_paths.append("src://effect_textures/%s.png"%texset[index])
     ccooks = [color_cookies.load(path) for path in cookie_paths]
     dcooks = [depth_cookies.slice(i) for i in range(NUM_SPOTS)]
-    colors = [
-              vec3(0,0,400), 
-              vec3(0,0,300), 
-              vec3(0,0,200), 
-              vec3(0,100,100), 
-              vec3(0,300,0), 
-              vec3(0,250,0), 
-              vec3(0,200,0), 
-              vec3(0,150,0),
-              vec3(0,100,300), 
-              vec3(400,100,0), 
-              vec3(0,200,0), 
-              vec3(50,400,0), 
-              vec3(0,50,40), 
-              vec3(50,0,40), 
-              vec3(50,20,100), 
-              vec3(200)
-              ]
-    assert len(colors) == NUM_SPOTS
+    colors = [vec3.fromHsv(i/NUM_SPOTS,1.0,250.0) for i in range(NUM_SPOTS)] 
     indices = [i for i in range(NUM_SPOTS)]
-    frqs = [0.17, 0.37, -0.27, 0.07, -0.08, 0.20, 0.49, -0.23, 0.175, 0.375, -0.275, 0.075, -0.085, 0.205, 0.495, -0.235]
-    fovbases = [25, 35, 20, 25, 25, 25, 25, 25, 23, 33, 25, 23, 23, 23, 23, 23]
-    fovamps = [25, 35, 25, 25, 25, 25, 25, 25, 25, 35, 25, 25, 25, 25, 25, 25]
-    voffsets = [18,21,24,27,30,33,36,39,20,23,26,29,32,35,38,41]
-    vscales = [8, 8, 14, 8, 8, 8, 8, 8, 8, 8, 14, 8, 8, 8, 8, 8]
-    radii = [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-    assert len(indices) == NUM_SPOTS
-    assert len(frqs) == NUM_SPOTS
-    assert len(fovbases) == NUM_SPOTS
-    assert len(fovamps) == NUM_SPOTS
-    assert len(voffsets) == NUM_SPOTS
-    assert len(vscales) == NUM_SPOTS
-    assert len(radii) == NUM_SPOTS
+    frqs = [random.uniform(-0.4,0.4) for i in range(NUM_SPOTS)]
+    fovbases = [random.uniform(25,45) for i in range(NUM_SPOTS)]
+    fovamps = [random.uniform(0,10) for i in range(NUM_SPOTS)]
+    voffsets = [random.uniform(30,40) for i in range(NUM_SPOTS)]
+    vscales = [random.uniform(0,10) for i in range(NUM_SPOTS)]
+    radii = [random.uniform(10,25) for i in range(NUM_SPOTS)]
     if True:
       shadow_size = 1024
       shadow_bias = 1e-3
@@ -214,7 +176,7 @@ class StereoApp1(object):
         s = MySpotLight( **kwargs, 
                          index=indices[i],
                          frq=frqs[i],
-                         color=colors[i]*0.5,
+                         color=colors[i],
                          cookie=ccooks[i],
                          depth_cookie=dcooks[i],
                          fovbase=fovbases[i],
