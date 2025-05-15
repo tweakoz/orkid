@@ -39,7 +39,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=2)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=1)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
     self.vrcamera = lev2.CameraData()
@@ -133,63 +133,96 @@ class StereoApp1(object):
     self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
+    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
+
+    COLOR_LAYERS = [self.layer_fwd]
+    NUM_SPOTS = 16
+
     lmgr = self.scene.lightingmanager
     color_cookies = lmgr.spot_cookies_color
     depth_cookies = lmgr.spot_cookies_depth
     color_cookies.needsIrradianceCache = True
-    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
-    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
-    depth_cookie1 = depth_cookies.slice(0)
-    depth_cookie2 = depth_cookies.slice(1)
-    depth_cookie3 = depth_cookies.slice(2)
+    color_cookies.resize(1024,1024,NUM_SPOTS,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,NUM_SPOTS,tokens.Z32F,True)
 
-    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = color_cookies.load("src://effect_textures/knob2.png")
-
-    shadow_size = 4096
-    shadow_bias = 1e-3
-    intens = 400
-    self.spotlight1 = MySpotLight(app=self,
-                                  model=self.ball_model,
-                                  frq=0.3,
-                                  color=vec3(intens,0,0),
-                                  cookie=self.cookie1,
-                                  depth_cookie=depth_cookie1,
-                                  radius=12,
-                                  bias=shadow_bias,
-                                  dim=shadow_size,
-                                  fovamp=0,
-                                  fovbase=45,
-                                  voffset=16,
-                                  vscale=12)
-
-    self.spotlight2 = MySpotLight(app=self,
-                                  model=self.ball_model,
-                                  frq=0.7,
-                                  color=vec3(0,intens,0),
-                                  cookie=self.cookie1,
-                                  depth_cookie=depth_cookie2,
-                                  radius=16,
-                                  bias=shadow_bias,
-                                  dim=shadow_size,
-                                  fovamp=0,
-                                  fovbase=65,
-                                  voffset=17,
-                                  vscale=10)
-
-    self.spotlight3 = MySpotLight(app=self,
-                                  model=self.ball_model,
-                                  frq=0.9,
-                                  color=vec3(0,0,intens),
-                                  cookie=self.cookie1,
-                                  depth_cookie=depth_cookie3,
-                                  radius=19,
-                                  bias=shadow_bias,
-                                  dim=shadow_size,
-                                  fovamp=0,
-                                  fovbase=75,
-                                  voffset=20,
-                                  vscale=10)
+    cookie_paths = [
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/L0D.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/knob2.png",
+      "src://effect_textures/L0D.png",
+    ]
+    assert len(cookie_paths) == NUM_SPOTS
+    ccooks = [color_cookies.load(path) for path in cookie_paths]
+    dcooks = [depth_cookies.slice(i) for i in range(NUM_SPOTS)]
+    colors = [
+              vec3(0,0,400), 
+              vec3(0,0,300), 
+              vec3(0,0,200), 
+              vec3(0,100,100), 
+              vec3(0,300,0), 
+              vec3(0,250,0), 
+              vec3(0,200,0), 
+              vec3(0,150,0),
+              vec3(0,100,300), 
+              vec3(400,100,0), 
+              vec3(0,200,0), 
+              vec3(50,400,0), 
+              vec3(0,50,40), 
+              vec3(50,0,40), 
+              vec3(50,20,100), 
+              vec3(200)
+              ]
+    assert len(colors) == NUM_SPOTS
+    indices = [i for i in range(NUM_SPOTS)]
+    frqs = [0.17, 0.37, -0.27, 0.07, -0.08, 0.20, 0.49, -0.23, 0.175, 0.375, -0.275, 0.075, -0.085, 0.205, 0.495, -0.235]
+    fovbases = [25, 35, 20, 25, 25, 25, 25, 25, 23, 33, 25, 23, 23, 23, 23, 23]
+    fovamps = [25, 35, 25, 25, 25, 25, 25, 25, 25, 35, 25, 25, 25, 25, 25, 25]
+    voffsets = [18,21,24,27,30,33,36,39,20,23,26,29,32,35,38,41]
+    vscales = [8, 8, 14, 8, 8, 8, 8, 8, 8, 8, 14, 8, 8, 8, 8, 8]
+    radii = [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+    assert len(indices) == NUM_SPOTS
+    assert len(frqs) == NUM_SPOTS
+    assert len(fovbases) == NUM_SPOTS
+    assert len(fovamps) == NUM_SPOTS
+    assert len(voffsets) == NUM_SPOTS
+    assert len(vscales) == NUM_SPOTS
+    assert len(radii) == NUM_SPOTS
+    if True:
+      shadow_size = 1024
+      shadow_bias = 1e-3
+      kwargs = {
+        "app":self,
+        "model":self.ball_model,
+        "bias":shadow_bias,
+        "dim":shadow_size,
+        "layers":COLOR_LAYERS,
+      }
+      self.spotlights = [] 
+      for i in range(NUM_SPOTS):
+        s = MySpotLight( **kwargs, 
+                         index=indices[i],
+                         frq=frqs[i],
+                         color=colors[i]*0.5,
+                         cookie=ccooks[i],
+                         depth_cookie=dcooks[i],
+                         fovbase=fovbases[i],
+                         fovamp=fovamps[i],
+                         voffset=voffsets[i],
+                         vscale=vscales[i],
+                         radius=radii[i])
+        self.spotlights.append(s)
 
   ##############################################
 
@@ -215,9 +248,9 @@ class StereoApp1(object):
 
   def onGpuUpdate(self,ctx):
     
-    self.spotlight1.update(self.lighttime)
-    self.spotlight2.update(self.lighttime)
-    self.spotlight3.update(self.lighttime)
+    if hasattr(self,'spotlights'):
+      for s in self.spotlights:
+        s.update(self.lighttime)
 
     self.localpose.bindPose()
     self.anim_inst.currentFrame = self.frame_index
