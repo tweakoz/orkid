@@ -351,7 +351,7 @@ void CtxGLFW::Show() {
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
 
-      if (desired_monitor_name != "") {
+      if (desired_monitor_name != "none") {
         for (int i = 0; i < monitor_count; i++) {
           GLFWmonitor* monitor    = monitors[i];
           const char* monitorName = glfwGetMonitorName(monitor);
