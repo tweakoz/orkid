@@ -116,7 +116,7 @@ Image Image::convertToFormat(EBufferFormat fmt) const {
 
 void Image::convertFromImageToFormat(const Image& inp, EBufferFormat fmt) {
 
-  printf( "Image::convertFromImageToFormat fmt<%s> inp_fmt<%s>\n", //
+  if(0)printf( "Image::convertFromImageToFormat fmt<%s> inp_fmt<%s>\n", //
            EBufferFormatToName(fmt).c_str(), //
            EBufferFormatToName(inp._format).c_str() );
 

@@ -22,7 +22,7 @@ void Image::resizedOf(const Image& inp, int w, int h) {
   int original_depth = inp._depth;
   int original_numcomponents = inp._numcomponents;
   int original_bytesPerChannel = inp._bytesPerChannel;
-  printf("Image::resize ow<%d>->nw<%d> oh<%d>->nh<%d> numc<%d> bpc<%d>\n", original_width, original_height, w, h, original_numcomponents, original_bytesPerChannel);
+  //printf("Image::resize ow<%d>->nw<%d> oh<%d>->nh<%d> numc<%d> bpc<%d>\n", original_width, original_height, w, h, original_numcomponents, original_bytesPerChannel);
   this->init(w, h, original_numcomponents, original_bytesPerChannel);
 
   _format = inp._format;

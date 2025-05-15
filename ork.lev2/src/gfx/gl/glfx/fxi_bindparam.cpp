@@ -229,12 +229,12 @@ void Interface::bindParamTextureArray(const FxShaderParam* hpar, const TextureAr
       auto slice_ref = tex_array->slice(islice);
       auto it = tex_array->_images.find(islice);
       if(it == tex_array->_images.end()) {
-        printf("ERROR TEXARRAY: image not found for dirty slice<%d>\n", islice);
+        //printf("ERROR TEXARRAY: image not found for dirty slice<%d>\n", islice);
       }
       else{
         auto img       = it->second;
         OrkAssert(img != nullptr);
-        printf("TEXARRAY: update slice<%d>\n", islice);
+        //printf("TEXARRAY: update slice<%d>\n", islice);
         GLTXI->updateTextureArraySlice(slice_ref.get(), img);  
       }
     }

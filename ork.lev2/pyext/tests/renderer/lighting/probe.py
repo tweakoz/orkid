@@ -40,7 +40,7 @@ class LIGHTING_APP(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,msaa=0, fullscreen=False)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,msaa=0, fullscreen=True)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.materials = set()
 

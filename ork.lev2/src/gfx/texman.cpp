@@ -404,7 +404,7 @@ texturearraysliceref_ptr_t TextureArray::load(const std::string& path) {
     OrkAssert(it_first != _free_slices.end());
     size_t slice_index = *it_first;
     _free_slices.erase(it_first);
-    printf("TextureArray::load slice_index<%zu> path<%s>\n", slice_index, path.c_str() );
+    //printf("TextureArray::load slice_index<%zu> path<%s>\n", slice_index, path.c_str() );
     auto new_slice = std::make_shared<TextureArraySliceRef>(this, slice_index);
     auto temp_image = std::make_shared<Image>();
     temp_image->readFromFile(path);

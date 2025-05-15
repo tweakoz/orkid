@@ -161,8 +161,8 @@ static bool _checkFboComplete(GLuint fboID, std::string name, RtGroup* rtg) {
   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   switch (status) {
     case GL_FRAMEBUFFER_COMPLETE:
-    deco::printf(fvec3::Green(), "GL_FRAMEBUFFER_COMPLETE!\n");
-    rval = true;
+      //deco::printf(fvec3::Green(), "GL_FRAMEBUFFER_COMPLETE!\n");
+      rval = true;
       break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
       deco::printf(fvec3::Red(), "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT\n");
