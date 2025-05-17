@@ -139,6 +139,7 @@ struct CommonStuff : public ork::Object {
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
   uint64_t _brdftype = 0;
+  float _dppZbias = 1.0e-3f;
 
   std::string _name;
 };

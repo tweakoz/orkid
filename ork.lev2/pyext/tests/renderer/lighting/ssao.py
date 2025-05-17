@@ -55,8 +55,8 @@ class SSAOAPP(object):
     # create scenegraph
     ###################################
     sceneparams = VarMap() 
-    sceneparams.preset = "DeferredPBR"
-    sceneparams.SkyboxIntensity = float(1)
+    sceneparams.preset = "ForwardPBR"
+    sceneparams.SkyboxIntensity = float(2)
     sceneparams.SpecularIntensity = float(1)
     sceneparams.DiffuseIntensity = float(1)
     sceneparams.AmbientLight = vec3(0)
@@ -65,14 +65,14 @@ class SSAOAPP(object):
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
     sceneparams.SSAONumSamples = 32
     sceneparams.SSAONumSteps = 5
-    sceneparams.SSAOBias = -1e-5
-    sceneparams.SSAORadius = 2.0*25.4/1000.0
-    sceneparams.SSAOWeight = 0.75
-    sceneparams.SSAOPower = 0.75
+    sceneparams.SSAOBias = 0.15
+    sceneparams.SSAORadius = .1
+    sceneparams.SSAOWeight = 0.5
+    sceneparams.SSAOPower = 0.5
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_std = self.scene.createLayer("std_deferred")
+    self.layer_std = self.scene.createLayer("std_forward")
     self.std_layers = [self.layer_std,self.layer_donly]
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
@@ -88,7 +88,7 @@ class SSAOAPP(object):
       mtlruf = white,
       doConform=True
     )
-    gmtl.metallicFactor = 1
+    gmtl.metallicFactor = 0
     gmtl.roughnessFactor = 1
     gmtl.baseColor = vec4(.9,.9,1,1)
     gmtl.doubleSided = True

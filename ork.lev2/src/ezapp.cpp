@@ -642,6 +642,8 @@ int OrkEzApp::mainThreadLoop() {
   ///////////////////////////////
 
   glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
+    this->_gpuFrameCounter++;
+
     if (_mainWindow->_onGpuUpdate) {
       _mainWindow->_onGpuUpdate(context);
     }

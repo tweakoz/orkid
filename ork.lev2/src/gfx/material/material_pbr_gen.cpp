@@ -359,7 +359,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->bindParamTexture(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
-      int numsamples = int(pow(ir2, 0.25f) * 4096.0);
+      int numsamples = 16384; //int(pow(ir2, 0.25f) * 4096.0);
       mtl->bindParamU32(param_numsamples, numsamples);
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));

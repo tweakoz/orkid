@@ -153,6 +153,7 @@ public:
   fxparam_constptr_t _paramMVPR          = nullptr;
   fxparam_constptr_t _paramMV            = nullptr;
   fxparam_constptr_t _paramMROT          = nullptr;
+  fxparam_constptr_t _paramDppZBias      = nullptr;
   fxparam_constptr_t _paramMapDepth      = nullptr;
   fxparam_constptr_t _paramMapLinearDepth      = nullptr;
 

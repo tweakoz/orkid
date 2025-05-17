@@ -238,6 +238,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMROT              = fxi->parameter(_shader, "mrot");
   _paramMapCNMREA         = fxi->parameter(_shader, "CNMREA");
   
+  _paramDppZBias          = fxi->parameter(_shader, "DppZBias");
   _parMapLightMapArray    = fxi->parameter(_shader, "LightMapArray");
   _paramLightMapColors    = fxi->parameter(_shader, "LightMapColors");
   

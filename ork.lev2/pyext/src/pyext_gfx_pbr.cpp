@@ -133,6 +133,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "ssaoRadius",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_ssaoRadius; },
               [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_ssaoRadius = v; })
+          .def_property(
+              "dppZBias",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_dppZbias; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_dppZbias = v; })
           .def("__repr__", [](pbr::commonstuff_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrCommon(%p)", d.get());

@@ -97,12 +97,7 @@ uniform_set ub_frg_fwd {
   float RoughnessFactor;
   float RoughnessPower;
 
-  //float SSAOPower;
-  //float SSAOWeight;
-  //float SSAORadius;
-  //float SSAOBias;
-  //int SSAONumSteps;
-  //int SSAONumSamples;
+  float DppZBias;
 
   float DepthFogDistance;
   float DepthFogPower;
@@ -670,7 +665,7 @@ fragment_interface iface_fdprepass_stereo : ub_frg_fwd {
 vertex_shader vs_forward_depthprepass_mono : iface_vdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  frg_depth = (hpos.z) / (hpos.w);
+  frg_depth =  (hpos.z/hpos.w);
 }
 vertex_shader vs_forward_depthprepass_skinned_mono : iface_vdprepass_skinned : skin_tools {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
@@ -690,7 +685,6 @@ vertex_shader vs_forward_depthprepass_instanced_mono : iface_vdprepass {
   vec4 instanced_pos = (instancemtx * position);
   vec4 hpos          = mvp * instanced_pos;
   gl_Position        = hpos;
-  // gl_FragDepth = hpos.z/hpos.w;
 }
 vertex_shader vs_forward_depthprepass_skinned_instanced_mono : iface_vdprepass {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
@@ -753,7 +747,7 @@ vertex_shader vs_forward_depthprepass_skinned_instanced_stereo : iface_vdprepass
 }
 fragment_shader ps_forward_depthprepass_mono : iface_fdprepass {
   //gl_FragDepth = frg_depth;
-  gl_FragDepth = gl_FragCoord.z + 1e-6;
+  gl_FragDepth = gl_FragCoord.z + DppZBias;
 }
 fragment_shader ps_forward_depthprepass_stereo 
   : iface_fdprepass_stereo

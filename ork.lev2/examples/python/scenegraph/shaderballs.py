@@ -76,11 +76,11 @@ class SceneGraphApp(object):
       "SkyboxIntensity": float(inten),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.25),
+      "AmbientLight": vec3(0),
       "DepthFogDistance": float(10000),
       "SSAONumSamples": int(SSAO_NUM_SAMPLES),
       "SSAONumSteps": 2,
-      "SSAOBias": 0.05,
+      "SSAOBias": 0.005,
       "SSAORadius": 0.05, # 2 inches
       "SSAOWeight": 0.25,
       "SSAOPower": 0.125,
@@ -102,6 +102,7 @@ class SceneGraphApp(object):
     self.pbr_common = self.scene.pbr_common
     self.pbr_common.useFloatColorBuffer = True
     self.pbr_common.useDepthPrepass = True
+    self.pbr_common.dppZBias = 1.0e-4
 
     self.rendernode.debugRenderingModel = tokens.NONE # NONE ALL FORWARD_PBR
     self.rendernode.debugPassID = tokens.ALL # PROBE MAIN

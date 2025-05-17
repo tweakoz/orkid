@@ -160,7 +160,7 @@ void pyinit_scenegraph(py::module& module_ecs) {
         layer (str): The name of the layer.
         transform (decompxf_ptr_t, optional): The transformation to be applied. Defaults to None.
      )doc");
-  /////////////////////////////////////////////////////////////////////////////////
+   /////////////////////////////////////////////////////////////////////////////////
   auto sgsys_type =
       py::class_<SceneGraphSystem,pysgsystem_ptr_t>(module_ecs, "SceneGraphSystem")
           .def(

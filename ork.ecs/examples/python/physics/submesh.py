@@ -236,21 +236,21 @@ class ECS_MINIMAL(object):
     boolean_out = boolean_out.difference(tmeshz)
     submesh = trimeshToSubmesh(boolean_out)
 
-    for i in range(0,4):
-      tmesh = clean_mesh(submeshToTrimesh(submesh,vec3(0),quat(),vec3(1)))
-      evw = 10+i*10
-      evh = 12
-      y = 5+i*6
-      submesh2=fullBoxQuads(evw,evh)
-      tmesh2 = clean_mesh(submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1)))
+    #for i in range(0,4):
+    #  tmesh = clean_mesh(submeshToTrimesh(submesh,vec3(0),quat(),vec3(1)))
+    #  evw = 10+i*10
+    #  evh = 12
+    #  y = 5+i*6
+    #  submesh2=fullBoxQuads(evw,evh)
+    #  tmesh2 = clean_mesh(submeshToTrimesh(submesh2,vec3(0,y,0),quat(),vec3(1)))
 
-      boolean_out = tmesh.difference(tmesh2)
+    #  boolean_out = tmesh.difference(tmesh2)
 
       
-      submesh = trimeshToSubmesh(boolean_out)
-      submesh = submesh.withFaceNormals()
-      submesh = submesh.withVertexColorsFromNormals()
-      submesh = submesh.withBarycentricUVs()
+    #  submesh = trimeshToSubmesh(boolean_out)
+    submesh = submesh.withFaceNormals()
+    submesh = submesh.withVertexColorsFromNormals()
+    submesh = submesh.withBarycentricUVs()
 
     shape = ecs.BulletShapeMeshData()
     shape.submesh = submesh

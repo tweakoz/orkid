@@ -69,6 +69,7 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& 
         pipeline             = std::make_shared<FxPipeline>(permu);
         pipeline->_technique = this->_tek_FWD_DEPTHPREPASS_RI_NI_MO;
         pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+        pipeline->bindParam(this->_paramDppZBias, "RCFD_PBR_DPP_ZBIAS"_crcsh);
         pipeline->addStateLambda(createBasicStateLambda(this));
         pipeline->addStateLambda([this](const RenderContextInstData& RCID) {
           auto mut = const_cast<PBRMaterial*>(this);

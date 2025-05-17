@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5),false);
@@ -352,6 +354,10 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         case "RCFD_Model_Rot"_crcu: {
           auto rotmtx = worldmatrix.rotMatrix33();
           FXI->bindParamMatrix(param, rotmtx);
+          break;
+        }
+        case "RCFD_PBR_DPP_ZBIAS"_crcu: {
+          FXI->bindParamFloat(param, pbrcommon->_dppZbias);
           break;
         }
         default:

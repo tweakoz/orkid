@@ -45,7 +45,7 @@ libblock lib_brdf : lib_math {
 	}
 
   vec2 integrateGGX(float n_dot_v, float roughness) {
-    int numsamples = 1024;
+    int numsamples = 4096;
     n_dot_v = saturateF(n_dot_v);
     float vx = sqrt(1.0 - n_dot_v * n_dot_v);
     vec3 v = vec3(vx, 0, n_dot_v);

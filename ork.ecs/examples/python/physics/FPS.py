@@ -20,16 +20,15 @@ from lev2utils.cameras import *
 
 ################################################################################
 tokens = CrcStringProxy()
-LAYERNAME = "std_forward"
 GROUP_PLAYER = 1
 GROUP_BALL = 2
 GROUP_ENV = 4
 GROUP_ALL = GROUP_PLAYER | GROUP_BALL | GROUP_ENV
-NUM_BALLS = 1500
+NUM_BALLS = 1000
 OFFSET = vec3(0,0.5,0)
 SIMRATE = 120
 BALLS_NODE_NAME = "balls-instancing-node"
-SSAO_NUM_SAMPLES = 32
+SSAO_NUM_SAMPLES = 8
 ################################################################################
 
 class ECS_FIRST_PERSON_SHOOTER(object):
@@ -44,8 +43,8 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                 fullscreen=False,
                                 left = 20,
                                 top = 42,
-                                width = 1680,
-                                height = 900,
+                                width = 1280,
+                                height = 720,
                                 
                                 disableMouseCursor=True)
 
@@ -56,7 +55,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                    constrainZ=True, 
                    up=vec3(0,1,0),
                    near=0.1,
-                   far = 1000.0 )
+                   far = 100.0 )
     self.uicam.rotOnMove = True 
 
     ##############################################
@@ -82,22 +81,29 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ####################
 
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
-    systemdata_SG.declareLayer(LAYERNAME)
+    ##############################################
+
+    #self.layer_fwd = self.layer1
+    self.fwd_layers = ["depth_prepass","std_forward"]
+    systemdata_SG.declareLayer("std_forward")
+    systemdata_SG.declareLayer("depth_prepass")
     systemdata_SG.declareParams({
-      "SkyboxIntensity": float(2.5),
+      "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.0),
-      "DepthFogDistance": float(2000),
-      "DepthFogPower": float(1.25),
-      "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 8,
-      "SSAOBias": -3e-4,
-      "SSAORadius": 2.0*25.4/1000, # 2 inches
+      "AmbientLight": vec3(0),
+      "DepthFogDistance": float(10000),
+      "SSAONumSamples": int(SSAO_NUM_SAMPLES),
+      "SSAONumSteps": 2,
+      "SSAOBias": 0.5,
+      "SSAORadius": 0.25, # 2 inches
       "SSAOWeight": 1.0,
-      "SSAOPower": 1.0,
-      "preset": "DeferredPBR"
+      "SSAOPower": 0.125,
+      "SSAOFeedback": 1.0/2.0,
+      "preset": "ForwardPBR"
     })
+    
+    #todo - set pbrcommon dppZBias to match SSAOBias
     
     self.systemdata_scenegraph = systemdata_SG
 
@@ -117,7 +123,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     drawable.resize(NUM_BALLS)
     systemdata_SG.declareNodeOnLayer( name=BALLS_NODE_NAME,
                                       drawable=drawable,
-                                      layer=LAYERNAME)
+                                      layers=self.fwd_layers)
 
     ####################
     # create archetype/entity data
@@ -287,10 +293,10 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     c_physics.declareNodeInstance(nid)
     c_scenegraph.declareNodeInstance(nid)
 
-    #ball_drawable = ModelDrawableData("data://tests/pbr_calib.glb")
-    #c_scenegraph.declareNodeOnLayer( name="ballnode",
-    #                                 drawable=ball_drawable,
-    #                                 layer=LAYERNAME)
+    ball_drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
+    c_scenegraph.declareNodeOnLayer( name="ballnode",
+                                     drawable=ball_drawable,
+                                     layers=self.fwd_layers)
 
     ball_spawner = self.ecsscene.declareSpawner("ball_spawner")
     ball_spawner.archetype = arch_ball
@@ -323,7 +329,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     ball_drawable = lev2.ModelDrawableData("data://tests/pbr_calib.glb")
     c_scenegraph.declareNodeOnLayer( name="projnode",
                                      drawable=ball_drawable,
-                                     layer=LAYERNAME,
+                                     layers=self.fwd_layers,
                                      modcolor = vec4(0,0,1,0))
 
     proj_spawner = self.ecsscene.declareSpawner("proj_spawner")
@@ -370,7 +376,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     room_node = c_scenegraph.declareNodeOnLayer( name = "envnode",
                                                  drawable = room_drawable,
-                                                 layer = LAYERNAME,
+                                                 layers = self.fwd_layers,
                                                  transform = room_mesh_transform)
     
     env_spawner = self.ecsscene.declareSpawner("env_spawner")
@@ -432,7 +438,6 @@ class ECS_FIRST_PERSON_SHOOTER(object):
         EYE = PXF.translation+OFFSET
         TGT = EYE + DIR
         UP = vec3(0,1,0)
-        """
         self.controller.systemNotify( self.sys_sg,
                                       tokens.UpdateCamera,{
                                         tokens.eye: EYE,
@@ -443,7 +448,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
                                         tokens.fovy: UIC.fovy
                                       }
                                      )
-        """
+
 
     ##############################
     # tick the simulation
