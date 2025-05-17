@@ -135,6 +135,7 @@ struct CommonStuff : public ork::Object {
   float _ssaoBias = 0.0;
   float _ssaoWeight = 0.0;
   float _ssaoPower = 1.0;
+  float _ssaoFeedback = 0.5;
   bool _useDepthPrepass = true;
   bool _useFloatColorBuffer = false;
   uint64_t _brdftype = 0;

@@ -58,6 +58,44 @@ RtGroup::~RtGroup() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+rtbuffer_ptr_t RtGroup::GetMrt(int idx) const {
+  OrkAssert((idx >= 0) && (idx < kmaxmrts));
+  return mMrt[idx];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+texture_ptr_t RtGroup::texture(int idx) const {
+  OrkAssert((idx >= 0) && (idx < kmaxmrts));
+  auto buf = GetMrt(idx);
+  return buf ? buf->_texture : nullptr;
+}
+
+int RtGroup::GetNumTargets(void) const {
+  return mNumMrts;
+}
+void RtGroup::SetSizeDirty(bool bv) {
+  mbSizeDirty = bv;
+}
+bool RtGroup::IsSizeDirty() const {
+  return mbSizeDirty;
+}
+Context* RtGroup::ParentTarget() const {
+  return _parentTarget;
+}
+/////////////////////////////////////////
+int RtGroup::width() const {
+  return miW;
+}
+int RtGroup::height() const {
+  return miH;
+}
+ViewportRect RtGroup::viewportRect() const {
+  return ViewportRect(0, 0, miW, miH);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 rtgroup_ptr_t RtGroup::clone() const {
   auto _this = (RtGroup*)this;
 

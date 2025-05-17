@@ -62,37 +62,21 @@ struct RtGroup final {
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
   /////////////////////////////////////////
-  rtbuffer_ptr_t GetMrt(int idx) const {
-    OrkAssert((idx >= 0) && (idx < kmaxmrts));
-    return mMrt[idx];
-  }
+  rtbuffer_ptr_t GetMrt(int idx) const;
+  texture_ptr_t texture(int idx) const;
   /////////////////////////////////////////
   rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
-  int GetNumTargets(void) const {
-    return mNumMrts;
-  }
+  int GetNumTargets(void) const;
   void Resize(int iw, int ih);
-  void SetSizeDirty(bool bv) {
-    mbSizeDirty = bv;
-  }
-  bool IsSizeDirty() const {
-    return mbSizeDirty;
-  }
-  Context* ParentTarget() const {
-    return _parentTarget;
-  }
+  void SetSizeDirty(bool bv);
+  bool IsSizeDirty() const;
+  Context* ParentTarget() const;
   /////////////////////////////////////////
-  int width() const {
-    return miW;
-  }
-  int height() const {
-    return miH;
-  }
-  ViewportRect viewportRect() const {
-    return ViewportRect(0, 0, miW, miH);
-  }
+  int width() const;
+  int height() const;
+  ViewportRect viewportRect() const;
   /////////////////////////////////////////
   static const int kmaxmrts = 8;
 

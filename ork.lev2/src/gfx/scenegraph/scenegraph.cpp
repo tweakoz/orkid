@@ -348,12 +348,16 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSamples")) {
       _pbr_common->_ssaoNumSamples = int(try_ssao.value());
       _pbr_common->_useDepthPrepass = true;
+      printf("PBRC<%p> ssao num samples<%d>\n", (void*) _pbr_common.get(), _pbr_common->_ssaoNumSamples);
     }
     if (auto try_dpp = params->typedValueForKey<bool>("DepthPrepass")) {
       _pbr_common->_useDepthPrepass = try_dpp.value();
     }
     if (auto try_ssao = params->tryKeyAsInteger("SSAONumSteps")) {
       _pbr_common->_ssaoNumSteps = int(try_ssao.value());
+    }
+    if (auto try_ssao = params->tryKeyAsNumber("SSAOFeedback")) {
+      _pbr_common->_ssaoFeedback = try_ssao.value();
     }
     if (auto try_ssao = params->tryKeyAsNumber("SSAOBias")) {
       _pbr_common->_ssaoBias = try_ssao.value();

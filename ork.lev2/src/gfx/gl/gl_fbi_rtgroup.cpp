@@ -185,16 +185,18 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     // Handle texture creation based on MSAA
     glGenTextures(1, &dst_glto->_textureObject);
-    glBindTexture(isMSAA ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, dst_glto->_textureObject);
+
+    GLenum target = isMSAA ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+    glBindTexture(target, dst_glto->_textureObject);
     if (!isMSAA) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     } else {
       glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, num_samples, GL_DEPTH_COMPONENT32, width, height, GL_TRUE);
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Setup framebuffer
     GLuint fboCopy;

@@ -24,34 +24,29 @@ namespace ork::lev2 {
 void pyinit_gfx_compositor(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
-  auto scf_type = 
-  py::class_<StandardCompositorFrame,standardcompositorframe_ptr_t>(module_lev2,"StandardCompositorFrame")
-    .def(py::init<>())
-    .def_property("drawEvent",
-      [](standardcompositorframe_ptr_t scf) -> uidrawevent_ptr_t {
-        auto mut = std::const_pointer_cast<::ork::ui::DrawEvent>(scf->_drawEvent);
-        return mut;
-      },
-      [](standardcompositorframe_ptr_t scf, uidrawevent_ptr_t de){
-        scf->_drawEvent = de;
-      }
-    );
+  auto scf_type = py::class_<StandardCompositorFrame, standardcompositorframe_ptr_t>(module_lev2, "StandardCompositorFrame")
+                      .def(py::init<>())
+                      .def_property(
+                          "drawEvent",
+                          [](standardcompositorframe_ptr_t scf) -> uidrawevent_ptr_t {
+                            auto mut = std::const_pointer_cast<::ork::ui::DrawEvent>(scf->_drawEvent);
+                            return mut;
+                          },
+                          [](standardcompositorframe_ptr_t scf, uidrawevent_ptr_t de) { scf->_drawEvent = de; });
   type_codec->registerStdCodec<standardcompositorframe_ptr_t>(scf_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto compositorpassdata_type = //
       py::class_<CompositingPassData, compositingpassdata_ptr_t>(module_lev2, "CompositingPassData")
           .def(py::init<>())
-          .def_property("cameramatrices_clone",
-            [](compositingpassdata_ptr_t cpd) -> cameramatrices_ptr_t {
-              // TODO: cannot return a const shared_ptr yet, due to bindings weirdness
-              // so for now clone it
-              auto clone = std::make_shared<CameraMatrices>(*(cpd->_mono_cam_matrices));
-              return clone;
-            },
-            [](compositingpassdata_ptr_t cpd, cameramatrices_ptr_t m){
-              cpd->setSharedCameraMatrices(m);
-            }
-          )
+          .def_property(
+              "cameramatrices_clone",
+              [](compositingpassdata_ptr_t cpd) -> cameramatrices_ptr_t {
+                // TODO: cannot return a const shared_ptr yet, due to bindings weirdness
+                // so for now clone it
+                auto clone = std::make_shared<CameraMatrices>(*(cpd->_mono_cam_matrices));
+                return clone;
+              },
+              [](compositingpassdata_ptr_t cpd, cameramatrices_ptr_t m) { cpd->setSharedCameraMatrices(m); })
           .def("__repr__", [](compositingpassdata_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingPassData(%p)", d.get());
@@ -63,21 +58,51 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto rendernode_type = //
       py::class_<RenderCompositingNode, ::ork::Object, compositorrendernode_ptr_t>(module_lev2, "RenderCompositingNode")
-          .def_property("layers",
-            [](compositorrendernode_ptr_t rnode) -> std::string {
-              return rnode->_layers;
-            },
-            [](compositorrendernode_ptr_t rnode, std::string l){
-              rnode->_layers = l;
-            }
-          )
-          .def_property_readonly("outputGroup", [](compositorrendernode_ptr_t rnode) -> rtgroup_ptr_t { //
-            return rnode->GetOutputGroup();
-          })
-          .def_property_readonly("outputBuffer", [](compositorrendernode_ptr_t rnode) -> rtbuffer_ptr_t { //
-            return rnode->GetOutput();
-          })
-          .def("__repr__", [](compositorrendernode_ptr_t d) -> std::string {
+          .def_property(
+              "layers",
+              [](compositorrendernode_ptr_t rnode) -> std::string { return rnode->_layers; },
+              [](compositorrendernode_ptr_t rnode, std::string l) { rnode->_layers = l; })
+          .def_property_readonly(
+              "outputGroup",
+              [](compositorrendernode_ptr_t rnode) -> rtgroup_ptr_t { //
+                return rnode->GetOutputGroup();
+              })
+          .def_property_readonly(
+              "outputBuffer",
+              [](compositorrendernode_ptr_t rnode) -> rtbuffer_ptr_t { //
+                return rnode->GetOutput();
+              })
+              .def_property(
+                "debugRenderingModel",
+                [](compositorrendernode_ptr_t node) -> crcstring_ptr_t { //
+                  uint32_t id = node->_debugRenderingModel;
+                  auto crc    = std::make_shared<CrcString>(uint64_t(id)); //
+                  return crc;
+                },
+                [](compositorrendernode_ptr_t node, crcstring_ptr_t value) {        //
+                  node->_debugRenderingModel = uint32_t(value->hashed()); //
+                })
+            .def_property(
+                "debugPassID",
+                [](compositorrendernode_ptr_t node) -> crcstring_ptr_t { //
+                  uint32_t id = node->_debugPassID;
+                  auto crc    = std::make_shared<CrcString>(uint64_t(id)); //
+                  return crc;
+                },
+                [](compositorrendernode_ptr_t node, crcstring_ptr_t value) { //
+                  node->_debugPassID = uint32_t(value->hashed());  //
+                })
+            .def_property(
+                "debugSubPassID",
+                [](compositorrendernode_ptr_t node) -> crcstring_ptr_t { //
+                  uint32_t id = node->_debugSubPassID;
+                  auto crc    = std::make_shared<CrcString>(uint64_t(id)); //
+                  return crc;
+                },
+                [](compositorrendernode_ptr_t node, crcstring_ptr_t value) {   //
+                  node->_debugSubPassID = uint32_t(value->hashed()); //
+                })
+            .def("__repr__", [](compositorrendernode_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("RenderCompositingNode(%p)", d.get());
             return fxs.c_str();
@@ -88,18 +113,16 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto postnode_type = //
       py::class_<PostCompositingNode, ::ork::Object, compositorpostnode_ptr_t>(module_lev2, "PostFxNode")
-          .def("__repr__", [](compositorpostnode_ptr_t d) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("PostCompositingNode(%p)", d.get());
-            return fxs.c_str();
-          })
-          .def_property_readonly("outputGroup", [](compositorpostnode_ptr_t d) -> rtgroup_ptr_t {
-            return d->GetOutputGroup();
-          })
-          .def_property_readonly("outputBuffer", [](compositorpostnode_ptr_t d) -> rtbuffer_ptr_t {
-            return d->GetOutput();
-          })
-          .def("addToSceneVars",[](compositorpostnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
+          .def(
+              "__repr__",
+              [](compositorpostnode_ptr_t d) -> std::string {
+                fxstring<64> fxs;
+                fxs.format("PostCompositingNode(%p)", d.get());
+                return fxs.c_str();
+              })
+          .def_property_readonly("outputGroup", [](compositorpostnode_ptr_t d) -> rtgroup_ptr_t { return d->GetOutputGroup(); })
+          .def_property_readonly("outputBuffer", [](compositorpostnode_ptr_t d) -> rtbuffer_ptr_t { return d->GetOutput(); })
+          .def("addToSceneVars", [](compositorpostnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
             vm->reifyValueForKey<postfx_node_chain_t>(key).push_back(dcnode);
           });
   type_codec->registerStdCodec<compositorpostnode_ptr_t>(postnode_type);
@@ -117,41 +140,23 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto dcblurpostnode_type = //
       py::class_<PostFxNodeDecompBlur, PostCompositingNode, decompblur_postnode_ptr_t>(module_lev2, "PostFxNodeDecompBlur")
           .def(py::init<>())
-          .def("gpuInit",[](decompblur_postnode_ptr_t dcnode, ctx_t ctx, int w, int h) {
-            dcnode->gpuInit(ctx.get(), w, h);
-          })
-          .def_property("threshold",
-            [](decompblur_postnode_ptr_t dcnode) -> float {
-              return dcnode->_threshold;
-            },
-            [](decompblur_postnode_ptr_t dcnode, float threshold){
-              dcnode->_threshold = threshold;
-            }
-          )
-          .def_property("blurwidth",
-            [](decompblur_postnode_ptr_t dcnode) -> float {
-              return dcnode->_blurwidth;
-            },
-            [](decompblur_postnode_ptr_t dcnode, float blurwidth){
-              dcnode->_blurwidth = blurwidth;
-            }
-          )
-          .def_property("blurfactor",
-            [](decompblur_postnode_ptr_t dcnode) -> float {
-              return dcnode->_blurfactor;
-            },
-            [](decompblur_postnode_ptr_t dcnode, float blurfactor){
-              dcnode->_blurfactor = blurfactor;
-            }
-          )
-          .def_property("amount",
-            [](decompblur_postnode_ptr_t dcnode) -> float {
-              return dcnode->_amount;
-            },
-            [](decompblur_postnode_ptr_t dcnode, float amount){
-              dcnode->_amount = amount;
-            }
-          )
+          .def("gpuInit", [](decompblur_postnode_ptr_t dcnode, ctx_t ctx, int w, int h) { dcnode->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "threshold",
+              [](decompblur_postnode_ptr_t dcnode) -> float { return dcnode->_threshold; },
+              [](decompblur_postnode_ptr_t dcnode, float threshold) { dcnode->_threshold = threshold; })
+          .def_property(
+              "blurwidth",
+              [](decompblur_postnode_ptr_t dcnode) -> float { return dcnode->_blurwidth; },
+              [](decompblur_postnode_ptr_t dcnode, float blurwidth) { dcnode->_blurwidth = blurwidth; })
+          .def_property(
+              "blurfactor",
+              [](decompblur_postnode_ptr_t dcnode) -> float { return dcnode->_blurfactor; },
+              [](decompblur_postnode_ptr_t dcnode, float blurfactor) { dcnode->_blurfactor = blurfactor; })
+          .def_property(
+              "amount",
+              [](decompblur_postnode_ptr_t dcnode) -> float { return dcnode->_amount; },
+              [](decompblur_postnode_ptr_t dcnode, float amount) { dcnode->_amount = amount; })
           .def("__repr__", [](decompblur_postnode_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("DecompBlurPostFxNode(%p)", d.get());
@@ -162,41 +167,23 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto dchsvgpostnode_type = //
       py::class_<PostFxNodeHSVG, PostCompositingNode, postnode_hsvg_ptr_t>(module_lev2, "PostFxNodeHSVG")
           .def(py::init<>())
-          .def("gpuInit",[](postnode_hsvg_ptr_t dcnode, ctx_t ctx, int w, int h) {
-            dcnode->gpuInit(ctx.get(), w, h);
-          })
-          .def_property("hue",
-            [](postnode_hsvg_ptr_t dcnode) -> float {
-              return dcnode->_hue;
-            },
-            [](postnode_hsvg_ptr_t dcnode, float hue){
-              dcnode->_hue = hue;
-            }
-          )
-          .def_property("saturation",
-            [](postnode_hsvg_ptr_t dcnode) -> float {
-              return dcnode->_saturation;
-            },
-            [](postnode_hsvg_ptr_t dcnode, float saturation){
-              dcnode->_saturation = saturation;
-            }
-          )
-          .def_property("value",
-            [](postnode_hsvg_ptr_t dcnode) -> float {
-              return dcnode->_value;
-            },
-            [](postnode_hsvg_ptr_t dcnode, float value){
-              dcnode->_value = value;
-            }
-          )
-          .def_property("gamma",
-            [](postnode_hsvg_ptr_t dcnode) -> float {
-              return dcnode->_gamma;
-            },
-            [](postnode_hsvg_ptr_t dcnode, float gamma){
-              dcnode->_gamma = gamma;
-            }
-          )
+          .def("gpuInit", [](postnode_hsvg_ptr_t dcnode, ctx_t ctx, int w, int h) { dcnode->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "hue",
+              [](postnode_hsvg_ptr_t dcnode) -> float { return dcnode->_hue; },
+              [](postnode_hsvg_ptr_t dcnode, float hue) { dcnode->_hue = hue; })
+          .def_property(
+              "saturation",
+              [](postnode_hsvg_ptr_t dcnode) -> float { return dcnode->_saturation; },
+              [](postnode_hsvg_ptr_t dcnode, float saturation) { dcnode->_saturation = saturation; })
+          .def_property(
+              "value",
+              [](postnode_hsvg_ptr_t dcnode) -> float { return dcnode->_value; },
+              [](postnode_hsvg_ptr_t dcnode, float value) { dcnode->_value = value; })
+          .def_property(
+              "gamma",
+              [](postnode_hsvg_ptr_t dcnode) -> float { return dcnode->_gamma; },
+              [](postnode_hsvg_ptr_t dcnode, float gamma) { dcnode->_gamma = gamma; })
           .def("__repr__", [](postnode_hsvg_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PostFxNodeHSVG(%p)", d.get());
@@ -210,7 +197,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
     postnode_user_ptr_t _usernode;
   };
   using usernode_param_proxy_ptr_t = std::shared_ptr<usernode_param_proxy>;
-  auto usernode_params_type   =                                                               //
+  auto usernode_params_type        =                                                                   //
       py::class_<usernode_param_proxy, usernode_param_proxy_ptr_t>(module_lev2, "UserNodeParamsProxy") //
           .def(
               "__repr__",
@@ -227,7 +214,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                 return output.c_str();
               })
           .def(
-              "__setattr__",                                                                  //
+              "__setattr__",                                                                   //
               [type_codec](usernode_param_proxy_ptr_t proxy, py::object key, py::object val) { //
                 auto var_key = type_codec->decode(key);
                 auto var_val = type_codec->decode(val);
@@ -238,7 +225,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                 }
               })
           .def(
-              "__getattr__",                                                                //
+              "__getattr__",                                                                 //
               [type_codec](usernode_param_proxy_ptr_t proxy, py::object key) -> py::object { //
                 auto var_key = type_codec->decode(key);
                 if (auto as_str = var_key.tryAs<std::string>()) {
@@ -254,93 +241,86 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
               });
 
   type_codec->registerStdCodec<usernode_param_proxy_ptr_t>(usernode_params_type);
-    /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto dcuserpostnode_type = //
       py::class_<PostFxNodeUser, PostCompositingNode, postnode_user_ptr_t>(module_lev2, "PostFxNodeUser")
           .def(py::init<>())
-          .def("gpuInit",[](postnode_user_ptr_t dcnode, ctx_t ctx, int w, int h) {
-            dcnode->gpuInit(ctx.get(), w, h);
-          })
-          .def_property("disabled", //
-            [](postnode_user_ptr_t dcnode) -> bool {
-              return dcnode->_disabled;
-            },
-            [](postnode_user_ptr_t dcnode, bool disabled) {
-              dcnode->_disabled = disabled;
-            })
-          .def_property("shader_path", //
-            [](postnode_user_ptr_t dcnode) -> std::string {
-              return dcnode->_shader_path;
-            },
-            [](postnode_user_ptr_t dcnode, std::string shaderpath) {
-              dcnode->_shader_path = shaderpath;
-            })
-            .def_property("technique", //
-            [](postnode_user_ptr_t dcnode) -> std::string {
-              return dcnode->_technique_name;
-            },
-            [](postnode_user_ptr_t dcnode, std::string technique) {
-              dcnode->_technique_name = technique;
-            })
+          .def("gpuInit", [](postnode_user_ptr_t dcnode, ctx_t ctx, int w, int h) { dcnode->gpuInit(ctx.get(), w, h); })
+          .def_property(
+              "disabled", //
+              [](postnode_user_ptr_t dcnode) -> bool { return dcnode->_disabled; },
+              [](postnode_user_ptr_t dcnode, bool disabled) { dcnode->_disabled = disabled; })
+          .def_property(
+              "shader_path", //
+              [](postnode_user_ptr_t dcnode) -> std::string { return dcnode->_shader_path; },
+              [](postnode_user_ptr_t dcnode, std::string shaderpath) { dcnode->_shader_path = shaderpath; })
+          .def_property(
+              "technique", //
+              [](postnode_user_ptr_t dcnode) -> std::string { return dcnode->_technique_name; },
+              [](postnode_user_ptr_t dcnode, std::string technique) { dcnode->_technique_name = technique; })
           .def_property_readonly(
-              "params",                                                                    //
+              "params",                                                                //
               [type_codec](postnode_user_ptr_t dcnode) -> usernode_param_proxy_ptr_t { //
-                auto proxy = std::make_shared<usernode_param_proxy>();
+                auto proxy       = std::make_shared<usernode_param_proxy>();
                 proxy->_usernode = dcnode;
                 return proxy;
               })
-              .def("__repr__", [](postnode_user_ptr_t d) -> std::string {
+          .def("__repr__", [](postnode_user_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PostFxNodeUSER(%p)", d.get());
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<postnode_user_ptr_t>(dcuserpostnode_type);  
+  type_codec->registerStdCodec<postnode_user_ptr_t>(dcuserpostnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto outputnode_type = //
       py::class_<OutputCompositingNode, ::ork::Object, compositoroutnode_ptr_t>(module_lev2, "OutputCompositingNode")
-          .def("__repr__", [](compositoroutnode_ptr_t d) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("OutputCompositingNode(%p)", d.get());
-            return fxs.c_str();
-          })
-          .def_property("flipY",[](compositoroutnode_ptr_t n) -> bool {
-            return n->_flipY;
-          },
-          [](compositoroutnode_ptr_t n, bool b){
-            n->_flipY = b;
-          })
-          .def("onBeginAssemble",[type_codec](compositoroutnode_ptr_t n, py::function f) {
+          .def(
+              "__repr__",
+              [](compositoroutnode_ptr_t d) -> std::string {
+                fxstring<64> fxs;
+                fxs.format("OutputCompositingNode(%p)", d.get());
+                return fxs.c_str();
+              })
+          .def_property(
+              "flipY",
+              [](compositoroutnode_ptr_t n) -> bool { return n->_flipY; },
+              [](compositoroutnode_ptr_t n, bool b) { n->_flipY = b; })
+          .def(
+              "onBeginAssemble",
+              [type_codec](compositoroutnode_ptr_t n, py::function f) {
+                pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
+                n->_pyimpl_oba.set<pyfn_ptr_t>(f_ptr); // store the function
+                n->_onBeginAssemble = [n, type_codec](CompositorDrawData& drawdata) {
+                  py::gil_scoped_acquire gil;
+                  compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
+                  auto ddpy                      = type_codec->encode(ddptr);
+                  auto f_ptr                     = n->_pyimpl_oba.get<pyfn_ptr_t>();
+                  (*f_ptr)(ddpy);
+                };
+              })
+          .def(
+              "onEndAssemble",
+              [type_codec](compositoroutnode_ptr_t n, py::function f) {
+                pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
+                n->_pyimpl_oea.set<pyfn_ptr_t>(f_ptr); // store the function
+                n->_onEndAssemble = [n, type_codec](CompositorDrawData& drawdata) {
+                  py::gil_scoped_acquire gil;
+                  compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
+                  auto ddpy                      = type_codec->encode(ddptr);
+                  auto f_ptr                     = n->_pyimpl_oea.get<pyfn_ptr_t>();
+                  (*f_ptr)(ddpy);
+                };
+              })
+          .def("onCameraChange", [type_codec](compositoroutnode_ptr_t n, py::function f) {
             pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
             n->_pyimpl_oba.set<pyfn_ptr_t>(f_ptr); // store the function
-            n->_onBeginAssemble = [n,type_codec](CompositorDrawData& drawdata) {
+            n->_onCameraChange = [n, type_codec](CompositorDrawData& drawdata) {
               py::gil_scoped_acquire gil;
               compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
-              auto ddpy = type_codec->encode(ddptr);
-              auto f_ptr = n->_pyimpl_oba.get<pyfn_ptr_t>();
-              (*f_ptr)(ddpy);
-            };
-          })
-          .def("onEndAssemble",[type_codec](compositoroutnode_ptr_t n, py::function f) {
-            pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
-            n->_pyimpl_oea.set<pyfn_ptr_t>(f_ptr); // store the function
-            n->_onEndAssemble = [n,type_codec](CompositorDrawData& drawdata) {
-              py::gil_scoped_acquire gil;
-              compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
-              auto ddpy = type_codec->encode(ddptr);
-              auto f_ptr = n->_pyimpl_oea.get<pyfn_ptr_t>();
-              (*f_ptr)(ddpy);
-            };
-          })
-          .def("onCameraChange",[type_codec](compositoroutnode_ptr_t n, py::function f) {
-            pyfn_ptr_t f_ptr = std::make_shared<py::function>(f);
-            n->_pyimpl_oba.set<pyfn_ptr_t>(f_ptr); // store the function
-            n->_onCameraChange = [n,type_codec](CompositorDrawData& drawdata) {
-              py::gil_scoped_acquire gil;
-              compositordrawdata_ptr_t ddptr = compositordrawdata_ptr_t(&drawdata);
-              auto ddpy = type_codec->encode(ddptr);
-              auto f_ptr = n->_pyimpl_oba.get<pyfn_ptr_t>();
+              auto ddpy                      = type_codec->encode(ddptr);
+              auto f_ptr                     = n->_pyimpl_oba.get<pyfn_ptr_t>();
               (*f_ptr)(ddpy);
             };
           });
@@ -348,13 +328,15 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto scene_type = //
       py::class_<CompositingScene, compositingscene_ptr_t>(module_lev2, "CompositingScene")
-          .def("createSceneItem",[](compositingscene_ptr_t scene, std::string named) -> compositingsceneitem_ptr_t {
-            auto item = std::make_shared<CompositingSceneItem>();
-            scene->_items[named] = item;
-            auto cdata = scene->_parent;
-            cdata->_activeItem = named;
-            return item;
-          })
+          .def(
+              "createSceneItem",
+              [](compositingscene_ptr_t scene, std::string named) -> compositingsceneitem_ptr_t {
+                auto item            = std::make_shared<CompositingSceneItem>();
+                scene->_items[named] = item;
+                auto cdata           = scene->_parent;
+                cdata->_activeItem   = named;
+                return item;
+              })
           .def("__repr__", [](compositingscene_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingScene(%p)", d.get());
@@ -365,12 +347,10 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto sceneitem_type = //
       py::class_<CompositingSceneItem, compositingsceneitem_ptr_t>(module_lev2, "CompositingSceneItem")
           .def(py::init<>())
-          .def_property("technique",[](compositingsceneitem_ptr_t item) -> compositortechnique_ptr_t {
-              return item->_technique;
-          },
-          [](compositingsceneitem_ptr_t item, compositortechnique_ptr_t t){
-            item->_technique = t;
-          })
+          .def_property(
+              "technique",
+              [](compositingsceneitem_ptr_t item) -> compositortechnique_ptr_t { return item->_technique; },
+              [](compositingsceneitem_ptr_t item, compositortechnique_ptr_t t) { item->_technique = t; })
           .def("__repr__", [](compositingsceneitem_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingSceneItem(%p)", d.get());
@@ -388,23 +368,20 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<compositortechnique_ptr_t>(technique_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto nodecompositortechnique_type = //
-      py::class_<NodeCompositingTechnique, CompositingTechnique, nodecompositortechnique_ptr_t>(module_lev2, "NodeCompositingTechnique")
+      py::class_<NodeCompositingTechnique, CompositingTechnique, nodecompositortechnique_ptr_t>(
+          module_lev2, "NodeCompositingTechnique")
           .def(py::init<>())
-          .def_property("renderNode",[](nodecompositortechnique_ptr_t ntek) -> compositorrendernode_ptr_t {
-              return ntek->_renderNode;
-          },
-          [](nodecompositortechnique_ptr_t ntek, compositorrendernode_ptr_t t){
-            ntek->_renderNode = t;
-          })
-          .def_property("outputNode",[](nodecompositortechnique_ptr_t ntek) -> compositoroutnode_ptr_t {
-              return ntek->_outputNode;
-          },
-          [](nodecompositortechnique_ptr_t ntek, compositoroutnode_ptr_t t){
-            ntek->_outputNode = t;
-          })
-          .def_property_readonly("postEffectNodes", [](nodecompositortechnique_ptr_t ntek) -> std::vector<compositorpostnode_ptr_t> {
-            return ntek->_postEffectNodes;
-          })
+          .def_property(
+              "renderNode",
+              [](nodecompositortechnique_ptr_t ntek) -> compositorrendernode_ptr_t { return ntek->_renderNode; },
+              [](nodecompositortechnique_ptr_t ntek, compositorrendernode_ptr_t t) { ntek->_renderNode = t; })
+          .def_property(
+              "outputNode",
+              [](nodecompositortechnique_ptr_t ntek) -> compositoroutnode_ptr_t { return ntek->_outputNode; },
+              [](nodecompositortechnique_ptr_t ntek, compositoroutnode_ptr_t t) { ntek->_outputNode = t; })
+          .def_property_readonly(
+              "postEffectNodes",
+              [](nodecompositortechnique_ptr_t ntek) -> std::vector<compositorpostnode_ptr_t> { return ntek->_postEffectNodes; })
           .def("__repr__", [](nodecompositortechnique_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("NodeCompositingTechnique(%p)", d.get());
@@ -415,127 +392,157 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto compositordata_type = //
       py::class_<CompositingData, compositordata_ptr_t>(module_lev2, "CompositingData")
           .def(py::init<>())
-          .def("createScene",[](compositordata_ptr_t cdata, std::string named) -> compositingscene_ptr_t {
-            auto scene = std::make_shared<CompositingScene>();
-            cdata->_scenes[named] = scene;
-            cdata->_activeScene = named;
-            scene->_parent = cdata.get();
-            return scene;
-          })
-          .def("presetDeferredPBR", 
-               [](compositordata_ptr_t cdata) {
-                cdata->presetDeferredPBR();
-          })
+          .def(
+              "createScene",
+              [](compositordata_ptr_t cdata, std::string named) -> compositingscene_ptr_t {
+                auto scene            = std::make_shared<CompositingScene>();
+                cdata->_scenes[named] = scene;
+                cdata->_activeScene   = named;
+                scene->_parent        = cdata.get();
+                return scene;
+              })
+          .def("presetDeferredPBR", [](compositordata_ptr_t cdata) { cdata->presetDeferredPBR(); })
           .def("__repr__", [](compositordata_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingData(%p)", d.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<compositordata_ptr_t>(compositordata_type);
-    /////////////////////////////////////////////////////////////////////////////////
-    auto vd_t = py::class_<ViewData,viewdata_ptr_t>(module_lev2, "ViewData")
-    .def_property_readonly("camposmono", [](viewdata_ptr_t vd) -> fvec3 { //
-      return vd->_camposmono;
-    })
-    .def_property_readonly("zndc2eye", [](viewdata_ptr_t vd) -> fvec2 { //
-      return vd->_zndc2eye;
-    })
-    .def_property_readonly("near", [](viewdata_ptr_t vd) -> float { //
-      return vd->_near;
-    })
-    .def_property_readonly("far", [](viewdata_ptr_t vd) -> float { //
-      return vd->_far;
-    })
-    .def_property_readonly("VL", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VL;
-    })
-    .def_property_readonly("VR", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VR;
-    })
-    .def_property_readonly("VM", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VM;
-    })
-    .def_property_readonly("PL", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->PL;
-    })
-    .def_property_readonly("PR", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->PR;
-    })
-    .def_property_readonly("PM", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->PM;
-    })
-    .def_property_readonly("VPL", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VPL;
-    })
-    .def_property_readonly("VPR", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VPR;
-    })
-    .def_property_readonly("VPM", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->VPM;
-    })
-    .def_property_readonly("IVPL", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->IVPL;
-    })
-    .def_property_readonly("IVPR", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->IVPR;
-    })
-    .def_property_readonly("IVPM", [](viewdata_ptr_t vd) -> fmtx4 { //
-      return vd->IVPM;
-    });
-    type_codec->registerStdCodec<viewdata_ptr_t>(vd_t);
-    /////////////////////////////////////////////////////////////////////////////////
-    auto cdd_t = py::class_<compositordrawdata_ptr_t>(module_lev2, "CompositorDrawData")
-    .def_property_readonly("camposmono", [](compositordrawdata_ptr_t cdd) -> fvec3 { //
-      return cdd->computeViewData()._camposmono;
-    })
-    .def_property_readonly("viewdata", [](compositordrawdata_ptr_t cdd) -> viewdata_ptr_t { //
-      return std::make_shared<ViewData>(cdd->computeViewData());
-    })
-    .def("rendererProperty", [type_codec](compositordrawdata_ptr_t cdd,crcstring_ptr_t crcstr) -> py::object { //
-      auto it = cdd->_properties.find(crcstr->hashed());
-      // todo - use type codec to decode svar16_t
-      if (it != cdd->_properties.end()) {
-        auto svar = it->second;
-        py::object ret_val = py::none();
-        if( auto as_int = svar.tryAs<int>() ) {
-          ret_val = py::int_(as_int.value());
-        } else if( auto as_float = svar.tryAs<float>() ) {
-          ret_val = py::float_(as_float.value());
-        } else if( auto as_vec3 = svar.tryAs<fvec3>() ) {
-          ret_val = type_codec->encode(as_vec3.value());
-        } else if( auto as_vec4 = svar.tryAs<fvec4>() ) {
-          ret_val = type_codec->encode(as_vec4.value());
-        } else if( auto as_camm = svar.tryAs<cameramatrices_ptr_t>() ) {
-          ret_val = type_codec->encode(as_camm.value());
-        }
-        return ret_val;
-      }
-      return py::none();
-    })
-    .def("__repr__", [](compositordrawdata_ptr_t d) -> std::string {
-      fxstring<64> fxs;
-      fxs.format("CompositorDrawData(%p)", d.get());
-      return fxs.c_str();
-    });
-    type_codec->registerStdCodec<compositordrawdata_ptr_t>(cdd_t);
-    /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto vd_t = py::class_<ViewData, viewdata_ptr_t>(module_lev2, "ViewData")
+                  .def_property_readonly(
+                      "camposmono",
+                      [](viewdata_ptr_t vd) -> fvec3 { //
+                        return vd->_camposmono;
+                      })
+                  .def_property_readonly(
+                      "zndc2eye",
+                      [](viewdata_ptr_t vd) -> fvec2 { //
+                        return vd->_zndc2eye;
+                      })
+                  .def_property_readonly(
+                      "near",
+                      [](viewdata_ptr_t vd) -> float { //
+                        return vd->_near;
+                      })
+                  .def_property_readonly(
+                      "far",
+                      [](viewdata_ptr_t vd) -> float { //
+                        return vd->_far;
+                      })
+                  .def_property_readonly(
+                      "VL",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VL;
+                      })
+                  .def_property_readonly(
+                      "VR",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VR;
+                      })
+                  .def_property_readonly(
+                      "VM",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VM;
+                      })
+                  .def_property_readonly(
+                      "PL",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->PL;
+                      })
+                  .def_property_readonly(
+                      "PR",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->PR;
+                      })
+                  .def_property_readonly(
+                      "PM",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->PM;
+                      })
+                  .def_property_readonly(
+                      "VPL",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VPL;
+                      })
+                  .def_property_readonly(
+                      "VPR",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VPR;
+                      })
+                  .def_property_readonly(
+                      "VPM",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->VPM;
+                      })
+                  .def_property_readonly(
+                      "IVPL",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->IVPL;
+                      })
+                  .def_property_readonly(
+                      "IVPR",
+                      [](viewdata_ptr_t vd) -> fmtx4 { //
+                        return vd->IVPR;
+                      })
+                  .def_property_readonly("IVPM", [](viewdata_ptr_t vd) -> fmtx4 { //
+                    return vd->IVPM;
+                  });
+  type_codec->registerStdCodec<viewdata_ptr_t>(vd_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto cdd_t = py::class_<compositordrawdata_ptr_t>(module_lev2, "CompositorDrawData")
+                   .def_property_readonly(
+                       "camposmono",
+                       [](compositordrawdata_ptr_t cdd) -> fvec3 { //
+                         return cdd->computeViewData()._camposmono;
+                       })
+                   .def_property_readonly(
+                       "viewdata",
+                       [](compositordrawdata_ptr_t cdd) -> viewdata_ptr_t { //
+                         return std::make_shared<ViewData>(cdd->computeViewData());
+                       })
+                   .def(
+                       "rendererProperty",
+                       [type_codec](compositordrawdata_ptr_t cdd, crcstring_ptr_t crcstr) -> py::object { //
+                         auto it = cdd->_properties.find(crcstr->hashed());
+                         // todo - use type codec to decode svar16_t
+                         if (it != cdd->_properties.end()) {
+                           auto svar          = it->second;
+                           py::object ret_val = py::none();
+                           if (auto as_int = svar.tryAs<int>()) {
+                             ret_val = py::int_(as_int.value());
+                           } else if (auto as_float = svar.tryAs<float>()) {
+                             ret_val = py::float_(as_float.value());
+                           } else if (auto as_vec3 = svar.tryAs<fvec3>()) {
+                             ret_val = type_codec->encode(as_vec3.value());
+                           } else if (auto as_vec4 = svar.tryAs<fvec4>()) {
+                             ret_val = type_codec->encode(as_vec4.value());
+                           } else if (auto as_camm = svar.tryAs<cameramatrices_ptr_t>()) {
+                             ret_val = type_codec->encode(as_camm.value());
+                           }
+                           return ret_val;
+                         }
+                         return py::none();
+                       })
+                   .def("__repr__", [](compositordrawdata_ptr_t d) -> std::string {
+                     fxstring<64> fxs;
+                     fxs.format("CompositorDrawData(%p)", d.get());
+                     return fxs.c_str();
+                   });
+  type_codec->registerStdCodec<compositordrawdata_ptr_t>(cdd_t);
+  /////////////////////////////////////////////////////////////////////////////////
   auto compositorimpl_type = //
       py::class_<CompositingImpl, compositorimpl_ptr_t>(module_lev2, "CompositingImpl")
           .def(py::init([](compositordata_ptr_t cdata) -> compositorimpl_ptr_t { //
             return std::make_shared<CompositingImpl>(cdata);
           }))
-          .def("pushCPD", 
-               [](compositorimpl_ptr_t ci, 
-                  compositingpassdata_ptr_t cpd) {
-                ci->pushCPD(*cpd);
-          })
-          .def("popCPD", 
-               [](compositorimpl_ptr_t ci) {
-                ci->popCPD();
-          })
-          .def_property_readonly("context", [](compositorimpl_ptr_t ci) -> compositorctx_ptr_t { //
-            return ci->_compcontext;
-          })
+          .def("pushCPD", [](compositorimpl_ptr_t ci, compositingpassdata_ptr_t cpd) { ci->pushCPD(*cpd); })
+          .def("popCPD", [](compositorimpl_ptr_t ci) { ci->popCPD(); })
+          .def_property_readonly(
+              "context",
+              [](compositorimpl_ptr_t ci) -> compositorctx_ptr_t { //
+                return ci->_compcontext;
+              })
           .def("__repr__", [](compositorimpl_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingImpl(%p)", i.get());
@@ -549,7 +556,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-  using unlit_ptr_t = std::shared_ptr<compositor::UnlitNode>;
+  using unlit_ptr_t   = std::shared_ptr<compositor::UnlitNode>;
   auto unlitnode_type = //
       py::class_<compositor::UnlitNode, RenderCompositingNode, unlit_ptr_t>(module_lev2, "UnlitRenderNode")
           .def(py::init([] -> unlit_ptr_t { //
@@ -565,119 +572,145 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto defpbrctx_type = //
       py::class_<pbr::deferrednode::DeferredContext, pbr_deferred_context_ptr_t>(module_lev2, "DeferredPbrContext")
-      .def_property_readonly("lightingMaterial", [](pbr_deferred_context_ptr_t ctx) -> freestyle_mtl_ptr_t { //
-        return ctx->_lightingmtl;
-      })
-      .def_property_readonly("pipeline_envlighting_model0_mono", [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
-        return ctx->_pipeline_envlighting_model0_mono;
-      })
-      .def_property_readonly("gbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
-        return ctx->_rtgGbuffer;
-      })
-      .def_property_readonly("lbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
-        return ctx->_rtgLbuffer;
-      })
-      .def("createAuxBinding", [](pbr_deferred_context_ptr_t ctx,std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
-        return ctx->createAuxParamBinding(paramname);
-      })
-      .def_property("lightAccumFormat",
-        [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
-          return std::make_shared<CrcString>(uint64_t(ctx->_lightAccumFormat));
-        },
-        [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value){
-            ctx->_lightAccumFormat = EBufferFormat(value->hashed());
-        })
-      .def_property("auxiliaryFormat",
-        [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
-          return std::make_shared<CrcString>(uint64_t(ctx->_auxBufferFormat));
-        },
-        [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value){
-            ctx->_auxBufferFormat = EBufferFormat(value->hashed());
-        })
-      .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
-        ctx->gpuInit(gfx_ctx.get());
-      })
-      .def("onGpuInit", [](pbr_deferred_context_ptr_t ctx, py::object callback) { //
-        ctx->_vars->makeValueForKey<py::object>("_hold_callback",callback);
-        auto L = [ctx](){
-          py::gil_scoped_acquire acquire;
-          auto cb = ctx->_vars->typedValueForKey<py::object>("_hold_callback");
-          cb.value()();
-        };
-        ctx->_onGpuInitialized = L;
-      });
+          .def_property_readonly(
+              "lightingMaterial",
+              [](pbr_deferred_context_ptr_t ctx) -> freestyle_mtl_ptr_t { //
+                return ctx->_lightingmtl;
+              })
+          .def_property_readonly(
+              "pipeline_envlighting_model0_mono",
+              [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
+                return ctx->_pipeline_envlighting_model0_mono;
+              })
+          .def_property_readonly(
+              "gbuffer",
+              [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+                return ctx->_rtgGbuffer;
+              })
+          .def_property_readonly(
+              "lbuffer",
+              [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+                return ctx->_rtgLbuffer;
+              })
+          .def(
+              "createAuxBinding",
+              [](pbr_deferred_context_ptr_t ctx, std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
+                return ctx->createAuxParamBinding(paramname);
+              })
+          .def_property(
+              "lightAccumFormat",
+              [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
+                return std::make_shared<CrcString>(uint64_t(ctx->_lightAccumFormat));
+              },
+              [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value) {
+                ctx->_lightAccumFormat = EBufferFormat(value->hashed());
+              })
+          .def_property(
+              "auxiliaryFormat",
+              [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
+                return std::make_shared<CrcString>(uint64_t(ctx->_auxBufferFormat));
+              },
+              [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value) { ctx->_auxBufferFormat = EBufferFormat(value->hashed()); })
+          .def(
+              "gpuInit",
+              [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
+                ctx->gpuInit(gfx_ctx.get());
+              })
+          .def("onGpuInit", [](pbr_deferred_context_ptr_t ctx, py::object callback) { //
+            ctx->_vars->makeValueForKey<py::object>("_hold_callback", callback);
+            auto L = [ctx]() {
+              py::gil_scoped_acquire acquire;
+              auto cb = ctx->_vars->typedValueForKey<py::object>("_hold_callback");
+              cb.value()();
+            };
+            ctx->_onGpuInitialized = L;
+          });
   type_codec->registerStdCodec<pbr_deferred_context_ptr_t>(defpbrctx_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto auxbinding_type = //
       py::class_<pbr::deferrednode::AuxParamBinding, pbr::deferrednode::auxparambinding_ptr_t>(module_lev2, "AuxParamBinding")
-      .def_property("texture", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> texture_ptr_t { //
-          return self->_var.getShared<Texture>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
-          self->_var.setShared<Texture>(texture);
-        })
-      .def_property("bool",
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> bool { //
-          return self->_var.get<bool>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, bool val) { //
-          self->_var.set<bool>(val);
-        })
-      .def_property("float", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
-          return self->_var.get<float>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, float val) { //
-          self->_var.set<float>(val);
-        })
-      .def_property("vec2", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec2 { //
-          return self->_var.get<fvec2>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec2 val) { //
-          self->_var.set<fvec2>(val);
-        })
-      .def_property("vec3", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec3 { //
-          return self->_var.get<fvec3>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec3 val) { //
-          self->_var.set<fvec3>(val);
-        })
-      .def_property("vec4", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec4 { //
-          return self->_var.get<fvec4>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec4 val) { //
-          self->_var.set<fvec4>(val);
-        })
-      .def_property("mtx4", 
-        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
-          return self->_var.get<fmtx4>();
-        },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 val) { //
-          self->_var.set<fmtx4>(val);
-        });
+          .def_property(
+              "texture",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> texture_ptr_t { //
+                return self->_var.getShared<Texture>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
+                self->_var.setShared<Texture>(texture);
+              })
+          .def_property(
+              "bool",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> bool { //
+                return self->_var.get<bool>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, bool val) { //
+                self->_var.set<bool>(val);
+              })
+          .def_property(
+              "float",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
+                return self->_var.get<float>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, float val) { //
+                self->_var.set<float>(val);
+              })
+          .def_property(
+              "vec2",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec2 { //
+                return self->_var.get<fvec2>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec2 val) { //
+                self->_var.set<fvec2>(val);
+              })
+          .def_property(
+              "vec3",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec3 { //
+                return self->_var.get<fvec3>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec3 val) { //
+                self->_var.set<fvec3>(val);
+              })
+          .def_property(
+              "vec4",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec4 { //
+                return self->_var.get<fvec4>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, fvec4 val) { //
+                self->_var.set<fvec4>(val);
+              })
+          .def_property(
+              "mtx4",
+              [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
+                return self->_var.get<fmtx4>();
+              },
+              [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 val) { //
+                self->_var.set<fmtx4>(val);
+              });
   type_codec->registerStdCodec<pbr::deferrednode::auxparambinding_ptr_t>(auxbinding_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;
-  auto defpbrnode_type = //
-      py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(module_lev2, "DeferredPbrRenderNode")
+  auto defpbrnode_type   = //
+      py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(
+          module_lev2, "DeferredPbrRenderNode")
           .def(py::init([] -> defpbrnode_ptr_t { //
             return std::make_shared<pbr::deferrednode::DeferredCompositingNodePbr>(nullptr);
           }))
-          .def_property_readonly("pbr_common", [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
-            return node->_pbrcommon;
-          })
-          .def_property_readonly("context", [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
-            return node->deferredContext();
-          })
-          .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
-            return node->overrideShader(shaderpath);
-          })
+          .def_property_readonly(
+              "pbr_common",
+              [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
+                return node->_pbrcommon;
+              })
+          .def_property_readonly(
+              "context",
+              [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
+                return node->deferredContext();
+              })
+          .def(
+              "overrideShader",
+              [](defpbrnode_ptr_t node, std::string shaderpath) { //
+                return node->overrideShader(shaderpath);
+              })
           .def("__repr__", [](defpbrnode_ptr_t node) -> std::string {
             fxstring<64> fxs;
             fxs.format("DeferredPbrRenderNode(%p)", node.get());
@@ -688,14 +721,16 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using fwdpbrnode_ptr_t = std::shared_ptr<pbr::ForwardNode>;
-  auto fwdpbrnode_type = //
+  auto fwdpbrnode_type   = //
       py::class_<pbr::ForwardNode, RenderCompositingNode, fwdpbrnode_ptr_t>(module_lev2, "PbrForwardNode")
           .def(py::init([] -> fwdpbrnode_ptr_t { //
             return std::make_shared<pbr::ForwardNode>(nullptr);
           }))
-          .def_property_readonly("pbr_common", [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
-            return node->_pbrcommon;
-          })
+          .def_property_readonly(
+              "pbr_common",
+              [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
+                return node->_pbrcommon;
+              })
           .def("__repr__", [](fwdpbrnode_ptr_t node) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrForwardNode(%p)", node.get());
@@ -706,26 +741,22 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using scroutnode_ptr_t = std::shared_ptr<ScreenOutputCompositingNode>;
-  auto scroutnode_type = //
+  auto scroutnode_type   = //
       py::class_<ScreenOutputCompositingNode, OutputCompositingNode, scroutnode_ptr_t>(module_lev2, "ScreenOutputNode")
           .def(py::init([] -> scroutnode_ptr_t { //
             return std::make_shared<ScreenOutputCompositingNode>();
           }))
-          .def_property("format",
-            [](scroutnode_ptr_t self) -> std::string {
-              return EBufferFormatToName(self->_format);
-            },
-            [](scroutnode_ptr_t self, std::string str_val){
+          .def_property(
+              "format",
+              [](scroutnode_ptr_t self) -> std::string { return EBufferFormatToName(self->_format); },
+              [](scroutnode_ptr_t self, std::string str_val) {
                 uint64_t hashed = CrcString(str_val.c_str()).hashed();
-                self->_format = EBufferFormat(hashed);
-            })
-          .def_property("mono",
-            [](scroutnode_ptr_t self) -> bool {
-              return self->_monoviewer;
-            },
-            [](scroutnode_ptr_t self, bool value){
-              self->_monoviewer = value;
-            })
+                self->_format   = EBufferFormat(hashed);
+              })
+          .def_property(
+              "mono",
+              [](scroutnode_ptr_t self) -> bool { return self->_monoviewer; },
+              [](scroutnode_ptr_t self, bool value) { self->_monoviewer = value; })
           .def("__repr__", [](scroutnode_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("ScreenOutputNode(%p)", i.get());
@@ -736,38 +767,33 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using vroutnode_ptr_t = std::shared_ptr<VrOutputNode>;
-  auto vroutnode_type = //
+  auto vroutnode_type   = //
       py::class_<VrOutputNode, OutputCompositingNode, vroutnode_ptr_t>(module_lev2, "VrOutputNode")
           .def(py::init([] -> vroutnode_ptr_t { //
             return std::make_shared<VrOutputNode>();
           }))
-          .def_property("mono",
-            [](vroutnode_ptr_t self) -> bool {
-              return self->_monoviewer;
-            },
-            [](vroutnode_ptr_t self, bool value){
-              self->_monoviewer = value;
-            })
+          .def_property(
+              "mono",
+              [](vroutnode_ptr_t self) -> bool { return self->_monoviewer; },
+              [](vroutnode_ptr_t self, bool value) { self->_monoviewer = value; })
           .def("__repr__", [](vroutnode_ptr_t n) -> std::string {
             fxstring<64> fxs;
             fxs.format("VrOutputNode(%p)", n.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);
-/////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto rtgoutnode_type = //
-      py::class_<RtGroupOutputCompositingNode, OutputCompositingNode, compositoroutnode_rtgroup_ptr_t>(module_lev2, "RtGroupOutputCompositingNode")
+      py::class_<RtGroupOutputCompositingNode, OutputCompositingNode, compositoroutnode_rtgroup_ptr_t>(
+          module_lev2, "RtGroupOutputCompositingNode")
           .def(py::init([] -> compositoroutnode_rtgroup_ptr_t { //
             return std::make_shared<RtGroupOutputCompositingNode>();
           }))
-          .def_property("supersample", //
-            [](compositoroutnode_rtgroup_ptr_t self) -> int {
-              return self->_supersample;
-            },
-            [](compositoroutnode_rtgroup_ptr_t self, int ss) {
-              self->_supersample = ss;
-            })
+          .def_property(
+              "supersample", //
+              [](compositoroutnode_rtgroup_ptr_t self) -> int { return self->_supersample; },
+              [](compositoroutnode_rtgroup_ptr_t self, int ss) { self->_supersample = ss; })
           .def("__repr__", [](compositoroutnode_rtgroup_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("RtGroupOutputCompositingNode(%p)", i.get());
@@ -775,8 +801,6 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<compositoroutnode_rtgroup_ptr_t>(rtgoutnode_type);
 
-
   /////////////////////////////////////////////////////////////////////////////////
-
 }
-} //namespace ork::lev2 {
+} // namespace ork::lev2

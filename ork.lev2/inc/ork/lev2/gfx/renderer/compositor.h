@@ -184,6 +184,7 @@ struct ViewData {
   fmtx4 IVPL, IVPR, IVPM;
   fmtx4 VL, VR, VM;
   fmtx4 PL, PR, PM;
+  fmtx4 IPL, IPR, IPM;
   fmtx4 VPL, VPR, VPM;
   fvec2 _zndc2eye;
   float _near = 0.1;

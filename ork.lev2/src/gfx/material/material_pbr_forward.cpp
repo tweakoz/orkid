@@ -290,40 +290,16 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
 
           FXI->bindParamTexture(this->_paramMapDepth, depthtexture.get() );
 
-          if(RCFD->hasUserProperty("LINEAR_DEPTH_MAP"_crcu)){
-            auto lindepthtexture = RCFD->userPropertyAs<texture_ptr_t>("LINEAR_DEPTH_MAP"_crcu);
-            auto near_far = RCFD->userPropertyAs<fvec2>("NEAR_FAR"_crcu);
-            auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);
-            auto ssaoPOWER = RCFD->userPropertyAs<float>("SSAO_POWER"_crcu);
-            auto ssaoWEIGHT = RCFD->userPropertyAs<float>("SSAO_WEIGHT"_crcu);
-            auto pmatrix = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
-            auto ipmatrix = RCFD->userPropertyAs<fmtx4>("IPMATRIX"_crcu);
-            auto kernel = RCFD->userPropertyAs<texture_ptr_t>("SSAO_KERNEL"_crcu);
-            auto scrnoise = RCFD->userPropertyAs<texture_ptr_t>("SSAO_SCRNOISE"_crcu);
-            fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
-            FXI->bindParamTexture(this->_paramMapLinearDepth, lindepthtexture.get() );
-            FXI->bindParamTexture(this->_paramSSAOTexture, ssaotexture.get() );
-            FXI->bindParamTexture(this->_paramSSAOKernel, kernel.get());
-            FXI->bindParamTexture(this->_paramSSAOScrNoise, scrnoise.get());
-
-            FXI->bindParamFloat(this->_paramSSAOPower, ssaoPOWER );
-            FXI->bindParamFloat(this->_paramSSAOWeight, ssaoWEIGHT );
-            FXI->bindParamVect2(this->_parInvViewSize, ivpdim );
-            FXI->bindParamVect2(this->_paramNearFar, near_far );
-            FXI->bindParamInt(this->_paramSSAONumSamples, pbrcommon->_ssaoNumSamples);
-            FXI->bindParamInt(this->_paramSSAONumSteps, pbrcommon->_ssaoNumSteps);
-            FXI->bindParamFloat(this->_paramSSAOBias, pbrcommon->_ssaoBias);
-            FXI->bindParamFloat(this->_paramSSAORadius, pbrcommon->_ssaoRadius);
-            FXI->bindParamFloat(this->_paramSSAOWeight, pbrcommon->_ssaoWeight);
-            FXI->bindParamFloat(this->_paramSSAOPower, pbrcommon->_ssaoPower);
-            FXI->bindParamMatrix(this->_paramP, pmatrix);
-            FXI->bindParamMatrix(this->_paramIP, ipmatrix);
-            pmatrix.dump("PMATRIX");
-            printf( "near<%f> far<%f>\n", near_far.x, near_far.y );
-            printf( "ivpdim<%f %f>\n", ivpdim.x, ivpdim.y );
-          }
-
-
+          auto near_far = RCFD->userPropertyAs<fvec2>("NEAR_FAR"_crcu);
+          auto ssaoDIM = RCFD->userPropertyAs<fvec2>("SSAO_DIM"_crcu);
+          auto pmatrix = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
+          auto ipmatrix = RCFD->userPropertyAs<fmtx4>("IPMATRIX"_crcu);
+          fvec2 ivpdim = fvec2(1.0f / ssaoDIM.x, 1.0f / ssaoDIM.y);
+          FXI->bindParamTexture(this->_paramSSAOTexture, ssaotexture.get() );
+          FXI->bindParamVect2(this->_parInvViewSize, ivpdim );
+          FXI->bindParamVect2(this->_paramNearFar, near_far );
+          FXI->bindParamMatrix(this->_paramP, pmatrix);
+          FXI->bindParamMatrix(this->_paramIP, ipmatrix);
 
       }
   };

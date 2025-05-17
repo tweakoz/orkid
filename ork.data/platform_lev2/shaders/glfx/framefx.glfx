@@ -168,7 +168,7 @@ libblock color_tools {
     if (hsv.x < 0)
       hsv.x += 1.0;
 
-    // hsv.x += fShift;                                // F‘Š•â³
+    // hsv.x += fShift;                                // F'Š•â³
     // if (1.0 <= hsv.x) hsv.x -= 1.0;
 
     return hsv;
@@ -300,6 +300,7 @@ uniform_set uset_frg_ssao {
   float SSAORadius;
   float SSAOWeight;
   float SSAOPower;
+  float SSAOFeedback;
   sampler2D SSAOKernel;
   sampler2D SSAOScrNoise;
   sampler2D MapDepth;
@@ -313,14 +314,14 @@ uniform_set uset_frg_ssao {
   vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_ssao //
+fragment_shader ps_ssao_prepass //
   : iface_fmt_greyscale //
   : uset_frg_ssao //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
-  out_value   = ssao_nonlinear(uv);
-  float prev = texture(SSAOPREV,uv).r;
-  out_value   = mix(prev,out_value,0.5);
+  float cur_ssao = ssao_nonlinear(uv);
+  float prv_ssao = texture(SSAOPREV,uv).r;
+  out_value = mix(prv_ssao,cur_ssao,SSAOFeedback); // Strong temporal filtering to reduce noise
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_linearize_depth //
@@ -333,7 +334,7 @@ fragment_shader ps_linearize_depth //
   float near = Zndc2eye.x;
   float far = Zndc2eye.y;
   float linz = (1.0*near*far) / (far+near-ndc*(far-near));
-  out_value   = linz; // linearize
+  out_value   = 0.0;//linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {
@@ -510,11 +511,11 @@ technique framefx_hsvg {
     state_block     = sb_default_ffx;
   }
 }
-technique framefx_ssao {
+technique framefx_ssao_prepass {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
-    fragment_shader = ps_ssao;
+    fragment_shader = ps_ssao_prepass;
     state_block     = sb_default_ffx;
   }
 }

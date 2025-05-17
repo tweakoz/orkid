@@ -55,6 +55,7 @@ struct ForwardPbrNodeImpl {
   enumeratedlights_ptr_t _enumeratedLights;
 
   rtgset_ptr_t _rtgs_main;
+  rtgroup_ptr_t _rtg_main;
   rtgroup_ptr_t _rtg_main_depth_copy;
   rtgroup_ptr_t _rtg_main_depth_copy_linear;
   rtgroup_ptr_t _rtg_ambocc_accum;
@@ -75,8 +76,8 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpP;
   const FxShaderParam* _fxpInvP;
   const FxShaderParam* _fxpColorMap;
-  const FxShaderTechnique* _tek_ssao;
-  const FxShaderTechnique* _tek_lindepth;
+  const FxShaderTechnique* _tek_ssao_prepass;
+  const FxShaderTechnique* _tek_ssao_lindepth;
 
   const FxShaderParam* _fxpSSAONumSamples;
   const FxShaderParam* _fxpSSAONumSteps;
@@ -84,6 +85,7 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpSSAORadius;
   const FxShaderParam* _fxpSSAOWeight;
   const FxShaderParam* _fxpSSAOPower;
+  const FxShaderParam* _fxpSSAOFeedback;
   const FxShaderParam* _fxpSSAOKernel;
   const FxShaderParam* _fxpSSAOScrNoise;
   const FxShaderParam* _fxpSSAOMapDepth;

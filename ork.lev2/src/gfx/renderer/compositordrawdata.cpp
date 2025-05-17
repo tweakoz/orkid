@@ -95,6 +95,12 @@ ViewData CompositorDrawData::computeViewData() const {
   VD.IVPM.inverseOf(VD.VPM);
   VD.IVPL.inverseOf(VD.VPL);
   VD.IVPR.inverseOf(VD.VPR);
+
+  VD.IPM.inverseOf(VD.PM);
+  VD.IPL.inverseOf(VD.PL);
+  VD.IPR.inverseOf(VD.PR);
+
+
   VD._v[0]   = VD.VL;
   VD._v[1]   = VD.VR;
   VD._p[0]   = VD.PL; //_p[0].Transpose();

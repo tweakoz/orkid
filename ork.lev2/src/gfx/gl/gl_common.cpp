@@ -243,7 +243,7 @@ int GetGlError(void) {
 }
 
 std::string renderCrcStringToString(uint64_t crc) {
-  switch(crc) {
+  switch (crc) {
     case "FORWARD_PBR"_crcu:
       return "FORWARD_PBR";
     default:
@@ -307,6 +307,20 @@ std::string GLenumToString(GLenum e) {
       return "GL_COLOR_ATTACHMENT6";
     case GL_COLOR_ATTACHMENT7:
       return "GL_COLOR_ATTACHMENT7";
+    case GL_RED:
+      return "GL_RED";
+    case GL_R8:
+      return "GL_R8";
+    case GL_R16:
+      return "GL_R16";
+    case GL_R16F:
+      return "GL_R16F";
+    case GL_R16UI:
+      return "GL_R16UI";
+    case GL_R32F:
+      return "GL_R32F";
+    case GL_R32UI:
+      return "GL_R32UI";
     case GL_RGBA:
       return "GL_RGBA";
     case GL_RGBA8:

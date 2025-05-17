@@ -3,7 +3,8 @@ libblock lib_fwd     //
     : lib_math       //
     : lib_brdf       //
     : lib_envmapping //
-    : lib_def : lib_ssao {
+    : lib_def 
+    {
   /////////////////////////////////////////////////////////
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;
@@ -94,18 +95,11 @@ libblock lib_fwd     //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    // vec2 uv = gl_FragCoord.xy * InvViewportSize;
-    // float ambocc = texture(SSAOMap, uv).x;
-    //  filter sample ambocc
-    vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc  = vec3(1); // texture(LightMapA, pbd.).xyz;
-    float dambocc = 1.0;     // texture(SSAOMap, ssao_uv).x;
-    // dambocc = pow(dambocc, SSAOPower);
-    // dambocc = mix(1.0,dambocc,SSAOWeight);
-    float ambocc = 1.0; //(sambocc * dambocc);
-    // ambocc = 1.0;//
+    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
+    float dambocc = texture(SSAOMap, ssao_uv).x;  // Sample precomputed SSAO
+    float ambocc = dambocc;
     /////////////////////////
-    float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
+    float ambientshade = 1.0; //clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade * ambocc;
     vec3 diffuse_env   = env_equirectangular2(diffn, MapDiffuseEnv) * DiffuseLevel * SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
@@ -190,14 +184,12 @@ libblock lib_fwd     //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
-    float dambocc = 1.0; // texture(SSAOMap, ssao_uv).x;  // dynamic AO
-    dambocc       = pow(dambocc, SSAOPower);
-    dambocc       = mix(1.0, dambocc, SSAOWeight);
-    float ambocc  = dambocc;
+    vec2 ssao_uv = (gl_FragCoord.xy) * InvViewportSize;
+    float dambocc = texture(SSAOMap, ssao_uv).x;  // Sample precomputed SSAO
+    float ambocc = dambocc;
     /////////////////////////
-    float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
-    vec3 ambient       = AmbientLevel * ambientshade;
+    float ambientshade = 1.0;//clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
+    vec3 ambient       = AmbientLevel * ambientshade * ambocc;
     /////////////////////////
     float costheta = clamp(dot(normal, edir), 0.01, 0.99);
     vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;
@@ -286,8 +278,6 @@ libblock lib_fwd     //
 
       vec3 specular_mask = vec3(float(_specular_mask));
 
-      // vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
-
       ////////////////////////////////////////////////////////////
 
       plc._lightdel = lightdel;
@@ -340,10 +330,6 @@ libblock lib_fwd     //
       vec3 diffuse_lighttex  = _sample_color_cookie(light_tex_slice, 0, diffuse_lightuv).xyz;      // diffuse WIP
       vec3 specular_lighttex = _sample_color_cookie(light_tex_slice, level, specular_lightuv).xyz; // specular WIP
 
-      // specular_lighttex *= plc._F0 * pl_c * float(specular_mask);
-
-      // vec3 lighttex = specular_lighttex; //mix(diffuse_lighttex,specular_lighttex,1.0-pow(pbd._roughness,1.0));
-
       vec3 LN     = normalize(lightdel);
       float Ldist = length(lightdel);
       float NdotL = max(0.0, dot(normal, LN));
@@ -354,12 +340,11 @@ libblock lib_fwd     //
       vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      //spot_lighting += vec3(shadow_factor*0.1);
-      // spot_lighting += pl_c;
+
     } // for (int i = 0; i < spot_light_count; i++) {
 
-    // return spot_lighting;
-    return (env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
+    return (env_lighting*ambocc + point_lighting + spot_lighting + emission); // * (1.0 - ZP);
+
   }
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;

@@ -60,8 +60,8 @@ uniform_set ub_frg_fwd {
   sampler2DArray light_cookie_depths;      // 4
 
   sampler2D SSAOMap;            // 5
-  sampler2D SSAOKernel;         // 6
-  sampler2D SSAOScrNoise;       // 7
+  //sampler2D SSAOKernel;         // 6
+  //sampler2D SSAOScrNoise;       // 7
 
   sampler2D MapBrdfIntegration; // 8
   sampler2D MapDiffuseEnv;      // 9
@@ -97,12 +97,12 @@ uniform_set ub_frg_fwd {
   float RoughnessFactor;
   float RoughnessPower;
 
-  float SSAOPower;
-  float SSAOWeight;
-  float SSAORadius;
-  float SSAOBias;
-  int SSAONumSteps;
-  int SSAONumSamples;
+  //float SSAOPower;
+  //float SSAOWeight;
+  //float SSAORadius;
+  //float SSAOBias;
+  //int SSAONumSteps;
+  //int SSAONumSamples;
 
   float DepthFogDistance;
   float DepthFogPower;
@@ -315,156 +315,116 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 libblock lib_ssao {
 /////////////////////////////////////////////////////////
 
-vec3 getViewPositionNL(vec2 uv) {
-    float depth = texture(MapDepth, uv).r;
-    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth, 1.0);
+vec3 viewpos_nonlin(vec2 uv) {
+    float depth = textureLod(MapDepth, uv, 0).r;
+    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
     vec4 viewSpacePosition = MatInvP * clipSpacePosition;
     viewSpacePosition /= viewSpacePosition.w;
-    return viewSpacePosition.xyz;
-}
-vec3 getViewPosition(vec2 uv) {
-    float lin_depth = texture(MapLinearDepth, uv).r;
-    float near = Zndc2eye.x;
-    float far = Zndc2eye.y;
-    float unit_depth = (lin_depth - near) / (far - near) * 2.0 - 1.0;
-    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, unit_depth, 1.0);
-    vec4 viewSpacePosition = MatInvP * clipSpacePosition;
-    viewSpacePosition /= viewSpacePosition.w;
-    return vec3(viewSpacePosition.xy,unit_depth);
+    return -viewSpacePosition.xyz;
 }
 
-vec3 ssao_normal(vec2 frg_uv) {
-    vec3 base_pos = getViewPosition(frg_uv);
+vec3 ssao_normal_nonlinear(vec2 frg_uv) {
+  vec3 base_pos = viewpos_nonlin(frg_uv);
 
-    // compute surface normal @ base_pos (via differential normal calculation)
+  // compute surface normal @ base_pos (via differential normal calculation)
 
-    vec2 uv_l = frg_uv + vec2(InvViewportSize.x, 0.0);
-    vec2 uv_r = frg_uv - vec2(InvViewportSize.x, 0.0);
-    vec2 uv_t = frg_uv + vec2(0.0, InvViewportSize.y);
-    vec2 uv_b = frg_uv - vec2(0.0, InvViewportSize.y);
+  vec2 uv_l = frg_uv + vec2(InvViewportSize.x, 0.0);
+  vec2 uv_r = frg_uv - vec2(InvViewportSize.x, 0.0);
+  vec2 uv_t = frg_uv + vec2(0.0, InvViewportSize.y);
+  vec2 uv_b = frg_uv - vec2(0.0, InvViewportSize.y);
 
-    vec3 pos_l = getViewPosition(uv_l);
-    vec3 pos_r = getViewPosition(uv_r);
-    vec3 pos_t = getViewPosition(uv_t);
-    vec3 pos_b = getViewPosition(uv_b);
+  vec3 pos_l = viewpos_nonlin(uv_l);
+  vec3 pos_r = viewpos_nonlin(uv_r);
+  vec3 pos_t = viewpos_nonlin(uv_t);
+  vec3 pos_b = viewpos_nonlin(uv_b);
 
-    vec3 dx = pos_l - base_pos;
-    vec3 dy = pos_t - base_pos;
-    vec3 normal = normalize(cross(dx, dy));
-    return normal*vec3(-1,1,1);
+  vec3 dx = pos_l - base_pos;
+  vec3 dy = pos_t - base_pos;
+  vec3 normal = normalize(cross(dx, dy));
+  return normal;
 }
-/*
-vec3 ssao_normal2(vec2 frg_uv) {
-    // compute surface normal @ base_pos (via differential normal calculation)
-    vec3 normal = ssao_normal(frg_uv);
-    vec3 up = vec3(0,1,0);
-    vec3 nxu = normalize(cross(normal, up));
-    vec3 nxv = normalize(cross(normal, nxu));
-    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
 
-    // Accumulate occlusion
-    vec3 NN = normal;
-    float rad_div_steps = SSAORadius / float(SSAONumSteps);
-    for (int i = 0; i < SSAONumSamples; ++i) {
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
-        if (dot(NOISEOUT, normal) < 0.0) {
-          NOISEOUT = -NOISEOUT;
-        } 
-        vec3 sampleDir = normalize(NOISEOUT.x * nxu + NOISEOUT.y * nxv + NOISEOUT.z * normal);
-        NN += sampleDir*0.02;
-    }
-    return normalize(NN);
-}
-// SSAO calculation function
-float ssao_linear(vec2 frg_uv) {
-    vec3 base_pos = getViewPosition(frg_uv);
-    float base_depth = base_pos.z;
-
-    vec3 up = vec3(0,1,0);
-    vec3 normal = ssao_normal(frg_uv);
-    vec3 nxu = normalize(cross(normal, up));
-    vec3 nxv = normalize(cross(normal, nxu));
-    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
-
-    // Accumulate occlusion
-    float occlusion = 0.0;
-    float rad_div_steps = SSAORadius / float(SSAONumSteps);
-    for (int i = 0; i < SSAONumSamples; ++i) {
-
-        // generate hemisphere of rays centered on "normal" at base_pos
-
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 NOISEOUT = normalize(reflect(skern, randomVec));
-
-        // construct sample direction from NOISEOUT, normal, nxu, nxv
-        vec3 sampleDir = normalize(normal+NOISEOUT*0.4);
-        //vec3 sampleDir = normalize(normal + NOISEOUT);
-        
-        // ensure sampledir is on hemisphere of normal by reflecting of plane defined by normal
-
-        vec3 trv_per_step = sampleDir.xyz * rad_div_steps;
-        for (int j = 1; j <= SSAONumSteps; ++j) {
-
-            // ray cast depth
-            vec3 sample_pos = base_pos + trv_per_step * float(j);
-            float casted_depth = -sample_pos.z;
-
-            // depth map sample
-            vec2 sample_uv = clamp(sample_pos.xy, vec2(0.0), vec2(1.0));
-            float depth_sample2 = -getViewPosition(sample_uv).z;
-
-
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(base_depth - depth_sample2));
-            if(casted_depth < (depth_sample2-SSAOBias)) {
-                occlusion += rangeCheck;
-            }
-            //occlusion += casted_depth*0.5;
-        }
-        //occlusion = sampleDir.z;
-    }
-    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
-
-    return occlusion;
-}
 
   /////////////////////////////////////////////////////////
 float ssao_nonlinear(vec2 frg_uv) {
-    float depth = texture(MapDepth, frg_uv).r;
+    vec3 base_pos = viewpos_nonlin(frg_uv);
+    vec3 normal2 = ssao_normal_nonlinear(frg_uv);
+    float base_depth = base_pos.z;
 
-    // Random noise texture
-    vec3 randomVec = texture(SSAOScrNoise, frg_uv).xyz;
+    // Make sampling direction more stable with consistent basis
+    vec3 tangent = normalize(cross(normal2, vec3(0.0, 1.0, 0.0)));
+    vec3 bitangent = cross(normal2, tangent);
+    mat3 TBN = mat3(tangent, bitangent, normal2);
 
-    // Accumulate occlusion
-    float occlusion = 0.0;
-    for (int i = 0; i < SSAONumSamples; ++i) {
-        vec3 skern = texture(SSAOKernel, vec2(float(i) / float(SSAONumSamples), 0)).xyz;
-        vec3 sampleDir = reflect(skern, randomVec); // reflect sample around the random vector
-        sampleDir = normalize(sampleDir);
+    float total_occlusion = 0.0;
+    int NUM_SAMPLES = 16;
 
-        vec2 trv_per_step = sampleDir.xy * (SSAORadius / float(SSAONumSteps));
-        for (int j = 1; j <= SSAONumSteps; ++j) {
-            vec2 samplePos = frg_uv + trv_per_step * float(j);
+    // Make the noise pattern more stable
+    vec2 noise_uv = fract(gl_FragCoord.xy / 64.0);
+    vec3 rand_vec = texture(SSAOScrNoise, noise_uv).xyz;
+    
+    // Create rotation matrix for random rotation
+    float rot_angle = rand_vec.x * 6.28318;
+    mat2 rot_matrix = mat2(
+        cos(rot_angle), -sin(rot_angle),
+        sin(rot_angle), cos(rot_angle)
+    );
+    
+    int num_passes = 0;
+    for(int i = 0; i < NUM_SAMPLES; i++) {
+        // Get sample from kernel and ensure it's in the upper hemisphere
+        vec3 kernel_sample = texture(SSAOKernel, vec2(float(i)/float(NUM_SAMPLES), 0)).xyz;
+        kernel_sample.z = abs(kernel_sample.z); // Ensure positive z (upper hemisphere)
+        
+        // Create rotation angles for this sample
+        float theta = rand_vec.x * 6.28318;
+        float phi = rand_vec.y * 3.1415; // Only rotate up to 90 degrees
+        
+        // Apply rotation to maintain hemispherical distribution
+        float sin_theta = sin(theta);
+        float cos_theta = cos(theta);
+        float sin_phi = sin(phi);
+        float cos_phi = cos(phi);
+        
+        vec3 rotated_sample = vec3(
+            kernel_sample.x * cos_theta + kernel_sample.y * sin_theta,
+            -kernel_sample.x * sin_theta + kernel_sample.y * cos_theta,
+            kernel_sample.z
+        );
+        rotated_sample = normalize(rotated_sample);
+        
+        // Bias samples towards normal direction
+        float scale = 1.0; //float(i) / float(NUM_SAMPLES);
+        scale = mix(0.1, 1.0, scale * scale);
+        rotated_sample *= scale;
+        
+        // Create offset vector in tangent space
+        vec3 offset = rotated_sample * SSAORadius;
+        
+        // convert offset to screen space
+        //vec2 offset_uv = vec2(offset.x, offset.y);
+        //vec2 offset_screen = offset.xy * 0.1;
 
-            // Clamp sample positions to screen boundaries
-            samplePos = clamp(samplePos, vec2(0.0), vec2(1.0));
-
-            float sampleDepth = texture(MapDepth, samplePos.xy).r;
-
-            float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(depth - sampleDepth));
-            if (sampleDepth < depth + SSAOBias) {
-                occlusion += rangeCheck;
-            }
-        }
+        // Convert to screen space offset
+        vec2 sample_uv = frg_uv + offset.xy;
+        
+        // Get sample depth
+        float sample_depth = viewpos_nonlin(sample_uv).z;
+        
+        // Compare depths in view space
+        float depth_diff = base_depth - sample_depth;
+        
+        // Accumulate occlusion with distance-based falloff
+        total_occlusion += float(depth_diff<SSAOBias);
+        num_passes ++;
     }
-    occlusion = (occlusion / (SSAONumSamples * SSAONumSteps));
 
-    return 1.0-occlusion;
-}
-*/
-
-float ssao(vec2 frg_uv) {
-  return 1.0; //ssao_linear(frg_uv);
+    // Normalize and invert occlusion
+    float occlusion = (total_occlusion / float(NUM_SAMPLES));
+    
+    // Enhance contrast slightly
+    occlusion = pow(occlusion, SSAOPower);
+    return mix(1.0, occlusion, SSAOWeight);
 }
 
 }

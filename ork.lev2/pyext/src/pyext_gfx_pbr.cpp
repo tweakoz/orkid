@@ -41,7 +41,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               [](py::object path) -> pbr::irradiancemaps_ptr_t { //
                 auto as_py_str = py::str(path);
                 auto as_str    = as_py_str.cast<std::string>();
-                //printf("requestIrradianceMaps<%s>\n", as_str.c_str());
+                // printf("requestIrradianceMaps<%s>\n", as_str.c_str());
                 return pbr::CommonStuff::requestIrradianceMaps(as_str);
               })
           .def(py::init<>())
@@ -68,10 +68,11 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
 
                 return load_req;
               })
-          .def("setBRDF",
-               [](pbr::commonstuff_ptr_t pbc, crcstring_ptr_t fmt) { //
+          .def(
+              "setBRDF",
+              [](pbr::commonstuff_ptr_t pbc, crcstring_ptr_t fmt) { //
                 pbc->_brdftype = fmt->hashed();
-               })
+              })
           .def_property(
               "environmentIntensity",
               [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_environmentIntensity; },
@@ -128,6 +129,10 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "ssaoNumSamples",
               [](pbr::commonstuff_ptr_t pbc) -> int { return pbc->_ssaoNumSamples; },
               [](pbr::commonstuff_ptr_t pbc, int v) { pbc->_ssaoNumSamples = v; })
+          .def_property(
+              "ssaoRadius",
+              [](pbr::commonstuff_ptr_t pbc) -> float { return pbc->_ssaoRadius; },
+              [](pbr::commonstuff_ptr_t pbc, float v) { pbc->_ssaoRadius = v; })
           .def("__repr__", [](pbr::commonstuff_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PbrCommon(%p)", d.get());
@@ -148,9 +153,11 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
           .def("addLightingLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) { m->addBasicStateLambda(pipe); })
           .def("addBasicStateLambda", [](pbrmaterial_ptr_t m) { m->addBasicStateLambda(); })
           .def("addLightingLambda", [](pbrmaterial_ptr_t m) { m->addLightingLambda(); })
-          .def("setActiveLightMap", [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
-            m->setActiveLightMap(name,color);
-          })
+          .def(
+              "setActiveLightMap",
+              [](pbrmaterial_ptr_t m, std::string name, fvec3 color) { //
+                m->setActiveLightMap(name, color);
+              })
           .def_property_readonly(
               "fxcache",                                              //
               [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
@@ -290,7 +297,7 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               })
           .def_property_readonly("texArrayCNMREA", [](pbrmaterial_ptr_t m) -> texturearray_ptr_t { return m->_texArrayCNMREA; })
           .def("setColorImage", [](pbrmaterial_ptr_t mtl, ctx_t context, image_ptr_t img) {
-            auto txi = context->TXI();
+            auto txi   = context->TXI();
             auto array = mtl->_texArrayCNMREA;
             auto slice = array->slice(0);
             txi->updateTextureArraySlice(slice.get(), img);

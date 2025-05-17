@@ -252,7 +252,11 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   rval._camdat = *this;
 
   //deco::prints(rval._vmatrix.dump4x3cn(), true);
-  //deco::prints(rval._pmatrix.dump4x3cn(), true);
+  //printf("near<%f> far<%f> aper<%f> aspect<%f>\n", fnear, ffar, faper, faspect);
+  //deco::prints(rval._pmatrix.dump4x4cn(), true);
+  //fmtx4 ip;
+  //ip.inverseOf(rval._pmatrix);
+  //deco::prints(ip.dump4x4cn(), true);
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////

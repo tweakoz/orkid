@@ -24,7 +24,7 @@ from lev2utils.primitives import createGridData
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
-SSAO_NUM_SAMPLES = 64
+SSAO_NUM_SAMPLES = 16
 
 
 ################################################################################
@@ -66,7 +66,7 @@ class SceneGraphApp(object):
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15),near=0.1,far=100)
     self.nodes=[]
-    self.ssaamode = False
+    self.ssaomode = True
 
   ##############################################
 
@@ -76,14 +76,15 @@ class SceneGraphApp(object):
       "SkyboxIntensity": float(inten),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.0),
+      "AmbientLight": vec3(0.25),
       "DepthFogDistance": float(10000),
-      "SSAONumSamples": SSAO_NUM_SAMPLES,
-      "SSAONumSteps": 4,
-      "SSAOBias": 0.001,
-      "SSAORadius": 1.0*25.4/1000.0, # 2 inches
-      "SSAOWeight": 0.5,
-      "SSAOPower": 0.5,
+      "SSAONumSamples": int(SSAO_NUM_SAMPLES),
+      "SSAONumSteps": 2,
+      "SSAOBias": 0.05,
+      "SSAORadius": 0.05, # 2 inches
+      "SSAOWeight": 0.25,
+      "SSAOPower": 0.125,
+      "SSAOFeedback": 1.0/16.0,
     }
 
     if envmap != "":
@@ -102,9 +103,15 @@ class SceneGraphApp(object):
     self.pbr_common.useFloatColorBuffer = True
     self.pbr_common.useDepthPrepass = True
 
+    self.rendernode.debugRenderingModel = tokens.NONE # NONE ALL FORWARD_PBR
+    self.rendernode.debugPassID = tokens.ALL # PROBE MAIN
+    self.rendernode.debugSubPassID = tokens.SSAO_LINDEPTH # tokens.FORWARD_PBR
+
     ###################################
 
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
+
+
 
     random.seed(12)
     white = lev2.Image.createFromFile("src://effect_textures/white_64.dds")
@@ -167,7 +174,7 @@ class SceneGraphApp(object):
     cookie1 = color_cookies.load("src://effect_textures/knob2.png")
     depth_cookie1 = depth_cookies.slice(0)
 
-    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(1000,800,500),cookie=cookie1,depth_cookie=depth_cookie1, radius=16,voffset=16,fovbase=25)
+    self.spotlight1 = MySpotLight( index=0,app=self,model=model,frq=0.17,color=vec3(1000,800,500),cookie=cookie1,depth_cookie=depth_cookie1, radius=24,voffset=10,fovbase=25)
 
     print("LMGR",lmgr)
     #assert(False)
@@ -187,11 +194,11 @@ class SceneGraphApp(object):
     res = lev2.ui.HandlerResult()
     if uievent.code == tokens.KEY_DOWN.hashed:
       if uievent.keycode == ord("A"):
-        if self.ssaamode == True:
-          self.ssaamode = False
+        if self.ssaomode == True:
+          self.ssaomode = False
         else:
-          self.ssaamode = True
-        print("SSAO MODE",self.ssaamode)
+          self.ssaomode = True
+        print("SSAO MODE",self.ssaomode)
         return res
       if uievent.keycode == ord("-"):
         self.pbr_common.roughnessPower *= 0.95
@@ -215,7 +222,7 @@ class SceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    if self.ssaamode == True:
+    if self.ssaomode == True:
       self.pbr_common.ssaoNumSamples = SSAO_NUM_SAMPLES
     else:
       self.pbr_common.ssaoNumSamples = 0
