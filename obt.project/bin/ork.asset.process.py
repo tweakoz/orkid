@@ -39,8 +39,15 @@ envmap_assets_to_process = [
   "src://envmaps/blender_sunrise.dds",
   "src://envmaps/blender_sunset.dds",
   "src://envmaps/tozenv_basic.dds",
+  "src://envmaps/tozenv_hellscape.dds",
+  "src://envmaps/tozenv_colornoise.dds",
   "src://envmaps/tozenv_caustic1.png",
   "src://envmaps/tozenv_nebula.png",
+  "src://envmaps/arena4k.png",
+  "src://envmaps/club4k.png",
+  "src://envmaps/crossroads.png",
+  "src://envmaps/ethereal4k.png",
+  "src://envmaps/futcity4k.png",
 ]
 #######################################
 def on_event(loadreq,evcode,data):

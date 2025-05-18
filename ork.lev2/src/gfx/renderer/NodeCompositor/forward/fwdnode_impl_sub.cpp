@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pbr_node_forward_impl.h"
+#include "fwdnode_impl.h"
 #include <ork/util/logger.h>
 
 namespace ork::lev2::pbr {
@@ -17,14 +17,13 @@ void ForwardPbrNodeImpl::_render_dpp(forward_pass_ptr_t fpass) {
   auto rtg_out  = fpass->_rtg_out;
   auto FBI = _currentContext->FBI();
 
+  //printf("render dppass rtg<%p>\n", (void*)rtg_out.get());
+
   _currentDrawQueue->enqueueLayerToRenderQueue(fpass->_dpp_pass_layer, _currentIRenderer);
+
+  //fpass->_fwd_pass_layer
   _currentRCFD->_renderingmodel = "DEPTH_PREPASS"_crcu;
   _currentRCFD->_subpassID      = "DEPTH_PREPASS"_crcu;
-
-  rtg_out->_autoclear      = true;
-  rtg_out->_depthOnly      = true;
-  rtg_out->_clearMaskDepth = true;
-  rtg_out->_clearMaskColor = false;
 
   _currentContext->debugPushGroup("ForwardPBR::depth-pre pass");
   FBI->PushRtGroup(rtg_out.get());
@@ -43,14 +42,11 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   auto rtg_out  = fpass->_rtg_out;
   auto RCFD     = drawdata->RCFD();
   auto FBI      = context->FBI();
+  auto FXI      = context->FXI();
   auto GBI      = context->GBI();
 
   context->debugPushGroup("ForwardPBR::skybox pass");
-
-  rtg_out->_depthOnly      = false;
-  rtg_out->_autoclear      = true;
-  rtg_out->_clearMaskDepth = true;
-  rtg_out->_clearMaskColor = true;
+  //printf("render skybox rtg<%p>\n", (void*)rtg_out.get());
 
   RCFD->_renderingmodel = "CUSTOM"_crcu;
   RCFD->_subpassID      = "SKYBOX"_crcu;
@@ -58,7 +54,12 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   RCID._pipeline_cache = _skybox_fxcache;
   auto pipeline        = _skybox_fxcache->findPipeline(RCID);
   FBI->PushRtGroup(rtg_out.get());
-  pipeline->wrappedDrawCall(RCID, [GBI]() {
+  pipeline->_rasterstate->setWriteMaskZ(true);
+  pipeline->_rasterstate->setWriteMaskRGB(true);
+  pipeline->_rasterstate->setWriteMaskA(true);
+  pipeline->_rasterstate->setDepthTest(EDepthTest::OFF);
+  pipeline->wrappedDrawCall(RCID, [=]() {
+    FXI->applyRasterState(*pipeline->_rasterstate);
     GBI->render2dQuadEML(
         fvec4(-1, -1, 2, 2), //
         fvec4(0, 0, 1, 1),   //
@@ -249,22 +250,22 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
   auto rtg_out   = fpass->_rtg_out;
   auto FBI       = _currentContext->FBI();
   auto GBI       = _currentContext->GBI();
+  auto pbrcommon = _node->_pbrcommon;
+
+  //printf("render colorpass rtg<%p>\n", (void*)rtg_out.get());
 
   _currentContext->debugMarker("ForwardPBR::renderEnqueuedScene::layer<std_forward>");
   _currentDrawQueue->enqueueLayerToRenderQueue(fpass->_fwd_pass_layer, _currentIRenderer);
 
   _currentRCFD->_renderingmodel = "FORWARD_PBR"_crcu;
   _currentRCFD->_subpassID      = "COLOR"_crcu;
-  _currentContext->debugPushGroup("ForwardPBR::color pass");
-  _currentIRenderer->_debugLog     = false;
-  rtg_out->_autoclear      = false;
-  rtg_out->_depthOnly      = false;
-  rtg_out->_clearMaskDepth = false; // not clearing anyway ...
-  rtg_out->_clearMaskColor = false; // not clearing anyway ...
+  auto autorelease_dbg_group    = _currentContext->debugPushGroup("ForwardPBR::color pass", true);
+  _currentIRenderer->_debugLog  = false;
+
+  ////////////////////////////////
+
   FBI->PushRtGroup(rtg_out.get());
   _currentIRenderer->drawEnqueuedRenderables(true);
-  _currentContext->debugPopGroup();
-
   FBI->PopRtGroup();
 
 }

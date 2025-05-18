@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pbr_node_forward_impl.h"
+#include "fwdnode_impl.h"
 
 ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 

@@ -96,8 +96,7 @@ libblock lib_deferred
   : lib_brdf
   : lib_gbuf_decode
   : lib_def
-  : lib_mmnoise
-  : lib_ssao {
+  : lib_mmnoise {
   /////////////////////////////////////////////////////////
   vec3 gammaCorrect(vec3 inp){
     return inp;

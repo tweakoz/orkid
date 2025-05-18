@@ -299,6 +299,8 @@ public:
 
   ///////////////////////////////////////////////////////
 
+  void bindRtGroup(RtGroup* rtg) final;
+
   void __setRtGroup(RtGroup* Base);
 
   void _pushRtGroup(RtGroup* Base) final;

@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import math, sys, os, random
+import math, sys, os, random, argparse
 from pathlib import Path
 from obt import path as obt_path
 from orkengine.core import vec3, vec4, quat
@@ -17,6 +17,12 @@ this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(str(obt_path.orkid()/"ork.lev2"/"examples"/"python")) # add parent dir to path
 from ork import path as ork_path
 from lev2utils.cameras import *
+
+################################################################################
+parser = argparse.ArgumentParser(description='ECS FPS Example')
+parser.add_argument('--fullscreen', action="store_true")
+parser.add_argument("-e","--envmap", type=str, default="nebula")
+args = parser.parse_args()
 
 ################################################################################
 tokens = CrcStringProxy()
@@ -40,7 +46,7 @@ class ECS_FIRST_PERSON_SHOOTER(object):
 
     self.ezapp = ecs.createApp( self,
                                 ssaa=0,
-                                fullscreen=False,
+                                fullscreen=args.fullscreen,
                                 left = 20,
                                 top = 42,
                                 width = 1280,
@@ -83,25 +89,29 @@ class ECS_FIRST_PERSON_SHOOTER(object):
     systemdata_SG = self.ecsscene.declareSystem("SceneGraphSystem")
     ##############################################
 
-    #self.layer_fwd = self.layer1
     self.fwd_layers = ["depth_prepass","std_forward"]
     systemdata_SG.declareLayer("std_forward")
     systemdata_SG.declareLayer("depth_prepass")
     systemdata_SG.declareParams({
+      "SkyboxTexPathStr": args.envmap,
       "SkyboxIntensity": float(2),
-      "SpecularIntensity": float(1),
+      "SpecularIntensity": float(2),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0),
       "DepthFogDistance": float(10000),
-      "SSAONumSamples": int(SSAO_NUM_SAMPLES),
-      "SSAONumSteps": 2,
-      "SSAOBias": 0.5,
-      "SSAORadius": 0.25, # 2 inches
-      "SSAOWeight": 1.0,
-      "SSAOPower": 0.125,
-      "SSAOFeedback": 1.0/2.0,
-      "preset": "ForwardPBR"
+      "preset": "ForwardPBR",
     })
+    if False:
+      systemdata_SG.declareParams({
+        "SSAONumSamples": int(SSAO_NUM_SAMPLES),
+        "SSAONumSteps": 2,
+        "SSAOBias": 0.5,
+        "SSAORadius": 0.25, # 2 inches
+        "SSAOWeight": 1.0,
+        "SSAOPower": 0.125,
+        "SSAOFeedback": 1.0/2.0,
+        "dppZbias": 0.0, #2.0e-6,
+      })
     
     #todo - set pbrcommon dppZBias to match SSAOBias
     

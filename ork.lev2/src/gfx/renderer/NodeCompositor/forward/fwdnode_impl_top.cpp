@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pbr_node_forward_impl.h"
+#include "fwdnode_impl.h"
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
@@ -142,6 +142,11 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   auto drawdata = fpass->_drawdata;
   auto rtg_out  = fpass->_rtg_out;
+  auto FBI      = _currentContext->FBI();
+
+  //printf("render dppskyssaocolor rtg<%p>\n", (void*)rtg_out.get());
+
+  rtg_out->_autoclear      = false;
 
   /////////////////////////////////////////////////////////////////////////////////////////
 
@@ -150,7 +155,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   CompositingPassData MY_CPD = _currentCIMPL->topCPD(); // copy top CPD
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
-
+  pbrcommon->_useDepthPrepass = true;
   ///////////////////////////////////////////////////////////////////////////
   // CPD modifications for this set of passes
   ///////////////////////////////////////////////////////////////////////////
@@ -172,6 +177,18 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   _currentRCFD->setUserProperty("OutputHeight"_crcu, _currentHeight);
 
   ///////////////////////////////////////////////////////////////////////////
+  // clear
+  ///////////////////////////////////////////////////////////////////////////
+
+  rtg_out->_clearMaskDepth = true;
+  rtg_out->_clearMaskColor = true;
+  rtg_out->_clearDepth     = 1.0f;
+  rtg_out->_clearColor     = _node->_pbrcommon->_clearColor;
+  rtg_out->_autoclear      = true;
+  FBI->PushRtGroup(rtg_out.get()); // creates and clears...
+  rtg_out->_autoclear      = false;
+
+  ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it
   ///////////////////////////////////////////////////////////////////////////
 
@@ -181,9 +198,14 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   // depth prepass
   ///////////////////////////////////////////////////////////////////////////
 
-  if (true) { //pbrcommon->_useDepthPrepass) {
+  if (pbrcommon->_useDepthPrepass) {
     // depth prepass
     _render_dpp(fpass);
+    _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
+  }
+  else{
+    _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, rtg_out->_depthBuffer->_texture);
+
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -194,14 +216,6 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   if (is_ssao_active) {
     // linearize depth -> fpass->_rtg_depth_copy_linear
     //_render_ssao_linearize_depth(fpass);
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  // store depth buffer in RCFD
-  ///////////////////////////////////////////////////////////////////////////
-
-  if (pbrcommon->_useDepthPrepass) {
-    _currentRCFD->setUserProperty("DEPTH_MAP"_crcu, fpass->_rtg_depth_copy->_depthBuffer->_texture);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -226,6 +240,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   _render_colorpass(fpass);
 
   ///////////////////////////////////////////////////////////////////////////
+  FBI->PopRtGroup(); 
   _currentCIMPL->popCPD();
   ///////////////////////////////////////////////////////////////////////////
   auto& ddprops = drawdata->_properties;
@@ -314,14 +329,6 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   CPD._height = _currentHeight;
 
   context->debugMarker(FormatString("ForwardPBR::preclear"));
-
-  _rtg_main->_autoclear      = true;
-  _rtg_main->_clearMaskDepth = true;
-  _rtg_main->_clearMaskColor = true;
-  _rtg_main->_clearDepth     = 1.0f;
-  _rtg_main->_clearColor     = _node->_pbrcommon->_clearColor;
-  FBI->PushRtGroup(_rtg_main.get()); // creates and clears...
-  FBI->PopRtGroup();
 
   CIMPL->pushCPD(CPD);
 

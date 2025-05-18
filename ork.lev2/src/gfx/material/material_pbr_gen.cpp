@@ -347,10 +347,14 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       filtex->_rtbuffer    = outbuffr;
       outbuffr->_debugName = FormatString("filteredenvmap-specenv-ruf%d", irough);
 
+
+      int numsamples = 8192; //int(pow(ir2, 0.25f) * 4096.0);
+
       fbi->PushRtGroup(outgroup.get());
+      ///////////////////////////////////////////////
+      // filter specular env map
+      ///////////////////////////////////////////////
       mtl->begin(tekFilterSpecMap, RCFD);
-      ///////////////////////////////////////////////
-      ///////////////////////////////////////////////
       logchan_pbrgen->log(
           "filterenv iruf<%d> num_ruf_levels<%d> w<%d> h<%d> roughness<%g>", irough, num_ruf_levels, w, h, roughness);
       logchan_pbrgen->log("filterenv iruf<%d> outgroup<%p> outbuf<%p>", irough, outgroup.get(), outbuffr.get());
@@ -359,12 +363,45 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       mtl->bindParamTexture(param_pfm, src_tex.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->bindParamVec2(param_imgdim, fvec2(w, h));
-      int numsamples = 16384; //int(pow(ir2, 0.25f) * 4096.0);
       mtl->bindParamU32(param_numsamples, numsamples);
       mtl->commit();
-      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-      ///////////////////////////////////////////////
+
+      // Split rendering into 256x256 chunks
+      const int CHUNK_SIZE = 128;
+      int num_chunks_x = (w + CHUNK_SIZE - 1) / CHUNK_SIZE;
+      int num_chunks_y = (h + CHUNK_SIZE - 1) / CHUNK_SIZE;
+
+      for(int cy = 0; cy < num_chunks_y; cy++) {
+
+        printf("env spec-filt ruf<%d> chunkrow<%d>                    \r", irough, cy );
+
+        for(int cx = 0; cx < num_chunks_x; cx++) {
+          // Calculate chunk dimensions
+          int chunk_w = std::min(CHUNK_SIZE, w - cx * CHUNK_SIZE);
+          int chunk_h = std::min(CHUNK_SIZE, h - cy * CHUNK_SIZE);
+          
+          // Calculate NDC coordinates for this chunk
+          float ndc_x = (float)(cx * CHUNK_SIZE) / w * 2.0f - 1.0f;
+          float ndc_y = (float)(cy * CHUNK_SIZE) / h * 2.0f - 1.0f;
+          float ndc_w = (float)chunk_w / w * 2.0f;
+          float ndc_h = (float)chunk_h / h * 2.0f;
+
+          // Calculate UV coordinates for this chunk
+          float uv_x = (float)(cx * CHUNK_SIZE) / w;
+          float uv_y = (float)(cy * CHUNK_SIZE) / h;
+          float uv_w = (float)chunk_w / w;
+          float uv_h = (float)chunk_h / h;
+
+          dwi->quad2DEML(
+            fvec4(ndc_x, ndc_y, ndc_w, ndc_h),
+            fvec4(uv_x, uv_y, uv_w, uv_h),
+            fvec4(0, 0, 0, 0));
+        }
+      }
+
       mtl->end(RCFD);
+
+      ///////////////////////////////////////////////
       fbi->PopRtGroup();
 
       auto captureb = std::make_shared<CaptureBuffer>();
@@ -522,8 +559,41 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       mtl->bindParamTexture(param_pfm, rawenvmap.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();
-      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-      ///////////////////////////////////////////////
+
+      // Split rendering into 256x256 chunks
+      const int CHUNK_SIZE = 256;
+      int num_chunks_x = (w + CHUNK_SIZE - 1) / CHUNK_SIZE;
+      int num_chunks_y = (h + CHUNK_SIZE - 1) / CHUNK_SIZE;
+
+      for(int cy = 0; cy < num_chunks_y; cy++) {
+
+        printf("env diff-filt chunkrow<%d>             \r", cy );
+
+        for(int cx = 0; cx < num_chunks_x; cx++) {
+          // Calculate chunk dimensions
+          int chunk_w = std::min(CHUNK_SIZE, w - cx * CHUNK_SIZE);
+          int chunk_h = std::min(CHUNK_SIZE, h - cy * CHUNK_SIZE);
+          
+          // Calculate NDC coordinates for this chunk
+          float ndc_x = (float)(cx * CHUNK_SIZE) / w * 2.0f - 1.0f;
+          float ndc_y = (float)(cy * CHUNK_SIZE) / h * 2.0f - 1.0f;
+          float ndc_w = (float)chunk_w / w * 2.0f;
+          float ndc_h = (float)chunk_h / h * 2.0f;
+
+          // Calculate UV coordinates for this chunk
+          float uv_x = (float)(cx * CHUNK_SIZE) / w;
+          float uv_y = (float)(cy * CHUNK_SIZE) / h;
+          float uv_w = (float)chunk_w / w;
+          float uv_h = (float)chunk_h / h;
+
+
+          dwi->quad2DEML(
+            fvec4(ndc_x, ndc_y, ndc_w, ndc_h),
+            fvec4(uv_x, uv_y, uv_w, uv_h),
+            fvec4(0, 0, 0, 0));
+        }
+      }
+
       mtl->end(RCFD);
       fbi->PopRtGroup();
 

@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "pbr_node_forward_impl.h"
+#include "fwdnode_impl.h"
 #include <ork/util/logger.h>
 
 namespace ork::lev2::pbr {
@@ -88,6 +88,8 @@ void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
   auto GBI       = _currentContext->GBI();
   auto pbrcommon = _node->_pbrcommon;
   int node_frame = _node->_frameIndex;
+
+  //printf("render ssaoprepass rtg<%p>\n", (void*)rtg_out.get());
 
   auto ssao_kernel   = pbrcommon->ssaoKernel(_currentContext, node_frame);
   //printf("node_frame<%d>\n", node_frame);

@@ -39,8 +39,15 @@ void GlFrameBufferInterface::_popRtGroup(bool continue_render) { // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlFrameBufferInterface::bindRtGroup(RtGroup* rtg) {
+  __setRtGroup(rtg);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
 
+  //printf("__setRtGroup<%p> prev<%p>\n", rtgroup, _active_rtgroup);
   GL_ERRORCHECK();
 
   _active_rtgroup = rtgroup;
@@ -114,6 +121,7 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplForMainSurface(RtGroup*
 
 void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   // glClearColor( 1.0f,1.0f,0.0f,1.0f );
+  //printf("clearing rtgroup<%p> color<%d> depth<%d>\n", rtg, int(rtg->_clearMaskColor), int(rtg->_clearMaskDepth));
   GL_ERRORCHECK();
   GLuint BufferBits = rtg->_clearMaskDepth ? GL_DEPTH_BUFFER_BIT : 0;
   if (rtg->_clearMaskDepth) {
