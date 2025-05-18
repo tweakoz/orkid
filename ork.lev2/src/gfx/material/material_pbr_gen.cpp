@@ -327,7 +327,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     h                        = rawenvmap->_height;
     std::atomic<int> pending = 0;
     cimg_array_t cimgs;
-    while (w < 512 and h < 512) {
+    while ((w < 1024) or (h < 1024)) {
       w *= 2;
       h *= 2;
     }

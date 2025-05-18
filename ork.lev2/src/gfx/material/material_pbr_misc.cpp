@@ -36,6 +36,8 @@ OIIO_NAMESPACE_USING
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl);
+
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
   auto basic_lambda  = createBasicStateLambda(this);

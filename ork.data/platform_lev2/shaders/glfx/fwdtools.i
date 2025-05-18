@@ -98,12 +98,7 @@ libblock lib_fwd     //
     // float ambocc = texture(SSAOMap, uv).x;
     //  filter sample ambocc
     vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
-    vec3 sambocc  = vec3(1); // texture(LightMapA, pbd.).xyz;
     float ambocc = texture(SSAOMap, ssao_uv).x;
-    // dambocc = pow(dambocc, SSAOPower);
-    // dambocc = mix(1.0,dambocc,SSAOWeight);
-    //float ambocc = 1.0; //(sambocc * dambocc);
-    // ambocc = 1.0;//
     /////////////////////////
     float ambientshade = clamp(dot(n, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade * ambocc;
@@ -130,7 +125,7 @@ libblock lib_fwd     //
     vec3 specular_light = ambient + env * SkyboxLevel;
     vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
-    vec3 specular       = specularMask * specularC * ambocc;
+    vec3 specular       = specularMask * specularC;// * ambocc;
     // specular = specular * pow(1.0-roughness,2.0);
 
     // vec3 probe_REFL = vec3(0);
@@ -348,15 +343,8 @@ libblock lib_fwd     //
       vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
-      //spot_lighting += vec3(shadow_factor*0.1);
-      // spot_lighting += pl_c;
+
     } // for (int i = 0; i < spot_light_count; i++) {
-
-    // return spot_lighting;
-    //return vec3(dambocc); //(env_lighting + point_lighting + spot_lighting + emission); //*modcolor;
-    //float Z = texture(MapLinearDepth, ssao_uv).r;
-    //float ZP = Z*0.02;
-
 
     return (env_lighting + point_lighting + spot_lighting + emission) * modcolor; // * (1.0 - ZP);
 

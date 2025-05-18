@@ -49,7 +49,7 @@ class StereoApp1(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(1.5),
+      "SkyboxIntensity": float(2.5),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
       "AmbientLight": vec3(0.1),
@@ -106,7 +106,7 @@ class StereoApp1(object):
 
     self.grid_data = createGridData()
     self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(.7)
+    self.grid_data.modcolor = vec3(1.7)
     self.grid_data.intensityA = 1.0*0.3
     self.grid_data.intensityB = 0.97*0.3
     self.grid_data.intensityC = 0

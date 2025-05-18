@@ -91,6 +91,8 @@ fragment_shader ps_filterSpecularEnvMapSTD : iface_fyo : lib_math : lib_envmappi
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapping : lib_brdf {
 
+  // Bicubic interpolation weight function
+
   vec2 fcoord = gl_FragCoord.xy;
   fcoord *= vec2(1.0 / (imgdim.x - 1), 1.0 / (imgdim.y - 1)); // a
   vec3 n  = env_equirectangularUV2Na(fcoord);
@@ -98,6 +100,10 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
   vec3 v  = r;
   vec3 o  = vec3(0, 0, 0);
   float w = 0;
+
+  // Check if bicubic upsampling is needed
+  vec2 prefiltmapSize = textureSize(prefiltmap, 0);
+  bool useBicubic = (prefiltmapSize.x < imgdim.x || prefiltmapSize.y < imgdim.y);
 
   vec2 blueNoiseOffset = fract(vec2(rand(fcoord), rand(fcoord.yx)) * 1000.0);
 
@@ -127,7 +133,16 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
 
       vec2 luv = env_equirectangularN2UVa(l);
       luv      = clamp(luv, 0, 1);
-      o += textureLod(prefiltmap, luv, 0).rgb * ndotl * msWeight;
+      
+      // Use bicubic sampling if input is lower resolution, otherwise use regular sampling
+      vec3 sampleColor;
+      if (useBicubic) {
+        sampleColor = textureBicubic(prefiltmap, luv);
+      } else {
+        sampleColor = textureLod(prefiltmap, luv, 0).rgb;
+      }
+      
+      o += sampleColor * ndotl * msWeight;
       w += ndotl * msWeight;
     }
   }

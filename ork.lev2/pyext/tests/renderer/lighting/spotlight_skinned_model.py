@@ -39,7 +39,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=1)
+    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.cameralut = lev2.CameraDataLut()
     self.vrcamera = lev2.CameraData()
@@ -61,9 +61,6 @@ class StereoApp1(object):
 
     self.frame_index = 0
 
-    #self.vrdev = lev2.orkidvr.novr_device()
-    #self.vrdev.camera = "vrcam"
-
     ###################################
     # create scenegraph
     ###################################
@@ -76,10 +73,7 @@ class StereoApp1(object):
       "AmbientLevel": vec3(0),
       "DepthFogDistance": 10000.0,
     }
-    if mono:
-      params_dict["preset"] = "ForwardPBR"
-    else:
-      params_dict["preset"] = "FWDPBRVR"
+    params_dict["preset"] = "ForwardPBR"
 
     self.model = lev2.XgmModel("data://tests/chartest/char_mesh")
     self.anim = lev2.XgmAnim("data://tests/chartest/char_testanim1")
@@ -107,11 +101,8 @@ class StereoApp1(object):
     ##################
 
     createSceneGraph(app=self,params_dict=params_dict)
-    self.layer_donly = self.scene.createLayer("depth_prepass")
     self.layer_fwd = self.layer1
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
-    #self.scenegraph = scenegraph.Scene(sg_params) << this does not work..
-    #self.sgnode = self.model.createNode("modelnode",self.layer_fwd)
+    self.fwd_layers = [self.layer_fwd]
     self.model_drawable = self.model.createDrawable()
     self.sgnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"modelnode",self.model_drawable)
     self.modelinst = self.model_drawable.modelinst

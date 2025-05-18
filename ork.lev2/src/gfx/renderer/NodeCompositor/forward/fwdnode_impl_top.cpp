@@ -155,7 +155,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   CompositingPassData MY_CPD = _currentCIMPL->topCPD(); // copy top CPD
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
-  pbrcommon->_useDepthPrepass = true;
+  //pbrcommon->_useDepthPrepass = true;
   ///////////////////////////////////////////////////////////////////////////
   // CPD modifications for this set of passes
   ///////////////////////////////////////////////////////////////////////////
