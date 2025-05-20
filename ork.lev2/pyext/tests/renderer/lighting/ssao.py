@@ -65,10 +65,11 @@ class SSAOAPP(object):
     sceneparams.SkyboxTexPathStr = "src://envmaps/tozenv_nebula"
     sceneparams.SSAONumSamples = 32
     sceneparams.SSAONumSteps = 5
-    sceneparams.SSAOBias = 0.15
-    sceneparams.SSAORadius = .1
-    sceneparams.SSAOWeight = 0.5
+    sceneparams.SSAOBias = -0.05
+    sceneparams.SSAORadius = .015
+    sceneparams.SSAOWeight = 1.0
     sceneparams.SSAOPower = 0.5
+    sceneparams.SSAOFeedback = 0.125
     ###################################
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer_donly = self.scene.createLayer("depth_prepass")

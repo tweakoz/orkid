@@ -121,7 +121,7 @@ class StereoApp1(object):
     self.grid_data.intensityC = 0.9
     self.grid_data.intensityD = 0.85
     self.grid_data.lineWidth = 0.1
-    self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")

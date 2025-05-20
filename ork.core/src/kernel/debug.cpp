@@ -22,7 +22,9 @@
 #endif
 
 
+#if ! defined(LINUX)
 std::atomic<int> Namespace::_nest_counter = 0;
+#endif
 
 namespace ork {
 

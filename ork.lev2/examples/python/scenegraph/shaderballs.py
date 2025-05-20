@@ -186,7 +186,7 @@ class SceneGraphApp(object):
     self.grid_data.modcolor = vec3(0.5)
     self.grid_draw = self.grid_data.createDrawable()
     self.grid_node = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"grid",self.grid_draw)
-    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    #self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
   ################################################

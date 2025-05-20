@@ -24,7 +24,7 @@ ForwardPbrNodeImpl::ForwardPbrNodeImpl(ForwardNode* node)
 
   _SHADOWCAM = std::make_shared<CameraMatrices>();
   _CUBECAM   = std::make_shared<CameraMatrices>();
-  _main_pass = std::make_shared<ForwardPass>();
+  _primary_pass = std::make_shared<ForwardPass>();
 
 }
 
@@ -37,9 +37,9 @@ ForwardPbrNodeImpl::~ForwardPbrNodeImpl() {
 
 void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
 
-  if (nullptr == _rtgs_main) {
+  if (nullptr == _rtgs_primary) {
 
-    _rtg_main_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
+    _rtg_primary_depth_copy  = std::make_shared<RtGroup>(context, 8, 8);
     _rtg_cube1_depth_copy = std::make_shared<RtGroup>(context, 8, 8);
     _rtg_ambocc_accum     = std::make_shared<RtGroup>(context, 8, 8);
     _rtg_ambocc_accum2    = std::make_shared<RtGroup>(context, 8, 8);
@@ -52,17 +52,16 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     }
 
     auto e_msaa = intToMsaaEnum(_ginitdata->_msaa_samples);
-    _rtgs_main  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
-    _rtgs_main->addBuffer("ForwardRt0", efmt);
-    // MsaaSamples msaa = rtg_out->_msaa_samples;
+    _rtgs_primary  = std::make_shared<RtgSet>(context, e_msaa, "rtgs-main");
+    _rtgs_primary->addBuffer("ForwardRt0", efmt);
 
     auto rtb1 = _rtg_ambocc_accum->createRenderTarget(EBufferFormat::R32F);
     auto rtb2 = _rtg_ambocc_accum2->createRenderTarget(EBufferFormat::R32F);
-    _rtg_main_depth_copy_linear = std::make_shared<RtGroup>(context, 8, 8);
-    auto rtb3 = _rtg_main_depth_copy_linear->createRenderTarget(EBufferFormat::R32F);
+    //_rtg_primary_depth_copy_linear = std::make_shared<RtGroup>(context, 8, 8);
+    //auto rtb3 = _rtg_primary_depth_copy_linear->createRenderTarget(EBufferFormat::R32F);
     rtb1->_debugName = "SSAO-Accum1";
     rtb2->_debugName = "SSAO-Accum2";
-    rtb3->_debugName = "SSAO-LinDepth";
+    //rtb3->_debugName = "SSAO-LinDepth";
     printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
     //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
     // auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
@@ -71,35 +70,6 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     _skybox_material->_variant = "skybox.forward"_crcu;
     _skybox_fxcache            = _skybox_material->pipelineCache();
     _enumeratedLights          = std::make_shared<EnumeratedLights>();
-
-    if (_ginitdata->_msaa_samples > 1) {
-      switch (_ginitdata->_msaa_samples) {
-        case 0:
-        case 1:
-          _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_1X, "rtgs-,main-resolve");
-          break;
-        case 4:
-          _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_4X, "rtgs-,main-resolve");
-          break;
-        case 9:
-          _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_9X, "rtgs-,main-resolve");
-          break;
-        case 16:
-          _rtgs_resolve_msaa = std::make_shared<RtgSet>(context, MsaaSamples::MSAA_16X, "rtgs-,main-resolve");
-          break;
-        default:
-          OrkAssert(false);
-          break;
-      }
-      _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer", efmt);
-      //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
-      // auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
-      // dsbuf->_debugName = "MsaaDownsampleBuffer";
-      _blit2screenmtl.gpuInit(context, "orkshader://solid");
-      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
-      _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
-    }
 
     /////////////////
     // SSAO
@@ -146,8 +116,6 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 
   //printf("render dppskyssaocolor rtg<%p>\n", (void*)rtg_out.get());
 
-  rtg_out->_autoclear      = false;
-
   /////////////////////////////////////////////////////////////////////////////////////////
 
   RtGroupRenderTarget rt(rtg_out.get());
@@ -155,7 +123,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   CompositingPassData MY_CPD = _currentCIMPL->topCPD(); // copy top CPD
   auto pbrcommon             = _node->_pbrcommon;
   bool renderingPROBE        = fpass->_renderingPROBE;
-  //pbrcommon->_useDepthPrepass = true;
+  pbrcommon->_useDepthPrepass = false;
   ///////////////////////////////////////////////////////////////////////////
   // CPD modifications for this set of passes
   ///////////////////////////////////////////////////////////////////////////
@@ -173,8 +141,6 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   _currentRCFD->setUserProperty("enumeratedlights"_crcu, _enumeratedLights);
   _currentRCFD->setUserProperty("renderingPROBE"_crcu, renderingPROBE);
   _currentRCFD->setUserProperty("havePROBES"_crcu, have_probes);
-  _currentRCFD->setUserProperty("OutputWidth"_crcu, _currentWidth);
-  _currentRCFD->setUserProperty("OutputHeight"_crcu, _currentHeight);
 
   ///////////////////////////////////////////////////////////////////////////
   // clear
@@ -184,9 +150,11 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   rtg_out->_clearMaskColor = true;
   rtg_out->_clearDepth     = 1.0f;
   rtg_out->_clearColor     = _node->_pbrcommon->_clearColor;
-  rtg_out->_autoclear      = true;
-  FBI->PushRtGroup(rtg_out.get()); // creates and clears...
   rtg_out->_autoclear      = false;
+
+  FBI->setViewport(0,0,_currentWidth, _currentHeight);
+  FBI->setScissor(0,0,_currentWidth, _currentHeight);
+  FBI->rtGroupClear(rtg_out.get()); // creates and clears...
 
   ///////////////////////////////////////////////////////////////////////////
   // Render Skybox first so MSAA can blend with it
@@ -240,7 +208,6 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   _render_colorpass(fpass);
 
   ///////////////////////////////////////////////////////////////////////////
-  FBI->PopRtGroup(); 
   _currentCIMPL->popCPD();
   ///////////////////////////////////////////////////////////////////////////
   auto& ddprops = drawdata->_properties;
@@ -251,6 +218,9 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
+
+  //printf("ForwardPBR::render_top\n");
+
   EASY_BLOCK("pbr-_render");
 
   auto context = drawdata.context();
@@ -281,12 +251,11 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   _currentHeight = drawdata.property("OutputHeight"_crcu).get<int>();
 
   uint64_t rtg_key = _node->_bufferKey;
-  _rtg_main    = _rtgs_main->fetch(rtg_key);
+  _rtg_primary    = _rtgs_primary->fetch(rtg_key);
 
-  if (_rtg_main->width() != _currentWidth or _rtg_main->height() != _currentHeight) {
-    _rtg_main->Resize(_currentWidth, _currentHeight);
+  if (_rtg_primary->width() != _currentWidth or _rtg_primary->height() != _currentHeight) {
+    _rtg_primary->Resize(_currentWidth, _currentHeight);
   }
-  _rtg_main->_autoclear = false;
 
   //////////////////////////////////////////////////////
   // get draw queue (otherwise we cant draw anything)
@@ -322,9 +291,9 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   CPD._mono_cam_matrices = drawdata.property("defcammtx"_crcu).get<cameramatrices_ptr_t>();
   CPD.assignLayers("depth_prepass,std_forward,probe,depth_probe");
   CPD._clearColor = _node->_pbrcommon->_clearColor;
-  RtGroupRenderTarget rt(_rtg_main.get());
+  RtGroupRenderTarget rt(_rtg_primary.get());
   CPD._irendertarget = &rt;
-  CPD.SetDstRect(context->mainSurfaceRectAtOrigin());
+  CPD.SetDstRect(ViewportRect(0, 0, _currentWidth, _currentHeight));
   CPD._width  = _currentWidth;
   CPD._height = _currentHeight;
 
@@ -346,38 +315,26 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   _update_env_probes(drawdata);
 
   ////////////////////////////
-  // main pass
+  // primary pass
   ////////////////////////////
 
-  context->debugPushGroup("ForwardPBR::MAIN RTG PASS");
+  context->debugPushGroup("ForwardPBR::PRIMARY RTG PASS");
 
-  //_main_pass->_node                  = _node;
-  _main_pass->_drawdata              = &drawdata;
-  _main_pass->_rtg_out               = _rtg_main;
-  _main_pass->_rtg_depth_copy        = _rtg_main_depth_copy;
-  _main_pass->_rtg_depth_copy_linear = _rtg_main_depth_copy_linear;
-  _main_pass->_renderingPROBE        = false;
-  _main_pass->_single_pass_stereo    = CPD._single_pass_stereo;
+  //_primary_pass->_node                  = _node;
+  _primary_pass->_drawdata              = &drawdata;
+  _primary_pass->_rtg_out               = _rtg_primary;
+  _primary_pass->_rtg_depth_copy        = _rtg_primary_depth_copy;
+  _primary_pass->_rtg_depth_copy_linear = _rtg_primary_depth_copy_linear;
+  _primary_pass->_renderingPROBE        = false;
+  _primary_pass->_single_pass_stereo    = CPD._single_pass_stereo;
 
-  RCFD->_passID = "MAIN"_crcu;
+  RCFD->_passID = "PRIMARY"_crcu;
 
-  _render_dppskyssaocolor(_main_pass);
+  _render_dppskyssaocolor(_primary_pass);
 
   CIMPL->popCPD();
 
   context->debugPopGroup();
-
-  ////////////////////////////
-  // resolve msaa
-  ////////////////////////////
-
-  if (_rtgs_resolve_msaa) {
-    context->debugPushGroup("ForwardPBR::MSAA RESOLVE");
-    auto FBI      = context->FBI();
-    RCFD->_passID = "MSAARESOLVE"_crcu;
-    FBI->msaaBlit(_rtg_main, _rtgs_resolve_msaa->fetch(rtg_key));
-    context->debugPopGroup();
-  }
 
   RCFD->exchangeDebugRenderingModel(prev_dbg_rmodel);
   RCFD->exchangeDebugPassID(prev_dbg_passid);

@@ -168,6 +168,12 @@ void FrameBufferInterface::setViewport(const ViewportRect& rect) {
   maViewportStack[miViewportStackIndex] = rect;
   _setViewport(rect._x, rect._y, rect._w, rect._h);
 }
+void FrameBufferInterface::setScissor(int x, int y, int w, int h) {
+  setScissor(ViewportRect(x, y, w, h));
+}
+void FrameBufferInterface::setViewport(int x, int y, int w, int h) {
+  setViewport(ViewportRect(x, y, w, h));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

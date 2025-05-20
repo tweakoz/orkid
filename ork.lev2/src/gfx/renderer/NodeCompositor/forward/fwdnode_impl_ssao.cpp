@@ -24,7 +24,7 @@ void ForwardPbrNodeImpl::_render_ssao_linearize_depth(forward_pass_ptr_t fpass) 
 
   _currentRCFD->_subpassID = "SSAO_LINDEPTH"_crcu;
   //printf("W<%d> H<%d>\n", W, H);
-  auto LDOUT = _rtg_main_depth_copy_linear;
+  auto LDOUT = _rtg_primary_depth_copy_linear;
   if (LDOUT->width() != W or LDOUT->height() != H) {
     LDOUT->Resize(W, H);
   }
@@ -74,7 +74,7 @@ void ForwardPbrNodeImpl::_render_ssao_linearize_depth(forward_pass_ptr_t fpass) 
   FBI->PopRtGroup();
   _currentContext->debugPopGroup();
 
-  _currentRCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_main_depth_copy_linear->GetMrt(0)->_texture);
+  _currentRCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_primary_depth_copy_linear->GetMrt(0)->_texture);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
   _ssao_material->bindParamFloat(_fxpSSAOPower, pbrcommon->_ssaoPower);
   _ssao_material->bindParamFloat(_fxpSSAOFeedback, pbrcommon->_ssaoFeedback);
 
-  _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_main->_depthBuffer->_texture.get());
+  _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_primary->_depthBuffer->_texture.get());
   _ssao_material->bindParamTexture(_fxpSSAOKernel, ssao_kernel.get());
   _ssao_material->bindParamTexture(_fxpSSAOScrNoise, ssao_scrnoise.get());
   _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());

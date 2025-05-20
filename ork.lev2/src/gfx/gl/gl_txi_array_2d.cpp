@@ -764,7 +764,11 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
   GL_ERRORCHECK();
   glTexParameteri(texture_target, GL_TEXTURE_MAX_LOD, num_slices - 1);
   GL_ERRORCHECK();
+#if defined(OPENGL_41)
   glTexParameteri(texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+  #else
+  glTexParameteri(texture_target, GL_TEXTURE_MAX_ANISOTROPY, 1);
+  #endif
   GL_ERRORCHECK();
 
   

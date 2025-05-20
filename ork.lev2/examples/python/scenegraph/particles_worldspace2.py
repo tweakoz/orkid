@@ -61,7 +61,7 @@ class ParticlesApp(object):
     self.grid_data.intensityD = 0
     self.grid_data.lineWidth = 0.025
     self.grid_data.extent =  extent
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
     self._ground_plane = plane(vec3(0,1,0),0)
      

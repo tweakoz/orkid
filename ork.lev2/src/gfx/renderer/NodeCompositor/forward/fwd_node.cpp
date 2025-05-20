@@ -39,10 +39,10 @@ void ForwardNode::DoRender(CompositorDrawData& drawdata) {
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
   auto fwd_impl   = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
-  auto rtg_output = fwd_impl->_rtgs_main->fetch(_bufferKey);
-  if (fwd_impl->_rtgs_resolve_msaa) {
+  auto rtg_output = fwd_impl->_rtgs_primary->fetch(_bufferKey);
+  /*if (fwd_impl->_rtgs_resolve_msaa) {
     rtg_output = fwd_impl->_rtgs_resolve_msaa->fetch(_bufferKey);
-  }
+  }*/
   return rtg_output;
 }
 ///////////////////////////////////////////////////////////////////////////////

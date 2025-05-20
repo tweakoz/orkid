@@ -54,10 +54,10 @@ struct ForwardPbrNodeImpl {
   std::string _camname;
   enumeratedlights_ptr_t _enumeratedLights;
 
-  rtgset_ptr_t _rtgs_main;
-  rtgroup_ptr_t _rtg_main;
-  rtgroup_ptr_t _rtg_main_depth_copy;
-  rtgroup_ptr_t _rtg_main_depth_copy_linear;
+  rtgset_ptr_t  _rtgs_primary;
+  rtgroup_ptr_t _rtg_primary;
+  rtgroup_ptr_t _rtg_primary_depth_copy;
+  rtgroup_ptr_t _rtg_primary_depth_copy_linear;
   rtgroup_ptr_t _rtg_ambocc_accum;
   rtgroup_ptr_t _rtg_ambocc_accum2;
   rtgroup_ptr_t _rtg_cube1_depth_copy;
@@ -104,7 +104,7 @@ struct ForwardPbrNodeImpl {
   int _currentWidth              = 0;
   int _currentHeight             = 0;
 
-  forward_pass_ptr_t _main_pass;
+  forward_pass_ptr_t _primary_pass;
 
 }; // IMPL
 

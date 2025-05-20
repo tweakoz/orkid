@@ -62,7 +62,7 @@ class StereoApp1(object):
     onode.flipY = True
 
     self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     createDefaultSpriteSystem(app=self)

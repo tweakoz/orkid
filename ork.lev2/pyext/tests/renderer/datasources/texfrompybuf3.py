@@ -167,7 +167,7 @@ class TestApp(object):
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(1)*3
     self.grid_data.majorTileDim = 8.0
-    self.grid_node = self.layer_std.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer_std.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     self.model = lev2.XgmModel("data://tests/chartest/char_mesh")

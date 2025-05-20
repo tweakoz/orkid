@@ -262,7 +262,7 @@ class UiSgQuadViewTestApp(object):
     ##########################################################################
 
     #self.grid_data = createGridData()
-    #self.grid_node = self.panels[0].layer.createGridNode("grid",self.grid_data)
+    #self.grid_node = self.panels[0].layer.createDrawableNodeFromData("grid",self.grid_data)
     #self.grid_node.sortkey = 1
 
     #self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)

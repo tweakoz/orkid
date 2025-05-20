@@ -302,8 +302,38 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       else if(texture_path == "arena") {
         texture_path = "src://envmaps/arena4k";
       }
+      else if(texture_path == "arena8k") {
+        texture_path = "src://envmaps/arena8k";
+      }
       else if(texture_path == "club") {
         texture_path = "src://envmaps/club4k";
+      }
+      else if(texture_path == "club8k") {
+        texture_path = "src://envmaps/club8k";
+      }
+      else if(texture_path == "cold") {
+        texture_path = "src://envmaps/cold4k";
+      }
+      else if(texture_path == "cold8k") {
+        texture_path = "src://envmaps/cold8k";
+      }
+      else if(texture_path == "pillars") {
+        texture_path = "src://envmaps/pillars4k";
+      }
+      else if(texture_path == "pillars8k") {
+        texture_path = "src://envmaps/pillars8k";
+      }
+      else if(texture_path == "desert") {
+        texture_path = "src://envmaps/desert4k";
+      }
+      else if(texture_path == "desert8k") {
+        texture_path = "src://envmaps/desert8k";
+      }
+      else if(texture_path == "ocean") {
+        texture_path = "src://envmaps/ocean4k";
+      }
+      else if(texture_path == "ocean8k") {
+        texture_path = "src://envmaps/ocean8k";
       }
       else if(texture_path == "crossroads") {
         texture_path = "src://envmaps/crossroads4k";
@@ -313,6 +343,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       }
       else if(texture_path == "futcity") {
         texture_path = "src://envmaps/futcity4k";
+      }
+      else if(texture_path == "futcity8k") {
+        texture_path = "src://envmaps/futcity8k";
       }
       _pbr_common->_useFloatColorBuffer = use_float_buffer;
 

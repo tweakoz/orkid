@@ -130,7 +130,7 @@ class UiSgQuadViewTestApp(object):
 
     self.scenegraph1 = scenegraph.Scene(sg_params1)
     self.layer1 = self.scenegraph1.createLayer("std_forward")
-    self.grid_node1 = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node1 = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node1.sortkey = 1
     self.cube_node1 = cube_prim.createNode("cube",self.layer1,pipeline_cube)
     self.sg1_stringnode = self.layer1.createDrawableNodeFromData("stringdraw",self.stringdrawable)
@@ -149,7 +149,7 @@ class UiSgQuadViewTestApp(object):
 
     self.scenegraph2 = scenegraph.Scene(sg_params2)
     self.layer2 = self.scenegraph2.createLayer("std_forward")
-    self.grid_node2 = self.layer2.createGridNode("grid",self.grid_data)
+    self.grid_node2 = self.layer2.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node2.sortkey = 1
     self.submesh_prim = submesh_prim
     self.mesh_node = submesh_prim.createNode("mesh",self.layer2,pipeline_mesh)

@@ -116,14 +116,14 @@ libblock lib_fwd     //
     // vec3 diffuse_env = env_equirectangular(diffn, MapDiffuseEnv, 0);
     //  Use reflection with appropriate mip level for specular
     float rl       = roughness * roughness;
-    rl             = pow(rl, 0.25);
+    rl             = pow(rl, 0.75);
     float slice = rl * RoughnessLevels*0.7;
     vec3 spec_env  = env_equirectangular_spec_wbias(refl_equi, MapSpecularEnv, slice,3.0);
     vec3 env       = spec_env + probe_REFL;
     env = env * (1.0+(pow(dialetric,2.0))*0.33);
 
-    vec3 specular_light = ambient + env * SkyboxLevel;
-    vec3 specularC      = specular_light * F0 * SpecularLevel * SkyboxLevel;
+    vec3 specular_light = ambient + env;
+    vec3 specularC      = specular_light * F0 * SpecularLevel;
     vec3 specularMask   = clamp(F * brdf.x + brdf.y, 0, 1);
     vec3 specular       = specularMask * specularC;// * ambocc;
     // specular = specular * pow(1.0-roughness,2.0);
@@ -131,7 +131,7 @@ libblock lib_fwd     //
     // vec3 probe_REFL = vec3(0);
     //  vec3 ambient = invF*AmbientLevel;
     /////////////////////////
-    return saturateV(diffuse + specular);
+    return saturateV((diffuse + specular)*SkyboxLevel);
   } // vec3 environmentLighting(){
 
   /////////////////////////////////////////////////////////

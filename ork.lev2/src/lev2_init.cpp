@@ -32,6 +32,7 @@
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_imposter.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/vr/vr.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -220,6 +221,7 @@ struct ClassToucher {
 
     GridDrawableData::GetClassStatic();
     GroundPlaneDrawableData::GetClassStatic();
+    ImposterDrawableData::GetClassStatic();
 
     XgmAnimChannel::GetClassStatic();
     XgmFloatAnimChannel::GetClassStatic();

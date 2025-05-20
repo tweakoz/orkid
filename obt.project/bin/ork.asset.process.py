@@ -45,9 +45,15 @@ envmap_assets_to_process = [
   "src://envmaps/tozenv_nebula.png",
   "src://envmaps/arena4k.png",
   "src://envmaps/club4k.png",
+  "src://envmaps/club8k.png",
   "src://envmaps/crossroads.png",
   "src://envmaps/ethereal4k.png",
   "src://envmaps/futcity4k.png",
+  "src://envmaps/ocean4k.png",
+  "src://envmaps/desert4k.png",
+  "src://envmaps/canyon4k.png",
+  "src://envmaps/cold4k.png",
+  "src://envmaps/pillars4k.png",
 ]
 #######################################
 def on_event(loadreq,evcode,data):

@@ -167,7 +167,7 @@ class LIGHTING_APP(object):
     self.grid_data.texturepath = "src://effect_textures/white_64.dds"
     self.grid_drawable = self.grid_data.createDrawable()
     self.grid_node = self.scene.createDrawableNodeOnLayers(COLOR_LAYERS,"grid-node",self.grid_drawable)
-    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    #self.grid_node = self.layer1.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
     ###################################

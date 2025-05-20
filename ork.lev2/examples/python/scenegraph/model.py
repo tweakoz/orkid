@@ -125,7 +125,7 @@ class SceneGraphApp(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_node = self.layer_fwd.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
   ##############################################

@@ -47,7 +47,7 @@ void GlFrameBufferInterface::bindRtGroup(RtGroup* rtg) {
 
 void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
 
-  //printf("__setRtGroup<%p> prev<%p>\n", rtgroup, _active_rtgroup);
+  //printf("__setRtGroup<%p:%s> prev<%p>\n", rtgroup, rtgroup ? rtgroup->_name.c_str() : "mainsurf", _active_rtgroup);
   GL_ERRORCHECK();
 
   _active_rtgroup = rtgroup;
@@ -120,8 +120,13 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplForMainSurface(RtGroup*
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
+
+  if (auto as_impl = rtg->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
+    as_impl.value()->_bindop();
+  }
+  
   // glClearColor( 1.0f,1.0f,0.0f,1.0f );
-  //printf("clearing rtgroup<%p> color<%d> depth<%d>\n", rtg, int(rtg->_clearMaskColor), int(rtg->_clearMaskDepth));
+  //printf("clearing rtgroup<%p:%s> color<%d> depth<%d>\n", rtg, rtg->_name.c_str(), int(rtg->_clearMaskColor), int(rtg->_clearMaskDepth));
   GL_ERRORCHECK();
   GLuint BufferBits = rtg->_clearMaskDepth ? GL_DEPTH_BUFFER_BIT : 0;
   if (rtg->_clearMaskDepth) {

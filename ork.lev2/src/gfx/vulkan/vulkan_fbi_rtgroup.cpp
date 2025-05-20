@@ -446,20 +446,19 @@ void VklRtBufferImpl::transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbu
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);    // VkAccessFlags dstAccessMask
 
-    if (1)
-      vkCmdPipelineBarrier(
-          cb->_vkcmdbuf,                                 // command buffer
-          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
-          VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
-          0,
-          nullptr, // memoryBarriers
-          0,
-          nullptr, // bufferMemoryBarriers
-          1,
-          barrier.get()); // imageMemoryBarriers
+    vkCmdPipelineBarrier(
+        cb->_vkcmdbuf,                                 // command buffer
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
+        VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+        0,
+        nullptr, // memoryBarriers
+        0,
+        nullptr, // bufferMemoryBarriers
+        1,
+        barrier.get()); // imageMemoryBarriers
 
-      setLayout(new_layout);
+    setLayout(new_layout);
   }
 }
 

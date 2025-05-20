@@ -404,8 +404,9 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                   }
                   prim->unlock(context.get());
                 })
-                .def("createNode", createNodeLambdaFromPrimType<primitives::points_v12t8_ptr_t>());
+                .def("createNode", createNodeLambdaFromPrimType<primitives::points_v12t8_ptr_t>())
                 #endif
+                ;
   type_codec->registerStdCodec<primitives::points_v12t8_ptr_t>(pointsprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tiled_pointsprim_type = //

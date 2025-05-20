@@ -17,6 +17,8 @@
 #include <ork/profiling.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
+// Explicit template instantiations for fixed vectors used in renderer
+///////////////////////////////////////////////////////////////////////////////
 
 template class ork::fixedvector<U32, ork::lev2::RenderQueue::krqmaxsize>;
 template class ork::fixedvector<const ork::lev2::RenderQueue::Node*, ork::lev2::RenderQueue::krqmaxsize>;
@@ -26,6 +28,9 @@ template class ork::fixedvector<ork::lev2::CallbackRenderable, ork::lev2::IRende
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
+// Base renderer implementation
+// Handles render queue management and sorting
+///////////////////////////////////////////////////////////////////////////////
 
 IRenderer::IRenderer(Context* pTARG)
     : _target(pTARG)
@@ -34,11 +39,17 @@ IRenderer::IRenderer(Context* pTARG)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Add a renderable to the unsorted queue
+// This is the entry point for all renderables
+///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::enqueueRenderable(IRenderable* renderable) {
   _unsortedNodes.enqueueRenderable(renderable);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Main render queue processing
+// Sorts and renders all queued renderables
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::drawEnqueuedRenderables(bool reset_after) {
@@ -49,6 +60,9 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
     mPerformanceItem->Enter();
 
   ///////////////////////////////////////////////////////
+  // Early out if queue is empty
+  ///////////////////////////////////////////////////////
+  
   size_t renderQueueSize = _unsortedNodes.Size();
   _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
@@ -65,6 +79,9 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   }
 
   ///////////////////////////////////////////////////////
+  // Stage 1: Export nodes and compute sort keys
+  ///////////////////////////////////////////////////////
+  
   _sortkeys.clear();
   EASY_END_BLOCK;
   EASY_BLOCK("IRenderer::DER2", profiler::colors::Red);
@@ -81,20 +98,21 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   EASY_END_BLOCK;
 
   ///////////////////////////////////////////////////////
-  // orkprintf( "rqsize<%d>\n", renderQueueSize );
+  // Stage 2: Radix sort the render queue
+  ///////////////////////////////////////////////////////
+  
   EASY_BLOCK("IRenderer::DER3", profiler::colors::Red);
 
   U32& first = (*_sortkeys.begin());
-
   _radixsorter.Sort(&first, U32(renderQueueSize));
-
   U32* sortedRenderQueueIndices = _radixsorter.GetIndices();
 
   int imdlcount = 0;
-
   float fruntot = 0.0f;
   EASY_END_BLOCK;
 
+  ///////////////////////////////////////////////////////
+  // Stage 3: Debug output of sort keys
   ///////////////////////////////////////////////////////
 
   EASY_BLOCK("IRenderer::DER4", profiler::colors::Red);
@@ -106,13 +124,14 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
 
   EASY_END_BLOCK;
 
-  EASY_BLOCK("IRenderer::DER5", profiler::colors::Red);
+  ///////////////////////////////////////////////////////
+  // Stage 4: Render sorted queue
+  ///////////////////////////////////////////////////////
 
-  //printf("renderQueueSize<%zu>\n", renderQueueSize);
+  EASY_BLOCK("IRenderer::DER5", profiler::colors::Red);
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
-    // printf( "sorted<%d:%d>\n", i, sorted );
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
@@ -121,10 +140,10 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   }
 
   float favgrun = fruntot / float(imdlcount);
-  ///////////////////////////////////////////////////////
   EASY_END_BLOCK;
 
-  // resetQueue();
+  ///////////////////////////////////////////////////////
+  // Stage 5: Cleanup and performance tracking
   ///////////////////////////////////////////////////////
 
   EASY_BLOCK("IRenderer::DER6", profiler::colors::Red);
@@ -137,11 +156,13 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
   EASY_BLOCK("IRenderer::DER7", profiler::colors::Red);
 
   _target->debugPopGroup();
-    if(reset_after){
-      resetQueue();
-    }
+  if(reset_after){
+    resetQueue();
+  }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Reset the render queue, clearing all renderables
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::resetQueue(void) {
@@ -151,6 +172,9 @@ void IRenderer::resetQueue(void) {
   _callbacks.clear();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Render a callback renderable
+// Used for custom rendering operations
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const {
@@ -164,6 +188,9 @@ void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Factory methods for different renderable types
+// These create and enqueue the renderables in one step
 ///////////////////////////////////////////////////////////////////////////////
 
 ModelRenderable& IRenderer::enqueueModel() {
@@ -188,9 +215,9 @@ CallbackRenderable& IRenderer::enqueueCallback() {
   return rend;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Each Renderer implements this function as a helper for Renderables when composing their sort keys
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Performance monitoring and context management
+///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::SetPerformanceItem(PerformanceItem* perfitem) {
   mPerformanceItem = perfitem;
@@ -199,6 +226,7 @@ void IRenderer::SetPerformanceItem(PerformanceItem* perfitem) {
 Context* IRenderer::GetTarget() const {
   return _target;
 }
+
 void IRenderer::setContext(Context* ptarg) {
   _target = ptarg;
 }

@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_imposter.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_geoclipmap.h>
@@ -57,6 +58,13 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           }))
           .def("resize", [](instancedmodeldrawabledata_ptr_t d, size_t count) { d->resize(count); });
   type_codec->registerStdCodec<instancedmodeldrawabledata_ptr_t>(instmdldrawabledata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto impdrawdata_type = //
+      py::class_<ImposterDrawableData, DrawableData, imposterdrawabledataptr_t>(module_lev2, "ImposterDrawableData")
+          .def(py::init<>())
+          .def("createDrawable", [](imposterdrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
+          ;
+  type_codec->registerStdCodec<imposterdrawabledataptr_t>(impdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //
       py::class_<GridDrawableData, DrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")

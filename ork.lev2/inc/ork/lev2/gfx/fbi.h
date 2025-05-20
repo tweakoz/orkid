@@ -74,12 +74,17 @@ public:
   // viewport / scissor
   ///////////////////////////////////////////////////////
 
-  void pushViewport(int iX, int iY, int iW, int iH);
-  void pushViewport(const ViewportRect& rViewportRect);
-  void setViewport(const ViewportRect& rScissorRect);
   void pushScissor(int iX, int iY, int iW, int iH);
   void pushScissor(const ViewportRect& rScissorRect);
+
+  void pushViewport(int iX, int iY, int iW, int iH);
+  void pushViewport(const ViewportRect& rViewportRect);
+
+  void setScissor(int iX, int iY, int iW, int iH);
   void setScissor(const ViewportRect& rScissorRect);
+  void setViewport(int iX, int iY, int iW, int iH);
+  void setViewport(const ViewportRect& rScissorRect);
+
   void popViewport();
   void popScissor();
   const ViewportRect& scissor() const;
