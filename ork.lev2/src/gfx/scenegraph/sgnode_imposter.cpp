@@ -29,6 +29,7 @@ struct ImposterDrawableImpl {
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _primitive;
   callback_drawable_wkptr_t _drawable;
   fxparam_constptr_t _paramRTGTEX;
+  fxparam_constptr_t _paramMVP;
   freestyle_mtl_ptr_t _blit_material;
   const FxShaderTechnique* _blit_tek = nullptr;
   fxparam_constptr_t _blit_par_mvp = nullptr;
@@ -82,6 +83,7 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
     OrkAssert(as_fstyle != nullptr);
     _paramRTGTEX = as_fstyle->param("rtgtex");
     OrkAssert(_paramRTGTEX != nullptr);
+    _paramMVP = as_fstyle->param("mvp");
 
     _blit_material = std::make_shared<FreestyleMaterial>();
     _blit_material->gpuInit(ctx, "orkshader://solid");
@@ -133,6 +135,8 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     auto monocams = CPD.cameraMatrices();
     fvec2 VIEWPORT_PLV = fvec2(CPD._width, CPD._height);
     auto VP = RCFD->userPropertyAs<fmtx4>("VPMATRIX"_crcu);
+    auto P = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
+    auto V = RCFD->userPropertyAs<fmtx4>("VMATRIX"_crcu);
 
     ////////////////////////////////////////////
     // node related data
@@ -159,9 +163,24 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     // compute sphere size in pixels @ pos
     ////////////////////////////////////////////
 
-    fvec3 SPH_U = UP.normalized() * _radius;
-    fvec3 SPH_R = RIGHT.normalized() * _radius;
+    fvec3 SPH_U = UP.normalized() * _radius*2.0;
+    fvec3 SPH_R = RIGHT.normalized() * _radius*2.0;
     fvec3 SPH_Z = UP.crossWith(RIGHT).normalized() * _radius;
+    fvec3 UP_corrected = -UP; // Negate the UP vector
+    fvec3 SPH_UC = UP_corrected.normalized() * _radius*2.0;
+
+    fvec3 V0 = -SPH_R*0.5f-(SPH_U*0.5f);
+    fvec3 V1 =  SPH_R*0.5f-(SPH_U*0.5f);
+    fvec3 V2 =  V1 + SPH_U;
+    fvec3 V3 =  V0 + SPH_U;
+
+    // get screen space positions of V0..3
+
+    fvec3 SS0 = V0.transform(VP).perspectiveDivided();
+    fvec3 SS1 = V1.transform(VP).perspectiveDivided();
+    fvec3 SS2 = V2.transform(VP).perspectiveDivided();
+    fvec3 SS3 = V3.transform(VP).perspectiveDivided();
+
     ////////////////////////////////////////////
     // render imposter to texture
     ////////////////////////////////////////////
@@ -175,11 +194,25 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->pushScissor(vprect_rtg);
     FBI->pushViewport(vprect_rtg);
     FBI->PushRtGroup(RTG.get());
+
+    float x1 = SS0.x;
+    float x2 = SS2.x;
+    float y1 = SS0.y;
+    float y2 = SS2.y;
+    auto SUBP = P.subPerspective(x1, y1, x2, y2);
+    auto SUBMVP = SUBP * V * worldmatrix;
+    _impdata->_pipeline->bindParam(_paramMVP, SUBMVP);
+    ////////////////////////////////////////////
+    _impdata->_pipeline->wrappedDrawCall(
+      RCID,                                   //
+      [this, context]() {                     //
+       this->_primitive->renderEML(context); //
+    });
+
     FBI->PopRtGroup();
     FBI->popViewport();
     FBI->popScissor();
 
-    //_impdata->_pipeline->bindParam(_paramRTGTEX, RTG->texture(0));
 
     //auto monocams   = CPD._mono_cam_matrices;
     //monocams->MVPMONO(worldmatrix);
@@ -188,10 +221,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     // blit pre-rendered texture to screen
     ////////////////////////////////////////////
 
-    fvec3 V0 = -SPH_R*0.5f-(SPH_U*0.5f);
-    fvec3 V1 =  SPH_R*0.5f-(SPH_U*0.5f);
-    fvec3 V2 =  V1 + SPH_U;
-    fvec3 V3 =  V0 + SPH_U;
 
     // material preamble
 
@@ -203,21 +232,13 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
     // render
 
-    fvec3 P2 = POS+SPH_Z*2.5f;
     DWI->quad3DEML(
-      P2+V0, P2+V1, P2+V2, P2+V3,                                     // positions
-      fvec2(0, 0), fvec2(1, 0), fvec2(1, 1), fvec2(0, 1), // uv
+      POS+V0, POS+V1, POS+V2, POS+V3,                                     // positions
+      fvec2(0, 1), fvec2(0, 0), fvec2(1, 0), fvec2(1, 1), // uv
       0xffffffff);                                        // color
 
     // material postamble
     _blit_material->end(RCFD);
-
-    ////////////////////////////////////////////
-    _impdata->_pipeline->wrappedDrawCall(
-      RCID,                                   //
-      [this, context]() {                     //
-       this->_primitive->renderEML(context); //
-    });
 
   }
   else{

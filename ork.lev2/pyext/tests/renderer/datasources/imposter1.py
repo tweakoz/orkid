@@ -138,7 +138,7 @@ class ImposterApp(object):
 
     self.grid_data.shader_suffix = "_V4"
     self.grid_data.modcolor = vec3(1)*3
-    self.grid_data.majorTileDim = 8.0
+    self.grid_data.majorTileDim = 1.0
     self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
@@ -197,7 +197,7 @@ class ImposterApp(object):
 
   def onGpuUpdate(self,ctx):
     self.frame_index += 0.3
-    y = math.sin(self.frame_index*0.1)*2
+    y = 1.0+math.sin(self.frame_index*0.05)
     pos = vec3(0,y,0)
     self.imp_node.worldTransform.translation = pos
     pass 
