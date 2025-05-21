@@ -66,7 +66,7 @@ fragment_interface iface_frg : uset_frg {
 }
 ////////////////////////////////////////
 vertex_shader vs_imp1 : iface_vtx {
-  frg_col = (normalize(nrm)+vec3(1))*0.5;
+  frg_col = normalize(nrm);//+vec3(1))*0.5;
   gl_Position = mvp * pos;
 }
 ////////////////////////////////////////
@@ -95,7 +95,7 @@ class ImposterApp(object):
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
     self.frame_index = 0
 
-    setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,10,0))
+    setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,0,0))
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -166,27 +166,33 @@ class ImposterApp(object):
     pipeline.sharedMaterial = mtl
 
     # rtgroup
-    rtg = lev2.RtGroup(ctx,256,256)
+    rtg = lev2.RtGroup(ctx,128,128)
     rtb_c = rtg.createBuffer(tokens.RGB8,tokens.NONE)
     # the imposter itself    
     self.imp_data = lev2.ImposterDrawableData()
     self.imp_data.shape = Sphere(vec3(0), 1.0)
-    self.imp_data.detail = 2
+    self.imp_data.detail = 3
     self.imp_data.pipeline = pipeline
     self.imp_data.rtgroup = rtg
 
     # imposter scenegraph node
     self.imp_node = self.layer_fwd.createDrawableNodeFromData("imp1",self.imp_data)
     self.imp_node.worldTransform.scale = 1
-    self.imp_node.worldTransform.translation = vec3(0,1.0,0)
+    self.imp_node.worldTransform.translation = vec3(0,0,0)
 
   ##############################################
 
   def onUiEvent(self,uievent):
+    res = lev2.ui.HandlerResult()
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      ######################
+      if uievent.keycode == ord("D"):
+        self.imp_data.debug_viz = not self.imp_data.debug_viz
+        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-    return lev2.ui.HandlerResult()
+    return res
 
   ################################################
 
@@ -197,7 +203,7 @@ class ImposterApp(object):
   def onGpuUpdate(self,ctx):
     self.frame_index += 0.3
     y = 1.0+math.sin(self.frame_index*0.05)
-    pos = vec3(0,y,0)
+    pos = vec3(0,1,0)
     self.imp_node.worldTransform.translation = pos
     pass 
 

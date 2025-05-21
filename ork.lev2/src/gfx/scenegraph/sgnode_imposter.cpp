@@ -8,6 +8,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/math/sphere.h>
 #include <ork/core_types.h>
+#include <ork/math/cmatrix4.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::lev2::ImposterDrawableData, "ImposterDrawableData");
@@ -97,7 +98,7 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
 
     _blit_material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
     _blit_material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
-    _blit_material->_rasterstate->setCullTest(ECullTest::PASS_FRONT);
+    _blit_material->_rasterstate->setCullTest(ECullTest::OFF);
     _blit_material->_rasterstate->setWriteMaskRGB(true);
     _blit_material->_rasterstate->setWriteMaskA(true);
     _blit_material->_rasterstate->setWriteMaskZ(true);
@@ -138,49 +139,14 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     auto P = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
     auto V = RCFD->userPropertyAs<fmtx4>("VMATRIX"_crcu);
     auto eye_pos = V.inverse().translation();
+
     ////////////////////////////////////////////
     // node related data
     ////////////////////////////////////////////
 
     auto worldmatrix = RCID.worldMatrix();
     fvec3 POS = worldmatrix.translation();
-
-    ////////////////////////////////////////////
-    // compute billboard vectors
-    ////////////////////////////////////////////
-
-    fvec3 UP, RIGHT;
-    monocams->pixelLengthVectors(POS,          // pos (in)
-                                 VIEWPORT_PLV, // viewport (in)
-                                 UP,           // up (out)
-                                 RIGHT);       // right (out)
-
-    // the pixel length vectors are in world space
-    //  and represent the size of 1 pixel in world space
-    //  at the given position in the world                             
-
-    ////////////////////////////////////////////
-    // compute sphere size in pixels @ pos
-    ////////////////////////////////////////////
-
-    fvec3 SPH_U = UP.normalized() * _radius*2.5;
-    fvec3 SPH_R = RIGHT.normalized() * _radius*2.5;
-    fvec3 SPH_Z = UP.crossWith(RIGHT).normalized() * _radius;
-    fvec3 UP_corrected = -UP; // Negate the UP vector
-    fvec3 SPH_UC = UP_corrected.normalized() * _radius*2.0;
-
-    fvec3 V0 = -SPH_R*0.5f-(SPH_U*0.5f);
-    fvec3 V1 =  SPH_R*0.5f-(SPH_U*0.5f);
-    fvec3 V2 =  V1 + SPH_U;
-    fvec3 V3 =  V0 + SPH_U;
-
-    // get screen space positions of V0..3
-
-    fvec3 SS0 = V0.transform(VP).perspectiveDivided();
-    fvec3 SS1 = V1.transform(VP).perspectiveDivided();
-    fvec3 SS2 = V2.transform(VP).perspectiveDivided();
-    fvec3 SS3 = V3.transform(VP).perspectiveDivided();
-
+    
     ////////////////////////////////////////////
     // render imposter to texture
     ////////////////////////////////////////////
@@ -195,16 +161,53 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->pushViewport(vprect_rtg);
     FBI->PushRtGroup(RTG.get());
 
-    float x1 = SS0.x;
-    float x2 = SS2.x;
-    float y1 = SS0.y;
-    float y2 = SS2.y;
-    auto SUBP = P.subPerspective(x1, y1, x2, y2);
     auto target = POS;
-    auto la_up = UP;
-    fmtx4 NEW_V;
-    NEW_V.lookAt(eye_pos, target, la_up);
-    auto SUBMVP = SUBP * NEW_V * worldmatrix;
+
+    fvec3 sphereToCamera = eye_pos - POS;
+    float distanceToSphere = sphereToCamera.length();
+    fvec3 sphereToCameraDir = sphereToCamera / distanceToSphere;
+    
+    ////////////////////////////////////////////
+    // Calculate billboard orientation that perfectly faces camera
+    ////////////////////////////////////////////
+    
+    // Find a stable up vector (not parallel to view direction)
+    fvec3 worldUp = fvec3(0, 1, 0);
+    if (std::abs(sphereToCameraDir.dotWith(worldUp)) > 0.99f) {
+        worldUp = fvec3(1, 0, 0);
+    }
+    
+    // Calculate right and up vectors for billboard
+    fvec3 right = sphereToCameraDir.crossWith(worldUp).normalized();
+    fvec3 up = right.crossWith(sphereToCameraDir).normalized();
+
+    float bbrad = _radius * 1.1f;
+    fvec3 V0 = POS - right * bbrad - up * bbrad; // bottom left
+    fvec3 V1 = POS + right * bbrad - up * bbrad; // bottom right
+    fvec3 V2 = POS + right * bbrad + up * bbrad; // top right
+    fvec3 V3 = POS - right * bbrad + up * bbrad; // top left
+    
+    // Create a view matrix looking directly at the sphere center
+    fmtx4 rtgView;
+    rtgView.lookAt(eye_pos, POS, up );
+    
+    // For a 3D sphere, we want perspective projection
+    fmtx4 rtgProj;
+    
+    // Calculate field of view that frames the sphere nicely
+    // Using the formula: fovy = 2 * atan(radius / distance)
+    float fovy = 2.0f * atan(_radius / distanceToSphere);
+    fovy *= 1.1f;
+    
+    // Add a small margin to ensure the sphere is fully visible (20%)
+    
+    // Create perspective projection matrix
+    // Use aspect ratio 1:1 since we're rendering to a square texture
+    float near = std::max(0.1f, distanceToSphere - _radius * 2.0f);
+    float far = distanceToSphere + _radius * 2.0f;
+    rtgProj.perspective(fovy, 1.0f, near, far);    //printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
+
+    auto SUBMVP = (rtgProj * rtgView)*worldmatrix; 
     _impdata->_pipeline->bindParam(_paramMVP, SUBMVP);
     ////////////////////////////////////////////
     _impdata->_pipeline->wrappedDrawCall(
@@ -233,12 +236,21 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     // render
 
     DWI->quad3DEML(
-      POS+V0, POS+V1, POS+V2, POS+V3,                                     // positions
-      fvec2(0, 1), fvec2(0, 0), fvec2(1, 0), fvec2(1, 1), // uv
+      V0, V1, V2, V3,                                     // positions
+      fvec2(1, 0), fvec2(0, 0), fvec2(0, 1), fvec2(1, 1), // uv
       0xffffffff);                                        // color
 
     // material postamble
     _blit_material->end(RCFD);
+
+    if( _impdata->_debug_viz ){
+      _impdata->_pipeline->bindParam(_paramMVP, (P*V)*worldmatrix);
+      _impdata->_pipeline->wrappedDrawCall(
+        RCID,                                   //
+        [this, context]() {                     //
+         this->_primitive->renderEML(context); //
+      });
+    }
 
   }
   else{

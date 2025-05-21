@@ -83,7 +83,11 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "rtgroup",
               [](imposterdrawabledataptr_t drw) -> rtgroup_ptr_t { return drw->_rtg; },
-              [](imposterdrawabledataptr_t drw, rtgroup_ptr_t val) { drw->_rtg = val; });
+              [](imposterdrawabledataptr_t drw, rtgroup_ptr_t val) { drw->_rtg = val; })
+          .def_property(
+              "debug_viz",
+              [](imposterdrawabledataptr_t drw) -> bool { return drw->_debug_viz; },
+              [](imposterdrawabledataptr_t drw, bool val) { drw->_debug_viz = val; });
   type_codec->registerStdCodec<imposterdrawabledataptr_t>(impdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //

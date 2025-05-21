@@ -249,6 +249,23 @@ template <typename T> struct Matrix44 final
 
   Matrix44<T> subPerspective(float x1, float y1, float x2, float y2) const;
   
+
+  static Matrix44<T> obliqueView(
+    const Vector3<T>& eye, 
+    const Vector3<T>& v0,  // bottom-left corner
+    const Vector3<T>& v1,  // bottom-right corner
+    const Vector3<T>& v2,  // top-right corner
+    const Vector3<T>& v3); // top-left corner
+
+  static Matrix44<T> obliqueProjection(
+    const Matrix44<T>& viewMat, 
+    const Vector3<T>& v0,  // bottom-left corner
+    const Vector3<T>& v1,  // bottom-right corner
+    const Vector3<T>& v2,  // top-right corner
+    const Vector3<T>& v3,  // top-left corner
+    T nearZ, 
+    T farZ);
+
   static Matrix44<T> createPerspectiveMatrix(T fovy /*degrees*/, T aspect, T near, T far) {
     Matrix44<T> rval;
     rval.perspective(fovy, aspect, near, far);

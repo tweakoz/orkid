@@ -1290,6 +1290,48 @@ template <typename T> T Matrix44<T>::determinant3x3() const {
   return glm::determinant(m33.asGlmMat3());
 }
 
+struct frustum {
+  float _l = 0.0f;
+  float _r = 0.0f;
+  float _t = 0.0f;
+  float _b = 0.0f;
+  float _n = 0.0f;
+  float _f = 0.0f;
+};
+
+inline fmtx4 FrustumMatrix(const frustum& f) {
+  float left   = f._l;
+  float right  = f._r;
+  float top    = f._t;
+  float bottom = f._b;
+  float zn     = f._n;
+  float zf     = f._f;
+
+  fmtx4 rval;
+
+  rval.setToIdentity();
+
+  const float two_near_dist = 2.0f * zn;
+  const float width         = right - left;
+  const float height        = top - bottom;
+  const float depth         = zf - zn;
+
+  const float m00 = two_near_dist / width;
+  const float m02 = (right + left) / width;
+  const float m11 = two_near_dist / height;
+  const float m12 = (top + bottom) / height;
+  const float m22 = -(zf + zn) / depth;
+  const float m23 = -(2.0f * zf * zn) / depth;
+  const float m32 = -1.0f;
+
+  rval.setRow(0, fvec4(m00, 0.0f, m02, 0.0f));
+  rval.setRow(1, fvec4(0.0f, m11, m12, 0.0f));
+  rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23));
+  rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f));
+
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
