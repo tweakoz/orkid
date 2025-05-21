@@ -137,7 +137,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     auto VP = RCFD->userPropertyAs<fmtx4>("VPMATRIX"_crcu);
     auto P = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
     auto V = RCFD->userPropertyAs<fmtx4>("VMATRIX"_crcu);
-
+    auto eye_pos = V.inverse().translation();
     ////////////////////////////////////////////
     // node related data
     ////////////////////////////////////////////
@@ -200,7 +200,11 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     float y1 = SS0.y;
     float y2 = SS2.y;
     auto SUBP = P.subPerspective(x1, y1, x2, y2);
-    auto SUBMVP = SUBP * V * worldmatrix;
+    auto target = POS;
+    auto la_up = UP;
+    fmtx4 NEW_V;
+    NEW_V.lookAt(eye_pos, target, la_up);
+    auto SUBMVP = SUBP * NEW_V * worldmatrix;
     _impdata->_pipeline->bindParam(_paramMVP, SUBMVP);
     ////////////////////////////////////////////
     _impdata->_pipeline->wrappedDrawCall(
@@ -212,10 +216,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->PopRtGroup();
     FBI->popViewport();
     FBI->popScissor();
-
-
-    //auto monocams   = CPD._mono_cam_matrices;
-    //monocams->MVPMONO(worldmatrix);
 
     ////////////////////////////////////////////
     // blit pre-rendered texture to screen
