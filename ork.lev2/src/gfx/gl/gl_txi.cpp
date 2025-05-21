@@ -59,6 +59,12 @@ GLFormatTriplet::GLFormatTriplet(EBufferFormat inp) {
       _type           = GL_UNSIGNED_INT;
       break;
     }
+    case EBufferFormat::RGBA32UI: {
+      _internalFormat = GL_RGBA32UI;
+      _format         = GL_RGBA_INTEGER;
+      _type           = GL_UNSIGNED_INT;
+      break;
+    }
     ////////////////////////////
     case EBufferFormat::RGB8: {
       _internalFormat = GL_RGB8;
