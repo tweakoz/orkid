@@ -163,8 +163,8 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     // compute sphere size in pixels @ pos
     ////////////////////////////////////////////
 
-    fvec3 SPH_U = UP.normalized() * _radius*2.0;
-    fvec3 SPH_R = RIGHT.normalized() * _radius*2.0;
+    fvec3 SPH_U = UP.normalized() * _radius*2.5;
+    fvec3 SPH_R = RIGHT.normalized() * _radius*2.5;
     fvec3 SPH_Z = UP.crossWith(RIGHT).normalized() * _radius;
     fvec3 UP_corrected = -UP; // Negate the UP vector
     fvec3 SPH_UC = UP_corrected.normalized() * _radius*2.0;

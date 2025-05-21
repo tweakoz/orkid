@@ -71,8 +71,7 @@ vertex_shader vs_imp1 : iface_vtx {
 }
 ////////////////////////////////////////
 fragment_shader ps_imp : iface_frg {
-	vec2 muv   = gl_FragCoord.xy*0.01;// * InvViewportSize;
-  out_clr = vec4(mod(muv,1.0),0,1);
+  out_clr = vec4(frg_col,1);
 }
 
 ////////////////////////////////////////
@@ -167,12 +166,12 @@ class ImposterApp(object):
     pipeline.sharedMaterial = mtl
 
     # rtgroup
-    rtg = lev2.RtGroup(ctx,64,64)
+    rtg = lev2.RtGroup(ctx,256,256)
     rtb_c = rtg.createBuffer(tokens.RGB8,tokens.NONE)
     # the imposter itself    
     self.imp_data = lev2.ImposterDrawableData()
     self.imp_data.shape = Sphere(vec3(0), 1.0)
-    self.imp_data.detail = 1
+    self.imp_data.detail = 2
     self.imp_data.pipeline = pipeline
     self.imp_data.rtgroup = rtg
 
