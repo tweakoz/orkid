@@ -247,6 +247,8 @@ template <typename T> struct Matrix44 final
   static bool unProject(const Matrix44<T>& rIMVP, const Vector3<T>& ClipCoord, Vector3<T>& rVObj);
   static bool unProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj);
 
+  Matrix44<T> subPerspective(float x1, float y1, float x2, float y2) const;
+  
   static Matrix44<T> createPerspectiveMatrix(T fovy /*degrees*/, T aspect, T near, T far) {
     Matrix44<T> rval;
     rval.perspective(fovy, aspect, near, far);

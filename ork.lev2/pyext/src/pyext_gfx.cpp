@@ -341,9 +341,19 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
+      .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
+        auto rtg = std::make_shared<RtGroup>(ctx.get(), w, h);
+        return rtg;
+      }))
       .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
       .def_property_readonly("width", [](rtgroup_ptr_t rtg) -> int { return int(rtg->width()); })
       .def_property_readonly("height", [](rtgroup_ptr_t rtg) -> int { return int(rtg->height()); })
+      .def("createBuffer", [](rtgroup_ptr_t rtg, crcstring_ptr_t format, crcstring_ptr_t usage) -> rtbuffer_ptr_t { 
+          auto efmt = EBufferFormat(format->hashed());
+          uint64_t eusage = usage ? uint64_t(usage->hashed()) : 0;
+          auto rtb = rtg->createRenderTarget(efmt, eusage);
+          return rtb;
+      })
       .def(
           "__repr__",
           [](rtgroup_ptr_t rtg) -> std::string {

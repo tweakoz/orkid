@@ -47,6 +47,7 @@ struct submesh {
   submesh();
   ~submesh();
 
+  void clear();
   //////////////////////////////////////////////////////////////////////////////
 
   void importPolyAnnotations(const annopolylut& apl);
@@ -310,12 +311,12 @@ struct submesh {
 
   std::string name;
   AnnotationMap _annotations;
-  float _surfaceArea;
+  float _surfaceArea = 0.0f;
 
   /////////////////////////////////////
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's
   mutable AABox _aaBox;
-  mutable bool _aaBoxDirty;
+  mutable bool _aaBoxDirty = true;
 
   connectivity_impl_ptr_t _connectivityIMPL;
 
@@ -373,6 +374,8 @@ std::string submeshConvexCheckWindingOrder(const submesh& inpsubmesh);
 
 void submesh_xatlas(const submesh& inpsubmesh, submesh& outsubmesh);
 
+void submesh_fromUvSphere(float radius, size_t num_u, size_t num_v, submesh& outsubmesh);
+void submesh_fromIcoSphere(float radius, size_t subdivs, submesh& outsubmesh);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;

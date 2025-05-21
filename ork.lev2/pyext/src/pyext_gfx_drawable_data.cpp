@@ -46,8 +46,9 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto mdldrawabledata_type = //
       py::class_<ModelDrawableData, DrawableData, modeldrawabledata_ptr_t>(module_lev2, "ModelDrawableData")
-          .def(py::init<>(
-              [](std::string modelpath) -> modeldrawabledata_ptr_t { return std::make_shared<ModelDrawableData>(modelpath); }));
+          .def(py::init<>([](std::string modelpath) -> modeldrawabledata_ptr_t {
+            return std::make_shared<ModelDrawableData>(modelpath);
+          }));
   type_codec->registerStdCodec<modeldrawabledata_ptr_t>(mdldrawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto instmdldrawabledata_type = //
@@ -63,7 +64,26 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
       py::class_<ImposterDrawableData, DrawableData, imposterdrawabledataptr_t>(module_lev2, "ImposterDrawableData")
           .def(py::init<>())
           .def("createDrawable", [](imposterdrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
-          ;
+          .def_property(
+              "shape",
+              [type_codec](imposterdrawabledataptr_t drw) -> py::object { //
+                return type_codec->encode64(drw->_shape);
+              },
+              [type_codec](imposterdrawabledataptr_t drw, py::object val) { //
+                drw->_shape = type_codec->decode64(val);
+              })
+          .def_property(
+              "detail",
+              [](imposterdrawabledataptr_t drw) -> size_t { return drw->_detail; },
+              [](imposterdrawabledataptr_t drw, size_t val) { drw->_detail = val; })
+          .def_property(
+              "pipeline",
+              [](imposterdrawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline; },
+              [](imposterdrawabledataptr_t drw, fxpipeline_ptr_t val) { drw->_pipeline = val; })
+          .def_property(
+              "rtgroup",
+              [](imposterdrawabledataptr_t drw) -> rtgroup_ptr_t { return drw->_rtg; },
+              [](imposterdrawabledataptr_t drw, rtgroup_ptr_t val) { drw->_rtg = val; });
   type_codec->registerStdCodec<imposterdrawabledataptr_t>(impdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //

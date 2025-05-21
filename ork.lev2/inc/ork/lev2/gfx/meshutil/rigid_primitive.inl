@@ -176,21 +176,11 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
   }
 
   //////////////////////////////////////////////////////////////////////////////
-
-  lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) final {
-
+  void installInCallbackDrawable(lev2::callback_drawable_wkptr_t drw, lev2::material_ptr_t material){
     OrkAssert(material != nullptr);
-    //OrkAssert(material->_technique != nullptr);
-
-    //_pipeline = pipeline;
-
-    auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
-
-
-    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+    drw.lock()->SetRenderCallback([this,material](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
       auto RCFD = RCID.rcfd();
-
       lev2::FxPipelinePermutation permu;
       permu._stereo = false;
       permu._instanced = false;
@@ -198,10 +188,7 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
       permu._is_picking = false;
       permu._has_vtxcolors = true;
       permu._rendering_model = RCFD->_renderingmodel._modelID;
-
       auto fxcache = material->pipelineCache();
-
-
       auto pipeline = fxcache->findPipeline(permu);
       OrkAssert(pipeline != nullptr);
       pipeline->wrappedDrawCall(
@@ -210,6 +197,24 @@ template <typename vtx_t> struct RigidPrimitive : public RigidPrimitiveBase {
             this->renderEML(context); //
           });
     });
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  void installInCallbackDrawable(lev2::callback_drawable_wkptr_t drw, lev2::fxpipeline_ptr_t pipeline){
+    OrkAssert(pipeline != nullptr);
+    drw.lock()->SetRenderCallback([this,pipeline](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      pipeline->wrappedDrawCall(
+          RCID,                       //
+          [this, context]() {         //
+            this->renderEML(context); //
+          });
+    });
+  }
+  //////////////////////////////////////////////////////////////////////////////
+
+  lev2::callback_drawable_ptr_t createDrawable(lev2::material_ptr_t material) final {
+    auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
+    installInCallbackDrawable(drw, material);
     return drw;
   }
 
@@ -647,11 +652,11 @@ void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context, 
 using rigidprim_V12_t               = RigidPrimitive<lev2::VtxV12>;
 using rigidprim_V12T8_t             = RigidPrimitive<lev2::VtxV12T8>;
 using rigidprim_V12C4T16_t          = RigidPrimitive<lev2::SVtxV12C4T16>;
-using rigidprim_SVtxV12N12T16_t     = RigidPrimitive<lev2::SVtxV12N12T16>;
+using rigidprim_V12N12T16_t         = RigidPrimitive<lev2::SVtxV12N12T16>;
 using rigidprim_V12_ptr_t           = std::shared_ptr<rigidprim_V12_t>;
 using rigidprim_V12T8_ptr_t         = std::shared_ptr<rigidprim_V12T8_t>;
 using rigidprim_V12C4T16_ptr_t      = std::shared_ptr<rigidprim_V12C4T16_t>;
-using rigidprim_SVtxV12N12T16_ptr_t = std::shared_ptr<rigidprim_SVtxV12N12T16_t>;
+using rigidprim_V12N12T16_ptr_t     = std::shared_ptr<rigidprim_V12N12T16_t>;
 using rigidprim_V12N12B12T8C4_t     = meshutil::RigidPrimitive<lev2::SVtxV12N12B12T8C4>;
 using rigidprim_V12N12B12T8C4_ptr_t = std::shared_ptr<rigidprim_V12N12B12T8C4_t>;
 ///////////////////////////////////////////////////////////////////////////////

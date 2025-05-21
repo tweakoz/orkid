@@ -279,7 +279,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
 
   fvec3 outx, outy;
 
-  _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
+  _curMatrices.pixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
   float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
   float fdx = -float(esx - ipushx);
@@ -617,7 +617,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
         fvec3 outx, outy;
 
-        _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
+        _curMatrices.pixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
         float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
 
@@ -677,7 +677,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         fvec3 UpVector;
         fvec3 RightVector;
 
-        _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
+        _curMatrices.pixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
 
         //printf( "UpVector<%g %g %g>\n", UpVector.x, UpVector.y, UpVector.z );
         //printf( "RightVector<%g %g %g>\n", RightVector.x, RightVector.y, RightVector.z );

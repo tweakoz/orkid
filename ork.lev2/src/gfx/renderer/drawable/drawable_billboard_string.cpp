@@ -166,7 +166,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
       fvec3 pos = fvec3(0, 0, 0);
       fvec3 pixlen_x, pixlen_y;
-      mcammats->GetPixelLengthVectors(pos, VP, pixlen_x, pixlen_y);
+      mcammats->pixelLengthVectors(pos, VP, pixlen_x, pixlen_y);
 
       // printf( "pixlen_x<%g %g %g>\n", pixlen_x.x, pixlen_x.y, pixlen_x.z );
 

@@ -50,7 +50,7 @@ struct ClipMapRenderImpl {
       auto hdrstream = chunkreader.GetStream("header");
       auto geostream = chunkreader.GetStream("geometry");
 
-      _mesh_primitive = std::make_shared<rigidprim_SVtxV12N12T16_t>();
+      _mesh_primitive = std::make_shared<rigidprim_V12N12T16_t>();
       _mesh_primitive->gpuLoadFromChunksA(ctx, hdrstream, geostream);
       return true;
     };
@@ -61,7 +61,7 @@ struct ClipMapRenderImpl {
       printf("generating primitive...\n");
       auto generator  = std::make_shared<geoclipmap::Generator>(params);
       auto subm       = generator->generateClipmaps();
-      _mesh_primitive = std::make_shared<rigidprim_SVtxV12N12T16_t>();
+      _mesh_primitive = std::make_shared<rigidprim_V12N12T16_t>();
       meshutil::XgmClusterizerStd clusterizer;
       _mesh_primitive->toClusterizer(*subm, clusterizer);
 
@@ -149,7 +149,7 @@ struct ClipMapRenderImpl {
 
   texture_ptr_t _colortexture;
   fxpipelinecache_constptr_t _fxcache;
-  meshutil::rigidprim_SVtxV12N12T16_ptr_t _mesh_primitive;
+  meshutil::rigidprim_V12N12T16_ptr_t _mesh_primitive;
   fxparam_constptr_t _paramMYM      = nullptr;
   freestyle_mtl_ptr_t _as_freestyle = nullptr;
 

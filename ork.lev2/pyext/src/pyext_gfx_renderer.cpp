@@ -142,7 +142,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 float aspect = vp.x / vp.y;
                 auto cammat  = camera->computeMatrices(aspect);
                 fvec3 out_x, out_y;
-                cammat.GetPixelLengthVectors(inpos, vp, out_x, out_y);
+                cammat.pixelLengthVectors(inpos, vp, out_x, out_y);
                 py::list rval;
                 rval.append(out_x);
                 rval.append(out_y);

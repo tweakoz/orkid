@@ -406,6 +406,42 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "bindParamMatrix4",
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
           .def(
+              "bindParam",
+              [type_codec](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  m->bindParam(p.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+                else if( py::isinstance<py::float_>(inp_value) ){
+                  float fvalue = py::cast<float>(inp_value);
+                  m->bindParam(p.get(),fvalue);
+                }
+                else if( py::isinstance<fvec2>(inp_value) ){
+                  m->bindParam(p.get(),py::cast<fvec2>(inp_value));
+                }
+                else if( py::isinstance<fvec3>(inp_value) ){
+                  m->bindParam(p.get(),py::cast<fvec3>(inp_value));
+                }
+                else if( py::isinstance<fvec4>(inp_value) ){
+                  m->bindParam(p.get(),py::cast<fvec4>(inp_value));
+                }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  m->bindParam(p.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::hasattr(inp_value, "__call__")){
+                  auto holdname = FormatString("%s_held",p->_name.c_str());
+                  m->_uservars->makeValueForKey<py::object>(holdname,inp_value);
+                  FxPipeline::varval_generator_t L = [m,holdname,type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    auto cb = m->_uservars->typedValueForKey<py::object>(holdname);
+                    py::object generated = cb.value()();
+                    FxPipeline::varval_t asv = type_codec->decode(generated);
+                    return asv;
+                  };
+                  m->bindParam(p.get(),L);
+                }
+
+              })
+          .def(
               "bindParamTexture",
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamTexture(p.get(), value.get()); })
           .def(

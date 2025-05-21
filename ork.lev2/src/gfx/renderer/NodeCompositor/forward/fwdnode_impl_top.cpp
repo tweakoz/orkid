@@ -303,6 +303,10 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(_currentViewData._near, _currentViewData._far));
   RCFD->setUserProperty("PMATRIX"_crcu, _currentViewData.PL);
+  RCFD->setUserProperty("VMATRIX"_crcu, _currentViewData.VL);
+  RCFD->setUserProperty("VPMATRIX"_crcu, _currentViewData.VPL);
+  RCFD->setUserProperty("IVMATRIX"_crcu, _currentViewData.VL.inverse());
+  RCFD->setUserProperty("IVPMATRIX"_crcu, _currentViewData.IVPL);
   RCFD->setUserProperty("IPMATRIX"_crcu, _currentViewData.PL.inverse());
 
   ////////////////////////////

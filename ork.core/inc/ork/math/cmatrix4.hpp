@@ -1072,7 +1072,8 @@ template <typename T> void Matrix44<T>::frustum(T left, T right, T top, T bottom
 // this will project a point into a clip space box ranged from -1..1 on x/y and 0..1 on z
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T ffar) {
+template <typename T> //
+void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T ffar) { //
   OrkAssert(fnear >= 0.0f);
   OrkAssert(ffar > fnear);
 
@@ -1085,6 +1086,35 @@ template <typename T> void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T
   // printf( "c<%s>\n", a.c_str() );
   // printf( "d<%s>\n", b.c_str() );
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> //
+Matrix44<T> Matrix44<T>::subPerspective(float x1, float y1, float x2, float y2) const {
+  // given a perspective matrix (this), return a submatrix that represents the
+  // perspective matrix for the rectangle defined by (x1,y1) and (x2,y2)
+  // inputs:
+  //   this: represents a matrix for mapping a frustum A to unit cube
+  //   x1,y1: lower left corner of rectangle in frustum A (normalized coordinates)
+  //   x2,y2: upper right corner of rectangle in frustum A (normalized coordinates)
+  // outputs:
+  //   rval: represents a matrix for mapping a frustum B to unit cube
+  // other:
+  //   frustum B is the rectangle defined by (x1,y1) and (x2,y2) in frustum A
+  // Create a viewport transformation matrix
+  Matrix44<T> viewport;
+    
+  // Map from [-1,1] to [x1,x2] and [y1,y2]
+  viewport[0][0] = (x2 - x1) / 2.0f;
+  viewport[1][1] = (y2 - y1) / 2.0f;
+  viewport[0][3] = (x2 + x1) / 2.0f;
+  viewport[1][3] = (y2 + y1) / 2.0f;
+    
+  // The result is the original matrix multiplied by the inverse of the viewport matrix
+  return (*this) * viewport.inverse();
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::lookAt(const Vector3<T>& Eye, const Vector3<T>& Ctr, const Vector3<T>& Up) {

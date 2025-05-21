@@ -112,7 +112,7 @@ struct CameraMatrices {
   //  given a worldpos (hopefully within the camera's frustum)
   //  given viewport dimensions in
   ////////////////////////////////////////////////////////////////////
-  void GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const;
+  void pixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const;
   ////////////////////////////////////////////////////////////////////
   // generate direction vector/origin (from 2d normalized screen coordinate)
   ////////////////////////////////////////////////////////////////////

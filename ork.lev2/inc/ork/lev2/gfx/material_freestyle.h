@@ -93,7 +93,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   std::set<const FxShaderTechnique*> _techniques;
   std::set<fxparam_constptr_t> _params;
   std::set<const FxUniformBlock*> _uniformBlocks;
-
+  varmap::varmap_ptr_t _uservars;
   ////////////////////////////////////////////
 
   Context* _initialTarget = nullptr;

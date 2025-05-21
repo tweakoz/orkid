@@ -19,8 +19,7 @@ const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
 submesh::submesh()
-    : _surfaceArea(0)
-    , _concmutex("submesh") {
+    : _concmutex("submesh") {
 
   _connectivityIMPL = std::make_shared<DefaultConnectivity>(this);
 }
@@ -36,7 +35,14 @@ void submesh::inheritParams( const submesh* from ){
 /////////////////////////////////////////////////////////////////////////
 submesh::~submesh() {
 }
-
+///////////////////////////////////////////////////////////////////////////////
+void submesh::clear() {
+  _annotations.clear();
+  _surfaceArea = 0.0f;
+  _aaBox = AABox();
+  _aaBoxDirty = true;
+  _connectivityIMPL = std::make_shared<DefaultConnectivity>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t submesh::hash() const{
   boost::Crc64 crc64;

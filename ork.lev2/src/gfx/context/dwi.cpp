@@ -30,6 +30,7 @@ void DrawingInterface::line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& 
   GBI->DrawPrimitiveEML(vw, PrimitiveType::LINES, 2);
 
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& v2, const fvec2& v3, //
@@ -57,7 +58,31 @@ void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& 
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void DrawingInterface::quad3DEML(
+                 const fvec3& V0, //
+                 const fvec3& V1, //
+                 const fvec3& V2, //
+                 const fvec3& V3, //
+                 const fvec2& Uv0, //
+                 const fvec2& Uv1, //
+                 const fvec2& Uv2, //
+                 const fvec2& Uv3,
+                 uint32_t color ) { //
+  auto GBI = _context.GBI();
+  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  ork::lev2::VtxWriter<SVtxV12C4T16> vw;
+  vw.Lock(GBI, &vb, 6);
+  vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
+  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
+  vw.AddVertex(SVtxV12C4T16(V1.x, V1.y, V1.z, Uv1.x, Uv1.y, Uv1.x, Uv1.y, color));
+  vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, Uv0.x, Uv0.y, Uv0.x, Uv0.y, color));
+  vw.AddVertex(SVtxV12C4T16(V3.x, V3.y, V3.z, Uv3.x, Uv3.y, Uv3.x, Uv3.y, color));
+  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, Uv2.x, Uv2.y, Uv2.x, Uv2.y, color));
+  vw.UnLock(GBI);
+  GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
+ }
+  
+ ///////////////////////////////////////////////////////////////////////////////
 
 void DrawingInterface::quad2DEML(const fvec4& QuadRect, //
                                  const fvec4& UvRect, //

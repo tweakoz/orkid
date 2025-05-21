@@ -13,6 +13,7 @@
 #include <ork/math/audiomath.h>
 #include <ork/python/pycodec.inl>
 #include <ork/math/box.h>
+#include <ork/math/sphere.h>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -25,8 +26,34 @@ namespace ork::python {
 void init_math_la_float(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 void init_math_la_double(py::module& module_core,python::pb11_typecodec_ptr_t type_codec);
 void init_math(py::module& module_core,python::pb11_typecodec_ptr_t type_codec) {
-  using aabb_ptr_t = std::shared_ptr<ork::AABox>;
   /////////////////////////////////////////////////////////////////////////////////
+  using sphere_ptr_t = std::shared_ptr<Sphere>;
+  auto sphere_t = py::class_<Sphere, sphere_ptr_t>(module_core, "Sphere") //
+  .def(py::init<>([](const fvec3& center, float radius) -> sphere_ptr_t {
+    return std::make_shared<ork::Sphere>(center, radius);
+  }))
+  .def_property_readonly("center", [] (sphere_ptr_t self)-> fvec3 {
+    return self->mCenter;
+  })
+  .def_property_readonly("radius", [] (sphere_ptr_t self)-> float {
+    return self->mRadius;
+  })
+  .def("intersect",[](sphere_ptr_t self, //
+                      const fray3& ray) -> py::dict { //
+    fvec3 isect_in;
+    fvec3 isect_out;
+    fvec3 isect_normal;
+    bool bintersect = self->Intersect(ray, isect_in, isect_out, isect_normal);
+    py::dict rval;
+    rval["did_intersect"] = bintersect;
+    rval["isect_in"]      = isect_in;
+    rval["isect_out"]     = isect_out;
+    rval["isect_normal"]  = isect_normal;
+    return rval;
+  });
+  type_codec->registerStdCodec<sphere_ptr_t>(sphere_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  using aabb_ptr_t = std::shared_ptr<ork::AABox>;
   auto aabb_type_t = py::class_<AABox, aabb_ptr_t>(module_core, "aabb") //
   .def(py::init<>())
   .def_property_readonly("center", [] (aabb_ptr_t self)-> fvec3 {

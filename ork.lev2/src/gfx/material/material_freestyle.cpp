@@ -15,6 +15,7 @@ FreestyleMaterial::FreestyleMaterial() {
   _rasterstate->setWriteMaskZ(true);
   _rasterstate->setCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
+  _uservars = std::make_shared<varmap::VarMap>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 FreestyleMaterial::~FreestyleMaterial() {
@@ -22,7 +23,7 @@ FreestyleMaterial::~FreestyleMaterial() {
 ///////////////////////////////////////////////////////////////////////////////
 
 fxpipeline_ptr_t FreestyleMaterial::_createFxPipeline(const FxPipelinePermutation& permu, //
-                                               const FreestyleMaterial*mtl){
+                                                      const FreestyleMaterial*mtl){
 
   fxpipeline_ptr_t pipeline = nullptr;
 

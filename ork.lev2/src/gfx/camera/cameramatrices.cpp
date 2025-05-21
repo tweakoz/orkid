@@ -178,7 +178,7 @@ void CameraMatrices::projectDepthRay(const fvec2& v2d, fray3& ray_out) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CameraMatrices::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const {
+void CameraMatrices::pixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const {
   /////////////////////////////////////////////////////////////////
   int ivpw = int(vp.x);
   int ivph = int(vp.y);
