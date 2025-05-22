@@ -12,6 +12,9 @@ struct ImposterPassData {
   rtgroup_ptr_t _rtg;
   varmap::varmap_ptr_t _userdata;
   bool _debug_viz = false;
+  bool _enabled = true;
+  void_lambda_t _onPreRender;
+  void_lambda_t _onPostRender;
 };
 
 struct ImposterDrawableData final : public DrawableData {

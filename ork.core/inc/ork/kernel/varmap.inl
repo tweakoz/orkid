@@ -72,6 +72,14 @@ template <typename val_t> struct TVarMap {
     return attempt_cast_const<T>(nullptr);
   }
   ///////////////////////////////////////////////////////////////////////////
+  template <typename T> inline attempt_cast<std::shared_ptr<T>> sharedValueForKey(const key_t& key) {
+    auto it = _themap.find(key);
+    if (it != _themap.end()) {
+      return it->second.template tryAs<std::shared_ptr<T>>();
+    }
+    return attempt_cast<std::shared_ptr<T>>(nullptr);
+  }
+  ///////////////////////////////////////////////////////////////////////////
   template <typename T> inline T& mergedValueForKey(const key_t& key) {
     auto& val_untyped = _themap[key];
     auto it = _themap.find(key);

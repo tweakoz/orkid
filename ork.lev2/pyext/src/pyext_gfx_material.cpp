@@ -237,6 +237,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 else if( py::isinstance<fvec4>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec4>(inp_value));
                 }
+                else if( py::isinstance<fmtx4>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<fmtx4>(inp_value));
+                }
                 else if( py::isinstance<Texture>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }

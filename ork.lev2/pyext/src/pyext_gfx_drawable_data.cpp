@@ -74,25 +74,45 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "debug_viz",
               [](imposterpassdataptr_t pass) -> bool { return pass->_debug_viz; },
-              [](imposterpassdataptr_t pass, bool val) { pass->_debug_viz = val; });
+              [](imposterpassdataptr_t pass, bool val) { pass->_debug_viz = val; })
+          .def_property_readonly("userdata", [](imposterpassdataptr_t pass) -> varmap::varmap_ptr_t { return pass->_userdata; })
+          .def_property(
+              "enabled",
+              [](imposterpassdataptr_t pass) -> bool { return pass->_enabled; },
+              [](imposterpassdataptr_t pass, bool val) { pass->_enabled = val; })
+          .def("onPreRender", [](imposterpassdataptr_t pass, py::object func) {
+            auto mypo = pass->_userdata->makeSharedForKey<py::object>("_onPreRender");
+            (*mypo) = func;
+            pass->_onPreRender                                               = [=]() { //
+              py::gil_scoped_acquire gil;
+              py::function func = py::cast<py::function>(*mypo);
+              func();
+            };
+            // func(rcid); };
+          })
+          .def("onPostRender", [](imposterpassdataptr_t pass, py::object func) {
+            auto mypo = pass->_userdata->makeSharedForKey<py::object>("_onPostRender");
+            (*mypo) = func;
+            pass->_onPostRender                                               = [=]() { //
+              py::gil_scoped_acquire gil;
+              py::function func = py::cast<py::function>(*mypo);
+              func();
+            };
+            // func(rcid); };
+          });
   type_codec->registerStdCodec<imposterpassdataptr_t>(imppassdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto impdrawdata_type = //
       py::class_<ImposterDrawableData, DrawableData, imposterdrawabledataptr_t>(module_lev2, "ImposterDrawableData")
           .def(py::init<>())
           .def("createDrawable", [](imposterdrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
-          .def_property_readonly("imp_pass",
-              [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t {
-                return drw->_imp_pass;
-              })
+          .def_property_readonly("imp_pass", [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t { return drw->_imp_pass; })
           .def_property(
               "user_passes",
               [](imposterdrawabledataptr_t drw) -> std::vector<imposterpassdataptr_t> { return drw->_user_passes; },
               [](imposterdrawabledataptr_t drw, std::vector<imposterpassdataptr_t> val) { drw->_user_passes = val; })
-          .def_property_readonly("blit_pass",
-              [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t {
-                return drw->_blit_pass;
-              })
+          .def_property_readonly(
+              "blit_pass", [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t { return drw->_blit_pass; })
           .def_property(
               "shape",
               [type_codec](imposterdrawabledataptr_t drw) -> py::object { //

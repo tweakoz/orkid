@@ -34,20 +34,6 @@ struct ImposterDrawableImpl {
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _primitive;
   callback_drawable_wkptr_t _drawable;
 
-  /*
-  fxparam_constptr_t _paramRTGTEX;
-  fxparam_constptr_t _paramMVP;
-  freestyle_mtl_ptr_t _blit_material;
-  const FxShaderTechnique* _blit_tek = nullptr;
-  fxparam_constptr_t _blit_par_mvp = nullptr;
-  fxparam_constptr_t _blit_par_tex = nullptr;
-  fxparam_constptr_t _blit_par_dmp = nullptr;
-  fxparam_constptr_t _blit_par_near = nullptr;
-  fxparam_constptr_t _blit_par_far = nullptr;
-  fxparam_constptr_t _blit_par_near2 = nullptr;
-  fxparam_constptr_t _blit_par_far2 = nullptr;
-  fxparam_constptr_t _blit_par_ivp = nullptr;*/
-
   float _radius = 0.0f;
 };
 
@@ -98,7 +84,7 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
     // primary pass
     ///////////////////////////////////////
 
-    auto imppass = _impdata->_imp_pass;
+    auto imppass   = _impdata->_imp_pass;
     auto as_fstyle = std::dynamic_pointer_cast<FreestyleMaterial>(imppass->_pipeline->_sharedMaterial);
     OrkAssert(as_fstyle != nullptr);
 
@@ -137,16 +123,23 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
     blit_material->_rasterstate->setWriteMaskA(true);
     blit_material->_rasterstate->setWriteMaskZ(false);
 
-    blpass->_userdata->set("blit_material", blit_material);
-    blpass->_userdata->set("blit_tek", blit_tek);
-    blpass->_userdata->set("blit_par_mvp", blit_par_mvp);
-    blpass->_userdata->set("blit_par_tex", blit_par_tex);
-    blpass->_userdata->set("blit_par_dmp", blit_par_dmp);
-    blpass->_userdata->set("blit_par_near", blit_par_near);
-    blpass->_userdata->set("blit_par_far", blit_par_far);
-    blpass->_userdata->set("blit_par_near2", blit_par_near2);
-    blpass->_userdata->set("blit_par_far2", blit_par_far2);
-    blpass->_userdata->set("blit_par_ivp", blit_par_ivp);
+    blpass->_userdata->set("material", blit_material);
+    blpass->_userdata->set("tek", blit_tek);
+    blpass->_userdata->set("par_mvp", blit_par_mvp);
+    blpass->_userdata->set("par_tex", blit_par_tex);
+    blpass->_userdata->set("par_dmp", blit_par_dmp);
+    blpass->_userdata->set("par_near", blit_par_near);
+    blpass->_userdata->set("par_far", blit_par_far);
+    blpass->_userdata->set("par_near2", blit_par_near2);
+    blpass->_userdata->set("par_far2", blit_par_far2);
+    blpass->_userdata->set("par_ivp", blit_par_ivp);
+
+    if (not blpass->_userdata->hasKey("color_rtg")) {
+      blpass->_userdata->set("color_rtg", imppass->_rtg);
+    }
+    if (not blpass->_userdata->hasKey("depth_rtg")) {
+      blpass->_userdata->set("depth_rtg", imppass->_rtg);
+    }
 
     ///////////////////////////////////////
     // user passes
@@ -246,76 +239,69 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto SUBMVP = SUBVP * worldmatrix;
 
   auto imppass = _impdata->_imp_pass;
-  auto blpass = _impdata->_blit_pass;
+  auto blpass  = _impdata->_blit_pass;
 
   auto RTG = imppass->_rtg;
   if (RTG) {
 
     RTG->_autoclear  = true;
-      RTG->_clearColor = fvec4(0, 0, 0, 0);
-      auto vprect_rtg  = RTG->viewportRect();
-      FBI->pushScissor(vprect_rtg);
-      FBI->pushViewport(vprect_rtg);
-      FBI->PushRtGroup(RTG.get());
+    RTG->_clearColor = fvec4(0, 0, 0, 0);
+    auto vprect_rtg  = RTG->viewportRect();
+    FBI->pushScissor(vprect_rtg);
+    FBI->pushViewport(vprect_rtg);
+    FBI->PushRtGroup(RTG.get());
 
-      auto par_mvp  = imppass->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
+    auto par_mvp = imppass->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
 
-      imppass->_pipeline->bindParam(par_mvp, SUBMVP);
-      ////////////////////////////////////////////
-      imppass->_pipeline->wrappedDrawCall(
-          RCID,                                   //
-          [this, context]() {                     //
-            this->_primitive->renderEML(context); //
-          });
+    imppass->_pipeline->bindParam(par_mvp, SUBMVP);
+    ////////////////////////////////////////////
+    imppass->_pipeline->wrappedDrawCall(
+        RCID,                                   //
+        [this, context]() {                     //
+          this->_primitive->renderEML(context); //
+        });
 
-      FBI->PopRtGroup();
-      FBI->popViewport();
-      FBI->popScissor();
+    FBI->PopRtGroup();
+    FBI->popViewport();
+    FBI->popScissor();
   }
-  /*
-  for (auto p : _impdata->_user_passes) {
 
+  ////////////////////////////////////////////
+  // user passes
+  ////////////////////////////////////////////
+
+  for (auto p : _impdata->_user_passes) {
     auto RTG = p->_rtg;
     if (RTG) {
-
-      OrkAssert(RCFD->_renderingmodel._modelID == "FORWARD_PBR"_crcu);
-
-      ////////////////////////////////////////////
-      // camera related data
-      ////////////////////////////////////////////
-
-      ////////////////////////////////////////////
-      // node related data
-      ////////////////////////////////////////////
-
-      ////////////////////////////////////////////
-      // render imposter to texture
-      ////////////////////////////////////////////
-
+      if(p->_onPreRender) {
+        p->_onPreRender();
+      }
+      RTG->_autoclear  = true;
+      RTG->_clearMaskColor  = true;
+      RTG->_clearMaskDepth  = true;
       RTG->_autoclear  = true;
       RTG->_clearColor = fvec4(0, 0, 0, 0);
       auto vprect_rtg  = RTG->viewportRect();
       FBI->pushScissor(vprect_rtg);
       FBI->pushViewport(vprect_rtg);
       FBI->PushRtGroup(RTG.get());
-
-      auto par_mvp  = p->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
-
-      p->_pipeline->bindParam(par_mvp, SUBMVP);
-      ////////////////////////////////////////////
       p->_pipeline->wrappedDrawCall(
-          RCID,                                   //
-          [this, context]() {                     //
-            this->_primitive->renderEML(context); //
+          RCID,               //
+          [=]() { //
+            DWI->quad2DEML(
+                fvec4(-1,-1,2,2),
+                fvec4(0,0,1,1),
+                fvec4(0,0,1,1));
           });
-
       FBI->PopRtGroup();
       FBI->popViewport();
       FBI->popScissor();
+      if(p->_onPostRender != nullptr) {
+        p->_onPostRender();
+      }
     } // if(RTG){
-
   } // for( auto p : _impdata->_user_passes ){
-  */
+
   ////////////////////////////////////////////
   // blit pass
   //  pre-rendered texture -> screen
@@ -323,21 +309,22 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   // material preamble
 
+  auto bmat       = blpass->_userdata->typedValueForKey<freestyle_mtl_ptr_t>("material").value();
+  auto btek       = blpass->_userdata->typedValueForKey<const FxShaderTechnique*>("tek").value();
+  auto bpar_mvp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
+  auto bpar_tex   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_tex").value();
+  auto bpar_dmp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_dmp").value();
+  auto bpar_near  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_near").value();
+  auto bpar_far   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_far").value();
+  auto bpar_near2 = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_near2").value();
+  auto bpar_far2  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_far2").value();
+  auto bpar_ivp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_ivp").value();
+  auto COLOR_RTG  = blpass->_userdata->typedValueForKey<rtgroup_ptr_t>("color_rtg").value();
+  auto DEPTH_RTG  = blpass->_userdata->typedValueForKey<rtgroup_ptr_t>("depth_rtg").value();
 
-  RTG             = imppass->_rtg;
-  auto bmat       = blpass->_userdata->typedValueForKey<freestyle_mtl_ptr_t>("blit_material").value();
-  auto btek       = blpass->_userdata->typedValueForKey<const FxShaderTechnique*>("blit_tek").value();
-  auto bpar_mvp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_mvp").value();
-  auto bpar_tex   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_tex").value();
-  auto bpar_dmp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_dmp").value();
-  auto bpar_near  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_near").value();
-  auto bpar_far   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_far").value();
-  auto bpar_near2 = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_near2").value();
-  auto bpar_far2  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_far2").value();
-  auto bpar_ivp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("blit_par_ivp").value();
   bmat->begin(btek, RCFD);
-  bmat->bindParam(bpar_tex, RTG->texture(0));
-  bmat->bindParam(bpar_dmp, RTG->depthTexture());
+  bmat->bindParam(bpar_tex, COLOR_RTG->texture(0));
+  bmat->bindParam(bpar_dmp, DEPTH_RTG->depthTexture());
   bmat->bindParam(bpar_mvp, VP);
   bmat->bindParamFloat(bpar_near, CAMDAT.mNear);
   bmat->bindParamFloat(bpar_far, CAMDAT.mFar);
@@ -398,7 +385,7 @@ drawable_ptr_t ImposterDrawableData::createDrawable() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ImposterDrawableData::ImposterDrawableData() {
-  _imp_pass = std::make_shared<ImposterPassData>();
+  _imp_pass  = std::make_shared<ImposterPassData>();
   _blit_pass = std::make_shared<ImposterPassData>();
 }
 

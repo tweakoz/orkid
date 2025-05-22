@@ -330,7 +330,7 @@ void pyinit_gfx(py::module& module_lev2) {
                          });
   type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
+  auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
       .def(
           "__repr__",
           [](rtbuffer_ptr_t rtb) -> std::string {
@@ -339,8 +339,9 @@ void pyinit_gfx(py::module& module_lev2) {
             return fxs.c_str();
           })
       .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
+  type_codec->registerStdCodec<rtbuffer_ptr_t>(rtb_t);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
+  auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
       .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
         bool needs_depth = true;
         MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
@@ -365,8 +366,10 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->GetNumTargets(); })
       .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
-      .def("mrt_buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); });
+      .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
+      .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
+  type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())

@@ -33,6 +33,10 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
+IMP_DIM = 256
+
+################################################################################
+
 IMP_SHADERTEXT = """
 ////////////////////////////////////////
 fxconfig fxcfg_default { 
@@ -48,6 +52,8 @@ uniform_set uset_vtx {
 uniform_set uset_frg {
   vec2 inverse_viewport_size;
   sampler2D rtgtex;
+  sampler2D fbtex;
+  sampler2D depthtex;
   float time;
 }
 ////////////////////////////////////////
@@ -60,6 +66,7 @@ vertex_interface iface_vtx : uset_vtx {
   }
   outputs {
     vec3 frg_col;
+    vec2 frg_uv0;
     vec3 frg_pos;
   }
 }
@@ -67,6 +74,7 @@ vertex_interface iface_vtx : uset_vtx {
 fragment_interface iface_frg : uset_frg {
   inputs {
     vec3 frg_col;
+    vec2 frg_uv0;
     vec3 frg_pos;
   }
   outputs { layout(location = 0) vec4 out_clr; }
@@ -84,7 +92,7 @@ libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise{
     for (int o = 0; o < 4; o++) {
       float amp = float(4 - o) / 2.0;
       float frq = float(o + 1) / 8.0;    
-      vec3 samplePos = (p * frq) + vec3(0, time * amp * 0.2, 0);
+      vec3 samplePos = (p * frq) + vec3(0, time * amp * 0.25, 0);
       n += cellnoise(samplePos) * amp; 
     } 
     return pow(n * 0.5, 2);
@@ -112,7 +120,7 @@ fragment_shader ps_imp : iface_frg : lib_X {
 
   // Raymarch
   float totalDist = 0.0;
-  float surfaceThreshold = 0.6;  // Isosurface threshold
+  float surfaceThreshold = 0.5;  // Isosurface threshold
   
   for (int i = 0; i < MAX_STEPS; i++) {
       vec3 p = ro + rd * totalDist;
@@ -156,13 +164,38 @@ fragment_shader ps_imp : iface_frg : lib_X {
       discard;
   }
 }
-
+////////////////////////////////////////
+vertex_shader vs_upass : iface_vtx {
+  frg_col = vec3(1,0,0);
+  frg_pos = pos.xyz;
+  frg_uv0 = uv0;
+  gl_Position = mvp * pos;
+}
+fragment_shader ps_upass : iface_frg {
+  float Z = texture(depthtex, frg_uv0).r;
+  if(Z > 0.9999) 
+    discard;
+  vec2 warp_uv = ((frg_uv0-vec2(0.5))*0.985)+vec2(0.5);
+  vec3 rgb = texture(rtgtex, frg_uv0).bgr*0.05 + texture(fbtex, warp_uv).xyz*0.99999;
+  float alp = texture(rtgtex, frg_uv0).w;
+  out_clr = vec4(rgb,alp);
+  gl_FragDepth = Z;
+}
 ////////////////////////////////////////
 technique tek_imp1 {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_imp1;
     fragment_shader = ps_imp;
+    state_block     = default;
+  }
+}
+////////////////////////////////////////
+technique tek_upass {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_upass;
+    fragment_shader = ps_upass;
     state_block     = default;
   }
 }
@@ -196,8 +229,8 @@ class ImposterApp(object):
     ###################################
 
     params_dict = {
-      "SkyboxTexPathStr": "src://envmaps/blender_studio.dds",
-      "SkyboxIntensity": 1.5,
+      "SkyboxTexPathStr": "studio",
+      "SkyboxIntensity": 0.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
@@ -231,36 +264,97 @@ class ImposterApp(object):
   # create imposter
   ##############################################
 
-    # imposter material
-    mtl = lev2.FreestyleMaterial()
-    mtl.gpuInitFromShaderText(ctx,"IMPX",IMP_SHADERTEXT)
-    mtl.rasterstate.setBlendingMacro(tokens.OFF)
-    mtl.rasterstate.culltest = tokens.PASS_FRONT
-    mtl.rasterstate.depthtest = tokens.LEQUALS
-
-    # imposter pipeline permutation
-    permu = lev2.FxPipelinePermutation()
-    permu.technique = mtl.shader.technique("tek_imp1")
-
-    # imposter pipeline
-    pipeline = mtl.fxcache.findPipeline(permu)
-    pipeline.name = "imppipe"
-    pipeline.bindParam(mtl.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
-    pipeline.bindParam(mtl.param("time"), lambda: self.time)
-    pipeline.sharedMaterial = mtl
-
-    # rtgroup
-    rtg_imp = lev2.RtGroup(ctx,256,256)
-    rtb_imp_color = rtg_imp.createBuffer(tokens.RGBA8,tokens.NONE)
+    #####################
     # the imposter itself    
-    self.imp_data = lev2.ImposterDrawableData()
-    self.imp_data.shape = Sphere(vec3(0), 1.0)
-    self.imp_data.detail = 3
-    self.imp_data.imp_pass.pipeline = pipeline
-    self.imp_data.imp_pass.rtgroup = rtg_imp
+    #####################
 
+    impdata = lev2.ImposterDrawableData()
+    self.imposter_data = impdata
+    impdata.shape = Sphere(vec3(0), 1.0)
+    impdata.detail = 3
+
+    #####################
+    # imposter material / pipeline
+    #####################
+
+    imp_mtl = lev2.FreestyleMaterial()
+    imp_mtl.gpuInitFromShaderText(ctx,"IMPX",IMP_SHADERTEXT)
+    imp_mtl.rasterstate.setBlendingMacro(tokens.OFF)
+    imp_mtl.rasterstate.culltest = tokens.PASS_FRONT
+    imp_mtl.rasterstate.depthtest = tokens.LEQUALS
+    imp_permu = lev2.FxPipelinePermutation()
+    imp_permu.technique = imp_mtl.shader.technique("tek_imp1")
+    imp_pipeline = imp_mtl.fxcache.findPipeline(imp_permu)
+    imp_pipeline.name = "imppasspipe"
+    imp_pipeline.bindParam(imp_mtl.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+    imp_pipeline.bindParam(imp_mtl.param("time"), lambda: self.time)
+    imp_pipeline.sharedMaterial = imp_mtl
+
+    #####################
+    # imposter rtgroup
+    #####################
+
+    imp_pass = impdata.imp_pass
+    rtg_imp = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+    rtb_imp_color = rtg_imp.createBuffer(tokens.RGBA32F,tokens.NONE)
+    imp_pass.rtgroup = rtg_imp
+    imp_pass.pipeline = imp_pipeline
+
+    #####################
+    # user pass
+    #####################
+
+    if True:
+      upass = lev2.ImposterPassData()
+      rtg_fb0 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+      rtg_fb1 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+      rtg_fb0.createBuffer(tokens.RGBA32F,tokens.NONE)
+      rtg_fb1.createBuffer(tokens.RGBA32F,tokens.NONE)
+      ctx.FBI.rtGroupPush(rtg_fb0)
+      ctx.FBI.rtGroupPop()
+      ctx.FBI.rtGroupPush(rtg_fb1)
+      ctx.FBI.rtGroupPop()
+      
+      self.fb_tex = rtg_fb0.texture(0)
+            
+      upass_mtl = lev2.FreestyleMaterial()
+      upass_mtl.gpuInitFromShaderText(ctx,"IMPUPASS",IMP_SHADERTEXT)
+      upass_mtl.rasterstate.setBlendingMacro(tokens.OFF)
+      upass_mtl.rasterstate.culltest = tokens.OFF
+      upass_mtl.rasterstate.depthtest = tokens.OFF
+      upass_permu = lev2.FxPipelinePermutation()
+      upass_permu.technique = upass_mtl.shader.technique("tek_upass")
+      upass.pipeline = upass_mtl.fxcache.findPipeline(upass_permu)
+      upass.pipeline.name = "upasspipe"
+
+
+      upass.pipeline.bindParam(upass_mtl.param("mvp"), mtx4())
+      upass.pipeline.bindParam(upass_mtl.param("time"), lambda: self.time)
+      upass.pipeline.bindParam(upass_mtl.param("fbtex"), lambda: self.fb_tex )
+      upass.pipeline.bindParam(upass_mtl.param("rtgtex"), lambda: rtg_imp.texture(0))
+      upass.pipeline.bindParam(upass_mtl.param("depthtex"), lambda: rtg_imp.depth_buffer.texture)
+      upass.pipeline.sharedMaterial = upass_mtl
+      impdata.user_passes = [upass]
+      upass.enabled = True
+
+      def _on_post_render():
+        if (self.frame_index % 2) == 0:
+          upass.rtgroup = rtg_fb1 # upass renders to fb1
+          impdata.blit_pass.userdata.color_rtg = rtg_fb0 # blit_pass reads fb0
+          self.fb_tex = rtg_fb0.texture(0) # upass reads fb0
+        else:
+          upass.rtgroup = rtg_fb0 # upass renders to fb0
+          impdata.blit_pass.userdata.color_rtg = rtg_fb1 # blit_pass reads fb1
+          self.fb_tex = rtg_fb1.texture(0) # upass reads fb1
+
+      upass.onPostRender(_on_post_render)
+      _on_post_render()
+
+    #####################
     # imposter scenegraph node
-    self.imp_node = self.layer_fwd.createDrawableNodeFromData("imp1",self.imp_data)
+    #####################
+
+    self.imp_node = self.layer_fwd.createDrawableNodeFromData("imp1",impdata)
     self.imp_node.worldTransform.scale = 1
     self.imp_node.worldTransform.translation = vec3(0,0,0)
 
@@ -268,11 +362,6 @@ class ImposterApp(object):
 
   def onUiEvent(self,uievent):
     res = lev2.ui.HandlerResult()
-    if uievent.code == tokens.KEY_DOWN.hashed:
-      ######################
-      if uievent.keycode == ord("D"):
-        self.imp_data.blit_pass.debug_viz = not self.imp_data.blit_pass.debug_viz
-        return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
@@ -281,15 +370,14 @@ class ImposterApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    #self.imp_data.debug_viz = (int(self.frame_index)>>6)&1
     self.time = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) 
 
   ################################################
 
   def onGpuUpdate(self,ctx):
-    self.frame_index += 0.3
-    y = 1.0+math.sin(self.frame_index*0.05)
+    self.frame_index += 1
+    y = 1.0+math.sin(self.frame_index*0.005)
     pos = vec3(0,y,0)
     self.imp_node.worldTransform.translation = pos
     pass 
