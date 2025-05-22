@@ -299,16 +299,24 @@ class ImposterApp(object):
     imp_pipeline.bindParam(imp_mtl.param("time"), lambda: self.time)
     imp_pipeline.sharedMaterial = imp_mtl
 
+    def createRGBRTG():
+      rtg = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+      rtg.createBuffer(tokens.RGBA32F,tokens.NONE)
+      ctx.FBI.rtGroupInit(rtg)
+      return rtg
+
     #####################
     # imposter rtgroup
     #####################
 
     imp_pass = impdata.imp_pass
-    rtg_imp = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
-    rtb_imp_color = rtg_imp.createBuffer(tokens.RGBA32F,tokens.NONE)
-    imp_pass.rtgroup = rtg_imp
+    rtg_imps = [createRGBRTG()]
+    if is_stereo:
+      rtg_imps += [createRGBRTG()]
+    self.rtg_imp = rtg_imps[0]
+    imp_pass.rtgroup = self.rtg_imp
     imp_pass.pipeline = imp_pipeline
-
+    
     #####################
     # user pass
     #####################
@@ -316,17 +324,12 @@ class ImposterApp(object):
     if True:
       upass = lev2.ImposterPassData()
 
-      def createRGBRTG():
-        rtg = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
-        rtg.createBuffer(tokens.RGBA32F,tokens.NONE)
-        ctx.FBI.rtGroupInit(rtg)
-        return rtg
       
-      rtg_fb = [createRGBRTG(),createRGBRTG()]
+      rtg_feedback = [createRGBRTG(),createRGBRTG()]
       if is_stereo:
-        rtg_fb += [createRGBRTG(),createRGBRTG()]
+        rtg_feedback += [createRGBRTG(),createRGBRTG()]
 
-      self.fb_tex = rtg_fb[0].texture(0)
+      self.fb_tex = rtg_feedback[0].texture(0)
             
       upass_mtl = lev2.FreestyleMaterial()
       upass_mtl.gpuInitFromShaderText(ctx,"IMPUPASS",IMP_SHADERTEXT)
@@ -342,23 +345,26 @@ class ImposterApp(object):
       upass.pipeline.bindParam(upass_mtl.param("mvp"), mtx4())
       upass.pipeline.bindParam(upass_mtl.param("time"), lambda: self.time)
       upass.pipeline.bindParam(upass_mtl.param("fbtex"), lambda: self.fb_tex )
-      upass.pipeline.bindParam(upass_mtl.param("rtgtex"), lambda: rtg_imp.texture(0))
-      upass.pipeline.bindParam(upass_mtl.param("depthtex"), lambda: rtg_imp.depth_buffer.texture)
+      upass.pipeline.bindParam(upass_mtl.param("rtgtex"), lambda: self.rtg_imp.texture(0))
+      upass.pipeline.bindParam(upass_mtl.param("depthtex"), lambda: self.rtg_imp.depth_buffer.texture)
       upass.pipeline.sharedMaterial = upass_mtl
       impdata.user_passes = [upass]
       upass.enabled = True
 
       def _on_post_render():
         eye_index = ctx.topRCFD.userprops.eye_index # 0: left, 1: right
-        base = 0 if (eye_index==None) else (eye_index * 2)
+        eye_index = 0 if (eye_index==None) else eye_index
+        self.rtg_imp = rtg_imps[eye_index]
+        impdata.imp_pass.rtgroup = self.rtg_imp
+        base = eye_index * 2
         if (self.frame_index % 2) == 0:
-          upass.rtgroup = rtg_fb[base+1] # upass renders to fb1
-          impdata.blit_pass.userdata.color_rtg = rtg_fb[base+0] # blit_pass reads fb0
-          self.fb_tex = rtg_fb[base+0].texture(0) # upass reads fb0
+          upass.rtgroup = rtg_feedback[base+1] # upass renders to fb1
+          impdata.blit_pass.userdata.color_rtg = rtg_feedback[base+1] # blit_pass reads fb1
+          self.fb_tex = rtg_feedback[base+0].texture(0) # upass reads fb0
         else:
-          upass.rtgroup = rtg_fb[base+0] # upass renders to fb0
-          impdata.blit_pass.userdata.color_rtg = rtg_fb[base+1] # blit_pass reads fb1
-          self.fb_tex = rtg_fb[base+1].texture(0) # upass reads fb1
+          upass.rtgroup = rtg_feedback[base+0] # upass renders to fb0
+          impdata.blit_pass.userdata.color_rtg = rtg_feedback[base+0] # blit_pass reads fb0
+          self.fb_tex = rtg_feedback[base+1].texture(0) # upass reads fb1
 
       upass.onPostRender(_on_post_render)
       _on_post_render() # first time init
