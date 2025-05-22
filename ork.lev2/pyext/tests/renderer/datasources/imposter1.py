@@ -27,15 +27,16 @@ from lev2utils.lighting import MySpotLight, MyCookie
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
 ################################################################################
 
 args = vars(parser.parse_args())
+is_stereo = args["stereo"]
 
 ################################################################################
 
 IMP_DIM = 128
-RENDERMODEL = "ForwardPBR"
-#RENDERMODEL = "FWDPBRVRDM"
+RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
 
 ################################################################################
 
@@ -225,6 +226,12 @@ class ImposterApp(object):
 
   def onGpuInit(self,ctx):
 
+    if is_stereo:
+      self.vrdev = lev2.orkidvr.novr_device()
+      self.vrdev.camera = "vrcam"
+      self.vrdev.width = 1280
+      self.vrdev.height = 1280
+
     ###################################
     # create scenegraph
     ###################################
@@ -306,7 +313,7 @@ class ImposterApp(object):
     # user pass
     #####################
 
-    if False:
+    if True:
       upass = lev2.ImposterPassData()
       rtg_fb0 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
       rtg_fb1 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
@@ -372,7 +379,20 @@ class ImposterApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    self.time = updinfo.absolutetime
+    abstime = updinfo.absolutetime
+    self.time = abstime
+    #########################
+    if is_stereo:
+      x = math.sin(abstime*0.125)
+      z = -math.cos(abstime*0.125)
+      xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,   # eye
+                            vec3(0,0,0),        # tgt
+                            vec3(0,1,0))        # up
+    #########################
+
+      self.vrdev.setPoseMatrix("hmd",xf_hmd)
+
+
     self.scene.updateScene(self.cameralut) 
 
   ################################################
