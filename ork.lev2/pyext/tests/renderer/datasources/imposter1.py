@@ -33,7 +33,9 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
-IMP_DIM = 256
+IMP_DIM = 128
+RENDERMODEL = "ForwardPBR"
+#RENDERMODEL = "FWDPBRVRDM"
 
 ################################################################################
 
@@ -223,14 +225,13 @@ class ImposterApp(object):
 
   def onGpuInit(self,ctx):
 
-    RENDERMODEL = "ForwardPBR"
     ###################################
     # create scenegraph
     ###################################
 
     params_dict = {
-      "SkyboxTexPathStr": "studio",
-      "SkyboxIntensity": 0.5,
+      "SkyboxTexPathStr": "cold",
+      "SkyboxIntensity": 1.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
@@ -249,13 +250,14 @@ class ImposterApp(object):
 
     ###################################
 
-    self.grid_data = createGridData()
+    if True:
+      self.grid_data = createGridData(extent=1000)
 
-    self.grid_data.shader_suffix = "_V4"
-    self.grid_data.modcolor = vec3(1)*3
-    self.grid_data.majorTileDim = 1.0
-    self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+      self.grid_data.shader_suffix = "_V4"
+      self.grid_data.modcolor = vec3(1,1.2,1.3)*2
+      self.grid_data.majorTileDim = 1.0
+      self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
+      self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.png")
@@ -304,7 +306,7 @@ class ImposterApp(object):
     # user pass
     #####################
 
-    if True:
+    if False:
       upass = lev2.ImposterPassData()
       rtg_fb0 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
       rtg_fb1 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
@@ -379,7 +381,7 @@ class ImposterApp(object):
     self.frame_index += 1
     y = 1.0+math.sin(self.frame_index*0.005)
     pos = vec3(0,y,0)
-    self.imp_node.worldTransform.translation = pos
+    #self.imp_node.worldTransform.translation = pos
     pass 
 
 ###############################################################################

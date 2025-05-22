@@ -180,7 +180,8 @@ public:
   }
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
-  DebugGroup debugPushGroup(const std::string str, bool autorelease = false);
+  DebugGroup debugPushGroupAutoRelease(const std::string str);
+  void debugPushGroup(const std::string str);
   virtual void debugPushGroup(const std::string str, const fvec4& color) {
   }
   ///////////////////////////////////////////////////////////////////////

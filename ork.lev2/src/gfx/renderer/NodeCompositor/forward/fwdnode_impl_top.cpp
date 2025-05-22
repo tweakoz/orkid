@@ -261,7 +261,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // get draw queue (otherwise we cant draw anything)
   //////////////////////////////////////////////////////
 
-  auto autorelease_fpbr_rgroup = context->debugPushGroup("ForwardPBR::render",true);
+  auto autorelease_fpbr_rgroup = context->debugPushGroupAutoRelease("ForwardPBR::render");
   _currentDrawQueue = RCFD->GetDB();
   if(nullptr == _currentDrawQueue) {
     return;

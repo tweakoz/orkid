@@ -97,8 +97,6 @@ void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
   _currentRCFD->setUserProperty("SSAO_KERNEL"_crcu, ssao_kernel);
   _currentRCFD->setUserProperty("SSAO_SCRNOISE"_crcu, ssao_scrnoise);
 
-  OrkAssert(pbrcommon->_useDepthPrepass);
-
   bool buf_select = (_node->_frameIndex & 1);
 
   _currentRCFD->_subpassID = "SSAO_PREPASS"_crcu;

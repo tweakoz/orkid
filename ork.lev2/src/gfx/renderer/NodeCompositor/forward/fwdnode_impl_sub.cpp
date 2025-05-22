@@ -259,7 +259,7 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
 
   _currentRCFD->_renderingmodel = "FORWARD_PBR"_crcu;
   _currentRCFD->_subpassID      = "COLOR"_crcu;
-  auto autorelease_dbg_group    = _currentContext->debugPushGroup("ForwardPBR::color pass", true);
+  auto autorelease_dbg_group    = _currentContext->debugPushGroupAutoRelease("ForwardPBR::color pass");
   _currentIRenderer->_debugLog  = false;
 
   ////////////////////////////////

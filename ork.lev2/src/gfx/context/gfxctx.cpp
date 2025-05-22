@@ -327,9 +327,12 @@ DebugGroup::~DebugGroup(){
   }
 }
 
-DebugGroup Context::debugPushGroup(const std::string str, bool autorelease) {
+DebugGroup Context::debugPushGroupAutoRelease(const std::string str) {
   debugPushGroup(str, fvec4::Red());
-  return DebugGroup(autorelease ? this : nullptr);
+  return DebugGroup(this);
+}
+void Context::debugPushGroup(const std::string str) {
+  debugPushGroup(str, fvec4::Red());
 }
 void Context::debugMarker(const std::string str){
   debugMarker(str, fvec4::Red());

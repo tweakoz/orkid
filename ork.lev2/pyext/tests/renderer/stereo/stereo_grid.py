@@ -34,7 +34,7 @@ class StereoApp1(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,fullscreen=True,ssaa=2)
+    self.ezapp = OrkEzApp.create(self,fullscreen=False,ssaa=2)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.cameralut = CameraDataLut()
