@@ -178,7 +178,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
 
         fbi->PushRtGroup(output_rtg);
 
-        auto output_buffer = output_rtg->GetMrt(0);
+        auto output_buffer = output_rtg->buffer(0);
 
         int srcw = src_buffer->_width;
         int srch = src_buffer->_height;

@@ -47,7 +47,7 @@ rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t ForwardNode::GetOutput() const {
-  return GetOutputGroup()->GetMrt(0);
+  return GetOutputGroup()->buffer(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::pbr

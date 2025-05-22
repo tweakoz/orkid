@@ -137,7 +137,7 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 lev2::Texture* Buffer::OutputTexture() {
-  return (mRtGroup != nullptr) ? mRtGroup->GetMrt(0)->texture() : nullptr;
+  return (mRtGroup != nullptr) ? mRtGroup->buffer(0)->texture() : nullptr;
 }
 
 Buffer32::Buffer32()
@@ -258,7 +258,7 @@ void ImgModule::Compute(dataflow::workunit* wu) {
       // SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
       if (ork::FileEnv::filespec_to_extension(fname.c_str()).length() == 0)
         fname += ".dds";
-      auto buf0 = rtg->GetMrt(0);
+      auto buf0 = rtg->buffer(0);
       fbi->capture(buf0.get(), fname);
     }
 
@@ -546,7 +546,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       ork::file::Path indexed_path;
       indexed_path.compose(dpath);
       printf("indexed_path<%s>\n", indexed_path.c_str());
-      auto buf0 = rtg->GetMrt(0);
+      auto buf0 = rtg->buffer(0);
       fbi->capture(buf0.get(), indexed_path);
     }
   }

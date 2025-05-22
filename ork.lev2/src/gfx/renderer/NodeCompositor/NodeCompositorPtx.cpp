@@ -230,7 +230,7 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 lev2::rtbuffer_ptr_t PtxCompositingNode::GetOutput() const {
   auto ptximpl = _impl.getShared<PtxImpl>();
-  return ptximpl->_output->GetMrt(0);
+  return ptximpl->_output->buffer(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

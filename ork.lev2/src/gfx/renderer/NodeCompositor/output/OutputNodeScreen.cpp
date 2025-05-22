@@ -243,7 +243,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           auto& mtl     = impl->_blit2screenmtl;
           mtl.begin(impl->_fxtechnique1x1, framedata);
           mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
-          tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
+          tex = impl->_msaadownsamplebuffer->buffer(0)->texture();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());

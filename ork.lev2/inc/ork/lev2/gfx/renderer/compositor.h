@@ -129,7 +129,7 @@ struct CompositingPassData {
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
   const ViewportRect& GetDstRect() const;
-  const ViewportRect& GetMrtRect() const;
+  const ViewportRect& bufferRect() const;
   void SetDstRect(const ViewportRect& rect);
   void SetMrtRect(const ViewportRect& rect);
   void assignLayers(const std::string& layers);

@@ -98,7 +98,7 @@ renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg, bool clear,
   auto renpass        = std::make_shared<RenderPass>();
   renpass->_debugName = name;
   auto vk_renpass     = renpass->_impl.makeShared<VulkanRenderPass>(this, renpass.get());
-  auto color_rtb      = rtg->GetMrt(0);
+  auto color_rtb      = rtg->buffer(0);
   auto color_rtbi     = color_rtb->_impl.getShared<VklRtBufferImpl>();
   auto depth_rtb      = rtg->_depthBuffer;
   bool has_depth      = (depth_rtb != nullptr);
@@ -111,7 +111,7 @@ renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg, bool clear,
   /////////////////////////////////////////////
   int num_rtb = rtg->GetNumTargets();
   for (int i = 0; i < num_rtb; i++) {
-    auto rtb                     = rtg->GetMrt(i);
+    auto rtb                     = rtg->buffer(i);
     auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
     rtbi->_attachmentDesc.loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 
@@ -210,7 +210,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   }
   for (int i = 0; i < num_rtb; i++) {
     auto color = rtg->_clearColor;
-    auto rtb                     = rtg->GetMrt(i);
+    auto rtb                     = rtg->buffer(i);
     auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
     if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
       clearValues.emplace_back().color = {{color.x, color.y, color.z, color.w}};

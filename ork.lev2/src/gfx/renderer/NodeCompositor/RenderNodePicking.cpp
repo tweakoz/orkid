@@ -173,7 +173,7 @@ void PickingCompositingNode::DoRender(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PickingCompositingNode::GetOutput() const {
-  return _impl.get<std::shared_ptr<picking::IMPL>>()->_rtg->GetMrt(0);
+  return _impl.get<std::shared_ptr<picking::IMPL>>()->_rtg->buffer(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PickingCompositingNode::GetOutputGroup() const {

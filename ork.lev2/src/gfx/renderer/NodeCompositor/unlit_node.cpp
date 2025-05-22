@@ -148,7 +148,7 @@ void UnlitNode::DoRender(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t UnlitNode::GetOutput() const {
-  return _impl.get<std::shared_ptr<_unlitnode::IMPL>>()->_rtg->GetMrt(0);
+  return _impl.get<std::shared_ptr<_unlitnode::IMPL>>()->_rtg->buffer(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::compositor

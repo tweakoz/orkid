@@ -64,7 +64,7 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
   auto at       = std::make_shared<RtGroupAttachments>();
   int numrt     = _rtg->GetNumTargets();
   for (int i = 0; i < numrt; i++) {
-    auto rtbuffer   = _rtg->GetMrt(i);
+    auto rtbuffer   = _rtg->buffer(i);
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
@@ -192,7 +192,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   ////////////////////////////////////////
   bool is_swapchain = false;
   for (int it = 0; it < inumtargets; it++) {
-    rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+    rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
     auto bufferimpl         = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     ////////////////////////////////////////////
     uint64_t USAGE = "color"_crcu;
@@ -221,7 +221,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   else {
 
     for (int it = 0; it < inumtargets; it++) {
-      rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+      rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
       OrkAssert(rtbuffer->_usage != "depth"_crcu);
       auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
       auto texture    = rtbuffer->texture();
@@ -331,7 +331,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
       _active_rtgroup->SetSizeDirty(false);
     }
     for (int i = 0; i < inumtargets; i++) {
-      auto rtb      = _active_rtgroup->GetMrt(i);
+      auto rtb      = _active_rtgroup->buffer(i);
       auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
       OrkAssert(rtb_impl->_vkimgview != VK_NULL_HANDLE);
     }
@@ -343,7 +343,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   int inumtargets = _active_rtgroup->GetNumTargets();
   //auto vkcmdbuf   = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
   for (int i = 0; i < inumtargets; i++) {
-    auto rtb      = _active_rtgroup->GetMrt(i);
+    auto rtb      = _active_rtgroup->buffer(i);
     auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
     rtb_impl->transitionToRenderTarget(_contextVK,_contextVK->primary_cb());
   }
@@ -409,7 +409,7 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   /////////////////////////////////////////////
 
   for (int ib = 0; ib < num_buf; ib++) {
-    auto rtb      = finished_rtg->GetMrt(ib);
+    auto rtb      = finished_rtg->buffer(ib);
     auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
     rtb_impl->transitionToTexture(_contextVK,_contextVK->primary_cb());
   }

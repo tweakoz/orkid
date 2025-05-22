@@ -90,7 +90,7 @@ void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t ScaleBiasCompositingNode::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<scaleandbias::IMPL>>();
-  return (impl->_rtg) ? impl->_rtg->GetMrt(0) : nullptr;
+  return (impl->_rtg) ? impl->_rtg->buffer(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

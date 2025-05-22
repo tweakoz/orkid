@@ -174,7 +174,7 @@ void ForwardPbrNodeImpl::_update_env_probes(CompositorDrawData& drawdata) {
             _currentContext->debugPopGroup();
           }
 
-          probe->_cubeTexture = probe->_cubeRenderRTG->GetMrt(0)->_texture;
+          probe->_cubeTexture = probe->_cubeRenderRTG->texture(0);
           TXI->generateMipMaps(probe->_cubeTexture.get());
           probe->_dirty = false;
         }

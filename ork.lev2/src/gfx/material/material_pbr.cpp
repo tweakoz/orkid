@@ -471,7 +471,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   const auto& CPD                    = RCFD->topCPD();
   const auto& world                  = mtxi->RefMMatrix();
   const auto& drect                  = CPD.GetDstRect();
-  const auto& mrect                  = CPD.GetMrtRect();
+  const auto& mrect                  = CPD.bufferRect();
   FxShader* shader                   = _pbrmaterial->_shader;
   size_t inumbones                   = _matrixblock->GetNumMatrices();
   const fmtx4* Matrices              = _matrixblock->GetMatrices();

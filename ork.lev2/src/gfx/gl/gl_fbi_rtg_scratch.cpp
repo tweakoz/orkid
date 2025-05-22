@@ -81,7 +81,7 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
   //_logchan_rtgroup->log("bind std FBOID<%d>", int(rtg_impl->_standard->_fbo));
 
   for (int it = 0; it < inumtargets; it++) {
-    rtbuffer_ptr_t pB = rtgroup->GetMrt(it);
+    rtbuffer_ptr_t pB = rtgroup->buffer(it);
     if (pB->_impl.isA<GlRtBufferImpl*>() == false) {
       auto bufferimpl = new GlRtBufferImpl;
       // printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", rtgroup, pB);
@@ -340,7 +340,7 @@ void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
 
   //////
   for (int it = 0; it < inumtargets; it++) {
-    rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+    rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
     auto bufferimpl         = rtbuffer->_impl.get<GlRtBufferImpl*>();
 
     auto tex = rtbuffer->texture();

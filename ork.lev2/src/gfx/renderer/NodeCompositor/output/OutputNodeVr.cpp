@@ -353,7 +353,7 @@ void VrOutputNode::composite(CompositorDrawData& drawdata) {
           mtl.end(framedata);
           fbi->PopRtGroup();
 
-          tex = downRTG->GetMrt(0)->texture();
+          tex = downRTG->buffer(0)->texture();
 
           drawdata.context()->debugPopGroup();   
 

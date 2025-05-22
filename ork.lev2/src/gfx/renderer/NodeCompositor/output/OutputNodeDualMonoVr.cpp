@@ -354,11 +354,11 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           int wd2 = out_surface_width>>1;
           int h = out_surface_height;
           DistortionRect drectL = {
-              impl->_ssaadownsamplebufferL->GetMrt(0)->texture(),
+              impl->_ssaadownsamplebufferL->texture(0).get(),
               SRect(wd2, 0, wd2*2, h),
           };
           DistortionRect drectR = {
-              impl->_ssaadownsamplebufferR->GetMrt(0)->texture(),
+              impl->_ssaadownsamplebufferR->texture(0).get(),
               SRect(0, 0, wd2, h),
           };
           //printf("out_surface_width<%d> out_surface_height<%d>\n", out_surface_width, out_surface_height);
@@ -384,7 +384,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           // Downsampled Left Eye -> Output
           ////////////
 
-          auto tex = impl->_ssaadownsamplebufferL->GetMrt(0)->texture();
+          auto tex = impl->_ssaadownsamplebufferL->texture(0).get();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           if (_flipY) {
             this_buf->Render2dQuadEML(
@@ -402,7 +402,7 @@ void DualMonoVrOutputNode::composite(CompositorDrawData& drawdata) {
           // Downsampled Right Eye -> Output
           ////////////
 
-          tex = impl->_ssaadownsamplebufferR->GetMrt(0)->texture();
+          tex = impl->_ssaadownsamplebufferR->texture(0).get();
           mtl.bindParamTexture(impl->_fxpColorMap, tex);
           if (_flipY) {
             this_buf->Render2dQuadEML(

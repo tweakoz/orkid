@@ -74,7 +74,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
 
     if (auto try_final = drawdata._properties["postfx_in"_crcu].tryAs<rtgroup_ptr_t>()) {
-      auto buf0 = try_final.value()->GetMrt(0);
+      auto buf0 = try_final.value()->buffer(0);
       if (buf0) {
         assert(buf0 != nullptr);
         auto tex = buf0->texture();
@@ -109,7 +109,7 @@ struct IMPL {
             _freestyle_mtl->bindParamFloat(_fxpSaturation, _node->_saturation );
             _freestyle_mtl->bindParamFloat(_fxpValue, _node->_value );
             _freestyle_mtl->bindParamFloat(_fxpGamma, _node->_gamma );
-            _freestyle_mtl->bindParamTexture(_fxpInputMap, final_rtg->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpInputMap, final_rtg->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(finalw,finalh);
             _freestyle_mtl->end(framedata);
@@ -159,7 +159,7 @@ void PostFxNodeHSVG::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PostFxNodeHSVG::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<posteffect_hsvg::IMPL>>();
-  return (impl->_rtg_out) ? impl->_rtg_out->GetMrt(0) : nullptr;
+  return (impl->_rtg_out) ? impl->_rtg_out->buffer(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PostFxNodeHSVG::GetOutputGroup() const {

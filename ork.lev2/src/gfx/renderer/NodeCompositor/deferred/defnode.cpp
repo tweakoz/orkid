@@ -79,8 +79,8 @@ struct PbrNodeImpl {
     const auto TOPCPD = CIMPL->topCPD();
     /////////////////////////////////////////////////
     RCFD->setUserProperty("rtg_gbuffer"_crc, rtg_gbuffer);
-    RCFD->setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->GetMrt(0));
-    RCFD->setUserProperty("rtb_accum"_crc, rtg_laccum->GetMrt(0));
+    RCFD->setUserProperty("rtb_gbuffer"_crc, rtg_gbuffer->buffer(0));
+    RCFD->setUserProperty("rtb_accum"_crc, rtg_laccum->buffer(0));
     RCFD->_renderingmodel = node->_renderingmodel;
     RCFD->_pbrcommon      = pbrcommon;
     //////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ struct PbrNodeImpl {
 
       /////////////////////////
 
-      _context->_lightingmtl->bindParamTexture(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
+      _context->_lightingmtl->bindParamTexture(_context->_parMapGBuf, rtg_gbuffer->buffer(0)->texture());
 
       _context->_lightingmtl->bindParamTexture(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
 
@@ -313,7 +313,7 @@ pbr_deferred_context_ptr_t DeferredCompositingNodePbr::deferredContext() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t DeferredCompositingNodePbr::GetOutput() const {
-  return GetOutputGroup()->GetMrt(0);
+  return GetOutputGroup()->buffer(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t DeferredCompositingNodePbr::GetOutputGroup() const {

@@ -24,7 +24,7 @@ void VkFrameBufferInterface::_initSwapChain() {
     size_t num_images = _swapchain->_rtgs.size();
     for (size_t i = 0; i < num_images; i++) {
       auto rtg = _swapchain->_rtgs[i];
-      auto rtb_color = rtg->GetMrt(0);
+      auto rtb_color = rtg->buffer(0);
       auto rtb_depth = rtg->_depthBuffer;
       auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
       auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
@@ -147,7 +147,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
 void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
 
-  auto main_rtb = _main_rtg->GetMrt(0);
+  auto main_rtb = _main_rtg->buffer(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
   auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;

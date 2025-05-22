@@ -58,7 +58,7 @@ RtGroup::~RtGroup() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtbuffer_ptr_t RtGroup::GetMrt(int idx) const {
+rtbuffer_ptr_t RtGroup::buffer(int idx) const {
   OrkAssert((idx >= 0) && (idx < kmaxmrts));
   return mMrt[idx];
 }
@@ -67,8 +67,12 @@ rtbuffer_ptr_t RtGroup::GetMrt(int idx) const {
 
 texture_ptr_t RtGroup::texture(int idx) const {
   OrkAssert((idx >= 0) && (idx < kmaxmrts));
-  auto buf = GetMrt(idx);
+  auto buf = buffer(idx);
   return buf ? buf->_texture : nullptr;
+}
+
+texture_ptr_t RtGroup::depthTexture() const {
+  return _depthBuffer ? _depthBuffer->_texture : nullptr;
 }
 
 int RtGroup::GetNumTargets(void) const {

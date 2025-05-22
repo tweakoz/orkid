@@ -27,6 +27,14 @@ uniform_set ublock_frg {
   sampler2D ColorMap;
   sampler2D ColorMap2;
   sampler2D ColorMap3;
+  sampler2D ImpDepthMap;
+
+  mat4 MatMVP;
+  float ImpNear;
+  float ImpFar;
+  float ImpNear2;
+  float ImpFar2;
+  mat4 ImpIVP;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
@@ -99,10 +107,17 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_texcolor : iface_fmt {
-  vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr   = vec4(texc.xyz, 1);
+fragment_shader ps_impblit : iface_fmt {
+  out_clr   = textureLod(ColorMap, frg_uv0,0);
+  float raw_depth = textureLod(ImpDepthMap,frg_uv0,0).r;
+  float z_ndc = raw_depth * 2.0 - 1.0;     
+  gl_FragDepth = (z_ndc * 0.5) + 0.5;
 }
+///////////////////////////////////////////////////////////////
+fragment_shader ps_texcolor : iface_fmt {
+  out_clr   = texture(ColorMap, frg_uv0);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_texcolor_pik : iface_fmt {
   ivec2 texelCoord = ivec2(frg_uv0 * textureSize(PickIdMap, 0));
   uvec4 texc = texelFetch(PickIdMap, texelCoord,0); ///65535.0;
@@ -333,6 +348,14 @@ technique texcolor {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texcolor;
+    state_block     = sb_default;
+  }
+}
+technique imposter_blit {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_impblit;
     state_block     = sb_default;
   }
 }

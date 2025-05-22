@@ -92,7 +92,7 @@ struct IMPL {
     //////////////////////////////////////////////////////
 
     if (auto try_final = drawdata._properties["postfx_in"_crcu].tryAs<rtgroup_ptr_t>()) {
-      auto buf0 = try_final.value()->GetMrt(0);
+      auto buf0 = try_final.value()->buffer(0);
       if (buf0) {
         assert(buf0 != nullptr);
         auto tex = buf0->texture();
@@ -132,7 +132,7 @@ struct IMPL {
             _freestyle_mtl->begin(_tek_maskbright,framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpMaskThreshold, _node->_threshold);
-            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_b->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_b->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
             _freestyle_mtl->end(framedata);
@@ -148,7 +148,7 @@ struct IMPL {
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth );
             _freestyle_mtl->bindParamInt(_fxpImageW,smallw );
             _freestyle_mtl->bindParamInt(_fxpImageH,smallh );
-            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_c->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_c->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
             _freestyle_mtl->end(framedata);
@@ -164,7 +164,7 @@ struct IMPL {
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth);
             _freestyle_mtl->bindParamInt(_fxpImageW,smallw );
             _freestyle_mtl->bindParamInt(_fxpImageH,smallh );
-            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_d->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_d->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(smallw,smallh);
             _freestyle_mtl->end(framedata);
@@ -179,8 +179,8 @@ struct IMPL {
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamFloat(_fxpEffectAmount, _node->_amount );
-            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_e->GetMrt(0)->_texture.get());
-            _freestyle_mtl->bindParamTexture(_fxpMrtMap1, final_rtg->GetMrt(0)->_texture.get());
+            _freestyle_mtl->bindParamTexture(_fxpMrtMap0, _rtg_e->texture(0).get());
+            _freestyle_mtl->bindParamTexture(_fxpMrtMap1, final_rtg->texture(0).get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
             rquad(finalw,finalh);
             _freestyle_mtl->end(framedata);
@@ -239,7 +239,7 @@ void PostFxNodeDecompBlur::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PostFxNodeDecompBlur::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<decomp_blur::IMPL>>();
-  return (impl->_rtg_out) ? impl->_rtg_out->GetMrt(0) : nullptr;
+  return (impl->_rtg_out) ? impl->_rtg_out->buffer(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PostFxNodeDecompBlur::GetOutputGroup() const {

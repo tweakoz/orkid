@@ -44,7 +44,7 @@ CompositingPassData CompositingPassData::clone() const {
 const ViewportRect& CompositingPassData::GetDstRect() const {
   return mDstRect;
 }
-const ViewportRect& CompositingPassData::GetMrtRect() const {
+const ViewportRect& CompositingPassData::bufferRect() const {
   return mMrtRect;
 }
 void CompositingPassData::SetDstRect(const ViewportRect& rect) {

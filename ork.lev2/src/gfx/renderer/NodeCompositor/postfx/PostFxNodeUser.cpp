@@ -72,7 +72,7 @@ struct IMPL {
     target->debugPushGroup("PostFxNodeUser::render");
 
     if (auto try_input = drawdata._properties["postfx_in"_crcu].tryAs<rtgroup_ptr_t>()) {
-      auto buf0 = try_input.value()->GetMrt(0);
+      auto buf0 = try_input.value()->buffer(0);
       if (buf0) {
         assert(buf0 != nullptr);
         auto tex = buf0->texture();
@@ -150,7 +150,7 @@ void PostFxNodeUser::DoRender(CompositorDrawData& drawdata) // virtual
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t PostFxNodeUser::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<posteffect_user::IMPL>>();
-  return (impl->_rtg_out) ? impl->_rtg_out->GetMrt(0) : nullptr;
+  return (impl->_rtg_out) ? impl->_rtg_out->buffer(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t PostFxNodeUser::GetOutputGroup() const {

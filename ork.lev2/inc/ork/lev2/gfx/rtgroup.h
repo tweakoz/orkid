@@ -62,8 +62,9 @@ struct RtGroup final {
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
   /////////////////////////////////////////
-  rtbuffer_ptr_t GetMrt(int idx) const;
+  rtbuffer_ptr_t buffer(int idx) const;
   texture_ptr_t texture(int idx) const;
+  texture_ptr_t depthTexture() const;
   /////////////////////////////////////////
   rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
   /////////////////////////////////////////

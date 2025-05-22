@@ -19,8 +19,8 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
 
   dst->Resize(wd2, hd2);
   PushRtGroup(dst.get());
-  auto src_rtb       = src->GetMrt(0);
-  auto dst_rtb       = dst->GetMrt(0);
+  auto src_rtb       = src->buffer(0);
+  auto dst_rtb       = dst->buffer(0);
   auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
   auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
   auto this_buf      = this->GetThisBuffer();
@@ -29,7 +29,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
 
   shader->begin(_tek_downsample2x2, framedata);
   shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-  shader->bindParamTexture(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamTexture(_fxpColorMap, src->texture(0).get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, wd2, hd2);
   this->pushViewport(extents);
@@ -50,7 +50,7 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
   if (as_impl) {
     int inumtargets = rtg->GetNumTargets();
     for (int it = 0; it < inumtargets; it++) {
-      auto b = rtg->GetMrt(it);
+      auto b = rtg->buffer(it);
       if (b) {
         auto bufferimpl = b->_impl.get<GlRtBufferImpl*>();
         auto glto       = bufferimpl->_teximpl.get<gltexobj_ptr_t>();
@@ -73,8 +73,8 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
 void GlFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   dst->Resize(src->width(), src->height());
   PushRtGroup(dst.get());
-  auto src_rtb       = src->GetMrt(0);
-  auto dst_rtb       = dst->GetMrt(0);
+  auto src_rtb       = src->buffer(0);
+  auto dst_rtb       = dst->buffer(0);
   auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
   auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
 
@@ -112,8 +112,8 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
   // dst->Resize(w,h);
   PushRtGroup(dst.get());
-  auto src_rtb       = src->GetMrt(0);
-  auto dst_rtb       = dst->GetMrt(0);
+  auto src_rtb       = src->buffer(0);
+  auto dst_rtb       = dst->buffer(0);
   auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
   auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
   auto this_buf      = this->GetThisBuffer();
@@ -122,7 +122,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
   shader->begin(_tek_blit, framedata);
   shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
-  shader->bindParamTexture(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamTexture(_fxpColorMap, src->texture(0).get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, w, h);
   this->pushViewport(extents);

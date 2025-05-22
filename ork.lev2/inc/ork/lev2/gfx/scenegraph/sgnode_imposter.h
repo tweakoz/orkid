@@ -6,6 +6,14 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ImposterPassData {
+  ImposterPassData();
+  fxpipeline_ptr_t _pipeline;
+  rtgroup_ptr_t _rtg;
+  varmap::varmap_ptr_t _userdata;
+  bool _debug_viz = false;
+};
+
 struct ImposterDrawableData final : public DrawableData {
 
   DeclareConcreteX(ImposterDrawableData, DrawableData);
@@ -14,11 +22,11 @@ public:
   drawable_ptr_t createDrawable() const final;
   ImposterDrawableData();
   ~ImposterDrawableData();
+  std::vector<imposterpassdataptr_t> _user_passes;
+  imposterpassdataptr_t _imp_pass;
+  imposterpassdataptr_t _blit_pass;
   svar64_t _shape;
-  fxpipeline_ptr_t _pipeline;
-  rtgroup_ptr_t _rtg;
   size_t _detail = 0;
-  bool _debug_viz = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -657,7 +657,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                 pfc._pickvalues[MrtIndex] = nullptr;
               }
 
-              auto rtbuffer = pfc._rtgroup->GetMrt(MrtIndex);
+              auto rtbuffer = pfc._rtgroup->buffer(MrtIndex);
 
               OrkAssert(MrtIndex < pfc._rtgroup->GetNumTargets());
 

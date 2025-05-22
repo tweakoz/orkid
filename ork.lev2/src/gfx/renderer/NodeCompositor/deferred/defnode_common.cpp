@@ -313,7 +313,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   }
   targ->debugPopGroup(); // findclusters
   CIMPL->popCPD();       // findclusters
-  auto buf0      = _rtgDepthCluster->GetMrt(0);
+  auto buf0      = _rtgDepthCluster->buffer(0);
   bool captureok = FBI->capture(buf0.get(), &_clustercapture);
   assert(captureok);
   return (const uint32_t*)_clustercapture._data;*/
@@ -442,7 +442,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   _lightingmtl->commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
@@ -480,9 +480,9 @@ void DeferredContext::beginPointLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
@@ -534,9 +534,9 @@ void DeferredContext::beginSpotLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
@@ -585,9 +585,9 @@ void DeferredContext::beginShadowedSpotLighting(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
-  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
+  //_lightingmtl->bindParamTexture(_parMapDepthCluster, _rtgDepthCluster->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
@@ -638,7 +638,7 @@ void DeferredContext::beginSpotDecaling(
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   ///////////////////////////
-  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamTexture(_parMapGBuf, _rtgGbuffer->buffer(0)->texture());
   _lightingmtl->bindParamTexture(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   if (cookietexture)
     _lightingmtl->bindParamTexture(_parLightCookieTexture, cookietexture);

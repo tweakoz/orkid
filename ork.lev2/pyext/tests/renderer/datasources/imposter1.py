@@ -35,7 +35,11 @@ args = vars(parser.parse_args())
 
 IMP_SHADERTEXT = """
 ////////////////////////////////////////
-fxconfig fxcfg_default { glsl_version = "330"; }
+fxconfig fxcfg_default { 
+  glsl_version = "330";
+  import "orkshader://sdftools.i";
+  import "orkshader://misctools.i";
+}
 ////////////////////////////////////////
 uniform_set uset_vtx {
   mat4 mvp;
@@ -44,6 +48,7 @@ uniform_set uset_vtx {
 uniform_set uset_frg {
   vec2 inverse_viewport_size;
   sampler2D rtgtex;
+  float time;
 }
 ////////////////////////////////////////
 vertex_interface iface_vtx : uset_vtx {
@@ -55,23 +60,101 @@ vertex_interface iface_vtx : uset_vtx {
   }
   outputs {
     vec3 frg_col;
+    vec3 frg_pos;
   }
 }
 ////////////////////////////////////////
 fragment_interface iface_frg : uset_frg {
   inputs {
     vec3 frg_col;
+    vec3 frg_pos;
   }
   outputs { layout(location = 0) vec4 out_clr; }
 }
 ////////////////////////////////////////
 vertex_shader vs_imp1 : iface_vtx {
   frg_col = normalize(nrm);//+vec3(1))*0.5;
+  frg_pos = pos.xyz;
   gl_Position = mvp * pos;
 }
 ////////////////////////////////////////
-fragment_shader ps_imp : iface_frg {
-  out_clr = vec4(frg_col,1);
+libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise{
+  float sampleNoise(vec3 p) {
+    float n = 0.0;
+    for (int o = 0; o < 4; o++) {
+      float amp = float(4 - o) / 2.0;
+      float frq = float(o + 1) / 8.0;    
+      vec3 samplePos = (p * frq) + vec3(0, time * amp * 0.2, 0);
+      n += cellnoise(samplePos) * amp; 
+    } 
+    return pow(n * 0.5, 2);
+  }
+  vec3 calculateNormal(vec3 p) {
+    const float h = 0.001;
+    const vec2 k = vec2(1, -1);
+    return normalize(
+      k.xyy * sampleNoise(p + k.xyy * h) +
+      k.yyx * sampleNoise(p + k.yyx * h) +
+      k.yxy * sampleNoise(p + k.yxy * h) +
+      k.xxx * sampleNoise(p + k.xxx * h)
+    );
+  }
+}
+////////////////////////////////////////
+fragment_shader ps_imp : iface_frg : lib_X {
+
+  const int MAX_STEPS = 128;
+  const float MAX_DIST = 20.0;
+  const float SURFACE_DIST = 0.004;
+
+  vec3 ro = vec3(0, 0, -5);  // Ray origin
+  vec3 rd = normalize(frg_pos);  // Ray direction
+
+  // Raymarch
+  float totalDist = 0.0;
+  float surfaceThreshold = 0.6;  // Isosurface threshold
+  
+  for (int i = 0; i < MAX_STEPS; i++) {
+      vec3 p = ro + rd * totalDist;
+      
+      // Sample noise at current point
+      float noise = sampleNoise(p);
+      
+      // Distance to isosurface
+      float dist = abs(noise - surfaceThreshold);
+      
+      // Advance ray
+      totalDist += dist;
+      
+      // Surface hit or max distance reached
+      if (dist < SURFACE_DIST || totalDist > MAX_DIST) {
+          break;
+      }
+  }
+  
+  // Check if we hit a surface
+  if (totalDist < MAX_DIST) {
+      vec3 hitPoint = ro + rd * totalDist;
+      
+      // Calculate surface normal for lighting
+      vec3 normal = calculateNormal(hitPoint);
+      
+      // Basic lighting
+      vec3 lightDir = normalize(vec3(1, 1, -1));
+      float lighting = max(0.0, dot(normal, lightDir));
+      
+      // Sample noise for color variation
+      float noiseVal = sampleNoise(hitPoint);
+      
+      // Color based on noise and lighting
+      vec3 surfaceColor = ((normal+vec3(1))*0.5)*vec3(noiseVal);// * (0.5 + 0.5 * lighting);
+      
+      out_clr = vec4(surfaceColor, 1.0);
+  } else {
+      // Background color if no surface hit
+      //out_clr = vec4(0.1, 0.1, 0.2, 1.0);
+      discard;
+  }
 }
 
 ////////////////////////////////////////
@@ -163,17 +246,18 @@ class ImposterApp(object):
     pipeline = mtl.fxcache.findPipeline(permu)
     pipeline.name = "imppipe"
     pipeline.bindParam(mtl.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+    pipeline.bindParam(mtl.param("time"), lambda: self.time)
     pipeline.sharedMaterial = mtl
 
     # rtgroup
-    rtg = lev2.RtGroup(ctx,128,128)
-    rtb_c = rtg.createBuffer(tokens.RGB8,tokens.NONE)
+    rtg_imp = lev2.RtGroup(ctx,256,256)
+    rtb_imp_color = rtg_imp.createBuffer(tokens.RGBA8,tokens.NONE)
     # the imposter itself    
     self.imp_data = lev2.ImposterDrawableData()
     self.imp_data.shape = Sphere(vec3(0), 1.0)
     self.imp_data.detail = 3
-    self.imp_data.pipeline = pipeline
-    self.imp_data.rtgroup = rtg
+    self.imp_data.imp_pass.pipeline = pipeline
+    self.imp_data.imp_pass.rtgroup = rtg_imp
 
     # imposter scenegraph node
     self.imp_node = self.layer_fwd.createDrawableNodeFromData("imp1",self.imp_data)
@@ -187,7 +271,7 @@ class ImposterApp(object):
     if uievent.code == tokens.KEY_DOWN.hashed:
       ######################
       if uievent.keycode == ord("D"):
-        self.imp_data.debug_viz = not self.imp_data.debug_viz
+        self.imp_data.blit_pass.debug_viz = not self.imp_data.blit_pass.debug_viz
         return res
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
@@ -197,13 +281,16 @@ class ImposterApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
+    #self.imp_data.debug_viz = (int(self.frame_index)>>6)&1
     self.time = updinfo.absolutetime
     self.scene.updateScene(self.cameralut) 
+
+  ################################################
 
   def onGpuUpdate(self,ctx):
     self.frame_index += 0.3
     y = 1.0+math.sin(self.frame_index*0.05)
-    pos = vec3(0,1,0)
+    pos = vec3(0,y,0)
     self.imp_node.worldTransform.translation = pos
     pass 
 

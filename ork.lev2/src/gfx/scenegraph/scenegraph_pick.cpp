@@ -68,13 +68,13 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     _compimpl               = _compdata->createImpl();
     switch(_scene._pickFormat){
       case 0:
-        _pickIDtexture = _pfc->_rtgroup->GetMrt(0)->texture();
-        _pickPOStexture = _pfc->_rtgroup->GetMrt(1)->texture();
-        _pickNRMtexture = _pfc->_rtgroup->GetMrt(2)->texture();
-        _pickUVtexture = _pfc->_rtgroup->GetMrt(3)->texture();
+        _pickIDtexture = _pfc->_rtgroup->buffer(0)->texture();
+        _pickPOStexture = _pfc->_rtgroup->buffer(1)->texture();
+        _pickNRMtexture = _pfc->_rtgroup->buffer(2)->texture();
+        _pickUVtexture = _pfc->_rtgroup->buffer(3)->texture();
         break;
       case 1:
-        _pickIDtexture = _pfc->_rtgroup->GetMrt(0)->texture();
+        _pickIDtexture = _pfc->_rtgroup->buffer(0)->texture();
         break;
       default:
         OrkAssert(false);

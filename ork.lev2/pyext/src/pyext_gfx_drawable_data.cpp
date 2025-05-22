@@ -60,10 +60,39 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def("resize", [](instancedmodeldrawabledata_ptr_t d, size_t count) { d->resize(count); });
   type_codec->registerStdCodec<instancedmodeldrawabledata_ptr_t>(instmdldrawabledata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto imppassdata_type = //
+      py::class_<ImposterPassData, imposterpassdataptr_t>(module_lev2, "ImposterPassData")
+          .def(py::init<>())
+          .def_property(
+              "pipeline",
+              [](imposterpassdataptr_t pass) -> fxpipeline_ptr_t { return pass->_pipeline; },
+              [](imposterpassdataptr_t pass, fxpipeline_ptr_t val) { pass->_pipeline = val; })
+          .def_property(
+              "rtgroup",
+              [](imposterpassdataptr_t pass) -> rtgroup_ptr_t { return pass->_rtg; },
+              [](imposterpassdataptr_t pass, rtgroup_ptr_t val) { pass->_rtg = val; })
+          .def_property(
+              "debug_viz",
+              [](imposterpassdataptr_t pass) -> bool { return pass->_debug_viz; },
+              [](imposterpassdataptr_t pass, bool val) { pass->_debug_viz = val; });
+  type_codec->registerStdCodec<imposterpassdataptr_t>(imppassdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto impdrawdata_type = //
       py::class_<ImposterDrawableData, DrawableData, imposterdrawabledataptr_t>(module_lev2, "ImposterDrawableData")
           .def(py::init<>())
           .def("createDrawable", [](imposterdrawabledataptr_t data) -> drawable_ptr_t { return data->createDrawable(); })
+          .def_property_readonly("imp_pass",
+              [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t {
+                return drw->_imp_pass;
+              })
+          .def_property(
+              "user_passes",
+              [](imposterdrawabledataptr_t drw) -> std::vector<imposterpassdataptr_t> { return drw->_user_passes; },
+              [](imposterdrawabledataptr_t drw, std::vector<imposterpassdataptr_t> val) { drw->_user_passes = val; })
+          .def_property_readonly("blit_pass",
+              [](imposterdrawabledataptr_t drw) -> imposterpassdataptr_t {
+                return drw->_blit_pass;
+              })
           .def_property(
               "shape",
               [type_codec](imposterdrawabledataptr_t drw) -> py::object { //
@@ -75,19 +104,7 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "detail",
               [](imposterdrawabledataptr_t drw) -> size_t { return drw->_detail; },
-              [](imposterdrawabledataptr_t drw, size_t val) { drw->_detail = val; })
-          .def_property(
-              "pipeline",
-              [](imposterdrawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline; },
-              [](imposterdrawabledataptr_t drw, fxpipeline_ptr_t val) { drw->_pipeline = val; })
-          .def_property(
-              "rtgroup",
-              [](imposterdrawabledataptr_t drw) -> rtgroup_ptr_t { return drw->_rtg; },
-              [](imposterdrawabledataptr_t drw, rtgroup_ptr_t val) { drw->_rtg = val; })
-          .def_property(
-              "debug_viz",
-              [](imposterdrawabledataptr_t drw) -> bool { return drw->_debug_viz; },
-              [](imposterdrawabledataptr_t drw, bool val) { drw->_debug_viz = val; });
+              [](imposterdrawabledataptr_t drw, size_t val) { drw->_detail = val; });
   type_codec->registerStdCodec<imposterdrawabledataptr_t>(impdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //

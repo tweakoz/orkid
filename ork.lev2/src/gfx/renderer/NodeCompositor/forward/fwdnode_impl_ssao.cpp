@@ -74,7 +74,7 @@ void ForwardPbrNodeImpl::_render_ssao_linearize_depth(forward_pass_ptr_t fpass) 
   FBI->PopRtGroup();
   _currentContext->debugPopGroup();
 
-  _currentRCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_primary_depth_copy_linear->GetMrt(0)->_texture);
+  _currentRCFD->setUserProperty("LINEAR_DEPTH_MAP"_crcu, _rtg_primary_depth_copy_linear->texture(0));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +146,7 @@ void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
   _ssao_material->bindParamTexture(_fxpSSAOMapDepth, _rtg_primary->_depthBuffer->_texture.get());
   _ssao_material->bindParamTexture(_fxpSSAOKernel, ssao_kernel.get());
   _ssao_material->bindParamTexture(_fxpSSAOScrNoise, ssao_scrnoise.get());
-  _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->GetMrt(0)->_texture.get());
+  _ssao_material->bindParamTexture(_fxpSSAOPREV, ambocc_accum_r->texture(0).get());
   _ssao_material->bindParamVec2(_fxpZndc2eye, _currentViewData._zndc2eye);
   _ssao_material->bindParamMatrix(_fxpInvP, _currentViewData.IPM);
   _ssao_material->bindParamMatrix(_fxpP, _currentViewData.PM);
@@ -170,7 +170,7 @@ void ForwardPbrNodeImpl::_render_ssao_prepass(forward_pass_ptr_t fpass) {
   FBI->PopRtGroup();
   _currentContext->debugPopGroup();
 
-  _currentRCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->GetMrt(0)->_texture);
+  _currentRCFD->setUserProperty("SSAO_MAP"_crcu, ambocc_accum_w->texture(0));
   fvec2 ssao_dim = fvec2(ambocc_accum_w->width(), ambocc_accum_w->height());
   _currentRCFD->setUserProperty("SSAO_DIM"_crcu, ssao_dim);
   _currentRCFD->setUserProperty("SSAO_POWER"_crcu, pbrcommon->_ssaoPower);
