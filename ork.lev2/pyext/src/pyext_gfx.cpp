@@ -73,12 +73,13 @@ void pyinit_gfx(py::module& module_lev2) {
                 return rval;
               })
           //////////////////////
-          //.def(
-          //    "topRCFD",
-          //  [](ctx_t& c) -> rcfd_ptr_t {
-          //  auto rcfd = c.get()->topRenderContextFrameData();
-          // return rcfd_ptr_t(const_cast<RenderContextFrameData*>(rcfd));
-          //})
+          .def_property_readonly(
+              "topRCFD",
+              [](ctx_t& c) -> rcfd_ptr_t {
+                return c.get()->topRenderContextFrameData();
+              }
+          ) //
+          //////////////////////
           .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
           //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
           .def("__repr__", [](const ctx_t& c) -> std::string {
@@ -112,6 +113,7 @@ void pyinit_gfx(py::module& module_lev2) {
       //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
       .def("rtGroupPush", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
       .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
+      .def("rtGroupInit", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { fbi.get()->PushRtGroup(rtg.get()); fbi.get()->PopRtGroup(); })
       .def("rtGroupClear", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;

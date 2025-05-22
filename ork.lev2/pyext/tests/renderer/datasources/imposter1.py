@@ -315,16 +315,18 @@ class ImposterApp(object):
 
     if True:
       upass = lev2.ImposterPassData()
-      rtg_fb0 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
-      rtg_fb1 = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
-      rtg_fb0.createBuffer(tokens.RGBA32F,tokens.NONE)
-      rtg_fb1.createBuffer(tokens.RGBA32F,tokens.NONE)
-      ctx.FBI.rtGroupPush(rtg_fb0)
-      ctx.FBI.rtGroupPop()
-      ctx.FBI.rtGroupPush(rtg_fb1)
-      ctx.FBI.rtGroupPop()
+
+      def createRGBRTG():
+        rtg = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+        rtg.createBuffer(tokens.RGBA32F,tokens.NONE)
+        ctx.FBI.rtGroupInit(rtg)
+        return rtg
       
-      self.fb_tex = rtg_fb0.texture(0)
+      rtg_fb = [createRGBRTG(),createRGBRTG()]
+      if is_stereo:
+        rtg_fb += [createRGBRTG(),createRGBRTG()]
+
+      self.fb_tex = rtg_fb[0].texture(0)
             
       upass_mtl = lev2.FreestyleMaterial()
       upass_mtl.gpuInitFromShaderText(ctx,"IMPUPASS",IMP_SHADERTEXT)
@@ -347,17 +349,19 @@ class ImposterApp(object):
       upass.enabled = True
 
       def _on_post_render():
+        eye_index = ctx.topRCFD.userprops.eye_index # 0: left, 1: right
+        base = 0 if (eye_index==None) else (eye_index * 2)
         if (self.frame_index % 2) == 0:
-          upass.rtgroup = rtg_fb1 # upass renders to fb1
-          impdata.blit_pass.userdata.color_rtg = rtg_fb0 # blit_pass reads fb0
-          self.fb_tex = rtg_fb0.texture(0) # upass reads fb0
+          upass.rtgroup = rtg_fb[base+1] # upass renders to fb1
+          impdata.blit_pass.userdata.color_rtg = rtg_fb[base+0] # blit_pass reads fb0
+          self.fb_tex = rtg_fb[base+0].texture(0) # upass reads fb0
         else:
-          upass.rtgroup = rtg_fb0 # upass renders to fb0
-          impdata.blit_pass.userdata.color_rtg = rtg_fb1 # blit_pass reads fb1
-          self.fb_tex = rtg_fb1.texture(0) # upass reads fb1
+          upass.rtgroup = rtg_fb[base+0] # upass renders to fb0
+          impdata.blit_pass.userdata.color_rtg = rtg_fb[base+1] # blit_pass reads fb1
+          self.fb_tex = rtg_fb[base+1].texture(0) # upass reads fb1
 
       upass.onPostRender(_on_post_render)
-      _on_post_render()
+      _on_post_render() # first time init
 
     #####################
     # imposter scenegraph node

@@ -19,6 +19,26 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();
 
   /////////////////////////////////////////////////////////////////////////////////
+  struct RcfdPropsProxy {
+    RcfdPropsProxy(rcfd_ptr_t rcfd) : _rcfd(rcfd) {}
+    rcfd_ptr_t _rcfd;
+  };
+  using rcfdpropsproxy_ptr_t = std::shared_ptr<RcfdPropsProxy>;
+  auto rcfdpropsproxy_type   =                                                            //
+      py::class_<RcfdPropsProxy, rcfdpropsproxy_ptr_t>(module_lev2, "RcfdUserPropsProxy") //
+          .def(
+              "__getattr__",                                                           //
+              [type_codec](rcfdpropsproxy_ptr_t proxy, std::string key ) -> py::object { //
+                CrcString crc(key.c_str());
+                auto it = proxy->_rcfd->_userProperties.find(crc.hashed());
+                if(it != proxy->_rcfd->_userProperties.end()){
+                  auto encoded = type_codec->encode(it->second);
+                  return encoded;
+                }
+                return type_codec->encode(nullptr);
+              });
+  type_codec->template registerStdCodec<rcfdpropsproxy_ptr_t>(rcfdpropsproxy_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto rcfd_type_t = py::class_<RenderContextFrameData, rcfd_ptr_t>(
                          module_lev2,                                 //
                          "RenderContextFrameData")                    //
@@ -43,8 +63,9 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                                auto as_crc               = CrcString(rendermodel.c_str());
                                the_rcfd->_renderingmodel = (uint32_t)as_crc._hashed;
                              })
-                         .def("setUserProperty", [](rcfd_ptr_t the_rcfd, uint32_t crc, py::object obj) { //
-                           // rcfd->setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
+
+                         .def_property_readonly("userprops", [](rcfd_ptr_t the_rcfd) -> rcfdpropsproxy_ptr_t { //
+                           return std::make_shared<RcfdPropsProxy>(the_rcfd);
                          });
   type_codec->registerStdCodec<rcfd_ptr_t>(rcfd_type_t);
   /////////////////////////////////////////////////////////////////////////////////

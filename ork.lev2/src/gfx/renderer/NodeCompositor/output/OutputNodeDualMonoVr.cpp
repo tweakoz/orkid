@@ -248,6 +248,7 @@ void DualMonoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
 compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_ptr_t tek) {
   return [this, tek](CompositorDrawData& drawdata) {
     auto rnode = tek->_renderNode;
+    auto context = drawdata.context();
     // printf("rendering dual-mono-vr!\n");
     ////////////////////////////////////////////////////////////////////////////
     // this assembler will run the render and postfx nodes twice,
@@ -259,9 +260,11 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
     auto do_for_eye = [&](uint64_t eye) {
       auto impl    = _impl.get<DMVRIMPL_ptr_t>();
       auto context = drawdata.context();
+      auto framedata = drawdata.RCFD();
       ////////////////////////////////////////////////////////////////////////////
       bool is_left_eye  = (eye == "left"_crcu);
       bool is_right_eye = (not is_left_eye);
+      framedata->setUserProperty("eye_index"_crcu, int(is_left_eye ? 0 : 1));
       ////////////////////////////////////////////////////////////////////////////
       rtgroup_ptr_t render_outg = rnode ? rnode->GetOutputGroup() : nullptr;
       RtBuffer* render_out      = rnode ? rnode->GetOutput().get() : nullptr;
