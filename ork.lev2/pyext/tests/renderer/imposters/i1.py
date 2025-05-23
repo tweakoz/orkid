@@ -176,7 +176,7 @@ class ImposterApp(object):
     self.imposter.onGpuUpdate(ctx)
     y = math.sin(self.imposter.frame_index*0.005)
     pos = vec3(0,y,0)
-    self.imposter.sgnode.worldTransform.translation = pos
+    #self.imposter.sgnode.worldTransform.translation = pos
     pass 
 
 ###############################################################################
