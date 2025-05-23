@@ -137,7 +137,7 @@ fragment_shader ps_filterSpecularEnvMapEQUI : iface_fyo : lib_math : lib_envmapp
       // Use bicubic sampling if input is lower resolution, otherwise use regular sampling
       vec3 sampleColor;
       if (useBicubic) {
-        sampleColor = textureBicubic(prefiltmap, luv);
+        sampleColor = textureBicubic(prefiltmap, luv).rgb;
       } else {
         sampleColor = textureLod(prefiltmap, luv, 0).rgb;
       }

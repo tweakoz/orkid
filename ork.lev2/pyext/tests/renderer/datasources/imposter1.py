@@ -26,17 +26,10 @@ from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
 
-parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
-################################################################################
-
-args = vars(parser.parse_args())
-is_stereo = args["stereo"]
 
 ################################################################################
 
 IMP_DIM = 128
-RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
 
 ################################################################################
 
@@ -209,13 +202,21 @@ technique tek_upass {
 
 class ImposterApp(object):
 
-  def __init__(self):
+  def __init__(self,is_stereo=None,extapp=None):
     super().__init__()
-    self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
-    self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    self.frame_index = 0
+    self.time = 0.0
+    if extapp==None:
+      self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
+      self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+    else:
+      self.ezapp = extapp.ezapp
 
+    self.extapp = extapp
     setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,0,0))
+
+    self.frame_index = 0
+    self.is_stereo = is_stereo
+    self.RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -227,7 +228,9 @@ class ImposterApp(object):
 
   def onGpuInit(self,ctx):
 
-    if is_stereo:
+    
+
+    if self.is_stereo and (self.extapp==None):
       self.vrdev = lev2.orkidvr.novr_device()
       self.vrdev.camera = "vrcam"
       self.vrdev.width = 960
@@ -238,35 +241,34 @@ class ImposterApp(object):
     # create scenegraph
     ###################################
 
-    params_dict = {
-      "SkyboxTexPathStr": "cold",
-      "SkyboxIntensity": 0.5,
-      "DiffuseIntensity": 1.0,
-      "SpecularIntensity": 1.0,
-      "AmbientLevel": vec3(0),
-      "DepthFogDistance": 10000.0,
-    }
-    params_dict["preset"] = RENDERMODEL
+    if self.extapp==None:
+      params_dict = {
+        "SkyboxTexPathStr": "cold",
+        "SkyboxIntensity": 0.5,
+        "DiffuseIntensity": 1.0,
+        "SpecularIntensity": 1.0,
+        "AmbientLevel": vec3(0),
+        "DepthFogDistance": 10000.0,
+      }
+      params_dict["preset"] = self.RENDERMODEL
 
-    ##################
-    # create model / sg node
-    ##################
+      ##################
+      # create model / sg node
+      ##################
 
-    createSceneGraph(app=self,params_dict=params_dict)
-    self.layer_donly = self.scene.createLayer("depth_prepass")
-    self.layer_fwd = self.layer1
-    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+      createSceneGraph(app=self,params_dict=params_dict)
+      self.lyr_donly = self.scene.createLayer("depth_prepass")
+      self.lyr_fwd = self.layer1
+      self.fwd_layers = [self.lyr_fwd,self.lyr_donly]
+     ###################################
 
-    ###################################
+    self.grid_data = createGridData(extent=1000)
 
-    if True:
-      self.grid_data = createGridData(extent=1000)
-
-      self.grid_data.shader_suffix = "_V4"
-      self.grid_data.modcolor = vec3(1,1.2,1.3)*2
-      self.grid_data.majorTileDim = 1.0
-      self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
-      self.grid_node.sortkey = 1
+    self.grid_data.shader_suffix = "_V3"
+    self.grid_data.modcolor = vec3(1,1.2,1.3)*2
+    self.grid_data.majorTileDim = 1.0
+    self.grid_node = self.lyr_fwd.createDrawableNodeFromData("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
     self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
     self.cookie1 = MyCookie("src://effect_textures/knob2.png")
@@ -314,7 +316,7 @@ class ImposterApp(object):
 
     imp_pass = impdata.imp_pass
     rtg_imps = [createRGBRTG("imprtg0")]
-    if is_stereo:
+    if self.is_stereo:
       rtg_imps += [createRGBRTG("imprtg1")]
     self.rtg_imp = rtg_imps[0]
     imp_pass.rtgroup = self.rtg_imp
@@ -325,12 +327,12 @@ class ImposterApp(object):
     # user pass
     #####################
 
-    if True:
+    if False:
       upass = lev2.ImposterPassData()
 
       
       rtg_feedback = [createRGBRTG("FB0L"),createRGBRTG("FB1L")]
-      if is_stereo:
+      if self.is_stereo:
         rtg_feedback += [createRGBRTG("FB0R"),createRGBRTG("FB1R")]
 
       self.fb_tex = rtg_feedback[0].texture(0)
@@ -395,7 +397,7 @@ class ImposterApp(object):
     # imposter scenegraph node
     #####################
 
-    self.imp_node = self.layer_fwd.createDrawableNodeFromData("imp1",impdata)
+    self.imp_node = self.lyr_fwd.createDrawableNodeFromData("imp1",impdata)
     self.imp_node.worldTransform.scale = 1
     self.imp_node.worldTransform.translation = vec3(0,0,0)
 
@@ -414,18 +416,16 @@ class ImposterApp(object):
     abstime = updinfo.absolutetime
     self.time = abstime
     #########################
-    if is_stereo:
-      x = math.sin(abstime*0.1)
-      z = -math.cos(abstime*0.1)
-      xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,  # eye
-                            vec3(0,0,0),        # tgt
-                            vec3(0,1,0))        # up
+    if (self.extapp==None):
+      if self.is_stereo:
+        x = math.sin(abstime*0.1)
+        z = -math.cos(abstime*0.1)
+        xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,  # eye
+                              vec3(0,0,0),        # tgt
+                              vec3(0,1,0))        # up
+        self.vrdev.setPoseMatrix("hmd",xf_hmd)
+      self.scene.updateScene(self.cameralut) 
     #########################
-
-      self.vrdev.setPoseMatrix("hmd",xf_hmd)
-
-
-    self.scene.updateScene(self.cameralut) 
 
   ################################################
 
@@ -433,9 +433,15 @@ class ImposterApp(object):
     self.frame_index += 1
     y = math.sin(self.frame_index*0.005)
     pos = vec3(0,y,0)
-    self.imp_node.worldTransform.translation = pos
+    #self.imp_node.worldTransform.translation = pos
     pass 
 
 ###############################################################################
 
-ImposterApp().ezapp.mainThreadLoop()
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description='scenegraph example')
+  parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
+  ################################################################################
+  args = vars(parser.parse_args())
+  is_stereo = args["stereo"]
+  ImposterApp(is_stereo=is_stereo).ezapp.mainThreadLoop()

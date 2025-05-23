@@ -77,7 +77,7 @@ class StereoApp1(object):
     # stereo viewing setup  
     ########################################
 
-    self.vrdev.FOVD = 120
+    self.vrdev.FOVD = 60
     self.vrdev.IPD = 0.065
     self.vrdev.near = 0.1
     self.vrdev.far = 1e5
@@ -85,7 +85,7 @@ class StereoApp1(object):
     x = math.sin(abstime*0.125)
     z = -math.cos(abstime*0.125)
 
-    xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*-5,   # eye
+    xf_hmd = mtx4.lookAt( vec3(x,0.1,z)*-10,   # eye
                           vec3(0,0,0),        # tgt
                           vec3(0,1,0))        # up
     
