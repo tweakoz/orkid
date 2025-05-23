@@ -1,0 +1,161 @@
+////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "410";
+  import "orkshader://sdftools.i";
+  import "orkshader://misctools.i";
+}
+////////////////////////////////////////
+uniform_set uset_vtx {
+  mat4 mvp;
+}
+////////////////////////////////////////
+uniform_set uset_frg {
+  vec2 inverse_viewport_size;
+  sampler2D rtgtex;
+  sampler2D fbtex;
+  sampler2D depthtex;
+  float time;
+}
+////////////////////////////////////////
+vertex_interface iface_vtx : uset_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec3 nrm : NORMAL;
+    vec3 bin : BINORMAL;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec3 frg_col;
+    vec2 frg_uv0;
+    vec3 frg_pos;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg : uset_frg {
+  inputs {
+    vec3 frg_col;
+    vec2 frg_uv0;
+    vec3 frg_pos;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+////////////////////////////////////////
+vertex_shader vs_imp1 : iface_vtx {
+  frg_col     = normalize(nrm); //+vec3(1))*0.5;
+  frg_pos     = pos.xyz;
+  gl_Position = mvp * pos;
+}
+////////////////////////////////////////
+libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
+  float sampleNoise(vec3 p) {
+    float n = 0.0;
+    for (int o = 0; o < 4; o++) {
+      float amp      = float(4 - o) / 2.0;
+      float frq      = float(o + 1) / 8.0;
+      vec3 samplePos = (p * frq) + vec3(0, time * amp * 0.25, 0);
+      n += cellnoise(samplePos) * amp;
+    }
+    return pow(n * 0.5, 2);
+  }
+  vec3 calculateNormal(vec3 p) {
+    const float h = 0.001;
+    const vec2 k  = vec2(1, -1);
+    return normalize(
+        k.xyy * sampleNoise(p + k.xyy * h) + k.yyx * sampleNoise(p + k.yyx * h) + k.yxy * sampleNoise(p + k.yxy * h) +
+        k.xxx * sampleNoise(p + k.xxx * h));
+  }
+}
+////////////////////////////////////////
+fragment_shader ps_imp : iface_frg : lib_X {
+
+  const int MAX_STEPS      = 128;
+  const float MAX_DIST     = 20.0;
+  const float SURFACE_DIST = 0.004;
+
+  vec3 ro = vec3(0, 0, -5);     // Ray origin
+  vec3 rd = normalize(frg_pos); // Ray direction
+
+  // Raymarch
+  float totalDist        = 0.0;
+  float surfaceThreshold = 0.5; // Isosurface threshold
+
+  for (int i = 0; i < MAX_STEPS; i++) {
+    vec3 p = ro + rd * totalDist;
+
+    // Sample noise at current point
+    float noise = sampleNoise(p);
+
+    // Distance to isosurface
+    float dist = abs(noise - surfaceThreshold);
+
+    // Advance ray
+    totalDist += dist;
+
+    // Surface hit or max distance reached
+    if (dist < SURFACE_DIST || totalDist > MAX_DIST) {
+      break;
+    }
+  }
+
+  // Check if we hit a surface
+  if (totalDist < MAX_DIST) {
+    vec3 hitPoint = ro + rd * totalDist;
+
+    // Calculate surface normal for lighting
+    vec3 normal = calculateNormal(hitPoint);
+
+    // Basic lighting
+    vec3 lightDir  = normalize(vec3(1, 1, -1));
+    float lighting = max(0.0, dot(normal, lightDir));
+
+    // Sample noise for color variation
+    float noiseVal = sampleNoise(hitPoint);
+
+    // Color based on noise and lighting
+    vec3 surfaceColor = ((normal + vec3(1)) * 0.5) * vec3(noiseVal); // * (0.5 + 0.5 * lighting);
+
+    out_clr = vec4(surfaceColor, 1.0);
+  } else {
+    // Background color if no surface hit
+    // out_clr = vec4(0.1, 0.1, 0.2, 1.0);
+    discard;
+  }
+  // gl_FragDepth = 0.5;
+}
+////////////////////////////////////////
+vertex_shader vs_upass : iface_vtx {
+  frg_col     = vec3(1, 0, 0);
+  frg_pos     = pos.xyz;
+  frg_uv0     = uv0;
+  gl_Position = mvp * pos;
+}
+fragment_shader ps_upass : iface_frg {
+  float Z = texture(depthtex, frg_uv0).r;
+  if (Z > 0.9999)
+    discard;
+  vec2 warp_uv = ((frg_uv0 - vec2(0.5)) * 0.985) + vec2(0.5);
+  vec3 rgb     = texture(rtgtex, frg_uv0).bgr * 0.05 + texture(fbtex, warp_uv).xyz * 0.9999999;
+  float alp    = texture(rtgtex, frg_uv0).w;
+  out_clr      = vec4(rgb, alp);
+  gl_FragDepth = Z;
+}
+////////////////////////////////////////
+technique tek_imp1 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_imp1;
+    fragment_shader = ps_imp;
+    state_block     = default;
+  }
+}
+////////////////////////////////////////
+technique tek_upass {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_upass;
+    fragment_shader = ps_upass;
+    state_block     = default;
+  }
+}
