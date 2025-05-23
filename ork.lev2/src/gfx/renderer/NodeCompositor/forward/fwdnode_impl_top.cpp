@@ -301,6 +301,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
 
   CIMPL->pushCPD(CPD);
 
+  //printf("_currentViewData._near<%f> _currentViewData._far<%f>\n", _currentViewData._near, _currentViewData._far);
   RCFD->setUserProperty("NEAR_FAR"_crcu, fvec2(_currentViewData._near, _currentViewData._far));
   RCFD->setUserProperty("PMATRIX"_crcu, _currentViewData.PL);
   RCFD->setUserProperty("VMATRIX"_crcu, _currentViewData.VL);

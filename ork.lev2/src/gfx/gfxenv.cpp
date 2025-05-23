@@ -109,6 +109,9 @@ MsaaSamples intToMsaaEnum( int samples ){
 std::string EBufferFormatToName(EBufferFormat fmt){
   std::string rval;
   switch(fmt){
+    case EBufferFormat(0):
+      rval = "UNDEF(0)";
+      break;
     case EBufferFormat::NONE:
       rval = "NONE";
       break;

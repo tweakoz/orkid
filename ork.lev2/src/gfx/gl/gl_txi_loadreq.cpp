@@ -56,9 +56,8 @@ void GlTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   glGenTextures(1, &GLTO->_textureObject);
   glBindTexture(TARGET, GLTO->_textureObject);
   GL_ERRORCHECK();
-
   
-  _texture_set[GLTO->_textureObject] = ptex.get();
+  _registerTexture(ptex.get());
 
   if (ptex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, GLTO->_textureObject, ptex->_debugName);

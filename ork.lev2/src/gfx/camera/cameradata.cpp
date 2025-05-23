@@ -82,8 +82,8 @@ CameraData::CameraData()
     , _uiCamera(nullptr)
     , mAper(17.0f)
     , mHorizAper(0.0f)
-    , mNear(100.0f)
-    , mFar(750.0f){
+    , mNear(1.0f)
+    , mFar(10.0f){
 }
 void CameraData::copyFrom(const CameraData& oth){
   mEye = oth.mEye;

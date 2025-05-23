@@ -443,6 +443,8 @@ struct GlTextureInterface : public TextureInterface {
   void initTextureFromTensor(Texture* ptex, torchtensor_ptr_t tensor, EBufferFormat fmt) final;
   #endif
 
+  void _registerTexture(Texture* ptex);
+
   std::map<size_t, pbosetptr_t> _pbosets;
   ContextGL& mTargetGL;
   std::map<GLuint, const Texture*> _texture_set;

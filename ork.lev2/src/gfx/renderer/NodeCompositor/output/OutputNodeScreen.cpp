@@ -142,9 +142,13 @@ void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) 
   _impl.get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
 }
 void ScreenOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
+  auto context = drawdata.context();
+  context->debugPushGroup("ScreenOutputCompositingNode::beginAssemble");
   _impl.get<std::shared_ptr<SCRIMPL>>()->beginAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
+  auto context = drawdata.context();
+  context->debugPopGroup();
   _impl.get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {

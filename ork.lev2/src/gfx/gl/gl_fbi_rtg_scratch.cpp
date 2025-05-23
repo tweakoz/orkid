@@ -63,12 +63,11 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
   dtex->_height       = ih;
   dtex->_msaa_samples = rtgroup->_msaa_samples;
   dtex->_texFormat    = EBufferFormat::Z32F;
-  dtex->_debugName    = "RtgDepth";
+  dtex->_debugName    = rtgroup->_name+":Depth";
   dtex->_texType      = ETEXTYPE_2D;
   auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
-  mTargetGL.mTxI._texture_set[depth_glto->_textureObject] = dtex.get();
-
+  mTargetGL.mTxI._registerTexture(dtex.get());
   GL_ERRORCHECK();
 
   // printf("RtGroup<%p> GenFBO<%d>\n", rtgroup, int(impl->_standard->_fbo));
@@ -89,15 +88,18 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
       //////////////////////////////////////////
       Texture* ptex       = pB->texture();
       ptex->_msaa_samples = rtgroup->_msaa_samples;
-      ptex->_debugName    = pB->_debugName;
+
+      if(pB->_debugName.length()) {
+        ptex->_debugName = rtgroup->_name+":"+pB->_debugName;
+      } else {
+        ptex->_debugName = rtgroup->_name+":Color"+std::to_string(it);
+      }
 
       auto color_glto = bufferimpl->_teximpl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
       GL_ERRORCHECK();
       glGenTextures(1, (GLuint*)&color_glto->_textureObject);
       glBindTexture(texture_target, color_glto->_textureObject);
-
-      mTargetGL.mTxI._texture_set[color_glto->_textureObject] = ptex;
 
       if (pB->_debugName.length()) {
         mTargetGL.debugLabel(GL_TEXTURE, color_glto->_textureObject, pB->_debugName);
@@ -116,6 +118,9 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
       }
       //////////////////////////////////////////
       pB->_impl.set<GlRtBufferImpl*>(bufferimpl);
+        
+      mTargetGL.mTxI._registerTexture(ptex);
+
     }
   }
 
@@ -248,11 +253,13 @@ void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
   dtex2->_height       = ih;
   dtex2->_msaa_samples = rtgroup->_msaa_samples;
   dtex2->_texFormat    = EBufferFormat::Z32F;
-  dtex2->_debugName    = "RtgDepth";
+  dtex2->_debugName    = rtgroup->_name+":Depth";
   auto depth_glto      = dtex2->_impl.getShared<GLTextureObject>();
 
   depth_glto->_textureObject = rtg_impl->_standard->_depthTexObject;
   depth_glto->mTarget        = texture_target;
+
+  mTargetGL.mTxI._registerTexture(rtgroup->_depthBuffer->_texture.get());
 
   GL_ERRORCHECK();
   std::string DepthTexName("RtgDepth");
@@ -421,6 +428,11 @@ void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
       //////////////////////////////////////////
 
       auto glto     = tex->_impl.get<gltexobj_ptr_t>();
+      /*
+      if(glto->_textureObject == 9) {
+        raise(SIGTRAP);
+      }*/
+      
       GLuint texobj = glto->_textureObject;
       tex->_width   = iw;
       tex->_height  = ih;

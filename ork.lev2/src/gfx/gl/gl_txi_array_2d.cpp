@@ -100,7 +100,7 @@ void GlTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(texture_target, glto->_textureObject);
 
-  _texture_set[glto->_textureObject] = array->_tex.get();
+  _registerTexture(array->_tex.get());
 
   if (array->_tex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, array->_tex->_debugName);
@@ -502,7 +502,7 @@ void GlTextureInterface::initTextureArray2D(TextureArray* texture_array) {
     logchan_txia2d->log("///////////////////////////////////////////////////////////");
   }
 
-  _texture_set[glto->_textureObject] = texture_array->_tex.get();
+  _registerTexture(texture_array->_tex.get());
 
   if (texture_array->_tex->_debugName.length()) {
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, texture_array->_tex->_debugName);

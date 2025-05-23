@@ -110,8 +110,7 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 fragment_shader ps_impblit : iface_fmt {
   out_clr   = textureLod(ColorMap, frg_uv0,0);
   float raw_depth = textureLod(ImpDepthMap,frg_uv0,0).r;
-  float z_ndc = raw_depth * 2.0 - 1.0;     
-  gl_FragDepth = (z_ndc * 0.5) + 0.5;
+  gl_FragDepth = raw_depth;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texcolor : iface_fmt {

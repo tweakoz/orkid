@@ -73,12 +73,7 @@ void pyinit_gfx(py::module& module_lev2) {
                 return rval;
               })
           //////////////////////
-          .def_property_readonly(
-              "topRCFD",
-              [](ctx_t& c) -> rcfd_ptr_t {
-                return c.get()->topRenderContextFrameData();
-              }
-          ) //
+          .def_property_readonly("topRCFD", [](ctx_t& c) -> rcfd_ptr_t { return c.get()->topRenderContextFrameData(); }) //
           //////////////////////
           .def_property_readonly("frameIndex", [](ctx_t& c) -> int { return c.get()->GetTargetFrame(); })
           //.def_property("currentMaterial", [](ctx_t& c)&Context::currentMaterial, &Context::BindMaterial)
@@ -113,7 +108,12 @@ void pyinit_gfx(py::module& module_lev2) {
       //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
       .def("rtGroupPush", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
       .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
-      .def("rtGroupInit", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { fbi.get()->PushRtGroup(rtg.get()); fbi.get()->PopRtGroup(); })
+      .def(
+          "rtGroupInit",
+          [](const fbi_t& fbi, rtgroup_ptr_t rtg) {
+            fbi.get()->PushRtGroup(rtg.get());
+            fbi.get()->PopRtGroup();
+          })
       .def("rtGroupClear", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
@@ -167,7 +167,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
       .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
   //.def("copyTensorIntoStorageBuffer", [](gbi_t gbi, torchtensor_ptr_t tensor, fxshaderstoragebuffer_ptr_t buffer) {
-  //ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
+  // ci.get()->copyTensorIntoStorageBuffer(buffer.get(), tensor); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<ci_t>(module_lev2, "ComputeInterface")
       .def(
@@ -269,10 +269,10 @@ void pyinit_gfx(py::module& module_lev2) {
             return the_txi->createColorTexture(color, w, h); //
           })
       .def(
-          "updateTextureArraySlice", //
-          [](const txi_t& the_txi,   //
-            texturearraysliceref_ptr_t slice,     //
-             image_ptr_t img) {      //
+          "updateTextureArraySlice",           //
+          [](const txi_t& the_txi,             //
+             texturearraysliceref_ptr_t slice, //
+             image_ptr_t img) {                //
             the_txi->updateTextureArraySlice(slice.get(), img);
           })
 #if defined(ENABLE_PYTORCH)
@@ -316,15 +316,18 @@ void pyinit_gfx(py::module& module_lev2) {
                              [](rasterstate_ptr_t state, crcstring_ptr_t value) { //
                                state->setBlendingMacro(BlendingMacro(value->hashed()));
                              })
-                         /*.def_property(
-                             "blending",
-                             [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
-                               auto crcstr = std::make_shared<CrcString>(uint64_t(state->_blending));
-                               return crcstr;
-                             },
-                             [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
-                               state->setBlendingMacro(ctest->hashed());
-                             })*/
+                         .def_property(
+                             "writeMaskRGB",
+                             [](rasterstate_ptr_t state) -> bool { return state->_writemaskRGB; },
+                             [](rasterstate_ptr_t state, bool value) { state->_writemaskRGB = value; })
+                         .def_property(
+                             "writeMaskA",
+                             [](rasterstate_ptr_t state) -> bool { return state->_writemaskA; },
+                             [](rasterstate_ptr_t state, bool value) { state->_writemaskA = value; })
+                         .def_property(
+                             "writeMaskZ",
+                             [](rasterstate_ptr_t state) -> bool { return state->_writemaskZ; },
+                             [](rasterstate_ptr_t state, bool value) { state->_writemaskZ = value; })
                          .def("__repr__", [](rasterstate_ptr_t state) -> std::string {
                            fxstring<256> fxs;
                            fxs.format("RasterState()");
@@ -333,43 +336,49 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<rasterstate_ptr_t>(rstate_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto rtb_t = py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
-      .def(
-          "__repr__",
-          [](rtbuffer_ptr_t rtb) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("RtBuffer(%p)", rtb.get());
-            return fxs.c_str();
-          })
-      .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
+                   .def(
+                       "__repr__",
+                       [](rtbuffer_ptr_t rtb) -> std::string {
+                         fxstring<256> fxs;
+                         fxs.format("RtBuffer(%p)", rtb.get());
+                         return fxs.c_str();
+                       })
+                   .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
   type_codec->registerStdCodec<rtbuffer_ptr_t>(rtb_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
-      .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
-        bool needs_depth = true;
-        MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
-        auto rtg = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, needs_depth);
-        return rtg;
-      }))
-      .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
-      .def_property_readonly("width", [](rtgroup_ptr_t rtg) -> int { return int(rtg->width()); })
-      .def_property_readonly("height", [](rtgroup_ptr_t rtg) -> int { return int(rtg->height()); })
-      .def("createBuffer", [](rtgroup_ptr_t rtg, crcstring_ptr_t format, crcstring_ptr_t usage) -> rtbuffer_ptr_t { 
-          auto efmt = EBufferFormat(format->hashed());
-          uint64_t eusage = usage ? uint64_t(usage->hashed()) : 0;
-          auto rtb = rtg->createRenderTarget(efmt, eusage);
-          return rtb;
-      })
-      .def(
-          "__repr__",
-          [](rtgroup_ptr_t rtg) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("RtGroup(%p)", rtg.get());
-            return fxs.c_str();
-          })
-      .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->GetNumTargets(); })
-      .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
-      .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
-      .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });
+                   .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
+                     bool needs_depth         = true;
+                     MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
+                     auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, needs_depth);
+                     return rtg;
+                   }))
+                   .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
+                   .def_property_readonly("width", [](rtgroup_ptr_t rtg) -> int { return int(rtg->width()); })
+                   .def_property_readonly("height", [](rtgroup_ptr_t rtg) -> int { return int(rtg->height()); })
+                   .def_property(
+                       "name",
+                       [](rtgroup_ptr_t rtg) -> std::string { return rtg->_name; },
+                       [](rtgroup_ptr_t rtg, std::string name) { rtg->_name = name; })
+                   .def(
+                       "createBuffer",
+                       [](rtgroup_ptr_t rtg, crcstring_ptr_t format, crcstring_ptr_t usage) -> rtbuffer_ptr_t {
+                         auto efmt       = EBufferFormat(format->hashed());
+                         uint64_t eusage = usage ? uint64_t(usage->hashed()) : 0;
+                         auto rtb        = rtg->createRenderTarget(efmt, eusage);
+                         return rtb;
+                       })
+                   .def(
+                       "__repr__",
+                       [](rtgroup_ptr_t rtg) -> std::string {
+                         fxstring<256> fxs;
+                         fxs.format("RtGroup(%p)", rtg.get());
+                         return fxs.c_str();
+                       })
+                   .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->GetNumTargets(); })
+                   .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
+                   .def("buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->buffer(irtb); })
+                   .def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->texture(irtb); });
   //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->buffer(irtb)->texture(); });
   type_codec->registerStdCodec<rtgroup_ptr_t>(rtg_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -454,9 +463,14 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); })
-          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; });
-  // using rawtexptr_t = Texture*;
-  type_codec->registerStdCodec<texture_ptr_t>(texture_type);
+          .def_static("declare", [](std::string path) -> texture_ptr_t { return nullptr; })
+          .def_property(
+              "name",
+              [](texture_ptr_t tex) -> std::string { return tex->_debugName; },
+              [](texture_ptr_t tex, std::string name) { tex->_debugName = name; });
+
+      // using rawtexptr_t = Texture*;
+      type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pfc_type = py::class_<PixelFetchContext, pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
                       .def_property(
@@ -619,19 +633,21 @@ void pyinit_gfx(py::module& module_lev2) {
   auto texarray_t = py::class_<TextureArray, texturearray_ptr_t>(module_lev2, "TextureArray");
   texarray_t
       .def(py::init([](size_t w, size_t h, size_t maxslices) -> texturearray_ptr_t {
-        auto rval     = std::make_shared<TextureArray>();
-        rval->_width  = w;
-        rval->_height = h;
+        auto rval        = std::make_shared<TextureArray>();
+        rval->_width     = w;
+        rval->_height    = h;
         rval->_maxslices = maxslices;
         return rval;
       }))
-      .def("resize", [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d, crcstring_ptr_t fmt, bool needs_mips) {
-        auto efmt = EBufferFormat(fmt->hashed());
-        texarray->_requires_mips = needs_mips;
-        texarray->resize(w,h,d,efmt);
-      })
+      .def(
+          "resize",
+          [](texturearray_ptr_t texarray, size_t w, size_t h, size_t d, crcstring_ptr_t fmt, bool needs_mips) {
+            auto efmt                = EBufferFormat(fmt->hashed());
+            texarray->_requires_mips = needs_mips;
+            texarray->resize(w, h, d, efmt);
+          })
       .def("load", [](texturearray_ptr_t texarray, std::string path) -> texturearraysliceref_ptr_t { return texarray->load(path); })
-      .def("slice", [](texturearray_ptr_t texarray, size_t index ) -> texturearraysliceref_ptr_t { return texarray->slice(index); })
+      .def("slice", [](texturearray_ptr_t texarray, size_t index) -> texturearraysliceref_ptr_t { return texarray->slice(index); })
       /*.def("createRtGroup", [](texturearray_ptr_t texarray, ctx_t context) -> rtgroup_ptr_t {
         auto rtg = std::make_shared<RtGroup>(context.get(),texarray->_width, texarray->_height);
         texarray->_rtg = rtg;
@@ -645,25 +661,33 @@ void pyinit_gfx(py::module& module_lev2) {
         }
         return rtg;
       })*/
-      .def_property("needsIrradianceCache", [](texturearray_ptr_t texarray) -> bool { //
-        return texarray->_needsIrradianceCache;
-      }, [](texturearray_ptr_t texarray, bool b) { //
-        texarray->_needsIrradianceCache = b;
-      })
-      .def_property("bufferFormat", [](texturearray_ptr_t texarray) -> crcstring_ptr_t { //
-        auto crcstr = std::make_shared<CrcString>(uint64_t(texarray->_format));
-        return crcstr;
-      }, [](texturearray_ptr_t texarray, crcstring_ptr_t v) { //
-        auto fmt = EBufferFormat(v->hashed());
-        texarray->_format = fmt;
-      })
-      .def("subimage", [](texturearray_ptr_t texarray, int slice) -> image_ptr_t { //
-        OrkAssert(slice >= 0);
-        OrkAssert(slice < texarray->_images.size());
-        auto rval = texarray->_images[slice];
-        return rval;
-      })
-    .def("__repr__", [](texturearray_ptr_t texarray) -> std::string {
+      .def_property(
+          "needsIrradianceCache",
+          [](texturearray_ptr_t texarray) -> bool { //
+            return texarray->_needsIrradianceCache;
+          },
+          [](texturearray_ptr_t texarray, bool b) { //
+            texarray->_needsIrradianceCache = b;
+          })
+      .def_property(
+          "bufferFormat",
+          [](texturearray_ptr_t texarray) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(texarray->_format));
+            return crcstr;
+          },
+          [](texturearray_ptr_t texarray, crcstring_ptr_t v) { //
+            auto fmt          = EBufferFormat(v->hashed());
+            texarray->_format = fmt;
+          })
+      .def(
+          "subimage",
+          [](texturearray_ptr_t texarray, int slice) -> image_ptr_t { //
+            OrkAssert(slice >= 0);
+            OrkAssert(slice < texarray->_images.size());
+            auto rval = texarray->_images[slice];
+            return rval;
+          })
+      .def("__repr__", [](texturearray_ptr_t texarray) -> std::string {
         fxstring<256> fxs;
         fxs.format("TextureArrayLoader(%p)", texarray.get());
         return fxs.c_str();
@@ -671,14 +695,17 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<texturearray_ptr_t>(texarray_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto texarrayslice_t = py::class_<TextureArraySliceRef, texturearraysliceref_ptr_t>(module_lev2, "TextureArraySlice");
-  texarrayslice_t.def_property_readonly("index", [](texturearraysliceref_ptr_t texarrayslice) -> int { //
-    return texarrayslice->_slice;
-  })
-  .def("__repr__", [](texturearraysliceref_ptr_t texarrayslice) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("TextureArraySliceRef(%p)", texarrayslice.get());
-    return fxs.c_str();
-  });
+  texarrayslice_t
+      .def_property_readonly(
+          "index",
+          [](texturearraysliceref_ptr_t texarrayslice) -> int { //
+            return texarrayslice->_slice;
+          })
+      .def("__repr__", [](texturearraysliceref_ptr_t texarrayslice) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("TextureArraySliceRef(%p)", texarrayslice.get());
+        return fxs.c_str();
+      });
   type_codec->registerStdCodec<texturearraysliceref_ptr_t>(texarrayslice_t);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

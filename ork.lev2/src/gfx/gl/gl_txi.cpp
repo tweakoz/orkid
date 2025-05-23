@@ -878,7 +878,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     GL_ERRORCHECK();
     glGenTextures(1, &glto->_textureObject);
-    _texture_set[glto->_textureObject] = ptex;
+    _registerTexture(ptex);
     glBindTexture(texture_target, glto->_textureObject);
     GL_ERRORCHECK();
     if (ptex->_debugName.length()) {
@@ -1057,11 +1057,14 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
   glGenTextures(1, &glto->_textureObject);
   glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
 
-  _texture_set[glto->_textureObject] = tex;
+  _registerTexture(tex);
 
   if (from_chain->_debugName.length()) {
     tex->_debugName = from_chain->_debugName;
     mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, tex->_debugName);
+  }
+  else{
+    tex->_debugName = "createFromMipChain";
   }
 
   size_t nummips = from_chain->_levels.size();
@@ -1289,7 +1292,20 @@ void GlTextureInterface::initTextureFromTensor(Texture* ptex, torchtensor_ptr_t 
   GL_ERRORCHECK();
 }
 
+
 #endif
+
+void GlTextureInterface::_registerTexture(Texture* ptex) {
+  OrkAssert(ptex != nullptr);
+  OrkAssert(ptex->_impl.isA<gltexobj_ptr_t>());
+  OrkAssert(ptex->_impl.get<gltexobj_ptr_t>() != nullptr);
+  OrkAssert(ptex->_texFormat != EBufferFormat(0));
+  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+  /*if(glto->_textureObject == 9){
+    raise(SIGTRAP);
+  }*/
+  _texture_set[glto->_textureObject] = ptex;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

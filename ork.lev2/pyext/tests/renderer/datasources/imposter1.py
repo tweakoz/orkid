@@ -166,6 +166,7 @@ fragment_shader ps_imp : iface_frg : lib_X {
       //out_clr = vec4(0.1, 0.1, 0.2, 1.0);
       discard;
   }
+  //gl_FragDepth = 0.5;
 }
 ////////////////////////////////////////
 vertex_shader vs_upass : iface_vtx {
@@ -179,7 +180,7 @@ fragment_shader ps_upass : iface_frg {
   if(Z > 0.9999) 
     discard;
   vec2 warp_uv = ((frg_uv0-vec2(0.5))*0.985)+vec2(0.5);
-  vec3 rgb = texture(rtgtex, frg_uv0).bgr*0.05 + texture(fbtex, warp_uv).xyz*0.99999;
+  vec3 rgb = texture(rtgtex, frg_uv0).bgr*0.05 + texture(fbtex, warp_uv).xyz*0.9999999;
   float alp = texture(rtgtex, frg_uv0).w;
   out_clr = vec4(rgb,alp);
   gl_FragDepth = Z;
@@ -231,6 +232,8 @@ class ImposterApp(object):
       self.vrdev.camera = "vrcam"
       self.vrdev.width = 1280
       self.vrdev.height = 1280
+      self.vrdev.near = 1.0
+      self.vrdev.far = 1000.0
 
     ###################################
     # create scenegraph
@@ -299,8 +302,9 @@ class ImposterApp(object):
     imp_pipeline.bindParam(imp_mtl.param("time"), lambda: self.time)
     imp_pipeline.sharedMaterial = imp_mtl
 
-    def createRGBRTG():
+    def createRGBRTG(name):
       rtg = lev2.RtGroup(ctx,IMP_DIM,IMP_DIM)
+      rtg.name = name
       rtg.createBuffer(tokens.RGBA32F,tokens.NONE)
       ctx.FBI.rtGroupInit(rtg)
       return rtg
@@ -310,13 +314,14 @@ class ImposterApp(object):
     #####################
 
     imp_pass = impdata.imp_pass
-    rtg_imps = [createRGBRTG()]
+    rtg_imps = [createRGBRTG("imprtg0")]
     if is_stereo:
-      rtg_imps += [createRGBRTG()]
+      rtg_imps += [createRGBRTG("imprtg1")]
     self.rtg_imp = rtg_imps[0]
     imp_pass.rtgroup = self.rtg_imp
     imp_pass.pipeline = imp_pipeline
-    
+    self.rtg_imps = rtg_imps
+
     #####################
     # user pass
     #####################
@@ -325,9 +330,9 @@ class ImposterApp(object):
       upass = lev2.ImposterPassData()
 
       
-      rtg_feedback = [createRGBRTG(),createRGBRTG()]
+      rtg_feedback = [createRGBRTG("FB0L"),createRGBRTG("FB1L")]
       if is_stereo:
-        rtg_feedback += [createRGBRTG(),createRGBRTG()]
+        rtg_feedback += [createRGBRTG("FB0R"),createRGBRTG("FB1R")]
 
       self.fb_tex = rtg_feedback[0].texture(0)
             
@@ -336,6 +341,11 @@ class ImposterApp(object):
       upass_mtl.rasterstate.setBlendingMacro(tokens.OFF)
       upass_mtl.rasterstate.culltest = tokens.OFF
       upass_mtl.rasterstate.depthtest = tokens.OFF
+      upass_mtl.rasterstate.culltest = tokens.OFF
+      upass_mtl.rasterstate.depthtest = tokens.OFF
+      upass_mtl.rasterstate.writeMaskRGB = True
+      upass_mtl.rasterstate.writeMaskA = True
+      upass_mtl.rasterstate.writeMaskZ = True
       upass_permu = lev2.FxPipelinePermutation()
       upass_permu.technique = upass_mtl.shader.technique("tek_upass")
       upass.pipeline = upass_mtl.fxcache.findPipeline(upass_permu)
@@ -368,7 +378,20 @@ class ImposterApp(object):
 
       upass.onPostRender(_on_post_render)
       _on_post_render() # first time init
-
+    else:
+      def _on_post_render():
+        eye_index = ctx.topRCFD.userprops.eye_index # 0: left, 1: right
+        eye_index = 0 if (eye_index==None) else eye_index
+        #print("eye_index",eye_index)
+        self.rtg_imp = rtg_imps[eye_index]
+        impdata.imp_pass.rtgroup = self.rtg_imp
+        impdata.blit_pass.userdata.color_rtg = self.rtg_imp 
+        impdata.blit_pass.userdata.depth_rtg = self.rtg_imp 
+      impdata.blit_pass.onPostRender(_on_post_render)
+      _on_post_render() # first time init
+      
+    #impdata.imp_pass.debug_shaderstate = True
+    #impdata.blit_pass.debug_shaderstate = True
     #####################
     # imposter scenegraph node
     #####################

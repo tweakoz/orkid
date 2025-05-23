@@ -75,25 +75,31 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               "debug_viz",
               [](imposterpassdataptr_t pass) -> bool { return pass->_debug_viz; },
               [](imposterpassdataptr_t pass, bool val) { pass->_debug_viz = val; })
+          .def_property(
+              "debug_shaderstate",
+              [](imposterpassdataptr_t pass) -> bool { return pass->_debug_shaderstate; },
+              [](imposterpassdataptr_t pass, bool val) { pass->_debug_shaderstate = val; })
           .def_property_readonly("userdata", [](imposterpassdataptr_t pass) -> varmap::varmap_ptr_t { return pass->_userdata; })
           .def_property(
               "enabled",
               [](imposterpassdataptr_t pass) -> bool { return pass->_enabled; },
               [](imposterpassdataptr_t pass, bool val) { pass->_enabled = val; })
-          .def("onPreRender", [](imposterpassdataptr_t pass, py::object func) {
-            auto mypo = pass->_userdata->makeSharedForKey<py::object>("_onPreRender");
-            (*mypo) = func;
-            pass->_onPreRender                                               = [=]() { //
-              py::gil_scoped_acquire gil;
-              py::function func = py::cast<py::function>(*mypo);
-              func();
-            };
-            // func(rcid); };
-          })
+          .def(
+              "onPreRender",
+              [](imposterpassdataptr_t pass, py::object func) {
+                auto mypo          = pass->_userdata->makeSharedForKey<py::object>("_onPreRender");
+                (*mypo)            = func;
+                pass->_onPreRender = [=]() { //
+                  py::gil_scoped_acquire gil;
+                  py::function func = py::cast<py::function>(*mypo);
+                  func();
+                };
+                // func(rcid); };
+              })
           .def("onPostRender", [](imposterpassdataptr_t pass, py::object func) {
-            auto mypo = pass->_userdata->makeSharedForKey<py::object>("_onPostRender");
-            (*mypo) = func;
-            pass->_onPostRender                                               = [=]() { //
+            auto mypo           = pass->_userdata->makeSharedForKey<py::object>("_onPostRender");
+            (*mypo)             = func;
+            pass->_onPostRender = [=]() { //
               py::gil_scoped_acquire gil;
               py::function func = py::cast<py::function>(*mypo);
               func();

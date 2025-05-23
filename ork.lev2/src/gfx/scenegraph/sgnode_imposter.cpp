@@ -100,45 +100,47 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
 
     auto blpass = _impdata->_blit_pass;
 
-    auto blit_material = std::make_shared<FreestyleMaterial>();
-    blit_material->gpuInit(ctx, "orkshader://solid");
-    auto blit_tek       = blit_material->technique("imposter_blit");
-    auto blit_par_mvp   = blit_material->param("MatMVP");
-    auto blit_par_tex   = blit_material->param("ColorMap");
-    auto blit_par_dmp   = blit_material->param("ImpDepthMap");
-    auto blit_par_near  = blit_material->param("ImpNear");
-    auto blit_par_far   = blit_material->param("ImpFar");
-    auto blit_par_near2 = blit_material->param("ImpNear2");
-    auto blit_par_far2  = blit_material->param("ImpFar2");
-    auto blit_par_ivp   = blit_material->param("ImpIVP");
+    auto blmtl = std::make_shared<FreestyleMaterial>();
+    blmtl->gpuInit(ctx, "orkshader://solid");
+    auto tek       = blmtl->technique("imposter_blit");
+    auto par_mvp   = blmtl->param("MatMVP");
+    auto par_tex   = blmtl->param("ColorMap");
+    auto par_dmp   = blmtl->param("ImpDepthMap");
+    auto par_near  = blmtl->param("ImpNear");
+    auto par_far   = blmtl->param("ImpFar");
+    auto par_near2 = blmtl->param("ImpNear2");
+    auto par_far2  = blmtl->param("ImpFar2");
+    auto par_ivp   = blmtl->param("ImpIVP");
 
-    OrkAssert(blit_tek != nullptr);
-    OrkAssert(blit_par_mvp != nullptr);
-    OrkAssert(blit_par_tex != nullptr);
+    OrkAssert(tek != nullptr);
+    OrkAssert(par_mvp != nullptr);
+    OrkAssert(par_tex != nullptr);
 
-    blit_material->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
-    blit_material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
-    blit_material->_rasterstate->setCullTest(ECullTest::OFF);
-    blit_material->_rasterstate->setWriteMaskRGB(true);
-    blit_material->_rasterstate->setWriteMaskA(true);
-    blit_material->_rasterstate->setWriteMaskZ(false);
+    auto blrs = blmtl->_rasterstate;
+    blrs->setBlendingMacro(BlendingMacro::ALPHA);
+    blrs->setDepthTest(EDepthTest::LEQUALS);
+    blrs->setCullTest(ECullTest::OFF);
+    blrs->setWriteMaskRGB(true);
+    blrs->setWriteMaskA(false);
+    blrs->setWriteMaskZ(true);
 
-    blpass->_userdata->set("material", blit_material);
-    blpass->_userdata->set("tek", blit_tek);
-    blpass->_userdata->set("par_mvp", blit_par_mvp);
-    blpass->_userdata->set("par_tex", blit_par_tex);
-    blpass->_userdata->set("par_dmp", blit_par_dmp);
-    blpass->_userdata->set("par_near", blit_par_near);
-    blpass->_userdata->set("par_far", blit_par_far);
-    blpass->_userdata->set("par_near2", blit_par_near2);
-    blpass->_userdata->set("par_far2", blit_par_far2);
-    blpass->_userdata->set("par_ivp", blit_par_ivp);
+    auto blud = blpass->_userdata;
+    blud->set("material", blmtl);
+    blud->set("tek", tek);
+    blud->set("par_mvp", par_mvp);
+    blud->set("par_tex", par_tex);
+    blud->set("par_dmp", par_dmp);
+    blud->set("par_near", par_near);
+    blud->set("par_far", par_far);
+    blud->set("par_near2", par_near2);
+    blud->set("par_far2", par_far2);
+    blud->set("par_ivp", par_ivp);
 
-    if (not blpass->_userdata->hasKey("color_rtg")) {
-      blpass->_userdata->set("color_rtg", imppass->_rtg);
+    if (not blud->hasKey("color_rtg")) {
+      blud->set("color_rtg", imppass->_rtg);
     }
-    if (not blpass->_userdata->hasKey("depth_rtg")) {
-      blpass->_userdata->set("depth_rtg", imppass->_rtg);
+    if (not blud->hasKey("depth_rtg")) {
+      blud->set("depth_rtg", imppass->_rtg);
     }
 
     ///////////////////////////////////////
@@ -251,15 +253,26 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->pushViewport(vprect_rtg);
     FBI->PushRtGroup(RTG.get());
 
+    if(imppass->_onPreRender) {
+      imppass->_onPreRender();
+    }
+
     auto par_mvp = imppass->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
 
     imppass->_pipeline->bindParam(par_mvp, SUBMVP);
     ////////////////////////////////////////////
+    GBI->_debugNextPrimitive = imppass->_debug_shaderstate;
+    context->debugPushGroup("imp-pass");
     imppass->_pipeline->wrappedDrawCall(
         RCID,                                   //
         [this, context]() {                     //
           this->_primitive->renderEML(context); //
         });
+    context->debugPopGroup();
+
+    if(imppass->_onPostRender) {
+      imppass->_onPostRender();
+    }
 
     FBI->PopRtGroup();
     FBI->popViewport();
@@ -269,7 +282,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   ////////////////////////////////////////////
   // user passes
   ////////////////////////////////////////////
-
+  int ip = 0;
   for (auto p : _impdata->_user_passes) {
     auto RTG = p->_rtg;
     if (RTG) {
@@ -285,6 +298,8 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       FBI->pushScissor(vprect_rtg);
       FBI->pushViewport(vprect_rtg);
       FBI->PushRtGroup(RTG.get());
+      GBI->_debugNextPrimitive = p->_debug_shaderstate;
+      context->debugPushGroup("user-pass-%d",ip);
       p->_pipeline->wrappedDrawCall(
           RCID,               //
           [=]() { //
@@ -299,6 +314,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       if(p->_onPostRender != nullptr) {
         p->_onPostRender();
       }
+      ip++;
     } // if(RTG){
   } // for( auto p : _impdata->_user_passes ){
 
@@ -309,18 +325,19 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   // material preamble
 
-  auto bmat       = blpass->_userdata->typedValueForKey<freestyle_mtl_ptr_t>("material").value();
-  auto btek       = blpass->_userdata->typedValueForKey<const FxShaderTechnique*>("tek").value();
-  auto bpar_mvp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
-  auto bpar_tex   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_tex").value();
-  auto bpar_dmp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_dmp").value();
-  auto bpar_near  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_near").value();
-  auto bpar_far   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_far").value();
-  auto bpar_near2 = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_near2").value();
-  auto bpar_far2  = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_far2").value();
-  auto bpar_ivp   = blpass->_userdata->typedValueForKey<fxparam_constptr_t>("par_ivp").value();
-  auto COLOR_RTG  = blpass->_userdata->typedValueForKey<rtgroup_ptr_t>("color_rtg").value();
-  auto DEPTH_RTG  = blpass->_userdata->typedValueForKey<rtgroup_ptr_t>("depth_rtg").value();
+  auto blud       = blpass->_userdata;
+  auto bmat       = blud->typedValueForKey<freestyle_mtl_ptr_t>("material").value();
+  auto btek       = blud->typedValueForKey<const FxShaderTechnique*>("tek").value();
+  auto bpar_mvp   = blud->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
+  auto bpar_tex   = blud->typedValueForKey<fxparam_constptr_t>("par_tex").value();
+  auto bpar_dmp   = blud->typedValueForKey<fxparam_constptr_t>("par_dmp").value();
+  auto bpar_near  = blud->typedValueForKey<fxparam_constptr_t>("par_near").value();
+  auto bpar_far   = blud->typedValueForKey<fxparam_constptr_t>("par_far").value();
+  auto bpar_near2 = blud->typedValueForKey<fxparam_constptr_t>("par_near2").value();
+  auto bpar_far2  = blud->typedValueForKey<fxparam_constptr_t>("par_far2").value();
+  auto bpar_ivp   = blud->typedValueForKey<fxparam_constptr_t>("par_ivp").value();
+  auto COLOR_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("color_rtg").value();
+  auto DEPTH_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("depth_rtg").value();
 
   bmat->begin(btek, RCFD);
   bmat->bindParam(bpar_tex, COLOR_RTG->texture(0));
@@ -333,8 +350,15 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   bmat->bindParam(bpar_ivp, SUBVP.inverse());
   bmat->commit();
 
+  if(blpass->_onPreRender) {
+    blpass->_onPreRender();
+  }
+
   // render
-  // GBI->_debugNextPrimitive = true;
+
+  GBI->_debugNextPrimitive = blpass->_debug_shaderstate;
+
+  context->debugPushGroup("blit-pass");
   DWI->quad3DEML(
       V0,
       V1,
@@ -345,6 +369,12 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
       fvec2(1, 1),
       fvec2(0, 1), // uv
       0xffffffff); // color
+
+  context->debugPopGroup();
+
+  if(blpass->_onPostRender) {
+    blpass->_onPostRender();
+  }
 
   // material postamble
   bmat->end(RCFD);

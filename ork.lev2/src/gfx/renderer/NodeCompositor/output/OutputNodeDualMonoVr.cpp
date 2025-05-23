@@ -138,7 +138,7 @@ struct DMVRIMPL {
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
     auto mono_cam = is_left_eye ? VRDEV->_leftcamera : VRDEV->_rightcamera;
     drawdata._properties["defcammtx"_crcu].set<cameramatrices_ptr_t>(mono_cam);
-
+    mono_cam->_camdat.Persp(VRDEV->_near, VRDEV->_far, VRDEV->_fov*RTOD);
     RCFD->setUserProperty("vrroot"_crc, rootmatrix);
     _stereomatrices->_left  = VRDEV->_leftcamera;
     _stereomatrices->_right = VRDEV->_rightcamera;
@@ -306,16 +306,24 @@ compdrawdata_fn_t DualMonoVrOutputNode::createAssembler(nodecompositortechnique_
       ////////////////////////////////////////////////////////////////////////////
     };
 
+    context->debugPushGroup("DualMonoVrOutputNode::assemble");
+
     if (_onBeginAssemble) {
       _onBeginAssemble(drawdata);
     }
 
+    context->debugPushGroup("DualMonoVrOutputNode::assembleL");
     do_for_eye("left"_crcu);
+    context->debugPopGroup();
+    context->debugPushGroup("DualMonoVrOutputNode::assembleR");
     do_for_eye("right"_crcu);
+    context->debugPopGroup();
 
     if (_onEndAssemble) {
       _onEndAssemble(drawdata);
     }
+
+    context->debugPopGroup();
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
