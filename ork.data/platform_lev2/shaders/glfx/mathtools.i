@@ -138,37 +138,37 @@ libblock lib_math {
   float bicubicWeight(float t) {
     t = abs(t);
     if (t < 1.0) {
-     return (4.0 - 6.0 * t * t + 3.0 * t * t * t) / 6.0;
+      return (4.0 - 6.0 * t * t + 3.0 * t * t * t) / 6.0;
     } else if (t < 2.0) {
-     float s = 2.0 - t;
-     return (s * s * s) / 6.0;
+      float s = 2.0 - t;
+      return (s * s * s) / 6.0;
     }
     return 0.0;
-  }  
+  }
   // Bicubic texture sample
-  vec3 textureBicubic(sampler2D tex, vec2 uv) {
-    vec2 texSize = textureSize(tex, 0);
+  vec4 textureBicubic(sampler2D tex, vec2 uv) {
+    vec2 texSize    = textureSize(tex, 0);
     vec2 invTexSize = 1.0 / texSize;
-    
-    vec2 coord = uv * texSize - 0.5;
+
+    vec2 coord  = uv * texSize - 0.5;
     vec2 fcoord = fract(coord);
     coord -= fcoord;
-    
-    vec3 result = vec3(0.0);
-    
+
+    vec4 result = vec4(0.0);
+
     for (int y = -1; y <= 2; y++) {
       for (int x = -1; x <= 2; x++) {
         vec2 sampleUV = (coord + vec2(x, y) + 0.5) * invTexSize;
-        sampleUV = clamp(sampleUV, 0.0, 1.0);
-        
+        sampleUV      = clamp(sampleUV, 0.0, 1.0);
+
         float weightX = bicubicWeight(float(x) - fcoord.x);
         float weightY = bicubicWeight(float(y) - fcoord.y);
-        float weight = weightX * weightY;
-        
-        result += textureLod(tex, sampleUV, 0).rgb * weight;
+        float weight  = weightX * weightY;
+
+        result += textureLod(tex, sampleUV, 0) * weight;
       }
     }
-    
+
     return result;
   }
 

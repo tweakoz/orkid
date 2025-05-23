@@ -24,10 +24,15 @@ void pyinit_vr(py::module& module_lev2) {
        .def("setPoseMatrix",[=](orkidvr::device_ptr_t dev, std::string name, const fmtx4& mtx) { //
         dev->_posemap[name] = mtx;
       })
-      .def_property("FOV", [](orkidvr::device_ptr_t dev) -> float { //
+      .def_property("FOVR", [](orkidvr::device_ptr_t dev) -> float { //
         return dev->_fov;
-      }, [](orkidvr::device_ptr_t dev, float fov) { //
-        dev->_fov = fov;
+      }, [](orkidvr::device_ptr_t dev, float fov_rad) { //
+        dev->_fov = fov_rad;
+      })
+      .def_property("FOVD", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_fov*RTOD;
+      }, [](orkidvr::device_ptr_t dev, float fov_deg) { //
+        dev->_fov = fov_deg * DTOR;
       })
       .def_property("IPD", [](orkidvr::device_ptr_t dev) -> float { //
         return dev->_IPD;

@@ -122,10 +122,10 @@ struct Device {
 
   uint32_t _width      = 128;
   uint32_t _height     = 128;
-  float _fov           = 45.0f;
-  float _near          = .01f;
-  float _far           = 10000.0;
-  float _IPD           = 0.0f;
+  float _fov           = 90.0f;
+  float _near          = .1f;
+  float _far           = 1000.0;
+  float _IPD           = 0.065f;
   int _calibstate      = 0;
   int _calibstateFrame = 0;
 

@@ -230,18 +230,17 @@ class ImposterApp(object):
     if is_stereo:
       self.vrdev = lev2.orkidvr.novr_device()
       self.vrdev.camera = "vrcam"
-      self.vrdev.width = 1280
-      self.vrdev.height = 1280
-      self.vrdev.near = 1.0
-      self.vrdev.far = 1000.0
-
+      self.vrdev.width = 960
+      self.vrdev.height = 960
+      self.vrdev.FOVD = 90
+      
     ###################################
     # create scenegraph
     ###################################
 
     params_dict = {
       "SkyboxTexPathStr": "cold",
-      "SkyboxIntensity": 1.5,
+      "SkyboxIntensity": 0.5,
       "DiffuseIntensity": 1.0,
       "SpecularIntensity": 1.0,
       "AmbientLevel": vec3(0),
@@ -416,9 +415,9 @@ class ImposterApp(object):
     self.time = abstime
     #########################
     if is_stereo:
-      x = math.sin(abstime*0.125)
-      z = -math.cos(abstime*0.125)
-      xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,   # eye
+      x = math.sin(abstime*0.1)
+      z = -math.cos(abstime*0.1)
+      xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,  # eye
                             vec3(0,0,0),        # tgt
                             vec3(0,1,0))        # up
     #########################
@@ -432,9 +431,9 @@ class ImposterApp(object):
 
   def onGpuUpdate(self,ctx):
     self.frame_index += 1
-    y = 1.0+math.sin(self.frame_index*0.005)
+    y = math.sin(self.frame_index*0.005)
     pos = vec3(0,y,0)
-    #self.imp_node.worldTransform.translation = pos
+    self.imp_node.worldTransform.translation = pos
     pass 
 
 ###############################################################################

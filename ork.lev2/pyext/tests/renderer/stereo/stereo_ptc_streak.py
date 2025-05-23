@@ -77,7 +77,7 @@ class StereoApp1(object):
     # stereo viewing setup  
     ########################################
 
-    self.vrdev.FOV = math.radians(120)
+    self.vrdev.FOVD = 120
     self.vrdev.IPD = 0.065
     self.vrdev.near = 0.1
     self.vrdev.far = 1e5

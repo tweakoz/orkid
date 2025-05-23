@@ -104,7 +104,7 @@ class StereoApp1(object):
     ########################################
 
     # projection matrix
-    self.vrdev.FOV = 90    # degrees
+    self.vrdev.FOVD = 90    # degrees
     self.vrdev.IPD = 0.065 # meters
     self.vrdev.near = 0.1  # meters
     self.vrdev.far = 1e5   # meters

@@ -253,13 +253,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_Camera_MVP_Mono"_crcu: {
-          #if defined(__APPLE__)
-            if (is_stereo and stereocams) {
-              //printf( "RCFD_Camera_MVP_Mono: stereocams<%p>\n", (void*)stereocams );
-              FXI->bindParamMatrix(param, stereocams->MVPL(worldmatrix));
-              break;
-            }
-          #endif
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
             FXI->bindParamMatrix(param, monocams->MVPMONO(worldmatrix));
@@ -270,12 +263,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_Camera_VP_Mono"_crcu: {
-          #if defined(__APPLE__)
-            if (is_stereo and stereocams) {
-              FXI->bindParamMatrix(param, stereocams->VPL());
-              break;
-            }
-          #endif
           if (monocams) {
             FXI->bindParamMatrix(param, monocams->VPMONO());
           } else {
@@ -285,12 +272,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_Camera_IV_Mono"_crcu: {
-          #if defined(__APPLE__)
-            if (is_stereo and stereocams) {
-              FXI->bindParamMatrix(param, stereocams->VL().inverse());
-              break;
-            }
-          #endif
           if (monocams) {
             FXI->bindParamMatrix(param, monocams->GetIVMatrix());
           } else {
@@ -300,12 +281,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "RCFD_Camera_IVP_Mono"_crcu: {
-          #if defined(__APPLE__)
-            if (is_stereo and stereocams) {
-              FXI->bindParamMatrix(param, stereocams->VPL().inverse());
-              break;
-            }
-          #endif
           if (monocams) {
             FXI->bindParamMatrix(param, monocams->VPMONO().inverse());
           } else {
