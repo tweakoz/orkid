@@ -130,7 +130,20 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
           .def_property(
               "detail",
               [](imposterdrawabledataptr_t drw) -> size_t { return drw->_detail; },
-              [](imposterdrawabledataptr_t drw, size_t val) { drw->_detail = val; });
+              [](imposterdrawabledataptr_t drw, size_t val) { drw->_detail = val; })
+          .def_property(
+              "filter_type",
+              [](imposterdrawabledataptr_t drw) -> crcstring_ptr_t { //
+                return std::make_shared<ork::CrcString>(uint64_t(drw->_filter_type));
+              },
+              [](imposterdrawabledataptr_t drw, crcstring_ptr_t val) { //
+                OrkAssert(val != nullptr);
+                drw->_filter_type = EImposterFilterType(val->hashed());
+              })
+          .def_property(
+              "filter_radius",
+              [](imposterdrawabledataptr_t drw) -> float { return drw->_filterRadius; },
+              [](imposterdrawabledataptr_t drw, float val) { drw->_filterRadius = val; });
   type_codec->registerStdCodec<imposterdrawabledataptr_t>(impdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto griddrawdata_type = //

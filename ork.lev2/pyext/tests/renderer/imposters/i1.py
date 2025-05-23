@@ -25,7 +25,7 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
-IMP_DIM = 128
+IMP_DIM = 384
 ################################################################################
 
 class ImposterApp(object):
@@ -58,8 +58,8 @@ class ImposterApp(object):
     if self.is_stereo and (self.extapp==None):
       self.vrdev = lev2.orkidvr.novr_device()
       self.vrdev.camera = "vrcam"
-      self.vrdev.width = 960
-      self.vrdev.height = 960
+      self.vrdev.width = 1280
+      self.vrdev.height = 1280
       self.vrdev.FOVD = 90
       
     ###################################
@@ -103,7 +103,9 @@ class ImposterApp(object):
   ##############################################
 
     imposter = createImposter( context=ctx,
-                               radius=1.0, 
+                               radius=1.0,
+                               filtertype=tokens.BILINEAR,
+                               filterradius=3.0, 
                                detail=2,
                                shaderpath=this_dir/"i1.glfx",
                                shadertek="tek_imp1",
@@ -120,7 +122,7 @@ class ImposterApp(object):
     # user pass
     #####################
 
-    if True:
+    if False:
 
       # warped(2D) feedback pass
       imposter.installFeedbackBlit(shaderpath=this_dir/"i1.glfx",
@@ -174,11 +176,12 @@ class ImposterApp(object):
 
   def onGpuUpdate(self,ctx):
     self.imposter.onGpuUpdate(ctx)
-    y = math.sin(self.imposter.frame_index*0.005)
+    findex = self.imposter.frame_index
+    y = math.sin(findex*0.005)
     pos = vec3(0,y,0)
     #self.imposter.sgnode.worldTransform.translation = pos
-    pass 
-
+    #self.imposter.impdata.enable_Lanczos_blit = ((int(findex)%800)<400)
+    #print(self.imposter.impdata.enable_Lanczos_blit)
 ###############################################################################
 
 if __name__ == "__main__":

@@ -49,6 +49,7 @@ uniform_set ub_frg {
   vec3 EyePostion;
   vec4 AuxA;
   vec4 AuxB;
+  float FilterRadius;
 }
 
 uniform_set ub_frg_fwd {
@@ -121,10 +122,13 @@ uniform_set ub_frg_fwd {
   vec4 AuxA;
   vec4 AuxB;
   uint obj_pickID;
-  vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
   vec3 EyePostionL;
   vec3 EyePostionR;
+
+  float FilterRadius;
+  vec2 ViewportSize;
+  vec2 InvViewportSize;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {

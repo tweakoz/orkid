@@ -34,6 +34,14 @@ struct ImposterDrawableImpl {
   meshutil::rigidprim_V12N12B12T8C4_ptr_t _primitive;
   callback_drawable_wkptr_t _drawable;
 
+  fxparam_constptr_t _blit_par_mvp         = nullptr;
+  fxparam_constptr_t _blit_par_rtgsize     = nullptr;
+  fxparam_constptr_t _blit_par_invrtgsize  = nullptr;
+  fxparam_constptr_t _blit_par_filterrad   = nullptr;
+  fxtechnique_constptr_t _blit_tek_bilinear     = nullptr;
+  fxtechnique_constptr_t _blit_tek_lanczos = nullptr;
+  fxtechnique_constptr_t _blit_tek_bicubic = nullptr;
+
   float _radius = 0.0f;
 };
 
@@ -102,18 +110,25 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
 
     auto blmtl = std::make_shared<FreestyleMaterial>();
     blmtl->gpuInit(ctx, "orkshader://solid");
-    auto tek       = blmtl->technique("imposter_blit");
-    auto par_mvp   = blmtl->param("MatMVP");
-    auto par_tex   = blmtl->param("ColorMap");
-    auto par_dmp   = blmtl->param("ImpDepthMap");
-    auto par_near  = blmtl->param("ImpNear");
-    auto par_far   = blmtl->param("ImpFar");
-    auto par_near2 = blmtl->param("ImpNear2");
-    auto par_far2  = blmtl->param("ImpFar2");
-    auto par_ivp   = blmtl->param("ImpIVP");
+    _blit_tek_bilinear   = blmtl->technique("imposter_blit_bilinear");
+    _blit_tek_lanczos    = blmtl->technique("imposter_blit_lanczos");
+    _blit_tek_bicubic    = blmtl->technique("imposter_blit_bicubic");
+    _blit_par_mvp        = blmtl->param("MatMVP");
+    auto par_tex         = blmtl->param("ColorMap");
+    auto par_dmp         = blmtl->param("ImpDepthMap");
+    auto par_near        = blmtl->param("ImpNear");
+    auto par_far         = blmtl->param("ImpFar");
+    auto par_near2       = blmtl->param("ImpNear2");
+    auto par_far2        = blmtl->param("ImpFar2");
+    auto par_ivp         = blmtl->param("ImpIVP");
+    _blit_par_rtgsize    = blmtl->param("ViewportSize");
+    _blit_par_invrtgsize = blmtl->param("InvViewportSize");
+    _blit_par_filterrad  = blmtl->param("FilterRadius");
 
-    OrkAssert(tek != nullptr);
-    OrkAssert(par_mvp != nullptr);
+    OrkAssert(_blit_tek_bilinear != nullptr);
+    OrkAssert(_blit_tek_lanczos != nullptr);
+    OrkAssert(_blit_tek_bicubic != nullptr);
+    OrkAssert(_blit_par_mvp != nullptr);
     OrkAssert(par_tex != nullptr);
 
     auto blrs = blmtl->_rasterstate;
@@ -126,8 +141,6 @@ void ImposterDrawableImpl::gpuInit(lev2::Context* ctx) {
 
     auto blud = blpass->_userdata;
     blud->set("material", blmtl);
-    blud->set("tek", tek);
-    blud->set("par_mvp", par_mvp);
     blud->set("par_tex", par_tex);
     blud->set("par_dmp", par_dmp);
     blud->set("par_near", par_near);
@@ -196,6 +209,10 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   fvec3 sphereToCamera    = eye_pos - POS;
   float distanceToSphere  = sphereToCamera.length();
   fvec3 sphereToCameraDir = sphereToCamera / distanceToSphere;
+  int top_width           = CPD._width;
+  int top_height          = CPD._height;
+
+  // printf("imposter::renderImp top_width<%d> top_height<%d>\n", top_width, top_height);
 
   ////////////////////////////////////////////
   // Calculate billboard orientation that perfectly faces camera
@@ -253,7 +270,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->pushViewport(vprect_rtg);
     FBI->PushRtGroup(RTG.get());
 
-    if(imppass->_onPreRender) {
+    if (imppass->_onPreRender) {
       imppass->_onPreRender();
     }
 
@@ -270,7 +287,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
         });
     context->debugPopGroup();
 
-    if(imppass->_onPostRender) {
+    if (imppass->_onPostRender) {
       imppass->_onPostRender();
     }
 
@@ -286,32 +303,29 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   for (auto p : _impdata->_user_passes) {
     auto RTG = p->_rtg;
     if (RTG) {
-      if(p->_onPreRender) {
+      if (p->_onPreRender) {
         p->_onPreRender();
       }
-      RTG->_autoclear  = true;
-      RTG->_clearMaskColor  = true;
-      RTG->_clearMaskDepth  = true;
-      RTG->_autoclear  = true;
-      RTG->_clearColor = fvec4(0, 0, 0, 0);
-      auto vprect_rtg  = RTG->viewportRect();
+      RTG->_autoclear      = true;
+      RTG->_clearMaskColor = true;
+      RTG->_clearMaskDepth = true;
+      RTG->_autoclear      = true;
+      RTG->_clearColor     = fvec4(0, 0, 0, 0);
+      auto vprect_rtg      = RTG->viewportRect();
       FBI->pushScissor(vprect_rtg);
       FBI->pushViewport(vprect_rtg);
       FBI->PushRtGroup(RTG.get());
       GBI->_debugNextPrimitive = p->_debug_shaderstate;
-      context->debugPushGroup("user-pass-%d",ip);
+      context->debugPushGroup("user-pass-%d", ip);
       p->_pipeline->wrappedDrawCall(
-          RCID,               //
+          RCID,   //
           [=]() { //
-            DWI->quad2DEML(
-                fvec4(-1,-1,2,2),
-                fvec4(0,0,1,1),
-                fvec4(0,0,1,1));
+            DWI->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
           });
       FBI->PopRtGroup();
       FBI->popViewport();
       FBI->popScissor();
-      if(p->_onPostRender != nullptr) {
+      if (p->_onPostRender != nullptr) {
         p->_onPostRender();
       }
       ip++;
@@ -327,8 +341,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   auto blud       = blpass->_userdata;
   auto bmat       = blud->typedValueForKey<freestyle_mtl_ptr_t>("material").value();
-  auto btek       = blud->typedValueForKey<const FxShaderTechnique*>("tek").value();
-  auto bpar_mvp   = blud->typedValueForKey<fxparam_constptr_t>("par_mvp").value();
   auto bpar_tex   = blud->typedValueForKey<fxparam_constptr_t>("par_tex").value();
   auto bpar_dmp   = blud->typedValueForKey<fxparam_constptr_t>("par_dmp").value();
   auto bpar_near  = blud->typedValueForKey<fxparam_constptr_t>("par_near").value();
@@ -339,18 +351,43 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto COLOR_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("color_rtg").value();
   auto DEPTH_RTG  = blud->typedValueForKey<rtgroup_ptr_t>("depth_rtg").value();
 
-  bmat->begin(btek, RCFD);
+  fxtechnique_constptr_t tek = nullptr;
+
+  switch (_impdata->_filter_type) {
+    case EImposterFilterType::BILINEAR:
+      tek = _blit_tek_bilinear;
+      break;
+    case EImposterFilterType::BICUBIC:
+      tek = _blit_tek_bicubic;
+      break;
+    case EImposterFilterType::LANCZOS:
+      tek = _blit_tek_lanczos;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+
+  fvec2 rtg_size    = fvec2(top_width, top_height);
+  fvec2 rtg_invsize = fvec2(1.0f / top_width, 1.0f / top_height);
+
+  bmat->begin(tek, RCFD);
   bmat->bindParam(bpar_tex, COLOR_RTG->texture(0));
   bmat->bindParam(bpar_dmp, DEPTH_RTG->depthTexture());
-  bmat->bindParam(bpar_mvp, VP);
+  bmat->bindParam(_blit_par_mvp, VP);
   bmat->bindParamFloat(bpar_near, CAMDAT.mNear);
   bmat->bindParamFloat(bpar_far, CAMDAT.mFar);
   bmat->bindParamFloat(bpar_near2, CAMDAT.mNear);
   bmat->bindParamFloat(bpar_far2, CAMDAT.mFar);
   bmat->bindParam(bpar_ivp, SUBVP.inverse());
+  bmat->bindParam(_blit_par_rtgsize, rtg_size);
+  bmat->bindParam(_blit_par_invrtgsize, rtg_invsize);
+  bmat->bindParamFloat(_blit_par_filterrad, _impdata->_filterRadius);
   bmat->commit();
 
-  if(blpass->_onPreRender) {
+  // filtrad = 2(Lanczos-2) or 3(Lanczos-3)
+
+  if (blpass->_onPreRender) {
     blpass->_onPreRender();
   }
 
@@ -372,7 +409,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
 
   context->debugPopGroup();
 
-  if(blpass->_onPostRender) {
+  if (blpass->_onPostRender) {
     blpass->_onPostRender();
   }
 
@@ -380,7 +417,7 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   bmat->end(RCFD);
 
   if (blpass->_debug_viz) {
-    blpass->_pipeline->bindParam(bpar_mvp, (P * V) * worldmatrix);
+    blpass->_pipeline->bindParam(_blit_par_mvp, (P * V) * worldmatrix);
     blpass->_pipeline->wrappedDrawCall(
         RCID,                                   //
         [this, context]() {                     //

@@ -18,6 +18,13 @@ struct ImposterPassData {
   void_lambda_t _onPostRender;
 };
 
+enum class EImposterFilterType : uint64_t {
+  CrcEnum(BILINEAR),
+  CrcEnum(BICUBIC),
+  CrcEnum(LANCZOS),
+};
+
+
 struct ImposterDrawableData final : public DrawableData {
 
   DeclareConcreteX(ImposterDrawableData, DrawableData);
@@ -31,6 +38,8 @@ public:
   imposterpassdataptr_t _blit_pass;
   svar64_t _shape;
   size_t _detail = 0;
+  EImposterFilterType _filter_type = EImposterFilterType::BILINEAR;
+  float _filterRadius = 2.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

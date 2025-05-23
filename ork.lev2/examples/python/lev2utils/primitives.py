@@ -227,12 +227,16 @@ def createImposter( context = None,
                     shadertek  = None,
                     layer = None,
                     DIM = 128,
-                    is_stereo = False ):
+                    is_stereo = False,
+                    filtertype = None,
+                    filterradius = 2.0,
+                    ):
 
   assert(shaderpath!=None)
   assert(shadertek!=None)
   assert(layer!=None)
   assert(context!=None)
+  assert(filtertype!=None)
   class ImposterObject(object):
 
     def __init__(self):
@@ -257,6 +261,9 @@ def createImposter( context = None,
       self.imp_mtl = imp_mtl
       self.is_stereo = is_stereo
       self.frame_index = 0
+
+      self.impdata.filter_type = filtertype
+      self.impdata.filter_radius = filterradius
 
       #####################
       # imposter rtgroup

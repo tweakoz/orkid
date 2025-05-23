@@ -12,6 +12,9 @@ libblock lib_math {
   vec3 saturateV(vec3 inp) {
     return clamp(inp, 0, 1);
   }
+  vec4 saturateV4(vec4 inp) {
+    return clamp(inp, 0, 1);
+  }
 
   uint bitReverse(uint x) {
     x = ((x & 0x55555555u) << 1u) | ((x & 0xaaaaaaaau) >> 1u);
@@ -172,4 +175,210 @@ libblock lib_math {
     return result;
   }
 
+  float lanczosWeight(float x) {
+    if (x == 0.0)
+      return 1.0;
+    if (x >= 1.0)
+      return 0.0;
+    float pix = PI * x;
+    return sin(pix) * sin(pix * FilterRadius) / (pix * pix * FilterRadius);
+  }
+
+  vec4 textureLancsozEWA(sampler2D tex, vec2 uv) {
+
+    vec2 srcSize    = vec2(textureSize(tex, 0));
+    vec2 invSrcSize = 1.0 / srcSize;
+
+    // Calculate pixel centers in source texture space
+    vec2 srcPos = uv * srcSize - 0.5;
+
+    // Compute Jacobian matrix for the inverse mapping
+    // This determines the elliptical filter shape
+    vec2 scale    = srcSize * InvViewportSize;
+    mat2 jacobian = mat2(dFdx(srcPos), dFdy(srcPos));
+
+    // Alternative if derivatives aren't available:
+    // mat2 jacobian = mat2(scale.x, 0.0, 0.0, scale.y);
+
+    // Compute ellipse parameters from Jacobian
+    mat2 Jinv = inverse(jacobian);
+    mat2 A    = transpose(Jinv) * Jinv;
+
+    // EWA filter radius (Lanczos-2 or Lanczos-3)
+
+    // Compute bounding box for filter kernel
+    float a = A[0][0], b = A[0][1], c = A[1][1];
+    float det = a * c - b * b;
+    float F   = FilterRadius * FilterRadius;
+    float ddx = sqrt(F * c / det);
+    float ddy = sqrt(F * a / det);
+
+    vec2 center = floor(srcPos + 0.5);
+    int x0      = int(floor(center.x - ddx));
+    int x1      = int(ceil(center.x + ddx));
+    int y0      = int(floor(center.y - ddy));
+    int y1      = int(ceil(center.y + ddy));
+
+    vec4 colorSum   = vec4(0.0);
+    float weightSum = 0.0;
+
+    // EWA filtering
+    for (int y = y0; y <= y1; y++) {
+      for (int x = x0; x <= x1; x++) {
+        vec2 samplePos = vec2(float(x), float(y));
+        vec2 d         = samplePos - srcPos;
+
+        // Compute squared distance in ellipse-transformed space
+        float distSq = dot(d, A * d);
+
+        if (distSq < F) {
+          // Sample is inside the ellipse
+          float dist   = sqrt(distSq);
+          float weight = lanczosWeight(dist / FilterRadius) / FilterRadius;
+
+          // Apply Jacobian determinant for proper area weighting
+          weight /= abs(determinant(jacobian));
+
+          vec2 tc    = (samplePos + 0.5) * invSrcSize;
+          vec4 color = textureLod(tex, tc, 0);
+
+          colorSum += color * weight;
+          weightSum += weight;
+        }
+      }
+    }
+
+    vec4 rval = vec4(0.0);
+
+    // Normalize and output
+    if (weightSum > 0.0) {
+      rval = saturateV4(colorSum / weightSum);
+    } else {
+      // Fallback for degenerate cases
+      rval = textureLod(tex, uv, 0);
+    }
+    return rval;
+  }
+
+  float lanczosKernel(float x, float a) {
+    if (x < 1e-5) return 1.0;
+    if (x >= 1.0) return 0.0;
+    
+    float pix = PI * x;
+    // The kernel should be: sin(πx) * sin(πx/a) / (π²x²/a)
+    // Which simplifies to: a * sin(πx) * sin(πx/a) / (π²x²)
+    
+    return sin(pix) * sin(pix / a) / (pix * pix / a);
+  }
+
+  vec4 textureLanczosEWA2(sampler2D tex, vec2 uv) {
+    vec2 srcSize    = vec2(textureSize(tex, 0));
+    vec2 invSrcSize = 1.0 / srcSize;
+
+    // Get derivatives for EWA
+    vec2 srcPos = uv * srcSize - 0.5;
+    vec2 dx     = dFdx(srcPos);
+    vec2 dy     = dFdy(srcPos);
+
+    // Form the ellipse matrix (inverse covariance)
+    float a = dot(dx, dx);
+    float b = dot(dx, dy);
+    float c = dot(dy, dy);
+
+    // Regularize to prevent numerical issues
+    const float epsilon = 1e-6;
+    a                   = max(a, epsilon);
+    c                   = max(c, epsilon);
+
+    // Compute filter support ellipse
+    float det    = a * c - b * b;
+    float invDet = 1.0 / max(det, epsilon);
+
+    // Lanczos radius (2 or 3)
+    const float radius   = 3.0;
+    const float radiusSq = radius * radius;
+
+    // Compute axis-aligned bounding box
+    float s   = sqrt(invDet);
+    float ddx = radius * s * sqrt(c);
+    float ddy = radius * s * sqrt(a);
+
+    // Clamp filter size for performance
+    ddx = min(ddx, 5.0);
+    ddy = min(ddy, 5.0);
+
+    vec2 center = floor(srcPos + 0.5);
+
+    // Initialize accumulators
+    vec4 colorSum   = vec4(0.0);
+    float weightSum = 0.0;
+
+    // For anti-ringing
+    vec4 localMin = vec4(1e10);
+    vec4 localMax = vec4(-1e10);
+    vec4 M1       = vec4(0.0); // First moment
+    vec4 M2       = vec4(0.0); // Second moment
+
+    // Main filter loop
+    int x0 = int(center.x - ddx);
+    int x1 = int(center.x + ddx);
+    int y0 = int(center.y - ddy);
+    int y1 = int(center.y + ddy);
+
+    for (int y = y0; y <= y1; y++) {
+      for (int x = x0; x <= x1; x++) {
+        vec2 samplePos = vec2(float(x), float(y));
+        vec2 d         = samplePos - srcPos;
+
+        // Evaluate elliptical distance
+        float ellipDist = (c * d.x * d.x - 2.0 * b * d.x * d.y + a * d.y * d.y) * invDet;
+
+        if (ellipDist < radiusSq) {
+          float dist   = sqrt(ellipDist) / radius;
+          float weight = lanczosKernel(dist, radius);
+
+          // Area compensation
+          weight *= s;
+
+          // Fetch sample
+          vec2 tc    = clamp((samplePos + 0.5) * invSrcSize, 0.0, 1.0);
+          vec4 color = textureLod(tex, tc, 0);
+
+          // Accumulate
+          colorSum += color * weight;
+          weightSum += weight;
+
+          // Track statistics for anti-ringing
+          localMin = min(localMin, color);
+          localMax = max(localMax, color);
+          M1 += color * weight;
+          M2 += color * color * weight;
+        }
+      }
+    }
+
+    vec4 rval = vec4(0.0);
+
+    // Final color with anti-ringing
+    if (weightSum > 0.001) {
+      vec4 filteredColor = colorSum / weightSum;
+
+      // Compute local variance
+      vec4 mean     = M1 / weightSum;
+      vec4 variance = M2 / weightSum - mean * mean;
+      vec4 sigma    = sqrt(max(variance, vec4(0.0)));
+
+      // Adaptive clamping based on local statistics
+      vec4 minClamp = mean - sigma * 1.5;
+      vec4 maxClamp = mean + sigma * 1.5;
+      minClamp      = max(minClamp, localMin);
+      maxClamp      = min(maxClamp, localMax);
+
+      rval = clamp(filteredColor, minClamp, maxClamp);
+    } else {
+      // Fallback
+      rval = textureLod(tex, uv, 0);
+    }
+    return rval;
+  }
 }
