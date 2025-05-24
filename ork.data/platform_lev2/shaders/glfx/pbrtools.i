@@ -34,14 +34,6 @@ uniform_set uset_frg_fwd  //
   vec4 ShadowParams;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block uset_frg_fwd_lighting {
-  vec4 _lightcolor[64];    // 1024 : 1024 
-  vec4 _lightsizbias[64];  // 1024 : 2048
-  vec4 _lightpos[64];      // 1024 : 3072
-  mat4 _shadowmatrix[64];  // 4096 : 7168
-  uint _lightTexSlice[64]; // 256  : 7424
-}
-///////////////////////////////////////////////////////////////
 // Vertex Interfaces
 ///////////////////////////////////////////////////////////////
 vertex_interface vif_PNT : ub_vtx {
@@ -122,7 +114,7 @@ vertex_interface vif_PNBT_skinned : vif_PNBT : iface_skintools {
 ///////////////////////////////////////////////////////////////
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface fif_forward : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_interface fif_forward : uset_frg_fwd : ublk_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
     vec3 frg_opos;
@@ -137,7 +129,7 @@ fragment_interface fif_forward : uset_frg_fwd : uset_frg_fwd_lighting {
     layout(location = 0) vec4 out_color;
   }
 }
-fragment_interface fif_forward_min : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_interface fif_forward_min : uset_frg_fwd : ublk_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
     vec3 frg_opos;

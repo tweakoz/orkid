@@ -398,23 +398,23 @@ fragment_interface iface_grid_forward_lit {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_unlit_mono : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_unlit_mono : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output(frg_pos.xyz);
   out_clr   = gout;
 }
-fragment_shader ps_grid_forward_unlit_mono_v2 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_unlit_mono_v2 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output2(frg_pos.xyz);
   out_clr   = gout;
 }
-fragment_shader ps_grid_forward_unlit_mono_v3 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_unlit_mono_v3 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output3(frg_pos.xyz);
   out_clr   = gout;
 }
-fragment_shader ps_grid_forward_unlit_mono_v4 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_unlit_mono_v4 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output4(frg_pos.xyz);
   out_clr   = gout;
 }
-fragment_shader ps_grid_forward_unlit_mono_v5 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_unlit_mono_v5 : iface_grid_forward_unlit : lib_frg_grid : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output5(frg_pos.xyz);
   out_clr   = gout;
 }
@@ -456,58 +456,58 @@ fragment_shader ps_grid_forward_depth_prepass : iface_frg_grid_forward_depth {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_lit_mono : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
   out_clr   = vec4(oc.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono_v2 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_lit_mono_v2 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output2(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
   out_clr   = vec4(oc.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono_v3 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_lit_mono_v3 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output3(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
   out_clr   = vec4(oc.xyz, gout.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono_v4 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_lit_mono_v4 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec4 gout = grid_output4(frg_wpos.xyz);
   vec3 oc   = forward_lighting_mono(gout.xyz);
   out_clr   = vec4(oc.xyz, gout.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_mono_v5 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : uset_frg_fwd_lighting {
+fragment_shader ps_grid_forward_lit_mono_v5 : iface_grid_forward_lit : lib_frg_grid : lib_fwd : uset_frg_fwd : ublk_frg_fwd_lighting {
   vec3 oc   = forward_lighting_mono(vec3(1,1,1))*ModColor.xyz;
   out_clr   = vec4(oc, 1.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo : iface_grid_forward_lit : lib_frg_grid : lib_fwd_stereo : uset_frg_fwd
-    : uset_frg_fwd_lighting {
+    : ublk_frg_fwd_lighting {
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc   = forward_lighting_stereo(gout.xyz);
   out_clr   = vec4(gout.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo_v2 : iface_grid_forward_lit : lib_frg_grid : lib_fwd_stereo : uset_frg_fwd
-    : uset_frg_fwd_lighting {
+    : ublk_frg_fwd_lighting {
   vec4 gout = grid_output2(frg_wpos.xyz);
   vec3 oc   = forward_lighting_stereo(gout.xyz);
   out_clr   = vec4(gout.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo_v3 : iface_grid_forward_lit : lib_frg_grid : lib_fwd_stereo : uset_frg_fwd
-    : uset_frg_fwd_lighting {
+    : ublk_frg_fwd_lighting {
   vec4 gout = grid_output3(frg_wpos.xyz);
   vec3 oc   = forward_lighting_stereo(gout.xyz);
   out_clr   = vec4(gout.xyz, gout.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_grid_forward_lit_stereo_v4 : iface_grid_forward_lit : lib_frg_grid : lib_fwd_stereo : uset_frg_fwd
-    : uset_frg_fwd_lighting : extension(GL_NV_viewport_array) { //
+    : ublk_frg_fwd_lighting : extension(GL_NV_viewport_array) { //
   vec4 gout = grid_output4(frg_wpos.xyz);
   vec3 oc   = forward_lighting_stereo(gout.xyz);
   out_clr   = vec4(oc, gout.w);

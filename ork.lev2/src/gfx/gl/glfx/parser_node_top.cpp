@@ -152,6 +152,24 @@ file::Path TopNode::_resolveImportPath(const std::string& importName) const {
     return imppath;
 }
 ///////////////////////////////////////////////////////////
+importnode_ptr_t TopNode::findOrLoadImport(const std::string& importName) {
+  importnode_ptr_t rval;
+  auto program = _parser->_program;
+  auto prg_namespace = program->_importNamespace;
+  auto resolved_path = _resolveImportPath(importName);
+  auto it = prg_namespace->_uniqueImports.find(resolved_path.c_str()); 
+  if( it == prg_namespace->_uniqueImports.end() ) {
+    rval = std::make_shared<ImportNode>(importName,this);
+    prg_namespace->_uniqueImports.insert({resolved_path.c_str(), rval});
+    rval->load(resolved_path);
+    _imports.push_back(rval);
+  }
+  else {
+    rval = it->second;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////
 void TopNode::parse() {
   //printf( "TopNode<%p:%s>::beginparse()\n", this, _parser->_name.c_str() );
   const auto& tokens = _scanner->tokens;
@@ -194,14 +212,7 @@ void TopNode::parse() {
           std::string p       = impnam->text.substr(1, impnam->text.length() - 2);
           //imports.push_back(p);
           //printf( "IMPORT<%s>\n", p.c_str());
-          auto resolved_path = _resolveImportPath(p);
-          auto it = prg_namespace->_uniqueImports.find(resolved_path.c_str()); 
-          if( it == prg_namespace->_uniqueImports.end() ) {
-            auto importnode = std::make_shared<ImportNode>(p,this);
-            prg_namespace->_uniqueImports.insert({resolved_path.c_str(), importnode});
-            importnode->load(resolved_path);
-            _imports.push_back(importnode);
-          }
+          auto importnode = findOrLoadImport(p);
           itokidx += 3;
           advance_block = false;
         } else if (tok.text == "libblock") {

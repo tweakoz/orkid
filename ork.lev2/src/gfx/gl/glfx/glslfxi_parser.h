@@ -745,6 +745,8 @@ struct TopNode : public AstNode {
   void addStructType(structnode_ptr_t snode);
 
   file::Path _resolveImportPath(const std::string& importName) const;
+  importnode_ptr_t findOrLoadImport(const std::string& importName);
+
   int itokidx = 0;
 
   GlSlFxParser* _parser = nullptr;

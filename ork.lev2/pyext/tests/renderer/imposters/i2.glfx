@@ -24,7 +24,10 @@ vertex_shader vs_imp : vif_PNT {
   gl_Position = mvp * position;
 }
 ////////////////////////////////////////
-libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
+libblock lib_X      //
+  : lib_sdftools    //
+  : lib_mmnoise     //
+  : lib_cellnoise { //
   float sampleNoise(vec3 p) {
     float n = 0.0;
     for (int o = 0; o < 4; o++) {
@@ -49,10 +52,10 @@ fragment_shader ps_imp    //
   : lib_X                 //
   : lib_brdf              //
   : lib_def               //
-  //: lib_fwd               //
+  : lib_fwd_impl          //
   : uset_frg_fwd          //
-  : uset_frg_fwd_lighting //
-  : uset_frg_i2 {            //
+  : ublk_frg_fwd_lighting //
+  : uset_frg_i2 {         //
 
   const int MAX_STEPS      = 128;
   const float MAX_DIST     = 20.0;
@@ -99,6 +102,19 @@ fragment_shader ps_imp    //
 
     // Color based on noise and lighting
     vec3 surfaceColor = ((normal + vec3(1)) * 0.5) * vec3(noiseVal); // * (0.5 + 0.5 * lighting);
+    PbrData pbd;
+    pbd._emissive  = false;
+    pbd._metallic  = 0.0;
+    pbd._roughness = 1.0;
+    pbd._albedo    = surfaceColor;
+    pbd._wpos      = vec3(0);
+    pbd._wnrm      = vec3(1);
+    pbd._fogZ      = 0.0;
+    pbd._atmos     = 0.0;
+    pbd._alpha     = 1.0;
+    vec3 eyepos = vec3(0);
+    //vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, eyepos);
+
     //surfaceColor = forward_lighting_mono(surfaceColor);
     out_color = vec4(surfaceColor, 1.0);
   } else {

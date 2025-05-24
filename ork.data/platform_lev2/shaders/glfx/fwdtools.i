@@ -7,13 +7,16 @@ import "stdtools.i";
 import "ssaotools.i";
 import "pbrtools.i";
 ///////////////////////////////////////////////////////////////
-libblock lib_fwd     //
+libblock lib_fwd_impl
     : lib_math       //
     : lib_brdf       //
     : lib_envmapping //
-    : lib_def        //
+    : lib_def       //
     : lib_ssao {     //
-  /////////////////////////////////////////////////////////
+
+  vec3 _forward_lighting_int(vec3 modcolor, vec3 eyepos) {
+    return vec3(1);
+  }
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;
     const vec3 metalbase = vec3(0.04);
@@ -29,7 +32,6 @@ libblock lib_fwd     //
     plc._F0        = mix(metalbase, basecolor, metallic);
     return plc;
   }
-  /////////////////////////////////////////////////////////
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
     float dist2light    = length(plc._lightdel);
     float atten         = 1.0 / max(.05, dist2light * dist2light); // prevent infinite light
@@ -54,7 +56,6 @@ libblock lib_fwd     //
     return (diffuse_term + specular_term) * atten * ndotl;
     // return lightdir*(atten*ndotl);
   }
-  /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos) {
 
     vec3 out_color;
@@ -142,7 +143,11 @@ libblock lib_fwd     //
     /////////////////////////
     return saturateV((diffuse + specular)*SkyboxLevel);
   } // vec3 environmentLighting(){
+}
 
+///////////////////////////////////////////////////////////////
+libblock lib_fwd     //
+    : lib_fwd_impl { //
   /////////////////////////////////////////////////////////
 
   vec3 _sample_color_cookie(uint slice, float lod, vec2 uv) {

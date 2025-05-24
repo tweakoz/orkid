@@ -41,14 +41,7 @@ void ConfigNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   // handle imports (deprecated)
   ///////////////////////////////////
   for (auto imp_path : config_block_imports) {
-    auto resolved_path = topnode->_resolveImportPath(imp_path);
-    auto it = prg_namespace->_uniqueImports.find(resolved_path.c_str()); 
-    if( it == prg_namespace->_uniqueImports.end() ) {
-      auto import = std::make_shared<ImportNode>(imp_path,topnode.get());
-      prg_namespace->_uniqueImports.insert({resolved_path.c_str(), import});
-      import->load(resolved_path);
-      topnode->_imports.push_back(import);
-    }
+    auto import = topnode->findOrLoadImport(imp_path);
   }
 }
 

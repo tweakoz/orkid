@@ -47,40 +47,54 @@ uniform_set uset_std_pick {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set uset_std_pbr {
+  //////////////////////////////
   sampler2DArray CNMREA;         
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;
-  sampler2D MapBrdfIntegration; // 8
-  sampler2D MapDiffuseEnv;      // 9
-  sampler2DArray MapSpecularEnv;           // 2
+  sampler2D MapBrdfIntegration; 
+  sampler2D MapDiffuseEnv;      
+  sampler2DArray MapSpecularEnv;
+  //////////////////////////////
+  vec3 AmbientLevel;
+  vec2 Zndc2eye;
+  vec3 EyePostion;
+  vec3 EyePostionL;
+  vec3 EyePostionR;
+  vec4 ModColor;
+  //////////////////////////////
   float MetallicFactor;
   float RoughnessFactor;
   float RoughnessPower;
   float SkyboxLevel;
   float SpecularLevel;
   float DiffuseLevel;
-  vec3 AmbientLevel;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
   float RoughnessLevels;
   float SpecularMipBias;
   float DepthFogDistance;
   float DepthFogPower;
-  vec2 Zndc2eye;
-  vec3 EyePostion;
-  vec3 EyePostionL;
-  vec3 EyePostionR;
-  vec4 ModColor;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set uset_std_lighting {
+  //////////////////////////////
   sampler2DArray LightMapArray;            
   sampler2DArray light_cookie_colors;      
   sampler2DArray light_cookie_depths;      
   sampler2D MapDepth;           
   sampler2D MapLinearDepth;     
+  //////////////////////////////
   vec3 LightMapColors[8];        
+  //////////////////////////////
   int point_light_count;
   int spot_light_count;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_frg_fwd_lighting {
+  vec4 _lightcolor[64];    // 1024 : 1024 
+  vec4 _lightsizbias[64];  // 1024 : 2048
+  vec4 _lightpos[64];      // 1024 : 3072
+  mat4 _shadowmatrix[64];  // 4096 : 7168
+  uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
