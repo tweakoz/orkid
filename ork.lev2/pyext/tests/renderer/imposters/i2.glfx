@@ -1,50 +1,27 @@
 ////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "410";
+  import "orkshader://fwdtools.i";
   import "orkshader://sdftools.i";
   import "orkshader://misctools.i";
-  import "orkshader://stdtools.i";
 }
 ////////////////////////////////////////
 uniform_set uset_vtx : uset_std_matrices {
 }
 ////////////////////////////////////////
-uniform_set uset_frg {
+uniform_set uset_frg_i2  //
+  : uset_std_viewport    //
+  : uset_std_filtering { //
   sampler2D rtgtex;
   sampler2D fbtex;
   sampler2D depthtex;
   float time;
 }
 ////////////////////////////////////////
-vertex_interface iface_vtx : uset_vtx {
-  inputs {
-    vec4 pos : POSITION;
-    vec3 nrm : NORMAL;
-    vec3 bin : BINORMAL;
-    vec2 uv0 : TEXCOORD0;
-  }
-  outputs {
-    vec3 frg_col;
-    vec2 frg_uv0;
-    vec3 frg_pos;
-  }
-}
-////////////////////////////////////////
-fragment_interface iface_frg : uset_frg {
-  inputs {
-    vec3 frg_col;
-    vec2 frg_uv0;
-    vec3 frg_pos;
-  }
-  outputs {
-    layout(location = 0) vec4 out_clr;
-  }
-}
-////////////////////////////////////////
-vertex_shader vs_imp1 : iface_vtx {
-  frg_col     = normalize(nrm); //+vec3(1))*0.5;
-  frg_pos     = pos.xyz;
-  gl_Position = mvp * pos;
+vertex_shader vs_imp : vif_PNT {
+  frg_clr     = vec4(normalize(normal),1); //+vec3(1))*0.5;
+  frg_opos     = position.xyz;
+  gl_Position = mvp * position;
 }
 ////////////////////////////////////////
 libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
@@ -67,14 +44,22 @@ libblock lib_X : lib_sdftools : lib_mmnoise : lib_cellnoise {
   }
 }
 ////////////////////////////////////////
-fragment_shader ps_imp : iface_frg : lib_X {
+fragment_shader ps_imp    //
+  : fif_forward_min       //
+  : lib_X                 //
+  : lib_brdf              //
+  : lib_def               //
+  //: lib_fwd               //
+  : uset_frg_fwd          //
+  : uset_frg_fwd_lighting //
+  : uset_frg_i2 {            //
 
   const int MAX_STEPS      = 128;
   const float MAX_DIST     = 20.0;
   const float SURFACE_DIST = 0.004;
 
   vec3 ro = vec3(0, 0, -5);     // Ray origin
-  vec3 rd = normalize(frg_pos); // Ray direction
+  vec3 rd = normalize(frg_opos); // Ray direction
 
   // Raymarch
   float totalDist        = 0.0;
@@ -114,8 +99,8 @@ fragment_shader ps_imp : iface_frg : lib_X {
 
     // Color based on noise and lighting
     vec3 surfaceColor = ((normal + vec3(1)) * 0.5) * vec3(noiseVal); // * (0.5 + 0.5 * lighting);
-
-    out_clr = vec4(surfaceColor, 1.0);
+    //surfaceColor = forward_lighting_mono(surfaceColor);
+    out_color = vec4(surfaceColor, 1.0);
   } else {
     // Background color if no surface hit
     // out_clr = vec4(0.1, 0.1, 0.2, 1.0);
@@ -124,27 +109,27 @@ fragment_shader ps_imp : iface_frg : lib_X {
   // gl_FragDepth = 0.5;
 }
 ////////////////////////////////////////
-vertex_shader vs_upass : iface_vtx {
-  frg_col     = vec3(1, 0, 0);
+vertex_shader vs_upass : vif_PNT {
+  frg_clr     = vec3(1, 0, 0);
   frg_pos     = pos.xyz;
   frg_uv0     = uv0;
   gl_Position = mvp * pos;
 }
-fragment_shader ps_upass : iface_frg {
+fragment_shader ps_upass : fif_forward_min {
   float Z = texture(depthtex, frg_uv0).r;
   if (Z > 0.9999)
     discard;
   vec2 warp_uv = ((frg_uv0 - vec2(0.5)) * 0.985) + vec2(0.5);
   vec3 rgb     = texture(rtgtex, frg_uv0).bgr * 0.05 + texture(fbtex, warp_uv).xyz * 0.9999999;
   float alp    = texture(rtgtex, frg_uv0).w;
-  out_clr      = vec4(rgb, alp);
+  out_color    = vec4(rgb, alp);
   gl_FragDepth = Z;
 }
 ////////////////////////////////////////
-technique tek_imp1 {
+technique tek_imp {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_imp1;
+    vertex_shader   = vs_imp;
     fragment_shader = ps_imp;
     state_block     = default;
   }

@@ -1,9 +1,18 @@
+import "gbuftools.i";
+import "brdftools.i";
+import "deftools.i";
+import "fwdtools.i";
+import "skintools.i";
+import "stdtools.i";
+import "ssaotools.i";
+import "pbrtools.i";
 ///////////////////////////////////////////////////////////////
 libblock lib_fwd     //
     : lib_math       //
     : lib_brdf       //
     : lib_envmapping //
-    : lib_def : lib_ssao {
+    : lib_def        //
+    : lib_ssao {     //
   /////////////////////////////////////////////////////////
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;

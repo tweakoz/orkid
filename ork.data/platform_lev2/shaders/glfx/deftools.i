@@ -1,3 +1,6 @@
+import "mathtools.i";
+import "brdftools.i";
+import "envtools.i";
 ///////////////////////////////////////////////////////////////
 libblock lib_def 
 	: lib_math

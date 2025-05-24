@@ -80,7 +80,6 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     _tek_ssao_prepass = _ssao_material->technique("framefx_ssao_prepass");
     _tek_ssao_lindepth = _ssao_material->technique("framefx_linearize_depth");
 
-    _fxpSSAOMVP             = _ssao_material->param("mvp");
     _fxpSSAONumSamples      = _ssao_material->param("SSAONumSamples");
     _fxpSSAONumSteps        = _ssao_material->param("SSAONumSteps");
     _fxpSSAOBias            = _ssao_material->param("SSAOBias");
@@ -95,8 +94,10 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     _fxpSSAOInvViewportSize = _ssao_material->param("InvViewportSize");
     _fxpSSAOPREV            = _ssao_material->param("SSAOPREV");
     _fxpZndc2eye            = _ssao_material->param("Zndc2eye");
-    _fxpInvP                = _ssao_material->param("MatInvP");
-    _fxpP                   = _ssao_material->param("MatP");
+    //
+    _fxpSSAOMVP             = _ssao_material->param("mvp");
+    _fxpInvP                = _ssao_material->param("inv_p");
+    _fxpP                   = _ssao_material->param("p");
 
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
     _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);

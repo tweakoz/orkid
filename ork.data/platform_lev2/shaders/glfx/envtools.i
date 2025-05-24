@@ -2,7 +2,10 @@
 // environment mapping functions
 ///////////////////////////////////////////////////////////////////////////////
 
-libblock lib_envmapping {
+libblock lib_envmapping 
+  : lib_math
+  : uset_std_pbr
+{ //
 
   vec2 spotlightUV(vec3 dir) {
     // Placeholder function to calculate UV coordinates

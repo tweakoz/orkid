@@ -1,4 +1,7 @@
-libblock lib_math {
+import "orkshader://stdtools.i";
+
+libblock lib_math        //
+  : uset_std_filtering { //
 
   float rand(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -184,7 +187,7 @@ libblock lib_math {
     return sin(pix) * sin(pix * FilterRadius) / (pix * pix * FilterRadius);
   }
 
-  vec4 textureLancsozEWA(sampler2D tex, vec2 uv) {
+  vec4 textureLancsozEWA(sampler2D tex, vec2 uv ) {
 
     vec2 srcSize    = vec2(textureSize(tex, 0));
     vec2 invSrcSize = 1.0 / srcSize;

@@ -108,6 +108,14 @@ struct NodeCollection{
   nodeset_t _uniqueset;
 };
 
+struct ImportNamespace {
+  std::map<std::string, importnode_ptr_t> _uniqueImports;
+  std::map<std::string, decoblocknode_ptr_t> _decoBlockNodes;
+
+};
+
+using import_namespace_ptr_t = std::shared_ptr<ImportNamespace>;
+
 struct Program {
 
   Program(std::string name);
@@ -122,6 +130,8 @@ struct Program {
   std::unordered_map<std::string, decoblocknode_ptr_t> _blockNodes;
   std::vector<decoblocknode_ptr_t> _orderedBlockNodes;
   std::string _name;
+
+  import_namespace_ptr_t _importNamespace;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -331,6 +341,7 @@ struct DecoBlockNode : public NamedBlockNode {
 
   std::vector<requiredextensionnode_ptr_t> _requiredExtensions;
   mutable std::vector<decoblocknode_ptr_t> _dependencies;
+  mutable std::unordered_set<decoblocknode_ptr_t> _uniqueDependencies;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -733,6 +744,7 @@ struct TopNode : public AstNode {
 
   void addStructType(structnode_ptr_t snode);
 
+  file::Path _resolveImportPath(const std::string& importName) const;
   int itokidx = 0;
 
   GlSlFxParser* _parser = nullptr;
@@ -757,7 +769,7 @@ struct ImportNode : public AstNode {
     _name = name;
     _parent_topnode = parent;
   }
-  void load();
+  void load(const file::Path& resolvedPath);
   void pregen(shaderbuilder::BackEnd& backend) const;
 
   std::string _name;
@@ -782,6 +794,8 @@ struct GlSlFxParser {
   scanner_constptr_t _scanner;
   topnode_ptr_t _topNode;
   program_ptr_t _program;
+
+
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

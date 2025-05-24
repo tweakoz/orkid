@@ -21,6 +21,8 @@ namespace ork::lev2::glslfx::parser {
 void ConfigNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   NamedBlockNode::parse(parser,view);
   auto topnode = parser->_topNode;
+  auto program = parser->_program;
+  auto prg_namespace = program->_importNamespace;
   ///////////////////////////////////
   int ist = view._start + 1;
   int ien = view._end - 1;
@@ -39,10 +41,14 @@ void ConfigNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   // handle imports (deprecated)
   ///////////////////////////////////
   for (auto imp_path : config_block_imports) {
-
-    auto import = std::make_shared<ImportNode>(imp_path,topnode.get());
-    import->load();
-    topnode->_imports.push_back(import);
+    auto resolved_path = topnode->_resolveImportPath(imp_path);
+    auto it = prg_namespace->_uniqueImports.find(resolved_path.c_str()); 
+    if( it == prg_namespace->_uniqueImports.end() ) {
+      auto import = std::make_shared<ImportNode>(imp_path,topnode.get());
+      prg_namespace->_uniqueImports.insert({resolved_path.c_str(), import});
+      import->load(resolved_path);
+      topnode->_imports.push_back(import);
+    }
   }
 }
 

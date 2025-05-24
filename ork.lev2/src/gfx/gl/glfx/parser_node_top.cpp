@@ -130,6 +130,28 @@ bool TopNode::isIoAttrDecorator(const std::string typeName) const {
   return (it != _validOutputDecorators.end());
 }
 ///////////////////////////////////////////////////////////
+file::Path TopNode::_resolveImportPath(const std::string& importName) const {
+    file::Path::NameType a, b;
+    file::Path imppath;
+    //////////////////////////////////
+    // if import file has datasource (xxx://), use that
+    //  instead of inferring from container's path
+    //////////////////////////////////
+    file::Path(importName).split(a, b, ':');
+    if (b.length() != 0) { // use from import
+      imppath = importName;
+    } else { // infer from container
+      imppath = _parser->_name.c_str();
+      //imppath = this->_name.c_str();
+      //printf( "parent_parser<%s> imppath1<%s>\n", parent_parser->_name.c_str(), imppath.c_str());
+      imppath.split(a, b, ':');
+      ork::FixedString<256> fxs;
+      fxs.format("%s://%s", a.c_str(), importName.c_str());
+      imppath = fxs.c_str();
+    }
+    return imppath;
+}
+///////////////////////////////////////////////////////////
 void TopNode::parse() {
   //printf( "TopNode<%p:%s>::beginparse()\n", this, _parser->_name.c_str() );
   const auto& tokens = _scanner->tokens;
@@ -141,6 +163,7 @@ void TopNode::parse() {
   auto filter = std::make_shared<ScanViewRegex>("(\n)", true);
 
   auto program = _parser->_program;
+  auto prg_namespace = program->_importNamespace;
 
   while (itokidx < tokens.size()) {
     const Token& tok = tokens[itokidx];
@@ -171,9 +194,14 @@ void TopNode::parse() {
           std::string p       = impnam->text.substr(1, impnam->text.length() - 2);
           //imports.push_back(p);
           //printf( "IMPORT<%s>\n", p.c_str());
-          auto importnode = std::make_shared<ImportNode>(p,this);
-          importnode->load();
-          _imports.push_back(importnode);
+          auto resolved_path = _resolveImportPath(p);
+          auto it = prg_namespace->_uniqueImports.find(resolved_path.c_str()); 
+          if( it == prg_namespace->_uniqueImports.end() ) {
+            auto importnode = std::make_shared<ImportNode>(p,this);
+            prg_namespace->_uniqueImports.insert({resolved_path.c_str(), importnode});
+            importnode->load(resolved_path);
+            _imports.push_back(importnode);
+          }
           itokidx += 3;
           advance_block = false;
         } else if (tok.text == "libblock") {

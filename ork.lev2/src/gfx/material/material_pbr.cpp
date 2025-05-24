@@ -140,7 +140,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   auto loadreq = std::make_shared<asset::LoadRequest>();
 
-  //printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
+  printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
   loadreq->_asset_path = _shaderpath;
 
   _as_freestyle = std::make_shared<FreestyleMaterial>();
@@ -221,8 +221,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramV                 = fxi->parameter(_shader, "v");
-  _paramP                 = fxi->parameter(_shader, "MatP");
-  _paramIP                = fxi->parameter(_shader, "MatInvP");
+  _paramP                 = fxi->parameter(_shader, "p");
+  _paramIP                = fxi->parameter(_shader, "inv_p");
   _paramVP                = fxi->parameter(_shader, "vp");
   _paramVL                = fxi->parameter(_shader, "v_l");
   _paramVR                = fxi->parameter(_shader, "v_r");
