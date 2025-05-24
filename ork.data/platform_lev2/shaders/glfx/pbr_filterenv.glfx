@@ -24,6 +24,9 @@ uniform_set ub_frg {
   float EnvironmentMipBias;
   float EnvironmentMipScale;
   uint numsamples;
+  float FilterRadius;
+  vec2 ViewportSize;
+  vec2 InvViewportSize;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
