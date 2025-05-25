@@ -110,6 +110,7 @@ struct CommonStuff : public ork::Object {
   void requestAndRefSkyboxTexture(asset::loadrequest_ptr_t load_req);
   static irradiancemaps_ptr_t requestIrradianceMaps(const AssetPath& texture_path);
 
+  void onGpuInit(lev2::Context* ctx);
 
   irradiancemaps_ptr_t _irradianceMaps;
 
@@ -140,6 +141,14 @@ struct CommonStuff : public ork::Object {
   bool _useFloatColorBuffer = false;
   uint64_t _brdftype = 0;
   float _dppZbias = 1.0e-3f;
+
+  texture_ptr_t _texCubeBlack;
+  texture_ptr_t _texCubeWhite;
+  texturearray_ptr_t _texBlackArray;
+  texturearray_ptr_t _texWhiteLightMapArray;
+  texture_ptr_t _texBlack;
+  texture_ptr_t _texWhite;
+  bool _needsGpuInit = true;
 
   std::string _name;
 };

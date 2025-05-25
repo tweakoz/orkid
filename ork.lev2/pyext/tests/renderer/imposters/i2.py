@@ -25,12 +25,12 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
-IMP_DIM = 384
+IMP_DIM = 512
 ################################################################################
 
 class ImposterApp(object):
 
-  def __init__(self,is_stereo=None,extapp=None):
+  def __init__(self,is_stereo=None,extapp=None,envmap="cold"):
     super().__init__()
     self.time = 0.0
     if extapp==None:
@@ -44,6 +44,7 @@ class ImposterApp(object):
 
     self.is_stereo = is_stereo
     self.RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
+    self.envmap = envmap
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -68,10 +69,10 @@ class ImposterApp(object):
 
     if self.extapp==None:
       params_dict = {
-        "SkyboxTexPathStr": "cold",
-        "SkyboxIntensity": 0.5,
+        "SkyboxTexPathStr": self.envmap,
+        "SkyboxIntensity": 1.0,
         "DiffuseIntensity": 1.0,
-        "SpecularIntensity": 1.0,
+        "SpecularIntensity": 10.0,
         "AmbientLevel": vec3(0),
         "DepthFogDistance": 10000.0,
       }
@@ -116,7 +117,19 @@ class ImposterApp(object):
     imp_mtl = imposter.imp_mtl
     imp_pass = imposter.impdata.imp_pass
     imp_pass.pipeline.bindParam(imp_mtl.param("mvp"),  mtx4())
-    imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time)
+    imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*0.1)
+    imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
+    imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
+    imp_pass.pipeline.bindParam(imp_mtl.param("SSAOMap"), tokens.RCFD_PBR_WHITE_2DMAP )
+    imp_pass.pipeline.bindParam(imp_mtl.param("MapDiffuseEnv"), tokens.RCFD_PBR_DIFFUSE_ENV )
+    imp_pass.pipeline.bindParam(imp_mtl.param("MapSpecularEnv"), tokens.RCFD_PBR_SPECULAR_ENV )
+    imp_pass.pipeline.bindParam(imp_mtl.param("LightMapColors"), tokens.RCFD_PBR_LIGHTMAP_COLORS )
+    imp_pass.pipeline.bindParam(imp_mtl.param("EyePostion"), tokens.RCFD_EYE_POSITION )
+    imp_pass.pipeline.bindParam(imp_mtl.param("AmbientLevel"), vec3(0) )
+    imp_pass.pipeline.bindParam(imp_mtl.param("SkyboxLevel"), 1.0 )
+    imp_pass.pipeline.bindParam(imp_mtl.param("DiffuseLevel"), 1.0 )
+    imp_pass.pipeline.bindParam(imp_mtl.param("SpecularLevel"), 1.0 )
+    imp_pass.pipeline.bindParam(imp_mtl.param("RoughnessLevels"), 16.0 )
 
     #####################
     # user pass
@@ -187,7 +200,9 @@ class ImposterApp(object):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='scenegraph example')
   parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
+  parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
   ################################################################################
   args = vars(parser.parse_args())
   is_stereo = args["stereo"]
-  ImposterApp(is_stereo=is_stereo).ezapp.mainThreadLoop()
+  envmap = args["envmap"]
+  ImposterApp(is_stereo=is_stereo,envmap=envmap).ezapp.mainThreadLoop()

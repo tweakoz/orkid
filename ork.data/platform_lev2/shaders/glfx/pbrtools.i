@@ -885,7 +885,8 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //
-    : iface_frg_pick {
+    : iface_frg_pick
+    : uset_std_pick {
 
   out_pickID = uvec4(obj_pickID,frg_pickSUBID.x,frg_pickSUBID.y,frg_pickSUBID.z);
 

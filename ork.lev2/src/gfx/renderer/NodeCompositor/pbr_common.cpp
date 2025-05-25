@@ -311,5 +311,24 @@ void CommonStuff::describeX(class_t* c) {
             return _irradianceVars();
           });
 }
+void CommonStuff::onGpuInit(Context* ctx) {
+  if(not _needsGpuInit){
+    return;
+  }
+  _needsGpuInit = false;
+  auto TXI = ctx->TXI();
+  _texBlack = TXI->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
+  _texWhite = TXI->createColorTextureV3(fvec3(1, 1, 1), 64, 64);
+  _texCubeBlack = TXI->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
+  _texCubeWhite = TXI->createColorCubeTexture(fvec4(1, 1, 1, 1), 64,64);
+  _texBlackArray = TXI->createColorTextureV3Array(fvec3(0, 0, 0), 64, 64, 32);
+  _texWhiteLightMapArray = TXI->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 32);
+  _texBlack->_debugName = "black";
+  _texWhite->_debugName = "white";
+  _texCubeBlack->_debugName = "black_cube";
+  _texCubeWhite->_debugName = "white_cube";
+  _texBlackArray->_debugName = "black_array";
+  _texWhiteLightMapArray->_debugName = "white_lightmap_array";
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::pbr

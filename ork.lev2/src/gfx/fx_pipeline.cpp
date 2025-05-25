@@ -252,6 +252,67 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           //OrkAssert(false);
           break;
         }
+        case "RCFD_EYE_POSITION"_crcu: {
+          auto RCFD = RCID.rcfd();
+          fmtx4 V;
+          if (monocams) {
+            V = monocams->_vmatrix;
+          }          
+          auto eyepos = V.inverse().translation();
+          printf("eyepos<%g %g %g>\n", eyepos.x, eyepos.y, eyepos.z);
+          FXI->bindParamVect3(param, eyepos);
+          //OrkAssert(false);
+          break;
+        }
+        case "RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu: {
+          auto brdf_integration = pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get();
+          FXI->bindParamTexture(param, brdf_integration);
+          break;
+        }
+        case "RCFD_PBR_DIFFUSE_ENV"_crcu: {
+          auto the_tex = pbrcommon->envDiffuseTexture().get();
+          FXI->bindParamTexture(param, the_tex);
+          break;
+        }
+        case "RCFD_PBR_SPECULAR_ENV"_crcu: {
+          auto the_tex = pbrcommon->envSpecularTexture().get();
+          FXI->bindParamTexture(param, the_tex);
+          break;
+        }
+        case "RCFD_PBR_BLACK_2DMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texBlack.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_2DMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texWhite.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_LIGHTMAP_ARRAY"_crcu: {
+          FXI->bindParamTextureArray(param, pbrcommon->_texWhiteLightMapArray.get());
+          break;
+        }
+        case "RCFD_PBR_LIGHTMAP_COLORS"_crcu: {
+          static fvec3 lightmap_colors[8] = {
+            fvec3(1.0f, 1.0f, 1.0f), // white
+            fvec3(0.5f, 0.5f, 0.5f), // gray
+            fvec3(1.0f, 0.5f, 0.5f), // red
+            fvec3(0.5f, 1.0f, 0.5f), // green
+            fvec3(0.5f, 0.5f, 1.0f), // blue
+            fvec3(1.0f, 1.0f, 0.5f), // yellow
+            fvec3(1.0f, 0.5f, 1.0f), // magenta
+            fvec3(0.5f, 1.0f, 1.0f)  // cyan
+          };
+          FXI->bindParamVect3Array(param, lightmap_colors,8);
+          break;
+        }
+        case "RCFD_PBR_BLACK_CUBEMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texCubeBlack.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_CUBEMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texCubeWhite.get());
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );

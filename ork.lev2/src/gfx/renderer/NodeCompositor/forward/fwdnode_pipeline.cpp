@@ -56,6 +56,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     bool have_PROBES = RCFD->userPropertyAs<bool>("havePROBES"_crcu);
     bool should_bind_probes = (have_PROBES);
     bool is_depth_prepass = RCFD->_renderingmodel._modelID == "DEPTH_PREPASS"_crcu;
+    auto pbrcommon = RCFD->userPropertyAs<pbr::commonstuff_ptr_t>("PBR_COMMON"_crcu);
 
     ///////////////////////////////////////////////////////////////////////////
     // we are not lighting for depth prepass, so NOP
@@ -202,10 +203,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     }
     else{
-      OrkAssert(mtl->_texCubeBlack);
       //printf( "NOT BINDING PROBES black<%p>!\n", mtl->_texCubeBlack.get() );
-      FXI->bindParamTexture(mtl->_parProbeReflection, mtl->_texCubeBlack.get() );
-      FXI->bindParamTexture(mtl->_parProbeIrradiance, mtl->_texCubeBlack.get() );
+      FXI->bindParamTexture(mtl->_parProbeReflection, pbrcommon->_texCubeBlack.get() );
+      FXI->bindParamTexture(mtl->_parProbeIrradiance, pbrcommon->_texCubeBlack.get() );
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -222,7 +222,7 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       //printf("binding white lightmap array\n");
       //printf("mtl->_parMapLightMapArray<%p>\n", mtl->_parMapLightMapArray);
       //printf("mtl->_texWhiteLightMapArray<%p>\n", mtl->_texWhiteLightMapArray.get());
-      FXI->bindParamTextureArray(mtl->_parMapLightMapArray, mtl->_texWhiteLightMapArray.get());
+      FXI->bindParamTextureArray(mtl->_parMapLightMapArray, pbrcommon->_texWhiteLightMapArray.get());
       FXI->bindParamVect3Array(mtl->_paramLightMapColors, mtl->_lightmapColors,8);
       //printf("OK...\n");
     }

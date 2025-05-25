@@ -29,6 +29,7 @@ ForwardNode::~ForwardNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
+  _pbrcommon->onGpuInit(pTARG);
   _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG, iW, iH);
 }
 ///////////////////////////////////////////////////////////////////////////////

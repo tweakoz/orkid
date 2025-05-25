@@ -97,8 +97,6 @@ libblock lib_fwd_impl
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    // vec2 uv = gl_FragCoord.xy * InvViewportSize;
-    // float ambocc = texture(SSAOMap, uv).x;
     //  filter sample ambocc
     vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
     float ambocc = texture(SSAOMap, ssao_uv).x;
@@ -112,7 +110,7 @@ libblock lib_fwd_impl
     /////////////////////////
     // rotate refl by 180 degrees on y to get refl_probe_coord
     vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
-    vec3 probe_REFL       = env_equirectangular_cube(reflectionPROBE, refl_probe_coord).xyz;
+    vec3 probe_REFL       = env_cube(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
     vec3 refl_equi = vec3(refl.x, -refl.y, refl.z);
     // Use normal for diffuse (irradiance)
@@ -135,6 +133,7 @@ libblock lib_fwd_impl
     //  vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     return saturateV((diffuse + specular)*SkyboxLevel);
+    //return specular;
   } // vec3 environmentLighting(){
 }
 

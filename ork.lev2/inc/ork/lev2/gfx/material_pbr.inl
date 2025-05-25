@@ -229,10 +229,6 @@ public:
   texture_ptr_t _texEmissive;
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
-  texture_ptr_t _texBlack;
-  texturearray_ptr_t _texBlackArray;
-  texture_ptr_t _texCubeBlack;
-  texturearray_ptr_t _texWhiteLightMapArray;
 
   ///////////////////////////////////////////
   // Lightmaps
