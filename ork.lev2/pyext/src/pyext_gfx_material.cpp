@@ -228,6 +228,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   float fvalue = py::cast<float>(inp_value);
                   pipeline->bindParam(param.get(),fvalue);
                 }
+                else if( py::isinstance<py::int_>(inp_value) ){
+                  int ivalue = py::cast<int>(inp_value);
+                  pipeline->bindParam(param.get(),ivalue);
+                }
                 else if( py::isinstance<fvec2>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec2>(inp_value));
                 }

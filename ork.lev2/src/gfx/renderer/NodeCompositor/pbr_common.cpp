@@ -87,11 +87,11 @@ static asset::vars_ptr_t _irradianceVars() {
 
       auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
       auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
-      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX"_crcu);
-      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET"_crcu);
-      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM"_crcu);
-      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN"_crcu);
-      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG"_crcu);
+      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX");
+      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET");
+      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM");
+      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN");
+      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG");
 
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;

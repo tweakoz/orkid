@@ -217,15 +217,18 @@ static texture_ptr_t _getbrdfintmap(Context* targ, uint64_t type) {
 
 /////////////////////////////////////////////////////////////////////////
 
-texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,uint64_t type) {
+texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ,std::string type) {
   static std::unordered_map<uint64_t,texture_ptr_t> _maps;
-  auto it = _maps.find(type);
+  uint64_t type_hash = CrcString(type.c_str()).hashed();
+
+  auto it = _maps.find(type_hash);
   if( it != _maps.end() ){
     return it->second;
   }
   else{
-    auto new_tex = _getbrdfintmap(targ,type);
-    _maps[type] = new_tex;
+    auto new_tex = _getbrdfintmap(targ,type_hash);
+    new_tex->_debugName = FormatString("brdfIntegrationMap<%s>", type.c_str());
+    _maps[type_hash] = new_tex;
     return new_tex;
   }
 }
