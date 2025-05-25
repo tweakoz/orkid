@@ -2,13 +2,13 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
+  import "stdtools.i";
   import "ssaotools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx_ffx {
-  mat4 mvp;
+uniform_set ub_vtx_ffx : uset_std_matrices {
   vec4 modcolor;
   float time;
 }
@@ -293,30 +293,18 @@ fragment_shader ps_hsvg : iface_fmt : color_tools {
   out_clr   = vec4(r,g,b, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-uniform_set uset_frg_ssao {
-  int SSAONumSamples;
-  int SSAONumSteps;
-  float SSAOBias;
-  float SSAORadius;
-  float SSAOWeight;
-  float SSAOPower;
-  float SSAOFeedback;
-  sampler2D SSAOKernel;
-  sampler2D SSAOScrNoise;
+uniform_set uset_frg_ssao_impl {
   sampler2D MapDepth;
   sampler2D MapLinearDepth;
   sampler2D SSAOPREV;
   vec2 texelSize;
-  vec2 InvViewportSize; 
-  mat4 mvp; 
-  mat4 MatP;
-  mat4 MatInvP;
-  vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_ssao_prepass //
   : iface_fmt_greyscale //
-  : uset_frg_ssao //
+  : uset_std_matrices
+  : uset_std_viewport
+  : uset_frg_ssao_impl //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float cur_ssao = ssao_nonlinear(uv);
@@ -326,7 +314,8 @@ fragment_shader ps_ssao_prepass //
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_linearize_depth //
   : iface_fmt_greyscale //
-  : uset_frg_ssao //
+  : uset_std_viewport
+  : uset_frg_ssao_impl //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
