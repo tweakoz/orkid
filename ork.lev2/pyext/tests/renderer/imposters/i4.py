@@ -25,7 +25,7 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
-IMP_DIM = 512
+IMP_DIM = 1024
 ################################################################################
 
 class ImposterApp(object):
@@ -108,7 +108,7 @@ class ImposterApp(object):
                                filtertype=tokens.BILINEAR,
                                filterradius=3.0, 
                                detail=3,
-                               shaderpath=this_dir/"i2.glfx",
+                               shaderpath=this_dir/"i4.glfx",
                                shadertek="tek_imp",
                                layer=self.lyr_fwd,
                                DIM = IMP_DIM,
@@ -122,7 +122,7 @@ class ImposterApp(object):
     imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
     imp_pass.pipeline.bindParam(imp_mtl.param("ViewportSize"), tokens.FBI_RTG_DIM )
     imp_pass.pipeline.bindParam(imp_mtl.param("InvViewportSize"), tokens.FBI_RTG_INVDIM )
-    imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*0.1)
+    imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time)
     imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
     imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
     imp_pass.pipeline.bindParam(imp_mtl.param("SSAOMap"), tokens.RCFD_PBR_WHITE_2DMAP )
@@ -136,27 +136,7 @@ class ImposterApp(object):
     imp_pass.pipeline.bindParam(imp_mtl.param("SpecularLevel"), 1.0 )
     imp_pass.pipeline.bindParam(imp_mtl.param("RoughnessLevels"), 16.0 )
 
-    #####################
-    # user pass
-    #####################
-
-    if False:
-
-      # warped(2D) feedback pass
-      imposter.installFeedbackBlit(shaderpath=this_dir/"i1.glfx",
-                                   shadertek="tek_upass" )
-      
-      upass = imposter.feedback_pass
-      umtl  = imposter.feedback_mtl
-      upass.pipeline.bindParam(umtl.param("mvp"), mtx4())
-      upass.pipeline.bindParam(umtl.param("time"), lambda: self.time)
-      upass.pipeline.bindParam(umtl.param("fbtex"), lambda: imposter.fb_tex )
-      upass.pipeline.bindParam(umtl.param("rtgtex"), lambda: imposter.rtg_imp.texture(0))
-      upass.pipeline.bindParam(umtl.param("depthtex"), lambda: imposter.rtg_imp.depth_buffer.texture)
-
-    else:  
-
-      imposter.installStandardBlit()
+    imposter.installStandardBlit()
 
     self.imposter = imposter
 
@@ -195,8 +175,9 @@ class ImposterApp(object):
   def onGpuUpdate(self,ctx):
     self.imposter.onGpuUpdate(ctx)
     findex = self.imposter.frame_index
-    y = math.sin(findex*0.005)
-    pos = vec3(0,y,0)
+    x = math.sin(findex*0.005)
+    z = -math.cos(findex*0.005)
+    pos = vec3(x,0,z)
     #self.imposter.sgnode.worldTransform.translation = pos
     #self.imposter.impdata.enable_Lanczos_blit = ((int(findex)%800)<400)
     #print(self.imposter.impdata.enable_Lanczos_blit)

@@ -1,0 +1,71 @@
+////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "410";
+import "orkshader://fwdtools.i";
+import "orkshader://sdftools.i";
+import "orkshader://misctools.i";
+}
+////////////////////////////////////////
+uniform_set uset_vtx : uset_std_matrices {
+}
+////////////////////////////////////////
+uniform_set uset_frg_i3    //
+    : uset_std_viewport    //
+    : uset_std_filtering { //
+  sampler2D rtgtex;
+  sampler2D depthtex;
+  float time;
+  vec3 raydir;
+}
+////////////////////////////////////////
+vertex_shader vs_imp : vif_PNT {
+  frg_clr     = vec4(normalize(normal), 1); //+vec3(1))*0.5;
+  frg_opos    = position.xyz;
+  frg_uv0     = uv0;
+  frg_wpos    = (m*position);
+  gl_Position = mvp * position;
+}
+////////////////////////////////////////
+fragment_shader ps_imp      //
+    : fif_forward_min       //
+    : lib_brdf              //
+    : lib_def               //
+    : lib_sdftools          //
+    : lib_fwd_impl          //
+    : uset_frg_fwd          //
+    : ublk_frg_fwd_lighting //
+    : uset_frg_i3 {         //
+
+  vec3 rayori = frg_wpos.xyz; // surface of imposter sphere
+
+  // naive, simple and inefficient raymarch sphere of radius 0.75
+
+  float radius = sin(time*1.0) * 0.15 + 0.75; // oscillating radius
+  vec3 sphere_center = m[3].xyz; // center of the sphere @ node position
+  const float maxdist = 2.5;
+  float step = 0.0005;
+  vec3 p = rayori;
+  for (int i = 0; i < 500; i++) {
+    float dist = length(p - rayori);
+    if (dist > maxdist) {
+      discard;
+    }
+    float sphere_dist = length(p - sphere_center) - radius;
+    if (sphere_dist < 0.001) {
+      break;
+    }
+    p += raydir * step; // march along the ray
+  }
+  vec3 n = normalize(p - sphere_center); // normal at the surface
+  out_color = vec4(n, 1); // debug color
+  gl_FragDepth = depthAtWpos(p.xyz, vp);
+}
+////////////////////////////////////////
+technique tek_imp {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_imp;
+    fragment_shader = ps_imp;
+    state_block     = default;
+  }
+}

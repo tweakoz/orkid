@@ -57,15 +57,11 @@ fragment_shader ps_imp      //
     : ublk_frg_fwd_lighting //
     : uset_frg_i2 {         //
 
-	vec2 muv    = gl_FragCoord.xy / vec2(512, 512); // viewport size
-  muv-=vec2(0.5);
-  muv *= vec2(0.5,1);
-  muv += vec2(0.5);
   vec3 rayori = frg_wpos.xyz;
 
   // analytical intersection with sphere
   vec3 sphere_center = vec3(0, 0, 0);
-  float sphere_radius = 0.75;
+  float sphere_radius = sin(time*20.0) * 0.15 + 0.65; // oscillating radius
   vec3 oc = rayori - sphere_center;
   float a = dot(raydir, raydir);
   float b = 2.0 * dot(oc, raydir);
@@ -80,7 +76,7 @@ fragment_shader ps_imp      //
   }
   /////////////////
   vec3 intersection = rayori + t * raydir;
-  out_color = vec4(intersection, 1); // debug color
+  out_color = vec4(normalize(intersection), 1); // debug color
   gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
 
 }
