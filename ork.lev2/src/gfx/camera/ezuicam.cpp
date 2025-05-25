@@ -44,7 +44,7 @@ void EzUiCam::lookAt(fvec3 eye, fvec3 tgt, fvec3 up ){
     fmtx4 VMATRIX;
     VMATRIX.lookAt(eye,tgt,up);
 
-    if(_constrainZ){
+    if(false){ //_constrainZ){
 
       VMATRIX = VMATRIX.inverse();
       fvec3 znormal = VMATRIX.zNormal();

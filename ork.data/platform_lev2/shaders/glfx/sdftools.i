@@ -192,6 +192,19 @@ vec3 worldNormalSDF(in vec3 p) {
   return normalize(normal);
 }
 ///////////////////////////////
+vec3 wposAtDepth(vec2 muv, mat4 ivp, float depth){
+  vec2 scrxy     = muv * 2.0 - vec2(1, 1);
+  vec3 inpos     = vec3(scrxy.x, scrxy.y, depth * 2 - 1.0);
+  vec4 rr        = ivp * vec4(inpos, 1);
+  vec3 pos    = vec3(rr.xyz / rr.w);
+  return pos;
+}
+float depthAtWpos(vec3 wpos, mat4 vp) {
+  vec4 hpos = vp * vec4(wpos, 1.0);
+  if (hpos.w == 0.0) return 0.0; // Avoid division by zero
+  return (hpos.z / hpos.w + 1.0) * 0.5; // Convert to normalized depth
+}
+///////////////////////////////
 struct SdfResult{
   vec3 _color;
   float _fragdepth;

@@ -16,11 +16,14 @@ uniform_set uset_frg_i2    //
   sampler2D fbtex;
   sampler2D depthtex;
   float time;
+  vec3 raydir;
 }
 ////////////////////////////////////////
 vertex_shader vs_imp : vif_PNT {
   frg_clr     = vec4(normalize(normal), 1); //+vec3(1))*0.5;
   frg_opos    = position.xyz;
+  frg_uv0     = uv0;
+  frg_wpos    = (m*position);
   gl_Position = mvp * position;
 }
 ////////////////////////////////////////
@@ -30,21 +33,16 @@ libblock lib_X        //
     : lib_cellnoise { //
 
   float sampleNoise(vec3 p) {
-    float n = 0.0;
-    for (int o = 0; o < 2; o++) {
-      float amp      = float(4 - o) / 2.0;
-      float frq      = float(o + 1) / 8.0;
-      vec3 samplePos = (p * frq) + vec3(0, time * amp * 0.25, 0);
-      n += cellnoise(samplePos) * amp;
-    }
-    return pow(n * 0.5, 2);
+    return 1;
   }
 
   vec3 calculateNormal(vec3 p) {
     const float h = 0.001;
     const vec2 k  = vec2(1, -1);
     return normalize(
-        k.xyy * sampleNoise(p + k.xyy * h) + k.yyx * sampleNoise(p + k.yyx * h) + k.yxy * sampleNoise(p + k.yxy * h) +
+        k.xyy * sampleNoise(p + k.xyy * h) + //
+        k.yyx * sampleNoise(p + k.yyx * h) + //
+        k.yxy * sampleNoise(p + k.yxy * h) + //
         k.xxx * sampleNoise(p + k.xxx * h));
   }
 }
@@ -59,66 +57,32 @@ fragment_shader ps_imp      //
     : ublk_frg_fwd_lighting //
     : uset_frg_i2 {         //
 
-  const int MAX_STEPS      = 128;
-  const float MAX_DIST     = 20.0;
-  const float SURFACE_DIST = 0.001;
+	vec2 muv    = gl_FragCoord.xy / vec2(512, 512); // viewport size
+  muv-=vec2(0.5);
+  muv *= vec2(0.5,1);
+  muv += vec2(0.5);
+  vec3 rayori = frg_wpos.xyz;
 
-  vec3 ro = vec3(0, 0, -10);      // Ray origin
-  vec3 rd = normalize(frg_opos); // Ray direction
-
-  // Raymarch
-  float totalDist        = 0.0;
-  float surfaceThreshold = 0.30; // Isosurface threshold
-
-  for (int i = 0; i < MAX_STEPS; i++) {
-    vec3 p = ro + rd * totalDist;
-
-    // Sample noise at current point
-    float noise = sampleNoise(p);
-
-    // Distance to isosurface
-    float dist = abs(noise - surfaceThreshold);
-
-    // Advance ray
-    totalDist += dist;
-
-    // Surface hit or max distance reached
-    if (dist < SURFACE_DIST || totalDist > MAX_DIST) {
-      break;
-    }
+  // analytical intersection with sphere
+  vec3 sphere_center = vec3(0, 0, 0);
+  float sphere_radius = 0.75;
+  vec3 oc = rayori - sphere_center;
+  float a = dot(raydir, raydir);
+  float b = 2.0 * dot(oc, raydir);
+  float c = dot(oc, oc) - sphere_radius * sphere_radius;
+  float discriminant = b * b - 4.0 * a * c;
+  if (discriminant < 0.0) {
+    //discard; // no intersection
   }
-
-  // Check if we hit a surface
-  if (totalDist < MAX_DIST) {
-    vec3 hitPoint = ro + rd * totalDist;
-
-    // Calculate surface normal for lighting
-    //vec3 normal = calculateNormal(hitPoint);
-    vec3 normal = normalize(hitPoint*vec3(-1,-1,1));
-    // Sample noise for color variation
-    float noiseVal = sampleNoise(hitPoint);
-
-    // Color based on noise and lighting
-    vec3 surfaceColor = vec3(1); // * (0.5 + 0.5 * lighting);
-    PbrData pbd;
-    pbd._emissive     = false;
-    pbd._metallic     = 1.0;
-    pbd._roughness    = 0.0;
-    pbd._albedo       = surfaceColor;
-    pbd._wpos         = hitPoint;
-    pbd._wnrm         = normal;
-    pbd._fogZ         = 0.0;
-    pbd._atmos        = 0.0;
-    pbd._alpha        = 1.0;
-    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd, EyePostion);
-    out_color = vec4(env_lighting, 1.0);
-
-  } else {
-    // Background color if no surface hit
-    //out_color = vec4(0.1, 0.1, 0.2, 1.0);
-    discard;
+  float t = (-b - sqrt(discriminant)) / (2.0 * a);
+  if (t < 0.0) {
+    //discard; // intersection behind the ray origin
   }
-  // gl_FragDepth = 0.5;
+  /////////////////
+  vec3 intersection = rayori + t * raydir;
+  out_color = vec4(intersection, 1); // debug color
+  gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
+
 }
 ////////////////////////////////////////
 vertex_shader vs_upass : vif_PNT {

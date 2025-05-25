@@ -107,7 +107,7 @@ class ImposterApp(object):
                                radius=1.0,
                                filtertype=tokens.BILINEAR,
                                filterradius=3.0, 
-                               detail=2,
+                               detail=3,
                                shaderpath=this_dir/"i2.glfx",
                                shadertek="tek_imp",
                                layer=self.lyr_fwd,
@@ -116,7 +116,12 @@ class ImposterApp(object):
     
     imp_mtl = imposter.imp_mtl
     imp_pass = imposter.impdata.imp_pass
-    imp_pass.pipeline.bindParam(imp_mtl.param("mvp"),  mtx4())
+    imp_pass.pipeline.bindParam(imp_mtl.param("m"),  tokens.RCFD_M )
+    imp_pass.pipeline.bindParam(imp_mtl.param("vp"),  tokens.RCFD_Camera_VP_Mono )
+    imp_pass.pipeline.bindParam(imp_mtl.param("inv_vp"), tokens.RCFD_Camera_IVP_Mono )
+    imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
+    imp_pass.pipeline.bindParam(imp_mtl.param("ViewportSize"), tokens.FBI_RTG_DIM )
+    imp_pass.pipeline.bindParam(imp_mtl.param("InvViewportSize"), tokens.FBI_RTG_INVDIM )
     imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*0.1)
     imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
     imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
@@ -200,7 +205,7 @@ class ImposterApp(object):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='scenegraph example')
   parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
-  parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
+  parser.add_argument("-e", "--envmap", type=str, default="cold", help='environment map')
   ################################################################################
   args = vars(parser.parse_args())
   is_stereo = args["stereo"]

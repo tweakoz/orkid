@@ -234,7 +234,22 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "CPD_Rtg_InvDim"_crcu: {
-          FXI->bindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
+          fvec2 invdim(1.0f/float(W), 1.0f/float(H));
+          FXI->bindParamVect2(param, invdim);
+          break;
+        }
+        case "FBI_RTG_DIM"_crcu: {
+          auto rtg = context->FBI()->_active_rtgroup;
+          int fbiw = rtg->miW;
+          int fbih = rtg->miH;
+          FXI->bindParamVect2(param, fvec2(fbiw,fbih));
+          break;
+        }
+        case "FBI_RTG_INVDIM"_crcu: {
+          auto rtg = context->FBI()->_active_rtgroup;
+          int fbiw = rtg->miW;
+          int fbih = rtg->miH;
+          FXI->bindParamVect2(param, fvec2(1.0/fbiw,1.0/fbih));
           break;
         }
         case "RCFD_MODCOLOR"_crcu: {
@@ -259,7 +274,6 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
             V = monocams->_vmatrix;
           }          
           auto eyepos = V.inverse().translation();
-          printf("eyepos<%g %g %g>\n", eyepos.x, eyepos.y, eyepos.z);
           FXI->bindParamVect3(param, eyepos);
           //OrkAssert(false);
           break;
@@ -313,6 +327,12 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           FXI->bindParamTexture(param, pbrcommon->_texCubeWhite.get());
           break;
         }
+        case "RCFD_MONOCAM_NEAR_FAR"_crcu: {
+          float near = monocams->_camdat.mNear;
+          float far = monocams->_camdat.mFar;
+          FXI->bindParamVect2(param, fvec2(near, far));
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
@@ -323,9 +343,19 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           }
           break;
         }
+        case "RCFD_Camera_P_Mono"_crcu: {
+          if (monocams) {
+            FXI->bindParamMatrix(param, monocams->_pmatrix);
+          } else {
+            FXI->bindParamMatrix(param, MTXI->RefPMatrix());
+          }
+          break;
+        }
         case "RCFD_Camera_VP_Mono"_crcu: {
           if (monocams) {
-            FXI->bindParamMatrix(param, monocams->VPMONO());
+            fmtx4 vp = monocams->VPMONO();
+            //vp.dump("monocams->VPMONO()");
+            FXI->bindParamMatrix(param, vp);
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
             FXI->bindParamMatrix(param, MVP);
@@ -343,7 +373,23 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_Camera_IVP_Mono"_crcu: {
           if (monocams) {
-            FXI->bindParamMatrix(param, monocams->VPMONO().inverse());
+            auto VP = monocams->VPMONO();
+            auto IVP = VP.inverse();
+            //IVP.dump("IVP");
+            FXI->bindParamMatrix(param, IVP );
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+            FXI->bindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_ZNORMAL_Mono"_crcu: {
+          if (monocams) {
+            auto VP = monocams->VPMONO();
+            auto IVP = VP.inverse();
+            fvec3 raydir = IVP.zNormal();
+            //IVP.dump("IVP");
+            FXI->bindParamVect3(param, raydir );
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
             FXI->bindParamMatrix(param, MVP);
