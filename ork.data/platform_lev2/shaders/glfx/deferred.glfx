@@ -2,10 +2,8 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "mathtools.i";
-  import "misctools.i";
-  import "envtools.i";
   import "pbrtools.i";
+  import "misctools.i";
 ///////////////////////////////////////////////////////////////
 }
 // Interfaces
@@ -28,7 +26,7 @@ vertex_interface iface_v2uv : ub_deferred_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_deferred_frg {
+uniform_set ub_deferred_frg : uset_std_ssao {
   mat4 IVPArray[2];
   mat4 VArray[2];
   mat4 PArray[2];
@@ -36,47 +34,15 @@ uniform_set ub_deferred_frg {
   sampler2D MapDepthCluster;
   sampler2D MapLinearDepth;
   sampler2D MapDepth;
-  sampler2DArray MapSpecularEnv;
-  sampler2D MapDiffuseEnv;
-  sampler2D MapBrdfIntegration;
   sampler2D MapLightingCookie;
   sampler2D MapShadowDepth;
   sampler3D MapVolTexA;
-  vec3 EyePostion;
   vec2 InvViewportSize; // inverse target size
   float Time;
   vec2 NearFar;
   int NumLights;
   int TileDim;
-  float SkyboxLevel;
-  float SpecularLevel;
-  float DiffuseLevel;
-  vec3 AmbientLevel;
-  float SpecularMipBias;
-  float EnvironmentMipBias;
-  float EnvironmentMipScale;
-  float DepthFogDistance;
-  float DepthFogPower;
   vec4 ShadowParams;
-
-  int SSAONumSamples;
-  int SSAONumSteps;
-  float SSAOBias;
-  float SSAORadius;
-  float SSAOWeight;
-  float SSAOPower;
-  sampler2D SSAOKernel;
-  sampler2D SSAOScrNoise;
-  vec2 Zndc2eye;
-  mat4 MatP;
-  mat4 MatInvP;
-}
-///////////////////////////////////////////////////////////////
-uniform_block ub_light {
-  vec4 LightColorD[256];
-  mat4 LightMatrix[256];
-  mat4 ShadowMatrix[256];
-  float LightRadius[256];
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_f2uv {
@@ -88,7 +54,7 @@ fragment_interface iface_f2uv {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred
-  : ub_light
+  : ublk_deferred_lighting
   : ub_deferred_frg
   : lib_math
   : lib_envmapping
@@ -472,10 +438,8 @@ libblock lib_deferred
     //return mix(out_color,vec3(atmos),clamp(alpha,0,1));
 
   } // vec3 environmentLighting(){
-
-
 ///////////////////////////////////////////////////////////////
-} // libblock lib_deferred : ub_light : ub_deferred_frg {
+} // libblock lib_deferred : ublk_deferred_lighting : ub_deferred_frg {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_passthru2uv : iface_v2uv {
   frg_uva     = uv0;

@@ -98,3 +98,10 @@ uniform_block ublk_frg_fwd_lighting {
   uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
+uniform_block ublk_deferred_lighting {
+  vec4 LightColorD[256];   // 4096   : 4096
+  mat4 LightMatrix[256];   // 163384 : 167480
+  mat4 ShadowMatrix[256];  // 163384 : 330864
+  float LightRadius[256];  // 1024   : 331888
+}
+///////////////////////////////////////////////////////////////

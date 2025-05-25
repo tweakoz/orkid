@@ -7,6 +7,8 @@ uniform_set uset_std_ssao {
   float SSAOBias;            // 0.01
   float SSAOPower;           // 1.0  
   float SSAOWeight;          // 1.0
+  int SSAONumSamples;
+  int SSAONumSteps;
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_ssao : uset_std_ssao {
