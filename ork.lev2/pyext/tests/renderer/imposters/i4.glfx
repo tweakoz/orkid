@@ -40,6 +40,7 @@ libblock lib_X        //
     displacement += sin(angleXY*10.0 + time * 1.5) * 0.1; // oscillating displacement
     displacement += -cos(angleYZ*3.0 + time * 2.7) * 0.1; // oscillating displacement
     sphere_dist += displacement; // apply displacement to the sphere distance
+    float NN2 = 1.0+noise(p*7)*0.5;
     return sphere_dist;
   }
   vec3 myWorldNormal(vec3 p) {
@@ -50,6 +51,14 @@ libblock lib_X        //
     n.y = myWorldSDF(vec3(p.x, p.y + eps, p.z)) - myWorldSDF(vec3(p.x, p.y - eps, p.z));
     n.z = myWorldSDF(vec3(p.x, p.y, p.z + eps)) - myWorldSDF(vec3(p.x, p.y, p.z - eps));
     return normalize(n);
+  }
+  float curvature(vec3 p) {
+    // compute curvature of myWorldSDF at point p
+    float eps = 0.0001;
+    vec3 n = myWorldNormal(p);
+    float d2 = myWorldSDF(p + n * eps);
+    float d1 = myWorldSDF(p - n * eps);
+    return (d2 - d1) / (2.0 * eps);
   }
 }
 ////////////////////////////////////////
@@ -70,6 +79,7 @@ fragment_shader ps_imp      //
   // raymarch sphere of radius 0.75
 
   vec3 rayori = frg_wpos.xyz; // surface of imposter sphere
+  const float STEPRATE = 0.01;
   const float maxdist = 2.5;
   const float _EPSILON = 0.0005;
   const int MAX_STEPS = 500;
@@ -86,7 +96,7 @@ fragment_shader ps_imp      //
     if (distance_travelled > maxdist) {
       break;
     }
-    float D = sdf_distance*0.01;
+    float D = sdf_distance*STEPRATE;
     p += raydir * D; 
     distance_travelled += D;    
   }
@@ -95,12 +105,16 @@ fragment_shader ps_imp      //
   }
   vec3 n = myWorldNormal(p); // normal at the surface
   float NN = 1.0+cellnoise(p*7)*0.5;
+  float NN2 = 1.0+noise(p*7)*0.5;
 
   PbrData pbr;
   pbr._emissive = false;
-  pbr._albedo = n*0.05+vec3(0.95)*NN;
-  pbr._metallic = 1.0;
-  pbr._roughness = pow(n.y*0.5+0.5,2); // oscillating roughness
+  float K = curvature(p);
+  float K2 = saturateF(1.0-pow(K,4)*0.1);
+  vec3 CA = mix(vec3(1,0.5,0.5), vec3(1,1,1), NN2); // color based on curvature
+  pbr._albedo = mix(CA,vec3(1.0,.7,.3)*NN, K2);
+  pbr._metallic = mix(1,0, K2);
+  pbr._roughness = K2; // oscillating roughness
   pbr._wpos = p;
   pbr._wnrm = n;
   vec3 C = pbrEnvironmentLightingXXX(pbr, EyePostion);

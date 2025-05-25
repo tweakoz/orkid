@@ -25,7 +25,7 @@ from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
 ################################################################################
-IMP_DIM = 1024
+IMP_DIM = 2048
 ################################################################################
 
 class ImposterApp(object):
