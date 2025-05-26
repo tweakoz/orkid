@@ -8,187 +8,175 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-import numpy as np
-from orkengine.core import vec3, vec4, quat, mtx4, Sphere, Transform
-from orkengine.core import CrcStringProxy, lev2_pyexdir, thisdir
+from orkengine.core import vec3, vec4, quat, mtx4, dfrustum, dvec4, fmtx4_to_dmtx4, CrcStringProxy, VarMap
+from orkengine.core import lev2_pyexdir, Transform, thisdir
 from orkengine import lev2
-from obt.path import Path       
-tokens = CrcStringProxy()
-        
+
 ################################################################################
 
 lev2_pyexdir.addToSysPath()
 this_dir = thisdir()
+this_dir.addToSysPath()
+
+import _boilerplate as boilerplate
+
 from lev2utils.cameras import setupUiCamera
 from lev2utils.primitives import createGridData, createImposter
 from lev2utils.scenegraph import createSceneGraph
 from lev2utils.lighting import MySpotLight, MyCookie
 
-################################################################################
+tokens = CrcStringProxy()
 IMP_DIM = 768
 ################################################################################
 
-class ImposterApp(object):
+################################################################################
 
-  def __init__(self,is_stereo=None,extapp=None,envmap="cold"):
-    super().__init__()
-    self.time = 0.0
-    if extapp==None:
-      self.ezapp = lev2.OrkEzApp.create(self,ssaa=0)
-      self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
-    else:
-      self.ezapp = extapp.ezapp
+class ImposterApp(boilerplate.ImposterBaseApp):
 
-    self.extapp = extapp
-    setupUiCamera(app=self,eye=vec3(0,1,1)*25,tgt=vec3(0,0,0))
-
-    self.is_stereo = is_stereo
-    self.RENDERMODEL = "FWDPBRVRDM" if is_stereo else "ForwardPBR"
-    self.envmap = envmap
-
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
+  def __init__(self,is_stereo=False,extapp=None,envmap="pillars",statedebug=False):
+    super().__init__(is_stereo=is_stereo,extapp=extapp,envmap=envmap,statedebug=statedebug)
 
   ##############################################
 
   def onGpuInit(self,ctx):
 
-    if self.is_stereo and (self.extapp==None):
-      self.vrdev = lev2.orkidvr.novr_device()
-      self.vrdev.camera = "vrcam"
-      self.vrdev.width = 1280
-      self.vrdev.height = 1280
-      self.vrdev.FOVD = 90
+    super().onGpuInit(ctx)
       
+    sceneparams = VarMap() 
+    sceneparams.preset = self.RENDERMODEL
+    sceneparams.SkyboxIntensity = float(0.25)
+    sceneparams.SpecularIntensity = float(5)
+    sceneparams.DiffuseIntensity = float(1)
+    sceneparams.AmbientLight = vec3(0.0)
+    sceneparams.DepthFogDistance = float(1e5)
+    sceneparams.SkyboxTexPathStr = self.envmap
+
     ###################################
-    # create scenegraph
+    # post fx node
     ###################################
 
-    if self.extapp==None:
-      params_dict = {
-        "SkyboxTexPathStr": self.envmap,
-        "SkyboxIntensity": 1.0,
-        "DiffuseIntensity": 1.0,
-        "SpecularIntensity": 10.0,
-        "AmbientLevel": vec3(0),
-        "DepthFogDistance": 10000.0,
-      }
-      params_dict["preset"] = self.RENDERMODEL
+    postNode = lev2.PostFxNodeHSVG()
+    postNode.hue = 0.0
+    postNode.saturation = 0.85
+    postNode.value = 1.0
+    postNode.gamma = 0.9
+    postNode.gpuInit(ctx,8,8);
+    postNode.addToSceneVars(sceneparams,"PostFxChain")
+    self.post_node = postNode
 
-      ##################
-      # create model / sg node
-      ##################
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer_donly = self.scene.createLayer("depth_prepass")
+    self.layer_fwd = self.scene.createLayer("std_forward")
+    self.fwd_layers = [self.layer_fwd,self.layer_donly]
+    self.pbr_common = self.scene.pbr_common
+    self.pbr_common.useFloatColorBuffer = True
 
-      createSceneGraph(app=self,params_dict=params_dict)
-      self.lyr_donly = self.scene.createLayer("depth_prepass")
-      self.lyr_fwd = self.layer1
-      self.fwd_layers = [self.lyr_fwd,self.lyr_donly]
-     ###################################
+    ###################################
+    # create model
+    ###################################
 
-    self.grid_data = createGridData(extent=1000)
+    model = lev2.XgmModel("data://tests/misc_gltf_samples/lion.glb")
+    model.debugRenderingModel = tokens.ALL if self.statedebug else tokens.NONE
+    model.debugPassID = tokens.PRIMARY if self.statedebug else tokens.NONE
+    model.debugSubPassID = tokens.ALL if self.statedebug else tokens.NONE
+    self.drawable_model = model.createDrawable()
+    self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
+    self.modelnode.worldTransform.scale = 1.5
+    self.modelnode.worldTransform.translation = vec3(0,1,0)
 
-    self.grid_data.shader_suffix = "_V3"
-    self.grid_data.modcolor = vec3(1,1.2,1.3)*2
-    self.grid_data.majorTileDim = 1.0
-    self.grid_node = self.lyr_fwd.createDrawableNodeFromData("grid",self.grid_data)
-    self.grid_node.sortkey = 100
+    ###################################
+    # create grid
+    ###################################
 
-    self.ball_model = lev2.XgmModel("data://tests/pbr_calib.glb")
-    self.cookie1 = MyCookie("src://effect_textures/knob2.png")
+    self.grid_data = createGridData(extent=1000.0)
+    self.grid_data.shader_suffix = "_V4"
+    self.grid_data.modcolor = vec3(1.0)
+    self.grid_data.intensityA = 1.0
+    self.grid_data.intensityB = 0.97
+    self.grid_data.intensityC = 0
+    self.grid_data.intensityD = 0
+    self.grid_data.lineWidth = 0.025
+    self.grid_node = self.layer_fwd.createDrawableNodeFromData("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ##############################################
   # create imposter
   ##############################################
 
-    imposter = createImposter( context=ctx,
-                               radius=1.0,
-                               filtertype=tokens.BILINEAR,
-                               filterradius=3.0, 
-                               detail=3,
-                               shaderpath=this_dir/"i5.glfx",
-                               shadertek="tek_imp",
-                               layer=self.lyr_fwd,
-                               DIM = IMP_DIM,
-                               is_stereo=self.is_stereo )
-    
-    imp_mtl = imposter.imp_mtl
-    imp_pass = imposter.impdata.imp_pass
-    imp_pass.pipeline.bindParam(imp_mtl.param("m"),  tokens.RCFD_M )
-    imp_pass.pipeline.bindParam(imp_mtl.param("vp"),  tokens.RCFD_Camera_VP_Mono )
-    imp_pass.pipeline.bindParam(imp_mtl.param("inv_vp"), tokens.RCFD_Camera_IVP_Mono )
-    imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
-    imp_pass.pipeline.bindParam(imp_mtl.param("ViewportSize"), tokens.FBI_RTG_DIM )
-    imp_pass.pipeline.bindParam(imp_mtl.param("InvViewportSize"), tokens.FBI_RTG_INVDIM )
-    imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*2.3)
-    imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
-    imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
-    imp_pass.pipeline.bindParam(imp_mtl.param("SSAOMap"), tokens.RCFD_PBR_WHITE_2DMAP )
-    imp_pass.pipeline.bindParam(imp_mtl.param("MapDiffuseEnv"), tokens.RCFD_PBR_DIFFUSE_ENV )
-    imp_pass.pipeline.bindParam(imp_mtl.param("MapSpecularEnv"), tokens.RCFD_PBR_SPECULAR_ENV )
-    imp_pass.pipeline.bindParam(imp_mtl.param("LightMapColors"), tokens.RCFD_PBR_LIGHTMAP_COLORS )
-    imp_pass.pipeline.bindParam(imp_mtl.param("EyePostion"), tokens.RCFD_EYE_POSITION )
-    imp_pass.pipeline.bindParam(imp_mtl.param("AmbientLevel"), vec3(0) )
-    imp_pass.pipeline.bindParam(imp_mtl.param("SkyboxLevel"), 1.0 )
-    imp_pass.pipeline.bindParam(imp_mtl.param("DiffuseLevel"), 1.0 )
-    imp_pass.pipeline.bindParam(imp_mtl.param("SpecularLevel"), 1.0 )
-    imp_pass.pipeline.bindParam(imp_mtl.param("RoughnessLevels"), 16.0 )
+    if True:
+      imposter = createImposter( context=ctx,
+                                 radius=1.0,
+                                 filtertype=tokens.BILINEAR,
+                                 filterradius=3.0, 
+                                 detail=3,
+                                 shaderpath=this_dir/"i5.glfx",
+                                 shadertek="tek_imp",
+                                 layer=self.layer_fwd,
+                                 DIM = IMP_DIM,
+                                 is_stereo=self.is_stereo,
+                                 use_pbr=True )
+      
+      imp_mtl = imposter.imp_mtl
+      imp_pass = imposter.impdata.imp_pass
+      imp_pass.pipeline.bindParam(imp_mtl.param("raydir"), tokens.RCFD_Camera_ZNORMAL_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("time"), lambda: self.time*3.0)
 
-    imposter.installStandardBlit()
+      imposter.installStandardBlit()
 
-    self.imposter = imposter
+      self.imposter = imposter
 
     # debug shader state ?      
     #imposter.impdata.imp_pass.debug_shaderstate = True
     #imposter.impdata.blit_pass.debug_shaderstate = True
 
-  ##############################################
+    ###################################
+    # create spotlights
+    ###################################
 
-  def onUiEvent(self,uievent):
-    res = lev2.ui.HandlerResult()
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-    return res
+    lmgr = self.scene.lightingmanager
+    color_cookies = lmgr.spot_cookies_color
+    depth_cookies = lmgr.spot_cookies_depth
+    color_cookies.needsIrradianceCache = True
+    color_cookies.resize(1024,1024,5,tokens.RGB8,True)
+    depth_cookies.resize(1024,1024,5,tokens.Z32F,True)
+
+    cookie1 = color_cookies.load("src://effect_textures/L0D.png")
+    cookie2 = color_cookies.load("lev2://textures/transponder24.png")
+    cookie3 = color_cookies.load("src://effect_textures/knob2.png")
+    cookie4 = color_cookies.load("src://effect_textures/knob2.png")
+    depth1 = depth_cookies.slice(0)
+    depth2 = depth_cookies.slice(1)
+    depth3 = depth_cookies.slice(2)
+    depth4 = depth_cookies.slice(3)
+    shadow_size = 2048
+    shadow_bias = 1e-4
+    intens_scale = 0.5
+    speed_scale = 0.5
+    self.spotlight1 = MySpotLight(index=0,app=self,model=model,frq=0.17*speed_scale,color=vec3(0,150,0)*intens_scale,cookie=cookie1,depth_cookie=depth1,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.2)
+    self.spotlight2 = MySpotLight(index=1,app=self,model=model,frq=0.37*speed_scale,color=vec3(300,0,0)*intens_scale,cookie=cookie2,depth_cookie=depth2,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=1.5)
+    self.spotlight3 = MySpotLight(index=2,app=self,model=model,frq=0.57*speed_scale,color=vec3(100)*intens_scale,cookie=cookie3,depth_cookie=depth3,fovbase=60.0,fovamp=20.0,voffset=10,vscale=5,bias=shadow_bias,dim=shadow_size,radius=2.0)
+    self.spotlight4 = MySpotLight(index=3,app=self,model=model,frq=0.97*speed_scale,color=vec3(0,0,200)*intens_scale,cookie=cookie4,depth_cookie=depth4,fovbase=70.0,fovamp=20.0,voffset=3,vscale=2,bias=shadow_bias,dim=shadow_size,radius=7)
 
   ################################################
 
   def onUpdate(self,updinfo):
-    abstime = updinfo.absolutetime
-    self.time = abstime
-    #########################
-    if (self.extapp==None):
-      if self.is_stereo:
-        x = math.sin(abstime*0.1)
-        z = -math.cos(abstime*0.1)
-        xf_hmd = mtx4.lookAt( vec3(x,0.5,z)*3.0,  # eye
-                              vec3(0,0,0),        # tgt
-                              vec3(0,1,0))        # up
-        self.vrdev.setPoseMatrix("hmd",xf_hmd)
-      self.scene.updateScene(self.cameralut) 
-    #########################
+    super().onUpdate(updinfo)
 
   ################################################
 
   def onGpuUpdate(self,ctx):
-    self.imposter.onGpuUpdate(ctx)
-    findex = self.imposter.frame_index
-    x = math.sin(findex*0.005)
-    z = -math.cos(findex*0.005)
-    pos = vec3(x,0,z)
-    #self.imposter.sgnode.worldTransform.translation = pos
-    #self.imposter.impdata.enable_Lanczos_blit = ((int(findex)%800)<400)
-    #print(self.imposter.impdata.enable_Lanczos_blit)
+    if hasattr(self,"imposter"):
+      self.imposter.onGpuUpdate(ctx)
+      z = math.sin(self.imposter.frame_index*0.01)*2.0
+      self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
+    self.spotlight1.update(self.lighttime)
+    self.spotlight2.update(self.lighttime)
+    self.spotlight3.update(self.lighttime)
+    self.spotlight4.update(self.lighttime)
+    if hasattr(self,"sgnode_frustum"):
+      self.layer_fwd.removeDrawableNode(self.sgnode_frustum )
+
 ###############################################################################
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='scenegraph example')
-  parser.add_argument("--stereo", action="store_true", help='enable stereo rendering')
-  parser.add_argument("-e", "--envmap", type=str, default="cold", help='environment map')
-  ################################################################################
-  args = vars(parser.parse_args())
-  is_stereo = args["stereo"]
-  envmap = args["envmap"]
-  ImposterApp(is_stereo=is_stereo,envmap=envmap).ezapp.mainThreadLoop()
+  boilerplate.run(ImposterApp)

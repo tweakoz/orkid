@@ -33,17 +33,14 @@ libblock lib_X        //
   float myWorldSDF(vec3 p) {
     float radius = sin(time*1.0) * 0.1 + 0.65; // oscillating radius
     vec3 sphere_center = m[3].xyz; // center of the sphere @ node position
+    float sphere_dist = length(p - sphere_center) - radius;
     float angleXY = atan(p.y - sphere_center.y, p.x - sphere_center.x);
     float angleYZ = atan(p.y - sphere_center.y, p.z - sphere_center.z);
-    float sphere_dist = length(p - sphere_center) - radius;
     float displacement = 0.0;
     displacement += sin(angleXY*10.0 + time * 1.5) * 0.1; // oscillating displacement
     displacement += -cos(angleYZ*3.0 + time * 2.7) * 0.1; // oscillating displacement
     sphere_dist += displacement; // apply displacement to the sphere distance
-    float NN = 1.0+cellnoise(p*7)*0.25;
-    float NN2 = 1.0+noise(p*7)*0.25;
-    sphere_dist += NN2 * 0.03; // apply noise-based displacement
-    sphere_dist += NN * 0.03; // apply cell noise scaling
+    float NN2 = 1.0+noise(p*7)*0.5;
     return sphere_dist;
   }
   vec3 myWorldNormal(vec3 p) {
@@ -74,6 +71,7 @@ fragment_shader ps_imp      //
     : uset_frg_fwd          //
     : ublk_frg_fwd_lighting //
     : uset_frg_i4           //
+    : uset_std_lighting     //
     : lib_X               { //
 
   float radius = sin(time*1.0) * 0.1 + 0.65; // oscillating radius
@@ -82,7 +80,7 @@ fragment_shader ps_imp      //
   // raymarch sphere of radius 0.75
 
   vec3 rayori = frg_wpos.xyz; // surface of imposter sphere
-  const float STEPRATE = 0.02;
+  const float STEPRATE = 0.01;
   const float maxdist = 2.5;
   const float _EPSILON = 0.0005;
   const int MAX_STEPS = 500;
@@ -114,14 +112,15 @@ fragment_shader ps_imp      //
   pbr._emissive = false;
   float K = curvature(p);
   float K2 = saturateF(1.0-pow(K,4)*0.1);
-  vec3 CA = mix(vec3(1,0,0.0), vec3(1,.4,0), NN); // color based on curvature
-  pbr._albedo = vec3(NN2*0.85,NN*0.85, K2);
+  vec3 CA = mix(vec3(1,0.5,0.5), vec3(1,1,1), NN2); // color based on curvature
+  pbr._albedo = mix(CA,vec3(1.0,.7,.3)*NN, K2);//*0.35;
   pbr._metallic = mix(1,0, K2);
-  pbr._roughness = 1-pow(K2,0.125)*2.0; // oscillating roughness
+  pbr._roughness = pow(K2,1.0); // oscillating roughness
   pbr._wpos = p;
   pbr._wnrm = n;
-  vec3 C = pbrEnvironmentLightingXXX(pbr, EyePostion);
-  out_color = vec4(C*float(int(hit)), 1); // debug color
+  vec3 pbr_lit = _forward_lightingX( pbr, EyePostion, vec3(0), vec3(1) );
+  out_color = vec4(pbr_lit*float(int(hit)), 1); // debug color
+  //out_color = vec4(pbr._albedo*float(int(hit)), 1); // debug color
   gl_FragDepth = depthAtWpos(frg_wpos.xyz, vp);
 }
 ////////////////////////////////////////
@@ -133,3 +132,4 @@ technique tek_imp {
     state_block     = default;
   }
 }
+
