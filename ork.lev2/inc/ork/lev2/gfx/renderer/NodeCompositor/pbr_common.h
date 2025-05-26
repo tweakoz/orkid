@@ -146,6 +146,7 @@ struct CommonStuff : public ork::Object {
   texture_ptr_t _texCubeWhite;
   texturearray_ptr_t _texBlackArray;
   texturearray_ptr_t _texWhiteLightMapArray;
+  texturearray_ptr_t _texBlackLightMapArray;
   texture_ptr_t _texBlack;
   texture_ptr_t _texWhite;
   bool _needsGpuInit = true;

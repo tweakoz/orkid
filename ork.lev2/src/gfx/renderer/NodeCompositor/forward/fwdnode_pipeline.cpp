@@ -71,97 +71,18 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 
     // logchan_pbr_fwd->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
-    int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-
-    auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-    // size_t map_length = 16 * (sizeof(fvec4) + sizeof(fvec4) + sizeof(float));
-    auto pl_mapped = FXI->mapUniformBuffer(pl_buffer, 0, pl_buffer->_length);
-
-    size_t i32_stride  = sizeof(int32_t);
-    size_t f32_stride  = sizeof(float);
-    size_t vec4_stride = sizeof(fvec4);
-    size_t mat4_stride = sizeof(fmtx4);
-
-    size_t base_color    = 0;
-    size_t base_sizbias  = base_color + vec4_stride * 64;
-    size_t base_position = base_sizbias + vec4_stride * 64;
-    size_t base_shmtx    = base_position + vec4_stride * 64;
-    size_t base_lighttexid  = base_shmtx + mat4_stride * 64;
-
-    if (0) {
-      printf("base_color<%zu>\n", base_color);
-      printf("base_sizbias<%zu>\n", base_sizbias);
-      printf("base_position<%zu>\n", base_position);
-      printf("base_shmtx<%zu>\n", base_shmtx);
-    }
-    // 16*(16+16+8) = 16*40 = 640
-
-    size_t index = 0;
-    for (auto light : enumlights->_untexturedpointlights) {
-      auto C                                                    = fvec4(light->color(), light->intensity());
-      auto P                                                    = light->worldPosition();
-      float R                                                   = light->radius();
-      size_t v4_offset                                          = index * vec4_stride;
-      pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
-      pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, 0, 0, 1);
-      pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
-      pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = fmtx4();
-      index++;
-    }
-
     auto lmgr = CIMPL->_lightmgr;
     OrkAssert(lmgr);
-    auto clr_cookies = lmgr->_cookies_spot_color; 
-    auto dep_cookies = lmgr->_cookies_spot_depth; 
-
-    int num_texspotlights          = 0;
-    for(int i=0; i<64; i++){
-      pl_mapped->ref<uint32_t>(base_lighttexid + (i * vec4_stride)) = i;
-    }
-    for (auto item : enumlights->_tex2spotlightmap) {
-      for (auto light : item.second) {
-        auto irr = light->_irradianceCookie;
-
-        auto C    = fvec4(light->color(), light->intensity());
-        auto P    = light->worldMatrix().translation();
-        float R   = light->_spdata->GetRange();
-        float B   = light->shadowDepthBias();
-        float SMS = light->_spdata->shadowMapSize();
-
-         if(0){
-          printf( "C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w );
-          printf( "P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z );
-          printf( "R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS );
-         }
-         
-        size_t v4_offset                                          = index * vec4_stride;
-        pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
-        pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
-        pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
-        pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
-        size_t texid_addr = base_lighttexid + (index * vec4_stride);
-        //printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
-
-        int cookie_index = light->_cookieColor->_slice;
-        //cookie_index = rand() % 8;
-        pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
-        index++;
-        num_texspotlights++;
-
-      }
-    }
-
-    //printf( "texlistsize<%d>\n", texlist.size() );
-    pl_mapped->unmap();
 
     ///////////////////////////////////////////////////////////////////////////
     // bind lighting UBO
     ///////////////////////////////////////////////////////////////////////////
 
-    if (mtl->_parUnTexPointLightsCount)
-      FXI->bindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
+    if (mtl->_parUnTexPointLightsCount) {
+      FXI->bindParamInt(mtl->_parUnTexPointLightsCount, enumlights->_num_active_untextured_pointlights);
+    }
     if (mtl->_parUnTexPointLightsData) {
-      //printf( "binding lighting UBO\n");
+      auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
       FXI->bindUniformBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
     }
 
@@ -170,12 +91,9 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
     ///////////////////////////////////////////////////////////////////////////
  
      if (mtl->_parTexSpotLightsCount) {
-      FXI->bindParamInt(mtl->_parTexSpotLightsCount, num_texspotlights);
-      // TODO use dep_cookies (and make sure dep_cookies filled in by depth pass of shadow/lights)
-      //FXI->bindParamTextureArray(mtl->_parLightDepthCookies, mtl->_texWhiteLightMapArray.get() );
-      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, dep_cookies.get() );
-      FXI->bindParamTextureArray(mtl->_parLightColorCookies, clr_cookies.get() );
-
+      FXI->bindParamInt(mtl->_parTexSpotLightsCount, enumlights->_num_active_texspotlights);
+      FXI->bindParamTextureArray(mtl->_parLightDepthCookies, lmgr->_cookies_spot_depth.get() );
+      FXI->bindParamTextureArray(mtl->_parLightColorCookies, lmgr->_cookies_spot_color.get() );
     }
     FXI->bindParamTextureArray( mtl->_paramMapCNMREA, mtl->_texArrayCNMREA.get() );
 

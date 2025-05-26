@@ -323,12 +323,14 @@ void CommonStuff::onGpuInit(Context* ctx) {
   _texCubeWhite = TXI->createColorCubeTexture(fvec4(1, 1, 1, 1), 64,64);
   _texBlackArray = TXI->createColorTextureV3Array(fvec3(0, 0, 0), 64, 64, 32);
   _texWhiteLightMapArray = TXI->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 32);
+  _texBlackLightMapArray = TXI->createColorTextureV3Array(fvec3(0,0,0), 64, 64, 32);
   _texBlack->_debugName = "black";
   _texWhite->_debugName = "white";
   _texCubeBlack->_debugName = "black_cube";
   _texCubeWhite->_debugName = "white_cube";
   _texBlackArray->_debugName = "black_array";
   _texWhiteLightMapArray->_debugName = "white_lightmap_array";
+  _texBlackLightMapArray->_debugName = "white_lightmap_array";
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::pbr

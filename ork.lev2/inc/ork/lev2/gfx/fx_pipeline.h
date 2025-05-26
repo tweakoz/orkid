@@ -70,6 +70,7 @@ struct FxPipeline {
   int beginBlock(const RenderContextInstData& RCID);
   void endBlock(const RenderContextInstData& RCID);
   void bindParam(fxparam_constptr_t p, varval_t v);
+  void bindUniformBuffer(fxuniformblock_constptr_t p, varval_t v);
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
   void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
@@ -81,6 +82,7 @@ struct FxPipeline {
   fxtechnique_constptr_t _technique = nullptr;
   const FxPipelinePermutation __permutation;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
+  std::unordered_map<fxuniformblock_constptr_t, varval_t> _uniformbuffers;
   std::vector<statelambda_t> _statelambdas;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
   fxparam_constptr_t _parInstanceIdMap     = nullptr;

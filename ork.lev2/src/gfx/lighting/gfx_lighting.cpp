@@ -46,8 +46,7 @@ float Light::distance(fvec3 pos) const {
 
 void LightData::describeX(class_t* c) {
 
-  c->directProperty("Color", &LightData::mColor)
-      ->annotate<ConstString>("editor.type", "color" );
+  c->directProperty("Color", &LightData::mColor)->annotate<ConstString>("editor.type", "color");
 
   c->directProperty("Intensity", &LightData::_intensity)
       ->annotate<float>("editor.range.min", 0)
@@ -89,30 +88,27 @@ lev2::texture_ptr_t LightData::cookie() const {
 }
 
 Light::Light(const LightData* ld)
-      : _data(ld)
-      , mPriority(0.0f)
-      , _dynamic(false)
-  {
-    /*if(ld){
-      _cookieTexture = ld->cookie();
-    }*/
+    : _data(ld)
+    , mPriority(0.0f)
+    , _dynamic(false) {
+  /*if(ld){
+    _cookieTexture = ld->cookie();
+  }*/
 
-    _xformgenerator = []->fmtx4 {
-      return fmtx4();
-    };
-  }
+  _xformgenerator = [] -> fmtx4 { return fmtx4(); };
+}
 
-  Light::Light(xform_generator_t mtx, const LightData* ld)
-      : _data(ld)
-      , _xformgenerator(mtx)
-      , mPriority(0.0f)
-      , _dynamic(false) {
-    /*if(ld){
-      _cookieTexture = ld->cookie();
-    }*/
-  }
-  Light::~Light() {
-  }
+Light::Light(xform_generator_t mtx, const LightData* ld)
+    : _data(ld)
+    , _xformgenerator(mtx)
+    , mPriority(0.0f)
+    , _dynamic(false) {
+  /*if(ld){
+    _cookieTexture = ld->cookie();
+  }*/
+}
+Light::~Light() {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,7 +124,7 @@ drawable_ptr_t PointLightData::createDrawable() const {
   return std::make_shared<PointLight>(this);
 }
 
-pointlightdata_ptr_t PointLightData::instantiate(){
+pointlightdata_ptr_t PointLightData::instantiate() {
   return std::make_shared<PointLightData>();
 }
 
@@ -186,21 +182,21 @@ bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
 
 DynamicPointLight::DynamicPointLight()
     : PointLight(nullptr) {
-   _inlineData = std::make_shared<PointLightData>();
-    _data = _inlineData.get();
-    _pldata = _inlineData.get();
+  _inlineData = std::make_shared<PointLightData>();
+  _data       = _inlineData.get();
+  _pldata     = _inlineData.get();
 }
 DynamicDirectionalLight::DynamicDirectionalLight()
     : DirectionalLight(nullptr) {
-   _inlineData = std::make_shared<DirectionalLightData>();
-    _data = _inlineData.get();
-    _dldata = _inlineData.get();
+  _inlineData = std::make_shared<DirectionalLightData>();
+  _data       = _inlineData.get();
+  _dldata     = _inlineData.get();
 }
 DynamicSpotLight::DynamicSpotLight()
     : SpotLight(nullptr) {
-   _inlineData = std::make_shared<SpotLightData>();
-    _data = _inlineData.get();
-    _spdata = _inlineData.get();
+  _inlineData = std::make_shared<SpotLightData>();
+  _data       = _inlineData.get();
+  _spdata     = _inlineData.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -312,10 +308,10 @@ float SpotLight::getRange() const {
 
 RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
   if (nullptr == _shadowIRT or (_spdata->shadowMapSize() != _shadowmapDim)) {
-    _shadowmapDim = _spdata->shadowMapSize();
+    _shadowmapDim         = _spdata->shadowMapSize();
     MsaaSamples msaasamps = intToMsaaEnum(_spdata->shadowSamples());
-    _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
-    _shadowIRT    = new RtGroupRenderTarget(_shadowRTG);
+    _shadowRTG            = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
+    _shadowIRT            = new RtGroupRenderTarget(_shadowRTG);
   }
   return _shadowIRT;
 }
@@ -329,7 +325,7 @@ bool SpotLight::IsInFrustum(const Frustum& frustum) {
   fvec3 up        = mtx.yNormal();
   float fovy      = 15.0f;
 
-  //set(pos, tgt, up, fovy);
+  // set(pos, tgt, up, fovy);
 
   return false; // CollisionTester::FrustumFrustumTest( frustum, mWorldSpaceLightFrustum );
 }
@@ -344,7 +340,7 @@ void SpotLight::lookAt(const fvec3& pos, const fvec3& tgt, const fvec3& up) {
   mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
   opq::assertOnQueue(opq::mainSerialQueue());
-  _xformgenerator = [this,pos]() -> fmtx4 {
+  _xformgenerator = [this, pos]() -> fmtx4 {
     fmtx4 rval;
     rval.setTranslation(pos);
     return rval;
@@ -372,7 +368,7 @@ bool SpotLight::AffectsCircleXZ(const Circle& cirXZ) {
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 SpotLight::shadowMatrix() const {
-  return mProjectionMatrix*mViewMatrix;
+  return mProjectionMatrix * mViewMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -410,7 +406,7 @@ CameraData SpotLight::shadowCamDat() const {
 
 void LightContainer::AddLight(Light* plight) {
   float priority = plight->mPriority;
-   _prioritizedLights[priority].insert(plight);
+  _prioritizedLights[priority].insert(plight);
 }
 
 void LightContainer::RemoveLight(Light* plight) {
@@ -420,7 +416,8 @@ void LightContainer::RemoveLight(Light* plight) {
   }
 }
 
-LightContainer::LightContainer(){}
+LightContainer::LightContainer() {
+}
 
 void LightContainer::Clear() {
   _prioritizedLights.clear();
@@ -543,8 +540,8 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
     }
   }
   ////////////////////////////////////////////////////////////
-  for ( auto pri_item : mGlobalMovingLights._prioritizedLights ) {
-    for( auto item : pri_item.second ) {
+  for (auto pri_item : mGlobalMovingLights._prioritizedLights) {
+    for (auto item : pri_item.second) {
       Light* plight = item;
       if (true) { // plight->IsInFrustum(frustum)) {
         size_t idx = out_lights->_alllights.size();
@@ -574,30 +571,29 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlig
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
         auto cookie = as_spot->_cookieColor;
-        if (cookie){
+        if (cookie) {
           out_lights->_tex2shadowedspotlightmap[cookie].push_back(as_spot);
           OrkAssert(false);
         }
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      //auto cookie = as_point->_cookieTexture;
-      //if (cookie)
-        //out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
-      //else
-        out_lights->_untexturedpointlights.push_back(as_point);
+      // auto cookie = as_point->_cookieTexture;
+      // if (cookie)
+      // out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
+      // else
+      out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
       auto cookie = as_spot->_cookieColor;
       bool decal  = as_spot->decal();
       if (decal) {
-        if (cookie){
+        if (cookie) {
           out_lights->_tex2spotdecalmap[cookie].push_back(as_spot);
         }
         OrkAssert(false);
       } else {
-        if (cookie){
+        if (cookie) {
           out_lights->_tex2spotlightmap[cookie].push_back(as_spot);
-        }
-        else{
+        } else {
           out_lights->_untexturedspotlights.push_back(as_spot);
         }
       }
@@ -679,7 +675,7 @@ int LightingGroup::GetLightId(int idx) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingGroup::LightingGroup()
-    : _manager( nullptr )
+    : _manager(nullptr)
     , mLightMap(0)
     , mDPEnvMap(0) {
 }
@@ -687,9 +683,9 @@ LightingGroup::LightingGroup()
 ///////////////////////////////////////////////////////////////////////////////
 
 LightManager::LightManager(lightmanagerdata_constptr_t lmd)
-: _data(lmd) {
-  _cookies_spot_color = std::make_shared<TextureArray>();
-  _cookies_spot_depth = std::make_shared<TextureArray>();
+    : _data(lmd) {
+  _cookies_spot_color                   = std::make_shared<TextureArray>();
+  _cookies_spot_depth                   = std::make_shared<TextureArray>();
   _cookies_spot_color->_tex->_debugName = "cookies_spot_color";
   _cookies_spot_depth->_tex->_debugName = "cookies_spot_depth";
 }
@@ -699,9 +695,9 @@ LightManager::LightManager(lightmanagerdata_constptr_t lmd)
 HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     : mHeadLight([this]() -> fmtx4 { return mHeadLightMatrix; }, &mHeadLightData) {
 
-      _managerdata = std::make_shared<LightManagerData>();
-      _manager     = std::make_shared<LightManager>(_managerdata);
-  auto cdata = FrameData.topCPD().cameraMatrices();
+  _managerdata = std::make_shared<LightManagerData>();
+  _manager     = std::make_shared<LightManager>(_managerdata);
+  auto cdata   = FrameData.topCPD().cameraMatrices();
   /*
   auto camvd = cdata->computeMatrices();
     ork::fvec3 vZ = cdata->xNormal();
@@ -717,6 +713,91 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     mHeadLightMatrix.SetTranslation( vP );
     mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
     mHeadLightManager._alllights.push_back(& mHeadLight);*/
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LightManager::bindEnumeratedToUniformBuffer( Context* ctx, enumeratedlights_ptr_t enumerated_lights, FxUniformBuffer* ubo ) const {
+
+  auto FXI = ctx->FXI();
+  ///////////////////////////////////////////////////////////////////////////
+  // build lighting UBO
+  ///////////////////////////////////////////////////////////////////////////
+
+  auto pl_mapped = FXI->mapUniformBuffer(ubo, 0, ubo->_length);
+
+  size_t i32_stride  = sizeof(int32_t);
+  size_t f32_stride  = sizeof(float);
+  size_t vec4_stride = sizeof(fvec4);
+  size_t mat4_stride = sizeof(fmtx4);
+
+  size_t base_color      = 0;
+  size_t base_sizbias    = base_color + vec4_stride * 64;
+  size_t base_position   = base_sizbias + vec4_stride * 64;
+  size_t base_shmtx      = base_position + vec4_stride * 64;
+  size_t base_lighttexid = base_shmtx + mat4_stride * 64;
+
+  if (0) {
+    printf("base_color<%zu>\n", base_color);
+    printf("base_sizbias<%zu>\n", base_sizbias);
+    printf("base_position<%zu>\n", base_position);
+    printf("base_shmtx<%zu>\n", base_shmtx);
+  }
+  // 16*(16+16+8) = 16*40 = 640
+
+  size_t index = 0;
+  for (auto light : enumerated_lights->_untexturedpointlights) {
+    auto C                                                    = fvec4(light->color(), light->intensity());
+    auto P                                                    = light->worldPosition();
+    float R                                                   = light->radius();
+    size_t v4_offset                                          = index * vec4_stride;
+    pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
+    pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, 0, 0, 1);
+    pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
+    pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = fmtx4();
+    index++;
+  }
+  enumerated_lights->_num_active_untextured_pointlights = enumerated_lights->_untexturedpointlights.size(); 
+
+  for (int i = 0; i < 64; i++) {
+    pl_mapped->ref<uint32_t>(base_lighttexid + (i * vec4_stride)) = i;
+  }
+  enumerated_lights->_num_active_texspotlights = 0;
+  for (auto item : enumerated_lights->_tex2spotlightmap) {
+    for (auto light : item.second) {
+      auto irr = light->_irradianceCookie;
+
+      auto C    = fvec4(light->color(), light->intensity());
+      auto P    = light->worldMatrix().translation();
+      float R   = light->_spdata->GetRange();
+      float B   = light->shadowDepthBias();
+      float SMS = light->_spdata->shadowMapSize();
+
+      if (0) {
+        printf("C<%zu> <%g %g %g %g>\n", index, C.x, C.y, C.z, C.w);
+        printf("P<%zu> <%g %g %g>\n", index, P.x, P.y, P.z);
+        printf("R<%zu> <%f> B<%f> SMS<%f>\n", index, R, B, SMS);
+      }
+
+      size_t v4_offset                                          = index * vec4_stride;
+      pl_mapped->ref<fvec4>(base_color + v4_offset)             = C;
+      pl_mapped->ref<fvec4>(base_sizbias + v4_offset)           = fvec4(R, B, SMS, 1);
+      pl_mapped->ref<fvec4>(base_position + v4_offset)          = P;
+      pl_mapped->ref<fmtx4>(base_shmtx + (index * mat4_stride)) = light->shadowMatrix();
+      size_t texid_addr                                         = base_lighttexid + (index * vec4_stride);
+      // printf( "TEXID ADDR<%zu> ID<%d>\n", tex_addr, num_texspotlights );
+
+      int cookie_index = light->_cookieColor->_slice;
+      // cookie_index = rand() % 8;
+      pl_mapped->ref<uint32_t>(texid_addr) = uint32_t(cookie_index);
+      index++;
+      enumerated_lights->_num_active_texspotlights++;
+    }
+  }
+
+  // printf( "texlistsize<%d>\n", texlist.size() );
+  pl_mapped->unmap();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
