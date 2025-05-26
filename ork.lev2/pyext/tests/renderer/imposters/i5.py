@@ -57,9 +57,9 @@ class ImposterApp(boilerplate.ImposterBaseApp):
 
     postNode = lev2.PostFxNodeHSVG()
     postNode.hue = 0.0
-    postNode.saturation = 0.85
+    postNode.saturation = 0.7
     postNode.value = 1.0
-    postNode.gamma = 0.9
+    postNode.gamma = 0.8
     postNode.gpuInit(ctx,8,8);
     postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
@@ -167,7 +167,7 @@ class ImposterApp(boilerplate.ImposterBaseApp):
   def onGpuUpdate(self,ctx):
     if hasattr(self,"imposter"):
       self.imposter.onGpuUpdate(ctx)
-      z = math.sin(self.imposter.frame_index*0.01)*2.0
+      z = math.sin(self.imposter.frame_index*0.003)*2.0
       self.imposter.sgnode.worldTransform.translation = vec3(0,0.1,z)
     self.spotlight1.update(self.lighttime)
     self.spotlight2.update(self.lighttime)

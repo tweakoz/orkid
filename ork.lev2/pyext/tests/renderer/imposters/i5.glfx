@@ -111,11 +111,11 @@ fragment_shader ps_imp      //
   PbrData pbr;
   pbr._emissive = false;
   float K = curvature(p);
-  float K2 = saturateF(1.0-pow(K,4)*0.1);
-  vec3 CA = mix(vec3(1,0.5,0.5), vec3(1,1,1), NN2); // color based on curvature
-  pbr._albedo = mix(CA,vec3(1.0,.7,.3)*NN, K2);//*0.35;
+  float K2 = saturateF(1.0-pow(K,4)*0.3);
+  vec3 CA = vec3(1,1,2)*saturateF(pow(NN*0.75,2));//, vec3(1,1,1), NN2); // color based on curvature
+  pbr._albedo = mix(CA,vec3(3,2,1)*NN*2, K2);//*0.35;
   pbr._metallic = mix(1,0, K2);
-  pbr._roughness = pow(K2,1.0); // oscillating roughness
+  pbr._roughness = 1.0-pow(K2,1.0); // oscillating roughness
   pbr._wpos = p;
   pbr._wnrm = n;
   vec3 pbr_lit = _forward_lightingX( pbr, EyePostion, vec3(0), vec3(1) );
