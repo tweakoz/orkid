@@ -116,6 +116,7 @@ namespace opengl{
   void touchClasses();
 }
 
+
 void registerEnums();
 
 ork::lev2::context_ptr_t gloadercontext;

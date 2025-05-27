@@ -11,13 +11,11 @@ add_executable (ork.test.lev2.exe ${testsrcs} )
 
 ork_std_target_opts(ork.test.lev2.exe)
 
-target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_utpp )
-target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_core )
-target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_lev2 )
-
-set_target_properties(ork.test.lev2.exe PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.test.lev2.exe PRIVATE ${ORKROOT}/ork.core/inc )
-target_include_directories (ork.test.lev2.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.test.lev2.exe PRIVATE ${SRCD} )
+
+ork_std_target_opts_exe(ork.test.lev2.exe)
+ork_std_target_opts_core(ork.test.lev2.exe)
+ork_std_target_opts_lev2(ork.test.lev2.exe)
+ork_std_target_opts_utpp(ork.test.lev2.exe)
 
 install(TARGETS ork.test.lev2.exe DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )

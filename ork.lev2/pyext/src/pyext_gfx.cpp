@@ -180,7 +180,7 @@ void pyinit_gfx(py::module& module_lev2) {
 #if defined(ENABLE_SSBO)
       .def(
           "createShaderStorageBufferWithLength",
-          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return ci.get()->createStorageBuffer(length); })
+          [](ci_t& ci, size_t length) -> fxshaderstoragebuffer_ptr_t { return fxshaderstoragebuffer_ptr_t(ci.get()->createStorageBuffer(length)); })
       .def(
           "copyDataIntoShaderStorageBuffer",
           [](ci_t& ci, py::object data, fxshaderstoragebuffer_ptr_t buffer, size_t dest_offset) { //
@@ -199,7 +199,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def(
           "createShaderStorageBufferFromTensor",
           [](ci_t& ci, torchtensor_ptr_t tensor) -> fxshaderstoragebuffer_ptr_t {
-            return ci.get()->storageBufferFromTensor(tensor);
+            return fxshaderstoragebuffer_ptr_t(ci.get()->storageBufferFromTensor(tensor));
           })
       .def(
           "copyTensorIntoShaderStorageBuffer",
