@@ -25,8 +25,10 @@ tokens = CrcStringProxy()
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument('-S', '--stateDebugger', action="store_true", help='Graphics state debugger')
 ################################################################################
 args = vars(parser.parse_args())
+statedebug = args["stateDebugger"]
 ################################################################################
 
 class StereoApp1(object):
@@ -97,6 +99,9 @@ class StereoApp1(object):
     ###################################
 
     model = lev2.XgmModel("data://tests/pbr_calib.glb")
+    model.debugRenderingModel = tokens.ALL if statedebug else tokens.NONE
+    model.debugPassID = tokens.PRIMARY if statedebug else tokens.NONE
+    model.debugSubPassID = tokens.ALL if statedebug else tokens.NONE
     self.drawable_model = model.createDrawable()
     self.modelnode = self.scene.createDrawableNodeOnLayers(self.fwd_layers,"model-node",self.drawable_model)
     self.modelnode.worldTransform.scale = 1

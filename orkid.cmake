@@ -261,16 +261,18 @@ IF(${APPLE})
 ELSEIF(${UNIX})
   function(ork_torch_opts the_target)
   set(TORCHLIB_DIR $ENV{OBT_PYPKG}/torch/lib )
-  target_include_directories(${the_target} PUBLIC /usr/local/cuda-12.8/include )
-  target_include_directories(${the_target} PUBLIC $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
-  target_link_directories(${the_target} PUBLIC /usr/local/cuda-12.8/lib64 )
+  target_include_directories(${the_target} PRIVATE /usr/local/cuda-12.8/include )
+  target_include_directories(${the_target} PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
+  target_link_directories(${the_target} PRIVATE /usr/local/cuda-12.8/lib64 )
   #target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
   # explicitly link to the torch libraries
   # (so LD_LIBRARY_PATH is not needed)
-  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
-  target_link_libraries(${the_target} LINK_PRIVATE cuda cudart cublas curand )
-  target_link_libraries(${the_target} LINK_PUBLIC ${TORCHLIB_DIR}/libc10.so )
-  endfunction()
+  
+  target_link_libraries(${the_target} PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
+  target_link_libraries(${the_target} PRIVATE cuda cudart cublas curand )
+  target_link_libraries(${the_target} PRIVATE ${TORCHLIB_DIR}/libc10.so )
+
+    endfunction()
 ENDIF()
 
 #############################################################################################################
@@ -306,12 +308,78 @@ endfunction()
 
 #############################################################################################################
 
-function(ork_lev2_target_opts_compiler the_target)
-  ork_std_target_opts_compiler(${the_target})
+function(ork_core_target_opts_compiler the_target)
   target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.core/inc )
+endfunction()
+
+function(ork_core_target_opts_linker the_target)
+  target_link_libraries(${the_target} LINK_PRIVATE ork_core )
+  target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.core/inc )
+endfunction()
+
+function(ork_std_target_opts_core the_target)
+  ork_core_target_opts_compiler(${the_target})
+  ork_core_target_opts_linker(${the_target})
+endfunction()
+
+#############################################################################################################
+
+function(ork_lev2_target_opts_compiler the_target)
   target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.lev2/inc )
-  target_include_directories (${the_target} PRIVATE ${SRCD} )
+  # suppress pytorch warnings
+  target_compile_options(${the_target} PRIVATE -Wno-gnu-zero-variadic-macro-arguments )
+  endfunction()
+
+function(ork_lev2_target_opts_linker the_target)
+  target_link_libraries(${the_target} LINK_PRIVATE ork_lev2 )
+  target_link_libraries(${the_target} LINK_PRIVATE Boost::system )
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
+  set_target_properties(${the_target} PROPERTIES
+    INSTALL_RPATH $ENV{OBT_PYPKG}/torch/lib
+    BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endfunction()
+
+function(ork_std_target_opts_lev2 the_target)
+  ork_lev2_target_opts_compiler(${the_target})
+  ork_lev2_target_opts_linker(${the_target})
+endfunction()
+
+#############################################################################################################
+
+function(ork_ecs_target_opts_compiler the_target)
+  target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.ecs/inc )
+  target_include_directories (${the_target} PRIVATE $ENV{OBT_STAGE}/include/luajit-2.1 )
+  endfunction()
+
+function(ork_ecs_target_opts_linker the_target)
+  target_link_libraries(${the_target} LINK_PRIVATE ork_ecs )
+  target_link_libraries(${the_target} LINK_PRIVATE Boost::system )
+  set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
+  set_target_properties(${the_target} PROPERTIES
+    INSTALL_RPATH $ENV{OBT_PYPKG}/torch/lib
+    BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endfunction()
+
+function(ork_std_target_opts_ecs the_target)
+  ork_ecs_target_opts_compiler(${the_target})
+  ork_ecs_target_opts_linker(${the_target})
+endfunction()
+
+#############################################################################################################
+
+function(ork_utpp_target_opts_compiler the_target)
+  target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.utpp/inc )
+endfunction()
+
+function(ork_utpp_target_opts_linker the_target)
+  target_link_libraries(${the_target} LINK_PRIVATE ork_utpp )
+endfunction()
+
+function(ork_std_target_opts_utpp the_target)
+  ork_utpp_target_opts_compiler(${the_target})
+  ork_utpp_target_opts_linker(${the_target})
 endfunction()
 
 #############################################################################################################
@@ -324,6 +392,33 @@ function( ork_ecs_target_opts_compiler the_target)
   target_include_directories (${the_target} PRIVATE ${ORKROOT}/ork.ecs/src )
   target_include_directories (${the_target} PRIVATE ${SRCD} )
   target_include_directories (${the_target} PRIVATE $ENV{OBT_STAGE}/include/luajit-2.1 )
+endfunction()
+
+#############################################################################################################
+
+function(setupCoreEXE target sources)
+  add_executable (${target} ${sources} ${ARGN} )
+  ork_std_target_opts_exe(${target})
+  ork_std_target_opts_core(${target})
+endfunction()
+
+#############################################################################################################
+
+function(setupLev2EXE target sources)
+  add_executable (${target} ${sources} ${ARGN} )
+  ork_std_target_opts_exe(${target})
+  ork_std_target_opts_core(${target})
+  ork_std_target_opts_lev2(${target})
+endfunction()
+
+#############################################################################################################
+
+function(setupEcsEXE target sources)
+  add_executable (${target} ${sources} ${ARGN} )
+  ork_std_target_opts_exe(${target})
+  ork_std_target_opts_core(${target})
+  ork_std_target_opts_lev2(${target})
+  ork_std_target_opts_ecs(${target})
 endfunction()
 
 #############################################################################################################

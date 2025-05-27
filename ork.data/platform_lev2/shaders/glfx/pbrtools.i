@@ -1,147 +1,60 @@
-import "orkshader://gbuftools.i";
-import "orkshader://brdftools.i";
-import "orkshader://deftools.i";
-import "orkshader://fwdtools.i";
-import "orkshader://skintools.i";
+import "gbuftools.i";
+import "brdftools.i";
+import "deftools.i";
+import "fwdtools.i";
+import "skintools.i";
+import "stdtools.i";
+import "mathtools.i";
+import "ssaotools.i";
+import "envtools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx {
-  mat4 m;
-  mat4 v;
-  mat4 mv;
-  mat4 vp;
-  mat4 v_l;
-  mat4 v_r;
-  mat4 vp_l;
-  mat4 vp_r;
-  mat4 inv_vp;
-  mat4 inv_vp_l;
-  mat4 inv_vp_r;
-  mat4 mvp;
-  mat4 mvp_l;
-  mat4 mvp_r;
-  mat3 mrot;
+uniform_set ub_vtx        //
+  : uset_std_matrices     //
+  : uset_std_viewport     //
+  : uset_std_instancing { //
   vec4 modcolor;
-  vec2 InvViewportSize; // inverse target size
-  sampler2D InstanceMatrices;
-  sampler2D InstanceColors;
-  usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
-  //sampler2D ColorMap;
-  //sampler2D NormalMap;
-  //sampler2D MtlRufMap;
-
-  sampler2DArray CNMREA;         // 4
-  sampler2D EmissiveMap;
-
-  samplerCube reflectionPROBE;
-  samplerCube irradiancePROBE;
-  vec4 ModColor;
-  uint obj_pickID;
-  mat4 v;
-  vec2 InvViewportSize; // inverse target size
-  float MetallicFactor;
-  float RoughnessFactor;
-  float RoughnessPower;
-  vec3 EyePostion;
-  vec4 AuxA;
-  vec4 AuxB;
-  float FilterRadius;
+uniform_set uset_frg        //
+  : uset_std_matrices     // 
+  : uset_std_viewport     // 
+  : uset_std_pbr          //
+  : uset_std_filtering    //
+  : uset_std_aux {        //  
 }
-
-uniform_set ub_frg_fwd {
-
-  sampler2DArray CNMREA;                   // 0
-  sampler2DArray LightMapArray;            // 1
-  sampler2DArray MapSpecularEnv;           // 2
-  sampler2DArray light_cookie_colors;      // 3
-  sampler2DArray light_cookie_depths;      // 4
-
-  sampler2D SSAOMap;            // 5
-  //sampler2D SSAOKernel;         // 6
-  //sampler2D SSAOScrNoise;       // 7
-
-  sampler2D MapBrdfIntegration; // 8
-  sampler2D MapDiffuseEnv;      // 9
-  sampler2D MapDepth;           // 10
-  sampler2D MapLinearDepth;     // 12
-
-  samplerCube reflectionPROBE; // 13
-  samplerCube irradiancePROBE; // 14
-
-  //
-
-  vec3 LightMapColors[8];        
-
-  mat4 m;
-  mat4 vp;
-  mat4 v_l;
-  mat4 v_r;
-  mat4 vp_l;
-  mat4 vp_r;
-  mat4 inv_vp;
-  mat4 inv_mvp;
-  mat4 inv_vp_l;
-  mat4 inv_vp_r;
-
-  float RoughnessLevels;
-
-  float SkyboxLevel;
-  float SpecularLevel;
-  float DiffuseLevel;
-  vec3 AmbientLevel;
-
-  float MetallicFactor;
-  float RoughnessFactor;
-  float RoughnessPower;
-
+///////////////////////////////////////////////////////////////
+uniform_set uset_frg_fwd  //
+  : uset_std_matrices   //
+  : uset_std_viewport   //
+  : uset_std_pbr        //
+  : uset_std_ssao       //
+  : uset_std_aux        //
+  : uset_std_lighting { //
   float DppZBias;
-
-  float DepthFogDistance;
-  float DepthFogPower;
   vec4 ShadowParams;
-
-  float SpecularMipBias;
-
-  float EnvironmentMipBias;
-  float EnvironmentMipScale;
-  vec2 Zndc2eye;
-  mat4 MatP;
-  mat4 MatInvP;
-
-  int point_light_count;
-  int spot_light_count;
-  //sampler2D UnTexPointLightsData;
-
-  //sampler2D light_cookies[8];
-
-  vec4 ModColor;
-  vec4 AuxA;
-  vec4 AuxB;
-  uint obj_pickID;
-  vec3 EyePostion;
-  vec3 EyePostionL;
-  vec3 EyePostionR;
-
-  float FilterRadius;
-  vec2 ViewportSize;
-  vec2 InvViewportSize;
-}
-///////////////////////////////////////////////////////////////
-uniform_block ub_frg_fwd_lighting {
-  vec4 _lightcolor[64];    // 1024 : 1024 
-  vec4 _lightsizbias[64];  // 1024 : 2048
-  vec4 _lightpos[64];      // 1024 : 3072
-  mat4 _shadowmatrix[64];  // 4096 : 7168
-  uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer : ub_vtx {
+vertex_interface vif_PNT : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec3 frg_opos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+}
+vertex_interface vif_PNBT : ub_vtx {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
@@ -151,6 +64,7 @@ vertex_interface iface_vgbuffer : ub_vtx {
   }
   outputs {
     vec4 frg_wpos;
+    vec3 frg_opos;
     vec4 frg_clr;
     vec2 frg_uv0;
     mat3 frg_tbn;
@@ -169,6 +83,7 @@ vertex_interface vif_PNBVT : ub_vtx {
   }
   outputs {
     vec4 frg_wpos;
+    vec3 frg_opos;
     vec4 frg_clr;
     vec2 frg_uv0;
     mat3 frg_tbn;
@@ -178,32 +93,33 @@ vertex_interface vif_PNBVT : ub_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer_instanced : iface_vgbuffer {
+vertex_interface vif_PNBT_instanced : vif_PNBT {
   outputs {
     //vec4 frg_modcolor;
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer_stereo : iface_vgbuffer {
+vertex_interface vif_PNBT_stereo : vif_PNBT {
   outputs {
     layout(secondary_view_offset = 1) int gl_Layer;
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer_stereo_instanced : iface_vgbuffer_instanced {
+vertex_interface vif_PNBT_stereo_instanced : vif_PNBT_instanced {
   outputs {
     layout(secondary_view_offset = 1) int gl_Layer;
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer_skinned : iface_vgbuffer : iface_skintools {
+vertex_interface vif_PNBT_skinned : vif_PNBT : iface_skintools {
 }
 ///////////////////////////////////////////////////////////////
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting {
+fragment_interface fif_forward : uset_frg_fwd : ublk_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
+    vec3 frg_opos;
     vec4 frg_clr;
     vec2 frg_uv0;
     mat3 frg_tbn;
@@ -215,10 +131,24 @@ fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting {
     layout(location = 0) vec4 out_color;
   }
 }
+fragment_interface fif_forward_min : uset_frg_fwd : ublk_frg_fwd_lighting {
+  inputs {
+    vec4 frg_wpos;
+    vec3 frg_opos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    float frg_camdist;
+    vec3 frg_camz;
+    vec4 frg_modcolor;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+  }
+}
 ///////////////////////////////////////////////////////////////
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdprepass : ub_frg_fwd {
+fragment_interface iface_fdprepass : uset_frg_fwd {
   inputs {
     float frg_depth;
   }
@@ -228,7 +158,7 @@ fragment_interface iface_fdprepass : ub_frg_fwd {
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fgbuffer 
- : ub_frg {
+ : uset_frg {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -319,14 +249,14 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_rigid_gbuffer : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_rigid_gbuffer : vif_PNBT : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position = mvp * position;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2)
-    : iface_vgbuffer_stereo : lib_pbr_vtx {
+    : vif_PNBT_stereo : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position                   = mvp_l * position;
   gl_SecondaryPositionNV        = mvp_r * position;
@@ -338,7 +268,7 @@ vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
 // vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced //
-  : iface_vgbuffer_instanced //
+  : vif_PNBT_instanced //
   : lib_pbr_vtx_instanced { //
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
@@ -357,7 +287,7 @@ vertex_shader vs_rigid_gbuffer_instanced //
 vertex_shader vs_rigid_gbuffer_instanced_stereo //
   : extension(GL_NV_stereo_view_rendering) //
   : extension(GL_NV_viewport_array2) //
-  : iface_vgbuffer_stereo_instanced //
+  : vif_PNBT_stereo_instanced //
   : lib_pbr_vtx_instanced { //
   ////////////////////////////////
   int matrix_v     = (gl_InstanceID >> 10);
@@ -381,7 +311,7 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo //
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-skinned
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_skinned_gbuffer : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx {
+vertex_shader vs_skinned_gbuffer : vif_PNBT_skinned : skin_tools : lib_pbr_vtx {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
   vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -401,7 +331,7 @@ vertex_shader vs_rigid_gbuffer_vtxcolor : vif_PNBVT : lib_pbr_vtx {
   frg_clr     = vtxcolor;
   gl_Position = mvp * position;
 }
-vertex_shader vs_forward_rigid_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_forward_rigid_vtxcolor : vif_PNBT : lib_pbr_vtx {
   frg_clr     = vec4(1,1,1,1);//vtxcolor;
   gl_Position = mvp * position;
 }
@@ -411,17 +341,17 @@ fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
   //out_gbuf = packGbuffer(vec3(0,1,0), vec3(1,1,0), vec3(0,0,1), 1, 0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_forward_frgcolor : iface_forward {
+fragment_shader ps_forward_frgcolor : fif_forward {
   out_color = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_rigid_gbuffer_font : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_rigid_gbuffer_font : vif_PNBT : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
   gl_Position = mvp * position;
 }
-vertex_shader vs_rigid_gbuffer_font_instanced : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_rigid_gbuffer_font_instanced : vif_PNBT : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
@@ -533,7 +463,7 @@ vertex_interface iface_vdprepass_skinned_stereo : ub_vtx : iface_skintools {
   }
 }
 
-fragment_interface iface_fdprepass_stereo : ub_frg_fwd {
+fragment_interface iface_fdprepass_stereo : uset_frg_fwd {
   inputs {
     float frg_depthL;
     float frg_depthR;
@@ -643,7 +573,7 @@ fragment_shader ps_forward_depthprepass_stereo
 ///////////////////////////////////////////////////////////////
 // Forward pbr
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_forward_stereo_instanced : iface_vgbuffer_instanced {
+vertex_interface fif_forward_stereo_instanced : vif_PNBT_instanced {
   outputs {
     layout(secondary_view_offset = 1) int gl_Layer;
   }
@@ -654,11 +584,11 @@ vertex_shader vs_forward_test_vtxcolor : vif_PNBVT : lib_pbr_vtx {
   gl_Position = mvp * position;
   frg_clr = vtxcolor;
 }
-vertex_shader vs_forward_test : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_forward_test : vif_PNBT : lib_pbr_vtx {
   vs_common(position, normal, binormal);
   gl_Position = mvp * position;
 }
-vertex_shader vs_forward_test_stereo : iface_vgbuffer_stereo : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
+vertex_shader vs_forward_test_stereo : vif_PNBT_stereo : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   vs_common(position, normal, binormal);
   gl_Position                   = mvp_l * position;
@@ -667,7 +597,7 @@ vertex_shader vs_forward_test_stereo : iface_vgbuffer_stereo : lib_pbr_vtx : ext
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
-vertex_shader vs_forward_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
+vertex_shader vs_forward_instanced : vif_PNBT_instanced : lib_pbr_vtx_instanced {
   int matrix_v     = (gl_InstanceID >> 10);
   int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
@@ -681,7 +611,7 @@ vertex_shader vs_forward_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_inst
   ////////////////////////////////
   gl_Position = mvp * instanced_pos;
 }
-vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib_pbr_vtx_instanced
+vertex_shader vs_forward_instanced_stereo : fif_forward_stereo_instanced : lib_pbr_vtx_instanced
     : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
 
@@ -702,7 +632,7 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
-vertex_shader vs_forward_skinned_mono : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx {
+vertex_shader vs_forward_skinned_mono : vif_PNBT_skinned : skin_tools : lib_pbr_vtx {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
   vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -710,7 +640,7 @@ vertex_shader vs_forward_skinned_mono : iface_vgbuffer_skinned : skin_tools : li
   ////////////////////////////////
   gl_Position = mvp * skn_pos;
 }
-vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
+vertex_shader vs_forward_skinned_stereo : vif_PNBT_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
@@ -725,7 +655,7 @@ vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : 
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test_fragcolor //
-    : iface_forward             //
+    : fif_forward             //
     : lib_math                  //
     : lib_brdf                  //
     : lib_def                   //
@@ -734,19 +664,19 @@ fragment_shader ps_forward_test_fragcolor //
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test //
-    : iface_forward             //
+    : fif_forward             //
     : lib_math                  //
     : lib_brdf                  //
     : lib_def                   //
     : lib_fwd {                 //
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
 }
-fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
+fragment_shader ps_forward_test_instanced_mono : fif_forward : lib_math : lib_brdf : lib_def : lib_fwd {
   out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);
 }
 //////////////////////////////////////
 fragment_shader ps_forward_test_stereo 
-  : iface_forward 
+  : fif_forward 
   : lib_math 
   : lib_brdf 
   : lib_def 
@@ -756,7 +686,7 @@ fragment_shader ps_forward_test_stereo
   : extension(GL_NV_viewport_array2) {
   out_color = vec4(forward_lighting_stereo(ModColor.xyz), 1);
 }
-fragment_shader ps_forward_test_instanced_stereo : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo
+fragment_shader ps_forward_test_instanced_stereo : fif_forward : lib_math : lib_brdf : lib_def : lib_fwd : lib_fwd_stereo
     : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   out_color = vec4(forward_lighting_stereo(frg_modcolor.xyz), 1);
@@ -765,13 +695,13 @@ fragment_shader ps_forward_test_instanced_stereo : iface_forward : lib_math : li
 ///////////////////////////////////////////////////////////////
 // Forward SkyBox
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_forward_skybox_mono : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_forward_skybox_mono : vif_PNBT : lib_pbr_vtx {
   gl_Position = position; // screen space quad
   frg_clr     = position;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_skybox_stereo       //
-    : iface_vgbuffer_stereo                  //
+    : vif_PNBT_stereo                  //
     : lib_pbr_vtx                            //
     : extension(GL_NV_stereo_view_rendering) //
     : extension(GL_NV_viewport_array2) {     //
@@ -784,10 +714,11 @@ vertex_shader vs_forward_skybox_stereo       //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_mono //
-    : iface_forward                    //
+    : fif_forward                    //
     : lib_math                         //
     : lib_brdf                         //
     : lib_def                          //
+    : lib_ssao                         //
     : lib_fwd {                        //
 
   ///////////////////////
@@ -818,7 +749,7 @@ fragment_shader ps_forward_skybox_mono //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo //
-    : iface_forward                      //
+    : fif_forward                      //
     : lib_math                           //
     : lib_brdf                           //
     : lib_def                            //
@@ -852,11 +783,11 @@ fragment_shader ps_forward_skybox_stereo //
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_forward_unlit : iface_vgbuffer : lib_pbr_vtx {
+vertex_shader vs_forward_unlit : vif_PNBT : lib_pbr_vtx {
   gl_Position = mvp * position; // screen space quad
   frg_uv0     = uv0;
 }
-fragment_shader ps_forward_unlit : iface_forward {
+fragment_shader ps_forward_unlit : fif_forward {
   vec3 rgb = texture(CNMREA, vec3(frg_uv0,0)).xyz;
   rgb *= ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
@@ -895,7 +826,7 @@ vertex_interface iface_vtx_pick_rigid {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_frg_pick : ub_frg_fwd {
+fragment_interface iface_frg_pick : uset_frg_fwd {
   inputs {
     vec3 frg_wpos;
     vec3 frg_wnrm;
@@ -954,7 +885,8 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //
-    : iface_frg_pick {
+    : iface_frg_pick
+    : uset_std_pick {
 
   out_pickID = uvec4(obj_pickID,frg_pickSUBID.x,frg_pickSUBID.y,frg_pickSUBID.z);
 

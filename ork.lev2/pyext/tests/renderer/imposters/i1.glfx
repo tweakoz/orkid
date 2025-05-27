@@ -3,14 +3,13 @@ fxconfig fxcfg_default {
   glsl_version = "410";
   import "orkshader://sdftools.i";
   import "orkshader://misctools.i";
+  import "orkshader://stdtools.i";
 }
 ////////////////////////////////////////
-uniform_set uset_vtx {
-  mat4 mvp;
+uniform_set uset_vtx : uset_std_matrices {
 }
 ////////////////////////////////////////
 uniform_set uset_frg {
-  vec2 inverse_viewport_size;
   sampler2D rtgtex;
   sampler2D fbtex;
   sampler2D depthtex;

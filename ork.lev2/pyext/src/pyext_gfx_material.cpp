@@ -217,6 +217,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
               pipeline->_debugName = name; //
             })
           .def(
+              "bindUniBlock",                                                                    //
+              [type_codec](fxpipeline_ptr_t pipeline, //
+                 pyfxuniblk_ptr_t ublock, //
+                 py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  pipeline->bindUniformBuffer(ublock.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+              })
+              .def(
               "bindParam",                                                                    //
               [type_codec](fxpipeline_ptr_t pipeline, //
                  pyfxparam_ptr_t param, //
@@ -232,6 +241,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   float fvalue = py::cast<float>(inp_value);
                   pipeline->bindParam(param.get(),fvalue);
                 }
+                else if( py::isinstance<py::int_>(inp_value) ){
+                  int ivalue = py::cast<int>(inp_value);
+                  pipeline->bindParam(param.get(),ivalue);
+                }
                 else if( py::isinstance<fvec2>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec2>(inp_value));
                 }
@@ -243,6 +256,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
                 else if( py::isinstance<fmtx4>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fmtx4>(inp_value));
+                }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
                 }
                 else if( py::isinstance<Texture>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
@@ -395,6 +411,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def("computeShader", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxcomputeshader_ptr_t { return pyfxcomputeshader_ptr_t(m->computeShader(named)); })
           #endif
           .def("param", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(named)); })
+          .def("uniblk", [](freestyle_mtl_ptr_t m, std::string named) -> pyfxuniblk_ptr_t { return pyfxuniblk_ptr_t(m->uniformBlock(named)); })
           .def("bindParamBool", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, bool value) { m->bindParamBool(p.get(), value); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(

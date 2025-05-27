@@ -1,10 +1,15 @@
+import "pbrtools.i";
 ///////////////////////////////////////////////////////////////
-libblock lib_fwd     //
+libblock lib_fwd_impl
     : lib_math       //
     : lib_brdf       //
     : lib_envmapping //
-    : lib_def : lib_ssao {
-  /////////////////////////////////////////////////////////
+    : lib_def       //
+    : lib_ssao {     //
+
+  vec3 _forward_lighting_int(vec3 modcolor, vec3 eyepos) {
+    return vec3(1);
+  }
   LightCtx lcalc_forward(vec3 wpos, PbrData pbd, vec3 eyepos) {
     LightCtx plc;
     const vec3 metalbase = vec3(0.04);
@@ -20,7 +25,6 @@ libblock lib_fwd     //
     plc._F0        = mix(metalbase, basecolor, metallic);
     return plc;
   }
-  /////////////////////////////////////////////////////////
   vec3 plcalc_forward(LightCtx plc, PbrData pbd, float lightRadius) {
     float dist2light    = length(plc._lightdel);
     float atten         = 1.0 / max(.05, dist2light * dist2light); // prevent infinite light
@@ -45,7 +49,6 @@ libblock lib_fwd     //
     return (diffuse_term + specular_term) * atten * ndotl;
     // return lightdir*(atten*ndotl);
   }
-  /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos) {
 
     vec3 out_color;
@@ -94,8 +97,6 @@ libblock lib_fwd     //
     /////////////////////////
     // ambient occlusion
     /////////////////////////
-    // vec2 uv = gl_FragCoord.xy * InvViewportSize;
-    // float ambocc = texture(SSAOMap, uv).x;
     //  filter sample ambocc
     vec2 ssao_uv  = (gl_FragCoord.xy) * InvViewportSize;
     float ambocc = texture(SSAOMap, ssao_uv).x;
@@ -109,7 +110,7 @@ libblock lib_fwd     //
     /////////////////////////
     // rotate refl by 180 degrees on y to get refl_probe_coord
     vec3 refl_probe_coord = vec3(-refl.x, refl.y, -refl.z);
-    vec3 probe_REFL       = env_equirectangular_cube(reflectionPROBE, refl_probe_coord).xyz;
+    vec3 probe_REFL       = env_cube(reflectionPROBE, refl_probe_coord).xyz;
     /////////////////////////
     vec3 refl_equi = vec3(refl.x, -refl.y, refl.z);
     // Use normal for diffuse (irradiance)
@@ -132,9 +133,8 @@ libblock lib_fwd     //
     //  vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     return saturateV((diffuse + specular)*SkyboxLevel);
+    //return specular;
   } // vec3 environmentLighting(){
-
-  /////////////////////////////////////////////////////////
 
   vec3 _sample_color_cookie(uint slice, float lod, vec2 uv) {
     return textureLod(light_cookie_colors, vec3(uv,slice), lod).xyz;
@@ -145,27 +145,20 @@ libblock lib_fwd     //
 
   /////////////////////////////////////////////////////////
 
-  vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
+  vec3 _forward_lightingX(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor) {
 
     // sample PBR material textures
-    vec3 albedo    = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
-    vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
-    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
-    vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
 
-    vec3 wpos       = frg_wpos.xyz;
-    vec3 N          = TN * 2.0 - vec3(1, 1, 1);
-    vec3 normal     = normalize(frg_tbn * N);
     vec3 metalbase  = vec3(0.04);
-    float metallic  = clamp(rufmtlamb.z * MetallicFactor, 0.02, 0.99);
-    float roughness = rufmtlamb.y * RoughnessFactor;
+    float metallic  = clamp(pbd._metallic * MetallicFactor, 0.02, 0.99);
+    float roughness = pbd._roughness * RoughnessFactor;
     roughness       = pow(roughness, RoughnessPower);
     float dialetric = 1.0 - metallic;
-    vec3 basecolor  = albedo;
+    vec3 basecolor  = pbd._albedo;
     vec3 diffcolor  = mix(basecolor, vec3(0), metallic);
     /////////////////////////
-    vec3 edir = normalize(wpos - eyepos);
-    vec3 refl = normalize(reflect(edir, normal));
+    vec3 edir = normalize(pbd._wpos - eyepos);
+    vec3 refl = normalize(reflect(edir, pbd._wnrm));
     refl.x *= -1.0;
     /////////////////////////
     // light maps
@@ -176,6 +169,7 @@ libblock lib_fwd     //
     light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 3)).xyz * LightMapColors[3];
     light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 4)).xyz * LightMapColors[4];
     light_maps      = light_maps + texture(LightMapArray, vec3(frg_uv0, 5)).xyz * LightMapColors[5];
+
     /////////////////////////
     // ambient occlusion
     /////////////////////////
@@ -185,11 +179,12 @@ libblock lib_fwd     //
     //dambocc       = mix(1.0, dambocc, SSAOWeight);
     float ambocc  = dambocc;
     /////////////////////////
-    float ambientshade = clamp(dot(normal, -edir), 0, 1) * 0.3 + 0.7;
+    float ambientshade = clamp(dot(pbd._wnrm, -edir), 0, 1) * 0.3 + 0.7;
     vec3 ambient       = AmbientLevel * ambientshade;
     /////////////////////////
-    float costheta = clamp(dot(normal, edir), 0.01, 0.99);
+    float costheta = clamp(dot(pbd._wnrm, edir), 0.01, 0.99);
     vec2 brdf      = textureLod(MapBrdfIntegration, vec2(costheta, roughness * 0.99), 0).rg;
+   
     ///////////////////////////
     // somethings wrong with the brdf output here
     //   we get speckled black noise
@@ -203,19 +198,8 @@ libblock lib_fwd     //
     vec3 G0    = mix(metalbase, basecolor, 1.0 - metallic);
     vec3 F     = fresnelSchlickRoughness(costheta, F0, roughness);
     vec3 invF  = (vec3(1) - F);
-    vec3 diffn = normal;
+    vec3 diffn = pbd._wnrm;
     /////////////////////////
-
-    PbrData pbd;
-    pbd._emissive  = length(TN) < 0.1;
-    pbd._metallic  = metallic;
-    pbd._roughness = roughness;
-    pbd._albedo    = albedo;
-    pbd._wpos      = wpos;
-    pbd._wnrm      = normal;
-    pbd._fogZ      = 0.0;
-    pbd._atmos     = 0.0;
-    pbd._alpha     = 1.0;
 
     // if(pbd._emissive){
     // return modcolor*pbd._albedo;
@@ -228,10 +212,10 @@ libblock lib_fwd     //
     // point lighting
     ///////////////////////////////////////////////
 
-    LightCtx plc        = lcalc_forward(wpos, pbd, eyepos);
+    LightCtx plc        = lcalc_forward(pbd._wpos, pbd, eyepos);
     vec3 point_lighting = vec3(0, 0, 0);
     for (int i = 0; i < point_light_count; i++) {
-      plc._lightdel = _lightpos[i].xyz - wpos;
+      plc._lightdel = _lightpos[i].xyz - pbd._wpos;
       vec3 LC       = _lightcolor[i].xyz * _lightcolor[i].w;
       float LR      = _lightsizbias[i].x;
       point_lighting += plcalc_forward(plc, pbd, LR) * LC;
@@ -250,9 +234,9 @@ libblock lib_fwd     //
 
       mat4 shmtx           = _shadowmatrix[i];
       vec3 lightpos        = _lightpos[i].xyz;
-      vec3 lightdel        = lightpos - wpos;
+      vec3 lightdel        = lightpos - pbd._wpos;
       float lightrange     = LSB.x;
-      vec4 light_hpos      = (shmtx)*vec4(wpos, 1);
+      vec4 light_hpos      = (shmtx)*vec4(pbd._wpos, 1);
       vec3 light_ndc       = (light_hpos.xyz / light_hpos.w);
       float lightz         = light_ndc.z;
       vec2 diffuse_lightuv = light_ndc.xy * 0.5 + vec2(0.5);
@@ -265,8 +249,8 @@ libblock lib_fwd     //
       ////////////////////////////////////////////////////////////
 
       vec3 lightdir         = normalize(lightdel * -1);
-      vec3 halfdir          = normalize(lightdir - normalize(eyepos - wpos));
-      vec4 light_hpos2      = (shmtx)*vec4(wpos + halfdir, 1);
+      vec3 halfdir          = normalize(lightdir - normalize(eyepos - pbd._wpos));
+      vec4 light_hpos2      = (shmtx)*vec4(pbd._wpos + halfdir, 1);
       vec3 light_ndc2       = (light_hpos2.xyz / light_hpos2.w);
       vec2 specular_lightuv = light_ndc2.xy * 0.5 + vec2(0.5);
 
@@ -290,10 +274,10 @@ libblock lib_fwd     //
       uint light_tex_slice    = _lightTexSlice[i];
 
       ////////////////////////////////////////////////////////////
-      // compute wpos in shadow space
+      // compute pbd._wpos in shadow space
       ////////////////////////////////////////////////////////////
 
-      vec4 shadow_hpos    = (shmtx)*vec4(wpos, 1);
+      vec4 shadow_hpos    = (shmtx)*vec4(pbd._wpos, 1);
       vec3 shadow_ndc     = (shadow_hpos.xyz / shadow_hpos.w);
       vec2 shadow_uv      = shadow_ndc.xy * 0.5 + vec2(0.5);
       float shadow_factor = 0.0;
@@ -335,7 +319,7 @@ libblock lib_fwd     //
 
       vec3 LN     = normalize(lightdel);
       float Ldist = length(lightdel);
-      float NdotL = max(0.0, dot(normal, LN));
+      float NdotL = max(0.0, dot(pbd._wnrm, LN));
 
       float spec_mix = (1.0 - pow(pbd._roughness, 1.0));
 
@@ -343,12 +327,59 @@ libblock lib_fwd     //
       vec3 lighttex = diffuse;
       lighttex += F0 * pbd._albedo * specular_lighttex * NdotL * specular_mask * spec_mix;
       spot_lighting += lightcol * lighttex / pow(Ldist, 2) * float(mask) * shadow_factor;
+      //spot_lighting += diffuse;// / pow(Ldist, 2);
 
     } // for (int i = 0; i < spot_light_count; i++) {
 
     return (env_lighting + point_lighting + spot_lighting + emission) * modcolor; // * (1.0 - ZP);
-
+    //return (spot_lighting);
   }
+  vec3 _forward_lightingZ(vec3 modcolor, 
+                          vec3 albedo,
+                          vec3 rufmtlamb,
+                          vec3 emission,
+                          vec3 eyepos, 
+                          vec3 normal, 
+                          bool emissive) {
+  PbrData pbr;
+  pbr._emissive = emissive;
+  pbr._albedo = albedo;
+  pbr._metallic = rufmtlamb.x;
+  pbr._roughness = rufmtlamb.y;
+  pbr._wpos = frg_wpos.xyz;
+  pbr._wnrm = normal;
+  pbr._fogZ = 0.0;
+  pbr._atmos = 0.0;
+  pbr._alpha = 1.0;
+  return _forward_lightingX(pbr,eyepos,emission,modcolor);
+}
+
+}
+
+///////////////////////////////////////////////////////////////
+libblock lib_fwd     //
+    : lib_fwd_impl { //
+  /////////////////////////////////////////////////////////
+
+
+  vec3 _forward_lighting(vec3 modcolor, vec3 eyepos) {
+    vec3 TN        = texture(CNMREA, vec3(frg_uv0, 1)).xyz;
+    vec3 albedo    = (modcolor * frg_clr.xyz * texture(CNMREA, vec3(frg_uv0, 0)).xyz);
+    vec3 rufmtlamb = texture(CNMREA, vec3(frg_uv0, 2)).xyz;
+    vec3 emission  = texture(CNMREA, vec3(frg_uv0, 3)).xyz;
+    vec3 N          = TN * 2.0 - vec3(1, 1, 1);
+    bool emissive = length(TN) < 0.1;
+    vec3 normal     = normalize(frg_tbn * N);
+    return _forward_lightingZ(modcolor, 
+                              albedo,
+                              rufmtlamb,
+                              emission,
+                              eyepos, 
+                              normal, 
+                              emissive);
+  }
+
+
   vec3 forward_lighting_mono(vec3 modcolor) {
     vec3 eyepos = EyePostion;
     return _forward_lighting(modcolor, eyepos);

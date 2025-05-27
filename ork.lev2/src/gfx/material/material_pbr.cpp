@@ -140,7 +140,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   auto loadreq = std::make_shared<asset::LoadRequest>();
 
-  //printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
+  printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
   loadreq->_asset_path = _shaderpath;
 
   _as_freestyle = std::make_shared<FreestyleMaterial>();
@@ -221,8 +221,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramV                 = fxi->parameter(_shader, "v");
-  _paramP                 = fxi->parameter(_shader, "MatP");
-  _paramIP                = fxi->parameter(_shader, "MatInvP");
+  _paramP                 = fxi->parameter(_shader, "p");
+  _paramIP                = fxi->parameter(_shader, "inv_p");
   _paramVP                = fxi->parameter(_shader, "vp");
   _paramVL                = fxi->parameter(_shader, "v_l");
   _paramVR                = fxi->parameter(_shader, "v_r");
@@ -292,7 +292,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parDepthFogPower       = fxi->parameter(_shader, "DepthFogPower");
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
-  _parUnTexPointLightsData  = fxi->uniformBlock(_shader, "ub_frg_fwd_lighting");
+  _parUnTexPointLightsData  = fxi->uniformBlock(_shader, "ublk_frg_fwd_lighting");
 
   _parTexSpotLightsCount = fxi->parameter(_shader, "spot_light_count");
 
@@ -313,14 +313,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // printf( "_texNormal<%p>\n", _texNormal.get() );
   // printf( "_texMtlRuf<%p>\n", _texMtlRuf.get() );
 
-  _texBlack = targ->TXI()->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
-  _texCubeBlack = targ->TXI()->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
-  _texBlackArray = targ->TXI()->createColorTextureV3Array(fvec3(0, 0, 0), 64, 64, 32);
-  _texWhiteLightMapArray = targ->TXI()->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 32);
-  _texBlack->_debugName = "black";
-  _texCubeBlack->_debugName = "black_cube";
-  _texBlackArray->_debugName = "black_array";
-  _texWhiteLightMapArray->_debugName = "white_lightmap_array";
   /////////////////////////////////////////////////
 
   if(_texArrayCNMREA == nullptr){

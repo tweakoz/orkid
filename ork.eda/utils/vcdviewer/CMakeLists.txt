@@ -1,24 +1,14 @@
 cmake_minimum_required (VERSION 3.13.4)
 include(orkid)
-#enableQt5()
+
 project (ork.eda.vcdviewer CXX)
 
-include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
-
-set( EXE ork.eda.vcdviewer)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 
 file(GLOB testsrcs ${SRCD}/*.cpp)
-add_executable (${EXE} ${testsrcs} )
 
-ork_std_target_opts_exe(${EXE})
-
-target_link_libraries(${EXE} LINK_PRIVATE ork_core )
-target_link_libraries(${EXE} LINK_PRIVATE ork_eda )
-target_link_libraries(${EXE} LINK_PRIVATE ork_lev2 )
-
-set_target_properties(${EXE} PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.core/inc )
-target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.eda/inc )
-target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.lev2/inc )
-target_include_directories (${EXE} PRIVATE ${SRCD} )
+setupLev2EXE(ork.eda.vcdviewer ${testsrcs} )
+target_include_directories (ork.eda.vcdviewer PRIVATE ${ORKROOT}/ork.eda/inc )
+target_include_directories (ork.eda.vcdviewer PRIVATE ${SRCD} )
+target_link_libraries(ork.eda.vcdviewer LINK_PRIVATE ork_eda )
+target_link_libraries(ork.eda.vcdviewer LINK_PRIVATE openvdb openvdb_ax tbb)

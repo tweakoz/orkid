@@ -88,7 +88,8 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
   size_t inumdecos = _decorators.size();
   auto parser = backend._parser;
   auto program = parser->_program;
-
+  auto prg_namespace = program->_importNamespace;
+  
   auto decochildren = std::make_shared<DecoChildren>();
   decochildren->_parent = this;
   backend._decochildrenmap[this] = decochildren;
@@ -101,12 +102,16 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
                                   ? it_nodedeco->second 
                                   : nullptr;
     if(blocknode!=nullptr){
-      decochildren->_dependencies.push_back(blocknode);
-      _dependencies.push_back(blocknode);
+      auto it = _uniqueDependencies.find(blocknode);
+      if (it == _uniqueDependencies.end()) {
+        decochildren->_dependencies.push_back(blocknode);
+        _dependencies.push_back(blocknode);
+        _uniqueDependencies.insert(blocknode);
+      }
     }
     else{
-      //printf("BlockNode<%s> not found\n", deco.c_str());
-      //OrkAssert(false);
+      printf("BlockNode<%s:%s> dependency<%s> not found\n", _name.c_str(), _blocktype.c_str(), deco.c_str());
+      OrkAssert(false);
     }
 
     if (auto as_if = std::dynamic_pointer_cast<InterfaceNode>(blocknode)) {
@@ -124,6 +129,10 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// This function walks up the dependency tree of DecoBlockNode
+///////////////////////////////////////////////////////////////////////////////
+
 void DecoBlockNode::walkUp(decoblocknode_ptr_t node, unique_deco_set& uset) {
   for (auto dep : node->_dependencies) {
     walkUp(dep,uset);
@@ -133,6 +142,8 @@ void DecoBlockNode::walkUp(decoblocknode_ptr_t node, unique_deco_set& uset) {
     uset._uniques.insert(node);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void DecoChildren::interfaceNodes(unique_deco_set& uset) const {
   unique_deco_set walk_up_all;

@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/util/logger.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
@@ -69,6 +70,11 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
   _params[p] = v;
 }
 /////////////////////////////////////////////////////////////////////////
+void FxPipeline::bindUniformBuffer(fxuniformblock_constptr_t p, varval_t v){
+  OrkAssert(p!=nullptr);
+  _uniformbuffers[p] = v;
+}
+/////////////////////////////////////////////////////////////////////////
 void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   if(_debugBreak){
       OrkBreak();
@@ -84,6 +90,12 @@ void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID.rcfd()->GetTarget();
   auto FXI        = context->FXI();
+  auto RCFD       = RCID.rcfd();
+  const auto& CPD = RCFD->topCPD();
+  auto CIMPL = RCFD->topCompositor();
+  auto LMGR = CIMPL->lightManager();
+  auto PBRC = RCFD->_pbrcommon;
+
   int rval = FXI->BeginBlock(_technique, RCID);
 
   if( _debugBreak ){
@@ -116,10 +128,30 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
     printf( "FxPipeline<%p:%s>::beginBlock num_params<%zu>\n", this, _debugName.c_str(), _params.size() );
   }
 
+
   for (auto item : _params) {
     fxparam_constptr_t param = item.first;
     const auto& val          = item.second;
     _set_typed_param(RCID,param,val);
+  }
+
+  for (auto item : _uniformbuffers) {
+    fxuniformblock_constptr_t param = item.first;
+    const auto& val          = item.second;
+    if( auto as_crcstr = val.tryAs<crcstring_ptr_t>() ){
+      const auto& crcstr = *as_crcstr.value().get();
+      if( crcstr == "LMGR_LIGHTING_UBO"_crcu ){
+        auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+        auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
+        FXI->bindUniformBuffer(param, pl_buffer);
+        //auto clr_cookies = LMGR->_cookies_spot_color; 
+        //auto dep_cookies = LMGR->_cookies_spot_depth; 
+
+      }
+    } else {
+      OrkAssert(false); // unhandled uniform buffer type
+    }
+
   }
 
   ///////////////////////////////
@@ -136,6 +168,7 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val){
   auto context          = RCID.rcfd()->GetTarget();
+  auto RCFD             = RCID.rcfd();
   auto FXI              = context->FXI();
   auto worldmatrix = RCID.worldMatrix();
   const auto& CPD       = RCID.rcfd()->topCPD();
@@ -147,6 +180,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   bool is_stereo        = CPD.isSinglePassStereo();
   auto pbrcommon = RCID.rcfd()->_pbrcommon;
   auto modcolor = context->RefModColor();
+  auto CIMPL = RCFD->topCompositor();
+  auto LMGR = CIMPL->lightManager();
 
     ////////////////////////////////////////////////////////////
     // try to order these by commonalitiy
@@ -164,6 +199,8 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
       FXI->bindParamTexture(param, texture.get());
     } else if (auto as_bool_ = val.tryAs<bool>()) {
       FXI->bindParamBool(param, as_bool_.value());
+    } else if (auto as_int_ = val.tryAs<int>()) {
+      FXI->bindParamInt(param, as_int_.value());
     } else if (auto as_float_ = val.tryAs<float>()) {
       FXI->bindParamFloat(param, as_float_.value());
     } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
@@ -234,7 +271,22 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           break;
         }
         case "CPD_Rtg_InvDim"_crcu: {
-          FXI->bindParamVect2(param, fvec2(1.0f/float(W),1.0f/float(H)));
+          fvec2 invdim(1.0f/float(W), 1.0f/float(H));
+          FXI->bindParamVect2(param, invdim);
+          break;
+        }
+        case "FBI_RTG_DIM"_crcu: {
+          auto rtg = context->FBI()->_active_rtgroup;
+          int fbiw = rtg->miW;
+          int fbih = rtg->miH;
+          FXI->bindParamVect2(param, fvec2(fbiw,fbih));
+          break;
+        }
+        case "FBI_RTG_INVDIM"_crcu: {
+          auto rtg = context->FBI()->_active_rtgroup;
+          int fbiw = rtg->miW;
+          int fbih = rtg->miH;
+          FXI->bindParamVect2(param, fvec2(1.0/fbiw,1.0/fbih));
           break;
         }
         case "RCFD_MODCOLOR"_crcu: {
@@ -252,6 +304,76 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           //OrkAssert(false);
           break;
         }
+        case "RCFD_EYE_POSITION"_crcu: {
+          auto RCFD = RCID.rcfd();
+          fmtx4 V;
+          if (monocams) {
+            V = monocams->_vmatrix;
+          }          
+          auto eyepos = V.inverse().translation();
+          FXI->bindParamVect3(param, eyepos);
+          //OrkAssert(false);
+          break;
+        }
+        case "RCFD_PBR_BRDF_INTEGRATION_GGX"_crcu: {
+          auto brdf_integration = pbrcommon->_irradianceMaps->_brdfIntegrationMapGGX.get();
+          FXI->bindParamTexture(param, brdf_integration);
+          break;
+        }
+        case "RCFD_PBR_DIFFUSE_ENV"_crcu: {
+          auto the_tex = pbrcommon->envDiffuseTexture().get();
+          FXI->bindParamTexture(param, the_tex);
+          break;
+        }
+        case "RCFD_PBR_SPECULAR_ENV"_crcu: {
+          auto the_tex = pbrcommon->envSpecularTexture().get();
+          FXI->bindParamTexture(param, the_tex);
+          break;
+        }
+        case "RCFD_PBR_BLACK_2DMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texBlack.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_2DMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texWhite.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_LIGHTMAP_ARRAY"_crcu: {
+          FXI->bindParamTextureArray(param, pbrcommon->_texWhiteLightMapArray.get());
+          break;
+        }
+        case "RCFD_PBR_BLACK_LIGHTMAP_ARRAY"_crcu: {
+          FXI->bindParamTextureArray(param, pbrcommon->_texBlackLightMapArray.get());
+          break;
+        }
+        case "RCFD_PBR_LIGHTMAP_COLORS"_crcu: {
+          static fvec3 lightmap_colors[8] = {
+            fvec3(1.0f, 1.0f, 1.0f), // white
+            fvec3(0.5f, 0.5f, 0.5f), // gray
+            fvec3(1.0f, 0.5f, 0.5f), // red
+            fvec3(0.5f, 1.0f, 0.5f), // green
+            fvec3(0.5f, 0.5f, 1.0f), // blue
+            fvec3(1.0f, 1.0f, 0.5f), // yellow
+            fvec3(1.0f, 0.5f, 1.0f), // magenta
+            fvec3(0.5f, 1.0f, 1.0f)  // cyan
+          };
+          FXI->bindParamVect3Array(param, lightmap_colors,8);
+          break;
+        }
+        case "RCFD_PBR_BLACK_CUBEMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texCubeBlack.get());
+          break;
+        }
+        case "RCFD_PBR_WHITE_CUBEMAP"_crcu: {
+          FXI->bindParamTexture(param, pbrcommon->_texCubeWhite.get());
+          break;
+        }
+        case "RCFD_MONOCAM_NEAR_FAR"_crcu: {
+          float near = monocams->_camdat.mNear;
+          float far = monocams->_camdat.mFar;
+          FXI->bindParamVect2(param, fvec2(near, far));
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
               //printf( "RCFD_Camera_MVP_Mono: monocams<%p>\n", (void*)monocams );
@@ -262,9 +384,19 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           }
           break;
         }
+        case "RCFD_Camera_P_Mono"_crcu: {
+          if (monocams) {
+            FXI->bindParamMatrix(param, monocams->_pmatrix);
+          } else {
+            FXI->bindParamMatrix(param, MTXI->RefPMatrix());
+          }
+          break;
+        }
         case "RCFD_Camera_VP_Mono"_crcu: {
           if (monocams) {
-            FXI->bindParamMatrix(param, monocams->VPMONO());
+            fmtx4 vp = monocams->VPMONO();
+            //vp.dump("monocams->VPMONO()");
+            FXI->bindParamMatrix(param, vp);
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
             FXI->bindParamMatrix(param, MVP);
@@ -282,7 +414,23 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_Camera_IVP_Mono"_crcu: {
           if (monocams) {
-            FXI->bindParamMatrix(param, monocams->VPMONO().inverse());
+            auto VP = monocams->VPMONO();
+            auto IVP = VP.inverse();
+            //IVP.dump("IVP");
+            FXI->bindParamMatrix(param, IVP );
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+            FXI->bindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_ZNORMAL_Mono"_crcu: {
+          if (monocams) {
+            auto VP = monocams->VPMONO();
+            auto IVP = VP.inverse();
+            fvec3 raydir = IVP.zNormal();
+            //IVP.dump("IVP");
+            FXI->bindParamVect3(param, raydir );
           } else {
             auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
             FXI->bindParamMatrix(param, MVP);
@@ -333,6 +481,24 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
         }
         case "RCFD_PBR_DPP_ZBIAS"_crcu: {
           FXI->bindParamFloat(param, pbrcommon->_dppZbias);
+          break;
+        }
+        case "LMGR_ACTIVE_UNTEXTURED_POINTLIGHT_COUNT"_crcu: {
+          auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+          FXI->bindParamInt(param, enumlights->_num_active_untextured_pointlights);
+          break;
+        }
+        case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COUNT"_crcu: {
+          auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+          FXI->bindParamInt(param, enumlights->_num_active_texspotlights);
+          break;
+        }
+        case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COLOR_COOKIES"_crcu: {
+          FXI->bindParamTextureArray(param, LMGR->_cookies_spot_color.get() );
+          break;
+        }
+        case "LMGR_ACTIVE_TEXTURED_SPOTLIGHT_DEPTH_COOKIES"_crcu: {
+          FXI->bindParamTextureArray(param, LMGR->_cookies_spot_depth.get() );
           break;
         }
         default:

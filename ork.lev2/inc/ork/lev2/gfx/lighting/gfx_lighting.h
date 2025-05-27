@@ -29,6 +29,22 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct EnumeratedLights;
+struct PointLight;
+struct SpotLight;
+struct LightManagerData;
+
+using enumeratedlights_ptr_t = std::shared_ptr<EnumeratedLights>;
+using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
+using pointlightlist_t    = std::vector<PointLight*>;
+using spotlightlist_t     = std::vector<SpotLight*>;
+using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
+using tex2spotlightmap_t  = std::map<texturearraysliceref_ptr_t, spotlightlist_t>;
+using lightprobeset_t = std::vector<lightprobe_ptr_t>;
+using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline int countbits(U32 v) {
   v     = v - ((v >> 1) & 0x55555555);                      // reuse input as temporary
   v     = (v & 0x33333333) + ((v >> 2) & 0x33333333);       // temp
@@ -494,8 +510,6 @@ struct LightManagerData : public ork::Object {
 public:
 };
 
-using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LightCollector {
@@ -525,17 +539,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EnumeratedLights;
-
-using enumeratedlights_ptr_t = std::shared_ptr<EnumeratedLights>;
-using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
-using pointlightlist_t    = std::vector<PointLight*>;
-using spotlightlist_t     = std::vector<SpotLight*>;
-using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
-using tex2spotlightmap_t  = std::map<texturearraysliceref_ptr_t, spotlightlist_t>;
-using lightprobeset_t = std::vector<lightprobe_ptr_t>;
-
 struct EnumeratedLights {
+    
   std::vector<Light*> _alllights;
   pointlightlist_t _untexturedpointlights;
   tex2pointlightmap_t _tex2pointlightmap;
@@ -544,6 +549,11 @@ struct EnumeratedLights {
   tex2spotlightmap_t _tex2shadowedspotlightmap;
   tex2spotlightmap_t _tex2spotdecalmap;
   lightprobeset_t _lightprobes;
+
+  int _num_active_untextured_pointlights = 0;
+  int _num_active_texspotlights = 0;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -565,6 +575,8 @@ public:
 
   size_t GetNumLightGroups() const;
   void Clear();
+
+  void bindEnumeratedToUniformBuffer(Context* ctx, enumeratedlights_ptr_t enumerated_lights, FxUniformBuffer* ubo) const;  
 
   lightmanagerdata_constptr_t _data;
   texturearray_ptr_t _cookies_spot_color;

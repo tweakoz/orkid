@@ -230,6 +230,7 @@ def createImposter( context = None,
                     is_stereo = False,
                     filtertype = None,
                     filterradius = 2.0,
+                    use_pbr = False
                     ):
 
   assert(shaderpath!=None)
@@ -278,6 +279,36 @@ def createImposter( context = None,
       imp_pass.pipeline = imp_pipeline
       self.rtg_imps = rtg_imps
     
+      #####################
+
+      imp_pass.pipeline.bindParam(imp_mtl.param("m"),  tokens.RCFD_M )
+      imp_pass.pipeline.bindParam(imp_mtl.param("vp"),  tokens.RCFD_Camera_VP_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("inv_vp"), tokens.RCFD_Camera_IVP_Mono )
+      imp_pass.pipeline.bindParam(imp_mtl.param("ViewportSize"), tokens.FBI_RTG_DIM )
+      imp_pass.pipeline.bindParam(imp_mtl.param("InvViewportSize"), tokens.FBI_RTG_INVDIM )
+
+      #####################
+
+      if use_pbr:
+        imp_pass.pipeline.bindParam(imp_mtl.param("LightMapColors"), tokens.RCFD_PBR_LIGHTMAP_COLORS )
+        imp_pass.pipeline.bindParam(imp_mtl.param("LightMapArray"), tokens.RCFD_PBR_BLACK_LIGHTMAP_ARRAY )
+        imp_pass.pipeline.bindParam(imp_mtl.param("reflectionPROBE"), tokens.RCFD_PBR_BLACK_CUBEMAP )
+        imp_pass.pipeline.bindParam(imp_mtl.param("MapBrdfIntegration"), tokens.RCFD_PBR_BRDF_INTEGRATION_GGX )
+        imp_pass.pipeline.bindParam(imp_mtl.param("SSAOMap"), tokens.RCFD_PBR_WHITE_2DMAP )
+        imp_pass.pipeline.bindParam(imp_mtl.param("MapDiffuseEnv"), tokens.RCFD_PBR_DIFFUSE_ENV )
+        imp_pass.pipeline.bindParam(imp_mtl.param("MapSpecularEnv"), tokens.RCFD_PBR_SPECULAR_ENV )
+        imp_pass.pipeline.bindParam(imp_mtl.param("EyePostion"), tokens.RCFD_EYE_POSITION )
+        imp_pass.pipeline.bindParam(imp_mtl.param("AmbientLevel"), vec3(0) )
+        imp_pass.pipeline.bindParam(imp_mtl.param("SkyboxLevel"), 1.0 )
+        imp_pass.pipeline.bindParam(imp_mtl.param("DiffuseLevel"), 1.0 )
+        imp_pass.pipeline.bindParam(imp_mtl.param("SpecularLevel"), 1.0 )
+        imp_pass.pipeline.bindParam(imp_mtl.param("RoughnessLevels"), 16.0 )
+        imp_pass.pipeline.bindUniBlock(imp_mtl.uniblk("ublk_frg_fwd_lighting"), tokens.LMGR_LIGHTING_UBO )
+        imp_pass.pipeline.bindParam(imp_mtl.param("point_light_count"), tokens.LMGR_ACTIVE_UNTEXTURED_POINTLIGHT_COUNT )
+        imp_pass.pipeline.bindParam(imp_mtl.param("spot_light_count"), tokens.LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COUNT )
+        imp_pass.pipeline.bindParam(imp_mtl.param("light_cookie_colors"), tokens.LMGR_ACTIVE_TEXTURED_SPOTLIGHT_COLOR_COOKIES )
+        imp_pass.pipeline.bindParam(imp_mtl.param("light_cookie_depths"), tokens.LMGR_ACTIVE_TEXTURED_SPOTLIGHT_DEPTH_COOKIES )
+
     #######################################################
 
     def onGpuUpdate(self,ctx):

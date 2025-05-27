@@ -2,18 +2,13 @@ cmake_minimum_required (VERSION 3.13.4)
 include(orkid)
 project (ork.lev2.test.aud.singularity CXX)
 
-include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
-include_directories(AFTER ${ORKROOT}/ork.core/inc )
-include_directories(AFTER ${ORKROOT}/ork.lev2/inc )
 include_directories(AFTER ${SRCD} )
-include_directories(AFTER $ENV{QTDIR}/include)
-#include_directories(AFTER $ENV{OBT_BUILDS}/sse2neon)
+
+set(HARNESS_SRCS harness.cpp harness_midi.cpp harness_sequence.cpp)
 
 function(setupEXE target sources)
-  add_executable (${target} harness.cpp harness_midi.cpp harness_sequence.cpp ${sources} )
-  ork_std_target_opts_exe(${target})
-  target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 rtmidi )
-  set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
+  setupLev2EXE (${target} ${sources} ${HARNESS_SRCS} )
+  target_link_libraries( ${target} LINK_PRIVATE rtmidi )
 endfunction()
 
 setupEXE(ork.test.lev2.aud.singularity.krzrom.exe main_krzrom.cpp )

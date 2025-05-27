@@ -1,11 +1,24 @@
-
-libblock lib_ssao {
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_ssao {
+  sampler2D SSAOMap;          
+  sampler2D SSAOKernel;       
+  sampler2D SSAOScrNoise;   
+  float SSAORadius;          // 0.5
+  float SSAOBias;            // 0.01
+  float SSAOPower;           // 1.0  
+  float SSAOWeight;          // 1.0
+  int SSAONumSamples;
+  int SSAONumSteps;
+  float SSAOFeedback;
+}
+///////////////////////////////////////////////////////////////
+libblock lib_ssao : uset_std_ssao {
   /////////////////////////////////////////////////////////
   
   vec3 viewpos_nonlin(vec2 uv) {
       float depth = textureLod(MapDepth, uv, 0).r;
       vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-      vec4 viewSpacePosition = MatInvP * clipSpacePosition;
+      vec4 viewSpacePosition = inv_p * clipSpacePosition;
       viewSpacePosition /= viewSpacePosition.w;
       return -viewSpacePosition.xyz;
   }

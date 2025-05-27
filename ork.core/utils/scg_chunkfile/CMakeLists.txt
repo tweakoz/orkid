@@ -16,14 +16,7 @@ endif()
 include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 
 file(GLOB srcs ./*.cpp)
-add_executable (ork.scg_chunkfile.exe ${srcs} )
 
-target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE ork_core )
-target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE ork_lev2 )
-target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE Boost::system )
+setupLev2EXE(ork.scg_chunkfile.exe ${srcs} )
 
-set_target_properties(ork.scg_chunkfile.exe PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.scg_chunkfile.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.scg_chunkfile.exe PRIVATE ${SRCD} )
-
-ork_std_target_opts_exe(ork.scg_chunkfile.exe)

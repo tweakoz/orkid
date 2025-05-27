@@ -87,11 +87,11 @@ static asset::vars_ptr_t _irradianceVars() {
 
       auto filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ,equirectangular);
       auto filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ,equirectangular);
-      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX"_crcu);
-      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET"_crcu);
-      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM"_crcu);
-      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN"_crcu);
-      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG"_crcu);
+      auto brdfIntegrationMapGGX = PBRMaterial::brdfIntegrationMap(targ,"GGX");
+      auto brdfIntegrationMapVelvet = PBRMaterial::brdfIntegrationMap(targ,"GGXVELVET");
+      auto brdfIntegrationMapRim = PBRMaterial::brdfIntegrationMap(targ,"GGXRIM");
+      auto brdfIntegrationMapBlinn = PBRMaterial::brdfIntegrationMap(targ,"BLINN");
+      auto brdfIntegrationMapPhong = PBRMaterial::brdfIntegrationMap(targ,"PHONG");
 
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_spec") = filtenvSpecularMap;
       load_req->_asset_vars->makeValueForKey<texture_ptr_t>("irrmap_diff") = filtenvDiffuseMap;
@@ -310,6 +310,27 @@ void CommonStuff::describeX(class_t* c) {
             OrkAssert(false);
             return _irradianceVars();
           });
+}
+void CommonStuff::onGpuInit(Context* ctx) {
+  if(not _needsGpuInit){
+    return;
+  }
+  _needsGpuInit = false;
+  auto TXI = ctx->TXI();
+  _texBlack = TXI->createColorTextureV3(fvec3(0, 0, 0), 64, 64);
+  _texWhite = TXI->createColorTextureV3(fvec3(1, 1, 1), 64, 64);
+  _texCubeBlack = TXI->createColorCubeTexture(fvec4(0, 0, 0, 1), 64,64);
+  _texCubeWhite = TXI->createColorCubeTexture(fvec4(1, 1, 1, 1), 64,64);
+  _texBlackArray = TXI->createColorTextureV3Array(fvec3(0, 0, 0), 64, 64, 32);
+  _texWhiteLightMapArray = TXI->createColorTextureV3Array(fvec3(1, 1, 1), 64, 64, 32);
+  _texBlackLightMapArray = TXI->createColorTextureV3Array(fvec3(0,0,0), 64, 64, 32);
+  _texBlack->_debugName = "black";
+  _texWhite->_debugName = "white";
+  _texCubeBlack->_debugName = "black_cube";
+  _texCubeWhite->_debugName = "white_cube";
+  _texBlackArray->_debugName = "black_array";
+  _texWhiteLightMapArray->_debugName = "white_lightmap_array";
+  _texBlackLightMapArray->_debugName = "white_lightmap_array";
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::pbr

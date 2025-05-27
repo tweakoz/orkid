@@ -1,0 +1,107 @@
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_matrices {
+  mat4 m;
+  mat4 v;
+  mat4 p;
+  mat4 mv;
+  mat4 vp;
+  mat4 mvp;
+  mat3 mrot;
+  //
+  mat4 inv_v;
+  mat4 inv_p;
+  mat4 inv_vp;
+  //
+  mat4 v_l;
+  mat4 v_r;
+  mat4 vp_l;
+  mat4 vp_r;
+  mat4 inv_vp_l;
+  mat4 inv_vp_r;
+  mat4 mvp_l;
+  mat4 mvp_r;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_viewport {
+  vec2 ViewportSize;    // target size
+  vec2 InvViewportSize; // inverse target size
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_instancing {
+  sampler2D InstanceMatrices;
+  sampler2D InstanceColors;
+  usampler2D InstanceIds;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_filtering {
+  float FilterRadius;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_aux {
+  vec4 AuxA;
+  vec4 AuxB;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_pick {
+  uint obj_pickID;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_pbr {
+  //////////////////////////////
+  sampler2DArray CNMREA;         
+  samplerCube reflectionPROBE;
+  samplerCube irradiancePROBE;
+  sampler2D MapBrdfIntegration; 
+  sampler2D MapDiffuseEnv;      
+  sampler2DArray MapSpecularEnv;
+  //////////////////////////////
+  vec3 AmbientLevel;
+  vec2 Zndc2eye;
+  vec3 EyePostion;
+  vec3 EyePostionL;
+  vec3 EyePostionR;
+  vec4 ModColor;
+  //////////////////////////////
+  float MetallicFactor;
+  float RoughnessFactor;
+  float RoughnessPower;
+  float SkyboxLevel;
+  float SpecularLevel;
+  float DiffuseLevel;
+  float EnvironmentMipBias;
+  float EnvironmentMipScale;
+  float RoughnessLevels;
+  float SpecularMipBias;
+  float DepthFogDistance;
+  float DepthFogPower;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_lighting {
+  //////////////////////////////
+  sampler2DArray LightMapArray;            
+  sampler2DArray light_cookie_colors;      
+  sampler2DArray light_cookie_depths;      
+  sampler2D MapDepth;           
+  sampler2D MapLinearDepth;     
+  //////////////////////////////
+  vec3 LightMapColors[8];        
+  //////////////////////////////
+  int point_light_count;
+  int spot_light_count;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_frg_fwd_lighting {
+  vec4 _lightcolor[64];    // 1024 : 1024 
+  vec4 _lightsizbias[64];  // 1024 : 2048
+  vec4 _lightpos[64];      // 1024 : 3072
+  mat4 _shadowmatrix[64];  // 4096 : 7168
+  uint _lightTexSlice[64]; // 256  : 7424
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublk_deferred_lighting {
+  vec4 LightColorD[256];   // 4096   : 4096
+  mat4 LightMatrix[256];   // 163384 : 167480
+  mat4 ShadowMatrix[256];  // 163384 : 330864
+  float LightRadius[256];  // 1024   : 331888
+}
+///////////////////////////////////////////////////////////////

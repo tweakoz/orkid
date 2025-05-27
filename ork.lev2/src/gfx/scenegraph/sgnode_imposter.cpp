@@ -202,11 +202,12 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   auto VP                 = RCFD->userPropertyAs<fmtx4>("VPMATRIX"_crcu);
   auto P                  = RCFD->userPropertyAs<fmtx4>("PMATRIX"_crcu);
   auto V                  = RCFD->userPropertyAs<fmtx4>("VMATRIX"_crcu);
-  auto eye_pos            = V.inverse().translation();
+  auto IV                 = V.inverse();
+  auto eye_pos            = IV.translation();
   const auto& CAMDAT      = monocams->_camdat;
   auto worldmatrix        = RCID.worldMatrix();
   fvec3 POS               = worldmatrix.translation();
-  fvec3 sphereToCamera    = eye_pos - POS;
+  fvec3 sphereToCamera    = (eye_pos - POS);
   float distanceToSphere  = sphereToCamera.length();
   fvec3 sphereToCameraDir = sphereToCamera / distanceToSphere;
   int top_width           = CPD._width;
@@ -218,15 +219,9 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   // Calculate billboard orientation that perfectly faces camera
   ////////////////////////////////////////////
 
-  // Find a stable up vector (not parallel to view direction)
-  fvec3 worldUp = fvec3(0, 1, 0);
-  if (std::abs(sphereToCameraDir.dotWith(worldUp)) > 0.99f) {
-    worldUp = fvec3(1, 0, 0);
-  }
-
-  // Calculate right and up vectors for billboard
-  fvec3 right = sphereToCameraDir.crossWith(worldUp).normalized() * -1.0f;
-  fvec3 up    = right.crossWith(sphereToCameraDir).normalized() * -1.0f;
+  // get up from V matrix
+  fvec3 up = IV.yNormal();
+  fvec3 right = IV.xNormal();
 
   float bbrad = _radius * 1.1f;
   fvec3 V0    = POS - right * bbrad - up * bbrad; // bottom left
@@ -251,11 +246,23 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
   // Create perspective projection matrix
   // Use aspect ratio 1:1 since we're rendering to a square texture
 
-  float near = std::max(0.1f, distanceToSphere - _radius * 2.0f);
-  float far  = distanceToSphere + _radius * 2.0f;
   rtgProj.perspective(fovy, 1.0f, CAMDAT.mNear, CAMDAT.mFar); // printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
   auto SUBVP  = (rtgProj * rtgView);
   auto SUBMVP = SUBVP * worldmatrix;
+
+  fmtx4 prev_VPMONO, prev_IVPMONO;
+  bool restore_prev_vpmono = false;
+  bool restore_prev_ivpmono = false;
+  if(RCFD->hasUserProperty("RCFD_Camera_VP_Mono"_crcu)){
+    prev_VPMONO = RCFD->userPropertyAs<fmtx4>("RCFD_Camera_VP_Mono"_crcu);
+    restore_prev_vpmono = true;
+  }
+  if(RCFD->hasUserProperty("RCFD_Camera_IVP_Mono"_crcu)){
+    prev_IVPMONO = RCFD->userPropertyAs<fmtx4>("RCFD_Camera_IVP_Mono"_crcu);
+    restore_prev_ivpmono = true;
+  }
+  RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,SUBVP);
+  RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,SUBVP.inverse());
 
   auto imppass = _impdata->_imp_pass;
   auto blpass  = _impdata->_blit_pass;
@@ -269,7 +276,6 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->pushScissor(vprect_rtg);
     FBI->pushViewport(vprect_rtg);
     FBI->PushRtGroup(RTG.get());
-
     if (imppass->_onPreRender) {
       imppass->_onPreRender();
     }
@@ -296,6 +302,13 @@ void ImposterDrawableImpl::_render(const RenderContextInstData& RCID) {
     FBI->popScissor();
   }
 
+  if(restore_prev_vpmono){
+    RCFD->setUserProperty("RCFD_Camera_VP_Mono"_crcu,prev_VPMONO);
+  }
+  if(restore_prev_ivpmono){
+    RCFD->setUserProperty("RCFD_Camera_IVP_Mono"_crcu,prev_IVPMONO);
+  }
+  
   ////////////////////////////////////////////
   // user passes
   ////////////////////////////////////////////

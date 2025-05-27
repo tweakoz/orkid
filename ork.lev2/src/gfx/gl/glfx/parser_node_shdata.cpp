@@ -45,7 +45,11 @@ void ShaderDataNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   while (false == done) {
     const Token* dt_tok  = view.token(i);
     const Token* nam_tok = view.token(i + 1);
-
+    if(nam_tok == nullptr) {
+      // printf("ShaderDataNode::parse<%s> nam_tok is null at i<%d>\n", _name.c_str(), int(i));
+      done = true;
+      continue; // skip this iteration if nam_tok is null
+    }
     bool is_endline = (dt_tok->text == "\n");
     if (is_endline) {
       i++;
@@ -117,10 +121,10 @@ void UniformDeclNode::emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) co
 
 void UniformSetNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
-  codegen.formatLine("/// begin uniformset");
+  codegen.formatLine("/// begin uniformset <%s>", _name.c_str());
   for (auto udecl : _uniformdecls)
     udecl->emit(backend, true);
-  codegen.formatLine("/// end uniformset");
+  codegen.formatLine("/// end uniformset <%s>", _name.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

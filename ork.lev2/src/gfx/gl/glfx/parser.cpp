@@ -80,7 +80,8 @@ void GlSlFxParser::DumpAllTokens() {
 ///////////////////////////////////////////////////////////
 
 Program::Program(const std::string name) : _name(name) {
-
+  printf("GlfxProgram<%p:%s>\n", this, _name.c_str());
+  _importNamespace = std::make_shared<ImportNamespace>();
 }
 ///////////////////////////////////////////////////////////
 void Program::addBlockNode(decoblocknode_ptr_t node) {
@@ -89,12 +90,9 @@ void Program::addBlockNode(decoblocknode_ptr_t node) {
            node.get(), node->_name.c_str() );
   auto it = _blockNodes.find(node->_name);
   if(it != _blockNodes.end()){
-    logerrchannel()->log( "adding dup block<%s>", node->_name.c_str() );
-    OrkAssert(false);
-  }
-  auto its = node->_name.find("lib_math");
-  if(its!=std::string::npos){
-    //printf( "WTF\n");
+    logerrchannel()->log( "Program<%s> adding dup block<%s>", _name.c_str(), node->_name.c_str() );
+    //OrkAssert(false);
+    return;
   }
   _blockNodes[node->_name]=node;
   size_t bncount = _blockNodes.size();

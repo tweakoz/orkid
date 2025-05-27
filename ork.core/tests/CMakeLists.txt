@@ -9,13 +9,10 @@ set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
 add_executable (ork.test.core.exe ${testsrcs} )
 
-ork_std_target_opts(ork.test.core.exe)
-
-target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_utpp )
-target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_core )
-
-set_target_properties(ork.test.core.exe PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories (ork.test.core.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.test.core.exe PRIVATE ${SRCD} )
+
+ork_std_target_opts_exe(ork.test.core.exe)
+ork_std_target_opts_core(ork.test.core.exe)
+ork_std_target_opts_utpp(ork.test.core.exe)
 
 install(TARGETS ork.test.core.exe DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )

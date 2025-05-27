@@ -289,6 +289,7 @@ void InterfaceNode::pregen(shaderbuilder::BackEnd& backend) const {
 void InterfaceNode::emitInterface(shaderbuilder::BackEnd& backend) const {
   //emitChildren(backend);
   auto& codegen = backend._codegen;
+  codegen.formatLine("/// begin interface <%s>", _name.c_str());
   ////////////////////////////////////////////////
   for (auto iflayout : _interfacelayouts) {
     for (auto item : iflayout->_tokens) {
@@ -309,6 +310,7 @@ void InterfaceNode::emitInterface(shaderbuilder::BackEnd& backend) const {
   _outputs->emit(backend);
   _storage->emit(backend);
   ////////////////////////////////////////////////
+  codegen.formatLine("/// end interface <%s>", _name.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

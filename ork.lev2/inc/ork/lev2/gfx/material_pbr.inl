@@ -87,7 +87,7 @@ public:
   static FxUniformBuffer* pointLightDataBuffer(Context* targ);
   static FxUniformBuffer* boneDataBuffer(Context* targ);
 
-  static texture_ptr_t brdfIntegrationMap(Context* targ,uint64_t type);
+  static texture_ptr_t brdfIntegrationMap(Context* targ,std::string type);
   static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
   static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ, bool equirectangular);
 
@@ -229,10 +229,6 @@ public:
   texture_ptr_t _texEmissive;
   texture_ptr_t _texAmbOcc;
   texture_ptr_t _texLightMap;
-  texture_ptr_t _texBlack;
-  texturearray_ptr_t _texBlackArray;
-  texture_ptr_t _texCubeBlack;
-  texturearray_ptr_t _texWhiteLightMapArray;
 
   ///////////////////////////////////////////
   // Lightmaps
