@@ -17,17 +17,17 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto material_type = //
       py::class_<GfxMaterial, material_ptr_t>(module_lev2, "Material")
-          .def_property("name", 
+          .def_property("name",
             [](material_ptr_t material) -> std::string { //
               return material->mMaterialName; //
-            }, 
+            },
             [](material_ptr_t material, std::string name) { //
               material->mMaterialName = name; //
             })
           .def_property_readonly(
               "rasterstate",                                    //
               [](material_ptr_t material) -> rasterstate_ptr_t  { //
-                return material->_rasterstate; 
+                return material->_rasterstate;
               })
           .def("__repr__", [](material_ptr_t m) -> std::string {
             fxstring<64> fxs;
@@ -201,7 +201,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "findPipeline",                                                                    //
-              [](fxpipelinecache_ptr_t cache, 
+              [](fxpipelinecache_ptr_t cache,
                  fxpipelinepermutation_ptr_t permu ) -> fxpipeline_ptr_t { //
                 return cache->findPipeline(*permu);
               });
@@ -209,10 +209,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pipeline_type =                                                     //
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
-          .def_property("name", 
+          .def_property("name",
             [](fxpipeline_ptr_t pipeline) -> std::string { //
               return pipeline->_debugName; //
-            }, 
+            },
             [](fxpipeline_ptr_t pipeline, std::string name) { //
               pipeline->_debugName = name; //
             })
@@ -223,6 +223,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
+                }
+                else if( py::isinstance<py::bool_>(inp_value) ){
+                  bool bvalue = py::cast<bool>(inp_value);
+                  pipeline->bindParam(param.get(),bvalue);
                 }
                 else if( py::isinstance<py::float_>(inp_value) ){
                   float fvalue = py::cast<float>(inp_value);
@@ -315,10 +319,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [type_codec](fxpipeline_ptr_t pipeline, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
                 else if(key=="debugPrint"){
-                  pipeline->_debugPrint = py::cast<bool>(val); 
+                  pipeline->_debugPrint = py::cast<bool>(val);
                 }
                 else if(key=="debugName"){
-                  pipeline->_debugName = py::cast<std::string>(val); 
+                  pipeline->_debugName = py::cast<std::string>(val);
                 }
                 else {
                   OrkAssert(false);
