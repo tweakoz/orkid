@@ -35,8 +35,12 @@
 ///////////////////////////////////////
 #if defined(ENABLE_PIPEWIRE)
 #include "pipewire/audiodevice_pipewire.h"
-///////////////////////////////////////
 #endif
+///////////////////////////////////////
+#if defined(ENABLE_CORE_AUDIO)
+#include "coreaudio/CoreAudioDevice.h"
+#endif
+///////////////////////////////////////
 
 bool gb_audio_filter = false;
 
@@ -71,6 +75,9 @@ struct AudioDevFactory{
   AudioDevFactory(appinitdata_wkptr_t aid){
 
     std::string default_device_type = "PORTAUDIO";
+    #if defined(ENABLE_CORE_AUDIO)
+    default_device_type = "COREAUDIO";
+    #endif
 
     auto stagedir = ork::file::Path::stage_dir();
     auto orkconfig_path = stagedir / "orkid.json";
@@ -88,6 +95,11 @@ struct AudioDevFactory{
 #if defined(ENABLE_ALSA)
     if( default_device_type == "ALSA" ){
       _device = std::make_shared<AudioDeviceAlsa>(aid);
+    }
+#endif
+#if defined(ENABLE_CORE_AUDIO)
+    if( default_device_type == "COREAUDIO" ){
+      _device = std::make_shared<ca::CoreAudioDevice>(aid);
     }
 #endif
 #if defined(ENABLE_PORTAUDIO)

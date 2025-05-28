@@ -33,14 +33,13 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP_ADAPTIVE_DATA::describeX(class_t* clazz){
-
+void AMP_ADAPTIVE_DATA::describeX(class_t* clazz) {
 }
 
 AMP_ADAPTIVE_DATA::AMP_ADAPTIVE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_ADAPTIVE";
-  auto param = addParam("gain","dB");
+  auto param = addParam("gain", "dB");
   param->useAmplitudeEvaluator();
 }
 
@@ -53,54 +52,52 @@ AMP_ADAPTIVE::AMP_ADAPTIVE(const DspBlockData* dbd)
 }
 
 void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
-  float paramgain = _param[0].eval();         //,0.01f,100.0f);
+  float paramgain = _param[0].eval();           //,0.01f,100.0f);
   int inumframes  = _layer->_dspwritecount;
   const auto& LD  = _layer->_layerdata;
   //////////////////////////////////
   int numinp = _ioconfig->numInputs();
   int numout = _ioconfig->numOutputs();
-  //printf( "numinp<%d> numout<%d>\n", numinp, numout );
+  // printf( "numinp<%d> numout<%d>\n", numinp, numout );
   //////////////////////////////////
   float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-  //printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
+  // printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
   float baseG = laychgain;
-  baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  baseG *= decibel_to_linear_amp_ratio(paramgain) * _dbd->_inputPad;
   //////////////////////////////////
   bool use_natenv = LD->_usenatenv;
   //////////////////////////////////
-  switch(numinp){
-    case 1:{
-      auto bufferL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
-      auto bufferR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
-
+  switch (numinp) {
+    case 1: {
+      auto bufferL = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
+      auto bufferR = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
 
       for (int i = 0; i < inumframes; i++) {
-        //printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain ); 
+        // printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain );
         float ampenv = use_natenv //
-                     ? 1.0f //
-                     : _layer->_ampenvgain;
-        float linG = baseG*ampenv;
-        float inp     = bufferL[i];
-
+                           ? 1.0f //
+                           : _layer->_ampenvgain;
+        float linG   = baseG * ampenv;
+        float inp    = bufferL[i];
 
         bufferL[i] = inp * linG;
         bufferR[i] = inp * linG;
       }
       break;
     }
-    case 2:{
-      auto chanL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
-      auto chanR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
-      //printf( "outputchanL<%p> outputchanR<%p>\n", outputchanL, outputchanR );
+    case 2: {
+      auto chanL = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
+      auto chanR = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+      // printf( "outputchanL<%p> outputchanR<%p>\n", outputchanL, outputchanR );
       for (int i = 0; i < inumframes; i++) {
         float ampenv = use_natenv //
-                     ? 1.0f //
-                     : _layer->_ampenvgain;
-        float linG = baseG*ampenv;
-        float inpL     = chanL[i];
-        float inpR     = chanR[i];
-        chanL[i] = inpL * linG;
-        chanR[i] = inpR * linG;
+                           ? 1.0f //
+                           : _layer->_ampenvgain;
+        float linG   = baseG * ampenv;
+        float inpL   = chanL[i];
+        float inpR   = chanR[i];
+        chanL[i]     = inpL * linG;
+        chanR[i]     = inpR * linG;
       }
       break;
     }
@@ -120,14 +117,13 @@ void AMP_ADAPTIVE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP_MONOIO_DATA::describeX(class_t* clazz){
-
+void AMP_MONOIO_DATA::describeX(class_t* clazz) {
 }
 
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_MONOIO";
-  auto param = addParam("gain","dB");
+  auto param = addParam("gain", "dB");
   param->useAmplitudeEvaluator();
 }
 
@@ -147,10 +143,10 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
   auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-  float ampenv = _layer->_ampenvgain;
+  float ampenv    = _layer->_ampenvgain;
   //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    float linG = paramgain; 
+    float linG = paramgain;
     linG *= laychgain;
     linG *= ampenv;
     float inp     = inputchan[i];
@@ -169,14 +165,13 @@ void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PLUSAMP_DATA::describeX(class_t* clazz){
-
+void PLUSAMP_DATA::describeX(class_t* clazz) {
 }
 
 PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PLUSAMP";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t PLUSAMP_DATA::createInstance() const {
   return std::make_shared<PLUSAMP>(this);
@@ -203,20 +198,20 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   auto LD = _layer->_layerdata;
 
   float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-  float baseG = laychgain;
-  baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  float baseG     = laychgain;
+  baseG *= decibel_to_linear_amp_ratio(paramgain) * _dbd->_inputPad;
   bool use_natenv = LD->_usenatenv;
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float ampenv = use_natenv ? 1.0f : decibel_to_linear_amp_ratio((1.0-_layer->_ampenvgain)*-96.0f);
-      float linG = baseG*ampenv;
-      _filt      = 0.99 * _filt + 0.01 * linG;
-      //float final_g = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _filt;
-      float inL  = lbuf[i] * _filt;
-      //float ae   = _param[1].eval();
-      // float ae   = aenv[i];
+      float ampenv = use_natenv ? 1.0f : decibel_to_linear_amp_ratio((1.0 - _layer->_ampenvgain) * -96.0f);
+      float linG   = baseG * ampenv;
+      _filt        = 0.99 * _filt + 0.01 * linG;
+      // float final_g = decibel_to_linear_amp_ratio(_filt);
+      float inU = ubuf[i] * _filt;
+      float inL = lbuf[i] * _filt;
+      // float ae   = _param[1].eval();
+      //  float ae   = aenv[i];
       float res = (inU + inL) * 0.5 * _filt * 2.0;
       ubuf[i]   = res;
       lbuf[i]   = res;
@@ -231,14 +226,13 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XAMP_DATA::describeX(class_t* clazz){
-
+void XAMP_DATA::describeX(class_t* clazz) {
 }
 
 XAMP_DATA::XAMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XAMP";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XAMP_DATA::createInstance() const {
   return std::make_shared<XAMP>(this);
@@ -287,14 +281,13 @@ void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GAIN_DATA::describeX(class_t* clazz){
-
+void GAIN_DATA::describeX(class_t* clazz) {
 }
 
 GAIN_DATA::GAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "GAIN";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t GAIN_DATA::createInstance() const {
   return std::make_shared<GAIN>(this);
@@ -322,14 +315,13 @@ void GAIN::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void STEREO_GAIN_DATA::describeX(class_t* clazz){
-
+void STEREO_GAIN_DATA::describeX(class_t* clazz) {
 }
 
 STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "STEREO_GAIN";
-  addParam("gain")->useAmplitudeEvaluator(); 
+  addParam("gain")->useAmplitudeEvaluator();
 }
 dspblk_ptr_t STEREO_GAIN_DATA::createInstance() const {
   return std::make_shared<STEREO_GAIN>(this);
@@ -358,14 +350,13 @@ void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void XFADE_DATA::describeX(class_t* clazz){
-
+void XFADE_DATA::describeX(class_t* clazz) {
 }
 
 XFADE_DATA::XFADE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XFADE";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XFADE_DATA::createInstance() const {
   return std::make_shared<XFADE>(this);
@@ -412,14 +403,13 @@ void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XGAIN_DATA::describeX(class_t* clazz){
-
+void XGAIN_DATA::describeX(class_t* clazz) {
 }
 
 XGAIN_DATA::XGAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XGAIN";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t XGAIN_DATA::createInstance() const {
   return std::make_shared<XGAIN>(this);
@@ -440,11 +430,11 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
   if (1) {
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
-      _filt      = 0.999 * _filt + 0.001 * gain;
-      float linG = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _dbd->_inputPad;
-      float inL  = lbuf[i] * _dbd->_inputPad;
-      float res  = (inU * inL) * linG;
+      _filt         = 0.999 * _filt + 0.001 * gain;
+      float linG    = decibel_to_linear_amp_ratio(_filt);
+      float inU     = ubuf[i] * _dbd->_inputPad;
+      float inL     = lbuf[i] * _dbd->_inputPad;
+      float res     = (inU * inL) * linG;
       outputchan[i] = res;
     }
     _fval[0] = _filt;
@@ -457,15 +447,14 @@ void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMPU_AMPL_DATA::describeX(class_t* clazz){
-
+void AMPU_AMPL_DATA::describeX(class_t* clazz) {
 }
 
 AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMPUAMPL";
-  addParam("gainU")->useDefaultEvaluator(); // position: eval: "POS" 
-  addParam("gainL")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gainU")->useDefaultEvaluator(); // position: eval: "POS"
+  addParam("gainL")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t AMPU_AMPL_DATA::createInstance() const {
   return std::make_shared<AMPU_AMPL>(this);
@@ -490,23 +479,23 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   const auto& layd = _layer->_layerdata;
   float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
   float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
-  float baseLG = LowerLinG;
-  baseLG *= decibel_to_linear_amp_ratio(gainL)*_dbd->_inputPad;
+  float baseLG     = LowerLinG;
+  baseLG *= decibel_to_linear_amp_ratio(gainL) * _dbd->_inputPad;
   float baseUG = UpperLinG;
-  baseUG *= decibel_to_linear_amp_ratio(gainU)*_dbd->_inputPad;
+  baseUG *= decibel_to_linear_amp_ratio(gainU) * _dbd->_inputPad;
   bool use_natenv = _layer->_layerdata->_usenatenv;
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      _filtU      = 0.999 * _filtU + 0.001 * baseUG;
-      _filtL      = 0.999 * _filtL + 0.001 * baseLG;
-      float inU   = ubuf[i];
-      float inL   = lbuf[i];
+      _filtU       = 0.999 * _filtU + 0.001 * baseUG;
+      _filtL       = 0.999 * _filtL + 0.001 * baseLG;
+      float inU    = ubuf[i];
+      float inL    = lbuf[i];
       float ampenv = use_natenv //
-                    ? 1.0f //
-                    : _layer->_ampenvgain;
-      float resU  = inU * _filtU * ampenv;
-      float resL  = inL * _filtL * ampenv;
+                         ? 1.0f //
+                         : _layer->_ampenvgain;
+      float resU   = inU * _filtU * ampenv;
+      float resL   = inL * _filtL * ampenv;
 
       ubuf[i] = resU * u_lrmix.lmix + resL * l_lrmix.lmix;
       lbuf[i] = resU * u_lrmix.rmix + resL * l_lrmix.rmix;
@@ -528,15 +517,14 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BAL_AMP_DATA::describeX(class_t* clazz){
-
+void BAL_AMP_DATA::describeX(class_t* clazz) {
 }
 
 BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "BALAMP";
-  addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
-  addParam("AMP")->useAmplitudeEvaluator(); // position: eval: "POS" 
+  addParam("POS")->useDefaultEvaluator();   // position: eval: "POS"
+  addParam("AMP")->useAmplitudeEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t BAL_AMP_DATA::createInstance() const {
   return std::make_shared<BAL_AMP>(this);
@@ -569,15 +557,14 @@ void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP_MOD_OSC_DATA::describeX(class_t* clazz){
-
+void AMP_MOD_OSC_DATA::describeX(class_t* clazz) {
 }
 
 AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMPMODOSC";
-  addParam("PITCH")->usePitchEvaluator(); // oscilator pitch 
-  addParam("DEP")->useDefaultEvaluator(); // ampmod depth 
+  addParam("PITCH")->usePitchEvaluator(); // oscilator pitch
+  addParam("DEP")->useDefaultEvaluator(); // ampmod depth
 }
 dspblk_ptr_t AMP_MOD_OSC_DATA::createInstance() const {
   return std::make_shared<AMP_MOD_OSC>(this);
@@ -610,14 +597,13 @@ void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BANGAMP_DATA::describeX(class_t* clazz){
-
+void BANGAMP_DATA::describeX(class_t* clazz) {
 }
 
 BANGAMP_DATA::BANGAMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "!AMP";
-  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS"
 }
 dspblk_ptr_t BANGAMP_DATA::createInstance() const {
   return std::make_shared<BANGAMP>(this);
@@ -659,16 +645,15 @@ void BANGAMP::doKeyOn(const KeyOnInfo& koi) // final
   _smooth = 0.0f;
 }
 
-void NOISEGATE_DATA::describeX(class_t* clazz){
-
+void NOISEGATE_DATA::describeX(class_t* clazz) {
 }
 
 NOISEGATE_DATA::NOISEGATE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "NOISEGATE";
-  addParam("thresh")->useDefaultEvaluator(); // position: eval: "POS" 
-  addParam("attack")->useDefaultEvaluator(); // position: eval: "POS"   
-  addParam("release")->useDefaultEvaluator(); // position: eval: "POS"   
+  addParam("thresh")->useDefaultEvaluator();  // position: eval: "POS"
+  addParam("attack")->useDefaultEvaluator();  // position: eval: "POS"
+  addParam("release")->useDefaultEvaluator(); // position: eval: "POS"
 }
 
 dspblk_ptr_t NOISEGATE_DATA::createInstance() const {
@@ -695,44 +680,53 @@ void NOISEGATE::compute(DspBuffer& dspbuf) // final
 
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
 
-  auto my_data = (const NOISEGATE_DATA*) _dbd;
+  auto my_data = (const NOISEGATE_DATA*)_dbd;
 
-  float attack = my_data->_attack;
+  float attack  = my_data->_attack;
   float release = my_data->_release;
-  float thresh = my_data->_threshold;
+  float thresh  = my_data->_threshold;
   float inpgain = my_data->_inputgain;
   float outgain = my_data->_outputgain;
 
+  if (0) {
+    printf(
+        "inpgain<%g> outgain<%g> thresh<%g> attack<%g> release<%g> _energy<%g>\n",
+        inpgain,
+        outgain,
+        thresh,
+        attack,
+        release,
+        _energy);
+  }
   for (int i = 0; i < inumframes; i++) {
-
-
 
     float inU = ubuf[i] * _dbd->_inputPad * inpgain;
     float inL = lbuf[i] * _dbd->_inputPad * inpgain;
     float res = (inU + inL);
 
-    res    = std::clamp(res, -1.0f, 1.0f);
+    res = std::clamp(res, -1.0f, 1.0f);
 
     // measure "energy" of input over last .5 seconds
     // if energy is below threshold, gate the signal
 
     float energy = _energy * 0.999f + res * res * 0.001f;
-    _energy     = energy;
+    _energy      = energy;
 
     float envelope = _envelope;
     if (energy > thresh) {
       envelope = envelope + attack;
-      if(envelope>1.0f) envelope = 1.0f;
+      if (envelope > 1.0f)
+        envelope = 1.0f;
     } else {
       envelope = envelope * (1.0f - release);
     }
     _envelope = envelope;
 
-    res     = res * _envelope * outgain;
-    res    = std::clamp(res, -1.0f, 1.0f);
-    float ae  = _param[1].eval();
-    lbuf[i]   = res;
-    ubuf[i]   = res;
+    res      = res * _envelope * outgain;
+    res      = std::clamp(res, -1.0f, 1.0f);
+    float ae = _param[1].eval();
+    lbuf[i]  = res;
+    ubuf[i]  = res;
   }
   _fval[0] = 0.0f;
 }

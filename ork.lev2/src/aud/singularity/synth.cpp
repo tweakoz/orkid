@@ -745,10 +745,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     // route to synth input
     /////////////////////////////
 
-    if (input)
+    if (input){
       for (int i = 0; i < inumframes; i++) {
-        input_left[i] = input[i];
+        float j = input[i];
+        input_left[i] = j;
       }
+    }
 
     /////////////////////////////
     // clear output busses

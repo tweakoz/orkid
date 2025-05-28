@@ -35,14 +35,15 @@ class TrackAndClip:
 
 class SingulTestApp(object):
 
-  def __init__(self):
+  def __init__(self,enable_input=False):
     super().__init__()
     self.ezapp = OrkEzApp.create(self,
                                  left=420, 
                                  top=100, 
                                  height=720,
                                  width=1280,
-                                 enable_audio_synth=True)
+                                 enable_audio_synth=True,
+                                 enable_audio_input = enable_input)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup

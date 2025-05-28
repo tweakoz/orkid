@@ -383,5 +383,20 @@ struct StereoDelay : public DspBlock {
   delaycontext_ptr_t _delayL;
   delaycontext_ptr_t _delayR;
 };
+struct HwInputData final : public DspBlockData {
+  DeclareConcreteX(HwInputData,DspBlockData);
+  HwInputData(std::string name="X");
+  dspblk_ptr_t createInstance() const override;
+};
+
+struct HwInput : public DspBlock {
+  using dataclass_t = HwInputData;
+  HwInput(const HwInputData* dbd);
+  ~HwInput();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  void doKeyOff() final;
+  bool _key_down = false;
+};
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

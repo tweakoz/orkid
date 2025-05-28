@@ -705,7 +705,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     ///////////
     else {
       printf("unhandled DSPBLOCK <%s>\n", blocktype.c_str());
-      OrkAssert(false);
+      //OrkAssert(false);
     }
   } else {
     OrkAssert(false);

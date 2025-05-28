@@ -254,7 +254,8 @@ public:
   onauddevfn_t _onAudioInit                 = nullptr;
   onauddevfn_t _onAudioExit                 = nullptr;
   onsynfn_t _onSynthExit                    = nullptr;
-
+  audiodevice_ptr_t _audiodevice            = nullptr;
+  audio::singularity::synth_ptr_t _synth    = nullptr;
 };
 
 } // namespace ork::lev2

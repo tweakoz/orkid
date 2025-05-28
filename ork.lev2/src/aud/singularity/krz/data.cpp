@@ -55,7 +55,7 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
     auto& base_json = krz_import->_json_programs;
     dblock        = std::make_shared<DataBlock>();
     auto json_path = base/"k2v3base.json";
-    if(false) {
+    if(true) {
       auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
       array.push_back(0);
       FILE* json_file = fopen(json_path.c_str(), "wb");

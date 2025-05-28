@@ -65,6 +65,7 @@ static int patestCallback(
 
   auto paimpl = padev->_impl.getShared<PaImpl>();
   auto the_synth = padev->_the_synth;
+    OrkAssert(padev->_num_input_channels == 1);
 
   if(inputBuffer and padev->_input_handler){
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
@@ -82,7 +83,21 @@ static int patestCallback(
 
   if(the_synth and outputBuffer){
     auto out = (float*)outputBuffer;
-    the_synth->compute(framesPerBuffer, inputBuffer);
+
+    // convert inputBuffer to float
+    OrkAssert(padev->_num_input_channels == 1);
+    static auto inputBufferFloat = new float[framesPerBuffer];
+    auto inpbuf_int = (const int16_t*)inputBuffer;
+    for (size_t i = 0; i < framesPerBuffer; i++) {
+      int16_t j = inpbuf_int[i];
+      // endian swap 
+      ork::swapbytes(j);
+      inputBufferFloat[i] = float(j) * (1.0f / 32768.0f); // convert to float
+    }
+
+
+
+    the_synth->compute(framesPerBuffer, inputBufferFloat);
     the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
 
     if (false) { // test tone ?
@@ -186,7 +201,7 @@ static int patestCallback(
     }
     inp_params.device = paimpl->_input_override;
     inp_params.channelCount = num_inputs;
-    inp_params.sampleFormat = paFloat32;
+    inp_params.sampleFormat = paInt16; // paFloat32;
     inp_params.suggestedLatency = Pa_GetDeviceInfo(inp_params.device)->defaultLowInputLatency;
     inp_params.hostApiSpecificStreamInfo = nullptr;
   }
@@ -211,7 +226,7 @@ static int patestCallback(
         &out_params,
         SR,
         DESIRED_NUMFRAMES,
-        paClipOff,
+        paClipOff|paDitherOff,
         patestCallback,
         (void*) padev );
     OrkAssert(err == paNoError);

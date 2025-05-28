@@ -322,13 +322,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ezapp->_vars;
       })
       ///////////////////////////////////////////////////////
+      .def_property_readonly("audio_device", [](orkezapp_ptr_t ezapp) -> audiodevice_ptr_t { //
+        return ezapp->_audiodevice;  
+      })
+      ///////////////////////////////////////////////////////
       .def_property_readonly("audio_synth", [](orkezapp_ptr_t ezapp) -> audio::singularity::synth_ptr_t { //
-        audio::singularity::synth_ptr_t synth = nullptr;
-        auto it = ezapp->_initdata->_miscvars.find("synth");
-        if (it != ezapp->_initdata->_miscvars.end()) {
-          synth = it->second.get<audio::singularity::synth_ptr_t>();
-        }
-        return synth;  
+        return ezapp->_synth;  
       })
       ///////////////////////////////////////////////////////
       .def_property_readonly(

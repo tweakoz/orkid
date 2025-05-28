@@ -129,7 +129,7 @@ void filescanner::emitCalvin(const Calvin* c, rapidjson::Value& parent) {
       break;
   }
 
-  if (pid == 190) {
+  /*if (pid == 190) {
     auto l0  = p->_layers[0];
     auto c0  = l0->_calvin;
     auto& kp = c0->_kmpage;
@@ -137,7 +137,7 @@ void filescanner::emitCalvin(const Calvin* c, rapidjson::Value& parent) {
     assert(kp._kmid1 == 58);
     AddMember(kmseg, "YO", std::string("WHATUP"));
     // assert(false);
-  }
+  }*/
 
   AddMember(calvinseg, "KEYMAP", kmseg);
 

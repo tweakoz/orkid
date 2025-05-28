@@ -473,37 +473,38 @@ bool OrkEzApp::shouldUpdateThrottleOnGPU(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioInit(){
-  audiodevice_ptr_t auddev = AudioDevice::createInstance(_initdata);
-  _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(auddev);
+  _audiodevice = AudioDevice::createInstance(_initdata);
+  _initdata->_miscvars["audiodevice"].set<audiodevice_ptr_t>(_audiodevice);
   if(_initdata->_enable_audio_synth){
     audio::singularity::synth::bringUp();
-    auto synth = audio::singularity::synth::instance();
-    _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(synth);
-    if(synth){
-      synth->mainThreadHandler();
+    _synth = audio::singularity::synth::instance();
+    _initdata->_miscvars["synth"].set<audio::singularity::synth_ptr_t>(_synth);
+    if(_synth){
+      _synth->mainThreadHandler();
     }
     if(_onSynthInit){
-      _onSynthInit(synth);
+      _onSynthInit(_synth);
     }
   }
   if(_onAudioInit){
-    _onAudioInit(auddev);
+    _onAudioInit(_audiodevice);
   }
-  auddev->startup();
+  _audiodevice->startup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::_audioExit(){
   auto it_a = _initdata->_miscvars.find("audiodevice");
   if(it_a != _initdata->_miscvars.end()){
     auto auddev = it_a->second.get<audiodevice_ptr_t>();
-    if(auddev){
-      auddev->shutdown();
+    if(_audiodevice){
+      _audiodevice->shutdown();
       if(_onAudioExit){
         _onAudioExit(auddev);
       }
     }
     _initdata->_miscvars.erase(it_a);
   }
+  _audiodevice = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
