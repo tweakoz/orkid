@@ -58,14 +58,14 @@ lyrdata_ptr_t fxpreset_distortionplusecho() {
   /////////////////
   auto echo = appendStereoStereoDynamicEcho(fxlayer, fxstage, 0.55, 0.28, 0.15, 0.15);
   /////////////////
+  appendStereoDistortion(fxlayer, fxstage, 0.0);
+  auto chorus               = appendStereoChorus(fxlayer, fxstage);
   appendStereoHighFreqStimulator(
       fxlayer, //
       fxstage,
       500.0f, // cutoff
       18.0f,  // drive
-      0.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, -12.0);
-  auto chorus               = appendStereoChorus(fxlayer, fxstage);
+      12.0f);  // output gain
   chorus->param(0)->_coarse = 0.5f;  // delay time (L)
   chorus->param(1)->_coarse = 0.25f; // delay time (R)
   chorus->param(2)->_coarse = 0.25;  // feedback
@@ -567,6 +567,22 @@ lyrdata_ptr_t fxpreset_pitchrec() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_pitchrecdn() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  appendPitchRec(fxlayer, fxstage, -400, 0.5, 0.35);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_stereodelay() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -835,7 +851,8 @@ void loadAllFxPresets(synth* s) {
   addpreset("ShifterOctDn", fxpreset_pitchoctdn());
   addpreset("ShifterWave", fxpreset_pitchwave());
   addpreset("ShifterChorus", fxpreset_pitchchorus());
-  addpreset("ShifterRec", fxpreset_pitchrec());
+  addpreset("ShifterRecUp", fxpreset_pitchrec());
+  addpreset("ShifterRecDn", fxpreset_pitchrecdn());
   addpreset("MultiTest", fxpreset_multitest());
   addpreset("StereoDelay", fxpreset_stereodelay());
   addpreset("Vowels", fxpreset_vowels());
@@ -852,10 +869,12 @@ void loadAllFxPresets(synth* s) {
   addpreset("IR-1", fxpreset_IR("TunnelToHeaven.wav",0.25,-18));
   addpreset("IR-2", fxpreset_IR("TunnelToHell.wav",0.1,-24));
   addpreset("IR-3", fxpreset_IR("Sound 2.wav",0.20,-6));
-  addpreset("IR-4", fxpreset_IR("StorageTankNo7.wav",0.20,-6));
-  addpreset("IR-5", fxpreset_IR("PacificHall.wav",0.20,-6));
-  addpreset("IR-6", fxpreset_IR("PepperCanyonHall.wav",0.18,-18));
+  addpreset("IR-3a", fxpreset_IR("Sound 2.wav",0.05,-6));
+  addpreset("IR-4", fxpreset_IR("StorageTankNo7.wav",0.50,-6));
+  addpreset("IR-5", fxpreset_IR("PacificHall.wav",0.50,-6));
+  addpreset("IR-6", fxpreset_IR("PepperCanyonHall.wav",0.18,-6));
   addpreset("IR-7", fxpreset_IR("5012 Black Hole.SDIR",0.25,0));
+  addpreset("IR-7a", fxpreset_IR("5012 Black Hole.SDIR",0.05,0));
   
 }
 } // namespace ork::audio::singularity

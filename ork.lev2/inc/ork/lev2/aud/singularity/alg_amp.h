@@ -204,7 +204,37 @@ struct PANNER2D : public DspBlock {
   float _a1 = 1.0f;
   float _a2 = 1.0f;
   float _ap2 = 0.0f;
+  float _prevAngle = 0.0f;
+  float _prevDistance = 0.0f;
 };
+///////////////////////////////////////////////////////////////////////////////
+struct PANNER2DU_DATA : public DspBlockData {
+  DeclareConcreteX(PANNER2DU_DATA,DspBlockData);
+  PANNER2DU_DATA(std::string name="DspAmpPanner2DU");
+  dspblk_ptr_t createInstance() const override;
+};
+struct PANNER2DU : public DspBlock {
+  using dataclass_t = PANNER2DU_DATA;
+  PANNER2DU(const DspBlockData* dbd);
+  ~PANNER2DU();
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  float _mixL, _mixR; // for smoothing
+  delaycontext_ptr_t _delayL, _delayR;
+  TrapSVF _filter1L, _filter1R;
+  TrapSVF _fbLP;
+  TrapSVF _dcBLOCK;
+  TrapAllpass _allpassA, _allpassB, _allpassC;
+  SimpleAllpass _ap2A, _ap2B, _ap2C;
+  float _feedback = 0.995f;
+  float _a0 = 1.0f;
+  float _a1 = 1.0f;
+  float _a2 = 1.0f;
+  float _ap2 = 0.0f;
+  float _prevAngle = 0.0f;
+  float _prevDistance = 0.0f;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct NOISEGATE_DATA : public DspBlockData {
   DeclareConcreteX(NOISEGATE_DATA,DspBlockData);
   NOISEGATE_DATA(std::string name="DspAmpNoiseGate");

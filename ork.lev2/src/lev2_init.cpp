@@ -378,6 +378,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::XFADE_DATA);
     RegisterClassX(audio::singularity::PANNER_DATA);
     RegisterClassX(audio::singularity::PANNER2D_DATA);
+    RegisterClassX(audio::singularity::PANNER2DU_DATA);
     RegisterClassX(audio::singularity::RingModData);
     RegisterClassX(audio::singularity::NOISEGATE_DATA);
 

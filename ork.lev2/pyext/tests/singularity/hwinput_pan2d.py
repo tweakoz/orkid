@@ -42,6 +42,8 @@ class HwInputApp(SingulTestApp):
     newprog = self.new_soundbank.newProgram(prgname)
     ############################
     newlyr = newprog.newLayer()
+    newlyr.panmode = 4     # fixed / floatpan (-1 .. +1)
+    newlyr.floatPan = 0.0
     ############################
     dspstg = newlyr.appendStage("DSP")
     ampstg = newlyr.appendStage("AMP")
@@ -55,10 +57,38 @@ class HwInputApp(SingulTestApp):
     hwinput = dspstg.appendDspBlock("HwInput","hwi")
     noisegate = dspstg.appendDspBlock("AmpNoiseGate","ng")
     ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
+    panblock = ampstg.appendDspBlock("AmpPanner2DU","PANNER")
+    def gen_pan_block(newlyr,panblock,arate=None,drate=None):
+      ANGLE = panblock.paramByName("ANGLE")
+      DISTANCE = panblock.paramByName("DISTANCE")
+      #########################################
+      # angle will just keep going up...
+      #########################################
+      angle_gradient = newlyr.appendController("Gradient", "angle_gradient")
+      angle_gradient.properties.initial = 0.0
+      angle_gradient.properties.slope = arate
+      #
+      ANGLE.coarse=0
+      ANGLE.mods.src1 = angle_gradient
+      ANGLE.mods.src1scale = 1.0
+      ANGLE.mods.src1bias = -1.0
+      #########################################
+      # distance will follow a sine wave
+      #########################################
+      dist_lfo = newlyr.appendController("Lfo", "distanceLFO")
+      dist_lfo.properties.shape = "Sine"
+      dist_lfo.properties.minRate = drate
+      dist_lfo.properties.maxRate = drate
+      DISTANCE.coarse=0
+      DISTANCE.mods.src1 = dist_lfo
+      DISTANCE.mods.src1scale = 2.0
+      DISTANCE.mods.src1bias = 3.0
+    gen_pan_block(newlyr,panblock,arate=0.01,drate=0.1)
+    self.panblock = panblock
     ############################
     newlyr.pitchBlock = pchblock
-    newlyr.panmode = 4     # fixed / floatpan (-1 .. +1)
-    newlyr.floatPan = 0.0
+    #newlyr.panmode = 4     # fixed / floatpan (-1 .. +1)
+    #newlyr.floatPan = 0.0
     ############################
     noisegate.threshold = 0.0005
     noisegate.input_gain = 1.0
@@ -80,6 +110,9 @@ class HwInputApp(SingulTestApp):
     print(self.prog_index)
     if self.pgmview:
       self.pgmview.setProgram(newprog)
+  def onGpuUpdate(self, ctx):
+    self.panblock.paramByName("ANGLE").coarse = self.time*1.4
+    self.panblock.paramByName("DISTANCE").coarse = math.sin(self.time)+2
   ##############################################
 
 ###############################################################################
