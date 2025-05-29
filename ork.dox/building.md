@@ -72,6 +72,7 @@ or
 
    2 finger scroll: zoom camera
 
+   Command-Q to quit
 
 # Debug ORKID
 
