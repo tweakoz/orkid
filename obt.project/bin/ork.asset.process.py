@@ -46,7 +46,7 @@ envmap_assets_to_process = [
   "src://envmaps/arena4k.png",
   "src://envmaps/club4k.png",
   "src://envmaps/club8k.png",
-  "src://envmaps/crossroads.png",
+  "src://envmaps/crossroads4k.png",
   "src://envmaps/ethereal4k.png",
   "src://envmaps/futcity4k.png",
   "src://envmaps/ocean4k.png",
