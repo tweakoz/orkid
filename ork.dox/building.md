@@ -10,6 +10,7 @@ make sure email and username set for github
 * remove homebrew ```sudo rm -rf /opt/homebrew```
 * reinstall homebrew:
     ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"```
+* if you dont want to delete and reinstall homebrew, you probably should at least update it.
 * ```brew install python3```
 * probably want to use bash instead of zsh
 * prepend /opt/homebrew/bin to $PATH
