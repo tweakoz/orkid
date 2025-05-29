@@ -877,6 +877,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("IR-RadioAnn2", fxpreset_IR("Sound 2.wav",0.20,-6));
   addpreset("IR-Mic1", fxpreset_IR("Neumann U-87 AI - 15cm.wav",0.50,-16));
   addpreset("IR-Forest", fxpreset_IR("forest.wav",0.0015,-6));
+  addpreset("IR-RMX16b", fxpreset_IR("rmx16-nonlin.wav",0.03,-6));
   addpreset("IR-RMX16", fxpreset_IR("rmx16-nonlin.wav",0.01,-6));
   addpreset("IR-Spring1", fxpreset_IR("spring1.wav",0.004,-6));
   addpreset("IR-Shower", fxpreset_IR("shower.wav",0.0006,-6));
