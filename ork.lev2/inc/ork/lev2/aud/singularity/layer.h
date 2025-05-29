@@ -56,6 +56,7 @@ struct LayerData : public ork::Object {
   int _panmode = -1;
   int _pan = 0;
   int _headroom = 0;
+  float _floatPan = 0.0f; // -1.0f to +1.0f
 
   algdata_ptr_t _algdata;
   std::string _outbus;

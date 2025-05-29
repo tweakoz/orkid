@@ -16,7 +16,7 @@
 #include <string>
 #include <iomanip> // For std::setw and std::setprecision
 
-ImplementReflectionX(ork::audio::singularity::MonoInStereoOutData, "SynMonoInStereoOut");
+ImplementReflectionX(ork::audio::singularity::MonoInStereoOutData, "DspMonoInStereoOut");
 ImplementReflectionX(ork::audio::singularity::StereoEnhancerData, "DspFxMixStereoEnhancer");
 ImplementReflectionX(ork::audio::singularity::Sum2Data, "DspFxMixSum2");
 
@@ -60,9 +60,9 @@ void MonoInStereoOutData::describeX(class_t* clazz) {
 MonoInStereoOutData::MonoInStereoOutData(std::string name)
     : DspBlockData(name) {
   _blocktype     = "MonoInStereoOut";
-  auto amp_param = addParam();
+  auto amp_param = addParam("gain", "dB");
   amp_param->useAmplitudeEvaluator();
-  auto pan_param = addParam();
+  auto pan_param = addParam("pan", "PAN");
   pan_param->useDefaultEvaluator();
 }
 dspblk_ptr_t MonoInStereoOutData::createInstance() const { // override
@@ -73,28 +73,19 @@ MonoInStereoOut::MonoInStereoOut(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
 
-void MonoInStereoOut::compute(DspBuffer& dspbuf) // final
-{
-  float dynamicgain = _param[0].eval() * _dbd->_inputPad;
-  float dynamicpan  = _panbase + _param[1].eval();
+void MonoInStereoOut::compute(DspBuffer& dspbuf) { // final
+
   int inumframes    = _layer->_dspwritecount;
   int ibase         = _layer->_dspwritebase;
-  const auto& LD    = _layer->_layerdata;
-  auto l_lrmix      = panBlend(dynamicpan);
-  auto lbuf         = getRawBuf(dspbuf, 0) + ibase;
-  auto rbuf         = getRawBuf(dspbuf, 1) + ibase;
-  float SingleLinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+
+  auto lbuf_i         = getInpBuf(dspbuf, 0) + ibase;
+  auto lbuf_o         = getOutBuf(dspbuf, 0) + ibase;
+  auto rbuf_o         = getOutBuf(dspbuf, 1) + ibase;
 
   for (int i = 0; i < inumframes; i++) {
-    // float linG = decibel_to_linear_amp_ratio(dynamicgain);
-    // linG *= SingleLinG;
-    float inp  = lbuf[i];
-    float mono = clip_float(
-        inp * dynamicgain, //
-        kminclip,
-        kmaxclip);
-    lbuf[i] = mono * l_lrmix.lmix;
-    rbuf[i] = mono * l_lrmix.rmix;
+    float inp  = lbuf_i[i];
+    lbuf_o[i] = inp*32.0;
+    rbuf_o[i] = inp*32.0;
   }
   _fval[0] = _filt;
 }

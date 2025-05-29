@@ -599,6 +599,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t ldata, int val) { //
                               ldata->_pan = val;
                             })
+                        .def_property(
+                            "floatPan",
+                            [](lyrdata_ptr_t ldata) -> float { //
+                              return ldata->_floatPan;
+                            },
+                            [](lyrdata_ptr_t ldata, float val) { //
+                              ldata->_floatPan = val;
+                            })
                         .def("__repr__", [](lyrdata_ptr_t ldata) -> std::string {
                           std::ostringstream oss;
                           oss << "LayerData( name: " << ldata->_name << ", stage_count: " << ldata->_algdata->_numstages << " )";

@@ -288,20 +288,24 @@ float Layer::currentPan() const{
   int panmode = _layerdata->_panmode;
   int pan = _layerdata->_pan;
   float fpan = float(pan-7)/7.0;
-  switch(panmode){
+  switch(panmode) {
     case 0: // Fixed
       break;
     case 1: // +MIDI
       fpan += 0.5f;
       break;
-    case 2:{ // Auto
+    case 2: { // Auto
       int ko = _curnote-60;
       fpan = float(ko)/60.0;
       break;
     }
-    case 3:{ // Reverse(Auto)
+    case 3: { // Reverse(Auto)
       int ko = -(_curnote-60);
       fpan = float(ko)/60.0;
+      break;
+    }
+    case 4: { // Fixed (floatpan)
+      fpan = _layerdata->_floatPan;
       break;
     }
   }

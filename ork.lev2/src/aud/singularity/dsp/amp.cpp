@@ -67,10 +67,15 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
   //////////////////////////////////
   bool use_natenv = LD->_usenatenv;
   //////////////////////////////////
+  int wrbase = _layer->_dspwritebase;
+  //printf("numinp<%d> numout<%d>\n", numinp, numout);
   switch (numinp) {
     case 1: {
-      auto bufferL = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
-      auto bufferR = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+      auto bufferIL = getInpBuf(dspbuf, 0) + wrbase;
+      auto bufferOL = getOutBuf(dspbuf, 0) + wrbase;
+      auto bufferOR = getOutBuf(dspbuf, 1) + wrbase;
+
+      //printf("bufferIL<%p> bufferOL<%p> bufferOR<%p>\n", bufferIL, bufferOL, bufferOR);
 
       for (int i = 0; i < inumframes; i++) {
         // printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain );
@@ -78,26 +83,28 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
                            ? 1.0f //
                            : _layer->_ampenvgain;
         float linG   = baseG * ampenv;
-        float inp    = bufferL[i];
+        float inp    = bufferIL[i];
 
-        bufferL[i] = inp * linG;
-        bufferR[i] = inp * linG;
+        bufferOL[i] = inp * linG;
+        bufferOR[i] = inp * linG;
       }
       break;
     }
     case 2: {
-      auto chanL = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
-      auto chanR = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+      auto bufferIL = getInpBuf(dspbuf, 0) + wrbase;
+      auto bufferIR = getInpBuf(dspbuf, 1) + wrbase;
+      auto bufferOL = getOutBuf(dspbuf, 0) + wrbase;
+      auto bufferOR = getOutBuf(dspbuf, 1) + wrbase;
       // printf( "outputchanL<%p> outputchanR<%p>\n", outputchanL, outputchanR );
       for (int i = 0; i < inumframes; i++) {
         float ampenv = use_natenv //
                            ? 1.0f //
                            : _layer->_ampenvgain;
         float linG   = baseG * ampenv;
-        float inpL   = chanL[i];
-        float inpR   = chanR[i];
-        chanL[i]     = inpL * linG;
-        chanR[i]     = inpR * linG;
+        float inpL   = bufferIL[i];
+        float inpR   = bufferIR[i];
+        bufferOL[i]     = inpL * linG;
+        bufferOR[i]     = inpR * linG;
       }
       break;
     }

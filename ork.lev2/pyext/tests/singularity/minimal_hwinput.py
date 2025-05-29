@@ -31,7 +31,7 @@ class HwInputApp(SingulTestApp):
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     prgname = "hwinput"
-    self.mainbus.gain = 18
+    self.mainbus.gain = 30
     self.octave = 4
     ############################
     # create a new hybrid patch
@@ -42,24 +42,31 @@ class HwInputApp(SingulTestApp):
     newprog = self.new_soundbank.newProgram(prgname)
     ############################
     newlyr = newprog.newLayer()
+    ############################
     dspstg = newlyr.appendStage("DSP")
     ampstg = newlyr.appendStage("AMP")
-    dspstg.ioconfig.inputs = [0,1]
-    dspstg.ioconfig.outputs = [0,1]
-    ampstg.ioconfig.inputs = [0,1]
-    ampstg.ioconfig.outputs = [0,2]
+    ############################
+    dspstg.ioconfig.inputs = [0]    # mono input
+    dspstg.ioconfig.outputs = [0]   # mono output
+    ampstg.ioconfig.inputs = [0]    # mono input
+    ampstg.ioconfig.outputs = [0,1] # stereo output
+    ############################
     pchblock = dspstg.appendDspBlock("Pitch","pitch")
-    newlyr.pitchBlock = pchblock
-    newlyr.panmode = 0
-    newlyr.pan = 0
-    ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
     hwinput = dspstg.appendDspBlock("HwInput","hwi")
     noisegate = dspstg.appendDspBlock("AmpNoiseGate","ng")
-    noisegate.threshold = 0.003
-    noisegate.input_gain = 50.0
-    noisegate.output_gain = 5 / noisegate.input_gain
-    noisegate.attack = 0.03
-    noisegate.release = 0.001
+    ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
+    ############################
+    newlyr.pitchBlock = pchblock
+    newlyr.panmode = 4     # fixed / floatpan (-1 .. +1)
+    newlyr.floatPan = 0.0
+    ############################
+    noisegate.threshold = 0.0005
+    noisegate.input_gain = 1.0
+    noisegate.output_gain = 1 / noisegate.input_gain
+    noisegate.attack = 0.05
+    noisegate.release = 0.0005
+    ############################
+    #m2s.params["gain"] = 0.0
     ############################
     self.soundbank = self.new_soundbank
     ############################
