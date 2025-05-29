@@ -13,7 +13,7 @@ make sure email and username set for github
 * if you dont want to delete and reinstall homebrew, you probably should at least update it.
 * ```brew install python3```
 * probably want to use bash instead of zsh
-* prepend /opt/homebrew/bin to $PATH
+* prepend /opt/homebrew/bin to $PATH - so homebrew's python takes precedence (Apple tends to ship old Pythons).
 * ```xcodebuild -runFirstLaunch``` # agree to Eula I think...
 
 # INITIAL SYSTEM-WIDE SETUP (Ubuntu 24.04/x64)
