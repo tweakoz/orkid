@@ -60,6 +60,18 @@ or
 * ```obt.goto.orkid``` # goto orkid directory
 * ```./ork.lev2/pyext/tests/renderer/lighting/spotlight_skinned_model.py```
      this may require a few minutes for some additional asset processing, this is a one-time cost - the result of the processing will get cached
+* standard camera controls - mac trackpad (or mouse): 
+
+   Maya inspired arrangement - with the Z,X,C keys standing in as L,M,R mouse buttons.
+
+   hold z key + move trackpad: rotate camera
+
+   hold x key + move trackpad: pan camera
+
+   hold c key + move trackpad: dolly camera
+
+   2 finger scroll: zoom camera
+
 
 # Debug ORKID
 
