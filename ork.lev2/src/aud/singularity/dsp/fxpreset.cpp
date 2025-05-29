@@ -788,8 +788,16 @@ lyrdata_ptr_t fxpreset_IR(std::string ampname, float mix, float postgain) {
   auto dataset = std::make_shared<SpectralImpulseResponseDataSet>();
   dataset->_impulses.resize(1);
   auto IR = std::make_shared<SpectralImpulseResponse>(256);
-  auto base      = ork::audio::singularity::basePath() / "IRs";
-  auto ir_path = base/ampname;
+  auto base1      = ork::file::Path::data_dir() / "src" / "audio" / "ImpulseResponses";
+  auto base2      = ork::audio::singularity::basePath() / "IRs";
+  ork::file::Path ir_path;
+  if((base1/ampname).exists()) {
+    ir_path = base1/ampname;
+  } else if((base2/ampname).exists()) {
+    ir_path = base2/ampname;
+  } else {
+    OrkAssert(false); // not found
+  }
   IR->loadAudioFileX(ir_path.c_str(),false);
   dataset->_impulses[0] = IR;
   /////////////////
@@ -857,24 +865,29 @@ void loadAllFxPresets(synth* s) {
   addpreset("StereoDelay", fxpreset_stereodelay());
   addpreset("Vowels", fxpreset_vowels());
   addpreset("Violins", fxpreset_violins());
-  addpreset("AmpTest", fxpreset_testamp());
-  addpreset("AmpAT4050A", fxpreset_IR("Fender SuperChamp AT4050.wav",1.0,-12));
-  addpreset("AmpAT4050B", fxpreset_IR("Fender Bassman AT4050.wav",1.0,-12));
-  addpreset("AmpAT4050C", fxpreset_IR("Fender 68-Vibrolux AT4050.wav",1.0,+0));
-  addpreset("AmpJCM2KA", fxpreset_IR("Marshall JCM2000 SM57.wav",1.0,-12));
-  addpreset("AmpJCM2KB", fxpreset_IR("Marshall JCM2000 SM57 off Axis.wav",1.0,-18));
-  addpreset("AmpJMKSC2", fxpreset_IR("JoeMeek SC2 Impulse Hard.wav",1.0,-6));
-  addpreset("AmpSVTB52", fxpreset_IR("Ampeg SVT Beta52.wav",1.0,-6));
-  addpreset("IR-WLANE", fxpreset_IR("WoodruffLane.wav",0.5,-6));
-  addpreset("IR-1", fxpreset_IR("TunnelToHeaven.wav",0.25,-18));
-  addpreset("IR-2", fxpreset_IR("TunnelToHell.wav",0.1,-24));
-  addpreset("IR-3", fxpreset_IR("Sound 2.wav",0.20,-6));
-  addpreset("IR-3a", fxpreset_IR("Sound 2.wav",0.05,-6));
-  addpreset("IR-4", fxpreset_IR("StorageTankNo7.wav",0.50,-6));
-  addpreset("IR-5", fxpreset_IR("PacificHall.wav",0.50,-6));
-  addpreset("IR-6", fxpreset_IR("PepperCanyonHall.wav",0.18,-6));
-  addpreset("IR-7", fxpreset_IR("5012 Black Hole.SDIR",0.25,0));
-  addpreset("IR-7a", fxpreset_IR("5012 Black Hole.SDIR",0.05,0));
+  addpreset("Amp-Test", fxpreset_testamp());
+  addpreset("Amp-AT4050A", fxpreset_IR("Fender SuperChamp AT4050.wav",1.0,-12));
+  addpreset("Amp-AT4050B", fxpreset_IR("Fender Bassman AT4050.wav",1.0,-12));
+  addpreset("Amp-AT4050C", fxpreset_IR("Fender 68-Vibrolux AT4050.wav",1.0,-6));
+  addpreset("Amp-JCM2KA", fxpreset_IR("Marshall JCM2000 SM57.wav",1.0,-15));
+  addpreset("Amp-JCM2KB", fxpreset_IR("Marshall JCM2000 SM57 off Axis.wav",1.0,-21));
+  addpreset("Amp-JMKSC2", fxpreset_IR("JoeMeek SC2 Impulse Hard.wav",1.0,-18));
+  addpreset("Amp-SVTB52", fxpreset_IR("Ampeg SVT Beta52.wav",1.0,-18));
+  addpreset("IR-RadioAnn1", fxpreset_IR("Sound 2.wav",0.05,-6));
+  addpreset("IR-RadioAnn2", fxpreset_IR("Sound 2.wav",0.20,-6));
+  addpreset("IR-Mic1", fxpreset_IR("Neumann U-87 AI - 15cm.wav",0.50,-16));
+  addpreset("IR-Forest", fxpreset_IR("forest.wav",0.0015,-6));
+  addpreset("IR-RMX16", fxpreset_IR("rmx16-nonlin.wav",0.01,-6));
+  addpreset("IR-Spring1", fxpreset_IR("spring1.wav",0.004,-6));
+  addpreset("IR-Shower", fxpreset_IR("shower.wav",0.0006,-6));
+  addpreset("IR-Attic", fxpreset_IR("attic1.wav",0.0003,-6));
+  addpreset("IR-Rollo", fxpreset_IR("rolloplate.wav",0.0015,-3));
+  addpreset("IR-KnHall1", fxpreset_IR("knightshall.wav",0.01,-3));
+  addpreset("IR-KnHall2", fxpreset_IR("knightshall.wav",0.003,-3));
+  addpreset("IR-Cath5m1", fxpreset_IR("cathedral5m.wav",0.01,-3));
+  addpreset("IR-Cath5m2", fxpreset_IR("cathedral5m.wav",0.003,-3));
+  addpreset("IR-BH1", fxpreset_IR("5012 Black Hole.SDIR",0.25,0));
+  addpreset("IR-BH2", fxpreset_IR("5012 Black Hole.SDIR",0.05,0));
   
 }
 } // namespace ork::audio::singularity
