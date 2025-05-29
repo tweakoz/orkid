@@ -51,8 +51,8 @@ or
 * ```exit``` # exit current enviroment instance
 * ```~/.staging-xxx/obt-launch-env``` # relaunch OBT shell / environment to reload environment vars 
 * ```ork.build.py``` # incremental build (only works after orkid was already built and environment relaunched - as $PATHS must be updated)
-* ```obt.osx.macho.fixup.libs.py --all``` # ***(MacOs Only)*** dyld/rpath/installname fixups
-* ```obt.osx.macho.fixup.libs.py --all``` # ***(MacOs Only)*** yes twice (dyld/rpath/installname fixups)
+* ***(MacOs Only)*** ```obt.osx.macho.fixup.libs.py --all``` # dyld/rpath/installname fixups
+* ***(MacOs Only)*** ```obt.osx.macho.fixup.libs.py --all``` # yes twice (dyld/rpath/installname fixups)
 * ```git lfs fetch --all``` # just in case original orkid clone did not do the lfs fetch for you (may require git lfs install)
 * ```ork.asset.process.py``` # preprocess some assets, wait until see asset_count<11>, then ctrl-c 
 
