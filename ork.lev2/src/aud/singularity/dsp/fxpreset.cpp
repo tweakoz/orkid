@@ -452,6 +452,24 @@ lyrdata_ptr_t fxpreset_pitchoctup() {
   /////////////////
   return fxlayer;
 }
+lyrdata_ptr_t fxpreset_pitchoctdn() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto shifter               = appendPitchShifter(fxlayer, fxstage);
+  shifter->param(0)->_coarse = 0.85;  // wet/dry mix
+  shifter->param(1)->_coarse = -1200; // 1 octave up
+  /////////////////
+  return fxlayer;
+}
 lyrdata_ptr_t fxpreset_pitchfifthup() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -467,6 +485,24 @@ lyrdata_ptr_t fxpreset_pitchfifthup() {
   auto shifter               = appendPitchShifter(fxlayer, fxstage);
   shifter->param(0)->_coarse = 0.5;  // wet/dry mix
   shifter->param(1)->_coarse = 700; // 1 octave up
+  /////////////////
+  return fxlayer;
+}
+lyrdata_ptr_t fxpreset_pitchfifthdn() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto shifter               = appendPitchShifter(fxlayer, fxstage);
+  shifter->param(0)->_coarse = 0.85;  // wet/dry mix
+  shifter->param(1)->_coarse = -700; // 1 octave up
   /////////////////
   return fxlayer;
 }
@@ -793,8 +829,10 @@ void loadAllFxPresets(synth* s) {
   addpreset("Distortion+Chorus", fxpreset_distortionpluschorus());
   addpreset("Distortion+Echo", fxpreset_distortionplusecho());
   addpreset("StereoChorus", fxpreset_stereochorus());
-  addpreset("ShifterFifthup", fxpreset_pitchfifthup());
-  addpreset("ShifterOctaveup", fxpreset_pitchoctup());
+  addpreset("ShifterFifthUp", fxpreset_pitchfifthup());
+  addpreset("ShifterFifthDn", fxpreset_pitchfifthdn());
+  addpreset("ShifterOctUp", fxpreset_pitchoctup());
+  addpreset("ShifterOctDn", fxpreset_pitchoctdn());
   addpreset("ShifterWave", fxpreset_pitchwave());
   addpreset("ShifterChorus", fxpreset_pitchchorus());
   addpreset("ShifterRec", fxpreset_pitchrec());
