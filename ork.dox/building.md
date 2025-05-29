@@ -25,7 +25,9 @@ make sure email and username set for github
 # VENV SETUP 
 
 * ensure base python environment is clean, any packages installed systemwide or userwide
-    may interfere with venv's that inherit. pep-668
+    may interfere with venv's that inherit. pep-668. If you rely on a customized python environment
+    for other work, that is fine - just quarantine it into it's own launch script. OBT/Orkid will itself
+    be quarantined and should not interfere.
 * ensure using python3.13 (from homebrew)
 * ```python3 -m venv ~/.venv```
 * ```source ~/.venv/bin/activate```
