@@ -264,13 +264,10 @@ ELSEIF(${UNIX})
   target_include_directories(${the_target} PRIVATE /usr/local/cuda-12.8/include )
   target_include_directories(${the_target} PRIVATE $ENV{OBT_PYPKG}/torch/include $ENV{OBT_PYPKG}/torch/include/torch/csrc/api/include )
   target_link_directories(${the_target} PRIVATE /usr/local/cuda-12.8/lib64 )
-  #target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
-  # explicitly link to the torch libraries
-  # (so LD_LIBRARY_PATH is not needed)
-  
-  target_link_libraries(${the_target} PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
-  target_link_libraries(${the_target} PRIVATE cuda cudart cublas curand )
-  target_link_libraries(${the_target} PRIVATE ${TORCHLIB_DIR}/libc10.so )
+  target_link_directories(${the_target} PUBLIC ${TORCHLIB_DIR} )
+  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libtorch.so ${TORCHLIB_DIR}/libtorch_cpu.so ${TORCHLIB_DIR}/libtorch_cuda.so)
+  target_link_libraries(${the_target} LINK_PRIVATE cuda cudart cublas curand )
+  target_link_libraries(${the_target} LINK_PRIVATE ${TORCHLIB_DIR}/libc10.so )
 
     endfunction()
 ENDIF()
@@ -334,11 +331,18 @@ function(ork_lev2_target_opts_linker the_target)
   target_link_libraries(${the_target} LINK_PRIVATE ork_lev2 )
   target_link_libraries(${the_target} LINK_PRIVATE Boost::system )
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
-  set_target_properties(${the_target} PROPERTIES
-    INSTALL_RPATH $ENV{OBT_PYPKG}/torch/lib
-    BUILD_WITH_INSTALL_RPATH TRUE
+  IF(${APPLE})
+    set_target_properties(${the_target} PROPERTIES
+      INSTALL_RPATH $ENV{OBT_STAGE}/lib;$ENV{OBT_PYPKG}/torch/lib
+      BUILD_WITH_INSTALL_RPATH TRUE
     )
-endfunction()
+  ELSE()
+    set_target_properties(${the_target} PROPERTIES
+      INSTALL_RPATH $ENV{OBT_STAGE}/lib:$ENV{OBT_PYPKG}/torch/lib
+      BUILD_WITH_INSTALL_RPATH TRUE
+    )
+  ENDIF()
+    endfunction()
 
 function(ork_std_target_opts_lev2 the_target)
   ork_lev2_target_opts_compiler(${the_target})

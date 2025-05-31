@@ -65,7 +65,12 @@ static int patestCallback(
 
   auto paimpl = padev->_impl.getShared<PaImpl>();
   auto the_synth = padev->_the_synth;
+  auto aid = padev->_appinitdata.lock();
+
+  if(aid->_enable_audio_input){
     OrkAssert(padev->_num_input_channels == 1);
+
+  }
 
   if(inputBuffer and padev->_input_handler){
     static auto chunk = std::make_shared<AudioInputChunk>(padev->_num_input_channels);
@@ -85,9 +90,16 @@ static int patestCallback(
     auto out = (float*)outputBuffer;
 
     // convert inputBuffer to float
-    OrkAssert(padev->_num_input_channels == 1);
     static auto inputBufferFloat = new float[framesPerBuffer];
-    auto inpbuf_int = (const int16_t*)inputBuffer;
+    const int16_t* inpbuf_int = nullptr;
+    if(aid->_enable_audio_input and padev->_num_input_channels == 1){
+      inpbuf_int = (const int16_t*)inputBuffer;
+    }
+    else{
+      static std::vector<uint16_t> zeros(framesPerBuffer, 0);
+      inpbuf_int = (const int16_t*)zeros.data(); // no input, fill with zeros
+    }
+
     for (size_t i = 0; i < framesPerBuffer; i++) {
       int16_t j = inpbuf_int[i];
       // endian swap 
@@ -152,11 +164,15 @@ static int patestCallback(
   int num_inputs = 0;
   int num_outputs = 0;
   auto aid = padev->_appinitdata.lock();
-  if( aid->_enable_audio_input )
+  if( aid->_enable_audio_input ) {
     num_inputs = padev->_num_input_channels;
-  if( aid->_enable_audio_output )
+  }
+  if( aid->_enable_audio_output ) {
     num_outputs = padev->_num_output_channels;
+  }
 
+  logchan_portaudio->log("desired input device name<%s>", padev->_inp_dev_name.c_str());
+  logchan_portaudio->log("desired output device name<%s>", padev->_out_dev_name.c_str());
   logchan_portaudio->log("req num_inp<%zu> num_out<%zu>", num_inputs, num_outputs);
 
   size_t num_devices = Pa_GetDeviceCount();
@@ -166,6 +182,11 @@ static int patestCallback(
   bool output_default = padev->_out_dev_name == "default";
   bool got_input = false;
   bool got_output = false;
+
+
+  logchan_portaudio->log("input_default<%s> output_default<%s>",
+                         input_default ? "true" : "false",
+                         output_default ? "true" : "false");
 
   for(size_t c=0; c<num_devices; c++){
     auto devinfo = Pa_GetDeviceInfo(c);
