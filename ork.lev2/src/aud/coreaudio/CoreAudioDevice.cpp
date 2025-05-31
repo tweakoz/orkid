@@ -125,7 +125,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
 
     if (input.first == _appinitdata.lock()->_audio_input_devname) {
       //_inp_dev_name = input.first;
-      //_num_input_channels = info->countChannels();
+      _num_input_channels = info->countChannels();
       logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> numch<%d>", input.first.c_str(), info->countChannels());
       _input_info = info;
     }
@@ -193,8 +193,45 @@ void CoreAudioDevice::startup() {
       while (true) {
         // printf("CoreAudioThread running\n");
 
+        /////////////////////////
+        // borrow StereoFragment (2 channels) from AuContext
+        //   to hold output data
+        /////////////////////////
+
         auto mix_group = _aucontext->AllocOutBuffer(inumfr);
         mix_group->Clear();
+
+        /////////////////////////
+        // pull input data from device input queue
+        //  via borrowed LayerFragment(n channels) from AuContext
+        /////////////////////////
+
+        LayerFragment* inpdata = nullptr;
+        _aucontext->_inputQueue.try_pop(inpdata);
+
+        /////////////////////////
+        // invoke input handler if registered
+        /////////////////////////
+
+        if(inpdata and _input_handler) {
+          // by convention,
+          //  inputhandlers should NOT hold on to the AudioInputChunk
+          static auto chunk = std::make_shared<AudioInputChunk>(_num_input_channels);
+          chunk->_num_frames = inumfr;
+          chunk->_chunk_index++;
+          OrkAssert(_num_input_channels >= 1);
+          auto& chan0 = chunk->_channels[0];
+          const float* in = (const float*) inpdata->mChannels[0].mSampleData;
+          chan0.resize(inumfr);
+          for (size_t i = 0; i < inumfr; i++) {
+            chan0[i] = in[i];
+          }
+          _input_handler(chunk.get());
+        }
+
+        /////////////////////////
+        // run the synthesizer
+        /////////////////////////
 
         if (_the_synth) {
 
@@ -203,8 +240,6 @@ void CoreAudioDevice::startup() {
           auto& outL             = mix_group->mMixLeft.mSampleData;
           auto& outR             = mix_group->mMixRight.mSampleData;
           float cpuload          = 0.0f;
-          LayerFragment* inpdata = nullptr;
-          _aucontext->_inputQueue.try_pop(inpdata);
           if (inpdata) {
             float* buffer = inpdata->mChannels[0].mSampleData;
             _the_synth->compute(inumfr, buffer);
@@ -215,10 +250,6 @@ void CoreAudioDevice::startup() {
           for (size_t i = 0; i < inumfr; i++) {
             outL[i] = obuf._leftBuffer[i];  // interleaved
             outR[i] = obuf._rightBuffer[i]; // interleaved
-          }
-
-          if (inpdata) {
-            _aucontext->ReturnLayerFragment(inpdata);
           }
 
           uint64_t end_time     = mach_absolute_time();
@@ -236,7 +267,22 @@ void CoreAudioDevice::startup() {
           _the_synth->_cpuload = calculateCPULoad();
         }
 
+        /////////////////////////
+        // return LayerFragment 
+        //   to the AuContext
+        /////////////////////////
+
+        if (inpdata) {
+          _aucontext->ReturnLayerFragment(inpdata);
+        }
+
+        /////////////////////////
+        // push StereoFragment to output queue
+        /////////////////////////
+
         _aucontext->_outputQueue.push(mix_group);
+
+        /////////////////////////
       }
     });
   }
