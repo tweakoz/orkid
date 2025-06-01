@@ -340,7 +340,7 @@ function(ork_lev2_target_opts_linker the_target)
   set_target_properties(${the_target} PROPERTIES LINKER_LANGUAGE CXX)
   IF(${APPLE})
     set_target_properties(${the_target} PROPERTIES
-      INSTALL_RPATH $ENV{OBT_STAGE}/lib;$ENV{OBT_PYPKG}/torch/lib
+      INSTALL_RPATH $ENV{OBT_STAGE}/lib:$ENV{OBT_PYPKG}/torch/lib
       BUILD_WITH_INSTALL_RPATH TRUE
     )
   ELSE()
