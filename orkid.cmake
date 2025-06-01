@@ -415,12 +415,21 @@ endfunction()
 
 #############################################################################################################
 
-function(setupLev2EXE target sources)
-  add_executable (${target} ${sources} ${ARGN} )
+function(setupLev2COM target)
   ork_std_target_opts_exe(${target})
   ork_std_target_opts_core(${target})
   ork_std_target_opts_lev2(${target})
   ork_torch_opts(${target})
+endfunction()
+
+function(setupLev2EXE target sources)
+  add_executable (${target} ${sources} ${ARGN} )
+  setupLev2COM(${target})
+endfunction()
+
+function(setupLev2SHLIB target sources)
+  add_library (${target} SHARED ${sources} ${ARGN} )
+  setupLev2COM(${target})
 endfunction()
 
 #############################################################################################################
