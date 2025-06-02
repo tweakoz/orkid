@@ -99,7 +99,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_canalwaysontop =  py::cast<bool>(item.second);
                 } else if (key == "enable_graphics") {
                   appinitdata->_enable_graphics = py::cast<bool>(item.second);
-                  printf("enable_graphics<%d>\n", appinitdata->_enable_graphics);
+                  //printf("enable_graphics<%d>\n", appinitdata->_enable_graphics);
                 } else if (key == "enable_audio") {
                   appinitdata->_enable_audio = py::cast<bool>(item.second);
                   appinitdata->_enable_audio_input = py::cast<bool>(item.second);
