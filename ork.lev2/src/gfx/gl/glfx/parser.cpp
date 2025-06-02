@@ -80,7 +80,7 @@ void GlSlFxParser::DumpAllTokens() {
 ///////////////////////////////////////////////////////////
 
 Program::Program(const std::string name) : _name(name) {
-  printf("GlfxProgram<%p:%s>\n", this, _name.c_str());
+  //printf("GlfxProgram<%p:%s>\n", this, _name.c_str());
   _importNamespace = std::make_shared<ImportNamespace>();
 }
 ///////////////////////////////////////////////////////////

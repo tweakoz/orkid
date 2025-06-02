@@ -62,7 +62,7 @@ void PBRMaterial::assignImages( lev2::Context* ctx,   //
     _image_mtlruf = mtlruf;
     _image_emissive = emissive;
     conformImages();
-    printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
+    //printf( "conformed color<%p> normal<%p> mtlruf<%p> emissive<%p>\n", _image_color.get(), _image_normal.get(), _image_mtlruf.get(), _image_emissive.get() );
   }
     
   TextureArrayInitData TID;

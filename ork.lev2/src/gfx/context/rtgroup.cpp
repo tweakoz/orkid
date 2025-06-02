@@ -141,7 +141,7 @@ void RtGroup::SetMrt(int idx, rtbuffer_ptr_t buf) {
 
 void RtGroup::Resize(int iw, int ih) {
   if ((iw != miW) || (ih != miH)) {
-    printf("RtGroup<%p> Resize prev<%d %d> new<%d %d>\n", this, miW, miH, iw, ih);
+    //printf("RtGroup<%p> Resize prev<%d %d> new<%d %d>\n", this, miW, miH, iw, ih);
     miW         = iw;
     miH         = ih;
     if(iw==1728 and ih==1004){

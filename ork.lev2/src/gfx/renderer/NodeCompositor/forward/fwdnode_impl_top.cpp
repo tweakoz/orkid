@@ -62,7 +62,7 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     rtb1->_debugName = "SSAO-Accum1";
     rtb2->_debugName = "SSAO-Accum2";
     //rtb3->_debugName = "SSAO-LinDepth";
-    printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
+    //printf("PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples));
     //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
     // auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
     // buf1->_debugName = "ForwardRt0";

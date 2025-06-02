@@ -33,7 +33,7 @@ void ImportNode::pregen(shaderbuilder::BackEnd& backend) const {
 void ImportNode::load(const file::Path& resolvedPath) {
   auto parent_parser = _parent_topnode->_parser;
   auto program       = parent_parser->_program;
-  printf( "  IMPORT %s\n",  resolvedPath.c_str());
+  //printf( "  IMPORT %s\n",  resolvedPath.c_str());
   auto importscanner = std::make_shared<Scanner>(block_regex);
   ///////////////////////////////////
   File fx_file(resolvedPath.c_str(), EFM_READ);

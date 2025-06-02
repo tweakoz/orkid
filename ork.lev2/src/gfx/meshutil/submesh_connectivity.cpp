@@ -251,7 +251,7 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     std::string poly_str = "[";
     ply.visitVertices([&](vertex_ptr_t v) { poly_str += FormatString(" %d", v->_poolindex); });
     poly_str += " ]";
-    logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s : area<%g>", poly_str.c_str(), area);
+    //logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s : area<%g>", poly_str.c_str(), area);
     return nullptr;
   }
   //////////////////////////////

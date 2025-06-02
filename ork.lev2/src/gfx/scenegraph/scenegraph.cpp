@@ -239,7 +239,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
     if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
       auto texture_path = try_bgtex.value();
-      printf("texture_path<%s>\n", texture_path.c_str());
+      //printf("texture_path<%s>\n", texture_path.c_str());
       //_renderPresetData->_assetSynchro->increment();
       // aliases 
       if(texture_path == "black") {
