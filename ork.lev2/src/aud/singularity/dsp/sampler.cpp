@@ -580,7 +580,7 @@ void SampleOscillator::compute(int inumfr) {
   
               _curcents = clip_float(_curcents, -0, 12700);
 
-  if (1) {
+  if (0) {
     printf(
         "_baseCents<%f> offs<%f> _curcents<%d>\n", //
         _regionsearch._baseCents,                  //
