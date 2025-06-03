@@ -78,17 +78,28 @@ void StreamingOscillatorBlock::compute(DspBuffer& dspbuf){
 
       int num_frames_pushed=0;
       size_t failed = 0;
+      float energy = 0.0f;
       while((num_frames_pushed<inumframes) and (failed<10)){
         size_t num_enqueued = _ringBuffer.size();
         if(num_enqueued>0){
           size_t num_frames_to_push = std::min(num_enqueued, size_t(inumframes-num_frames_pushed));
           _ringBuffer.pop_many(outputchan+num_frames_pushed, num_frames_to_push);
+
+          for(int i=0; i<num_frames_to_push; i++){
+            energy += abs(outputchan[num_frames_pushed+i]);
+          }
+            
+          
           num_frames_pushed += num_frames_to_push;
         }
         else{
           failed++;
         }
       }
+      if(0){
+        printf("SOSCIL energy<%f> num_frames_pushed<%d> inumframes<%d> ringbufsize<%zu>\n",
+             energy, num_frames_pushed, inumframes, _ringBuffer.size());
+        }
     }
   }
   else{
