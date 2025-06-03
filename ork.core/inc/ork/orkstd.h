@@ -18,8 +18,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void OrkNonFatalAssertFunction( const char *fmtstr, ... );
-void OrkAssertFunction( const char *fmtstr, ... );
+void OrkNonFatalAssertFunction( const char *fmtstr );
+void OrkAssertFunction( const char *fmtstr );
 void _format_and_assert(const char* file, int line, const char* fmtstr, ...);
 
 #ifndef NULL
@@ -37,7 +37,7 @@ void _format_and_assert(const char* file, int line, const char* fmtstr, ...);
 
 //# define OrkAssert( x ) ((void *)0)
 # define OrkAssert( x ) { if( (x) == 0 ) { char buffer[1024]; snprintf( buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x ); OrkAssertFunction(&buffer[0]); } }
-# define OrkAssertI( x, i ) { if( (x) == 0 ) OrkAssertFunction( "Assert At: [File %s] [Line %d] [Reason: %s]", __FILE__, __LINE__, i  ); }
+# define OrkAssertI( x, info ) { if( (x) == 0 ) { char buffer[1024]; snprintf( buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed] [Info: %s]", __FILE__, __LINE__, #x, info ); OrkAssertFunction(&buffer[0]); } }
 
 #define OrkAssertIFMT(x, fmtstr, ...) { \
     if (!(x)) { \

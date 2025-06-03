@@ -39,6 +39,7 @@ struct LayerData : public ork::Object {
   scopesource_ptr_t createScopeSource();
   ///////////////////////////////////////////////////
   int numDspBlocks() const;
+  int numDspStages() const;
 
   const ProgramData* _programdata = nullptr;
   int _loKey                      = 0;

@@ -49,13 +49,8 @@ void OrkNonFatalAssertFunction(const char *fmtstr, ...)
 	orkprintf(errorbuffer);
 }
 
-void OrkAssertFunction(const char *fmtstr, ...)
+void OrkAssertFunction(const char *fmtstr)
 {
-	va_list argp;
-	va_start( argp, fmtstr );
-	vsprintf( &errorbuffer[0], fmtstr, argp );
-	va_end( argp );
-
 	orkprintf( "/////////////////////////////////////////////\n" );
 	orkprintf( "/////////////////////////////////////////////\n" );
 	orkprintf( "/////////////////////////////////////////////\n" );

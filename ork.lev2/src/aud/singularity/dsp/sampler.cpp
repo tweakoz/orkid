@@ -458,10 +458,9 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
   auto sample = _regionsearch._sample;
 
   if (nullptr == sample) {
-    //printf("SampleOscillator no sample!\n");
+    printf("SampleOscillator no sample!\n");
     return;
   }
-
   OrkAssert(sample);
 
   _blk_start     = int64_t(sample->_blk_start) << 16;
@@ -554,6 +553,7 @@ void SampleOscillator::keyOn(const KeyOnInfo& koi) {
 
 void SampleOscillator::keyOff() {
 
+
   _released = true;
   // printf("osc<%p> beginRelease\n", (void*) this);
 
@@ -574,16 +574,19 @@ void SampleOscillator::updateFreqRatio() {
 
 void SampleOscillator::compute(int inumfr) {
 
+  
   _curcents = _regionsearch._baseCents //
               + _lyr->_curPitchOffsetInCents;
-  _curcents = clip_float(_curcents, -0, 12700);
+  
+              _curcents = clip_float(_curcents, -0, 12700);
 
-  if (0)
+  if (1) {
     printf(
         "_baseCents<%f> offs<%f> _curcents<%d>\n", //
         _regionsearch._baseCents,                  //
         _lyr->_curPitchOffsetInCents,              //
         _curcents);
+    }
 
   if (false == _active) {
     for (int i = 0; i < inumfr; i++) {

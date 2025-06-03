@@ -197,7 +197,7 @@ void CoreAudioDevice::startup() {
       _noinputblock[i] = 0.0f; // interleaved
     }
     _au_thread->start([=](anyp data) { //
-      while (true) {
+      while (_aucontext->_keep_going) {
         printf("CoreAudioThread running\n");
 
         /////////////////////////
@@ -206,6 +206,7 @@ void CoreAudioDevice::startup() {
         /////////////////////////
 
         auto mix_group = _aucontext->AllocOutBuffer(inumfr);
+        printf("got outbuf<%p>\n", (void*) mix_group);
         mix_group->Clear();
 
         /////////////////////////
@@ -214,26 +215,29 @@ void CoreAudioDevice::startup() {
         /////////////////////////
 
         LayerFragment* inpdata = nullptr;
-        _aucontext->_inputQueue.try_pop(inpdata);
 
-        /////////////////////////
-        // invoke input handler if registered
-        /////////////////////////
+        if(_input_impl){
+          _aucontext->_inputQueue.try_pop(inpdata);
 
-        if(inpdata and _input_handler) {
-          // by convention,
-          //  inputhandlers should NOT hold on to the AudioInputChunk
-          static auto chunk = std::make_shared<AudioInputChunk>(_num_input_channels);
-          chunk->_num_frames = inumfr;
-          chunk->_chunk_index++;
-          OrkAssert(_num_input_channels >= 1);
-          auto& chan0 = chunk->_channels[0];
-          const float* in = (const float*) inpdata->mChannels[0].mSampleData;
-          chan0.resize(inumfr);
-          for (size_t i = 0; i < inumfr; i++) {
-            chan0[i] = in[i];
+          /////////////////////////
+          // invoke input handler if registered
+          /////////////////////////
+
+          if(inpdata and _input_handler) {
+            // by convention,
+            //  inputhandlers should NOT hold on to the AudioInputChunk
+            static auto chunk = std::make_shared<AudioInputChunk>(_num_input_channels);
+            chunk->_num_frames = inumfr;
+            chunk->_chunk_index++;
+            OrkAssert(_num_input_channels >= 1);
+            auto& chan0 = chunk->_channels[0];
+            const float* in = (const float*) inpdata->mChannels[0].mSampleData;
+            chan0.resize(inumfr);
+            for (size_t i = 0; i < inumfr; i++) {
+              chan0[i] = in[i];
+            }
+            _input_handler(chunk.get());
           }
-          _input_handler(chunk.get());
         }
 
         /////////////////////////
@@ -291,6 +295,7 @@ void CoreAudioDevice::startup() {
 
         /////////////////////////
       }
+      OrkAssert(false);
     });
   }
 }

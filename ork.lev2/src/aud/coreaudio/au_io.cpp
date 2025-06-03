@@ -21,7 +21,7 @@ const int getframesize() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OSStatus AuContext::CallbackSetup() {
+OSStatus AuContext::callbackSetup() {
   OSStatus err = noErr;
   AURenderCallbackStruct input, output;
 
@@ -58,10 +58,10 @@ void DumpStreamDesc(const char* name, const CAStreamBasicDescription& strd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OSStatus AuContext::SetupOutputBuffers() {
+OSStatus AuContext::setupOutputBuffers() {
   logchan_auio->log("SetupOutputBuffers");
 
-  if(!_outputDev){
+  if (!_outputDev) {
     OrkAssert(false);
     return kAudioUnitErr_InvalidParameter; // no input device set
   }
@@ -131,10 +131,10 @@ OSStatus AuContext::SetupOutputBuffers() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OSStatus AuContext::SetupInputBuffers() {
+OSStatus AuContext::setupInputBuffers() {
   logchan_auio->log("SetupInputBuffers");
 
-  if(!_inputDev){
+  if (!_inputDev) {
     OrkAssert(false);
     return kAudioUnitErr_InvalidParameter; // no input device set
   }
@@ -261,7 +261,7 @@ OSStatus AuContext::SetupInputBuffers() {
   return err;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AuContext::ComputeThruOffset() {
+void AuContext::computeThruOffset() {
   // Handle cases where we might not have both devices
   if (!_inputDev || !_outputDev || !_inputDev->_info || !_outputDev->_info) {
     // If we only have output, use its latency
@@ -279,16 +279,16 @@ void AuContext::ComputeThruOffset() {
   } else {
     // Both devices present - calculate full offset
     _inToOutSampleOffset = SInt32(
-        _inputDev->_info->_safetyOffset + _inputDev->_info->_bufferSizeFrames + 
-        _outputDev->_info->_safetyOffset + _outputDev->_info->_bufferSizeFrames);
+        _inputDev->_info->_safetyOffset + _inputDev->_info->_bufferSizeFrames + _outputDev->_info->_safetyOffset +
+        _outputDev->_info->_bufferSizeFrames);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-OSStatus AuContext::EnableInputs() {
+OSStatus AuContext::enableInputs() {
 
   logchan_auio->log("EnableInputs");
 
-  if(!_inputDev){
+  if (!_inputDev) {
     OrkAssert(false);
     return kAudioUnitErr_InvalidParameter; // no input device set
   }
@@ -324,10 +324,10 @@ OSStatus AuContext::EnableInputs() {
   return err;
 }
 ///////////////////////////////////////////////////////////////////////////////
-OSStatus AuContext::EnableOutputs() {
+OSStatus AuContext::enableOutputs() {
   logchan_auio->log("EnableOutputs");
 
-  if(!_outputDev){
+  if (!_outputDev) {
     OrkAssert(false);
     return kAudioUnitErr_InvalidParameter; // no input device set
   }
@@ -490,34 +490,58 @@ OSStatus AuContext::_outputProc(
     UInt32 inNumberFrames,
     AudioBufferList* ioData) {
 
+  printf("outputproc: begin\n");
+
   OSStatus err          = noErr;
   auto auctx            = (AuContext*)inRefCon;
   auctx->output_started = true;
   Float64 rate          = 0.0;
   AudioTimeStamp inTS, outTS;
 
-  if (auctx->_firstInputTime < 0.) {
-    // input hasn't run yet -> silence
-    ZeroBuffers(ioData);
-    if (auctx->_curMixOutGroup) {
-      auctx->ReturnOutBuffer(auctx->_curMixOutGroup);
-      auctx->_curMixOutGroup = nullptr;
+  // Handle output-only mode differently
+  if (!auctx->_inputDev) {
+    // No input device - initialize output timing if needed
+    if (auctx->_firstOutputTime < 0.) {
+      auctx->_firstOutputTime = TimeStamp->mSampleTime;
     }
-    return noErr;
+
+    // Skip directly to processing output queue
+    // Don't return early - continue to queue processing below
+  } else {
+    // We have an input device - check if input has started
+    if (auctx->_firstInputTime < 0.) {
+      // input device exists but hasn't run yet -> silence
+      ZeroBuffers(ioData);
+      if (auctx->_curMixOutGroup) {
+        auctx->ReturnOutBuffer(auctx->_curMixOutGroup);
+        auctx->_curMixOutGroup = nullptr;
+      }
+      printf("outputproc: end: A - waiting for input\n");
+      return noErr;
+    }
   }
-  // logchan_auio->log("_outputProc fit<%g>",auctx->_firstInputTime);
+
+  ////////////////////////////////////////
+  // Timing synchronization (only needed when we have both devices)
+  ////////////////////////////////////////
 
   // use the varispeed playback rate to offset small discrepancies in sample rate
   // first find the rate scalars of the input and output devices
-  err = AudioDeviceGetCurrentTime(auctx->_inputDev->_info->_ID, &inTS);
-  // this callback may still be called a few times after the device has been stopped
-  if (err) {
-    ZeroBuffers(ioData);
-    return noErr;
+
+  if (auctx->_inputDev && auctx->_inputDev->_info) {
+    err = AudioDeviceGetCurrentTime(auctx->_inputDev->_info->_ID, &inTS);
+    // this callback may still be called a few times after the device has been stopped
+    if (err) {
+      ZeroBuffers(ioData);
+      printf("outputproc: end: B - input device error\n");
+      return noErr;
+    }
   }
 
-  err = AudioDeviceGetCurrentTime(auctx->_outputDev->_info->_ID, &outTS);
-  // AuCheckErr(err);
+  if (auctx->_outputDev && auctx->_outputDev->_info) {
+    err = AudioDeviceGetCurrentTime(auctx->_outputDev->_info->_ID, &outTS);
+    // AuCheckErr(err);
+  }
 
   auto nanos       = AudioConvertHostTimeToNanos(outTS.mHostTime);
   static auto base = nanos;
@@ -528,18 +552,24 @@ OSStatus AuContext::_outputProc(
   double ftime = double(millis) * 0.001;
 
   // get Delta between the devices and add it to the offset
-  if (auctx->_firstOutputTime < 0.) {
-    auctx->_firstOutputTime = TimeStamp->mSampleTime;
-    Float64 delta           = (auctx->_firstInputTime - auctx->_firstOutputTime);
-    auctx->ComputeThruOffset();
-    // changed: 3865519 11/10/04
-    if (delta < 0.0)
-      auctx->_inToOutSampleOffset -= delta;
-    else
-      auctx->_inToOutSampleOffset = -delta + auctx->_inToOutSampleOffset;
-
-    ZeroBuffers(ioData);
-    return noErr;
+  if (auctx->_inputDev) {
+    // Only do timing sync when we have input device
+    if (auctx->_firstOutputTime < 0.) {
+      auctx->_firstOutputTime = TimeStamp->mSampleTime;
+      Float64 delta           = 0.0;
+      if (auctx->_firstInputTime >= 0.) {
+        delta = (auctx->_firstInputTime - auctx->_firstOutputTime);
+      }
+      auctx->computeThruOffset();
+      // changed: 3865519 11/10/04
+      if (delta < 0.0)
+        auctx->_inToOutSampleOffset -= delta;
+      else
+        auctx->_inToOutSampleOffset = -delta + auctx->_inToOutSampleOffset;
+      ZeroBuffers(ioData);
+      printf("outputproc: end: C - initializing timing\n");
+      return noErr;
+    }
   }
 
   auto startread       = SInt64(TimeStamp->mSampleTime - auctx->_inToOutSampleOffset);
@@ -581,10 +611,13 @@ OSStatus AuContext::_outputProc(
   }
 
   ////////////////////////////////////////
+  // Process output queue
+  ////////////////////////////////////////
 
   int inumframes_remaining = inNumberFrames;
 
   auto send = [&](StereoFragment* mixout) -> int {
+
     int num_sent = 0;
 
     const auto& inpbufferL         = mixout->mMixLeft;
@@ -642,6 +675,7 @@ OSStatus AuContext::_outputProc(
       auctx->ReturnOutBuffer(mixout);
       auctx->_curMixOutGroup = nullptr;
     }
+    printf("outputproc: end: D num_sent: %d\n", int(num_sent));
 
     return num_sent;
   };

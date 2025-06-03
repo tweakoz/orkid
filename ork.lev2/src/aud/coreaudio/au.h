@@ -71,19 +71,28 @@ struct AuContext {
   void ReturnOutBuffer(StereoFragment*);
   LayerFragment* AllocLayerFragment(int inumch, int numfr);
 
-  OSStatus SetupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev);
-  OSStatus SetOutputDevice(cadevice_impl_ptr_t dev);
-  OSStatus SetInputDevice(cadevice_impl_ptr_t dev);
-  OSStatus MakeGraph();
+  // High-level setup methods
+  OSStatus setupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev);
+  OSStatus setupGraphForInputOnly();
+  OSStatus setupGraphForOutputOnly();
+  OSStatus setupGraphForIO();
 
-  OSStatus SetupAUHAL(AudioDeviceID in);
-  OSStatus EnableInputs();
-  OSStatus EnableOutputs();
-  OSStatus CallbackSetup();
-  OSStatus SetupInputBuffers();
-  OSStatus SetupOutputBuffers();
+  // Device setup methods
+  OSStatus setOutputDevice(cadevice_impl_ptr_t dev);
+  OSStatus setInputDevice(cadevice_impl_ptr_t dev);
 
-  void ComputeThruOffset();
+  // Common setup methods
+  OSStatus createAUGraph();
+  OSStatus createHALUnit(AudioUnit& unit, bool isInput);
+  OSStatus configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, bool isInput);
+
+  OSStatus setupInputBuffers();
+  OSStatus setupOutputBuffers();
+  OSStatus callbackSetup();
+  OSStatus enableInputs();
+  OSStatus enableOutputs();
+
+  void computeThruOffset();
 
   static OSStatus _inputProc(
       void* inRefCon,
@@ -101,13 +110,13 @@ struct AuContext {
       UInt32 inNumberFrames,
       AudioBufferList* ioData);
 
-  int _numInputChannels          = 0;
-  int _mumOutputBuffers          = 0;
-  int _numOutputBuffersProcessed = 0;
-  int _inputFrameSize            = 0;
-  int _outputFrameSize           = 0;
-  bool output_started            = false;
-
+  int _numInputChannels           = 0;
+  int _mumOutputBuffers           = 0;
+  int _numOutputBuffersProcessed  = 0;
+  int _inputFrameSize             = 0;
+  int _outputFrameSize            = 0;
+  bool output_started             = false;
+  bool _keep_going                = true;
   StereoFragment* _curMixOutGroup = nullptr;
   AudioBufferList* _inputBuffer   = nullptr;
 

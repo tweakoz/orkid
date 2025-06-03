@@ -76,6 +76,10 @@ lyrdata_ptr_t LayerData::clone() const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
+int LayerData::numDspStages() const {
+  int dsps = int(_algdata->_numstages);
+  return dsps;
+}
 int LayerData::numDspBlocks() const {
   int dspb = 0;
   for (int istage = 0; istage < _algdata->_numstages; istage++) {

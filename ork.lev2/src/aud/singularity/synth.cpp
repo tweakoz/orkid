@@ -624,7 +624,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyo
     piset.erase(it);
   });
   pi->_progdata = pdata;
-  // printf("syn KEYON<%d>\n", note);
+  printf("syn KEYON<%d>\n", note);
 
   int clampn = std::clamp(note, 0, 127);
   int clampv = std::clamp(velocity, 0, 127);
@@ -649,6 +649,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyo
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::keyOff(programInst* pinst) {
+  printf("syn keyOff pinst<%p>\n", pinst);
   pinst->keyOff();
   _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
     auto it = piset.find(pinst);
@@ -688,6 +689,9 @@ std::string synth::statusString() const {
   rval += FormatString( "numbusses<%zu> ", _outputBusses.size());
   rval += FormatString( "numvoices<%zu> ", _allVoices.size());
   rval += FormatString( "mastergain<%g> ", _masterGain);
+  rval += FormatString( "activevoices<%zu> ", _numActiveVoices );
+  rval += FormatString( "activedspblocks<%zu> ", _numActiveDspBlocks );
+  rval += FormatString( "activedspstages<%zu> ", _numActiveDspStages );
   rval += FormatString( "cpuload<%g> ", _cpuload);
   return rval;
 }
@@ -742,12 +746,16 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       frame._numlayers   = _activeVoices.size();
 
       int numdspblocks = 0;
+      int numdspstages = 0;
       for (auto v : _activeVoices) {
         auto ld = v->_layerdata;
         numdspblocks += ld->numDspBlocks();
+        numdspstages += ld->numDspStages();
       }
 
       frame._numdspblocks = numdspblocks;
+      _numActiveDspBlocks = numdspblocks;
+      _numActiveDspStages = numdspstages;
       _onprofilerframe(frame);
     }
 
@@ -786,6 +794,7 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     //  (into output busses)
     /////////////////////////////
     constexpr int k_samples_per_tick = 128;
+    _numActiveVoices = _activeVoices.size();
     //////////////////////////////////
     for (auto l : _activeVoices)
       l->beginCompute(inumframes);
@@ -804,8 +813,9 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       ////////////////////////////////
       // update dsp modules
       ////////////////////////////////
-      for (auto l : _activeVoices)
+      for (auto l : _activeVoices) {
         l->compute(_dspwritebase, _dspwritecount);
+      }
       /////////////////////////////
       // synth update tick
       /////////////////////////////

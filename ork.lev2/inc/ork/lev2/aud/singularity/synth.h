@@ -217,6 +217,9 @@ struct synth {
   void panic();
   
   int _soloLayer       = -1;
+  size_t _numActiveVoices = 0;
+  size_t _numActiveDspStages = 0;
+  size_t _numActiveDspBlocks = 0;
   bool _stageEnable[5] = {true, true, true, true, true};
   int _lnoteframe;
   float _lnotetime;
