@@ -130,7 +130,7 @@ struct synth {
   inline float sampleRate() const {
     return _sampleRate;
   }
-
+  std::string statusString() const;
   outbus_ptr_t createOutputBus(std::string named);
   outbus_ptr_t outputBus(std::string named) const;
 

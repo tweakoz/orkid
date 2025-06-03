@@ -115,31 +115,37 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
     , _inputDevList(true)
     , _outputDevList(false) {
 
-  for (const auto& input : _inputDevList.GetMap()) {
-    auto info   = input.second;
-    auto format = info->_format;
+  auto unlocked_appinitdata = _appinitdata.lock();
 
-    auto fmtstr = CAStreamBasicDescription::Print(format);
-    logchan_coreaudio->log(
-        "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
+  if( unlocked_appinitdata->_enable_audio_input ) {
+    for (const auto& input : _inputDevList.GetMap()) {
+      auto info   = input.second;
+      auto format = info->_format;
 
-    if (input.first == _appinitdata.lock()->_audio_input_devname) {
-      //_inp_dev_name = input.first;
-      _num_input_channels = info->countChannels();
-      logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> numch<%d>", input.first.c_str(), info->countChannels());
-      _input_info = info;
+      auto fmtstr = CAStreamBasicDescription::Print(format);
+      logchan_coreaudio->log(
+          "input id<%d> name<%s> numchan<%d> fmt<%s>", info->_ID, input.first.c_str(), info->countChannels(), fmtstr.c_str());
+
+      if (input.first == unlocked_appinitdata->_audio_input_devname) {
+        //_inp_dev_name = input.first;
+        _num_input_channels = info->countChannels();
+        logchan_coreaudio->log("FOUND INPUT DEVICE !!!!! name<%s> numch<%d>", input.first.c_str(), info->countChannels());
+        _input_info = info;
+      }
     }
   }
-  for (const auto& output : _outputDevList.GetMap()) {
-    auto info   = output.second;
-    auto format = info->_format;
-    logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
-    CAStreamBasicDescription::Print(format);
-    if (output.first == _appinitdata.lock()->_audio_output_devname) {
-      //_inp_dev_name = input.first;
-      //_num_input_channels = info->countChannels();
-      logchan_coreaudio->log("FOUND OUTPUT DEVICE !!!!! name<%s> numch<%d>", output.first.c_str(), info->countChannels());
-      _output_info = info;
+  if( unlocked_appinitdata->_enable_audio_output ) {
+    for (const auto& output : _outputDevList.GetMap()) {
+      auto info   = output.second;
+      auto format = info->_format;
+      logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
+      CAStreamBasicDescription::Print(format);
+      if (output.first == _appinitdata.lock()->_audio_output_devname) {
+        //_inp_dev_name = input.first;
+        //_num_input_channels = info->countChannels();
+        logchan_coreaudio->log("FOUND OUTPUT DEVICE !!!!! name<%s> numch<%d>", output.first.c_str(), info->countChannels());
+        _output_info = info;
+      }
     }
   }
 }
@@ -148,9 +154,11 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
 
 void CoreAudioDevice::startup() {
 
-  constexpr double desired_ample_rate = 48000.0;
+  auto unlocked_appinitdata = _appinitdata.lock();
+
+  constexpr double desired_sample_rate = 48000.0;
   constexpr int inumfr                = 64;
-  constexpr double seconds_per_buffer = static_cast<double>(inumfr) / desired_ample_rate;
+  constexpr double seconds_per_buffer = static_cast<double>(inumfr) / desired_sample_rate;
   constexpr double available_time_us  = seconds_per_buffer * 1000000.0; // microseconds
                                                                         // For mach_time conversion
   mach_timebase_info_data_t timebase;
@@ -164,21 +172,21 @@ void CoreAudioDevice::startup() {
   if (_input_info) {
     _input_impl       = std::make_shared<CoreAudioDeviceImpl>(_input_info);
     input_sample_rate = _input_info->_format.mSampleRate;
-    OrkAssert(int(input_sample_rate) == int(desired_ample_rate));
+    OrkAssert(int(input_sample_rate) == int(desired_sample_rate));
   }
   if (_output_info) {
     _output_impl       = std::make_shared<CoreAudioDeviceImpl>(_output_info);
     output_sample_rate = _output_info->_format.mSampleRate;
-    OrkAssert(int(output_sample_rate) == int(desired_ample_rate));
+    OrkAssert(int(output_sample_rate) == int(desired_sample_rate));
   }
 
-  if (_appinitdata.lock()->_enable_audio_synth) {
+  if (unlocked_appinitdata->_enable_audio_synth) {
     _the_synth = synth::instance();
-    _the_synth->setSampleRate(desired_ample_rate);
+    _the_synth->setSampleRate(desired_sample_rate);
   }
 
   _aucontext = std::make_shared<AuContext>();
-  if (_input_impl and _output_impl) {
+  if (_input_impl or _output_impl) {
     _aucontext->Init(_input_impl, _output_impl);
     _aucontext->Start();
 
@@ -188,10 +196,9 @@ void CoreAudioDevice::startup() {
     for (int i = 0; i < inumfr; i++) {
       _noinputblock[i] = 0.0f; // interleaved
     }
-
     _au_thread->start([=](anyp data) { //
       while (true) {
-        // printf("CoreAudioThread running\n");
+        printf("CoreAudioThread running\n");
 
         /////////////////////////
         // borrow StereoFragment (2 channels) from AuContext

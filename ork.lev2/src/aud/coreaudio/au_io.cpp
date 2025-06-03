@@ -60,6 +60,12 @@ void DumpStreamDesc(const char* name, const CAStreamBasicDescription& strd) {
 
 OSStatus AuContext::SetupOutputBuffers() {
   logchan_auio->log("SetupOutputBuffers");
+
+  if(!_outputDev){
+    OrkAssert(false);
+    return kAudioUnitErr_InvalidParameter; // no input device set
+  }
+
   OSStatus err = noErr;
   CAStreamBasicDescription streamdesc_output;
 
@@ -127,6 +133,12 @@ OSStatus AuContext::SetupOutputBuffers() {
 
 OSStatus AuContext::SetupInputBuffers() {
   logchan_auio->log("SetupInputBuffers");
+
+  if(!_inputDev){
+    OrkAssert(false);
+    return kAudioUnitErr_InvalidParameter; // no input device set
+  }
+
   OSStatus err = noErr;
 
   CAStreamBasicDescription streamdesc_appinp;
@@ -250,16 +262,36 @@ OSStatus AuContext::SetupInputBuffers() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void AuContext::ComputeThruOffset() {
-  auto input_info  = _inputDev->_info;
-  auto output_info = _outputDev->_info;
-  // The initial latency will at least be the saftey offset's of the devices + the buffer sizes
-  _inToOutSampleOffset = SInt32(
-      input_info->_safetyOffset + input_info->_bufferSizeFrames + output_info->_safetyOffset + output_info->_bufferSizeFrames);
+  // Handle cases where we might not have both devices
+  if (!_inputDev || !_outputDev || !_inputDev->_info || !_outputDev->_info) {
+    // If we only have output, use its latency
+    if (_outputDev && _outputDev->_info) {
+      _inToOutSampleOffset = SInt32(_outputDev->_info->_safetyOffset + _outputDev->_info->_bufferSizeFrames);
+    }
+    // If we only have input, use its latency
+    else if (_inputDev && _inputDev->_info) {
+      _inToOutSampleOffset = SInt32(_inputDev->_info->_safetyOffset + _inputDev->_info->_bufferSizeFrames);
+    }
+    // No devices available - use zero offset
+    else {
+      _inToOutSampleOffset = 0;
+    }
+  } else {
+    // Both devices present - calculate full offset
+    _inToOutSampleOffset = SInt32(
+        _inputDev->_info->_safetyOffset + _inputDev->_info->_bufferSizeFrames + 
+        _outputDev->_info->_safetyOffset + _outputDev->_info->_bufferSizeFrames);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::EnableInputs() {
 
   logchan_auio->log("EnableInputs");
+
+  if(!_inputDev){
+    OrkAssert(false);
+    return kAudioUnitErr_InvalidParameter; // no input device set
+  }
 
   OSStatus err = noErr;
   UInt32 enableIO;
@@ -294,6 +326,12 @@ OSStatus AuContext::EnableInputs() {
 ///////////////////////////////////////////////////////////////////////////////
 OSStatus AuContext::EnableOutputs() {
   logchan_auio->log("EnableOutputs");
+
+  if(!_outputDev){
+    OrkAssert(false);
+    return kAudioUnitErr_InvalidParameter; // no input device set
+  }
+
   OSStatus err = noErr;
   return err; //
   UInt32 enableIO;

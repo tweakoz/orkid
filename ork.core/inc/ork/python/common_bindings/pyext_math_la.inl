@@ -641,6 +641,13 @@ void pyinit_math_la_t(
               })
           .def_static(
               "scaleMatrix",
+              [](T scale) -> mat4_t {
+                mat4_t rval;
+                rval.setScale(scale,scale,scale);
+                return rval;
+              })
+          .def_static(
+              "scaleMatrix",
               [](T x, T y, T z) -> mat4_t {
                 mat4_t rval;
                 rval.setScale(x, y, z);

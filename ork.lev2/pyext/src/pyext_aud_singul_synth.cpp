@@ -40,6 +40,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 //printf("the_synth<%p>\n", (void*)the_synth.get());
                 return the_synth;
               })
+          .def_property_readonly(
+              "statusString", //
+              [](synth_ptr_t synth) -> std::string { return synth->statusString(); })
           .def("panic", &synth::panic)
           .def(
               "nextEffect", //

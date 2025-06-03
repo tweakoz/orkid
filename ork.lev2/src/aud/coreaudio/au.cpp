@@ -48,13 +48,17 @@ OSStatus AuContext::SetOutputDevice(cadevice_impl_ptr_t dev) {
 
 OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
 
-  logchan_audunit->log("AuContext::Init() indev<%d> outdev<%d>", indev->_info->_ID, outdev->_info->_ID);
-  // Setup AUHAL for an input device
-  auto err = SetupAUHAL(indev->_info->_ID);
-  AuCheckErr(err);
-
-  SetInputDevice(indev);
-  SetOutputDevice(outdev);
+  logchan_audunit->log("AuContext::Init() indev<%d> outdev<%d>", indev ? indev->_info->_ID : -1, outdev->_info->_ID);
+  OSStatus err = noErr;
+  if(indev){
+    // Setup AUHAL for an input device
+    err = SetupAUHAL(indev->_info->_ID);
+    AuCheckErr(err);
+    SetInputDevice(indev);
+  }
+  if(outdev){
+    SetOutputDevice(outdev);
+  }
 
   // Setup Graph containing Default Output Unit
   err = SetupGraph(indev, outdev);
@@ -66,8 +70,10 @@ OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) 
   // Add latency between the two devices
   ComputeThruOffset();
 
-  err = SetupInputBuffers();
-  AuCheckErr(err);
+  if(indev){
+    err = SetupInputBuffers();
+    AuCheckErr(err);
+  }
 
   return err;
 }
@@ -82,8 +88,10 @@ OSStatus AuContext::Start() {
 
   OSStatus err = noErr;
   // Start pulling for audio data
-  err = AudioOutputUnitStart(_inputUnit);
-  AuCheckErr(err);
+  if(_inputDev){
+    err = AudioOutputUnitStart(_inputUnit);
+    AuCheckErr(err);
+  }
 
   err = AUGraphStart(_graph);
   AuCheckErr(err);
@@ -103,8 +111,10 @@ OSStatus AuContext::Stop() {
     return noErr;
 
   OSStatus err = noErr;
-  err          = AudioOutputUnitStop(_inputUnit);
-  AuCheckErr(err);
+  if(_inputDev) {
+    err          = AudioOutputUnitStop(_inputUnit);
+    AuCheckErr(err);
+  }
 
   err = AUGraphStop(_graph);
   AuCheckErr(err);
@@ -137,7 +147,11 @@ bool IsUnitRunning(AudioUnit aunit) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool AuContext::IsRunning() {
-  bool hal_running = IsUnitRunning(_inputUnit);
+
+  bool hal_running = true; 
+  if(_inputDev) {
+    hal_running = IsUnitRunning(_inputUnit);
+  }
 
   Boolean graph_running = false;
 
@@ -173,7 +187,7 @@ void AuContext::Cleanup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 OSStatus AuContext::SetupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
-  logchan_audunit->log("AuContext::SetupGraph() indev<%d> outdev<%d>", indev->_info->_ID, outdev->_info->_ID);
+  logchan_audunit->log("AuContext::SetupGraph() indev<%d> outdev<%d>", indev ? indev->_info->_ID : -1, outdev ? outdev->_info->_ID : -1);
   OSStatus err = noErr;
   AURenderCallbackStruct output;
 
@@ -188,23 +202,22 @@ OSStatus AuContext::SetupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t ou
   err = MakeGraph();
   AuCheckErr(err);
 
-  // err = SetOutputDevice(outdev);
-  // AuCheckErr(err);
-
   // Tell the output unit not to reset timestamps
   // Otherwise sample rate changes will cause sync los
-  UInt32 startAtZero = 0;
-  err                = AudioUnitSetProperty(
-      _outputUnit, kAudioOutputUnitProperty_StartTimestampsAtZero, kAudioUnitScope_Global, 0, &startAtZero, sizeof(startAtZero));
-  AuCheckErr(err);
+  if(outdev) {
+    UInt32 startAtZero = 0;
+    err                = AudioUnitSetProperty(
+        _outputUnit, kAudioOutputUnitProperty_StartTimestampsAtZero, kAudioUnitScope_Global, 0, &startAtZero, sizeof(startAtZero));
+    AuCheckErr(err);
 
-  output.inputProc       = _outputProc;
-  output.inputProcRefCon = this;
+    output.inputProc       = _outputProc;
+    output.inputProcRefCon = this;
 
-  SetupOutputBuffers();
+    SetupOutputBuffers();
 
-  err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &output, sizeof(output));
-  AuCheckErr(err);
+    err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &output, sizeof(output));
+    AuCheckErr(err);
+  }
 
   return err;
 }

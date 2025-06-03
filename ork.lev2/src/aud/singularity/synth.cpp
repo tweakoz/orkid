@@ -680,6 +680,20 @@ void synth::resize(int numframes) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::string synth::statusString() const {
+  std::string rval;
+  rval += FormatString("synth<%p> ", this);
+  rval += FormatString( "samplerate<%g> ", _sampleRate);
+  rval += FormatString( "numframes<%d> ", _numFrames);
+  rval += FormatString( "numbusses<%zu> ", _outputBusses.size());
+  rval += FormatString( "numvoices<%zu> ", _allVoices.size());
+  rval += FormatString( "mastergain<%g> ", _masterGain);
+  rval += FormatString( "cpuload<%g> ", _cpuload);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void synth::compute(int inumframes, const void* inputBuffer) {
 
   // if (_lock_compute)
