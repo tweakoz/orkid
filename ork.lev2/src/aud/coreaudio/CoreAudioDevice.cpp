@@ -213,9 +213,13 @@ void CoreAudioDevice::startup() {
         //   to hold output data
         /////////////////////////
 
-        auto mix_group = _aucontext->AllocOutBuffer(inumfr);
-        //printf("got outbuf<%p>\n", (void*) mix_group);
-        mix_group->Clear();
+        StereoFragment* mix_group = nullptr;
+        if(_output_impl){
+          mix_group = _aucontext->AllocOutBuffer(inumfr);
+          //printf("got outbuf<%p>\n", (void*) mix_group);
+          mix_group->Clear();
+
+        }
 
         /////////////////////////
         // pull input data from device input queue
@@ -252,7 +256,7 @@ void CoreAudioDevice::startup() {
         // run the synthesizer
         /////////////////////////
 
-        if (_the_synth) {
+        if (_output_impl and _the_synth) {
 
           uint64_t start_time = mach_absolute_time();
 
@@ -298,8 +302,9 @@ void CoreAudioDevice::startup() {
         /////////////////////////
         // push StereoFragment to output queue
         /////////////////////////
-
-        _aucontext->_outputQueue.push(mix_group);
+        if(mix_group){
+          _aucontext->_outputQueue.push(mix_group);
+        }
 
         /////////////////////////
       }

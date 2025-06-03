@@ -9,7 +9,6 @@
 namespace ork::lev2::ca {
 static logchannel_ptr_t logchan_auio = logger()->createChannel("AuIo", fvec3(1, 0.4, .6), true);
 
-static const int desired_framesize = 64;
 int gframesize                     = desired_framesize;
 
 void setframesize(int fr) {
@@ -21,7 +20,8 @@ const int getframesize() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-OSStatus AuContext::callbackSetup() {
+OSStatus AuContext::setupInputCallback() {
+  logchan_auio->log("setupInputCallback");
   OSStatus err = noErr;
   AURenderCallbackStruct input, output;
 
@@ -151,13 +151,8 @@ OSStatus AuContext::setupInputBuffers() {
   UInt32 bufferFrameSize = desired_framesize;
   UInt32 propertySize    = sizeof(bufferFrameSize);
 
-  err = AudioUnitSetProperty(
-      _inputUnit, kAudioDevicePropertyBufferFrameSize, kAudioUnitScope_Global, 0, &bufferFrameSize, propertySize);
-  AuCheckErr(err);
-
-  err = AudioUnitGetProperty(
-      _inputUnit, kAudioDevicePropertyBufferFrameSize, kAudioUnitScope_Global, 0, &bufferFrameSize, &propertySize);
-  AuCheckErr(err);
+ // Note: Buffer frame size should be set AFTER the device is configured
+ // We'll get the actual frame size from the device later
 
   logchan_auio->log("INPBUFFERFRAMESIZE<%d>", int(bufferFrameSize));
 
@@ -165,36 +160,40 @@ OSStatus AuContext::setupInputBuffers() {
   setframesize(_inputFrameSize);
 
   //////////////////////////////
-  // Get the Stream Format (DeviceSide)
+ // Get the Stream Format from the device
+ // For HAL input units, we need to get the format from the device side (scope Input, element 1)
+ // and apply it to the output side (scope Output, element 1)
   //////////////////////////////
 
   propertySize = sizeof(streamdesc_input);
   err          = AudioUnitGetProperty(
       _inputUnit,
-      kAudioUnitProperty_StreamFormat,
-      kAudioUnitScope_Input, // The context for audio data coming into an audio unit.
+     kAudioUnitScope_Input,  // Device side
+     1,                      // Input element
       1,
       &streamdesc_input,
       &propertySize);
-  AuCheckErr(err);
-
+ 
+ if (err != noErr) {
+   // If we can't get the format from the input scope, try getting it from the device
+   propertySize = sizeof(AudioStreamBasicDescription);
+   err = AudioDeviceGetProperty(_inputDev->_info->_ID, 0, true, 
+                                kAudioDevicePropertyStreamFormat, 
+                                &propertySize, &streamdesc_input);
+   AuCheckErr(err);
+ }
   //////////////////////////////
-  // Get the Stream Format (ApplicationSide)
+  // Now set up the application side format
   //////////////////////////////
 
-  propertySize = sizeof(streamdesc_appinp);
-  err          = AudioUnitGetProperty(
-      _inputUnit,                      // unitID
-      kAudioUnitProperty_StreamFormat, // propID
-      kAudioUnitScope_Output,          // The context for audio data leaving an audio unit
-      1,                               // elementIDX
-      &streamdesc_appinp,              // dest
-      &propertySize);                  // size
-  AuCheckErr(err);
-
-  // streamdesc_appinp = streamdesc_input;
-  streamdesc_appinp.mChannelsPerFrame = streamdesc_input.mChannelsPerFrame;
-
+  // Start with the device format
+  streamdesc_appinp = streamdesc_input;
+  
+  // Get the actual device info
+  if (_inputDev && _inputDev->_info) {
+    streamdesc_appinp = _inputDev->_info->_format;
+    streamdesc_appinp.mChannelsPerFrame = _inputDev->_info->countChannels();
+  }
   //////////////////////////////////////
   // Set the format of all the AUs to the input/output devices channel count
   // For a simple case, you want to set this to the lower of count of the channels
@@ -373,7 +372,7 @@ OSStatus AuContext::_inputProc(
     AudioBufferList* ioData) {
 
 
-  // logchan_auio->log("_inputProc");
+   //logchan_auio->log("_inputProc");
 
   OSStatus err = noErr;
 
@@ -462,6 +461,8 @@ OSStatus AuContext::_inputProc(
   /////////////////////////////
 
   framaccum += inNumberFrames;
+
+  //logchan_auio->log("write to input queue framaccum<%d>", int(framaccum));
 
   // _this->_inputCallback(inpbufgroup);
   _this->_inputQueue.push(inpbufgroup);

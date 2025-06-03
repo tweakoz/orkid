@@ -257,10 +257,6 @@ OSStatus AuContext::createHALUnit(AudioUnit& unit, bool isInput) {
 OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, bool isInput) {
   OSStatus err = noErr;
 
-  // Set the device
-  err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
-  AuCheckErr(err);
-
   // Enable/disable IO based on whether this is input or output
   UInt32 enableIO = 1;
   if (isInput) {
@@ -282,7 +278,27 @@ OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, boo
     err      = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
     AuCheckErr(err);
   }
+ 
+    // Set the device AFTER enabling/disabling IO
+  err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, 
+                             kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
+  AuCheckErr(err);
+  
 
+ // Set the buffer frame size
+ UInt32 bufferFrameSize = desired_framesize;
+ UInt32 propertySize = sizeof(UInt32);
+ 
+ // Try to set the preferred buffer size
+ err = AudioUnitSetProperty(unit, 
+                            kAudioDevicePropertyBufferFrameSize, 
+                            kAudioUnitScope_Global, 
+                            0, 
+                            &bufferFrameSize, 
+                            propertySize);
+ // It's OK if this fails - we'll use whatever the device prefers
+ // Don't check the error here
+ 
   return err;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,7 +315,7 @@ OSStatus AuContext::setupGraphForInputOnly() {
   AuCheckErr(err);
 
   // Setup input callback
-  err = callbackSetup();
+  err = setupInputCallback();
   AuCheckErr(err);
 
   // Initialize the input unit
@@ -353,7 +369,7 @@ OSStatus AuContext::setupGraphForIO() {
   err = configureHALUnit(_inputUnit, _inputDev->_info->_ID, true);
   AuCheckErr(err);
 
-  err = callbackSetup();
+  err = setupInputCallback();
   AuCheckErr(err);
 
   err = AudioUnitInitialize(_inputUnit);

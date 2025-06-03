@@ -6,6 +6,8 @@
 #include <ork/kernel/opq.h>
 #include <atomic>
 
+constexpr int desired_framesize = 64;
+
 #define tryerr(err, x)                                                                                                             \
   if (err == x)                                                                                                                    \
   return #x
@@ -89,7 +91,7 @@ struct AuContext {
 
   OSStatus setupInputBuffers();
   OSStatus setupOutputBuffers();
-  OSStatus callbackSetup();
+  OSStatus setupInputCallback();
   OSStatus enableInputs();
   OSStatus enableOutputs();
 
