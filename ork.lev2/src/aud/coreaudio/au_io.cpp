@@ -372,24 +372,25 @@ OSStatus AuContext::_inputProc(
     UInt32 inNumberFrames,
     AudioBufferList* ioData) {
 
+
   // logchan_auio->log("_inputProc");
 
   OSStatus err = noErr;
 
-  auto auctx = (AuContext*)inRefCon;
-  if (auctx->_firstInputTime < 0.)
-    auctx->_firstInputTime = inTimeStamp->mSampleTime;
+  auto _this = (AuContext*)inRefCon;
+  if (_this->_firstInputTime < 0.)
+    _this->_firstInputTime = inTimeStamp->mSampleTime;
 
   assert(ioData == nullptr); // huh ..
 
-  AudioBufferList* source_buffers = auctx->_inputBuffer;
+  AudioBufferList* source_buffers = _this->_inputBuffer;
 
   /////////////////////////////
   // pull data from input
   /////////////////////////////
 
   err = AudioUnitRender(
-      auctx->_inputUnit,
+      _this->_inputUnit,
       ioActionFlags,
       inTimeStamp,
       inBusNumber,
@@ -403,7 +404,7 @@ OSStatus AuContext::_inputProc(
   int inumchans = (inumbuf > 0) ? int(source_buffers->mBuffers[0].mNumberChannels) : 0;
   // logchan_auio->log("inp numfr<%d> inumbuf<%d> inumchans<%d>", inNumberFrames, inumbuf, inumchans);
 
-  auto inpbufgroup = auctx->AllocLayerFragment(inumbuf, inNumberFrames);
+  auto inpbufgroup = _this->AllocLayerFragment(inumbuf, inNumberFrames);
 
   static int framaccum = 0;
   OrkAssert(inumbuf == 1);
@@ -462,8 +463,8 @@ OSStatus AuContext::_inputProc(
 
   framaccum += inNumberFrames;
 
-  // auctx->_inputCallback(inpbufgroup);
-  auctx->_inputQueue.push(inpbufgroup);
+  // _this->_inputCallback(inpbufgroup);
+  _this->_inputQueue.push(inpbufgroup);
   ////////////////////////////////////////
   // write to passthru buffer
   ////////////////////////////////////////
@@ -493,28 +494,30 @@ OSStatus AuContext::_outputProc(
   //printf("outputproc: begin\n");
 
   OSStatus err          = noErr;
-  auto auctx            = (AuContext*)inRefCon;
-  auctx->output_started = true;
+  auto _this            = (AuContext*)inRefCon;
+  _this->output_started = true;
   Float64 rate          = 0.0;
   AudioTimeStamp inTS, outTS;
 
+  _this->_output_ready.store(true);
+
   // Handle output-only mode differently
-  if (!auctx->_inputDev) {
+  if (!_this->_inputDev) {
     // No input device - initialize output timing if needed
-    if (auctx->_firstOutputTime < 0.) {
-      auctx->_firstOutputTime = TimeStamp->mSampleTime;
+    if (_this->_firstOutputTime < 0.) {
+      _this->_firstOutputTime = TimeStamp->mSampleTime;
     }
 
     // Skip directly to processing output queue
     // Don't return early - continue to queue processing below
   } else {
     // We have an input device - check if input has started
-    if (auctx->_firstInputTime < 0.) {
+    if (_this->_firstInputTime < 0.) {
       // input device exists but hasn't run yet -> silence
       ZeroBuffers(ioData);
-      if (auctx->_curMixOutGroup) {
-        auctx->ReturnOutBuffer(auctx->_curMixOutGroup);
-        auctx->_curMixOutGroup = nullptr;
+      if (_this->_curMixOutGroup) {
+        _this->ReturnOutBuffer(_this->_curMixOutGroup);
+        _this->_curMixOutGroup = nullptr;
       }
       printf("outputproc: end: A - waiting for input\n");
       return noErr;
@@ -528,8 +531,8 @@ OSStatus AuContext::_outputProc(
   // use the varispeed playback rate to offset small discrepancies in sample rate
   // first find the rate scalars of the input and output devices
 
-  if (auctx->_inputDev && auctx->_inputDev->_info) {
-    err = AudioDeviceGetCurrentTime(auctx->_inputDev->_info->_ID, &inTS);
+  if (_this->_inputDev && _this->_inputDev->_info) {
+    err = AudioDeviceGetCurrentTime(_this->_inputDev->_info->_ID, &inTS);
     // this callback may still be called a few times after the device has been stopped
     if (err) {
       ZeroBuffers(ioData);
@@ -538,8 +541,8 @@ OSStatus AuContext::_outputProc(
     }
   }
 
-  if (auctx->_outputDev && auctx->_outputDev->_info) {
-    err = AudioDeviceGetCurrentTime(auctx->_outputDev->_info->_ID, &outTS);
+  if (_this->_outputDev && _this->_outputDev->_info) {
+    err = AudioDeviceGetCurrentTime(_this->_outputDev->_info->_ID, &outTS);
     // AuCheckErr(err);
   }
 
@@ -552,27 +555,27 @@ OSStatus AuContext::_outputProc(
   double ftime = double(millis) * 0.001;
 
   // get Delta between the devices and add it to the offset
-  if (auctx->_inputDev) {
+  if (_this->_inputDev) {
     // Only do timing sync when we have input device
-    if (auctx->_firstOutputTime < 0.) {
-      auctx->_firstOutputTime = TimeStamp->mSampleTime;
+    if (_this->_firstOutputTime < 0.) {
+      _this->_firstOutputTime = TimeStamp->mSampleTime;
       Float64 delta           = 0.0;
-      if (auctx->_firstInputTime >= 0.) {
-        delta = (auctx->_firstInputTime - auctx->_firstOutputTime);
+      if (_this->_firstInputTime >= 0.) {
+        delta = (_this->_firstInputTime - _this->_firstOutputTime);
       }
-      auctx->computeThruOffset();
+      _this->computeThruOffset();
       // changed: 3865519 11/10/04
       if (delta < 0.0)
-        auctx->_inToOutSampleOffset -= delta;
+        _this->_inToOutSampleOffset -= delta;
       else
-        auctx->_inToOutSampleOffset = -delta + auctx->_inToOutSampleOffset;
+        _this->_inToOutSampleOffset = -delta + _this->_inToOutSampleOffset;
       ZeroBuffers(ioData);
       printf("outputproc: end: C - initializing timing\n");
       return noErr;
     }
   }
 
-  auto startread       = SInt64(TimeStamp->mSampleTime - auctx->_inToOutSampleOffset);
+  auto startread       = SInt64(TimeStamp->mSampleTime - _this->_inToOutSampleOffset);
   static auto basefidx = startread;
 
   // logchan_auio->log( "outtime seconds<%g> fidx<%d>", ftime, int(startread-basefidx) );
@@ -671,8 +674,8 @@ OSStatus AuContext::_outputProc(
     num_sent = num_frames_to_send;
 
     if (mixout->mNumUsed == mixout->mNumFrames) {
-      auctx->ReturnOutBuffer(mixout);
-      auctx->_curMixOutGroup = nullptr;
+      _this->ReturnOutBuffer(mixout);
+      _this->_curMixOutGroup = nullptr;
     }
    //printf("outputproc: end: D num_sent: %d\n", int(num_sent));
 
@@ -680,25 +683,55 @@ OSStatus AuContext::_outputProc(
   };
 
   //////////////////////////////////////////////
-
+  bool processed_any = false;
   while (inumframes_remaining > 0) {
-    if (auctx->_curMixOutGroup) {
-      inumframes_remaining -= send(auctx->_curMixOutGroup);
+    if (_this->_curMixOutGroup) {
+      inumframes_remaining -= send(_this->_curMixOutGroup);
+      processed_any = true;
     } else {
-      if (auctx->_outputQueue.try_pop(auctx->_curMixOutGroup)) {
-        auctx->_curMixOutGroup->mNumUsed = 0;
+      if (_this->_outputQueue.try_pop(_this->_curMixOutGroup)) {
+        _this->_curMixOutGroup->mNumUsed = 0;
+        processed_any = true;
       } else {
-        // usleep(10);
+       // No data available - break out to avoid spinning
+       break;
       }
 
-      if (auctx->_curMixOutGroup) {
-        inumframes_remaining -= send(auctx->_curMixOutGroup);
+      if (_this->_curMixOutGroup) {
+        inumframes_remaining -= send(_this->_curMixOutGroup);
         // logchan_auio->log( "outbuf<%d> inumch<%d> idbsiz<%d> data<%p>", i, inumch, idbsiz, data );
       }
     }
   }
-
+  if (!processed_any && !_this->_inputDev) {
+    static int empty_count = 0;
+    if (++empty_count % 100 == 0) { // Log every 100th empty callback
+      printf("outputproc: no data available (count=%d)\n", empty_count);
+    }
+  }
   return noErr;
+}
+
+bool AuContext::waitForOutputReady(int timeout_ms) {
+ if (!_outputDev || !_outputUnit) {
+   return true; // No output device, nothing to wait for
+ }
+ 
+ logchan_auio->log("Waiting for output to be ready...");
+ 
+ auto start_time = std::chrono::steady_clock::now();
+ while (!_output_ready.load()) {
+   auto current_time = std::chrono::steady_clock::now();
+   auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count();
+   if (elapsed_ms > timeout_ms) {
+     logchan_auio->log("Timeout waiting for output ready");
+     return false;
+   }
+   usleep(1000); // Sleep for 1ms
+ }
+ 
+ logchan_auio->log("Output is ready");
+ return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 

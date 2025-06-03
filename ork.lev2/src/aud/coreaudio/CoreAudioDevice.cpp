@@ -196,6 +196,14 @@ void CoreAudioDevice::startup() {
     for (int i = 0; i < inumfr; i++) {
       _noinputblock[i] = 0.0f; // interleaved
     }
+
+    if (_output_impl) {
+      if (!_aucontext->waitForOutputReady(2000)) {
+        logchan_coreaudio->log("ERROR: Output callback not ready, aborting startup");
+        return;
+      }
+    }
+
     _au_thread->start([=](anyp data) { //
       while (_aucontext->_keep_going) {
         //printf("CoreAudioThread running\n");

@@ -4,6 +4,7 @@
 #include "ca_helpers/CAStreamBasicDescription.h"
 #include <libkern/OSAtomic.h>
 #include <ork/kernel/opq.h>
+#include <atomic>
 
 #define tryerr(err, x)                                                                                                             \
   if (err == x)                                                                                                                    \
@@ -110,6 +111,7 @@ struct AuContext {
       UInt32 inNumberFrames,
       AudioBufferList* ioData);
 
+  bool waitForOutputReady(int timeout_ms = 1000);
   int _numInputChannels           = 0;
   int _mumOutputBuffers           = 0;
   int _numOutputBuffersProcessed  = 0;
@@ -117,6 +119,7 @@ struct AuContext {
   int _outputFrameSize            = 0;
   bool output_started             = false;
   bool _keep_going                = true;
+  std::atomic<bool> _output_ready = false;
   StereoFragment* _curMixOutGroup = nullptr;
   AudioBufferList* _inputBuffer   = nullptr;
 
@@ -131,10 +134,10 @@ struct AuContext {
   cadevice_impl_ptr_t _outputDev;
 
   // AudioUnits and Graph
-  AUGraph _graph;
-  AUNode _outputNode;
-  AudioUnit _outputUnit;
-  AudioUnit _inputUnit;
+  AUGraph _graph = 0;
+  AUNode _outputNode = 0;
+  AudioUnit _outputUnit = 0;
+  AudioUnit _inputUnit = 0;
 
   StereoFragmentPool _outputPool;
   LayerFragmentPool _inputPool;
