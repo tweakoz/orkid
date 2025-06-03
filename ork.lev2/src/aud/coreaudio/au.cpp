@@ -48,24 +48,25 @@ OSStatus AuContext::SetOutputDevice(cadevice_impl_ptr_t dev) {
 
 OSStatus AuContext::Init(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
 
-  logchan_audunit->log("AuContext::Init() indev<%d> outdev<%d>", //
-                       indev ? indev->_info->_ID : -1,           //
-                       outdev ? outdev->_info->_ID : -1);
+  logchan_audunit->log(
+      "AuContext::Init() indev<%d> outdev<%d>", //
+      indev ? indev->_info->_ID : -1,           //
+      outdev ? outdev->_info->_ID : -1);
 
-  _inputDev = indev;
+  _inputDev  = indev;
   _outputDev = outdev;
 
   OSStatus err = setupGraph(indev, outdev);
   AuCheckErr(err);
 
-   // Initialize graph if we created one
+  // Initialize graph if we created one
   if (_graph) {
     err = AUGraphInitialize(_graph);
     AuCheckErr(err);
-   } else {
+  } else {
     // For input-only or output-only, units are already initialized in setup methods
     logchan_audunit->log("No graph to initialize (input-only or output-only mode)");
-   }
+  }
 
   // Add latency between the two devices
   computeThruOffset();
@@ -101,19 +102,19 @@ OSStatus AuContext::Start() {
     err = AudioOutputUnitStart(_inputUnit);
     AuCheckErr(err);
   }
- 
- // Handle output based on configuration
- if (_outputDev && _outputUnit) {
-   if (_graph) {
-     // If we have a graph (I/O mode), start the graph
-     err = AUGraphStart(_graph);
-     AuCheckErr(err);
-   } else {
-     // Output-only mode - start the HAL output unit directly
-     logchan_audunit->log("Starting HAL output unit directly");
-     err = AudioOutputUnitStart(_outputUnit);
-     AuCheckErr(err);
-   }  
+
+  // Handle output based on configuration
+  if (_outputDev && _outputUnit) {
+    if (_graph) {
+      // If we have a graph (I/O mode), start the graph
+      err = AUGraphStart(_graph);
+      AuCheckErr(err);
+    } else {
+      // Output-only mode - start the HAL output unit directly
+      logchan_audunit->log("Starting HAL output unit directly");
+      err = AudioOutputUnitStart(_outputUnit);
+      AuCheckErr(err);
+    }
   }
 
   return err;
@@ -139,7 +140,7 @@ OSStatus AuContext::Stop() {
   }
 
   err = AUGraphStop(_graph);
-    AuCheckErr(err);
+  AuCheckErr(err);
 
   _firstInputTime  = -1;
   _firstOutputTime = -1;
@@ -171,25 +172,26 @@ bool IsUnitRunning(AudioUnit aunit) {
 
 bool AuContext::IsRunning() {
 
- bool input_running = false;
- bool output_running = false;
- bool graph_running = false;
+  bool input_running  = false;
+  bool output_running = false;
+  bool graph_running  = false;
   if (_inputDev) {
     input_running = IsUnitRunning(_inputUnit);
   }
-  if (_outputDev ) {
+  if (_outputDev) {
     // Output-only mode - check HAL unit
     output_running = IsUnitRunning(_outputUnit);
   }
- 
+
   if (_graph) {
-   Boolean is_running = false;
-   auto err = AUGraphIsRunning(_graph, &is_running);
-   graph_running = is_running;
+    Boolean is_running = false;
+    auto err           = AUGraphIsRunning(_graph, &is_running);
+    graph_running      = is_running;
     AuCheckErr(err);
   }
 
-  return (input_running || output_running || graph_running);;
+  return (input_running || output_running || graph_running);
+  ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -214,210 +216,205 @@ void AuContext::Cleanup() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
- 
+
 OSStatus AuContext::createAUGraph() {
-    OSStatus err = noErr;
+  OSStatus err = noErr;
 
   // Make a New Graph
   err = NewAUGraph(&_graph);
   AuCheckErr(err);
-  
+
   // Open the Graph, AudioUnits are opened but not initialized
   err = AUGraphOpen(_graph);
   AuCheckErr(err);
-  
+
   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::createHALUnit(AudioUnit& unit, bool isInput) {
-   OSStatus err = noErr;
-   AudioComponent comp;
-   AudioComponentDescription desc;
-   
-   desc.componentType = kAudioUnitType_Output;
-   desc.componentSubType = kAudioUnitSubType_HALOutput;
-   desc.componentManufacturer = kAudioUnitManufacturer_Apple;
-   desc.componentFlags = 0;
-   desc.componentFlagsMask = 0;
-   
-   comp = AudioComponentFindNext(NULL, &desc);
-   if (comp == NULL) {
-     logchan_audunit->log("Failed to find HAL component");
-     return -1;
-   }
-   
-   err = AudioComponentInstanceNew(comp, &unit);
-   AuCheckErr(err);
-   
-   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, bool isInput) {
-   OSStatus err = noErr;
-   
-   // Set the device
-   err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, 
-                              kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
-   AuCheckErr(err);
-   
-   // Enable/disable IO based on whether this is input or output
-   UInt32 enableIO = 1;
-   if (isInput) {
-     // Enable input
-     err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
-                                kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
-     AuCheckErr(err);
-     
-      // Disable output
-     enableIO = 0;
-     err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
-                                kAudioUnitScope_Output, 0, &enableIO, sizeof(enableIO));
-     AuCheckErr(err);
-   } else {
-     // Enable output
-     err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
-                                kAudioUnitScope_Output, 0, &enableIO, sizeof(enableIO));
-     AuCheckErr(err);
-     
-      // Disable input
-     enableIO = 0;
-     err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
-                                kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
-     AuCheckErr(err);
-   }
-   
-   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::setupGraphForInputOnly() {
-   logchan_audunit->log("setupGraphForInputOnly");
-   OSStatus err = noErr;
-   
-   // Create HAL unit for input
-   err = createHALUnit(_inputUnit, true);
-   AuCheckErr(err);
-   
-   // Configure for input
-   err = configureHALUnit(_inputUnit, _inputDev->_info->_ID, true);
-   AuCheckErr(err);
-   
-   // Setup input callback
-   err = callbackSetup();
-   AuCheckErr(err);
-   
-   // Initialize the input unit
-   err = AudioUnitInitialize(_inputUnit);
-   AuCheckErr(err);
-   
-   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::setupGraphForOutputOnly() {
-   logchan_audunit->log("setupGraphForOutputOnly");
-   OSStatus err = noErr;
- 
-   // Create HAL unit for output
-   err = createHALUnit(_outputUnit, false);
-   AuCheckErr(err);
-   
-   // Configure for output
-   err = configureHALUnit(_outputUnit, _outputDev->_info->_ID, false);
-   AuCheckErr(err);
-   
-   // Setup output callback
-   AURenderCallbackStruct output;
-   output.inputProc = _outputProc;
-   output.inputProcRefCon = this;
-   
-   err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, 
-                              kAudioUnitScope_Input, 0, &output, sizeof(output));
-   AuCheckErr(err);
-   
-   // Tell the output unit not to reset timestamps
-   UInt32 startAtZero = 0;
-   err = AudioUnitSetProperty(_outputUnit, kAudioOutputUnitProperty_StartTimestampsAtZero, 
-                              kAudioUnitScope_Global, 0, &startAtZero, sizeof(startAtZero));
-   AuCheckErr(err);
-   
-   // Initialize the output unit
-   err = AudioUnitInitialize(_outputUnit);
-   AuCheckErr(err);
-   
-   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::setupGraphForIO() {
-   logchan_audunit->log("setupGraphForIO");
-   OSStatus err = noErr;
-   
-   // Setup input HAL unit
-   err = createHALUnit(_inputUnit, true);
-   AuCheckErr(err);
-   
-   err = configureHALUnit(_inputUnit, _inputDev->_info->_ID, true);
-   AuCheckErr(err);
-   
-   err = callbackSetup();
-   AuCheckErr(err);
-   
-   err = AudioUnitInitialize(_inputUnit);
-   AuCheckErr(err);
-   
-   // Create AUGraph for output
-   err = createAUGraph();
-   AuCheckErr(err);
-   
-   // Add output node to graph
-   AudioComponentDescription outDesc;
-   outDesc.componentType = kAudioUnitType_Output;
-   outDesc.componentSubType = kAudioUnitSubType_DefaultOutput;
-   outDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
-   outDesc.componentFlags = 0;
-   outDesc.componentFlagsMask = 0;
-   
-   err = AUGraphAddNode(_graph, &outDesc, &_outputNode);
-   AuCheckErr(err);
-   
-   err = AUGraphNodeInfo(_graph, _outputNode, NULL, &_outputUnit);
-   AuCheckErr(err);
-   
-   // Setup output callback
-   AURenderCallbackStruct output;
-   output.inputProc = _outputProc;
-   output.inputProcRefCon = this;
-   
-   err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, 
-                              kAudioUnitScope_Input, 0, &output, sizeof(output));
-   AuCheckErr(err);
-   
-   // Set output device
-   err = AudioUnitSetProperty(_outputUnit, kAudioOutputUnitProperty_CurrentDevice, 
-                              kAudioUnitScope_Global, 0, &_outputDev->_info->_ID, 
-                              sizeof(_outputDev->_info->_ID));
-   AuCheckErr(err);
-   
-   return err;
- }
- ///////////////////////////////////////////////////////////////////////////////
- OSStatus AuContext::setupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
-   logchan_audunit->log("setupGraph() indev<%d> outdev<%d>", 
-                        indev ? indev->_info->_ID : -1, 
-                        outdev ? outdev->_info->_ID : -1);
-   OSStatus err = noErr;
-   
-   if (indev && outdev) {
-     err = setupGraphForIO();
-   } else if (indev && !outdev) {
-     err = setupGraphForInputOnly();
-   } else if (!indev && outdev) {
-     err = setupGraphForOutputOnly();
-   } else {
-     logchan_audunit->log("Error: No devices specified");
-     return kAudioUnitErr_InvalidParameter;
-   }
-   
-   return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::createHALUnit(AudioUnit& unit, bool isInput) {
+  OSStatus err = noErr;
+  AudioComponent comp;
+  AudioComponentDescription desc;
+
+  desc.componentType         = kAudioUnitType_Output;
+  desc.componentSubType      = kAudioUnitSubType_HALOutput;
+  desc.componentManufacturer = kAudioUnitManufacturer_Apple;
+  desc.componentFlags        = 0;
+  desc.componentFlagsMask    = 0;
+
+  comp = AudioComponentFindNext(NULL, &desc);
+  if (comp == NULL) {
+    logchan_audunit->log("Failed to find HAL component");
+    return -1;
   }
+
+  err = AudioComponentInstanceNew(comp, &unit);
+  AuCheckErr(err);
+
+  return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::configureHALUnit(AudioUnit unit, AudioDeviceID deviceID, bool isInput) {
+  OSStatus err = noErr;
+
+  // Set the device
+  err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &deviceID, sizeof(deviceID));
+  AuCheckErr(err);
+
+  // Enable/disable IO based on whether this is input or output
+  UInt32 enableIO = 1;
+  if (isInput) {
+    // Enable input
+    err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
+    AuCheckErr(err);
+
+    // Disable output
+    enableIO = 0;
+    err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &enableIO, sizeof(enableIO));
+    AuCheckErr(err);
+  } else {
+    // Enable output
+    err = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &enableIO, sizeof(enableIO));
+    AuCheckErr(err);
+
+    // Disable input
+    enableIO = 0;
+    err      = AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &enableIO, sizeof(enableIO));
+    AuCheckErr(err);
+  }
+
+  return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::setupGraphForInputOnly() {
+  logchan_audunit->log("setupGraphForInputOnly");
+  OSStatus err = noErr;
+
+  // Create HAL unit for input
+  err = createHALUnit(_inputUnit, true);
+  AuCheckErr(err);
+
+  // Configure for input
+  err = configureHALUnit(_inputUnit, _inputDev->_info->_ID, true);
+  AuCheckErr(err);
+
+  // Setup input callback
+  err = callbackSetup();
+  AuCheckErr(err);
+
+  // Initialize the input unit
+  err = AudioUnitInitialize(_inputUnit);
+  AuCheckErr(err);
+
+  return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::setupGraphForOutputOnly() {
+  logchan_audunit->log("setupGraphForOutputOnly");
+  OSStatus err = noErr;
+
+  // Create HAL unit for output
+  err = createHALUnit(_outputUnit, false);
+  AuCheckErr(err);
+
+  // Configure for output
+  err = configureHALUnit(_outputUnit, _outputDev->_info->_ID, false);
+  AuCheckErr(err);
+
+  // Setup output callback
+  AURenderCallbackStruct output;
+  output.inputProc       = _outputProc;
+  output.inputProcRefCon = this;
+
+  err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &output, sizeof(output));
+  AuCheckErr(err);
+
+  // Tell the output unit not to reset timestamps
+  UInt32 startAtZero = 0;
+  err                = AudioUnitSetProperty(
+      _outputUnit, kAudioOutputUnitProperty_StartTimestampsAtZero, kAudioUnitScope_Global, 0, &startAtZero, sizeof(startAtZero));
+  AuCheckErr(err);
+
+  // Initialize the output unit
+  err = AudioUnitInitialize(_outputUnit);
+  AuCheckErr(err);
+
+  return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::setupGraphForIO() {
+  logchan_audunit->log("setupGraphForIO");
+  OSStatus err = noErr;
+
+  // Setup input HAL unit
+  err = createHALUnit(_inputUnit, true);
+  AuCheckErr(err);
+
+  err = configureHALUnit(_inputUnit, _inputDev->_info->_ID, true);
+  AuCheckErr(err);
+
+  err = callbackSetup();
+  AuCheckErr(err);
+
+  err = AudioUnitInitialize(_inputUnit);
+  AuCheckErr(err);
+
+  // Create AUGraph for output
+  err = createAUGraph();
+  AuCheckErr(err);
+
+  // Add output node to graph
+  AudioComponentDescription outDesc;
+  outDesc.componentType         = kAudioUnitType_Output;
+  outDesc.componentSubType      = kAudioUnitSubType_DefaultOutput;
+  outDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+  outDesc.componentFlags        = 0;
+  outDesc.componentFlagsMask    = 0;
+
+  err = AUGraphAddNode(_graph, &outDesc, &_outputNode);
+  AuCheckErr(err);
+
+  err = AUGraphNodeInfo(_graph, _outputNode, NULL, &_outputUnit);
+  AuCheckErr(err);
+
+  // Setup output callback
+  AURenderCallbackStruct output;
+  output.inputProc       = _outputProc;
+  output.inputProcRefCon = this;
+
+  err = AudioUnitSetProperty(_outputUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &output, sizeof(output));
+  AuCheckErr(err);
+
+  // Set output device
+  err = AudioUnitSetProperty(
+      _outputUnit,
+      kAudioOutputUnitProperty_CurrentDevice,
+      kAudioUnitScope_Global,
+      0,
+      &_outputDev->_info->_ID,
+      sizeof(_outputDev->_info->_ID));
+  AuCheckErr(err);
+
+  return err;
+}
+///////////////////////////////////////////////////////////////////////////////
+OSStatus AuContext::setupGraph(cadevice_impl_ptr_t indev, cadevice_impl_ptr_t outdev) {
+  logchan_audunit->log("setupGraph() indev<%d> outdev<%d>", indev ? indev->_info->_ID : -1, outdev ? outdev->_info->_ID : -1);
+  OSStatus err = noErr;
+
+  if (indev && outdev) {
+    err = setupGraphForIO();
+  } else if (indev && !outdev) {
+    err = setupGraphForInputOnly();
+  } else if (!indev && outdev) {
+    err = setupGraphForOutputOnly();
+  } else {
+    logchan_audunit->log("Error: No devices specified");
+    return kAudioUnitErr_InvalidParameter;
+  }
+
+  return err;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

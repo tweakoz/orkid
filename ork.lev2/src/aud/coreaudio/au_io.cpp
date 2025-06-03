@@ -617,7 +617,6 @@ OSStatus AuContext::_outputProc(
   int inumframes_remaining = inNumberFrames;
 
   auto send = [&](StereoFragment* mixout) -> int {
-
     int num_sent = 0;
 
     const auto& inpbufferL         = mixout->mMixLeft;
