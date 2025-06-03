@@ -198,7 +198,7 @@ void CoreAudioDevice::startup() {
     }
     _au_thread->start([=](anyp data) { //
       while (_aucontext->_keep_going) {
-        printf("CoreAudioThread running\n");
+        //printf("CoreAudioThread running\n");
 
         /////////////////////////
         // borrow StereoFragment (2 channels) from AuContext
@@ -206,7 +206,7 @@ void CoreAudioDevice::startup() {
         /////////////////////////
 
         auto mix_group = _aucontext->AllocOutBuffer(inumfr);
-        printf("got outbuf<%p>\n", (void*) mix_group);
+        //printf("got outbuf<%p>\n", (void*) mix_group);
         mix_group->Clear();
 
         /////////////////////////

@@ -490,7 +490,7 @@ OSStatus AuContext::_outputProc(
     UInt32 inNumberFrames,
     AudioBufferList* ioData) {
 
-  printf("outputproc: begin\n");
+  //printf("outputproc: begin\n");
 
   OSStatus err          = noErr;
   auto auctx            = (AuContext*)inRefCon;
@@ -674,7 +674,7 @@ OSStatus AuContext::_outputProc(
       auctx->ReturnOutBuffer(mixout);
       auctx->_curMixOutGroup = nullptr;
     }
-    printf("outputproc: end: D num_sent: %d\n", int(num_sent));
+   //printf("outputproc: end: D num_sent: %d\n", int(num_sent));
 
     return num_sent;
   };
