@@ -675,6 +675,12 @@ void valueFromJson(val_t& outval, const std::string& json_str) {
   OrkAssert(is_object);
   __recurse_value_FromJson(outval, _document);
 }
+void valueFromJsonNode(val_t& outval, const rapidjson::Value& json_val) {
+  bool is_object = json_val.IsObject();
+  //printf("json_str<%s>\n", json_str.c_str());
+  OrkAssert(is_object);
+  __recurse_value_FromJson(outval, json_val);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
