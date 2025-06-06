@@ -374,6 +374,21 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
       return streamer->_low_watermark;
     },[](streamerdata_ptr_t streamer, size_t size) { //
       streamer->_low_watermark = size;
+    })
+    .def_property("high_watermark",[](streamerdata_ptr_t streamer) -> size_t { //
+      return streamer->_high_watermark;
+    },[](streamerdata_ptr_t streamer, size_t size) { //
+      streamer->_high_watermark = size;
+    })
+    .def_property("target_latency_ms",[](streamerdata_ptr_t streamer) -> float { //
+      return streamer->_target_latency_ms;
+    },[](streamerdata_ptr_t streamer, float size) { //
+      streamer->_target_latency_ms = size;
+    })
+    .def_property("interpolate_dropouts",[](streamerdata_ptr_t streamer) -> bool { //
+      return streamer->_interpolate_dropouts;
+    },[](streamerdata_ptr_t streamer, bool val) { //
+      streamer->_interpolate_dropouts = val;
     });
   type_codec->registerStdCodec<streamerdata_ptr_t>(streamer_type);
   /////////////////////////////////////////////////////////////////////////////////

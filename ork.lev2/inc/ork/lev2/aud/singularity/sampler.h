@@ -297,24 +297,62 @@ struct SAMPLER final : public DspBlock {
 
 struct STREAMING_OSCILLATOR_DATA : public DspBlockData {
   DeclareConcreteX(STREAMING_OSCILLATOR_DATA, DspBlockData);
-  STREAMING_OSCILLATOR_DATA(std::string name="");
+  
+  STREAMING_OSCILLATOR_DATA(std::string name = "StreamingOscillator");
   dspblk_ptr_t createInstance() const override;
+  
+  // Configuration parameters
+  size_t _low_watermark = 8192;      // Minimum samples before underrun
+  size_t _high_watermark = 32768;    // Maximum buffer fill level
+  float _target_latency_ms = 750.0f; // Target latency in milliseconds
+  bool _interpolate_dropouts = true; // Smooth dropouts with interpolation
+  bool _adaptive_buffering = true;   // Enable adaptive playback rate
+  
+  // Source for streaming audio
   lev2::audiostreaminginputchunk_source_ptr_t _source;
-  size_t _low_watermark = 24000;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct StreamingOscillatorBlock final : public DspBlock {
+class StreamingOscillatorBlock : public DspBlock {
+public:
   using dataclass_t = STREAMING_OSCILLATOR_DATA;
   StreamingOscillatorBlock(const DspBlockData* dbd);
-  void compute(DspBuffer& dspbuf);
-  void doKeyOn(const KeyOnInfo& koi);
-  void doKeyOff();
+  
+  void compute(DspBuffer& dspbuf) override;
+  void doKeyOn(const KeyOnInfo& koi) override;
+  void doKeyOff() override;
+  
+private:
   const STREAMING_OSCILLATOR_DATA* _streamingdata = nullptr;
-  size_t _counter = 0;
-  using rb_t = RingBuffer<float>;
-  rb_t _ringBuffer;
+  
+  // Ring buffer for audio data
+  ork::RingBuffer<float> _ringBuffer;
+  
+  // Dynamic watermarks based on sample rate
+  size_t _dynamic_low_watermark;
+  size_t _dynamic_high_watermark;
+  size_t _dynamic_target_level;
+  
+  // State tracking
+  std::atomic<size_t> _underrun_count;
+  std::atomic<size_t> _total_samples_processed;
+  std::atomic<size_t> _total_samples_dropped;
+  
+  float _last_sample;          // For interpolation
+  int _fade_samples;           // Samples to fade in/out
+  bool _is_priming;            // Initial buffer fill phase
+  bool _was_underrun = false;  // Previous frame underrun state
+  
+  // Timing
+  std::chrono::steady_clock::time_point _stats_timer;
+  std::chrono::steady_clock::time_point _underrun_start_time;
+  std::chrono::steady_clock::time_point _startup_time;
+  
+  // Adaptive buffering
+  float _playback_rate;
+  std::atomic<size_t> _chunks_received_total;
+  double _last_chunk_time;
+  std::deque<double> _chunk_intervals;
 };
+
 
 } // namespace ork::audio::singularity

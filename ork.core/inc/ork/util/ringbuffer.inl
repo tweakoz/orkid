@@ -95,7 +95,10 @@ public:
     size_t size() const {
         return _count;
     }
-
+    size_t capacity() const {
+        return _size;
+    }
+    
 private:
     std::vector<T> _buffer;
     size_t _size;
