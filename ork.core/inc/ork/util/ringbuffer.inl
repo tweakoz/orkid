@@ -54,6 +54,16 @@ public:
         _write_index = (_write_index + count) % _size;
     }
 
+    bool try_pop(T& value) {
+        if (_count == 0) {
+            return false;
+        }
+        value = _buffer[_read_index];
+        _read_index = (_read_index + 1) % _size;
+        --_count;
+        return true;
+    }
+
     T pop_one() {
         if (_count == 0) {
             throw std::runtime_error("RingBuffer is empty");
@@ -98,7 +108,7 @@ public:
     size_t capacity() const {
         return _size;
     }
-    
+
 private:
     std::vector<T> _buffer;
     size_t _size;

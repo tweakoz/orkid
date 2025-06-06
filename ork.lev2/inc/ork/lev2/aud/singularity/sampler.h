@@ -352,6 +352,8 @@ private:
   std::atomic<size_t> _chunks_received_total;
   double _last_chunk_time;
   std::deque<double> _chunk_intervals;
+  std::vector<float> _accumulator_buffer;
+
 };
 
 
