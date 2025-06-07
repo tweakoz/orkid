@@ -100,6 +100,8 @@ void pyinit_gfx_buffers(py::module& module_lev2) {
 
   PYBIND11_NUMPY_DTYPE(VtxV12C4, x, y, z, color);
   PYBIND11_NUMPY_DTYPE(_VtxV12T8, x, y, z, u, v);
+  PYBIND11_NUMPY_DTYPE(SVtxVU32, _data);
+  PYBIND11_NUMPY_DTYPE(SVtxVU32Inst, _instanceId);
 
 }
 } // namespace ork::lev2 {

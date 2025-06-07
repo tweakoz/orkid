@@ -409,6 +409,23 @@ void pyinit_gfx_primitives_points(py::module& primitives) {
                 ;
   type_codec->registerStdCodec<primitives::points_v12t8_ptr_t>(pointsprim_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto pointsprimu32_type = //
+    py::class_<primitives::PointsPrimitive<SVtxVU32>, primitives::points_vu32_ptr_t>(primitives, "PointsPrimitiveVU32")
+        .def(
+            "create",
+            [](int numpoints) -> primitives::points_vu32_ptr_t {
+              return std::make_shared<primitives::PointsPrimitive<SVtxVU32>>(numpoints);
+            })
+        .def(
+            "lock",
+            [](primitives::points_vu32_ptr_t prim, ctx_t& context, int num_points) -> py::array_t<SVtxVU32> {
+              auto buffer = prim->lock(context.get(), num_points);
+              return py::array_t<SVtxVU32>(prim->_numpoints, buffer, py::none());
+            })
+        .def("unlock", [](primitives::points_vu32_ptr_t prim, ctx_t& context) { return prim->unlock(context.get()); })
+        .def("createNode", createNodeLambdaFromPrimType<primitives::points_vu32_ptr_t>());
+  type_codec->registerStdCodec<primitives::points_vu32_ptr_t>(pointsprim_type);
+  ////////////////////////////////////////////////////////////////////////////////
   auto tiled_pointsprim_type = //
       py::class_<primitives::TiledPointsPrimitive<VtxV12C4>, primitives::tiled_points_v12c4_ptr_t>(
           primitives, "TiledPointsPrimitiveV12C4")
