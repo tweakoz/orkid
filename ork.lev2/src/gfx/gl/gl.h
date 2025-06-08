@@ -11,16 +11,16 @@
 #include <functional>
 #include <map>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ftxui/dom/node.hpp>      
-#include <ftxui/dom/elements.hpp>  
-#include <ftxui/screen/color.hpp>  
-#include <ftxui/screen/screen.hpp>  
-#include <ftxui/component/component_base.hpp>  
-#include <ftxui/component/component.hpp>  
-#include <ftxui/component/captured_mouse.hpp>  
-#include <ftxui/component/screen_interactive.hpp>  
-#include <ftxui/screen/color_info.hpp>  
-#include <ftxui/screen/terminal.hpp> 
+#include <ftxui/dom/node.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/color.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <ftxui/component/component_base.hpp>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/captured_mouse.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/screen/color_info.hpp>
+#include <ftxui/screen/terminal.hpp>
 #include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -616,7 +616,7 @@ public:
   bool _SUPPORTS_EXTERNAL_MEMORY_OBJECT = true;
   int _MAX_TEXTURE_IMAGE_UNITS = 0;
   std::string _GL_RENDERER;
-  
+
   std::stack<void*> mDCStack;
   std::stack<void*> mGLRCStack;
 

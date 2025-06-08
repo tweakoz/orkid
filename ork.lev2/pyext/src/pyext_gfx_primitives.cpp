@@ -20,6 +20,7 @@ using shape_t             = pybind11::detail::any_container<ssize_t>;
 
 void pyinit_gfx_primitives_rigid(py::module& module_lev2);
 void pyinit_gfx_primitives_points(py::module& primitives);
+void pyinit_gfx_primitives_instanced_indexed(py::module& primitives);
 void pyinit_gfx_primitives_frustum(py::module& primitives);
 
 void pyinit_primitives(py::module& module_lev2) {
@@ -82,6 +83,7 @@ void pyinit_primitives(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_gfx_primitives_rigid(module_lev2); // todo parent under primitives
   pyinit_gfx_primitives_frustum(primitives);
+  pyinit_gfx_primitives_instanced_indexed(primitives);
   pyinit_gfx_primitives_points(primitives);
 }
 } // namespace ork::lev2

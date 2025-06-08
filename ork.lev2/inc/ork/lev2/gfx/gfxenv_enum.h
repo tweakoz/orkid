@@ -220,7 +220,7 @@ enum struct BlendingMacro : crc_enum_t {
   CrcEnum(SUBTRACTIVE),       // (SrcClr*0) + (FBClr*(1-SrcColor))
   CrcEnum(ALPHA_SUBTRACTIVE), // (SrcClr*0) + (FBClr*(1-SrcAlpha))
   CrcEnum(MODULATE),          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-}; 
+};
 
 //////////////////////////////////////
 
@@ -233,7 +233,7 @@ enum struct EDepthTest : crc_enum_t {
   CrcEnum(EQUALS),
   CrcEnum(ALWAYS), // is this the same as off?
 
-}; 
+};
 
 //////////////////////////////////////
 
@@ -276,7 +276,7 @@ enum EShadeModel {
 enum struct EFrontFace : crc_enum_t {
   CrcEnum(CLOCKWISE),
   CrcEnum(COUNTER_CLOCKWISE),
-}; 
+};
 
 enum struct ECullTest : crc_enum_t {
   CrcEnum(OFF),
@@ -289,6 +289,8 @@ enum struct ECullTest : crc_enum_t {
 enum struct EVtxStreamFormat : crc_enum_t {
   CrcEnum(VU16),            // 2 BPV	primarily for texture based sourcing
   CrcEnum(VU32),            // 4 BPV	primarily for texture based sourcing
+
+  CrcEnum(VU32INST),        // 4 BPV	primarily for instanced rendering
 
   CrcEnum(V4T4),            // 8 BPV	2D text (or textured quads) no vtxcolors
   CrcEnum(V4C4),            // 8 BPV	2D Colored

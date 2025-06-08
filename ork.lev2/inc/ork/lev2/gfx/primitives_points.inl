@@ -31,7 +31,7 @@ struct PointsData {
   pointsdata_ptr_t hsvScaleBias(fvec2 hue, fvec2 sat, fvec2 val) const;
   pointsdata_ptr_t swizzleRGB() const;
   pointsdata_ptr_t stochasticSample(float probability) const;
-  
+
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -185,5 +185,6 @@ using tiled_points_v12c4_t = TiledPointsPrimitive<VtxV12C4>;
 using tiled_points_v12c4_ptr_t = std::shared_ptr<tiled_points_v12c4_t>;
 using points_v12c4_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12C4>>;
 using points_v12t8_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12T8>>;
+using points_vu32_ptr_t = std::shared_ptr<PointsPrimitive<SVtxVU32>>;
 
 } // namespace ork::lev2::primitives
