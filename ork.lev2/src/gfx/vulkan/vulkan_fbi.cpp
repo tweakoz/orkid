@@ -59,13 +59,10 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  if(_contextVK->_is_visual_frame){
-    _acquireSwapChainForFrame();
-    _active_rtgroup = _main_rtg.get();
-  }
-  else{
-    _active_rtgroup = nullptr;
-  }
+  OrkAssert(_contextVK->_is_visual_frame);
+  _swapchain->acquireImage(_contextVK);
+  _main_rtg = _swapchain->currentRTG();
+  _active_rtgroup = _main_rtg.get();
 }
 
 ///////////////////////////////////////////////////////

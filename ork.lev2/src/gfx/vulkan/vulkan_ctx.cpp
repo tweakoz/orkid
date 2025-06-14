@@ -13,14 +13,11 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-rtgroup_ptr_t VkSwapChain::currentRTG(){
-  return _rtgs[_curSwapWriteImage];
-}
-
 void VkContext::describeX(class_t* clazz) {
 
   clazz->annotateTyped<context_factory_t>("context_factory", []() { //
-    return std::make_shared<VkContext>(); });
+    return std::make_shared<VkContext>();
+  });
 }
 
 ///////////////////////////////////////////////////////
@@ -102,6 +99,7 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   if (_GVI->_debugEnabled) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
+  _device_extensions.push_back("VK_KHR_portability_subset");
 
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
@@ -196,19 +194,19 @@ void VkContext::_initVulkanCommon() {
   size_t count = _cmdbuf_pool.capacity();
 
   for (size_t i = 0; i < count; i++) {
-    auto ork_cb                          = _cmdbuf_pool.direct_access(i);
+    auto ork_cb         = _cmdbuf_pool.direct_access(i);
     ork_cb->_is_primary = true;
-    auto vk_impl = _createVkCommandBuffer(ork_cb.get());
+    auto vk_impl        = _createVkCommandBuffer(ork_cb.get());
   }
 
   VkSemaphoreCreateInfo SCI{};
-  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_fbi->_swapChainImageAcquiredSemaphore);
-  OrkAssert(OK == VK_SUCCESS);
+  // initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  // OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_fbi->_swapChainImageAcquiredSemaphore);
+  // OrkAssert(OK == VK_SUCCESS);
 
-  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
-  OrkAssert(OK == VK_SUCCESS);
+  // initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  // OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
+  // OrkAssert(OK == VK_SUCCESS);
 
   auto vksci_base = makeVKSCI();
   _sampler_base   = std::make_shared<VulkanSamplerObject>(this, vksci_base);
@@ -273,7 +271,7 @@ VkContext::VkContext() {
   _gbi = std::make_shared<VkGeometryBufferInterface>(this);
   _txi = std::make_shared<VkTextureInterface>(this);
   _fxi = std::make_shared<VkFxInterface>(this);
-  _ci = std::make_shared<VkComputeInterface>(this);
+  _ci  = std::make_shared<VkComputeInterface>(this);
 }
 
 ///////////////////////////////////////////////////////
@@ -391,6 +389,8 @@ void VkContext::_doBeginFrame() {
     miH = _fbi->_main_rtg->miH;
   }
 
+  printf("VkContext<%p> _doBeginFrame w<%d> h<%d>\n", (void*)this, miW, miH);
+
   auto mainrect = mainSurfaceRectAtOrigin();
 
   _fbi->setViewport(mainrect);
@@ -410,13 +410,14 @@ void VkContext::_doBeginFrame() {
 
   ////////////////////////
 
-  if (not _first_frame) {
-    if(_is_visual_frame){
-      auto swapchain = _fbi->_swapchain;
-      auto fence     = swapchain->_fence;
-      fence->wait();
-    }
-  }
+  auto swapchain = _fbi->_acquireSwapChainForFrame();
+
+  ////////////////////////
+  // Check if command buffer pool is healthy
+  ////////////////////////
+
+  // printf("  Allocating command buffer from pool (available: %zu)\n", _cmdbuf_pool.available());
+  _defaultCommandBuffer = _cmdbuf_pool.allocate();
 
   ////////////////////////
   // clean up renderpasses
@@ -425,7 +426,6 @@ void VkContext::_doBeginFrame() {
   _renderpasses.clear();
 
   ////////////////////////
-  _defaultCommandBuffer   = _cmdbuf_pool.allocate();
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
   _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
   ////////////////////////
@@ -442,8 +442,7 @@ void VkContext::_doBeginFrame() {
   _pendingOneShotCommands.clear();
   /////////////////////////////////////////
 
-  if(_is_visual_frame)
-    _fbi->PushRtGroup(_fbi->_main_rtg.get());
+  _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -456,6 +455,8 @@ vkcmdbufimpl_ptr_t VkContext::primary_cb() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
+
+  printf("VkContext<%p> CB<%p> _doEndFrame\n", (void*)this, (void*)primary_cb().get());
 
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
@@ -472,15 +473,13 @@ void VkContext::_doEndFrame() {
   // end main renderpass (and pop main rtg)
   ////////////////////////
 
-  if(_is_visual_frame)
-    _fbi->PopRtGroup(false);
+  _fbi->PopRtGroup(false);
 
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
 
-  if(_is_visual_frame)
-    _fbi->_enq_transitionMainRtgToPresent();
+  _fbi->_enq_transitionMainRtgToPresent();
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -491,66 +490,21 @@ void VkContext::_doEndFrame() {
 
   ////////////////////////
 
-  //printf( "num renderpasses<%zu>\n", _renderpasses.size() );
+  // printf( "num renderpasses<%zu>\n", _renderpasses.size() );
 
   ///////////////////////////////////////////////////////
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitStartRenderSemaphores;
-  std::vector<VkPipelineStageFlags> waitStages;
-  
-  if(_is_visual_frame){
-    waitStartRenderSemaphores.push_back({_fbi->_swapChainImageAcquiredSemaphore});
-    waitStages.push_back({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
-  }
-
-  VkSubmitInfo SI = {};
-  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.waitSemaphoreCount   = waitStartRenderSemaphores.size();
-  SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
-  SI.pWaitDstStageMask    = waitStages.data();
-  SI.commandBufferCount   = 1;
-  SI.pCommandBuffers      = &primary_cb()->_vkcmdbuf;
-  SI.signalSemaphoreCount = 1;
-  SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   auto swapchain = _fbi->_swapchain;
-  auto fence     = swapchain->_fence;
-  fence->reset();
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
-
+  swapchain->enqueueFrame(this);
   primary_cb()->_secondary_cmdbuffers.clear();
 
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////
 
-  if(_is_visual_frame){
-    std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
-
-    VkPresentInfoKHR PRESI{};
-    initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-    PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
-    PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
-    PRESI.swapchainCount     = 1;
-    PRESI.pSwapchains        = &swapchain->_vkSwapChain;
-    PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
-
-    auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
-    switch (status) {
-      case VK_SUCCESS:
-        break;
-      case VK_SUBOPTIMAL_KHR:
-      case VK_ERROR_OUT_OF_DATE_KHR: {
-        // OrkAssert(false);
-        //  need to recreate swap chain
-        break;
-      }
-      default:
-        OrkAssert(false);
-        break;
-    }
-  }
+  swapchain->presentFrame(this);
 
   ///////////////////////////////////////////////////////
 
@@ -561,6 +515,7 @@ void VkContext::_doEndFrame() {
 
   _cmdbuf_pool.deallocate(_defaultCommandBuffer);
   _defaultCommandBuffer = nullptr;
+  //_cmdbufcur_gfx = nullptr;
   ////////////////////////
 
   miTargetFrame++;
@@ -592,16 +547,16 @@ void VkContext::initializeWindowContext(
   platoMakeCurrent(plato);
   _fbi->SetThisBuffer(pWin);
 
-uint32_t count;
+  uint32_t count;
   const char** extensions = glfwGetRequiredInstanceExtensions(&count);
   printf("GLFW requires %u extensions for surface:\n", count);
   for (uint32_t i = 0; i < count; i++) {
     printf("  - %s\n", extensions[i]);
   }
- 
+
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  printf("createWindowSurface with instance<%p>\n", (void*) &_GVI->_instance );
+  printf("createWindowSurface with instance<%p>\n", (void*)&_GVI->_instance);
 
   VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);
@@ -838,13 +793,12 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-  scheduleOnBeginFrame([this, iw, ih]() { 
-    if(_fbi->_main_rtg){
+  scheduleOnBeginFrame([this, iw, ih]() {
+    if (_fbi->_main_rtg) {
       _fbi->_main_rtg->Resize(iw, ih);
     }
   });
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

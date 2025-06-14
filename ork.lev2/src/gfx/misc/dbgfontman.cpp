@@ -798,7 +798,7 @@ void FontMan::_gpuInit(Context* pTARG) {
 
   if (_doGpuInit) {
     pTARG->makeCurrentContext();
-    pTARG->debugPushGroup("FontMan::InitFonts");
+    //pTARG->debugPushGroup("FontMan::InitFonts");
 
     _addFont(pTARG, Inconsolata12);
     _addFont(pTARG, Inconsolata13);
@@ -811,7 +811,7 @@ void FontMan::_gpuInit(Context* pTARG) {
 
     _defaultTextBlockState->_font = _pushFont("i14");
 
-    pTARG->debugPopGroup();
+    //pTARG->debugPopGroup();
     _doGpuInit = false;
   }
 }

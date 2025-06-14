@@ -139,7 +139,7 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
   ret->addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   ret->addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   ret->addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  ret->anisotropyEnable        = VK_TRUE;
+  ret->anisotropyEnable        = VK_FALSE;
   ret->maxAnisotropy           = 16;
   ret->borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
   ret->unnormalizedCoordinates = VK_FALSE;

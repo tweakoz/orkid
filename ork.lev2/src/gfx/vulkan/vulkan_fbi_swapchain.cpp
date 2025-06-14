@@ -20,15 +20,23 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   if (_swapchain) {
     _old_swapchains.insert(_swapchain);
-    _swapchain->_fence->wait();
+
+    // Wait for all frames in flight to complete before destroying
+    vkDeviceWaitIdle(_contextVK->_vkdevice);
+
+    for (auto& fence : _swapchain->_frameFences) {
+      if (fence) {
+        fence->wait();
+      }
+    }
     size_t num_images = _swapchain->_rtgs.size();
     for (size_t i = 0; i < num_images; i++) {
-      auto rtg = _swapchain->_rtgs[i];
-      auto rtb_color = rtg->buffer(0);
-      auto rtb_depth = rtg->_depthBuffer;
+      auto rtg            = _swapchain->_rtgs[i];
+      auto rtb_color      = rtg->buffer(0);
+      auto rtb_depth      = rtg->_depthBuffer;
       auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
       auto rtb_impl_depth = rtb_depth ? rtb_depth->_impl.getShared<VklRtBufferImpl>() : nullptr;
-      //auto img = _swapchain->_vkSwapChainImages[i];
+      // auto img = _swapchain->_vkSwapChainImages[i];
 
       // barrier - complete all ops before destroying
       if (0) {
@@ -43,9 +51,12 @@ void VkFrameBufferInterface::_initSwapChain() {
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,            // dstStageMask
             0,                                             // dependencyFlags
-            0, nullptr,                                    // memoryBarrierCount, pMemoryBarriers
-            0, nullptr,                                    // bufferMemoryBarrierCount, pBufferMemoryBarriers
-            1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
+            0,
+            nullptr, // memoryBarrierCount, pMemoryBarriers
+            0,
+            nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+            1,
+            imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
       }
 
       vkDestroyImageView(vkdev, rtb_impl_color->_vkimgview, nullptr);
@@ -56,29 +67,50 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   // Wait for device to be idle before creating new swap chain
   vkDeviceWaitIdle(_contextVK->_vkdevice);
-  
-  // Also wait for queue to be idle
-  //vkQueueWaitIdle(_contextVK->_vkqueue);
 
- // Clear old swapchains after destroying current one
+  // Also wait for queue to be idle
+  // vkQueueWaitIdle(_contextVK->_vkqueue);
+
+  // Clear old swapchains after destroying current one
   for (auto& old_swap : _old_swapchains) {
     vkDestroySwapchainKHR(vkdev, old_swap->_vkSwapChain, nullptr);
   }
   _old_swapchains.clear();
 
   auto swap_chain = std::make_shared<VkSwapChain>();
-  swap_chain->_fence = std::make_shared<VulkanFenceObject>(_contextVK);
-  //auto surfaceFormat = pres_caps->_formats[0];
+
+  // Create per-frame synchronization objects
+  swap_chain->_imageAcquiredSemaphores.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
+  swap_chain->_renderCompleteSemaphores.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
+  swap_chain->_frameFences.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
+
+  VkSemaphoreCreateInfo SCI{};
+  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+
+  VkFenceCreateInfo FCI{};
+  initializeVkStruct(FCI, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+  FCI.flags = VK_FENCE_CREATE_SIGNALED_BIT; // Start signaled
+
+  for (size_t i = 0; i < VkSwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+    VkResult OK = vkCreateSemaphore(_contextVK->_vkdevice, &SCI, nullptr, &swap_chain->_imageAcquiredSemaphores[i]);
+    OrkAssert(OK == VK_SUCCESS);
+
+    OK = vkCreateSemaphore(_contextVK->_vkdevice, &SCI, nullptr, &swap_chain->_renderCompleteSemaphores[i]);
+    OrkAssert(OK == VK_SUCCESS);
+
+    swap_chain->_frameFences[i] = std::make_shared<VulkanFenceObject>(_contextVK);
+  }
+
+  // auto surfaceFormat = pres_caps->_formats[0];
   VkSurfaceFormatKHR surfaceFormat = pres_caps->_formats[0];
   for (const auto& format : pres_caps->_formats) {
     // Prefer BGRA8 SRGB if available
-    if (format.format == VK_FORMAT_B8G8R8A8_SRGB && 
-        format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
       surfaceFormat = format;
       break;
     }
   }
- 
+
   VkSurfaceTransformFlagsKHR preTransform;
   if (pres_caps->_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
     preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -95,35 +127,32 @@ void VkFrameBufferInterface::_initSwapChain() {
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
 
-    auto& caps = pres_caps->_capabilities;
+  auto& caps = pres_caps->_capabilities;
 
-    // Check if extent is defined by surface (required on some platforms)
+  // Check if extent is defined by surface (required on some platforms)
   if (caps.currentExtent.width != 0xFFFFFFFF) {
-    width = caps.currentExtent.width;
+    width  = caps.currentExtent.width;
     height = caps.currentExtent.height;
   }
 
-
   // Clamp to surface capabilities
-  width = std::max(caps.minImageExtent.width, 
-                   std::min(caps.maxImageExtent.width, uint32_t(width)));
-  height = std::max(caps.minImageExtent.height, 
-                    std::min(caps.maxImageExtent.height, uint32_t(height)));
-  
+  width  = std::max(caps.minImageExtent.width, std::min(caps.maxImageExtent.width, uint32_t(width)));
+  height = std::max(caps.minImageExtent.height, std::min(caps.maxImageExtent.height, uint32_t(height)));
 
-                    
-  printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", 
-         width, height, uint32_t(width), uint32_t(height));
-  printf("Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
-         caps.minImageExtent.width, caps.minImageExtent.height,
-         caps.maxImageExtent.width, caps.maxImageExtent.height,
-         caps.currentExtent.width, caps.currentExtent.height);
-   
+  printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
+  printf(
+      "Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
+      caps.minImageExtent.width,
+      caps.minImageExtent.height,
+      caps.maxImageExtent.width,
+      caps.maxImageExtent.height,
+      caps.currentExtent.width,
+      caps.currentExtent.height);
 
   // Ensure we have valid dimensions
   if (width == 0 || height == 0) {
     // Window is minimized, use minimum valid size
-    width = std::max(1u, caps.minImageExtent.width);
+    width  = std::max(1u, caps.minImageExtent.width);
     height = std::max(1u, caps.minImageExtent.height);
   }
 
@@ -136,10 +165,9 @@ void VkFrameBufferInterface::_initSwapChain() {
   SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
-  SCINFO.imageExtent      = {uint32_t(width),uint32_t(height)};  // The width and height of the swap chain images
+  SCINFO.imageExtent      = {uint32_t(width), uint32_t(height)}; // The width and height of the swap chain images
   SCINFO.imageArrayLayers = 1;                                   // Always 1 unless developing a stereoscopic 3D application
 
-  
   // Only use supported image usage flags
   SCINFO.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
@@ -148,13 +176,11 @@ void VkFrameBufferInterface::_initSwapChain() {
   if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT) {
     SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   }
-  
-  printf("Supported usage flags: 0x%x, requesting: 0x%x\n", 
-         caps.supportedUsageFlags, SCINFO.imageUsage);
-  
+
+  printf("Supported usage flags: 0x%x, requesting: 0x%x\n", caps.supportedUsageFlags, SCINFO.imageUsage);
+
   // Ensure we're not requesting unsupported usage
   SCINFO.imageUsage &= caps.supportedUsageFlags;
-  
 
   SCINFO.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
 
@@ -166,7 +192,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   // misc properties
   // SCINFO.preTransform already set above, don't override
-  
+
   // Choose a supported composite alpha mode
   SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   if (!(caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)) {
@@ -179,10 +205,10 @@ void VkFrameBufferInterface::_initSwapChain() {
       SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
     }
   }
- 
-  SCINFO.clipped        = VK_TRUE;                           // clip pixels that are obscured by other windows
-  //SCINFO.oldSwapchain   = _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
-  SCINFO.oldSwapchain   = VK_NULL_HANDLE; // _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
+
+  SCINFO.clipped = VK_TRUE; // clip pixels that are obscured by other windows
+  // SCINFO.oldSwapchain   = _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
+  SCINFO.oldSwapchain = VK_NULL_HANDLE; // _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
 
   // Choose a supported present mode
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
@@ -206,11 +232,12 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   for (size_t i = 0; i < swapChainImages.size(); i++) {
 
-    _contextVK->_setObjectDebugName( swapChainImages[i], VK_OBJECT_TYPE_IMAGE, FormatString("swapchain-image-%d", i).c_str() );
+    _contextVK->_setObjectDebugName(swapChainImages[i], VK_OBJECT_TYPE_IMAGE, FormatString("swapchain-image-%d", i).c_str());
 
-    auto IVCI = createImageViewInfo2D( swapChainImages[i], //
-                                       surfaceFormat.format, //
-                                       VK_IMAGE_ASPECT_COLOR_BIT );
+    auto IVCI = createImageViewInfo2D(
+        swapChainImages[i],   //
+        surfaceFormat.format, //
+        VK_IMAGE_ASPECT_COLOR_BIT);
 
     VkImageView imgview;
     OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &imgview);
@@ -225,11 +252,12 @@ void VkFrameBufferInterface::_initSwapChain() {
     ////////////////////////////////////////////
     // link rtb_color to swap chain color image
     ////////////////////////////////////////////
-    auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
+    auto rtb_impl_color         = rtb_color->_impl.getShared<VklRtBufferImpl>();
     rtb_impl_color->_is_surface = true;
-    rtb_impl_color->_replaceImage( surfaceFormat.format, //
-                                   imgview, //
-                                   swapChainImages[i] );
+    rtb_impl_color->_replaceImage(
+        surfaceFormat.format, //
+        imgview,              //
+        swapChainImages[i]);
     ////////////////////////////////////////////
     swap_chain->_rtgs.push_back(rtg);
   }
@@ -241,7 +269,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
 void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
 
-  auto main_rtb = _main_rtg->buffer(0);
+  auto main_rtb  = _main_rtg->buffer(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
   auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -249,7 +277,7 @@ void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
   auto imgbar = createImageBarrier(
       main_rtbi->_vkimg,
       main_rtbi->_currentLayout,            // oldLayout (dont care)
-      new_layout,      // newLayout
+      new_layout,                           // newLayout
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
       VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
 
@@ -258,58 +286,22 @@ void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
       0,                                             // dependencyFlags
-      0, nullptr,                                    // memoryBarrierCount, pMemoryBarriers
-      0, nullptr,                                    // bufferMemoryBarrierCount, pBufferMemoryBarriers
-      1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
+      0,
+      nullptr, // memoryBarrierCount, pMemoryBarriers
+      0,
+      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1,
+      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
 
-   main_rtbi->setLayout(new_layout);
-   
+  main_rtbi->setLayout(new_layout);
 }
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_acquireSwapChainForFrame() {
-
-  ///////////////////////////////////////////////////
-  // Get SwapChain Image
-  ///////////////////////////////////////////////////
-
-  bool ok_to_transition = false;
-
-  while (not ok_to_transition) {
-    _swapchain->_curSwapWriteImage = 0xffffffff;
-    VkResult status                = vkAcquireNextImageKHR(
-        _contextVK->_vkdevice,                //
-        _swapchain->_vkSwapChain,             //
-        std::numeric_limits<uint64_t>::max(), // timeout (ns)
-        _swapChainImageAcquiredSemaphore,     //
-        VK_NULL_HANDLE,                       // no fence
-        &_swapchain->_curSwapWriteImage       //
-    );
-
-    switch (status) {
-      case VK_SUCCESS:
-        ok_to_transition = true;
-        break;
-      case VK_SUBOPTIMAL_KHR:
-      case VK_ERROR_OUT_OF_DATE_KHR: {
-        vkDeviceWaitIdle(_contextVK->_vkdevice);
-        _initSwapChain();
-        // printf("VK_ERROR_OUT_OF_DATE_KHR\n");
-        //  OrkAssert(false);
-        //   need to recreate swap chain
-        break;
-      }
-      default:
-        OrkAssert(false);
-        break;
-    }
-  }
-
-  OrkAssert(_swapchain->_curSwapWriteImage >= 0);
-  OrkAssert(_swapchain->_curSwapWriteImage < _swapchain->_rtgs.size());
-  _main_rtg = _swapchain->currentRTG();
-  // printf( "_swapchain->_curSwapWriteImage<%u>\n", _swapchain->_curSwapWriteImage );
+vkswapchain_ptr_t VkFrameBufferInterface::_acquireSwapChainForFrame() {
+  OrkAssert(_swapchain);
+  _swapchain->acquireImage(_contextVK);
+  return _swapchain;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

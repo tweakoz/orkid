@@ -824,12 +824,22 @@ struct VkLoadContext {
   GLFWwindow* _pushedWindow = nullptr;
 };
 
+
 struct VkSwapChain {
   rtgroup_ptr_t currentRTG();
 
+  void acquireImage(vkcontext_rawptr_t ctxVK);
+  void enqueueFrame(vkcontext_rawptr_t ctxVK);
+  void presentFrame(vkcontext_rawptr_t ctxVK);
+
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
-  vkfence_obj_ptr_t _fence;
+  static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;    // CPU can be ahead by 2 frames
+  std::vector<VkSemaphore> _imageAcquiredSemaphores;   // One per frame-in-flight
+  std::vector<VkSemaphore> _renderCompleteSemaphores;  // One per frame-in-flight
+  std::vector<vkfence_obj_ptr_t> _frameFences;         // One per frame-in-flight
+  size_t _currentFrame = 0;                            // Which frame-in-flight we're on (0 or 1 if MAX=2)
+  
   uint32_t _curSwapWriteImage = 0xffffffff;
 };
 
@@ -1015,14 +1025,14 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   //////////////////////////////////////////////
   void _initSwapChain();
-  void _acquireSwapChainForFrame();
+  vkswapchain_ptr_t _acquireSwapChainForFrame();
   void _enq_transitionMainRtgToPresent();
 
   //////////////////////////////////////////////
 
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
-  VkSemaphore _swapChainImageAcquiredSemaphore;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1292,10 +1302,10 @@ public:
   VkSurfaceKHR _vkpresentationsurface;
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
-  VkSemaphore _renderingCompleteSemaphore;
   size_t _num_queue_types = 0;
   int _renderpass_index;
   int _subpass_index = 0;
+
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;

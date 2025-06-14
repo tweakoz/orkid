@@ -77,8 +77,13 @@ void VulkanFenceObject::onCrossed(void_lambda_t op) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::onFenceCrossed(void_lambda_t op) {
-  auto fence = _fbi->_swapchain->_fence;
-  fence->onCrossed(op);
+  auto swapchain = _fbi->_swapchain;
+  if (swapchain && swapchain->_currentFrame < swapchain->_frameFences.size()) {
+    auto& fence = swapchain->_frameFences[swapchain->_currentFrame];
+    if (fence) {
+      fence->onCrossed(op);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
