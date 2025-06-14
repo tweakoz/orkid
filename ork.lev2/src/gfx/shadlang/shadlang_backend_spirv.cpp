@@ -159,7 +159,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _input_index     = 0;
   _output_index    = 0;
 
-  printf( "begin shader<%s>\n", shader->_name.c_str() );
+  //printf( "begin shader<%s>\n", shader->_name.c_str() );
 
   /////////////////////////////////////////////////
   /////////////////////////////////////////////////
@@ -170,17 +170,17 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _binding_id = 0;
   ////////////////////////////////////////////////
   tracker._onInheritLibrary = [&](std::string INHID, libblock_ptr_t lib_block) { //
-    printf( "INHERIT LIB<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
+    //printf( "INHERIT LIB<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritLibrary(lib_block);
   };
   ////////////////////////////////////////////////
   tracker._onInheritTypes = [&](std::string INHID, typeblock_ptr_t typ_block) { //
-    printf( "INHERIT TYP<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
+    //printf( "INHERIT TYP<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritTypes(typ_block);
   };
   ////////////////////////////////////////////////
   tracker._onInheritSamplerSet = [=](std::string INHID, astnode_ptr_t sset) { //
-    printf( "INHERIT SSET<%s>\n", INHID.c_str() );
+    //printf( "INHERIT SSET<%s>\n", INHID.c_str() );
     auto it_sset  = _spirvsamplersets.find(INHID);
     OrkAssert(it_sset != _spirvsamplersets.end());
     auto spirvsmpset = it_sset->second;
@@ -188,7 +188,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
-    printf( "INHERIT USET<%s>\n", INHID.c_str() );
+    //printf( "INHERIT USET<%s>\n", INHID.c_str() );
     auto it_uset  = _spirvuniformsets.find(INHID);
     OrkAssert(it_uset != _spirvuniformsets.end());
     auto spirvuniset = it_uset->second;
@@ -196,7 +196,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformBlk = [=](std::string INHID, astnode_ptr_t ublk) { //
-    printf( "INHERIT UBLK<%s>\n", INHID.c_str() );
+    //printf( "INHERIT UBLK<%s>\n", INHID.c_str() );
       auto it_ublk  = _spirvuniformblks.find(INHID);
       OrkAssert(it_ublk != _spirvuniformblks.end());
       auto spirvuniblk = it_ublk->second;
@@ -204,12 +204,12 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
-    printf( "INHERIT IO<%s>\n", INHID.c_str() );
+    //printf( "INHERIT IO<%s>\n", INHID.c_str() );
     _inheritIO(interface_node);
   }; 
   ////////////////////////////////////////////////
   tracker._onInheritExtension = [=](std::string INHID, astnode_ptr_t ast_node) { //
-    printf( "INHERIT EXTENSIONS<%s>\n", INHID.c_str() );
+    //printf( "INHERIT EXTENSIONS<%s>\n", INHID.c_str() );
     auto as_ext_node = std::dynamic_pointer_cast<SemaInheritExtension>(ast_node);
     OrkAssert(as_ext_node);
     _inheritExtension(as_ext_node);
@@ -275,7 +275,7 @@ void SpirvCompiler::_convertSamplerSets() {
     auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
     OrkAssert(dsetids.size() == 1);
     int dset_id = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
-    printf("sampler dset_id<%d>\n", dset_id);
+    //printf("sampler dset_id<%d>\n", dset_id);
     //////////////////////////////////////
     auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
     //////////////////////////////////////
@@ -287,7 +287,7 @@ void SpirvCompiler::_convertSamplerSets() {
     OrkAssert((dset_id>=0) and (dset_id<=4));
     //////////////////////////////////////
     for (auto decl : sampler_declarations) {
-      dumpAstNode(decl);
+     //dumpAstNode(decl);
       auto sampler_type = decl->childAs<SHAST::SamplerType>(0);
       OrkAssert(sampler_type);
       auto smp_typename = sampler_type->typedValueForKey<std::string>("sampler_type").value();
@@ -618,7 +618,7 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
       }
     }
 
-    dumpAstNode(layout_node);
+    //dumpAstNode(layout_node);
     item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " "+direction+" ";
   }
   else if(need_location){
@@ -677,7 +677,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
   for (auto input_group : input_groups) {
     auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-    printf("  num_inputs<%zu>\n", inputs.size());
+    //printf("  num_inputs<%zu>\n", inputs.size());
     for (auto input : inputs) {
       auto as_layout = input->childAs<InterfaceLayout>(0);
       auto as_tid = (as_layout!=nullptr) //
@@ -707,9 +707,9 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
   for (auto storage_group : storage_groups) {
     auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
-    printf("  NUM_STORAGES<%zu>\n", storages.size());
+    //printf("  NUM_STORAGES<%zu>\n", storages.size());
     for (auto storage : storages) {
-      dumpAstNode(storage);
+      //dumpAstNode(storage);
       ///////////////////////////////////////////////////////////
       // parse storage top
       ///////////////////////////////////////////////////////////
@@ -723,8 +723,8 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       OrkAssert(ast_storage_name);
       auto storage_type = ast_storage_type->typedValueForKey<std::string>("identifier_name").value();
       auto storage_name = ast_storage_name->typedValueForKey<std::string>("identifier_name").value();
-      printf("storage_type<%s>\n", storage_type.c_str());
-      printf("storage_name<%s>\n", storage_name.c_str());
+      //printf("storage_type<%s>\n", storage_type.c_str());
+      //printf("storage_name<%s>\n", storage_name.c_str());
 
       ///////////////////////////////////////////////////////////
       // parse/emit layout
@@ -757,7 +757,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           OrkAssert(tid);
           auto dt = tid->typedValueForKey<std::string>("data_type").value();
           auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          printf( "STORAGE DATADECL dt<%s> id<%s>\n", dt.c_str(), id.c_str() );
+          //printf( "STORAGE DATADECL dt<%s> id<%s>\n", dt.c_str(), id.c_str() );
           _appendText(_interface_group, " %s %s;", dt.c_str(), id.c_str());
         }
         else if( auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub) ){
@@ -768,7 +768,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
           auto len_node = as_adecl->childAs<SemaIntegerLiteral>(1);
           auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
           auto ary_len = atoi(ary_len_str.c_str());
-          printf( "STORAGE ARYDECL dt<%s> id<%s> len<%d>\n", dt.c_str(), id.c_str(), ary_len );
+          //printf( "STORAGE ARYDECL dt<%s> id<%s> len<%d>\n", dt.c_str(), id.c_str(), ary_len );
           _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
         }
         else{
@@ -832,7 +832,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   auto as_glsl = shadlang::toGLFX1(_shader_group);
-  printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
+  //printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
 
   ///////////////////////////////////////////////////////
   // compile with shaderc

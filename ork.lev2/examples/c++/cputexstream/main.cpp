@@ -33,8 +33,11 @@ struct Resources {
     _material = std::make_shared<FreestyleMaterial>();
     _material->gpuInit(ctx, "orkshader://solid");
     _fxtechnique        = _material->technique("texcolor");
+    OrkAssert(_fxtechnique != nullptr);
     _fxparameterMVP     = _material->param("MatMVP");
+    OrkAssert(_fxparameterMVP != nullptr);
     _fxparameterTexture = _material->param("ColorMap");
+    OrkAssert(_fxparameterTexture != nullptr);
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, _fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", _fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);

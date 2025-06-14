@@ -591,6 +591,18 @@ void VkContext::initializeWindowContext(
   ///////////////////////
   platoMakeCurrent(plato);
   _fbi->SetThisBuffer(pWin);
+
+uint32_t count;
+  const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+  printf("GLFW requires %u extensions for surface:\n", count);
+  for (uint32_t i = 0; i < count; i++) {
+    printf("  - %s\n", extensions[i]);
+  }
+ 
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+  printf("createWindowSurface with instance<%p>\n", (void*) &_GVI->_instance );
+
   VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);
 

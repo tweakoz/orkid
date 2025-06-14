@@ -149,7 +149,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   OrkAssert(shader_input_stream != nullptr);
   OrkAssert(tecniq_input_stream != nullptr);
 
-  header_input_stream->dump();
+  //header_input_stream->dump();
 
   auto str_shader_counts = header_input_stream->ReadIndexedString(chunkreader);
   OrkAssert(str_shader_counts == "shader_counts");
@@ -180,7 +180,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto ork_smpset = vk_smpset->_impl.makeShared<FxSamplerSet>();
     auto dset_id    = uniforms_input_stream->ReadItem<size_t>();
     vk_smpset->_descriptor_set_id = dset_id;
-    printf( "shader<%p:%s> GOT SAMPLERSET<%s>\n", (void*) ork_shader, ork_shader->mName.c_str(), str_smpset_name.c_str() );
+    //printf( "shader<%p:%s> GOT SAMPLERSET<%s>\n", (void*) ork_shader, ork_shader->mName.c_str(), str_smpset_name.c_str() );
     vulkan_shaderfile->_vk_samplersets[str_smpset_name] = vk_smpset;
     ork_shader->_samplerSets[str_smpset_name] = ork_smpset.get();
     ///////////////////////////////////////////////
@@ -216,7 +216,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_uniset == "uniset");
     auto str_uniset_name                                = uniforms_input_stream->ReadIndexedString(chunkreader);
     auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
-    printf( "GOT UNIFORMSET<%s>\n", str_uniset_name.c_str() );
+    //printf( "GOT UNIFORMSET<%s>\n", str_uniset_name.c_str() );
     vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
     ///////////////////////////////////////////////
     auto str_params = uniforms_input_stream->ReadIndexedString(chunkreader);
@@ -253,7 +253,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
     vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
     vk_uniblk->_descriptor_set_id = dset_id;
-    printf( "GOT UNIFORMBLK<%s>\n", str_uniblk_name.c_str() );
+    //printf( "GOT UNIFORMBLK<%s>\n", str_uniblk_name.c_str() );
     vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
 
     auto it = ork_shader->_uniformBlocks.find(str_uniblk_name);
@@ -358,7 +358,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vulkan_shobj->_uniset_refs = refs;
       for (size_t i = 0; i < num_iunisets; i++) {
         auto str_uniset = shader_input_stream->ReadIndexedString(chunkreader);
-        printf( "REF UNIFORMSET str_smpset<%s>\n", str_uniset.c_str() );
+        //printf( "REF UNIFORMSET str_smpset<%s>\n", str_uniset.c_str() );
         auto it         = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformsets.end());
         vkfxsuniset_ptr_t vk_uniset = it->second;
@@ -373,7 +373,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vulkan_shobj->_uniblk_refs = refs;
       for (size_t i = 0; i < num_iuniblks; i++) {
         auto str_uniblk = shader_input_stream->ReadIndexedString(chunkreader);
-        printf( "REF UNIFORMBLK str_smpset<%s>\n", str_uniblk.c_str() );
+        //printf( "REF UNIFORMBLK str_smpset<%s>\n", str_uniblk.c_str() );
         auto it         = vulkan_shaderfile->_vk_uniformblks.find(str_uniblk);
         OrkAssert(it != vulkan_shaderfile->_vk_uniformblks.end());
         vkfxsuniblk_ptr_t vk_uniblk = it->second;
@@ -386,7 +386,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     if (num_ifaces) {
       for (size_t i = 0; i < num_ifaces; i++) {
         auto str_iface = shader_input_stream->ReadIndexedString(chunkreader);
-        printf( "REF IFACE<%s>\n", str_iface.c_str() );
+        //printf( "REF IFACE<%s>\n", str_iface.c_str() );
         vulkan_shobj->_vk_interfaces.push_back(str_iface);
       }
     }
@@ -617,7 +617,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 OrkAssert(false);
               }
               // OrkAssert(cursor==item_ptr->_offset);
-              printf("VKFXI: datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor);
+              //printf("VKFXI: datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor);
             }
           }
         }

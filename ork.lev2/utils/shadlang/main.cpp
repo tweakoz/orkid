@@ -42,7 +42,7 @@ int main(int argc, char** argv, char** envp) {
   if(tunit){
     if( ast_output_path.length() ){
         auto ast = shadlang::SHAST::toASTstring(tunit);
-        printf( "AST<%s>\n", ast.c_str());
+        //printf( "AST<%s>\n", ast.c_str());
         bool OK = File::writeString(ast_output_path, ast);
         OrkAssert(OK);
     }

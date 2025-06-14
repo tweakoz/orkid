@@ -40,7 +40,7 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
       out_stream->AddItem<size_t>(inputs.size());
       for (auto input : inputs) {
-        dumpAstNode(input);
+        //dumpAstNode(input);
         if( auto tid = input->template childAs<TypedIdentifier>(0) ){
           out_stream->AddIndexedString("input", chunkwriter);
           auto dt = tid->template typedValueForKey<std::string>("data_type").value();
@@ -72,7 +72,7 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
       out_stream->AddItem<size_t>(outputs.size());
       for (auto output : outputs) {
-        dumpAstNode(output);
+        //(output);
         if( auto as_tid = output->template childAs<TypedIdentifier>(0) ){
           out_stream->AddIndexedString("output", chunkwriter);
           auto dt = as_tid->template typedValueForKey<std::string>("data_type").value();
@@ -165,28 +165,31 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   size_t num_uniblks     = uniblks.size();
   size_t num_imports     = imports.size();
 
-  printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
-  printf("num_vtx_interfaces<%zu>\n", num_vtx_ifaces);
-  printf("num_geo_shaders<%zu>\n", num_geo_shaders);
-  printf("num_geo_interfaces<%zu>\n", num_geo_ifaces);
-  printf("num_frg_shaders<%zu>\n", num_frg_shaders);
-  printf("num_frg_interfaces<%zu>\n", num_frg_ifaces);
-  printf("num_cu_shaders<%zu>\n", num_cu_shaders);
-  printf("num_techniques<%zu>\n", num_techniques);
-  printf("num_smpsets<%zu>\n", num_smpsets);
-  printf("num_unisets<%zu>\n", num_unisets);
-  printf("num_uniblks<%zu>\n", num_uniblks);
-  printf("num_imports<%zu>\n", num_imports);
-  //////////////////
   auto SPC = std::make_shared<spirv::SpirvCompiler>(transunit, true);
-  for (auto spirvsmpset : SPC->_spirvsamplersets) {
-    printf("spirvsmpset<%s>\n", spirvsmpset.first.c_str());
-  }
-  for (auto spirvuniset : SPC->_spirvuniformsets) {
-    printf("spirvuniset<%s>\n", spirvuniset.first.c_str());
-  }
-  for (auto spirvuniblk : SPC->_spirvuniformblks) {
-    printf("spirvuniblk<%s>\n", spirvuniblk.first.c_str());
+
+  if(0){
+    printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
+    printf("num_vtx_interfaces<%zu>\n", num_vtx_ifaces);
+    printf("num_geo_shaders<%zu>\n", num_geo_shaders);
+    printf("num_geo_interfaces<%zu>\n", num_geo_ifaces);
+    printf("num_frg_shaders<%zu>\n", num_frg_shaders);
+    printf("num_frg_interfaces<%zu>\n", num_frg_ifaces);
+    printf("num_cu_shaders<%zu>\n", num_cu_shaders);
+    printf("num_techniques<%zu>\n", num_techniques);
+    printf("num_smpsets<%zu>\n", num_smpsets);
+    printf("num_unisets<%zu>\n", num_unisets);
+    printf("num_uniblks<%zu>\n", num_uniblks);
+    printf("num_imports<%zu>\n", num_imports);
+    //////////////////
+    for (auto spirvsmpset : SPC->_spirvsamplersets) {
+      printf("spirvsmpset<%s>\n", spirvsmpset.first.c_str());
+    }
+    for (auto spirvuniset : SPC->_spirvuniformsets) {
+      printf("spirvuniset<%s>\n", spirvuniset.first.c_str());
+    }
+    for (auto spirvuniblk : SPC->_spirvuniformblks) {
+      printf("spirvuniblk<%s>\n", spirvuniblk.first.c_str());
+    }
   }
   //////////////////
   // begin shader stream
@@ -220,7 +223,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       // rebuild _samplers_by_name
       /////////////////////////////////////////////
       uniforms_stream->AddIndexedString("smpset", chunkwriter);
-      printf( "WRITE SAMPLERSET<%s>\n", name.c_str() );
+      //printf( "WRITE SAMPLERSET<%s>\n", name.c_str() );
       uniforms_stream->AddIndexedString(name, chunkwriter);
       uniforms_stream->AddItem<size_t>(spirv_smpset->_descriptor_set_id);
       uniforms_stream->AddIndexedString("samplers", chunkwriter);
@@ -328,28 +331,28 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     for (auto uset : tracker._inherited_ssets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      printf("WRITE SAMPLERSET REF<%s>\n", INHID.c_str());
+      //printf("WRITE SAMPLERSET REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_usets.size());
     for (auto uset : tracker._inherited_usets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      printf("WRITE UNIFORMSET REF<%s>\n", INHID.c_str());
+      //printf("WRITE UNIFORMSET REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_ublks.size());
     for (auto ublk : tracker._inherited_ublks) {
       auto INHID = ublk->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
+      //printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->AddItem<size_t>(tracker._inherited_ifaces.size());
     for (auto uset : tracker._inherited_ifaces) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->AddIndexedString(INHID, chunkwriter);
-      printf("WRITE IFACE REF<%s>\n", INHID.c_str());
+      //printf("WRITE IFACE REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
 

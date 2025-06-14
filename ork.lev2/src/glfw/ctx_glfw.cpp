@@ -806,7 +806,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
 GLFWwindow* CtxGLFW::_apiInitVK() {
   OrkAssert(glfwVulkanSupported());
-  OrkAssert(vulkan::_GVI);
+  //OrkAssert(vulkan::_GVI);
+  //OrkAssert(vulkan::_GVI->_instance);
   auto ctx_vars = std::make_shared<varmap::VarMap>();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* offscreen_window = glfwCreateWindow(
@@ -827,6 +828,8 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     glfwSetErrorCallback(error_callback);
 
     _gctx = new CtxGLFW(nullptr);
+
+    printf( "<<<glfwInit>>> HERE!!!\n");
 
     bool ok = glfwInit();
     assert(ok);

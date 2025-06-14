@@ -96,6 +96,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
+  basehasher->finish();
   uint64_t hashkey               = basehasher->result();
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;

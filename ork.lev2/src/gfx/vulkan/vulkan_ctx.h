@@ -44,6 +44,7 @@ struct GLFWwindow;
 #include <ork/lev2/gfx/shadlang.h>
 #include <ork/lev2/gfx/shadman.h>
 
+#define GLFW_INCLUDE_VULKAN
 #import <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
 

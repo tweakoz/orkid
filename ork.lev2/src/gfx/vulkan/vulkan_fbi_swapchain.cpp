@@ -27,7 +27,7 @@ void VkFrameBufferInterface::_initSwapChain() {
       auto rtb_color = rtg->buffer(0);
       auto rtb_depth = rtg->_depthBuffer;
       auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
-      auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
+      auto rtb_impl_depth = rtb_depth ? rtb_depth->_impl.getShared<VklRtBufferImpl>() : nullptr;
       //auto img = _swapchain->_vkSwapChainImages[i];
 
       // barrier - complete all ops before destroying
@@ -54,10 +54,31 @@ void VkFrameBufferInterface::_initSwapChain() {
     vkDestroySwapchainKHR(vkdev, _swapchain->_vkSwapChain, nullptr);
   }
 
+  // Wait for device to be idle before creating new swap chain
+  vkDeviceWaitIdle(_contextVK->_vkdevice);
+  
+  // Also wait for queue to be idle
+  //vkQueueWaitIdle(_contextVK->_vkqueue);
+
+ // Clear old swapchains after destroying current one
+  for (auto& old_swap : _old_swapchains) {
+    vkDestroySwapchainKHR(vkdev, old_swap->_vkSwapChain, nullptr);
+  }
+  _old_swapchains.clear();
+
   auto swap_chain = std::make_shared<VkSwapChain>();
   swap_chain->_fence = std::make_shared<VulkanFenceObject>(_contextVK);
-  auto surfaceFormat = pres_caps->_formats[0];
-
+  //auto surfaceFormat = pres_caps->_formats[0];
+  VkSurfaceFormatKHR surfaceFormat = pres_caps->_formats[0];
+  for (const auto& format : pres_caps->_formats) {
+    // Prefer BGRA8 SRGB if available
+    if (format.format == VK_FORMAT_B8G8R8A8_SRGB && 
+        format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+      surfaceFormat = format;
+      break;
+    }
+  }
+ 
   VkSurfaceTransformFlagsKHR preTransform;
   if (pres_caps->_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
     preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
@@ -74,16 +95,67 @@ void VkFrameBufferInterface::_initSwapChain() {
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
 
+    auto& caps = pres_caps->_capabilities;
+
+    // Check if extent is defined by surface (required on some platforms)
+  if (caps.currentExtent.width != 0xFFFFFFFF) {
+    width = caps.currentExtent.width;
+    height = caps.currentExtent.height;
+  }
+
+
+  // Clamp to surface capabilities
+  width = std::max(caps.minImageExtent.width, 
+                   std::min(caps.maxImageExtent.width, uint32_t(width)));
+  height = std::max(caps.minImageExtent.height, 
+                    std::min(caps.maxImageExtent.height, uint32_t(height)));
+  
+
+                    
+  printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", 
+         width, height, uint32_t(width), uint32_t(height));
+  printf("Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
+         caps.minImageExtent.width, caps.minImageExtent.height,
+         caps.maxImageExtent.width, caps.maxImageExtent.height,
+         caps.currentExtent.width, caps.currentExtent.height);
+   
+
+  // Ensure we have valid dimensions
+  if (width == 0 || height == 0) {
+    // Window is minimized, use minimum valid size
+    width = std::max(1u, caps.minImageExtent.width);
+    height = std::max(1u, caps.minImageExtent.height);
+  }
 
   // image properties
-  SCINFO.minImageCount    = 3;
+  // Ensure minImageCount is within capabilities
+  uint32_t minImageCount = caps.minImageCount + 1;
+  if (caps.maxImageCount > 0 && minImageCount > caps.maxImageCount) {
+    minImageCount = caps.maxImageCount;
+  }
+  SCINFO.minImageCount    = minImageCount;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
   SCINFO.imageExtent      = {uint32_t(width),uint32_t(height)};  // The width and height of the swap chain images
   SCINFO.imageArrayLayers = 1;                                   // Always 1 unless developing a stereoscopic 3D application
-  SCINFO.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Or any other value depending on your needs
-  SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+  
+  // Only use supported image usage flags
+  SCINFO.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
+    SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  }
+  if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT) {
+    SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  }
+  
+  printf("Supported usage flags: 0x%x, requesting: 0x%x\n", 
+         caps.supportedUsageFlags, SCINFO.imageUsage);
+  
+  // Ensure we're not requesting unsupported usage
+  SCINFO.imageUsage &= caps.supportedUsageFlags;
+  
+
   SCINFO.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
 
   // image view properties
@@ -93,11 +165,33 @@ void VkFrameBufferInterface::_initSwapChain() {
   SCINFO.pQueueFamilyIndices   = nullptr; // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
 
   // misc properties
-  SCINFO.preTransform   = pres_caps->_capabilities.currentTransform;
-  SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // todo - support alpha
+  // SCINFO.preTransform already set above, don't override
+  
+  // Choose a supported composite alpha mode
+  SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  if (!(caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)) {
+    // Find first supported composite alpha
+    if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) {
+      SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+    } else if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) {
+      SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+    } else if (caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) {
+      SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+    }
+  }
+ 
   SCINFO.clipped        = VK_TRUE;                           // clip pixels that are obscured by other windows
-  SCINFO.oldSwapchain   = VK_NULL_HANDLE;
-  SCINFO.presentMode    = VK_PRESENT_MODE_IMMEDIATE_KHR;
+  //SCINFO.oldSwapchain   = _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
+  SCINFO.oldSwapchain   = VK_NULL_HANDLE; // _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
+
+  // Choose a supported present mode
+  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
+  for (const auto& mode : pres_caps->_presentModes) {
+    if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+      SCINFO.presentMode = mode;
+      break;
+    }
+  }
   // SCINFO.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
   SCINFO.clipped = VK_TRUE;
 
@@ -199,6 +293,7 @@ void VkFrameBufferInterface::_acquireSwapChainForFrame() {
         break;
       case VK_SUBOPTIMAL_KHR:
       case VK_ERROR_OUT_OF_DATE_KHR: {
+        vkDeviceWaitIdle(_contextVK->_vkdevice);
         _initSwapChain();
         // printf("VK_ERROR_OUT_OF_DATE_KHR\n");
         //  OrkAssert(false);

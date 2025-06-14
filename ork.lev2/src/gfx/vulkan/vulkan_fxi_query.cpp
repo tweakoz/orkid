@@ -105,12 +105,13 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   // search uniform blocks
   //////////////////////////////////////////////////////
 
-  if (1)
+  if (0){
     printf(
         "VkFxInterface shader<%s> parameter<%s> not found in unisets numunisets<%zu>\n", //
         shader_name.c_str(),                                                             //
         name.c_str(),                                                                    //
         num_unisets);
+    }
 
   // search uniform blocks
 
@@ -134,12 +135,13 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   if (rval != nullptr) {
     return rval;
   }
-  if (1)
+  if (0){
     printf(
         "VkFxInterface shader<%s> parameter<%s> not found in uniblks numuniblks<%zu>\n", //
         shader_name.c_str(),                                                             //
         name.c_str(),                                                                    //
         num_uniblks);
+    }
   return nullptr;
 }
 

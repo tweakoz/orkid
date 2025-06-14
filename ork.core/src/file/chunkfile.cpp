@@ -315,7 +315,7 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   GetItem<size_t>(mkr_endvarmap);
   OrkAssert(mkr_endvarmap == "EndVarMap"_crcu);
 }
-void InputStream::dump() const{
+void InputStream::dump() const {
   hexdumpbytes((const uint8_t*) mpbase, milength);
 }
 ////////////////////////////////////////////////////////////////////////////////////

@@ -21,9 +21,22 @@ uniform_set ublock_frg {
   vec4 modcolor;
   int downsampledim;
   float downsampleamp;
+}
+sampler_set samplers (descriptor_set 0) {
   sampler2D ColorMap;
   sampler2D ColorMap2;
   sampler2D ColorMap3;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_PT {
+  inputs {
+    vec3 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
@@ -44,7 +57,7 @@ vertex_interface iface_vdefault_stereo : iface_vdefault {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ublock_frg {
+fragment_interface iface_fdefault : ublock_frg : samplers {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -52,7 +65,7 @@ fragment_interface iface_fdefault : ublock_frg {
   outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : ublock_frg {
+fragment_interface iface_fmt : ublock_frg : samplers {
   inputs { vec2 frg_uv0; }
   outputs { layout(location = 0) vec4 out_clr; }
 }
@@ -198,6 +211,11 @@ fragment_shader ps_downsample7x7 : iface_fmt {
   out_clr = vec4(outc/tot_w,1);
 }
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_texcolor : vif_PT : ublock_vtx {
+  gl_Position = MatMVP * vec4(position,1);
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vtxcolor;
@@ -314,7 +332,7 @@ technique mmodcolor {
 technique texcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_vtxcolor;
+    vertex_shader   = vs_texcolor;
     fragment_shader = ps_texcolor;
     state_block     = sb_default;
   }

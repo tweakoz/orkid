@@ -125,7 +125,7 @@ vkimagecreateinfo_ptr_t makeVKICI(
   VKICI->tiling        = VK_IMAGE_TILING_OPTIMAL;
   VKICI->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
   VKICI->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  // VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   return VKICI;
 }
 

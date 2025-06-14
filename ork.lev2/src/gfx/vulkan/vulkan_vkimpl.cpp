@@ -16,8 +16,8 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_validate = true;
-constexpr bool _enable_renderdoc = true;
+constexpr bool _enable_validate = false;
+constexpr bool _enable_renderdoc = false;
 constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -99,6 +99,8 @@ vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
 
 VulkanInstance::VulkanInstance() {
 
+  static auto gctx = CtxGLFW::globalOffscreenContext();
+
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -148,7 +150,8 @@ VulkanInstance::VulkanInstance() {
   _instance_extensions.push_back("VK_MVK_macos_surface");
   _instance_extensions.push_back("VK_EXT_metal_surface");
   //_instance_extensions.push_back("VK_KHR_portability_subset");
-  //_instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+  _instance_extensions.push_back("VK_KHR_portability_enumeration");
+  _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
  #else 
   _instance_extensions.push_back("VK_KHR_xcb_surface");
 #endif
@@ -156,10 +159,12 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledExtensionCount   = _instance_extensions.size();
   _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
 
+  printf("num vk instance extensions<%zu>\n", _instance_extensions.size());
+
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);
 
-  deco::printf(yel, "vulkan::_init res<%d>\n", int(res));
+  deco::printf(yel, "vulkan::_init instance<%p> res<%d>\n", (void*) & _instance, int(res));
 
   /////////////////////////////////////////////////////////////////////////////
   // check device groups (for later multidevice support)
@@ -318,13 +323,17 @@ VkFormatConverter::VkFormatConverter() {
     _inv_fmtmap[vk_fmt] = ork_fmt;
   };
 
+  #if ! defined(__APPLE__)
   do_format(EBufferFormat::RGB8, VK_FORMAT_R8G8B8_UNORM);
-  do_format(EBufferFormat::RGBA8, VK_FORMAT_R8G8B8A8_UNORM);
   do_format(EBufferFormat::S3TC_DXT1, VK_FORMAT_BC1_RGBA_UNORM_BLOCK);
   do_format(EBufferFormat::S3TC_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
+  do_format(EBufferFormat::BGR8, VK_FORMAT_B8G8R8_UNORM);
+  #endif
+
+  do_format(EBufferFormat::SRGB_BGRA8, VK_FORMAT_B8G8R8A8_SRGB);
+  do_format(EBufferFormat::RGBA8, VK_FORMAT_R8G8B8A8_UNORM);
   do_format(EBufferFormat::BGR5A1, VK_FORMAT_B5G5R5A1_UNORM_PACK16);
   do_format(EBufferFormat::BGRA8, VK_FORMAT_B8G8R8A8_UNORM);
-  do_format(EBufferFormat::BGR8, VK_FORMAT_B8G8R8_UNORM);
   do_format(EBufferFormat::R32F,VK_FORMAT_R32_SFLOAT);
   do_format(EBufferFormat::Z32F, VK_FORMAT_D32_SFLOAT);
   do_format(EBufferFormat::Z24S8, VK_FORMAT_D24_UNORM_S8_UINT);
@@ -352,9 +361,10 @@ VkFormatConverter::VkFormatConverter() {
   _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
 }
 VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
+  auto fmtname = EBufferFormatToName(fmt_in);
+  printf("convertBufferFormat<%s>\n", fmtname.c_str());
   auto it = _instance._fmtmap.find(fmt_in);
   if( it == _instance._fmtmap.end() ){
-    auto fmtname = EBufferFormatToName(fmt_in);
     printf("format<%s> conversion not present\n", fmtname.c_str());
     OrkAssert(false);
   }

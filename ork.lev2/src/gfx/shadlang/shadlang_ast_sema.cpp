@@ -126,7 +126,7 @@ std::string _smp_extract_type(smp_ptr_t smp_node, match_ptr_t dt_match) {
 void _semaNameSamplerTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<SamplerType>(top);
   for (auto id_node : nodes) {
-    dumpAstNode(id_node);
+    //dumpAstNode(id_node);
     auto match     = slp->matchForAstNode(id_node);
     auto sampler_type = _smp_extract_type(id_node, match);
     id_node->setValueForKey<std::string>("sampler_type", sampler_type);
@@ -295,8 +295,10 @@ void _semaCollectNamedOfType(
         n->template setValueForKey<std::string>("import_path", the_name);
         n->template setValueForKey<std::string>("raw_name", the_name);
         the_name = FormatString("ImportDirective<%s>", the_name.c_str());
-      }
-      else{
+      } else if constexpr (std::is_same<node_t, Technique>::value) {
+        printf("_name<%s> Technique<%s>\n", slp->_name.c_str(), the_name.c_str());
+        n->template setValueForKey<std::string>("raw_name", the_name);
+      } else{
         n->template setValueForKey<std::string>("raw_name", the_name);
       }
 
@@ -319,7 +321,7 @@ void _semaCollectNamedOfType(
 
       outmap[the_name] = n;
 
-      printf( "cache: objname: %s\n", the_name.c_str() );
+      //printf( "cache: objname: %s\n", the_name.c_str() );
 
       auto it2 = slp->_slp_cache->_translatables.find(the_name);
       if (it != slp->_slp_cache->_translatables.end()) {
@@ -369,10 +371,12 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
   auto nodes     = AstNode::collectNodesOfType<ImportDirective>(top);
 
-  printf( "ShadLangParser<%p:%s> ImportCount<%zu>\n", //
+  if(0){
+    printf( "ShadLangParser<%p:%s> ImportCount<%zu>\n", //
           (void*) slp, //
           slp->_name.c_str(), //
           nodes.size() );
+  }
 
   for (auto import_node : nodes) {
     //
@@ -800,7 +804,7 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
 
 void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto inputs = AstNode::collectNodesOfType<InterfaceInput>(top);
-   printf("  num_inputs<%zu>\n", inputs.size());
+   //printf("  num_inputs<%zu>\n", inputs.size());
   for (auto input : inputs) {
     auto tid = input->childAs<TypedIdentifier>(0);
     if(tid){
@@ -808,7 +812,7 @@ void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t t
       auto semantic = input->childAs<SemaIdentifier>(2);
       if( colon and semantic ){
         auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
-        printf( "sema_id<%s>\n", sema_id.c_str() );
+        //printf( "sema_id<%s>\n", sema_id.c_str() );
         input->setValueForKey<std::string>("semantic", sema_id);
       }
     }
@@ -1107,7 +1111,7 @@ void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
-  printf("ShadLangParser<%p:%s> semaAST CP-A\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-A\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 2 - Imports
@@ -1116,7 +1120,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
   _semaPerformImports(this, top);
 
-  printf("ShadLangParser<%p:%s> semaAST CP-B\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-B\n", this, _name.c_str() );
 
   //////////////////////////////////
 
@@ -1131,7 +1135,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaNameTypedIdentifers(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-C\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-C\n", this, _name.c_str() );
 
   //////////////////////////////////
 
@@ -1141,7 +1145,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaExtractDescriptorSetIds(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 1 : Build Symbol Tables
@@ -1182,7 +1186,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaMoveNames<Pass>(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-E\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-E\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 3
@@ -1205,7 +1209,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaFindInterfaceInputSemantics(this, top);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 4..
@@ -1231,7 +1235,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     keep_going = (count > 0);
   }
 
-  printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
+  //printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
 

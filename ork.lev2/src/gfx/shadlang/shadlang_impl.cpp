@@ -269,7 +269,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::
     printf("%s\n", ast_str.c_str());
     printf("///////////////////////////////\n");
   }
-  if(1){
+  if(0){
     printf("///////////////////////////////\n");
     printf("// TU<%p> LIST parser<%s>\n", (void*) top_as_tunit.get(), _name.c_str() );
     printf("///////////////////////////////\n");

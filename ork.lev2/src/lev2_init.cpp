@@ -124,6 +124,7 @@ ork::lev2::context_ptr_t gloadercontext;
 struct ClassToucher {
   ClassToucher(appinitdata_ptr_t aid) {
 
+    
     printf( "ork.lev2 classes registered...\n");
 
     AllocationLabel label("ork::lev2::Init");
