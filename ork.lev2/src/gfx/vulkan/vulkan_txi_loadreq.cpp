@@ -55,7 +55,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
         vk_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
     // Copy the mip level data from the staging buffer to the image
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "staging");
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "_createFromLoadReq");
     staging_buffer->copyFromHost(level_data, level_length);
     vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};

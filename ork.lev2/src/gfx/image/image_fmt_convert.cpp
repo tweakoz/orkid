@@ -106,6 +106,24 @@ Image Image::convertToFormat(EBufferFormat fmt) const {
     }
     img._format = fmt;
     return img;
+  } else if (fmt == EBufferFormat::RGBA8 and _format == EBufferFormat::RGB8) {
+    Image img;
+    img.init(_width, _height, 4, _bytesPerChannel);
+    auto outptr = (uint8_t*)img._data->data();
+    auto inptr  = (const uint8_t*)_data->data();
+    for (int y = 0; y < _height; y++) {
+      for (int x = 0; x < _width; x++) {
+        int pixelindex       = y * _width + x;
+        int elembaseIN       = pixelindex * 3;
+        int elembaseOUT      = pixelindex * 4;
+        outptr[elembaseOUT + 0] = inptr[elembaseIN + 2];
+        outptr[elembaseOUT + 1] = inptr[elembaseIN + 1];
+        outptr[elembaseOUT + 2] = inptr[elembaseIN + 0];
+        outptr[elembaseOUT + 3] = 255;
+      }
+    }
+    img._format = fmt;
+    return img;
   } else {
     OrkAssert(false);
     return *this;

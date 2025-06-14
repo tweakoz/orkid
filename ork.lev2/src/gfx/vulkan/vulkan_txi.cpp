@@ -250,7 +250,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,"staging");
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,"createFromMipChain");
     staging_buffer->copyFromHost(level_data, level_length);
     vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
@@ -352,7 +352,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // map staging memory and copy
   /////////////////////////////////////
 
-  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "staging");
+  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "initTextureFromData");
   staging_buffer->copyFromHost(tid._data, tid._truncation_length);
   vktex->_staging_buffers.insert(staging_buffer);
 
