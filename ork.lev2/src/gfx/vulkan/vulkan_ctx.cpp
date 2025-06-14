@@ -12,6 +12,7 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_vkctx = logger()->createChannel("VKCTX", fvec3(1,1,.9));
 
 void VkContext::describeX(class_t* clazz) {
 
@@ -378,45 +379,19 @@ void VkContext::makeCurrentContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doBeginFrame() {
+void VkContext::_doPreBeginFrame() {
+  logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
   _renderpass_index = -1;
-
-  makeCurrentContext();
-
-  if (_fbi->_main_rtg) {
-    miW = _fbi->_main_rtg->miW;
-    miH = _fbi->_main_rtg->miH;
-  }
-
-  printf("VkContext<%p> _doBeginFrame w<%d> h<%d>\n", (void*)this, miW, miH);
-
-  auto mainrect = mainSurfaceRectAtOrigin();
-
-  _fbi->setViewport(mainrect);
-  _fbi->setScissor(mainrect);
-
-  _fbi->BeginFrame();
-  _gbi->BeginFrame();
-  _fxi->BeginFrame();
-
-  PushModColor(fcolor4::White());
-  _msi->PushMMatrix(fmtx4::Identity());
-  _msi->PushVMatrix(fmtx4::Identity());
-  _msi->PushPMatrix(fmtx4::Identity());
 
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
 
   ////////////////////////
-
-  auto swapchain = _fbi->_acquireSwapChainForFrame();
-
-  ////////////////////////
   // Check if command buffer pool is healthy
   ////////////////////////
 
-  // printf("  Allocating command buffer from pool (available: %zu)\n", _cmdbuf_pool.available());
+  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)\n", _cmdbuf_pool.available());
   _defaultCommandBuffer = _cmdbuf_pool.allocate();
 
   ////////////////////////
@@ -442,6 +417,17 @@ void VkContext::_doBeginFrame() {
   _pendingOneShotCommands.clear();
   /////////////////////////////////////////
 
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doBeginFrame() {
+  logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
+  if (_fbi->_main_rtg) {
+    miW = _fbi->_main_rtg->miW;
+    miH = _fbi->_main_rtg->miH;
+  }
   _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
@@ -456,18 +442,9 @@ vkcmdbufimpl_ptr_t VkContext::primary_cb() {
 
 void VkContext::_doEndFrame() {
 
-  printf("VkContext<%p> CB<%p> _doEndFrame\n", (void*)this, (void*)primary_cb().get());
-
-  GBI()->EndFrame();
-  MTXI()->PopMMatrix();
-  MTXI()->PopVMatrix();
-  MTXI()->PopPMatrix();
-  FBI()->EndFrame();
+  logchan_vkctx->log("VkContext<%p> CB<%p> _doEndFrame", (void*)this, (void*)primary_cb().get());
 
   // FBI()->popMainSurface();
-
-  PopModColor();
-  mbPostInitializeContext = false;
 
   ////////////////////////
   // end main renderpass (and pop main rtg)
@@ -490,7 +467,7 @@ void VkContext::_doEndFrame() {
 
   ////////////////////////
 
-  // printf( "num renderpasses<%zu>\n", _renderpasses.size() );
+  // logchan_vkctx->log( "num renderpasses<%zu>\n", _renderpasses.size() );
 
   ///////////////////////////////////////////////////////
   // submit primary command buffer for this frame
@@ -518,7 +495,6 @@ void VkContext::_doEndFrame() {
   //_cmdbufcur_gfx = nullptr;
   ////////////////////////
 
-  miTargetFrame++;
   _renderpass_index = -1;
 }
 
@@ -549,14 +525,14 @@ void VkContext::initializeWindowContext(
 
   uint32_t count;
   const char** extensions = glfwGetRequiredInstanceExtensions(&count);
-  printf("GLFW requires %u extensions for surface:\n", count);
+  logchan_vkctx->log("GLFW requires %u extensions for surface:", count);
   for (uint32_t i = 0; i < count; i++) {
-    printf("  - %s\n", extensions[i]);
+    logchan_vkctx->log("  - %s", extensions[i]);
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  printf("createWindowSurface with instance<%p>\n", (void*)&_GVI->_instance);
+  logchan_vkctx->log("createWindowSurface with instance<%p>", (void*)&_GVI->_instance);
 
   VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);
@@ -566,7 +542,7 @@ void VkContext::initializeWindowContext(
   for (uint32_t i = 0; i < _num_queue_types; i++) {
     VkBool32 presentSupport = VK_FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(_vkphysicaldevice, i, _vkpresentationsurface, &presentSupport);
-    printf("Qfamily<%u> on surface supports presentation<%d>\n", i, int(presentSupport));
+    logchan_vkctx->log("Qfamily<%u> on surface supports presentation<%d>", i, int(presentSupport));
   }
 
   _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
@@ -635,7 +611,7 @@ void VkContext::initializeLoaderContext() {
     if (this->mTargetDrawableSizeDirty) {
       int w = mainSurfaceWidth();
       int h = mainSurfaceHeight();
-      // printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      // logchan_vkctx->log("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
     }
@@ -770,7 +746,7 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
       &presentModeCount, //
       nullptr);
 
-  printf("presentModeCount<%d>\n", presentModeCount);
+  logchan_vkctx->log("presentModeCount<%d>", presentModeCount);
   if (presentModeCount != 0) {
     std::vector<VkPresentModeKHR> presentModes;
     presentModes.resize(presentModeCount);
@@ -794,6 +770,7 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
   scheduleOnBeginFrame([this, iw, ih]() {
+    logchan_vkctx->log("VkContext<%p> _doResizeMainSurface w<%d> h<%d>", (void*)this, iw, ih);
     if (_fbi->_main_rtg) {
       _fbi->_main_rtg->Resize(iw, ih);
     }

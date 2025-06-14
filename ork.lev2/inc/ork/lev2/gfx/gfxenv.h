@@ -406,7 +406,7 @@ public:
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
   std::unordered_map<uint32_t, svar64_t> _miscVBs;
-  std::vector<sticky_cb_t> _stickyCallbacks;
+  std::vector<sticky_cb_t> _beginFrameBlockers;
 
   commandbuffer_ptr_t _recordCommandBuffer;
   commandbuffer_ptr_t _defaultCommandBuffer;
@@ -421,6 +421,10 @@ private:
   LockedResource<gpueventsink_map_t> _gpuEventSinks;
   gpuevent_queue_t _gpuEventQueue;
 
+  void _processBeginFrameBlockers();
+  void _loadingPhaseOperations();
+
+  virtual void _doPreBeginFrame() {}
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;
   virtual load_token_t _doBeginLoad() {

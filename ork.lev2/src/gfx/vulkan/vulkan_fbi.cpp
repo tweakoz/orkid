@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_fbi = logger()->createChannel("VKFBI", fvec3(0.8, 0.2, 0.5), true);
 
 
 VkMsaaState::VkMsaaState(){
@@ -59,6 +60,7 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
+  logchan_fbi->log("_doBeginFrame()");
   OrkAssert(_contextVK->_is_visual_frame);
   _swapchain->acquireImage(_contextVK);
   _main_rtg = _swapchain->currentRTG();
@@ -68,6 +70,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
+  logchan_fbi->log("_doEndFrame()");
 }
 
 ///////////////////////////////////////////////////////

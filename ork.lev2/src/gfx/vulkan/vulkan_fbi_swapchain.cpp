@@ -296,14 +296,6 @@ void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
   main_rtbi->setLayout(new_layout);
 }
 
-///////////////////////////////////////////////////////
-
-vkswapchain_ptr_t VkFrameBufferInterface::_acquireSwapChainForFrame() {
-  OrkAssert(_swapchain);
-  _swapchain->acquireImage(_contextVK);
-  return _swapchain;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////

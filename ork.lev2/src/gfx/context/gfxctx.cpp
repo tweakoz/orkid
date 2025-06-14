@@ -87,35 +87,25 @@ void Context::triggerFrameDebugCapture() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::beginFrame(bool visual) {
-
-  _is_visual_frame = visual;
-
-  makeCurrentContext();
-
-  /////////////////////////////////////
-  // sticky callbacks
-  //  (they stay at the front until they return true)
-  /////////////////////////////////////
-
+void Context::_processBeginFrameBlockers() {
   bool keep_going = true;
   while (keep_going) {
     keep_going = false;
-    auto it    = _stickyCallbacks.begin();
-    if (it != _stickyCallbacks.end()) {
+    auto it    = _beginFrameBlockers.begin();
+    if (it != _beginFrameBlockers.end()) {
       auto cb        = *it;
       bool processed = cb();
       if (processed) {
-        _stickyCallbacks.erase(it);
+        _beginFrameBlockers.erase(it);
         keep_going = true;
       }
     }
   }
+}
 
-  /////////////////////////////////////
-  // loading phase based operations
-  /////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
+void Context::_loadingPhaseOperations() {
   loadingphase_ptr_t phase = nullptr;
   _loadingPhases.atomicOp([&phase](loadingphase_list_t& unlocked) {
     if (unlocked.size()) {
@@ -135,6 +125,19 @@ void Context::beginFrame(bool visual) {
     }
     ops.clear();
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Context::beginFrame(bool visual) {
+
+  _is_visual_frame = visual;
+
+  makeCurrentContext();
+  _doPreBeginFrame();
+
+  _processBeginFrameBlockers();
+  _loadingPhaseOperations();
 
   /////////////////////////////////////
 
@@ -211,8 +214,8 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string named) {
-  return _beginRecordCommandBuffer(rpass,named);
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
+  return _beginRecordCommandBuffer(rpass, named);
 }
 void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   _endRecordCommandBuffer(cmdbuf);
@@ -319,10 +322,11 @@ void Context::endLoad(load_token_t ploadtok) {
   _doEndLoad(ploadtok);
 }
 
-DebugGroup::DebugGroup(Context* ctx) : _context(ctx) {
+DebugGroup::DebugGroup(Context* ctx)
+    : _context(ctx) {
 }
-DebugGroup::~DebugGroup(){
-  if(_context){
+DebugGroup::~DebugGroup() {
+  if (_context) {
     _context->debugPopGroup();
   }
 }
@@ -334,11 +338,9 @@ DebugGroup Context::debugPushGroupAutoRelease(const std::string str) {
 void Context::debugPushGroup(const std::string str) {
   debugPushGroup(str, fvec4::Red());
 }
-void Context::debugMarker(const std::string str){
+void Context::debugMarker(const std::string str) {
   debugMarker(str, fvec4::Red());
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

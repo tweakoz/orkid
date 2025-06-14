@@ -1025,7 +1025,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   //////////////////////////////////////////////
   void _initSwapChain();
-  vkswapchain_ptr_t _acquireSwapChainForFrame();
   void _enq_transitionMainRtgToPresent();
 
   //////////////////////////////////////////////
@@ -1216,6 +1215,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   void _doResizeMainSurface(int iw, int ih) final;
+  void _doPreBeginFrame() final;
   void _doBeginFrame() final;
   void _doEndFrame() final;
   ctx_platform_handle_t _doClonePlatformHandle() const final;
