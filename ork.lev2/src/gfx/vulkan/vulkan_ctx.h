@@ -830,7 +830,8 @@ struct VkSwapChain {
 
   void acquireImage(vkcontext_rawptr_t ctxVK);
   void enqueueFrame(vkcontext_rawptr_t ctxVK);
-  void presentFrame(vkcontext_rawptr_t ctxVK);
+  void enqueuePresentFrame(vkcontext_rawptr_t ctxVK);
+  void waitPresentFrame(vkcontext_rawptr_t ctxVK);
 
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;

@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_vkcb = logger()->createChannel("VKCB", fvec3(1,1,.9));
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) {
   auto cmdbuf          = std::make_shared<CommandBuffer>();
@@ -19,7 +20,7 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,
   else {
     cmdbuf->_debugName = name;
   }
-
+  logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
   auto vkcmdbuf = _createVkCommandBuffer(cmdbuf.get());
   _recordCommandBuffer = cmdbuf;
 
@@ -52,6 +53,7 @@ void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   _recordCommandBuffer = nullptr;
   vkcmdbuf->_recorded = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
+  logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,6 +104,7 @@ void VkContext::_doPopCommandBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
   auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   if(not impl->_recorded){
     printf( "CB<%p:%s> impl<%p> not recorded!\n", (void*) cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*) impl.get() );

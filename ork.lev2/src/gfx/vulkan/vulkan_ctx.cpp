@@ -395,15 +395,12 @@ void VkContext::_doPreBeginFrame() {
   _defaultCommandBuffer = _cmdbuf_pool.allocate();
 
   ////////////////////////
-  // clean up renderpasses
-  ////////////////////////
-
-  _renderpasses.clear();
-
-  ////////////////////////
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
   _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
   ////////////////////////
+
+  logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
+
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -475,13 +472,13 @@ void VkContext::_doEndFrame() {
 
   auto swapchain = _fbi->_swapchain;
   swapchain->enqueueFrame(this);
-  primary_cb()->_secondary_cmdbuffers.clear();
 
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////
 
-  swapchain->presentFrame(this);
+  swapchain->enqueuePresentFrame(this);
+  swapchain->waitPresentFrame(this);
 
   ///////////////////////////////////////////////////////
 
@@ -492,10 +489,17 @@ void VkContext::_doEndFrame() {
 
   _cmdbuf_pool.deallocate(_defaultCommandBuffer);
   _defaultCommandBuffer = nullptr;
+  primary_cb()->_secondary_cmdbuffers.clear();
   //_cmdbufcur_gfx = nullptr;
   ////////////////////////
 
   _renderpass_index = -1;
+
+  ///////////////////////////////////////////////////////
+  logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
+
+  _renderpasses.clear();
+
 }
 
 ///////////////////////////////////////////////////////

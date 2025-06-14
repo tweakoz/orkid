@@ -10,26 +10,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 rtgroup_ptr_t VkSwapChain::currentRTG() {
   return _rtgs[_curSwapWriteImage];
 }
 
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
 
   // Ensure we have a valid swapchain
 
   size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
-
-  auto& fence = _frameFences[sub_index];
-  if (fence) {
-    printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
-    fence->wait();
-    printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
-  }
 
   // After fence wait, we need to acquire the next swapchain image
   // This must happen AFTER fence wait to ensure semaphores are ready
@@ -83,6 +76,8 @@ void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   // printf( "_curSwapWriteImage<%u>\n", _curSwapWriteImage );
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
   size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
@@ -113,7 +108,9 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   }
 }
 
-void VkSwapChain::presentFrame(vkcontext_rawptr_t ctxVK) {
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
   std::vector<VkSemaphore> waitPresentSemaphores;
 
   size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
@@ -173,6 +170,20 @@ void VkSwapChain::presentFrame(vkcontext_rawptr_t ctxVK) {
       OrkAssert(false);
       break;
   } // switch (status)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
+  size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
+
+  // Wait for the current frame's fence to ensure rendering is complete
+  auto& fence = _frameFences[sub_index];
+  if (fence) {
+    printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
+    fence->wait();
+    printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
+  }
   _currentFrame++;
 }
 
