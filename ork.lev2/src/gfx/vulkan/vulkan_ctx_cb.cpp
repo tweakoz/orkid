@@ -12,8 +12,8 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkcb = logger()->createChannel("VKCB", fvec3(1,1,.9));
 
-commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) {
-  auto cmdbuf          = std::make_shared<CommandBuffer>();
+secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) {
+  auto cmdbuf          = std::make_shared<SecondaryCommandBuffer>();
   if( name == "" ){
     cmdbuf->_debugName = "_beginRecordCommandBuffer";
   }
@@ -21,7 +21,7 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,
     cmdbuf->_debugName = name;
   }
   logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
-  auto vkcmdbuf = _createVkCommandBuffer(cmdbuf.get());
+  auto vkcmdbuf = _createSecondaryVkCommandBuffer(cmdbuf.get());
   _recordCommandBuffer = cmdbuf;
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
@@ -47,9 +47,9 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   OrkAssert(cmdbuf == _recordCommandBuffer);
-  auto vkcmdbuf        = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  auto vkcmdbuf        = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   _recordCommandBuffer = nullptr;
   vkcmdbuf->_recorded = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
@@ -58,8 +58,9 @@ void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
 void VkContext::_doPushCommandBuffer(
-    commandbuffer_ptr_t cmdbuf, //
+    secondary_commandbuffer_ptr_t cmdbuf, //
     rtgroup_ptr_t rtg) {        //
   
   _vk_cmdbufstack.push(_cmdbufcur_gfx);
@@ -100,12 +101,12 @@ void VkContext::_doPopCommandBuffer() {
   _cmdbufcur_gfx = _vk_cmdbufstack.top();
   _vk_cmdbufstack.pop();
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
-  auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   if(not impl->_recorded){
     printf( "CB<%p:%s> impl<%p> not recorded!\n", (void*) cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*) impl.get() );
     OrkAssert(false);
@@ -116,8 +117,8 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf) {
-  auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+void VkContext::enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf) {
+  auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   OrkAssert(impl->_recorded);
   _pendingOneShotCommands.push_back(cmdbuf);
 }
@@ -125,14 +126,14 @@ void VkContext::enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-vkcmdbufimpl_ptr_t VkContext::_createVkCommandBuffer(CommandBuffer* ork_cb){
+vkpricmdbufimpl_ptr_t VkContext::_createPrimaryVkCommandBuffer(PrimaryCommandBuffer* ork_cb){
 
-  vkcmdbufimpl_ptr_t rval = ork_cb->_impl.makeShared<VkCommandBufferImpl>(this);
-  rval->_parent = ork_cb;
+  vkpricmdbufimpl_ptr_t rval = ork_cb->_impl.makeShared<VkPrimaryCommandBufferImpl>(this);
+  rval->_orkCB = ork_cb;
   VkCommandBufferAllocateInfo CBAI_GFX = {};
   initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
   CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-  CBAI_GFX.level              = ork_cb->_is_primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   CBAI_GFX.commandBufferCount = 1;
   VkResult OK = vkAllocateCommandBuffers(
       _vkdevice, //
@@ -142,18 +143,53 @@ vkcmdbufimpl_ptr_t VkContext::_createVkCommandBuffer(CommandBuffer* ork_cb){
   _setObjectDebugName(rval->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, ork_cb->_debugName.c_str());
   return rval;
 }
+vkseccmdbufimpl_ptr_t VkContext::_createSecondaryVkCommandBuffer(SecondaryCommandBuffer* ork_cb){
 
+  vkseccmdbufimpl_ptr_t rval = ork_cb->_impl.makeShared<VkSecondaryCommandBufferImpl>(this);
+  rval->_orkCB = ork_cb;
+  VkCommandBufferAllocateInfo CBAI_GFX = {};
+  initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+  CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+  CBAI_GFX.commandBufferCount = 1;
+  VkResult OK = vkAllocateCommandBuffers(
+      _vkdevice, //
+      &CBAI_GFX, //
+      &rval->_vkcmdbuf);
+  OrkAssert(OK == VK_SUCCESS);
+  _setObjectDebugName(rval->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, ork_cb->_debugName.c_str());
+  return rval;
+}
 ///////////////////////////////////////////////////
 
-VkCommandBufferImpl::VkCommandBufferImpl(VkContext* ctx)
+std::atomic<int> VkPrimaryCommandBufferImpl::_cmdbufcount(0);
+
+VkPrimaryCommandBufferImpl::VkPrimaryCommandBufferImpl(VkContext* ctx)
     : _contextVK(ctx) {
+    int count = _cmdbufcount.fetch_add(1);
+    logchan_vkcb->log("VkPrimaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
+}
+
+VkPrimaryCommandBufferImpl::~VkPrimaryCommandBufferImpl(){
+  //printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
+  vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
+  _cmdbufcount.fetch_sub(1);
 }
 
 ///////////////////////////////////////////////////
 
-VkCommandBufferImpl::~VkCommandBufferImpl(){
+std::atomic<int> VkSecondaryCommandBufferImpl::_cmdbufcount(0);
+
+VkSecondaryCommandBufferImpl::VkSecondaryCommandBufferImpl(VkContext* ctx)
+    : _contextVK(ctx) {
+    int count = _cmdbufcount.fetch_add(1);
+    logchan_vkcb->log("VkSecondaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
+}
+
+VkSecondaryCommandBufferImpl::~VkSecondaryCommandBufferImpl(){
   //printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
   vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
+  _cmdbufcount.fetch_sub(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

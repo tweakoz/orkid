@@ -189,8 +189,8 @@ public:
   virtual void debugPopGroup() {
   }
   ///////////////////////////////////////////////////////////////////////
-  virtual void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {}
-  virtual void debugPopGroup(commandbuffer_ptr_t cb) {}
+  virtual void debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {}
+  virtual void debugPopGroup(secondary_commandbuffer_ptr_t cb) {}
   ///////////////////////////////////////////////////////////////////////
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
   void debugMarker(const std::string str);
@@ -227,22 +227,18 @@ public:
   // command buffers / renderpasses
   ///////////////////////////////////////////////////////////////////////
 
-  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
-  void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
-  void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
-  commandbuffer_ptr_t popCommandBuffer();
-  void enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
+  void endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
+  void enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
   void beginRenderPass(renderpass_ptr_t);
   void endRenderPass(renderpass_ptr_t);
   void beginSubPass(rendersubpass_ptr_t);
   void endSubPass(rendersubpass_ptr_t);
 
-  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg = nullptr);
-  virtual void _doPopCommandBuffer();
-  virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf);
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
-  virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  virtual void _doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
+  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
+  virtual void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
   virtual void _beginRenderPass(renderpass_ptr_t);
   virtual void _endRenderPass(renderpass_ptr_t);
@@ -408,11 +404,14 @@ public:
   std::unordered_map<uint32_t, svar64_t> _miscVBs;
   std::vector<sticky_cb_t> _beginFrameBlockers;
 
-  commandbuffer_ptr_t _recordCommandBuffer;
-  commandbuffer_ptr_t _defaultCommandBuffer;
-  shared_pool::fixed_pool<CommandBuffer, 4> _cmdbuf_pool;
-  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
-  commandbuffer_ptr_t _current_cmdbuf;
+  enum class _RenderPassAPI : uint64_t {
+    NONE = 0, // not yet specified
+    IMPLICIT, // using rtgroup push/pop implicit renderpasses (deprecated)
+    EXPLICIT, // using explicit renderpasses (vulkan, metal, etc..)
+  };
+  _RenderPassAPI _renderpassAPI = _RenderPassAPI::NONE;
+
+  secondary_commandbuffer_ptr_t _recordCommandBuffer;
 
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
@@ -789,8 +788,8 @@ private:
 struct RenderPass {
   svarshp_t _impl;
   std::vector<rendersubpass_ptr_t> _subpasses;
-  bool _immutable        = false;
-  bool _allow_clear      = true;
+  bool _immutable   = false;
+  bool _autoClear   = true;
   std::string _debugName = "RenderPass";
 };
 
@@ -803,16 +802,24 @@ struct RenderSubPass {
   rtgroup_ptr_t _rtg_output;
   svarshp_t _impl;
   std::string _debugName;
-  commandbuffer_ptr_t _commandbuffer;
+  secondary_commandbuffer_ptr_t _commandbuffer;
 };
 
-struct CommandBuffer {
-  CommandBuffer(std::string name = "---")
+struct PrimaryCommandBuffer {
+  PrimaryCommandBuffer(std::string name = "---")
       : _debugName(name) {
   }
   svarshp_t _impl;
   std::string _debugName;
-  bool _is_primary = false;
+  bool _no_draw    = false;
+};
+
+struct SecondaryCommandBuffer {
+  SecondaryCommandBuffer(std::string name = "---")
+      : _debugName(name) {
+  }
+  svarshp_t _impl;
+  std::string _debugName;
   bool _no_draw    = false;
 };
 

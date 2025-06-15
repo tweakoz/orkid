@@ -18,7 +18,7 @@ VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass)
 
   static size_t counter = 0;
 
-  _seccmdbuffer             = std::make_shared<CommandBuffer>();
+  _seccmdbuffer             = std::make_shared<SecondaryCommandBuffer>();
   _seccmdbuffer->_debugName = FormatString("renderpass cb<%d>\n", counter);
 
   if (counter == 6) {
@@ -27,7 +27,7 @@ VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass)
 
   counter++;
 
-  auto vkcmdbuf = _contextVK->_createVkCommandBuffer(_seccmdbuffer.get());
+  auto vkcmdbuf = _contextVK->_createSecondaryVkCommandBuffer(_seccmdbuffer.get());
 
   std::set<rendersubpass_ptr_t> subpass_set;
 
@@ -47,9 +47,14 @@ VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass)
   for (auto subp : rpass->_subpasses) {
     visit_subpass(subp);
   }
+
+  int count = _rpasscount.fetch_add(1);
+  printf("VulkanRenderPass count<%d>\n", count);
 }
 
 ///////////////////////////////////////////////////
+
+std::atomic<int> VulkanRenderPass::_rpasscount(0);
 
 VulkanRenderPass::~VulkanRenderPass() {
   if (_vkrp) {
@@ -60,6 +65,19 @@ VulkanRenderPass::~VulkanRenderPass() {
     // printf( "DESTROY FRAMEBUFFER<%p>\n", (void*) _vkfb );
     vkDestroyFramebuffer(_contextVK->_vkdevice, _vkfb, nullptr);
   }
+  _rpasscount.fetch_sub(1);
+
+}
+
+std::atomic<int> VulkanRenderSubPass::_subpasscount(0);
+
+VulkanRenderSubPass::VulkanRenderSubPass() {
+  int count = _subpasscount.fetch_add(1);
+  printf("VulkanRenderSubPass count<%d>\n", count);
+}
+
+VulkanRenderSubPass::~VulkanRenderSubPass() {
+  _subpasscount.fetch_sub(1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,7 +207,13 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
   auto rtg      = _fbi->_active_rtgroup;
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
-  auto vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
+
+  vkrenderpass_ptr_t vk_rpass;
+  if( renpass->_impl.isShared<VulkanRenderPass>() )
+    vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
+  else {
+    vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(this, renpass.get());
+  }
   int num_rtb = rtg->GetNumTargets();
 
   VkRenderPassBeginInfo RPBI = {};
@@ -201,19 +225,34 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
   std::vector<VkClearValue> clearValues;
 
-  if(rtg->_depthBuffer){
-    auto rtb                     = rtg->_depthBuffer;
-    auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
-    if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
-      clearValues.emplace_back().depthStencil = {1.0f, 0};
-    }
+  bool do_clear = false;
+  
+  switch(_renderpassAPI){
+    case _RenderPassAPI::IMPLICIT:
+      do_clear = rtg->_autoclear;
+      break;
+    case _RenderPassAPI::EXPLICIT:
+      do_clear = renpass->_autoClear;
+      break;
+    default:
+      OrkAssert(false);
   }
-  for (int i = 0; i < num_rtb; i++) {
-    auto color = rtg->_clearColor;
-    auto rtb                     = rtg->buffer(i);
-    auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
-    if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
-      clearValues.emplace_back().color = {{color.x, color.y, color.z, color.w}};
+  
+  if(do_clear){
+    if(rtg->_depthBuffer){
+      auto rtb                     = rtg->_depthBuffer;
+      auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
+      if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
+        clearValues.emplace_back().depthStencil = {1.0f, 0};
+      }
+    }
+    for (int i = 0; i < num_rtb; i++) {
+      auto color = rtg->_clearColor;
+      auto rtb                     = rtg->buffer(i);
+      auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
+      if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
+        clearValues.emplace_back().color = {{color.x, color.y, color.z, color.w}};
+      }
     }
   }
 
@@ -234,7 +273,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   /////////////////////////////////////////
   // Renderpass !
   /////////////////////////////////////////
-  debugPushGroup(_defaultCommandBuffer, renpass->_debugName, fvec4(1, 1, 0, 1));
+  //debugPushGroup(_defaultCommandBuffer, renpass->_debugName, fvec4(1, 1, 0, 1));
   vkCmdBeginRenderPass(
       primary_cb()->_vkcmdbuf,                        // must be on primary!
       &RPBI,                                          //
@@ -258,7 +297,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
   vkCmdEndRenderPass(primary_cb()->_vkcmdbuf); // must be on primary!
-  debugPopGroup(_defaultCommandBuffer);
+  //debugPopGroup(_defaultCommandBuffer);
   _cur_renderpass = nullptr;
   // OrkAssert(false);
 }

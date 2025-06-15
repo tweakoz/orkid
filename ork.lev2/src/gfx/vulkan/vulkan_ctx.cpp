@@ -192,12 +192,11 @@ void VkContext::_initVulkanCommon() {
   // create primary command buffer impls
   ////////////////////////////
 
-  size_t count = _cmdbuf_pool.capacity();
+  size_t count = _pri_cmdbuf_pool.capacity();
 
   for (size_t i = 0; i < count; i++) {
-    auto ork_cb         = _cmdbuf_pool.direct_access(i);
-    ork_cb->_is_primary = true;
-    auto vk_impl        = _createVkCommandBuffer(ork_cb.get());
+    auto ork_cb         = _pri_cmdbuf_pool.direct_access(i);
+    auto vk_impl        = _createPrimaryVkCommandBuffer(ork_cb.get());
   }
 
   VkSemaphoreCreateInfo SCI{};
@@ -391,12 +390,12 @@ void VkContext::_doPreBeginFrame() {
   // Check if command buffer pool is healthy
   ////////////////////////
 
-  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)\n", _cmdbuf_pool.available());
-  _defaultCommandBuffer = _cmdbuf_pool.allocate();
+  // logchan_vkctx->log("  Allocating command buffer from pool (available: %zu)\n", _pri_cmdbuf_pool.available());
+  _defaultCommandBuffer = _pri_cmdbuf_pool.allocate();
 
   ////////////////////////
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-  _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
+  _defaultCommandBufferImpl = _defaultCommandBuffer->_impl.getShared<VkPrimaryCommandBufferImpl>();
+  _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   ////////////////////////
 
   logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
@@ -425,14 +424,14 @@ void VkContext::_doBeginFrame() {
     miW = _fbi->_main_rtg->miW;
     miH = _fbi->_main_rtg->miH;
   }
-  _fbi->PushRtGroup(_fbi->_main_rtg.get());
+  //_fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkcmdbufimpl_ptr_t VkContext::primary_cb() {
+vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
   // OrkAssert(_current_subpass == nullptr);
-  return _cmdbufcurframe_gfx_pri;
+  return _cmdbufcurpri_gfx;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -447,7 +446,7 @@ void VkContext::_doEndFrame() {
   // end main renderpass (and pop main rtg)
   ////////////////////////
 
-  _fbi->PopRtGroup(false);
+  //_fbi->PopRtGroup(false);
 
   ////////////////////////
   // main_rtg -> presentation layout
@@ -482,23 +481,20 @@ void VkContext::_doEndFrame() {
 
   ///////////////////////////////////////////////////////
 
-  _cmdbufcurframe_gfx_pri = nullptr;
-  _first_frame            = false;
+  _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
+  _cmdbufcurpri_gfx->_secondary_cmdbuffers.clear();
 
-  ///////////////////////////////////////////////////////
-
-  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
-  _defaultCommandBuffer = nullptr;
-  primary_cb()->_secondary_cmdbuffers.clear();
-  //_cmdbufcur_gfx = nullptr;
   ////////////////////////
 
-  _renderpass_index = -1;
 
   ///////////////////////////////////////////////////////
   logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
 
   _renderpasses.clear();
+  _renderpass_index = -1;
+  _defaultCommandBuffer = nullptr;
+  _cmdbufcurpri_gfx = nullptr;
+  _first_frame            = false;
 
 }
 
@@ -633,7 +629,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
-    _vkCmdDebugMarkerBeginEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerBeginEXT(_cmdbufcurpri_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 
@@ -641,12 +637,12 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 
 void VkContext::debugPopGroup() {
   if (_vkCmdDebugMarkerEndEXT) {
-    _vkCmdDebugMarkerEndEXT(_cmdbufcur_gfx->_vkcmdbuf);
+    _vkCmdDebugMarkerEndEXT(_cmdbufcurpri_gfx->_vkcmdbuf);
   }
 }
 ///////////////////////////////////////////////////////
 
-void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {
+void VkContext::debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
@@ -656,7 +652,7 @@ void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, co
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
 
-    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+    auto cbimpl = cb->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
     _vkCmdDebugMarkerBeginEXT(cbimpl->_vkcmdbuf, &markerInfo);
   }
@@ -664,9 +660,9 @@ void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, co
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugPopGroup(commandbuffer_ptr_t cb) {
+void VkContext::debugPopGroup(secondary_commandbuffer_ptr_t cb) {
   if (_vkCmdDebugMarkerEndEXT) {
-    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+    auto cbimpl = cb->_impl.getShared<VkSecondaryCommandBufferImpl>();
     _vkCmdDebugMarkerEndEXT(cbimpl->_vkcmdbuf);
   }
 }
@@ -682,7 +678,7 @@ void VkContext::debugMarker(const std::string named, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = named.c_str();
-    _vkCmdDebugMarkerInsertEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerInsertEXT(_cmdbufcurpri_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 

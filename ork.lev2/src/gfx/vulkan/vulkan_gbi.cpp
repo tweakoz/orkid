@@ -407,7 +407,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   OrkAssert(_contextVK->_renderpass_index >= 0);
 
-  auto& CB = _contextVK->_cmdbufcur_gfx;
+  auto& CB = _contextVK->_cmdbufcurpri_gfx;
 
   ///////////////////////
   // get primclass (input to pipeline search)
@@ -460,7 +460,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
     PrimitiveType eType) {
   OrkAssert(_contextVK->_renderpass_index >= 0);
 
-  auto& CB = _contextVK->_cmdbufcur_gfx;
+  auto& CB = _contextVK->_cmdbufcurpri_gfx;
 
   int num_indices = idx_buf.GetNumIndices();
 

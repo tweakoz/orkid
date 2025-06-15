@@ -112,7 +112,8 @@ struct VulkanVertexBuffer;
 struct VkVertexInputConfiguration;
 struct VulkanIndexBuffer;
 struct VkLoadContext;
-struct VkCommandBufferImpl;
+struct VkPrimaryCommandBufferImpl;
+struct VkSecondaryCommandBufferImpl;
 struct VulkanRenderPass;
 struct VulkanRenderSubPass;
 struct VkSwapChainCaps;
@@ -166,7 +167,8 @@ using vkvtxbuf_ptr_t            = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t            = std::shared_ptr<VulkanIndexBuffer>;
 using vkvertexinputconfig_ptr_t = std::shared_ptr<VkVertexInputConfiguration>;
 using vkloadctx_ptr_t           = std::shared_ptr<VkLoadContext>;
-using vkcmdbufimpl_ptr_t        = std::shared_ptr<VkCommandBufferImpl>;
+using vkpricmdbufimpl_ptr_t        = std::shared_ptr<VkPrimaryCommandBufferImpl>;
+using vkseccmdbufimpl_ptr_t        = std::shared_ptr<VkSecondaryCommandBufferImpl>;
 using vkrenderpass_ptr_t        = std::shared_ptr<VulkanRenderPass>;
 using vksubpass_ptr_t           = std::shared_ptr<VulkanRenderSubPass>;
 using vkswapchaincaps_ptr_t     = std::shared_ptr<VkSwapChainCaps>;
@@ -361,17 +363,29 @@ struct VulkanGeometryInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VkCommandBufferImpl {
+struct VkPrimaryCommandBufferImpl {
 
-  VkCommandBufferImpl(vkcontext_rawptr_t ctxVK);
-  ~VkCommandBufferImpl();
+  VkPrimaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
+  ~VkPrimaryCommandBufferImpl();
 
   VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
-  CommandBuffer* _parent    = nullptr;
   bool _recorded            = false;
   vkcontext_rawptr_t _contextVK;
+  PrimaryCommandBuffer* _orkCB = nullptr;
 
-  std::vector<commandbuffer_ptr_t> _secondary_cmdbuffers;
+  std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers;
+  static std::atomic<int> _cmdbufcount;
+};
+struct VkSecondaryCommandBufferImpl {
+
+  VkSecondaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
+  ~VkSecondaryCommandBufferImpl();
+
+  VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
+  SecondaryCommandBuffer* _orkCB = nullptr;
+  bool _recorded            = false;
+  vkcontext_rawptr_t _contextVK;
+  static std::atomic<int> _cmdbufcount;
 };
 
 struct VulkanRenderPass {
@@ -382,13 +396,16 @@ struct VulkanRenderPass {
   VkRenderPass _vkrp  = VK_NULL_HANDLE;
   VkFramebuffer _vkfb = VK_NULL_HANDLE;
   VkFramebufferCreateInfo _vkfbinfo;
-  commandbuffer_ptr_t _seccmdbuffer;
+  secondary_commandbuffer_ptr_t _seccmdbuffer;
   vkcontext_rawptr_t _contextVK;
+  static std::atomic<int> _rpasscount;
 };
 struct VulkanRenderSubPass {
-
+  VulkanRenderSubPass();
+  ~VulkanRenderSubPass();
   std::vector<VkAttachmentReference> _attach_refs;
   VkSubpassDescription _SUBPASS;
+  static std::atomic<int> _subpasscount;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -396,9 +413,9 @@ struct VulkanRenderSubPass {
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
 
-  void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
-  void transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
-  void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
+  void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
+  void transitionToTexture(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
+  void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
@@ -447,7 +464,7 @@ struct VkRtGroupImpl {
   VkSubpassDescription _vksubpass;
   VkSubpassDependency _vksubpassdeps;
 
-  commandbuffer_ptr_t _cmdbuf;
+  secondary_commandbuffer_ptr_t _cmdbuf;
   renderpass_ptr_t _rpass_clear;
   renderpass_ptr_t _rpass_misc;
 };
@@ -482,6 +499,9 @@ struct VulkanMemoryForImage {
   vkmemreq_ptr_t _memreq;
   vkmemallocinfo_ptr_t _allocinfo;
   vkmem_ptr_t _vkmem;
+
+  static std::atomic<int> _imgmemcount;
+  static std::atomic<size_t> _imgmembytes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -517,6 +537,10 @@ struct VulkanBuffer {
   VkBufferCreateInfo _cinfo;
   VkBuffer _vkbuffer;
   vkmemforbuf_ptr_t _memory;
+
+  static std::atomic<int> _buffercount;
+  static std::atomic<size_t> _bufferbytes;
+
 };
 
 using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
@@ -550,16 +574,33 @@ struct VulkanFenceObject {
   VkFence _vkfence;
 };
 using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanEventObject {
+  VulkanEventObject(vkcontext_rawptr_t ctxVK);
+  ~VulkanEventObject();
+  void wait();
+  void reset();
+  void onCrossed(void_lambda_t op);
+  std::vector<void_lambda_t> _onReached;
+  vkcontext_rawptr_t _ctxVK;
+  VkEvent _vkevent;
+};
+using vkevent_obj_ptr_t = std::shared_ptr<VulkanEventObject>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanImageObject {
   VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name = "");
   ~VulkanImageObject();
-  vkcontext_rawptr_t _ctx;
+  vkcontext_rawptr_t _ctx = nullptr;
   vkimagecreateinfo_ptr_t _cinfo;
   VkImage _vkimage;
   VkImageView _vkimageview;
   vkmemforimg_ptr_t _imgmem;
+  static std::atomic<int> _imgobjcount;
+  static std::atomic<size_t> _imgobjbytes;
 };
 
 struct VulkanSamplerObject {
@@ -569,6 +610,12 @@ struct VulkanSamplerObject {
 };
 using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 
+struct InFlightTextureTransfer {
+  vkbuffer_ptr_t _staging_buffer;
+  secondary_commandbuffer_ptr_t _command_buffer;
+  void_lambda_t _onTransferFinished;
+};
+using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
 struct VulkanTextureObject {
 
   VulkanTextureObject(vktxi_rawptr_t txi);
@@ -581,7 +628,9 @@ struct VulkanTextureObject {
   vktxi_rawptr_t _txi;
   vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
-  commandbuffer_ptr_t _loadCB;
+  secondary_commandbuffer_ptr_t _loadCB;
+
+  std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
 
   static std::atomic<size_t> _vkto_count;
 };
@@ -763,7 +812,7 @@ struct VkPipelineObject {
 
   VkPipelineObject(vkcontext_rawptr_t ctx);
 
-  void applyPendingPushConstants(vkcmdbufimpl_ptr_t cmdbuf);
+  void applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf);
 
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
@@ -803,8 +852,8 @@ struct VkPrimitiveClass {
 struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
-  vkbuffer_ptr_t _vkbuffer;
-  vkcontext_rawptr_t _ctx;
+  vkbuffer_ptr_t _vkbuffer = VK_NULL_HANDLE;
+  vkcontext_rawptr_t _ctx = nullptr;
   VertexBufferBase& _ork_vtxbuf;
   std::unordered_map<uint64_t, vkvertexinputconfig_ptr_t> _vif_to_layout;
 
@@ -813,8 +862,8 @@ struct VulkanVertexBuffer {
 struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
   ~VulkanIndexBuffer();
-  vkbuffer_ptr_t _vkbuffer;
-  vkcontext_rawptr_t _ctx;
+  vkbuffer_ptr_t _vkbuffer = VK_NULL_HANDLE;
+  vkcontext_rawptr_t _ctx = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1223,8 +1272,8 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name) final;
-  void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+  secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name) final;
+  void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
   void _beginSubPass(rendersubpass_ptr_t) final;
@@ -1252,8 +1301,8 @@ public:
 
   void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final;
-  void debugPopGroup(commandbuffer_ptr_t cb) final;
+  void debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final;
+  void debugPopGroup(secondary_commandbuffer_ptr_t cb) final;
 
   void debugMarker(const std::string str, const fvec4& color) final;
 
@@ -1263,9 +1312,7 @@ public:
   void _doEndLoad(load_token_t ploadtok) final; // virtual
 
   //////////////////////////////////////////////
-  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
-  void _doPopCommandBuffer() final;
-  void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+  void _doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
 
   //////////////////////////////////////////////
 
@@ -1318,12 +1365,10 @@ public:
   VkQueue _vkqueue_graphics;
   VkCommandPool _vkcmdpool_graphics;
 
-  commandbuffer_ptr_t _abs_cmdbufcurframe_gfx_pri;
-  vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
-  vkcmdbufimpl_ptr_t _cmdbufcur_gfx;
-  std::stack<vkcmdbufimpl_ptr_t> _vk_cmdbufstack;
-
-  vkcmdbufimpl_ptr_t primary_cb();
+  primary_commandbuffer_ptr_t _defaultCommandBuffer;
+  vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
+  vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;
+  vkpricmdbufimpl_ptr_t primary_cb();
 
   vksampler_obj_ptr_t _sampler_base;
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
@@ -1343,11 +1388,13 @@ public:
   bool _first_frame = true;
   std::vector<renderpass_ptr_t> _renderpasses;
   renderpass_ptr_t _cur_renderpass;
+  shared_pool::fixed_pool<PrimaryCommandBuffer, 4> _pri_cmdbuf_pool;
   //////////////////////////////////////////////
-  vkcmdbufimpl_ptr_t _createVkCommandBuffer(CommandBuffer* par);
+  vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
+  vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
   renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear, std::string name);
-  void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
-  std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
+  void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);
+  std::vector<secondary_commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////

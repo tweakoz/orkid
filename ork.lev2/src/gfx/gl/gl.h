@@ -598,8 +598,8 @@ public:
 
   void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final {}
-  void debugPopGroup(commandbuffer_ptr_t cb) final {}
+  void debugPushGroup(secondary_commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final {}
+  void debugPopGroup(secondary_commandbuffer_ptr_t cb) final {}
   void debugMarker(const std::string str,const fvec4& color) final;
 
   void TakeThreadOwnership() final;

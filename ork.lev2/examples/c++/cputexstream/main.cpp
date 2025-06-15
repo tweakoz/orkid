@@ -107,6 +107,18 @@ int main(int argc, char** argv,char** envp) {
     resources = std::make_shared<Resources>(ctx);
   });
   //////////////////////////////////////////////////////////
+  ezapp->onGpuUpdate([&](Context* ctx) {
+    TextureInitData tid;
+    auto txi         = ctx->TXI(); // Texture Interface
+    tid._w           = DIM;
+    tid._h           = DIM;
+    tid._src_format  = EBufferFormat::RGBA32F;
+    tid._dst_format  = EBufferFormat::RGBA32F;
+    tid._autogenmips = false;
+    tid._data        = resources->_texturedata->data();
+    txi->initTextureFromData(resources->_texture.get(), tid);
+  });
+  //////////////////////////////////////////////////////////
   int framecounter = 0;
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
@@ -121,24 +133,16 @@ int main(int argc, char** argv,char** envp) {
     const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
     fbi->SetClearColor(fvec4(r, g, b, 1));
+    fbi->_autoClear = true;
     context->beginFrame();
-
-    TextureInitData tid;
-    tid._w           = DIM;
-    tid._h           = DIM;
-    tid._src_format      = EBufferFormat::RGBA32F;
-    tid._dst_format      = EBufferFormat::RGBA32F;
-    tid._autogenmips = false;
-    tid._data        = resources->_texturedata->data();
-
-    txi->initTextureFromData(resources->_texture.get(), tid);
-
+    fbi->PushRtGroup(fbi->_main_rtg.get()); // implicit renderpass api
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
     appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-    resources->_material->end(RCFD);
+    resources->_material->end(RCFD);    
+    fbi->PopRtGroup(false);
     context->endFrame();
 
     if (timer.SecsSinceStart() > 5.0f) {

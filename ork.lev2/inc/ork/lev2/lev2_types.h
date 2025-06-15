@@ -105,14 +105,16 @@ using torchtensor_ptr_t = std::shared_ptr<TorchTensor>;
 // RenderPass
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CommandBuffer;
+struct PrimaryCommandBuffer;
+struct SecondaryCommandBuffer;
 struct RenderPass;
 struct RenderSubPass;
 
 using renderpass_ptr_t = std::shared_ptr<RenderPass>;
 using rendersubpass_ptr_t = std::shared_ptr<RenderSubPass>;
-using commandbuffer_ptr_t = std::shared_ptr<CommandBuffer>;
-using commandbufferlist_t = std::vector<commandbuffer_ptr_t>;
+using primary_commandbuffer_ptr_t = std::shared_ptr<PrimaryCommandBuffer>;
+using secondary_commandbuffer_ptr_t = std::shared_ptr<SecondaryCommandBuffer>;
+using commandbufferlist_t = std::vector<secondary_commandbuffer_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // RtGroup

@@ -32,7 +32,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr, "VkTextureInterface::_createFromLoadReq");
 
-  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
+  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {

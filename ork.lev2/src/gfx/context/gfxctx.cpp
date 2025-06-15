@@ -214,17 +214,20 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
+secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
   return _beginRecordCommandBuffer(rpass, named);
 }
-void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _endRecordCommandBuffer(cmdbuf);
 }
 
 void Context::beginRenderPass(renderpass_ptr_t pass) {
+  OrkAssert(_renderpassAPI==_RenderPassAPI::NONE);
+  _renderpassAPI = _RenderPassAPI::EXPLICIT;
   _beginRenderPass(pass);
 }
 void Context::endRenderPass(renderpass_ptr_t pass) {
+  _renderpassAPI = _RenderPassAPI::NONE;
   _endRenderPass(pass);
 }
 void Context::beginSubPass(rendersubpass_ptr_t pass) {
@@ -235,32 +238,17 @@ void Context::endSubPass(rendersubpass_ptr_t pass) {
 }
 
 RenderSubPass::RenderSubPass() {
-  _commandbuffer = std::make_shared<CommandBuffer>();
+  _commandbuffer = std::make_shared<SecondaryCommandBuffer>();
 }
 
-void Context::pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
-  _cmdbuf_stack.push(cmdbuf);
-  _current_cmdbuf = cmdbuf;
-  _doPushCommandBuffer(cmdbuf, rtg);
-}
-commandbuffer_ptr_t Context::popCommandBuffer() {
-  _doPopCommandBuffer();
-  _cmdbuf_stack.pop();
-  commandbuffer_ptr_t next = nullptr;
-  if (not _cmdbuf_stack.empty()) {
-    next = _cmdbuf_stack.top();
-  }
-  _current_cmdbuf = next;
-  return next;
-}
-void Context::enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _doEnqueueSecondaryCommandBuffer(cmdbuf);
 }
 
-commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
+secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
   return nullptr;
 }
-void Context::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
 void Context::_beginRenderPass(renderpass_ptr_t) {
 }
@@ -270,12 +258,7 @@ void Context::_beginSubPass(rendersubpass_ptr_t) {
 }
 void Context::_endSubPass(rendersubpass_ptr_t) {
 }
-
-void Context::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) {
-}
-void Context::_doPopCommandBuffer() {
-}
-void Context::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void Context::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
 
 /////////////////////////////////////////////////////////////////////////

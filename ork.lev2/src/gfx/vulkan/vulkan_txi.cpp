@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
+std::atomic<size_t> VulkanTextureObject::_vkto_count = 0;
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txi = logger()->createChannel("VKTXI", fvec3(0.8, 0.2, 0.5), true);
 
@@ -61,7 +62,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::generateMipMaps");
 
-  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
+  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   int32_t mipWidth  = ptex->_width;
@@ -209,7 +210,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::createFromMipChain");
 
-  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
+  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   auto image = vktex->_imgobj;
@@ -344,18 +345,58 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
+  
   ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
-  auto vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
+  vktexobj_ptr_t vktex;
+  if (auto existing = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
+    // Texture already exists - we're updating it
+    vktex = existing.value();
+  } else {
+    // New texture
+    vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
+  }
 
   /////////////////////////////////////
-  // map staging memory and copy
+  // create a transfer object
   /////////////////////////////////////
 
-  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "initTextureFromData");
-  staging_buffer->copyFromHost(tid._data, tid._truncation_length);
+  auto transfer = std::make_shared<InFlightTextureTransfer>();
+  vktex->_inflight_transfers.insert(transfer);
+  
+  /////////////////////////////////////
+  // allocate a (cpuside) staging buffer
+  // this is used to copy data from the application
+  //  TODO: reuse staging buffers
+  /////////////////////////////////////
+
+  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, //
+                                                       tid.computeDstSize(), //
+                                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //
+                                                       "initTextureFromData");
+
+  /////////////////////////////////////
+
+  transfer->_staging_buffer = staging_buffer;
   vktex->_staging_buffers.insert(staging_buffer);
+  
+  // TODO async CPU notification (lambda) that 
+  //  texture is fully transferred to GPU
+  transfer->_onTransferFinished = [=]() {
+    OrkAssert(false);
+    vktex->_inflight_transfers.erase(transfer);
+    //vktex->_staging_buffers.erase(staging_buffer);
+    //vktex->_loadCB = nullptr;
+  };
 
+  /////////////////////////////////////
+  // copy data from application to staging buffer (synchronously)
+  //  after this is complete,
+  //  the application buffer can be released
+  /////////////////////////////////////
+
+  staging_buffer->copyFromHost(tid._data, tid._truncation_length);
+  
   /////////////////////////////////////
 
   ptex->_texFormat = tid._dst_format;
@@ -395,9 +436,10 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::initTextureFromData");
+  auto cmdbuf  = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::initTextureFromData");
+  transfer->_command_buffer = cmdbuf;
 
-  auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
+  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   auto barrier = createImageBarrier(
@@ -473,8 +515,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  _contextVK->endRecordCommandBuffer(vktex->_loadCB);
-  _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
+  _contextVK->endRecordCommandBuffer(cmdbuf);
+  _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
 
   /////////////////////////////////////
 
@@ -552,7 +594,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
 
   auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::_initTextureFromRtBuffer");
 
-  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   auto barrier = createImageBarrier(
@@ -591,11 +633,20 @@ VkTextureAsyncTask::VkTextureAsyncTask() {
 VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
   initializeVkStruct(_vksampler);
   initializeVkStruct(_vkdescriptor_info);
+
+  int count = _vkto_count.fetch_add(1);
+  logchan_txi->log(
+      "VulkanTextureObject count<%d>",
+      count);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanTextureObject::~VulkanTextureObject() {
+  _vkto_count.fetch_sub(1);
+  _staging_buffers.clear();
+  _imgobj = nullptr;
+  _loadCB = nullptr;
 }
 
 VulkanSamplerObject::VulkanSamplerObject(vkcontext_rawptr_t ctx, vksamplercreateinfo_ptr_t cinfo)

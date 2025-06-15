@@ -241,7 +241,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
 void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
 
-  auto cmdbuf = _contextVK->_cmdbufcur_gfx->_vkcmdbuf;
+  auto cmdbuf = _contextVK->_cmdbufcurpri_gfx->_vkcmdbuf;
 
   if (_currentPipeline != pipe) {
     vkCmdBindPipeline(
@@ -308,7 +308,7 @@ void VkFxInterface::_flushRenderPassScopedState() {
 
 void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot) {
   if (_active_gfx_descriptorSets[slot] != desc_set) {
-    auto& CB = _contextVK->_cmdbufcur_gfx;
+    auto& CB = _contextVK->_cmdbufcurpri_gfx;
     vkCmdBindDescriptorSets(
         CB->_vkcmdbuf,
         VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
@@ -327,7 +327,7 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, 
 
 void VkFxInterface::_bindVertexBufferOnSlot(vkvtxbuf_ptr_t vb, size_t slot) {
   if (_active_vbs[slot] != vb) {
-    auto& CB            = _contextVK->_cmdbufcur_gfx;
+    auto& CB            = _contextVK->_cmdbufcurpri_gfx;
     VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(
         CB->_vkcmdbuf,             // command buffer
@@ -347,7 +347,7 @@ VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkPipelineObject::applyPendingPushConstants(vkcmdbufimpl_ptr_t cmdbuf) { //
+void VkPipelineObject::applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf) { //
 
   OrkAssert(_vk_program->_pushConstantBlock != nullptr);
   size_t num_params = _vk_program->_pending_params.size();
