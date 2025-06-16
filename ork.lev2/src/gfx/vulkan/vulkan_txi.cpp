@@ -363,10 +363,19 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  transfer->_timeline_semaphore = std::make_shared<VulkanTimelineSemaphore>(this->_contextVK);
-  transfer->_timeline_semaphore->_onReached = [=]() {
-    OrkAssert(false);    
-  };
+  auto tlsema = std::make_shared<VulkanTimelineSemaphore>(this->_contextVK);
+  transfer->_completionSemaphore = tlsema;
+
+  // Get signal value
+  uint64_t signalValue = tlsema->getNextSignalValue();
+  
+  // Set up completion callback
+  tlsema->onValueReached(signalValue, [=]() {
+    // User callback - texture is ready
+    logchan_txi->log("Texture %s transfer complete", ptex->_debugName.c_str());
+    //ptex->_readyForUse = true;
+  });
+
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer
   // this is used to copy data from the application
@@ -383,15 +392,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   transfer->_staging_buffer = staging_buffer;
   vktex->_staging_buffers.insert(staging_buffer);
   
-  // TODO async CPU notification (lambda) that 
-  //  texture is fully transferred to GPU
-  transfer->_onTransferFinished = [=]() {
-    OrkAssert(false);
-    vktex->_inflight_transfers.erase(transfer);
-    //vktex->_staging_buffers.erase(staging_buffer);
-    //vktex->_loadCB = nullptr;
-  };
-
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)
   //  after this is complete,
@@ -440,10 +440,17 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   auto cmdbuf  = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
+
   transfer->_command_buffer = cmdbuf;
 
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
+  cmdbuf_impl->_completionSemaphore = tlsema;
+  cmdbuf_impl->_onComplete = [](){
+    OrkAssert(false);
+  };
+  cmdbuf_impl->_signalValue = 1;
 
   auto barrier = createImageBarrier(
       vktex->_imgobj->_vkimage,

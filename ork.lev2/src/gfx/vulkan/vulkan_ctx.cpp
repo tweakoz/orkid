@@ -408,10 +408,9 @@ void VkContext::_doPreBeginFrame() {
   /////////////////////////////////////////
   for (auto one_shot : _pendingOneShotCommands) {
     enqueueSecondaryCommandBuffer(one_shot);
-  }
+  }  
   _pendingOneShotCommands.clear();
   /////////////////////////////////////////
-
 
 }
 
@@ -423,7 +422,20 @@ void VkContext::_doBeginFrame() {
     miW = _fbi->_main_rtg->miW;
     miH = _fbi->_main_rtg->miH;
   }
-  //_fbi->PushRtGroup(_fbi->_main_rtg.get());
+  // Poll timeline semaphores
+  for (auto& semaphore : _pendingOneShotSemas) {
+    uint64_t currentValue = semaphore->hostQuery();
+    printf("semaphore<%p> currentValue<%llu>\n", (void*)semaphore.get(), currentValue);
+    semaphore->checkCallbacks(currentValue);
+  }
+  
+  // Clean up completed semaphores
+  std::erase_if(          //
+    _pendingOneShotSemas, //
+    [](const auto& sem) { //
+      return sem->_callbacks.empty(); //
+  });
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -468,8 +480,15 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   auto swapchain = _fbi->_swapchain;
-  swapchain->enqueueFrame(this);
-
+  
+  if ( not _pendingOneShotSemas.empty()) {
+    // Submit with timeline semaphores
+    _submitFrameWithTimelineSemaphores(swapchain);
+  } else {
+    // Normal submission
+    swapchain->enqueueFrame(this);
+  }
+  
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////

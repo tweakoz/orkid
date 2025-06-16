@@ -122,6 +122,8 @@ struct VkSwapChain;
 struct VkMsaaState;
 struct VkRasterState;
 struct VkBufferLayout;
+struct VulkanBinarySemaphore;
+struct VulkanTimelineSemaphore;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -131,6 +133,8 @@ using vkcontext_rawptr_t = VkContext*;
 
 using vkrenderinfo_ptr_t = std::shared_ptr<VulkanRenderInfo>;
 using vkpipelinerenderinfo_ptr_t = std::shared_ptr<VulkanPipelineRenderInfo>;
+using vkbinarysemaphore_ptr_t = std::shared_ptr<VulkanBinarySemaphore>;
+using vktimelinesemaphore_ptr_t = std::shared_ptr<VulkanTimelineSemaphore>;
 //
 using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
 using vkimi_ptr_t = std::shared_ptr<VkImiInterface>;
@@ -394,6 +398,10 @@ struct VkSecondaryCommandBufferImpl {
   bool _recorded            = false;
   vkcontext_rawptr_t _contextVK;
   static std::atomic<int> _cmdbufcount;
+  // Optional timeline semaphore to signal when this command buffer completes
+  vktimelinesemaphore_ptr_t _completionSemaphore;
+  uint64_t _signalValue = 0;
+  void_lambda_t _onComplete;
 };
 
 struct VulkanRenderInfo {
@@ -560,17 +568,54 @@ struct VulkanBinarySemaphore {
   vkcontext_rawptr_t _ctxVK;
   VkSemaphore _vksema;
 };
-using vkbinarysemaphore_ptr_t = std::shared_ptr<VulkanBinarySemaphore>;
 
 struct VulkanTimelineSemaphore {
   VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK);
   ~VulkanTimelineSemaphore();
+
+  /////
+  // Host operations
+  /////
+
+  uint64_t hostQuery() const;
+  bool hostWait(uint64_t value, uint64_t timeout_ns = UINT64_MAX) const;
+  void hostSignal(uint64_t value);
+  uint64_t incrSignal(uint64_t count=1);
+  // Async callback when value is reached
+  void onValueReached(uint64_t value, void_lambda_t callback);
+
+  /////
+  // For queue submission (no command buffer operations!)
+  /////
+  
+  struct WaitInfo {
+    uint64_t value;
+    VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;  // For VK 1.2
+    VkPipelineStageFlags2 stageMask2 = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;  // For VK 1.3
+  };
+  
+  struct SignalInfo {
+    uint64_t value;
+  };
+
+  /////
+  // Convenience methods
+  /////
+  
+  uint64_t getNextSignalValue() { return _nextValue.fetch_add(1); }
+  uint64_t getCurrentValue() const { return hostQuery(); }
+  void checkCallbacks(uint64_t currentValue);
+
+  /////
+  
   vkcontext_rawptr_t _ctxVK;
   VkSemaphore _vksema;
-  void_lambda_t _onReached;
+  std::atomic<uint64_t> _nextValue{1};
+  
+  // Multiple callbacks for different values
+  std::unordered_map<uint64_t, std::vector<void_lambda_t>> _callbacks;
 };
 
-using vktimelinesemaphore_ptr_t = std::shared_ptr<VulkanTimelineSemaphore>;
 
 struct VulkanFenceObject {
   VulkanFenceObject(vkcontext_rawptr_t ctxVK);
@@ -622,8 +667,7 @@ using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 struct InFlightTextureTransfer {
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
-  vktimelinesemaphore_ptr_t _timeline_semaphore;
-  void_lambda_t _onTransferFinished;
+  vktimelinesemaphore_ptr_t _completionSemaphore;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
 struct VulkanTextureObject {
@@ -894,6 +938,7 @@ struct VkSwapChain {
   void enqueueFrame(vkcontext_rawptr_t ctxVK);
   void enqueuePresentFrame(vkcontext_rawptr_t ctxVK);
   void waitPresentFrame(vkcontext_rawptr_t ctxVK);
+  size_t subIndex() const;                            // Which frame-in-flight we're on (0 or 1 if MAX=2)
 
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
@@ -1291,6 +1336,8 @@ public:
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg) final;
   void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
 
+  void _submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain);
+
   //////////////////////////////////////////////
   // Interfaces
 
@@ -1397,6 +1444,7 @@ public:
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
   shared_pool::fixed_pool<PrimaryCommandBuffer, 4> _pri_cmdbuf_pool;
+
   //////////////////////////////////////////////
   vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);

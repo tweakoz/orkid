@@ -92,6 +92,7 @@ void VkFrameBufferInterface::_initSwapChain() {
     swap_chain->_imageAcquiredSemaphores.push_back(bin_sema_imgacq);
     swap_chain->_renderCompleteSemaphores.push_back(bin_sema_rencom);
     swap_chain->_frameFences.push_back(fence);
+    fence->reset();
   }
 
   // auto surfaceFormat = pres_caps->_formats[0];

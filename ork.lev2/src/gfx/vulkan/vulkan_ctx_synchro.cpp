@@ -33,6 +33,61 @@ VulkanTimelineSemaphore::~VulkanTimelineSemaphore() {
   vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
 }
 
+// Host operations
+uint64_t VulkanTimelineSemaphore::hostQuery() const {
+uint64_t value;
+  vkGetSemaphoreCounterValue(_ctxVK->_vkdevice, _vksema, &value);
+  return value;
+}
+uint64_t VulkanTimelineSemaphore::incrSignal(uint64_t count) { //
+  return _nextValue.fetch_add(count);
+} 
+
+bool VulkanTimelineSemaphore::hostWait(uint64_t value, uint64_t timeout_ns) const {
+  VkSemaphoreWaitInfo waitInfo{};
+  waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+  waitInfo.semaphoreCount = 1;
+  waitInfo.pSemaphores = &_vksema;
+  waitInfo.pValues = &value;
+  
+  VkResult result = vkWaitSemaphores(_ctxVK->_vkdevice, &waitInfo, timeout_ns);
+  return result == VK_SUCCESS;
+}
+
+void VulkanTimelineSemaphore::hostSignal(uint64_t value) {
+  VkSemaphoreSignalInfo signalInfo{};
+  signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
+  signalInfo.semaphore = _vksema;
+  signalInfo.value = value;
+
+  VkResult result = vkSignalSemaphore(_ctxVK->_vkdevice, &signalInfo);
+  OrkAssert(result == VK_SUCCESS);
+}
+
+void VulkanTimelineSemaphore::checkCallbacks(uint64_t currentValue) {
+  auto it = _callbacks.begin();
+  while (it != _callbacks.end() && it->first <= currentValue) {
+    for (auto& callback : it->second) {
+      callback();
+    }
+    it = _callbacks.erase(it);
+  }
+}
+
+void VulkanTimelineSemaphore::onValueReached(uint64_t value, void_lambda_t callback) {
+  
+  // Check if already reached
+  uint64_t currentValue = hostQuery();
+  if (currentValue >= value) {
+    // Already reached, execute immediately
+    callback();
+  } else {
+    // Store for later execution
+    _callbacks[value].push_back(callback);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanBinarySemaphore::VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK)
@@ -100,11 +155,10 @@ void VulkanFenceObject::onCrossed(void_lambda_t op) {
 
 void VkContext::onFenceCrossed(void_lambda_t op) {
   auto swapchain = _fbi->_swapchain;
-  if (swapchain && swapchain->_currentFrame < swapchain->_frameFences.size()) {
-    auto& fence = swapchain->_frameFences[swapchain->_currentFrame];
-    if (fence) {
-      fence->onCrossed(op);
-    }
+  size_t sub_index = swapchain->subIndex();
+  auto fence = swapchain->_frameFences[sub_index];
+  if (fence) {
+    fence->onCrossed(op);
   }
 }
 

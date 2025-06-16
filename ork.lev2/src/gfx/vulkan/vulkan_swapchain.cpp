@@ -23,12 +23,17 @@ rtgroup_ptr_t VkSwapChain::currentRTG() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+size_t VkSwapChain::subIndex() const {
+  // Return the current frame index modulo MAX_FRAMES_IN_FLIGHT
+  // This gives us the index of the current frame in the circular buffer
+  return _currentFrame % MAX_FRAMES_IN_FLIGHT;
+}                       
 
 void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
 
   // Ensure we have a valid swapchain
 
-  size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
+  size_t sub_index = subIndex();
 
   // After fence wait, we need to acquire the next swapchain image
   // This must happen AFTER fence wait to ensure semaphores are ready
@@ -86,7 +91,7 @@ void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
 
 void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
-  size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
+  size_t sub_index = subIndex();
 
   _semasOkToRender[0] = _imageAcquiredSemaphores[sub_index]->_vksema;
   _waitOnPipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -115,7 +120,7 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
 void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
-  size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
+  size_t sub_index = subIndex();
 
   _semasOkToPresent[0] = (_renderCompleteSemaphores[sub_index]->_vksema);
 
@@ -177,13 +182,14 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
-  size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
+  size_t sub_index = subIndex();
 
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
   if (fence) {
     printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
+    fence->reset();
     printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
   }
   _currentFrame++;

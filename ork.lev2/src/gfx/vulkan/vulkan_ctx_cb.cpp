@@ -26,11 +26,11 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
+  VkCommandBufferInheritanceInfo INHINFO = {};
+  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+
   if (rtg) { // dynamic rendering inheritance?
     CBBI_GFX.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-
-    VkCommandBufferInheritanceInfo INHINFO = {};
-    initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
 
     // Dynamic rendering inheritance
     VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo{};
@@ -61,11 +61,16 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
     inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // or from rtg
 
     INHINFO.pNext             = &inheritanceRenderingInfo;
-    CBBI_GFX.pInheritanceInfo = &INHINFO;
   } else {
     // Secondary command buffer for compute or transfer operations
-    CBBI_GFX.pInheritanceInfo = nullptr;
+    // Still needs basic inheritance info, just no render pass
+    INHINFO.renderPass = VK_NULL_HANDLE;
+    INHINFO.framebuffer = VK_NULL_HANDLE;
+    INHINFO.occlusionQueryEnable = VK_FALSE;
+    INHINFO.queryFlags = 0;
+    INHINFO.pipelineStatistics = 0;
   }
+  CBBI_GFX.pInheritanceInfo = &INHINFO;
 
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
@@ -148,6 +153,63 @@ void VkContext::enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdb
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   OrkAssert(impl->_recorded);
   _pendingOneShotCommands.push_back(cmdbuf);
+  
+  // Track semaphores separately for batch submission
+  if (impl->_completionSemaphore) {
+    _pendingOneShotSemas.insert(impl->_completionSemaphore);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain) {
+  // Collect all semaphores and their signal values
+  std::vector<VkSemaphore> allSemaphores;
+  std::vector<uint64_t> allSignalValues;
+  
+  // Add timeline semaphores with their values
+  for (auto& semaphore : _pendingOneShotSemas) {
+    allSemaphores.push_back(semaphore->_vksema);
+    allSignalValues.push_back(semaphore->getNextSignalValue());
+  }
+
+  size_t sub_index = swapchain->subIndex();
+
+  // Add binary semaphore (render complete) with value 0
+  auto& renderCompleteSem = swapchain->_renderCompleteSemaphores[sub_index];
+  allSemaphores.push_back(renderCompleteSem->_vksema);
+  allSignalValues.push_back(0);  // Binary semaphores use value 0
+  
+  // Timeline info must match ALL semaphores
+  VkTimelineSemaphoreSubmitInfo timelineInfo{};
+  timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+  timelineInfo.signalSemaphoreValueCount = allSignalValues.size();  // Must match signalSemaphoreCount
+  timelineInfo.pSignalSemaphoreValues = allSignalValues.data();
+  
+  // Wait semaphore (binary) also needs a value
+  std::vector<uint64_t> waitValues = {0};  // Binary semaphore
+  timelineInfo.waitSemaphoreValueCount = 1;
+  timelineInfo.pWaitSemaphoreValues = waitValues.data();
+  
+  // Submit info
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.pNext = &timelineInfo;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &primary_cb()->_vkcmdbuf;
+  submitInfo.signalSemaphoreCount = allSemaphores.size();
+  submitInfo.pSignalSemaphores = allSemaphores.data();
+  
+
+  // Wait for image acquisition
+  auto& imageAcquiredSem = swapchain->_imageAcquiredSemaphores[sub_index];
+  VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  submitInfo.waitSemaphoreCount = 1;
+  submitInfo.pWaitSemaphores = &imageAcquiredSem->_vksema;  
+  submitInfo.pWaitDstStageMask = &waitStages;
+  
+  auto fence = swapchain->_frameFences[sub_index];
+  vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
