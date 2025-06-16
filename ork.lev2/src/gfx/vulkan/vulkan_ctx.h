@@ -265,6 +265,7 @@ struct VulkanDeviceInfo {
   VkPhysicalDevice _phydev;
   VkPhysicalDeviceProperties _devprops;
   VkPhysicalDeviceFeatures _devfeatures;
+  VkPhysicalDeviceFeatures2 _devfeatures2;
   VkPhysicalDeviceMemoryProperties _devmemprops;
   std::vector<VkExtensionProperties> _extensions;
   std::vector<VkMemoryHeap> _heaps;
@@ -272,6 +273,11 @@ struct VulkanDeviceInfo {
   std::set<std::string> _extension_set;
 
   bool _is_discrete    = false;
+  bool _supportsDynamicRendering = false;
+  bool _supportsVulkan13 = false;
+  bool _supportsTimelineSemaphores = false;
+  bool _supportsSynchronization2 = false;
+
   size_t _maxWkgCountX = 0;
   size_t _maxWkgCountY = 0;
   size_t _maxWkgCountZ = 0;

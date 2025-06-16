@@ -122,7 +122,7 @@ VulkanInstance::VulkanInstance() {
   _appdata.applicationVersion = 1;
   _appdata.pEngineName        = "Orkid";
   _appdata.engineVersion      = 1;
-  _appdata.apiVersion         = VK_API_VERSION_1_2;
+  _appdata.apiVersion         = VK_API_VERSION_1_3;
 
   initializeVkStruct(_instancedata,VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
   _instancedata.pApplicationInfo        = &_appdata;
@@ -139,6 +139,7 @@ VulkanInstance::VulkanInstance() {
 
   _instance_extensions.push_back("VK_EXT_debug_utils");
   _instance_extensions.push_back("VK_EXT_debug_report");
+ //_instance_extensions.push_back("VK_KHR_dynamic_rendering");
 
   for( size_t i=0; i<glfwExtensionCount; i++ ){
     _instance_extensions.push_back(glfwExtensions[i]);
@@ -194,6 +195,25 @@ VulkanInstance::VulkanInstance() {
           device_info->_devprops.deviceID,
           device_info->_devprops.deviceName,
           int(device_info->_is_discrete));
+
+      // Check for Vulkan 1.3 and dynamic rendering support
+      initializeVkStruct(device_info->_devfeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+      
+      VkPhysicalDeviceDynamicRenderingFeatures dynRenderFeatures{};
+      initializeVkStruct(dynRenderFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
+      device_info->_devfeatures2.pNext = &dynRenderFeatures;
+      
+      VkPhysicalDeviceVulkan13Features vk13Features{};
+      initializeVkStruct(vk13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES);
+      dynRenderFeatures.pNext = &vk13Features;
+      
+      vkGetPhysicalDeviceFeatures2(device_info->_phydev, &device_info->_devfeatures2);
+      device_info->_devfeatures = device_info->_devfeatures2.features;
+      
+      device_info->_supportsDynamicRendering = dynRenderFeatures.dynamicRendering;
+      device_info->_supportsVulkan13 = true;
+      
+
     }
     igroup++;
   }

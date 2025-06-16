@@ -110,6 +110,16 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   DCI.pQueueCreateInfos       = _DQCIs.data();
   DCI.enabledExtensionCount   = _device_extensions.size();
   DCI.ppEnabledExtensionNames = _device_extensions.data();
+
+  // add features (not extensions)
+
+  VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
+  initializeVkStruct(timelineFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+  timelineFeatures.timelineSemaphore = VK_TRUE;
+  timelineFeatures.pNext = (void*) DCI.pNext;
+  DCI.pNext = &timelineFeatures;
+ 
+
   vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
 
   vkGetDeviceQueue(
