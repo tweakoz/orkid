@@ -16,7 +16,7 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
   auto cmdbuf = std::make_shared<SecondaryCommandBuffer>();
   cmdbuf->_debugName = name;
 
-  logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), name.c_str());
+  //logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), name.c_str());
   auto vkcmdbuf        = _createSecondaryVkCommandBuffer(cmdbuf.get());
   _recordCommandBuffer = cmdbuf;
 
@@ -85,7 +85,7 @@ void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _recordCommandBuffer = nullptr;
   vkcmdbuf->_recorded  = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
-  logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
+  //logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,7 +137,7 @@ _cmdbufcur_gfx.get() ); vkEndCommandBuffer(_cmdbufcur_gfx->_vkcmdbuf); _cmdbufcu
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
-  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
+  //logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   if (not impl->_recorded) {
     printf("CB<%p:%s> impl<%p> not recorded!\n", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*)impl.get());
@@ -170,7 +170,10 @@ void VkContext::_submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain) 
   // Add timeline semaphores with their values
   for (auto& semaphore : _pendingOneShotSemas) {
     allSemaphores.push_back(semaphore->_vksema);
-    allSignalValues.push_back(semaphore->getNextSignalValue());
+    // TODO: this does not look correct
+    //  i think we should use previously allocated signal values...
+    //  or at least something more explicit...
+    allSignalValues.push_back(semaphore->incrSignal());
   }
 
   size_t sub_index = swapchain->subIndex();
@@ -256,7 +259,7 @@ std::atomic<int> VkPrimaryCommandBufferImpl::_cmdbufcount(0);
 VkPrimaryCommandBufferImpl::VkPrimaryCommandBufferImpl(VkContext* ctx)
     : _contextVK(ctx) {
   int count = _cmdbufcount.fetch_add(1);
-  logchan_vkcb->log("VkPrimaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
+  //logchan_vkcb->log("VkPrimaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
 }
 
 VkPrimaryCommandBufferImpl::~VkPrimaryCommandBufferImpl() {
@@ -272,7 +275,7 @@ std::atomic<int> VkSecondaryCommandBufferImpl::_cmdbufcount(0);
 VkSecondaryCommandBufferImpl::VkSecondaryCommandBufferImpl(VkContext* ctx)
     : _contextVK(ctx) {
   int count = _cmdbufcount.fetch_add(1);
-  logchan_vkcb->log("VkSecondaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
+  //logchan_vkcb->log("VkSecondaryCommandBufferImpl<%p> count<%d>", (void*)this, count);
 }
 
 VkSecondaryCommandBufferImpl::~VkSecondaryCommandBufferImpl() {

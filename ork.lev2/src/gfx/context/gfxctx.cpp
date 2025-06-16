@@ -43,7 +43,11 @@ ViewportRect Context::mainSurfaceRectAtOrigin() const {
   return ViewportRect(0, 0, mainSurfaceWidth(), mainSurfaceHeight());
 }
 void Context::resizeMainSurface(int iw, int ih) {
-  _doResizeMainSurface(iw, ih);
+  if((iw!=miW) or (ih!=miH)) {
+    _doResizeMainSurface(iw, ih);
+    miW = iw;
+    miH = ih;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -166,6 +170,8 @@ void Context::beginFrame(bool visual) {
 
   for (auto l : _onBeginFrameCallbacks)
     l();
+
+  _onBeginFrameCallbacks.clear();
 
   /////////////////////////////////////
 

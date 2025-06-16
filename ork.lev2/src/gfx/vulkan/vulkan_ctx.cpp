@@ -380,7 +380,7 @@ void VkContext::makeCurrentContext() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPreBeginFrame() {
-  logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
+  //logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
@@ -397,7 +397,7 @@ void VkContext::_doPreBeginFrame() {
   _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   ////////////////////////
 
-  logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
+  //logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -417,23 +417,21 @@ void VkContext::_doPreBeginFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {
-  logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
+  //logchan_vkctx->log("VkContext<%p> _doBeginFrame w<%d> h<%d>", (void*)this, miW, miH);
   if (_fbi->_main_rtg) {
     miW = _fbi->_main_rtg->miW;
     miH = _fbi->_main_rtg->miH;
   }
   // Poll timeline semaphores
   for (auto& semaphore : _pendingOneShotSemas) {
-    uint64_t currentValue = semaphore->hostQuery();
-    printf("semaphore<%p> currentValue<%llu>\n", (void*)semaphore.get(), currentValue);
-    semaphore->checkCallbacks(currentValue);
+    semaphore->checkCallbacks();
   }
   
   // Clean up completed semaphores
   std::erase_if(          //
     _pendingOneShotSemas, //
-    [](const auto& sem) { //
-      return sem->_callbacks.empty(); //
+    [](auto sema) { //
+      return sema->_callbacks.empty(); //
   });
 
 }
@@ -448,7 +446,7 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 
 void VkContext::_doEndFrame() {
 
-  logchan_vkctx->log("VkContext<%p> CB<%p> _doEndFrame", (void*)this, (void*)primary_cb().get());
+  //logchan_vkctx->log("VkContext<%p> CB<%p> _doEndFrame", (void*)this, (void*)primary_cb().get());
 
   // FBI()->popMainSurface();
 
@@ -505,7 +503,7 @@ void VkContext::_doEndFrame() {
 
 
   ///////////////////////////////////////////////////////
-  logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
+  //logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
 
   _defaultCommandBuffer = nullptr;
   _cmdbufcurpri_gfx = nullptr;
@@ -547,7 +545,7 @@ void VkContext::initializeWindowContext(
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  logchan_vkctx->log("createWindowSurface with instance<%p>", (void*)&_GVI->_instance);
+  //logchan_vkctx->log("createWindowSurface with instance<%p>", (void*)&_GVI->_instance);
 
   VkResult OK = glfwCreateWindowSurface(_GVI->_instance, glfw_window, nullptr, &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);

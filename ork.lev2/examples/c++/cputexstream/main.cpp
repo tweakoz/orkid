@@ -143,7 +143,7 @@ int main(int argc, char** argv,char** envp) {
     fbi->PopRtGroup(false);*/
     context->endFrame();
 
-    ::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
+    //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
 
     if (timer.SecsSinceStart() > 5.0f) {
       float FPS    = float(framecounter) / timer.SecsSinceStart();

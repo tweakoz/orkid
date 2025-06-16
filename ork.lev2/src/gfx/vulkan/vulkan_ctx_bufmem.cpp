@@ -30,6 +30,7 @@ uint32_t VkContext::_findMemoryType(    //
 
 std::atomic<int> VulkanMemoryForImage::_imgmemcount(0);
 std::atomic<size_t> VulkanMemoryForImage::_imgmembytes(0);
+std::atomic<size_t> VulkanMemoryForImage::_imgmemSN(0);
 
 VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage image, VkMemoryPropertyFlags memprops)
     : _ctxVK(ctxVK)
@@ -53,9 +54,12 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
   OK = vkBindImageMemory(_ctxVK->_vkdevice, _vkimage, *_vkmem, 0);
   OrkAssert(OK == VK_SUCCESS);
 
+  int SN       = _imgmemSN.fetch_add(1);
   int count    = _imgmemcount.fetch_add(1);
   size_t bytes = _imgmembytes.fetch_add(_memreq->size);
-  logchan_vkbufmem->log("VulkanMemoryForImage<%p> count<%d> bytes<%zu>", (void*)this, count, bytes);
+  if(SN&0xfff==0){
+    logchan_vkbufmem->log("VulkanMemoryForImage<%p> count<%d> bytes<%zu>", (void*)this, count, bytes);
+  }
 }
 
 VulkanMemoryForImage::~VulkanMemoryForImage() {
@@ -163,6 +167,7 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
 
 ///////////////////////////////////////////////////////////////////////////////
 std::atomic<int> VulkanImageObject::_imgobjcount = 0;
+std::atomic<size_t> VulkanImageObject::_imgobjSN = 0;
 
 VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name)
     : _ctx(ctx)
@@ -177,8 +182,11 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
     _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, name.c_str());
   }
 
+  int SN    = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
-  logchan_vkbufmem->log("VulkanImageObject<%p> count<%d>", (void*)this, count);
+  if(SN&0xfff==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> count<%d> SN<%d>", (void*)this, count, SN);
+  }
 }
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
@@ -196,6 +204,7 @@ VulkanImageObject::~VulkanImageObject() {
 
 std::atomic<int> VulkanBuffer::_buffercount    = 0;
 std::atomic<size_t> VulkanBuffer::_bufferbytes = 0;
+std::atomic<size_t> VulkanBuffer::_bufferSN = 0;
 
 VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name)
     : _ctxVK(ctxVK)
@@ -221,9 +230,12 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
       ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
 
+  int SN = _bufferSN.fetch_add(1);
   int count = _buffercount.fetch_add(1);
   _bufferbytes.fetch_add(_length);
-  logchan_vkbufmem->log("VulkanBuffer<%p> count<%d> bytes<%zu>", (void*)this, count, size_t(_bufferbytes));
+  if(SN&0xfff==0){
+    logchan_vkbufmem->log("VulkanBuffer<%p> count<%d> bytes<%zu>", (void*)this, count, size_t(_bufferbytes));
+  }
 }
 //////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {

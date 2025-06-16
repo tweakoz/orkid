@@ -134,7 +134,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
   VkResult status = vkQueuePresentKHR(ctxVK->_vkqueue_graphics, &PRESI);
 
-  printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
+  //printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
 
   switch (status) {
     case VK_SUCCESS:
@@ -187,10 +187,10 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
   if (fence) {
-    printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
+    //printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
     fence->reset();
-    printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
+    //printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
   }
   _currentFrame++;
 }

@@ -366,14 +366,16 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto tlsema = std::make_shared<VulkanTimelineSemaphore>(this->_contextVK);
   transfer->_completionSemaphore = tlsema;
 
-  // Get signal value
-  uint64_t signalValue = tlsema->getNextSignalValue();
+  // allocate signal value
+  //  TODO: find out what op is signalling this value...
+  uint64_t signalValue = tlsema->incrSignal();
   
   // Set up completion callback
   tlsema->onValueReached(signalValue, [=]() {
     // User callback - texture is ready
-    logchan_txi->log("Texture %s transfer complete", ptex->_debugName.c_str());
-    //ptex->_readyForUse = true;
+    //logchan_txi->log("Texture %s transfer complete", ptex->_debugName.c_str());
+    vktex->_staging_buffers.erase(transfer->_staging_buffer);
+    vktex->_inflight_transfers.erase(transfer);
   });
 
   /////////////////////////////////////
@@ -447,10 +449,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   cmdbuf_impl->_completionSemaphore = tlsema;
-  cmdbuf_impl->_onComplete = [](){
-    OrkAssert(false);
-  };
-  cmdbuf_impl->_signalValue = 1;
 
   auto barrier = createImageBarrier(
       vktex->_imgobj->_vkimage,
@@ -548,13 +546,15 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
 
-  logchan_txi->log(
+  if(0){
+    logchan_txi->log(
       "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
       (void*)ptex,
       ptex->_debugName.c_str(),
       iwidth,
       iheight,
       fmt_str.c_str());
+    }
 
   /////////////////////////////////////
   // create image object
@@ -645,9 +645,11 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
   initializeVkStruct(_vkdescriptor_info);
 
   int count = _vkto_count.fetch_add(1);
+  if(0){
   logchan_txi->log(
       "VulkanTextureObject count<%d>",
       count);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_vksynch = logger()->createChannel("VKSYNCH", fvec3(1, .8, .9), true);
+std::atomic<int> VulkanTimelineSemaphore::_semaphorecount = 0;
 
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK)
     : _ctxVK(ctxVK) {
@@ -25,15 +27,23 @@ VulkanTimelineSemaphore::VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK)
 
   VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
   OrkAssert(OK == VK_SUCCESS);
+
+  int count = _semaphorecount.fetch_add(1);
+  //logchan_vksynch->log("CONSTRUCT VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
 }
 
 ///////////////////////////////////////////////////
 
 VulkanTimelineSemaphore::~VulkanTimelineSemaphore() {
   vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+  int count = _semaphorecount.fetch_sub(1);
+  //logchan_vksynch->log("DESTROY VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
 }
 
+///////////////////////////////////////////////////
 // Host operations
+///////////////////////////////////////////////////
+
 uint64_t VulkanTimelineSemaphore::hostQuery() const {
 uint64_t value;
   vkGetSemaphoreCounterValue(_ctxVK->_vkdevice, _vksema, &value);
@@ -64,14 +74,25 @@ void VulkanTimelineSemaphore::hostSignal(uint64_t value) {
   OrkAssert(result == VK_SUCCESS);
 }
 
-void VulkanTimelineSemaphore::checkCallbacks(uint64_t currentValue) {
+void VulkanTimelineSemaphore::checkCallbacks() {
+  uint64_t currentValue = hostQuery();
+  //std::string out_str = FormatString("semaphore<%p> currentValue<%llu> [", (void*)this, currentValue);
+  
   auto it = _callbacks.begin();
-  while (it != _callbacks.end() && it->first <= currentValue) {
-    for (auto& callback : it->second) {
-      callback();
+  while (it != _callbacks.end()) {
+    uint64_t callback_key = it->first;
+    //out_str += FormatString("%llu, ", callback_key);
+    if(currentValue>=callback_key) {
+      for (auto& callback : it->second) {
+        callback();
+      }
+      it = _callbacks.erase(it);
+    } else {
+      ++it;
     }
-    it = _callbacks.erase(it);
   }
+  //out_str += "]";
+  //logchan_vksynch->log("%s", out_str.c_str());
 }
 
 void VulkanTimelineSemaphore::onValueReached(uint64_t value, void_lambda_t callback) {

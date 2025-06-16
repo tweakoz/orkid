@@ -400,8 +400,6 @@ struct VkSecondaryCommandBufferImpl {
   static std::atomic<int> _cmdbufcount;
   // Optional timeline semaphore to signal when this command buffer completes
   vktimelinesemaphore_ptr_t _completionSemaphore;
-  uint64_t _signalValue = 0;
-  void_lambda_t _onComplete;
 };
 
 struct VulkanRenderInfo {
@@ -511,6 +509,7 @@ struct VulkanMemoryForImage {
 
   static std::atomic<int> _imgmemcount;
   static std::atomic<size_t> _imgmembytes;
+  static std::atomic<size_t> _imgmemSN;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -549,6 +548,7 @@ struct VulkanBuffer {
 
   static std::atomic<int> _buffercount;
   static std::atomic<size_t> _bufferbytes;
+  static std::atomic<size_t> _bufferSN;
 
 };
 
@@ -588,6 +588,7 @@ struct VulkanTimelineSemaphore {
   // For queue submission (no command buffer operations!)
   /////
   
+  
   struct WaitInfo {
     uint64_t value;
     VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;  // For VK 1.2
@@ -602,9 +603,7 @@ struct VulkanTimelineSemaphore {
   // Convenience methods
   /////
   
-  uint64_t getNextSignalValue() { return _nextValue.fetch_add(1); }
-  uint64_t getCurrentValue() const { return hostQuery(); }
-  void checkCallbacks(uint64_t currentValue);
+  void checkCallbacks();
 
   /////
   
@@ -614,6 +613,8 @@ struct VulkanTimelineSemaphore {
   
   // Multiple callbacks for different values
   std::unordered_map<uint64_t, std::vector<void_lambda_t>> _callbacks;
+
+  static std::atomic<int> _semaphorecount;
 };
 
 
@@ -654,7 +655,7 @@ struct VulkanImageObject {
   VkImageView _vkimageview;
   vkmemforimg_ptr_t _imgmem;
   static std::atomic<int> _imgobjcount;
-  static std::atomic<size_t> _imgobjbytes;
+  static std::atomic<size_t> _imgobjSN;
 };
 
 struct VulkanSamplerObject {

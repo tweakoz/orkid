@@ -60,7 +60,7 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  logchan_fbi->log("_doBeginFrame()");
+  //logchan_fbi->log("_doBeginFrame()");
   OrkAssert(_contextVK->_is_visual_frame);
   _swapchain->acquireImage(_contextVK);
   _main_rtg = _swapchain->currentRTG();
@@ -70,7 +70,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  logchan_fbi->log("_doEndFrame()");
+  //logchan_fbi->log("_doEndFrame()");
 }
 
 ///////////////////////////////////////////////////////

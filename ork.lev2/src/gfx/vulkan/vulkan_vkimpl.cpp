@@ -381,7 +381,7 @@ VkFormatConverter::VkFormatConverter() {
 }
 VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
   auto fmtname = EBufferFormatToName(fmt_in);
-  printf("convertBufferFormat<%s>\n", fmtname.c_str());
+  //printf("convertBufferFormat<%s>\n", fmtname.c_str());
   auto it = _instance._fmtmap.find(fmt_in);
   if( it == _instance._fmtmap.end() ){
     printf("format<%s> conversion not present\n", fmtname.c_str());
