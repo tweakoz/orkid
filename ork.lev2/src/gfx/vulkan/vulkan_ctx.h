@@ -554,15 +554,23 @@ barrier_ptr_t createImageBarrier(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanTimelineSemaphoreObject {
-  VulkanTimelineSemaphoreObject(vkcontext_rawptr_t ctxVK);
-  ~VulkanTimelineSemaphoreObject();
+struct VulkanBinarySemaphore {
+  VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK);
+  ~VulkanBinarySemaphore();
+  vkcontext_rawptr_t _ctxVK;
+  VkSemaphore _vksema;
+};
+using vkbinarysemaphore_ptr_t = std::shared_ptr<VulkanBinarySemaphore>;
+
+struct VulkanTimelineSemaphore {
+  VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK);
+  ~VulkanTimelineSemaphore();
   vkcontext_rawptr_t _ctxVK;
   VkSemaphore _vksema;
   void_lambda_t _onReached;
 };
 
-using vktlsema_obj_ptr_t = std::shared_ptr<VulkanTimelineSemaphoreObject>;
+using vktimelinesemaphore_ptr_t = std::shared_ptr<VulkanTimelineSemaphore>;
 
 struct VulkanFenceObject {
   VulkanFenceObject(vkcontext_rawptr_t ctxVK);
@@ -614,7 +622,7 @@ using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 struct InFlightTextureTransfer {
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
-  vktlsema_obj_ptr_t _timeline_semaphore;
+  vktimelinesemaphore_ptr_t _timeline_semaphore;
   void_lambda_t _onTransferFinished;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
@@ -877,6 +885,9 @@ struct VkLoadContext {
 
 
 struct VkSwapChain {
+
+  VkSwapChain();
+
   rtgroup_ptr_t currentRTG();
 
   void acquireImage(vkcontext_rawptr_t ctxVK);
@@ -887,9 +898,12 @@ struct VkSwapChain {
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
   static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;    // CPU can be ahead by 2 frames
-  std::vector<VkSemaphore> _imageAcquiredSemaphores;   // One per frame-in-flight
-  std::vector<VkSemaphore> _renderCompleteSemaphores;  // One per frame-in-flight
+  std::vector<vkbinarysemaphore_ptr_t> _imageAcquiredSemaphores;   // One per frame-in-flight
+  std::vector<vkbinarysemaphore_ptr_t> _renderCompleteSemaphores;  // One per frame-in-flight
   std::vector<vkfence_obj_ptr_t> _frameFences;         // One per frame-in-flight
+  std::vector<VkSemaphore> _semasOkToRender;
+  std::vector<VkSemaphore> _semasOkToPresent;
+  std::vector<VkPipelineStageFlags> _waitOnPipelineStages;
   size_t _currentFrame = 0;                            // Which frame-in-flight we're on (0 or 1 if MAX=2)
   
   uint32_t _curSwapWriteImage = 0xffffffff;
@@ -1388,7 +1402,7 @@ public:
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
   void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);
   std::vector<secondary_commandbuffer_ptr_t> _pendingOneShotCommands;
-  std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
+  std::unordered_set<vktimelinesemaphore_ptr_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
 

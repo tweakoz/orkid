@@ -12,6 +12,12 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+VkSwapChain::VkSwapChain() {
+  _semasOkToRender.resize(1);
+  _waitOnPipelineStages.resize(1);
+  _semasOkToPresent.resize(1);
+}
+
 rtgroup_ptr_t VkSwapChain::currentRTG() {
   return _rtgs[_curSwapWriteImage];
 }
@@ -48,7 +54,7 @@ void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
         ctxVK->_vkdevice,
         _vkSwapChain,
         std::numeric_limits<uint64_t>::max(),
-        _imageAcquiredSemaphores[sub_index], // Use current frame's semaphore
+        _imageAcquiredSemaphores[sub_index]->_vksema, // Use current frame's semaphore
         VK_NULL_HANDLE,
         &_curSwapWriteImage);
 
@@ -82,21 +88,18 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
   size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
 
-  std::vector<VkSemaphore> waitStartRenderSemaphores;
-  std::vector<VkPipelineStageFlags> waitStages;
-
-  waitStartRenderSemaphores.push_back(_imageAcquiredSemaphores[sub_index]);
-  waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  _semasOkToRender[0] = _imageAcquiredSemaphores[sub_index]->_vksema;
+  _waitOnPipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   VkSubmitInfo SI = {};
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.waitSemaphoreCount   = waitStartRenderSemaphores.size();
-  SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
-  SI.pWaitDstStageMask    = waitStages.data();
+  SI.waitSemaphoreCount   = _semasOkToRender.size();
+  SI.pWaitSemaphores      = _semasOkToRender.data();
+  SI.pWaitDstStageMask    = _waitOnPipelineStages.data();
   SI.commandBufferCount   = 1;
   SI.pCommandBuffers      = &ctxVK->primary_cb()->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
-  SI.pSignalSemaphores    = &_renderCompleteSemaphores[sub_index];
+  SI.pSignalSemaphores    = & (_renderCompleteSemaphores[sub_index]->_vksema);
 
   // Submit with this frame's fence
   if (sub_index < _frameFences.size()) {
@@ -111,16 +114,15 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
-  std::vector<VkSemaphore> waitPresentSemaphores;
 
   size_t sub_index = _currentFrame % MAX_FRAMES_IN_FLIGHT;
 
-  waitPresentSemaphores.push_back(_renderCompleteSemaphores[sub_index]);
+  _semasOkToPresent[0] = (_renderCompleteSemaphores[sub_index]->_vksema);
 
   VkPresentInfoKHR PRESI{};
   initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-  PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
-  PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
+  PRESI.waitSemaphoreCount = _semasOkToPresent.size();
+  PRESI.pWaitSemaphores    = _semasOkToPresent.data();
   PRESI.swapchainCount     = 1;
   PRESI.pSwapchains        = &_vkSwapChain;
   PRESI.pImageIndices      = &_curSwapWriteImage;

@@ -11,7 +11,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanTimelineSemaphoreObject::VulkanTimelineSemaphoreObject(vkcontext_rawptr_t ctxVK)
+VulkanTimelineSemaphore::VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK)
     : _ctxVK(ctxVK) {
 
   VkSemaphoreTypeCreateInfoKHR STCI = {};
@@ -29,11 +29,33 @@ VulkanTimelineSemaphoreObject::VulkanTimelineSemaphoreObject(vkcontext_rawptr_t 
 
 ///////////////////////////////////////////////////
 
-VulkanTimelineSemaphoreObject::~VulkanTimelineSemaphoreObject() {
+VulkanTimelineSemaphore::~VulkanTimelineSemaphore() {
   vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+VulkanBinarySemaphore::VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK)
+    : _ctxVK(ctxVK) {
+  VkSemaphoreTypeCreateInfoKHR STCI = {};
+  initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
+  STCI.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+  STCI.initialValue  = 0;
+  VkSemaphoreCreateInfo SCI = {};
+  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  SCI.pNext = &STCI;
+
+
+  VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
+  OrkAssert(OK == VK_SUCCESS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanBinarySemaphore::~VulkanBinarySemaphore() {
+  vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)

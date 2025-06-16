@@ -80,25 +80,18 @@ void VkFrameBufferInterface::_initSwapChain() {
   auto swap_chain = std::make_shared<VkSwapChain>();
 
   // Create per-frame synchronization objects
-  swap_chain->_imageAcquiredSemaphores.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
-  swap_chain->_renderCompleteSemaphores.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
-  swap_chain->_frameFences.resize(VkSwapChain::MAX_FRAMES_IN_FLIGHT);
-
-  VkSemaphoreCreateInfo SCI{};
-  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-
-  VkFenceCreateInfo FCI{};
-  initializeVkStruct(FCI, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-  FCI.flags = VK_FENCE_CREATE_SIGNALED_BIT; // Start signaled
+  swap_chain->_imageAcquiredSemaphores.clear();
+  swap_chain->_renderCompleteSemaphores.clear();
+  swap_chain->_frameFences.clear();
 
   for (size_t i = 0; i < VkSwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-    VkResult OK = vkCreateSemaphore(_contextVK->_vkdevice, &SCI, nullptr, &swap_chain->_imageAcquiredSemaphores[i]);
-    OrkAssert(OK == VK_SUCCESS);
 
-    OK = vkCreateSemaphore(_contextVK->_vkdevice, &SCI, nullptr, &swap_chain->_renderCompleteSemaphores[i]);
-    OrkAssert(OK == VK_SUCCESS);
-
-    swap_chain->_frameFences[i] = std::make_shared<VulkanFenceObject>(_contextVK);
+    auto bin_sema_imgacq = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+    auto bin_sema_rencom = std::make_shared<VulkanBinarySemaphore>(_contextVK);
+    auto fence = std::make_shared<VulkanFenceObject>(_contextVK);
+    swap_chain->_imageAcquiredSemaphores.push_back(bin_sema_imgacq);
+    swap_chain->_renderCompleteSemaphores.push_back(bin_sema_rencom);
+    swap_chain->_frameFences.push_back(fence);
   }
 
   // auto surfaceFormat = pres_caps->_formats[0];

@@ -209,15 +209,6 @@ void VkContext::_initVulkanCommon() {
     auto vk_impl        = _createPrimaryVkCommandBuffer(ork_cb.get());
   }
 
-  VkSemaphoreCreateInfo SCI{};
-  // initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  // OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_fbi->_swapChainImageAcquiredSemaphore);
-  // OrkAssert(OK == VK_SUCCESS);
-
-  // initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  // OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
-  // OrkAssert(OK == VK_SUCCESS);
-
   auto vksci_base = makeVKSCI();
   _sampler_base   = std::make_shared<VulkanSamplerObject>(this, vksci_base);
 

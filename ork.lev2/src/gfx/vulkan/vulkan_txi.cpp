@@ -363,7 +363,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  transfer->_timeline_semaphore = std::make_shared<VulkanTimelineSemaphoreObject>(this->_contextVK);
+  transfer->_timeline_semaphore = std::make_shared<VulkanTimelineSemaphore>(this->_contextVK);
   transfer->_timeline_semaphore->_onReached = [=]() {
     OrkAssert(false);    
   };
