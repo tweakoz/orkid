@@ -48,7 +48,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
 void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
   auto as_impl = rtg->_impl.tryAs<glrtgroupimpl_ptr_t>();
   if (as_impl) {
-    int inumtargets = rtg->GetNumTargets();
+    int inumtargets = rtg->numImageBuffers();
     for (int it = 0; it < inumtargets; it++) {
       auto b = rtg->buffer(it);
       if (b) {

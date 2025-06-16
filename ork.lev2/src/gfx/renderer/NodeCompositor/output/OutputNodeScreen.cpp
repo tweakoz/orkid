@@ -60,23 +60,6 @@ struct SCRIMPL {
       auto dsbuf            = _msaadownsamplebuffer->createRenderTarget(_node->_format);
       dsbuf->_debugName     = "MsaaDownsampleBuffer";
 
-      _subpass_assemble = std::make_shared<RenderSubPass>();
-      _subpass_assemble->_debugName = "ONS-ASSEMBLE";
-      _subpass_assemble->_rtg_input = nullptr;
-      _subpass_assemble->_rtg_output = nullptr;
-
-      _subpass_composite = std::make_shared<RenderSubPass>();
-      _subpass_composite->_debugName = "ONS-COMPOSITE";
-      _subpass_composite->_rtg_input = nullptr;
-      _subpass_composite->_rtg_output = nullptr;
-
-
-      _screen_renderpass = std::make_shared<RenderPass>();
-      _screen_renderpass->_immutable = true;
-      _screen_renderpass->_debugName = "ONS-RENDERPASS";
-      _screen_renderpass->_subpasses.push_back(_subpass_assemble);
-      _screen_renderpass->_subpasses.push_back(_subpass_composite);
-
     }
   }
   ///////////////////////////////////////
@@ -121,16 +104,9 @@ struct SCRIMPL {
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
-    targ->beginRenderPass(_screen_renderpass);
-    targ->beginSubPass(_subpass_assemble);
-
-
-
   }
   void endAssemble(CompositorDrawData& drawdata) {
     Context* targ = drawdata.context();
-    targ->endSubPass(_subpass_assemble);
-    targ->endRenderPass(_screen_renderpass);
     auto CIMPL = drawdata._cimpl;
     CIMPL->popCPD();
   }
@@ -151,9 +127,6 @@ struct SCRIMPL {
   int _width      = 0;
   int _height     = 0;
   rtgroup_ptr_t _msaadownsamplebuffer;
-  renderpass_ptr_t _screen_renderpass;
-  rendersubpass_ptr_t _subpass_assemble;
-  rendersubpass_ptr_t _subpass_composite;
 };
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()

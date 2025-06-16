@@ -23,7 +23,7 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
   rtg_impl->_depthonly = std::make_shared<GlFboObject>();
   rtgroup->_impl.set<glrtgroupimpl_ptr_t>(rtg_impl);
 
-  int inumtargets     = rtgroup->GetNumTargets();
+  int inumtargets     = rtgroup->numImageBuffers();
   int numsamples      = msaaEnumToInt(rtgroup->_msaa_samples);
   auto texture_target = (numsamples == 1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
   if (rtgroup->_cubeMap) {
@@ -182,7 +182,7 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
     }
 
     GLenum texture_target = rtg_impl->_target;
-    int inumtargets       = rtgroup->GetNumTargets();
+    int inumtargets       = rtgroup->numImageBuffers();
     if (rtgroup->_depthOnly) {
       glBindFramebuffer(GL_FRAMEBUFFER, rtg_impl->_depthonly->_fbo);
     } else if (rtgroup->_cubeMap) {
@@ -222,7 +222,7 @@ void GlFrameBufferInterface::_regenRtgImplFromScratch(RtGroup* rtgroup) {
   //////////////////////////////////////////
   // regen impl
   //////////////////////////////////////////
-  int inumtargets = rtgroup->GetNumTargets();
+  int inumtargets = rtgroup->numImageBuffers();
 
   OrkAssert(rtg_impl);
 

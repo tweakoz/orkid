@@ -214,50 +214,23 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
-  return _beginRecordCommandBuffer(rpass, named);
+secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(std::string named, rtgroup_ptr_t rtg) {
+  return _beginRecordCommandBuffer(named,rtg);
 }
 void Context::endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _endRecordCommandBuffer(cmdbuf);
-}
-
-void Context::beginRenderPass(renderpass_ptr_t pass) {
-  OrkAssert(_renderpassAPI==_RenderPassAPI::NONE);
-  _renderpassAPI = _RenderPassAPI::EXPLICIT;
-  _beginRenderPass(pass);
-}
-void Context::endRenderPass(renderpass_ptr_t pass) {
-  _renderpassAPI = _RenderPassAPI::NONE;
-  _endRenderPass(pass);
-}
-void Context::beginSubPass(rendersubpass_ptr_t pass) {
-  _beginSubPass(pass);
-}
-void Context::endSubPass(rendersubpass_ptr_t pass) {
-  _endSubPass(pass);
-}
-
-RenderSubPass::RenderSubPass() {
-  _commandbuffer = std::make_shared<SecondaryCommandBuffer>();
 }
 
 void Context::enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   _doEnqueueSecondaryCommandBuffer(cmdbuf);
 }
 
-secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string named) {
+secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(std::string named,rtgroup_ptr_t rtg) {
   return nullptr;
 }
 void Context::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
-void Context::_beginRenderPass(renderpass_ptr_t) {
-}
-void Context::_endRenderPass(renderpass_ptr_t) {
-}
-void Context::_beginSubPass(rendersubpass_ptr_t) {
-}
-void Context::_endSubPass(rendersubpass_ptr_t) {
-}
+
 void Context::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 }
 

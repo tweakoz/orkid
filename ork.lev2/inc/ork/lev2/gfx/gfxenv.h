@@ -227,23 +227,13 @@ public:
   // command buffers / renderpasses
   ///////////////////////////////////////////////////////////////////////
 
-  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
+  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg = nullptr);
   void endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
   void enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
-  void beginRenderPass(renderpass_ptr_t);
-  void endRenderPass(renderpass_ptr_t);
-  void beginSubPass(rendersubpass_ptr_t);
-  void endSubPass(rendersubpass_ptr_t);
-
   virtual void _doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
-  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name);
+  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg);
   virtual void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
-
-  virtual void _beginRenderPass(renderpass_ptr_t);
-  virtual void _endRenderPass(renderpass_ptr_t);
-  virtual void _beginSubPass(rendersubpass_ptr_t);
-  virtual void _endSubPass(rendersubpass_ptr_t);
 
 
   ///////////////////////////////////////////////////////////////////////
@@ -403,13 +393,6 @@ public:
   PerformanceItem mFramePerfItem;
   std::unordered_map<uint32_t, svar64_t> _miscVBs;
   std::vector<sticky_cb_t> _beginFrameBlockers;
-
-  enum class _RenderPassAPI : uint64_t {
-    NONE = 0, // not yet specified
-    IMPLICIT, // using rtgroup push/pop implicit renderpasses (deprecated)
-    EXPLICIT, // using explicit renderpasses (vulkan, metal, etc..)
-  };
-  _RenderPassAPI _renderpassAPI = _RenderPassAPI::NONE;
 
   secondary_commandbuffer_ptr_t _recordCommandBuffer;
 
@@ -783,26 +766,6 @@ public:
 private:
   Context* mTarget;
   int mCameraNumber;
-};
-
-struct RenderPass {
-  svarshp_t _impl;
-  std::vector<rendersubpass_ptr_t> _subpasses;
-  bool _immutable   = false;
-  bool _autoClear   = true;
-  std::string _debugName = "RenderPass";
-};
-
-struct RenderSubPass {
-
-  RenderSubPass();
-
-  std::vector<rendersubpass_ptr_t> _subpass_dependencies;
-  rtgroup_ptr_t _rtg_input;
-  rtgroup_ptr_t _rtg_output;
-  svarshp_t _impl;
-  std::string _debugName;
-  secondary_commandbuffer_ptr_t _commandbuffer;
 };
 
 struct PrimaryCommandBuffer {

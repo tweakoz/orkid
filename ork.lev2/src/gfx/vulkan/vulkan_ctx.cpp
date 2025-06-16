@@ -381,8 +381,6 @@ void VkContext::makeCurrentContext() {
 void VkContext::_doPreBeginFrame() {
   logchan_vkctx->log("VkContext<%p> _doPreBeginFrame", (void*)this );
 
-  _renderpass_index = -1;
-
   mpCurrentObject        = 0;
   mRenderContextInstData = 0;
 
@@ -430,7 +428,6 @@ void VkContext::_doBeginFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
-  // OrkAssert(_current_subpass == nullptr);
   return _cmdbufcurpri_gfx;
 }
 
@@ -490,8 +487,6 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
   logchan_vkctx->log("VkContext<%p> clear renderpasses", (void*)this );
 
-  _renderpasses.clear();
-  _renderpass_index = -1;
   _defaultCommandBuffer = nullptr;
   _cmdbufcurpri_gfx = nullptr;
   _first_frame            = false;

@@ -60,8 +60,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   sh_pbits          = check_pb_range(sh_pbits, 24);
 
   uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
-  auto rpass        = _contextVK->_renderpasses.back();
-  auto rp_impl      = rpass->_impl.getShared<VulkanRenderPass>();
+
   // hash renderpass ?
 
   uint64_t pipeline_hash = vb_pbits           //
@@ -78,7 +77,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   if (it == _pipelines.end()) { // create pipeline
 
     printf(
-        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%zx> pc_pbits<%zx> sh_pbits<%zx> rs_pbits<%zx>\n", //
+        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%llx> pc_pbits<%llx> sh_pbits<%llx> rs_pbits<%llx>\n", //
         pipeline_hash,
         vb_pbits,
         rtg_pbits,
@@ -97,9 +96,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 
     CINFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
-    CINFO.renderPass = rp_impl->_vkrp;
+    CINFO.renderPass = VK_NULL_HANDLE;
     CINFO.subpass    = 0;
 
+    // Dynamic rendering info
+    auto rinfo = rtg_impl->_pipelineRenderInfo;
+    OrkAssert(rinfo);
+    CINFO.pNext = &rinfo->_createInfo; // Set the dynamic rendering info
     // count shader stages
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     if (shprog->_vtxshader)
@@ -367,7 +370,7 @@ void VkPipelineObject::applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf) {
         size_t parm_size = item._value.size();
         if (0) {
           printf(
-              "parm<%s:%s:%zu> range_offset<%d> dst_offset<%d> ", //
+              "parm<%s:%s:%zu> range_offset<%d> dst_offset<%zu> ", //
               parm_type.c_str(),
               parm_name.c_str(),
               parm_size,

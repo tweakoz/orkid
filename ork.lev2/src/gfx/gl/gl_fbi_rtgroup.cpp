@@ -133,7 +133,7 @@ void GlFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
     glClearDepth(1.0f);
   }
   // printf( "clear<%p> depthONLY<%d>\n", rtg, int(rtg->_depthOnly) );
-  if (rtg->_clearMaskColor and rtg->GetNumTargets()) {
+  if (rtg->_clearMaskColor and rtg->numImageBuffers()) {
     BufferBits |= GL_COLOR_BUFFER_BIT;
     const auto& C = rtg->_clearColor;
     glClearColor(C.x, C.y, C.z, C.w);

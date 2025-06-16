@@ -30,7 +30,7 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, "imgmemcfclr");
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr, "VkTextureInterface::_createFromLoadReq");
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_createFromLoadReq");
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;

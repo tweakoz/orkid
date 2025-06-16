@@ -75,7 +75,7 @@ texture_ptr_t RtGroup::depthTexture() const {
   return _depthBuffer ? _depthBuffer->_texture : nullptr;
 }
 
-int RtGroup::GetNumTargets(void) const {
+int RtGroup::numImageBuffers(void) const {
   return mNumMrts;
 }
 void RtGroup::SetSizeDirty(bool bv) {

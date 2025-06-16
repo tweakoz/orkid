@@ -67,21 +67,6 @@ struct RTGIMPL {
       _width  = w;
       _height = h;
 
-      _subpass_assemble = std::make_shared<RenderSubPass>();
-      _subpass_assemble->_debugName = "OCN-RTG-ASSEMBLE";
-      _subpass_assemble->_rtg_input = nullptr;
-      _subpass_assemble->_rtg_output = nullptr;
-
-      _subpass_composite = std::make_shared<RenderSubPass>();
-      _subpass_composite->_debugName = "OCN-RTG-COMPOSITE";
-      _subpass_composite->_rtg_input = nullptr;
-      _subpass_composite->_rtg_output = nullptr;
-
-      _screen_renderpass = std::make_shared<RenderPass>();
-      _screen_renderpass->_immutable = true;
-      _screen_renderpass->_debugName = "OCN-SCR-RENDERPASS";
-      _screen_renderpass->_subpasses.push_back(_subpass_assemble);
-      _screen_renderpass->_subpasses.push_back(_subpass_composite);
     }
   }
   ///////////////////////////////////////
@@ -100,8 +85,6 @@ struct RTGIMPL {
     drawdata._properties["SinglePassStereo"_crcu].set<bool>(false);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
-    //targ->beginRenderPass(_screen_renderpass);
-    //targ->beginSubPass(_screen_renderpass);
   }
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
@@ -128,9 +111,6 @@ struct RTGIMPL {
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
-  renderpass_ptr_t _screen_renderpass;
-  rendersubpass_ptr_t _subpass_assemble;
-  rendersubpass_ptr_t _subpass_composite;
 };
 ///////////////////////////////////////////////////////////////////////////////
 RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) 

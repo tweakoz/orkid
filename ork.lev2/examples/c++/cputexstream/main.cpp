@@ -43,6 +43,8 @@ struct Resources {
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);
     deco::printf(fvec3::Yellow(), "  fxparameterTexture<%p>\n", _fxparameterTexture);
 
+
+    //_renderpass = std::make_shared<RenderPass>();
     //////////////////////////////////////////////////////////
     // update texels on CPU (in parallel)
     //////////////////////////////////////////////////////////
@@ -88,7 +90,7 @@ struct Resources {
   std::shared_ptr<float_vect_t> _texturedata;
   uint32_t _appstate = "INIT_THREAD"_crcu;
   thread_ptr_t _texupdthread;
-
+  //renderpass_ptr_t _renderpass = nullptr;
 
 };
 
@@ -123,27 +125,25 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
-    auto fxi            = context->FXI(); // FX Interface
-    auto txi            = context->TXI(); // Texture Interface
     float r             = float(rand() % 256) / 255.0f;
     float g             = float(rand() % 256) / 255.0f;
     float b             = float(rand() % 256) / 255.0f;
-    int TARGW           = context->mainSurfaceWidth();
-    int TARGH           = context->mainSurfaceHeight();
-    const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
 
     fbi->SetClearColor(fvec4(r, g, b, 1));
     fbi->_autoClear = true;
     context->beginFrame();
+    /*
     fbi->PushRtGroup(fbi->_main_rtg.get()); // implicit renderpass api
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
-    appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    //appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     resources->_material->end(RCFD);    
-    fbi->PopRtGroup(false);
+    fbi->PopRtGroup(false);*/
     context->endFrame();
+
+    ::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
 
     if (timer.SecsSinceStart() > 5.0f) {
       float FPS    = float(framecounter) / timer.SecsSinceStart();

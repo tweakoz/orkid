@@ -70,9 +70,6 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 
 void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
-  OrkAssert(_target._renderpassAPI!=Context::_RenderPassAPI::EXPLICIT);
-  _target._renderpassAPI = Context::_RenderPassAPI::IMPLICIT;
-
   bool first = mRtGroupStack.empty();
   mRtGroupStack.push(_active_rtgroup);
   _pushRtGroup(rtg_top);
@@ -104,12 +101,6 @@ void FrameBufferInterface::PopRtGroup(bool continue_render) {
   mRtGroupStack.pop();
   popViewport();
   popScissor();
-  OrkAssert(_target._renderpassAPI != Context::_RenderPassAPI::EXPLICIT);
-  if(mRtGroupStack.empty()) {
-    _target._renderpassAPI = Context::_RenderPassAPI::NONE;
-  } else {
-    _target._renderpassAPI = Context::_RenderPassAPI::IMPLICIT;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

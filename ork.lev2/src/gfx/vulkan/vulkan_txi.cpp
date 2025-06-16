@@ -60,7 +60,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     // vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
   }
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::generateMipMaps");
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::generateMipMaps");
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -208,7 +208,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::createFromMipChain");
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::createFromMipChain");
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -363,7 +363,10 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  
+  transfer->_timeline_semaphore = std::make_shared<VulkanTimelineSemaphoreObject>(this->_contextVK);
+  transfer->_timeline_semaphore->_onReached = [=]() {
+    OrkAssert(false);    
+  };
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer
   // this is used to copy data from the application
@@ -436,7 +439,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf  = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::initTextureFromData");
+  auto cmdbuf  = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
   transfer->_command_buffer = cmdbuf;
 
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
@@ -592,7 +595,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::_initTextureFromRtBuffer");
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_initTextureFromRtBuffer");
 
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;

@@ -88,6 +88,9 @@ struct VkTextureInterface;
 struct VkFxInterface;
 struct VkComputeInterface;
 //
+struct VulkanRenderInfo;
+struct VulkanPipelineRenderInfo;
+//
 struct VulkanTextureObject;
 struct VulkanFxShaderObject;
 struct VkFxShaderFile;
@@ -114,8 +117,6 @@ struct VulkanIndexBuffer;
 struct VkLoadContext;
 struct VkPrimaryCommandBufferImpl;
 struct VkSecondaryCommandBufferImpl;
-struct VulkanRenderPass;
-struct VulkanRenderSubPass;
 struct VkSwapChainCaps;
 struct VkSwapChain;
 struct VkMsaaState;
@@ -127,6 +128,9 @@ using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
 using vkdevgrp_ptr_t     = std::shared_ptr<VulkanDeviceGroup>;
 using vkcontext_ptr_t    = std::shared_ptr<VkContext>;
 using vkcontext_rawptr_t = VkContext*;
+
+using vkrenderinfo_ptr_t = std::shared_ptr<VulkanRenderInfo>;
+using vkpipelinerenderinfo_ptr_t = std::shared_ptr<VulkanPipelineRenderInfo>;
 //
 using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
 using vkimi_ptr_t = std::shared_ptr<VkImiInterface>;
@@ -169,8 +173,6 @@ using vkvertexinputconfig_ptr_t = std::shared_ptr<VkVertexInputConfiguration>;
 using vkloadctx_ptr_t           = std::shared_ptr<VkLoadContext>;
 using vkpricmdbufimpl_ptr_t        = std::shared_ptr<VkPrimaryCommandBufferImpl>;
 using vkseccmdbufimpl_ptr_t        = std::shared_ptr<VkSecondaryCommandBufferImpl>;
-using vkrenderpass_ptr_t        = std::shared_ptr<VulkanRenderPass>;
-using vksubpass_ptr_t           = std::shared_ptr<VulkanRenderSubPass>;
 using vkswapchaincaps_ptr_t     = std::shared_ptr<VkSwapChainCaps>;
 using vkswapchain_ptr_t         = std::shared_ptr<VkSwapChain>;
 using vkmsaastate_ptr_t         = std::shared_ptr<VkMsaaState>;
@@ -388,24 +390,19 @@ struct VkSecondaryCommandBufferImpl {
   static std::atomic<int> _cmdbufcount;
 };
 
-struct VulkanRenderPass {
-  VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass);
-  ~VulkanRenderPass();
+struct VulkanRenderInfo {
+  VulkanRenderInfo(rtgroup_rawptr_t rtg);
+  ~VulkanRenderInfo();
 
-  std::vector<RenderSubPass*> _toposorted_subpasses;
-  VkRenderPass _vkrp  = VK_NULL_HANDLE;
-  VkFramebuffer _vkfb = VK_NULL_HANDLE;
-  VkFramebufferCreateInfo _vkfbinfo;
-  secondary_commandbuffer_ptr_t _seccmdbuffer;
-  vkcontext_rawptr_t _contextVK;
-  static std::atomic<int> _rpasscount;
+  rtgroup_ptr_t _rtg;
+  VkRenderingInfo _renderinfo;
 };
-struct VulkanRenderSubPass {
-  VulkanRenderSubPass();
-  ~VulkanRenderSubPass();
-  std::vector<VkAttachmentReference> _attach_refs;
-  VkSubpassDescription _SUBPASS;
-  static std::atomic<int> _subpasscount;
+struct VulkanPipelineRenderInfo {
+  VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg);
+  ~VulkanPipelineRenderInfo();
+
+  rtgroup_ptr_t _rtg;
+  VkPipelineRenderingCreateInfo _createInfo;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -447,11 +444,11 @@ using rtgroup_attachments_ptr_t = std::shared_ptr<RtGroupAttachments>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRtGroupImpl {
-  VkRtGroupImpl(RtGroup* _rtg);
+  VkRtGroupImpl(rtgroup_rawptr_t _rtg);
 
   rtgroup_attachments_ptr_t attachments();
 
-  RtGroup* _rtg = nullptr;
+  rtgroup_rawptr_t _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;
@@ -461,12 +458,10 @@ struct VkRtGroupImpl {
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
 
-  VkSubpassDescription _vksubpass;
-  VkSubpassDependency _vksubpassdeps;
+  vkrenderinfo_ptr_t _renderInfo;
+  vkpipelinerenderinfo_ptr_t _pipelineRenderInfo;
 
   secondary_commandbuffer_ptr_t _cmdbuf;
-  renderpass_ptr_t _rpass_clear;
-  renderpass_ptr_t _rpass_misc;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -613,6 +608,7 @@ using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 struct InFlightTextureTransfer {
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
+  vktlsema_obj_ptr_t _timeline_semaphore;
   void_lambda_t _onTransferFinished;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
@@ -1039,8 +1035,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  void rtGroupClear(RtGroup* rtg) final;
-  void rtGroupMipGen(RtGroup* rtg) final;
+  void rtGroupClear(rtgroup_rawptr_t rtg) final;
+  void rtGroupMipGen(rtgroup_rawptr_t rtg) final;
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
@@ -1052,14 +1048,14 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
-  void _pushRtGroup(RtGroup* Base) final;
+  void _pushRtGroup(rtgroup_rawptr_t Base) final;
   void _popRtGroup(bool continue_render) final;
 
   //////////////////////////////////////////////
 
   void _present();
   freestyle_mtl_ptr_t utilshader();
-  vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
+  vkrtgrpimpl_ptr_t _createRtGroupImpl(rtgroup_rawptr_t rtg);
 
   //////////////////////////////////////////////
 
@@ -1272,12 +1268,8 @@ public:
 
   //////////////////////////////////////////////
 
-  secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name) final;
+  secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg) final;
   void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
-  void _beginRenderPass(renderpass_ptr_t) final;
-  void _endRenderPass(renderpass_ptr_t) final;
-  void _beginSubPass(rendersubpass_ptr_t) final;
-  void _endSubPass(rendersubpass_ptr_t) final;
 
   //////////////////////////////////////////////
   // Interfaces
@@ -1351,8 +1343,6 @@ public:
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
   size_t _num_queue_types = 0;
-  int _renderpass_index;
-  int _subpass_index = 0;
 
   //////////////////////////////////////////////
 
@@ -1386,13 +1376,10 @@ public:
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
-  std::vector<renderpass_ptr_t> _renderpasses;
-  renderpass_ptr_t _cur_renderpass;
   shared_pool::fixed_pool<PrimaryCommandBuffer, 4> _pri_cmdbuf_pool;
   //////////////////////////////////////////////
   vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
-  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear, std::string name);
   void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);
   std::vector<secondary_commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;

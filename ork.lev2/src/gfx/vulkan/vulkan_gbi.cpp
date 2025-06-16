@@ -405,8 +405,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
-  OrkAssert(_contextVK->_renderpass_index >= 0);
-
   auto& CB = _contextVK->_cmdbufcurpri_gfx;
 
   ///////////////////////
@@ -458,7 +456,6 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
     const IndexBufferBase& idx_buf,
     PrimitiveType eType) {
-  OrkAssert(_contextVK->_renderpass_index >= 0);
 
   auto& CB = _contextVK->_cmdbufcurpri_gfx;
 

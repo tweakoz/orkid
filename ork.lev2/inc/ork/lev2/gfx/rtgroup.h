@@ -69,7 +69,7 @@ struct RtGroup final {
   rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
-  int GetNumTargets(void) const;
+  int numImageBuffers(void) const; // number of non-depth image buffers
   void Resize(int iw, int ih);
   void SetSizeDirty(bool bv);
   bool IsSizeDirty() const;
