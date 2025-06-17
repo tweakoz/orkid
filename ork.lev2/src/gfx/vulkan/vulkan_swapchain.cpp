@@ -27,7 +27,7 @@ size_t VkSwapChain::subIndex() const {
   // Return the current frame index modulo MAX_FRAMES_IN_FLIGHT
   // This gives us the index of the current frame in the circular buffer
   return _currentFrame % MAX_FRAMES_IN_FLIGHT;
-}                       
+}
 
 void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
 
@@ -93,7 +93,7 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
 
   size_t sub_index = subIndex();
 
-  _semasOkToRender[0] = _imageAcquiredSemaphores[sub_index]->_vksema;
+  _semasOkToRender[0]      = _imageAcquiredSemaphores[sub_index]->_vksema;
   _waitOnPipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   VkSubmitInfo SI = {};
@@ -104,16 +104,16 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   SI.commandBufferCount   = 1;
   SI.pCommandBuffers      = &ctxVK->primary_cb()->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
-  SI.pSignalSemaphores    = & (_renderCompleteSemaphores[sub_index]->_vksema);
+  SI.pSignalSemaphores    = &(_renderCompleteSemaphores[sub_index]->_vksema);
 
   // Submit with this frame's fence
-  if (sub_index < _frameFences.size()) {
-    auto& fence = _frameFences[sub_index];
-    fence->reset();
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
-  } else {
-    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
-  }
+ if (sub_index < _frameFences.size()) {
+   auto& fence = _frameFences[sub_index];
+   fence->reset();
+   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+ } else {
+   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
+ }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
   VkResult status = vkQueuePresentKHR(ctxVK->_vkqueue_graphics, &PRESI);
 
-  //printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
+  // printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
 
   switch (status) {
     case VK_SUCCESS:
@@ -183,18 +183,16 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
 
 void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
-
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
   if (fence) {
     //printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
     fence->reset();
-    //printf("  VkSwapChain<%p> Fence wait complete\n", (void*) this);
   }
   _currentFrame++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////

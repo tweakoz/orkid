@@ -26,6 +26,37 @@ uint32_t VkContext::_findMemoryType(    //
   return 0;
 }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+StagingBufferSet::StagingBufferSet(vkcontext_rawptr_t ctxvk, size_t size) 
+  : _contextVK(ctxvk)
+  , _size(size) {
+
+}
+
+StagingBufferSet::~StagingBufferSet(){
+  _pbos_perm.clear();
+}
+
+
+vkbuffer_ptr_t StagingBufferSet::alloc() {
+  if (_pbos.empty()) {
+    constexpr int num_pbos_per_set = 2;
+    for (int i = 0; i < num_pbos_per_set; i++) {
+      vkbuffer_ptr_t pbo = std::make_shared<VulkanBuffer>(_contextVK, _size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,"stagingBufferSet");
+      _pbos_perm.insert(pbo);
+      _pbos.push(pbo);
+    }
+  }
+  auto rval = _pbos.front();
+  _pbos.pop();
+  return rval;
+}
+
+void StagingBufferSet::free(vkbuffer_ptr_t pbo) {
+  _pbos.push(pbo);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 std::atomic<int> VulkanMemoryForImage::_imgmemcount(0);
@@ -57,8 +88,8 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
   int SN       = _imgmemSN.fetch_add(1);
   int count    = _imgmemcount.fetch_add(1);
   size_t bytes = _imgmembytes.fetch_add(_memreq->size);
-  if(SN&0xfff==0){
-    logchan_vkbufmem->log("VulkanMemoryForImage<%p> count<%d> bytes<%zu>", (void*)this, count, bytes);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanMemoryForImage<%p> SN<%d> numalive<%d> bytes<%zu>", (void*)this, SN, count, bytes);
   }
 }
 
@@ -184,8 +215,8 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
 
   int SN    = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
-  if(SN&0xfff==0){
-    logchan_vkbufmem->log("VulkanImageObject<%p> count<%d> SN<%d>", (void*)this, count, SN);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, count, SN);
   }
 }
 VulkanImageObject::~VulkanImageObject() {
@@ -233,8 +264,8 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   int SN = _bufferSN.fetch_add(1);
   int count = _buffercount.fetch_add(1);
   _bufferbytes.fetch_add(_length);
-  if(SN&0xfff==0){
-    logchan_vkbufmem->log("VulkanBuffer<%p> count<%d> bytes<%zu>", (void*)this, count, size_t(_bufferbytes));
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanBuffer<%p> SN<%d> numalive<%d> bytes<%zu>", (void*)this, SN, count, size_t(_bufferbytes));
   }
 }
 //////////////////////////////////////

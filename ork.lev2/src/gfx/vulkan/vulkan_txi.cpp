@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include <ork/math/misc_math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -45,6 +46,21 @@ opq::mainSerialQueue()->enqueue(lamb);
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+stagingbuffer_set VkTextureInterface::stagingBufferSetForSize(size_t size) {
+  // round up to next power of two
+  size_t rounded_size = nextPowerOfTwo(size);
+  auto it = _stagingBuffers.find(rounded_size);
+  if (it != _stagingBuffers.end()) {
+    return it->second;
+  } else {
+    auto new_set = std::make_shared<StagingBufferSet>(_contextVK,rounded_size);
+    _stagingBuffers[rounded_size] = new_set;
+    return new_set;
+  }  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,13 +199,6 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
   /////////////////////////////////////
 
-  _contextVK->onFenceCrossed([=]() {
-    //vktex->_staging_buffers.erase(staging_buffer);
-    //vktex->_loadCB = nullptr;
-  });
-
-  /////////////////////////////////////
-
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 }
@@ -251,9 +260,10 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,"createFromMipChain");
+    auto set = stagingBufferSetForSize(level_length);
+    auto staging_buffer = set->alloc();
     staging_buffer->copyFromHost(level_data, level_length);
-    vktex->_staging_buffers.insert(staging_buffer);
+    //vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
     region.bufferOffset      = 0;
     region.bufferRowLength   = 0;
@@ -329,13 +339,6 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   /////////////////////////////////////
 
-  _contextVK->onFenceCrossed([=]() {
-    //vktex->_staging_buffers.clear();
-    //vktex->_loadCB = nullptr;
-  });
-
-  /////////////////////////////////////
-
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 
@@ -374,7 +377,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   tlsema->onValueReached(signalValue, [=]() {
     // User callback - texture is ready
     //logchan_txi->log("Texture %s transfer complete", ptex->_debugName.c_str());
-    vktex->_staging_buffers.erase(transfer->_staging_buffer);
     vktex->_inflight_transfers.erase(transfer);
   });
 
@@ -392,7 +394,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   transfer->_staging_buffer = staging_buffer;
-  vktex->_staging_buffers.insert(staging_buffer);
   
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)
@@ -513,13 +514,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       nullptr,
       1,
       barrier.get());
-
-  /////////////////////////////////////
-
-  _contextVK->onFenceCrossed([=]() {
-    //vktex->_staging_buffers.erase(staging_buffer);
-    //vktex->_loadCB = nullptr;
-  });
 
   /////////////////////////////////////
 
@@ -656,7 +650,6 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
 
 VulkanTextureObject::~VulkanTextureObject() {
   _vkto_count.fetch_sub(1);
-  _staging_buffers.clear();
   _imgobj = nullptr;
   _loadCB = nullptr;
 }

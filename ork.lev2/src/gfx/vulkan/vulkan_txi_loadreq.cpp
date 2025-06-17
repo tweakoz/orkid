@@ -106,13 +106,6 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   /////////////////////////////////////
 
-  _contextVK->onFenceCrossed([=]() {
-    //vktex->_staging_buffers.clear();
-    //vktex->_loadCB = nullptr;
-  });
-
-  /////////////////////////////////////
-
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
 }

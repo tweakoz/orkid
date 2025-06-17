@@ -29,6 +29,7 @@ void VkFrameBufferInterface::_initSwapChain() {
         fence->wait();
       }
     }
+
     size_t num_images = _swapchain->_rtgs.size();
     for (size_t i = 0; i < num_images; i++) {
       auto rtg            = _swapchain->_rtgs[i];
