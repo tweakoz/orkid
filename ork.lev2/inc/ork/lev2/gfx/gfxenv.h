@@ -227,12 +227,12 @@ public:
   // command buffers / renderpasses
   ///////////////////////////////////////////////////////////////////////
 
-  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg = nullptr);
+  secondary_commandbuffer_ptr_t beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg = nullptr);
   void endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
   void enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
   virtual void _doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
-  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg);
+  virtual secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg);
   virtual void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf);
 
 

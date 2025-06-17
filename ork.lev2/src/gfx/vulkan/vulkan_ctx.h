@@ -419,8 +419,10 @@ struct VulkanRenderInfo {
   VulkanRenderInfo(rtgroup_rawptr_t rtg);
   ~VulkanRenderInfo();
 
-  rtgroup_ptr_t _rtg;
+  rtgroup_rawptr_t _rtg;
   VkRenderingInfo _renderinfo;
+  std::vector<VkRenderingAttachmentInfo> _rainfos_color;
+  VkRenderingAttachmentInfo _rainfo_depth;
 };
 struct VulkanPipelineRenderInfo {
   VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg);
@@ -484,8 +486,8 @@ struct VkRtGroupImpl {
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
 
-  vkrenderinfo_ptr_t _renderInfo;
-  vkpipelinerenderinfo_ptr_t _pipelineRenderInfo;
+  vkrenderinfo_ptr_t _rinfo_retain;
+  vkpipelinerenderinfo_ptr_t _prinfo_retain;
 
   secondary_commandbuffer_ptr_t _cmdbufRTG;
 };
@@ -1351,7 +1353,7 @@ public:
 
   //////////////////////////////////////////////
 
-  secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg) final;
+  secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) final;
   void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
 
   //////////////////////////////////////////////

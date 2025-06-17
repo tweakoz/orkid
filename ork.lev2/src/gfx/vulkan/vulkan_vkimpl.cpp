@@ -135,6 +135,7 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledLayerCount       = 0;
   _instancedata.ppEnabledLayerNames     = nullptr;
   }
+
   _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
 
   _instance_extensions.push_back("VK_EXT_debug_utils");
@@ -198,19 +199,16 @@ VulkanInstance::VulkanInstance() {
 
       // Check for Vulkan 1.3 and dynamic rendering support
       initializeVkStruct(device_info->_devfeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
-      
-      VkPhysicalDeviceDynamicRenderingFeatures dynRenderFeatures{};
-      initializeVkStruct(dynRenderFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
-      device_info->_devfeatures2.pNext = &dynRenderFeatures;
-      
+            
       VkPhysicalDeviceVulkan13Features vk13Features{};
       initializeVkStruct(vk13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES);
-      dynRenderFeatures.pNext = &vk13Features;
+      vk13Features.dynamicRendering = VK_TRUE;
+      device_info->_devfeatures2.pNext = &vk13Features;
       
       vkGetPhysicalDeviceFeatures2(device_info->_phydev, &device_info->_devfeatures2);
       device_info->_devfeatures = device_info->_devfeatures2.features;
       
-      device_info->_supportsDynamicRendering = dynRenderFeatures.dynamicRendering;
+      //device_info->_supportsDynamicRendering = dynRenderFeatures.dynamicRendering;
       device_info->_supportsVulkan13 = true;
       
 

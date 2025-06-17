@@ -100,9 +100,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     CINFO.subpass    = 0;
 
     // Dynamic rendering info
-    auto rinfo = rtg_impl->_pipelineRenderInfo;
-    OrkAssert(rinfo);
-    CINFO.pNext = &rinfo->_createInfo; // Set the dynamic rendering info
+    rtg_impl->_prinfo_retain = std::make_shared<VulkanPipelineRenderInfo>(rtg);
+
+    OrkAssert(rtg_impl->_prinfo_retain);
+    CINFO.pNext = &rtg_impl->_prinfo_retain->_createInfo; // Set the dynamic rendering info
     // count shader stages
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     if (shprog->_vtxshader)

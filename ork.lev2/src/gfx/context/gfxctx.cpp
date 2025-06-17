@@ -220,7 +220,7 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(std::string named, rtgroup_ptr_t rtg) {
+secondary_commandbuffer_ptr_t Context::beginRecordCommandBuffer(std::string named, rtgroup_rawptr_t rtg) {
   return _beginRecordCommandBuffer(named,rtg);
 }
 void Context::endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
@@ -231,7 +231,7 @@ void Context::enqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf
   _doEnqueueSecondaryCommandBuffer(cmdbuf);
 }
 
-secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(std::string named,rtgroup_ptr_t rtg) {
+secondary_commandbuffer_ptr_t Context::_beginRecordCommandBuffer(std::string named,rtgroup_rawptr_t rtg) {
   return nullptr;
 }
 void Context::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {

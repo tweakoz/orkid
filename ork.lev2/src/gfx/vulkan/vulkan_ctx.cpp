@@ -101,7 +101,7 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
   _device_extensions.push_back("VK_KHR_portability_subset");
-
+  //_device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
@@ -114,11 +114,18 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   // add features (not extensions)
 
   VkPhysicalDeviceTimelineSemaphoreFeatures timelineFeatures{};
+  VkPhysicalDeviceDynamicRenderingFeatures dynrenderfeat{};
+
   initializeVkStruct(timelineFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+  initializeVkStruct(dynrenderfeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES);
+
   timelineFeatures.timelineSemaphore = VK_TRUE;
-  timelineFeatures.pNext = (void*) DCI.pNext;
-  DCI.pNext = &timelineFeatures;
- 
+  dynrenderfeat.dynamicRendering = VK_TRUE;
+
+  DCI.pNext = (void*) & timelineFeatures;
+  timelineFeatures.pNext = (void*) & dynrenderfeat;
+  dynrenderfeat.pNext = (void*) nullptr;
+
 
   vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
 

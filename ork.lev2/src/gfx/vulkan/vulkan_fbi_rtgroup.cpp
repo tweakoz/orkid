@@ -54,11 +54,6 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
 VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
     : _rtg(rtg)
     , _contextVK(ctxVK) {
-  _renderInfo = std::make_shared<VulkanRenderInfo>(rtg);
-  _pipelineRenderInfo = std::make_shared<VulkanPipelineRenderInfo>(rtg);
-
-  _cmdbufRTG = std::make_shared<SecondaryCommandBuffer>();
-  auto cbufimpl = ctxVK->_createSecondaryVkCommandBuffer(_cmdbufRTG.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -364,8 +359,30 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   /////////////////////////////////////////
 
   // Begin dynamic rendering
-  auto cbufimpl = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  //vkCmdBeginRendering(cbufimpl->_vkcmdbuf, &RTGIMPL->_renderInfo->_renderinfo);
+  //RTGIMPL->_cmdbufRTG = _contextVK->_beginRecordCommandBuffer("yo",_active_rtgroup );
+  //auto cbufimpl = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  std::string name = "rtg";
+  auto cmdbuf = std::make_shared<SecondaryCommandBuffer>();
+  cmdbuf->_debugName = name;
+  RTGIMPL->_cmdbufRTG = cmdbuf;
+  
+  //logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), name.c_str());
+  auto vkcmdbuf        = _contextVK->_createSecondaryVkCommandBuffer(cmdbuf.get());
+  _contextVK->_recordCommandBuffer = cmdbuf;
+
+  _contextVK->_setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, name.c_str());
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  VkCommandBufferInheritanceInfo INHINFO = {};
+  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  CBBI_GFX.pInheritanceInfo = &INHINFO;
+
+  vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  RTGIMPL->_rinfo_retain = std::make_shared<VulkanRenderInfo>(rtgroup);
+
+  //vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_rinfo_retain->_renderinfo);
   
 }
 
@@ -388,8 +405,9 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   //////////////////////////////////////////////
 
   //vkCmdEndRendering(cbufimpl->_vkcmdbuf);
-
-  //_contextVK->enqueueSecondaryCommandBuffer(finished_rtg->_cmdbuf);
+  vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
+  cbufimpl->_recorded  = true;
+  _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
 
   /////////////////////////////////////////////
   // transition rtgroup to texture sampling
@@ -720,7 +738,6 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
   //GL_ERRORCHECK();
   return true;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
