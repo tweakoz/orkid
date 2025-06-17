@@ -50,6 +50,22 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+SbsPoolAdapter::SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t usage)
+  : _contextVK(ctxVK)
+  , _size(size)
+  , _usage(usage)
+{
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkbuffer_ptr_t SbsPoolAdapter::alloc(){
+  return std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 stagingbufferpool_ptr_t VkTextureInterface::stagingBufferPoolForSrcOfSize(size_t size) {
   // round up to next power of two
   size_t rounded_size = nextPowerOfTwo(size);

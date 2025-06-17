@@ -1150,18 +1150,12 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 ///////////////////////////////////////////////////////////////////////////////
 struct SbsPoolAdapter {
   using item_t = vkbuffer_ptr_t;
+  static constexpr size_t _num_alloc_per_batch = 2;
   /////////////////////
-  inline SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t usage)
-    : _contextVK(ctxVK)
-    , _size(size)
-    , _usage(usage){}
-  /////////////////////
-  inline vkbuffer_ptr_t alloc(){
-    return std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
-  }
+  SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t usage);
+  vkbuffer_ptr_t alloc();
   /////////////////////
   vkcontext_rawptr_t _contextVK = nullptr;
-  static constexpr size_t _num_alloc_per_batch = 2;
   const size_t _size;
   const uint64_t _usage;
 };
