@@ -1148,23 +1148,25 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct StagingBufferSet {
-
-  StagingBufferSet(vkcontext_rawptr_t ctxvk, uint64_t usage, size_t size);
-  ~StagingBufferSet();
-
-  vkbuffer_ptr_t alloc();
-  void free(vkbuffer_ptr_t pbo);
-  std::queue<vkbuffer_ptr_t> _pbos;
-  std::set<vkbuffer_ptr_t> _pbos_perm;
-  vkcontext_rawptr_t _contextVK;
+struct SbsPoolAdapter {
+  using item_t = vkbuffer_ptr_t;
+  /////////////////////
+  inline SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t usage)
+    : _contextVK(ctxVK)
+    , _size(size)
+    , _usage(usage){}
+  /////////////////////
+  inline vkbuffer_ptr_t alloc(){
+    return std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
+  }
+  /////////////////////
+  vkcontext_rawptr_t _contextVK = nullptr;
+  static constexpr size_t _num_alloc_per_batch = 2;
   const size_t _size;
-  uint64_t _usage = 0;
+  const uint64_t _usage;
 };
-
-using stagingbuffer_set = std::shared_ptr<StagingBufferSet>;
-
+using StagingBufferPool = ObjectPoolX<SbsPoolAdapter>;
+using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkTextureInterface final : public TextureInterface {
@@ -1183,11 +1185,10 @@ struct VkTextureInterface final : public TextureInterface {
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;
   void _initTextureFromRtBuffer(RtBuffer* rtb);
 
-  // std::map<size_t, pbosetptr_t> _pbosets;
   vkcontext_rawptr_t _contextVK;
 
-  stagingbuffer_set stagingBufferSetForSrcOfSize(size_t size);
-  std::unordered_map<size_t, stagingbuffer_set> _stagingSrcBuffers;
+  stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
+  std::unordered_map<size_t, stagingbufferpool_ptr_t> _stagingSrcBuffers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

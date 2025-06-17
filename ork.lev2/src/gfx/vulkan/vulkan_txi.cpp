@@ -50,16 +50,17 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-stagingbuffer_set VkTextureInterface::stagingBufferSetForSrcOfSize(size_t size) {
+stagingbufferpool_ptr_t VkTextureInterface::stagingBufferPoolForSrcOfSize(size_t size) {
   // round up to next power of two
   size_t rounded_size = nextPowerOfTwo(size);
   auto it             = _stagingSrcBuffers.find(rounded_size);
   if (it != _stagingSrcBuffers.end()) {
     return it->second;
   } else {
-    auto new_set = std::make_shared<StagingBufferSet>(_contextVK, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rounded_size);
-    _stagingSrcBuffers[rounded_size] = new_set;
-    return new_set;
+    SbsPoolAdapter adapter(_contextVK, rounded_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto new_pool = std::make_shared<StagingBufferPool>(adapter);
+    _stagingSrcBuffers[rounded_size] = new_pool;
+    return new_pool;
   }
 }
 
@@ -260,7 +261,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto set            = stagingBufferSetForSrcOfSize(level_length);
+    auto set            = stagingBufferPoolForSrcOfSize(level_length);
     auto staging_buffer = set->alloc();
     staging_buffer->copyFromHost(level_data, level_length);
     // vktex->_staging_buffers.insert(staging_buffer);
@@ -366,7 +367,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   size_t transfer_size = tid.computeDstSize();
-  auto set             = stagingBufferSetForSrcOfSize(transfer_size);
+  auto set             = stagingBufferPoolForSrcOfSize(transfer_size);
   auto staging_buffer  = set->alloc();
   OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
 

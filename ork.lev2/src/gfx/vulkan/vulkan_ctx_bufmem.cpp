@@ -27,37 +27,7 @@ uint32_t VkContext::_findMemoryType(    //
   return 0;
 }
 
-  ///////////////////////////////////////////////////////////////////////////////
-
-StagingBufferSet::StagingBufferSet(vkcontext_rawptr_t ctxvk, uint64_t usage, size_t size) 
-  : _contextVK(ctxvk)
-  , _size(size)
-  , _usage(usage) {
-
-}
-
-StagingBufferSet::~StagingBufferSet(){
-  _pbos_perm.clear();
-}
-
-
-vkbuffer_ptr_t StagingBufferSet::alloc() {
-  if (_pbos.empty()) {
-    constexpr int num_pbos_per_set = 2;
-    for (int i = 0; i < num_pbos_per_set; i++) {
-      vkbuffer_ptr_t pbo = std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
-      _pbos_perm.insert(pbo);
-      _pbos.push(pbo);
-    }
-  }
-  auto rval = _pbos.front();
-  _pbos.pop();
-  return rval;
-}
-
-void StagingBufferSet::free(vkbuffer_ptr_t pbo) {
-  _pbos.push(pbo);
-}
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 

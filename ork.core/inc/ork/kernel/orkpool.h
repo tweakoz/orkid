@@ -347,6 +347,35 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename pool_adapter_t>
+struct ObjectPoolX {
+  using item_t = typename pool_adapter_t::item_t;
+  ObjectPoolX(pool_adapter_t tr) : _config(tr) {}
+  item_t alloc() {
+    if (_freeItems.empty()) {
+      for (size_t i = 0; //
+				       i<pool_adapter_t::_num_alloc_per_batch; //
+							 i++) { //
+        item_t item = _config.alloc();
+        _retainedItems.push_back(item);
+        _freeItems.push(item);
+      }
+    }
+    auto rval = _freeItems.front();
+    _freeItems.pop();
+    return rval;
+
+  }
+  void free(item_t item) {
+    _freeItems.push(item);
+  }
+  pool_adapter_t _config;
+  std::queue<item_t> _freeItems;
+  std::vector<item_t> _retainedItems;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 
