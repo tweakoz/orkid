@@ -924,6 +924,8 @@ struct VkSwapChain {
   void waitPresentFrame(vkcontext_rawptr_t ctxVK);
   size_t subIndex() const; // Which frame-in-flight we're on (0 or 1 if MAX=2)
 
+  void _submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK);
+
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
   static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;               // CPU can be ahead by 2 frames
@@ -933,6 +935,14 @@ struct VkSwapChain {
   std::vector<VkSemaphore> _semasOkToRender;
   std::vector<VkSemaphore> _semasOkToPresent;
   std::vector<VkPipelineStageFlags> _waitOnPipelineStages;
+
+
+  std::vector<VkSemaphore> _allSignalSemaphores;
+  std::vector<VkSemaphore> _allWaitSemaphores;
+  std::vector<uint64_t> _allSignalValues;
+  std::vector<uint64_t> _allWaitValues;
+  std::vector<VkPipelineStageFlags> _allWaitStages;
+
   size_t _currentFrame = 0; // Which frame-in-flight we're on (0 or 1 if MAX=2)
 
   uint32_t _curSwapWriteImage = 0xffffffff;
@@ -1338,8 +1348,6 @@ public:
 
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_ptr_t rtg) final;
   void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
-
-  void _submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain);
 
   //////////////////////////////////////////////
   // Interfaces

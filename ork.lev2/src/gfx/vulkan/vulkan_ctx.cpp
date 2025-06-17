@@ -487,7 +487,7 @@ void VkContext::_doEndFrame() {
   
   if ( not _pendingOneShotSemas.empty()) {
     // Submit with timeline semaphores
-    _submitFrameWithTimelineSemaphores(swapchain);
+    swapchain->_submitFrameWithSemaphores(this);
   } else {
     // Normal submission
     swapchain->enqueueFrame(this);

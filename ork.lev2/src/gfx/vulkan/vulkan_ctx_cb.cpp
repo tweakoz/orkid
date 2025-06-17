@@ -162,54 +162,64 @@ void VkContext::enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdb
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain) {
-  // Collect all semaphores and their signal values
-  std::vector<VkSemaphore> allSemaphores;
-  std::vector<uint64_t> allSignalValues;
+void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   
+  _allWaitSemaphores.clear();
+  _allWaitValues.clear();
+  _allSignalSemaphores.clear();
+  _allSignalValues.clear();
+  _allWaitStages.clear();
+
+  // Collect all semaphores and their signal values
+  
+  size_t sub_index = subIndex();
+  auto imageAcquiredSem = _imageAcquiredSemaphores[sub_index];
+  _allWaitSemaphores.push_back(imageAcquiredSem->_vksema);
+  _allWaitValues.push_back(0);  // Binary semaphore, value 0
+
   // Add timeline semaphores with their values
-  for (auto semaphore : _pendingOneShotSemas) {
-    allSemaphores.push_back(semaphore->_vksema);
-    allSignalValues.push_back(1);
+  for (auto semaphore : ctxVK->_pendingOneShotSemas) {
+    _allSignalSemaphores.push_back(semaphore->_vksema);
+    _allSignalValues.push_back(1);
   }
 
-  size_t sub_index = swapchain->subIndex();
 
   // Add binary semaphore (render complete) with value 0
-  auto& renderCompleteSem = swapchain->_renderCompleteSemaphores[sub_index];
-  allSemaphores.push_back(renderCompleteSem->_vksema);
-  allSignalValues.push_back(0);  // Binary semaphores use value 0
+  auto& renderCompleteSem = _renderCompleteSemaphores[sub_index];
+  _allSignalSemaphores.push_back(renderCompleteSem->_vksema);
+  _allSignalValues.push_back(0);  // Binary semaphores use value 0
   
   // Timeline info must match ALL semaphores
   VkTimelineSemaphoreSubmitInfo timelineInfo{};
   timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-  timelineInfo.signalSemaphoreValueCount = allSignalValues.size();  // Must match signalSemaphoreCount
-  timelineInfo.pSignalSemaphoreValues = allSignalValues.data();
+  timelineInfo.signalSemaphoreValueCount = _allSignalValues.size();  // Must match signalSemaphoreCount
+  timelineInfo.pSignalSemaphoreValues = _allSignalValues.data();
   
   // Wait semaphore (binary) also needs a value
-  std::vector<uint64_t> waitValues = {0};  // Binary semaphore
-  timelineInfo.waitSemaphoreValueCount = 1;
-  timelineInfo.pWaitSemaphoreValues = waitValues.data();
+  timelineInfo.waitSemaphoreValueCount = _allWaitValues.size();
+  timelineInfo.pWaitSemaphoreValues = _allWaitValues.data();
   
   // Submit info
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.pNext = &timelineInfo;
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &primary_cb()->_vkcmdbuf;
-  submitInfo.signalSemaphoreCount = allSemaphores.size();
-  submitInfo.pSignalSemaphores = allSemaphores.data();
+  submitInfo.pCommandBuffers = &(ctxVK->primary_cb()->_vkcmdbuf);
+  submitInfo.signalSemaphoreCount = _allSignalSemaphores.size();
+  submitInfo.pSignalSemaphores = _allSignalSemaphores.data();
   
 
   // Wait for image acquisition
-  auto& imageAcquiredSem = swapchain->_imageAcquiredSemaphores[sub_index];
-  VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = &imageAcquiredSem->_vksema;  
-  submitInfo.pWaitDstStageMask = &waitStages;
+  for(int i=0; i < _allWaitSemaphores.size(); i++) {
+    _allWaitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  }
+
+  submitInfo.waitSemaphoreCount = _allWaitSemaphores.size();
+  submitInfo.pWaitSemaphores = _allWaitSemaphores.data();  
+  submitInfo.pWaitDstStageMask = _allWaitStages.data();
   
-  auto fence = swapchain->_frameFences[sub_index];
-  vkQueueSubmit(_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
+  auto fence = _frameFences[sub_index];
+  vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
