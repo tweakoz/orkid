@@ -361,36 +361,36 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   }
 
   /////////////////////////////////////
+  // allocate a (cpuside) staging buffer
+  // this is used to copy data from the application
+  /////////////////////////////////////
+
+  size_t transfer_size = tid.computeDstSize();
+  auto set             = stagingBufferSetForSrcOfSize(transfer_size);
+  auto staging_buffer  = set->alloc();
+  OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
+
+  /////////////////////////////////////
   // create a transfer object
   /////////////////////////////////////
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-
-  /////////////////////////////////////
-  // allocate a (cpuside) staging buffer
-  // this is used to copy data from the application
-  //  TODO: reuse staging buffers
-  /////////////////////////////////////
-  size_t transfer_size = tid.computeDstSize();
-  /*auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, //
-                                                       tid.computeDstSize(), //
-                                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //
-                                                       "initTextureFromData");*/
-
-  auto set            = stagingBufferSetForSrcOfSize(transfer_size);
-  auto staging_buffer = set->alloc();
-  OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
   transfer->_command_buffer = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
+  transfer->_staging_buffer = staging_buffer;
+  auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
+  /////////////////////////////////////
+  // Set up completion callback
   /////////////////////////////////////
 
-  //transfer->_staging_buffer = staging_buffer;
-  // Set up completion callback
-  auto tlsema                    = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+  auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     set->free(staging_buffer);
   };
+  cmdbuf_impl->_completionSemaphore = tlsema;
 
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)
@@ -404,7 +404,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // hash the image creation parameters
   /////////////////////////////////////
 
-  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT //
+                 | VK_IMAGE_USAGE_SAMPLED_BIT;
 
   uint64_t image_params_hash = hashImageCreationParams(
       tid._w,          //
@@ -415,9 +416,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       usage);          // usage
 
   /////////////////////////////////////
-  // create a new VkImage and VkImageView
   // if the image params have changed
-  // (e.g. size, format, usage)
+  //   (e.g. size, format, usage)
+  //   create a new VkImage and VkImageView
   // otherwise, reuse the existing VkImage and VkImageView
   /////////////////////////////////////
 
@@ -460,11 +461,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
   // record transition to transfer destination (for copy)
   /////////////////////////////////////
-
-  auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
-
-  cmdbuf_impl->_completionSemaphore = tlsema;
 
   auto barrier = createImageBarrier(
       vktex->_imgobj->_vkimage,
