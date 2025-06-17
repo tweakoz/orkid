@@ -50,15 +50,15 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-stagingbuffer_set VkTextureInterface::stagingBufferSetForSize(size_t size) {
+stagingbuffer_set VkTextureInterface::stagingBufferSetForSrcOfSize(size_t size) {
   // round up to next power of two
   size_t rounded_size = nextPowerOfTwo(size);
-  auto it = _stagingBuffers.find(rounded_size);
-  if (it != _stagingBuffers.end()) {
+  auto it = _stagingSrcBuffers.find(rounded_size);
+  if (it != _stagingSrcBuffers.end()) {
     return it->second;
   } else {
-    auto new_set = std::make_shared<StagingBufferSet>(_contextVK,rounded_size);
-    _stagingBuffers[rounded_size] = new_set;
+    auto new_set = std::make_shared<StagingBufferSet>(_contextVK,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,rounded_size);
+    _stagingSrcBuffers[rounded_size] = new_set;
     return new_set;
   }  
 }
@@ -260,7 +260,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto set = stagingBufferSetForSize(level_length);
+    auto set = stagingBufferSetForSrcOfSize(level_length);
     auto staging_buffer = set->alloc();
     staging_buffer->copyFromHost(level_data, level_length);
     //vktex->_staging_buffers.insert(staging_buffer);
@@ -369,25 +369,29 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   transfer->_completionSemaphore = tlsema;
   
-  // Set up completion callback
-  tlsema->_onComplete = [=]() {
-    vktex->_inflight_transfers.erase(transfer);
-  };
 
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer
   // this is used to copy data from the application
   //  TODO: reuse staging buffers
   /////////////////////////////////////
-
-  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, //
+  size_t transfer_size = tid.computeDstSize();
+  /*auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, //
                                                        tid.computeDstSize(), //
                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //
-                                                       "initTextureFromData");
+                                                       "initTextureFromData");*/
 
+  auto set = stagingBufferSetForSrcOfSize(transfer_size);
+  auto staging_buffer = set->alloc();
+  OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
   /////////////////////////////////////
 
   transfer->_staging_buffer = staging_buffer;
+  // Set up completion callback
+  tlsema->_onComplete = [=]() {
+    vktex->_inflight_transfers.erase(transfer);
+    set->free(staging_buffer);
+  };
   
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)

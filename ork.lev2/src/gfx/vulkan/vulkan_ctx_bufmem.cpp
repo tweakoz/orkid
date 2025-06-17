@@ -28,9 +28,10 @@ uint32_t VkContext::_findMemoryType(    //
 
   ///////////////////////////////////////////////////////////////////////////////
 
-StagingBufferSet::StagingBufferSet(vkcontext_rawptr_t ctxvk, size_t size) 
+StagingBufferSet::StagingBufferSet(vkcontext_rawptr_t ctxvk, uint64_t usage, size_t size) 
   : _contextVK(ctxvk)
-  , _size(size) {
+  , _size(size)
+  , _usage(usage) {
 
 }
 
@@ -43,7 +44,7 @@ vkbuffer_ptr_t StagingBufferSet::alloc() {
   if (_pbos.empty()) {
     constexpr int num_pbos_per_set = 2;
     for (int i = 0; i < num_pbos_per_set; i++) {
-      vkbuffer_ptr_t pbo = std::make_shared<VulkanBuffer>(_contextVK, _size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,"stagingBufferSet");
+      vkbuffer_ptr_t pbo = std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
       _pbos_perm.insert(pbo);
       _pbos.push(pbo);
     }
@@ -199,7 +200,7 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
 ///////////////////////////////////////////////////////////////////////////////
 std::atomic<int> VulkanImageObject::_imgobjcount = 0;
 std::atomic<size_t> VulkanImageObject::_imgobjSN = 0;
-
+///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name)
     : _ctx(ctx)
     , _cinfo(cinfo) {
@@ -216,9 +217,10 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   int SN    = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
   if((SN&0xff)==0){
-    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, count, SN);
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
   }
 }
+///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
   //  vkDestroyImageView(vkdev, rtb_impl_color->_vkimgview, nullptr);
@@ -229,8 +231,8 @@ VulkanImageObject::~VulkanImageObject() {
     vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
   }
   _imgmem = nullptr;
+  int count = _imgobjcount.fetch_sub(1);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 std::atomic<int> VulkanBuffer::_buffercount    = 0;

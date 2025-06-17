@@ -1142,13 +1142,14 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
 struct StagingBufferSet {
 
-  StagingBufferSet(vkcontext_rawptr_t ctxvk, size_t size);
+  StagingBufferSet(vkcontext_rawptr_t ctxvk, uint64_t usage, size_t size);
   ~StagingBufferSet();
 
   vkbuffer_ptr_t alloc();
   void free(vkbuffer_ptr_t pbo);
   std::queue<vkbuffer_ptr_t> _pbos;
   std::set<vkbuffer_ptr_t> _pbos_perm;
+  uint64_t _usage = 0;
   const size_t _size;
   vkcontext_rawptr_t _contextVK;
 };
@@ -1176,8 +1177,8 @@ struct VkTextureInterface final : public TextureInterface {
   // std::map<size_t, pbosetptr_t> _pbosets;
   vkcontext_rawptr_t _contextVK;
 
-  stagingbuffer_set stagingBufferSetForSize(size_t size);
-  std::unordered_map<size_t, stagingbuffer_set> _stagingBuffers;
+  stagingbuffer_set stagingBufferSetForSrcOfSize(size_t size);
+  std::unordered_map<size_t, stagingbuffer_set> _stagingSrcBuffers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
