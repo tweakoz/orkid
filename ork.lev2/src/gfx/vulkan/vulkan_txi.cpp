@@ -366,19 +366,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  auto tlsema = std::make_shared<VulkanTimelineSemaphore>(this->_contextVK);
+  auto tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   transfer->_completionSemaphore = tlsema;
-
-  // allocate signal value
-  //  TODO: find out what op is signalling this value...
-  uint64_t signalValue = tlsema->incrSignal();
   
   // Set up completion callback
-  tlsema->onValueReached(signalValue, [=]() {
-    // User callback - texture is ready
-    //logchan_txi->log("Texture %s transfer complete", ptex->_debugName.c_str());
+  tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
-  });
+  };
 
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer

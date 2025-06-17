@@ -11,10 +11,33 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vksynch = logger()->createChannel("VKSYNCH", fvec3(1, .8, .9), true);
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanSemaphoreBase::VulkanSemaphoreBase(vkcontext_rawptr_t ctxVK)
+    : _ctxVK(ctxVK) {
+  _vksema = VK_NULL_HANDLE;
+}
+
+///////////////////////////////////////////////////
+
+VulkanSemaphoreBase::~VulkanSemaphoreBase() {
+  // logchan_vksynch->log("VulkanSemaphoreBase<%p> destroyed", (void*)this);
+  if (_vksema) {
+    vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+    _vksema = VK_NULL_HANDLE;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 std::atomic<int> VulkanTimelineSemaphore::_semaphorecount = 0;
 
 VulkanTimelineSemaphore::VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK)
-    : _ctxVK(ctxVK) {
+    : VulkanSemaphoreBase(ctxVK) {
 
   VkSemaphoreTypeCreateInfoKHR STCI = {};
   initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
@@ -29,109 +52,107 @@ VulkanTimelineSemaphore::VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK)
   OrkAssert(OK == VK_SUCCESS);
 
   int count = _semaphorecount.fetch_add(1);
-  //logchan_vksynch->log("CONSTRUCT VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
+  // logchan_vksynch->log("CONSTRUCT VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
 }
 
 ///////////////////////////////////////////////////
 
 VulkanTimelineSemaphore::~VulkanTimelineSemaphore() {
-  vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
   int count = _semaphorecount.fetch_sub(1);
-  //logchan_vksynch->log("DESTROY VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
+  // logchan_vksynch->log("DESTROY VulkanTimelineSemaphore<%p> count<%d>", (void*) this, count);
 }
 
-///////////////////////////////////////////////////
-// Host operations
 ///////////////////////////////////////////////////
 
 uint64_t VulkanTimelineSemaphore::hostQuery() const {
-uint64_t value;
+  uint64_t value;
   vkGetSemaphoreCounterValue(_ctxVK->_vkdevice, _vksema, &value);
   return value;
 }
-uint64_t VulkanTimelineSemaphore::incrSignal(uint64_t count) { //
-  return _nextValue.fetch_add(count);
-} 
+
+///////////////////////////////////////////////////
 
 bool VulkanTimelineSemaphore::hostWait(uint64_t value, uint64_t timeout_ns) const {
   VkSemaphoreWaitInfo waitInfo{};
-  waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+  waitInfo.sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
   waitInfo.semaphoreCount = 1;
-  waitInfo.pSemaphores = &_vksema;
-  waitInfo.pValues = &value;
-  
+  waitInfo.pSemaphores    = &_vksema;
+  waitInfo.pValues        = &value;
+
   VkResult result = vkWaitSemaphores(_ctxVK->_vkdevice, &waitInfo, timeout_ns);
   return result == VK_SUCCESS;
 }
 
+///////////////////////////////////////////////////
+
 void VulkanTimelineSemaphore::hostSignal(uint64_t value) {
   VkSemaphoreSignalInfo signalInfo{};
-  signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
+  signalInfo.sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
   signalInfo.semaphore = _vksema;
-  signalInfo.value = value;
+  signalInfo.value     = value;
 
   VkResult result = vkSignalSemaphore(_ctxVK->_vkdevice, &signalInfo);
   OrkAssert(result == VK_SUCCESS);
 }
 
-void VulkanTimelineSemaphore::checkCallbacks() {
-  uint64_t currentValue = hostQuery();
-  //std::string out_str = FormatString("semaphore<%p> currentValue<%llu> [", (void*)this, currentValue);
-  
-  auto it = _callbacks.begin();
-  while (it != _callbacks.end()) {
-    uint64_t callback_key = it->first;
-    //out_str += FormatString("%llu, ", callback_key);
-    if(currentValue>=callback_key) {
-      for (auto& callback : it->second) {
-        callback();
-      }
-      it = _callbacks.erase(it);
-    } else {
-      ++it;
-    }
-  }
-  //out_str += "]";
-  //logchan_vksynch->log("%s", out_str.c_str());
-}
-
-void VulkanTimelineSemaphore::onValueReached(uint64_t value, void_lambda_t callback) {
-  
-  // Check if already reached
-  uint64_t currentValue = hostQuery();
-  if (currentValue >= value) {
-    // Already reached, execute immediately
-    callback();
-  } else {
-    // Store for later execution
-    _callbacks[value].push_back(callback);
-  }
-}
-
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanBinarySemaphore::VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK)
-    : _ctxVK(ctxVK) {
+VulkanCompletionSemaphore::VulkanCompletionSemaphore(vkcontext_rawptr_t ctxVK)
+    : VulkanSemaphoreBase(ctxVK) {
   VkSemaphoreTypeCreateInfoKHR STCI = {};
   initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
-  STCI.semaphoreType = VK_SEMAPHORE_TYPE_BINARY;
+  STCI.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
   STCI.initialValue  = 0;
+
   VkSemaphoreCreateInfo SCI = {};
   initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
   SCI.pNext = &STCI;
-
 
   VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
   OrkAssert(OK == VK_SUCCESS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////
 
-VulkanBinarySemaphore::~VulkanBinarySemaphore() {
-  vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+VulkanCompletionSemaphore::~VulkanCompletionSemaphore() {
 }
 
+///////////////////////////////////////////////////
+
+bool VulkanCompletionSemaphore::isSignalled() const {
+  uint64_t value;
+  VkResult result = vkGetSemaphoreCounterValue(_ctxVK->_vkdevice, _vksema, &value);
+  OrkAssert(result == VK_SUCCESS);
+  return value > 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanBinarySemaphore::VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK)
+    : VulkanSemaphoreBase(ctxVK) {
+  VkSemaphoreTypeCreateInfoKHR STCI = {};
+  initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
+  STCI.semaphoreType        = VK_SEMAPHORE_TYPE_BINARY;
+  STCI.initialValue         = 0;
+  VkSemaphoreCreateInfo SCI = {};
+  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  SCI.pNext = &STCI;
+
+  VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
+  OrkAssert(OK == VK_SUCCESS);
+}
+
+///////////////////////////////////////////////////
+
+VulkanBinarySemaphore::~VulkanBinarySemaphore() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)
@@ -173,11 +194,12 @@ void VulkanFenceObject::onCrossed(void_lambda_t op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::onFenceCrossed(void_lambda_t op) {
-  auto swapchain = _fbi->_swapchain;
+  auto swapchain   = _fbi->_swapchain;
   size_t sub_index = swapchain->subIndex();
-  auto fence = swapchain->_frameFences[sub_index];
+  auto fence       = swapchain->_frameFences[sub_index];
   if (fence) {
     fence->onCrossed(op);
   }
@@ -211,5 +233,5 @@ barrier_ptr_t createImageBarrier(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

@@ -66,12 +66,6 @@ void VkFrameBufferInterface::_initSwapChain() {
     vkDestroySwapchainKHR(vkdev, _swapchain->_vkSwapChain, nullptr);
   }
 
-  // Wait for device to be idle before creating new swap chain
-  vkDeviceWaitIdle(_contextVK->_vkdevice);
-
-  // Also wait for queue to be idle
-  // vkQueueWaitIdle(_contextVK->_vkqueue);
-
   // Clear old swapchains after destroying current one
   for (auto& old_swap : _old_swapchains) {
     vkDestroySwapchainKHR(vkdev, old_swap->_vkSwapChain, nullptr);

@@ -423,15 +423,21 @@ void VkContext::_doBeginFrame() {
     miH = _fbi->_main_rtg->miH;
   }
   // Poll timeline semaphores
-  for (auto& semaphore : _pendingOneShotSemas) {
-    semaphore->checkCallbacks();
+  for (auto semaphore : _pendingOneShotSemas) {
+    if(semaphore->isSignalled()){
+      if(semaphore->_onComplete!=nullptr){
+        // If the semaphore has a completion callback, execute it
+        semaphore->_onComplete();
+        semaphore->_onComplete = nullptr; // Clear the callback after execution
+      }
+    }
   }
   
   // Clean up completed semaphores
   std::erase_if(          //
     _pendingOneShotSemas, //
     [](auto sema) { //
-      return sema->_callbacks.empty(); //
+      return sema->_onComplete==nullptr; //
   });
 
 }

@@ -168,12 +168,9 @@ void VkContext::_submitFrameWithTimelineSemaphores(vkswapchain_ptr_t swapchain) 
   std::vector<uint64_t> allSignalValues;
   
   // Add timeline semaphores with their values
-  for (auto& semaphore : _pendingOneShotSemas) {
+  for (auto semaphore : _pendingOneShotSemas) {
     allSemaphores.push_back(semaphore->_vksema);
-    // TODO: this does not look correct
-    //  i think we should use previously allocated signal values...
-    //  or at least something more explicit...
-    allSignalValues.push_back(semaphore->incrSignal());
+    allSignalValues.push_back(1);
   }
 
   size_t sub_index = swapchain->subIndex();

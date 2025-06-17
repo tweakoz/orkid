@@ -122,8 +122,11 @@ struct VkSwapChain;
 struct VkMsaaState;
 struct VkRasterState;
 struct VkBufferLayout;
+struct VulkanSemaphoreBase;
 struct VulkanBinarySemaphore;
 struct VulkanTimelineSemaphore;
+struct VulkanCompletionSemaphore;
+
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -131,10 +134,12 @@ using vkdevgrp_ptr_t     = std::shared_ptr<VulkanDeviceGroup>;
 using vkcontext_ptr_t    = std::shared_ptr<VkContext>;
 using vkcontext_rawptr_t = VkContext*;
 
-using vkrenderinfo_ptr_t = std::shared_ptr<VulkanRenderInfo>;
-using vkpipelinerenderinfo_ptr_t = std::shared_ptr<VulkanPipelineRenderInfo>;
-using vkbinarysemaphore_ptr_t = std::shared_ptr<VulkanBinarySemaphore>;
-using vktimelinesemaphore_ptr_t = std::shared_ptr<VulkanTimelineSemaphore>;
+using vkrenderinfo_ptr_t          = std::shared_ptr<VulkanRenderInfo>;
+using vkpipelinerenderinfo_ptr_t  = std::shared_ptr<VulkanPipelineRenderInfo>;
+using vksemaphorebase_ptr_t       = std::shared_ptr<VulkanSemaphoreBase>;
+using vkbinarysemaphore_ptr_t     = std::shared_ptr<VulkanBinarySemaphore>;
+using vktimelinesemaphore_ptr_t   = std::shared_ptr<VulkanTimelineSemaphore>;
+using vkcompletionsemaphore_ptr_t = std::shared_ptr<VulkanCompletionSemaphore>;
 //
 using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
 using vkimi_ptr_t = std::shared_ptr<VkImiInterface>;
@@ -175,8 +180,8 @@ using vkvtxbuf_ptr_t            = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t            = std::shared_ptr<VulkanIndexBuffer>;
 using vkvertexinputconfig_ptr_t = std::shared_ptr<VkVertexInputConfiguration>;
 using vkloadctx_ptr_t           = std::shared_ptr<VkLoadContext>;
-using vkpricmdbufimpl_ptr_t        = std::shared_ptr<VkPrimaryCommandBufferImpl>;
-using vkseccmdbufimpl_ptr_t        = std::shared_ptr<VkSecondaryCommandBufferImpl>;
+using vkpricmdbufimpl_ptr_t     = std::shared_ptr<VkPrimaryCommandBufferImpl>;
+using vkseccmdbufimpl_ptr_t     = std::shared_ptr<VkSecondaryCommandBufferImpl>;
 using vkswapchaincaps_ptr_t     = std::shared_ptr<VkSwapChainCaps>;
 using vkswapchain_ptr_t         = std::shared_ptr<VkSwapChain>;
 using vkmsaastate_ptr_t         = std::shared_ptr<VkMsaaState>;
@@ -276,11 +281,11 @@ struct VulkanDeviceInfo {
   std::vector<VkQueueFamilyProperties> _queueprops;
   std::set<std::string> _extension_set;
 
-  bool _is_discrete    = false;
-  bool _supportsDynamicRendering = false;
-  bool _supportsVulkan13 = false;
+  bool _is_discrete                = false;
+  bool _supportsDynamicRendering   = false;
+  bool _supportsVulkan13           = false;
   bool _supportsTimelineSemaphores = false;
-  bool _supportsSynchronization2 = false;
+  bool _supportsSynchronization2   = false;
 
   size_t _maxWkgCountX = 0;
   size_t _maxWkgCountY = 0;
@@ -393,13 +398,13 @@ struct VkSecondaryCommandBufferImpl {
   VkSecondaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
   ~VkSecondaryCommandBufferImpl();
 
-  VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
+  VkCommandBuffer _vkcmdbuf      = VK_NULL_HANDLE;
   SecondaryCommandBuffer* _orkCB = nullptr;
-  bool _recorded            = false;
+  bool _recorded                 = false;
   vkcontext_rawptr_t _contextVK;
   static std::atomic<int> _cmdbufcount;
   // Optional timeline semaphore to signal when this command buffer completes
-  vktimelinesemaphore_ptr_t _completionSemaphore;
+  vkcompletionsemaphore_ptr_t _completionSemaphore;
 };
 
 struct VulkanRenderInfo {
@@ -549,7 +554,6 @@ struct VulkanBuffer {
   static std::atomic<int> _buffercount;
   static std::atomic<size_t> _bufferbytes;
   static std::atomic<size_t> _bufferSN;
-
 };
 
 using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
@@ -562,61 +566,41 @@ barrier_ptr_t createImageBarrier(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanBinarySemaphore {
-  VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK);
-  ~VulkanBinarySemaphore();
+struct VulkanSemaphoreBase {
+  VulkanSemaphoreBase(vkcontext_rawptr_t ctxVK);
+  virtual ~VulkanSemaphoreBase();
   vkcontext_rawptr_t _ctxVK;
   VkSemaphore _vksema;
 };
 
-struct VulkanTimelineSemaphore {
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanBinarySemaphore : public VulkanSemaphoreBase {
+  VulkanBinarySemaphore(vkcontext_rawptr_t ctxVK);
+  ~VulkanBinarySemaphore() final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanTimelineSemaphore : public VulkanSemaphoreBase {
   VulkanTimelineSemaphore(vkcontext_rawptr_t ctxVK);
-  ~VulkanTimelineSemaphore();
-
-  /////
-  // Host operations
-  /////
-
+  ~VulkanTimelineSemaphore() final;
   uint64_t hostQuery() const;
   bool hostWait(uint64_t value, uint64_t timeout_ns = UINT64_MAX) const;
   void hostSignal(uint64_t value);
-  uint64_t incrSignal(uint64_t count=1);
-  // Async callback when value is reached
-  void onValueReached(uint64_t value, void_lambda_t callback);
-
-  /////
-  // For queue submission (no command buffer operations!)
-  /////
-  
-
-  struct WaitInfo {
-    uint64_t value;
-    VkPipelineStageFlags stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;  // For VK 1.2
-    VkPipelineStageFlags2 stageMask2 = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;  // For VK 1.3
-  };
-  
-  struct SignalInfo {
-    uint64_t value;
-  };
-
-  /////
-  // Convenience methods
-  /////
-  
-  void checkCallbacks();
-
-  /////
-  
-  vkcontext_rawptr_t _ctxVK;
-  VkSemaphore _vksema;
-  std::atomic<uint64_t> _nextValue{1};
-  
-  // Multiple callbacks for different values
-  std::unordered_map<uint64_t, std::vector<void_lambda_t>> _callbacks;
-
   static std::atomic<int> _semaphorecount;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanCompletionSemaphore : public VulkanSemaphoreBase {
+  VulkanCompletionSemaphore(vkcontext_rawptr_t ctxVK);
+  ~VulkanCompletionSemaphore() final;
+  bool isSignalled() const;
+  void_lambda_t _onComplete = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanFenceObject {
   VulkanFenceObject(vkcontext_rawptr_t ctxVK);
@@ -668,7 +652,7 @@ using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 struct InFlightTextureTransfer {
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
-  vktimelinesemaphore_ptr_t _completionSemaphore;
+  vkcompletionsemaphore_ptr_t _completionSemaphore;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
 struct VulkanTextureObject {
@@ -908,7 +892,7 @@ struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
   vkbuffer_ptr_t _vkbuffer = VK_NULL_HANDLE;
-  vkcontext_rawptr_t _ctx = nullptr;
+  vkcontext_rawptr_t _ctx  = nullptr;
   VertexBufferBase& _ork_vtxbuf;
   std::unordered_map<uint64_t, vkvertexinputconfig_ptr_t> _vif_to_layout;
 
@@ -918,7 +902,7 @@ struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
   ~VulkanIndexBuffer();
   vkbuffer_ptr_t _vkbuffer = VK_NULL_HANDLE;
-  vkcontext_rawptr_t _ctx = nullptr;
+  vkcontext_rawptr_t _ctx  = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -927,7 +911,6 @@ struct VkLoadContext {
   VkContext* _vkcontext     = nullptr;
   GLFWwindow* _pushedWindow = nullptr;
 };
-
 
 struct VkSwapChain {
 
@@ -939,19 +922,19 @@ struct VkSwapChain {
   void enqueueFrame(vkcontext_rawptr_t ctxVK);
   void enqueuePresentFrame(vkcontext_rawptr_t ctxVK);
   void waitPresentFrame(vkcontext_rawptr_t ctxVK);
-  size_t subIndex() const;                            // Which frame-in-flight we're on (0 or 1 if MAX=2)
+  size_t subIndex() const; // Which frame-in-flight we're on (0 or 1 if MAX=2)
 
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
-  static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;    // CPU can be ahead by 2 frames
-  std::vector<vkbinarysemaphore_ptr_t> _imageAcquiredSemaphores;   // One per frame-in-flight
-  std::vector<vkbinarysemaphore_ptr_t> _renderCompleteSemaphores;  // One per frame-in-flight
-  std::vector<vkfence_obj_ptr_t> _frameFences;         // One per frame-in-flight
+  static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;               // CPU can be ahead by 2 frames
+  std::vector<vkbinarysemaphore_ptr_t> _imageAcquiredSemaphores;  // One per frame-in-flight
+  std::vector<vkbinarysemaphore_ptr_t> _renderCompleteSemaphores; // One per frame-in-flight
+  std::vector<vkfence_obj_ptr_t> _frameFences;                    // One per frame-in-flight
   std::vector<VkSemaphore> _semasOkToRender;
   std::vector<VkSemaphore> _semasOkToPresent;
   std::vector<VkPipelineStageFlags> _waitOnPipelineStages;
-  size_t _currentFrame = 0;                            // Which frame-in-flight we're on (0 or 1 if MAX=2)
-  
+  size_t _currentFrame = 0; // Which frame-in-flight we're on (0 or 1 if MAX=2)
+
   uint32_t _curSwapWriteImage = 0xffffffff;
 };
 
@@ -1055,8 +1038,8 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType,
-      int ivbase          = 0,
-      int ivcount         = 0) final;
+      int ivbase  = 0,
+      int ivcount = 0) final;
 
   void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType) final;
 
@@ -1143,7 +1126,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1152,7 +1134,6 @@ struct StagingBufferSet {
 
   StagingBufferSet(vkcontext_rawptr_t ctxvk, size_t size);
   ~StagingBufferSet();
-
 
   vkbuffer_ptr_t alloc();
   void free(vkbuffer_ptr_t pbo);
@@ -1186,7 +1167,7 @@ struct VkTextureInterface final : public TextureInterface {
   vkcontext_rawptr_t _contextVK;
 
   stagingbuffer_set stagingBufferSetForSize(size_t size);
-  std::unordered_map<size_t,stagingbuffer_set> _stagingBuffers;
+  std::unordered_map<size_t, stagingbuffer_set> _stagingBuffers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1297,7 +1278,7 @@ struct VkComputeInterface : public ComputeInterface {
 
   void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
 
-  #if defined(ENABLE_SSBO)
+#if defined(ENABLE_SSBO)
 
   void copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, std::vector<uint8_t>, size_t dest_offset) final;
   FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
@@ -1305,12 +1286,12 @@ struct VkComputeInterface : public ComputeInterface {
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
 
-  #if defined(ENABLE_PYTORCH)
+#if defined(ENABLE_PYTORCH)
   FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) final;
   void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) final;
-  #endif
+#endif
 
-  #endif
+#endif
 
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
 
@@ -1333,7 +1314,7 @@ struct VkContext : public Context {
   VkContext();
 
 public:
-  //static vkcontext_ptr_t makeShared();
+  // static vkcontext_ptr_t makeShared();
   static bool HaveExtension(const std::string& extname);
   static const CClass* gpClass;
   // static orkvector<std::string> gVKExtensions;
@@ -1472,7 +1453,7 @@ public:
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
   void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);
   std::vector<secondary_commandbuffer_ptr_t> _pendingOneShotCommands;
-  std::unordered_set<vktimelinesemaphore_ptr_t> _pendingOneShotSemas;
+  std::unordered_set<vkcompletionsemaphore_ptr_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
 
