@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include <ork/util/crc64.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -149,6 +150,26 @@ vkivci_ptr_t createImageViewInfo2D(
   return IVCI;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+uint64_t hashImageCreationParams(
+    int w,                             //
+    int h,                             //
+    int d,                             //
+    EBufferFormat fmt,                 //
+    int nummips,
+    uint64_t usage ) {                     //
+    boost::Crc64 crc;
+    crc.init();
+  crc.accumulateItem(w);
+  crc.accumulateItem(h);
+  crc.accumulateItem(d);
+  crc.accumulateItem(fmt);
+  crc.accumulateItem(nummips);
+  crc.accumulateItem(usage);
+  crc.finish();
+  return crc.result();
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 vkimagecreateinfo_ptr_t makeVKICI(

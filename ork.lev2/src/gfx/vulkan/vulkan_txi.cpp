@@ -53,14 +53,14 @@ void VkTextureInterface::ApplySamplingMode(Texture* ptex) {
 stagingbuffer_set VkTextureInterface::stagingBufferSetForSrcOfSize(size_t size) {
   // round up to next power of two
   size_t rounded_size = nextPowerOfTwo(size);
-  auto it = _stagingSrcBuffers.find(rounded_size);
+  auto it             = _stagingSrcBuffers.find(rounded_size);
   if (it != _stagingSrcBuffers.end()) {
     return it->second;
   } else {
-    auto new_set = std::make_shared<StagingBufferSet>(_contextVK,VK_BUFFER_USAGE_TRANSFER_SRC_BIT,rounded_size);
+    auto new_set = std::make_shared<StagingBufferSet>(_contextVK, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, rounded_size);
     _stagingSrcBuffers[rounded_size] = new_set;
     return new_set;
-  }  
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     // vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
   }
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::generateMipMaps");
+  vktex->_loadCB = _contextVK->beginRecordCommandBuffer("VkTextureInterface::generateMipMaps");
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -217,7 +217,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer("VkTextureInterface::createFromMipChain");
+  vktex->_loadCB = _contextVK->beginRecordCommandBuffer("VkTextureInterface::createFromMipChain");
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -260,10 +260,10 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto set = stagingBufferSetForSrcOfSize(level_length);
+    auto set            = stagingBufferSetForSrcOfSize(level_length);
     auto staging_buffer = set->alloc();
     staging_buffer->copyFromHost(level_data, level_length);
-    //vktex->_staging_buffers.insert(staging_buffer);
+    // vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
     region.bufferOffset      = 0;
     region.bufferRowLength   = 0;
@@ -348,7 +348,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
-  
+
   ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
   vktexobj_ptr_t vktex;
@@ -366,9 +366,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  auto tlsema = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+  auto tlsema                    = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   transfer->_completionSemaphore = tlsema;
-  
 
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer
@@ -381,7 +380,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, //
                                                        "initTextureFromData");*/
 
-  auto set = stagingBufferSetForSrcOfSize(transfer_size);
+  auto set            = stagingBufferSetForSrcOfSize(transfer_size);
   auto staging_buffer = set->alloc();
   OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
   /////////////////////////////////////
@@ -392,7 +391,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     vktex->_inflight_transfers.erase(transfer);
     set->free(staging_buffer);
   };
-  
+
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)
   //  after this is complete,
@@ -400,7 +399,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   staging_buffer->copyFromHost(tid._data, tid._truncation_length);
-  
+
   /////////////////////////////////////
 
   ptex->_texFormat = tid._dst_format;
@@ -409,38 +408,51 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_depth     = tid._d;
   ptex->_num_mips  = 1;
 
-  auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
-  VKICI->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-  vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
+  uint64_t image_params_hash = hashImageCreationParams(
+      tid._w,          //
+      tid._h,          //
+      tid._d,          //
+      tid._dst_format, //
+      1,               // nummips
+      usage);          // usage
 
-  /////////////////////////////////////
+  if (vktex->_image_params_hash != image_params_hash) {
+    vktex->_image_params_hash = image_params_hash;
 
-  auto IVCI = createImageViewInfo2D(
-      vktex->_imgobj->_vkimage,                                //
-      VkFormatConverter::convertBufferFormat(tid._dst_format), //
-      VK_IMAGE_ASPECT_COLOR_BIT);
+    auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
+    VKICI->usage = usage;
 
-  initializeVkStruct(vktex->_imgobj->_vkimageview);
-  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
-  OrkAssert(VK_SUCCESS == ok);
+    vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
+
+    /////////////////////////////////////
+
+    auto IVCI = createImageViewInfo2D(
+        vktex->_imgobj->_vkimage,                                //
+        VkFormatConverter::convertBufferFormat(tid._dst_format), //
+        VK_IMAGE_ASPECT_COLOR_BIT);
+
+    initializeVkStruct(vktex->_imgobj->_vkimageview);
+    VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
+    OrkAssert(VK_SUCCESS == ok);
+
+    vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+    OrkAssert(vktex->_imgobj->_vkimageview != VK_NULL_HANDLE);
+
+  }
 
   /////////////////////////////////////
 
   vktex->_vksampler = _contextVK->_sampler_base;
-
-  /////////////////////////////////////
-
-  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
-  OrkAssert(vktex->_imgobj->_vkimageview != VK_NULL_HANDLE);
   // vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
-  // transition to transfer dst (for copy)
+  // enqueue transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf  = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
+  auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
 
   transfer->_command_buffer = cmdbuf;
 
@@ -469,7 +481,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       barrier.get()); //
 
   /////////////////////////////////////
-  // staging mem -> image
+  // enqueue transfer staging mem -> image
   /////////////////////////////////////
 
   VkBufferImageCopy region{};
@@ -478,10 +490,10 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   region.bufferRowLength   = 0;
   region.bufferImageHeight = 0;
   region.imageSubresource  = {
-       VK_IMAGE_ASPECT_COLOR_BIT, //
-       0,
-       0,
-       1};
+      VK_IMAGE_ASPECT_COLOR_BIT, //
+      0,
+      0,
+      1};
   region.imageOffset = {0, 0, 0};
   region.imageExtent = {uint32_t(tid._w), uint32_t(tid._h), 1};
 
@@ -492,8 +504,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
       1,
       &region); //
+
   /////////////////////////////////////
-  // transition to sampleable texture
+  // enqueue transition to sampleable texture
   /////////////////////////////////////
 
   barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -538,15 +551,15 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
 
-  if(0){
+  if (0) {
     logchan_txi->log(
-      "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
-      (void*)ptex,
-      ptex->_debugName.c_str(),
-      iwidth,
-      iheight,
-      fmt_str.c_str());
-    }
+        "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
+        (void*)ptex,
+        ptex->_debugName.c_str(),
+        iwidth,
+        iheight,
+        fmt_str.c_str());
+  }
 
   /////////////////////////////////////
   // create image object
@@ -594,7 +607,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_initTextureFromRtBuffer");
+  auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkTextureInterface::_initTextureFromRtBuffer");
 
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -637,10 +650,8 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
   initializeVkStruct(_vkdescriptor_info);
 
   int count = _vkto_count.fetch_add(1);
-  if(0){
-  logchan_txi->log(
-      "VulkanTextureObject count<%d>",
-      count);
+  if (0) {
+    logchan_txi->log("VulkanTextureObject count<%d>", count);
   }
 }
 

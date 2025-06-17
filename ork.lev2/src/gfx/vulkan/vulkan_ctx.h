@@ -245,7 +245,15 @@ struct VulkanGeometryInterfaceInput;
 using vkgeometryinterfaceinput_ptr_t = std::shared_ptr<VulkanGeometryInterfaceInput>;
 using vkgeometryinterface_ptr_t      = std::shared_ptr<VulkanGeometryInterface>;
 
-///////////////////////////////////////////////////////////////////////////////
+uint64_t hashImageCreationParams(
+    int w,                             //
+    int h,                             //
+    int d,                             //
+    EBufferFormat fmt,                 //
+    int nummips,
+    uint64_t usage );
+    
+      ///////////////////////////////////////////////////////////////////////////////
 
 struct VkViewportTracker {
 
@@ -669,6 +677,7 @@ struct VulkanTextureObject {
   vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
   secondary_commandbuffer_ptr_t _loadCB;
+  uint64_t _image_params_hash = 0;
 
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
 
