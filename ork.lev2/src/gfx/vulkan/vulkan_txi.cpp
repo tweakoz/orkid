@@ -366,8 +366,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  auto tlsema                    = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
-  transfer->_completionSemaphore = tlsema;
 
   /////////////////////////////////////
   // allocate a (cpuside) staging buffer
@@ -383,10 +381,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto set            = stagingBufferSetForSrcOfSize(transfer_size);
   auto staging_buffer = set->alloc();
   OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
+  transfer->_command_buffer = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
   /////////////////////////////////////
 
-  transfer->_staging_buffer = staging_buffer;
+  //transfer->_staging_buffer = staging_buffer;
   // Set up completion callback
+  auto tlsema                    = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     set->free(staging_buffer);
@@ -401,12 +401,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   staging_buffer->copyFromHost(tid._data, tid._truncation_length);
 
   /////////////////////////////////////
-
-  ptex->_texFormat = tid._dst_format;
-  ptex->_width     = tid._w;
-  ptex->_height    = tid._h;
-  ptex->_depth     = tid._d;
-  ptex->_num_mips  = 1;
+  // hash the image creation parameters
+  /////////////////////////////////////
 
   uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
@@ -418,6 +414,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       1,               // nummips
       usage);          // usage
 
+  /////////////////////////////////////
+  // create a new VkImage and VkImageView
+  // if the image params have changed
+  // (e.g. size, format, usage)
+  // otherwise, reuse the existing VkImage and VkImageView
+  /////////////////////////////////////
+
   if (vktex->_image_params_hash != image_params_hash) {
     vktex->_image_params_hash = image_params_hash;
 
@@ -426,7 +429,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
-    /////////////////////////////////////
 
     auto IVCI = createImageViewInfo2D(
         vktex->_imgobj->_vkimage,                                //
@@ -441,6 +443,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
     OrkAssert(vktex->_imgobj->_vkimageview != VK_NULL_HANDLE);
 
+    ptex->_impl  = vktex;
+    ptex->_texFormat = tid._dst_format;
+    ptex->_width     = tid._w;
+    ptex->_height    = tid._h;
+    ptex->_depth     = tid._d;
+    ptex->_num_mips  = 1;
+
   }
 
   /////////////////////////////////////
@@ -449,14 +458,10 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
-  // enqueue transition to transfer dst (for copy)
+  // record transition to transfer destination (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
-
-  transfer->_command_buffer = cmdbuf;
-
-  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   cmdbuf_impl->_completionSemaphore = tlsema;
@@ -481,7 +486,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       barrier.get()); //
 
   /////////////////////////////////////
-  // enqueue transfer staging mem -> image
+  // record transfer from staging mem to image
   /////////////////////////////////////
 
   VkBufferImageCopy region{};
@@ -506,7 +511,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       &region); //
 
   /////////////////////////////////////
-  // enqueue transition to sampleable texture
+  // record transition to sampleable texture
   /////////////////////////////////////
 
   barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -527,14 +532,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       barrier.get());
 
   /////////////////////////////////////
+  // enqueue recorded texture update cmdbuf
+  /////////////////////////////////////
 
-  _contextVK->endRecordCommandBuffer(cmdbuf);
-  _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+  _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
+  _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
   /////////////////////////////////////
 
-  // ptex->_target = tid._type;
-  ptex->_impl  = vktex;
   ptex->_dirty = false;
 }
 

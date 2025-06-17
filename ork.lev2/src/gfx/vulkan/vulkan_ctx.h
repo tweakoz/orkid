@@ -661,7 +661,6 @@ using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 struct InFlightTextureTransfer {
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
-  vkcompletionsemaphore_ptr_t _completionSemaphore;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
 struct VulkanTextureObject {
@@ -1159,9 +1158,9 @@ struct StagingBufferSet {
   void free(vkbuffer_ptr_t pbo);
   std::queue<vkbuffer_ptr_t> _pbos;
   std::set<vkbuffer_ptr_t> _pbos_perm;
-  uint64_t _usage = 0;
-  const size_t _size;
   vkcontext_rawptr_t _contextVK;
+  const size_t _size;
+  uint64_t _usage = 0;
 };
 
 using stagingbuffer_set = std::shared_ptr<StagingBufferSet>;
