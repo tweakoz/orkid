@@ -132,15 +132,16 @@ int main(int argc, char** argv,char** envp) {
     fbi->SetClearColor(fvec4(r, g, b, 1));
     fbi->_autoClear = true;
     context->beginFrame();
-    /*
     fbi->PushRtGroup(fbi->_main_rtg.get()); // implicit renderpass api
+    /*
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
     //appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     resources->_material->end(RCFD);    
-    fbi->PopRtGroup(false);*/
+    */
+    fbi->PopRtGroup(false);
     context->endFrame();
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU

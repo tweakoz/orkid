@@ -51,10 +51,14 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
   _rtg_impl->__attachments = nullptr;
 }
 
-VkRtGroupImpl::VkRtGroupImpl(rtgroup_rawptr_t rtg)
-    : _rtg(rtg) {
+VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
+    : _rtg(rtg)
+    , _contextVK(ctxVK) {
   _renderInfo = std::make_shared<VulkanRenderInfo>(rtg);
   _pipelineRenderInfo = std::make_shared<VulkanPipelineRenderInfo>(rtg);
+
+  _cmdbufRTG = std::make_shared<SecondaryCommandBuffer>();
+  auto cbufimpl = ctxVK->_createSecondaryVkCommandBuffer(_cmdbufRTG.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,7 +168,7 @@ void VklRtBufferImpl::_replaceImage(
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(rtgroup);
+  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(_contextVK,rtgroup);
   RTGIMPL->_width           = rtgroup->width();
   RTGIMPL->_height          = rtgroup->height();
   int inumtargets           = rtgroup->numImageBuffers();
@@ -340,6 +344,29 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
     rtb_impl->transitionToRenderTarget(_contextVK,_contextVK->primary_cb());
   }
+
+  /////////////////////////////////////////
+  // autoclear ?
+  /////////////////////////////////////////
+
+  if (_active_rtgroup->_autoclear) {
+    for (int i = 0; i < inumtargets; i++) {
+      auto rtb      = _active_rtgroup->buffer(i);
+      auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+      if (rtb->_usage == "color"_crcu) {
+        rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      } else if (rtb->_usage == "depth"_crcu) {
+        rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      }
+    }
+  }
+
+  /////////////////////////////////////////
+
+  // Begin dynamic rendering
+  auto cbufimpl = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  //vkCmdBeginRendering(cbufimpl->_vkcmdbuf, &RTGIMPL->_renderInfo->_renderinfo);
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,6 +376,8 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   auto finished_rtg = _active_rtgroup;
   rtgroup_rawptr_t next_rtg = mRtGroupStack.top();
   _active_rtgroup = next_rtg;
+  auto RTGIMPL = finished_rtg->_impl.getShared<VkRtGroupImpl>();
+  auto cbufimpl = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
 
   ///////////////////////////////////////////////////
 
@@ -357,6 +386,8 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   //////////////////////////////////////////////
   // RTG commandbuffer complete, pop and execute
   //////////////////////////////////////////////
+
+  //vkCmdEndRendering(cbufimpl->_vkcmdbuf);
 
   //_contextVK->enqueueSecondaryCommandBuffer(finished_rtg->_cmdbuf);
 

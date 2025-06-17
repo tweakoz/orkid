@@ -461,7 +461,7 @@ using rtgroup_attachments_ptr_t = std::shared_ptr<RtGroupAttachments>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRtGroupImpl {
-  VkRtGroupImpl(rtgroup_rawptr_t _rtg);
+  VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t _rtg);
 
   rtgroup_attachments_ptr_t attachments();
 
@@ -469,7 +469,8 @@ struct VkRtGroupImpl {
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;
-
+  vkcontext_rawptr_t _contextVK = nullptr;
+  
   int _width         = 0;
   int _height        = 0;
   int _pipeline_bits = -1;
@@ -478,7 +479,7 @@ struct VkRtGroupImpl {
   vkrenderinfo_ptr_t _renderInfo;
   vkpipelinerenderinfo_ptr_t _pipelineRenderInfo;
 
-  secondary_commandbuffer_ptr_t _cmdbuf;
+  secondary_commandbuffer_ptr_t _cmdbufRTG;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

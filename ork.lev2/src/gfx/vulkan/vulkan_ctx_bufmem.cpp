@@ -231,7 +231,6 @@ VulkanImageObject::~VulkanImageObject() {
     vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
   }
   _imgmem = nullptr;
-  int count = _imgobjcount.fetch_sub(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
