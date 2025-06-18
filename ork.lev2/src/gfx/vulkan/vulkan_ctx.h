@@ -490,6 +490,8 @@ struct VkRtGroupImpl {
   vkpipelinerenderinfo_ptr_t _prinfo_retain;
 
   secondary_commandbuffer_ptr_t _cmdbufRTG;
+  VkCommandBufferBeginInfo _cmdBufCBBI_GFX;
+  VkCommandBufferInheritanceInfo _cmdBufII;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

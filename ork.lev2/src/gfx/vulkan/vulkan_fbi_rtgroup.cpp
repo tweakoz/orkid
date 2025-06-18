@@ -54,6 +54,15 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
 VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
     : _rtg(rtg)
     , _contextVK(ctxVK) {
+  std::string name = "rtg";
+  _cmdbufRTG = std::make_shared<SecondaryCommandBuffer>();
+  _cmdbufRTG->_debugName = name;
+  auto vkcmdbuf = _contextVK->_createSecondaryVkCommandBuffer(_cmdbufRTG.get());
+  _contextVK->_setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, name.c_str());
+  initializeVkStruct(_cmdBufCBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  _cmdBufCBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  initializeVkStruct(_cmdBufII, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  _cmdBufCBBI_GFX.pInheritanceInfo = &_cmdBufII;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -357,32 +366,13 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   }
 
   /////////////////////////////////////////
-
   // Begin dynamic rendering
-  //RTGIMPL->_cmdbufRTG = _contextVK->_beginRecordCommandBuffer("yo",_active_rtgroup );
-  //auto cbufimpl = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  std::string name = "rtg";
-  auto cmdbuf = std::make_shared<SecondaryCommandBuffer>();
-  cmdbuf->_debugName = name;
-  RTGIMPL->_cmdbufRTG = cmdbuf;
-  
-  //logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), name.c_str());
-  auto vkcmdbuf        = _contextVK->_createSecondaryVkCommandBuffer(cmdbuf.get());
-  _contextVK->_recordCommandBuffer = cmdbuf;
+  /////////////////////////////////////////
 
-  _contextVK->_setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, name.c_str());
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  VkCommandBufferInheritanceInfo INHINFO = {};
-  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  CBBI_GFX.pInheritanceInfo = &INHINFO;
-
-  vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
-
+  auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); // vkBeginCommandBuffer does an implicit reset
   RTGIMPL->_rinfo_retain = std::make_shared<VulkanRenderInfo>(rtgroup);
-
-  //vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_rinfo_retain->_renderinfo);
+  vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_rinfo_retain->_renderinfo);
   
 }
 
@@ -401,10 +391,11 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   int num_buf = finished_rtg->numImageBuffers();
 
   //////////////////////////////////////////////
+  // end dynamic rendering
   // RTG commandbuffer complete, pop and execute
   //////////////////////////////////////////////
 
-  //vkCmdEndRendering(cbufimpl->_vkcmdbuf);
+  vkCmdEndRendering(cbufimpl->_vkcmdbuf);
   vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
   cbufimpl->_recorded  = true;
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
