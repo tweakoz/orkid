@@ -17,6 +17,7 @@ static logchannel_ptr_t logchan_txi = logger()->createChannel("VKTXI", fvec3(0.8
 VkTextureInterface::VkTextureInterface(vkcontext_rawptr_t ctx)
     : TextureInterface(ctx)
     , _contextVK(ctx) {
+    _seccmdbufpool_xfer = std::make_shared<SecCmdBufPool>(SecCmdBufPoolAdapter(ctx));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,7 +60,7 @@ SbsPoolAdapter::SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t u
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkbuffer_ptr_t SbsPoolAdapter::alloc() {
+vkbuffer_ptr_t SbsPoolAdapter::allocFresh() {
   return std::make_shared<VulkanBuffer>(_contextVK, _size, _usage,"stagingBufferSet");
 }
 
@@ -361,6 +362,32 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   return ptex;
 }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+std::atomic<int> InFlightTextureTransfer::_xfercount = 0;
+std::atomic<size_t> InFlightTextureTransfer::_xferSN = 0;
+
+InFlightTextureTransfer::InFlightTextureTransfer() {
+  int count = _xfercount.fetch_add(1);
+  int SN = _xferSN.fetch_add(1);
+  if((count&0xff)==0){
+    logchan_txi->log("InFlightTextureTransfer count<%d> SN<%d>", count, SN);
+  }
+}
+InFlightTextureTransfer::~InFlightTextureTransfer(){
+  int count = _xfercount.fetch_sub(1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SecCmdBufPoolAdapter::SecCmdBufPoolAdapter(vkcontext_rawptr_t ctxVK)
+    : _contextVK(ctxVK) {
+    }
+
+secondary_commandbuffer_ptr_t SecCmdBufPoolAdapter::allocFresh() {
+  return _contextVK->beginRecordCommandBuffer("SecCmdBufPoolAdapter");
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
@@ -385,14 +412,15 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto set             = stagingBufferPoolForSrcOfSize(transfer_size);
   auto staging_buffer  = set->alloc();
   OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
-
+  //printf("alloc stgbuf<%p>\n", (void*)staging_buffer.get());
   /////////////////////////////////////
   // create a transfer object
   /////////////////////////////////////
 
   auto transfer = std::make_shared<InFlightTextureTransfer>();
   vktex->_inflight_transfers.insert(transfer);
-  transfer->_command_buffer = _contextVK->beginRecordCommandBuffer("VkTextureInterface::initTextureFromData");
+  transfer->_command_buffer = _seccmdbufpool_xfer->alloc();
+  _contextVK->_recordCommandBuffer = transfer->_command_buffer;
   transfer->_staging_buffer = staging_buffer;
   auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
@@ -402,12 +430,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   auto tlsema         = std::make_shared<VulkanCompletionSemaphore>(this->_contextVK);
+  cmdbuf_impl->_completionSemaphore = tlsema;
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     set->free(staging_buffer);
+    _seccmdbufpool_xfer->free(transfer->_command_buffer);
+    printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
   };
-  cmdbuf_impl->_completionSemaphore = tlsema;
-
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)
   //  after this is complete,

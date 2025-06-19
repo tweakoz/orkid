@@ -161,7 +161,6 @@ void Context::beginFrame(bool visual) {
   mpCurrentObject = 0;
 
   mRenderContextInstData = 0;
-
   _doBeginFrame();
 
   /////////////////////////////////////

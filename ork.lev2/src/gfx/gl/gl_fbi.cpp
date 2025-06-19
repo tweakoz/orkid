@@ -39,7 +39,6 @@ GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
     : FrameBufferInterface(target)
     , mTargetGL(target) {
 
-
 }
 
 GlFrameBufferInterface::~GlFrameBufferInterface() {

@@ -474,6 +474,7 @@ struct VkRtGroupImpl {
   VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t _rtg);
 
   rtgroup_attachments_ptr_t attachments();
+  vkrenderinfo_ptr_t renderinfo();
 
   rtgroup_rawptr_t _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
@@ -663,8 +664,12 @@ struct VulkanSamplerObject {
 using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 
 struct InFlightTextureTransfer {
+  InFlightTextureTransfer();
+  ~InFlightTextureTransfer();
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
+  static std::atomic<int> _xfercount;
+  static std::atomic<size_t> _xferSN;
 };
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
 struct VulkanTextureObject {
@@ -1157,7 +1162,7 @@ struct SbsPoolAdapter {
   static constexpr size_t _num_alloc_per_batch = 2;
   /////////////////////
   SbsPoolAdapter(vkcontext_rawptr_t ctxVK, size_t size, uint64_t usage);
-  vkbuffer_ptr_t alloc();
+  item_t allocFresh();
   /////////////////////
   vkcontext_rawptr_t _contextVK = nullptr;
   const size_t _size;
@@ -1165,6 +1170,18 @@ struct SbsPoolAdapter {
 };
 using StagingBufferPool = ObjectPoolX<SbsPoolAdapter>;
 using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
+///////////////////////////////////////////////////////////////////////////////
+struct SecCmdBufPoolAdapter {
+  using item_t = secondary_commandbuffer_ptr_t;
+  static constexpr size_t _num_alloc_per_batch = 2;
+  /////////////////////
+  SecCmdBufPoolAdapter(vkcontext_rawptr_t ctxVK);
+  item_t allocFresh();
+  /////////////////////
+  vkcontext_rawptr_t _contextVK = nullptr;
+};
+using SecCmdBufPool = ObjectPoolX<SecCmdBufPoolAdapter>;
+using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkTextureInterface final : public TextureInterface {
@@ -1187,6 +1204,8 @@ struct VkTextureInterface final : public TextureInterface {
 
   stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
   std::unordered_map<size_t, stagingbufferpool_ptr_t> _stagingSrcBuffers;
+
+  sseccmdbufpool_ptr_t _seccmdbufpool_xfer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1357,6 +1376,8 @@ public:
 
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) final;
   void _endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) final;
+
+  void _beginRecordCommandBuffer(secondary_commandbuffer_ptr_t cbuf);
 
   //////////////////////////////////////////////
   // Interfaces

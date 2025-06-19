@@ -67,6 +67,13 @@ VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
+  _rinfo_retain = std::make_shared<VulkanRenderInfo>(_rtg); 
+  return _rinfo_retain;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
   if (__attachments) {
     return __attachments;
@@ -371,8 +378,8 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
 
   auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); // vkBeginCommandBuffer does an implicit reset
-  RTGIMPL->_rinfo_retain = std::make_shared<VulkanRenderInfo>(rtgroup);
-  vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_rinfo_retain->_renderinfo);
+  auto rinfo = RTGIMPL->renderinfo();
+  vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
   
 }
 
@@ -418,12 +425,13 @@ void VklRtBufferImpl::transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkpricm
 
   //OrkAssert(ctxVK->_cur_renderpass);
 
-  if (_imgobj) {
+  VkImage image = _imgobj ? _imgobj->_vkimage : _vkimg;
+  if (image != VK_NULL_HANDLE) {
 
     auto new_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     auto barrier = createImageBarrier(
-        _imgobj->_vkimage,                        // VkImage image
+        image,          // VkImage image
         _currentLayout, // VkImageLayout oldLayout
         new_layout, // VkImageLayout newLayout
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask

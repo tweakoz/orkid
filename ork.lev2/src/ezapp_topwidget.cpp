@@ -134,12 +134,15 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   ///////////////////////////
   if (_mainwin->_onDraw) {
     EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
-    _mainwin->_onDraw(drwev);
-    auto ctxbase = drwev->GetTarget()->mCtxBase;
+    auto ctx = drwev->GetTarget();
+    ctx->beginFrame();
+    if(ctx->FBI()->_main_rtg){
+      _mainwin->_onDraw(drwev);
+    }
+    ctx->endFrame();
     EASY_END_BLOCK;
-
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
-    drwev->GetTarget()->swapBuffers(ctxbase);
+    ctx->swapBuffers(ctx->mCtxBase);
     EASY_END_BLOCK;
     ezapp->_render_count.fetch_add(1);
   }

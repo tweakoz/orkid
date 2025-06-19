@@ -432,6 +432,7 @@ void VkContext::_doBeginFrame() {
   // Poll timeline semaphores
   for (auto semaphore : _pendingOneShotSemas) {
     if(semaphore->isSignalled()){
+      // If the semaphore is signalled, execute its completion callback      
       if(semaphore->_onComplete!=nullptr){
         // If the semaphore has a completion callback, execute it
         semaphore->_onComplete();

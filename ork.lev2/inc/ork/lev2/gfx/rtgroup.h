@@ -52,6 +52,9 @@ struct RtBuffer final {
   uint64_t _usage = 0;
   std::string _debugName;
   texturearraysliceref_ptr_t _ta_slice;
+  fvec4 _clearColor = fvec4::Black();
+  float _clearDepth = 1.0f;
+  bool _autoclear = true;
 };
 
 struct RtGroup final {

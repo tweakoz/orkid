@@ -27,9 +27,11 @@ VulkanRenderInfo::VulkanRenderInfo(rtgroup_rawptr_t rtg)
     rai.resolveMode = VK_RESOLVE_MODE_NONE;
     // rai.resolveImageView = VkImageView();
     // rai.resolveImageLayout = VkImageLayout();
-    rai.loadOp           = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    bool clear = buf->_autoclear;
+    rai.loadOp           = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     rai.storeOp          = VK_ATTACHMENT_STORE_OP_STORE;
-    rai.clearValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    auto cc = buf->_clearColor;
+    rai.clearValue.color = {{cc.x,cc.y,cc.z,cc.w}};
     _rainfos_color.push_back(rai);
   }
   auto dbuf                            = rtg->_depthBuffer;

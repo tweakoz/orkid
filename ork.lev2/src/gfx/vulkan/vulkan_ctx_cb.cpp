@@ -12,6 +12,10 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkcb = logger()->createChannel("VKCB", fvec3(1, 1, .9));
 
+void VkContext::_beginRecordCommandBuffer(secondary_commandbuffer_ptr_t cbuf) {
+  
+}
+
 secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) {
   auto cmdbuf = std::make_shared<SecondaryCommandBuffer>();
   cmdbuf->_debugName = name;
@@ -153,7 +157,6 @@ void VkContext::enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdb
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   OrkAssert(impl->_recorded);
   _pendingOneShotCommands.push_back(cmdbuf);
-  
   // Track semaphores separately for batch submission
   if (impl->_completionSemaphore) {
     _pendingOneShotSemas.insert(impl->_completionSemaphore);

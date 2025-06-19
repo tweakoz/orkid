@@ -357,7 +357,7 @@ struct ObjectPoolX {
       for (size_t i = 0; //
 				       i<pool_adapter_t::_num_alloc_per_batch; //
 							 i++) { //
-        item_t item = _config.alloc();
+        item_t item = _config.allocFresh();
         _retainedItems.push_back(item);
         _freeItems.push(item);
       }

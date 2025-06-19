@@ -128,11 +128,11 @@ int main(int argc, char** argv,char** envp) {
     float r             = float(rand() % 256) / 255.0f;
     float g             = float(rand() % 256) / 255.0f;
     float b             = float(rand() % 256) / 255.0f;
-
-    fbi->SetClearColor(fvec4(r, g, b, 1));
-    fbi->_autoClear = true;
-    context->beginFrame();
-    fbi->PushRtGroup(fbi->_main_rtg.get()); // implicit renderpass api
+    auto main_rtg = fbi->_main_rtg;
+    auto main_rtb = main_rtg->buffer(0);
+    main_rtb->_autoclear = true;
+    main_rtb->_clearColor = fvec4(r, g, b, 1);
+    fbi->PushRtGroup(main_rtg.get()); // implicit renderpass api
     /*
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
@@ -142,7 +142,6 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->end(RCFD);    
     */
     fbi->PopRtGroup(false);
-    context->endFrame();
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
 
