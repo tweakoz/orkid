@@ -100,6 +100,7 @@ TEST(memcpy_accel) {
 
 
 /*
+
 test results m3 max jun 20, 2025
 
 memcpy_c:        NumRuns<128> GiB_copied<32.000000> elapsed<616.427302 msec> ops/sec<207.648168> GiB/sec<51.912042>
@@ -110,6 +111,17 @@ memcpy_neon:     NumRuns<128> GiB_copied<32.000000> elapsed<695.888758 msec> ops
 memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<693.061113 msec> ops/sec<184.687898> GiB/sec<46.171974>
 memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<702.507734 msec> ops/sec<182.204400> GiB/sec<45.551100>
 memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<579.061508 msec> ops/sec<221.047330> GiB/sec<55.261832>
+
+test results m3 ultra jun 20, 2025
+
+memcpy_c:        NumRuns<128> GiB_copied<32.000000> elapsed<590.799332 msec> ops/sec<216.655628> GiB/sec<54.163907>
+memcpy_std:      NumRuns<128> GiB_copied<32.000000> elapsed<560.705721 msec> ops/sec<228.283742> GiB/sec<57.070935>
+memcpy_fast:     NumRuns<128> GiB_copied<32.000000> elapsed<184.188843 msec> ops/sec<694.938945> GiB/sec<173.734736>
+memcpy_async:    NumRuns<128> GiB_copied<32.000000> elapsed<171.948195 msec> ops/sec<744.410259> GiB/sec<186.102565>
+memcpy_neon:     NumRuns<128> GiB_copied<32.000000> elapsed<696.741343 msec> ops/sec<183.712365> GiB/sec<45.928091>
+memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<687.877655 msec> ops/sec<186.079602> GiB/sec<46.519900>
+memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<697.211742 msec> ops/sec<183.588417> GiB/sec<45.897104>
+memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<555.666447 msec> ops/sec<230.354020> GiB/sec<57.588505>
 
 
 */
