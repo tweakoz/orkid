@@ -27,20 +27,8 @@ bool VkContext::HaveExtension(const std::string& extname) {
   return false;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
-vkcontext_ptr_t VkContext::makeShared() {
-  struct VkContextX : public VkContext {
-    VkContextX()
-        : VkContext() {
-    }
-  };
-  auto ctx = std::make_shared<VkContextX>();
-  return ctx;
-}*/
-
 ///////////////////////////////////////////////////////////////////////////////
+
 void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   _vkphysicaldevice = vk_devinfo->_phydev;
   _vkdeviceinfo     = vk_devinfo;
@@ -101,7 +89,7 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
   _device_extensions.push_back("VK_KHR_portability_subset");
-  //_device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+  _device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
@@ -153,6 +141,11 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
   }
+
+  _fetchDeviceProcAddr( _vkCmdBeginRenderingKHR,"vkCmdBeginRenderingKHR");
+  _fetchDeviceProcAddr( _vkCmdEndRenderingKHR,"vkCmdEndRenderingKHR");
+   OrkAssertI(_vkCmdBeginRenderingKHR != nullptr, "_vkCmdBeginRenderingKHR function pointer is null!");
+   OrkAssertI(_vkCmdEndRenderingKHR != nullptr, "_vkCmdEndRenderingKHR function pointer is null!");
 
   // UGLY!!!
 

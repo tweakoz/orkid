@@ -99,7 +99,7 @@ vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
 
 VulkanInstance::VulkanInstance() {
 
-  static auto gctx = CtxGLFW::globalOffscreenContext();
+  printf( "VulkanInstance::VulkanInstance() HERE!!!\n");
 
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -292,6 +292,8 @@ VulkanInstance::VulkanInstance() {
 
   if (_debugEnabled)
     _setupDebugMessenger();
+
+      static auto gctx = CtxGLFW::globalOffscreenContext();
 
 }
 

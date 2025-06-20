@@ -9,7 +9,7 @@
 
 #include <ork/util/choiceman.h>
 #include <ork/kernel/fixedlut.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/kernel/any.h>
 #include <ork/util/choiceman.h>
 #include <ork/kernel/msgrouter.inl>

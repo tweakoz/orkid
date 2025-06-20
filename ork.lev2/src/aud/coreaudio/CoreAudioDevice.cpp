@@ -27,7 +27,7 @@ static logchannel_ptr_t logchan_coreaudio = logger()->createChannel("audio.CA", 
 
 void EnumerateMidiDevices() {
   int n                = MIDIGetNumberOfExternalDevices();
-  MIDIEntityRef entity = NULL;
+  MIDIEntityRef entity = 0;
 
   CFStringRef pname, pmanuf, pmodel;
   char name[64], manuf[64], model[64];

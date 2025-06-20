@@ -14,7 +14,7 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/math/gradient.h>
 

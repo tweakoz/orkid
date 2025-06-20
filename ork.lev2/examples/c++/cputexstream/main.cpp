@@ -125,9 +125,10 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
-    float r             = float(rand() % 256) / 255.0f;
-    float g             = float(rand() % 256) / 255.0f;
-    float b             = float(rand() % 256) / 255.0f;
+    float fi = framecounter * 0.01f;
+    float r             = sinf(fi * 2.1f) * 0.5f + 0.5f;
+    float g             = cosf(fi * 3.13f) * 0.5f + 0.5f;
+    float b             = sinf(fi * 4.17f) * 0.5f + 0.5f;
     auto main_rtg = fbi->_main_rtg;
     auto main_rtb = main_rtg->buffer(0);
     main_rtb->_autoclear = true;

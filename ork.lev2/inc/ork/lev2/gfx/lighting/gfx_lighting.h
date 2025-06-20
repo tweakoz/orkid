@@ -15,7 +15,7 @@
 #include <ork/math/frustum.h>
 #include <ork/kernel/orklut.h>
 #include <ork/kernel/fixedlut.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/kernel/Array.h>
 
 #include <ork/config/config.h>

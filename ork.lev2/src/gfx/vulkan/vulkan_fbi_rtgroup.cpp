@@ -1,3 +1,4 @@
+
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -68,8 +69,9 @@ VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
-  _rinfo_retain = std::make_shared<VulkanRenderInfo>(_rtg); 
-  return _rinfo_retain;
+  auto rinfo = std::make_shared<VulkanRenderInfo>(_rtg); 
+  _renderinfo_set.insert(rinfo);
+  return rinfo;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,7 +351,6 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   /////////////////////////////////////////
 
   int inumtargets = _active_rtgroup->numImageBuffers();
-  //auto vkcmdbuf   = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
   for (int i = 0; i < inumtargets; i++) {
     auto rtb      = _active_rtgroup->buffer(i);
     auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
@@ -364,11 +365,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     for (int i = 0; i < inumtargets; i++) {
       auto rtb      = _active_rtgroup->buffer(i);
       auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-      if (rtb->_usage == "color"_crcu) {
-        rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      } else if (rtb->_usage == "depth"_crcu) {
-        rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      }
+      rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     }
   }
 
@@ -377,9 +374,11 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   /////////////////////////////////////////
 
   auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0); // vkBeginCommandBuffer does an implicit reset
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); // vkBeginCommandBuffer does an implicit reset
   auto rinfo = RTGIMPL->renderinfo();
-  vkCmdBeginRendering(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
+
+  _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
   
 }
 
@@ -402,7 +401,7 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   // RTG commandbuffer complete, pop and execute
   //////////////////////////////////////////////
 
-  vkCmdEndRendering(cbufimpl->_vkcmdbuf);
+  _contextVK->_vkCmdEndRenderingKHR(cbufimpl->_vkcmdbuf);
   vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
   cbufimpl->_recorded  = true;
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);

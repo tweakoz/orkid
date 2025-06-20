@@ -12,7 +12,7 @@
 #include <ork/object/AutoConnector.h>
 #include <ork/kernel/string/ArrayString.h>
 #include <ork/kernel/fixedlut.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/kernel/any.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/util/choiceman.h>

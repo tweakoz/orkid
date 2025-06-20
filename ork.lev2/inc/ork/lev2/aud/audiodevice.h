@@ -17,7 +17,7 @@
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/tempstring.h>
 #include <ork/dataflow/dataflow.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/math/multicurve.h>
 #include <ork/math/TransformNode.h>
 #include <ork/math/basicfilters.h>

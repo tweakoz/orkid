@@ -278,7 +278,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     /////////////////////////////////////
 
     auto set            = stagingBufferPoolForSrcOfSize(level_length);
-    auto staging_buffer = set->alloc();
+    auto staging_buffer = set->borrowItem();
     staging_buffer->copyFromHost(level_data, level_length);
     // vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
@@ -367,12 +367,29 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 std::atomic<int> InFlightTextureTransfer::_xfercount = 0;
 std::atomic<size_t> InFlightTextureTransfer::_xferSN = 0;
 
-InFlightTextureTransfer::InFlightTextureTransfer() {
+InFlightTextureTransfer::InFlightTextureTransfer(vkcontext_rawptr_t ctx, //
+                                                 vkbuffer_ptr_t stg_buffer, //
+                                                 secondary_commandbuffer_ptr_t cmd_buffer) //
+  : _staging_buffer(stg_buffer) //
+  , _command_buffer(cmd_buffer) { //
   int count = _xfercount.fetch_add(1);
   int SN = _xferSN.fetch_add(1);
   if((count&0xff)==0){
     logchan_txi->log("InFlightTextureTransfer count<%d> SN<%d>", count, SN);
   }
+  auto cmdbuf_impl = _command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+
+  VkCommandBufferInheritanceInfo inhinfo = {};
+  initializeVkStruct(inhinfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  CBBI_GFX.pInheritanceInfo = &inhinfo;
+  vkResetCommandBuffer(cmdbuf_impl->_vkcmdbuf, 0);
+  vkBeginCommandBuffer(cmdbuf_impl->_vkcmdbuf,  &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+
 }
 InFlightTextureTransfer::~InFlightTextureTransfer(){
   int count = _xfercount.fetch_sub(1);
@@ -409,19 +426,18 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   size_t transfer_size = tid.computeDstSize();
-  auto set             = stagingBufferPoolForSrcOfSize(transfer_size);
-  auto staging_buffer  = set->alloc();
-  OrkAssert(staging_buffer->_vkbuffer != VK_NULL_HANDLE);
-  //printf("alloc stgbuf<%p>\n", (void*)staging_buffer.get());
+  auto poolForSize     = stagingBufferPoolForSrcOfSize(transfer_size);
+  auto staging_buffer  = poolForSize->borrowItem();
+  auto command_buffer = _seccmdbufpool_xfer->borrowItem();
   /////////////////////////////////////
   // create a transfer object
   /////////////////////////////////////
 
-  auto transfer = std::make_shared<InFlightTextureTransfer>();
+  auto transfer = std::make_shared<InFlightTextureTransfer>( _contextVK,     //
+                                                             staging_buffer, //
+                                                             command_buffer );
   vktex->_inflight_transfers.insert(transfer);
-  transfer->_command_buffer = _seccmdbufpool_xfer->alloc();
   _contextVK->_recordCommandBuffer = transfer->_command_buffer;
-  transfer->_staging_buffer = staging_buffer;
   auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -433,9 +449,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   cmdbuf_impl->_completionSemaphore = tlsema;
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
-    set->free(staging_buffer);
-    _seccmdbufpool_xfer->free(transfer->_command_buffer);
-    printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
+    poolForSize->returnItem(staging_buffer);
+    _seccmdbufpool_xfer->returnItem(transfer->_command_buffer);
+    //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
   };
   /////////////////////////////////////
   // copy data from application to staging buffer (synchronously)

@@ -9,6 +9,19 @@ import os
 import obt.deco
 import obt.env
 import obt.path
+import obt.host
+
+OBT_DYLD_FALLBACK_LIBRARY_PATH = str(obt.path.libs())
+DYLD_LIBRARY_PATH = str(obt.path.libs())
+if obt.host.IsDarwin:
+  DYLD_LIBRARY_PATH += ":/opt/homebrew/lib"
+ENV_DYLD_LIBRARY_PATH = os.environ.get("DYLD_LIBRARY_PATH", "")
+ENV_OBT_DYLD_FALLBACK_LIBRARY_PATH = os.environ.get("OBT_DYLD_FALLBACK_LIBRARY_PATH", "")
+ORKID_SETUP_VULKAN_FN = "export ORKID_GRAPHICS_API=VULKAN; "
+ORKID_SETUP_VULKAN_FN += f"export DYLD_LIBRARY_PATH=${ENV_DYLD_LIBRARY_PATH}:{DYLD_LIBRARY_PATH}; "
+ORKID_SETUP_VULKAN_FN += f"export OBT_DYLD_FALLBACK_LIBRARY_PATH=${ENV_OBT_DYLD_FALLBACK_LIBRARY_PATH}:{OBT_DYLD_FALLBACK_LIBRARY_PATH}; "
+# todo figure out how to get DYLD_* to survive bash stack push
+#   alternatively, get rid of vulkan's need for DYLD_* in the first place
 
 def setup():
 
@@ -73,4 +86,6 @@ def extend_bashrc():
        + ["ork.goto.data_root() { cd ${ORKID_WORKSPACE_DIR}/ork.data; };\n"] \
        + ["ork.goto.data_src() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
        + ["ork.goto.data_test() { cd ${ORKID_WORKSPACE_DIR}/ork.data/src; };\n"] \
-       + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"]
+       + ["ork.goto.data_lev2() { cd ${ORKID_WORKSPACE_DIR}/ork.data/platform_lev2; };\n"] \
+       + ["ork.use.vulkan() { " + ORKID_SETUP_VULKAN_FN + "};\n"] 
+       

@@ -65,11 +65,11 @@ struct LayerFragment
 	void Copy( const LayerFragment* from );
 	void MixDown(StereoFragment*dest) const;
 	
-	int mNumChannels;
-	int mNumFrames;
-	int mFrameAccum;
-	Fragment* mChannels;
-	Layer* mLayer;
+	int mNumChannels = 0;
+	int mNumFrames = 0;
+	int mFrameAccum = 0;
+	Fragment* mChannels = nullptr;
+	Layer* mLayer = nullptr;
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,13 +89,14 @@ struct Layer
 	void ResizeFragments(int count);
 	void MakeTexture();
 	void Trackify();
-	uint32_t mTextureObject;
-	bool mEnabled;
-	bool mSolo;
+
+	uint32_t mTextureObject = 0;
+	bool mEnabled = true;
+	bool mSolo = false;
 	std::string mName;
 	std::vector<Track*> mTracks;
-	float mAmplitude;
-	int mTimeShift;
+	float mAmplitude = 1.0f;;
+	int mTimeShift = 0;
 
 private:
 	std::vector<LayerFragment*> mFragments;
@@ -147,7 +148,7 @@ struct PatternPlayback
 	const Pattern* the_pattern;
 
 private:
-	int mSegIdx;
+	int mSegIdx = 0;
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,10 +184,10 @@ struct Arrangement
 private:
 	std::map<std::string,Pattern*> mPatterns;
 	std::vector<Pattern*> mPatternSequence;
-	int mPatternNext;
-	int mCurPatIdx;
-	int mPatSerial;
-	bool mPatternLock;
+	int mPatternNext = -1;
+	int mCurPatIdx = -1;
+	int mPatSerial = -1;
+	bool mPatternLock = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -203,10 +204,10 @@ struct ObjectPool
 	const int mMaxObjects;
 	ork::atomic<int> mNumObjectsProcessed;
 	ork::atomic<int> mNumObjectsOut;
-	bool mGoingDown;
+	bool mGoingDown = false;
 
 	typedef std::function<void(int)> usage_cb_t;
-	usage_cb_t mUsageCb;
+	usage_cb_t mUsageCb = nullptr;
 
 };
 ///////////////////////////////////////////////////////////////////////////////

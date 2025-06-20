@@ -31,7 +31,7 @@ struct GLFWwindow;
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/file/chunkfile.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -493,6 +493,7 @@ struct VkRtGroupImpl {
   secondary_commandbuffer_ptr_t _cmdbufRTG;
   VkCommandBufferBeginInfo _cmdBufCBBI_GFX;
   VkCommandBufferInheritanceInfo _cmdBufII;
+  std::unordered_set<vkrenderinfo_ptr_t> _renderinfo_set;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -664,7 +665,9 @@ struct VulkanSamplerObject {
 using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 
 struct InFlightTextureTransfer {
-  InFlightTextureTransfer();
+  InFlightTextureTransfer(vkcontext_rawptr_t ctx, 
+                          vkbuffer_ptr_t stg_buffer,
+                          secondary_commandbuffer_ptr_t cmd_buffer);
   ~InFlightTextureTransfer();
   vkbuffer_ptr_t _staging_buffer;
   secondary_commandbuffer_ptr_t _command_buffer;
@@ -1180,7 +1183,7 @@ struct SecCmdBufPoolAdapter {
   /////////////////////
   vkcontext_rawptr_t _contextVK = nullptr;
 };
-using SecCmdBufPool = ObjectPoolX<SecCmdBufPoolAdapter>;
+using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,256>;
 using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1476,6 +1479,8 @@ public:
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT      = nullptr;
   PFN_vkCmdDebugMarkerEndEXT _vkCmdDebugMarkerEndEXT          = nullptr;
   PFN_vkCmdDebugMarkerInsertEXT _vkCmdDebugMarkerInsertEXT    = nullptr;
+  PFN_vkCmdBeginRendering _vkCmdBeginRenderingKHR             = nullptr;
+  PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

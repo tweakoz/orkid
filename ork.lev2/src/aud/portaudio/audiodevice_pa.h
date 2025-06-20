@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/lev2/aud/audiodevice.h>
 
 namespace ork::lev2 {

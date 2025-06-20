@@ -17,7 +17,7 @@
 #pragma GCC diagnostic pop
 
 #include <ork/kernel/mutex.h>
-#include <ork/kernel/orkpool.h>
+#include <ork/kernel/orkpool.inl>
 #include <ork/kernel/concurrent_queue.h>
 
 #include <ork/ecs/physics/bullet.h>
