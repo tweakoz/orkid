@@ -19,8 +19,8 @@ VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     _slp_cache = _GVI->_slp_cache;
 
     _default_rasterstate = std::make_shared<lev2::RasterState>();
-    //_default_rasterstate->_depthtest = EDepthTest::OFF;
-    //_default_rasterstate->_culltest = ECullTest::OFF;
+    _default_rasterstate->_depthtest = EDepthTest::OFF;
+    _default_rasterstate->_culltest = ECullTest::OFF;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
