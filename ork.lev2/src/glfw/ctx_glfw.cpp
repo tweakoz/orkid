@@ -1154,7 +1154,7 @@ struct PopupImpl {
     glfwShowWindow(_glfwPopupWindow);
 
     _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
-    _rtgroup->_pseudoRTG = true;
+    _rtgroup->_usage = "popup"_crcu;
     _rtgroup->mNumMrts   = 1;
     _rtgroup->_autoclear = false;
 

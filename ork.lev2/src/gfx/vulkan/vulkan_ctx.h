@@ -434,12 +434,22 @@ struct VulkanPipelineRenderInfo {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VkTransitionParams {
+    VkImageLayout layout;
+    VkAccessFlagBits srcAccess, dstAccess;
+    VkPipelineStageFlags srcStage, dstStage;
+    bool colorOnly = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
 
-  void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
-  void transitionToTexture(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
-  void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkpricmdbufimpl_ptr_t cb);
+  void _transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& params);
+  void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
+  void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
+  void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
@@ -475,6 +485,10 @@ struct VkRtGroupImpl {
 
   rtgroup_attachments_ptr_t attachments();
   vkrenderinfo_ptr_t renderinfo();
+
+  void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
+  void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
+  void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
 
   rtgroup_rawptr_t _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
@@ -1133,7 +1147,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   //////////////////////////////////////////////
 
-  void _present();
   freestyle_mtl_ptr_t utilshader();
   vkrtgrpimpl_ptr_t _createRtGroupImpl(rtgroup_rawptr_t rtg);
 

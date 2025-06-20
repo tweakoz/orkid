@@ -110,6 +110,7 @@ void VkFrameBufferInterface::_initSwapChain() {
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
   SCINFO.surface = _contextVK->_vkpresentationsurface;
+  SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
 
   auto ctx_glfw = _contextVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
   auto window   = ctx_glfw->_glfwWindow;
@@ -235,6 +236,7 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto ork_color_format = VkFormatConverter::convertBufferFormat(surfaceFormat.format);
 
     auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, true);
+    rtg->_usage   = "swapchain"_crcu; 
     auto rtb_color = rtg->createRenderTarget(ork_color_format, "present"_crcu);
     auto rtg_impl  = _createRtGroupImpl(rtg.get());
     rtg->_name     = FormatString("vk-swapchain-%d", i);

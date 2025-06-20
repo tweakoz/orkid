@@ -70,12 +70,20 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   if (auto as_impl = rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     rtg_impl = as_impl.value();
   } else {
-    if (rtgroup->_pseudoRTG) { // popups ?
-      rtg_impl = _buildRtgImplForMainSurface(rtgroup);
-    } else if (rtgroup->_slice) {
-      rtg_impl = _buildRtgImplFromTextureArraySlice(rtgroup);
-    } else {
-      rtg_impl = _buildRtgImplFromScratch(rtgroup);
+    switch(rtgroup->_usage) {
+      case "user"_crcu: // user defined rtgroup
+        _regenRtgImplFromScratch(rtgroup);
+        break;
+      case "swapchain"_crcu: // swapchain
+      case "popup"_crcu: // popup
+        rtg_impl = _buildRtgImplForMainSurface(rtgroup);
+        break;
+      case "arrayslice"_crcu: // popup
+        rtg_impl = _buildRtgImplFromTextureArraySlice(rtgroup);
+        break;
+      default:
+        OrkAssert(false); // unknown usage
+        break;
     }
   }
 

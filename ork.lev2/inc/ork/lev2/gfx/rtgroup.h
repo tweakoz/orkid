@@ -103,7 +103,7 @@ struct RtGroup final {
   bool _clearMaskColor = true;
   bool _clearMaskDepth = true;
   std::string _name;
-  bool _pseudoRTG = false;
+  uint64_t _usage = "user"_crcu; 
   rendertarget_rtgroup_ptr_t _rendertarget;
   TextureArraySliceRef* _slice = nullptr;
 };
