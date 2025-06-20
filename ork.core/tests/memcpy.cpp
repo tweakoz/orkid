@@ -78,20 +78,20 @@ TEST(memcpy_async) {
 
 #if defined(ORK_ARCHITECTURE_ARM_64)
 TEST(memcpy_neon) {
-  _harness([](void* dest, const void* src, size_t n){_memcpy_neon(dest,src,n);},"memcpy_fast");
+  _harness([](void* dest, const void* src, size_t n){_memcpy_neon(dest,src,n);},"memcpy_neon");
 }
 TEST(_memcpy_cache_optimized) {
-  _harness([](void* dest, const void* src, size_t n){_memcpy_cache_optimized(dest,src,n);},"memcpy_fast");
+  _harness([](void* dest, const void* src, size_t n){_memcpy_cache_optimized(dest,src,n);},"memcpy_cache_optimized");
 }
 TEST(memcpy_prefetch) {
-  _harness([](void* dest, const void* src, size_t n){_memcpy_prefetch(dest,src,n);},"memcpy_fast");
+  _harness([](void* dest, const void* src, size_t n){_memcpy_prefetch(dest,src,n);},"memcpy_prefetch");
 }
 TEST(memcpy_asm) {
-  _harness([](void* dest, const void* src, size_t n){_memcpy_asm(dest,src,n);},"memcpy_fast");
+  _harness([](void* dest, const void* src, size_t n){_memcpy_asm(dest,src,n);},"memcpy_asm");
 }
 #if defined(__APPLE__)
 TEST(memcpy_accel) {
-  _harness([](void* dest, const void* src, size_t n){_memcpy_accel(dest,src,n);},"memcpy_fast");
+  _harness([](void* dest, const void* src, size_t n){_memcpy_accel(dest,src,n);},"memcpy_accel");
 }
 #endif
 
@@ -102,14 +102,14 @@ TEST(memcpy_accel) {
 /*
 test results m3 max jun 20, 2025
 
-memcpy_c:     NumRuns<128> GiB_copied<32.000000> elapsed<614.298820 msec> ops/sec<208.367647> GiB/sec<52.091912>
-memcpy_std:   NumRuns<128> GiB_copied<32.000000> elapsed<583.938658 msec> ops/sec<219.201106> GiB/sec<54.800277>
-memcpy_fast:  NumRuns<128> GiB_copied<32.000000> elapsed<297.715187 msec> ops/sec<429.941117> GiB/sec<109.285409>
-memcpy_async: NumRuns<128> GiB_copied<32.000000> elapsed<298.758864 msec> ops/sec<428.439170> GiB/sec<107.109793>
-memcpy_fast:  NumRuns<128> GiB_copied<32.000000> elapsed<712.167978 msec> ops/sec<179.732877> GiB/sec<44.933219>
-memcpy_fast:  NumRuns<128> GiB_copied<32.000000> elapsed<706.161022 msec> ops/sec<181.261775> GiB/sec<45.315444>
-memcpy_fast:  NumRuns<128> GiB_copied<32.000000> elapsed<712.764502 msec> ops/sec<179.582456> GiB/sec<44.895614>
-memcpy_fast:  NumRuns<128> GiB_copied<32.000000> elapsed<581.959248 msec> ops/sec<219.946672> GiB/sec<54.986668>
+memcpy_c:        NumRuns<128> GiB_copied<32.000000> elapsed<616.427302 msec> ops/sec<207.648168> GiB/sec<51.912042>
+memcpy_std:      NumRuns<128> GiB_copied<32.000000> elapsed<578.335822 msec> ops/sec<221.324696> GiB/sec<55.331174>
+memcpy_fast:     NumRuns<128> GiB_copied<32.000000> elapsed<295.639157 msec> ops/sec<432.960238> GiB/sec<108.240060>
+memcpy_async:    NumRuns<128> GiB_copied<32.000000> elapsed<297.343016 msec> ops/sec<430.479255> GiB/sec<107.619814>
+memcpy_neon:     NumRuns<128> GiB_copied<32.000000> elapsed<695.888758 msec> ops/sec<183.937445> GiB/sec<45.984361>
+memcpy_prefetch: NumRuns<128> GiB_copied<32.000000> elapsed<693.061113 msec> ops/sec<184.687898> GiB/sec<46.171974>
+memcpy_asm:      NumRuns<128> GiB_copied<32.000000> elapsed<702.507734 msec> ops/sec<182.204400> GiB/sec<45.551100>
+memcpy_accel:    NumRuns<128> GiB_copied<32.000000> elapsed<579.061508 msec> ops/sec<221.047330> GiB/sec<55.261832>
 
 
 */
