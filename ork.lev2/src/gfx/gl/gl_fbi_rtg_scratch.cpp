@@ -56,6 +56,7 @@ glrtgroupimpl_ptr_t GlFrameBufferInterface::_buildRtgImplFromScratch(RtGroup* rt
   //////////////////////////////////////////
 
   rtgroup->_depthBuffer = std::make_shared<RtBuffer>(rtgroup, -1, EBufferFormat::Z32F, iw, ih);
+  rtgroup->_depthBuffer->_usage = "depth"_crcu;
   GL_ERRORCHECK();
 
   auto dtex           = rtgroup->_depthBuffer->_texture;

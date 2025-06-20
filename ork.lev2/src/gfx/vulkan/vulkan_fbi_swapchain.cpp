@@ -83,7 +83,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
     auto bin_sema_imgacq = std::make_shared<VulkanBinarySemaphore>(_contextVK);
     auto bin_sema_rencom = std::make_shared<VulkanBinarySemaphore>(_contextVK);
-    auto fence = std::make_shared<VulkanFenceObject>(_contextVK);
+    auto fence           = std::make_shared<VulkanFenceObject>(_contextVK);
     swap_chain->_imageAcquiredSemaphores.push_back(bin_sema_imgacq);
     swap_chain->_renderCompleteSemaphores.push_back(bin_sema_rencom);
     swap_chain->_frameFences.push_back(fence);
@@ -109,7 +109,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-  SCINFO.surface = _contextVK->_vkpresentationsurface;
+  SCINFO.surface     = _contextVK->_vkpresentationsurface;
   SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
 
   auto ctx_glfw = _contextVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
@@ -236,10 +236,29 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto ork_color_format = VkFormatConverter::convertBufferFormat(surfaceFormat.format);
 
     auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, true);
-    rtg->_usage   = "swapchain"_crcu; 
-    auto rtb_color = rtg->createRenderTarget(ork_color_format, "present"_crcu);
-    auto rtg_impl  = _createRtGroupImpl(rtg.get());
-    rtg->_name     = FormatString("vk-swapchain-%d", i);
+    rtg->_usage    = "swapchain"_crcu;
+    auto rtb_color = rtg->createRenderTarget(ork_color_format, "swapchain"_crcu);
+
+    //////////////////////////////////////////
+    // depth texture
+    //////////////////////////////////////////
+
+    rtg->_depthBuffer = std::make_shared<RtBuffer>(rtg.get(), -1, EBufferFormat::Z32F, width, height);
+    rtg->_depthBuffer->_usage = "depth"_crcu;
+    auto dtex           = rtg->_depthBuffer->_texture;
+    dtex->_width        = width;
+    dtex->_height       = height;
+    dtex->_msaa_samples = rtg->_msaa_samples;
+    dtex->_texFormat    = EBufferFormat::Z32F;
+    dtex->_debugName    = rtg->_name + ":Depth";
+    dtex->_texType      = ETEXTYPE_2D;
+    // auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
+
+    ////////////////////////////////////////////
+
+    auto rtg_impl = _createRtGroupImpl(rtg.get());
+    rtg->_name    = FormatString("vk-swapchain-%d", i);
+
     ////////////////////////////////////////////
     // link rtb_color to swap chain color image
     ////////////////////////////////////////////
@@ -249,42 +268,10 @@ void VkFrameBufferInterface::_initSwapChain() {
         surfaceFormat.format, //
         imgview,              //
         swapChainImages[i]);
-    ////////////////////////////////////////////
     swap_chain->_rtgs.push_back(rtg);
   }
 
   _swapchain = swap_chain;
-}
-
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
-
-  auto main_rtb  = _main_rtg->buffer(0);
-  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
-
-  auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-  auto imgbar = createImageBarrier(
-      main_rtbi->_vkimg,
-      main_rtbi->_currentLayout,            // oldLayout (dont care)
-      new_layout,                           // newLayout
-      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
-      VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
-
-  vkCmdPipelineBarrier(
-      _contextVK->primary_cb()->_vkcmdbuf,           // cmdbuf
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
-      0,                                             // dependencyFlags
-      0,
-      nullptr, // memoryBarrierCount, pMemoryBarriers
-      0,
-      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-      1,
-      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
-
-  main_rtbi->setLayout(new_layout);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

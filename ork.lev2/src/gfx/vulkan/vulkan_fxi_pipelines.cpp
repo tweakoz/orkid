@@ -243,9 +243,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
-
-  auto cmdbuf = _contextVK->_cmdbufcurpri_gfx->_vkcmdbuf;
+void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe) {
 
   if (_currentPipeline != pipe) {
     vkCmdBindPipeline(
@@ -310,11 +308,10 @@ void VkFxInterface::_flushRenderPassScopedState() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot) {
+void VkFxInterface::_bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot) {
   if (_active_gfx_descriptorSets[slot] != desc_set) {
-    auto& CB = _contextVK->_cmdbufcurpri_gfx;
     vkCmdBindDescriptorSets(
-        CB->_vkcmdbuf,
+        cmdbuf,
         VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
         _currentPipeline->_pipelineLayout, // pipeline layout
         slot,                              // index into descriptor sets slots
@@ -329,12 +326,11 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindVertexBufferOnSlot(vkvtxbuf_ptr_t vb, size_t slot) {
-  if (_active_vbs[slot] != vb) {
-    auto& CB            = _contextVK->_cmdbufcurpri_gfx;
+void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot) {
+  if (true) { //_active_vbs[slot] != vb) {
     VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(
-        CB->_vkcmdbuf,             // command buffer
+        cmdbuf,             // command buffer
         slot,                      // slot to bind to
         1,                         // binding count
         &vb->_vkbuffer->_vkbuffer, // buffers
@@ -351,7 +347,7 @@ VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkPipelineObject::applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf) { //
+void VkPipelineObject::applyPendingPushConstants(VkCommandBuffer cmdbuf) { //
 
   OrkAssert(_vk_program->_pushConstantBlock != nullptr);
   size_t num_params = _vk_program->_pending_params.size();
@@ -386,7 +382,7 @@ void VkPipelineObject::applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf) {
     }
     // hexdumpbytes(data,blocksize);
     vkCmdPushConstants(
-        cmdbuf->_vkcmdbuf,
+        cmdbuf,
         _pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         0,         // dest-offset

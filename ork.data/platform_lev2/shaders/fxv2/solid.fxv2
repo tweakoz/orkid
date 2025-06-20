@@ -66,7 +66,7 @@ fragment_interface iface_fdefault : ublock_frg : samplers {
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt : ublock_frg : samplers {
-  inputs { vec2 frg_uv0; }
+  inputs { vec4 frg_clr; vec2 frg_uv0; }
   outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
@@ -110,8 +110,8 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 // shaders
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texcolor : iface_fmt {
-  vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr   = vec4(texc.xyz, 1);
+  //vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(1,0,1, 1);
 }
 fragment_shader ps_texcolor4 : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv0);
@@ -213,6 +213,7 @@ fragment_shader ps_downsample7x7 : iface_fmt {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_texcolor : vif_PT : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
+  gl_Position.z = 0.5;
   frg_uv0     = uv0;
 }
 ///////////////////////////////////////////////////////////////
@@ -297,6 +298,12 @@ fragment_shader ps_pick : iface_fpick {
   out_nrmd = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_xxx : default {
+  DepthTest = OFF;
+  CullTest = OFF;
+  DepthMask = ON;
+}
+///////////////////////////////////////////////////////////////
 technique vtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -334,7 +341,7 @@ technique texcolor {
   pass p0 {
     vertex_shader   = vs_texcolor;
     fragment_shader = ps_texcolor;
-    state_block     = sb_default;
+    state_block     = sb_xxx;
   }
 }
 technique tek_objnormal {

@@ -93,7 +93,6 @@ void VkFxInterface::bindParamFloat(const FxShaderParam* hpar, float fA) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
-  if(nullptr==hpar) return;
   if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ) {
     auto& param_set      = _currentVKPASS->_vk_program->_pending_params.emplace_back();
     param_set._vk_param  = as_uniset_item.value();

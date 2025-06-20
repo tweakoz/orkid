@@ -32,7 +32,6 @@ VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
   _VKRSCI.depthBiasConstantFactor = 0.0f; // Optional
   _VKRSCI.depthBiasClamp = 0.0f;          // Optional
   _VKRSCI.depthBiasSlopeFactor = 0.0f;    // Optional
-
   hasher.accumulateItem(rstate->_depthtest);
   switch( rstate->_depthtest ){
     case EDepthTest::OFF: {

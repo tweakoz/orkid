@@ -56,7 +56,7 @@ VulkanRenderInfo::VulkanRenderInfo(rtgroup_rawptr_t rtg)
     //_rainfo_depth.resolveImageLayout = VkImageLayout();
     _rainfo_depth.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
     _rainfo_depth.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
-    _rainfo_depth.clearValue.depthStencil.depth = 0.0f;
+    _rainfo_depth.clearValue.depthStencil.depth = 1.0f;
     _renderinfo.pDepthAttachment                = &_rainfo_depth;
   }
 }
@@ -70,22 +70,22 @@ VulkanPipelineRenderInfo::VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg)
     : _rtg(rtg) {
 
   initializeVkStruct(_createInfo, VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO);
-  std::vector<VkFormat> colorFormats;
   for (int i = 0; i < rtg->numImageBuffers(); i++) {
-    auto fmt = VkFormatConverter::convertBufferFormat(rtg->buffer(i)->format());
-    colorFormats.push_back(fmt);
+    auto buf     = rtg->buffer(i);
+    auto fmt = VkFormatConverter::convertBufferFormat(buf->format());
+    _colorFormats.push_back(fmt);
   }
 
-  _createInfo.colorAttachmentCount    = colorFormats.size();
-  _createInfo.pColorAttachmentFormats = colorFormats.data();
+  _createInfo.colorAttachmentCount    = _colorFormats.size();
+  _createInfo.pColorAttachmentFormats = _colorFormats.data();
 
   if (rtg->_depthBuffer) {
-    auto depthFmt                     = VkFormatConverter::convertBufferFormat(rtg->_depthBuffer->format());
-    _createInfo.depthAttachmentFormat = depthFmt;
+    _depthFormat                      = VkFormatConverter::convertBufferFormat(rtg->_depthBuffer->format());
+    _createInfo.depthAttachmentFormat = _depthFormat;
 
     // Check if format has stencil
-    if (depthFmt == VK_FORMAT_D24_UNORM_S8_UINT || depthFmt == VK_FORMAT_D32_SFLOAT_S8_UINT) {
-      _createInfo.stencilAttachmentFormat = depthFmt;
+    if (_depthFormat == VK_FORMAT_D24_UNORM_S8_UINT || _depthFormat == VK_FORMAT_D32_SFLOAT_S8_UINT) {
+      _createInfo.stencilAttachmentFormat = _depthFormat;
     }
   }
 }

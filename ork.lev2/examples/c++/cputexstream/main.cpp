@@ -134,14 +134,16 @@ int main(int argc, char** argv,char** envp) {
     main_rtb->_autoclear = true;
     main_rtb->_clearColor = fvec4(r, g, b, 1);
     fbi->PushRtGroup(main_rtg.get()); // implicit renderpass api
-    /*
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
-    //appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    //resources->_material->_rasterstate->setDepthTest(EDepthTest::OFF);
+    //resources->_material->_rasterstate->setCullTest(ECullTest::OFF);
+    appwin->Render2dQuadEML( fvec4(-.5, -.5, 1, 1), // quad in NDC
+                             fvec4(0, 0, 1, 1),   // uv0rect
+                             fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD);    
-    */
     fbi->PopRtGroup(false);
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU

@@ -405,8 +405,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
-  auto& CB = _contextVK->_cmdbufcurpri_gfx;
-
   ///////////////////////
   // get primclass (input to pipeline search)
   ///////////////////////
@@ -432,18 +430,20 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  fxi->_bindPipeline(pipeline);
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
-  pipeline->applyPendingPushConstants(CB);
-  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
+  auto& CB = _contextVK->_vkcmdbuffer_current;
 
+  fxi->_bindPipeline(CB, pipeline);
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+  pipeline->applyPendingPushConstants(CB);
+  fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
+      
   ///////////////////////
   // draw
   ///////////////////////
 
   vkCmdDraw(
-      CB->_vkcmdbuf, // command buffer
+      CB, // command buffer
       ivcount,       // vertex count
       1,             // instance count
       ivbase,        // first vertex
@@ -456,8 +456,6 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
     const IndexBufferBase& idx_buf,
     PrimitiveType eType) {
-
-  auto& CB = _contextVK->_cmdbufcurpri_gfx;
 
   int num_indices = idx_buf.GetNumIndices();
 
@@ -487,11 +485,12 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  fxi->_bindPipeline(pipeline);
+  auto& CB = _contextVK->_vkcmdbuffer_current;
+  fxi->_bindPipeline(CB,pipeline);
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
+  fxi->_bindGfxDescriptorSetOnSlot(CB,desc_set, 0);
   pipeline->applyPendingPushConstants(CB);
-  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
+  fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
   ///////////////////////
   // bind index buffer
@@ -503,7 +502,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
 
-  vkCmdBindIndexBuffer( CB->_vkcmdbuf,  // command buffer 
+  vkCmdBindIndexBuffer( CB,  // command buffer 
                         vk_buffer,      // index buffer
                         0,              // start at first index in index buffer
                         vk_index_size); // index type
@@ -513,7 +512,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   ///////////////////////
 
   vkCmdDrawIndexed(
-      CB->_vkcmdbuf, // command buffer
+      CB, // command buffer
       num_indices,   // index count
       1,             // instance count
       0,             // first vertex

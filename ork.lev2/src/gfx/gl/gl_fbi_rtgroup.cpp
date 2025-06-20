@@ -178,6 +178,7 @@ void GlFrameBufferInterface::cloneDepthBuffer(rtgroup_ptr_t src_rtg, rtgroup_ptr
 
     // Create new depth buffer and texture as per MSAA settings
     dst_rtg->_depthBuffer           = dst_rtg->createRenderTarget(EBufferFormat::Z32F);
+    dst_rtg->_depthBuffer->_usage = "depth"_crcu;
     auto texture                    = std::make_shared<Texture>();
     texture->_texFormat             = EBufferFormat::Z32F;
     texture->_debugName             = "RtgDepthCopy";

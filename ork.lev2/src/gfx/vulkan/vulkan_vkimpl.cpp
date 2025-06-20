@@ -367,7 +367,7 @@ VkFormatConverter::VkFormatConverter() {
 
   _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
   _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-  _layoutmap["present"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  _layoutmap["swapchain"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
   // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
   // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
@@ -377,7 +377,7 @@ VkFormatConverter::VkFormatConverter() {
 
   _aspectmap["depth"_crcu]   = VK_IMAGE_ASPECT_DEPTH_BIT;
   _aspectmap["color"_crcu]   = VK_IMAGE_ASPECT_COLOR_BIT;
-  _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
+  _aspectmap["swapchain"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
 }
 VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
   auto fmtname = EBufferFormatToName(fmt_in);
@@ -400,6 +400,8 @@ VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) {
   return it->second;
 }
 VkImageAspectFlagBits VkFormatConverter::aspectForUsage(uint64_t usage) {
+  if(usage=="depth"_crcu) {
+  }
   auto it = _instance._aspectmap.find(usage);
   OrkAssert(it != _instance._aspectmap.end());
   return it->second;

@@ -25,9 +25,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 
   RTGIMPL->_pipeline_bits = 0;
 
-  bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
-  if (is_surface) {
-  }
   ////////////////////////////////////////
   // depth buffer
   ////////////////////////////////////////
@@ -36,7 +33,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     uint64_t USAGE  = "depth"_crcu;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
-    bufferimpl->setLayout(VkFormatConverter::_instance.layoutForUsage(USAGE));
     auto& adesc          = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -55,7 +51,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
       USAGE = rtbuffer->_usage;
     }
     ////////////////////////////////////////////
-    if (USAGE == "present"_crcu) {
+    if (USAGE == "swapchain"_crcu) {
       is_swapchain = true;
     }
     ////////////////////////////////////////////
@@ -79,7 +75,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
         auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
         auto format  = bufferimpl->_vkfmt;
 
-        bufferimpl->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        //bufferimpl->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         auto& attachment_ref = bufferimpl->_attachmentRef;
 
@@ -197,6 +193,8 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   auto rinfo = RTGIMPL->renderinfo();
 
   _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
+
+  _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,6 +220,8 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
   cbufimpl->_recorded = true;
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
+
+  _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
 
   /////////////////////////////////////////////
   // transition rtgroup ?

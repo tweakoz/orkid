@@ -74,7 +74,7 @@ void _vkCreateImageForBuffer(
       VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
       VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
       break;
-    case "present"_crcu:
+    case "swapchain"_crcu:
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
       break;
     default:
@@ -123,31 +123,50 @@ void VklRtBufferImpl::_replaceImage(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static constexpr VkTransitionParams kToRenderTarget = {
+static constexpr VkTransitionParams kToRenderTargetColor = {
     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,      // layout
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccess
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // dstAccess
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStage
-    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStage
-    true                                           // colorOnly
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT  // dstStage
+};
+static constexpr VkTransitionParams kToRenderTargetDepth = {
+    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,      // layout
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // srcAccess
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // dstAccess
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,    // srcStage
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT     // dstStage
 };
 
-static constexpr VkTransitionParams kToTexture = {
+static constexpr VkTransitionParams kToTextureColor = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // layout
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccess
     VK_ACCESS_SHADER_READ_BIT,                     // dstAccess  
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStage 
-    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStage
-    true                                           // colorOnly
+    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT          // dstStage
 };
 
-static constexpr VkTransitionParams kToHostRead = {
+static constexpr VkTransitionParams kToTextureDepth = {
+    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // layout
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // srcAccess
+    VK_ACCESS_SHADER_READ_BIT,                     // dstAccess  
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,    // srcStage
+    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT          // dstStage
+};
+
+static constexpr VkTransitionParams kToHostReadColor = {
     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,          // layout
     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccess
     VK_ACCESS_TRANSFER_READ_BIT,                   // dstAccess
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStage
-    VK_PIPELINE_STAGE_TRANSFER_BIT,                // dstStage
-    true                                           // colorOnly
+    VK_PIPELINE_STAGE_TRANSFER_BIT                 // dstStage
+};
+static constexpr VkTransitionParams kToHostReadDepth = {
+    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,          // layout
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // srcAccess
+    VK_ACCESS_TRANSFER_READ_BIT,                   // dstAccess
+    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,    // srcStage
+    VK_PIPELINE_STAGE_TRANSFER_BIT                 // dstStage
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,7 +181,7 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     
     vkCmdPipelineBarrier(cb->_vkcmdbuf,                 // command buffer
                          p.srcStage,                    // source stage
-                         p.dstStage    ,                // destination stage    
+                         p.dstStage,                    // destination stage    
                          VK_DEPENDENCY_BY_REGION_BIT,   // dependency flags
                          0, nullptr,                    // memory barriers
                          0, nullptr,                    // buffer memory barriers
@@ -173,9 +192,86 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { _transitionImage(cb, kToRenderTarget); }
-void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { _transitionImage(cb, kToTexture); }
-void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { _transitionImage(cb, kToHostRead); }
+void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
+  switch( _rtb->_usage) {
+    case "color"_crcu: // color attachment
+      _transitionImage(cb, kToRenderTargetColor);
+      break;
+    case "depth"_crcu: // depth attachment
+      _transitionImage(cb, kToRenderTargetDepth);
+      break;
+    case "swapchain"_crcu: // present attachment
+      _transitionImage(cb, kToRenderTargetColor);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
+  switch( _rtb->_usage) {
+    case "color"_crcu: // color attachment
+      _transitionImage(cb, kToTextureColor);
+      break;
+    case "depth"_crcu: // depth attachment
+      _transitionImage(cb, kToTextureDepth);
+      break;
+    case "swapchain"_crcu: // present attachment
+      OrkAssert(false); // swapchain should not be used as a texture
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { //
+  switch( _rtb->_usage) {
+    case "color"_crcu: // color attachment
+      _transitionImage(cb, kToHostReadColor);
+      break;
+    case "depth"_crcu: // depth attachment
+      _transitionImage(cb, kToHostReadDepth);
+      break;
+    case "swapchain"_crcu: // present attachment
+      _transitionImage(cb, kToHostReadColor);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
+
+void VklRtBufferImpl::_transitionToPresent(vkpricmdbufimpl_ptr_t cb) {
+  OrkAssert(_rtb->_usage == "swapchain"_crcu);
+  auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+  auto imgbar = createImageBarrier(
+      _vkimg,
+      _currentLayout,            // oldLayout (dont care)
+      new_layout,                           // newLayout
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
+      VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
+
+  vkCmdPipelineBarrier(
+      cb->_vkcmdbuf,           // cmdbuf
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
+      0,                                             // dependencyFlags
+      0,
+      nullptr, // memoryBarrierCount, pMemoryBarriers
+      0,
+      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1,
+      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
+
+  setLayout(new_layout);
+}
+
+  ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

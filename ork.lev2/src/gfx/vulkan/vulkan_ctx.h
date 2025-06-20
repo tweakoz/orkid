@@ -430,6 +430,8 @@ struct VulkanPipelineRenderInfo {
 
   rtgroup_ptr_t _rtg;
   VkPipelineRenderingCreateInfo _createInfo;
+  std::vector<VkFormat> _colorFormats;
+  VkFormat _depthFormat = VK_FORMAT_UNDEFINED;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -438,7 +440,6 @@ struct VkTransitionParams {
     VkImageLayout layout;
     VkAccessFlagBits srcAccess, dstAccess;
     VkPipelineStageFlags srcStage, dstStage;
-    bool colorOnly = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -450,6 +451,7 @@ struct VklRtBufferImpl {
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
   void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
+  void _transitionToPresent(vkpricmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
@@ -886,7 +888,7 @@ struct VkPipelineObject {
 
   VkPipelineObject(vkcontext_rawptr_t ctx);
 
-  void applyPendingPushConstants(vkpricmdbufimpl_ptr_t cmdbuf);
+  void applyPendingPushConstants(VkCommandBuffer cmdbuf);
 
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
@@ -1164,8 +1166,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   //////////////////////////////////////////////
   void _initSwapChain();
-  void _enq_transitionMainRtgToPresent();
-
   //////////////////////////////////////////////
 
   vkswapchain_ptr_t _swapchain;
@@ -1298,9 +1298,9 @@ struct VkFxInterface final : public FxInterface {
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;
 
-  void _bindPipeline(vkpipeline_obj_ptr_t pipe);
-  void _bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot);
-  void _bindVertexBufferOnSlot(vkvtxbuf_ptr_t vb, size_t slot);
+  void _bindPipeline(VkCommandBuffer cmdbuf, vkpipeline_obj_ptr_t pipe);
+  void _bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot);
+  void _bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot);
 
   void _flushRenderPassScopedState();
   int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
@@ -1478,7 +1478,7 @@ public:
   uint32_t _vkqfid_transfer          = NO_QUEUE;
   VkQueue _vkqueue_graphics;
   VkCommandPool _vkcmdpool_graphics;
-
+  VkCommandBuffer _vkcmdbuffer_current;
   primary_commandbuffer_ptr_t _defaultCommandBuffer;
   vkpricmdbufimpl_ptr_t _defaultCommandBufferImpl;
   vkpricmdbufimpl_ptr_t _cmdbufcurpri_gfx;

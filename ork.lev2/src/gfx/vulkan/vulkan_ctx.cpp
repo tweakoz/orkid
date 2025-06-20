@@ -452,22 +452,15 @@ vkpricmdbufimpl_ptr_t VkContext::primary_cb() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
-
-  //logchan_vkctx->log("VkContext<%p> CB<%p> _doEndFrame", (void*)this, (void*)primary_cb().get());
-
-  // FBI()->popMainSurface();
-
-  ////////////////////////
-  // end main renderpass (and pop main rtg)
-  ////////////////////////
-
-  //_fbi->PopRtGroup(false);
-
+  
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
 
-  _fbi->_enq_transitionMainRtgToPresent();
+  auto main_rtb  = _fbi->_main_rtg->buffer(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+
+  main_rtbi->_transitionToPresent(primary_cb());
 
   ////////////////////////
   // done with primary command buffer for this frame
