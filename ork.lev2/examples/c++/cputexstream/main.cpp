@@ -136,11 +136,13 @@ int main(int argc, char** argv,char** envp) {
     fbi->PushRtGroup(main_rtg.get()); // implicit renderpass api
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
-    resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
+    fmtx4 P;
+    P.perspective(45.0f, 1.0f, 0.1f, 100.0f);
+    fmtx4 V;
+    V.rotateOnZ(fi);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, V);
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
-    //resources->_material->_rasterstate->setDepthTest(EDepthTest::OFF);
-    //resources->_material->_rasterstate->setCullTest(ECullTest::OFF);
-    appwin->Render2dQuadEML( fvec4(-.5, -.5, 1, 1), // quad in NDC
+    appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect
                              fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD);    
