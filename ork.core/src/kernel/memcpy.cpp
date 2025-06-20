@@ -62,7 +62,7 @@ void memcpy_parallel(
 #if defined(ORK_ARCHITECTURE_ARM_64)
 #include <arm_neon.h>
 namespace ork {
-inline void _memcpy_neon(void* dest, const void* src, size_t n) { // arm neon
+void _memcpy_neon(void* dest, const void* src, size_t n) { // arm neon
   uint8_t* d       = static_cast<uint8_t*>(dest);
   const uint8_t* s = static_cast<const uint8_t*>(src);
   size_t i         = 0;
@@ -75,7 +75,7 @@ inline void _memcpy_neon(void* dest, const void* src, size_t n) { // arm neon
   }
 }
 
-inline void _memcpy_cache_optimized(void* dest, const void* src, size_t n) {
+void _memcpy_cache_optimized(void* dest, const void* src, size_t n) {
   constexpr size_t cache_line_size = 64;
   uint8_t* d                       = static_cast<uint8_t*>(dest);
   const uint8_t* s                 = static_cast<const uint8_t*>(src);
@@ -89,7 +89,7 @@ inline void _memcpy_cache_optimized(void* dest, const void* src, size_t n) {
   std::copy_n(s + i, n - i, d + i);
 }
 
-inline void _memcpy_prefetch(void* dest, const void* src, size_t n) {
+void _memcpy_prefetch(void* dest, const void* src, size_t n) {
   uint8_t* d       = static_cast<uint8_t*>(dest);
   const uint8_t* s = static_cast<const uint8_t*>(src);
 
@@ -103,7 +103,7 @@ inline void _memcpy_prefetch(void* dest, const void* src, size_t n) {
   }
 }
 
-inline void _memcpy_asm(void* dest, const void* src, size_t n) {
+void _memcpy_asm(void* dest, const void* src, size_t n) {
   asm volatile("mov x0, %[src] \n"
                "mov x1, %[dest] \n"
                "mov x2, %[n] \n"
@@ -119,7 +119,7 @@ inline void _memcpy_asm(void* dest, const void* src, size_t n) {
 
 #if defined(__APPLE__)
 
-inline void _memcpy_accel(void* dest, const void* src, size_t n) { // accelerate
+void _memcpy_accel(void* dest, const void* src, size_t n) { // accelerate
   vDSP_mmov((const float*)src, (float*)dest, n / sizeof(float), 1, n / sizeof(float), n / sizeof(float));
 }
 
@@ -144,11 +144,11 @@ struct copy_rec {
   size_t _n                     = 0;
 };
 
-using mpmc_queue_t = ork::MpMcBoundedQueue<copy_rec, 4096>;
+using mpmc_queue_t = ork::MpMcBoundedQueue<copy_rec, 8192>;
 
 struct ParallelMemoryCopier {
 
-  static constexpr size_t NUM_THREADS = 3;
+  static constexpr size_t NUM_THREADS = 4;
   mpmc_queue_t _mem_op_q;
   std::vector<thread_ptr_t> _threads;
   std::atomic<int> _run_state = -1;
@@ -162,11 +162,11 @@ struct ParallelMemoryCopier {
     while (pmc->_run_state < 1) {
       copy_rec op;
       if (pmc->_mem_op_q.try_pop(op)) {
-        memcpy(op._dest, op._src, op._n);
+        std::memcpy(op._dest, op._src, op._n);
         op._async_op->_async_counter.fetch_add(-1);
       } else {
         // std::this_thread::yield();
-        ::usleep(10);
+        ::usleep(15);
       }
     }
     pmc->_run_state++;
@@ -198,8 +198,8 @@ using pmemcpy_ptr_t = std::shared_ptr<ParallelMemoryCopier>;
 static pmemcpy_ptr_t _gmemopq = std::make_shared<ParallelMemoryCopier>();
 
 void memcpy_fast(void* dest, const void* src, size_t length) {
-  if (length > (8 << 20)) {
-    size_t part_size = 4 << 20;
+  constexpr size_t part_size = 4 << 20;
+  if (length > (part_size << 1)) {
     // split into N parts
     size_t num_parts = (length + part_size - 1) / part_size;
     copy_rec crec;
@@ -210,7 +210,7 @@ void memcpy_fast(void* dest, const void* src, size_t length) {
       auto doff             = (uint8_t*)dest + offset;
       auto soff             = (uint8_t*)src + offset;
       if (i == (num_parts - 1)) {
-        memcpy(doff, soff, this_part_size);
+        std::memcpy(doff, soff, this_part_size);
       } else {
         crec._async_op = aop;
         crec._dest     = doff;
@@ -221,7 +221,7 @@ void memcpy_fast(void* dest, const void* src, size_t length) {
     }
     aop->finish();
   } else {
-    memcpy(dest, src, length);
+    std::memcpy(dest, src, length);
     //_memcpy_accel(dest, src, length);
   }
 }

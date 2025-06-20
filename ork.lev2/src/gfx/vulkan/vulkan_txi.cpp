@@ -459,7 +459,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   //  the application buffer can be released
   /////////////////////////////////////
 
-  staging_buffer->copyFromHost(tid._data, tid._truncation_length);
+  staging_buffer->copyFromHost(tid._data, transfer_size);
 
   /////////////////////////////////////
   // hash the image creation parameters

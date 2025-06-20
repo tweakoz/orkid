@@ -13,6 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_vkpip = logger()->createChannel("VKPIP", fvec3(1,1,.2), true);
 
 vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
@@ -76,8 +77,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto it = _pipelines.find(pipeline_hash);
   if (it == _pipelines.end()) { // create pipeline
 
-    printf(
-        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%llx> pc_pbits<%llx> sh_pbits<%llx> rs_pbits<%llx>\n", //
+    logchan_vkpip->log(
+        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%llx> pc_pbits<%llx> sh_pbits<%llx> rs_pbits<%llx>", //
         pipeline_hash,
         vb_pbits,
         rtg_pbits,
@@ -308,24 +309,6 @@ void VkFxInterface::_flushRenderPassScopedState() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::_bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot) {
-  if (_active_gfx_descriptorSets[slot] != desc_set) {
-    vkCmdBindDescriptorSets(
-        cmdbuf,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
-        _currentPipeline->_pipelineLayout, // pipeline layout
-        slot,                              // index into descriptor sets slots
-        1,
-        &desc_set->_vkdescset, // bind 1 descriptor set
-        0,
-        nullptr); // dynamic offsets
-
-    _active_gfx_descriptorSets[slot] = desc_set;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkFxInterface::_bindVertexBufferOnSlot(VkCommandBuffer cmdbuf, vkvtxbuf_ptr_t vb, size_t slot) {
   if (true) { //_active_vbs[slot] != vb) {
     VkDeviceSize offset = 0;
@@ -411,6 +394,25 @@ void VkFxInterface::bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindin
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkFxInterface::_bindGfxDescriptorSetOnSlot(VkCommandBuffer cmdbuf, vkdescriptorset_ptr_t desc_set, size_t slot) {
+  if (true){ //_active_gfx_descriptorSets[slot] != desc_set) {
+    //logchan_vkpip->log("bind descset: slot<%d>", slot);
+    vkCmdBindDescriptorSets(
+        cmdbuf,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
+        _currentPipeline->_pipelineLayout, // pipeline layout
+        slot,                              // index into descriptor sets slots
+        1,
+        &desc_set->_vkdescset, // bind 1 descriptor set
+        0,
+        nullptr); // dynamic offsets
+
+    _active_gfx_descriptorSets[slot] = desc_set;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t program) {
 
   /////////////////////////////////
@@ -488,6 +490,8 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
       DWRITE.descriptorCount = 1;
       DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       DWRITE.pImageInfo      = &desc_info;
+
+      logchan_vkpip->log("update descset: bidx<%d> tex<%p> iphash<%llx>", binding_index, (void*)(vk_tex->_vkdescriptor_info.imageView), vk_tex->_image_params_hash);
 
       vkUpdateDescriptorSets(
           _ctxVK->_vkdevice, // device

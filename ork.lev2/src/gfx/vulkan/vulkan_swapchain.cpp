@@ -133,7 +133,6 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
   PRESI.pImageIndices      = &_curSwapWriteImage;
 
   VkResult status = vkQueuePresentKHR(ctxVK->_vkqueue_graphics, &PRESI);
-
   // printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
 
   switch (status) {
@@ -185,10 +184,34 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
+
+  float pre_time = ctxVK->_present_timer.SecsSinceStart();
+  float time_since_last_present = pre_time - ctxVK->_prev_time;
+  ctxVK->_prev_time = pre_time;
+
   if (fence) {
     //printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
     fence->reset();
+  }
+
+
+  ctxVK->_total_frame_time += time_since_last_present;
+
+
+  float pos_time = ctxVK->_present_timer.SecsSinceStart();
+  float delta_time = pos_time - pre_time;
+  ctxVK->_present_wait_time += delta_time;
+  ctxVK->_total_wait_time = ctxVK->_present_timer.SecsSinceStart();
+
+  if((_currentFrame&0x1ff)==0) {
+    float average_frame_time = ctxVK->_total_frame_time / (_currentFrame + 1);
+    float average_wait_time = ctxVK->_present_wait_time / (_currentFrame + 1);
+    printf("waittime<%g> total_time<%g>. average_wait_time<%g s> average_frame_time<%g>\n",
+           ctxVK->_present_wait_time, ctxVK->_total_wait_time, average_wait_time, average_frame_time);
+
+    ctxVK->_total_frame_time = 0.0f;
+    ctxVK->_total_wait_time = 0.0f;
   }
   _currentFrame++;
 }

@@ -15,7 +15,7 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 
-constexpr int DIM           = 2048;
+constexpr int DIM           = 4096;
 constexpr float finv        = 1.0f / 256.0f;
 constexpr float finvdim     = 1.0f / float(DIM);
 
@@ -52,10 +52,13 @@ struct Resources {
     _texupdthread->start([this](anyp data) {
       float fi = 0.0f;
       this->_appstate = "THREAD_RUNNING"_crcu;
+      auto task = opq::createCompletionGroup(
+          opq::concurrentQueue(), //
+          "cpugen");
       while ("THREAD_RUNNING"_crcu == this->_appstate) {
         for (int y = 0; y < DIM; y++) {
           float fy = float(y) * finvdim;
-          opq::concurrentQueue()->enqueue([=]() {
+          task->enqueue([=]() {
             int index      = y * DIM * 4;
             float* ptexels = this->_texturedata->data();
             for (int x = 0; x < DIM; x++) {
@@ -68,8 +71,8 @@ struct Resources {
             }
           });
         }
-        opq::concurrentQueue()->drain();
-        fi += 0.01f;
+        task->join();
+        fi += 0.07f;
       }
       this->_appstate = "THREAD_DONE"_crcu;
     });   
@@ -104,6 +107,7 @@ int main(int argc, char** argv,char** envp) {
   Timer timer;
   timer.Start();
   resources_ptr_t resources;
+  float abstime = 0.0f;
   //////////////////////////////////////////////////////////
   ezapp->onGpuInit([&](Context* ctx) {
     resources = std::make_shared<Resources>(ctx);
@@ -121,26 +125,35 @@ int main(int argc, char** argv,char** envp) {
     txi->initTextureFromData(resources->_texture.get(), tid);
   });
   //////////////////////////////////////////////////////////
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+    abstime = updata->_abstime;
+  });
+  //////////////////////////////////////////////////////////
   int framecounter = 0;
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
-    float fi = framecounter * 0.01f;
-    float r             = sinf(fi * 2.1f) * 0.5f + 0.5f;
-    float g             = cosf(fi * 3.13f) * 0.5f + 0.5f;
-    float b             = sinf(fi * 4.17f) * 0.5f + 0.5f;
+    float fi = abstime * 0.33f;
+    float r             = sinf(fi * 2.1f) * 0.25f + 0.5f;
+    float g             = cosf(fi * 3.13f) * 0.25f + 0.5f;
+    float b             = sinf(fi * 4.17f) * 0.25f + 0.5f;
     auto main_rtg = fbi->_main_rtg;
     auto main_rtb = main_rtg->buffer(0);
+    float w = main_rtg->miW;
+    float h = main_rtg->miH;
+    float aspect = w / h;
     main_rtb->_autoclear = true;
     main_rtb->_clearColor = fvec4(r, g, b, 1);
     fbi->PushRtGroup(main_rtg.get()); // implicit renderpass api
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
-    fmtx4 P;
-    P.perspective(45.0f, 1.0f, 0.1f, 100.0f);
-    fmtx4 V;
-    V.rotateOnZ(fi);
-    resources->_material->bindParamMatrix(resources->_fxparameterMVP, V);
+    fmtx4 P, V, M;
+    P.perspective(45.0f, aspect, 0.01f, 10.0f);
+    V.lookAt( fvec3(0, 0, 2),  // eye
+              fvec3(0, 0, 0),  // target
+              fvec3(0, 1, 0)); // up
+    M.rotateOnZ(abstime*0.25f);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, P*V*M);
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_texture.get());
     appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect

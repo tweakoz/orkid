@@ -110,7 +110,8 @@ void VkFrameBufferInterface::_initSwapChain() {
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
   SCINFO.surface     = _contextVK->_vkpresentationsurface;
-  SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
+  //SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
+  SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // No vsync
 
   auto ctx_glfw = _contextVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
   auto window   = ctx_glfw->_glfwWindow;
@@ -204,7 +205,7 @@ void VkFrameBufferInterface::_initSwapChain() {
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
   for (const auto& mode : pres_caps->_presentModes) {
     if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-      SCINFO.presentMode = mode;
+      //SCINFO.presentMode = mode;
       break;
     }
   }

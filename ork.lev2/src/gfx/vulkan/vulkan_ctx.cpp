@@ -257,7 +257,8 @@ void VkContext::_initVulkanCommon() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
-
+  _present_timer.Start();
+  _prev_time = 0.0f;
   _GVI->_contexts.insert(this);
 
   ////////////////////////////

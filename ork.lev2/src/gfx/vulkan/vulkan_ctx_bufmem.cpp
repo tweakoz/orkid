@@ -7,6 +7,7 @@
 
 #include "vulkan_ctx.h"
 #include <ork/util/crc64.h>
+#include <ork/kernel/memcpy.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -274,7 +275,14 @@ void VulkanBuffer::copyFromHost(const void* src, size_t length) {
   OrkAssert(length <= _length);
   void* dst = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, _length, 0, &dst);
-  memcpy(dst, src, _length);
+  static size_t _numcopied = 0;
+  static size_t _prvnumcopied = 0;
+  _numcopied += length;
+  if((_numcopied - _prvnumcopied) > (1<<30) ) {
+    //logchan_vkbufmem->log("VulkanBuffer copyFromHost copied<%zu> total<%zu>", length, _numcopied);
+    _prvnumcopied = _numcopied;
+  }
+  memcpy_fast(dst, src, _length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////
@@ -282,7 +290,7 @@ void VulkanBuffer::copyToHost(void* dst, size_t length) {
   OrkAssert(length <= _length);
   void* src = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, length, 0, &src);
-  memcpy(dst, src, length);
+  memcpy_fast(dst, src, length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////
