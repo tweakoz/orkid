@@ -416,10 +416,8 @@ struct VkSecondaryCommandBufferImpl {
 };
 
 struct VulkanRenderInfo {
-  VulkanRenderInfo(rtgroup_rawptr_t rtg);
+  VulkanRenderInfo(VkRtGroupImpl* rtg);
   ~VulkanRenderInfo();
-
-  rtgroup_rawptr_t _rtg;
   VkRenderingInfo _renderinfo;
   std::vector<VkRenderingAttachmentInfo> _rainfos_color;
   VkRenderingAttachmentInfo _rainfo_depth;
@@ -445,7 +443,7 @@ struct VkTransitionParams {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VklRtBufferImpl {
-  VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
+  VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fmt);
 
   void _transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& params);
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
@@ -457,18 +455,20 @@ struct VklRtBufferImpl {
   void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
 
   VkRtGroupImpl* _rtg_impl = nullptr;
-  RtBuffer* _rtb           = nullptr;
+  uint64_t _usage = "none"_crcu;
+  VkFormat _vkfmt = VK_FORMAT_UNDEFINED;
   bool _init               = true;
   bool _is_surface         = false;
   VkImage _vkimg;
   vkimageobj_ptr_t _imgobj;
-  VkFormat _vkfmt;
   VkImageView _vkimgview;
   VkAttachmentDescription _attachmentDesc;
   VkAttachmentReference _attachmentRef;
   VkDescriptorImageInfo _descriptorInfo;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   svar64_t _teximpl;
+  fvec4 _clear_color;
+  float _clear_depth = 1.0f;
 };
 
 struct RtGroupAttachments {
@@ -483,24 +483,26 @@ using rtgroup_attachments_ptr_t = std::shared_ptr<RtGroupAttachments>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRtGroupImpl {
-  VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t _rtg);
+  VkRtGroupImpl(vkcontext_rawptr_t ctxVK);
 
   rtgroup_attachments_ptr_t attachments();
   vkrenderinfo_ptr_t renderinfo();
+  void _updateClearParams(rtgroup_rawptr_t _rtg);
 
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
   void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
 
-  rtgroup_rawptr_t _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;
   vkcontext_rawptr_t _contextVK = nullptr;
-  
+  std::vector<vkrtbufimpl_ptr_t> _color_buffer_impls;
+  vkrtbufimpl_ptr_t _depth_buffer_impl;
   int _width         = 0;
   int _height        = 0;
   int _pipeline_bits = -1;
+  bool _autoclear = true;
   vkmsaastate_ptr_t _msaaState;
 
   vkrenderinfo_ptr_t _rinfo_retain;

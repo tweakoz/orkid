@@ -15,9 +15,10 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_rtgi = logger()->createChannel("VKRTGI", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
-VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
+VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fmt) //
     : _rtg_impl(par)
-    , _rtb(rtb) { //
+    , _usage(usage)
+    , _vkfmt(fmt) { //
 
   initializeVkStruct(_attachmentDesc);
   initializeVkStruct(_vkimgview);
@@ -27,8 +28,10 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
   _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered color/depth for presentation.
   _attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   _attachmentDesc.finalLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
-  switch (rtb->format()) {
-    case EBufferFormat::DEPTH:
+  switch (_vkfmt) {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_D32_SFLOAT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
       _attachmentDesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
       _attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
       break;
@@ -38,7 +41,7 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
       break;
   }
 
-  _vkfmt                 = VkFormatConverter::convertBufferFormat(rtb->format());
+  //_vkfmt                 = fmt; //VkFormatConverter::convertBufferFormat(rtb->format());
   _attachmentDesc.format = _vkfmt;
 
 }
@@ -177,7 +180,7 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     OrkAssert(img != VK_NULL_HANDLE);
     
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
-    barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_rtb->_usage);
+    barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
     
     vkCmdPipelineBarrier(cb->_vkcmdbuf,                 // command buffer
                          p.srcStage,                    // source stage
@@ -193,7 +196,7 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
-  switch( _rtb->_usage) {
+  switch( _usage) {
     case "color"_crcu: // color attachment
       _transitionImage(cb, kToRenderTargetColor);
       break;
@@ -212,7 +215,7 @@ void VklRtBufferImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
-  switch( _rtb->_usage) {
+  switch( _usage) {
     case "color"_crcu: // color attachment
       _transitionImage(cb, kToTextureColor);
       break;
@@ -231,7 +234,7 @@ void VklRtBufferImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb)      { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { //
-  switch( _rtb->_usage) {
+  switch(_usage) {
     case "color"_crcu: // color attachment
       _transitionImage(cb, kToHostReadColor);
       break;
@@ -248,7 +251,7 @@ void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { //
 }
 
 void VklRtBufferImpl::_transitionToPresent(vkpricmdbufimpl_ptr_t cb) {
-  OrkAssert(_rtb->_usage == "swapchain"_crcu);
+  OrkAssert(_usage == "swapchain"_crcu);
   auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   auto imgbar = createImageBarrier(

@@ -16,13 +16,10 @@ static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(_contextVK, rtgroup);
-  RTGIMPL->_width           = rtgroup->width();
-  RTGIMPL->_height          = rtgroup->height();
+  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(_contextVK);
   int inumtargets           = rtgroup->numImageBuffers();
-  int w                     = rtgroup->width();
-  int h                     = rtgroup->height();
-
+  RTGIMPL->_width = rtgroup->width();
+  RTGIMPL->_height = rtgroup->height();
   RTGIMPL->_pipeline_bits = 0;
 
   ////////////////////////////////////////
@@ -30,8 +27,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   ////////////////////////////////////////
   if (rtgroup->_depthBuffer) {
     auto rtbuffer   = rtgroup->_depthBuffer;
-    auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    auto vkfmt    = VkFormatConverter::convertBufferFormat(rtbuffer->format());
     uint64_t USAGE  = "depth"_crcu;
+    auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
+    RTGIMPL->_depth_buffer_impl = bufferimpl;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
     auto& adesc          = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -44,12 +43,14 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   bool is_swapchain = false;
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
-    auto bufferimpl         = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     ////////////////////////////////////////////
     uint64_t USAGE = "color"_crcu;
     if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;
     }
+    auto vkfmt    = VkFormatConverter::convertBufferFormat(rtbuffer->format());
+    auto bufferimpl         = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
+    RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
     ////////////////////////////////////////////
     if (USAGE == "swapchain"_crcu) {
       is_swapchain = true;
@@ -67,7 +68,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
       for (int it = 0; it < inumtargets; it++) {
         rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
         OrkAssert(rtbuffer->_usage != "depth"_crcu);
-        auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+        auto usage = rtbuffer->_usage;
+        auto vk_fmt = VkFormatConverter::convertBufferFormat(rtbuffer->format());
+        auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),usage, vk_fmt);
         auto texture    = rtbuffer->texture();
         OrkAssert(texture != nullptr);
         printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), rtbuffer->_usage);
@@ -90,20 +93,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
         bufferimpl->_vkimg                    = teximpl->_imgobj->_vkimage;
         OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
       }
-
-      // VkWriteDescriptorSet DWRITE{};
-      // initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-      // DWRITE.dstSet = /* Your Descriptor Set */;
-      // DWRITE.dstBinding = /* Your Binding */;
-      // DWRITE.dstArrayElement = 0;
-      // DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      // DWRITE.descriptorCount = 1;
-      // DWRITE.pImageInfo = &IMGINFO;
-      //  Don't forget to destroy the framebuffer and render pass when they are no longer needed
-      //  vkDestroyFramebuffer(_contextVK->_device, framebuffer, nullptr);
-      //  vkDestroyRenderPass(_contextVK->_device, renderPass, nullptr);
-
-      // vkUpdateDescriptorSets(_contextVK->_device, 1, &descriptorWrite, 0, nullptr);
       break;
     }
     case "swapchain"_crcu: 
@@ -113,7 +102,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     default:
       break;
   }
-
+  RTGIMPL->_updateClearParams(rtgroup);
   return RTGIMPL;
 }
 
@@ -124,6 +113,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
 
+  
   /////////////////////////////////
   // main_rtg ?
   //  (images managed by swapchain)
@@ -131,6 +121,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   switch(rtgroup->_usage) {
     case "swapchain"_crcu:
       RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
+      RTGIMPL->_updateClearParams(rtgroup);
       break;
     case "popup"_crcu:
       OrkAssert(false);

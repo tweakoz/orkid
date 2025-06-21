@@ -16,9 +16,8 @@ static logchannel_ptr_t logchan_rtgi = logger()->createChannel("VKRTGI", fvec3(0
 ///////////////////////////////////////////////////////////////////////////////
 
 
-VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
-    : _rtg(rtg)
-    , _contextVK(ctxVK) {
+VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK)
+    : _contextVK(ctxVK) {
   std::string name = "rtg";
   _cmdbufRTG = std::make_shared<SecondaryCommandBuffer>();
   _cmdbufRTG->_debugName = name;
@@ -32,8 +31,19 @@ VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK, rtgroup_rawptr_t rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkRtGroupImpl::_updateClearParams(rtgroup_rawptr_t rtg) {
+  _autoclear = rtg->_autoclear;
+  for(int i = 0; i < rtg->numImageBuffers(); i++) {
+    auto rtb      = rtg->buffer(i);
+    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtb_impl->_clear_color = rtb->_clearColor;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
-  auto rinfo = std::make_shared<VulkanRenderInfo>(_rtg); 
+  auto rinfo = std::make_shared<VulkanRenderInfo>(this); 
   _renderinfo_set.insert(rinfo);
   return rinfo;
 }
@@ -46,28 +56,25 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
   }
   __attachments = std::make_shared<RtGroupAttachments>();
   auto at       = std::make_shared<RtGroupAttachments>();
-  int numrt     = _rtg->numImageBuffers();
+  int numrt     = _color_buffer_impls.size();
   for (int i = 0; i < numrt; i++) {
-    auto rtbuffer   = _rtg->buffer(i);
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    auto bufferimpl = _color_buffer_impls[i];
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
     __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
 
     if (bufferimpl->_vkimgview == VK_NULL_HANDLE) {
-      printf("rtg<%s> has null imageview\n", _rtg->_name.c_str());
+      //printf("rtg<%s> has null imageview\n", _rtg->_name.c_str());
       OrkAssert(false);
     }
   }
-  if (_rtg->_depthBuffer) {
-    auto rtbuffer   = _rtg->_depthBuffer;
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
-    __attachments->_references.push_back(bufferimpl->_attachmentRef);
-    __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
-    __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
-    OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
+  if (_depth_buffer_impl) {
+    __attachments->_descriptions.push_back(_depth_buffer_impl->_attachmentDesc);
+    __attachments->_references.push_back(_depth_buffer_impl->_attachmentRef);
+    __attachments->_imageviews.push_back(_depth_buffer_impl->_vkimgview);
+    __attachments->descimginfos.push_back(_depth_buffer_impl->_descriptorInfo);
+    OrkAssert(_depth_buffer_impl->_vkimgview != VK_NULL_HANDLE);
   }
   return __attachments;
 }
@@ -75,54 +82,45 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb){
-  int inumtargets = _rtg->numImageBuffers();
-  for (int i = 0; i < inumtargets; i++) {
-    auto rtb      = _rtg->buffer(i);
-    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+  int numrt     = _color_buffer_impls.size();
+  for (int i = 0; i < numrt; i++) {
+    auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToRenderTarget(cb);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   }
-  auto depthbuffer = _rtg->_depthBuffer;
-  if (depthbuffer) {
-    auto rtb_impl = depthbuffer->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    rtb_impl->_transitionToRenderTarget(cb);
+  if (_depth_buffer_impl) {
+    _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    _depth_buffer_impl->_transitionToRenderTarget(cb);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb){
-  int inumtargets = _rtg->numImageBuffers();
-  for (int i = 0; i < inumtargets; i++) {
-    auto rtb      = _rtg->buffer(i);
-    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+  int numrt     = _color_buffer_impls.size();
+  for (int i = 0; i < numrt; i++) {
+    auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToTexture(cb);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
-  auto depthbuffer = _rtg->_depthBuffer;
-  if (depthbuffer) {
-    auto rtb_impl = depthbuffer->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    rtb_impl->_transitionToTexture(cb);
+  if (_depth_buffer_impl) {
+    _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    _depth_buffer_impl->_transitionToTexture(cb);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb){
-  int inumtargets = _rtg->numImageBuffers();
-  for (int i = 0; i < inumtargets; i++) {
-    auto rtb      = _rtg->buffer(i);
-    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+  int numrt     = _color_buffer_impls.size();
+  for (int i = 0; i < numrt; i++) {
+    auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToHostRead(cb);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
-  auto depthbuffer = _rtg->_depthBuffer;
-  if (depthbuffer) {
-    auto rtb_impl = depthbuffer->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    rtb_impl->_transitionToHostRead(cb);
+  if (_depth_buffer_impl) {
+    _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    _depth_buffer_impl->_transitionToHostRead(cb);
   }
 }
 

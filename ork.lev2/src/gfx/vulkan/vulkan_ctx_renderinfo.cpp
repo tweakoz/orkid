@@ -11,15 +11,13 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanRenderInfo::VulkanRenderInfo(rtgroup_rawptr_t rtg)
-    : _rtg(rtg) {
+VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
   initializeVkStruct(_renderinfo, VK_STRUCTURE_TYPE_RENDERING_INFO);
   _rainfos_color.clear();
-  size_t num_image_buffers = rtg->numImageBuffers();
+  size_t num_image_buffers = rtg->_color_buffer_impls.size();
   for (int i = 0; i < num_image_buffers; i++) {
-    auto buf     = rtg->buffer(i);
-    auto vkfmt   = VkFormatConverter::convertBufferFormat(buf->format());
-    auto bufimpl = buf->_impl.getShared<VklRtBufferImpl>();
+    auto bufimpl = rtg->_color_buffer_impls[i];
+    auto vkfmt   = bufimpl->_vkfmt;
     VkRenderingAttachmentInfo rai;
     initializeVkStruct(rai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     rai.imageView   = bufimpl->_vkimgview;
@@ -27,27 +25,25 @@ VulkanRenderInfo::VulkanRenderInfo(rtgroup_rawptr_t rtg)
     rai.resolveMode = VK_RESOLVE_MODE_NONE;
     // rai.resolveImageView = VkImageView();
     // rai.resolveImageLayout = VkImageLayout();
-    bool clear = buf->_autoclear;
-    rai.loadOp           = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    rai.loadOp           = rtg->_autoclear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     rai.storeOp          = VK_ATTACHMENT_STORE_OP_STORE;
-    auto cc = buf->_clearColor;
+    auto cc = bufimpl->_clear_color;
     rai.clearValue.color = {{cc.x,cc.y,cc.z,cc.w}};
     _rainfos_color.push_back(rai);
   }
-  auto dbuf                            = rtg->_depthBuffer;
   _renderinfo.viewMask                 = 0;
   _renderinfo.layerCount               = 1;
   _renderinfo.flags                    = VkRenderingFlags();
   _renderinfo.renderArea.offset.x      = 0;
   _renderinfo.renderArea.offset.y      = 0;
-  _renderinfo.renderArea.extent.width  = rtg->miW;
-  _renderinfo.renderArea.extent.height = rtg->miH;
+  _renderinfo.renderArea.extent.width  = rtg->_width;
+  _renderinfo.renderArea.extent.height = rtg->_height;
   _renderinfo.colorAttachmentCount     = _rainfos_color.size();
   _renderinfo.pColorAttachments        = _rainfos_color.data();
   _renderinfo.pStencilAttachment       = nullptr;
 
-  if (dbuf) {
-    auto dbuf_impl = dbuf->_impl.getShared<VklRtBufferImpl>();
+  auto dbuf_impl                       = rtg->_depth_buffer_impl;
+  if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
     _rainfo_depth.imageView   = dbuf_impl->_vkimgview;
     _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
