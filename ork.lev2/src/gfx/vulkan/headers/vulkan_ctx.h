@@ -42,14 +42,14 @@ struct GLFWwindow;
 #import <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "vulkan_ctx_protos.h"
-#include "vulkan_ctx_geom.h"
-#include "vulkan_ctx_misc.h"
-#include "vulkan_ctx_image.h"
-#include "vulkan_ctx_memory.h"
-#include "vulkan_ctx_rtg.h"
-#include "vulkan_ctx_synch.h"
-#include "vulkan_ctx_pipeline.h"
+#include "vk_protos.h"
+#include "vk_geom.h"
+#include "vk_misc.h"
+#include "vk_image.h"
+#include "vk_memory.h"
+#include "vk_rtgroup.h"
+#include "vk_synchro.h"
+#include "vk_pipeline.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////

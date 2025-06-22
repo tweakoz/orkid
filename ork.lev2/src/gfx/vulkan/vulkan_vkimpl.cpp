@@ -10,7 +10,7 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/asset/Asset.inl>
 #if defined(ENABLE_VULKAN)
-#include "vulkan_ctx.h"
+#include "headers/vulkan_ctx.h"
 #import <ork/lev2/glfw/ctx_glfw.h>
 
 namespace ork::lev2::vulkan {

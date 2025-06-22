@@ -20,7 +20,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "../gfx/vulkan/vulkan_ctx.h"
+#include "../gfx/vulkan/headers/vulkan_ctx.h"
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_GLFW)
 #include <ork/lev2/glfw/ctx_glfw.h>
