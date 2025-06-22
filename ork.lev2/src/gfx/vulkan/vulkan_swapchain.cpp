@@ -145,8 +145,10 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     }
   }
 
+  auto old_swapchain = _contextVK->_fbi->_swapchain; // No previous swapchain, this is the first one
+
   SCINFO.clipped = VK_TRUE; // clip pixels that are obscured by other windows
-  SCINFO.oldSwapchain = VK_NULL_HANDLE;
+  SCINFO.oldSwapchain = old_swapchain ? old_swapchain->_vkSwapChain : VK_NULL_HANDLE; // Use previous swapchain if available
 
   // Choose a supported present mode
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
