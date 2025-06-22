@@ -18,18 +18,23 @@ VkSwapChain::VkSwapChain() {
   _semasOkToPresent.resize(1);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 rtgroup_ptr_t VkSwapChain::currentRTG() {
   return _rtgs[_curSwapWriteImage];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
 size_t VkSwapChain::subIndex() const {
   // Return the current frame index modulo MAX_FRAMES_IN_FLIGHT
   // This gives us the index of the current frame in the circular buffer
   return _currentFrame % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
+///////////////////////////////////////////////////////////////////////////////
+
+VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
 
   // Ensure we have a valid swapchain
 
@@ -70,7 +75,7 @@ void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
       case VK_SUBOPTIMAL_KHR:
       case VK_ERROR_OUT_OF_DATE_KHR: {
         vkDeviceWaitIdle(ctxVK->_vkdevice);
-        ctxVK->_fbi->_initSwapChain();
+        return status;
         // printf("VK_ERROR_OUT_OF_DATE_KHR\n");
         //  OrkAssert(false);
         //   need to recreate swap chain
@@ -85,6 +90,7 @@ void VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   OrkAssert(_curSwapWriteImage >= 0);
   OrkAssert(_curSwapWriteImage < _rtgs.size());
   // printf( "_curSwapWriteImage<%u>\n", _curSwapWriteImage );
+  return VK_SUCCESS;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

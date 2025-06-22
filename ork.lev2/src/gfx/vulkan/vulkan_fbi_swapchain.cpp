@@ -10,25 +10,16 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_initSwapChain() {
+///////////////////////////////////////////////////////////////////////////////
+void VkFrameBufferInterface::_destroySwapChain() {
 
   auto& vkdev    = _contextVK->_vkdevice;
-  auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
-  auto pres_caps = _contextVK->_vkpresentation_caps;
 
   if (_swapchain) {
     _old_swapchains.insert(_swapchain);
 
     // Wait for all frames in flight to complete before destroying
     vkDeviceWaitIdle(_contextVK->_vkdevice);
-
-    for (auto& fence : _swapchain->_frameFences) {
-      if (fence) {
-        fence->wait();
-      }
-    }
 
     size_t num_images = _swapchain->_rtgs.size();
     for (size_t i = 0; i < num_images; i++) {
@@ -38,39 +29,28 @@ void VkFrameBufferInterface::_initSwapChain() {
       auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
       auto rtb_impl_depth = rtb_depth ? rtb_depth->_impl.getShared<VklRtBufferImpl>() : nullptr;
       // auto img = _swapchain->_vkSwapChainImages[i];
-
-      // barrier - complete all ops before destroying
-      if (0) {
-        auto imgbar = createImageBarrier(
-            rtb_impl_color->_vkimg,
-            VK_IMAGE_LAYOUT_UNDEFINED,            // oldLayout
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newLayout
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
-            VK_ACCESS_MEMORY_WRITE_BIT);          // dstAccessMask
-        vkCmdPipelineBarrier(
-            cmdbuf,                                        // cmdbuf
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,            // dstStageMask
-            0,                                             // dependencyFlags
-            0,
-            nullptr, // memoryBarrierCount, pMemoryBarriers
-            0,
-            nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-            1,
-            imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
-      }
-
       vkDestroyImageView(vkdev, rtb_impl_color->_vkimgview, nullptr);
       // vkDestroyImage(vkdev, img, nullptr);
     }
     vkDestroySwapchainKHR(vkdev, _swapchain->_vkSwapChain, nullptr);
   }
 
+  ////////////////////////////////////////////////////
   // Clear old swapchains after destroying current one
+  ////////////////////////////////////////////////////
+
   for (auto& old_swap : _old_swapchains) {
     vkDestroySwapchainKHR(vkdev, old_swap->_vkSwapChain, nullptr);
   }
   _old_swapchains.clear();
+  _swapchain = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+vkswapchain_ptr_t VkFrameBufferInterface::_createSwapChain() {
+
+  auto& vkdev    = _contextVK->_vkdevice;
+  auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
+  auto pres_caps = _contextVK->_vkpresentation_caps;
 
   auto swap_chain = std::make_shared<VkSwapChain>();
 
@@ -90,7 +70,6 @@ void VkFrameBufferInterface::_initSwapChain() {
     fence->reset();
   }
 
-  // auto surfaceFormat = pres_caps->_formats[0];
   VkSurfaceFormatKHR surfaceFormat = pres_caps->_formats[0];
   for (const auto& format : pres_caps->_formats) {
     // Prefer BGRA8 SRGB if available
@@ -120,7 +99,10 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   auto& caps = pres_caps->_capabilities;
 
+  ////////////////////////////////////////////////////
   // Check if extent is defined by surface (required on some platforms)
+  ////////////////////////////////////////////////////
+
   if (caps.currentExtent.width != 0xFFFFFFFF) {
     width  = caps.currentExtent.width;
     height = caps.currentExtent.height;
@@ -199,7 +181,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   SCINFO.clipped = VK_TRUE; // clip pixels that are obscured by other windows
   // SCINFO.oldSwapchain   = _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
-  SCINFO.oldSwapchain = VK_NULL_HANDLE; // _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
+  SCINFO.oldSwapchain = _swapchain ? _swapchain->_vkSwapChain : VK_NULL_HANDLE;
 
   // Choose a supported present mode
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
@@ -271,9 +253,16 @@ void VkFrameBufferInterface::_initSwapChain() {
         swapChainImages[i]);
     swap_chain->_rtgs.push_back(rtg);
   }
-
-  _swapchain = swap_chain;
+  ////////////////////////////////////////////////////
+  return swap_chain;
 }
+///////////////////////////////////////////////////////////////////////////////
+void VkFrameBufferInterface::_initSwapChain() {
+  //_destroySwapChain();
+  auto new_swapchain = _createSwapChain();
+  _swapchain = new_swapchain;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

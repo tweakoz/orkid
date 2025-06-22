@@ -147,6 +147,31 @@ vkimagecreateinfo_ptr_t makeVKICI(
     int w,
     int h,
     int d, //
+    VkFormat fmt,
+    int nummips) { //
+  auto VKICI = std::make_shared<VkImageCreateInfo>();
+  initializeVkStruct(*VKICI, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+  VKICI->imageType     = VK_IMAGE_TYPE_2D;
+  VKICI->format        = fmt;
+  VKICI->extent.width  = w;
+  VKICI->extent.height = h;
+  VKICI->extent.depth  = d;
+  VKICI->mipLevels     = nummips;
+  VKICI->arrayLayers   = 1;
+  VKICI->samples       = VK_SAMPLE_COUNT_1_BIT;
+  VKICI->tiling        = VK_IMAGE_TILING_OPTIMAL;
+  VKICI->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+  VKICI->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  VKICI->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  return VKICI;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkimagecreateinfo_ptr_t makeVKICI(
+    int w,
+    int h,
+    int d, //
     EBufferFormat fmt,
     int nummips) { //
   auto VKICI = std::make_shared<VkImageCreateInfo>();

@@ -61,11 +61,22 @@ void _vkCreateImageForBuffer(
     vkrtbufimpl_ptr_t bufferimpl,
     EBufferFormat ork_fmt,
     uint64_t usage) {               //
+  auto vk_fmt = VkFormatConverter::convertBufferFormat(ork_fmt);
+  _vkCreateImageForBuffer(ctxVK, bufferimpl, vk_fmt, usage);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void _vkCreateImageForBuffer(
+    vkcontext_rawptr_t ctxVK, //
+    vkrtbufimpl_ptr_t bufferimpl,
+    VkFormat vk_fmt,
+    uint64_t usage) {               //
   auto VKICI = makeVKICI(           //
       bufferimpl->_rtg_impl->_width,  // width
       bufferimpl->_rtg_impl->_height, // height
       1,                            // depth
-      ork_fmt,                      // format
+      vk_fmt,                      // format
       1);                           // miplevels
   switch (usage) {
     case "depth"_crcu:

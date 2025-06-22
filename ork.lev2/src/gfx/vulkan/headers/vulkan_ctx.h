@@ -257,6 +257,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   //////////////////////////////////////////////
 
   freestyle_mtl_ptr_t utilshader();
+  vkrtgrpimpl_ptr_t _createRtGroupImpl(const VkRtgCrOpts& options);
   vkrtgrpimpl_ptr_t _createRtGroupImpl(rtgroup_rawptr_t rtg);
 
   //////////////////////////////////////////////
@@ -272,6 +273,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkcontext_rawptr_t _contextVK;
 
   //////////////////////////////////////////////
+  void _destroySwapChain();
+  vkswapchain_ptr_t _createSwapChain();
   void _initSwapChain();
   //////////////////////////////////////////////
 

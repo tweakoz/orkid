@@ -62,7 +62,14 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 void VkFrameBufferInterface::_doBeginFrame() {
   //logchan_fbi->log("_doBeginFrame()");
   OrkAssert(_contextVK->_is_visual_frame);
-  _swapchain->acquireImage(_contextVK);
+  bool got_swapchain_image = false;
+  while(not got_swapchain_image){
+    VkResult status = _swapchain->acquireImage(_contextVK);
+    got_swapchain_image = (status == VK_SUCCESS);
+    if(not got_swapchain_image){
+      _initSwapChain();
+    }
+  }
   _main_rtg = _swapchain->currentRTG();
   _active_rtgroup = _main_rtg.get();
 }

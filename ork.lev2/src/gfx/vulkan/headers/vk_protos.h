@@ -236,6 +236,11 @@ void _vkCreateImageForBuffer(
     vkrtbufimpl_ptr_t bufferimpl,
     EBufferFormat ork_fmt,
     uint64_t usage);
+void _vkCreateImageForBuffer(
+    vkcontext_rawptr_t ctxVK, //
+    vkrtbufimpl_ptr_t bufferimpl,
+    VkFormat vk_fmt,
+    uint64_t usage);
 
 barrier_ptr_t createImageBarrier(
     VkImage image,
@@ -243,6 +248,12 @@ barrier_ptr_t createImageBarrier(
     VkImageLayout newLayout,
     VkAccessFlagBits srcAccessMask,
     VkAccessFlagBits dstAccessMask);
+vkimagecreateinfo_ptr_t makeVKICI(
+    int w,
+    int h,
+    int d, //
+    VkFormat fmt,
+    int nummips);
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

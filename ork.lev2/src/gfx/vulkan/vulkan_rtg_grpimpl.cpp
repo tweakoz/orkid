@@ -40,6 +40,20 @@ void VkRtGroupImpl::_updateClearParams(rtgroup_rawptr_t rtg) {
   }
 }
 
+///////////////////////////////////////////////////////
+
+void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
+  auto ctxVK = fbi->_contextVK;
+  int w = ctxVK->mainSurfaceWidth();
+  int h = ctxVK->mainSurfaceHeight();
+  if ( (_width != w) or (_height != h) ) {
+    logchan_rtgi->log("resize main surface to w<%d> h<%d>", w, h);
+    //SetSizeDirty(false);
+    _width  = w;
+    _height = h;
+  }  
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrenderinfo_ptr_t VkRtGroupImpl::renderinfo() {
@@ -122,6 +136,25 @@ void VkRtGroupImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb){
     _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     _depth_buffer_impl->_transitionToHostRead(cb);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkRtGroupImpl::assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup){
+  rtgroup->_impl.setShared<VkRtGroupImpl>(rtgimpl);
+  int inumtargets = rtgroup->numImageBuffers();
+  int inumimpls = rtgimpl->_color_buffer_impls.size();
+  OrkAssert(inumtargets == inumimpls);
+  for(int i=0; i < inumtargets; i++) {
+    auto rtb = rtgroup->buffer(i);
+    auto rtb_impl = rtgimpl->_color_buffer_impls[i];
+    rtb->_impl.setShared<VklRtBufferImpl>(rtb_impl);
+  }
+  if(rtgroup->_depthBuffer) {
+    auto rtb_impl = rtgimpl->_depth_buffer_impl;
+    rtgroup->_depthBuffer->_impl.setShared<VklRtBufferImpl>(rtb_impl);
+  }
+  rtgimpl->_updateClearParams(rtgroup);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

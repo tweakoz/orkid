@@ -8,6 +8,16 @@ struct VkMsaaState {
   int _pipeline_bits = -1;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkRtgCrOpts {
+  int _width = 0;
+  int _height = 0;
+  uint64_t _usage = 0;
+  MsaaSamples _msaaSamples = MsaaSamples::MSAA_1X;
+  std::vector<VkFormat> _colorFormats;
+  std::vector<uint64_t> _colorUsages;
+  VkFormat _depthFormat = VK_FORMAT_UNDEFINED;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fmt);
 
@@ -49,6 +59,8 @@ struct VkRtGroupImpl {
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
   void _updateMainSurface(VkFrameBufferInterface* fbi);
 
+  static void assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup);
+
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;
@@ -76,7 +88,7 @@ struct VkSwapChain {
 
   rtgroup_ptr_t currentRTG();
 
-  void acquireImage(vkcontext_rawptr_t ctxVK);
+  VkResult acquireImage(vkcontext_rawptr_t ctxVK);
   void enqueueFrame(vkcontext_rawptr_t ctxVK);
   void enqueuePresentFrame(vkcontext_rawptr_t ctxVK);
   void waitPresentFrame(vkcontext_rawptr_t ctxVK);

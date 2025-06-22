@@ -14,24 +14,17 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
-
-vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(_contextVK);
-  int inumtargets           = rtgroup->numImageBuffers();
-  RTGIMPL->_width = rtgroup->width();
-  RTGIMPL->_height = rtgroup->height();
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& options) {
+  int inumtargets           = options._colorFormats.size();
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
+  RTGIMPL->_width = options._width;
+  RTGIMPL->_height = options._height;
   RTGIMPL->_pipeline_bits = 0;
-
-  ////////////////////////////////////////
-  // depth buffer
-  ////////////////////////////////////////
-  if (rtgroup->_depthBuffer) {
-    auto rtbuffer   = rtgroup->_depthBuffer;
-    auto vkfmt    = VkFormatConverter::convertBufferFormat(rtbuffer->format());
+  if(options._depthFormat!=VK_FORMAT_UNDEFINED) {
     uint64_t USAGE  = "depth"_crcu;
-    auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, options._depthFormat);
     RTGIMPL->_depth_buffer_impl = bufferimpl;
-    _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthFormat, USAGE);
     auto& adesc          = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -42,14 +35,13 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   ////////////////////////////////////////
   bool is_swapchain = false;
   for (int it = 0; it < inumtargets; it++) {
-    rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
     ////////////////////////////////////////////
     uint64_t USAGE = "color"_crcu;
-    if (rtbuffer->_usage != 0) {
-      USAGE = rtbuffer->_usage;
+    if (options._colorUsages[it] != 0) {
+      USAGE = options._colorUsages[it];
     }
-    auto vkfmt    = VkFormatConverter::convertBufferFormat(rtbuffer->format());
-    auto bufferimpl         = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
+    auto vkfmt    = options._colorFormats[it];
+    auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
     RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
     ////////////////////////////////////////////
     if (USAGE == "swapchain"_crcu) {
@@ -57,26 +49,26 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     }
     ////////////////////////////////////////////
     else { // not present...
-      OrkAssert(rtgroup->_msaa_samples == MsaaSamples::MSAA_1X);
-      _contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
+      //OrkAssert(rtgroup->_msaa_samples == MsaaSamples::MSAA_1X);
+      //_contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
     }
     ///////////////////////////////////////////////////
   }
 
-  switch (rtgroup->_usage) {
+  switch (options._usage) {
     case "user"_crcu: {
       for (int it = 0; it < inumtargets; it++) {
-        rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
-        OrkAssert(rtbuffer->_usage != "depth"_crcu);
-        auto usage = rtbuffer->_usage;
-        auto vk_fmt = VkFormatConverter::convertBufferFormat(rtbuffer->format());
-        auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),usage, vk_fmt);
-        auto texture    = rtbuffer->texture();
-        OrkAssert(texture != nullptr);
-        printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), rtbuffer->_usage);
-        OrkAssert(rtbuffer->_usage == "color"_crcu);
-        auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
-        auto format  = bufferimpl->_vkfmt;
+        uint64_t buf_usage = options._colorUsages[it];
+        VkFormat vk_fmt = options._colorFormats[it];
+        //rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
+        OrkAssert(buf_usage != "depth"_crcu);
+        auto usage = buf_usage;
+        auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),usage, vk_fmt);
+        //auto texture    = rtbuffer->texture();
+        //OrkAssert(texture != nullptr);
+        //printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), buf_usage);
+        OrkAssert(buf_usage == "color"_crcu);
+        //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
 
         //bufferimpl->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -85,13 +77,13 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
         attachment_ref.attachment = it;
         attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
-        bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
-        bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
-        bufferimpl->_imgobj                   = teximpl->_imgobj;
-        bufferimpl->_vkimgview                = teximpl->_imgobj->_vkimageview;
-        bufferimpl->_vkimg                    = teximpl->_imgobj->_vkimage;
-        OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
+        //OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+        //bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
+        //bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
+        //bufferimpl->_imgobj                   = teximpl->_imgobj;
+        //bufferimpl->_vkimgview                = teximpl->_imgobj->_vkimageview;
+        //bufferimpl->_vkimg                    = teximpl->_imgobj->_vkimage;
+        //OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
       }
       break;
     }
@@ -102,8 +94,31 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     default:
       break;
   }
-  RTGIMPL->_updateClearParams(rtgroup);
   return RTGIMPL;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
+  int inumtargets           = rtgroup->numImageBuffers();
+  VkRtgCrOpts options;
+  options._usage = rtgroup->_usage;
+  options._msaaSamples = rtgroup->_msaa_samples;
+  options._depthFormat = VkFormatConverter::convertBufferFormat(rtgroup->_depthBuffer->format());
+  for(int i=0; i < inumtargets; i++) {
+    auto rtb = rtgroup->buffer(i);
+    options._colorFormats.push_back(VkFormatConverter::convertBufferFormat(rtb->format()));
+    options._colorUsages.push_back(rtb->_usage);
+  }
+  options._width = rtgroup->width();
+  options._height = rtgroup->height();
+  auto rtgimpl = _createRtGroupImpl(options);
+  ///////////////////////////////////////////////////
+  // set impls in rtgroup and rtbuffers
+  ///////////////////////////////////////////////////
+  VkRtGroupImpl::assignToRtGroup(rtgimpl, rtgroup);
+  ///////////////////////////////////////////////////
+  return rtgimpl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,20 +257,6 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
       OrkAssert(false);
       break;
   }
-}
-
-///////////////////////////////////////////////////////
-
-void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
-  auto ctxVK = fbi->_contextVK;
-  int w = ctxVK->mainSurfaceWidth();
-  int h = ctxVK->mainSurfaceHeight();
-  if (_width != w || _height != h) {
-    logchan_rtgroup->log("resize main surface to w<%d> h<%d>", w, h);
-    //SetSizeDirty(false);
-    _width  = w;
-    _height = h;
-  }  
 }
 
 ///////////////////////////////////////////////////////
