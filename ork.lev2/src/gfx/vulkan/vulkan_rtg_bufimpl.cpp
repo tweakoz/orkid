@@ -15,8 +15,9 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_rtgi = logger()->createChannel("VKRTGI", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 
-VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fmt) //
-    : _rtg_impl(par)
+VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, uint64_t usage, VkFormat fmt) //
+    : _contextVK(ctxVK)
+    , _rtg_impl(par)
     , _usage(usage)
     , _vkfmt(fmt) { //
 
@@ -45,6 +46,14 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fm
   _attachmentDesc.format = _vkfmt;
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+VklRtBufferImpl::~VklRtBufferImpl() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VklRtBufferImpl::setLayout(VkImageLayout layout) {
   auto previousLayout           = _attachmentDesc.finalLayout;
   _currentLayout                = layout;

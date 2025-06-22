@@ -22,7 +22,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
   RTGIMPL->_pipeline_bits = 0;
   if(options._depthFormat!=VK_FORMAT_UNDEFINED) {
     uint64_t USAGE  = "depth"_crcu;
-    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, options._depthFormat);
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, options._depthFormat);
     RTGIMPL->_depth_buffer_impl = bufferimpl;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthFormat, USAGE);
     auto& adesc          = bufferimpl->_attachmentDesc;
@@ -41,7 +41,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
       USAGE = options._colorUsages[it];
     }
     auto vkfmt    = options._colorFormats[it];
-    auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),USAGE, vkfmt);
+    auto bufferimpl         = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, vkfmt);
     RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
     ////////////////////////////////////////////
     if (USAGE == "swapchain"_crcu) {
@@ -63,7 +63,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
         //rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
         OrkAssert(buf_usage != "depth"_crcu);
         auto usage = buf_usage;
-        auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(),usage, vk_fmt);
+        auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),usage, vk_fmt);
         //auto texture    = rtbuffer->texture();
         //OrkAssert(texture != nullptr);
         //printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), buf_usage);

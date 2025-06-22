@@ -19,7 +19,8 @@ struct VkRtgCrOpts {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VklRtBufferImpl {
-  VklRtBufferImpl(VkRtGroupImpl* par, uint64_t usage, VkFormat fmt);
+  VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, uint64_t usage, VkFormat fmt);
+  ~VklRtBufferImpl();
 
   void _transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& params);
   void _transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb);
@@ -30,18 +31,19 @@ struct VklRtBufferImpl {
   void setLayout(VkImageLayout layout);
   void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
 
+  vkcontext_rawptr_t _contextVK = nullptr;
   VkRtGroupImpl* _rtg_impl = nullptr;
   uint64_t _usage = "none"_crcu;
   VkFormat _vkfmt = VK_FORMAT_UNDEFINED;
   bool _init               = true;
   bool _is_surface         = false;
-  VkImage _vkimg;
-  vkimageobj_ptr_t _imgobj;
-  VkImageView _vkimgview;
+  VkImage _vkimg           = VK_NULL_HANDLE; // Vulkan image handle
+  VkImageView _vkimgview  = VK_NULL_HANDLE; // Vulkan image view handle
   VkAttachmentDescription _attachmentDesc;
   VkAttachmentReference _attachmentRef;
   VkDescriptorImageInfo _descriptorInfo;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  vkimageobj_ptr_t _imgobj;
   svar64_t _teximpl;
   fvec4 _clear_color;
   float _clear_depth = 1.0f;
@@ -49,6 +51,7 @@ struct VklRtBufferImpl {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtGroupImpl {
   VkRtGroupImpl(vkcontext_rawptr_t ctxVK);
+  ~VkRtGroupImpl();
 
   rtgroup_attachments_ptr_t attachments();
   vkrenderinfo_ptr_t renderinfo();
@@ -82,9 +85,18 @@ struct VkRtGroupImpl {
   std::unordered_set<vkrenderinfo_ptr_t> _renderinfo_set;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkSwapChainCaps {
+  bool supportsPresentationMode(VkPresentModeKHR mode) const;
+
+  VkSurfaceCapabilitiesKHR _capabilities;
+  std::vector<VkSurfaceFormatKHR> _formats;
+  std::set<VkPresentModeKHR> _presentModes;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkSwapChain {
 
-  VkSwapChain();
+  VkSwapChain(vkcontext_rawptr_t ctxVK);
+  ~VkSwapChain();
 
   rtgroup_ptr_t currentRTG();
 
@@ -96,6 +108,7 @@ struct VkSwapChain {
 
   void _submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK);
 
+  vkcontext_rawptr_t _contextVK = nullptr;
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
   static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;               // CPU can be ahead by 2 frames

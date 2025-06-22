@@ -61,14 +61,6 @@ using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
 using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,256>;
 using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-struct VkSwapChainCaps {
-  bool supportsPresentationMode(VkPresentModeKHR mode) const;
-
-  VkSurfaceCapabilitiesKHR _capabilities;
-  std::vector<VkSurfaceFormatKHR> _formats;
-  std::set<VkPresentModeKHR> _presentModes;
-};
-///////////////////////////////////////////////////////////////////////////////
 struct VulkanDeviceInfo {
 
   VkPhysicalDevice _phydev;

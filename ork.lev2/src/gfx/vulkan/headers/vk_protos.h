@@ -168,6 +168,8 @@ using vkbufferlayout_ptr_t      = std::shared_ptr<VkBufferLayout>;
 
 using vkrtbufimpl_ptr_t         = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t         = std::shared_ptr<VkRtGroupImpl>;
+using vkrtbufimpl_wkptr_t       = std::weak_ptr<VklRtBufferImpl>;
+using vkrtgrpimpl_wkptr_t       = std::weak_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t      = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t        = std::shared_ptr<VkTexLoadReq>;
 using vkfxshader_bin_t          = std::vector<uint32_t>;

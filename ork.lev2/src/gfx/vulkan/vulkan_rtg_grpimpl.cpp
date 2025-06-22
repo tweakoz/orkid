@@ -28,7 +28,9 @@ VkRtGroupImpl::VkRtGroupImpl(vkcontext_rawptr_t ctxVK)
   initializeVkStruct(_cmdBufII, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
   _cmdBufCBBI_GFX.pInheritanceInfo = &_cmdBufII;
 }
-
+VkRtGroupImpl::~VkRtGroupImpl() {
+  _cmdbufRTG = nullptr; // Clear the command buffer to avoid dangling pointers
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_updateClearParams(rtgroup_rawptr_t rtg) {
