@@ -35,6 +35,7 @@ extern appinitdata_ptr_t _ginitdata;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
+void windowToFront(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
@@ -528,6 +529,9 @@ void CtxGLFW::Show() {
     setAlwaysOnTop(_glfwWindow);
   }
 
+  #ifdef __APPLE__
+    windowToFront(_glfwWindow);
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -817,6 +821,9 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
       nullptr, //
       nullptr);
   logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
   return offscreen_window;
 }
 

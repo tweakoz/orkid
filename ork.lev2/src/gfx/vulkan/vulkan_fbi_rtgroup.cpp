@@ -108,8 +108,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
-
+void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
 
@@ -122,6 +121,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     case "swapchain"_crcu:
       RTGIMPL = rtgroup->_impl.getShared<VkRtGroupImpl>();
       RTGIMPL->_updateClearParams(rtgroup);
+      RTGIMPL->_updateMainSurface(this);
       break;
     case "popup"_crcu:
       OrkAssert(false);
@@ -133,8 +133,6 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
       /////////////////////////////////////////
       int inumtargets = rtgroup->numImageBuffers();
       int numsamples  = msaaEnumToInt(rtgroup->_msaa_samples);
-      // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
-      //  auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
       if (auto as_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
         RTGIMPL = as_impl.value();
       } else {
@@ -186,6 +184,13 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
 
   _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
+  __setRtGroup(rtgroup);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,6 +242,20 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
       OrkAssert(false);
       break;
   }
+}
+
+///////////////////////////////////////////////////////
+
+void VkRtGroupImpl::_updateMainSurface(VkFrameBufferInterface* fbi) {
+  auto ctxVK = fbi->_contextVK;
+  int w = ctxVK->mainSurfaceWidth();
+  int h = ctxVK->mainSurfaceHeight();
+  if (_width != w || _height != h) {
+    logchan_rtgroup->log("resize main surface to w<%d> h<%d>", w, h);
+    //SetSizeDirty(false);
+    _width  = w;
+    _height = h;
+  }  
 }
 
 ///////////////////////////////////////////////////////
