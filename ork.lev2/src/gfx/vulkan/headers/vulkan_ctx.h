@@ -276,6 +276,7 @@ struct VkTextureInterface final : public TextureInterface {
 
   void TexManInit() final;
 
+  void _beginFrame();
   //
   bool destroyTexture(texture_ptr_t ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
@@ -290,7 +291,7 @@ struct VkTextureInterface final : public TextureInterface {
 
   stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
   std::unordered_map<size_t, stagingbufferpool_ptr_t> _stagingSrcBuffers;
-
+  std::unordered_set<vktexobj_ptr_t> _texobjs_pending_for_deletion;
   sseccmdbufpool_ptr_t _seccmdbufpool_xfer;
 };
 ///////////////////////////////////////////////////////////////////////////////

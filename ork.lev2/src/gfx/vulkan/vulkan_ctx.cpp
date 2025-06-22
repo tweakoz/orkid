@@ -441,7 +441,7 @@ void VkContext::_doBeginFrame() {
     [](auto sema) { //
       return sema->_onComplete==nullptr; //
   });
-
+  _txi->_beginFrame();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

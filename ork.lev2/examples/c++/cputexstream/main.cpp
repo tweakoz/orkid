@@ -15,19 +15,49 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 
-constexpr int DIM           = 2048;
-constexpr float finv        = 1.0f / 256.0f;
-constexpr float finvdim     = 1.0f / float(DIM);
 
 using float_vect_t = std::vector<float>;
+using compgroup_ptr_t = opq::CompletionGroup*;
 
+struct RenderData {
+  RenderData(int dim) : _DIM(dim) {
+    _texturedata = std::make_shared<float_vect_t>();
+    _texturedata->resize(_DIM * _DIM * 4);
+  }
+  float invdim() const {
+    return 1.0f / float(_DIM);
+  }
+  void update(compgroup_ptr_t cgroup, float fi){
+    //printf("update rdata<%p> fi<%f>\n", this, fi);
+    float finvdim = this->invdim();
+    float* ptexels = _texturedata->data();
+    for (int y = 0; y < _DIM; y++) {
+      float fy = float(y) * finvdim;
+      cgroup->enqueue([=]() {
+        int index      = y * _DIM * 4;
+        for (int x = 0; x < _DIM; x++) {
+          float fx           = float(x) * finvdim;
+          ptexels[index + 0] = sinf(fx * PI2 * 2.1f + fi) * 0.5 + 0.5f;
+          ptexels[index + 1] = cosf(fx * PI2 * 3.13f + fi) * 0.5 + 0.5f;
+          ptexels[index + 2] = sinf(fy * PI2 * 4.17f + fi + fx * 3.19f) * 0.5 + 0.5f;
+          ptexels[index + 3] = 1.0f;
+          index += 4;
+        }
+      });
+    }
+    cgroup->join();
+  }
+  int _DIM = 2048;
+  std::shared_ptr<float_vect_t> _texturedata;
+};
+
+using renderdata_ptr_t = std::shared_ptr<RenderData>;
 
 struct Resources {
 
   Resources(Context* ctx){
-    _texturedata = std::make_shared<float_vect_t>();
+    _renderdata = std::make_shared<RenderData>(1024);
     _texture = std::make_shared<Texture>();
-    _texturedata->resize(DIM * DIM * 4);
     _texture->_debugName = "cpugeneratedtexture";
 
     _material = std::make_shared<FreestyleMaterial>();
@@ -52,27 +82,25 @@ struct Resources {
     _texupdthread->start([this](anyp data) {
       float fi = 0.0f;
       this->_appstate = "THREAD_RUNNING"_crcu;
-      auto task = opq::createCompletionGroup(
+      auto cgroup = opq::createCompletionGroup(
           opq::concurrentQueue(), //
           "cpugen");
+
+      _timer.Start();
       while ("THREAD_RUNNING"_crcu == this->_appstate) {
-        for (int y = 0; y < DIM; y++) {
-          float fy = float(y) * finvdim;
-          task->enqueue([=]() {
-            int index      = y * DIM * 4;
-            float* ptexels = this->_texturedata->data();
-            for (int x = 0; x < DIM; x++) {
-              float fx           = float(x) * finvdim;
-              ptexels[index + 0] = sinf(fx * PI2 * 2.1f + fi) * 0.5 + 0.5f;
-              ptexels[index + 1] = cosf(fx * PI2 * 3.13f + fi) * 0.5 + 0.5f;
-              ptexels[index + 2] = sinf(fy * PI2 * 4.17f + fi + fx * 3.19f) * 0.5 + 0.5f;
-              ptexels[index + 3] = 1.0f;
-              index += 4;
-            }
-          });
+        if(_timer.SecsSinceStart() > 2.0f) {
+          int dim = _renderdata->_DIM;
+          dim <<= 1; // double the size
+          if(dim > 4096) {
+            dim = 128; // reset to 128
+          }
+          printf("texture dimensions changed to %d x %d\n", dim, dim);
+          _renderdata = std::make_shared<RenderData>(dim);
+          _timer.Start();
         }
-        task->join();
+        _renderdata->update(cgroup.get(),fi);
         fi += 0.07f;
+        _framecounter++;
       }
       this->_appstate = "THREAD_DONE"_crcu;
     });   
@@ -90,10 +118,11 @@ struct Resources {
   const FxShaderParam* _fxparameterMVP     = nullptr;
   const FxShaderParam* _fxparameterTexture = nullptr;
   texture_ptr_t _texture;
-  std::shared_ptr<float_vect_t> _texturedata;
+  renderdata_ptr_t _renderdata;
   uint32_t _appstate = "INIT_THREAD"_crcu;
   thread_ptr_t _texupdthread;
-  //renderpass_ptr_t _renderpass = nullptr;
+  int _framecounter = 0;
+  Timer _timer;
 
 };
 
@@ -108,12 +137,16 @@ int main(int argc, char** argv,char** envp) {
   timer.Start();
   resources_ptr_t resources;
   float abstime = 0.0f;
+  renderdata_ptr_t _current_renderdata;
   //////////////////////////////////////////////////////////
   ezapp->onGpuInit([&](Context* ctx) {
     resources = std::make_shared<Resources>(ctx);
   });
   //////////////////////////////////////////////////////////
   ezapp->onGpuUpdate([&](Context* ctx) {
+    _current_renderdata = resources->_renderdata;
+    //printf("_current_renderdata<%p>\n", _current_renderdata.get());
+    const int DIM = _current_renderdata->_DIM;
     TextureInitData tid;
     auto txi         = ctx->TXI(); // Texture Interface
     tid._w           = DIM;
@@ -121,7 +154,7 @@ int main(int argc, char** argv,char** envp) {
     tid._src_format  = EBufferFormat::RGBA32F;
     tid._dst_format  = EBufferFormat::RGBA32F;
     tid._autogenmips = false;
-    tid._data        = resources->_texturedata->data();
+    tid._data        = _current_renderdata->_texturedata->data();
     txi->initTextureFromData(resources->_texture.get(), tid);
   });
   //////////////////////////////////////////////////////////
@@ -159,8 +192,8 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->end(RCFD);    
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
-
-    if (timer.SecsSinceStart() > 5.0f) {
+    const int DIM = _current_renderdata->_DIM;
+    if (timer.SecsSinceStart() > 1.0f) {
       float FPS    = float(framecounter) / timer.SecsSinceStart();
       float MPPS   = FPS * float(DIM * DIM) / 1e6;
       float MiBPPS = FPS * float(DIM * DIM * 16) / float(1 << 20);

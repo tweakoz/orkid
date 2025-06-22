@@ -1,3 +1,4 @@
+
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -395,7 +396,23 @@ InFlightTextureTransfer::~InFlightTextureTransfer(){
   int count = _xfercount.fetch_sub(1);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void VkTextureInterface::_beginFrame(){
+    // check for textures pending for deletion
+    //. to have all transfers completed,
+    //.  then they can be deleted
+    std::unordered_set<vktexobj_ptr_t> ok_to_delete;
+    for (auto vktex : _texobjs_pending_for_deletion) {
+      if(vktex->_inflight_transfers.empty()){
+        ok_to_delete.insert(vktex);
+      }
+    }
+    for (auto vktex : ok_to_delete) {
+      _texobjs_pending_for_deletion.erase(vktex);
+    }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
 
 SecCmdBufPoolAdapter::SecCmdBufPoolAdapter(vkcontext_rawptr_t ctxVK)
     : _contextVK(ctxVK) {
@@ -411,13 +428,40 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
+  /////////////////////////////////////
+  // hash the image creation parameters
+  /////////////////////////////////////
+
+  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT //
+                 | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+  uint64_t image_params_hash = hashImageCreationParams(
+      tid._w,          //
+      tid._h,          //
+      tid._d,          //
+      tid._dst_format, //
+      1,               // nummips
+      usage);          // usage
+
+  /////////////////////////////////////
+  
+  bool hash_changed = false;
+  
   vktexobj_ptr_t vktex;
   if (auto existing = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
     // Texture already exists - we're updating it
     vktex = existing.value();
+    hash_changed = (image_params_hash != vktex->_image_params_hash);
+    if(hash_changed){
+      _texobjs_pending_for_deletion.insert(vktex);
+      vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
+      vktex->_image_params_hash = image_params_hash;
+    }
   } else {
     // New texture
     vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
+    vktex->_image_params_hash = image_params_hash;
+    hash_changed = true;
   }
 
   /////////////////////////////////////
@@ -461,20 +505,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   staging_buffer->copyFromHost(tid._data, transfer_size);
 
-  /////////////////////////////////////
-  // hash the image creation parameters
-  /////////////////////////////////////
-
-  uint64_t usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT //
-                 | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-  uint64_t image_params_hash = hashImageCreationParams(
-      tid._w,          //
-      tid._h,          //
-      tid._d,          //
-      tid._dst_format, //
-      1,               // nummips
-      usage);          // usage
 
   /////////////////////////////////////
   // if the image params have changed
@@ -483,8 +513,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // otherwise, reuse the existing VkImage and VkImageView
   /////////////////////////////////////
 
-  if (vktex->_image_params_hash != image_params_hash) {
-    vktex->_image_params_hash = image_params_hash;
+  if (hash_changed) {
 
     auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
     VKICI->usage = usage;
