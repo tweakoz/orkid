@@ -55,6 +55,11 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
 ///////////////////////////////////////////////////////////////////////////////
+using StagingBufferPool = ObjectPoolX<SbsPoolAdapter>;
+using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
+///////////////////////////////////////////////////////////////////////////////
+using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,256>;
+using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 struct VkSwapChainCaps {
   bool supportsPresentationMode(VkPresentModeKHR mode) const;
@@ -115,85 +120,6 @@ struct VulkanInstance {
   vkdeviceinfo_ptr_t _preferred;
 
   std::set<VkContext*> _contexts;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkMsaaState {
-  VkMsaaState();
-  VkPipelineMultisampleStateCreateInfo _VKSTATE;
-  int _pipeline_bits = -1;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkRasterState {
-  VkRasterState(rasterstate_ptr_t rstate);
-  VkPipelineRasterizationStateCreateInfo _VKRSCI;
-  VkPipelineDepthStencilStateCreateInfo _VKDSSCI;
-  VkPipelineColorBlendStateCreateInfo _VKCBSI;
-  VkPipelineColorBlendAttachmentState _VKCBATT;
-  int _pipeline_bits = -1;
-
-  using rsmap_t = std::unordered_map<uint64_t, int>;
-
-  static LockedResource<rsmap_t> _global_rasterstate_map;
-};
-///////////////////////////////////////////////////////////////////////////
-struct VulkanVertexInterfaceInput {
-  std::string _datatype;
-  std::string _identifier;
-  std::string _semantic;
-  size_t _datasize = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanVertexInterface {
-  using input_t = VulkanVertexInterfaceInput;
-  std::string _name;
-  vkvertexinterface_ptr_t _parent;
-  std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
-  int _pipeline_bits = -1;
-  uint64_t _hash     = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanGeometryInterfaceInput {
-  std::string _datatype;
-  std::string _identifier;
-  std::string _semantic;
-  size_t _datasize = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VulkanGeometryInterface {
-  using input_t = VulkanGeometryInterfaceInput;
-  std::string _name;
-  vkgeometryinterface_ptr_t _parent;
-  std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;
-  int _pipeline_bits = -1;
-  uint64_t _hash     = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkPrimaryCommandBufferImpl {
-
-  VkPrimaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
-  ~VkPrimaryCommandBufferImpl();
-
-  VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
-  bool _recorded            = false;
-  vkcontext_rawptr_t _contextVK;
-  PrimaryCommandBuffer* _orkCB = nullptr;
-
-  std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers;
-  static std::atomic<int> _cmdbufcount;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkSecondaryCommandBufferImpl {
-
-  VkSecondaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
-  ~VkSecondaryCommandBufferImpl();
-
-  VkCommandBuffer _vkcmdbuf      = VK_NULL_HANDLE;
-  SecondaryCommandBuffer* _orkCB = nullptr;
-  bool _recorded                 = false;
-  vkcontext_rawptr_t _contextVK;
-  static std::atomic<int> _cmdbufcount;
-  // Optional timeline semaphore to signal when this command buffer completes
-  vkcompletionsemaphore_ptr_t _completionSemaphore;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkDrawingInterface final : public DrawingInterface {
@@ -352,13 +278,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
-using StagingBufferPool = ObjectPoolX<SbsPoolAdapter>;
-using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
-///////////////////////////////////////////////////////////////////////////////
-using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,256>;
-using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;///////////////////////////////////////////////////////////////////////////////
 struct VkTextureInterface final : public TextureInterface {
 
   VkTextureInterface(vkcontext_rawptr_t ctx);

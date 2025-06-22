@@ -64,4 +64,32 @@ struct VkPlatformObject {
   void_lambda_t _bindop = []() {};
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct VkPrimaryCommandBufferImpl {
+
+  VkPrimaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
+  ~VkPrimaryCommandBufferImpl();
+
+  VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
+  bool _recorded            = false;
+  vkcontext_rawptr_t _contextVK;
+  PrimaryCommandBuffer* _orkCB = nullptr;
+
+  std::vector<secondary_commandbuffer_ptr_t> _secondary_cmdbuffers;
+  static std::atomic<int> _cmdbufcount;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VkSecondaryCommandBufferImpl {
+
+  VkSecondaryCommandBufferImpl(vkcontext_rawptr_t ctxVK);
+  ~VkSecondaryCommandBufferImpl();
+
+  VkCommandBuffer _vkcmdbuf      = VK_NULL_HANDLE;
+  SecondaryCommandBuffer* _orkCB = nullptr;
+  bool _recorded                 = false;
+  vkcontext_rawptr_t _contextVK;
+  static std::atomic<int> _cmdbufcount;
+  // Optional timeline semaphore to signal when this command buffer completes
+  vkcompletionsemaphore_ptr_t _completionSemaphore;
+};
+///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

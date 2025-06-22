@@ -193,6 +193,50 @@ struct VkFxShaderTechnique {
   std::vector<vkfxspass_ptr_t> _vk_passes;
   std::shared_ptr<FxShaderTechnique> _orktechnique;
 };
+///////////////////////////////////////////////////////////////////////////
+struct VulkanVertexInterfaceInput {
+  std::string _datatype;
+  std::string _identifier;
+  std::string _semantic;
+  size_t _datasize = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VulkanVertexInterface {
+  using input_t = VulkanVertexInterfaceInput;
+  std::string _name;
+  vkvertexinterface_ptr_t _parent;
+  std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
+  int _pipeline_bits = -1;
+  uint64_t _hash     = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VulkanGeometryInterfaceInput {
+  std::string _datatype;
+  std::string _identifier;
+  std::string _semantic;
+  size_t _datasize = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VulkanGeometryInterface {
+  using input_t = VulkanGeometryInterfaceInput;
+  std::string _name;
+  vkgeometryinterface_ptr_t _parent;
+  std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;
+  int _pipeline_bits = -1;
+  uint64_t _hash     = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VkRasterState {
+  VkRasterState(rasterstate_ptr_t rstate);
+  VkPipelineRasterizationStateCreateInfo _VKRSCI;
+  VkPipelineDepthStencilStateCreateInfo _VKDSSCI;
+  VkPipelineColorBlendStateCreateInfo _VKCBSI;
+  VkPipelineColorBlendAttachmentState _VKCBATT;
+  int _pipeline_bits = -1;
 
+  using rsmap_t = std::unordered_map<uint64_t, int>;
+
+  static LockedResource<rsmap_t> _global_rasterstate_map;
+};
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {
