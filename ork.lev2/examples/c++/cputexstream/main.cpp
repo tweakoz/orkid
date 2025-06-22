@@ -15,7 +15,7 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 
-constexpr int DIM           = 4096;
+constexpr int DIM           = 2048;
 constexpr float finv        = 1.0f / 256.0f;
 constexpr float finvdim     = 1.0f / float(DIM);
 

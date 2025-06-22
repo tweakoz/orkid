@@ -118,6 +118,7 @@ void _vkCreateImageForBuffer(
       VkFormatConverter::_instance.aspectForUsage(usage));
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
+  bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
   ///////////////////////////////////////////////////
 }
 
