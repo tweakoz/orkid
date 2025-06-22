@@ -11,10 +11,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static auto logchan_swapchain = logger()->createChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), true);
 
 VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK) 
   : _contextVK(ctxVK) {
 
+  logchan_swapchain->log("new VkSwapChain");
   auto& vkdev    = _contextVK->_vkdevice;
   auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
   auto pres_caps = _contextVK->_vkpresentation_caps;
@@ -225,6 +227,7 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
 ///////////////////////////////////////////////////////////////////////////////
 
 VkSwapChain::~VkSwapChain(){
+  logchan_swapchain->log("delete VkSwapChain");
   // Wait for all frames in flight to complete before destroying
   vkDeviceWaitIdle(_contextVK->_vkdevice);
   _rtgs.clear();
