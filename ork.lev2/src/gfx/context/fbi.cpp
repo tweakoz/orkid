@@ -29,6 +29,9 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
 
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
+  _main_rtg = std::make_shared<RtGroup>(&tgt,8,8,MsaaSamples::MSAA_1X,"swapchain"_crcu);
+  _main_rtg->_name = "main_rtg";
+  _main_rtg->_clearColor = fcolor4::Black();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

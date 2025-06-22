@@ -137,14 +137,12 @@ int main(int argc, char** argv,char** envp) {
     float r             = sinf(fi * 2.1f) * 0.25f + 0.5f;
     float g             = cosf(fi * 3.13f) * 0.25f + 0.5f;
     float b             = sinf(fi * 4.17f) * 0.25f + 0.5f;
+    float w = context->mainSurfaceWidth();
+    float h = context->mainSurfaceHeight();
+    float aspect = w / h;
     auto main_rtg = fbi->_main_rtg;
     auto main_rtb = main_rtg->buffer(0);
-    float w = main_rtg->miW;
-    float h = main_rtg->miH;
-    float aspect = w / h;
-    main_rtb->_autoclear = true;
     main_rtb->_clearColor = fvec4(r, g, b, 1);
-    fbi->PushRtGroup(main_rtg.get()); // implicit renderpass api
     auto RCFD = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_fxtechnique, RCFD);
     fmtx4 P, V, M;
@@ -159,7 +157,6 @@ int main(int argc, char** argv,char** envp) {
                              fvec4(0, 0, 1, 1),   // uv0rect
                              fvec4(0, 0, 1, 1));  // uv1rect
     resources->_material->end(RCFD);    
-    fbi->PopRtGroup(false);
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
 

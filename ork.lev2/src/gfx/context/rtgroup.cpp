@@ -41,14 +41,30 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, bool needs_depth)
+RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, uint64_t usage)
     : _parentTarget(ptgt)
     , mNumMrts(0)
     , miW(iW)
     , miH(iH)
     , _msaa_samples(msaa_samples)
     , mbSizeDirty(true)
-    , _needsDepth(needs_depth) {
+    , _usage(usage) {
+
+
+   switch(usage){
+     case "user"_crcu:
+       _needsDepth = true;
+       _autoclear = true;
+       break;
+     case "swapchain"_crcu:
+       _needsDepth = true;
+       _autoclear = true;
+       break;
+     default:
+       _autoclear = true;
+       _rendertarget = nullptr;
+       break;
+   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

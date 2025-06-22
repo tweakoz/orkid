@@ -162,6 +162,7 @@ void Context::beginFrame(bool visual) {
 
   mRenderContextInstData = 0;
   _doBeginFrame();
+  FBI()->PushRtGroup(FBI()->_main_rtg.get()); // implicit renderpass api
 
   /////////////////////////////////////
   // call onBeginFrame callbacks
@@ -193,6 +194,8 @@ void Context::beginFrame(bool visual) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
+
+  FBI()->PopRtGroup(); // pop main rtg
 
   for (auto l : _onEndFrameCallbacks)
     l();

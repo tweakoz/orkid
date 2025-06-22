@@ -60,7 +60,7 @@ struct RtBuffer final {
 struct RtGroup final {
 
   /////////////////////////////////////////
-  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,bool needs_depth = true);
+  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,uint64_t usage="user"_crcu);
   ~RtGroup();
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;

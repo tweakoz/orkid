@@ -348,9 +348,9 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto rtg_t = py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
                    .def(py::init([](ctx_t& ctx, int w, int h) -> rtgroup_ptr_t {
-                     bool needs_depth         = true;
+                     uint64_t usage = "user"_crcu;
                      MsaaSamples msaa_samples = MsaaSamples::MSAA_1X;
-                     auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, needs_depth);
+                     auto rtg                 = std::make_shared<RtGroup>(ctx.get(), w, h, msaa_samples, usage);
                      return rtg;
                    }))
                    .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
