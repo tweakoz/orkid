@@ -59,6 +59,7 @@ struct VkRtGroupImpl {
   void _transitionToTexture(vkpricmdbufimpl_ptr_t cb);
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
   void _updateMainSurface(VkFrameBufferInterface* fbi);
+  void _invalidateAttachments();
 
   static void assignToRtGroup(vkrtgrpimpl_ptr_t rtgimpl, rtgroup_rawptr_t rtgroup);
 
@@ -96,7 +97,10 @@ struct VkSwapChain {
   VkSwapChain(vkcontext_rawptr_t ctxVK);
   ~VkSwapChain();
 
-  rtgroup_ptr_t currentRTG();
+  void _reinit();
+  void _update();
+  void _buildup();
+  void _teardown();
 
   VkResult acquireImage(vkcontext_rawptr_t ctxVK);
   void enqueueFrame(vkcontext_rawptr_t ctxVK);
@@ -107,8 +111,8 @@ struct VkSwapChain {
   void _submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK);
 
   vkcontext_rawptr_t _contextVK = nullptr;
-  VkSwapchainKHR _vkSwapChain;
-  std::vector<rtgroup_ptr_t> _rtgs;
+  VkSwapchainKHR _vkSwapChain = VK_NULL_HANDLE;
+  //std::vector<rtgroup_ptr_t> _rtgs;
   static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;               // CPU can be ahead by 2 frames
   std::vector<vkbinarysemaphore_ptr_t> _imageAcquiredSemaphores;  // One per frame-in-flight
   std::vector<vkbinarysemaphore_ptr_t> _renderCompleteSemaphores; // One per frame-in-flight
@@ -116,7 +120,7 @@ struct VkSwapChain {
   std::vector<VkSemaphore> _semasOkToRender;
   std::vector<VkSemaphore> _semasOkToPresent;
   std::vector<VkPipelineStageFlags> _waitOnPipelineStages;
-
+std::vector<vkimageobj_ptr_t> _swapChainImages;
 
   std::vector<VkSemaphore> _allSignalSemaphores;
   std::vector<VkSemaphore> _allWaitSemaphores;
@@ -125,7 +129,8 @@ struct VkSwapChain {
   std::vector<VkPipelineStageFlags> _allWaitStages;
 
   size_t _currentFrame = 0; // Which frame-in-flight we're on (0 or 1 if MAX=2)
-
+  int _width = 0;
+  int _height = 0;
   uint32_t _curSwapWriteImage = 0xffffffff;
 };
 ///////////////////////////////////////////////////////////////////////////////

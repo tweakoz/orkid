@@ -13,14 +13,30 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static auto logchan_swapchain = logger()->createChannel("VKSWAP", fvec3(0.5, 0.5, 0.5), true);
 
-VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK) 
-  : _contextVK(ctxVK) {
-
+VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
+    : _contextVK(ctxVK) {
   logchan_swapchain->log("new VkSwapChain");
+  _buildup();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VkSwapChain::~VkSwapChain() {
+  logchan_swapchain->log("delete VkSwapChain");
+  _teardown();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::_buildup() {
   auto& vkdev    = _contextVK->_vkdevice;
   auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
+  
+  _contextVK->_vkpresentation_caps = _contextVK->_swapChainCapsForSurface(_contextVK->_vkpresentationsurface);
+  
   auto pres_caps = _contextVK->_vkpresentation_caps;
 
+  
   _semasOkToRender.resize(1);
   _waitOnPipelineStages.resize(1);
   _semasOkToPresent.resize(1);
@@ -56,8 +72,8 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
 
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-  SCINFO.surface     = _contextVK->_vkpresentationsurface;
-  //SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
+  SCINFO.surface = _contextVK->_vkpresentationsurface;
+  // SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // No vsync
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // No vsync
 
   auto ctx_glfw = _contextVK->_impl.getShared<VkPlatformObject>()->_ctxbase;
@@ -80,21 +96,27 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
   width  = std::max(caps.minImageExtent.width, std::min(caps.maxImageExtent.width, uint32_t(width)));
   height = std::max(caps.minImageExtent.height, std::min(caps.maxImageExtent.height, uint32_t(height)));
 
-  printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
-  printf(
-      "Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
-      caps.minImageExtent.width,
-      caps.minImageExtent.height,
-      caps.maxImageExtent.width,
-      caps.maxImageExtent.height,
-      caps.currentExtent.width,
-      caps.currentExtent.height);
-
   // Ensure we have valid dimensions
   if (width == 0 || height == 0) {
     // Window is minimized, use minimum valid size
     width  = std::max(1u, caps.minImageExtent.width);
     height = std::max(1u, caps.minImageExtent.height);
+  }
+  bool dimensions_changed = (_width != width) || (_height != height);
+  _width                  = width;
+  _height                 = height;
+
+  if (dimensions_changed) {
+
+    printf("Swap chain dimensions: requested=%dx%d, clamped=%ux%u\n", width, height, uint32_t(width), uint32_t(height));
+    printf(
+        "Surface caps: min=%ux%u, max=%ux%u, current=%ux%u\n",
+        caps.minImageExtent.width,
+        caps.minImageExtent.height,
+        caps.maxImageExtent.width,
+        caps.maxImageExtent.height,
+        caps.currentExtent.width,
+        caps.currentExtent.height);
   }
 
   // image properties
@@ -125,16 +147,19 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
 
   SCINFO.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
 
+  ///////////////////////////////////////////////////
   // image view properties
+  ///////////////////////////////////////////////////
+
   SCINFO.imageSharingMode =
       VK_SHARING_MODE_EXCLUSIVE;          // Can be VK_SHARING_MODE_CONCURRENT if sharing between multiple queue families
   SCINFO.queueFamilyIndexCount = 0;       // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
   SCINFO.pQueueFamilyIndices   = nullptr; // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
 
-  // misc properties
-  // SCINFO.preTransform already set above, don't override
-
+  ///////////////////////////////////////////////////
   // Choose a supported composite alpha mode
+  ///////////////////////////////////////////////////
+
   SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   if (!(caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)) {
     // Find first supported composite alpha
@@ -147,21 +172,32 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     }
   }
 
-  auto old_swapchain = _contextVK->_fbi->_swapchain; // No previous swapchain, this is the first one
+  ///////////////////////////////////////////////////
+  // declare old swapchain 
+  //  this allows us to reuse resources from the previous swapchain (if applicable)
+  ///////////////////////////////////////////////////
 
-  SCINFO.clipped = VK_TRUE; // clip pixels that are obscured by other windows
+  auto old_swapchain = _contextVK->_fbi->_swapchain;   
+  SCINFO.clipped      = VK_TRUE; // clip pixels that are obscured by other windows
   SCINFO.oldSwapchain = old_swapchain ? old_swapchain->_vkSwapChain : VK_NULL_HANDLE; // Use previous swapchain if available
 
+  ///////////////////////////////////////////////////
   // Choose a supported present mode
+  ///////////////////////////////////////////////////
+
   SCINFO.presentMode = VK_PRESENT_MODE_FIFO_KHR; // Always supported
   for (const auto& mode : pres_caps->_presentModes) {
     if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-      //SCINFO.presentMode = mode;
+      // SCINFO.presentMode = mode;
       break;
     }
   }
   // SCINFO.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
   SCINFO.clipped = VK_TRUE;
+
+  ///////////////////////////////////////////////////
+  // create new swapchain impl
+  ///////////////////////////////////////////////////
 
   VkResult OK = vkCreateSwapchainKHR(vkdev, &SCINFO, nullptr, &_vkSwapChain);
   OrkAssert(OK == VK_SUCCESS);
@@ -171,6 +207,10 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
   std::vector<VkImage> swapChainImages;
   swapChainImages.resize(imageCount);
   vkGetSwapchainImagesKHR(vkdev, _vkSwapChain, &imageCount, swapChainImages.data());
+
+  ///////////////////////////////////////////////////
+  // register new swapchain images / image views
+  ///////////////////////////////////////////////////
 
   for (size_t i = 0; i < swapChainImages.size(); i++) {
 
@@ -185,59 +225,114 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &imgview);
     OrkAssert(OK == VK_SUCCESS);
 
-    auto ork_color_format = VkFormatConverter::convertBufferFormat(surfaceFormat.format);
-
-    auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, true);
-    rtg->_usage    = "swapchain"_crcu;
-    auto rtb_color = rtg->createRenderTarget(ork_color_format, "swapchain"_crcu);
-
-    //////////////////////////////////////////
-    // depth texture
-    //////////////////////////////////////////
-
-    rtg->_depthBuffer = std::make_shared<RtBuffer>(rtg.get(), -1, EBufferFormat::Z32F, width, height);
-    rtg->_depthBuffer->_usage = "depth"_crcu;
-    auto dtex           = rtg->_depthBuffer->_texture;
-    dtex->_width        = width;
-    dtex->_height       = height;
-    dtex->_msaa_samples = rtg->_msaa_samples;
-    dtex->_texFormat    = EBufferFormat::Z32F;
-    dtex->_debugName    = rtg->_name + ":Depth";
-    dtex->_texType      = ETEXTYPE_2D;
-    // auto depth_glto     = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
-
     ////////////////////////////////////////////
-
-    auto rtg_impl = _contextVK->_fbi->_createRtGroupImpl(rtg.get());
-    rtg->_name    = FormatString("vk-swapchain-%d", i);
-
-    ////////////////////////////////////////////
-    // link rtb_color to swap chain color image
-    ////////////////////////////////////////////
-    auto imgobj = std::make_shared<VulkanImageObject>(_contextVK, swapChainImages[i], imgview, surfaceFormat.format);
-    imgobj->_delete_image = false; // Don't delete the image, it's managed by the swapchain
+    auto imgobj               = std::make_shared<VulkanImageObject>(_contextVK, swapChainImages[i], imgview, surfaceFormat.format);
+    imgobj->_delete_image     = false; // Don't delete the image, it's managed by the swapchain
     imgobj->_delete_imageview = false; // Delete the image view, it's managed by the swapchain
-    auto rtb_impl_color         = rtb_color->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl_color->_is_surface = true;
-    rtb_impl_color->_replaceImage(imgobj);
-    _rtgs.push_back(rtg);
+    _swapChainImages.push_back(imgobj);
+  }
+
+  ///////////////////////////////////////////////////
+  // Create/Update render target group impl for swapchain
+  ///////////////////////////////////////////////////
+
+  auto rtg = _contextVK->_fbi->_main_rtg;
+
+  vkrtgrpimpl_ptr_t rtg_impl;
+  if (auto existing = rtg->_impl.tryAsShared<VkRtGroupImpl>()) {
+    rtg_impl = existing.value();
+
+    // In VkSwapChain::_buildup(), after checking dimensions_changed
+    if (dimensions_changed) {
+      logchan_swapchain->log("Dimensions changed from %dx%d to %dx%d", rtg_impl->_width, rtg_impl->_height, width, height);
+
+      // Update dimensions
+      rtg_impl->_width  = width;
+      rtg_impl->_height = height;
+      rtg->miW          = width;
+      rtg->miH          = height;
+
+      // update abstract depthbuffer dimensions
+      if (rtg->_depthBuffer) {
+        rtg->_depthBuffer->_width  = width;
+        rtg->_depthBuffer->_height = height;
+      }
+
+      // Recreate depth buffer with new dimensions
+      if (rtg_impl->_depth_buffer_impl) {
+        logchan_swapchain->log("Recreating depth buffer with dimensions %dx%d", width, height);
+
+        // Store the old format
+        // auto depth_format = rtg_impl->_depth_buffer_impl->_vkfmt;
+
+        // logchan_swapchain->log("Recreating depth buffer with dimensions %dx%d format %d", width, height, depth_format);
+
+        // Clean up old image object
+        // rtg_impl->_depth_buffer_impl->_imgobj = nullptr;
+
+        // Create new depth buffer image with correct dimensions
+        _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, VK_FORMAT_D32_SFLOAT, "depth"_crcu);
+
+        logchan_swapchain->log(
+            "Depth buffer image: %p, view: %p",
+            rtg_impl->_depth_buffer_impl->_imgobj->_vkimage,
+            rtg_impl->_depth_buffer_impl->_imgobj->_vkimageview);
+      }
+
+      // Invalidate attachments cache
+      rtg_impl->_invalidateAttachments();
+    }
+  } else {
+    // First time creation
+    rtg_impl          = _contextVK->_fbi->_createRtGroupImpl(rtg.get());
+    rtg_impl->_width  = width;
+    rtg_impl->_height = height;
+    VkRtGroupImpl::assignToRtGroup(rtg_impl, rtg.get());
+    _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, VK_FORMAT_D32_SFLOAT, "depth"_crcu);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkSwapChain::~VkSwapChain(){
-  logchan_swapchain->log("delete VkSwapChain");
-  // Wait for all frames in flight to complete before destroying
+void VkSwapChain::_teardown() {
   vkDeviceWaitIdle(_contextVK->_vkdevice);
-  _rtgs.clear();
-vkDestroySwapchainKHR(_contextVK->_vkdevice, _vkSwapChain, nullptr);
+  vkQueueWaitIdle(_contextVK->_vkqueue_graphics);
+  if (_vkSwapChain != VK_NULL_HANDLE) {
+
+    // Clean up image views
+    for (auto& imgobj : _swapChainImages) {
+      if (imgobj && imgobj->_vkimageview != VK_NULL_HANDLE) {
+        vkDestroyImageView(_contextVK->_vkdevice, imgobj->_vkimageview, nullptr);
+      }
+    }
+    _swapChainImages.clear();
+
+    vkDestroySwapchainKHR(_contextVK->_vkdevice, _vkSwapChain, nullptr);
+  }
+  _vkSwapChain = VK_NULL_HANDLE;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtgroup_ptr_t VkSwapChain::currentRTG() {
-  return _rtgs[_curSwapWriteImage];
+void VkSwapChain::_reinit() {
+  _teardown();
+  _buildup();
+  _currentFrame      = 0;          // Reset frame index after reinitialization
+  _curSwapWriteImage = 0xffffffff; // Reset current swap image index
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkSwapChain::_update() {
+  bool got_swapchain_image = false;
+  while (not got_swapchain_image) {
+    VkResult status     = acquireImage(_contextVK);
+    got_swapchain_image = (status == VK_SUCCESS);
+    if (not got_swapchain_image) {
+      _reinit();
+    }
+  }
+  // return _rtgs[_curSwapWriteImage];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,9 +387,6 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
       case VK_ERROR_OUT_OF_DATE_KHR: {
         vkDeviceWaitIdle(ctxVK->_vkdevice);
         return status;
-        // printf("VK_ERROR_OUT_OF_DATE_KHR\n");
-        //  OrkAssert(false);
-        //   need to recreate swap chain
         break;
       }
       default:
@@ -302,10 +394,15 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
         break;
     }
   }
-
   OrkAssert(_curSwapWriteImage >= 0);
-  OrkAssert(_curSwapWriteImage < _rtgs.size());
-  // printf( "_curSwapWriteImage<%u>\n", _curSwapWriteImage );
+
+  auto rtg              = _contextVK->_fbi->_main_rtg;
+  auto rtg_impl         = rtg->_impl.getShared<VkRtGroupImpl>();
+  auto rtb_color        = rtg->buffer(0);
+  auto rtb_impl         = rtb_color->_impl.getShared<VklRtBufferImpl>();
+  rtb_impl->_is_surface = true;
+  rtb_impl->_replaceImage(_swapChainImages[_curSwapWriteImage]);
+
   return VK_SUCCESS;
 }
 
@@ -329,13 +426,13 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   SI.pSignalSemaphores    = &(_renderCompleteSemaphores[sub_index]->_vksema);
 
   // Submit with this frame's fence
- if (sub_index < _frameFences.size()) {
-   auto& fence = _frameFences[sub_index];
-   fence->reset();
-   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
- } else {
-   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
- }
+  if (sub_index < _frameFences.size()) {
+    auto& fence = _frameFences[sub_index];
+    fence->reset();
+    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
+  } else {
+    vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -370,7 +467,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       printf("VK_ERROR_OUT_OF_DATE_KHR: Swap chain needs recreation\n");
       // Need to recreate swap chain immediately
       vkDeviceWaitIdle(ctxVK->_vkdevice);
-      ctxVK->_fbi->_initSwapChain();
+      ctxVK->_fbi->_swapchain->_reinit();
       break;
     }
     case VK_ERROR_DEVICE_LOST: {
@@ -407,33 +504,35 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
 
-  float pre_time = ctxVK->_present_timer.SecsSinceStart();
+  float pre_time                = ctxVK->_present_timer.SecsSinceStart();
   float time_since_last_present = pre_time - ctxVK->_prev_time;
-  ctxVK->_prev_time = pre_time;
+  ctxVK->_prev_time             = pre_time;
 
   if (fence) {
-    //printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
+    // printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
     fence->reset();
   }
 
-
   ctxVK->_total_frame_time += time_since_last_present;
 
-
-  float pos_time = ctxVK->_present_timer.SecsSinceStart();
+  float pos_time   = ctxVK->_present_timer.SecsSinceStart();
   float delta_time = pos_time - pre_time;
   ctxVK->_present_wait_time += delta_time;
   ctxVK->_total_wait_time = ctxVK->_present_timer.SecsSinceStart();
 
-  if((_currentFrame&0x1ff)==0) {
+  if ((_currentFrame & 0x1ff) == 0) {
     float average_frame_time = ctxVK->_total_frame_time / (_currentFrame + 1);
-    float average_wait_time = ctxVK->_present_wait_time / (_currentFrame + 1);
-    printf("waittime<%g> total_time<%g>. average_wait_time<%g s> average_frame_time<%g>\n",
-           ctxVK->_present_wait_time, ctxVK->_total_wait_time, average_wait_time, average_frame_time);
+    float average_wait_time  = ctxVK->_present_wait_time / (_currentFrame + 1);
+    printf(
+        "waittime<%g> total_time<%g>. average_wait_time<%g s> average_frame_time<%g>\n",
+        ctxVK->_present_wait_time,
+        ctxVK->_total_wait_time,
+        average_wait_time,
+        average_frame_time);
 
     ctxVK->_total_frame_time = 0.0f;
-    ctxVK->_total_wait_time = 0.0f;
+    ctxVK->_total_wait_time  = 0.0f;
   }
   _currentFrame++;
 }

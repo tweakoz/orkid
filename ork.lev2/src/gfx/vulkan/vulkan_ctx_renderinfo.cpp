@@ -42,6 +42,7 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtg) {
   _renderinfo.pColorAttachments        = _rainfos_color.data();
   _renderinfo.pStencilAttachment       = nullptr;
 
+  //printf("rtg->_width<%d> rtg->_height<%d>\n", rtg->_width, rtg->_height);
   auto dbuf_impl                       = rtg->_depth_buffer_impl;
   if (dbuf_impl) {
     initializeVkStruct(_rainfo_depth, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);

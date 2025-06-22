@@ -81,7 +81,10 @@ void _vkCreateImageForBuffer(
     vkrtbufimpl_ptr_t bufferimpl,
     VkFormat vk_fmt,
     uint64_t usage) {               //
-  auto VKICI = makeVKICI(           //
+
+    auto old_imgobj = bufferimpl->_imgobj;
+
+    auto VKICI = makeVKICI(           //
       bufferimpl->_rtg_impl->_width,  // width
       bufferimpl->_rtg_impl->_height, // height
       1,                            // depth
@@ -123,6 +126,8 @@ void _vkCreateImageForBuffer(
 void VklRtBufferImpl::_replaceImage(vkimageobj_ptr_t imgobj) { //
   _imgobj = imgobj;
   _vkfmt = imgobj->_format;
+  _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; 
+  _rtg_impl->_invalidateAttachments();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -250,6 +255,8 @@ void VklRtBufferImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb)     { //
       break;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_transitionToPresent(vkpricmdbufimpl_ptr_t cb) {
   OrkAssert(_usage == "swapchain"_crcu);

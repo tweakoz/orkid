@@ -265,10 +265,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkcontext_rawptr_t _contextVK;
 
   //////////////////////////////////////////////
-  void _destroySwapChain();
-  vkswapchain_ptr_t _createSwapChain();
-  void _initSwapChain();
-  //////////////////////////////////////////////
 
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;

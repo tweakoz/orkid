@@ -567,7 +567,7 @@ void VkContext::initializeWindowContext(
   //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
   //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
 
-  _fbi->_initSwapChain();
+  _fbi->_swapchain = std::make_shared<VkSwapChain>(this);
 
 } // make a window
 

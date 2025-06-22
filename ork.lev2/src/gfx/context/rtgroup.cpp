@@ -26,6 +26,10 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
     , _usage(usage) {
 
   switch(usage){
+    case "swapchain"_crcu:
+      _mipgen = EMG_NONE;
+      // no texture
+      break;
     case "texarray"_crcu:
       _mipgen = EMG_AUTOCOMPUTE;
       break;

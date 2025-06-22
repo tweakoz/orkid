@@ -114,6 +114,13 @@ void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkRtGroupImpl::_invalidateAttachments() {
+  __attachments = nullptr;
+  _renderinfo_set.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkRtGroupImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb){
   int numrt     = _color_buffer_impls.size();
   for (int i = 0; i < numrt; i++) {
