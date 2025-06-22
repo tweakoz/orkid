@@ -169,7 +169,8 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
       for (int i = 0; i < inumtargets; i++) {
         auto rtb      = rtgroup->buffer(i);
         auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-        OrkAssert(rtb_impl->_vkimgview != VK_NULL_HANDLE);
+        auto rtb_imgobj = rtb_impl->_imgobj;
+        OrkAssert(rtb_imgobj->_vkimageview != VK_NULL_HANDLE);
       }
       break;
     }
@@ -292,7 +293,8 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
 
   auto vkimg     = rtbi->_imgobj->_vkimage;
   auto vkfmt     = rtbi->_vkfmt;
-  auto vkimgview = rtbi->_vkimgview;
+  auto imgobj   = rtbi->_imgobj;
+  auto vkimgview = imgobj->_vkimageview;
 
   VkBufferImageCopy region = {};
   region.bufferOffset      = 0;

@@ -22,7 +22,6 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
     , _vkfmt(fmt) { //
 
   initializeVkStruct(_attachmentDesc);
-  initializeVkStruct(_vkimgview);
 
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
   _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color/depth buffer before rendering.
@@ -42,7 +41,6 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
       break;
   }
 
-  //_vkfmt                 = fmt; //VkFormatConverter::convertBufferFormat(rtb->format());
   _attachmentDesc.format = _vkfmt;
 
 }
@@ -50,6 +48,8 @@ VklRtBufferImpl::VklRtBufferImpl(vkcontext_rawptr_t ctxVK, VkRtGroupImpl* par, u
 ///////////////////////////////////////////////////////////////////////////////
 
 VklRtBufferImpl::~VklRtBufferImpl() {
+  _teximpl = nullptr; // Clear the texture implementation to avoid dangling pointers
+  _imgobj = nullptr; // Clear the image object to avoid dangling pointers
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,43 +105,24 @@ void _vkCreateImageForBuffer(
       break;
   }
   ///////////////////////////////////////////////////
-  bufferimpl->_imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
-  auto& vkimage       = bufferimpl->_imgobj->_vkimage;
-  bufferimpl->_vkimg  = vkimage;
+  auto imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
+  auto& vkimage       = imgobj->_vkimage;
+  bufferimpl->_imgobj = imgobj;
   ///////////////////////////////////////////////////
   auto IVCI = createImageViewInfo2D(
       vkimage,            //
       bufferimpl->_vkfmt, //
       VkFormatConverter::_instance.aspectForUsage(usage));
-  VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &bufferimpl->_vkimgview);
+  VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
   ///////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VklRtBufferImpl::_replaceImage(
-    VkFormat new_fmt,     //
-    VkImageView new_view, //
-    VkImage new_img) {    //
-
-  //auto old_img  = _imgobj->_vkimage;
-  //auto old_view = _vkimgview;
-
-  ////////////////////
-  // delete old image
-  ////////////////////
-
-  // todo
-
-  ////////////////////
-  // assign new image
-  ////////////////////
-
-  _init      = false;
-  _vkimg     = new_img;
-  _vkimgview = new_view;
-  _vkfmt     = new_fmt;
+void VklRtBufferImpl::_replaceImage(vkimageobj_ptr_t imgobj) { //
+  _imgobj = imgobj;
+  _vkfmt = imgobj->_format;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,7 +177,7 @@ static constexpr VkTransitionParams kToHostReadDepth = {
 
 void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransitionParams& p) {
 
-    VkImage img = _imgobj ? _imgobj->_vkimage : _vkimg;
+    VkImage img = _imgobj->_vkimage;
     OrkAssert(img != VK_NULL_HANDLE);
     
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
@@ -275,14 +256,14 @@ void VklRtBufferImpl::_transitionToPresent(vkpricmdbufimpl_ptr_t cb) {
   auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
   auto imgbar = createImageBarrier(
-      _vkimg,
-      _currentLayout,            // oldLayout (dont care)
+      _imgobj->_vkimage,                    // image
+      _currentLayout,                       // oldLayout (dont care)
       new_layout,                           // newLayout
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
       VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
 
   vkCmdPipelineBarrier(
-      cb->_vkcmdbuf,           // cmdbuf
+      cb->_vkcmdbuf,                                 // cmdbuf
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
       0,                                             // dependencyFlags

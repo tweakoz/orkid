@@ -29,7 +29,7 @@ struct VklRtBufferImpl {
   void _transitionToPresent(vkpricmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
-  void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
+  void _replaceImage(vkimageobj_ptr_t imgobj);
 
   vkcontext_rawptr_t _contextVK = nullptr;
   VkRtGroupImpl* _rtg_impl = nullptr;
@@ -37,8 +37,6 @@ struct VklRtBufferImpl {
   VkFormat _vkfmt = VK_FORMAT_UNDEFINED;
   bool _init               = true;
   bool _is_surface         = false;
-  VkImage _vkimg           = VK_NULL_HANDLE; // Vulkan image handle
-  VkImageView _vkimgview  = VK_NULL_HANDLE; // Vulkan image view handle
   VkAttachmentDescription _attachmentDesc;
   VkAttachmentReference _attachmentRef;
   VkDescriptorImageInfo _descriptorInfo;

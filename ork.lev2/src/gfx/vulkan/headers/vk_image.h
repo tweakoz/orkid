@@ -3,6 +3,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanImageObject {
+  VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImageView imgview, VkFormat fmt);
   VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name = "");
   ~VulkanImageObject();
   vkcontext_rawptr_t _ctx = nullptr;
@@ -10,6 +11,9 @@ struct VulkanImageObject {
   VkImage _vkimage;
   VkImageView _vkimageview;
   vkmemforimg_ptr_t _imgmem;
+  VkFormat _format = VK_FORMAT_UNDEFINED;
+  bool _delete_image = true;
+  bool _delete_imageview = true;
   static std::atomic<int> _imgobjcount;
   static std::atomic<size_t> _imgobjSN;
 };

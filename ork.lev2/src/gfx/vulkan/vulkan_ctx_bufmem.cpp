@@ -223,14 +223,25 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
     , _cinfo(cinfo) {
 
   initializeVkStruct(_vkimage);
+  initializeVkStruct(_vkimageview);
   VkResult ok = vkCreateImage(_ctx->_vkdevice, cinfo.get(), nullptr, &_vkimage);
   OrkAssert(VK_SUCCESS == ok);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
   if (name != "") {
     _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, name.c_str());
   }
-
+  _format = cinfo->format;
+  int SN    = _imgobjSN.fetch_add(1);
+  int count = _imgobjcount.fetch_add(1);
+  if((SN&0xff)==0){
+    logchan_vkbufmem->log("VulkanImageObject<%p> SN<%d> numalive<%d>", (void*)this, SN, count );
+  }
+}
+VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, VkImage img, VkImageView vkimgview, VkFormat fmt)
+    : _ctx(ctx)
+    , _vkimage(img)
+    , _vkimageview(vkimgview)
+    , _format(fmt) {
   int SN    = _imgobjSN.fetch_add(1);
   int count = _imgobjcount.fetch_add(1);
   if((SN&0xff)==0){
@@ -240,11 +251,10 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
 ///////////////////////////////////////////////////////////////////////////////
 VulkanImageObject::~VulkanImageObject() {
   _imgobjcount.fetch_sub(1);
-  //  vkDestroyImageView(vkdev, rtb_impl_color->_vkimgview, nullptr);
-  if (_vkimageview != VK_NULL_HANDLE) {
+  if (_delete_imageview and (_vkimageview != VK_NULL_HANDLE)) {
     vkDestroyImageView(_ctx->_vkdevice, _vkimageview, nullptr);
   }
-  if (_vkimage != VK_NULL_HANDLE) {
+  if (_delete_image and (_vkimage != VK_NULL_HANDLE)) {
     vkDestroyImage(_ctx->_vkdevice, _vkimage, nullptr);
   }
   _imgmem = nullptr;

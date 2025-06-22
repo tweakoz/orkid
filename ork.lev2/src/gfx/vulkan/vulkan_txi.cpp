@@ -660,8 +660,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   teximpl->_vkdescriptor_info.sampler     = teximpl->_vksampler->_vksampler;
 
   auto rtb_impl        = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-  rtb_impl->_vkimgview = teximpl->_imgobj->_vkimageview;
-  rtb_impl->_vkimg     = teximpl->_imgobj->_vkimage;
+  rtb_impl->_imgobj = teximpl->_imgobj;
   rtb_impl->setLayout(VK_IMAGE_LAYOUT_UNDEFINED);
   rtb_impl->_teximpl = teximpl;
 

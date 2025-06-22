@@ -75,22 +75,24 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
   int numrt     = _color_buffer_impls.size();
   for (int i = 0; i < numrt; i++) {
     auto bufferimpl = _color_buffer_impls[i];
+    auto imgobj     = bufferimpl->_imgobj;
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
-    __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
+    __attachments->_imageviews.push_back(imgobj->_vkimageview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
 
-    if (bufferimpl->_vkimgview == VK_NULL_HANDLE) {
+    if (imgobj->_vkimageview == VK_NULL_HANDLE) {
       //printf("rtg<%s> has null imageview\n", _rtg->_name.c_str());
       OrkAssert(false);
     }
   }
   if (_depth_buffer_impl) {
+    auto imgobj     = _depth_buffer_impl->_imgobj;
     __attachments->_descriptions.push_back(_depth_buffer_impl->_attachmentDesc);
     __attachments->_references.push_back(_depth_buffer_impl->_attachmentRef);
-    __attachments->_imageviews.push_back(_depth_buffer_impl->_vkimgview);
+    __attachments->_imageviews.push_back(imgobj->_vkimageview);
     __attachments->descimginfos.push_back(_depth_buffer_impl->_descriptorInfo);
-    OrkAssert(_depth_buffer_impl->_vkimgview != VK_NULL_HANDLE);
+    OrkAssert(imgobj->_vkimageview != VK_NULL_HANDLE);
   }
   return __attachments;
 }

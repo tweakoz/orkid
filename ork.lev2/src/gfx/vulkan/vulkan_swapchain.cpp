@@ -212,12 +212,12 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
     ////////////////////////////////////////////
     // link rtb_color to swap chain color image
     ////////////////////////////////////////////
+    auto imgobj = std::make_shared<VulkanImageObject>(_contextVK, swapChainImages[i], imgview, surfaceFormat.format);
+    imgobj->_delete_image = false; // Don't delete the image, it's managed by the swapchain
+    imgobj->_delete_imageview = false; // Delete the image view, it's managed by the swapchain
     auto rtb_impl_color         = rtb_color->_impl.getShared<VklRtBufferImpl>();
     rtb_impl_color->_is_surface = true;
-    rtb_impl_color->_replaceImage(
-        surfaceFormat.format, //
-        imgview,              //
-        swapChainImages[i]);
+    rtb_impl_color->_replaceImage(imgobj);
     _rtgs.push_back(rtg);
   }
 }
@@ -227,19 +227,7 @@ VkSwapChain::VkSwapChain(vkcontext_rawptr_t ctxVK)
 VkSwapChain::~VkSwapChain(){
   // Wait for all frames in flight to complete before destroying
   vkDeviceWaitIdle(_contextVK->_vkdevice);
-  size_t num_images = _rtgs.size();
-  for (size_t i = 0; i < num_images; i++) {
-    auto rtg            = _rtgs[i];
-    auto rtb_color      = rtg->buffer(0);
-    auto rtb_depth      = rtg->_depthBuffer;
-    auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
-    auto rtb_impl_depth = rtb_depth ? rtb_depth->_impl.getShared<VklRtBufferImpl>() : nullptr;
-    rtb_color->_impl = nullptr; // Clear the impl to avoid dangling pointers
-    rtb_depth->_impl = nullptr; // Clear the impl to avoid dangling pointers
-    // auto img = _vkSwapChainImages[i];
-    vkDestroyImageView(_contextVK->_vkdevice, rtb_impl_color->_vkimgview, nullptr);
-    // vkDestroyImage(vkdev, img, nullptr);
-  }
+  _rtgs.clear();
 vkDestroySwapchainKHR(_contextVK->_vkdevice, _vkSwapChain, nullptr);
 }
 
