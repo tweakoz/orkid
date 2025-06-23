@@ -73,8 +73,9 @@ struct Resources {
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);
     deco::printf(fvec3::Yellow(), "  fxparameterTexture<%p>\n", _fxparameterTexture);
 
-
-    //_renderpass = std::make_shared<RenderPass>();
+    _offscreen_rtg = std::make_shared<RtGroup>(ctx, 64, 64, MsaaSamples::MSAA_1X, "user"_crcu);
+    _offscreen_color = _offscreen_rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu);
+    _offscreen_depth = _offscreen_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
     //////////////////////////////////////////////////////////
     // update texels on CPU (in parallel)
     //////////////////////////////////////////////////////////
@@ -119,6 +120,9 @@ struct Resources {
   const FxShaderParam* _fxparameterTexture = nullptr;
   texture_ptr_t _texture;
   renderdata_ptr_t _renderdata;
+  rtgroup_ptr_t _offscreen_rtg;
+  rtbuffer_ptr_t _offscreen_color;
+  rtbuffer_ptr_t _offscreen_depth;
   uint32_t _appstate = "INIT_THREAD"_crcu;
   thread_ptr_t _texupdthread;
   int _framecounter = 0;
@@ -166,6 +170,12 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
+
+
+
+    fbi->PushRtGroup(resources->_offscreen_rtg.get());
+    fbi->PopRtGroup();
+
     float fi = abstime * 0.33f;
     float r             = sinf(fi * 2.1f) * 0.25f + 0.5f;
     float g             = cosf(fi * 3.13f) * 0.25f + 0.5f;

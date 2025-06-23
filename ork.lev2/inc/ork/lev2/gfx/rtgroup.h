@@ -70,6 +70,7 @@ struct RtGroup final {
   texture_ptr_t depthTexture() const;
   /////////////////////////////////////////
   rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
+  rtbuffer_ptr_t createDepthBuffer(EBufferFormat efmt, bool with_texture = true);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
   int numImageBuffers(void) const; // number of non-depth image buffers

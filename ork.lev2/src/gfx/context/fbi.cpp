@@ -34,9 +34,7 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
   _main_rtg->_clearColor = fcolor4::Black();
 
   auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, "swapchain"_crcu);
-  auto rtb_depth = std::make_shared<RtBuffer>(_main_rtg.get(), -1, EBufferFormat::Z32F, 8, 8);
-  rtb_depth->_usage = "depth"_crcu;
-  _main_rtg->_depthBuffer = rtb_depth;
+  auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
 
 }
 

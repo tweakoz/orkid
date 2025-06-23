@@ -108,6 +108,13 @@ Context* RtGroup::ParentTarget() const {
   return _parentTarget;
 }
 /////////////////////////////////////////
+rtbuffer_ptr_t RtGroup::createDepthBuffer(EBufferFormat efmt, bool with_texture) {
+  auto rtb_depth = std::make_shared<RtBuffer>(this, -1, efmt, 8, 8);
+  rtb_depth->_usage = "depth"_crcu;
+  _depthBuffer = rtb_depth;
+  return rtb_depth;
+}
+/////////////////////////////////////////
 int RtGroup::width() const {
   return miW;
 }
