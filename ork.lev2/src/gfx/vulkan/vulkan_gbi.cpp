@@ -11,6 +11,26 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+
+int VulkanVertexBuffer::pipelineBitsForFormat() const {
+  int rval = 0;
+  switch( _ork_vtxbuf.meStreamFormat) {
+    case EVtxStreamFormat::V12C4T16:
+      rval = 0;
+      break;
+    case EVtxStreamFormat::V12N12B12T8C4:
+      rval = 1;
+      break;
+    case EVtxStreamFormat::V16T16C16:
+      rval = 2;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
+
 VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vtx_buf)
   : _ork_vtxbuf(vtx_buf) {
 

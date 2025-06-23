@@ -46,7 +46,6 @@ vertex_interface vif_PC {
   }
   outputs {
     vec4 frg_clr;
-    vec2 frg_uv0;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -227,11 +226,11 @@ vertex_shader vs_texcolor : vif_PT : ublock_vtx {
   frg_uv0     = uv0;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
+vertex_shader vs_vtxcolor : vif_PC : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vtxcolor;
-  frg_uv0     = uv0;
 }
+///////////////////////////////////////////////////////////////
 vertex_shader vs_debuguv : vif_PT : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vec4(uv0,0,1);

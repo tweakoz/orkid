@@ -98,7 +98,7 @@ int main(int argc, char** argv,char** envp) {
     auto RCFD1 = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_tekDebugUv, RCFD1);
     fmtx4 P1, V1, M1;
-    P1.perspective(45.0f, 1.0, 0.01f, 10.0f);
+    P1.perspective(55.0f*DTOR, 1.0, 0.01f, 10.0f);
     V1.lookAt( fvec3(0, 0, 1.5),  // eye
               fvec3(0, 0, 0),  // target
               fvec3(0, 1, 0)); // up
@@ -130,7 +130,7 @@ int main(int argc, char** argv,char** envp) {
     auto RCFD2 = std::make_shared<RenderContextFrameData>(context);
     resources->_material->begin(resources->_tekTexColor, RCFD2);
     fmtx4 P2, V2, M2;
-    P2.perspective(45.0f, aspect, 0.01f, 10.0f);
+    P2.perspective(55.0f*DTOR, aspect, 0.01f, 10.0f);
     V2.lookAt( fvec3(0, 0, 2),  // eye
               fvec3(0, 0, 0),  // target
               fvec3(0, 1, 0)); // up

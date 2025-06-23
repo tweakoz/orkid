@@ -46,7 +46,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     return inp;
   };
 
-  int vb_pbits = 0; // check_pb_range(vb->_vertexConfig->_pipeline_bits, 4);
+  EVtxStreamFormat vb_fmt = vb->_ork_vtxbuf.meStreamFormat;
 
   auto rtg       = fbi->_active_rtgroup;
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
@@ -57,6 +57,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   auto shprog = _currentVKPASS->_vk_program;
 
+  int vb_pbits = check_pb_range(vb->pipelineBitsForFormat(),4);
+  
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
   sh_pbits          = check_pb_range(sh_pbits, 24);
 
@@ -64,11 +66,11 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   // hash renderpass ?
 
-  uint64_t pipeline_hash = vb_pbits           //
-                           | (rtg_pbits << 4) //
-                           | (pc_pbits << 8)  //
-                           | (sh_pbits << 16) //
-                           | (rs_pbits << 40);
+  uint64_t pipeline_hash = vb_pbits            // 4  (4)
+                           | (rtg_pbits << 4)  // 4  (8)
+                           | (pc_pbits << 8)   // 4  (12)
+                           | (sh_pbits << 12)  // 24 (36)
+                           | (rs_pbits << 36); // 8  (44)
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -86,8 +88,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
         sh_pbits,
         rs_pbits);
 
-    auto VIF = shprog->_vertexinterface;
-    OrkAssert(VIF);
 
     rval                      = std::make_shared<VkPipelineObject>(_contextVK);
     _pipelines[pipeline_hash] = rval;
@@ -114,6 +114,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     if (shprog->_frgshader)
       stages.push_back(shprog->_frgshader->_shaderstageinfo);
 
+    auto VIF = shprog->_vertexinterface;
     auto vtx_state = gbi->vertexInputState(vb, VIF);
     OrkAssert(vtx_state);
 

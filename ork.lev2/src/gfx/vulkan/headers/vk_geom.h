@@ -35,6 +35,7 @@ struct VkPrimitiveClass {
 struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
+  int pipelineBitsForFormat() const;
   vkbuffer_ptr_t _vkbuffer = VK_NULL_HANDLE;
   vkcontext_rawptr_t _ctx  = nullptr;
   VertexBufferBase& _ork_vtxbuf;
