@@ -832,7 +832,6 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   auto as_glsl = shadlang::toGLFX1(_shader_group);
-  //printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
 
   ///////////////////////////////////////////////////////
   // compile with shaderc
@@ -848,6 +847,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
       options);
 
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+    printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
     std::cerr << result.GetErrorMessage();
     OrkAssert(false);
   }

@@ -39,6 +39,17 @@ vertex_interface vif_PT {
   }
 }
 ///////////////////////////////////////////////////////////////
+vertex_interface vif_PC {
+  inputs {
+    vec3 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
   inputs {
     vec3 position : POSITION;
@@ -221,7 +232,7 @@ vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
 }
-vertex_shader vs_debuguv : iface_vdefault : ublock_vtx {
+vertex_shader vs_debuguv : vif_PT : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vec4(uv0,0,1);
   frg_uv0     = uv0;

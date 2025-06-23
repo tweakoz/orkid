@@ -96,15 +96,15 @@ int main(int argc, char** argv,char** envp) {
 
     fbi->PushRtGroup(resources->_offscreen_rtg.get());
     auto RCFD1 = std::make_shared<RenderContextFrameData>(context);
-    resources->_material->begin(resources->_tekTexColor, RCFD1);
+    resources->_material->begin(resources->_tekDebugUv, RCFD1);
     fmtx4 P1, V1, M1;
     P1.perspective(45.0f, 1.0, 0.01f, 10.0f);
-    V1.lookAt( fvec3(0, 0, 1.4),  // eye
+    V1.lookAt( fvec3(0, 0, 1.5),  // eye
               fvec3(0, 0, 0),  // target
               fvec3(0, 1, 0)); // up
-    M1.rotateOnZ(abstime*-0.25f);
+    M1.rotateOnZ(abstime*0.25f);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, P1*V1*M1);
-    resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
+    //resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
 
     appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect

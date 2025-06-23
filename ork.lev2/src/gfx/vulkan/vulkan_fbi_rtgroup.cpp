@@ -100,6 +100,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     auto texture  = rtbuffer->texture();
     if(texture) {
       _contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
+      bufferimpl->_imgobj = texture->_impl.getShared<VulkanTextureObject>()->_imgobj;
     }
   }
   ///////////////////////////////////////////////////
