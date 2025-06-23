@@ -74,8 +74,8 @@ struct Resources {
     deco::printf(fvec3::Yellow(), "  fxparameterTexture<%p>\n", _fxparameterTexture);
 
     _offscreen_rtg = std::make_shared<RtGroup>(ctx, 64, 64, MsaaSamples::MSAA_1X, "user"_crcu);
-    _offscreen_color = _offscreen_rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu);
-    _offscreen_depth = _offscreen_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
+    _offscreen_color = _offscreen_rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu,true);
+    _offscreen_depth = _offscreen_rtg->createDepthBuffer(EBufferFormat::Z32F, true);
     //////////////////////////////////////////////////////////
     // update texels on CPU (in parallel)
     //////////////////////////////////////////////////////////

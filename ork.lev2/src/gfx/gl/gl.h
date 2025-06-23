@@ -304,7 +304,7 @@ public:
   void __setRtGroup(RtGroup* Base);
 
   void _pushRtGroup(RtGroup* Base) final;
-  void _popRtGroup(bool continue_render) final;
+  void _popRtGroup() final;
 
   //void Clear(const fcolor4& rCol, float fdepth) final;
   //void clearDepth(float fdepth) final;

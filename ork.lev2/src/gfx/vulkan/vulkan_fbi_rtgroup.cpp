@@ -192,7 +192,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
+void VkFrameBufferInterface::_popRtGroup() {
 
   auto finished_rtg         = _active_rtgroup;
   rtgroup_rawptr_t next_rtg = mRtGroupStack.top();
@@ -245,12 +245,25 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   /////////////////////////////////////////////
   // Resume rendering on the next rtgroup if needed
   /////////////////////////////////////////////
+
+  bool back_to_main = (finished_rtg!=_main_rtg.get());
+
+  if(back_to_main) {
+    // TODO:
+    //  probably need to start a new command buffer here    
+    //   instead of restarting the current one
+    _active_rtgroup = next_rtg;
+    auto RTGIMPL = next_rtg->_impl.getShared<VkRtGroupImpl>();
+    RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
+    auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    auto rinfo = RTGIMPL->renderinfo();
+    vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
+    vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); 
+    _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
+    _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
   
-  if (continue_render && next_rtg) {
-    // Always restart the RTG when popping back to it
-    // This ensures we have a fresh command buffer in the correct state
-    //__setRtGroup(next_rtg);
   }
+
 }
 
 ///////////////////////////////////////////////////////

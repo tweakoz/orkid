@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage = 0);
+  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage = 0, bool with_texture = true);
 
   Texture* texture() const {
     return _texture.get();
@@ -69,7 +69,7 @@ struct RtGroup final {
   texture_ptr_t texture(int idx) const;
   texture_ptr_t depthTexture() const;
   /////////////////////////////////////////
-  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
+  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0, bool with_texture = true);
   rtbuffer_ptr_t createDepthBuffer(EBufferFormat efmt, bool with_texture = true);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);

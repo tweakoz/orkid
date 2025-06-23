@@ -177,7 +177,7 @@ public:
   void _pushRtGroup(RtGroup* Base) final {
     _active_rtgroup = Base;
   }
-  void _popRtGroup(bool continue_render) final {
+  void _popRtGroup() final {
   }
   ///////////////////////////////////////////////////////
 

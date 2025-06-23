@@ -33,7 +33,7 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
   _main_rtg->_name = "main_rtg";
   _main_rtg->_clearColor = fcolor4::Black();
 
-  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, "swapchain"_crcu);
+  auto rtb_color = _main_rtg->createRenderTarget(EBufferFormat::SRGB_BGRA8, "swapchain"_crcu,false);
   auto rtb_depth = _main_rtg->createDepthBuffer(EBufferFormat::Z32F, false);
 
 }
@@ -102,9 +102,9 @@ void FrameBufferInterface::PushRtGroup(RtGroup* rtg_top) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FrameBufferInterface::PopRtGroup(bool continue_render) {
+void FrameBufferInterface::PopRtGroup() {
   RtGroup* prev = mRtGroupStack.top();
-  _popRtGroup(continue_render);
+  _popRtGroup();
   mRtGroupStack.pop();
   popViewport();
   popScissor();

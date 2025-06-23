@@ -16,7 +16,7 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage)
+RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint64_t usage, bool with_texture)
     : _rtgroup(rtg)
     , _width(iW)
     , _height(iH)
@@ -34,12 +34,15 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
       _mipgen = EMG_AUTOCOMPUTE;
       break;
     default:
-      _texture = std::make_shared<Texture>();
-      _texture->_texFormat = efmt;
-      _texture->_width     = iW;
-      _texture->_height    = iH;
-      _texture->_debugName = FormatString("rtg%d", slot);
       break;
+  }
+
+  if(with_texture){
+    _texture = std::make_shared<Texture>();
+    _texture->_texFormat = efmt;
+    _texture->_width     = iW;
+    _texture->_height    = iH;
+    _texture->_debugName = FormatString("rtg%d", slot);
   }
 }
 
@@ -109,10 +112,8 @@ Context* RtGroup::ParentTarget() const {
 }
 /////////////////////////////////////////
 rtbuffer_ptr_t RtGroup::createDepthBuffer(EBufferFormat efmt, bool with_texture) {
-  auto rtb_depth = std::make_shared<RtBuffer>(this, -1, efmt, 8, 8);
-  rtb_depth->_usage = "depth"_crcu;
-  _depthBuffer = rtb_depth;
-  return rtb_depth;
+  _depthBuffer = std::make_shared<RtBuffer>(this, -1, efmt, 8, 8, "depth"_crcu, with_texture);
+  return _depthBuffer;
 }
 /////////////////////////////////////////
 int RtGroup::width() const {
@@ -144,9 +145,9 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
+rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage, bool with_texture) {
   int islot = mNumMrts++;
-  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage);
+  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage, with_texture);
   OrkAssert(islot < kmaxmrts);
   mMrt[islot] = rtb;
   return rtb;

@@ -32,7 +32,7 @@ void GlFrameBufferInterface::_pushRtGroup(RtGroup* Base) { // final
   __setRtGroup(Base);
 }
 
-void GlFrameBufferInterface::_popRtGroup(bool continue_render) { // final
+void GlFrameBufferInterface::_popRtGroup() { // final
   RtGroup* prev = mRtGroupStack.top();
   __setRtGroup(prev);
 }
@@ -56,7 +56,8 @@ void GlFrameBufferInterface::__setRtGroup(RtGroup* rtgroup) {
   // no rtgroup just means main surface
   //////////////////////////////////////////////
 
-  if (nullptr == rtgroup) {
+  bool isMainSurface = (nullptr == rtgroup) or (rtgroup==_main_rtg.get());
+  if (isMainSurface) {
     _bindMainSurface();
     return;
   }
