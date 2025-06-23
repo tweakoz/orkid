@@ -426,8 +426,19 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   for (auto it : program->_textures_by_binding) {
     auto binding_index = it.first;
     auto vk_tex        = it.second;
+    auto img_obj       = vk_tex->_imgobj;
+    // make sure to invalidate descriptor set
+    // when any of the following change:
+    //  1. binding_index 
+    //  2. vk_tex 
+    //  3. img_obj 
+    //  4. vk_tex->_image_params_hash 
+    //  5. vk_tex->_vkdescriptor_info.imageView 
     crc64.accumulateItem(binding_index);
     crc64.accumulateItem(vk_tex.get());
+    crc64.accumulateItem(img_obj.get());
+    crc64.accumulateItem(vk_tex->_image_params_hash);
+    crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
   }
   crc64.finish();
   uint64_t descset_bits = crc64.result();
