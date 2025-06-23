@@ -26,7 +26,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   int num_mips = 1;
   auto fmt_str = EBufferFormatToName(format);
 
-  if (0) {
+  if (1) {
     logchan_txirtg->log(
         "_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>",
         (void*)ptex,

@@ -99,12 +99,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
     auto texture  = rtbuffer->texture();
     if(texture) {
-      //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
-      //OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
-      //bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
-      //bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
-      //bufferimpl->_imgobj                   = teximpl->_imgobj;
-      printf("texture<%p:%s>\n", (void*)texture, texture->_debugName.c_str());
+      _contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
     }
   }
   ///////////////////////////////////////////////////
