@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -15,48 +14,17 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& options) {
-  int inumtargets           = options._colorFormats.size();
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
   RTGIMPL->_width = options._width;
   RTGIMPL->_height = options._height;
   RTGIMPL->_pipeline_bits = 0;
-  if(options._depthFormat!=VK_FORMAT_UNDEFINED) {
-    uint64_t USAGE  = "depth"_crcu;
-    auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, options._depthFormat);
-    RTGIMPL->_depth_buffer_impl = bufferimpl;
-    _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthFormat, USAGE);
-    auto& adesc          = bufferimpl->_attachmentDesc;
-    adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  }
-  ////////////////////////////////////////
-  // other buffers
-  ////////////////////////////////////////
-  bool is_swapchain = false;
-  for (int it = 0; it < inumtargets; it++) {
-    ////////////////////////////////////////////
-    uint64_t USAGE = "color"_crcu;
-    if (options._colorUsages[it] != 0) {
-      USAGE = options._colorUsages[it];
-    }
-    auto vkfmt    = options._colorFormats[it];
-    auto bufferimpl         = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, vkfmt);
-    RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
-    ////////////////////////////////////////////
-    if (USAGE == "swapchain"_crcu) {
-      is_swapchain = true;
-    }
-    ////////////////////////////////////////////
-    else { // not present...
-      //OrkAssert(rtgroup->_msaa_samples == MsaaSamples::MSAA_1X);
-      //_contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
-    }
-    ///////////////////////////////////////////////////
-  }
-
+  //////////////////////////////////////////////////
+  // color buffers
+  //////////////////////////////////////////////////
   switch (options._usage) {
+    case "swapchain"_crcu:
     case "user"_crcu: {
+      int inumtargets = options._colorFormats.size();
       for (int it = 0; it < inumtargets; it++) {
         uint64_t buf_usage = options._colorUsages[it];
         VkFormat vk_fmt = options._colorFormats[it];
@@ -64,19 +32,19 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
         OrkAssert(buf_usage != "depth"_crcu);
         auto usage = buf_usage;
         auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),usage, vk_fmt);
-        //auto texture    = rtbuffer->texture();
-        //OrkAssert(texture != nullptr);
-        //printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), buf_usage);
-        OrkAssert(buf_usage == "color"_crcu);
-        //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
+        RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
+        //OrkAssert(buf_usage == "color"_crcu);
 
-        //bufferimpl->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        _vkCreateImageForBuffer(_contextVK, bufferimpl, vk_fmt, buf_usage);        
 
         auto& attachment_ref = bufferimpl->_attachmentRef;
-
         attachment_ref.attachment = it;
         attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+        //auto texture    = rtbuffer->texture();
+        //OrkAssert(texture != nullptr);
+        //printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), buf_usage);
+        //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
         //OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
         //bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
         //bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
@@ -87,13 +55,26 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
       }
       break;
     }
-    case "swapchain"_crcu: 
-      break;
     case "popup"_crcu: 
       break;
     default:
       break;
   }
+  //////////////////////////////////////////////////
+  // depth buffer
+  //////////////////////////////////////////////////
+  if(options._depthFormat!=VK_FORMAT_UNDEFINED) {
+    uint64_t USAGE  = "depth"_crcu;
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, options._depthFormat);
+    RTGIMPL->_depth_buffer_impl = bufferimpl;
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthFormat, USAGE);
+    auto& adesc          = bufferimpl->_attachmentDesc;
+    adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    
+  }
+  //////////////////////////////////////////////////
   return RTGIMPL;
 }
 
@@ -231,12 +212,14 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   _contextVK->_vkCmdEndRenderingKHR(cbufimpl->_vkcmdbuf);
   vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
   cbufimpl->_recorded = true;
+  
+  // Switch back to primary command buffer before enqueuing
+  _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
+  
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
 
-  _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
-
   /////////////////////////////////////////////
-  // transition rtgroup ?
+  // transition finished rtgroup based on its usage
   /////////////////////////////////////////////
 
   switch(finished_rtg->_usage) {
@@ -257,6 +240,16 @@ void VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     default:
       OrkAssert(false);
       break;
+  }
+
+  /////////////////////////////////////////////
+  // Resume rendering on the next rtgroup if needed
+  /////////////////////////////////////////////
+  
+  if (continue_render && next_rtg) {
+    // Always restart the RTG when popping back to it
+    // This ensures we have a fresh command buffer in the correct state
+    //__setRtGroup(next_rtg);
   }
 }
 
