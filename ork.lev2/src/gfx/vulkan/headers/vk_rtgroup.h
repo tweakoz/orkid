@@ -8,14 +8,19 @@ struct VkMsaaState {
   int _pipeline_bits = -1;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkRtgCrOpts {
+struct VkRtbCreateOption {
+  VkFormat _format = VK_FORMAT_UNDEFINED; 
+  uint64_t _usage = 0;                    
+  bool _with_texture = false;                
+};
+///////////////////////////////////////////////////////////////////////////////
+struct VkRtgCreateOptions {
   int _width = 0;
   int _height = 0;
   uint64_t _usage = 0;
   MsaaSamples _msaaSamples = MsaaSamples::MSAA_1X;
-  std::vector<VkFormat> _colorFormats;
-  std::vector<uint64_t> _colorUsages;
-  VkFormat _depthFormat = VK_FORMAT_UNDEFINED;
+  std::vector<VkRtbCreateOption> _colorOptions;
+  VkRtbCreateOption _depthOptions;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VklRtBufferImpl {

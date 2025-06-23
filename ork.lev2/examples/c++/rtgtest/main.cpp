@@ -76,6 +76,11 @@ struct Resources {
     _offscreen_rtg = std::make_shared<RtGroup>(ctx, 64, 64, MsaaSamples::MSAA_1X, "user"_crcu);
     _offscreen_color = _offscreen_rtg->createRenderTarget(EBufferFormat::RGBA32F, "color"_crcu,true);
     _offscreen_depth = _offscreen_rtg->createDepthBuffer(EBufferFormat::Z32F, true);
+    _offscreen_rtg->_name = "offscreen_rtg";
+    _offscreen_color->_debugName = "offscreen_color";
+    _offscreen_depth->_debugName = "offscreen_depth";
+    _offscreen_rtg->_autoclear = true;
+    _offscreen_color->_clearColor = fvec4(0.3f, 1, 0.3f, 1.0f);
     //////////////////////////////////////////////////////////
     // update texels on CPU (in parallel)
     //////////////////////////////////////////////////////////

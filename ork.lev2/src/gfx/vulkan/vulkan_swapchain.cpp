@@ -236,11 +236,17 @@ void VkSwapChain::_buildup() {
   // Create/Update render target group impl for swapchain
   ///////////////////////////////////////////////////
 
+  VkRtbCreateOption depth_option;
+  depth_option._format       = VK_FORMAT_D32_SFLOAT; // Use D32_SFLOAT for depth buffer
+  depth_option._usage        = "depth"_crcu; // Use "depth" usage
+  depth_option._with_texture = false; // No texture for depth buffer
+
   auto rtg = _contextVK->_fbi->_main_rtg;
 
   vkrtgrpimpl_ptr_t rtg_impl;
   if (auto existing = rtg->_impl.tryAsShared<VkRtGroupImpl>()) {
     rtg_impl = existing.value();
+
 
     // In VkSwapChain::_buildup(), after checking dimensions_changed
     if (dimensions_changed) {
@@ -261,18 +267,7 @@ void VkSwapChain::_buildup() {
       // Recreate depth buffer with new dimensions
       if (rtg_impl->_depth_buffer_impl) {
         logchan_swapchain->log("Recreating depth buffer with dimensions %dx%d", width, height);
-
-        // Store the old format
-        // auto depth_format = rtg_impl->_depth_buffer_impl->_vkfmt;
-
-        // logchan_swapchain->log("Recreating depth buffer with dimensions %dx%d format %d", width, height, depth_format);
-
-        // Clean up old image object
-        // rtg_impl->_depth_buffer_impl->_imgobj = nullptr;
-
-        // Create new depth buffer image with correct dimensions
-        _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, VK_FORMAT_D32_SFLOAT, "depth"_crcu);
-
+        _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, depth_option);
         logchan_swapchain->log(
             "Depth buffer image: %p, view: %p",
             rtg_impl->_depth_buffer_impl->_imgobj->_vkimage,
@@ -288,7 +283,7 @@ void VkSwapChain::_buildup() {
     rtg_impl->_width  = width;
     rtg_impl->_height = height;
     VkRtGroupImpl::assignToRtGroup(rtg_impl, rtg.get());
-    _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, VK_FORMAT_D32_SFLOAT, "depth"_crcu);
+    _vkCreateImageForBuffer(_contextVK, rtg_impl->_depth_buffer_impl, depth_option);
   }
 }
 

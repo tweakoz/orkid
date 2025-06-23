@@ -43,7 +43,6 @@ struct VulkanTextureObject {
   std::unordered_set<vkbuffer_ptr_t> _staging_buffers;
   vkimageobj_ptr_t _imgobj;
   int _maxmip = 0;
-  vktexasynctask_ptr_t _async;
   vktxi_rawptr_t _txi;
   vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
@@ -53,12 +52,6 @@ struct VulkanTextureObject {
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
 
   static std::atomic<size_t> _vkto_count;
-};
-///////////////////////////////////////////////////////////////////////////////
-struct VkTextureAsyncTask {
-  VkTextureAsyncTask();
-  std::atomic<int> _lock;
-  std::queue<void_lambda_t> _onFinished;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkTexLoadReq {

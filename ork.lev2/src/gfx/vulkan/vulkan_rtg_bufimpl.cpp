@@ -71,7 +71,11 @@ void _vkCreateImageForBuffer(
     EBufferFormat ork_fmt,
     uint64_t usage) {               //
   auto vk_fmt = VkFormatConverter::convertBufferFormat(ork_fmt);
-  _vkCreateImageForBuffer(ctxVK, bufferimpl, vk_fmt, usage);
+  VkRtbCreateOption options;
+  options._format = vk_fmt;
+  options._usage = usage;
+  options._with_texture = false; // No texture for this buffer
+  _vkCreateImageForBuffer(ctxVK, bufferimpl, options);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,33 +83,34 @@ void _vkCreateImageForBuffer(
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,
-    VkFormat vk_fmt,
-    uint64_t usage) {               //
+    VkRtbCreateOption options) {               //
 
     auto old_imgobj = bufferimpl->_imgobj;
 
     auto VKICI = makeVKICI(           //
       bufferimpl->_rtg_impl->_width,  // width
       bufferimpl->_rtg_impl->_height, // height
-      1,                            // depth
-      vk_fmt,                      // format
-      1);                           // miplevels
-  switch (usage) {
+      1,                              // depth
+      options._format,                // format
+      1);                             // miplevels
+  switch (options._usage) {
     case "depth"_crcu:
-      VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; // Allow rendering D/S to this image
       break;
     case "color"_crcu:
-      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-      // Use as texture and allow data transfer to it
-      VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image      
       break;
     case "swapchain"_crcu:
-      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image
       break;
     default:
       OrkAssert(false);
       break;
+  }
+  if(options._with_texture) {
+    // Use as texture
+    VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;       // Allow sampling from this image
+    VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // Allow data transfer to it
   }
   ///////////////////////////////////////////////////
   auto imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
@@ -115,7 +120,7 @@ void _vkCreateImageForBuffer(
   auto IVCI = createImageViewInfo2D(
       vkimage,            //
       bufferimpl->_vkfmt, //
-      VkFormatConverter::_instance.aspectForUsage(usage));
+      VkFormatConverter::_instance.aspectForUsage(options._usage));
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation

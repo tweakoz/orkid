@@ -56,7 +56,6 @@ struct VkPipelineObject;
 struct VkPrimitiveClass;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
-struct VkTextureAsyncTask;
 struct VkTexLoadReq;
 struct VulkanVertexBuffer;
 struct VkVertexInputConfiguration;
@@ -95,6 +94,8 @@ struct VulkanEventObject;
 struct VulkanSamplerObject;
 struct InFlightTextureTransfer;
 struct RtGroupAttachments;
+struct VkRtbCreateOption;
+struct VkRtgCreateOptions;
 ///////////////////////////////////////////////////////////////////////////////
 using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
 using inflighttextrans_ptr_t = std::shared_ptr<InFlightTextureTransfer>;
@@ -170,7 +171,6 @@ using vkrtbufimpl_ptr_t         = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t         = std::shared_ptr<VkRtGroupImpl>;
 using vkrtbufimpl_wkptr_t       = std::weak_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_wkptr_t       = std::weak_ptr<VkRtGroupImpl>;
-using vktexasynctask_ptr_t      = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t        = std::shared_ptr<VkTexLoadReq>;
 using vkfxshader_bin_t          = std::vector<uint32_t>;
 using vkvtxbuf_ptr_t            = std::shared_ptr<VulkanVertexBuffer>;
@@ -241,8 +241,7 @@ void _vkCreateImageForBuffer(
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,
-    VkFormat vk_fmt,
-    uint64_t usage);
+    VkRtbCreateOption options);
 
 barrier_ptr_t createImageBarrier(
     VkImage image,

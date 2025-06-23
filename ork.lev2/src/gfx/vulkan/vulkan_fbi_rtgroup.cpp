@@ -13,7 +13,7 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 ///////////////////////////////////////////////////////////////////////////////
-vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& options) {
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK);
   RTGIMPL->_width = options._width;
   RTGIMPL->_height = options._height;
@@ -24,34 +24,18 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
   switch (options._usage) {
     case "swapchain"_crcu:
     case "user"_crcu: {
-      int inumtargets = options._colorFormats.size();
+      int inumtargets = options._colorOptions.size();
       for (int it = 0; it < inumtargets; it++) {
-        uint64_t buf_usage = options._colorUsages[it];
-        VkFormat vk_fmt = options._colorFormats[it];
-        //rtbuffer_ptr_t rtbuffer = rtgroup->buffer(it);
+        const auto& color_option = options._colorOptions[it];
+        uint64_t buf_usage = color_option._usage;
+        VkFormat vk_fmt = color_option._format;
         OrkAssert(buf_usage != "depth"_crcu);
-        auto usage = buf_usage;
-        auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),usage, vk_fmt);
+        auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(), buf_usage, vk_fmt);
         RTGIMPL->_color_buffer_impls.push_back(bufferimpl);
-        //OrkAssert(buf_usage == "color"_crcu);
-
-        _vkCreateImageForBuffer(_contextVK, bufferimpl, vk_fmt, buf_usage);        
-
+        _vkCreateImageForBuffer(_contextVK, bufferimpl, color_option);        
         auto& attachment_ref = bufferimpl->_attachmentRef;
         attachment_ref.attachment = it;
         attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        //auto texture    = rtbuffer->texture();
-        //OrkAssert(texture != nullptr);
-        //printf("texture<%p:%s> _usage<0x%llx>\n", (void*)texture, texture->_debugName.c_str(), buf_usage);
-        //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
-        //OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
-        //bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
-        //bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
-        //bufferimpl->_imgobj                   = teximpl->_imgobj;
-        //bufferimpl->_vkimgview                = teximpl->_imgobj->_vkimageview;
-        //bufferimpl->_vkimg                    = teximpl->_imgobj->_vkimage;
-        //OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
       }
       break;
     }
@@ -63,11 +47,11 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
   //////////////////////////////////////////////////
   // depth buffer
   //////////////////////////////////////////////////
-  if(options._depthFormat!=VK_FORMAT_UNDEFINED) {
+  if(options._depthOptions._format!=VK_FORMAT_UNDEFINED) {
     uint64_t USAGE  = "depth"_crcu;
-    auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, options._depthFormat);
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(_contextVK, RTGIMPL.get(),USAGE, options._depthOptions._format);
     RTGIMPL->_depth_buffer_impl = bufferimpl;
-    _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthFormat, USAGE);
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, options._depthOptions);
     auto& adesc          = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -82,14 +66,25 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCrOpts& 
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rtgroup) {
   int inumtargets           = rtgroup->numImageBuffers();
-  VkRtgCrOpts options;
+  VkRtgCreateOptions options;
   options._usage = rtgroup->_usage;
   options._msaaSamples = rtgroup->_msaa_samples;
-  options._depthFormat = VkFormatConverter::convertBufferFormat(rtgroup->_depthBuffer->format());
+  bool as_texture = false;
   for(int i=0; i < inumtargets; i++) {
     auto rtb = rtgroup->buffer(i);
-    options._colorFormats.push_back(VkFormatConverter::convertBufferFormat(rtb->format()));
-    options._colorUsages.push_back(rtb->_usage);
+    VkRtbCreateOption color_option;
+    color_option._usage = rtb->_usage;
+    color_option._format = VkFormatConverter::convertBufferFormat(rtb->format());
+    color_option._with_texture = (rtb->texture() != nullptr);
+    options._colorOptions.push_back(color_option);
+  }
+  auto depth_buffer = rtgroup->_depthBuffer;
+  if(depth_buffer) {
+    VkRtbCreateOption depth_option;
+    depth_option._format = VkFormatConverter::convertBufferFormat(depth_buffer->format());
+    depth_option._with_texture = depth_buffer->texture() != nullptr;
+    depth_option._usage = depth_buffer->_usage;
+    options._depthOptions = depth_option;
   }
   options._width = rtgroup->width();
   options._height = rtgroup->height();
@@ -98,6 +93,20 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_rawptr_t rt
   // set impls in rtgroup and rtbuffers
   ///////////////////////////////////////////////////
   VkRtGroupImpl::assignToRtGroup(rtgimpl, rtgroup);
+  ///////////////////////////////////////////////////
+  for(int i=0; i < inumtargets; i++) {
+    auto rtbuffer = rtgroup->buffer(i);
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    auto texture  = rtbuffer->texture();
+    if(texture) {
+      //auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
+      //OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+      //bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
+      //bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
+      //bufferimpl->_imgobj                   = teximpl->_imgobj;
+      printf("texture<%p:%s>\n", (void*)texture, texture->_debugName.c_str());
+    }
+  }
   ///////////////////////////////////////////////////
   return rtgimpl;
 }
