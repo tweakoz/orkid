@@ -25,14 +25,14 @@ struct Resources {
 
     _material = std::make_shared<FreestyleMaterial>();
     _material->gpuInit(ctx, "orkshader://solid");
-    _fxtechnique        = _material->technique("texcolor");
-    OrkAssert(_fxtechnique != nullptr);
+    _tekTexColor        = _material->technique("texcolor");
+    _tekDebugUv         = _material->technique("debuguv");
     _fxparameterMVP     = _material->param("MatMVP");
-    OrkAssert(_fxparameterMVP != nullptr);
     _fxparameterTexture = _material->param("ColorMap");
     OrkAssert(_fxparameterTexture != nullptr);
-    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, _fxtechnique);
-    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", _fxtechnique);
+    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx);
+    deco::printf(fvec3::Yellow(), "  _tekTexColor<%p>\n", _tekTexColor);
+    deco::printf(fvec3::Yellow(), "  _tekDebugUv<%p>\n", _tekDebugUv);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);
     deco::printf(fvec3::Yellow(), "  fxparameterTexture<%p>\n", _fxparameterTexture);
 
@@ -50,7 +50,8 @@ struct Resources {
   }
 
   freestyle_mtl_ptr_t _material;
-  const FxShaderTechnique* _fxtechnique    = nullptr;
+  const FxShaderTechnique* _tekTexColor    = nullptr;
+  const FxShaderTechnique* _tekDebugUv     = nullptr;
   const FxShaderParam* _fxparameterMVP     = nullptr;
   const FxShaderParam* _fxparameterTexture = nullptr;
   rtgroup_ptr_t _offscreen_rtg;
@@ -94,7 +95,22 @@ int main(int argc, char** argv,char** envp) {
     ///////////////////////////////////////////////////
 
     fbi->PushRtGroup(resources->_offscreen_rtg.get());
-    // todo : some content here...
+    auto RCFD1 = std::make_shared<RenderContextFrameData>(context);
+    resources->_material->begin(resources->_tekTexColor, RCFD1);
+    fmtx4 P1, V1, M1;
+    P1.perspective(45.0f, 1.0, 0.01f, 10.0f);
+    V1.lookAt( fvec3(0, 0, 1.4),  // eye
+              fvec3(0, 0, 0),  // target
+              fvec3(0, 1, 0)); // up
+    M1.rotateOnZ(abstime*-0.25f);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, P1*V1*M1);
+    resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
+
+    appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
+                             fvec4(0, 0, 1, 1),   // uv0rect
+                             fvec4(0, 0, 1, 1));  // uv1rect
+    resources->_material->end(RCFD1);    
+
     fbi->PopRtGroup();
 
     ///////////////////////////////////////////////////
@@ -111,21 +127,21 @@ int main(int argc, char** argv,char** envp) {
     auto main_rtg = fbi->_main_rtg;
     auto main_rtb = main_rtg->buffer(0);
     main_rtb->_clearColor = fvec4(r, g, b, 1);
-    auto RCFD = std::make_shared<RenderContextFrameData>(context);
-    resources->_material->begin(resources->_fxtechnique, RCFD);
-    fmtx4 P, V, M;
-    P.perspective(45.0f, aspect, 0.01f, 10.0f);
-    V.lookAt( fvec3(0, 0, 2),  // eye
+    auto RCFD2 = std::make_shared<RenderContextFrameData>(context);
+    resources->_material->begin(resources->_tekTexColor, RCFD2);
+    fmtx4 P2, V2, M2;
+    P2.perspective(45.0f, aspect, 0.01f, 10.0f);
+    V2.lookAt( fvec3(0, 0, 2),  // eye
               fvec3(0, 0, 0),  // target
               fvec3(0, 1, 0)); // up
-    M.rotateOnZ(abstime*0.25f);
-    resources->_material->bindParamMatrix(resources->_fxparameterMVP, P*V*M);
+    M2.rotateOnZ(abstime*0.25f);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, P2*V2*M2);
     resources->_material->bindParamTexture(resources->_fxparameterTexture, resources->_offscreen_color->_texture.get());
 
     appwin->Render2dQuadEML( fvec4(-.75, -.75, 1.5, 1.5), // quad in NDC
                              fvec4(0, 0, 1, 1),   // uv0rect
                              fvec4(0, 0, 1, 1));  // uv1rect
-    resources->_material->end(RCFD);    
+    resources->_material->end(RCFD2);    
 
     //::usleep(1<<20); // sleep 1ms to avoid hogging the CPU
     if (timer.SecsSinceStart() > 1.0f) {
