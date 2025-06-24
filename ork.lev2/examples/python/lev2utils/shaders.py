@@ -402,7 +402,7 @@ class Shader(object):
   def __init__(self,ctx):
     super().__init__()
     ctx.makeCurrent()
-    self._mtl = FreestyleMaterial()
+    self._mtl = lev2.FreestyleMaterial()
     self._mtl.gpuInitFromShaderText(ctx,"frusprim",shadertext)
     self._tek_frustum = self._mtl.shader.technique("tek_frustum")
     self._tek_lines = self._mtl.shader.technique("tek_lines")
