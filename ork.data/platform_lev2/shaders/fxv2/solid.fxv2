@@ -34,9 +34,15 @@ vertex_interface vif_PT {
     vec2 uv0 : TEXCOORD0;
   }
   outputs {
-    vec4 frg_clr;
     vec2 frg_uv0;
   }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_T : ublock_frg : samplers {
+  inputs {
+    vec2 frg_uv0;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface vif_PC {
@@ -47,6 +53,13 @@ vertex_interface vif_PC {
   outputs {
     vec4 frg_clr;
   }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_C {
+  inputs {
+    vec4 frg_clr;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
@@ -119,16 +132,16 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_texcolor : iface_fmt {
+fragment_shader ps_texcolor : fif_T {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = vec4(texc.xyz, 1);
 }
-fragment_shader ps_texcolor4 : iface_fmt {
+fragment_shader ps_texcolor4 : fif_T {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = texc;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blit : iface_fmt {
+fragment_shader ps_blit : fif_T {
   vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
   out_clr = vec4(texc,1);
 }
@@ -233,8 +246,10 @@ vertex_shader vs_vtxcolor : vif_PC : ublock_vtx {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_debuguv : vif_PT : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
-  frg_clr     = vec4(uv0,0,1);
   frg_uv0     = uv0;
+}
+fragment_shader fs_debuguv : fif_T {
+  out_clr = vec4(frg_uv0, 0.0, 1.0);
 }
 vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
@@ -286,7 +301,7 @@ fragment_shader ps_feedbackatten : iface_fdefault {
   out_clr   = vec4(0, 0, 0, frg_clr.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fragclr : iface_fdefault {
+fragment_shader ps_fragclr : fif_C {
   out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
@@ -325,7 +340,7 @@ technique debuguv {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_debuguv;
-    fragment_shader = ps_fragclr;
+    fragment_shader = fs_debuguv;
     state_block     = sb_default;
   }
 }
