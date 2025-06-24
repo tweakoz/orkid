@@ -80,11 +80,7 @@ vertex_interface iface_vdefault_stereo : iface_vdefault {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ublock_frg : samplers {
-  inputs {
-    vec4 frg_clr;
-    vec2 frg_uv0;
-  }
+fragment_interface iface_fdefault : iface_vdefault : ublock_frg : samplers {
   outputs {
     layout(location = 0) vec4 out_clr;
   }
