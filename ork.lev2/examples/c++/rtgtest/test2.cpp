@@ -24,6 +24,8 @@ struct Resources {
     _tekTexColor        = _material->technique("texcolor");
     _tekDebugUv         = _material->technique("debuguv");
     _tekVtxColor        = _material->technique("vtxcolor");
+    _tekLib1X           = _material->technique("testlib1x");
+    
     _fxparameterMVP     = _material->param("MatMVP");
     _fxparameterMODC    = _material->param("modcolor");
     _fxparameterTexture = _material->param("ColorMap");
@@ -66,6 +68,7 @@ struct Resources {
   const FxShaderTechnique* _tekTexColor    = nullptr;
   const FxShaderTechnique* _tekDebugUv     = nullptr;
   const FxShaderTechnique* _tekVtxColor     = nullptr;
+  const FxShaderTechnique* _tekLib1X        = nullptr;
   const FxShaderParam* _fxparameterMVP     = nullptr;
   const FxShaderParam* _fxparameterMODC    = nullptr;
   const FxShaderParam* _fxparameterTexture = nullptr;
@@ -120,7 +123,13 @@ int main(int argc, char** argv,char** envp) {
       auto RCFD = std::make_shared<RenderContextFrameData>(context);
       
       // Use different techniques for variety
-      auto technique = (i<2) ? resources->_tekDebugUv : resources->_tekVtxColor;
+      const FxShaderTechnique* technique = nullptr;
+      switch(i) {
+        case 0: technique = resources->_tekDebugUv; break; // Debug UV
+        case 1: technique = resources->_tekDebugUv; break; // Debug UV
+        case 2: technique = resources->_tekVtxColor; break; // Vertex color
+        case 3: technique = resources->_tekLib1X; break; // Library technique
+      }
       resources->_material->begin(technique, RCFD);
       
       fmtx4 P, V, M;
