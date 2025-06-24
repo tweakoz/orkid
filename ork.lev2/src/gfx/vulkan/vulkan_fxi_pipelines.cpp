@@ -23,6 +23,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto fbi = _contextVK->_fbi;
   auto gbi = _contextVK->_gbi;
 
+    auto shprog = _currentVKPASS->_vk_program;
+
+  if(0)printf("_fetchPipeline: tek<%s> shprog<%p> vif<%s>\n", 
+         _currentORKTEK->_techniqueName.c_str(),
+         shprog.get(), 
+         shprog->_vertexinterface ? shprog->_vertexinterface->_name.c_str() : "null");
+
   ////////////////////////////////////////////////////
   // rasterstate info
   ////////////////////////////////////////////////////
@@ -54,8 +61,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   uint64_t rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
   uint64_t pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
-
-  auto shprog = _currentVKPASS->_vk_program;
 
   int vb_pbits = check_pb_range(vb->pipelineBitsForFormat(),4);
   

@@ -86,11 +86,18 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
 
   if(shprog->_pipeline_bits_composite == -1){ // compute ?
 
+    auto vtx_shader = shprog->_vtxshader;
+    auto frg_shader = shprog->_frgshader;
+
+    printf("/////////////////\nshprog<v:%s f%s> pipeline_bits_composite<%d>\n", //
+           vtx_shader->_name.c_str(), //
+           frg_shader->_name.c_str(),
+           shprog->_pipeline_bits_composite);
+           
     ////////////////////////////
     // compute VIF bits
     ////////////////////////////
 
-    auto vtx_shader = shprog->_vtxshader;
     auto vif_id = vtx_shader->_vk_interfaces[0];
     auto it_vif = shprog->_shader_file->_vk_vtxinterfaces.find(vif_id);
     OrkAssert(it_vif!=shprog->_shader_file->_vk_vtxinterfaces.end());
@@ -102,6 +109,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     for( auto input : VIF->_inputs ){
       crc.accumulateString(input->_datatype);
       crc.accumulateString(input->_semantic);
+      printf("dt<%s> sem<%s>\n", input->_datatype.c_str(), input->_semantic.c_str());
     }
     crc.finish();
     uint64_t hash = crc.result();
@@ -115,6 +123,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
       int new_index = _vk_vtxinterface_cache.size();
       _vk_vtxinterface_cache[hash] = new_index;
       VIF->_pipeline_bits = new_index;
+      VIF->_hash = hash;
     }
 
     ////////////////////////////
