@@ -12,7 +12,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txidata = logger()->createChannel("VKTXIDAT", fvec3(0.8, 0.2, 0.5), true);
-static logchannel_ptr_t logchan_txia2d = logger()->createChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), false);
+static logchannel_ptr_t logchan_txia2d = logger()->createChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -441,6 +441,14 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
 
   if (!ok) {
     logchan_txia2d->log("ERROR: updateTextureArraySlice validation failed");
+    logchan_txia2d->log("slice_index<%d> array_depth<%d> img_format<%s> array_format<%s>",
+                        slice_index, array->_tex->_depth,
+                        EBufferFormatToName(img->_format).c_str(),
+                        EBufferFormatToName(array->_tex->_texFormat).c_str());
+    logchan_txia2d->log("width<%d> height<%d> img_width<%d> img_height<%d>",
+                        array->_tex->_width, array->_tex->_height,
+                        img->_width, img->_height);
+    OrkAssert(false);
     return;
   }
 
@@ -449,6 +457,11 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
   // Get mipchain from image
   auto subimg_cmipc = img->uncompressedMipChain();
   int num_levels = int(subimg_cmipc->_levels.size());
+  
+  // IMPORTANT: Clamp to the texture array's actual mip levels
+  int array_mip_levels = array->_tex->_num_mips;
+  num_levels = std::min(num_levels, array_mip_levels);
+  
 
   // Calculate staging buffer size
   size_t staging_size = 0;
@@ -461,13 +474,17 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
   auto poolForSize = stagingBufferPoolForSrcOfSize(staging_size);
   auto staging_buffer = poolForSize->borrowItem();
   auto command_buffer = _seccmdbufpool_xfer->borrowItem();
-
+  _contextVK->_recordCommandBuffer = command_buffer; // todo: hacky, fixme
+                                                     // remove need to set _recordCommandBuffer
+                                                     // this is related to cmdbuf pool reset/begin usage..
   // Create transfer
   auto transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
   vktex->_inflight_transfers.insert(transfer);
   
   auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+  logchan_txia2d->log("updateTextureArraySlice staging_size<%zu> num_levels<%d>", staging_size, num_levels);
 
   // Setup completion
   auto tlsema = std::make_shared<VulkanCompletionSemaphore>(_contextVK);

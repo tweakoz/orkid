@@ -47,8 +47,13 @@ struct Resources {
     
     // Red slice with horizontal stripes (scroll up)
     auto img_red = std::make_shared<Image>();
+#if defined(__APPLE__)
+    img_red->_format = EBufferFormat::RGBA8;
+    img_red->init(_tex_size, _tex_size, 4, 1);
+#else
     img_red->_format = EBufferFormat::RGB8;
     img_red->init(_tex_size, _tex_size, 3, 1);
+#endif
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
         float stripe = (y % stripe_width < (stripe_width>>1)) ? 1.0f : 0.3f;
@@ -56,6 +61,9 @@ struct Resources {
         pixel[0] = uint8_t(stripe * 255);  // R
         pixel[1] = 0;                      // G
         pixel[2] = 0;                      // B
+#if defined(__APPLE__)
+        pixel[3] = 255;                    // A
+#endif
       }
     }
     
@@ -69,8 +77,13 @@ struct Resources {
     
     // Green slice with vertical stripes (scroll right)
     auto img_green = std::make_shared<Image>();
+#if defined(__APPLE__)
+    img_green->_format = EBufferFormat::RGBA8;
+    img_green->init(_tex_size, _tex_size, 4, 1);
+#else
     img_green->_format = EBufferFormat::RGB8;
     img_green->init(_tex_size, _tex_size, 3, 1);
+#endif
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
         float stripe = (x % stripe_width < (stripe_width>>1)) ? 1.0f : 0.3f;
@@ -78,6 +91,9 @@ struct Resources {
         pixel[0] = 0;                      // R
         pixel[1] = uint8_t(stripe * 255);  // G
         pixel[2] = 0;                      // B
+#if defined(__APPLE__)
+        pixel[3] = 255;                    // A
+#endif
       }
     }
     
@@ -91,8 +107,13 @@ struct Resources {
     
     // Blue slice with diagonal stripes (scroll diagonally)
     auto img_blue = std::make_shared<Image>();
+#if defined(__APPLE__)
+    img_blue->_format = EBufferFormat::RGBA8;
+    img_blue->init(_tex_size, _tex_size, 4, 1);
+#else
     img_blue->_format = EBufferFormat::RGB8;
     img_blue->init(_tex_size, _tex_size, 3, 1);
+#endif
     int DDB = stripe_width * 2;
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
@@ -101,6 +122,9 @@ struct Resources {
         pixel[0] = 0;                      // R
         pixel[1] = 0;                      // G
         pixel[2] = uint8_t(stripe * 255);  // B
+#if defined(__APPLE__)
+        pixel[3] = 255;                    // A
+#endif
       }
     }
     
@@ -114,8 +138,13 @@ struct Resources {
     
     // White slice with checkerboard pattern (scroll left and down)
     auto img_white = std::make_shared<Image>();
+#if defined(__APPLE__)
+    img_white->_format = EBufferFormat::RGBA8;
+    img_white->init(_tex_size, _tex_size, 4, 1);
+#else
     img_white->_format = EBufferFormat::RGB8;
     img_white->init(_tex_size, _tex_size, 3, 1);
+#endif
     int DDW = stripe_width>>3;  // Same as arraytex1
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
@@ -124,6 +153,9 @@ struct Resources {
         pixel[0] = uint8_t(checker * 255);  // R
         pixel[1] = uint8_t(checker * 255);  // G
         pixel[2] = uint8_t(checker * 255);  // B
+#if defined(__APPLE__)
+        pixel[3] = 255;                     // A
+#endif
       }
     }
     
@@ -199,6 +231,7 @@ struct Resources {
       float current_time = local_timer.SecsSinceStart();
       float delta_time = current_time - last_time;
       last_time = current_time;
+      
       // Calculate scroll offset
       anim_data->accumulated_scroll_x += anim_data->scroll_speed.x * anim_data->scroll_direction.x * delta_time;
       anim_data->accumulated_scroll_y += anim_data->scroll_speed.y * anim_data->scroll_direction.y * delta_time;
@@ -219,8 +252,7 @@ struct Resources {
       
       int scroll_x = int(anim_data->accumulated_scroll_x);
       int scroll_y = int(anim_data->accumulated_scroll_y);
-      printf("Animating slice %d, delta_time: %.3f scroll_x<%d> scroll_y<%d> \n", slice_idx, delta_time, scroll_x, scroll_y);
-
+      
       // Update image data with scrolling
       {
         std::lock_guard<std::mutex> lock(anim_data->update_mutex);
@@ -228,8 +260,12 @@ struct Resources {
         for (int y = 0; y < anim_data->tex_size; y++) {
           for (int x = 0; x < anim_data->tex_size; x++) {
             // Calculate source position with wrapping
-            int src_x = (x + scroll_x) % anim_data->tex_size;
-            int src_y = (y + scroll_y) % anim_data->tex_size;
+            int src_x = (x - scroll_x) % anim_data->tex_size;
+            int src_y = (y - scroll_y) % anim_data->tex_size;
+            
+            // Handle negative modulo
+            if (src_x < 0) src_x += anim_data->tex_size;
+            if (src_y < 0) src_y += anim_data->tex_size;
             
             // Copy pixel from base image with offset
             auto src_pixel = anim_data->base_image->pixel8(src_x, src_y);
@@ -237,6 +273,11 @@ struct Resources {
             dst_pixel[0] = src_pixel[0];
             dst_pixel[1] = src_pixel[1];
             dst_pixel[2] = src_pixel[2];
+#if defined(__APPLE__)
+            if (anim_data->current_image->_format == EBufferFormat::RGBA8) {
+              dst_pixel[3] = src_pixel[3];
+            }
+#endif
           }
         }
         
