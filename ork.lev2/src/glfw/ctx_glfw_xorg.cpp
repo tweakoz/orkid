@@ -21,7 +21,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
 #if defined(ENABLE_VULKAN)
-#include "../gfx/vulkan/vulkan_ctx.h"
+#include "../gfx/vulkan/headers/vulkan_ctx.h"
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 extern "C" {
