@@ -90,6 +90,7 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
   hasher->accumulateItem(_numcomponents);
   hasher->accumulateItem(_bytesPerChannel);
   hasher->accumulate(_data->data(), _data->length());
+  hasher->finish();
   auto hash = hasher->result();
   if( hash == _contentHash )
     return _cmipchain;

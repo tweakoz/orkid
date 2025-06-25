@@ -131,7 +131,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                                                              staging_buffer, //
                                                              command_buffer );
   vktex->_inflight_transfers.insert(transfer);
-  _contextVK->_recordCommandBuffer = transfer->_command_buffer;
+
   auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 

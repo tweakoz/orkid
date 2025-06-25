@@ -22,7 +22,6 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
 
   //logchan_vkcb->log("_beginRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), name.c_str());
   auto vkcmdbuf        = _createSecondaryVkCommandBuffer(cmdbuf.get());
-  _recordCommandBuffer = cmdbuf;
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, name.c_str());
 
@@ -84,9 +83,7 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
-  OrkAssert(cmdbuf == _recordCommandBuffer);
   auto vkcmdbuf        = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  _recordCommandBuffer = nullptr;
   vkcmdbuf->_recorded  = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
   //logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());

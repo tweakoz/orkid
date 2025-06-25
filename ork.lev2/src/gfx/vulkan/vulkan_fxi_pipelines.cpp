@@ -445,6 +445,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     crc64.accumulateItem(img_obj.get());
     crc64.accumulateItem(vk_tex->_image_params_hash);
     crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
+    crc64.accumulateItem(vk_tex->_dataVersion.load());
   }
   crc64.finish();
   uint64_t descset_bits = crc64.result();
@@ -464,7 +465,7 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     DSAI.descriptorSetCount = 1;
     DSAI.pSetLayouts        = &program->_descriptors->_dsetlayout;
 
-    printf("ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get());
+    //printf("ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get());
     VkResult OK = vkAllocateDescriptorSets(
         _ctxVK->_vkdevice, //
         &DSAI,             //
@@ -508,7 +509,15 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
       DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       DWRITE.pImageInfo      = &desc_info;
 
-      logchan_vkpip->log("update descset: bidx<%d> tex<%p> iphash<%llx>", binding_index, (void*)(vk_tex->_vkdescriptor_info.imageView), vk_tex->_image_params_hash);
+      if(0){
+        logchan_vkpip->log("update descset: bidx<%d> tex<%p> imgobj<%p:%zx:%zx> iphash<%llx>", //
+                         binding_index, //
+                         (void*)vk_tex.get(), //
+                         vk_tex->_imgobj.get(), //
+                         vk_tex->_imgobj->_vkimage, //
+                         vk_tex->_imgobj->_vkimageview, //
+                         vk_tex->_image_params_hash);
+      }
 
       vkUpdateDescriptorSets(
           _ctxVK->_vkdevice, // device

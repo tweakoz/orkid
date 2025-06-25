@@ -50,6 +50,7 @@ struct VulkanTextureObject {
   uint64_t _image_params_hash = 0;
 
   std::unordered_set<inflighttextrans_ptr_t> _inflight_transfers;
+  std::atomic<uint64_t> _dataVersion{0};
 
   static std::atomic<size_t> _vkto_count;
 };
