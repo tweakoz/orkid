@@ -683,6 +683,9 @@ bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode) {
     case "KW_SAMP1D"_crcu:
     case "KW_SAMP2D"_crcu:
     case "KW_SAMP3D"_crcu:
+    case "KW_SAMP1DARRAY"_crcu:
+    case "KW_SAMP2DARRAY"_crcu:
+    case "KW_SAMP3DARRAY"_crcu:
     case "KW_ISAMP1D"_crcu:
     case "KW_ISAMP2D"_crcu:
     case "KW_ISAMP3D"_crcu:

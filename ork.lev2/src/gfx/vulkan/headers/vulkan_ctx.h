@@ -286,6 +286,9 @@ struct VkTextureInterface final : public TextureInterface {
 
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;
   void _initTextureFromRtBuffer(RtBuffer* rtb);
+  void initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) final;
+  void initTextureArray2D(TextureArray* ptex) final;
+  void updateTextureArraySlice(TextureArraySliceRef* slice, image_ptr_t img) final;
 
   vkcontext_rawptr_t _contextVK;
 

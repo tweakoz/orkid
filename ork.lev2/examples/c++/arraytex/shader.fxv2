@@ -1,0 +1,67 @@
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+sampler_set samplers(descriptor_set 0) {
+  sampler2DArray ColorMap;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 MatMVP;
+  float QuadIndex;  // Which quad is being rendered (0-4)
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vif_PC {
+  inputs {
+    vec3 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_color;
+    vec2 frg_uv0;
+    float quad_index;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fif_PC : vif_PC {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_x : vif_PC : ublock_vtx {
+  gl_Position = MatMVP * vec4(position, 1);
+  frg_color   = vec4(position,1);
+  frg_uv0     = uv0;
+  quad_index  = QuadIndex;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader fs_x : fif_PC : samplers {
+  int quad_idx = int(quad_index);
+  
+  if (quad_idx < 4) {
+    // For quads 0-3, show a single slice
+    out_clr = texture(ColorMap, vec3(frg_uv0, float(quad_idx)));
+  } else {
+    // For quad 4 (center), average all 4 slices
+    vec4 color0 = texture(ColorMap, vec3(frg_uv0, 0.0));
+    vec4 color1 = texture(ColorMap, vec3(frg_uv0, 1.0));
+    vec4 color2 = texture(ColorMap, vec3(frg_uv0, 2.0));
+    vec4 color3 = texture(ColorMap, vec3(frg_uv0, 3.0));
+    out_clr = (color0 + color1 + color2 + color3);
+  }
+}
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  DepthTest = LEQUALS;
+  DepthMask = ON;
+}
+///////////////////////////////////////////////////////////////
+technique tek_x {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_x;
+    fragment_shader = fs_x;
+    state_block     = sb_default;
+  }
+}

@@ -150,7 +150,15 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
 
 void VkFxInterface::bindParamTextureArray(const FxShaderParam* hpar, const TextureArray* tex_array) {
   OrkAssert(tex_array);
-  OrkAssert(false);
+  OrkAssert(tex_array->_tex);
+  
+  auto vk_shprog = _currentVKPASS->_vk_program;
+    
+  if (tex_array && tex_array->_tex) {
+    // Texture arrays use the same texture object as regular textures
+    // The difference is in the shader (sampler2DArray vs sampler2D)
+    vk_shprog->bindDescriptorTexture(hpar, tex_array->_tex.get());
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

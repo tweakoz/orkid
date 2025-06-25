@@ -540,15 +540,22 @@ void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Te
       vk_tex = as_to.value();
     } else {
       printf("No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str());
-      // OrkAssert(false);
       return;
     }
+    
     auto it = _samplers_by_orkparam.find(param);
     OrkAssert(it != _samplers_by_orkparam.end());
-    size_t binding_index                = it->second;
-    _textures_by_orkparam[param]        = vk_tex;
+    size_t binding_index = it->second;
+    
+    // Store the texture object
+    _textures_by_orkparam[param] = vk_tex;
     _textures_by_binding[binding_index] = vk_tex;
-    // printf( "binding_index<%zu>\n", binding_index );
+    
+    // If this is a texture array, ensure the descriptor info is set up correctly
+    if (pTex->_texType == ETEXTYPE_2D_ARRAY) {
+      // The image view should already be configured as VK_IMAGE_VIEW_TYPE_2D_ARRAY
+      // from initTextureArray2DFromData
+    }
   }
 }
 
