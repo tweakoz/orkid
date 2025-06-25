@@ -34,13 +34,14 @@ static layer_props_t _layerProperties() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 static bool _hasLayer(layer_props_t& layer_props, std::string layerName) {
+  bool has_layer = false;
   for (const auto& lprop : layer_props) {
-    printf("layer<%s>\n", lprop.layerName);
     if (strcmp(lprop.layerName, layerName.c_str()) == 0) {
-      return true;
+     has_layer = true;
     }
   }
-  return false;
+  printf("has_layer<%s> : %s\n", layerName.c_str(), has_layer ? "true": "false");
+  return has_layer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,9 @@ VulkanInstance::VulkanInstance() {
     validation_layers.push_back("VK_LAYER_RENDERDOC_Capture");
   }
   auto layer_props = _layerProperties();
+  for(size_t i=0; i<layer_props.size(); i++){
+   printf("layer<%d:%s>\n", i, layer_props[i].layerName);
+  }
   _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
 
   initializeVkStruct(_appdata,VK_STRUCTURE_TYPE_APPLICATION_INFO);

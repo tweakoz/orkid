@@ -10,6 +10,7 @@
 #include <utpp/UnitTest++.h>
 #include <string.h>
 #include <math.h>
+#include <cstring>
 
 typedef uint32_t u32;
 
