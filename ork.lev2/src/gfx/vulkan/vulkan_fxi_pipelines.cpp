@@ -445,7 +445,6 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     crc64.accumulateItem(img_obj.get());
     crc64.accumulateItem(vk_tex->_image_params_hash);
     crc64.accumulateItem(vk_tex->_vkdescriptor_info.imageView);
-    crc64.accumulateItem(vk_tex->_dataVersion.load());
   }
   crc64.finish();
   uint64_t descset_bits = crc64.result();

@@ -14,7 +14,7 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txidata = logger()->createChannel("VKTXIDAT", fvec3(0.8, 0.2, 0.5), true);
 static logchannel_ptr_t logchan_txia2d  = logger()->createChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
-constexpr bool DEBUG_TEXARRAY2D = false;
+constexpr bool DEBUG_TEXARRAY2D = true;
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
@@ -601,7 +601,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
-  //logchan_txia2d->log("Updated texture array slice %d", slice_index);
+  logchan_txia2d->log("Updated texture array slice %d", slice_index);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

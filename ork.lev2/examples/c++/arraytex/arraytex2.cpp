@@ -38,24 +38,33 @@ struct Resources {
     auto txi = ctx->TXI();
 
     // Create test images with patterns that are visible when scrolling
-    _tex_size        = 256;
-    int stripe_width = 32;
 
     // Initialize slice animation data
     _slice_animations.resize(4);
 
+    auto create_image = [this](const std::string& name) {
+      auto img = std::make_shared<Image>();
+      #if defined(__APPLE__)
+      img->_format = EBufferFormat::RGBA8;
+      img->init(_tex_size, _tex_size, 4, 1);
+      #else
+      img->_format = EBufferFormat::RGB8;
+      img->init(_tex_size, _tex_size, 3, 1);
+      #endif
+      img->_debugName = name;
+      return img;
+    };
+
     // Red slice with horizontal stripes (scroll up)
-    auto img_red = std::make_shared<Image>();
-#if defined(__APPLE__)
-    img_red->_format = EBufferFormat::RGBA8;
-    img_red->init(_tex_size, _tex_size, 4, 1);
-#else
-    img_red->_format = EBufferFormat::RGB8;
-    img_red->init(_tex_size, _tex_size, 3, 1);
-#endif
+    auto img_red = create_image("red_slice");
+    auto img_grn = create_image("grn_slice");
+    auto img_blu = create_image("blu_slice");
+    auto img_whi = create_image("whi_slice");
+
+    int stripe_width = 128;
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
-        float stripe = (y % stripe_width < (stripe_width >> 1)) ? 1.0f : 0.3f;
+        float stripe = (y % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
         auto pixel   = img_red->pixel8(x, y);
         pixel[0]     = uint8_t(stripe * 255); // R
         pixel[1]     = 0;                     // G
@@ -65,27 +74,11 @@ struct Resources {
 #endif
       }
     }
-
-    _slice_animations[0]                = std::make_shared<SliceAnimationData>();
-    _slice_animations[0]->slice_index   = 0;
-    _slice_animations[0]->tex_size      = _tex_size;
-    _slice_animations[0]->scroll_dir    = fvec2(0, 0.4); // scroll up
-    _slice_animations[0]->base_image    = img_red;
-    _slice_animations[0]->current_image = std::make_shared<Image>(*img_red);
-
-    // Green slice with vertical stripes (scroll right)
-    auto img_green = std::make_shared<Image>();
-#if defined(__APPLE__)
-    img_green->_format = EBufferFormat::RGBA8;
-    img_green->init(_tex_size, _tex_size, 4, 1);
-#else
-    img_green->_format = EBufferFormat::RGB8;
-    img_green->init(_tex_size, _tex_size, 3, 1);
-#endif
+    stripe_width = 128;
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
-        float stripe = (x % stripe_width < (stripe_width >> 1)) ? 1.0f : 0.3f;
-        auto pixel   = img_green->pixel8(x, y);
+        float stripe = (x % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
+        auto pixel   = img_grn->pixel8(x, y);
         pixel[0]     = 0;                     // R
         pixel[1]     = uint8_t(stripe * 255); // G
         pixel[2]     = 0;                     // B
@@ -94,28 +87,12 @@ struct Resources {
 #endif
       }
     }
-
-    _slice_animations[1]                = std::make_shared<SliceAnimationData>();
-    _slice_animations[1]->slice_index   = 1;
-    _slice_animations[1]->tex_size      = _tex_size;
-    _slice_animations[1]->scroll_dir    = fvec2(0.5, 0); // scroll right
-    _slice_animations[1]->base_image    = img_green;
-    _slice_animations[1]->current_image = std::make_shared<Image>(*img_green);
-
-    // Blue slice with diagonal stripes (scroll diagonally)
-    auto img_blue = std::make_shared<Image>();
-#if defined(__APPLE__)
-    img_blue->_format = EBufferFormat::RGBA8;
-    img_blue->init(_tex_size, _tex_size, 4, 1);
-#else
-    img_blue->_format = EBufferFormat::RGB8;
-    img_blue->init(_tex_size, _tex_size, 3, 1);
-#endif
+    stripe_width = 32;
     int DDB = stripe_width * 2;
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
-        float stripe = ((x + y) % DDB < (DDB >> 1)) ? 1.0f : 0.3f;
-        auto pixel   = img_blue->pixel8(x, y);
+        float stripe = ((x + y) % DDB < (DDB >> 1)) ? 0.75f : 0.0f;
+        auto pixel   = img_blu->pixel8(x, y);
         pixel[0]     = 0;                     // R
         pixel[1]     = 0;                     // G
         pixel[2]     = uint8_t(stripe * 255); // B
@@ -124,28 +101,12 @@ struct Resources {
 #endif
       }
     }
-
-    _slice_animations[2]                = std::make_shared<SliceAnimationData>();
-    _slice_animations[2]->slice_index   = 2;
-    _slice_animations[2]->tex_size      = _tex_size;
-    _slice_animations[2]->scroll_dir    = fvec2(0.3,0.3); // scroll diagonally
-    _slice_animations[2]->base_image    = img_blue;
-    _slice_animations[2]->current_image = std::make_shared<Image>(*img_blue);
-
-    // White slice with checkerboard pattern (scroll left and down)
-    auto img_white = std::make_shared<Image>();
-#if defined(__APPLE__)
-    img_white->_format = EBufferFormat::RGBA8;
-    img_white->init(_tex_size, _tex_size, 4, 1);
-#else
-    img_white->_format = EBufferFormat::RGB8;
-    img_white->init(_tex_size, _tex_size, 3, 1);
-#endif
-    int DDW = stripe_width >> 3; // Same as arraytex1
+    stripe_width = 4;
+    int DDW = stripe_width; // Same as arraytex1
     for (int y = 0; y < _tex_size; y++) {
       for (int x = 0; x < _tex_size; x++) {
-        float checker = ((x / DDW) + (y / DDW)) % 2 ? 1.0f : 0.1f;
-        auto pixel    = img_white->pixel8(x, y);
+        float checker = ((x / DDW) + (y / DDW)) % 2 ? 0.25f : 0.0f;
+        auto pixel    = img_whi->pixel8(x, y);
         pixel[0]      = uint8_t(checker * 255); // R
         pixel[1]      = uint8_t(checker * 255); // G
         pixel[2]      = uint8_t(checker * 255); // B
@@ -155,12 +116,39 @@ struct Resources {
       }
     }
 
+    _slice_animations[0]                = std::make_shared<SliceAnimationData>();
+    _slice_animations[0]->slice_index   = 0;
+    _slice_animations[0]->tex_size      = _tex_size;
+    _slice_animations[0]->scroll_dir    = fvec2(0.12, 0.4); // scroll up
+    _slice_animations[0]->base_image    = img_red;
+    _slice_animations[0]->current_image = create_image("red_slice_current");
+
+
+    _slice_animations[1]                = std::make_shared<SliceAnimationData>();
+    _slice_animations[1]->slice_index   = 1;
+    _slice_animations[1]->tex_size      = _tex_size;
+    _slice_animations[1]->scroll_dir    = fvec2(1.5, 0.6); // scroll right
+    _slice_animations[1]->base_image    = img_grn;
+    _slice_animations[1]->current_image = create_image("rgn_slice_current");
+
+    // Blue slice with diagonal stripes (scroll diagonally)
+    auto img_blue = std::make_shared<Image>();
+
+    _slice_animations[2]                = std::make_shared<SliceAnimationData>();
+    _slice_animations[2]->slice_index   = 2;
+    _slice_animations[2]->tex_size      = _tex_size;
+    _slice_animations[2]->scroll_dir    = fvec2(0.3, 0.3); // scroll diagonally
+    _slice_animations[2]->base_image    = img_blu;
+    _slice_animations[2]->current_image = create_image("blu_slice_current");
+
+    // White slice with checkerboard pattern (scroll left and down)
+
     _slice_animations[3]                = std::make_shared<SliceAnimationData>();
     _slice_animations[3]->slice_index   = 3;
     _slice_animations[3]->tex_size      = _tex_size;
-    _slice_animations[3]->scroll_dir    = fvec2(0.01, 0.025f); // scroll left and down
-    _slice_animations[3]->base_image    = img_white;
-    _slice_animations[3]->current_image = std::make_shared<Image>(*img_white);
+    _slice_animations[3]->scroll_dir    = fvec2(0.01, 0.025f) * 0.0f; // scroll left and down
+    _slice_animations[3]->base_image    = img_whi;
+    _slice_animations[3]->current_image = create_image("whi_slice_current");
 
     // Create texture array with initial images
     TextureArrayInitData TID;
@@ -216,49 +204,62 @@ struct Resources {
 
   void animateSlice(int slice_idx) {
     auto anim_data = _slice_animations[slice_idx];
+    size_t tsize   = anim_data->tex_size;
+    auto wrap_val  = [tsize](int inp) -> int {
+      while (inp < 0)
+        inp += tsize;
+      inp = inp % tsize;
+      return inp;
+    };
 
     while (_running) {
 
-      anim_data->accumulated_scroll += anim_data->scroll_dir * 0.01;
-      if(0)printf(" Animating slice %d: accumulated_scroll = (%f, %f)\n",
-             slice_idx,
-             anim_data->accumulated_scroll.x,
-             anim_data->accumulated_scroll.y);
+      anim_data->accumulated_scroll += anim_data->scroll_dir; // Update scroll based on direction and time step
+
+      // Handle negative values from fmod
+
+      int scroll_x = int(anim_data->accumulated_scroll.x);
+      int scroll_y = int(anim_data->accumulated_scroll.y);
+
+      while (scroll_x < 0){
+        scroll_x += tsize;
+      }
+      while (scroll_y < 0){
+        scroll_y += tsize;
+      }
+      scroll_x %= tsize;
+      scroll_y %= tsize;
+
+      if (slice_idx == 1) {
+        printf(
+            " Animating slice %d: accumulated_scroll = (%f, %f)\n",
+            slice_idx,
+            anim_data->accumulated_scroll.x,
+            anim_data->accumulated_scroll.y);
+      }
+
       for (int y = 0; y < anim_data->tex_size; y++) {
+        int src_y = (y + scroll_y) % tsize;
         for (int x = 0; x < anim_data->tex_size; x++) {
-
-          auto dst_pixel = anim_data->current_image->pixel8(x, y);
-
-          // Calculate source position with proper wrapping
-          int scroll_x = int(anim_data->accumulated_scroll.x);
-          int scroll_y = int(anim_data->accumulated_scroll.y);
-
-          int src_x = (x + scroll_x);
-          int src_y = (y + scroll_y);
-          while (src_x >= anim_data->tex_size)
-            src_x -= anim_data->tex_size;
-          while (src_y >= anim_data->tex_size)
-            src_y -= anim_data->tex_size;
-          while (src_x < 0)
-            src_x += anim_data->tex_size;
-          while (src_y < 0)
-            src_y += anim_data->tex_size;
-
+          int src_x = (x + scroll_x) % tsize;
+          OrkAssert(src_x >= 0 and src_x < tsize);
+          OrkAssert(src_y >= 0 and src_y < tsize);
           auto src_pixel = anim_data->base_image->pixel8(src_x, src_y);
+          auto dst_pixel = anim_data->current_image->pixel8(x, y);
 
           dst_pixel[0] = src_pixel[0];
           dst_pixel[1] = src_pixel[1];
           dst_pixel[2] = src_pixel[2];
-#if defined(__APPLE__)
+          #if defined(__APPLE__)
           if (anim_data->current_image->_format == EBufferFormat::RGBA8) {
             dst_pixel[3] = src_pixel[3];
           }
-#endif
-        }
-      }
+          #endif
+        } // for(x)
+      } // for(y)
 
       anim_data->needs_update.store(true);
-      ::usleep(16<<10); // Sleep for 16ms to control animation speed
+      ::usleep(16 << 10); // Sleep for 16ms to control animation speed
     } // while(_running)
   }
 
@@ -279,7 +280,7 @@ struct Resources {
   }
 
   Context* _ctx = nullptr;
-  int _tex_size = 256;
+  constexpr static int _tex_size = 256;
   texturearray_ptr_t _texArray;
   freestyle_mtl_ptr_t _material;
   const FxShaderTechnique* _technique        = nullptr;
@@ -422,28 +423,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY_DOWN:
-        switch (ev->miKeyCode) {
-          case 'R':
-            deco::printf(fvec3::Green(), "Resetting animation positions\n");
-            for (auto& anim : resources->_slice_animations) {
-              anim->accumulated_scroll = fvec2(0, 0);
-            }
-            break;
-          case '+':
-          case '=':
-            resources->_tex_size = std::min(resources->_tex_size * 2, 2048);
-            deco::printf(fvec3::Yellow(), "Texture size increased to %dx%d\n", resources->_tex_size, resources->_tex_size);
-            // Would need to recreate texture array with new size
-            break;
-          case '-':
-          case '_':
-            resources->_tex_size = std::max(resources->_tex_size / 2, 64);
-            deco::printf(fvec3::Yellow(), "Texture size decreased to %dx%d\n", resources->_tex_size, resources->_tex_size);
-            // Would need to recreate texture array with new size
-            break;
-        }
-        break;
+      case ui::EventCode::DOUBLECLICK:
       default:
         break;
     }
