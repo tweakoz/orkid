@@ -21,7 +21,7 @@ using namespace ork;
 using namespace ork::lev2;
 
 constexpr bool DO_ASYNC_SLICE_UPDATE = true;
-constexpr int TEX_SIZE               = 2048;
+constexpr int TEX_SIZE               = 4096;
 constexpr int ROWS_PER_CHUNK         = TEX_SIZE >> 5;
 
 struct SliceAnimationData {
@@ -164,6 +164,7 @@ struct Resources {
 
     _texArray                   = std::make_shared<TextureArray>();
     _texArray->_tex->_debugName = "animated_texarray";
+    _texArray->_requires_mips = false;
     txi->initTextureArray2DFromData(_texArray.get(), TID);
 
     // Create shader that can sample from texture arrays - same as arraytex1

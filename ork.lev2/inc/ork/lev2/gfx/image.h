@@ -136,6 +136,7 @@ struct Image {
   void uncompressed(CompressedImage& imgout) const;
   CompressedImageMipChain uncompressedMipChain_b() const;
   compressedmipchain_ptr_t uncompressedMipChain() const;
+  compressedmipchain_ptr_t uncompressedSingleMipChain() const;
 
   #if defined(ENABLE_ISPC)
   void compressBC7(CompressedImage& imgout) const;

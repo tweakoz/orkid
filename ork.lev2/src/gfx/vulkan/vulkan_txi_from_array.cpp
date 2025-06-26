@@ -578,7 +578,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->subresourceRange.levelCount     = num_levels;
 
   vkCmdPipelineBarrier(
-      vk_sec_cmdbuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+      vk_sec_cmdbuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
   // Record commands
   vkCmdCopyBufferToImage(
@@ -593,8 +593,8 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  //barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
+  //barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
   vkCmdPipelineBarrier(
       vk_sec_cmdbuf,
       VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -655,9 +655,14 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
     OrkAssert(false);
     return;
   }
-
   // Get mipchain from image
-  auto mipc = img->uncompressedMipChain();
+  compressedmipchain_ptr_t mipc;
+  if(array->_requires_mips) {
+    // If the texture array requires mipmaps, use the mipchain from the image
+    mipc = img->uncompressedMipChain();
+  } else {
+    mipc = img->uncompressedSingleMipChain();
+  }
   _updateTextureArraySlice(slice_ref, mipc);
 }
 

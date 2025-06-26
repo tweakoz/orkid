@@ -120,6 +120,22 @@ compressedmipchain_ptr_t Image::uncompressedMipChain() const {
   return rval;
 }
 
+compressedmipchain_ptr_t Image::uncompressedSingleMipChain() const {
+  compressedmipchain_ptr_t rval = std::make_shared<CompressedImageMipChain>();
+  rval->_width           = _width;
+  rval->_height          = _height;
+  rval->_format          = _format;
+  rval->_numcomponents   = _numcomponents;
+  rval->_bytesPerChannel = _bytesPerChannel;
+
+  CompressedImage cimg;
+  this->uncompressed(cimg);
+  rval->_levels.push_back(cimg);
+
+  return rval;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompressedImageMipChain::initWithPrecompressedMipLevels(miplevels_t levels) {
