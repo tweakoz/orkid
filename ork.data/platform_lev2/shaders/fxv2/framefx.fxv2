@@ -9,7 +9,7 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx_ffx : uset_std_matrices {
+uniform_block ub_vtx_ffx : ublk_std_matrices {
   vec4 modcolor;
   float time;
 }
@@ -309,7 +309,7 @@ uniform_set uset_frg_ssao_impl {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_ssao_prepass //
   : iface_fmt_greyscale //
-  : uset_std_matrices
+  : ublk_std_matrices
   : uset_std_viewport
   : uset_frg_ssao_impl //
   : lib_ssao { 

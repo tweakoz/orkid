@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////
-uniform_set uset_std_matrices {
+uniform_block ublk_std_matrices (descriptor_set 3) {
   mat4 m;
   mat4 v;
   mat4 p;
@@ -94,7 +94,7 @@ uniform_set uset_std_lighting {
   int spot_light_count;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublk_frg_fwd_lighting(descriptor_set 1) {
+uniform_block ublk_frg_fwd_lighting(descriptor_set 3) {
   vec4 _lightcolor[64];    // 1024 : 1024 
   vec4 _lightsizbias[64];  // 1024 : 2048
   vec4 _lightpos[64];      // 1024 : 3072
@@ -102,7 +102,7 @@ uniform_block ublk_frg_fwd_lighting(descriptor_set 1) {
   uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublk_deferred_lighting(descriptor_set 1) {
+uniform_block ublk_deferred_lighting(descriptor_set 3) {
   vec4 LightColorD[256];   // 4096   : 4096
   mat4 LightMatrix[256];   // 163384 : 167480
   mat4 ShadowMatrix[256];  // 163384 : 330864

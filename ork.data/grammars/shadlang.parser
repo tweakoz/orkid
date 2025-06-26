@@ -443,7 +443,7 @@ SamplerSet <|[
 UniformBlk <|[
   KW_UNIBLK
   [ IDENTIFIER ] : "uniblk_name"
-  DescriptorSetId
+  DescriptorSetInhItem
   L_CURLY
   DataDeclarations : "uniblk_decls"
   R_CURLY
