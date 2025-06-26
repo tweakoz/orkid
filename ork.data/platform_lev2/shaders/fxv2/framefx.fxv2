@@ -3,8 +3,8 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "150";
-  //import "stdtools.i";
-  //import "ssaotools.i";
+  import "orkshader://stdtools.i2";
+  import "orkshader://ssaotools.i2";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -297,10 +297,13 @@ fragment_shader ps_hsvg : iface_fmt : color_tools {
   out_clr   = vec4(r,g,b, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-uniform_set uset_frg_ssao_impl {
+sampler_set sset_frg_ssao_impl(descriptor_set 0) {
   sampler2D MapDepth;
   sampler2D MapLinearDepth;
   sampler2D SSAOPREV;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_frg_ssao_impl {
   vec2 texelSize;
 }
 ///////////////////////////////////////////////////////////////
@@ -330,12 +333,14 @@ fragment_shader ps_linearize_depth //
   out_value   = 0.0;//linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
+sampler_set sset_ghost(descriptor_set 0) {
+  sampler2D MrtMap0; // Base color map
+  sampler2D AuxMap1; // Glow map
+}
 uniform_set ub_ghost {
   float EffectAmount;
-  sampler2D MrtMap0;
-  sampler2D AuxMap1;
 }
-fragment_interface iface_hdr_join_ghost : ub_ghost {
+fragment_interface iface_hdr_join_ghost : ub_ghost : sset_ghost {
   outputs { vec4 out_clr; }
   //
   inputs { vec2 frg_uv; }

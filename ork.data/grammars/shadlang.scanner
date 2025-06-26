@@ -71,6 +71,7 @@ KW_MAT4             <| "mat4" |>
 KW_SAMP1D           <| "sampler1D" |>
 KW_SAMP2D           <| "sampler2D" |>
 KW_SAMP3D           <| "sampler3D" |>
+KW_SAMPCUBE         <| "samplerCube" |>
 
 KW_SAMP1DARRAY      <| "sampler1DArray" |>
 KW_SAMP2DARRAY      <| "sampler2DArray" |>
