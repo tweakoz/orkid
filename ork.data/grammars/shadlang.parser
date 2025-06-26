@@ -425,10 +425,16 @@ DescriptorSetId <|[
   R_PAREN 
 ]|>
 
+DescriptorSetInhItem <|[
+  sel{
+    DescriptorSetId InheritListItem
+  }
+]|>
+
 SamplerSet <|[
   KW_SMPSET
   [ IDENTIFIER ] : "smpset_name"
-  DescriptorSetId
+  DescriptorSetInhItem
   L_CURLY
   SamplerDeclarations : "smpset_decls"
   R_CURLY

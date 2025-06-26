@@ -69,7 +69,15 @@ uniform_set uset_std_pbr {
   float DepthFogPower;
 }
 ///////////////////////////////////////////////////////////////
-sampler_set sset_std_pbr(descriptor_set 2) {
+sampler_set sset_std_lighting (descriptor_set 0) {
+  sampler2DArray LightMapArray;            
+  sampler2DArray light_cookie_colors;      
+  sampler2DArray light_cookie_depths;      
+  sampler2D MapDepth;           
+  sampler2D MapLinearDepth;     
+}
+///////////////////////////////////////////////////////////////
+sampler_set sset_std_pbr : sset_std_lighting {
   sampler2DArray CNMREA;         
   samplerCube reflectionPROBE;
   samplerCube irradiancePROBE;
@@ -86,15 +94,7 @@ uniform_set uset_std_lighting {
   int spot_light_count;
 }
 ///////////////////////////////////////////////////////////////
-sampler_set sset_std_lighting (descriptor_set 3) {
-  sampler2DArray LightMapArray;            
-  sampler2DArray light_cookie_colors;      
-  sampler2DArray light_cookie_depths;      
-  sampler2D MapDepth;           
-  sampler2D MapLinearDepth;     
-}
-///////////////////////////////////////////////////////////////
-uniform_block ublk_frg_fwd_lighting(descriptor_set 4) {
+uniform_block ublk_frg_fwd_lighting(descriptor_set 1) {
   vec4 _lightcolor[64];    // 1024 : 1024 
   vec4 _lightsizbias[64];  // 1024 : 2048
   vec4 _lightpos[64];      // 1024 : 3072
@@ -102,7 +102,7 @@ uniform_block ublk_frg_fwd_lighting(descriptor_set 4) {
   uint _lightTexSlice[64]; // 256  : 7424
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublk_deferred_lighting(descriptor_set 5) {
+uniform_block ublk_deferred_lighting(descriptor_set 1) {
   vec4 LightColorD[256];   // 4096   : 4096
   mat4 LightMatrix[256];   // 163384 : 167480
   mat4 ShadowMatrix[256];  // 163384 : 330864
