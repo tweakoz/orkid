@@ -411,6 +411,7 @@ ComputeShader <|[
 UniformSet <|[
   KW_UNISET
   [ IDENTIFIER ] : "uniset_name"
+  zom{ InheritListItem } : "uset_dependencies"
   L_CURLY
   DataDeclarations : "uniset_decls"
   R_CURLY
