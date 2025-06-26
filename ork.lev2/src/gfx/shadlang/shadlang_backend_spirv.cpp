@@ -278,28 +278,54 @@ void SpirvCompiler::_processGlobalRenames() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertSamplerSets() {
   auto ast_smpsets = SHAST::AstNode::collectNodesOfType<SHAST::SamplerSet>(_transu);
+  
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 1: Create all sampler sets, parse their direct properties
+  //////////////////////////////////////////////////////////////////////////
   for (auto ast_smpset : ast_smpsets) {
-
-    // Get the sampler set name first
     auto smpset_name               = ast_smpset->typedValueForKey<std::string>("object_name").value();
     auto smpset                    = std::make_shared<SpirvSamplerSet>();
     _spirvsamplersets[smpset_name] = smpset;
     smpset->_name                  = smpset_name;
+    smpset->_descriptor_set_id     = -1; // Initialize to invalid value
 
-    // Check for DescriptorSetId vs InheritListItem
-    auto dsetids       = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
-    auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_smpset);
-
-    // Handle descriptor set ID
+    // Check for direct DescriptorSetId
+    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
     if (dsetids.size() == 1) {
-      // Direct DescriptorSetId case (current behavior)
       int dset_id                = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
       smpset->_descriptor_set_id = dset_id;
       OrkAssert((dset_id >= 0) and (dset_id <= 4));
-    } else if (inherit_items.size() > 0) {
-      // InheritListItem case - inherit from parent sampler set
+    }
+
+    // Process local sampler declarations
+    auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
+    for (auto decl : sampler_declarations) {
+      auto sampler_type = decl->childAs<SHAST::SamplerType>(0);
+      OrkAssert(sampler_type);
+      auto smp_typename = sampler_type->typedValueForKey<std::string>("sampler_type").value();
+      auto semaid       = decl->childAs<SemaIdentifier>(1);
+      auto smp_name     = semaid->typedValueForKey<std::string>("identifier_name").value();
+
+      auto sampler         = std::make_shared<SpirvSampler>();
+      sampler->_datatype   = smp_typename;
+      sampler->_identifier = smp_name;
+      smpset->_samplers_by_name[smp_name] = sampler;
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+  // Stage 2: Process inheritance
+  //////////////////////////////////////////////////////////////////////////
+  for (auto ast_smpset : ast_smpsets) {
+    auto smpset_name = ast_smpset->typedValueForKey<std::string>("object_name").value();
+    auto smpset      = _spirvsamplersets[smpset_name];
+
+    auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_smpset);
+    
+    if (inherit_items.size() > 0) {
       bool parent_was_found = false;
 
       for (auto inherit_item : inherit_items) {
@@ -313,7 +339,10 @@ void SpirvCompiler::_convertSamplerSets() {
           // Inherit descriptor set ID
           smpset->_descriptor_set_id = parent_smpset->_descriptor_set_id;
 
-          // Inherit (prepend) all samplers from parent
+          // Create new map with parent samplers first, then local samplers
+          std::unordered_map<std::string, spirvsampler_ptr_t> new_samplers_by_name;
+          
+          // First add all parent samplers
           for (auto parent_sampler_item : parent_smpset->_samplers_by_name) {
             auto sampler_name   = parent_sampler_item.first;
             auto parent_sampler = parent_sampler_item.second;
@@ -323,39 +352,46 @@ void SpirvCompiler::_convertSamplerSets() {
             inherited_sampler->_datatype   = parent_sampler->_datatype;
             inherited_sampler->_identifier = parent_sampler->_identifier;
 
-            // Add to current sampler set
-            auto it = smpset->_samplers_by_name.find(sampler_name);
-            OrkAssert(it == smpset->_samplers_by_name.end());
-            smpset->_samplers_by_name[sampler_name] = inherited_sampler;
+            new_samplers_by_name[sampler_name] = inherited_sampler;
           }
+
+          // Then add local samplers (checking for duplicates)
+          for (auto local_sampler_item : smpset->_samplers_by_name) {
+            auto sampler_name = local_sampler_item.first;
+            auto local_sampler = local_sampler_item.second;
+            
+            // Check for duplicates
+            auto it = new_samplers_by_name.find(sampler_name);
+            if (it != new_samplers_by_name.end()) {
+              printf("SamplerSet<%s> redefines inherited sampler<%s> - not allowed!\n", 
+                     smpset_name.c_str(), sampler_name.c_str());
+              OrkAssert(false);
+            }
+            
+            new_samplers_by_name[sampler_name] = local_sampler;
+          }
+
+          // Replace the sampler set's samplers with the new combined map
+          smpset->_samplers_by_name = new_samplers_by_name;
 
           parent_was_found = true;
           break; // Only inherit from first valid SamplerSet parent
         }
       }
-      OrkAssertI(parent_was_found, "SamplerSet inherits from another SamplerSet but no valid parent found for ID");
+      
+      if (!parent_was_found) {
+        printf("SamplerSet<%s> inherits from another SamplerSet<%s> which is not found!\n",
+               smpset_name.c_str(),
+               inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
+        OrkAssert(false);
+      }
     } else {
-      // Neither DescriptorSetId nor InheritListItem found
-      OrkAssertI(false, "SamplerSet must have either DescriptorSetId or inherit from another SamplerSet");
-    }
-
-    // Process local sampler declarations (these will override inherited ones with same name)
-    auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
-
-    for (auto decl : sampler_declarations) {
-      auto sampler_type = decl->childAs<SHAST::SamplerType>(0);
-      OrkAssert(sampler_type);
-      auto smp_typename = sampler_type->typedValueForKey<std::string>("sampler_type").value();
-      auto semaid       = decl->childAs<SemaIdentifier>(1);
-      auto smp_name     = semaid->typedValueForKey<std::string>("identifier_name").value();
-
-      auto sampler         = std::make_shared<SpirvSampler>();
-      sampler->_datatype   = smp_typename;
-      sampler->_identifier = smp_name;
-
-      auto it = smpset->_samplers_by_name.find(smp_name);
-      OrkAssert(it == smpset->_samplers_by_name.end());
-      smpset->_samplers_by_name[smp_name] = sampler;
+      // No inheritance - must have direct descriptor set ID
+      if (smpset->_descriptor_set_id < 0) {
+        printf("SamplerSet<%s> must have either DescriptorSetId or inherit from another SamplerSet!\n", 
+               smpset_name.c_str());
+        OrkAssert(false);
+      }
     }
   }
 }
