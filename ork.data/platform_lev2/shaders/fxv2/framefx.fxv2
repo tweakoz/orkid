@@ -322,10 +322,12 @@ fragment_shader ps_ssao_prepass //
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_linearize_depth //
   : iface_fmt_greyscale //
+  : ublk_std_matrices
   : uset_std_viewport
   : uset_frg_ssao_impl //
+  : uset_std_depth
   : lib_ssao
-  : samplers_all { 
+  : sset_frg_ssao_impl { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
   float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
@@ -347,7 +349,10 @@ fragment_interface iface_hdr_join_ghost : ub_ghost : sset_ghost {
   //
   inputs { vec2 frg_uv; }
 }
-fragment_shader ps_hdr_join_ghost : iface_fmt : lib_cmn_funs {
+fragment_shader ps_hdr_join_ghost 
+  : iface_fmt 
+  : lib_cmn_funs 
+  : samplers_all {
   vec3 base  = pointsampletex2d(MrtMap0, frg_uv.xy).xyz;
   vec3 glow  = pointsampletex2d(AuxMap1, frg_uv.xy).xyz;
   float diff = distance(glow, base);
@@ -366,7 +371,10 @@ fragment_shader ps_hdr_join_ghost : iface_fmt : lib_cmn_funs {
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-fragment_shader ps_comic : iface_fmt : color_tools {
+fragment_shader ps_comic 
+  : iface_fmt 
+  : color_tools
+  : samplers_all {
   const float kdx          = 1.007 / 1024.0;
   const float kdy          = 1.007 / 768.0;
   const float kf           = 0.01;
@@ -414,9 +422,9 @@ fragment_shader ps_comic : iface_fmt : color_tools {
   out_clr = vec4(hsv2rgb(HsvOut), 1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fbout : iface_fmt { out_clr = texture(MrtMap0, frg_uv); }
+fragment_shader ps_fbout : iface_fmt : samplers_all { out_clr = texture(MrtMap0, frg_uv); }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fbin : iface_fmt { out_clr = texture(MrtMap0, frg_uv) * 0.1; }
+fragment_shader ps_fbin : iface_fmt : samplers_all { out_clr = texture(MrtMap0, frg_uv) * 0.1; }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
   gl_Position = mvp * position;

@@ -46,10 +46,13 @@ uniform_set uset_std_pick {
   uint obj_pickID;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set uset_std_pbr {
+uniform_set uset_std_depth {
+  vec2 Zndc2eye;
+}
+///////////////////////////////////////////////////////////////
+uniform_set uset_std_pbr : uset_std_depth {
   //////////////////////////////
   vec3 AmbientLevel;
-  vec2 Zndc2eye;
   vec3 EyePostion;
   vec3 EyePostionL;
   vec3 EyePostionR;
