@@ -349,7 +349,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vkfxssmpset_ptr_t vk_smpset = it->second;
         refs->_smpsets[str_smpset]  = vk_smpset;
       }
-      OrkAssert(refs->_smpsets.size() < 2);
+      if(refs->_smpsets.size()>1){
+        // print out sampler set names
+        printf("Shader<%s> has multiple sampler sets:\n", str_shader_name.c_str());
+        for (const auto& smp_it : refs->_smpsets) {
+          printf("  %s\n", smp_it.first.c_str());
+        }
+        // this is not allowed for now, so assert
+        OrkAssert(false); // only one sampler set per shader for now
+      }
     }
     /////////////////////////////////
     auto num_iunisets = shader_input_stream->ReadItem<size_t>();
