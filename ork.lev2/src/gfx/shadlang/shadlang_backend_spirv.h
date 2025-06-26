@@ -101,6 +101,7 @@ private:
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
   void _inheritExtension(semainhext_ptr_t ext_node);
+  void _emitMergedPushConstants();
 
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
@@ -133,6 +134,7 @@ public:
   std::unordered_map<std::string, spirvsmpset_ptr_t> _spirvsamplersets;
   std::unordered_map<std::string, spirvuniset_ptr_t> _spirvuniformsets;
   std::unordered_map<std::string, spirvuniblk_ptr_t> _spirvuniformblks;
+  std::vector<spirvuniset_ptr_t> _collected_uniform_sets;
 
 };
 

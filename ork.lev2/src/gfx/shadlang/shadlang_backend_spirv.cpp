@@ -157,6 +157,8 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _input_index     = 0;
   _output_index    = 0;
 
+  _collected_uniform_sets.clear();
+
   /////////////////////////////////////////////////
   // process shader inheritances
   /////////////////////////////////////////////////
@@ -281,7 +283,7 @@ void SpirvCompiler::_processGlobalRenames() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertSamplerSets() {
   auto ast_smpsets = SHAST::AstNode::collectNodesOfType<SHAST::SamplerSet>(_transu);
-  
+
   //////////////////////////////////////////////////////////////////////////
   // Stage 1: Create all sampler sets, parse their direct properties
   //////////////////////////////////////////////////////////////////////////
@@ -309,9 +311,9 @@ void SpirvCompiler::_convertSamplerSets() {
       auto semaid       = decl->childAs<SemaIdentifier>(1);
       auto smp_name     = semaid->typedValueForKey<std::string>("identifier_name").value();
 
-      auto sampler         = std::make_shared<SpirvSampler>();
-      sampler->_datatype   = smp_typename;
-      sampler->_identifier = smp_name;
+      auto sampler                        = std::make_shared<SpirvSampler>();
+      sampler->_datatype                  = smp_typename;
+      sampler->_identifier                = smp_name;
       smpset->_samplers_by_name[smp_name] = sampler;
     }
   }
@@ -324,7 +326,7 @@ void SpirvCompiler::_convertSamplerSets() {
     auto smpset      = _spirvsamplersets[smpset_name];
 
     auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_smpset);
-    
+
     if (inherit_items.size() > 0) {
       bool parent_was_found = false;
 
@@ -341,7 +343,7 @@ void SpirvCompiler::_convertSamplerSets() {
 
           // Create new map with parent samplers first, then local samplers
           std::unordered_map<std::string, spirvsampler_ptr_t> new_samplers_by_name;
-          
+
           // First add all parent samplers
           for (auto parent_sampler_item : parent_smpset->_samplers_by_name) {
             auto sampler_name   = parent_sampler_item.first;
@@ -357,17 +359,16 @@ void SpirvCompiler::_convertSamplerSets() {
 
           // Then add local samplers (checking for duplicates)
           for (auto local_sampler_item : smpset->_samplers_by_name) {
-            auto sampler_name = local_sampler_item.first;
+            auto sampler_name  = local_sampler_item.first;
             auto local_sampler = local_sampler_item.second;
-            
+
             // Check for duplicates
             auto it = new_samplers_by_name.find(sampler_name);
             if (it != new_samplers_by_name.end()) {
-              printf("SamplerSet<%s> redefines inherited sampler<%s> - not allowed!\n", 
-                     smpset_name.c_str(), sampler_name.c_str());
+              printf("SamplerSet<%s> redefines inherited sampler<%s> - not allowed!\n", smpset_name.c_str(), sampler_name.c_str());
               OrkAssert(false);
             }
-            
+
             new_samplers_by_name[sampler_name] = local_sampler;
           }
 
@@ -378,18 +379,18 @@ void SpirvCompiler::_convertSamplerSets() {
           break; // Only inherit from first valid SamplerSet parent
         }
       }
-      
+
       if (!parent_was_found) {
-        printf("SamplerSet<%s> inherits from another SamplerSet<%s> which is not found!\n",
-               smpset_name.c_str(),
-               inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
+        printf(
+            "SamplerSet<%s> inherits from another SamplerSet<%s> which is not found!\n",
+            smpset_name.c_str(),
+            inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
         OrkAssert(false);
       }
     } else {
       // No inheritance - must have direct descriptor set ID
       if (smpset->_descriptor_set_id < 0) {
-        printf("SamplerSet<%s> must have either DescriptorSetId or inherit from another SamplerSet!\n", 
-               smpset_name.c_str());
+        printf("SamplerSet<%s> must have either DescriptorSetId or inherit from another SamplerSet!\n", smpset_name.c_str());
         OrkAssert(false);
       }
     }
@@ -443,7 +444,7 @@ void SpirvCompiler::_convertUniformSets() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertUniformBlocks() {
   auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
-  
+
   //////////////////////////////////////////////////////////////////////////
   // Stage 1: Create all uniform blocks, parse their direct properties
   //////////////////////////////////////////////////////////////////////////
@@ -466,7 +467,7 @@ void SpirvCompiler::_convertUniformBlocks() {
     // Parse local data declarations
     auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
     LayoutStandard430 layout;
-    
+
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
@@ -497,7 +498,7 @@ void SpirvCompiler::_convertUniformBlocks() {
         layout.incrementDatatype(dt, 0);
       }
     }
-    
+
     if (layout.cursor() > 65536) {
       printf("uniblk<%s> buffer overflow length<%zu>\n", uni_name.c_str(), layout.cursor());
       OrkAssert(false);
@@ -512,7 +513,7 @@ void SpirvCompiler::_convertUniformBlocks() {
     auto uniblk   = _spirvuniformblks[uni_name];
 
     auto inherit_items = SHAST::AstNode::collectNodesOfType<SHAST::InheritListItem>(ast_uniblk);
-    
+
     if (inherit_items.size() > 0) {
       bool parent_was_found = false;
 
@@ -530,7 +531,7 @@ void SpirvCompiler::_convertUniformBlocks() {
           // Prepend parent items to the beginning
           std::vector<spirvuniblkitem_ptr_t> new_items_by_order;
           std::unordered_map<std::string, spirvuniblkitem_ptr_t> new_items_by_name;
-          
+
           // First add all parent items
           LayoutStandard430 new_layout;
           for (auto parent_item : parent_uniblk->_items_by_order) {
@@ -558,14 +559,16 @@ void SpirvCompiler::_convertUniformBlocks() {
             // Check for duplicates
             auto it = new_items_by_name.find(local_item->_identifier);
             if (it != new_items_by_name.end()) {
-              printf("UniformBlock<%s> redefines inherited item<%s> - not allowed!\n", 
-                     uni_name.c_str(), local_item->_identifier.c_str());
+              printf(
+                  "UniformBlock<%s> redefines inherited item<%s> - not allowed!\n",
+                  uni_name.c_str(),
+                  local_item->_identifier.c_str());
               OrkAssert(false);
             }
 
             // Update offset based on inherited items
             local_item->_offset = new_layout.cursor();
-            
+
             new_items_by_order.push_back(local_item);
             new_items_by_name[local_item->_identifier] = local_item;
 
@@ -579,24 +582,24 @@ void SpirvCompiler::_convertUniformBlocks() {
 
           // Replace the block's items with the new combined list
           uniblk->_items_by_order = new_items_by_order;
-          uniblk->_items_by_name = new_items_by_name;
+          uniblk->_items_by_name  = new_items_by_name;
 
           parent_was_found = true;
           break; // Only inherit from first valid UniformBlock parent
         }
       }
-      
+
       if (!parent_was_found) {
-        printf("UniformBlock<%s> inherits from another UniformBlock<%s> which is not found!\n",
-               uni_name.c_str(),
-               inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
+        printf(
+            "UniformBlock<%s> inherits from another UniformBlock<%s> which is not found!\n",
+            uni_name.c_str(),
+            inherit_items[0]->typedValueForKey<std::string>("inherited_object").value().c_str());
         OrkAssert(false);
       }
     } else {
       // No inheritance - must have direct descriptor set ID
       if (uniblk->_descriptor_set_id < 0) {
-        printf("UniformBlock<%s> must have either DescriptorSetId or inherit from another UniformBlock!\n", 
-               uni_name.c_str());
+        printf("UniformBlock<%s> must have either DescriptorSetId or inherit from another UniformBlock!\n", uni_name.c_str());
         OrkAssert(false);
       }
     }
@@ -631,30 +634,95 @@ void SpirvCompiler::_inheritUniformSet(
     std::string unisetname,        //
     spirvuniset_ptr_t spirvuset) { //
   if (_vulkan) {
-    /////////////////////
-    // loose unis
-    /////////////////////
-    if (spirvuset->_items_by_order.size()) {
-      auto line = FormatString(
-          "layout(push_constant) uniform %s {", //
-          unisetname.c_str());
-      _appendText(_uniforms_group, line.c_str());
-      for (auto item : spirvuset->_items_by_order) {
-        auto dt = item->_datatype;
-        auto id = item->_identifier;
-        if (item->_is_array) {
-          size_t array_len = item->_array_length;
-          auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
-          _appendText(_uniforms_group, str.c_str());
-        } else {
-          _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
-        }
-      }
-      _appendText(_uniforms_group, "};");
-    }
+    // Just collect for now, don't emit
+    _collected_uniform_sets.push_back(spirvuset);
   } else { // opengl
     OrkAssert(false);
   }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_emitMergedPushConstants() {
+  if (!_vulkan || _collected_uniform_sets.empty()) {
+    return;
+  }
+
+  // Calculate total size and merge all items
+  LayoutStandard430 merged_layout;
+  std::vector<std::pair<spirvunisetitem_ptr_t, std::string>> all_items; // item, source_set_name
+
+  for (auto spirvuset : _collected_uniform_sets) {
+    for (auto item : spirvuset->_items_by_order) {
+      // Check for duplicate names
+      for (const auto& existing : all_items) {
+        if (existing.first->_identifier == item->_identifier) {
+          printf("ERROR: Duplicate uniform name '%s' found in uniform sets!\n", item->_identifier.c_str());
+          OrkAssert(false);
+        }
+      }
+
+      // Clone item with new offset
+      auto merged_item           = std::make_shared<SpirvUniformSetItem>();
+      merged_item->_datatype     = item->_datatype;
+      merged_item->_identifier   = item->_identifier;
+      merged_item->_is_array     = item->_is_array;
+      merged_item->_array_length = item->_array_length;
+      merged_item->_offset       = merged_layout.cursor();
+
+      all_items.push_back({merged_item, spirvuset->_name});
+
+      // Update layout
+      if (merged_item->_is_array) {
+        merged_layout.incrementDatatype(merged_item->_datatype, merged_item->_array_length);
+      } else {
+        merged_layout.incrementDatatype(merged_item->_datatype, 0);
+      }
+    }
+  }
+
+  // Check size limit AFTER collecting all items
+  size_t total_size = merged_layout.cursor();
+  if (total_size > 256) {
+    printf("ERROR: Combined push_constant size %zu exceeds 256 byte limit!\n", total_size);
+    printf("Uniform sets included:\n");
+    for (auto spirvuset : _collected_uniform_sets) {
+      printf("  - %s\n", spirvuset->_name.c_str());
+    }
+    OrkAssert(false);
+  }
+
+  // Emit single push_constant block ONCE, outside the loop
+  _appendText(_uniforms_group, "layout(push_constant) uniform PushConstants {");
+
+  // Add comment showing which sets were merged
+  std::string sets_comment = "  // Merged from: ";
+  for (size_t i = 0; i < _collected_uniform_sets.size(); i++) {
+    if (i > 0)
+      sets_comment += ", ";
+    sets_comment += _collected_uniform_sets[i]->_name;
+  }
+  _appendText(_uniforms_group, sets_comment.c_str());
+
+  // Emit all items
+  for (const auto& item_pair : all_items) {
+    auto item       = item_pair.first;
+    auto source_set = item_pair.second;
+
+    std::string line = "  ";
+    if (item->_is_array) {
+      line += FormatString(
+          "%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str());
+    } else {
+      line += FormatString("%s %s; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
+    }
+    _appendText(_uniforms_group, line.c_str());
+  }
+
+  _appendText(_uniforms_group, "};");
+
+  // Clear for next shader
+  _collected_uniform_sets.clear();
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritLibrary(libblock_ptr_t lib_block) {
@@ -1029,6 +1097,8 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   for (auto inh : inhs) {
     AstNode::treeops::removeFromParent(inh);
   }
+
+  _emitMergedPushConstants();
 
   ///////////////////////////////////////////////////////
   // final prep for shaderc

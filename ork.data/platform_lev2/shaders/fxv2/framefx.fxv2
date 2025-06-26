@@ -213,24 +213,24 @@ libblock lib_cmn_funs {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext : iface_fmt {
+fragment_shader ps_uitext : iface_fmt : samplers_all {
   vec4 texc = texture(MrtMap0, frg_uv);
   if (texc.r == 0.0)
     discard;
   out_clr = vec4(texc.xyz * ModColor.xyz, texc.r);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitextured : iface_fmt {
+fragment_shader ps_uitextured : iface_fmt : samplers_all {
   vec4 texc = texture(MrtMap0, frg_uv);
   out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_standard : iface_fmt {
+fragment_shader ps_standard : iface_fmt : samplers_all {
   vec4 texc = texture(MrtMap0, frg_uv);
   out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs {
+fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs : samplers_all {
   vec3 texc = texture(MrtMap0, frg_uv).xyz;
   if(texc.x>MaskThreshold || texc.x>MaskThreshold || texc.x>MaskThreshold){
 
@@ -241,7 +241,7 @@ fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs {
   out_clr = vec4(texc,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blurx : iface_fmt : lib_cmn_funs {
+fragment_shader ps_blurx : iface_fmt : lib_cmn_funs : samplers_all {
   float stepval = (1.0 / image_width);
   vec3 PixOut   = vec3(0,0,0);
 
@@ -257,7 +257,7 @@ fragment_shader ps_blurx : iface_fmt : lib_cmn_funs {
   out_clr = vec4(PixOut,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blury : iface_fmt : lib_cmn_funs {
+fragment_shader ps_blury : iface_fmt : lib_cmn_funs : samplers_all {
   float stepval = (1.0 / image_height);
   vec3 PixOut   = vec3(0,0,0);
 
@@ -274,7 +274,7 @@ fragment_shader ps_blury : iface_fmt : lib_cmn_funs {
 
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_hdr_join : iface_fmt {
+fragment_shader ps_hdr_join : iface_fmt : samplers_all {
   vec4 glow = texture(MrtMap0, frg_uv);
   vec4 base = texture(MrtMap1, frg_uv);
   //vec3 full = mix(base.xyz, glow.xyz, EffectAmount).xyz;
@@ -283,7 +283,7 @@ fragment_shader ps_hdr_join : iface_fmt {
   //out_clr = vec4(glow.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_hsvg : iface_fmt : color_tools {
+fragment_shader ps_hsvg : iface_fmt : color_tools : samplers_all {
   vec4 inprgb = texture(MrtMap0, frg_uv);
   vec3 hsv   = rgb2hsv(inprgb.xyz);
   hsv.x      = mod(hsv.x + Hue + 1.0, 1.0);
@@ -312,7 +312,8 @@ fragment_shader ps_ssao_prepass //
   : ublk_std_matrices
   : uset_std_viewport
   : uset_frg_ssao_impl //
-  : lib_ssao { 
+  : lib_ssao
+  : sset_frg_ssao_impl { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float cur_ssao = ssao_nonlinear(uv);
   float prv_ssao = texture(SSAOPREV,uv).r;
@@ -323,7 +324,8 @@ fragment_shader ps_linearize_depth //
   : iface_fmt_greyscale //
   : uset_std_viewport
   : uset_frg_ssao_impl //
-  : lib_ssao { 
+  : lib_ssao
+  : samplers_all { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
   float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]
