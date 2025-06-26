@@ -25,7 +25,7 @@ InFlightTextureTransfer::InFlightTextureTransfer(vkcontext_rawptr_t ctx, //
   , _command_buffer(cmd_buffer) { //
   int count = _xfercount.fetch_add(1);
   int SN = _xferSN.fetch_add(1);
-  if((count&0xff)==0){
+  if((SN&0xfff)==0){
     logchan_txidata->log("InFlightTextureTransfer count<%d> SN<%d>", count, SN);
   }
   auto cmdbuf_impl = _command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
@@ -122,7 +122,26 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   size_t transfer_size = tid.computeDstSize();
   auto poolForSize     = stagingBufferPoolForSrcOfSize(transfer_size);
   auto staging_buffer  = poolForSize->borrowItem();
-  auto command_buffer = _seccmdbufpool_xfer->borrowItem();
+
+  /////////////////////////////////////
+  // asynchronously copy data from host to staging buffer
+  /////////////////////////////////////
+
+  std::atomic<bool> staging_buffer_ready = false;
+  auto copy_op = [=,&staging_buffer_ready]() {
+    staging_buffer->copyFromHost(tid._data, transfer_size);
+    staging_buffer_ready.store(true);
+  };
+  opq::concurrentQueue()->enqueue(copy_op);
+
+  /////////////////////////////////////
+  // allocate a secondary command buffer
+  /////////////////////////////////////
+
+  secondary_commandbuffer_ptr_t command_buffer;
+  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+    command_buffer = pool->borrowItem();
+  });
   /////////////////////////////////////
   // create a transfer object
   /////////////////////////////////////
@@ -144,17 +163,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   tlsema->_onComplete = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    _seccmdbufpool_xfer->returnItem(transfer->_command_buffer);
+    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+      pool->returnItem(command_buffer);
+    });
     //printf("free stgbuf<%p>\n", (void*)staging_buffer.get());
   };
-  /////////////////////////////////////
-  // copy data from application to staging buffer (synchronously)
-  //  after this is complete,
-  //  the application buffer can be released
-  /////////////////////////////////////
-
-  staging_buffer->copyFromHost(tid._data, transfer_size);
-
 
   /////////////////////////////////////
   // if the image params have changed
@@ -272,6 +285,19 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
+
+  /////////////////////////////////////
+  // wait for the staging buffer to be ready
+  /////////////////////////////////////
+
+  while( not staging_buffer_ready.load()) {
+    std::this_thread::yield();
+  }
+
+  /////////////////////////////////////
+  // enqueue the command buffer for execution
+  /////////////////////////////////////
+
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
   /////////////////////////////////////

@@ -91,52 +91,6 @@ void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-void VkContext::_doPushCommandBuffer(
-    secondary_commandbuffer_ptr_t cmdbuf, //
-    rtgroup_ptr_t rtg) {        //
-
-  _vk_cmdbufstack.push(_cmdbufcur_gfx);
-
-  OrkAssert(_current_cmdbuf == cmdbuf);
-  vkcmdbufimpl_ptr_t impl;
-  if (auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>()) {
-    impl = as_impl.value();
-  } else {
-    impl = _createVkCommandBuffer(cmdbuf.get());
-  }
-
-  //printf( "pushCB<%p:%s> impl<%p>\n", (void*) cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*) impl.get() );
-  VkCommandBufferInheritanceInfo INHINFO = {};
-  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  auto rpass         = _renderpasses.back();
-  auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
-  INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
-  INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
-  INHINFO.framebuffer = rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not
-provided.
-  ////////////////////////////////////////////
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
-                   | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-  CBBI_GFX.pInheritanceInfo = &INHINFO;
-  vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
-
-  _cmdbufcur_gfx = impl;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkContext::_doPopCommandBuffer() {
-  _cmdbufcur_gfx->_recorded = true;
-  //printf( "popCB<%p:%s> impl<%p>\n", (void*) _cmdbufcur_gfx->_parent, _cmdbufcur_gfx->_parent->_debugName.c_str(), (void*)
-_cmdbufcur_gfx.get() ); vkEndCommandBuffer(_cmdbufcur_gfx->_vkcmdbuf); _cmdbufcur_gfx = _vk_cmdbufstack.top();
-  _vk_cmdbufstack.pop();
-}
-*/
-///////////////////////////////////////////////////////////////////////////////
-
 void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   //logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
@@ -153,10 +107,14 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
 void VkContext::enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf) {
   auto impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
   OrkAssert(impl->_recorded);
-  _pendingOneShotCommands.push_back(cmdbuf);
+  _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
+    unlocked.push_back(cmdbuf);
+  });
   // Track semaphores separately for batch submission
   if (impl->_completionSemaphore) {
-    _pendingOneShotSemas.insert(impl->_completionSemaphore);
+    _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+      unlocked.insert(impl->_completionSemaphore);
+    });
   }
 }
 
@@ -178,10 +136,12 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   _allWaitValues.push_back(0);  // Binary semaphore, value 0
 
   // Add timeline semaphores with their values
-  for (auto semaphore : ctxVK->_pendingOneShotSemas) {
-    _allSignalSemaphores.push_back(semaphore->_vksema);
-    _allSignalValues.push_back(1);
-  }
+  ctxVK->_pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    for (auto semaphore : unlocked) {
+      _allSignalSemaphores.push_back(semaphore->_vksema);
+      _allSignalValues.push_back(1);
+    }
+  });
 
 
   // Add binary semaphore (render complete) with value 0

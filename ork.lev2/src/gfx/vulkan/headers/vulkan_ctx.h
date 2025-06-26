@@ -52,13 +52,15 @@ struct GLFWwindow;
 #include "vk_pipeline.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
+using vkseccmdbufarray_t = std::vector<secondary_commandbuffer_ptr_t>;
+using vkcompsema_set_t = std::unordered_set<vkcompletionsemaphore_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
 ///////////////////////////////////////////////////////////////////////////////
-using StagingBufferPool = ObjectPoolX<SbsPoolAdapter>;
+using StagingBufferPool = BoundedConcurrentObjectPoolX<SbsPoolAdapter,256>;
 using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
 ///////////////////////////////////////////////////////////////////////////////
-using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,256>;
+using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,512>;
 using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanDeviceInfo {
@@ -292,11 +294,11 @@ struct VkTextureInterface final : public TextureInterface {
   void _updateTextureArraySlice(TextureArraySliceRef* slice, compressedmipchain_ptr_t mipc);
 
   vkcontext_rawptr_t _contextVK;
-
+  using sbpoolmap_t = std::unordered_map<size_t, stagingbufferpool_ptr_t>;
   stagingbufferpool_ptr_t stagingBufferPoolForSrcOfSize(size_t size);
-  std::unordered_map<size_t, stagingbufferpool_ptr_t> _stagingSrcBuffers;
+  LockedResource<sbpoolmap_t> _stagingSrcBuffers;
   std::unordered_set<vktexobj_ptr_t> _texobjs_pending_for_deletion;
-  sseccmdbufpool_ptr_t _seccmdbufpool_xfer;
+  LockedResource<sseccmdbufpool_ptr_t> _seccmdbufpool_xfer;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxInterface final : public FxInterface {
@@ -583,8 +585,8 @@ public:
   vkpricmdbufimpl_ptr_t _createPrimaryVkCommandBuffer(PrimaryCommandBuffer* par);
   vkseccmdbufimpl_ptr_t _createSecondaryVkCommandBuffer(SecondaryCommandBuffer* par);
   void enqueueDeferredOneShotCommand(secondary_commandbuffer_ptr_t cmdbuf);
-  std::vector<secondary_commandbuffer_ptr_t> _pendingOneShotCommands;
-  std::unordered_set<vkcompletionsemaphore_ptr_t> _pendingOneShotSemas;
+  LockedResource<vkseccmdbufarray_t> _pendingOneShotCommands;
+  LockedResource<vkcompsema_set_t> _pendingOneShotSemas;
   void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
 

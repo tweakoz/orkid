@@ -14,7 +14,7 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_txidata = logger()->createChannel("VKTXIDAT", fvec3(0.8, 0.2, 0.5), true);
 static logchannel_ptr_t logchan_txia2d  = logger()->createChannel("VKTEXARRAY", fvec3(0.8, 0.5, 0.2), true);
-constexpr bool DEBUG_TEXARRAY2D = true;
+constexpr bool DEBUG_TEXARRAY2D = false;
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, TextureArrayInitData tid) {
@@ -184,7 +184,10 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   // Get staging buffer
   auto poolForSize    = stagingBufferPoolForSrcOfSize(total_staging_size);
   auto staging_buffer = poolForSize->borrowItem();
-  auto command_buffer = _seccmdbufpool_xfer->borrowItem();
+  secondary_commandbuffer_ptr_t command_buffer;
+  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+    command_buffer = pool->borrowItem();
+  });
 
   // Create transfer object
   auto transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
@@ -198,7 +201,9 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   tlsema->_onComplete               = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    _seccmdbufpool_xfer->returnItem(transfer->_command_buffer);
+    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+      pool->returnItem(command_buffer);
+    });
   };
 
   ///////////////////////////
@@ -479,14 +484,17 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   // Get staging buffer and command buffer
   auto poolForSize    = stagingBufferPoolForSrcOfSize(staging_size);
   auto staging_buffer = poolForSize->borrowItem();
-  auto command_buffer = _seccmdbufpool_xfer->borrowItem();
+  secondary_commandbuffer_ptr_t command_buffer;
+  _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+    command_buffer = pool->borrowItem();
+  });
 
   // Create transfer
   auto transfer = std::make_shared<InFlightTextureTransfer>(_contextVK, staging_buffer, command_buffer);
   vktex->_inflight_transfers.insert(transfer);
 
-  auto cmdbuf_impl = transfer->_command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+  auto cmdbuf_impl = command_buffer->_impl.getShared<VkSecondaryCommandBufferImpl>();
+  auto vk_sec_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   if(DEBUG_TEXARRAY2D) {
     logchan_txia2d->log(
@@ -505,7 +513,9 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   tlsema->_onComplete               = [=]() {
     vktex->_inflight_transfers.erase(transfer);
     poolForSize->returnItem(staging_buffer);
-    _seccmdbufpool_xfer->returnItem(transfer->_command_buffer);
+    _seccmdbufpool_xfer.atomicOp([&](sseccmdbufpool_ptr_t& pool) {
+      pool->returnItem(command_buffer);
+    });
   };
 
   // Copy data to staging buffer
@@ -531,7 +541,7 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       }
     } else {
       // Direct copy
-      memcpy(staging_data + offset, src, mip_data->length());
+      memcpy_fast(staging_data + offset, src, mip_data->length());
     }
 
     VkBufferImageCopy region{};
@@ -568,11 +578,11 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->subresourceRange.levelCount     = num_levels;
 
   vkCmdPipelineBarrier(
-      vk_cmdbuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+      vk_sec_cmdbuf, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
   // Record commands
   vkCmdCopyBufferToImage(
-      vk_cmdbuf,
+      vk_sec_cmdbuf,
       staging_buffer->_vkbuffer,
       vktex->_imgobj->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -583,10 +593,10 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  // barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
+  barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  //barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
   vkCmdPipelineBarrier(
-      vk_cmdbuf,
+      vk_sec_cmdbuf,
       VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
       0,
@@ -601,7 +611,9 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   _contextVK->endRecordCommandBuffer(transfer->_command_buffer);
   _contextVK->enqueueDeferredOneShotCommand(transfer->_command_buffer);
 
-  logchan_txia2d->log("Updated texture array slice %d", slice_index);
+  if(DEBUG_TEXARRAY2D){
+    logchan_txia2d->log("Updated texture array slice %d", slice_index);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

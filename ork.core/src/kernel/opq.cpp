@@ -128,23 +128,27 @@ static void _assertNotOnQueue(OperationsQueue* the_opQ) {
 ////////////////////////////////////////////////////////////////////////////////
 void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
   this->_numpending.fetch_add(1);
-  auto wrapped = [=]() mutable {
-    the_op();
-    /////////////////////////////////////
-    // update UI with progress ?
-    /////////////////////////////////////
-    if (_reportToUI) {
+  if (_reportToUI) {
+    auto wrapped = [=]() mutable {
+      the_op();
+      /////////////////////////////////////
+      // update UI with progress ?
+      /////////////////////////////////////
       auto data         = std::make_shared<ProgressData>();
       data->_queue_name = _q->_name;
       data->_task_name  = _name;
       _progressq.atomicOp([data](progressdata_queue_t& pq) { pq.push(data); });
       /////////////////////////////////////
       data->_num_pending = this->_numpending.fetch_add(-1);
-    } else {
+    };
+    _q->enqueue(wrapped);
+  } else {
+    auto wrapped = [=]() mutable {
+      the_op();
       this->_numpending.fetch_add(-1);
-    }
-  };
-  _q->enqueue(wrapped);
+    };
+    _q->enqueue(wrapped);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void CompletionGroup::join(bool with_progress_handler) {

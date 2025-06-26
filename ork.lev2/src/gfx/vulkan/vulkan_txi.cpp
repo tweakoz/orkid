@@ -18,7 +18,9 @@ static logchannel_ptr_t logchan_txi = logger()->createChannel("VKTXI", fvec3(0.8
 VkTextureInterface::VkTextureInterface(vkcontext_rawptr_t ctx)
     : TextureInterface(ctx)
     , _contextVK(ctx) {
-    _seccmdbufpool_xfer = std::make_shared<SecCmdBufPool>(SecCmdBufPoolAdapter(ctx));
+    _seccmdbufpool_xfer.atomicOp([ctx](sseccmdbufpool_ptr_t& pool) {
+      pool = std::make_shared<SecCmdBufPool>(SecCmdBufPoolAdapter(ctx));
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,16 +71,20 @@ vkbuffer_ptr_t SbsPoolAdapter::allocFresh() {
 
 stagingbufferpool_ptr_t VkTextureInterface::stagingBufferPoolForSrcOfSize(size_t size) {
   // round up to next power of two
+  stagingbufferpool_ptr_t rval;
   size_t rounded_size = nextPowerOfTwo(size);
-  auto it             = _stagingSrcBuffers.find(rounded_size);
-  if (it != _stagingSrcBuffers.end()) {
-    return it->second;
-  } else {
-    SbsPoolAdapter adapter(_contextVK, rounded_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    auto new_pool = std::make_shared<StagingBufferPool>(adapter);
-    _stagingSrcBuffers[rounded_size] = new_pool;
-    return new_pool;
-  }
+  _stagingSrcBuffers.atomicOp([&](sbpoolmap_t& unlocked) {
+    auto it             = unlocked.find(rounded_size);
+    if (it != unlocked.end()) {
+      rval = it->second;
+    } else {
+      SbsPoolAdapter adapter(_contextVK, rounded_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+      auto new_pool = std::make_shared<StagingBufferPool>(adapter);
+      unlocked[rounded_size] = new_pool;
+      rval = new_pool;
+    }
+  });
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

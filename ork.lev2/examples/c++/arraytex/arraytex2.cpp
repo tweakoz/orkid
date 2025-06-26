@@ -12,12 +12,17 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/image.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/memcpy.inl>
 #include <atomic>
 #include <mutex>
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
+
+constexpr bool DO_ASYNC_SLICE_UPDATE = true;
+constexpr int TEX_SIZE               = 2048;
+constexpr int ROWS_PER_CHUNK         = TEX_SIZE >> 5;
 
 struct SliceAnimationData {
   int slice_index;
@@ -44,13 +49,13 @@ struct Resources {
 
     auto create_image = [this](const std::string& name) {
       auto img = std::make_shared<Image>();
-      #if defined(__APPLE__)
+#if defined(__APPLE__)
       img->_format = EBufferFormat::RGBA8;
-      img->init(_tex_size, _tex_size, 4, 1);
-      #else
+      img->init(TEX_SIZE, TEX_SIZE, 4, 1);
+#else
       img->_format = EBufferFormat::RGB8;
-      img->init(_tex_size, _tex_size, 3, 1);
-      #endif
+      img->init(TEX_SIZE, TEX_SIZE, 3, 1);
+#endif
       img->_debugName = name;
       return img;
     };
@@ -61,9 +66,9 @@ struct Resources {
     auto img_blu = create_image("blu_slice");
     auto img_whi = create_image("whi_slice");
 
-    int stripe_width = 128;
-    for (int y = 0; y < _tex_size; y++) {
-      for (int x = 0; x < _tex_size; x++) {
+    int stripe_width = 256;
+    for (int y = 0; y < TEX_SIZE; y++) {
+      for (int x = 0; x < TEX_SIZE; x++) {
         float stripe = (y % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
         auto pixel   = img_red->pixel8(x, y);
         pixel[0]     = uint8_t(stripe * 255); // R
@@ -74,9 +79,9 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 128;
-    for (int y = 0; y < _tex_size; y++) {
-      for (int x = 0; x < _tex_size; x++) {
+    stripe_width = 256;
+    for (int y = 0; y < TEX_SIZE; y++) {
+      for (int x = 0; x < TEX_SIZE; x++) {
         float stripe = (x % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
         auto pixel   = img_grn->pixel8(x, y);
         pixel[0]     = 0;                     // R
@@ -87,10 +92,10 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 32;
-    int DDB = stripe_width * 2;
-    for (int y = 0; y < _tex_size; y++) {
-      for (int x = 0; x < _tex_size; x++) {
+    stripe_width = 512;
+    int DDB      = stripe_width * 2;
+    for (int y = 0; y < TEX_SIZE; y++) {
+      for (int x = 0; x < TEX_SIZE; x++) {
         float stripe = ((x + y) % DDB < (DDB >> 1)) ? 0.75f : 0.0f;
         auto pixel   = img_blu->pixel8(x, y);
         pixel[0]     = 0;                     // R
@@ -101,10 +106,10 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 4;
-    int DDW = stripe_width; // Same as arraytex1
-    for (int y = 0; y < _tex_size; y++) {
-      for (int x = 0; x < _tex_size; x++) {
+    stripe_width = 16;
+    int DDW      = stripe_width; // Same as arraytex1
+    for (int y = 0; y < TEX_SIZE; y++) {
+      for (int x = 0; x < TEX_SIZE; x++) {
         float checker = ((x / DDW) + (y / DDW)) % 2 ? 0.25f : 0.0f;
         auto pixel    = img_whi->pixel8(x, y);
         pixel[0]      = uint8_t(checker * 255); // R
@@ -118,15 +123,14 @@ struct Resources {
 
     _slice_animations[0]                = std::make_shared<SliceAnimationData>();
     _slice_animations[0]->slice_index   = 0;
-    _slice_animations[0]->tex_size      = _tex_size;
+    _slice_animations[0]->tex_size      = TEX_SIZE;
     _slice_animations[0]->scroll_dir    = fvec2(0.12, 0.4); // scroll up
     _slice_animations[0]->base_image    = img_red;
     _slice_animations[0]->current_image = create_image("red_slice_current");
 
-
     _slice_animations[1]                = std::make_shared<SliceAnimationData>();
     _slice_animations[1]->slice_index   = 1;
-    _slice_animations[1]->tex_size      = _tex_size;
+    _slice_animations[1]->tex_size      = TEX_SIZE;
     _slice_animations[1]->scroll_dir    = fvec2(1.5, 0.6); // scroll right
     _slice_animations[1]->base_image    = img_grn;
     _slice_animations[1]->current_image = create_image("rgn_slice_current");
@@ -136,8 +140,8 @@ struct Resources {
 
     _slice_animations[2]                = std::make_shared<SliceAnimationData>();
     _slice_animations[2]->slice_index   = 2;
-    _slice_animations[2]->tex_size      = _tex_size;
-    _slice_animations[2]->scroll_dir    = fvec2(0.3, 0.3); // scroll diagonally
+    _slice_animations[2]->tex_size      = TEX_SIZE;
+    _slice_animations[2]->scroll_dir    = fvec2(0.6, 0); // scroll diagonally
     _slice_animations[2]->base_image    = img_blu;
     _slice_animations[2]->current_image = create_image("blu_slice_current");
 
@@ -145,7 +149,7 @@ struct Resources {
 
     _slice_animations[3]                = std::make_shared<SliceAnimationData>();
     _slice_animations[3]->slice_index   = 3;
-    _slice_animations[3]->tex_size      = _tex_size;
+    _slice_animations[3]->tex_size      = TEX_SIZE;
     _slice_animations[3]->scroll_dir    = fvec2(0.01, 0.025f) * 0.0f; // scroll left and down
     _slice_animations[3]->base_image    = img_whi;
     _slice_animations[3]->current_image = create_image("whi_slice_current");
@@ -156,7 +160,7 @@ struct Resources {
     TID._slices[0] = TextureArrayInitSubItem{"red"_crcu, _slice_animations[0]->current_image};
     TID._slices[1] = TextureArrayInitSubItem{"green"_crcu, _slice_animations[1]->current_image};
     TID._slices[2] = TextureArrayInitSubItem{"blue"_crcu, _slice_animations[2]->current_image};
-    TID._slices[3] = TextureArrayInitSubItem{"white"_crcu, _slice_animations[3]->current_image};
+    TID._slices[3] = TextureArrayInitSubItem{"white"_crcu, img_whi};
 
     _texArray                   = std::make_shared<TextureArray>();
     _texArray->_tex->_debugName = "animated_texarray";
@@ -176,7 +180,7 @@ struct Resources {
 
     deco::printf(fvec3::White(), "Animated Texture Array Test Initialized\n");
     deco::printf(fvec3::Yellow(), "  Texture array created with %d slices\n", 4);
-    deco::printf(fvec3::Yellow(), "  Each slice is %dx%d RGB8 with animated scrolling\n", _tex_size, _tex_size);
+    deco::printf(fvec3::Yellow(), "  Each slice is %dx%d RGB8 with animated scrolling\n", TEX_SIZE, TEX_SIZE);
   }
 
   ~Resources() {
@@ -187,7 +191,7 @@ struct Resources {
     _running = true;
     _animation_threads.resize(4);
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 3; ++i) {
       _animation_threads[i] = std::make_shared<ork::Thread>(FormatString("texanim_%d", i));
       _animation_threads[i]->start([this, i](anyp data) { animateSlice(i); });
     }
@@ -204,13 +208,19 @@ struct Resources {
 
   void animateSlice(int slice_idx) {
     auto anim_data = _slice_animations[slice_idx];
-    size_t tsize   = anim_data->tex_size;
-    auto wrap_val  = [tsize](int inp) -> int {
+    auto wrap_val  = [](int inp) -> int {
       while (inp < 0)
-        inp += tsize;
-      inp = inp % tsize;
+        inp += TEX_SIZE;
+      inp = inp % TEX_SIZE;
       return inp;
     };
+    auto txi = _ctx->TXI();
+
+    auto task = opq::createCompletionGroup( //
+      opq::concurrentQueue(), //
+      "AnimationTask_" + std::to_string(slice_idx) //
+    );
+    task->dontReportToUI();
 
     while (_running) {
 
@@ -218,69 +228,55 @@ struct Resources {
 
       // Handle negative values from fmod
 
-      int scroll_x = int(anim_data->accumulated_scroll.x);
-      int scroll_y = int(anim_data->accumulated_scroll.y);
+      int scroll_x = wrap_val(anim_data->accumulated_scroll.x);
+      int scroll_y = wrap_val(anim_data->accumulated_scroll.y);
+      auto image   = anim_data->current_image;
 
-      while (scroll_x < 0){
-        scroll_x += tsize;
+      // Determine bytes per pixel
+      int bytes_per_pixel = 3;
+#if defined(__APPLE__)
+      if (image->_format == EBufferFormat::RGBA8) {
+        bytes_per_pixel = 4;
       }
-      while (scroll_y < 0){
-        scroll_y += tsize;
-      }
-      scroll_x %= tsize;
-      scroll_y %= tsize;
+#endif
 
-      if (slice_idx == 1) {
-        printf(
-            " Animating slice %d: accumulated_scroll = (%f, %f)\n",
-            slice_idx,
-            anim_data->accumulated_scroll.x,
-            anim_data->accumulated_scroll.y);
-      }
+      for (int y = 0; y < TEX_SIZE; y += ROWS_PER_CHUNK) {
+        int chunk_start = y;
+        int chunk_end   = std::min(y + ROWS_PER_CHUNK, TEX_SIZE);
 
-      for (int y = 0; y < anim_data->tex_size; y++) {
-        int src_y = (y + scroll_y) % tsize;
-        for (int x = 0; x < anim_data->tex_size; x++) {
-          int src_x = (x + scroll_x) % tsize;
-          OrkAssert(src_x >= 0 and src_x < tsize);
-          OrkAssert(src_y >= 0 and src_y < tsize);
-          auto src_pixel = anim_data->base_image->pixel8(src_x, src_y);
-          auto dst_pixel = anim_data->current_image->pixel8(x, y);
+        task->enqueue([=]() {
+          for (int row = chunk_start; row < chunk_end; row++) {
+            int src_y = (row + scroll_y) & (TEX_SIZE - 1);
 
-          dst_pixel[0] = src_pixel[0];
-          dst_pixel[1] = src_pixel[1];
-          dst_pixel[2] = src_pixel[2];
-          #if defined(__APPLE__)
-          if (anim_data->current_image->_format == EBufferFormat::RGBA8) {
-            dst_pixel[3] = src_pixel[3];
+            // Handle wrapped row copy
+            // Complex case: horizontal wrapping required
+            auto dst_row = image->pixel8(0, row);
+
+            // Copy the wrapped portion from scroll_x to end
+            int pixels_from_scroll = TEX_SIZE - scroll_x;
+            auto src_start         = anim_data->base_image->pixel8(scroll_x, src_y);
+            memcpy(dst_row, src_start, pixels_from_scroll * bytes_per_pixel);
+
+            // Copy the wrapped portion from beginning to scroll_x
+            auto src_wrap = anim_data->base_image->pixel8(0, src_y);
+            memcpy(dst_row + (pixels_from_scroll * bytes_per_pixel), src_wrap, scroll_x * bytes_per_pixel);
           }
-          #endif
-        } // for(x)
-      } // for(y)
+        });
+      }
+      task->join(false);
+      if (DO_ASYNC_SLICE_UPDATE) {
+        TextureArraySliceRef slice_ref(_texArray.get(), slice_idx);
+        txi->updateTextureArraySlice(&slice_ref, anim_data->current_image);
+      } else {
+        anim_data->needs_update.store(true);
+      }
+      _slice_updates.fetch_add(1);
+      // usleep(4 << 10);
 
-      anim_data->needs_update.store(true);
-      ::usleep(16 << 10); // Sleep for 16ms to control animation speed
     } // while(_running)
   }
 
-  void updateTextureSlices() {
-    auto txi = _ctx->TXI();
-    TextureArraySliceRef slice_ref(nullptr, 0);
-    for (int i = 0; i < 4; ++i) {
-      // animateSlice(i);
-      auto anim_data = _slice_animations[i];
-      if (anim_data->needs_update.exchange(false)) {
-        // std::lock_guard<std::mutex> lock(anim_data->update_mutex);
-        slice_ref._array = _texArray.get();
-        slice_ref._slice = anim_data->slice_index;
-        // Update texture array slice from image
-        txi->updateTextureArraySlice(&slice_ref, anim_data->current_image);
-      }
-    }
-  }
-
   Context* _ctx = nullptr;
-  constexpr static int _tex_size = 256;
   texturearray_ptr_t _texArray;
   freestyle_mtl_ptr_t _material;
   const FxShaderTechnique* _technique        = nullptr;
@@ -291,6 +287,7 @@ struct Resources {
   std::vector<sliceanimdata_ptr_t> _slice_animations;
   std::vector<thread_ptr_t> _animation_threads;
   std::atomic<bool> _running{false};
+  std::atomic<int> _slice_updates{0}; // Count of texture updates per frame
 };
 
 using resources_ptr_t = std::shared_ptr<Resources>;
@@ -317,10 +314,20 @@ int main(int argc, char** argv, char** envp) {
   ezapp->onGpuInit([&](Context* ctx) { resources = std::make_shared<Resources>(ctx); });
 
   //////////////////////////////////////////////////////////
-  ezapp->onGpuUpdate([&](Context* ctx) {
-    if (resources) {
-      resources->updateTextureSlices();
-    }
+  ezapp->onGpuUpdate([&](Context* ctx) { //
+    if (not DO_ASYNC_SLICE_UPDATE) {
+      // update slices synchronously (on GPU thread)
+      auto txi = ctx->TXI();
+      TextureArraySliceRef slice_ref(nullptr, 0);
+      for (int i = 0; i < 4; ++i) {
+        auto anim_data = resources->_slice_animations[i];
+        if (anim_data->needs_update.exchange(false)) {
+          slice_ref._array = resources->_texArray.get();
+          slice_ref._slice = anim_data->slice_index;
+          txi->updateTextureArraySlice(&slice_ref, anim_data->current_image);
+        }
+      }
+    } // if(not DO_ASYNC_SLICE_UPDATE)
   });
 
   //////////////////////////////////////////////////////////
@@ -385,24 +392,16 @@ int main(int argc, char** argv, char** envp) {
 
     resources->_material->end(RCFD);
 
-    // Count texture updates
-    int slice_updates = 0;
-    for (auto& anim : resources->_slice_animations) {
-      if (anim->needs_update) {
-        slice_updates++;
-      }
-    }
-    total_updates += slice_updates;
-
     // Performance stats
     if (perf_timer.SecsSinceStart() > 1.0f) {
+      int total_updates     = resources->_slice_updates.exchange(0);
       float elapsed         = perf_timer.SecsSinceStart();
       float FPS             = float(framecounter) / elapsed;
       float updates_per_sec = float(total_updates) / elapsed;
-      float tex_size        = resources->_tex_size;
+      float tex_size        = TEX_SIZE;
       float mpix_per_slice  = (tex_size * tex_size) / 1e6f;
       float mpix_per_sec    = mpix_per_slice * updates_per_sec;
-      float mb_per_sec      = mpix_per_sec * 3; // RGB8 = 3 bytes per pixel
+      float mb_per_sec      = mpix_per_sec * 4; // RGBA8 = 4 bytes per pixel
 
       deco::printf(fvec3::White(), "FPS: %.1f | ", FPS);
       deco::printf(fvec3::Yellow(), "Array Slice Updates/sec: %.1f | ", updates_per_sec);

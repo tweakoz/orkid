@@ -407,10 +407,12 @@ void VkContext::_doPreBeginFrame() {
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
   /////////////////////////////////////////
-  for (auto one_shot : _pendingOneShotCommands) {
-    enqueueSecondaryCommandBuffer(one_shot);
-  }  
-  _pendingOneShotCommands.clear();
+  _pendingOneShotCommands.atomicOp([&](vkseccmdbufarray_t& unlocked) {
+    for (auto one_shot : unlocked) {
+      enqueueSecondaryCommandBuffer(one_shot);
+    }  
+    unlocked.clear();
+  });
   /////////////////////////////////////////
 
 }
@@ -424,23 +426,25 @@ void VkContext::_doBeginFrame() {
     miH = _fbi->_main_rtg->miH;
   }
   // Poll timeline semaphores
-  for (auto semaphore : _pendingOneShotSemas) {
-    if(semaphore->isSignalled()){
-      // If the semaphore is signalled, execute its completion callback      
-      if(semaphore->_onComplete!=nullptr){
-        // If the semaphore has a completion callback, execute it
-        semaphore->_onComplete();
-        semaphore->_onComplete = nullptr; // Clear the callback after execution
+  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    for (auto semaphore : unlocked) {
+      if(semaphore->isSignalled()){
+        // If the semaphore is signalled, execute its completion callback      
+        if(semaphore->_onComplete!=nullptr){
+          // If the semaphore has a completion callback, execute it
+          semaphore->_onComplete();
+          semaphore->_onComplete = nullptr; // Clear the callback after execution
+        }
       }
     }
-  }
+    std::erase_if(          //
+      unlocked, //
+      [](auto sema) { //
+        return sema->_onComplete==nullptr; //
+    });
+  });
   
   // Clean up completed semaphores
-  std::erase_if(          //
-    _pendingOneShotSemas, //
-    [](auto sema) { //
-      return sema->_onComplete==nullptr; //
-  });
   _txi->_beginFrame();
 }
 
@@ -479,8 +483,12 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   auto swapchain = _fbi->_swapchain;
+  bool semas_empty = false;
+  _pendingOneShotSemas.atomicOp([&](vkcompsema_set_t& unlocked) {
+    semas_empty = unlocked.empty();
+  });
   
-  if ( not _pendingOneShotSemas.empty()) {
+  if ( not semas_empty) {
     // Submit with timeline semaphores
     swapchain->_submitFrameWithSemaphores(this);
   } else {
