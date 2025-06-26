@@ -339,6 +339,22 @@ struct ObjectPoolX {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename pool_adapter_t> //
+struct LockedObjectPoolX {
+  using item_t = typename pool_adapter_t::item_t;
+
+  LockedObjectPoolX(pool_adapter_t tr);
+  item_t borrowItem();
+  void returnItem(item_t item);
+
+  pool_adapter_t _config;
+  std::queue<item_t> _freeItems;
+  std::vector<item_t> _retainedItems;
+  std::mutex _mutex; // Mutex to protect access to _freeItems and _retainedItems
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename pool_adapter_t> //
 ObjectPoolX<pool_adapter_t>::ObjectPoolX(pool_adapter_t tr)
     : _config(tr) {
 }
@@ -362,6 +378,38 @@ ObjectPoolX<pool_adapter_t>::item_t ObjectPoolX<pool_adapter_t>::borrowItem() {
 template <typename pool_adapter_t> //
 void ObjectPoolX<pool_adapter_t>::returnItem(item_t item) {
   _freeItems.push(item);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename pool_adapter_t> //
+LockedObjectPoolX<pool_adapter_t>::LockedObjectPoolX(pool_adapter_t tr)
+    : _config(tr) {
+}
+
+template <typename pool_adapter_t> //
+LockedObjectPoolX<pool_adapter_t>::item_t LockedObjectPoolX<pool_adapter_t>::borrowItem() {
+  _mutex.lock(); // Lock the mutex to protect access to _freeItems and _retainedItems
+  if (_freeItems.empty()) {
+    for (size_t i = 0;                             //
+         i < pool_adapter_t::_num_alloc_per_batch; //
+         i++) {                                    //
+      item_t item = _config.allocFresh();
+      _retainedItems.push_back(item);
+      _freeItems.push(item);
+    }
+  }
+  auto rval = _freeItems.front();
+  _freeItems.pop();
+  _mutex.unlock(); // Unlock the mutex after accessing _freeItems
+  return rval;
+}
+
+template <typename pool_adapter_t> //
+void LockedObjectPoolX<pool_adapter_t>::returnItem(item_t item) {
+  _mutex.lock(); // Lock the mutex to protect access to _freeItems and _retainedItems
+  _freeItems.push(item);
+  _mutex.unlock(); // Unlock the mutex after accessing _freeItems
 }
 
 ///////////////////////////////////////////////////////////////////////////////

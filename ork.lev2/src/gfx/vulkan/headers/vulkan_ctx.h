@@ -57,10 +57,10 @@ using vkcompsema_set_t = std::unordered_set<vkcompletionsemaphore_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
 ///////////////////////////////////////////////////////////////////////////////
-using StagingBufferPool = BoundedConcurrentObjectPoolX<SbsPoolAdapter,256>;
+using StagingBufferPool = LockedObjectPoolX<SbsPoolAdapter>;
 using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;
 ///////////////////////////////////////////////////////////////////////////////
-using SecCmdBufPool = BoundedConcurrentObjectPoolX<SecCmdBufPoolAdapter,512>;
+using SecCmdBufPool = LockedObjectPoolX<SecCmdBufPoolAdapter>;
 using sseccmdbufpool_ptr_t = std::shared_ptr<SecCmdBufPool>;///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanDeviceInfo {
