@@ -171,7 +171,7 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();
   } else {
-    printf("No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str());
+    //printf("No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str());
     return;
   }
   // Find binding info in merged resources
