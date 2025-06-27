@@ -441,6 +441,45 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       tecniq_stream->AddIndexedString(frg_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
 
+      ////////////////////////////////////////////////////////////////
+      // Write merged resources for this pass
+      ////////////////////////////////////////////////////////////////
+      auto merged_resources = p->findFirstChildOfType<MergedShaderResourcesNode>();
+      if (merged_resources) {
+        tecniq_stream->AddIndexedString("merged_resources", chunkwriter);
+        auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
+        tecniq_stream->AddItem<size_t>(descriptor_sets.size());
+        
+        for (auto descriptor_set : descriptor_sets) {
+          tecniq_stream->AddIndexedString("descriptor_set", chunkwriter);
+          tecniq_stream->AddItem<int>(descriptor_set->_descriptor_set_id);
+          
+          auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
+          tecniq_stream->AddItem<size_t>(source_nodes.size());
+          
+          for (auto source_node : source_nodes) {
+            tecniq_stream->AddIndexedString("source", chunkwriter);
+            tecniq_stream->AddIndexedString(source_node->_source_name, chunkwriter);
+            tecniq_stream->AddIndexedString(source_node->_source_type, chunkwriter);
+            
+            auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
+            tecniq_stream->AddItem<size_t>(binding_nodes.size());
+            
+            for (auto binding_node : binding_nodes) {
+              tecniq_stream->AddIndexedString("binding", chunkwriter);
+              tecniq_stream->AddItem<uint32_t>(binding_node->_binding_id);
+              tecniq_stream->AddIndexedString(binding_node->_binding_name, chunkwriter);
+              tecniq_stream->AddIndexedString(binding_node->_datatype, chunkwriter);
+              tecniq_stream->AddIndexedString(binding_node->_original_source, chunkwriter);
+              tecniq_stream->AddItem<uint32_t>(static_cast<uint32_t>(binding_node->_resource_type));
+            }
+          }
+        }
+      } else {
+        tecniq_stream->AddIndexedString("no_merged_resources", chunkwriter);
+      }
+      ////////////////////////////////////////////////////////////////
+
     }
   } // for (auto tek : techniques) {
 

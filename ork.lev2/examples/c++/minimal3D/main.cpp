@@ -168,7 +168,6 @@ int main(int argc, char** argv,char** envp) {
     // render frame
     ///////////////////////////////////////
 
-    context->beginFrame();
     // push compositing pass data
     resources->_compimpl->pushCPD(resources->_CPD);
     {
@@ -178,7 +177,6 @@ int main(int argc, char** argv,char** envp) {
     }
     // pop compositing pass data
     resources->_compimpl->popCPD();
-    context->endFrame();
   });
   //////////////////////////////////////////////////////////
   ezapp->onGpuExit([&](Context* ctx) {

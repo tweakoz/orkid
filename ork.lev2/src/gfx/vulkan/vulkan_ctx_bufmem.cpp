@@ -269,6 +269,12 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
     : _ctxVK(ctxVK)
     , _length(length)
     , _usage(usage) {
+  
+  // Debug logging to diagnose zero-length buffer creation
+  if (length == 0) {
+    logchan_vkbufmem->log("ERROR: VulkanBuffer constructor called with length=0, usage=0x%x, name='%s'", usage, name.c_str());
+  }
+  
   OrkAssert(_length > 0);
 
   VkBufferCreateInfo BUFINFO;

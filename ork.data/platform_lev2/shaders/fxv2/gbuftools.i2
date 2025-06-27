@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////
-libblock lib_gbuf_decode {
+typeblock gbuf_types {
   struct GBufData {
     vec2 _uv;
     vec3 _wpos;
@@ -21,12 +21,21 @@ libblock lib_gbuf_decode {
     vec3 _wnrm_samples[9];
     float _z_samples[9];
   };
+  struct wposout {
+    vec4 _out;
+    float _fogZ;
+    float _linZ;
+    float _rawDepth;
+  };
   struct WPosData {
     vec2 _muv;
     vec2 _scruv;
     mat4 _ivp;
     int _index;
   };
+}
+
+libblock lib_gbuf_decode : gbuf_types {
   /////////////////////////////////////////////////////////
   WPosData stereoWPD(){
     WPosData wpd;
@@ -68,13 +77,6 @@ libblock lib_gbuf_decode {
     vec3 pos    = vec3(rr.xyz / rr.w);
     return pos;
   }
-  /////////////////////////////////////////////////////////
-  struct wposout {
-    vec4 _out;
-    float _fogZ;
-    float _linZ;
-    float _rawDepth;
-  };
   /////////////////////////////////////////////////////////
   wposout defwpos(WPosData wpd) {
     float depthtex = textureLod(MapDepth, wpd._muv,0).r;
@@ -181,7 +183,7 @@ libblock lib_gbuf_decode {
     ///////////////////////////////
     return decoded;
   }
-}
+} // libblock lib_gbuf_decode {
 libblock lib_gbuf_encode {
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
@@ -221,3 +223,4 @@ libblock lib_gbuf_encode {
     return packGbuffer(basecolor,vec3(0,0,0),1,0,true);
   }
 } // libblock lib_gbuf {
+

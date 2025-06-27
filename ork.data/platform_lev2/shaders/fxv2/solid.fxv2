@@ -377,10 +377,30 @@ technique vtxmodcolor {
     state_block     = sb_default;
   }
 }
+///////////////////////////////////////////////////////////////
+// Minimal interface for 2D UI (no normals)
+vertex_interface iface_minimal2D {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_minimal2D : iface_minimal2D : ublock_vtx {
+  gl_Position = MatMVP * vec4(position.xyz, 1);
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
+}
+///////////////////////////////////////////////////////////////
 technique mmodcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_vtxcolor;
+    vertex_shader   = vs_minimal2D;
     fragment_shader = ps_modclr;
     state_block     = sb_default;
   }
@@ -533,5 +553,11 @@ technique texmodcolor {
 technique textexmodcolor {
 }
 technique texmodcolorFB {
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor_uv : iface_vdefault : ublock_vtx {
+  gl_Position = MatMVP * vec4(position, 1);
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
 }
 ///////////////////////////////////////////////////////////////

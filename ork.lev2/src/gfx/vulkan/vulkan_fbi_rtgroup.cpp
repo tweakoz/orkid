@@ -113,7 +113,6 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
 
-  
   /////////////////////////////////
   // main_rtg ?
   //  (images managed by swapchain)
@@ -169,30 +168,47 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   }
 
   /////////////////////////////////////////
-  // transition rtgroup to RTT mode
-  /////////////////////////////////////////
-
-  RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
-
-  /////////////////////////////////////////
   // Begin dynamic rendering
   /////////////////////////////////////////
 
   auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
+
+  // DEBUG: Log the primary command buffer we're recording to
+  logchan_rtgroup->log("__setRtGroup: Recording transition to primary CB %p", (void*)_contextVK->primary_cb()->_vkcmdbuf);
+
+  // Move the transition here, before resetting and beginning the secondary command buffer
+  RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
+
+  // DEBUG: Log that transition is complete
+  logchan_rtgroup->log("__setRtGroup: Transition recorded, now resetting secondary CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+
   vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
+  vkcmdbuf->_recorded = false;                                          // Reset the recorded flag
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); // vkBeginCommandBuffer does an implicit reset
   auto rinfo = RTGIMPL->renderinfo();
+
+  // DEBUG: Log that secondary command buffer is beginning rendering
+  logchan_rtgroup->log("__setRtGroup: Secondary CB %p beginning rendering", (void*)vkcmdbuf->_vkcmdbuf);
 
   _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
 
   _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
 
+  // At start and end of __setRtGroup, log RTG pointer and CB pointers
+  logchan_rtgroup->log("[VKRTG] __setRtGroup: RTG %p, primary CB %p, secondary CB %p", (void*)rtgroup, (void*)_contextVK->primary_cb()->_vkcmdbuf, (void*)vkcmdbuf->_vkcmdbuf);
+  // When vkBeginCommandBuffer and vkEndCommandBuffer are called, log CB pointer
+  logchan_rtgroup->log("[VKRTG] vkBeginCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("[VKRTG] vkEndCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  // When _vkCmdBeginRenderingKHR and _vkCmdEndRenderingKHR are called, log CB pointer
+  logchan_rtgroup->log("[VKRTG] vkCmdBeginRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("[VKRTG] vkCmdEndRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   __setRtGroup(rtgroup);
+  logchan_rtgroup->log("[VKRTG] PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -214,11 +230,19 @@ void VkFrameBufferInterface::_popRtGroup() {
   // RTG commandbuffer complete, pop and execute
   //////////////////////////////////////////////
 
+  // Check if command buffer is in recording state before ending rendering
+  if (cbufimpl->_recorded == false) {
   _contextVK->_vkCmdEndRenderingKHR(cbufimpl->_vkcmdbuf);
   vkEndCommandBuffer(cbufimpl->_vkcmdbuf);
   cbufimpl->_recorded = true;
+  }
   
   // Switch back to primary command buffer before enqueuing
+  if (_contextVK->primary_cb() == nullptr) {
+    logchan_rtgroup->log("[VKRTG] ERROR: primary_cb() is nullptr in _popRtGroup! This will crash.");
+    OrkAssert(_contextVK->primary_cb() != nullptr);
+  }
+  logchan_rtgroup->log("[VKRTG] Switching back to primary command buffer %p before enqueuing", (void*)_contextVK->primary_cb()->_vkcmdbuf);
   _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
   
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
@@ -263,12 +287,14 @@ void VkFrameBufferInterface::_popRtGroup() {
     auto vkcmdbuf = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>();
     auto rinfo = RTGIMPL->renderinfo();
     vkResetCommandBuffer(vkcmdbuf->_vkcmdbuf, 0);                         // vkBeginCommandBuffer does an implicit reset
+    vkcmdbuf->_recorded = false;                                          // Reset the recorded flag
     vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &RTGIMPL->_cmdBufCBBI_GFX); 
     _contextVK->_vkCmdBeginRenderingKHR(vkcmdbuf->_vkcmdbuf, &rinfo->_renderinfo);
     _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
   
   }
 
+  logchan_rtgroup->log("[VKRTG] PopRtGroup: RTG %p, primary CB %p", (void*)_active_rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
 }
 
 ///////////////////////////////////////////////////////

@@ -1,5 +1,9 @@
 #pragma once 
 ///////////////////////////////////////////////////////////////////////////////
+#include "vk_synchro.h"
+#include "vk_pipeline.h"
+#include "vk_merged_resources.h"
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetItem {
@@ -140,10 +144,11 @@ struct VkFxShaderProgram {
   std::vector<VkParamSetItem> _pending_params;
   std::vector<void_lambda_t> _pending_param_ops;
   std::vector<uint8_t> _pushdatabuffer;
-  vkdescriptorbindings_ptr_t _descriptors;
-  std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
-  std::unordered_map<size_t, vktexobj_ptr_t> _textures_by_binding;
+  
+  // Storage for merged resource bindings (set_id, binding_id)
+  std::unordered_map<fxparam_constptr_t, std::pair<uint32_t, uint32_t>> _merged_resource_bindings;
+  
   int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;
 
@@ -181,10 +186,14 @@ struct VkPipelineObject {
 
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
+  
+  // Storage for merged resource descriptor set layouts
+  std::vector<VkDescriptorSetLayout> _merged_resource_descriptor_set_layouts;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPass {
   vkfxsprg_ptr_t _vk_program;
+  vk_merged_resources_ptr_t _merged_resources;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderTechnique {

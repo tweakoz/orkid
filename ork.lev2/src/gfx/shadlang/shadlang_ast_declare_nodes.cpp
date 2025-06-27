@@ -39,6 +39,7 @@ void ShadLangParser::preDeclareAstNodes() {
   declare("VertexShaderRef");
   declare("FragmentShaderRef");
   declare("GeometryShaderRef");
+  declare("ComputeShaderRef");
   declare("StateBlockRef");
 }
 

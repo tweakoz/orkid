@@ -321,6 +321,7 @@ void ScannerLightView::dump(const std::string& dumpid) const {
     auto t = _input_view.token(tokidx);
     printf("tok<%d> val<%s> line<%zu>\n", tokidx, t->text.c_str(), t->iline );
   }
+  OrkAssert(false);
 }
 
 void ScannerLightView::dumpToFile(const file::Path& out_path) const {

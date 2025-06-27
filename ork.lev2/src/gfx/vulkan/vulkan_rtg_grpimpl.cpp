@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -99,17 +98,26 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb){
-  int numrt     = _color_buffer_impls.size();
-  for (int i = 0; i < numrt; i++) {
+void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) {
+  //logchan_rtgi->log("_transitionToRenderTarget<%p>", (void*)cb.get());
+  
+  // DEBUG: Log the transition
+  logchan_rtgi->log("_transitionToRenderTarget: Transitioning depth buffer to VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL");
+  
+  for (int i = 0; i < _color_buffer_impls.size(); i++) {
     auto rtb_impl = _color_buffer_impls[i];
+    logchan_rtgi->log("[VKRTGI] Color buffer %d before transition: layout %d", i, rtb_impl->_currentLayout);
     rtb_impl->_transitionToRenderTarget(cb);
-    rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    logchan_rtgi->log("[VKRTGI] Color buffer %d after transition: layout %d", i, rtb_impl->_currentLayout);
   }
   if (_depth_buffer_impl) {
-    _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    logchan_rtgi->log("[VKRTGI] Depth buffer before transition: layout %d", _depth_buffer_impl->_currentLayout);
     _depth_buffer_impl->_transitionToRenderTarget(cb);
+    logchan_rtgi->log("[VKRTGI] Depth buffer after transition: layout %d", _depth_buffer_impl->_currentLayout);
   }
+  
+  // DEBUG: Log that transition is complete
+  logchan_rtgi->log("_transitionToRenderTarget: Depth buffer transition complete");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,11 +134,13 @@ void VkRtGroupImpl::_transitionToTexture(vkpricmdbufimpl_ptr_t cb){
   for (int i = 0; i < numrt; i++) {
     auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToTexture(cb);
+    logchan_rtgi->log("[VKRTGI] RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
   if (_depth_buffer_impl) {
     _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     _depth_buffer_impl->_transitionToTexture(cb);
+    logchan_rtgi->log("[VKRTGI] RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
   }
 }
 
@@ -141,11 +151,13 @@ void VkRtGroupImpl::_transitionToHostRead(vkpricmdbufimpl_ptr_t cb){
   for (int i = 0; i < numrt; i++) {
     auto rtb_impl = _color_buffer_impls[i];
     rtb_impl->_transitionToHostRead(cb);
+    logchan_rtgi->log("[VKRTGI] RTG transitioning color buffer %p from %d to %d in CB %p", (void*)rtb_impl->_imgobj->_vkimage, rtb_impl->_currentLayout, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
     rtb_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
   }
   if (_depth_buffer_impl) {
     _depth_buffer_impl->_attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     _depth_buffer_impl->_transitionToHostRead(cb);
+    logchan_rtgi->log("[VKRTGI] RTG transitioning depth buffer %p from %d to %d in CB %p", (void*)_depth_buffer_impl->_imgobj->_vkimage, _depth_buffer_impl->_currentLayout, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, (void*)cb->_vkcmdbuf);
   }
 }
 

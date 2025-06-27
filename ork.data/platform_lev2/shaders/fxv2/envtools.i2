@@ -3,7 +3,7 @@ import "orkshader://mathtools.i2";
 // environment mapping functions
 ///////////////////////////////////////////////////////////////////////////////
 
-libblock lib_envmapping {
+libblock lib_envmapping : ub_frg {
 
   ////////////////////////////////////////////
   // equirectangular envmap uv from normal

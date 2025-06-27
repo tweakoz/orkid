@@ -65,7 +65,7 @@ uniform_set ub_frg {
   vec4 ShadowParams;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_light {
+uniform_block ub_light(descriptor_set 1) {
   vec4 LightColorD[256];
   mat4 LightMatrix[256];
   mat4 ShadowMatrix[256];

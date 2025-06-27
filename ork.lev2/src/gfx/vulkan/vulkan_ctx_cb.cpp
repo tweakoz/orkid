@@ -77,6 +77,8 @@ secondary_commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(std::string n
 
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
+  logchan_vkcb->log("[VKCB] vkBeginCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
+
   return cmdbuf;
 }
 
@@ -87,6 +89,7 @@ void VkContext::_endRecordCommandBuffer(secondary_commandbuffer_ptr_t cmdbuf) {
   vkcmdbuf->_recorded  = true;
   vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
   //logchan_vkcb->log("_endRecordCommandBuffer<%p:%s>", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str());
+  logchan_vkcb->log("[VKCB] vkEndCommandBuffer: %s CB %p", "secondary", (void*)vkcmdbuf->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,6 +101,11 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(secondary_commandbuffer_ptr_t c
     printf("CB<%p:%s> impl<%p> not recorded!\n", (void*)cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*)impl.get());
     OrkAssert(false);
   }
+  
+  // DEBUG: Log when secondary command buffer is executed
+  logchan_vkcb->log("_doEnqueueSecondaryCommandBuffer: Executing secondary CB %p in primary CB %p", 
+                    (void*)impl->_vkcmdbuf, (void*)primary_cb()->_vkcmdbuf);
+  
   vkCmdExecuteCommands(primary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
   primary_cb()->_secondary_cmdbuffers.push_back(cmdbuf);
 }
@@ -180,6 +188,8 @@ void VkSwapChain::_submitFrameWithSemaphores(vkcontext_rawptr_t ctxVK) {
   
   auto fence = _frameFences[sub_index];
   vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &submitInfo, fence->_vkfence);
+
+  logchan_vkcb->log("[VKCB] vkQueueSubmit: CB %p", (void*)ctxVK->primary_cb()->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

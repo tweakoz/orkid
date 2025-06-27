@@ -173,13 +173,17 @@ VulkanFenceObject::~VulkanFenceObject() {
 ///////////////////////////////////////////////////
 
 void VulkanFenceObject::reset() {
+  logchan_vksynch->log("[VKFENCE] reset: fence %p", (void*)_vkfence);
   vkResetFences(_ctxVK->_vkdevice, 1, &_vkfence);
+  logchan_vksynch->log("[VKFENCE] reset: fence %p reset complete", (void*)_vkfence);
 }
 
 ///////////////////////////////////////////////////
 
 void VulkanFenceObject::wait() {
+  logchan_vksynch->log("[VKFENCE] wait: waiting for fence %p", (void*)_vkfence);
   vkWaitForFences(_ctxVK->_vkdevice, 1, &_vkfence, true, UINT64_MAX);
+  logchan_vksynch->log("[VKFENCE] wait: fence %p wait complete", (void*)_vkfence);
   for (auto item : _onReached) {
     item();
   }

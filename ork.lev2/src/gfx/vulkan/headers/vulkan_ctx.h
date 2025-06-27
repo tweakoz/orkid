@@ -50,6 +50,7 @@ struct GLFWwindow;
 #include "vk_rtgroup.h"
 #include "vk_synchro.h"
 #include "vk_pipeline.h"
+#include "vk_merged_resources.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 using vkseccmdbufarray_t = std::vector<secondary_commandbuffer_ptr_t>;

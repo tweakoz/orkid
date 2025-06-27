@@ -690,7 +690,7 @@ match_ptr_t Parser::match(
       errview = _trackcontig->_view;
     }
     OrkAssert(errview);
-    topview->dump("topview");
+    //topview->dump("topview");
 
     root_match_attempt->dump1(0);
 

@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/file/path.h>
+#include <ork/file/file.h>
 #include <ork/kernel/spawner.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/shadlang.h>
@@ -24,6 +24,7 @@ int main(int argc, char** argv, char** envp) {
       ("in", po::value<std::string>()->default_value(""), "input shader file path") //
       ("ast", po::value<std::string>()->default_value(""), "output shader AST file path")
       ("dot", po::value<std::string>()->default_value(""), "output shader DOT file path")
+      ("enhanced-dot", po::value<std::string>()->default_value(""), "output enhanced DOT file with merged resource visualization")
       ("glfx", po::value<std::string>()->default_value(""), "output shader glfx file path");
   auto opts = init_data->parse();
 
@@ -32,10 +33,12 @@ int main(int argc, char** argv, char** envp) {
   auto input_path = init_data->commandLineOption("in").as<std::string>();
   auto ast_output_path = init_data->commandLineOption("ast").as<std::string>();
   auto dot_output_path = init_data->commandLineOption("dot").as<std::string>();
+  auto enhanced_dot_output_path = init_data->commandLineOption("enhanced-dot").as<std::string>();
   auto glfx_output_path = init_data->commandLineOption("glfx").as<std::string>();
   printf( "input_path<%s>\n", input_path.c_str());
   printf( "ast_output_path<%s>\n", ast_output_path.c_str());
   printf( "dot_output_path<%s>\n", dot_output_path.c_str());
+  printf( "enhanced_dot_output_path<%s>\n", enhanced_dot_output_path.c_str());
   printf( "glfx_output_path<%s>\n", glfx_output_path.c_str());
   auto slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
   auto tunit      = shadlang::parseFromFile(slp_cache, input_path);
@@ -55,11 +58,21 @@ int main(int argc, char** argv, char** envp) {
         spawner->spawnSynchronous();
 
     }
+    if( enhanced_dot_output_path.length() ){
+        // Create merged resource data for enhanced visualization
+        auto merged_resources = shadlang::createMergedResourceData(tunit);
+        auto enhanced_dot = shadlang::toEnhancedDotFile(tunit, merged_resources);
+        bool OK = File::writeString(enhanced_dot_output_path, enhanced_dot);
+        OrkAssert(OK);
+        auto spawner = std::make_shared<Spawner>();
+        spawner->mCommandLine = std::string("dot -Tpng -o ") + enhanced_dot_output_path + ".png " + enhanced_dot_output_path;
+        spawner->spawnSynchronous();
+    }
     if( glfx_output_path.length() ){
         auto dot = shadlang::toGLFX1(tunit);
         bool OK = File::writeString(glfx_output_path, dot);
         OrkAssert(OK);
-
+        
     }
   }
   return (tunit!=nullptr) ? 0 : -1;

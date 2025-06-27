@@ -120,6 +120,8 @@ void EzTopWidget::enableUiDraw() {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
+  static int frame_counter = 0;
+  logchan_ezapp->log("[EzTopWidget::DoDraw] ENTER frame %d", frame_counter);
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!
   //////////////////////////////////////////////////////
@@ -135,10 +137,12 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   if (_mainwin->_onDraw) {
     EASY_BLOCK("EzTopWidget drawcontent", profiler::colors::Red);
     auto ctx = drwev->GetTarget();
+    logchan_ezapp->log("[EzTopWidget::DoDraw] beginFrame frame %d", frame_counter);
     ctx->beginFrame();
     if(ctx->FBI()->_main_rtg){
       _mainwin->_onDraw(drwev);
     }
+    logchan_ezapp->log("[EzTopWidget::DoDraw] endFrame frame %d", frame_counter);
     ctx->endFrame();
     EASY_END_BLOCK;
     EASY_BLOCK("EzTopWidget swap", 0xffc04000);
@@ -157,7 +161,8 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   } else {
     _mainwin->_render_state_numiters += 1.0;
   }
-  ///////////////////////////
+  logchan_ezapp->log("[EzTopWidget::DoDraw] EXIT frame %d", frame_counter);
+  frame_counter++;
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {

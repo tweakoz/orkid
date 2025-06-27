@@ -355,8 +355,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         for (const auto& smp_it : refs->_smpsets) {
           printf("  %s\n", smp_it.first.c_str());
         }
-        // this is not allowed for now, so assert
-        OrkAssert(false); // only one sampler set per shader for now
+        // Multiple sampler sets are now handled by the merged resources system
+        // No longer asserting - merged resources will handle the binding conflicts
+        printf("  Note: Multiple sampler sets will be handled by merged resources system\n");
       }
     }
     /////////////////////////////////
@@ -372,7 +373,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vkfxsuniset_ptr_t vk_uniset = it->second;
         refs->_unisets[str_uniset]  = vk_uniset;
       }
-      OrkAssert(refs->_unisets.size() < 2);
+      if(refs->_unisets.size()>1){
+        // print out uniform set names
+        printf("Shader<%s> has multiple uniform sets:\n", str_shader_name.c_str());
+        for (const auto& uni_it : refs->_unisets) {
+          printf("  %s\n", uni_it.first.c_str());
+        }
+        // Multiple uniform sets are now handled by the merged resources system
+        // No longer asserting - merged resources will handle the binding conflicts
+        printf("  Note: Multiple uniform sets will be handled by merged resources system\n");
+      }
     }
     /////////////////////////////////
     auto num_iuniblks = shader_input_stream->ReadItem<size_t>();
@@ -524,74 +534,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       
       ////////////////////////////////////////////////////////////
 
-      auto smpsets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptorbindings_ptr_t descset_bindings, uint32_t stage_bits) {
-        if (shobj->_smpset_refs) {
-          for (auto smpset_item : shobj->_smpset_refs->_smpsets) {
-            auto sset_name = smpset_item.first;
-            auto sset      = smpset_item.second;
-            auto dsid      = sset->_descriptor_set_id;
-            auto it        = descset_bindings->_descriptorsets.find(dsid);
-
-            if (it == descset_bindings->_descriptorsets.end()) {
-              descset_bindings->_descriptorsets[ dsid ] = sset;
-              ///////////////////////////////////////////
-              // loose samplers
-              ///////////////////////////////////////////
-              for (auto item : sset->_samplers_by_name) {
-                auto item_name       = item.first;
-                auto item_ptr        = item.second;
-                auto orkparam        = item_ptr->_orkparam.get();
-                size_t binding_index = descset_bindings->_sampler_count++;
-                auto it              = vk_program->_samplers_by_orkparam.find(orkparam);
-                OrkAssert(it == vk_program->_samplers_by_orkparam.end());
-                vk_program->_samplers_by_orkparam[orkparam] = binding_index;
-
-                auto& vkb = descset_bindings->_vkbindings.emplace_back();
-                initializeVkStruct(vkb);
-                vkb.binding        = binding_index;                             // TODO : query from shader
-                vkb.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // Type of the descriptor (e.g., uniform buffer,
-                                                                                // combined image sampler, etc.)
-                vkb.descriptorCount = 1;          // Number of descriptors in this binding (useful for arrays of descriptors)
-                vkb.stageFlags      = 0; // Shader stage to bind this descriptor to
-                // vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers
-
-              }
-            }
-            // set stage flags
-            for (auto& vkb : descset_bindings->_vkbindings) {
-              vkb.stageFlags |= stage_bits;
-            }
-          }
-        }
-      };
-
+      //////////////////////////////////////////////////////////////
+      // push constants
       //////////////////////////////////////////////////////////////
 
-      auto uniblks_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptorbindings_ptr_t descset_bindings, uint32_t stage_bits) {
-        if (shobj->_uniblk_refs) {
-          for (auto uniblk_item : shobj->_uniblk_refs->_uniblks) {
-            auto ublk_name = uniblk_item.first;
-            auto ublk      = uniblk_item.second;
-            auto dsid = ublk->_descriptor_set_id;
-            auto it        = descset_bindings->_descriptorsets.find(dsid);
-  
-            if (it == descset_bindings->_descriptorsets.end()) {
-              descset_bindings->_descriptorsets[dsid] = ublk;
-              auto& vkb = descset_bindings->_vkbindings.emplace_back();
-              initializeVkStruct(vkb);
-              vkb.binding         = 0; // TODO : query from shader
-              vkb.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-              vkb.descriptorCount = 1;          // Number of descriptors in this binding (useful for arrays of descriptors)
-              vkb.stageFlags      = 0; // Shader stage to bind this descriptor to
-            }
-            for (auto& vkb : descset_bindings->_vkbindings) {
-              vkb.stageFlags |= stage_bits;
-            }
-          }
-        }
-      };
+      auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
+      push_constants->_ranges.reserve(16);
+
+      auto pc_layout = std::make_shared<VkBufferLayout>();
       
-      //////////////////////////////////////////////////////////////
       std::set<vkfxsuniset_ptr_t> unisets_set;
       auto uniset_to_pushconstants = [&](vkfxsobj_ptr_t shobj, vkbufferlayout_ptr_t dest_layout) {
         if (nullptr == shobj->_uniset_refs) {
@@ -631,34 +582,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
       };
 
-      //////////////////////////////////////////////////////////////
-      // descriptors
-      //////////////////////////////////////////////////////////////
-
-      auto descriptors = std::make_shared<VkDescriptorSetBindings>();
-
-      descriptors->_vkbindings.reserve(32);
-
-      // smpsets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
-      if (vk_program->_vtxshader) {
-        uniblks_to_descriptors(vk_program->_vtxshader, descriptors, VK_SHADER_STAGE_VERTEX_BIT);
-        smpsets_to_descriptors(vk_program->_vtxshader, descriptors, VK_SHADER_STAGE_VERTEX_BIT);
-      }
-      if (vk_program->_frgshader) {
-        uniblks_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
-        smpsets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
-      }
-      vk_program->_descriptors = descriptors;
-
-      //////////////////////////////////////////////////////////////
-      // push constants
-      //////////////////////////////////////////////////////////////
-
-      auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
-      push_constants->_ranges.reserve(16);
-
-      auto pc_layout = std::make_shared<VkBufferLayout>();
-
       if (vk_program->_vtxshader) {
         uniset_to_pushconstants(vk_program->_vtxshader, pc_layout);
       }
@@ -672,6 +595,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_data_layout = pc_layout;
 
       size_t pc_size = alignUp(pc_layout->cursor(), 16);
+      // TODO: Wire this up to the actual Vulkan device property
+      constexpr size_t kDefaultMaxPushConstantSize = 256;
+      OrkAssert(pc_size <= kDefaultMaxPushConstantSize);
       push_constants->_ranges.reserve(8);
       auto& pc_range = push_constants->_ranges.emplace_back();
       initializeVkStruct(pc_range);
@@ -684,6 +610,65 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_program->_pushdatabuffer.resize(pc_size);
       memset(vk_program->_pushdatabuffer.data(), 0, pc_size);
       vk_program->_pushConstantBlock = push_constants;
+
+      ////////////////////////////////////////////////////////////
+      // Read merged resources for this pass
+      ////////////////////////////////////////////////////////////
+      auto next_token = tecniq_input_stream->ReadIndexedString(chunkreader);
+      if (next_token == "merged_resources") {
+        auto merged_resources = std::make_shared<VkMergedResources>();
+        
+        size_t num_descriptor_sets = tecniq_input_stream->ReadItem<size_t>();
+        
+        for (size_t ds_idx = 0; ds_idx < num_descriptor_sets; ds_idx++) {
+          auto descriptor_set_token = tecniq_input_stream->ReadIndexedString(chunkreader);
+          OrkAssert(descriptor_set_token == "descriptor_set");
+          
+          int descriptor_set_id = tecniq_input_stream->ReadItem<int>();
+          
+          size_t num_sources = tecniq_input_stream->ReadItem<size_t>();
+          
+          for (size_t src_idx = 0; src_idx < num_sources; src_idx++) {
+            auto source_token = tecniq_input_stream->ReadIndexedString(chunkreader);
+            OrkAssert(source_token == "source");
+            
+            auto source_name = tecniq_input_stream->ReadIndexedString(chunkreader);
+            auto source_type = tecniq_input_stream->ReadIndexedString(chunkreader);
+            
+            auto descriptor_set_source = std::make_shared<VkDescriptorSetSource>();
+            descriptor_set_source->source_name = source_name;
+            descriptor_set_source->source_type = source_type;
+            
+            size_t num_bindings = tecniq_input_stream->ReadItem<size_t>();
+            
+            for (size_t bind_idx = 0; bind_idx < num_bindings; bind_idx++) {
+              auto binding_token = tecniq_input_stream->ReadIndexedString(chunkreader);
+              OrkAssert(binding_token == "binding");
+              
+              auto binding = std::make_shared<VkMergedResourceBinding>();
+              binding->binding_id = tecniq_input_stream->ReadItem<uint32_t>();
+              binding->name = tecniq_input_stream->ReadIndexedString(chunkreader);
+              binding->datatype = tecniq_input_stream->ReadIndexedString(chunkreader);
+              binding->original_source = tecniq_input_stream->ReadIndexedString(chunkreader);
+              binding->type = static_cast<VkMergedResourceBinding::Type>(
+                  tecniq_input_stream->ReadItem<uint32_t>());
+              
+              descriptor_set_source->bindings.push_back(binding);
+            }
+            
+            merged_resources->descriptor_sets[descriptor_set_id].push_back(descriptor_set_source);
+          }
+        }
+        
+        vk_pass->_merged_resources = merged_resources;
+      } else if (next_token == "no_merged_resources") {
+        // No merged resources for this pass
+        vk_pass->_merged_resources = std::make_shared<VkMergedResources>();
+      } else {
+        // Backward compatibility - assume no merged resources
+        vk_pass->_merged_resources = std::make_shared<VkMergedResources>();
+      }
+      ////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////
 

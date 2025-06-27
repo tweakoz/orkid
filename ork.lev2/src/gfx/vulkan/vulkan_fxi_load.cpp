@@ -58,6 +58,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     if(input_path=="orkshader://pbr.fxv2"){
       printf("yo\n");
     }
+    printf("load shader from path<%s>\n", input_path.c_str());
     vulkan_shaderfile          = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data);
     _fxshaderfiles[input_path] = vulkan_shaderfile;
   }

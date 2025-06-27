@@ -398,6 +398,8 @@ void VkContext::_doPreBeginFrame() {
   _cmdbufcurpri_gfx         = _defaultCommandBufferImpl;
   ////////////////////////
 
+  logchan_vkctx->log("[VKCB] _doPreBeginFrame: setting primary CB to %p", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
+
   //logchan_vkctx->log("VkContext<%p> begin primaryCB", (void*)this );
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
@@ -504,6 +506,8 @@ void VkContext::_doEndFrame() {
   swapchain->waitPresentFrame(this);
 
   ///////////////////////////////////////////////////////
+
+  logchan_vkctx->log("[VKCB] _doEndFrame: clearing primary CB (was %p)", _cmdbufcurpri_gfx ? (void*)_cmdbufcurpri_gfx->_vkcmdbuf : nullptr);
 
   _pri_cmdbuf_pool.deallocate(_defaultCommandBuffer);
   _cmdbufcurpri_gfx->_secondary_cmdbuffers.clear();

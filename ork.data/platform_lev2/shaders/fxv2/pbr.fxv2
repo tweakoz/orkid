@@ -122,4 +122,3 @@ technique GBU_CT_NM_RI_IN_ST {
 	vf_pass={vs_rigid_gbuffer_instanced_stereo,ps_gbuffer_n_stereo_instanced,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-

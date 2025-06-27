@@ -85,6 +85,11 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     needs_conversion = true;
     logchan_txia2d->log("Converting RGB8 to RGBA8 for macOS");
   }
+  if (format == EBufferFormat::RGB16) {
+    format           = EBufferFormat::RGBA16;
+    needs_conversion = true;
+    logchan_txia2d->log("Converting RGB16 to RGBA16 for macOS");
+  }
 #endif
 
   array->_tex->_texFormat = format;
@@ -177,7 +182,12 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
   for (int level = 0; level < max_levels; level++) {
     size_t level_w         = max_w >> level;
     size_t level_h         = max_h >> level;
-    size_t bytes_per_pixel = (format == EBufferFormat::RGBA8) ? 4 : 0; // extend for other formats
+    size_t bytes_per_pixel = 0;
+    if (format == EBufferFormat::RGBA8) {
+      bytes_per_pixel = 4;
+    } else if (format == EBufferFormat::RGBA16) {
+      bytes_per_pixel = 8; // 4 channels * 2 bytes per channel
+    }
     total_staging_size += level_w * level_h * bytes_per_pixel * num_slices;
   }
 
@@ -228,18 +238,32 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
       // Handle conversion if needed
       if (needs_conversion && mip_data) {
-        // Convert RGB8 to RGBA8
-        size_t src_size = mip_w * mip_h * 3;
-        size_t dst_size = mip_w * mip_h * 4;
+        // Convert RGB to RGBA (both RGB8 and RGB16)
+        size_t bytes_per_pixel = (format == EBufferFormat::RGBA8) ? 1 : 2; // 1 for 8-bit, 2 for 16-bit
+        size_t src_size = mip_w * mip_h * 3 * bytes_per_pixel;
+        size_t dst_size = mip_w * mip_h * 4 * bytes_per_pixel;
 
         const uint8_t* src = (const uint8_t*)mip_data->data();
         uint8_t* dst       = staging_data + staging_offset;
 
-        for (size_t i = 0; i < mip_w * mip_h; i++) {
-          dst[i * 4 + 0] = src[i * 3 + 0]; // R
-          dst[i * 4 + 1] = src[i * 3 + 1]; // G
-          dst[i * 4 + 2] = src[i * 3 + 2]; // B
-          dst[i * 4 + 3] = 255;            // A
+        if (format == EBufferFormat::RGBA8) {
+          // Convert RGB8 to RGBA8
+          for (size_t i = 0; i < mip_w * mip_h; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // R
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // B
+            dst[i * 4 + 3] = 255;            // A
+          }
+        } else if (format == EBufferFormat::RGBA16) {
+          // Convert RGB16 to RGBA16
+          const uint16_t* src16 = (const uint16_t*)src;
+          uint16_t* dst16 = (uint16_t*)dst;
+          for (size_t i = 0; i < mip_w * mip_h; i++) {
+            dst16[i * 4 + 0] = src16[i * 3 + 0]; // R
+            dst16[i * 4 + 1] = src16[i * 3 + 1]; // G
+            dst16[i * 4 + 2] = src16[i * 3 + 2]; // B
+            dst16[i * 4 + 3] = 65535;            // A (max value for 16-bit)
+          }
         }
 
         // Add copy region
@@ -531,13 +555,29 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
     const uint8_t* src = (const uint8_t*)mip_data->data();
     uint8_t* dst       = staging_data + offset;
     if (needs_conversion && mip_data) {
-      // Convert RGB8 to RGBA8
+      // Convert RGB to RGBA (both RGB8 and RGB16)
+      size_t bytes_per_pixel = (array->_tex->_texFormat == EBufferFormat::RGBA8) ? 1 : 2; // 1 for 8-bit, 2 for 16-bit
+      size_t src_size = mip_w * mip_h * 3 * bytes_per_pixel;
+      size_t dst_size = mip_w * mip_h * 4 * bytes_per_pixel;
 
-      for (size_t i = 0; i < mip_w * mip_h; i++) {
-        dst[i * 4 + 0] = src[i * 3 + 0];   // src[i * 3 + 0]; // R
-        dst[i * 4 + 1] = src[i * 3 + 1]; // G
-        dst[i * 4 + 2] = src[i * 3 + 2]; // B
-        dst[i * 4 + 3] = 255;            // A
+      if (array->_tex->_texFormat == EBufferFormat::RGBA8) {
+        // Convert RGB8 to RGBA8
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // R
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 255;            // A
+        }
+      } else if (array->_tex->_texFormat == EBufferFormat::RGBA16) {
+        // Convert RGB16 to RGBA16
+        const uint16_t* src16 = (const uint16_t*)src;
+        uint16_t* dst16 = (uint16_t*)dst;
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
+          dst16[i * 4 + 0] = src16[i * 3 + 0]; // R
+          dst16[i * 4 + 1] = src16[i * 3 + 1]; // G
+          dst16[i * 4 + 2] = src16[i * 3 + 2]; // B
+          dst16[i * 4 + 3] = 65535;            // A (max value for 16-bit)
+        }
       }
     } else {
       // Direct copy

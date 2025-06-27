@@ -457,7 +457,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set
+  // bind descriptor set (if any)
   // flush push constants
   // bind vertex buffer
   ///////////////////////
@@ -466,7 +466,9 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   fxi->_bindPipeline(CB, pipeline);
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
   fxi->_bindGfxDescriptorSetOnSlot(CB, desc_set, 0);
+  }
   pipeline->applyPendingPushConstants(CB);
   fxi->_bindVertexBufferOnSlot(CB, vk_vbimpl, 0);
       
@@ -512,7 +514,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   ///////////////////////
   // bind pipeline
-  // bind descriptor set
+  // bind descriptor set (if any)
   // flush push constants
   // bind vertex buffer
   ///////////////////////
@@ -520,7 +522,9 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
   auto& CB = _contextVK->_vkcmdbuffer_current;
   fxi->_bindPipeline(CB,pipeline);
   auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  if (desc_set) {
   fxi->_bindGfxDescriptorSetOnSlot(CB,desc_set, 0);
+  }
   pipeline->applyPendingPushConstants(CB);
   fxi->_bindVertexBufferOnSlot(CB,vk_vbimpl, 0);
 
@@ -545,11 +549,11 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   vkCmdDrawIndexed(
       CB, // command buffer
-      num_indices,   // index count
-      1,             // instance count
-      0,             // first vertex
-      0,             // vertex offset
-      0);            // first instance
+      num_indices, // index count
+      1,           // instance count
+      0,           // first index
+      0,           // vertex offset
+      0);          // first instance
 }
 
 ///////////////////////////////////////////////////////////////////////////////
