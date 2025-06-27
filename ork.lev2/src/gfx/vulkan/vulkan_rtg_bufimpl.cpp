@@ -124,7 +124,7 @@ void _vkCreateImageForBuffer(
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation
   ///////////////////////////////////////////////////
-  logchan_rtgi->log("[VKBUFMEM] Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
+  logchan_rtgi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,9 +191,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
     VkImage img = _imgobj->_vkimage;
     OrkAssert(img != VK_NULL_HANDLE);
     
-    logchan_rtgi->log("[VKBUFMEM] Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
+    logchan_rtgi->log("IMAGE: Transition requested for image %p: current layout %d, target layout %d, CB %p", (void*)img, _currentLayout, p.layout, (void*)cb->_vkcmdbuf);
     if (_currentLayout == VK_IMAGE_LAYOUT_UNDEFINED || _currentLayout != p.layout) {
-      logchan_rtgi->log("[VKBUFMEM] Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
+      logchan_rtgi->log("IMAGE: Performing transition for image %p from %d to %d", (void*)img, _currentLayout, p.layout);
     auto barrier = createImageBarrier(img, _currentLayout, p.layout, p.srcAccess, p.dstAccess);
     barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_usage);
     
@@ -206,9 +206,9 @@ void VklRtBufferImpl::_transitionImage(vkpricmdbufimpl_ptr_t cb, const VkTransit
                          1, barrier.get());             // image memory barriers
 
     setLayout(p.layout);
-      logchan_rtgi->log("[VKBUFMEM] Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
+      logchan_rtgi->log("IMAGE: Transition complete for image %p, new layout %d", (void*)img, _currentLayout);
     } else {
-      logchan_rtgi->log("[VKBUFMEM] Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
+      logchan_rtgi->log("IMAGE: Skipping transition for image %p, already in layout %d", (void*)img, _currentLayout);
     }
 }
 

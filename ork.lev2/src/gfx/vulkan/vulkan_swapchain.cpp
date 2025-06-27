@@ -348,7 +348,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
   
   // DEBUG: Log current frame state
-  logchan_swapchain->log("[VKSWAP] acquireImage: frame %zu, sub_index %zu, curSwapWriteImage %u", 
+  logchan_swapchain->log("acquireImage: frame %zu, sub_index %zu, curSwapWriteImage %u", 
                          _currentFrame, sub_index, _curSwapWriteImage);
 
   // REMOVED: Fence waiting logic that was causing hang
@@ -368,7 +368,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
     if (_curSwapWriteImage != 0xffffffff) {
       // Previous acquire might have failed mid-operation
       // Wait for device idle to ensure clean state
-      logchan_swapchain->log("[VKSWAP] acquireImage: previous acquire failed, waiting for device idle");
+      logchan_swapchain->log("acquireImage: previous acquire failed, waiting for device idle");
       vkDeviceWaitIdle(ctxVK->_vkdevice);
     }
 
@@ -376,7 +376,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
     
     // DEBUG: Log semaphore state before acquire
     auto semaphore = _imageAcquiredSemaphores[sub_index]->_vksema;
-    logchan_swapchain->log("[VKSWAP] acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
+    logchan_swapchain->log("acquireImage: attempting vkAcquireNextImageKHR with semaphore %p (sub_index %zu)", 
                           (void*)semaphore, sub_index);
     
     VkResult status    = vkAcquireNextImageKHR(
@@ -388,23 +388,23 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
         &_curSwapWriteImage);
 
     // DEBUG: Log acquire result
-    logchan_swapchain->log("[VKSWAP] acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
+    logchan_swapchain->log("acquireImage: vkAcquireNextImageKHR returned %d, image index %u", 
                           status, _curSwapWriteImage);
 
     switch (status) {
       case VK_SUCCESS:
         ok_to_transition = true;
-        logchan_swapchain->log("[VKSWAP] acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
+        logchan_swapchain->log("acquireImage: SUCCESS - acquired image %u", _curSwapWriteImage);
         break;
       case VK_SUBOPTIMAL_KHR:
       case VK_ERROR_OUT_OF_DATE_KHR: {
-        logchan_swapchain->log("[VKSWAP] acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
+        logchan_swapchain->log("acquireImage: SWAPCHAIN OUT OF DATE - status %d", status);
         vkDeviceWaitIdle(ctxVK->_vkdevice);
         return status;
         break;
       }
       default:
-        logchan_swapchain->log("[VKSWAP] acquireImage: UNEXPECTED STATUS %d", status);
+        logchan_swapchain->log("acquireImage: UNEXPECTED STATUS %d", status);
         OrkAssert(false);
         break;
     }
@@ -418,7 +418,7 @@ VkResult VkSwapChain::acquireImage(vkcontext_rawptr_t ctxVK) {
   rtb_impl->_is_surface = true;
   rtb_impl->_replaceImage(_swapChainImages[_curSwapWriteImage]);
 
-  logchan_swapchain->log("[VKSWAP] acquireImage: COMPLETE - image %u ready for rendering", _curSwapWriteImage);
+  logchan_swapchain->log("acquireImage: COMPLETE - image %u ready for rendering", _curSwapWriteImage);
   return VK_SUCCESS;
 }
 
@@ -429,13 +429,13 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
   
   // DEBUG: Log frame submission
-  logchan_swapchain->log("[VKSWAP] enqueueFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
+  logchan_swapchain->log("enqueueFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
 
   _semasOkToRender[0]      = _imageAcquiredSemaphores[sub_index]->_vksema;
   _waitOnPipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   // DEBUG: Log semaphore setup
-  logchan_swapchain->log("[VKSWAP] enqueueFrame: wait semaphore %p (image acquired), signal semaphore %p (render complete)", 
+  logchan_swapchain->log("enqueueFrame: wait semaphore %p (image acquired), signal semaphore %p (render complete)", 
                         (void*)_semasOkToRender[0], (void*)_renderCompleteSemaphores[sub_index]->_vksema);
 
   VkSubmitInfo SI = {};
@@ -452,16 +452,16 @@ void VkSwapChain::enqueueFrame(vkcontext_rawptr_t ctxVK) {
   if (sub_index < _frameFences.size()) {
     auto& fence = _frameFences[sub_index];
     fence->reset();
-    logchan_swapchain->log("[VKSWAP] enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
+    logchan_swapchain->log("enqueueFrame: submitting with fence %p (sub_index %zu)", (void*)fence->_vkfence, sub_index);
     vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, fence->_vkfence);
-    logchan_swapchain->log("[VKSWAP] enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
+    logchan_swapchain->log("enqueueFrame: queue submit complete with fence %p", (void*)fence->_vkfence);
   } else {
-    logchan_swapchain->log("[VKSWAP] enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", 
+    logchan_swapchain->log("enqueueFrame: WARNING - submitting without fence (sub_index %zu >= fence count %zu)", 
                           sub_index, _frameFences.size());
     vkQueueSubmit(ctxVK->_vkqueue_graphics, 1, &SI, VK_NULL_HANDLE);
   }
   
-  logchan_swapchain->log("[VKSWAP] enqueueFrame: COMPLETE - frame %zu submitted", _currentFrame);
+  logchan_swapchain->log("enqueueFrame: COMPLETE - frame %zu submitted", _currentFrame);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -471,13 +471,13 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
   
   // DEBUG: Log present operation
-  logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: frame %zu, sub_index %zu, image %u", 
+  logchan_swapchain->log("enqueuePresentFrame: frame %zu, sub_index %zu, image %u", 
                          _currentFrame, sub_index, _curSwapWriteImage);
 
   _semasOkToPresent[0] = (_renderCompleteSemaphores[sub_index]->_vksema);
 
   // DEBUG: Log present semaphore
-  logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: waiting for render complete semaphore %p", (void*)_semasOkToPresent[0]);
+  logchan_swapchain->log("enqueuePresentFrame: waiting for render complete semaphore %p", (void*)_semasOkToPresent[0]);
 
   VkPresentInfoKHR PRESI{};
   initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -487,25 +487,25 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
   PRESI.pSwapchains        = &_vkSwapChain;
   PRESI.pImageIndices      = &_curSwapWriteImage;
 
-  logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: calling vkQueuePresentKHR for image %u", _curSwapWriteImage);
+  logchan_swapchain->log("enqueuePresentFrame: calling vkQueuePresentKHR for image %u", _curSwapWriteImage);
   VkResult status = vkQueuePresentKHR(ctxVK->_vkqueue_graphics, &PRESI);
-  logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: vkQueuePresentKHR returned %d", status);
+  logchan_swapchain->log("enqueuePresentFrame: vkQueuePresentKHR returned %d", status);
   
   // printf("vkQueuePresentKHR returned status: %d (0x%x)\n", status, status);
 
   switch (status) {
     case VK_SUCCESS:
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: SUCCESS - frame %zu presented", _currentFrame);
+      logchan_swapchain->log("enqueuePresentFrame: SUCCESS - frame %zu presented", _currentFrame);
       break;
     case VK_SUBOPTIMAL_KHR: {
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: VK_SUBOPTIMAL_KHR - Swap chain is suboptimal");
+      logchan_swapchain->log("enqueuePresentFrame: VK_SUBOPTIMAL_KHR - Swap chain is suboptimal");
       printf("VK_SUBOPTIMAL_KHR: Swap chain is suboptimal\n");
       // Swap chain is still usable, but may not be optimal
       // Consider recreating it on next frame
       break;
     }
     case VK_ERROR_OUT_OF_DATE_KHR: {
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: VK_ERROR_OUT_OF_DATE_KHR - Swap chain needs recreation");
+      logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_OUT_OF_DATE_KHR - Swap chain needs recreation");
       printf("VK_ERROR_OUT_OF_DATE_KHR: Swap chain needs recreation\n");
       // Need to recreate swap chain immediately
       vkDeviceWaitIdle(ctxVK->_vkdevice);
@@ -513,7 +513,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       break;
     }
     case VK_ERROR_DEVICE_LOST: {
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: VK_ERROR_DEVICE_LOST - Device has been lost!");
+      logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_DEVICE_LOST - Device has been lost!");
       printf("VK_ERROR_DEVICE_LOST: Device has been lost!\n");
       // This is a fatal error - the device is no longer usable
       // All Vulkan objects are now invalid
@@ -522,7 +522,7 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       break;
     }
     case VK_ERROR_SURFACE_LOST_KHR: {
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: VK_ERROR_SURFACE_LOST_KHR - Surface was lost");
+      logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_SURFACE_LOST_KHR - Surface was lost");
       printf("VK_ERROR_SURFACE_LOST_KHR: Surface was lost\n");
       // Surface is no longer available, need to recreate
       // This is fatal for now
@@ -530,14 +530,14 @@ void VkSwapChain::enqueuePresentFrame(vkcontext_rawptr_t ctxVK) {
       break;
     }
     case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT: {
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT");
+      logchan_swapchain->log("enqueuePresentFrame: VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT");
       printf("VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT\n");
       // Can try to reacquire exclusive full-screen access
       //  need to recreate swap chain
       break;
     }
     default:
-      logchan_swapchain->log("[VKSWAP] enqueuePresentFrame: UNEXPECTED STATUS %d", status);
+      logchan_swapchain->log("enqueuePresentFrame: UNEXPECTED STATUS %d", status);
       OrkAssert(false);
       break;
   } // switch (status)
@@ -549,7 +549,7 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   size_t sub_index = subIndex();
   
   // DEBUG: Log frame waiting
-  logchan_swapchain->log("[VKSWAP] waitPresentFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
+  logchan_swapchain->log("waitPresentFrame: frame %zu, sub_index %zu", _currentFrame, sub_index);
   
   // Wait for the current frame's fence to ensure rendering is complete
   auto& fence = _frameFences[sub_index];
@@ -560,18 +560,18 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
 
   if (fence) {
     // DEBUG: Log fence waiting
-    logchan_swapchain->log("[VKSWAP] waitPresentFrame: waiting for fence %p (frame %zu, sub_index %zu)", 
+    logchan_swapchain->log("waitPresentFrame: waiting for fence %p (frame %zu, sub_index %zu)", 
                           (void*)fence->_vkfence, _currentFrame, sub_index);
     
     // printf("  VkSwapChain<%p> Waiting for fence from frame %zu...\n", (void*) this, _currentFrame);
     fence->wait();
     
-    logchan_swapchain->log("[VKSWAP] waitPresentFrame: fence %p wait complete, resetting fence", (void*)fence->_vkfence);
+    logchan_swapchain->log("waitPresentFrame: fence %p wait complete, resetting fence", (void*)fence->_vkfence);
     fence->reset();
     
-    logchan_swapchain->log("[VKSWAP] waitPresentFrame: fence %p reset complete", (void*)fence->_vkfence);
+    logchan_swapchain->log("waitPresentFrame: fence %p reset complete", (void*)fence->_vkfence);
   } else {
-    logchan_swapchain->log("[VKSWAP] waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);
+    logchan_swapchain->log("waitPresentFrame: WARNING - no fence for sub_index %zu", sub_index);
   }
 
   ctxVK->_total_frame_time += time_since_last_present;
@@ -596,11 +596,11 @@ void VkSwapChain::waitPresentFrame(vkcontext_rawptr_t ctxVK) {
   }
   
   // DEBUG: Log frame completion and increment
-  logchan_swapchain->log("[VKSWAP] waitPresentFrame: frame %zu complete, incrementing to frame %zu", 
+  logchan_swapchain->log("waitPresentFrame: frame %zu complete, incrementing to frame %zu", 
                          _currentFrame, _currentFrame + 1);
   _currentFrame++;
   
-  logchan_swapchain->log("[VKSWAP] waitPresentFrame: COMPLETE - frame counter now %zu", _currentFrame);
+  logchan_swapchain->log("waitPresentFrame: COMPLETE - frame counter now %zu", _currentFrame);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

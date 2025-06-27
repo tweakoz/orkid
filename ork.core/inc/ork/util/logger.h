@@ -1,9 +1,9 @@
-
 #pragma once
 
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/mutex.h>
 #include <ork/file/file.h>
+#include <functional>
 
 namespace ork {
 
@@ -25,7 +25,12 @@ namespace ork {
     std::string _reset;
     bool _enabled;
     file_ptr_t _file; // if not null, log to file
+    
+    // Lambda-based logging strategies
+    std::function<void(const std::string&)> _writeStrategy;
+    std::function<std::string(const char*, va_list)> _formatStrategy;
 
+    void _log_internal(const char* format, va_list args, bool add_newline) const;
   };
 
   using logchannel_ptr_t = std::shared_ptr<LogChannel>;
@@ -44,6 +49,11 @@ namespace ork {
   logger_ptr_t logger();
   logchannel_ptr_t logchannel(const std::string& named);
   logchannel_ptr_t logerrchannel();
+
+  // Global log file manager functions
+  void setGlobalLogFile(const std::string& path);
+  void writeToGlobalLog(const std::string& channel, const std::string& message);
+  bool isGlobalLogEnabled();
 
   /////////////////////////////////////////////////////////////////////
 }

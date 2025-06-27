@@ -178,7 +178,7 @@ void VkFxInterface::bindParamTexture(const FxShaderParam* hpar, const Texture* p
   if (_currentVKPASS && _currentVKPASS->_merged_resources) {
     auto [set_id, binding_info] = findBindingInMergedResources(_currentVKPASS->_merged_resources, hpar->_name);
     if (binding_info && binding_info->type == VkMergedResourceBinding::Type::Sampler) {
-      printf("bindParamTexture: param<%s> -> merged resource set<%d> binding<%d>\n", 
+      if(0)printf("bindParamTexture: param<%s> -> merged resource set<%d> binding<%d>\n", 
              hpar->_name.c_str(), set_id, binding_info->binding_id);
       vk_shprog->_merged_resource_bindings[hpar] = std::make_pair(set_id, binding_info->binding_id);
       vk_shprog->_textures_by_orkparam[hpar] = vk_tex;

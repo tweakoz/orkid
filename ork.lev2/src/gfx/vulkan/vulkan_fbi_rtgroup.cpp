@@ -195,20 +195,20 @@ void VkFrameBufferInterface::__setRtGroup(rtgroup_rawptr_t rtgroup) {
   _contextVK->_vkcmdbuffer_current = RTGIMPL->_cmdbufRTG->_impl.getShared<VkSecondaryCommandBufferImpl>()->_vkcmdbuf;
 
   // At start and end of __setRtGroup, log RTG pointer and CB pointers
-  logchan_rtgroup->log("[VKRTG] __setRtGroup: RTG %p, primary CB %p, secondary CB %p", (void*)rtgroup, (void*)_contextVK->primary_cb()->_vkcmdbuf, (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("__setRtGroup: RTG %p, primary CB %p, secondary CB %p", (void*)rtgroup, (void*)_contextVK->primary_cb()->_vkcmdbuf, (void*)vkcmdbuf->_vkcmdbuf);
   // When vkBeginCommandBuffer and vkEndCommandBuffer are called, log CB pointer
-  logchan_rtgroup->log("[VKRTG] vkBeginCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
-  logchan_rtgroup->log("[VKRTG] vkEndCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("vkBeginCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("vkEndCommandBuffer: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
   // When _vkCmdBeginRenderingKHR and _vkCmdEndRenderingKHR are called, log CB pointer
-  logchan_rtgroup->log("[VKRTG] vkCmdBeginRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
-  logchan_rtgroup->log("[VKRTG] vkCmdEndRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("vkCmdBeginRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
+  logchan_rtgroup->log("vkCmdEndRenderingKHR: CB %p", (void*)vkcmdbuf->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
   __setRtGroup(rtgroup);
-  logchan_rtgroup->log("[VKRTG] PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+  logchan_rtgroup->log("PushRtGroup: RTG %p, primary CB %p", (void*)rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,10 +239,10 @@ void VkFrameBufferInterface::_popRtGroup() {
   
   // Switch back to primary command buffer before enqueuing
   if (_contextVK->primary_cb() == nullptr) {
-    logchan_rtgroup->log("[VKRTG] ERROR: primary_cb() is nullptr in _popRtGroup! This will crash.");
+    logchan_rtgroup->log("ERROR: primary_cb() is nullptr in _popRtGroup! This will crash.");
     OrkAssert(_contextVK->primary_cb() != nullptr);
   }
-  logchan_rtgroup->log("[VKRTG] Switching back to primary command buffer %p before enqueuing", (void*)_contextVK->primary_cb()->_vkcmdbuf);
+  logchan_rtgroup->log("Switching back to primary command buffer %p before enqueuing", (void*)_contextVK->primary_cb()->_vkcmdbuf);
   _contextVK->_vkcmdbuffer_current = _contextVK->primary_cb()->_vkcmdbuf;
   
   _contextVK->enqueueSecondaryCommandBuffer(RTGIMPL->_cmdbufRTG);
@@ -294,7 +294,7 @@ void VkFrameBufferInterface::_popRtGroup() {
   
   }
 
-  logchan_rtgroup->log("[VKRTG] PopRtGroup: RTG %p, primary CB %p", (void*)_active_rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+  logchan_rtgroup->log("PopRtGroup: RTG %p, primary CB %p", (void*)_active_rtgroup, _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
 }
 
 ///////////////////////////////////////////////////////

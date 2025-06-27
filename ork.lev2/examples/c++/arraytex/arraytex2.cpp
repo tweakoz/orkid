@@ -66,7 +66,7 @@ struct Resources {
     auto img_blu = create_image("blu_slice");
     auto img_whi = create_image("whi_slice");
 
-    int stripe_width = 256;
+    int stripe_width = 512;
     for (int y = 0; y < TEX_SIZE; y++) {
       for (int x = 0; x < TEX_SIZE; x++) {
         float stripe = (y % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
@@ -79,7 +79,7 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 256;
+    stripe_width = 512;
     for (int y = 0; y < TEX_SIZE; y++) {
       for (int x = 0; x < TEX_SIZE; x++) {
         float stripe = (x % stripe_width < (stripe_width >> 1)) ? 0.5f : 0.0f;
@@ -92,7 +92,7 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 512;
+    stripe_width = 1024;
     int DDB      = stripe_width * 2;
     for (int y = 0; y < TEX_SIZE; y++) {
       for (int x = 0; x < TEX_SIZE; x++) {
@@ -106,7 +106,7 @@ struct Resources {
 #endif
       }
     }
-    stripe_width = 16;
+    stripe_width = 64;
     int DDW      = stripe_width; // Same as arraytex1
     for (int y = 0; y < TEX_SIZE; y++) {
       for (int x = 0; x < TEX_SIZE; x++) {
