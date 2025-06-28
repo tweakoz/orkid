@@ -72,7 +72,7 @@ int main(int argc, char** argv, char** envp) {
         auto dot = shadlang::toGLFX1(tunit);
         bool OK = File::writeString(glfx_output_path, dot);
         OrkAssert(OK);
-        
+
     }
   }
   return (tunit!=nullptr) ? 0 : -1;

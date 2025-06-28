@@ -408,7 +408,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
         fxs.format("ork.data/platform_lev2/shaders/fxv2/%s", b.c_str());
         proc_import_path = fxs.c_str();
       } else {
-        proc_import_path = rpath;
+      proc_import_path = rpath;
       }
       //printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
     } else { // infer from container

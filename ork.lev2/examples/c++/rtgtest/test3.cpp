@@ -8,7 +8,7 @@
 // Configuration
 const int RECURSION_DEPTH = 5;        // How many levels deep
 const bool SCALE_SIZE_BY_LEVEL = true; // Scale RTG size down per level
-const int BASE_RTG_SIZE = 2048;        // Size of root RTG
+const int BASE_RTG_SIZE = 4096;        // Size of root RTG
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/string/deco.inl>
@@ -27,9 +27,9 @@ fvec4 clear_colors[8] = {
   fvec4(0,0,0,1),
   fvec4(0,0,1,1),
   fvec4(1,1,1,1),
-  fvec4(1,0,1,1),
+  fvec4(0.5,0,0.5,1),
   fvec4(0,0,0,1),
-  fvec4(1,1,0,1),
+  fvec4(0,0,0,1),
   fvec4(1,0,0,1),
   fvec4(0,1,1,1),
 };
@@ -130,7 +130,7 @@ struct Resources {
     node->rtg->_autoclear = true;
     
     color->_clearColor = clear_colors[node->_depth % 8];
-    if(node->_depth==3){
+    if(node->_depth==(RECURSION_DEPTH-2)){
       float r = (rand() % 100)/200.0f;
       float g = (rand() % 100)/200.0f;
       float b = (rand() % 100)/200.0f;

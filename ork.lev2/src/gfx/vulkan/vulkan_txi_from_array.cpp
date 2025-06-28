@@ -248,11 +248,11 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
 
         if (format == EBufferFormat::RGBA8) {
           // Convert RGB8 to RGBA8
-          for (size_t i = 0; i < mip_w * mip_h; i++) {
-            dst[i * 4 + 0] = src[i * 3 + 0]; // R
-            dst[i * 4 + 1] = src[i * 3 + 1]; // G
-            dst[i * 4 + 2] = src[i * 3 + 2]; // B
-            dst[i * 4 + 3] = 255;            // A
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // R
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 255;            // A
           }
         } else if (format == EBufferFormat::RGBA16) {
           // Convert RGB16 to RGBA16
@@ -561,12 +561,12 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
       size_t dst_size = mip_w * mip_h * 4 * bytes_per_pixel;
 
       if (array->_tex->_texFormat == EBufferFormat::RGBA8) {
-        // Convert RGB8 to RGBA8
-        for (size_t i = 0; i < mip_w * mip_h; i++) {
+      // Convert RGB8 to RGBA8
+      for (size_t i = 0; i < mip_w * mip_h; i++) {
           dst[i * 4 + 0] = src[i * 3 + 0]; // R
-          dst[i * 4 + 1] = src[i * 3 + 1]; // G
-          dst[i * 4 + 2] = src[i * 3 + 2]; // B
-          dst[i * 4 + 3] = 255;            // A
+        dst[i * 4 + 1] = src[i * 3 + 1]; // G
+        dst[i * 4 + 2] = src[i * 3 + 2]; // B
+        dst[i * 4 + 3] = 255;            // A
         }
       } else if (array->_tex->_texFormat == EBufferFormat::RGBA16) {
         // Convert RGB16 to RGBA16
