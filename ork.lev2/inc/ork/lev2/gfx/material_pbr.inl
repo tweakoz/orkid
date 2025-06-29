@@ -212,10 +212,9 @@ public:
 
   ///////////////////////////////////////////
   // instancing (via texture)
-  fxparam_constptr_t _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices
-  fxparam_constptr_t _paramInstanceIdMap     = nullptr; // 1k*1k texture containing instance pickids
-  fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
-  const FxUniformBlock* _paramInstanceBlock = nullptr;
+  fxparam_constptr_t _paramInstanceMatrixMap = nullptr;
+  fxparam_constptr_t _paramInstanceIdMap = nullptr;
+  fxparam_constptr_t _paramInstanceColorMap = nullptr;
   ///////////////////////////////////////////
   image_ptr_t _image_color;
   image_ptr_t _image_normal;

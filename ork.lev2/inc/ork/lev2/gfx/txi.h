@@ -79,7 +79,6 @@ public:
   bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
   void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
 
-  virtual void TexManInit()                       = 0;
   virtual bool destroyTexture(texture_ptr_t ptex) = 0;
   virtual void generateMipMaps(Texture* ptex)     = 0;
 
@@ -88,6 +87,7 @@ public:
 
   virtual void ApplySamplingMode(Texture* ptex) {
   }
+
   virtual void initTextureFromData(Texture* ptex, TextureInitData tid) {
   }
   virtual void initTextureFromImage(Texture* ptex, image_ptr_t img) {

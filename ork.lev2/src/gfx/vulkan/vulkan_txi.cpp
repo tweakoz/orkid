@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -21,11 +20,6 @@ VkTextureInterface::VkTextureInterface(vkcontext_rawptr_t ctx)
     _seccmdbufpool_xfer.atomicOp([ctx](sseccmdbufpool_ptr_t& pool) {
       pool = std::make_shared<SecCmdBufPool>(SecCmdBufPoolAdapter(ctx));
     });
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkTextureInterface::TexManInit() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

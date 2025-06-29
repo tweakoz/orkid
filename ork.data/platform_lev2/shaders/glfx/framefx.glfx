@@ -6,13 +6,28 @@ fxconfig fxcfg_default {
   import "ssaotools.i";
 }
 ///////////////////////////////////////////////////////////////
-// Interfaces
+// Sampler Sets
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx_ffx : uset_std_matrices {
+sampler_set ss_frg_ffx {
+  sampler2D MrtMap0;
+  sampler2D MrtMap1;
+  sampler2D MrtMap2;
+  sampler2D MrtMap3;
+  sampler2D AuxMap0;
+  sampler2D AuxMap1;
+  sampler2D NoiseMap;
+}
+///////////////////////////////////////////////////////////////
+// Uniform Sets
+///////////////////////////////////////////////////////////////
+uniform_set us_vtx_ffx : us_std_viewport {
   vec4 modcolor;
   float time;
 }
-vertex_interface iface_vdefault : ub_vtx_ffx {
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault : ub_std_vtx : us_vtx_ffx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -30,35 +45,6 @@ fragment_interface iface_fdefault {
     vec4 frg_clr;
     vec2 frg_uv;
   }
-  //
-  outputs { vec4 out_clr; }
-}
-///////////////////////////////////////////////////////////////
-uniform_set ub_frg_ffx {
-  vec4 ModColor;
-  float time;
-  float BlurFactor;
-  int BlurFactorI;
-  float MaskThreshold;
-  int image_width;
-  int image_height;
-  float EffectAmount;
-
-  float Hue;
-  float Saturation;
-  float Value;
-  float Gamma;
-
-  sampler2D MrtMap0;
-  sampler2D MrtMap1;
-  sampler2D MrtMap2;
-  sampler2D MrtMap3;
-  sampler2D AuxMap0;
-  sampler2D AuxMap1;
-  sampler2D NoiseMap;
-}
-fragment_interface iface_fmt : ub_frg_ffx {
-  inputs { vec2 frg_uv; }
   //
   outputs { vec4 out_clr; }
 }
@@ -293,29 +279,32 @@ fragment_shader ps_hsvg : iface_fmt : color_tools {
   out_clr   = vec4(r,g,b, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-uniform_set uset_frg_ssao_impl {
-  sampler2D MapDepth;
-  sampler2D MapLinearDepth;
-  sampler2D SSAOPREV;
+uniform_set us_frg_ssao_impl {
   vec2 texelSize;
+}
+///////////////////////////////////////////////////////////////
+sampler_set ss_frg_ssao_impl : ss_std_ssao {
+  sampler2D SSAOPREV;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_ssao_prepass //
   : iface_fmt_greyscale //
-  : uset_std_matrices
-  : uset_std_viewport
-  : uset_frg_ssao_impl //
+  : ub_std_vtx
+  : us_std_viewport
+  : us_frg_ssao_impl //
+  : ss_frg_ssao_impl //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float cur_ssao = ssao_nonlinear(uv);
   float prv_ssao = texture(SSAOPREV,uv).r;
-  out_value = mix(prv_ssao,cur_ssao,SSAOFeedback); // Strong temporal filtering to reduce noise
+  out_value = mix(prv_ssao,cur_ssao,SsaoFeedback); // Strong temporal filtering to reduce noise
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_linearize_depth //
   : iface_fmt_greyscale //
-  : uset_std_viewport
-  : uset_frg_ssao_impl //
+  : us_std_viewport
+  : us_frg_ssao_impl //
+  : ss_std_ssao //
   : lib_ssao { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
@@ -326,12 +315,14 @@ fragment_shader ps_linearize_depth //
   out_value   = 0.0;//linz; // linearize
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_ghost {
+uniform_set us_ghost {
   float EffectAmount;
+}
+sampler_set ss_ghost {
   sampler2D MrtMap0;
   sampler2D AuxMap1;
 }
-fragment_interface iface_hdr_join_ghost : ub_ghost {
+fragment_interface iface_hdr_join_ghost : us_ghost : ss_ghost {
   outputs { vec4 out_clr; }
   //
   inputs { vec2 frg_uv; }
@@ -407,18 +398,18 @@ fragment_shader ps_fbout : iface_fmt { out_clr = texture(MrtMap0, frg_uv); }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fbin : iface_fmt { out_clr = texture(MrtMap0, frg_uv) * 0.1; }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault {
-  gl_Position = mvp * position;
-  frg_clr     = vtxcolor;
-  frg_uv      = uv0;
-}
-///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault {
   out_clr = frg_clr;
   // out_clr = vec4(1.0,0.0,1.0,1.0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+}
 ///////////////////////////////////////////////////////////////
 technique frameeffect_standard {
   fxconfig = fxcfg_default;

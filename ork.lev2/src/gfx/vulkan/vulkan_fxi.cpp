@@ -89,7 +89,7 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     auto vtx_shader = shprog->_vtxshader;
     auto frg_shader = shprog->_frgshader;
 
-    printf("/////////////////\nshprog<v:%s f%s> pipeline_bits_composite<%d>\n", //
+    printf("/////////////////\nshprog<v:%s <f:%s> pipeline_bits_composite<%d>\n", //
            vtx_shader->_name.c_str(), //
            frg_shader->_name.c_str(),
            shprog->_pipeline_bits_composite);

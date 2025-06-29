@@ -92,7 +92,19 @@ void _vkCreateImageForBuffer(
       1,                              // depth
       options._format,                // format
       1);                             // miplevels
-  switch (options._usage) {
+  
+  logchan_rtgi->log("_vkCreateImageForBuffer: usage=0x%zx (%zu) format=%d", options._usage, options._usage, options._format);
+  
+  // Defensive check: convert usage=0 to "color"_crcu
+  uint64_t effective_usage = options._usage;
+  if (effective_usage == 0) {
+    logchan_rtgi->log("WARNING: _vkCreateImageForBuffer received usage=0, defaulting to 'color'");
+    effective_usage = "color"_crcu;
+    // Also update the buffer's usage to the corrected value
+    bufferimpl->_usage = effective_usage;
+  }
+  
+  switch (effective_usage) {
     case "depth"_crcu:
       VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; // Allow rendering D/S to this image
       break;
@@ -103,6 +115,7 @@ void _vkCreateImageForBuffer(
       VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Allow rendering Color to this image
       break;
     default:
+      logchan_rtgi->log("ERROR: Unknown usage value 0x%zx in _vkCreateImageForBuffer", effective_usage);
       OrkAssert(false);
       break;
   }
@@ -110,6 +123,7 @@ void _vkCreateImageForBuffer(
     // Use as texture
     VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;       // Allow sampling from this image
     VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // Allow data transfer to it
+    VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  // Allow data transfer from it (for readback/save)
   }
   ///////////////////////////////////////////////////
   auto imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
@@ -119,7 +133,7 @@ void _vkCreateImageForBuffer(
   auto IVCI = createImageViewInfo2D(
       vkimage,            //
       bufferimpl->_vkfmt, //
-      VkFormatConverter::_instance.aspectForUsage(options._usage));
+      VkFormatConverter::_instance.aspectForUsage(effective_usage));
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &imgobj->_vkimageview);
   OrkAssert(OK == VK_SUCCESS);
   bufferimpl->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Reset layout to undefined after creation

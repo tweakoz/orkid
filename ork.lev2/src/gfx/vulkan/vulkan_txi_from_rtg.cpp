@@ -18,7 +18,7 @@ static logchannel_ptr_t logchan_txirtg = logger()->createChannel("VKTXIRTG", fve
 void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   auto ptex = rtbuffer->texture();
   OrkAssert(ptex);
-  auto& teximpl = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
+  auto teximpl = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
 
   auto format  = rtbuffer->format();
   int iwidth   = rtbuffer->_width;

@@ -277,8 +277,6 @@ struct VkTextureInterface final : public TextureInterface {
 
   VkTextureInterface(vkcontext_rawptr_t ctx);
 
-  void TexManInit() final;
-
   void _beginFrame();
   //
   bool destroyTexture(texture_ptr_t ptex) final;
@@ -396,6 +394,10 @@ struct VkFxInterface final : public FxInterface {
   std::unordered_map<uint64_t, int> _vk_geointerface_cache;
   std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
+
+  bool _tryBindMergedResource(const FxShaderParam* hpar,
+                              VkMergedResourceBinding::Type expected_type,
+                              void* resource_data);
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkComputeInterface : public ComputeInterface {
@@ -462,6 +464,9 @@ public:
   void _doEndFrame() final;
   ctx_platform_handle_t _doClonePlatformHandle() const final;
 
+  void _beginAssetProcessing();
+  void _endAssetProcessing();
+
   //////////////////////////////////////////////
 
   secondary_commandbuffer_ptr_t _beginRecordCommandBuffer(std::string name, rtgroup_rawptr_t rtg) final;
@@ -517,6 +522,7 @@ public:
   void _initVulkanForWindow(VkSurfaceKHR surface);
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
+  void _initDefaultTextures();
   //////////////////////////////////////////////
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {
@@ -561,6 +567,13 @@ public:
   vksampler_obj_ptr_t _sampler_base;
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
   VkDescriptorPool _vkDescriptorPool;
+  
+  // Default texture implementations for unloaded textures
+  vktexobj_ptr_t _defaultTexImpl2D;
+  vktexobj_ptr_t _defaultTexImplCube;
+  vktexobj_ptr_t _defaultTexImpl2DArray;
+  vktexobj_ptr_t _defaultTexImpl3D;
+  
   //////////////////////////////////////////////
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName = nullptr;
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT      = nullptr;

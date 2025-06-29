@@ -300,6 +300,7 @@ void VkFrameBufferInterface::_popRtGroup() {
 ///////////////////////////////////////////////////////
 
 bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* capbuf, EBufferFormat destfmt) {
+
   auto rtbi = inpbuf->_impl.getShared<VklRtBufferImpl>();
   if (nullptr == capbuf) {
     OrkAssert(false);
@@ -317,7 +318,7 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
     h = capbuf->_captureH;
   }
 
-  rtbi->_transitionToHostRead(_contextVK->primary_cb());
+  //rtbi->_transitionToHostRead(_contextVK->primary_cb());
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
@@ -353,7 +354,7 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
       //  todo convert RGBA8 to NV12 (on GPU)
 
       // grab RGBA8 vkimg to staging buffer
-      OrkAssert(vkfmt == VK_FORMAT_R8G8B8A8_UNORM);
+      /*OrkAssert(vkfmt == VK_FORMAT_R8G8B8A8_UNORM);
       auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, rgbasize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
       vkCmdCopyImageToBuffer(
           _contextVK->primary_cb()->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
@@ -418,20 +419,22 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
           outptr[numpixels + outindex + 0] = u;
           outptr[numpixels + outindex + 1] = v;
         }
-      }
+      }*/
       break;
     }
     case EBufferFormat::RGBA8: {
       // glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
-      OrkAssert(false);
+      size_t rgbasize = w * h * 4;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
       break;
     }
     case EBufferFormat::RGB8: {
-      OrkAssert(false);
       //////////////////////////////////////
       // read RGBA
       //////////////////////////////////////
-      size_t rgbasize = w * h * 4;
+      size_t rgbasize = w * h * 3;
       if (capbuf->_tempbuffer.size() != rgbasize) {
         capbuf->_tempbuffer.resize(rgbasize);
       }
@@ -450,13 +453,21 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
       //////////////////////////////////////
       break;
     }
-    case EBufferFormat::RGBA16F:
-      OrkAssert(false);
+    case EBufferFormat::RGBA16F:{
+      size_t rgbasize = w * h * 64;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
       // glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
       break;
+    }
     ///////////////////////////////////////////////////////
     case EBufferFormat::RGBA32F: {
-      OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
+      size_t rgbasize = w * h * 128;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
+      /*OrkAssert(vkfmt == VK_FORMAT_R32G32B32A32_SFLOAT);
       size_t bufsize = w * h * 16;
       if (capbuf->_tempbuffer.size() != bufsize) {
         capbuf->_tempbuffer.resize(bufsize);
@@ -465,7 +476,7 @@ bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuff
       vkCmdCopyImageToBuffer(
           _contextVK->primary_cb()->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
       staging_buffer->copyToHost(capbuf->_tempbuffer.data(), bufsize);
-      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
+      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);*/
       break;
     }
     ///////////////////////////////////////////////////////

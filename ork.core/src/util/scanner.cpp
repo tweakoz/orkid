@@ -127,6 +127,16 @@ ScannerView Scanner::createTopView() const {
   return rval;
 }
 
+scannerview_ptr_t Scanner::createTopViewShPtr() const {
+  auto rval = std::make_shared<ScannerView>(*this, nullptr);
+  rval->_start = 0;
+  rval->_end   = tokens.size() - 1;
+  for (int i = 0; i < tokens.size(); i++) {
+    rval->_indices.push_back(i);
+  }
+  return rval;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 /////////////////////////////////////////////////////////////////////////////////////////////////

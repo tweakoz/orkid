@@ -380,6 +380,7 @@ public:
   const ::ork::rtti::ICastable* mpCurrentObject         = nullptr;
   RtGroup* _defaultRTG                                = nullptr;
 
+  uint64_t _currentPhase = 0;
   TargetType meTargetType;
   int miW, miH;
   int miModColorStackIndex;

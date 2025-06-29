@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
@@ -79,6 +78,26 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
   /////////////////////////////////////
+  // Handle format conversion for macOS
+  /////////////////////////////////////
+  
+  EBufferFormat actual_dst_format = tid._dst_format;
+  bool needs_conversion = false;
+  
+#if defined(__APPLE__)
+  if (tid._dst_format == EBufferFormat::BGR8) {
+    actual_dst_format = EBufferFormat::BGRA8;
+    needs_conversion = true;
+  } else if (tid._dst_format == EBufferFormat::RGB8) {
+    actual_dst_format = EBufferFormat::RGBA8;
+    needs_conversion = true;
+  } else if (tid._dst_format == EBufferFormat::RGB32F) {
+    actual_dst_format = EBufferFormat::RGBA32F;
+    needs_conversion = true;
+  }
+#endif
+
+  /////////////////////////////////////
   // hash the image creation parameters
   /////////////////////////////////////
 
@@ -89,7 +108,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       tid._w,          //
       tid._h,          //
       tid._d,          //
-      tid._dst_format, //
+      actual_dst_format, // Use the actual format for hash
       1,               // nummips
       usage);          // usage
 
@@ -119,7 +138,20 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // this is used to copy data from the application
   /////////////////////////////////////
 
-  size_t transfer_size = tid.computeDstSize();
+  size_t src_size = tid.computeSrcSize();
+  size_t transfer_size = src_size;
+  
+  // Adjust transfer size for format conversion
+  if (needs_conversion) {
+    if (tid._dst_format == EBufferFormat::BGR8 || tid._dst_format == EBufferFormat::RGB8) {
+      // 3 components to 4 components (8-bit)
+      transfer_size = tid._w * tid._h * tid._d * 4;
+    } else if (tid._dst_format == EBufferFormat::RGB32F) {
+      // 3 components to 4 components (32-bit float)
+      transfer_size = tid._w * tid._h * tid._d * 4 * sizeof(float);
+    }
+  }
+  
   auto poolForSize     = stagingBufferPoolForSrcOfSize(transfer_size);
   auto staging_buffer  = poolForSize->borrowItem();
 
@@ -129,7 +161,45 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   std::atomic<bool> staging_buffer_ready = false;
   auto copy_op = [=,&staging_buffer_ready]() {
-    staging_buffer->copyFromHost(tid._data, transfer_size);
+    if (needs_conversion) {
+      // Perform format conversion
+      void* staging_data = staging_buffer->map(0, transfer_size, 0);
+      const uint8_t* src_data = (const uint8_t*)tid._data;
+      
+      if (tid._dst_format == EBufferFormat::BGR8) {
+        // BGR8 to BGRA8
+        uint8_t* dst = (uint8_t*)staging_data;
+        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
+          dst[i * 4 + 0] = src_data[i * 3 + 0]; // B
+          dst[i * 4 + 1] = src_data[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src_data[i * 3 + 2]; // R
+          dst[i * 4 + 3] = 255;                 // A
+        }
+      } else if (tid._dst_format == EBufferFormat::RGB8) {
+        // RGB8 to RGBA8
+        uint8_t* dst = (uint8_t*)staging_data;
+        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
+          dst[i * 4 + 0] = src_data[i * 3 + 0]; // R
+          dst[i * 4 + 1] = src_data[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src_data[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 255;                 // A
+        }
+      } else if (tid._dst_format == EBufferFormat::RGB32F) {
+        // RGB32F to RGBA32F
+        float* dst = (float*)staging_data;
+        const float* src = (const float*)src_data;
+        for (size_t i = 0; i < tid._w * tid._h * tid._d; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // R
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // B
+          dst[i * 4 + 3] = 1.0f;           // A
+        }
+      }
+      staging_buffer->unmap();
+    } else {
+      // Direct copy
+      staging_buffer->copyFromHost(tid._data, transfer_size);
+    }
     staging_buffer_ready.store(true);
   };
   opq::concurrentQueue()->enqueue(copy_op);
@@ -178,7 +248,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   if (hash_changed) {
 
-    auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
+    auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, actual_dst_format, 1); // Use actual format
     VKICI->usage = usage;
 
     vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
@@ -186,7 +256,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     auto IVCI = createImageViewInfo2D(
         vktex->_imgobj->_vkimage,                                //
-        VkFormatConverter::convertBufferFormat(tid._dst_format), //
+        VkFormatConverter::convertBufferFormat(actual_dst_format), // Use actual format
         VK_IMAGE_ASPECT_COLOR_BIT);
 
     initializeVkStruct(vktex->_imgobj->_vkimageview);
@@ -198,7 +268,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     OrkAssert(vktex->_imgobj->_vkimageview != VK_NULL_HANDLE);
 
     ptex->_impl  = vktex;
-    ptex->_texFormat = tid._dst_format;
+    ptex->_texFormat = actual_dst_format; // Store the actual format
     ptex->_width     = tid._w;
     ptex->_height    = tid._h;
     ptex->_depth     = tid._d;

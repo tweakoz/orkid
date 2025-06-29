@@ -426,7 +426,6 @@ struct GlTextureInterface : public TextureInterface {
 
   void bindTextureToUnit(const Texture* tex, int loc, GLenum tex_target, int tex_unit);
 
-  void TexManInit() final;
   bool destroyTexture(texture_ptr_t ptex) final;
   void generateMipMaps(Texture* ptex) final;
   void _createFromLoadReq(texloadreq_ptr_t tlr) final;

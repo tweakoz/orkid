@@ -4,7 +4,8 @@
 
 libblock lib_envmapping 
   : lib_math
-  : uset_std_pbr
+  : us_std_pbr
+  : ss_std_pbr
 { //
 
   vec2 spotlightUV(vec3 dir) {

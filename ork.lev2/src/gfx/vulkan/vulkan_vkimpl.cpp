@@ -368,6 +368,15 @@ VkFormatConverter::VkFormatConverter() {
   do_format(EBufferFormat::RGBA32UI, VK_FORMAT_R32G32B32A32_UINT);
   do_format(EBufferFormat::RGBA16UI, VK_FORMAT_R16G16B16A16_UINT);
   
+  do_format(EBufferFormat::RGB10A2, VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+  do_format(EBufferFormat::RGB32UI, VK_FORMAT_R32G32B32_UINT);
+  do_format(EBufferFormat::R8, VK_FORMAT_R8_UNORM);
+  do_format(EBufferFormat::RG16F, VK_FORMAT_R16G16_SFLOAT);
+  do_format(EBufferFormat::RG32F, VK_FORMAT_R32G32_SFLOAT);
+  do_format(EBufferFormat::RGB32F, VK_FORMAT_R32G32B32_SFLOAT);
+  do_format(EBufferFormat::R32UI, VK_FORMAT_R32_UINT);
+  do_format(EBufferFormat::RGB16, VK_FORMAT_R16G16B16_UNORM);
+  
   do_format(EBufferFormat::RGBA_BPTC_UNORM, VK_FORMAT_BC7_UNORM_BLOCK);
   do_format(EBufferFormat::SRGB_ALPHA_BPTC_UNORM, VK_FORMAT_BC7_SRGB_BLOCK);
 

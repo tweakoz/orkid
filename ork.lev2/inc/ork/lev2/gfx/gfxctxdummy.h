@@ -208,8 +208,6 @@ protected:
 class DuTextureInterface : public TextureInterface {
 public:
   DuTextureInterface(Context& ctx);
-  void TexManInit(void) final {
-  }
 
   bool destroyTexture(texture_ptr_t ptex) final {
     return false;

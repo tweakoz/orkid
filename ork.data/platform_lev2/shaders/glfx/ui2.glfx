@@ -12,20 +12,28 @@ state_block sb_ui : default {
 	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ublock_frg {
+// SAMPLER SETS
+///////////////////////////////////////////////////////////////
+sampler_set ss_ui {
   sampler2D ColorMap;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_ui {
+sampler_set ss_ui_instanced : ss_std_instancing {
+  // Inherits instancing samplers
+}
+///////////////////////////////////////////////////////////////
+// UNIFORM SETS
+///////////////////////////////////////////////////////////////
+uniform_set us_ui {
   uvec4 objid;
   vec4 modcolor;
   mat4 mvp;
-  sampler2D InstanceMatrices;
-  usampler2D InstanceIds;
   float time;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vui : ub_ui {
+// VERTEX INTERFACES
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vui : us_ui {
   inputs {
     vec4 position : POSITION;
     vec4 vtxtexc : TEXCOORD0;
@@ -38,7 +46,9 @@ vertex_interface iface_vui : ub_ui {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fui : ub_ui {
+// FRAGMENT INTERFACES
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fui : us_ui : ss_ui {
   inputs {
     vec4 frg_clr;
 	vec4 frg_texc;
@@ -48,7 +58,7 @@ fragment_interface iface_fui : ub_ui {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fpick : ub_ui {
+fragment_interface iface_fpick : us_ui {
   inputs {
     vec4 frg_clr;
   }
@@ -57,6 +67,8 @@ fragment_interface iface_fpick : ub_ui {
     layout(location = 1) vec4 out_nrmd;
   }
 }
+///////////////////////////////////////////////////////////////
+// VERTEX SHADERS
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_ui
 	: iface_vui {
@@ -71,6 +83,8 @@ vertex_shader vs_vtxcolor
 	frg_texc = vtxtexc;
 }
 ///////////////////////////////////////////////////////////////
+// FRAGMENT SHADERS
+///////////////////////////////////////////////////////////////
 fragment_shader fs_vtxpick
 	: iface_fpick {
 		//out_iid = uvec4(0x1234,0x5678,0,0xabcd); // comes back as 0xabcd000056781234
@@ -84,8 +98,7 @@ fragment_shader fs_frgcolor
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_ui_tex
-	: iface_fui
-	: ublock_frg {
+	: iface_fui {
 	ivec2 iuv = ivec2( int(frg_texc.x), int(frg_texc.y) );
 	out_color = texelFetch(ColorMap,iuv,0);
 	out_color *= frg_clr;
@@ -139,6 +152,8 @@ fragment_shader fs_picking
 		out_iid = objid;
     out_nrmd = vec4(0,1,0,0);
 }
+///////////////////////////////////////////////////////////////
+// TECHNIQUES
 ///////////////////////////////////////////////////////////////
 technique ui_modcolor {
 	fxconfig=fxcfg_default;
@@ -202,3 +217,4 @@ technique ui_picking {
 		state_block=sb_ui;
 	}
 }
+///////////////////////////////////////////////////////////////

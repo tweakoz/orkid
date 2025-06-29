@@ -58,6 +58,7 @@ void ForwardPbrNodeImpl::_render_skybox(forward_pass_ptr_t fpass) {
   pipeline->_rasterstate->setWriteMaskRGB(true);
   pipeline->_rasterstate->setWriteMaskA(true);
   pipeline->_rasterstate->setDepthTest(EDepthTest::OFF);
+  pipeline->bindUniformBuffer(_par_ublk_std_matrices, "ub_skybox"_crcu);
   pipeline->wrappedDrawCall(RCID, [=]() {
     FXI->applyRasterState(*pipeline->_rasterstate);
     GBI->render2dQuadEML(

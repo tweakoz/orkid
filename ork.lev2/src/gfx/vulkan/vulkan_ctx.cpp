@@ -252,6 +252,154 @@ void VkContext::_initVulkanCommon() {
 
   OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
   OrkAssert(OK == VK_SUCCESS);
+  
+  ////////////////////////////
+  // create default texture implementations
+  ////////////////////////////
+  
+  _initDefaultTextures();
+}
+
+  void VkContext::_beginAssetProcessing() {
+    beginFrame();
+  }
+  void VkContext::_endAssetProcessing(){
+    endFrame();
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_initDefaultTextures() {
+  // Create black default textures for each type
+  auto create_default_texture = [this](ETextureType tex_type, int width, int height, int depth = 1, int num_layers = 1) -> vktexobj_ptr_t {
+    auto tex_obj = std::make_shared<VulkanTextureObject>(_txi.get());
+    
+    // Calculate mip levels based on dimensions
+    int num_mips = 1;
+    if (tex_type == ETEXTYPE_3D) {
+      num_mips = 1 + static_cast<int>(std::floor(std::log2(std::min({width, height, depth}))));
+    } else {
+      num_mips = 1 + static_cast<int>(std::floor(std::log2(std::min(width, height))));
+    }
+    
+    // Create image create info
+    auto imageInfo = std::make_shared<VkImageCreateInfo>();
+    initializeVkStruct(*imageInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imageInfo->format = VK_FORMAT_R8G8B8A8_UNORM;
+    imageInfo->extent.width = width;
+    imageInfo->extent.height = height;
+    imageInfo->extent.depth = depth;
+    imageInfo->mipLevels = num_mips;
+    imageInfo->arrayLayers = num_layers;
+    imageInfo->samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo->tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo->sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    
+    switch (tex_type) {
+      case ETEXTYPE_2D:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        break;
+      case ETEXTYPE_CUBE:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        imageInfo->flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        imageInfo->arrayLayers = 6;
+        break;
+      case ETEXTYPE_2D_ARRAY:
+        imageInfo->imageType = VK_IMAGE_TYPE_2D;
+        imageInfo->arrayLayers = num_layers;
+        break;
+      case ETEXTYPE_3D:
+        imageInfo->imageType = VK_IMAGE_TYPE_3D;
+        break;
+      default:
+        OrkAssert(false);
+    }
+    
+    // Create the image object
+    tex_obj->_imgobj = std::make_shared<VulkanImageObject>(this, imageInfo, "default_texture");
+    
+    // Create image view
+    VkImageViewCreateInfo viewInfo = {};
+    initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image = tex_obj->_imgobj->_vkimage;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = num_mips;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    
+    // Set view type and layer count based on texture type
+    switch (tex_type) {
+      case ETEXTYPE_2D:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.subresourceRange.layerCount = 1;
+        break;
+      case ETEXTYPE_CUBE:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        viewInfo.subresourceRange.layerCount = 6;
+        break;
+      case ETEXTYPE_2D_ARRAY:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        viewInfo.subresourceRange.layerCount = num_layers;
+        break;
+      case ETEXTYPE_3D:
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_3D;
+        viewInfo.subresourceRange.layerCount = 1;
+        break;
+      default:
+        OrkAssert(false);
+    }
+    
+    VkResult ok = vkCreateImageView(_vkdevice, &viewInfo, nullptr, &tex_obj->_imgobj->_vkimageview);
+    OrkAssert(VK_SUCCESS == ok);
+    
+    // Initialize with black data (we'll need to transition and fill the texture)
+    // For now, just transition to shader read optimal
+    auto cmdbuf = _beginRecordCommandBuffer("init_default_texture", nullptr);
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
+    
+    VkImageMemoryBarrier barrier = {};
+    initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = tex_obj->_imgobj->_vkimage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = num_mips;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = (tex_type == ETEXTYPE_CUBE) ? 6 : num_layers;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    
+    vkCmdPipelineBarrier(
+        cmdbuf_impl->_vkcmdbuf,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+    
+    _endRecordCommandBuffer(cmdbuf);
+    enqueueDeferredOneShotCommand(cmdbuf);
+    
+    // Set up descriptor info
+    tex_obj->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    tex_obj->_vkdescriptor_info.imageView = tex_obj->_imgobj->_vkimageview;
+    tex_obj->_vkdescriptor_info.sampler = _sampler_base->_vksampler;
+    
+    return tex_obj;
+  };
+  
+  // Create default textures with agreed-upon sizes
+  _defaultTexImpl2D = create_default_texture(ETEXTYPE_2D, 64, 64);
+  _defaultTexImplCube = create_default_texture(ETEXTYPE_CUBE, 64, 64);
+  _defaultTexImpl2DArray = create_default_texture(ETEXTYPE_2D_ARRAY, 64, 64, 1, 4); // 4 layers
+  _defaultTexImpl3D = create_default_texture(ETEXTYPE_3D, 16, 16, 16);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

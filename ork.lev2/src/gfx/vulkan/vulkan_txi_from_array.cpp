@@ -84,11 +84,18 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
     format           = EBufferFormat::RGBA8;
     needs_conversion = true;
     logchan_txia2d->log("Converting RGB8 to RGBA8 for macOS");
-  }
-  if (format == EBufferFormat::RGB16) {
+  } else if (format == EBufferFormat::BGR8) {
+    format           = EBufferFormat::BGRA8;
+    needs_conversion = true;
+    logchan_txia2d->log("Converting BGR8 to BGRA8 for macOS");
+  } else if (format == EBufferFormat::RGB16) {
     format           = EBufferFormat::RGBA16;
     needs_conversion = true;
     logchan_txia2d->log("Converting RGB16 to RGBA16 for macOS");
+  } else if (format == EBufferFormat::RGB32F) {
+    format           = EBufferFormat::RGBA32F;
+    needs_conversion = true;
+    logchan_txia2d->log("Converting RGB32F to RGBA32F for macOS");
   }
 #endif
 
@@ -254,6 +261,14 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
           dst[i * 4 + 2] = src[i * 3 + 2]; // B
           dst[i * 4 + 3] = 255;            // A
           }
+        } else if (format == EBufferFormat::BGRA8) {
+          // Convert BGR8 to BGRA8
+          for (size_t i = 0; i < mip_w * mip_h; i++) {
+            dst[i * 4 + 0] = src[i * 3 + 0]; // B
+            dst[i * 4 + 1] = src[i * 3 + 1]; // G
+            dst[i * 4 + 2] = src[i * 3 + 2]; // R
+            dst[i * 4 + 3] = 255;            // A
+          }
         } else if (format == EBufferFormat::RGBA16) {
           // Convert RGB16 to RGBA16
           const uint16_t* src16 = (const uint16_t*)src;
@@ -264,6 +279,17 @@ void VkTextureInterface::initTextureArray2DFromData(TextureArray* array, Texture
             dst16[i * 4 + 2] = src16[i * 3 + 2]; // B
             dst16[i * 4 + 3] = 65535;            // A (max value for 16-bit)
           }
+        } else if (format == EBufferFormat::RGBA32F) {
+          // Convert RGB32F to RGBA32F
+          const float* src32 = (const float*)src;
+          float* dst32 = (float*)dst;
+          for (size_t i = 0; i < mip_w * mip_h; i++) {
+            dst32[i * 4 + 0] = src32[i * 3 + 0]; // R
+            dst32[i * 4 + 1] = src32[i * 3 + 1]; // G
+            dst32[i * 4 + 2] = src32[i * 3 + 2]; // B
+            dst32[i * 4 + 3] = 1.0f;             // A
+          }
+          dst_size = mip_w * mip_h * 4 * sizeof(float);
         }
 
         // Add copy region
@@ -396,6 +422,10 @@ void VkTextureInterface::initTextureArray2D(TextureArray* texture_array) {
 #if defined(__APPLE__)
   if (format == EBufferFormat::RGB8) {
     format = EBufferFormat::RGBA8;
+  } else if (format == EBufferFormat::BGR8) {
+    format = EBufferFormat::BGRA8;
+  } else if (format == EBufferFormat::RGB32F) {
+    format = EBufferFormat::RGBA32F;
   }
 #endif
 
@@ -481,6 +511,16 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
     if(DEBUG_TEXARRAY2D){
       logchan_txia2d->log("Converting RGB8 to RGBA8 for slice %d update", slice_index);
     }
+  } else if (mipc->_format == EBufferFormat::BGR8 && array->_tex->_texFormat == EBufferFormat::BGRA8) {
+    needs_conversion = true;
+    if(DEBUG_TEXARRAY2D){
+      logchan_txia2d->log("Converting BGR8 to BGRA8 for slice %d update", slice_index);
+    }
+  } else if (mipc->_format == EBufferFormat::RGB32F && array->_tex->_texFormat == EBufferFormat::RGBA32F) {
+    needs_conversion = true;
+    if(DEBUG_TEXARRAY2D){
+      logchan_txia2d->log("Converting RGB32F to RGBA32F for slice %d update", slice_index);
+    }
   }
 #endif
 
@@ -498,8 +538,12 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
   for (int level = 0; level < num_levels; level++) {
     auto& mip = mipc->_levels[level];
     if (needs_conversion) {
-      // RGB8 to RGBA8 conversion needs more space
+      // 3 to 4 component conversion needs more space
+      if (mipc->_format == EBufferFormat::RGB32F) {
+        staging_size += mip._width * mip._height * 4 * sizeof(float);
+      } else {
       staging_size += mip._width * mip._height * 4;
+      }
     } else {
       staging_size += mip._data->length();
     }
@@ -568,6 +612,14 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
         dst[i * 4 + 2] = src[i * 3 + 2]; // B
         dst[i * 4 + 3] = 255;            // A
         }
+      } else if (array->_tex->_texFormat == EBufferFormat::BGRA8) {
+        // Convert BGR8 to BGRA8
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
+          dst[i * 4 + 0] = src[i * 3 + 0]; // B
+          dst[i * 4 + 1] = src[i * 3 + 1]; // G
+          dst[i * 4 + 2] = src[i * 3 + 2]; // R
+          dst[i * 4 + 3] = 255;            // A
+        }
       } else if (array->_tex->_texFormat == EBufferFormat::RGBA16) {
         // Convert RGB16 to RGBA16
         const uint16_t* src16 = (const uint16_t*)src;
@@ -578,6 +630,17 @@ void VkTextureInterface::_updateTextureArraySlice(TextureArraySliceRef* slice_re
           dst16[i * 4 + 2] = src16[i * 3 + 2]; // B
           dst16[i * 4 + 3] = 65535;            // A (max value for 16-bit)
         }
+      } else if (array->_tex->_texFormat == EBufferFormat::RGBA32F) {
+        // Convert RGB32F to RGBA32F
+        const float* src32 = (const float*)src;
+        float* dst32 = (float*)dst;
+        for (size_t i = 0; i < mip_w * mip_h; i++) {
+          dst32[i * 4 + 0] = src32[i * 3 + 0]; // R
+          dst32[i * 4 + 1] = src32[i * 3 + 1]; // G
+          dst32[i * 4 + 2] = src32[i * 3 + 2]; // B
+          dst32[i * 4 + 3] = 1.0f;             // A
+        }
+        dst_size = mip_w * mip_h * 4 * sizeof(float);
       }
     } else {
       // Direct copy
@@ -673,8 +736,12 @@ void VkTextureInterface::updateTextureArraySlice(TextureArraySliceRef* slice_ref
   // Check original format before conversion
   auto expected_format = array->_tex->_texFormat;
 #if defined(__APPLE__)
-  // On macOS, RGB8 images are valid if the array format is RGBA8
+  // On macOS, 3-component images are valid if the array format is the 4-component equivalent
   if (expected_format == EBufferFormat::RGBA8 && img->_format == EBufferFormat::RGB8) {
+    ok &= true; // This is OK, we'll convert during copy
+  } else if (expected_format == EBufferFormat::BGRA8 && img->_format == EBufferFormat::BGR8) {
+    ok &= true; // This is OK, we'll convert during copy
+  } else if (expected_format == EBufferFormat::RGBA32F && img->_format == EBufferFormat::RGB32F) {
     ok &= true; // This is OK, we'll convert during copy
   } else
 #endif

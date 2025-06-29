@@ -147,6 +147,7 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage, bool with_texture) {
   int islot = mNumMrts++;
+  printf("RtGroup::createRenderTarget usage=0x%zx (%zu) efmt=%d with_texture=%d\n", usage, usage, int(efmt), with_texture);
   rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH, usage, with_texture);
   OrkAssert(islot < kmaxmrts);
   mMrt[islot] = rtb;
@@ -187,11 +188,12 @@ void RtGroup::Resize(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, bool do_rendertarget)
+RtgSet::RtgSet(Context* ctx, MsaaSamples s, std::string name, uint64_t usage, bool do_rendertarget)
     : _context(ctx)
     , _msaasamples(s)
     , _do_rendertarget(do_rendertarget)
-    , _name(name) {
+    , _name(name)
+    , _usage(usage) {
 }
 
 rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
@@ -201,11 +203,14 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
     rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
     rval->_name = _name + FormatString(".%zx", key);
     rval->_autoclear = _autoclear;
+
+    rval->createDepthBuffer(EBufferFormat::Z32F, true);
+
     if(_do_rendertarget){
       rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval.get());
     }
     for (auto item : _bufrecs) {
-      auto buffer        = rval->createRenderTarget(item._format);
+      auto buffer        = rval->createRenderTarget(item._format, _usage);
       buffer->_debugName = item._name;
     }
     _rtgs[key] = rval;

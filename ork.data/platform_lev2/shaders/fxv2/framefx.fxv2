@@ -327,7 +327,8 @@ fragment_shader ps_linearize_depth //
   : uset_frg_ssao_impl //
   : uset_std_depth
   : lib_ssao
-  : sset_frg_ssao_impl { 
+  : sset_frg_ssao_impl 
+  : ublk_std_depth { 
   vec2 uv = gl_FragCoord.xy*InvViewportSize;
   float depthtex = texture(MapDepth,uv).r;
   float ndc = depthtex * 2.0 - 1.0; // Convert to NDC space [-1, 1]

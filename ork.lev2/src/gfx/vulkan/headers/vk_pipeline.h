@@ -145,6 +145,7 @@ struct VkFxShaderProgram {
   std::vector<void_lambda_t> _pending_param_ops;
   std::vector<uint8_t> _pushdatabuffer;
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
+  std::unordered_map<fxparam_constptr_t, vkbuffer_ptr_t> _uniformbuffers_by_orkparam;
   
   // Storage for merged resource bindings (set_id, binding_id)
   std::unordered_map<fxparam_constptr_t, std::pair<uint32_t, uint32_t>> _merged_resource_bindings;

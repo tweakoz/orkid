@@ -48,40 +48,54 @@ void SHAST::_dumpAstTreeVisitor( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slpcache, //
-                                             const std::string& shader_text) { //
-  return parseFromString(slpcache,"---",shader_text);
+SHAST::translationunit_ptr_t parseFromString(
+    slpcache_ptr_t slpcache,          //
+    const std::string& shader_text) { //
+  return parseFromString(slpcache, "---", shader_text);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slpcache, //
-                                             const std::string& name, //
-                                             const std::string& shader_text) { //
+SHAST::translationunit_ptr_t parseFromString(
+    slpcache_ptr_t slpcache,          //
+    const std::string& name,          //
+    const std::string& shader_text) { //
   auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
   slpcache->_impl_stack.push_back(parser);
   parser->_name = name;
   OrkAssert(shader_text.length());
   auto rval = parser->parseString(name, shader_text);
+  parser->processTranslationUnit(rval);
   slpcache->_impl_stack.pop_back();
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slpcache, //
-                                           file::Path shader_path) { //
+SHAST::translationunit_ptr_t parseFromFile(
+    slpcache_ptr_t slpcache,  //
+    file::Path shader_path) { //
+  auto it_imp = slpcache->_import_cache.find(shader_path.c_str());
+  // CACHED ?
+  if (it_imp != slpcache->_import_cache.end()) {
+    auto rval = it_imp->second;
+    printf("Importing<%s> already cached\n", shader_path.c_str());
+    return rval;
+  }
+
   auto shader_data = File::readAsString(shader_path);
-  if(shader_data == nullptr){
-    printf( "ShaderFile not found<%s>\n", shader_path.c_str() );
+  if (shader_data == nullptr) {
+    printf("ShaderFile not found<%s>\n", shader_path.c_str());
     OrkAssert(false);
     return nullptr;
   }
   auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
   slpcache->_impl_stack.push_back(parser);
   OrkAssert(shader_data->_data.length());
-  parser->_shader_path = shader_path;
-  auto rval = parser->parseString(shader_path.c_str(), shader_data->_data);
+  parser->_shader_path                         = shader_path;
+  auto rval                                    = parser->parseString(shader_path.c_str(), shader_data->_data);
+  slpcache->_import_cache[shader_path.c_str()] = rval;
+  parser->processTranslationUnit(rval);
   slpcache->_impl_stack.pop_back();
   return rval;
 }
@@ -90,44 +104,42 @@ SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slpcache, //
 namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Private{
+struct Private {
 
-  Private(){
-    auto grammars_dir = ork::file::Path::data_dir() / "grammars"; 
-    auto scanner_path = grammars_dir / "shadlang.scanner";
-    auto parser_path = grammars_dir / "shadlang.parser";
-    auto scanner_read_result  = ork::File::readAsString(scanner_path);
-    auto parser_read_result = ork::File::readAsString(parser_path);
-    _scanner_spec      = scanner_read_result->_data;
-    _parser_spec      = parser_read_result->_data;
+  Private() {
+    auto grammars_dir        = ork::file::Path::data_dir() / "grammars";
+    auto scanner_path        = grammars_dir / "shadlang.scanner";
+    auto parser_path         = grammars_dir / "shadlang.parser";
+    auto scanner_read_result = ork::File::readAsString(scanner_path);
+    auto parser_read_result  = ork::File::readAsString(parser_path);
+    _scanner_spec            = scanner_read_result->_data;
+    _parser_spec             = parser_read_result->_data;
   }
 
   std::string _scanner_spec;
   std::string _parser_spec;
-
 };
 
 using private_ptr_t = std::shared_ptr<const Private>;
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-void implStackDump(slpcache_ptr_t cache){
+void implStackDump(slpcache_ptr_t cache) {
   size_t index = 0;
-  for( auto item : cache->_impl_stack ){
+  for (auto item : cache->_impl_stack) {
     auto impl = item.get<std::shared_ptr<ShadLangParser>>();
-    printf( "stack<%zu> impl<%p:%s>\n", index, (void*) impl.get(), impl->_name.c_str() );
+    printf("stack<%zu> impl<%p:%s>\n", index, (void*)impl.get(), impl->_name.c_str());
     index++;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ShadLangParser::ShadLangParser(slpcache_ptr_t cache) 
-  : _slp_cache(cache) {
-  _name = "shadlang";
-  _DEBUG_MATCH       = false;
-  _DEBUG_INFO        = false;
+ShadLangParser::ShadLangParser(slpcache_ptr_t cache)
+    : _slp_cache(cache) {
+  _name        = "shadlang";
+  _DEBUG_MATCH = false;
+  _DEBUG_INFO  = false;
 
   static private_ptr_t _private = std::make_shared<Private>();
 
@@ -137,7 +149,7 @@ ShadLangParser::ShadLangParser(slpcache_ptr_t cache)
 
   ///////////////////////////////////////////////////////////
 
-  bool OK = this->loadPEGSpec(_private->_scanner_spec,_private->_parser_spec);
+  bool OK = this->loadPEGSpec(_private->_scanner_spec, _private->_parser_spec);
   OrkAssert(OK);
 
   ///////////////////////////////////////////////////////////
@@ -156,11 +168,11 @@ ShadLangParser::ShadLangParser(slpcache_ptr_t cache)
 
 SHAST::astnode_ptr_t ShadLangParser::astNodeForMatch(match_ptr_t match) const {
   auto it = _match2astnode.find(match);
-  if(it == _match2astnode.end()){
+  if (it == _match2astnode.end()) {
     match->dump1(0);
-    printf( "Cannot find AST for match<%p> matcher<%s>\n", (void*) match.get(), match->_matcher->_name.c_str() ); 
-    //OrkAssert(false);
-    if( match->_children.size() == 1 ){
+    printf("Cannot find AST for match<%p> matcher<%s>\n", (void*)match.get(), match->_matcher->_name.c_str());
+    // OrkAssert(false);
+    if (match->_children.size() == 1) {
       return astNodeForMatch(match->_children[0]);
     }
     return nullptr;
@@ -204,7 +216,7 @@ bool ShadLangParser::walkUpAST( //
   bool up = visitor(node);
   if (up and node->_parent) {
     bool cont = walkUpAST(node->_parent, visitor);
-    if( not cont ){
+    if (not cont) {
       return false;
     }
   }
@@ -213,13 +225,13 @@ bool ShadLangParser::walkUpAST( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShadLangParser::removeFromParent(SHAST::astnode_ptr_t node){
-    auto it1 = _astnode2match.find(node);
-  OrkAssert(it1!=_astnode2match.end());
+void ShadLangParser::removeFromParent(SHAST::astnode_ptr_t node) {
+  auto it1 = _astnode2match.find(node);
+  OrkAssert(it1 != _astnode2match.end());
   auto match = it1->second;
   _astnode2match.erase(it1);
   auto it2 = _match2astnode.find(match);
-  OrkAssert(it2!=_match2astnode.end());
+  OrkAssert(it2 != _match2astnode.end());
   _match2astnode.erase(it2);
 
   SHAST::AstNode::treeops::removeFromParent(node);
@@ -227,39 +239,19 @@ void ShadLangParser::removeFromParent(SHAST::astnode_ptr_t node){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShadLangParser::replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnode_ptr_t newnode){
+void ShadLangParser::replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnode_ptr_t newnode) {
   auto it1 = _astnode2match.find(oldnode);
-  OrkAssert(it1!=_astnode2match.end());
-  auto match = it1->second;
-  _astnode2match[ newnode ] = match;
-  _match2astnode[ match ] = newnode;
-  SHAST::AstNode::treeops::replaceInParent(oldnode,newnode);
+  OrkAssert(it1 != _astnode2match.end());
+  auto match              = it1->second;
+  _astnode2match[newnode] = match;
+  _match2astnode[match]   = newnode;
+  SHAST::AstNode::treeops::replaceInParent(oldnode, newnode);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::string parse_str) {
-
-  _name = name;
-
-  _scanner->scanString(parse_str);
-  _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
-  _scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
-  _scanner->discardTokensOfClass(uint64_t(TokenClass::MULTI_LINE_COMMENT));
-  _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
-
-  auto top_view = _scanner->createTopView();
-  // top_view.dump("top_view");
-  auto slv    = std::make_shared<ScannerLightView>(top_view);
-  _tu_matcher = findMatcherByName("TranslationUnit");
-  OrkAssert(_tu_matcher);
-  auto match = this->match(_tu_matcher, slv, [this](match_ptr_t m) { _buildAstTreeVisitor(m); });
-  OrkAssert(match);
-  auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
-  ///////////////////////////////////////////
-  pruneAST(ast_top);
-  semaAST(ast_top);
-  auto top_as_tunit = std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
+void ShadLangParser::processTranslationUnit(SHAST::translationunit_ptr_t tu) {
+  pruneAST(tu);
+  semaAST(tu);
+  /*
   ///////////////////////////////////////////
   if(0){
     printf("///////////////////////////////\n");
@@ -282,7 +274,30 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::
 
     }
     printf("///////////////////////////////\n");
-  }
+  }*/
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::string parse_str) {
+
+  _name = name;
+
+  _scanner->scanString(parse_str);
+  _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+  _scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+  _scanner->discardTokensOfClass(uint64_t(TokenClass::MULTI_LINE_COMMENT));
+  _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
+
+  _top_view = _scanner->createTopViewShPtr();
+  // top_view.dump("top_view");
+  _top_slv    = std::make_shared<ScannerLightView>(*_top_view);
+  _tu_matcher = findMatcherByName("TranslationUnit");
+  OrkAssert(_tu_matcher);
+  auto match = this->match(_tu_matcher, _top_slv, [this](match_ptr_t m) { _buildAstTreeVisitor(m); });
+  OrkAssert(match);
+  auto ast_top      = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
+  auto top_as_tunit = std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
   return top_as_tunit;
 }
 

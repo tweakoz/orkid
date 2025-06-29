@@ -402,15 +402,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     rpath.split(a, b, ':');
     if (b.length() != 0) { // use from import
       // Check if this is a protocol-based path (like orkshader://)
-      if (a == "orkshader") {
-        // Map orkshader:// to the actual file system path
-        ork::FixedString<256> fxs;
-        fxs.format("ork.data/platform_lev2/shaders/fxv2/%s", b.c_str());
-        proc_import_path = fxs.c_str();
-      } else {
       proc_import_path = rpath;
-      }
-      //printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
     } else { // infer from container
       proc_import_path = slp->_shader_path;
       //printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
@@ -428,22 +420,8 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     ////////////////////////////////////////////////////////
 
     auto cache = slp->_slp_cache;
-    translationunit_ptr_t sub_tunit;
-    auto it_imp = cache->_import_cache.find(proc_import_path.c_str());
-    // CACHED ?
-    if( it_imp != cache->_import_cache.end() ) {
-      sub_tunit = it_imp->second;
-      printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
-      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-    }
-    // NOT CACHED..
-    else{
-      printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
-      sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
-      OrkAssert(sub_tunit);
-      cache->_import_cache[proc_import_path.c_str()] = sub_tunit;
-      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-    }
+    translationunit_ptr_t sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
+    import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
 
     ////////////////////////////////////////////////////////
     // hoist translatables from sub tunit into parent tunit
@@ -1236,6 +1214,9 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     std::set<std::string> processed_sampler_resources; // Track samplers to prevent duplicates
     std::set<std::string> processed_uniform_block_resources; // Track uniform blocks to prevent duplicates
     
+    // ADD: Binding counter per descriptor set
+    std::map<int, int> next_binding_id_per_descriptor_set;
+    
     for (size_t shader_index = 0; shader_index < pass_shaders.size(); shader_index++) {
       auto shader = pass_shaders[shader_index];
       printf("    Processing shader[%zu]: %s\n", shader_index, shader->typedValueForKey<std::string>("object_name").value().c_str());
@@ -1374,8 +1355,21 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
         collectInheritedResources(iface, inherited_sampler_sets, inherited_uniform_blocks);
       }
       
+      // ALSO: Collect resources directly from the shader itself recursively
+      collectInheritedResources(shader, inherited_sampler_sets, inherited_uniform_blocks);
+      
       printf("      Inherited sampler sets: %zu\n", inherited_sampler_sets.size());
       printf("      Inherited uniform blocks: %zu\n", inherited_uniform_blocks.size());
+      
+      // Debug: Print what resources were found
+      for (auto inherit_node : inherited_sampler_sets) {
+        auto sset_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("        Found inherited sampler set: %s\n", sset_name.c_str());
+      }
+      for (auto inherit_node : inherited_uniform_blocks) {
+        auto ublk_name = inherit_node->typedValueForKey<std::string>("inherit_id").value();
+        printf("        Found inherited uniform block: %s\n", ublk_name.c_str());
+      }
       
       // Process inherited sampler sets
       for (auto inherit_node : inherited_sampler_sets) {
@@ -1413,27 +1407,18 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
                 continue; // Skip duplicate
               }
               
-              // Check for binding conflicts within the same descriptor set
-              bool binding_conflict = false;
-              for (auto& [existing_key, existing_binding] : merged_descriptor_sets[descriptor_set_id]) {
-                if (existing_binding.binding_id == binding_id && existing_binding.type == MergedShaderResources::ResourceBinding::Type::Sampler) {
-                  binding_conflict = true;
-                  break;
-                }
-              }
+              // Use counter to assign unique binding number
+              int binding_id = next_binding_id_per_descriptor_set[descriptor_set_id]++;
+              MergedShaderResources::ResourceBinding binding;
+              binding.type = MergedShaderResources::ResourceBinding::Type::Sampler;
+              binding.name = name;
+              binding.datatype = type_name;
+              binding.binding_id = binding_id;
+              binding.original_source = sset_name;
               
-              if (!binding_conflict) {
-                MergedShaderResources::ResourceBinding binding;
-                binding.type = MergedShaderResources::ResourceBinding::Type::Sampler;
-                binding.name = name;
-                binding.datatype = type_name;
-                binding.binding_id = binding_id;
-                binding.original_source = sset_name;
-                
-                merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
-                processed_sampler_resources.insert(resource_key);
-                printf("        Added sampler: %s (%s) binding %zu\n", name.c_str(), type_name.c_str(), binding_id);
-              }
+              merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
+              processed_sampler_resources.insert(resource_key);
+              printf("        Added sampler: %s (%s) binding %d\n", name.c_str(), type_name.c_str(), binding_id);
             }
           }
         } else {
@@ -1466,27 +1451,18 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
             continue; // Skip duplicate
           }
           
-          // Check for binding conflicts within the same descriptor set
-          bool binding_conflict = false;
-          for (auto& [existing_key, existing_binding] : merged_descriptor_sets[descriptor_set_id]) {
-            if (existing_binding.type == MergedShaderResources::ResourceBinding::Type::UniformBlock) {
-              binding_conflict = true;
-              break;
-            }
-          }
+          // Use counter to assign unique binding number
+          int binding_id = next_binding_id_per_descriptor_set[descriptor_set_id]++;
+          MergedShaderResources::ResourceBinding binding;
+          binding.type = MergedShaderResources::ResourceBinding::Type::UniformBlock;
+          binding.name = ublk_name;
+          binding.datatype = "uniform_block";
+          binding.binding_id = binding_id;
+          binding.original_source = ublk_name;
           
-          if (!binding_conflict) {
-            MergedShaderResources::ResourceBinding binding;
-            binding.type = MergedShaderResources::ResourceBinding::Type::UniformBlock;
-            binding.name = ublk_name;
-            binding.datatype = "uniform_block";
-            binding.binding_id = 0; // Will be assigned later
-            binding.original_source = ublk_name;
-            
-            merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
-            processed_uniform_block_resources.insert(resource_key);
-            printf("        Added uniform block: %s binding 0\n", ublk_name.c_str());
-          }
+          merged_descriptor_sets[descriptor_set_id][resource_key] = binding;
+          processed_uniform_block_resources.insert(resource_key);
+          printf("        Added uniform block: %s binding %d\n", ublk_name.c_str(), binding_id);
         } else {
           printf("      WARNING: Uniform block not found in symbol table: %s\n", ublk_name.c_str());
         }
@@ -1556,6 +1532,115 @@ void _semaAttachMergedResourceNodesToPasses(impl::ShadLangParser* slp, astnode_p
     }
   }
   printf("=== END MERGED RESOURCE ATTACHMENT ===\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaTransformVfPassToExplicitPass(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  printf("=== VF_PASS TRANSFORMATION ===\n");
+  
+  // Collect all VtxFrgPass nodes and their parent techniques
+  std::vector<std::pair<std::shared_ptr<Technique>, std::shared_ptr<VtxFrgPass>>> vfpass_nodes;
+  
+  AstNode::walkDownAST(top, [&](astnode_ptr_t node) -> bool {
+    if (auto technique = std::dynamic_pointer_cast<Technique>(node)) {
+      // Look for VtxFrgPass children in this technique
+      for (auto child : technique->_children) {
+        if (auto vfpass = std::dynamic_pointer_cast<VtxFrgPass>(child)) {
+          vfpass_nodes.push_back({technique, vfpass});
+        }
+      }
+    }
+    return true;
+  });
+  
+  int pass_counter = 0;
+  for (auto& [technique, vfpass] : vfpass_nodes) {
+    auto tech_name = technique->typedValueForKey<std::string>("object_name").value();
+    printf("  Processing VtxFrgPass in technique: %s\n", tech_name.c_str());
+    
+    // Extract shader names from SemaId children
+    std::string vtx_name, frg_name, sb_name;
+    
+    for (auto child : vfpass->_children) {
+      if (auto sema_id = std::dynamic_pointer_cast<SemaIdentifier>(child)) {
+        auto id_name = sema_id->typedValueForKey<std::string>("identifier_name").value();
+        
+        if (vtx_name.empty()) {
+          vtx_name = id_name;
+        } else if (frg_name.empty()) {
+          frg_name = id_name;
+        } else if (sb_name.empty()) {
+          sb_name = id_name;
+        }
+      }
+    }
+    
+    printf("    Found vf_pass: vs=%s, ps=%s, sb=%s\n", 
+           vtx_name.c_str(), frg_name.c_str(), sb_name.c_str());
+    
+    // Create a new Pass node
+    auto pass_node = std::make_shared<Pass>();
+    std::string pass_name = FormatString("p%d", pass_counter++);
+    pass_node->_name = FormatString("Pass %s", pass_name.c_str());
+    
+    // Store the pass name in the values map
+    pass_node->setValueForKey<std::string>("object_name", pass_name);
+    pass_node->setValueForKey<std::string>("pass_name", pass_name);
+    
+    // Create VertexShaderRef node
+    if (!vtx_name.empty()) {
+      auto vs_ref = std::make_shared<VertexShaderRef>();
+      vs_ref->_name = FormatString("VertexShaderRef: %s", vtx_name.c_str());
+      vs_ref->setValueForKey<std::string>("ref_id", vtx_name);
+      
+      // Create SemaIdentifier child
+      auto vs_sema_id = std::make_shared<SemaIdentifier>();
+      vs_sema_id->_name = FormatString("SemaIdentifier: %s", vtx_name.c_str());
+      vs_sema_id->setValueForKey<std::string>("identifier_name", vtx_name);
+      vs_ref->appendChild(vs_sema_id);
+      
+      pass_node->appendChild(vs_ref);
+    }
+    
+    // Create FragmentShaderRef node
+    if (!frg_name.empty()) {
+      auto ps_ref = std::make_shared<FragmentShaderRef>();
+      ps_ref->_name = FormatString("FragmentShaderRef: %s", frg_name.c_str());
+      ps_ref->setValueForKey<std::string>("ref_id", frg_name);
+      
+      // Create SemaIdentifier child
+      auto ps_sema_id = std::make_shared<SemaIdentifier>();
+      ps_sema_id->_name = FormatString("SemaIdentifier: %s", frg_name.c_str());
+      ps_sema_id->setValueForKey<std::string>("identifier_name", frg_name);
+      ps_ref->appendChild(ps_sema_id);
+      
+      pass_node->appendChild(ps_ref);
+    }
+    
+    // Create StateBlockRef node if specified
+    if (!sb_name.empty()) {
+      auto sb_ref = std::make_shared<StateBlockRef>();
+      sb_ref->_name = FormatString("StateBlockRef: %s", sb_name.c_str());
+      sb_ref->setValueForKey<std::string>("ref_id", sb_name);
+      
+      // Create SemaIdentifier child
+      auto sb_sema_id = std::make_shared<SemaIdentifier>();
+      sb_sema_id->_name = FormatString("SemaIdentifier: %s", sb_name.c_str());
+      sb_sema_id->setValueForKey<std::string>("identifier_name", sb_name);
+      sb_ref->appendChild(sb_sema_id);
+      
+      pass_node->appendChild(sb_ref);
+    }
+    
+    // Replace the VtxFrgPass node with the new Pass node
+    slp->replaceInParent(vfpass, pass_node);
+    
+    printf("    Replaced VtxFrgPass with Pass %s (%zu children)\n", 
+           pass_name.c_str(), pass_node->_children.size());
+  }
+  
+  printf("=== END VF_PASS TRANSFORMATION (processed %d vf_pass nodes) ===\n", (int)vfpass_nodes.size());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1690,6 +1775,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   // Pass 5. 
   //////////////////////////////////
 
+  _semaTransformVfPassToExplicitPass(this, top);
   _semaAttachMergedResourceNodesToPasses(this,top);
 
   //////////////////////////////////

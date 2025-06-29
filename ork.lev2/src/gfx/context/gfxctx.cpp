@@ -135,6 +135,9 @@ void Context::_loadingPhaseOperations() {
 
 void Context::beginFrame(bool visual) {
 
+  OrkAssert(_currentPhase == 0); 
+  _currentPhase = "INFRAME"_crcu;
+
   _is_visual_frame = visual;
 
   makeCurrentContext();
@@ -158,7 +161,6 @@ void Context::beginFrame(bool visual) {
   MTXI()->PushVMatrix(fmtx4::Identity());
   MTXI()->PushPMatrix(fmtx4::Identity());
 
-  mpCurrentObject = 0;
 
   mRenderContextInstData = 0;
   _doBeginFrame();
@@ -195,6 +197,7 @@ void Context::beginFrame(bool visual) {
 
 void Context::endFrame(void) {
 
+
   FBI()->PopRtGroup(); // pop main rtg
 
   for (auto l : _onEndFrameCallbacks)
@@ -218,6 +221,10 @@ void Context::endFrame(void) {
 
   miTargetFrame++;
   _isFrameDebugCapture = false;
+
+  OrkAssert(_currentPhase == "INFRAME"_crcu); 
+  _currentPhase = 0;
+
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -260,6 +267,9 @@ Context::Context()
   RCFD->pushCompositor(_gimpl);
   _defaultrcfd = RCFD;
   pushRenderContextFrameData(RCFD);
+
+    mpCurrentObject = nullptr;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

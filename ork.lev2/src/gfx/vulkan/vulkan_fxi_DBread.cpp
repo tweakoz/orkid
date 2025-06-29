@@ -397,7 +397,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vkfxsuniblk_ptr_t vk_uniblk = it->second;
         refs->_uniblks[str_uniblk]  = vk_uniblk;
       }
-      OrkAssert(refs->_uniblks.size() <= 4);
+      OrkAssert(refs->_uniblks.size() <= 8);
     }
     /////////////////////////////////
     auto num_ifaces = shader_input_stream->ReadItem<size_t>();
@@ -563,6 +563,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 cursor = dest_layout->layoutItem<float>(orkparam);
               } else if (datatype == "int") {
                 cursor = dest_layout->layoutItem<int>(orkparam);
+              } else if (datatype == "uint") {
+                cursor = dest_layout->layoutItem<uint32_t>(orkparam);
               } else if (datatype == "vec2") {
                 cursor = dest_layout->layoutItem<fvec2>(orkparam);
               } else if (datatype == "vec3") {

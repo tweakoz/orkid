@@ -362,6 +362,7 @@ DECLARE_STD_AST_CLASS_WPTR(Translatable,SamplerSet,samplerset_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
+DECLARE_STD_AST_CLASS(AstNode,VtxFrgPass);
 DECLARE_STD_AST_CLASS(AstNode,FxConfigRef);
 //
 DECLARE_STD_AST_CLASS(Shader,VertexShader);

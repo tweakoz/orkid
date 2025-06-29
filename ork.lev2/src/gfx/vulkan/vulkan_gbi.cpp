@@ -18,11 +18,14 @@ int VulkanVertexBuffer::pipelineBitsForFormat() const {
     case EVtxStreamFormat::V12C4T16:
       rval = 0;
       break;
-    case EVtxStreamFormat::V12N12B12T8C4:
+    case EVtxStreamFormat::V12N12B12T16:
       rval = 1;
       break;
-    case EVtxStreamFormat::V16T16C16:
+    case EVtxStreamFormat::V12N12B12T8C4:
       rval = 2;
+      break;
+    case EVtxStreamFormat::V16T16C16:
+      rval = 3;
       break;
     default:
       OrkAssert(false);
@@ -79,6 +82,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
     , _contextVK(ctx) {
 
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12C4T16);
+  _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T16);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V12N12B12T8C4);
   _instantiateVertexStreamConfig(EVtxStreamFormat::V16T16C16);
   ////////////////////////////////////////////////////////////////
@@ -110,7 +114,18 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
         OrkAssert(false);
         break;
     }
-    rval->_input_assembly_state.primitiveRestartEnable = VK_FALSE;
+    
+    // MoltenVK/Metal requires primitive restart to be enabled for strips and fans
+    switch(etype) {
+      case PrimitiveType::TRIANGLESTRIP:
+      case PrimitiveType::TRIANGLEFAN:
+        rval->_input_assembly_state.primitiveRestartEnable = VK_TRUE;
+        break;
+      default:
+        rval->_input_assembly_state.primitiveRestartEnable = VK_FALSE;
+        break;
+    }
+    
     return rval;
   };
   ////////////////////////////////////////////////////////////////
@@ -149,10 +164,19 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
     case EVtxStreamFormat::V12N12B12T8C4: {
       config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
-      config->addItem("BINORMAL0", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("BINORMAL", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 36, VK_FORMAT_R32G32_SFLOAT);
       config->addItem("COLOR0", "vec4", sizeof(uint32_t), 44, VK_FORMAT_R8G8B8A8_UNORM);
       config->_stride = sizeof(SVtxV12N12B12T8C4);
+      break;
+    }
+    case EVtxStreamFormat::V12N12B12T16: {
+      config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("NORMAL", "vec3", sizeof(fvec3), 12, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("BINORMAL", "vec3", sizeof(fvec3), 24, VK_FORMAT_R32G32B32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 36, VK_FORMAT_R32G32_SFLOAT);
+      config->addItem("TEXCOORD1", "vec2", sizeof(fvec2), 44, VK_FORMAT_R32G32_SFLOAT);
+      config->_stride = sizeof(SVtxV12N12B12T16);
       break;
     }
     case EVtxStreamFormat::V12C4T16: {

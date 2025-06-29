@@ -617,14 +617,22 @@ void SpirvCompiler::_inheritSamplerSet(
   for (auto item : spirvsset->_samplers_by_name) {
     auto dt   = item.second->_datatype;
     auto id   = item.second->_identifier;
+    
+    // Try to find binding ID from merged resources first
+    int binding_id = _findBindingIdFromMergedResources(id, unisetname);
+    if (binding_id == -1) {
+      // Fallback to original behavior if not found in merged resources
+      binding_id = _binding_id;
+      _binding_id++;
+    }
+    
     auto line = FormatString(
         "layout(set=%zu, binding=%d) uniform %s %s;", //
         spirvsset->_descriptor_set_id,                //
-        _binding_id,                                  //
+        binding_id,                                   //
         dt.c_str(),                                   //
         id.c_str());
     _appendText(_uniforms_group, line.c_str());
-    _binding_id++;
   }
 }
 
@@ -692,34 +700,36 @@ void SpirvCompiler::_emitMergedPushConstants() {
     OrkAssert(false);
   }
 
-  // Emit single push_constant block ONCE, outside the loop
-  _appendText(_uniforms_group, "layout(push_constant) uniform PushConstants {");
+  if(all_items.size()){
+    // Emit single push_constant block ONCE, outside the loop
+    _appendText(_uniforms_group, "layout(push_constant) uniform PushConstants {");
 
-  // Add comment showing which sets were merged
-  std::string sets_comment = "  // Merged from: ";
-  for (size_t i = 0; i < _collected_uniform_sets.size(); i++) {
-    if (i > 0)
-      sets_comment += ", ";
-    sets_comment += _collected_uniform_sets[i]->_name;
-  }
-  _appendText(_uniforms_group, sets_comment.c_str());
-
-  // Emit all items
-  for (const auto& item_pair : all_items) {
-    auto item       = item_pair.first;
-    auto source_set = item_pair.second;
-
-    std::string line = "  ";
-    if (item->_is_array) {
-      line += FormatString(
-          "%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str());
-    } else {
-      line += FormatString("%s %s; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
+    // Add comment showing which sets were merged
+    std::string sets_comment = "  // Merged from: ";
+    for (size_t i = 0; i < _collected_uniform_sets.size(); i++) {
+      if (i > 0)
+        sets_comment += ", ";
+      sets_comment += _collected_uniform_sets[i]->_name;
     }
-    _appendText(_uniforms_group, line.c_str());
-  }
+    _appendText(_uniforms_group, sets_comment.c_str());
 
-  _appendText(_uniforms_group, "};");
+    // Emit all items
+    for (const auto& item_pair : all_items) {
+      auto item       = item_pair.first;
+      auto source_set = item_pair.second;
+
+      std::string line = "  ";
+      if (item->_is_array) {
+        line += FormatString(
+            "%s %s[%zu]; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), item->_array_length, source_set.c_str());
+      } else {
+        line += FormatString("%s %s; // from %s", item->_datatype.c_str(), item->_identifier.c_str(), source_set.c_str());
+      }
+      _appendText(_uniforms_group, line.c_str());
+    }
+
+    _appendText(_uniforms_group, "};");
+  }
 
   // Clear for next shader
   _collected_uniform_sets.clear();
@@ -764,10 +774,19 @@ void SpirvCompiler::_inheritUniformBlk(
     /////////////////////
     // loose unis
     /////////////////////
+    
+    // Try to find binding ID from merged resources first
+    int binding_id = _findBindingIdFromMergedResources(uniblkname, uniblkname);
+    if (binding_id == -1) {
+      // Fallback to original behavior if not found in merged resources
+      binding_id = _binding_id;
+      _binding_id++;
+    }
+    
     auto line = FormatString(
-        "layout(set=%zu, binding=%zu) uniform %s {", //
+        "layout(set=%zu, binding=%d) uniform %s {", //
         spirvublk->_descriptor_set_id,               //
-        _binding_id,                                 //
+        binding_id,                                  //
         uniblkname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvublk->_items_by_order) {
@@ -782,7 +801,6 @@ void SpirvCompiler::_inheritUniformBlk(
       }
     }
     _appendText(_uniforms_group, "};");
-    _binding_id++;
   } else { // opengl
     OrkAssert(false);
   }
@@ -1145,6 +1163,79 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   }
 
   _spirv_binary = shader_bin_t(result.cbegin(), result.cend());
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper function to find binding ID from merged resources in the transunit
+int SpirvCompiler::_findBindingIdFromMergedResources(const std::string& resource_name, const std::string& source_name) {
+  // Find the current pass that contains this shader
+  auto passes = AstNode::collectNodesOfType<Pass>(_transu);
+  
+  for (auto pass : passes) {
+    // Check if this pass contains the current shader
+    auto vtx_refs = AstNode::collectNodesOfType<VertexShaderRef>(pass);
+    auto frg_refs = AstNode::collectNodesOfType<FragmentShaderRef>(pass);
+    auto geo_refs = AstNode::collectNodesOfType<GeometryShaderRef>(pass);
+    auto com_refs = AstNode::collectNodesOfType<ComputeShaderRef>(pass);
+    
+    bool pass_contains_shader = false;
+    std::string shader_name = _shader->typedValueForKey<std::string>("object_name").value();
+    
+    for (auto vtx_ref : vtx_refs) {
+      auto ref_name = vtx_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto frg_ref : frg_refs) {
+      auto ref_name = frg_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto geo_ref : geo_refs) {
+      auto ref_name = geo_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    for (auto com_ref : com_refs) {
+      auto ref_name = com_ref->typedValueForKey<std::string>("ref_id").value();
+      if (ref_name == shader_name) {
+        pass_contains_shader = true;
+        break;
+      }
+    }
+    
+    if (pass_contains_shader) {
+      // Find the merged resources node for this pass
+      auto merged_resources = pass->findFirstChildOfType<MergedShaderResourcesNode>();
+      if (merged_resources) {
+        // Look through all descriptor sets
+        auto descriptor_sets = AstNode::collectNodesOfType<DescriptorSetNode>(merged_resources);
+        for (auto descriptor_set : descriptor_sets) {
+          auto source_nodes = AstNode::collectNodesOfType<DescriptorSetSourceNode>(descriptor_set);
+          for (auto source_node : source_nodes) {
+            auto source_node_name = source_node->_source_name;
+            if (source_node_name == source_name) {
+              // Found the source, now look for the resource
+              auto binding_nodes = AstNode::collectNodesOfType<ResourceBindingNode>(source_node);
+              for (auto binding_node : binding_nodes) {
+                if (binding_node->_binding_name == resource_name) {
+                  return binding_node->_binding_id;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // If not found in merged resources, return -1 to indicate fallback to original behavior
+  return -1;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::shadlang::spirv

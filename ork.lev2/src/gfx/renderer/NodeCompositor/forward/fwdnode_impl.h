@@ -76,6 +76,10 @@ struct ForwardPbrNodeImpl {
   const FxShaderParam* _fxpP;
   const FxShaderParam* _fxpInvP;
   const FxShaderParam* _fxpColorMap;
+
+  const FxUniformBlock* _par_ublk_std_matrices = nullptr;  
+  FxUniformBuffer* _ubuf_std_matrices = nullptr;
+
   const FxShaderTechnique* _tek_ssao_prepass;
   const FxShaderTechnique* _tek_ssao_lindepth;
 

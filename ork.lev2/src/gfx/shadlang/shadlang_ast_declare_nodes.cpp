@@ -160,6 +160,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(InheritList);
   DECLARE_STD_AST_NODE(InheritListItem);
   DECLARE_STD_AST_NODE(Pass);
+  DECLARE_STD_AST_NODE(VtxFrgPass);
   DECLARE_STD_AST_NODE(FxConfigRef);
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(VertexInterface);

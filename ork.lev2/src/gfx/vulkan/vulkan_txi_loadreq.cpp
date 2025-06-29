@@ -15,6 +15,13 @@ static logchannel_ptr_t logchan_txi_loadreq = logger()->createChannel("VKTXILOAD
 
 void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
   auto ptex = req->ptex;
+  auto assreq = req->_assetloadreq;
+  
+  // Fire beginLoadMainThread event
+  if (assreq and assreq->_on_event) {
+    assreq->_on_event("beginLoadMainThread"_crcu, nullptr);
+  }
+  
   logchan_txi_loadreq->log("xxx _createFromLoadReq<%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
   ptex->_debugName = "VkTextureInterface::_createFromLoadReq";
 
@@ -34,6 +41,9 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkSecondaryCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
+  // Get format name for events
+  auto fmt_name = EBufferFormatToName(format);
 
   for (int ilevel = 0; ilevel < num_mips; ilevel++) {
     auto& level         = chain->_levels[ilevel];
@@ -80,6 +90,18 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
         nullptr,
         1,
         barrier.get());
+
+    // Fire onMipLoad event after staging buffer filled
+    if (assreq and assreq->_on_event) {
+      auto data = std::make_shared<varmap::VarMap>();
+      data->makeValueForKey<int>("level") = ilevel;
+      data->makeValueForKey<int>("width") = level._width;
+      data->makeValueForKey<int>("height") = level._height;
+      data->makeValueForKey<datablock_ptr_t>("data") = level._data;
+      data->makeValueForKey<uint32_t>("format") = int(format);
+      data->makeValueForKey<std::string>("format_string") = fmt_name;
+      assreq->_on_event("onMipLoad"_crcu, data);
+    }
   }
   /////////////////////////////////////
   // create image view
@@ -108,6 +130,60 @@ void VkTextureInterface::_createFromLoadReq(texloadreq_ptr_t req) {
 
   _contextVK->endRecordCommandBuffer(vktex->_loadCB);
   _contextVK->enqueueDeferredOneShotCommand(vktex->_loadCB);
+
+  /////////////////////////////////////
+  // Update texture properties
+  /////////////////////////////////////
+
+  ptex->_width = iwidth;
+  ptex->_height = iheight;
+  ptex->_depth = 1;
+  ptex->_texFormat = format;
+  ptex->_num_mips = num_mips;
+  ptex->_dirty = false;
+
+  // Fire endLoadMainThread - CPU work complete
+  if (assreq and assreq->_on_event) {
+    assreq->_on_event("endLoadMainThread"_crcu, nullptr);
+  }
+
+  // Fire loadComplete - from asset system perspective, loading is done
+  if (assreq and assreq->_on_event) {
+    auto data = std::make_shared<varmap::VarMap>();
+    data->makeValueForKey<std::string>("infname") = assreq->_asset_path.c_str();
+    data->makeValueForKey<std::string>("loader") = "_loadDDSTexture";
+    assreq->_on_event("loadComplete"_crcu, data);
+  }
+
+  /////////////////////////////////////
+  // Handle postprocessing if specified
+  /////////////////////////////////////
+
+  _contextVK->_beginAssetProcessing();
+  if (ptex->_vars->hasKey("postproc")) {
+    auto dblock    = req->_inpstream._datablock;
+    auto postproc  = ptex->_vars->typedValueForKey<Texture::proc_t>("postproc").value();
+    
+    if (assreq and assreq->_on_event) {
+      assreq->_on_event("beginPostProc"_crcu, nullptr);
+    }
+    
+    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: executing postproc for texture<%p:%s>\n", 
+                             (void*)ptex.get(), ptex->_debugName.c_str());
+    auto postblock = postproc(ptex, _contextVK, dblock);
+    
+    if (assreq and assreq->_on_event) {
+      assreq->_on_event("endPostProc"_crcu, nullptr);
+    }
+    
+    OrkAssert(postblock);
+  } else {
+    logchan_txi_loadreq->log("VkTextureInterface::_createFromLoadReq: no postproc for texture<%p:%s>\n", 
+                             (void*)ptex.get(), ptex->_debugName.c_str());
+  }
+  _contextVK->_endAssetProcessing();
+
+  ptex->_residenceState.fetch_or(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::vulkan {

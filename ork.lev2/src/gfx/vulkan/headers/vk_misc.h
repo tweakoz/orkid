@@ -34,7 +34,7 @@ struct VulkanPipelineRenderInfo {
   VulkanPipelineRenderInfo(rtgroup_rawptr_t rtg);
   ~VulkanPipelineRenderInfo();
 
-  rtgroup_ptr_t _rtg;
+  rtgroup_rawptr_t _rtg;  // Changed from shared_ptr to raw pointer
   VkPipelineRenderingCreateInfo _createInfo;
   std::vector<VkFormat> _colorFormats;
   VkFormat _depthFormat = VK_FORMAT_UNDEFINED;

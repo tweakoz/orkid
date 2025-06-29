@@ -13,9 +13,10 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
 FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
-  auto pbuf = new FxUniformBuffer;
-  auto uniblk_buf = pbuf->_impl.makeShared<VulkanBuffer>(_contextVK, length, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-  return pbuf;
+  auto ub = new FxUniformBuffer;
+  ub->_length         = length;
+  auto uniblk_buf = ub->_impl.makeShared<VulkanBuffer>(_contextVK, length, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+  return ub;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,6 +29,7 @@ fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b,
   auto mapping = std::make_shared<FxUniformBufferMapping>();
   mapping->_buffer = b;
   mapping->_offset   = base;
+  mapping->_fxi    = this;  // Fix: Set the FxInterface pointer
   if(length==0){
     mapping->_length = bufimpl->_length;
   }
@@ -43,6 +45,8 @@ fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b,
 void VkFxInterface::unmapUniformBuffer(FxUniformBufferMapping* mapping) {
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
   bufimpl->unmap();
+  mapping->_impl.make<void*>(nullptr);
+  mapping->_mappedaddr = nullptr; // Clear the mapped address
 }
 
 ///////////////////////////////////////////////////////////////////////////////
