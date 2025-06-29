@@ -145,6 +145,12 @@ fragment_interface fif_T : vif_PT : ublock_frg {
   }
 }
 ///////////////////////////////////////////////////////////////
+fragment_interface fif_min_T : vif_PT {
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
 fragment_interface fif_skybox : vif_PC : ublk_std_matrices : uset_std_pbr : sset_std_pbr {
   outputs {
     layout(location = 0) vec4 out_color;

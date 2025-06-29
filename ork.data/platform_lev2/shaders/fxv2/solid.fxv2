@@ -108,16 +108,16 @@ state_block sb_additive : sb_default {
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_texcolor : fif_T : samplers {
+fragment_shader ps_texcolor : fif_min_T : samplers {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = vec4(texc.xyz, 1);
 }
-fragment_shader ps_texcolor4 : fif_T : samplers {
+fragment_shader ps_texcolor4 : fif_min_T : samplers {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = texc;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_blit : fif_T : samplers {
+fragment_shader ps_blit : fif_min_T : samplers {
   vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
   out_clr   = vec4(texc, 1);
 }
@@ -224,7 +224,7 @@ vertex_shader vs_debuguv : vif_PT : ublock_vtx {
   gl_Position = MatMVP * position;
   frg_uv0     = uv0;
 }
-fragment_shader fs_debuguv : fif_T {
+fragment_shader fs_debuguv : fif_min_T {
   out_clr = vec4(frg_uv0, 0.0, 1.0);
 }
 vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
