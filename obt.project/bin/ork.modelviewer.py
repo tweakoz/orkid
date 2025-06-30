@@ -149,7 +149,7 @@ class SceneGraphApp(object):
     postNode.value = 1.0
     postNode.gamma = 2.2
     postNode.gpuInit(ctx,8,8);
-    postNode.addToSceneVars(sceneparams,"PostFxChain")
+    #postNode.addToSceneVars(sceneparams,"PostFxChain")
     self.post_node = postNode
 
     self.scene = self.ezapp.createScene(sceneparams)

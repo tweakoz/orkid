@@ -98,6 +98,10 @@ fragment_interface iface_fgbuffer : us_frg : ss_frg_fwd {
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default {
+	DepthTest=LESS;
+	DepthMask=true;
+	CullTest=PASS_FRONT;
+	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
 // Library Blocks
@@ -295,14 +299,17 @@ fragment_interface fif_FWDTEST
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_forward_test : vif_FWDTEST : lib_pbr_vtx : ublk_std_matrices {
+vertex_shader vs_forward_test 
+  : vif_FWDTEST 
+  : lib_pbr_vtx 
+  : uset_std_matrices {
 
   // frg_wpos, frg_tbn, frg_camz, frg_camdist
   vs_common(position, normal, binormal); 
 
   gl_Position = mvp * position;
   frg_uv0         = uv0 * vec2(1, -1);
-  frg_clr         = vec4(1,1,1,1); //vtxcolor
+  frg_clr         = vec4(normal,1); //vtxcolor
   frg_modcolor    = vec4(1,1,1,1); //modcolor
 }
 //////////////////////////////////////
@@ -313,9 +320,10 @@ fragment_shader ps_forward_test //
     : lib_def                   //
     : lib_fwd
     : std_forward_all {   
-  vec4 frg_clr = vec4(1,1,1,1);
-  vec4 frg_modcolor = vec4(1,1,1,1);
-  out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
+  //vec4 frg_clr = vec4(1,1,1,1);
+  //vec4 frg_modcolor = vec4(1,1,1,1);
+  //out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
+  out_color = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_test_vtxcolor : vif_PNBC : lib_pbr_vtx : ublk_std_matrices {
@@ -391,7 +399,7 @@ fragment_shader ps_forward_skybox_mono //
 
   vec2 uv = env_equirectangularN2UVa(vec3(VN.x, VN.y, -VN.z));
   vec3 rgb  = texture(MapSpecularEnv, vec3(-uv.x, -uv.y,0.0)).xyz * SkyboxLevel;
-  out_clr = vec4(rgb, 1);
+  out_clr = vec4(1,0,1, 1);
 
   ///////////////////////
 }

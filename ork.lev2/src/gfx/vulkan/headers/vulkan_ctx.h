@@ -53,10 +53,12 @@ struct GLFWwindow;
 #include "vk_merged_resources.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
+
 using vkseccmdbufarray_t = std::vector<secondary_commandbuffer_ptr_t>;
 using vkcompsema_set_t = std::unordered_set<vkcompletionsemaphore_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
+constexpr bool FLIP_Y_LIKE_OPENGL = true;
 ///////////////////////////////////////////////////////////////////////////////
 using StagingBufferPool = LockedObjectPoolX<SbsPoolAdapter>;
 using stagingbufferpool_ptr_t = std::shared_ptr<StagingBufferPool>;

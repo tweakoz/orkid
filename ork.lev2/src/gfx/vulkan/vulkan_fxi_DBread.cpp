@@ -531,7 +531,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
         vk_program->_frgshader = frg_obj;
       }
-      
+      ////////////////////////////////////////////////////////////
+      auto sblk_name = tecniq_input_stream->ReadIndexedString(chunkreader);
+      printf("stateblock name<%s>\n", sblk_name.c_str());
+
       ////////////////////////////////////////////////////////////
 
       //////////////////////////////////////////////////////////////
@@ -573,6 +576,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 cursor = dest_layout->layoutItem<fvec4>(orkparam);
               } else if (datatype == "mat4") {
                 cursor = dest_layout->layoutItem<fmtx4>(orkparam);
+              } else if (datatype == "mat3") {
+                cursor = dest_layout->layoutItem<fmtx3>(orkparam);
               } else {
                 printf("VKFXI: unknown datatype<%s>\n", datatype.c_str());
                 OrkAssert(false);

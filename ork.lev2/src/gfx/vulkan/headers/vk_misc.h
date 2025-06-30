@@ -20,6 +20,7 @@ struct VkViewportTracker {
   int _height = 0;
   int _x      = 0;
   int _y      = 0;
+  bool _flipY = true;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VulkanRenderInfo {

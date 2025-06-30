@@ -411,12 +411,16 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       auto stateblock_ref = p->findFirstChildOfType<StateBlockRef>();
       OrkAssert(vtx_shader_ref);
       OrkAssert(frg_shader_ref);
+      OrkAssert(stateblock_ref);
       auto vtx_sema_id = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
       auto frg_sema_id = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
+      auto sblk_sema_id = stateblock_ref->findFirstChildOfType<SemaIdentifier>();
       OrkAssert(vtx_sema_id);
       OrkAssert(frg_sema_id);
+      OrkAssert(sblk_sema_id);
       auto vtx_name = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
       auto frg_name = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
+      auto sblk_name = sblk_sema_id->typedValueForKey<std::string>("identifier_name").value();
       tecniq_stream->AddIndexedString("pass", chunkwriter);
       std::string stages;
       stages += "V";
@@ -440,7 +444,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       ////////////////////////////////////////////////////////////////
       tecniq_stream->AddIndexedString(frg_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
-
+      tecniq_stream->AddIndexedString(sblk_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
       // Write merged resources for this pass
       ////////////////////////////////////////////////////////////////

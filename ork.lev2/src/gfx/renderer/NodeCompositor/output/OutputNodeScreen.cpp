@@ -162,6 +162,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   Context* context = drawdata.context();
   auto fbi         = context->FBI();
+  auto dwi         = context->DWI();
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
@@ -230,10 +231,10 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           }
           else{
             if(_flipY){
-              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 0, 1, 1));
             }
             else{
-              this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
+              dwi->quad2DEML2(fvec4(-1, -1, 2, 2), fvec4(0, 1, 1, -1), fvec4(0, 1, 1, -1));            
             }
           }
           //this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));

@@ -1,4 +1,10 @@
 ///////////////////////////////////////////////////////////////
+uniform_set uset_std_matrices {
+  mat4 m;
+  mat4 mv;
+  mat4 mvp;
+  mat3 mrot;
+}
 uniform_block ublk_std_matrices (descriptor_set 0) {
   mat4 m;
   mat4 v;
