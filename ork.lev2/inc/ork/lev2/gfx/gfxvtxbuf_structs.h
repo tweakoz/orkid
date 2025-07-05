@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/util/endian.h>
@@ -15,33 +15,47 @@ namespace ork::lev2 {
   struct SVtxVU16 { // 4 BPV
 
     U16 _data; // 2
-  
+
     SVtxVU16(U16 d)
         : _data(d)
         {
         }
-  
+
     void EndianSwap() {
     }
-  
+
     constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::VU16;
   };
 
   struct SVtxVU32 { // 4 BPV
 
     U32 _data; // 2
-  
+
     SVtxVU32(U32 d)
         : _data(d)
         {
         }
-  
+
     void EndianSwap() {
     }
-  
+
     constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::VU32;
   };
-  
+
+  struct SVtxVU32Inst { // 4 BPV
+
+    U32 _instanceId;
+
+    SVtxVU32Inst(U32 d)
+        : _instanceId(d)
+        {
+        }
+
+    void EndianSwap() {
+    }
+
+    constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::VU32INST;
+  };
   ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV4T4 // 8 BPV	PreXF 2D (all on top)
@@ -140,8 +154,8 @@ struct SVtxV4T4C4 // 8 BPV	PreXF 2D (all on top)
 ///////////////////////////////////////////////////////////////////////////////
 
 struct _VtxV12C4 {
-  float x, y, z; 
-  uint32_t color;   
+  float x, y, z;
+  uint32_t color;
 };
 
 struct VtxV12C4 { // 16BPV

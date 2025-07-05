@@ -254,7 +254,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
   vis.pVertexBindingDescriptions      = &rval->_binding_description;
   vis.vertexAttributeDescriptionCount = rval->_attribute_descriptions.size();
   vis.pVertexAttributeDescriptions    = rval->_attribute_descriptions.data();
-  
+
   // add to cache
   vbuf->_vif_to_layout[vif_hash] = rval;
 
@@ -506,7 +506,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
 
-  vkCmdBindIndexBuffer( CB->_vkcmdbuf,  // command buffer 
+  vkCmdBindIndexBuffer( CB->_vkcmdbuf,  // command buffer
                         vk_buffer,      // index buffer
                         0,              // start at first index in index buffer
                         vk_index_size); // index type
