@@ -53,34 +53,32 @@
 namespace ork {
 
 struct DemangleCache {
-    
-    DemangleCache(){
-        _sentinel = 0;
-    }
-    ~DemangleCache(){
-        printf("destroying DemangleCache<%p>\n", this );
-        _sentinel = 1;
-    }
+
+  DemangleCache() {
+    _sentinel = 0;
+  }
+  ~DemangleCache() {
+    printf("destroying DemangleCache<%p>\n", this);
+    _sentinel = 1;
+  }
   std::unordered_map<std::string, std::string> _impl;
-    int _sentinel = -1;
+  int _sentinel = -1;
 
   std::string lookup(const std::string& typestr) {
-    OrkAssert(_sentinel==0);
+    OrkAssert(_sentinel == 0);
     std::string rval;
     auto it = _impl.find(typestr);
     if (it != _impl.end()) {
-      rval=it->second;
-    }
-    else{
-    #if defined(SVAR_DEBUG)
-        int status = 0;
-        const char* demangled = abi::__cxa_demangle(typestr.c_str(), 0, 0, &status);
-        rval = (status == 0) ? std::string(demangled) : typestr;
-        free((void*)demangled);
-    #else
-        rval = "unknown";
-    #endif
-
+      rval = it->second;
+    } else {
+#if defined(SVAR_DEBUG)
+      int status            = 0;
+      const char* demangled = abi::__cxa_demangle(typestr.c_str(), 0, 0, &status);
+      rval                  = (status == 0) ? std::string(demangled) : typestr;
+      free((void*)demangled);
+#else
+      rval = "unknown";
+#endif
     }
     return rval;
   }
@@ -88,12 +86,11 @@ struct DemangleCache {
 
 using demangle_cache_ptr_t = DemangleCache*;
 
-template <typename T>
-inline std::string demangled_typename() {
-    // This is thread-local and static, hence it's initialized only once per thread
-    thread_local static demangle_cache_ptr_t _cache = new DemangleCache; // leak until we figure out post main deinit issue.
-    auto typestr = typeid(T).name();
-    return _cache->lookup(typestr);
+template <typename T> inline std::string demangled_typename() {
+  // This is thread-local and static, hence it's initialized only once per thread
+  thread_local static demangle_cache_ptr_t _cache = new DemangleCache; // leak until we figure out post main deinit issue.
+  auto typestr                                    = typeid(T).name();
+  return _cache->lookup(typestr);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -224,64 +221,41 @@ struct __equal_to {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SvarDescriptorBase {
-  virtual ~SvarDescriptorBase() = default;
-#if defined(SVAR_DEBUG)
-  std::string _typestr;
-#endif
-  size_t _curlength;
-};
+struct SvarDescriptor {
 
-template <int tsize> struct SvarDescriptor : public SvarDescriptorBase {
+  using destroyer_t = void (*)(static_variant_base& var);
+  using copier_t    = void (*)(static_variant_base& lhs, const static_variant_base& rhs);
+  using equals_t    = bool (*)(const static_variant_base& lhs, const static_variant_base& rhs);
+  using mtinfo_t    = const std::type_info* (*)();
+  using length_t    = size_t (*)();
+  using typstr_t    = std::string (*)();
 
-  using destroyer_t = std::function<void(static_variant<tsize>& var)>;
-  using copier_t    = std::function<void(static_variant<tsize>& lhs, const static_variant<tsize>& rhs)>;
-  using equals_t    = std::function<bool(const static_variant<tsize>& lhs, const static_variant<tsize>& rhs)>;
-
-  /////////////////////////////////////////
-
-  template <typename T> void assign() {
-
-    _destroyer = [](static_variant<tsize>& var) {
-      if (var._assert_on_destroy) {
-        OrkAssert(false);
-      }
-
-      // just call T's destructor, as opposed to delete
-      //  because the variant owns the memory.
-      //  aka 'placement delete'
-      var.template get<T>().~T();
-    };
-
-    _copier = [](static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
-      const T& typed_right = rhs.template get<T>();
-      lhs.template set<T>(typed_right);
-    };
-
-    _equals = [](const static_variant<tsize>& lhs, const static_variant<tsize>& rhs) -> bool {
-      return __svartraits::__equal_to::compare<T>(lhs.template get<T>(), rhs.template get<T>());
-    };
-
-    _curlength = sizeof(T);
-
-#if defined(SVAR_DEBUG)
-    _typestr = demangled_typename<T>();
-#endif
-  }
+  template <typename T> static void destroy_impl(static_variant_base& var);
+  // from rhs's descriptor, copy the value into lhs
+  template <typename T> static void copy_impl(static_variant_base& lhs, const static_variant_base& rhs);
+  // from lhs's descriptor, compare the value with rhs
+  template <typename T> static bool equals_impl(const static_variant_base& lhs, const static_variant_base& rhs);
+  template <typename T> static const std::type_info* mtinfo_impl();
+  template <typename T> static std::string typstr_impl();
+  template <typename T> static size_t getlength_impl();
+  template <typename T> void assign();
 
   /////////////////////////////////////////
 
-  destroyer_t _destroyer;
-  copier_t _copier;
-  equals_t _equals;
+  destroyer_t _destroyer = nullptr;
+  copier_t _copier       = nullptr;
+  equals_t _equals       = nullptr;
+  mtinfo_t _mtinfo       = nullptr;
+  typstr_t _typstr       = nullptr;
+  length_t _getlength    = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize, typename T> struct SvarDescriptorFactory {
-  static SvarDescriptor<tsize> create() {
-    SvarDescriptor<tsize> rval;
-    rval.template assign<T>();
+template <typename T> struct SvarDescriptorFactory {
+  static constexpr SvarDescriptor create() {
+    SvarDescriptor rval;
+    rval.assign<T>();
     return rval;
   }
 };
@@ -290,53 +264,144 @@ template <int tsize, typename T> struct SvarDescriptorFactory {
 
 struct static_variant_base {
 
-  template <int size> friend struct SvarDescriptor;
-
-  virtual size_t capacity() const                                   = 0;
-  virtual size_t size() const                                       = 0;
-  virtual bool canConvertFrom(const static_variant_base& oth) const = 0;
-
+  using descriptor_factory_t = SvarDescriptor (*)();
+  friend struct SvarDescriptor;
+  //////////////////////////////////////////////////////////////
+  bool canConvertFrom(const static_variant_base& oth) const {
+    return capacity() >= oth.size();
+  }
+  //////////////////////////////////////////////////////////////
+  descriptor_factory_t descriptorFactory() const {
+    return _descriptorFactory.load();
+  }
+  //////////////////////////////////////////////////////////////
+  const std::type_info* _mtinfo() const {
+    auto desc_factory = descriptorFactory();
+    return (desc_factory != nullptr) ? (desc_factory()._mtinfo()) : nullptr;
+  }
+  //////////////////////////////////////////////////////////////
+  size_t size() const {
+    auto descriptor = (_descriptorFactory.load())();
+    return descriptor._getlength();
+  }
+  //////////////////////////////////////////////////////////////
+  void clear() {
+    _destroy();
+  }
+  //////////////////////////////////////////////////////////////
+  // call the destroyer on contained object
+  //////////////////////////////////////////////////////////////
+  void _destroy() {
+    auto descriptor_factory = _descriptorFactory.exchange(nullptr);
+    if (descriptor_factory) {
+      auto descriptor = descriptor_factory();
+      OrkAssert(descriptor._destroyer);
+      descriptor._destroyer(*this);
+    }
+  }
+  //////////////////////////////////////////////////////////////
+  //	assign descriptor
+  //////////////////////////////////////////////////////////////
+  template <typename T> void assignDescriptor() {
+    _descriptorFactory.store(&SvarDescriptorFactory<T>::create);
+  }
+  //////////////////////////////////////////////////////////////
+  const std::type_info* typeInfo() const {
+    return _mtinfo();
+  }
+  //////////////////////////////////////////////////////////////
+  const char* typeName() const {
+    auto mtinfo = _mtinfo();
+    return mtinfo ? mtinfo->name() : "";
+  }
+  //////////////////////////////////////////////////////////////
+  // return true if the variant has been set to something
+  //////////////////////////////////////////////////////////////
+  bool isSet() const {
+    return (_mtinfo() != 0);
+  }
+  //////////////////////////////////////////////////////////////
+  std::string typestr() const {
+    auto descriptor_factory = descriptorFactory();
+    if (descriptor_factory) {
+      OrkAssert(_mtinfo() != nullptr);
+      auto descriptor = descriptor_factory();
+      return descriptor._typstr();
+    }
+    return std::string();
+  }
+  //////////////////////////////////////////////////////////////
+  uint64_t hash() const {
+    auto desc = descriptorFactory()();
+    boost::Crc64 crcgen;
+    crcgen.init();
+    crcgen.accumulate(data(), desc._getlength());
+    crcgen.finish();
+    return crcgen.result();
+  }
+  //////////////////////////////////////////////////////////////
+  TypeId getOrkTypeId() const {
+    return TypeId::fromStdTypeInfo(_mtinfo());
+  }
+  //////////////////////////////////////////////////////////////
+  bool operator==(const static_variant_base& oth) const {
+    auto descriptor = (_descriptorFactory.load())();
+    auto e          = descriptor._equals;
+    return e(*this, oth);
+  }
+  //////////////////////////////////////////////////////////////
+  void convertFromOtherSize(const static_variant_base& oth) {
+    size_t oth_size = oth.size();
+    OrkAssert(capacity() >= oth_size);
+    auto descriptor_factory = descriptorFactory();
+    if( descriptor_factory == nullptr) {
+      _destroy();
+      return;
+    }
+    auto descriptor = descriptor_factory();
+    auto c         = descriptor._copier;
+    OrkAssert(c != nullptr);
+    c(*this, oth);
+  }
+  //////////////////////////////////////////////////////////////
+  size_t capacity() const {
+    return _capacity();
+  }
+  //////////////////////////////////////////////////////////////
+  const void* data() const {
+    return _data();
+  }
+  //////////////////////////////////////////////////////////////
+  virtual size_t _capacity() const  = 0;
+  virtual const void* _data() const = 0;
+  //////////////////////////////////////////////////////////////
+  std::atomic<descriptor_factory_t> _descriptorFactory;
+  bool _assert_on_destroy = false;
+  //////////////////////////////////////////////////////////////
 protected:
   static_variant_base()
-      : _mtinfo(nullptr) {
+      : _descriptorFactory(nullptr) {
   }
-  virtual ~static_variant_base() = default;
-  const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
-  bool _assert_on_destroy = false;
+  virtual ~static_variant_base() {
+  }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> struct static_variant : public static_variant_base {
 public:
-  using descriptor_factory_t = SvarDescriptor<tsize> (*)();
+  friend struct SvarDescriptor;
 
   static constexpr size_t ksize = tsize;
 
   //////////////////////////////////////////////////////////////
-
-  size_t capacity() const final {
-    return ksize;
-  }
-  size_t size() const final {
-    auto descriptor = (_descriptorFactory.load())();
-    return descriptor._curlength;
-  }
-
-  const void* data() const {
-    return _buffer;
-  }
-
-  bool canConvertFrom(const static_variant_base& oth) const {
-    return capacity() >= oth.size();
-  }
-
-  //////////////////////////////////////////////////////////////
   // default constuctor
   //////////////////////////////////////////////////////////////
-  static_variant()
-      : static_variant_base() {
-    _descriptorFactory = nullptr;
+  static_variant() {
+  }
+  ~static_variant() {
+    _destroy();
   }
   //////////////////////////////////////////////////////////////
   // copy constuctor
@@ -364,12 +429,6 @@ public:
     return *this;
   }
   //////////////////////////////////////////////////////////////
-  bool operator==(const static_variant& oth) const {
-    auto descriptor = (_descriptorFactory.load())();
-    auto e          = descriptor._equals;
-    return e(*this, oth);
-  }
-  //////////////////////////////////////////////////////////////
   // typed constructor
   //////////////////////////////////////////////////////////////
   template <typename T> static_variant(const T& value) {
@@ -377,51 +436,23 @@ public:
     memset(_buffer, 0, ksize);
     T* pval = (T*)&_buffer[0];
     new (pval) T(value);
-    _mtinfo = &typeid(T);
     assignDescriptor<T>();
-  }
-  //////////////////////////////////////////////////////////////
-  // destructor, delegate destuction of the contained object to the destroyer
-  //////////////////////////////////////////////////////////////
-  ~static_variant() {
-    _destroy();
-  }
-  //////////////////////////////////////////////////////////////
-  void clear(){
-    _destroy();
-  }
-  //////////////////////////////////////////////////////////////
-  // call the destroyer on contained object
-  //////////////////////////////////////////////////////////////
-  void _destroy() {
-    auto descriptor_factory = _descriptorFactory.exchange(nullptr);
-    if (descriptor_factory) {
-      OrkAssert(_mtinfo != nullptr);
-      auto descriptor = descriptor_factory();
-      OrkAssert(descriptor._destroyer);
-      descriptor._destroyer(*this);
-    }
-    _mtinfo = nullptr;
-  }
-  //////////////////////////////////////////////////////////////
-  //	assign descriptor
-  //////////////////////////////////////////////////////////////
-  template <typename T> void assignDescriptor() {
-    _descriptorFactory.store(&SvarDescriptorFactory<tsize, T>::create);
   }
   //////////////////////////////////////////////////////////////
   // return true if the contained object is a T
   //////////////////////////////////////////////////////////////
   template <typename T> bool isA() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    return (_mtinfo != 0) ? (*_mtinfo) == typeid(T) : false;
+    auto mtinfo = _mtinfo();
+    return (mtinfo != 0) ? (*mtinfo) == typeid(T) : false;
   }
   //////////////////////////////////////////////////////////////
   // return true if the contained object is a T
   //////////////////////////////////////////////////////////////
   template <typename T> bool isShared() const {
     static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
-    return (_mtinfo != 0) ? (*_mtinfo) == typeid(std::shared_ptr<T>) : false;
+    auto mtinfo = _mtinfo();
+    return (mtinfo != 0) ? (*mtinfo) == typeid(std::shared_ptr<T>) : false;
   }
   //////////////////////////////////////////////////////////////
   // assign an object to the variant, assert if it does not fit
@@ -431,7 +462,6 @@ public:
     _destroy();
     T* pval = (T*)&_buffer[0];
     new (pval) T(value);
-    _mtinfo = &typeid(T);
     assignDescriptor<T>();
   }
   //////////////////////////////////////////////////////////////
@@ -439,8 +469,7 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> T& get() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    OrkAssert(_mtinfo != nullptr);
-    OrkAssert(typeid(T) == *_mtinfo);
+    OrkAssert(isA<T>());
     T* pval = (T*)&_buffer[0];
     return *pval;
   }
@@ -449,15 +478,17 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> const T& get() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    auto& tinfo = typeid(T);
-    if (tinfo != *_mtinfo) {
-      auto typestr = demangled_typename<T>();
-      printf("T<%s>\n", typestr.c_str());
-      printf("tinfo: %p:%s\n", (void*)&tinfo, tinfo.name());
-      printf("_mtinfo: %p:%s\n", (void*)_mtinfo, _mtinfo->name());
-      fflush(stdout);
-    }
-    OrkAssert(tinfo == *_mtinfo);
+    auto descriptor_factory = _descriptorFactory.load();
+    OrkAssert(descriptor_factory != nullptr);
+    auto descriptor = descriptor_factory();
+    auto mtinfo     = descriptor._mtinfo();
+    auto& tinfo     = typeid(T);
+    // auto typestr = demangled_typename<T>();
+    // printf("T<%s>\n", typestr.c_str());
+    // printf("tinfo: %p:%s\n", (void*)&tinfo, tinfo.name());
+    // printf("_mtinfo: %p:%s\n", (void*)mtinfo, mtinfo->name());
+    // fflush(stdout);
+    OrkAssert(tinfo == *mtinfo);
     const T* pval = (const T*)&_buffer[0];
     return *pval;
   }
@@ -467,7 +498,7 @@ public:
   template <typename T> std::shared_ptr<T>& getShared() const {
     typedef std::shared_ptr<T> sharedptr_t;
     static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
-    assert(typeid(sharedptr_t) == *_mtinfo);
+    assert(typeid(sharedptr_t) == *_mtinfo());
     auto pval = (sharedptr_t*)&_buffer[0];
     return (*pval);
   }
@@ -481,9 +512,8 @@ public:
     auto pval = (sharedptr_t*)&_buffer[0];
     new (pval) sharedptr_t;
     (*pval) = ptr;
-    _mtinfo = &typeid(sharedptr_t);
     assignDescriptor<sharedptr_t>();
-    assert(typeid(sharedptr_t) == *_mtinfo);
+    assert(typeid(sharedptr_t) == *_mtinfo());
   }
   //////////////////////////////////////////////////////////////
   // construct a T and return by reference
@@ -491,13 +521,12 @@ public:
   template <typename T, typename... A> T& reifyAs() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
     auto pval = (T*)&_buffer[0];
-    if(not isA<T>()){
+    if (not isA<T>()) {
       _destroy();
       new (pval) T();
-      _mtinfo = &typeid(T);
       assignDescriptor<T>();
     }
-    assert(typeid(T) == *_mtinfo);
+    assert(typeid(T) == *_mtinfo());
     return *pval;
   }
   //////////////////////////////////////////////////////////////
@@ -508,9 +537,7 @@ public:
     _destroy();
     auto pval = (T*)&_buffer[0];
     new (pval) T(std::forward<A>(args)...);
-    _mtinfo = &typeid(T);
     assignDescriptor<T>();
-    assert(typeid(T) == *_mtinfo);
     return *pval;
   }
   //////////////////////////////////////////////////////////////
@@ -522,9 +549,7 @@ public:
     auto pval = (std::shared_ptr<T>*)&_buffer[0];
     new (pval) std::shared_ptr<T>;
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
-    _mtinfo = &typeid(std::shared_ptr<T>);
     assignDescriptor<std::shared_ptr<T>>();
-    assert(typeid(std::shared_ptr<T>) == *_mtinfo);
     return (*pval);
   }
   //////////////////////////////////////////////////////////////
@@ -532,7 +557,8 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast<T> tryAs() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (_mtinfo != nullptr) ? (typeid(T) == *_mtinfo) : false;
+    auto mtinfo  = _mtinfo();
+    bool type_ok = (mtinfo != nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast<T>((T*)(type_ok ? &_buffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
@@ -540,7 +566,8 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast<std::shared_ptr<T>> tryAsShared() {
     static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
-    bool type_ok = (_mtinfo != nullptr) ? (typeid(std::shared_ptr<T>) == *_mtinfo) : false;
+    auto mtinfo  = _mtinfo();
+    bool type_ok = (mtinfo != nullptr) ? (typeid(std::shared_ptr<T>) == *mtinfo) : false;
     return attempt_cast<std::shared_ptr<T>>((std::shared_ptr<T>*)(type_ok ? &_buffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
@@ -549,9 +576,10 @@ public:
   template <typename T> attempt_cast_const<std::shared_ptr<T>> tryAsShared() const {
     using ptr_t = std::shared_ptr<T>;
     static_assert(sizeof(ptr_t) <= ksize, "static_variant size violation");
-    bool type_ok = (_mtinfo != nullptr) ? (typeid(ptr_t) == *_mtinfo) : false;
+    auto mtinfo  = _mtinfo();
+    bool type_ok = (mtinfo != nullptr) ? (typeid(ptr_t) == *mtinfo) : false;
     if (type_ok) {
-      auto as_mut   = (ptr_t*)&_buffer[0];
+      auto as_mut = (ptr_t*)&_buffer[0];
       return attempt_cast_const<ptr_t>(as_mut);
     } else {
       return attempt_cast_const<ptr_t>(nullptr);
@@ -562,69 +590,93 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast_const<T> tryAs() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (_mtinfo != nullptr) ? (typeid(T) == *_mtinfo) : false;
+    auto mtinfo  = _mtinfo();
+    bool type_ok = (mtinfo != nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast_const<T>((const T*)(type_ok ? &_buffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
   // return true if the variant is capable of containing an object of type T
   //////////////////////////////////////////////////////////////
-  template <typename T> static bool isTypeOk() {
+  template <typename T> static constexpr bool isTypeOk() {
     int isize = sizeof(T);
     bool rval = (isize <= ksize);
     return rval;
   }
   //////////////////////////////////////////////////////////////
-  const std::type_info* typeInfo() const {
-    return _mtinfo;
-  }
-  //////////////////////////////////////////////////////////////
-  const char* typeName() const {
-    return _mtinfo ? _mtinfo->name() : "";
-  }
-  //////////////////////////////////////////////////////////////
-  // return true if the variant has been set to something
-  //////////////////////////////////////////////////////////////
-  bool isSet() const {
-    return (_mtinfo != 0);
-  }
-#if defined(SVAR_DEBUG)
-  std::string typestr() const {
-    auto descriptor_factory = _descriptorFactory.load();
-    if (descriptor_factory) {
-      OrkAssert(_mtinfo != nullptr);
-      auto descriptor = descriptor_factory();
-      return descriptor._typestr;
-    }
-    return std::string();
-  }
-  #else
-  std::string typestr() const {
-    return std::string("unknown");
-  
-  }
-#endif
-  //////////////////////////////////////////////////////////////
-  uint64_t hash() const {
-    boost::Crc64 crcgen;
-    crcgen.init();
-    crcgen.accumulate((const void*)_buffer, ksize);
-    crcgen.finish();
-    return crcgen.result();
-  }
-  //////////////////////////////////////////////////////////////
-  TypeId getOrkTypeId() const {
-    return TypeId::fromStdTypeInfo(_mtinfo);
-  }
-  //////////////////////////////////////////////////////////////
 private:
+  size_t _capacity() const final {
+    return ksize;
+  }
+
+  const void* _data() const final {
+    return _buffer;
+  }
   __attribute((aligned(16))) char _buffer[ksize];
-  ork::atomic<descriptor_factory_t> _descriptorFactory;
   //////////////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const int kptrsize = sizeof(void*);
+template <typename T> void SvarDescriptor::destroy_impl(static_variant_base& var) {
+  auto pval = (T*)var.data();
+  pval->~T();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// from rhs's descriptor, copy the value into lhs
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void SvarDescriptor::copy_impl(static_variant_base& lhs, const static_variant_base& rhs) {
+  auto lhs_typed = (T*)lhs.data();
+  auto rhs_typed = (const T*)rhs.data();
+  OrkAssert(lhs.capacity() >= sizeof(T));
+  new (lhs_typed) T(*rhs_typed);
+  lhs._descriptorFactory.store(rhs._descriptorFactory.load());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// from lhs's descriptor, compare the value with rhs
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> bool SvarDescriptor::equals_impl(const static_variant_base& lhs, const static_variant_base& rhs) {
+  const auto lhs_typed = (const T*)lhs.data();
+  const auto rhs_typed = (const T*)rhs.data();
+  return __svartraits::__equal_to::compare<T>((*lhs_typed), (*rhs_typed));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> const std::type_info* SvarDescriptor::mtinfo_impl() {
+  return &typeid(T);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> std::string SvarDescriptor::typstr_impl() {
+  return demangled_typename<T>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> size_t SvarDescriptor::getlength_impl() {
+  return sizeof(T);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void SvarDescriptor::assign() {
+
+  _destroyer = &destroy_impl<T>;
+  _copier    = &copy_impl<T>;
+  _equals    = &equals_impl<T>;
+  _mtinfo    = &mtinfo_impl<T>;
+  _getlength = &getlength_impl<T>;
+  _typstr    = &typstr_impl<T>;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static const int kptrsize   = sizeof(void*);
 static const int kshptrsize = sizeof(std::shared_ptr<char>);
 
 typedef static_variant<4> svar4_t;
