@@ -353,7 +353,7 @@ struct static_variant_base {
   void convertFromOtherSize(const static_variant_base& oth) {
     size_t oth_size = oth.size();
     OrkAssert(capacity() >= oth_size);
-    auto descriptor_factory = descriptorFactory();
+    auto descriptor_factory = oth.descriptorFactory();
     if( descriptor_factory == nullptr) {
       _destroy();
       return;

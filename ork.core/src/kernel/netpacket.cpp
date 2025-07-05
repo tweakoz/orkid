@@ -179,7 +179,9 @@ Serializer::Serializer(bool std_types) {
   });
   registerType<int32_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     msg.writeString("int32");
-    msg.template write<int32_t>(value.get<int32_t>());
+    int32_t value32 = value.get<int32_t>();
+    //printf("write int32<%d>\n", value32);
+    msg.template write<int32_t>(value32);
   });
   registerType<int32vector_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     auto& the_ivect = value.get<int32vector_t>();
@@ -397,7 +399,9 @@ Deserializer::Deserializer(bool std_types) {
       });
   registerType("int32", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
     const auto& packet = iter._basepacket;
-    packet.template read<int32_t>(out_value.template make<int32_t>(), iter);
+    int32_t& outval = out_value.template make<int32_t>();
+    packet.template read<int32_t>(outval, iter);
+    //printf("read int32<%d>\n", outval);
   });
   registerType(
       "array.int32", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
@@ -606,6 +610,7 @@ Deserializer::Deserializer(bool std_types) {
 void Deserializer::deserialize(MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
   const auto& packet = iter._basepacket;
   auto typecode      = packet.readString(iter);
+  //printf("Deserializer::deserialize typecode<%s>\n", typecode.c_str());
   auto it            = _typehandlers.find(typecode);
   OrkAssert(it != _typehandlers.end());
   auto deserfn = it->second;

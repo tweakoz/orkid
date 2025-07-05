@@ -10,6 +10,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/python/pycodec.inl>
+#include <ork/kernel/netpacket_serdes.inl>
 #include <iostream>
 
 namespace py = pybind11;
@@ -73,6 +74,34 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return as_reflcodec.value()->encode();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
+    } else if (auto as_v96 = val.tryAs<svar96_t>()) {
+      const auto& v96 = as_v96.value();
+      varval_t vv;
+      vv.convertFromOtherSize(v96);
+      return encode(vv);
+    } else if (auto as_v64 = val.tryAs<svar64_t>()) {
+      const auto& v64 = as_v64.value();
+      varval_t vv;
+      vv.convertFromOtherSize(v64);
+      return encode(vv);
+    } else if (auto as_v32 = val.tryAs<svar32_t>()) {
+      const auto& v32 = as_v32.value();
+      varval_t vv;
+      vv.convertFromOtherSize(v32);
+      return encode(vv);
+    } else if (auto as_v16 = val.tryAs<svar16_t>()) {
+      const auto& v16 = as_v16.value();
+      varval_t vv;
+      vv.convertFromOtherSize(v16);
+      return encode(vv);
+    } else if (auto as_kvmap = val.tryAs<net::serdes::kvmap_t>()) {
+      py::dict py_dict;
+        for (auto item : as_kvmap.value()) {
+          auto key = py::str(item.first);
+          auto val = item.second;
+          py_dict[key] = encode(val);
+        }
+      return py_dict;
     } else {
       printf("UNKNOWNTYPE<%s>\n", val.typeName());
       OrkAssert(false);
