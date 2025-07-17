@@ -238,7 +238,7 @@ void CoreAudioDevice::startup() {
           if(inpdata and _input_handler) {
             // by convention,
             //  inputhandlers should NOT hold on to the AudioInputChunk
-            static auto chunk = std::make_shared<AudioInputChunk>(_num_input_channels);
+            auto chunk = std::make_shared<AudioInputChunk>(_num_input_channels);
             chunk->_num_frames = inumfr;
             chunk->_chunk_index++;
             OrkAssert(_num_input_channels >= 1);
