@@ -27,7 +27,7 @@ static constexpr bool DEBUG_LOG = false;
 ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
 
 namespace ork::lev2::scenegraph {
-static logchannel_ptr_t logchan_sg = logger()->createChannel("scenegraph", fvec3(0.9, 0.2, 0.9));
+static logchannel_ptr_t logchan_sg = logger()->configureChannel("scenegraph", fvec3(0.9, 0.2, 0.9));
 
 void DrawableDataKvPair::describeX(object::ObjectClass* clazz) {
   clazz->directProperty("Layer", &DrawableDataKvPair::_layername);

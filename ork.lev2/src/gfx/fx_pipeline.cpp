@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5),false);
+static logchannel_ptr_t logchan_fxcache = logger()->configureChannel("fxcache",fvec3(0.7,0.7,0.5),false);
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t FxPipelinePermutation::genIndex() const {
   uint64_t index = 0;

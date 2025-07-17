@@ -336,9 +336,9 @@ void Layer::mixToBus(int base, int count) {
     bus_outr[i] += (lyroutr[i]*LG*panR);
   }
   if (0) { // test tone
-    for (int i = 0; i < _numFramesForBlock; i++) {
+    for (int i = 0; i < count; i++) {
       double phase = 120.0 * pi2 * double(_testtoneph) / getSampleRate();
-      float samp   = sinf(phase) * .6;
+      float samp   = sinf(phase) * .25;
       bus_outl[i]  = samp * _layerLinGain * _gainModifier;
       bus_outr[i]  = samp * _layerLinGain * _gainModifier;
       _testtoneph++;

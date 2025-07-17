@@ -12,7 +12,7 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_clip_plane = logger()->createChannel("meshutil.clipplane", fvec3(.9, .9, 1), true);
+static logchannel_ptr_t logchan_clip_plane = logger()->configureChannel("meshutil.clipplane", fvec3(.9, .9, 1), true);
 
 struct PlanarClipPrimitive : public ClipPrimitiveBase {
 

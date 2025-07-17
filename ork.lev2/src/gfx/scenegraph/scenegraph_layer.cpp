@@ -24,7 +24,7 @@ using namespace ork;
 static constexpr bool DEBUG_LOG = false;
 
 namespace ork::lev2::scenegraph {
-static logchannel_ptr_t logchan_sglayer = logger()->createChannel("SG-LAYER", fvec3(0.9, 0.2, 0.9));
+static logchannel_ptr_t logchan_sglayer = logger()->configureChannel("SG-LAYER", fvec3(0.9, 0.2, 0.9));
 
 ///////////////////////////////////////////////////////////////////////////////
 

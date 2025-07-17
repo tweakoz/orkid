@@ -11,7 +11,7 @@
 namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
-static logchannel_ptr_t logchan_meshutilassimp = logger()->createChannel("meshutil.assimp",fvec3(1,.9,.9),false);
+static logchannel_ptr_t logchan_meshutilassimp = logger()->configureChannel("meshutil.assimp",fvec3(1,.9,.9),false);
 ///////////////////////////////////////////////////////////////////////////////
 void visit_ainodes_down(const aiNode* node, int depth, ainode_visitorfn_t visitor){
     visitor(node,depth);

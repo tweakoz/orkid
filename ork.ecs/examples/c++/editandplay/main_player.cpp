@@ -33,7 +33,7 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::ecs;
 
-static logchannel_ptr_t logchan_editor = logger()->createChannel("EDITOR",fvec3(1,1,1));
+static logchannel_ptr_t logchan_editor = logger()->configureChannel("EDITOR",fvec3(1,1,1));
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -14,6 +14,7 @@
 #include <ork/object/COM.h>
 #include <ork/application/application.h>
 #include <ork/kernel/timer.h>
+#include <ork/util/logger.h>
 
 namespace dflow = ork::dataflow;
 
@@ -76,12 +77,12 @@ struct CoreAppInit {
     //dflow::floatxfpassthrudata::GetClassStatic();
     //dflow::fvec3xfpassthrudata::GetClassStatic();
 
-    printf( "ork.core classes registered...\n");
+    logger()->defaultChannel()->log("ork.core classes registered...");
 
     Timer::staticInit();
 
     init_data->enqueuePostInitOp(AppInitOrder::REFLECTION_LINK,[init_data] { 
-      printf( "ork.core postinit...\n");
+      logger()->defaultChannel()->log("ork.core postinit...");
       rtti::Class::InitializeClasses(); // init/link all classes
     });
   }

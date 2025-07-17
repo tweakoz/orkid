@@ -14,7 +14,7 @@ extern appinitdata_ptr_t _ginitdata;
 
 namespace ork::lev2::pbr {
 
-static logchannel_ptr_t logchan_pbr_fwd = logger()->createChannel("mtlpbrFWD", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_fwd = logger()->configureChannel("mtlpbrFWD", fvec3(0.8, 0.8, 0.1), true);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

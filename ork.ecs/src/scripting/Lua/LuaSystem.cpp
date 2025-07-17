@@ -40,7 +40,7 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
-static logchannel_ptr_t logchan_luasys = logger()->createChannel("ecs.luasys",fvec3(0.9,0.6,0.0));
+static logchannel_ptr_t logchan_luasys = logger()->configureChannel("ecs.luasys",fvec3(0.9,0.6,0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
 

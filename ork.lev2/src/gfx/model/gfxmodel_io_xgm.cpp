@@ -13,7 +13,7 @@ namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_mioRXGM = logger()->createChannel("xgmREAD", fvec3(0.8, 0.8, 0.4), false);
+static logchannel_ptr_t logchan_mioRXGM = logger()->configureChannel("xgmREAD", fvec3(0.8, 0.8, 0.4), false);
 
 bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 

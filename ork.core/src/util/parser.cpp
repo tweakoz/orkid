@@ -17,9 +17,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
-static logchannel_ptr_t logchan_dump   = logger()->createChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), false);
-static logchannel_ptr_t logchan_matchattempt   = logger()->createChannel("MATCHATTEMPT", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_parser = logger()->configureChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_dump   = logger()->configureChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_matchattempt   = logger()->configureChannel("MATCHATTEMPT", fvec3(0.5, 0.7, 0.5), true);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

@@ -19,7 +19,7 @@
 #include <ork/util/logger.h>
 
 namespace ork { namespace lev2 {
-static logchannel_ptr_t logchan_pickbuf = logger()->createChannel("PICKBUF", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_pickbuf = logger()->configureChannel("PICKBUF", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)

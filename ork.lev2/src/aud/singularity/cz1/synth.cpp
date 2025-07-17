@@ -26,7 +26,7 @@ using namespace ork;
 
 namespace ork::audio::singularity {
 
-static logchannel_ptr_t logchan_czx = logger()->createChannel("singul.czx", fvec3(1, 0.6, .8), false);
+static logchannel_ptr_t logchan_czx = logger()->configureChannel("singul.czx", fvec3(1, 0.6, .8), false);
 
 inline double sinc(double i) { // ph --1 .. +1
   if (i == 0.0)

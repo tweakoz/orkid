@@ -15,7 +15,7 @@
 using namespace std::string_literals;
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
+static logchannel_ptr_t logchan_ezapp = logger()->getChannel("EZAPP");
 ///////////////////////////////////////////////////////////////////////////////
 EzTopWidget::EzTopWidget(EzMainWin* mainwin)
     : ui::Group("ezviewport", 1, 1, 1, 1)
@@ -146,9 +146,9 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   ///////////////////////////
   double this_time           = _mainwin->_render_timer.SecsSinceStart();
   _mainwin->_render_prevtime = this_time;
-  if (this_time >= 5.0) {
+  if (this_time >= logchan_ezapp->_status_interval) {
     double FPS = _mainwin->_render_state_numiters / this_time;
-    logchan_ezapp->log("FPS<%g>", FPS);
+    logchan_ezapp->status("FPS","<%g>", FPS);
     _mainwin->_render_state_numiters = 0.0;
     _mainwin->_render_timer.Start();
   } else {
@@ -158,7 +158,7 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {
-  printf("EzTopWidget::_doOnResized<%d %d>\n", width(), height());
+  logchan_ezapp->status("topwidget resize", "<%d %d>", width(), height());
   if (_mainwin->_onResize) {
     _mainwin->_onResize(width(), height());
   }
@@ -167,14 +167,12 @@ void EzTopWidget::_doOnResized() {
 /////////////////////////////////////////////////
 ui::HandlerResult EzTopWidget::DoOnUiEvent(ui::event_constptr_t ev) {
   if (_mainwin->_onUiEvent) {
-    printf("A\n");
     auto hacked_event      = std::make_shared<ui::Event>();
     *hacked_event          = *ev;
     hacked_event->_vpdim.x = width();
     hacked_event->_vpdim.y = height();
     return _mainwin->_onUiEvent(hacked_event);
   } else {
-    printf("B\n");
     return ui::HandlerResult();
   }
 }

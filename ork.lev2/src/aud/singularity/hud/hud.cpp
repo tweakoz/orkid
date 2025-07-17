@@ -20,7 +20,7 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-static logchannel_ptr_t logchan_hud = logger()->createChannel("singul.hud", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_hud = logger()->configureChannel("singul.hud", fvec3(1, 0.6, .8), true);
 float hud_contentscale() {
   return _HIDPI() ? 2.0 : 1.0;
 }

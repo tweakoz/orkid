@@ -25,7 +25,7 @@
 using namespace rapidjson;
 
 namespace ork::reflect::serdes {
-static logchannel_ptr_t logchan_ds = logger()->createChannel("reflection.json.deser",fvec3(0.9,1,0.9), false);
+static logchannel_ptr_t logchan_ds = logger()->configureChannel("reflection.json.deser",fvec3(0.9,1,0.9), false);
 
 //////////////////////////////////////////////////////////////////////////////
 

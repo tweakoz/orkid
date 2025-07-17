@@ -14,6 +14,7 @@
 #include <ork/pch.h>
 #include <ork/util/Context.hpp>
 #include <ork/util/logger.h>
+#include <ork/util/ringbuffer.inl>
 #include <ork/profiling.inl>
 
 // #define DEBUG_OPQ_CALLSTACK
@@ -21,7 +22,7 @@
 template class ork::util::ContextTLS<ork::opq::TrackCurrent>;
 ///////////////////////////////////////////////////////////////////////
 namespace ork::opq {
-static logchannel_ptr_t logchan_opq = logger()->createChannel("OPQ", fvec3(0.4, 0.7, 0.7), true);
+static logchannel_ptr_t logchan_opq = logger()->configureChannel("OPQ", fvec3(0.4, 0.7, 0.7), true);
 ////////////////////////////////////////////////////////////////////////
 static int MAX_THREADS = 0;
 static int MIN_THREADS = 0;
@@ -37,14 +38,14 @@ static void _coordinatorThreadStartup() {
       int nc  = cq->_numCompletedOperations;
       int np  = cq->_numPendingOperations;
       if ((check_index & 7) == 0) {
-        // logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
+        logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
       }
       ///////////////////////////////////////////////////////////
       // thread creation (if stalled)
       ///////////////////////////////////////////////////////////
       if ((np > 0) and num_completed <= nc) {
         if (nt >= MAX_THREADS) {
-          // logchan_opq->log( "concurrentQueue stalled, max threads reached" );
+          logchan_opq->log( "concurrentQueue stalled, max threads reached" );
           continue;
         }
         // logchan_opq->log( "concurrentQueue stalled, adding a new thread" );
@@ -58,7 +59,7 @@ static void _coordinatorThreadStartup() {
       // thread deletion (if idle)
       ///////////////////////////////////////////////////////////
       else if (np == 0 and (nt > MIN_THREADS)) {
-        // logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
+        logchan_opq->log( "concurrentQueue too many idle threads, removing one" );
         OpqThread* thread = nullptr;
         cq->_threads.atomicOp([=, &thread](OperationsQueue::threadset_t& thset) {
           if (thset.size() > MIN_THREADS) {
@@ -199,19 +200,23 @@ CompletionGroup::~CompletionGroup() {
 Op::Op(const void_lambda_t& op, const std::string& name)
     : mName(name) {
   SetOp(op);
+  _enqueueTime = ork::Timer::get_sync_time();
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op(const BarrierSyncReq& op, const std::string& name)
     : mName(name) {
   SetOp(op);
+  _enqueueTime = ork::Timer::get_sync_time();
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op(const Op& oth)
     : mWrapped(oth.mWrapped)
     , mName(oth.mName) {
+  _enqueueTime = ork::Timer::get_sync_time();
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op() {
+  _enqueueTime = ork::Timer::get_sync_time();
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::~Op() {
@@ -419,7 +424,17 @@ bool OperationsQueue::Process() {
       });
       if (got_one) {
         EASY_BLOCK("opq", profiler::colors::Magenta);
+        
+        // Measure latency if performance tracking is enabled
+        if (_perf_tracking_active && the_op._enqueueTime > 0.0) {
+          float execution_time = Timer::get_sync_time();
+          float latency_ms = (execution_time - the_op._enqueueTime) * 1000.0f;
+          _recent_latencies.push_one(latency_ms);
+        }
+        
+        // Execute the operation
         the_op.invoke();
+        
         _numCompletedOperations.fetch_add(1);
         _numPendingOperations.fetch_add(-1);
         item_processed = true;
@@ -516,6 +531,13 @@ OperationsQueue::OperationsQueue(int inumthreads, const char* name)
   _numPendingOperations   = 0;
   _numCompletedOperations = 0;
 
+  // Simple performance tracking initialization
+  _perf_tracking_active = false;
+  _perf_start_time = 0.0f;
+  _perf_start_completed = 0;
+  _max_latency_ms = 0.0f;
+  _max_avg_latency_ms = 0.0f;
+
   _defaultConcurrencyGroup = createConcurrencyGroup("defconq");
 
   for (int i = 0; i < inumthreads; i++) {
@@ -583,13 +605,19 @@ void ConcurrencyGroup::enqueue(const Op& the_op) {
   bool was_enqueued = false;
   _queue._numPendingOperations.fetch_add(1);
 
+  // Set enqueue time for latency tracking
+  Op op_with_time = the_op;
+  if (_queue._perf_tracking_active) {
+    op_with_time._enqueueTime = Timer::get_sync_time();
+  }
+
   while (false == was_enqueued) {
 
-    _ops.atomicOp([&the_op, &was_enqueued, this](ConcurrencyGroup::internal_oper_queue_t& q) {
+    _ops.atomicOp([&op_with_time, &was_enqueued, this](ConcurrencyGroup::internal_oper_queue_t& q) {
       bool fits = (_limit_maxops_enqueued == 0) or (q.size() < _limit_maxops_enqueued);
       if (fits) {
         int index = this->_serialopindex.fetch_add(1);
-        q.push(the_op);
+        q.push(op_with_time);
         was_enqueued = true;
       }
     });
@@ -720,5 +748,74 @@ void init() {
   _coordinatorThreadStartup();
 }
 ///////////////////////////////////////////////////////////////////////////
+
+// Simple interval-based performance tracking
+void OperationsQueue::startPerformanceTracking() {
+  _perf_tracking_active = true;
+  // Reset interval tracking - first call will initialize
+  _perf_start_time = 0.0f;
+  _perf_start_completed = 0;
+  _max_avg_latency_ms = 0.0f;  // Reset max average latency tracking
+}
+
+void OperationsQueue::stopPerformanceTracking() {
+  _perf_tracking_active = false;
+}
+
+opq_perfdata_ptr_t OperationsQueue::getPerformanceData() const {
+  auto perf_data = std::make_shared<OPQPerfData>();
+  perf_data->queue_name = _name;
+  perf_data->num_threads = _numThreadsRunning.load();
+  perf_data->pending_ops = _numPendingOperations.load();
+  perf_data->completed_ops = _numCompletedOperations.load();
+  perf_data->update_time = Timer::get_sync_time();
+  
+  // Calculate interval-based ops/sec like opq.cpp tests
+  if (_perf_tracking_active) {
+    // Initialize on first call
+    if (_perf_start_time == 0.0f) {
+      // First call - just initialize, no metrics yet
+      const_cast<OperationsQueue*>(this)->_perf_start_time = perf_data->update_time;
+      const_cast<OperationsQueue*>(this)->_perf_start_completed = perf_data->completed_ops;
+      perf_data->aggregate_ops_per_sec = 0.0f;
+    } else {
+      // Calculate ops/sec for this interval
+      float elapsed = perf_data->update_time - _perf_start_time;
+      int ops_completed = perf_data->completed_ops - _perf_start_completed;
+      
+      if (elapsed > 0.0f) {
+        perf_data->aggregate_ops_per_sec = float(ops_completed) / elapsed;
+      }
+      
+      // Update for next interval
+      const_cast<OperationsQueue*>(this)->_perf_start_time = perf_data->update_time;
+      const_cast<OperationsQueue*>(this)->_perf_start_completed = perf_data->completed_ops;
+    }
+    
+    // Calculate real latency from ring buffer samples
+    if (_recent_latencies.size() > 0) {
+      float total_latency = 0.0f;
+      size_t sample_count = _recent_latencies.size();
+      
+      // Calculate current average latency
+      for( size_t i= 0; i < sample_count; i++ ) {
+        float sample = _recent_latencies.directAccess(i);
+        total_latency += sample;
+      }
+      perf_data->avg_latency_ms = total_latency / sample_count;
+      
+      // Track maximum average latency seen (for sparkline peak)
+      if (perf_data->avg_latency_ms > _max_avg_latency_ms) {
+        _max_avg_latency_ms = perf_data->avg_latency_ms;
+      }
+      perf_data->max_latency_ms = _max_avg_latency_ms;
+    } else {
+      perf_data->avg_latency_ms = 0.0f;
+      perf_data->max_latency_ms = _max_avg_latency_ms;  // Preserve max avg latency
+    }
+  }
+  
+  return perf_data;
+}
 
 } // namespace ork::opq

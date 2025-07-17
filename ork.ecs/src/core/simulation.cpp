@@ -30,7 +30,7 @@ template class ork::orklut<const ork::object::ObjectClass*, ork::ecs::System*>;
 
 namespace ork::ecs {
 
-static logchannel_ptr_t logchan_simulation = logger()->createChannel("ecs-simulation",fvec3(0.8,0.8,0));
+static logchannel_ptr_t logchan_simulation = logger()->configureChannel("ecs-simulation",fvec3(0.8,0.8,0));
 
 using namespace ::ork;
 using namespace ::ork::object;

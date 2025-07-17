@@ -13,7 +13,7 @@
 template class ork::orklut<std::string, ork::meshutil::submesh_ptr_t>;
 
 namespace ork::meshutil {
-static logchannel_ptr_t logchan_submesh = logger()->createChannel("meshutil.submesh", fvec3(.9, .9, 1));
+static logchannel_ptr_t logchan_submesh = logger()->configureChannel("meshutil.submesh", fvec3(.9, .9, 1));
 
 const vertexpool vertexpool::EmptyPool;
 

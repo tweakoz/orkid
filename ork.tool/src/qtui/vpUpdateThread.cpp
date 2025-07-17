@@ -79,7 +79,7 @@ void UpdateThread::run() // virtual
     icounter++;
     float fsecs = timr.SecsSinceStart();
     if (fsecs > 10.0f) {
-      printf("ups<%f>\n", float(icounter) / fsecs);
+      //printf("ups<%f>\n", float(icounter) / fsecs);
       timr.Start();
       icounter = 0;
     }

@@ -24,7 +24,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_controller = logger()->createChannel("ecs.controller", fvec3(0.7, 0.7, 0));
+static logchannel_ptr_t logchan_controller = logger()->configureChannel("ecs.controller", fvec3(0.7, 0.7, 0));
 
 using namespace ::ork;
 

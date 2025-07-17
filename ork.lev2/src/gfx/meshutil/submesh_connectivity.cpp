@@ -15,7 +15,7 @@ namespace ork::meshutil {
 
 bool __enable_zero_area_face_check = true;
 
-static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity", fvec3(.9, .9, 1), true);
+static logchannel_ptr_t logchan_connectivity = logger()->configureChannel("meshutil.connectivity", fvec3(.9, .9, 1), true);
 
 static bool GETZEROAREACHECK(){
   if(genviron.has("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK")){

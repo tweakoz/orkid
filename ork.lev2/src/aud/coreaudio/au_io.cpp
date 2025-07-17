@@ -7,7 +7,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::ca {
-static logchannel_ptr_t logchan_auio = logger()->createChannel("AuIo", fvec3(1, 0.4, .6), true);
+static logchannel_ptr_t logchan_auio = logger()->configureChannel("AuIo", fvec3(1, 0.4, .6), true);
 
 int gframesize                     = desired_framesize;
 

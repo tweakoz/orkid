@@ -36,7 +36,7 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_osxgl = logger()->createChannel("OSXGL", fvec3(0.8, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_osxgl = logger()->configureChannel("OSXGL", fvec3(0.8, 0.8, 0.5), true);
 
 static void _osxDisableMacOs(ContextGL* cgl){
     cgl->_SUPPORTS_BINARY_PIPELINE = false;

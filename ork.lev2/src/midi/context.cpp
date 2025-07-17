@@ -13,7 +13,7 @@
 /////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::midi {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_midi = logger()->createChannel("midi.context", fvec3(1, 0.3, 1));
+static logchannel_ptr_t logchan_midi = logger()->configureChannel("midi.context", fvec3(1, 0.3, 1));
 using input_impl_t  = std::shared_ptr<RtMidiIn>;
 using output_impl_t = std::shared_ptr<RtMidiOut>;
 /////////////////////////////////////////////////////////////////////////////

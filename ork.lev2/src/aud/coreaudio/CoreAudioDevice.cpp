@@ -23,7 +23,7 @@ namespace ork::lev2::ca {
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::audio::singularity;
 
-static logchannel_ptr_t logchan_coreaudio = logger()->createChannel("audio.CA", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_coreaudio = logger()->configureChannel("PERF", fvec3(1, 0.6, .8), true);
 
 void EnumerateMidiDevices() {
   int n                = MIDIGetNumberOfExternalDevices();
@@ -157,7 +157,7 @@ void CoreAudioDevice::startup() {
   auto unlocked_appinitdata = _appinitdata.lock();
 
   constexpr double desired_sample_rate = 48000.0;
-  constexpr int inumfr                = 64;
+  constexpr int inumfr                = desired_framesize;
   constexpr double seconds_per_buffer = static_cast<double>(inumfr) / desired_sample_rate;
   constexpr double available_time_us  = seconds_per_buffer * 1000000.0; // microseconds
                                                                         // For mach_time conversion
@@ -263,18 +263,28 @@ void CoreAudioDevice::startup() {
           auto& outL             = mix_group->mMixLeft.mSampleData;
           auto& outR             = mix_group->mMixRight.mSampleData;
           float cpuload          = 0.0f;
-          if (inpdata) {
-            float* buffer = inpdata->mChannels[0].mSampleData;
-            _the_synth->compute(inumfr, buffer);
-          } else {
-            _the_synth->compute(inumfr, _noinputblock.data());
+          if(0){ // test tone
+            static double phase = 0.0;
+            for (size_t i = 0; i < inumfr; i++) {
+              phase += 0.01f;;
+              float samp   = sinf(phase) * 0.33f; // test
+              outL[i] = samp;  // interleaved
+              outR[i] = samp; // interleaved
+            }
           }
-          const auto& obuf = _the_synth->_obuf;
-          for (size_t i = 0; i < inumfr; i++) {
-            outL[i] = obuf._leftBuffer[i];  // interleaved
-            outR[i] = obuf._rightBuffer[i]; // interleaved
+          else{
+            if (inpdata) {
+              float* buffer = inpdata->mChannels[0].mSampleData;
+              _the_synth->compute(inumfr, buffer);
+            } else {
+              _the_synth->compute(inumfr, _noinputblock.data());
+            }
+            const auto& obuf = _the_synth->_obuf;
+            for (size_t i = 0; i < inumfr; i++) {
+              outL[i] = obuf._leftBuffer[i];  // interleaved
+              outR[i] = obuf._rightBuffer[i]; // interleaved
+            }
           }
-
           uint64_t end_time     = mach_absolute_time();
           uint64_t elapsed_mach = end_time - start_time;
           double elapsed_nanos  = static_cast<double>(elapsed_mach) * mach_to_nanos;
@@ -288,6 +298,11 @@ void CoreAudioDevice::startup() {
           _cpu_load_sample_count.fetch_add(1);
 
           _the_synth->_cpuload = calculateCPULoad();
+        static int counter = 0;
+          if((counter%16)==0){
+            logchan_coreaudio->perfItem("SYNCPUTIM(ms)", elapsed_micros*0.001f);
+            logchan_coreaudio->perfItem("SYNCPU(%)", _the_synth->_cpuload*100.0);
+          }
         }
 
         /////////////////////////

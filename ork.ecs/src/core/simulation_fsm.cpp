@@ -27,7 +27,7 @@
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_simfsm = logger()->createChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
+static logchannel_ptr_t logchan_simfsm = logger()->configureChannel("ecs.simfsm", fvec3(1.0, 0.9, 0));
 
 struct RootState : public fsm::State {
   RootState(fsm::StateMachine* machine)

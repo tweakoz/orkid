@@ -20,6 +20,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/semaphore.h>
 #include <ork/util/Context.h>
+#include <ork/util/ringbuffer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 
 #define _DEBUG_OPQ
@@ -53,6 +54,25 @@ typedef any128 op_wrap_t;
 struct OperationsQueue;
 using opq_ptr_t = std::shared_ptr<OperationsQueue>;
 
+//////////////////////////////////////////////////////////////////////
+// OPQ Performance Data Structure
+//////////////////////////////////////////////////////////////////////
+
+struct OPQPerfData {
+  float aggregate_ops_per_sec = 0.0f;
+  int num_threads = 0;
+  float avg_latency_ms = 0.0f;
+  float max_latency_ms = 0.0f;
+  int pending_ops = 0;
+  int completed_ops = 0;
+  float update_time = 0.0f;
+  std::string queue_name;
+};
+
+using opq_perfdata_ptr_t = std::shared_ptr<OPQPerfData>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct BarrierSyncReq {
   BarrierSyncReq(future_ptr_t f)
       : _future(f) {
@@ -62,6 +82,7 @@ struct BarrierSyncReq {
 
 struct Op {
   op_wrap_t mWrapped;
+  double _enqueueTime = 0.0;
   std::string mName;
 
   Op(const Op& oth);
@@ -238,6 +259,11 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
 
   bool Process();
 
+  // Performance monitoring methods
+  opq_perfdata_ptr_t getPerformanceData() const;
+  void startPerformanceTracking();
+  void stopPerformanceTracking();
+
   typedef std::set<OpqThread*> threadset_t;
 
   concurrency_group_ptr_t _defaultConcurrencyGroup;
@@ -263,6 +289,16 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   using hookmap_t = std::unordered_map<std::string,hooklambda_t>;
 
   LockedResource<hookmap_t> _hooks;
+
+  // Simple performance tracking members
+  bool _perf_tracking_active = false;
+  float _perf_start_time = 0.0f;
+  int _perf_start_completed = 0;
+  
+  // Latency tracking
+  mutable RingBuffer<float> _recent_latencies{100};  // Keep last 100 latency samples
+  float _max_latency_ms = 0.0f;                      // Running maximum individual latency
+  mutable float _max_avg_latency_ms = 0.0f;          // Running maximum average latency
 };
 
 //////////////////////////////////////////////////////////////////////

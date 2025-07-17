@@ -8,7 +8,8 @@
 ################################################################################
 
 import math, random, argparse, sys, signal
-from orkengine.core import vec3, vec4, quat, mtx4
+from ork import demoapp
+from orkengine.core import vec3, vec4, quat, mtx4, ncui
 from orkengine.core import dfrustum, dvec4, fmtx4_to_dmtx4 
 from orkengine.core import lev2_pyexdir, Transform
 from orkengine.core import CrcStringProxy, thisdir, VarMap
@@ -26,7 +27,7 @@ sys.path.append(str(thisdir()/".."/"particles"))
 from _ptc_harness import *
 
 ################################################################################
-parser = argparse.ArgumentParser(description='scenegraph example')
+parser = demoapp.parser(description='scenegraph example')
 parser.add_argument('--stereo', action='store_true', help='stereo mode')
 ################################################################################
 args = vars(parser.parse_args())
@@ -42,6 +43,9 @@ class LIGHTING_APP(object):
     super().__init__()
     self.ezapp = lev2.OrkEzApp.create(self,ssaa=0,msaa=0, fullscreen=False)
     self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+
+    demoapp.install_signal_handler(self.ezapp)
+
     self.materials = set()
 
     if stereo:
@@ -51,11 +55,6 @@ class LIGHTING_APP(object):
     else:
       setupUiCamera(app=self,eye=vec3(0,12,15))
 
-    def onCtrlC(signum, frame):
-      print("signalling EXIT to ezapp")
-      self.ezapp.signalExit()
-
-    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
 
@@ -289,4 +288,33 @@ class LIGHTING_APP(object):
 
 ###############################################################################
 
+if args["newlogger"]:
+  uictx = ncui.context()
+  packH = ncui.HorizontalPack()
+  splitV = ncui.VerticalSplit()
+  splitV.bottom = packH
+
+  for i in range(4):
+    button = ncui.Button()
+    button.normal_bg_color = vec3(0.1, 0.2, 0.1)
+    button.normal_fg_color = vec3(0.5)
+    button.pressed_bg_color = vec3(0.3, 0.2, 0.1)
+    button.pressed_fg_color = vec3(1)
+    button.text = "ClickMe"+str(i)
+    button.width = 50
+    button.height = 1
+    packH.addChild(button)
+
+  splitV.split_position = 0.95  # 60% for logger, 40% for debug
+  logger_tabs = uictx.swapContent(splitV)
+  splitV.top = logger_tabs
+  splitV.bottom = packH
+
+###############################################################################
+
 LIGHTING_APP().ezapp.mainThreadLoop()
+
+for name in list(locals().keys()):
+    if not name.startswith('_'):
+        del locals()[name]
+         

@@ -19,7 +19,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_embtex = logger()->createChannel("gfxmodel-embtex",fvec3(0.8,0.8,0.6),false);
+static logchannel_ptr_t logchan_embtex = logger()->configureChannel("gfxmodel-embtex",fvec3(0.8,0.8,0.6),false);
 
 ///////////////////////////////////////////////////////////////////////////////
 

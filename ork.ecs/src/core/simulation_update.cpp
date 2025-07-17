@@ -23,7 +23,7 @@
 
 namespace ork::ecs {
 
-static logchannel_ptr_t logchan_simupdate = logger()->createChannel("ecs-simupdate", fvec3(0.9, 0.9, 0));
+static logchannel_ptr_t logchan_simupdate = logger()->configureChannel("ecs-simupdate", fvec3(0.9, 0.9, 0));
 
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::_computeDeltaTime() {

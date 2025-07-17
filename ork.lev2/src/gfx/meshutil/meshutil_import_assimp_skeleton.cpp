@@ -9,7 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_meshutilassimp_skel = logger()->createChannel("meshutil.assimp.skel",fvec3(1,.8,.7));
+static logchannel_ptr_t logchan_meshutilassimp_skel = logger()->configureChannel("meshutil.assimp.skel",fvec3(1,.8,.7));
 
 parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 

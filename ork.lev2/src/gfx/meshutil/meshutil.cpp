@@ -13,7 +13,7 @@
 
 namespace ork { namespace meshutil {
 
-static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil", fvec3(1, .9, 1));
+static logchannel_ptr_t logchan_meshutil = logger()->configureChannel("meshutil", fvec3(1, .9, 1));
 
 /////////////////////////////////////////////////////////////////////////
 

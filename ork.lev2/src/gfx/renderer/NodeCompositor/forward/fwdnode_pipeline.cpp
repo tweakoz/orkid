@@ -35,7 +35,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr_fwd = logger()->createChannel("mtlpbrFWD", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_fwd = logger()->configureChannel("mtlpbrFWDPL", fvec3(0.8, 0.8, 0.1), true);
 
 FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
 

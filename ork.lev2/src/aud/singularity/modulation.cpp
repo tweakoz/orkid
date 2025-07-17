@@ -22,7 +22,7 @@ ImplementReflectionX(ork::audio::singularity::BlockModulationData, "SynBlockModu
 ImplementReflectionX(ork::audio::singularity::DspParamData, "SynDspParam");
 
 namespace ork::audio::singularity {
-static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod", fvec3(1, 0.3, 1), false);
+static logchannel_ptr_t logchan_modulation = logger()->configureChannel("singul.mod", fvec3(1, 0.3, 1), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 

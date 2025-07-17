@@ -15,7 +15,7 @@
 
 namespace ork {
 
-logchannel_ptr_t logchan_dcache = logger()->createChannel("DCACHE", fvec3(0.5, 0.5, 0.5), true);
+logchannel_ptr_t logchan_dcache = logger()->configureChannel("DCACHE", fvec3(0.5, 0.5, 0.5), true);
 
 bool DataBlockCache::_enabled = true;
 DataBlockCache::DataBlockCache() {

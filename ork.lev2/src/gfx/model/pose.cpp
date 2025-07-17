@@ -21,8 +21,8 @@ using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_pose  = logger()->createChannel("gfxanim.pose", fvec3(1, 0.7, 1));
-static logchannel_ptr_t logchan_pose2 = logger()->createChannel("gfxanim.pose", fvec3(1, 0.8, .9));
+static logchannel_ptr_t logchan_pose  = logger()->configureChannel("gfxanim.pose", fvec3(1, 0.7, 1));
+static logchannel_ptr_t logchan_pose2 = logger()->configureChannel("gfxanim.pose2", fvec3(1, 0.8, .9));
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmBlendPoseInfo::XgmBlendPoseInfo()

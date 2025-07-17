@@ -35,7 +35,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr_unl = logger()->createChannel("mtlpbrDPP", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_unl = logger()->configureChannel("mtlpbrDPP", fvec3(0.8, 0.8, 0.1), true);
 
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineDPP(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;

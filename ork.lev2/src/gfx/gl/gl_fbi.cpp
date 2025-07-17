@@ -30,8 +30,8 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-logchannel_ptr_t GlFrameBufferInterface::_logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
-logchannel_ptr_t GlFrameBufferInterface::_logchan_fbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
+logchannel_ptr_t GlFrameBufferInterface::_logchan_rtgroup = logger()->configureChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
+logchannel_ptr_t GlFrameBufferInterface::_logchan_fbi = logger()->configureChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
 
 extern int G_MSAASAMPLES;
 

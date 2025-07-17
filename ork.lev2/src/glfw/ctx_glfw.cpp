@@ -32,7 +32,7 @@ extern int GLFW_MODIFIER_OSCTRL;
 extern bool _macosUseHIDPI;
 extern uint64_t GRAPHICS_API;
 extern appinitdata_ptr_t _ginitdata;
-static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
+static logchannel_ptr_t logchan_glfw = logger()->configureChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 void recomputeHIDPI(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,7 +129,7 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   w = int(w * ctxbase->_contentScaleX);
   h = int(h * ctxbase->_contentScaleY);
 
-  logchan_glfw->log("WIN RESIZED w<%d> h<%d>", w, h);
+  logchan_glfw->status("WIN RESIZED", "w<%d> h<%d>", w, h);
   sink->_on_callback_winresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,12 +140,12 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
   auto sink = ctxbase->_eventSINK;
   if (nullptr == sink)
     return;
-  logchan_glfw->log("FB RESIZED w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
+  logchan_glfw->status("FB RESIZED","w<%d> h<%d> cs<%g %g>", w, h, ctxbase->_contentScaleX, ctxbase->_contentScaleY);
   sink->_on_callback_fbresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
-  logchan_glfw->log("fb contentscale<%p %f %f>", window, sw, sh);
+  logchan_glfw->status("CONTENTSCALE","<%p %f %f>", window, sw, sh);
   auto ctxbase = (CtxGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == ctxbase)
     return;

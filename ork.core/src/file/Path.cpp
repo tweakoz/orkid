@@ -27,7 +27,7 @@ bool gbas1 = true;
 
 namespace ork { namespace file {
 
-static logchannel_ptr_t logchan_path = logger()->createChannel("path", fvec3(1,1,.9));
+static logchannel_ptr_t logchan_path = logger()->configureChannel("path", fvec3(1,1,.9));
 
 PathMarkers::PathMarkers()
     : mDriveLen(0)

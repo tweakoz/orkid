@@ -6,7 +6,7 @@
 #include <ork/kernel/opq.h>
 #include <atomic>
 
-constexpr int desired_framesize = 64;
+constexpr int desired_framesize = 1024;
 
 #define tryerr(err, x)                                                                                                             \
   if (err == x)                                                                                                                    \

@@ -39,7 +39,7 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr = logger()->configureChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 

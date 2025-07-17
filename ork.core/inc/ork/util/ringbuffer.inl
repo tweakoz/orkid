@@ -108,7 +108,9 @@ public:
     size_t capacity() const {
         return _size;
     }
-
+    T directAccess(size_t index) const {
+      return _buffer[index];
+    }
 private:
     std::vector<T> _buffer;
     size_t _size;

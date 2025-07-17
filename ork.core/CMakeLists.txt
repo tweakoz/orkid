@@ -63,7 +63,7 @@ ELSE()
 target_link_libraries(ork_core LINK_PRIVATE OpenCL )
 ENDIF()
 
-target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem xxhash )
+target_link_libraries(ork_core LINK_PRIVATE Boost::filesystem xxhash notcurses-core notcurses notcurses++ )
 target_link_libraries(ork_core LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
 
 find_package(Python COMPONENTS Interpreter Development REQUIRED)

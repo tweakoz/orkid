@@ -32,7 +32,7 @@ namespace ork::lev2{
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 
-static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
+static logchannel_ptr_t logchan_ezapp = logger()->configureChannel("EZAPP", fvec3(0.7, 0.7, 0.9));
 
 ////////////////////////////////////////////////////////////////////////////////
 EzUiEventInterceptor::EzUiEventInterceptor()
@@ -134,7 +134,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
         auto src = try_this_path.toAbsolute();
         auto dst = imgui_ini_path.toAbsolute();
         std::string cmd_str = FormatString("cp %s %s", src.c_str(), dst.c_str());
-        printf( "copying default imgui ini file <%s> to <%s>\n", src.c_str(), dst.c_str());
+        logchan_ezapp->log( "copying default imgui ini file <%s> to <%s>", src.c_str(), dst.c_str());
         int ret = system(cmd_str.c_str());
         OrkAssert(ret == 0);
         OrkAssert(dst.doesPathExist());
@@ -327,7 +327,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   else { // no graphics
     _mainWindow = nullptr;
     if(_initdata->_enable_audio){
-      printf("initializing audio\n");
+      logchan_ezapp->log("initializing audio");
       _audioInit();
     }
   }
@@ -353,17 +353,17 @@ void OrkEzApp::joinUpdate() {
   bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINING);
   ////////////////////////////////////////////////
   if (not has_joined_already) {
-     printf( "OrkEzApp<%p> joinUpdate:1\n", this );
+     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:1", this );
     while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
     }
-     printf( "OrkEzApp<%p> joinUpdate:2\n", this );
+     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:2", this );
     _updq->drain();
     _updateThread.join();
-     printf( "OrkEzApp<%p> joinUpdate:3\n", this );
+     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:3", this );
     DrawQueue::ClearAndSyncWriters();
-     printf( "OrkEzApp<%p> joinUpdate:4\n", this );
+     logger()->defaultChannel()->log( "OrkEzApp<%p> joinUpdate:4", this );
 
   }
   ////////////////////////////////////////////////
@@ -587,8 +587,8 @@ int OrkEzApp::mainThreadLoop() {
 
         _update_timeaccumulator -= step;
         stats_timeaccum += step;
-        if (stats_timeaccum >= 5.0) {
-          logchan_ezapp->log("UPS<%g>", state_numiters / stats_timeaccum);
+        if (stats_timeaccum >= logchan_ezapp->_status_interval) {
+          logchan_ezapp->status("UPS", "<%g>", state_numiters / stats_timeaccum);
           stats_timeaccum = 0.0;
           state_numiters  = 0.0;
         }

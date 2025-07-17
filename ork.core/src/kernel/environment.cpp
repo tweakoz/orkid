@@ -9,6 +9,7 @@
 #include <ork/file/path.h>
 #include <assert.h>
 #include <string.h>
+#include <unordered_set>
 
 //#if defined(__APPLE__)
 extern char** environ;
@@ -139,3 +140,45 @@ void Environment::dump() const
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
+
+///////////////////////////////////////////////////////////////////////////////
+#if defined(__APPLE__)
+#include <crt_externs.h>
+std::vector<std::string> get_args(){
+    std::vector<std::string> args;
+    char** argv = *_NSGetArgv();
+    int argc = *_NSGetArgc();
+    for (int i = 0; i < argc; ++i) {
+      args.push_back(argv[i]);
+    }
+    return args;
+}
+#else
+#include <unistd.h>
+#include <fcntl.h>
+
+std::vector<std::string> get_args() {
+    std::vector<std::string> args;
+    char buf[4096];
+    int fd = open("/proc/self/cmdline", O_RDONLY);
+    if (fd >= 0) {
+        ssize_t len = read(fd, buf, sizeof(buf));
+        close(fd);
+        // Args are null-separated in buf
+        for (ssize_t i = 0; i < len; ++i) {
+            if (buf[i] == '\0') {
+                args.push_back(std::string(buf, i));
+                buf += i + 1; // Move past null terminator
+                i = -1; // Reset index to start of new string
+            }
+        }
+    }
+    return args;
+}
+#endif
+
+std::unordered_set<std::string> get_args_set() {
+    auto args = get_args();
+    return std::unordered_set<std::string>(args.begin(), args.end());
+}
+

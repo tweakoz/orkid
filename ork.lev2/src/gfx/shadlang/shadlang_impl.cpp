@@ -27,9 +27,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), false);
-static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), false);
-static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), false);
+static logchannel_ptr_t logchan         = logger()->configureChannel("ORKSLIMPL", fvec3(1, 1, .9), false);
+static logchannel_ptr_t logchan_grammar = logger()->configureChannel("ORKSLGRAM", fvec3(1, 1, .8), false);
+static logchannel_ptr_t logchan_lexer   = logger()->configureChannel("ORKSLLEXR", fvec3(1, 1, .7), false);
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SHAST::_dumpAstTreeVisitor( //

@@ -17,7 +17,7 @@ using namespace ork;
 namespace ork::lev2::scenegraph {
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr bool RENDER_DEBUG_LOG   = false;
-static logchannel_ptr_t logchan_sgrender = logger()->createChannel("SGRENDER", fvec3(0.9, 0.2, 0.9));
+static logchannel_ptr_t logchan_sgrender = logger()->configureChannel("SGRENDER", fvec3(0.9, 0.2, 0.9));
 
 ///////////////////////////////////////////////////////////////////////////////
 // enqueue scenegraph to renderer (update thread)

@@ -28,7 +28,7 @@
 #include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
-static logchannel_ptr_t logchan_harness = logger()->createChannel("singul.harness", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_harness = logger()->configureChannel("singul.harness", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 namespace ork::lev2 {

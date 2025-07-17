@@ -124,7 +124,7 @@ ork::lev2::context_ptr_t gloadercontext;
 struct ClassToucher {
   ClassToucher(appinitdata_ptr_t aid) {
 
-    printf( "ork.lev2 classes registered...\n");
+    logger()->defaultChannel()->log( "ork.lev2 classes registered...");
 
     AllocationLabel label("ork::lev2::Init");
 
@@ -449,7 +449,7 @@ struct ClassToucher {
   }
 
   ~ClassToucher() {
-    printf( "ork.lev2 classes unregistered...\n");
+    logger()->defaultChannel()->log( "ork.lev2 classes unregistered...");
   }
 
 };
@@ -471,7 +471,7 @@ struct Lev2AppInit {
     meshutil::misc_init();    
     registerEnums();
     ///////////////////////////////////////////////////////////////
-    printf("initialize OpenVDB....\n");
+    logger()->defaultChannel()->log("initialize OpenVDB....");
     /*
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();

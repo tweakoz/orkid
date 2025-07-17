@@ -39,7 +39,7 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
-static logchannel_ptr_t logchan_luacomp = logger()->createChannel("ecs.luacomp",fvec3(0.9,0.8,0.0));
+static logchannel_ptr_t logchan_luacomp = logger()->configureChannel("ecs.luacomp",fvec3(0.9,0.8,0.0));
 
 void LuaComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("ScriptFile", &LuaComponentData::mScriptPath)

@@ -40,7 +40,7 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
-static logchannel_ptr_t logchan_pyctx = logger()->createChannel("ecs.pyctx",fvec3(0.9,0.6,0.0));
+static logchannel_ptr_t logchan_pyctx = logger()->configureChannel("ecs.pyctx",fvec3(0.9,0.6,0.0));
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::ecs {

@@ -33,7 +33,7 @@ using namespace ork::audio::singularity;
 template class ork::orklut<ork::Char8, float>;
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_portaudio = logger()->createChannel("audio.PA", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_portaudio = logger()->configureChannel("audio.PA", fvec3(1, 0.6, .8), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;

@@ -14,7 +14,7 @@
 
 namespace ork::lev2::glslfx {
 
-static logchannel_ptr_t logchan_pass = logger()->createChannel("GLSLFXPASS", fvec3(0.8, 0.8, 0.3));
+static logchannel_ptr_t logchan_pass = logger()->configureChannel("GLSLFXPASS", fvec3(0.8, 0.8, 0.3));
 
 ///////////////////////////////////////////////////////////////////////////////
 

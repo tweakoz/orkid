@@ -11,6 +11,7 @@
 #include <ork/event/Event.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication {
@@ -41,6 +42,9 @@ void pyinit_datablock(py::module& module_core);
 void pyinit_asset(py::module& module_core);
 void pyinit_opencl(py::module& module_core);
 void pyinit_ipcq(py::module& module_core);
+void pyinit_logger(py::module& module_core);
+void pyinit_ncui(py::module& module_core);
+void pyinit_opq(py::module& module_core);
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -148,7 +152,7 @@ void pyinit_reflection(py::module& module_core);
 
 PYBIND11_MODULE(_core, module_core) {
 
-  printf("initialize ork.core python bindings\n");
+  logger()->defaultChannel()->log("initialize ork.core python bindings");
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
@@ -365,6 +369,13 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_asset(module_core);
   pyinit_opencl(module_core);
   pyinit_ipcq(module_core);
+  pyinit_logger(module_core);
+  pyinit_opq(module_core);
+  
+  // Create ncui submodule
+  auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");
+  pyinit_ncui(ncui_module);
+  
   /////////////////////////////////////////////////////////////////////////////////
   auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;

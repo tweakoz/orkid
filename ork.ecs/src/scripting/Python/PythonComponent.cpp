@@ -38,7 +38,7 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
-static logchannel_ptr_t logchan_pysyscomp = logger()->createChannel("ecs.pycomp",fvec3(0.9,0.8,0.0));
+static logchannel_ptr_t logchan_pysyscomp = logger()->configureChannel("ecs.pycomp",fvec3(0.9,0.8,0.0));
 
 void PythonComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("ScriptFile", &PythonComponentData::mScriptPath)

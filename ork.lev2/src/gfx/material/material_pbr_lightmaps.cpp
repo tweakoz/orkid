@@ -37,7 +37,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_pbr_lm = logger()->createChannel("mtlpbrLM", fvec3(0.8, 0.8, 0.1), true);
+static logchannel_ptr_t logchan_pbr_lm = logger()->configureChannel("mtlpbrLM", fvec3(0.8, 0.8, 0.1), true);
 ///////////////////////////////////////////////////////////////////////////////
 
 void PBRMaterial::setActiveLightMap(std::string name, fvec3 c ){

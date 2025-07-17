@@ -6,7 +6,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2::ca {
-static logchannel_ptr_t logchan_audunit = logger()->createChannel("AuContext", fvec3(1, 0.3, .6), true);
+static logchannel_ptr_t logchan_audunit = logger()->configureChannel("AuContext", fvec3(1, 0.3, .6), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -25,7 +25,7 @@ static bool SHOW_SKELETON() {
 }
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9),false);
+static logchannel_ptr_t logchan_model = logger()->configureChannel("model",fvec3(0.9,0.2,0.9),false);
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawableData::describeX(object::ObjectClass* clazz){

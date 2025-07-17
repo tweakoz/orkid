@@ -65,6 +65,8 @@ void OrkAssertFunction(const char *fmtstr)
 
 	ork::msleep(500);
 
+	exit(-1);
+
 	char *pKILL = nullptr; // force kill process via segfault
 	*pKILL = 0;
 

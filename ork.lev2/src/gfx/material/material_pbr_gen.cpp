@@ -31,7 +31,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbrgen = logger()->createChannel("PBRGEN", fvec3(0.8, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_pbrgen = logger()->configureChannel("PBRGEN", fvec3(0.8, 0.8, 0.5), true);
 
 float roughness_power = 0.5f;
 int _SALT() {

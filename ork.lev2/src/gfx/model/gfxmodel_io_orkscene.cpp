@@ -11,7 +11,7 @@ namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_mioROSCN = logger()->createChannel("orksceneREAD", fvec3(0.8, 0.8, 0.4), true);
+static logchannel_ptr_t logchan_mioROSCN = logger()->configureChannel("orksceneREAD", fvec3(0.8, 0.8, 0.4), true);
 
 bool XgmModel::_loadOrkScene(XgmModel* mdl, datablock_ptr_t datablock) {
   ork::lev2::XgmModel xgmmdlout;

@@ -54,7 +54,7 @@ class MySpotLight:
     self.spot_light.depthCookie = depth_cookie
     #self.spot_light.irradianceCookie = cookie.irr
     self.spot_light.shadowCaster = True
-    print(self.spot_light.shadowMatrix)
+    #print(self.spot_light.shadowMatrix)
     self.lnode = app.layer_fwd.createLightNode("spotlight%d"%index,self.spot_light)
     pass
   def update(self,abstime):

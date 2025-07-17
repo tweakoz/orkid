@@ -321,7 +321,6 @@ public:
   void doKeyOn(const KeyOnInfo& koi) override;
   void doKeyOff() override;
   
-private:
   const STREAMING_OSCILLATOR_DATA* _streamingdata = nullptr;
   
   // Ring buffer for audio data
@@ -353,6 +352,7 @@ private:
   double _last_chunk_time;
   std::deque<double> _chunk_intervals;
   std::vector<float> _accumulator_buffer;
+  svar64_t _enhancement_impl;
 
 };
 

@@ -24,7 +24,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_EZAPP = logger()->createChannel("ezapp", fvec3(1, 0.5, 1), true);
+static logchannel_ptr_t logchan_EZAPP = logger()->getChannel("EZAPP");
 
 void pyinit_gfx_qtez(py::module& module_lev2) {
   auto type_codec = python::pb11_typecodec_t::instance();

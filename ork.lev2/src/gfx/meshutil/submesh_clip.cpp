@@ -11,7 +11,7 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
+static logchannel_ptr_t logchan_clip = logger()->configureChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
 SubMeshClipper::SubMeshClipper(
     const submesh& inpsubmesh,      //

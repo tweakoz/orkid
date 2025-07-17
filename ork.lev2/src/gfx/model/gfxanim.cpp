@@ -19,7 +19,7 @@ using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_anim = logger()->createChannel("gfxanim", fvec3(1, 0.6, 1));
+static logchannel_ptr_t logchan_anim = logger()->configureChannel("gfxanim", fvec3(1, 0.6, 1));
 
 XgmAnimMask::XgmAnimMask() {
   EnableAll();

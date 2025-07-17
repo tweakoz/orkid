@@ -20,7 +20,7 @@
 #include <ork/kernel/opq.h>
 
 namespace ork::audio::singularity {
-static logchannel_ptr_t logchan_synth = logger()->createChannel("singul.syn", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_synth = logger()->configureChannel("SingulSynth", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
 void synth::nextEffect(outbus_ptr_t bus) {
   _eventmap.atomicOp([=](eventmap_t& emap) { //
@@ -714,22 +714,22 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   // test tone ?
   /////////////////////////////
   if (0) {
-    double frq = midi_note_to_frequency(GNOTE);
+    double frq = 120.0f;
     // printf("GNOTE<%d> frq<%g>\n", GNOTE, frq);
     static const float kinvsr = getInverseSampleRate();
     for (int i = 0; i < inumframes; i++) {
       double phase = frq * pi2 * double(_testtoneph) * kinvsr;
-      float samp   = sinf(phase);
+      float samp   = sinf(phase)*0.33;
       // printf("i<%d> samp<%g>\n", i, samp);
       master_left[i]  = samp;
       master_right[i] = samp;
       _testtoneph++;
     }
-    constexpr int k_samples_per_tick = 128;
-    float elapsed_this_tick          = float(k_samples_per_tick) * getInverseSampleRate();
-    auto& eventmap                   = _eventmap.LockForWrite();
-    this->_tick(eventmap, elapsed_this_tick);
-    _eventmap.UnLock();
+    //constexpr int k_samples_per_tick = 128;
+    //float elapsed_this_tick          = float(k_samples_per_tick) * getInverseSampleRate();
+    //auto& eventmap                   = _eventmap.LockForWrite();
+    //this->_tick(eventmap, elapsed_this_tick);
+    //_eventmap.UnLock();
   }
   /////////////////////////////
   // real output ?

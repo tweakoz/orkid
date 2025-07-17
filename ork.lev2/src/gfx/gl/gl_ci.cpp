@@ -26,7 +26,7 @@
 
 namespace ork::lev2::glslfx {
 
-  static logchannel_ptr_t logchan_ci = logger()->createChannel("GLCI", fvec3(0.8, 0.8, 0.3));
+  static logchannel_ptr_t logchan_ci = logger()->configureChannel("GLCI", fvec3(0.8, 0.8, 0.3));
 
   ///////////////////////////////////////////////////////////////////////////////
 

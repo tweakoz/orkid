@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_txi = logger()->createChannel("VKTXI", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_txi = logger()->configureChannel("VKTXI", fvec3(0.8, 0.2, 0.5), true);
 
 VkTextureInterface::VkTextureInterface(vkcontext_rawptr_t ctx)
     : TextureInterface(ctx)

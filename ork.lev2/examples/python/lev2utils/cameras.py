@@ -1,7 +1,7 @@
 from orkengine.core import vec3, mathconstants
 from orkengine.lev2 import CameraData, CameraDataLut, EzUiCam
 
-print("AAA")
+#print("AAA")
 constants = mathconstants()
 
 def setupUiCameraX( near = 0.1,
@@ -39,7 +39,7 @@ def setupUiCameraX( near = 0.1,
 
 ###########################################################3
 
-print("BBB")
+#print("BBB")
 
 def setupUiCamera( app = None,
                    near = 0.1,
@@ -104,4 +104,4 @@ class UiWanderingCameraPanel:
 
     self.camera.copyFrom( self.uicam.cameradata )
 
-print("CCC")
+#print("CCC")

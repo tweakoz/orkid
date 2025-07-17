@@ -31,7 +31,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanim.io.read", fvec3(1, 0.8, 1), false);
+static logchannel_ptr_t logchan_anmio = logger()->configureChannel("gfxanim.io.read", fvec3(1, 0.8, 1), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {

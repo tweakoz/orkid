@@ -42,7 +42,7 @@ namespace ork::lev2::pbr {
 
 constexpr size_t KNUMSSAONOISEFRAMES = 60;
 
-static logchannel_ptr_t logchan_pbrcom = logger()->createChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), false);
 
 
 ///////////////////////////////////////////////////////////////////////////////

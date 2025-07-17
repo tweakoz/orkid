@@ -12,7 +12,7 @@
 #include <rtmidi/RtMidi.h>
 #include <ork/util/logger.h>
 
-static logchannel_ptr_t logchan_midicb = ork::logger()->createChannel("midi.cb", fvec3(1, 0.3, 1));
+static logchannel_ptr_t logchan_midicb = ork::logger()->configureChannel("midi.cb", fvec3(1, 0.3, 1));
 
 void mymidicallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
   

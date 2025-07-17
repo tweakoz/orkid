@@ -20,7 +20,7 @@ using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_skel = logger()->createChannel("gfxanim.skel", fvec3(1, 0.7, 1));
+static logchannel_ptr_t logchan_skel = logger()->configureChannel("gfxanim.skel", fvec3(1, 0.7, 1));
 
 XgmSkelNode::XgmSkelNode(const std::string& Name)
     : _name(Name) {
