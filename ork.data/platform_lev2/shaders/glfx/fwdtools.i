@@ -133,7 +133,6 @@ libblock lib_fwd_impl
     //  vec3 ambient = invF*AmbientLevel;
     /////////////////////////
     return saturateV((diffuse + specular)*SkyboxLevel);
-    //return specular;
   } // vec3 environmentLighting(){
 
   vec3 _sample_color_cookie(uint slice, float lod, vec2 uv) {
@@ -332,7 +331,6 @@ libblock lib_fwd_impl
     } // for (int i = 0; i < spot_light_count; i++) {
 
     return (env_lighting + point_lighting + spot_lighting + emission) * modcolor; // * (1.0 - ZP);
-    //return (spot_lighting);
   }
   vec3 _forward_lightingZ(vec3 modcolor, 
                           vec3 albedo,
