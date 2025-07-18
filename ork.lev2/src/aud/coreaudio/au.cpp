@@ -11,8 +11,8 @@ static logchannel_ptr_t logchan_audunit = logger()->configureChannel("AuContext"
 ///////////////////////////////////////////////////////////////////////////////
 
 AuContext::AuContext() //
-    : _outputPool(32)  //
-    , _inputPool(32) { //
+    : _outputPool(4)  //
+    , _inputPool(4) { //
 
   _inputCallback = [](LayerFragment* data) { //
                                              // printf( "got buffer for channel<%d>\n", abd.mChannelID );
