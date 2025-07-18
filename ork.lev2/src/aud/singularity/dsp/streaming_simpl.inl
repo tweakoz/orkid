@@ -122,6 +122,26 @@ struct SimpleImpl {
     float buffer_health = float(current_buffer_size) / float(target_level);
 
     ///////////////////////////////////////////////////////////////////
+    // compute stretch factor
+    ///////////////////////////////////////////////////////////////////
+
+    float deviation = buffer_health - 1.0f;
+
+    // Add dead zone around target level - no stretching within ±5% of target
+    static constexpr float DEAD_ZONE = 0.05f; // 5% dead zone
+    int stretch_state = 0; // -1, 0, or 1 (sign of deviation)
+    if (fabsf(deviation) < DEAD_ZONE) {
+      stretch_state = 0;
+    } else {
+      // Reduce effective deviation by dead zone amount
+      if (deviation > 0) {
+        stretch_state = -1; // Buffer is overfull, stretch down
+      } else {
+        stretch_state = 1; // Buffer is underfull, stretch up
+      }
+    }
+
+    ///////////////////////////////////////////////////////////////////
     // logging
     ///////////////////////////////////////////////////////////////////
 
@@ -130,6 +150,7 @@ struct SimpleImpl {
       logchan_strsimpl->perfItem("SIMPL:BufferTgt", int(target_level));
       logchan_strsimpl->perfItem("SIMPL:BufferHealth", buffer_health);
       logchan_strsimpl->perfItem("SIMPL:Consuming", int(should_consume_samples));
+      logchan_strsimpl->perfItem("SIMPL:STRETCH", stretch_state);
     }
 
     ///////////////////////////////////////////////////////////////////
@@ -138,9 +159,37 @@ struct SimpleImpl {
 
     if (should_consume_samples) {
 
+      constexpr int stretch_count = 1;
+      static float discard_samples[stretch_count];
+
+      if(stretch_state == -1){ // Buffer is overfull, stretch down
+        stretch_state = (current_buffer_size-stretch_count) > frames ? -1 : 0; // Only stretch if we have enough samples
+      }
+
       // Direct copy mode (no stretching)
       if (current_buffer_size >= size_t(frames)) {
-        _oscil->_ringBuffer.pop_many(outputchan, frames);
+        switch(stretch_state){
+          case -1: // Buffer is overfull, stretch down
+            // this means discard a few samples 
+            //   (assuning we have more than frames+discard amout)
+            _oscil->_ringBuffer.pop_many(discard_samples, stretch_count);
+            _oscil->_ringBuffer.pop_many(outputchan, frames);
+            break;
+          case 1: { // Buffer is underfull, stretch up
+            // this means we need to repeat some samples
+            // by pulling fewer samples than we need
+            // and then repeating the last sample
+            size_t to_pull = frames-stretch_count;
+            _oscil->_ringBuffer.pop_many(outputchan, to_pull);
+            for(int i=0; i<stretch_count; i++){
+              outputchan[to_pull+i] = outputchan[to_pull-1]; // Repeat last sample
+            }
+            break;
+          }
+          default: // No stretching needed
+            _oscil->_ringBuffer.pop_many(outputchan, frames);
+            break;
+        }
       } else {
         memset(outputchan, 0, frames * sizeof(float));
         logchan_strsimpl->log("SimpleImpl: Underrun - buffer:%zu needed:%d", current_buffer_size, frames);
