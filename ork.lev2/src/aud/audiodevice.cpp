@@ -154,7 +154,6 @@ lev2::audioinputchunk_ptr_t StreamingAudioInputChunkSource::getChunk() {
   _inputqueue.try_pop(chunk);
   return chunk;
 }
- // MpMcBoundedQueue<lev2::audioinputchunk_ptr_t,256> _inputqueue;
 
 ///////////////////////////////////////////////////////////////////////////////
 
