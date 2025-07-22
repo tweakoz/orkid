@@ -294,7 +294,9 @@ if "OBT_STAGE" in env_config["captured_env"]:
     
     # Set PATH with staging directories FIRST
     print("echo 'Setting PATH with staging directories...'")
-    print(f"export PATH='{obt_stage}/bin:{obt_stage}/pyvenv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'")
+    prev_path = env_config["captured_env"]["PATH"]
+    print(f"export PATH={prev_path}")
+    #'{obt_stage}/bin:{obt_stage}/pyvenv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'")
     print("echo 'PATH set to:' $PATH")
     print("")
 else:
