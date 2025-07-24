@@ -63,6 +63,29 @@ LoadRequest::LoadRequest(const AssetPath& p,vars_ptr_t vars) //
   , _asset_vars(vars) { //
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+LoadRequest::LoadRequest(const AssetPath& p, catalog::assetreq_ptr_t catalog_req)
+  : _asset_path(p)
+  , _catalog_request(catalog_req) {
+  _asset_vars = std::make_shared<vars_t>();
+  OrkAssert(catalog_req != nullptr);
+  OrkAssert(catalog_req->isValid());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LoadRequest::LoadRequest(catalog::assetreq_ptr_t catalog_req)
+  : _catalog_request(catalog_req) {
+  _asset_vars = std::make_shared<vars_t>();
+  OrkAssert(catalog_req != nullptr);
+  OrkAssert(catalog_req->isValid());
+  // Path will be resolved from catalog asset_id if needed
+  if (!catalog_req->_asset_id.empty()) {
+    _asset_path = AssetPath(catalog_req->_asset_id.c_str());
+  }
+}
+
 void LoadRequest::enqueueAsync(void_lambda_t on_complete) const{
 
 }
@@ -94,6 +117,26 @@ void LoadRequest::waitForCompletion() const { //
       ork::usleep(100);
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string LoadRequest::getAssetIdentifier() const {
+  if (_catalog_request) {
+    // For catalog: namespace.assetid or namespace.derivedname
+    if (!_catalog_request->_asset_id.empty()) {
+      return _catalog_request->_namespace + "." + _catalog_request->_asset_id;
+    }
+    // Derive from path - use base filename without extension
+    std::string name = _asset_path.getName();
+    size_t dot_pos = name.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+      name = name.substr(0, dot_pos);
+    }
+    return _catalog_request->_namespace + "." + name;
+  }
+  // For file: just the path
+  return _asset_path.c_str();
 }
 
 

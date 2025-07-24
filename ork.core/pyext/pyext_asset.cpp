@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetLoader.h>
+#include <ork/asset/catalog/asset_manifest.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -79,6 +80,72 @@ void pyinit_asset(py::module& module_core) {
     loader->load(loadreq);
     return loadreq;
   });
+  /////////////////////////////////////////////////////////////////////////////////
+  amodule.def("enqueueCatalogLoad", [type_codec](catalog::assetreq_ptr_t catalog_req, py::kwargs _kwargs) -> loadrequest_ptr_t {
+    varmap::varmap_ptr_t as_varmap = nullptr;
+    py::dict vars;
+    py::function py_on_event;
+    std::string apath; // Optional path override
+    
+    for (auto item : _kwargs) {
+      auto key = item.first.cast<std::string>();
+      if (key == "path") {
+        apath = item.second.cast<std::string>();
+      }
+      else if (key == "vars") {
+        vars = item.second.cast<py::dict>();
+      }
+      else if (key == "onEvent") {
+        py_on_event = item.second.cast<py::function>();
+      }
+    }
+    
+    // Process vars
+    if (py::isinstance<py::dict>(vars)) {
+      as_varmap = std::make_shared<varmap::VarMap>();
+      auto py_dict = vars.cast<py::dict>();
+      for (auto item : py_dict) {
+        auto key = item.first.cast<std::string>();
+        auto as_pyobj = py::cast<py::object>(item.second);
+        auto value = type_codec->decode(as_pyobj);
+        as_varmap->setValueForKey(key,value);
+      }
+    }
+    else{
+      as_varmap = vars.cast<varmap::varmap_ptr_t>();
+    }
+    
+    // Create LoadRequest with catalog
+    loadrequest_ptr_t loadreq;
+    if (apath.empty()) {
+      loadreq = std::make_shared<LoadRequest>(catalog_req);
+    } else {
+      loadreq = std::make_shared<LoadRequest>(apath, catalog_req);
+    }
+    
+    if(py_on_event){
+      loadreq->_asset_vars->makeValueForKey<py::function>("_event_handler") = py_on_event;
+      auto cpp_on_event = ([=](uint32_t event,varmap::var_t value) { //
+        py::gil_scoped_acquire acquire;
+        auto pyfn = loadreq->_asset_vars->typedValueForKey<py::function>("_event_handler");
+        auto encoded = type_codec->encode(value);
+        pyfn.value()(loadreq,event,encoded);
+      });
+      loadreq->_on_event = cpp_on_event;
+    }
+    
+    // Use NetAssetLoader for catalog loads
+    assetloader_ptr_t net_loader;
+    AssetLoader::_loaders_by_ext.atomicOp(
+      [&net_loader](AssetLoader::loader_by_ext_map_t& map) {
+        auto it = map.find("catalog");
+        net_loader = (it != map.end()) ? it->second : nullptr;
+      });
+    
+    OrkAssert(net_loader);
+    net_loader->load(loadreq);
+    return loadreq;
+  }, py::arg("catalog_request"));
   /////////////////////////////////////////////////////////////////////////////////
   auto aset_type = py::class_<Asset,asset_ptr_t>(amodule, "Asset");
   type_codec->registerStdCodec<asset_ptr_t>(aset_type);

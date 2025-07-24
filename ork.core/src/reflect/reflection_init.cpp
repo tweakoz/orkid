@@ -10,10 +10,13 @@
 #include <ork/math/gradient.h>
 #include <ork/math/TransformNode.h>
 #include <ork/asset/Asset.h>
+#include <ork/asset/AssetLoader.h>
+#include <ork/asset/NetAssetLoader.h>
 #include <ork/dataflow/all.h>
 #include <ork/object/COM.h>
 #include <ork/application/application.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/opq.h>
 #include <ork/util/logger.h>
 
 namespace dflow = ork::dataflow;
@@ -99,12 +102,19 @@ void initModule(ork::appinitdata_ptr_t init_data) {
     return;
   }
   g_core_class_toucher = std::make_shared<ork::CoreAppInit>(init_data);
+  
+  // Register NetAssetLoader for catalog extension
+  auto net_loader = std::make_shared<asset::NetAssetLoader>();
+  asset::AssetLoader::registerLoaderForExtension("catalog", net_loader);
+  opq::init();
+  
   ginit_mutex.UnLock();
 }
 
 void exitModule(ork::appinitdata_ptr_t init_data){
   ginit_mutex.Lock();
   g_core_class_toucher = nullptr;
+  opq::exit();
   ginit_mutex.UnLock();
 }
 

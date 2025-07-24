@@ -179,4 +179,22 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
 
 ////////////////////////////////////////////////////////////////////////////////
 
+AssetRequest::AssetRequest() {
+}
+
+AssetRequest::AssetRequest(const std::string& ns) 
+  : _namespace(ns) {
+}
+
+AssetRequest::AssetRequest(const std::string& ns, const std::string& asset_id)
+  : _namespace(ns)
+  , _asset_id(asset_id) {
+}
+
+bool AssetRequest::isValid() const {
+  return !_namespace.empty();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::asset::catalog

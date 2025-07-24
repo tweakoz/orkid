@@ -30,6 +30,34 @@ void pyinit_asset_catalog(py::module& module_core) {
     });
   type_codec->registerStdCodec<assetmanifest_ptr_t>(manifest_type);
 
+  /////////////////////////////////////////////////////////////////////////////////
+  // AssetRequest
+  /////////////////////////////////////////////////////////////////////////////////
+  auto assetreq_type = py::class_<AssetRequest, assetreq_ptr_t>(module_core, "AssetRequest")
+    .def(py::init<>())
+    .def(py::init<const std::string&>(), py::arg("namespace"))
+    .def(py::init<const std::string&, const std::string&>(), py::arg("namespace"), py::arg("asset_id"))
+    .def_readwrite("namespace", &AssetRequest::_namespace)
+    .def_readwrite("asset_id", &AssetRequest::_asset_id)
+    .def("is_valid", &AssetRequest::isValid)
+    .def("set_progress_callback", [](assetreq_ptr_t req, py::function fn) {
+      if (!fn.is_none()) {
+        req->_progress_callback._data.makeShared<py::function>(fn);
+        req->_progress_callback._item = [req](size_t downloaded, size_t total) {
+          auto fn = req->_progress_callback._data.getShared<py::function>();
+          py::gil_scoped_acquire acquire;
+          fn->operator()(downloaded, total);
+        };
+      } else {
+        req->_progress_callback._item = nullptr;
+      }
+    })
+    .def("__repr__", [](assetreq_ptr_t req) -> std::string {
+      return FormatString("AssetRequest(namespace='%s', asset_id='%s')", 
+        req->_namespace.c_str(), req->_asset_id.c_str());
+    });
+  type_codec->registerStdCodec<assetreq_ptr_t>(assetreq_type);
+
   // AssetEntry nested struct
   py::class_<AssetManifest::AssetEntry>(module_core, "AssetEntry")
     .def_readonly("type", &AssetManifest::AssetEntry::_type)

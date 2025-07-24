@@ -14,6 +14,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/file/path.h>
 #include <ork/kernel/datablock.h>
+#include <ork/asset/catalog/asset_manifest.h>
 
 namespace ork::asset {
 
@@ -42,6 +43,10 @@ struct LoadRequest{
   LoadRequest(const AssetPath& p);
   LoadRequest(const AssetPath& p, vars_ptr_t asset_vars);
   LoadRequest(datablock_ptr_t db,vars_ptr_t asset_vars=nullptr);
+  
+  // Catalog support
+  LoadRequest(const AssetPath& p, catalog::assetreq_ptr_t catalog_req);
+  LoadRequest(catalog::assetreq_ptr_t catalog_req);
 
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();
@@ -60,8 +65,13 @@ struct LoadRequest{
   event_lambda_t _on_event;
   datablock_ptr_t _datablock;
   uint64_t _contentHash = 0;
+  catalog::assetreq_ptr_t _catalog_request;
 
   std::atomic<int> _partial_load_counter = 0;
+  
+  // Helper methods
+  bool isCatalogLoad() const { return _catalog_request != nullptr; }
+  std::string getAssetIdentifier() const;
 };
 
 

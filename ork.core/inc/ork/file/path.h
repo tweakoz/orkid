@@ -31,24 +31,16 @@ class Path;
 class PathMarkers {
   friend class Path;
 
-  unsigned int mDriveLen : 2;       // 2
-  unsigned int mUrlBaseLen : 5;     // 7
-  unsigned int mFolderLen : 8;      // 15
-  unsigned int mFileNameLen : 8;    // 23
-  unsigned int mExtensionLen : 8;   // 27
-  unsigned int mQueryStringLen : 8; // 32
+  unsigned int mUrlBaseLen : 7;     // 0-127 chars for protocol
+  unsigned int mFolderLen : 10;     // 0-1023 chars for folder
+  unsigned int mFileNameLen : 8;    // 0-255 chars for filename
+  unsigned int mExtensionLen : 7;   // 0-127 chars for extension
 
 public:
-  unsigned int getDriveBase() const;
   unsigned int getUrlBase() const;
   unsigned int getFolderBase() const;
   unsigned int getFileNameBase() const;
   unsigned int getExtensionBase() const;
-  unsigned int getQueryStringBase() const;
-
-  unsigned int getDriveLength() const {
-    return mDriveLen;
-  }
   unsigned int getUrlLength() const {
     return mUrlBaseLen;
   }
@@ -61,9 +53,6 @@ public:
   unsigned int getExtensionLength() const {
     return mExtensionLen;
   }
-  unsigned int getQueryStringLength() const {
-    return mQueryStringLen;
-  }
 
   PathMarkers();
 };
@@ -71,17 +60,12 @@ public:
 //////////////////////////////////////////////////////////
 
 struct DecomposedPath {
-  typedef FixedString<256> string_t;
+  typedef std::string string_t;
 
-  string_t mProtocol;
-  string_t mHostname;
-  string_t mPort;
-
-  string_t mDrive;
-  string_t mFolder;
-  string_t mFile;
-  string_t mExtension;
-  string_t mQuery;
+  string_t mProtocol;   // e.g. "data://"
+  string_t mFolder;     // e.g. "/path/to/"
+  string_t mFile;       // e.g. "filename"
+  string_t mExtension;  // e.g. "txt"
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,15 +74,12 @@ class Path {
 public:
   typedef U32 HashType;
 
-  typedef FixedString<32> SmallNameType;
-  typedef FixedString<256> NameType;
+  typedef std::string SmallNameType;
+  typedef std::string NameType;
 
   enum EPathType {
     EPATHTYPE_NATIVE = 0,
-    EPATHTYPE_DOS,
     EPATHTYPE_POSIX,
-    //EPATHTYPE_NDS,
-
     EPATHTYPE_URL,
     EPATHTYPE_ASSET = EPATHTYPE_URL,
   };
@@ -108,7 +89,7 @@ public:
   Path(const std::string pathName);
   explicit Path(const PieceString& pathName);
   explicit Path(const boost::filesystem::path& p);
-  explicit Path(const NameType& pathName);
+  // explicit Path(const NameType& pathName); // Removed - NameType is now std::string
   explicit Path(const ork::PoolString& pathName);
   explicit Path(const std::vector<std::string>& pathVect);
 
@@ -136,7 +117,6 @@ public:
   void appendFolder(const char* filename);
   void setExtension(const char* ext);
   void setUrlBase(const char* UrlBase);
-  void setDrive(const char* UrlBase);
 
   void set(const char* pathName);
 
@@ -144,22 +124,12 @@ public:
   bool isRelative() const;
   bool hasUrlBase() const;
   bool hasFolder() const;
-  bool hasDrive() const;
-  bool hasQueryString() const;
   bool hasExtension() const;
   bool hasFile() const;
 
   //////////////////////////////////////////////
 
-  void decompose(SmallNameType& url, SmallNameType& drive, NameType& folder, NameType& file, SmallNameType& ext, NameType& query);
-
-  void compose(
-      const SmallNameType& url,
-      const SmallNameType& drive,
-      const NameType& folder,
-      const NameType& file,
-      const SmallNameType& ext,
-      const NameType& query);
+  // Removed 6-parameter decompose/compose - use DecomposedPath versions instead
 
   void decompose(DecomposedPath& decomposed);
   void compose(const DecomposedPath& decomposed);
@@ -168,7 +138,6 @@ public:
 
   //////////////////////////////////////////////
 
-  void splitQuery(NameType& BeforeQuerySep, NameType& AfterQuerySep) const;
   void split(NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep) const;
 
   //////////////////////////////////////////////
@@ -180,12 +149,10 @@ public:
 
   //////////////////////////////////////////////
 
-  SmallNameType getDrive() const;
   SmallNameType getExtension() const;
   SmallNameType getUrlBase() const;
 
   NameType getName() const;
-  NameType getQueryString() const;
   NameType getFolder(EPathType etype) const;
 
   Path stripBasePath(const NameType& base) const;
@@ -224,12 +191,41 @@ public:
   static Path share_dir();
   static Path temp_dir();
   static Path data_dir();
+  
+  //////////////////////////////////////
+  // Temporary file/directory creation
+  //////////////////////////////////////
+  
+  // Create a temporary directory (like Python's tempfile.mkdtemp)
+  // Returns path to the created directory
+  // prefix: optional prefix for the directory name
+  // suffix: optional suffix for the directory name
+  // dir: optional parent directory (defaults to system temp dir)
+  static Path mkdtemp(const std::string& prefix = "ork_",
+                      const std::string& suffix = "",
+                      const Path& dir = Path());
+  
+  // Create a temporary file (like Python's tempfile.mkstemp)
+  // Returns pair of (file descriptor, path to the created file)
+  // prefix: optional prefix for the file name
+  // suffix: optional suffix for the file name
+  // dir: optional parent directory (defaults to system temp dir)
+  static std::pair<int, Path> mkstemp(const std::string& prefix = "ork_",
+                                      const std::string& suffix = ".tmp",
+                                      const Path& dir = Path());
+  
+  // Create a named temporary file path (without creating the file)
+  // Similar to Python's tempfile.NamedTemporaryFile but doesn't create the file
+  // Returns a unique path that can be used for a temporary file
+  static Path mktemp(const std::string& prefix = "ork_",
+                     const std::string& suffix = ".tmp",
+                     const Path& dir = Path());
 
 
 private:
   //////////////////////////////////////
 
-  NameType _pathstring;
+  std::string _pathstring;
   PathMarkers _markers;
 
   //////////////////////////////////////

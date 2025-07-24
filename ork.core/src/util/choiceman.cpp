@@ -75,7 +75,7 @@ void ChoiceList::add(const AttrChoiceValue& val) {
   int nch               = (int)mChoicesVect.size() - 1;
   auto ChcVal           = mChoicesVect[nch];
   void* pData           = (void*)ChcVal.get();
-  slashnode_ptr_t pnode = _hierarchy->add_node(LongName.c_str(), pData);
+  slashnode_ptr_t pnode = _hierarchy->addNode(LongName.c_str(), pData);
   pNewVal->SetSlashNode(pnode.get());
   pNewVal->CopyKeywords(val);
   pNewVal->SetCustomData(val.GetCustomData());
@@ -97,7 +97,7 @@ void ChoiceList::remove(const AttrChoiceValue& val) {
       SlashNode* pnode = ChcVal->GetSlashNode();
 
       if (pnode) {
-        _hierarchy->remove_node(pnode);
+        _hierarchy->removeNode(pnode);
       }
 
       inumchoices = (int)mChoicesVect.size();
@@ -118,7 +118,7 @@ void ChoiceList::UpdateHierarchy(void) // update hierarchy
   size_t nch = mChoicesVect.size();
   for (size_t i = 0; i < nch; i++) {
     auto val = mChoicesVect[i];
-    _hierarchy->add_node(val->GetName().c_str(), (void*)val.get());
+    _hierarchy->addNode(val->GetName().c_str(), (void*)val.get());
     OldStlSchoolMapInsert(mValueMap, val->GetValue(), val);
   }
 }
@@ -159,15 +159,15 @@ bool ChoiceList::DoesSlashNodePassFilter(
 
       NodeStack.pop();
 
-      int inumchildren = snode->GetNumChildren();
+      int inumchildren = snode->numChildren();
 
-      auto children = snode->GetChildren();
+      auto children = snode->children();
 
       for (auto it : children) {
 
         auto pchild = it.second;
 
-        if (pchild->IsLeaf()) {
+        if (pchild->isLeaf()) {
           if (Filter) {
             if (Filter->mFilterMap.size()) {
               choice_constptr_t chcval = FindFromLongName(pchild->pathAsString());
@@ -199,13 +199,21 @@ void ChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wil
   orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard.c_str(), sdir.c_str());
   int inumfiles                         = (int)files.size();
   file::Path::NameType searchdir(sdir.toAbsolute().c_str());
-  searchdir.replace_in_place("\\", "/");
+  // Convert backslashes to forward slashes
+  for (size_t i = 0; i < searchdir.length(); i++) {
+    if (searchdir[i] == '\\') searchdir[i] = '/';
+  }
   for (int ifile = 0; ifile < inumfiles; ifile++) {
     auto the_file                  = files[ifile];
     auto the_stripped              = FileEnv::filespec_strip_base(the_file, "./");
     file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(the_stripped);
     file::Path::NameType ObjPtrStrA;
-    ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
+    // Remove searchdir prefix from ObjPtrStr
+    ObjPtrStrA = ObjPtrStr;
+    size_t pos = ObjPtrStrA.find(searchdir);
+    if (pos == 0) {
+      ObjPtrStrA = ObjPtrStrA.substr(searchdir.length());
+    }
     // OldStlSchoolFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
     file::Path::NameType ObjPtrStr2 = file::Path::NameType(sdir.c_str()) + ObjPtrStrA;
     file::Path OutPath(ObjPtrStr2.c_str());

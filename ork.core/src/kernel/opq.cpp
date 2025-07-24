@@ -27,11 +27,22 @@ static logchannel_ptr_t logchan_opq = logger()->configureChannel("OPQ", fvec3(0.
 static int MAX_THREADS = 0;
 static int MIN_THREADS = 0;
 ////////////////////////////////////////////////////////////////////////
+static std::shared_ptr<Thread> gthread_coordinator;
+static std::atomic<bool> gthread_coordinator_should_exit{false};
+////////////////////////////////////////////////////////////////////////
+static void _coordinatorThreadShutdown() {
+  if (gthread_coordinator) {
+    gthread_coordinator_should_exit = true;
+    gthread_coordinator->join();
+    gthread_coordinator = nullptr;
+  }
+}
+////////////////////////////////////////////////////////////////////////
 static void _coordinatorThreadStartup() {
   auto coordinator_thread_impl = [](anyp data) {
     int num_completed = 0;
     int check_index   = 0;
-    while (OpqThread::_gthreadcount > 0) {
+    while (OpqThread::_gthreadcount > 0 && !gthread_coordinator_should_exit) {
       ork::usleep(1 << 20);
       auto cq = concurrentQueue();
       int nt  = cq->_numThreadsRunning;
@@ -78,7 +89,9 @@ static void _coordinatorThreadStartup() {
       check_index++;
     }
   };
-  static auto coordinator_thread = std::make_shared<Thread>(coordinator_thread_impl, nullptr, "opq_coordinator_thread");
+  if (!gthread_coordinator) {
+    gthread_coordinator = std::make_shared<Thread>(coordinator_thread_impl, nullptr, "opq_coordinator_thread");
+  }
 }
 //////////////////////////////////////////////////////////////////////
 static progress_handler_t g_handler = [](progressdata_ptr_t data) {
@@ -281,6 +294,7 @@ void OpqThread::run() // virtual
   OpqThreadData* opqthreaddata = &_data;
   OperationsQueue* q           = opqthreaddata->_queue;
   std::string opqn             = q->_name;
+  _threadname = q->_name + "_thread_";
   SetCurrentThreadName(opqn.c_str());
 
   q->_numThreadsRunning++;
@@ -371,6 +385,11 @@ void OperationsQueue::_internalEndLock() {
 bool OperationsQueue::Process() {
 
   bool item_processed = false;
+  
+  // Don't process new operations if terminated
+  if (_terminated) {
+    return false;
+  }
 
   ///////////////////////////////////////
   // find a group with pending ops
@@ -454,15 +473,15 @@ bool OperationsQueue::Process() {
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////
 void OperationsQueue::enqueue(const Op& the_op) {
-  if (false == _goingdown)
+  if (false == _terminated)
     _defaultConcurrencyGroup->enqueue(the_op);
 }
 void OperationsQueue::enqueue(const void_lambda_t& l, const std::string& name) {
-  if (false == _goingdown)
+  if (false == _terminated)
     _defaultConcurrencyGroup->enqueue(Op(l, name));
 }
 void OperationsQueue::enqueue(const BarrierSyncReq& s) {
-  if (false == _goingdown)
+  if (false == _terminated)
     _defaultConcurrencyGroup->enqueue(Op(s));
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -525,7 +544,7 @@ OperationsQueue::OperationsQueue(int inumthreads, const char* name)
     : mSemaphore(name)
     , _name(name) {
   _lock                   = false;
-  _goingdown              = false;
+  _terminated             = false;
   mGroupCounter           = 0;
   _numThreadsRunning      = 0;
   _numPendingOperations   = 0;
@@ -547,10 +566,34 @@ OperationsQueue::OperationsQueue(int inumthreads, const char* name)
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-OperationsQueue::~OperationsQueue() {
+void OperationsQueue::terminate() {
+  if (_terminated.exchange(true)) {
+    // Already terminated
+    return;
+  }
 
-  _lock      = true;
-  _goingdown = true;
+  _lock = true;
+  
+  // Signal all threads to exit
+  size_t numthreads = 0;
+  _threads.atomicOp([=, &numthreads](threadset_t& thset) {
+    numthreads = thset.size();
+    for (auto thread : thset)
+      thread->_state.store(EPOQSTATE_OK2KILL);
+  });
+  
+  // Wake up all threads that might be waiting
+  for (size_t i = 0; i < numthreads * 2; i++) {
+    mSemaphore.notify();
+  }
+  
+  // Drain any remaining operations
+  drain();
+}
+
+OperationsQueue::~OperationsQueue() {
+  // Terminate the queue if not already done
+  terminate();
 
   /////////////////////////////////
   // signal to thread we are going down, then wait for it to go down
@@ -601,6 +644,11 @@ ConcurrencyGroup::ConcurrencyGroup(OperationsQueue& q, const char* pname)
 }
 ///////////////////////////////////////////////////////////////////////////
 void ConcurrencyGroup::enqueue(const Op& the_op) {
+
+  // Don't enqueue if the queue is terminated
+  if (_queue._terminated) {
+    return;
+  }
 
   bool was_enqueued = false;
   _queue._numPendingOperations.fetch_add(1);
@@ -746,6 +794,14 @@ void init() {
   mainSerialQueue();
   updateSerialQueue();
   _coordinatorThreadStartup();
+}
+///////////////////////////////////////////////////////////////////////
+void exit() {
+  _coordinatorThreadShutdown();
+  mainSerialQueue()->terminate();
+  updateSerialQueue()->terminate();
+  concurrentQueue()->terminate();
+  concurrentQueue()->terminate();
 }
 ///////////////////////////////////////////////////////////////////////////
 

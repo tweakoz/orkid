@@ -16,6 +16,7 @@ namespace ork {
 struct SlashTree;
 struct SlashNode;
 using slashnode_ptr_t      = std::shared_ptr<SlashNode>;
+using slashnode_wkptr_t    = std::weak_ptr<SlashNode>;
 using slashtree_ptr_t      = std::shared_ptr<SlashTree>;
 using slashnode_constptr_t = std::shared_ptr<const SlashNode>;
 using slashtree_constptr_t = std::shared_ptr<const SlashTree>;
@@ -43,32 +44,32 @@ struct SlashNode {
   SlashNode();
   ~SlashNode();
 
-  int GetNumChildren() const {
+  int numChildren() const {
     return int(_children_map.size());
   }
-  const children_t& GetChildren() const {
+  const children_t& children() const {
     return _children_map;
   }
-  const std::string& GetNodeName() const {
+  const std::string& nodeName() const {
     return _name;
   }
-  bool IsLeaf(void) const {
-    return (0 == GetNumChildren());
+  bool isLeaf() const {
+    return (0 == numChildren());
   }
   void dump(void) const;
   void _dump(void) const;
 
-  void SetData(void* pdata) {
+  void setData(void* pdata) {
     _data = pdata;
   }
-  const void* GetData(void) const {
+  const void* data() const {
     return _data;
   }
   const SlashNode* root() const;
-  void GetPath(orkvector<const SlashNode*>& pth) const;
+  void getPath(orkvector<const SlashNode*>& pth) const;
 
   std::string _name;
-  SlashNode* _parent;
+  slashnode_wkptr_t _parent;
   children_t _children_map;
   void* _data;
 };
@@ -77,14 +78,14 @@ struct SlashNode {
 
 struct SlashTree {
 
-  slashnode_ptr_t add_node(const char* instr, void* ndata);
-  void remove_node(SlashNode* pnode);
-  slashnode_ptr_t find_node(const std::string& instr) const;
+  slashnode_ptr_t addNode(const char* instr, void* ndata);
+  void removeNode(SlashNode* pnode);
+  slashnode_ptr_t findNode(const std::string& instr) const;
   SlashTree();
-  void Clear(void);
-  void dump(void) const;
+  void clear();
+  void dump() const;
 
-  slashnode_constptr_t root(void) const {
+  slashnode_constptr_t root() const {
     return _root;
   }
 

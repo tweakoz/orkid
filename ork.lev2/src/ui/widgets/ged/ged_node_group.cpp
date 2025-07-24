@@ -88,7 +88,7 @@ GedGroupNode::GedGroupNode(
     }
   }
 
-  mPersistID.format("%s_group_collapse", fixname.c_str());
+  mPersistID = FormatString("%s_group_collapse", fixname.c_str());
 
   ///////////////////////////////////////////
   PersistHashContext HashCtx;

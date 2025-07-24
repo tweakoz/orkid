@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 namespace ork::asset::catalog {
 
@@ -168,7 +169,7 @@ void AssetFetcher::loadAllManifests() {
 ////////////////////////////////////////////////////////////////////////////////
 
 int AssetFetcher::fetchPak(const std::string& pack_identifier) {
-  int fetch_count = 0;
+  std::vector<std::pair<std::string, AssetManifest::AssetEntry>> assets_to_fetch;
   
   if (pack_identifier.find('.') != std::string::npos) {
     ///////////////////////////////////////////////////////////
@@ -176,9 +177,7 @@ int AssetFetcher::fetchPak(const std::string& pack_identifier) {
     ///////////////////////////////////////////////////////////
     auto it = _resolved_assets.find(pack_identifier);
     if (it != _resolved_assets.end()) {
-      if (fetchAsset(pack_identifier, it->second)) {
-        fetch_count = 1;
-      }
+      assets_to_fetch.push_back({pack_identifier, it->second});
     } else {
       printf("Asset %s not found in manifests\n", pack_identifier.c_str());
     }
@@ -191,27 +190,56 @@ int AssetFetcher::fetchPak(const std::string& pack_identifier) {
       if (dot_pos != std::string::npos) {
         std::string namespace_part = asset_id.substr(0, dot_pos);
         if (namespace_part == pack_identifier) {
-          if (fetchAsset(asset_id, asset_data)) {
-            fetch_count++;
-          }
+          assets_to_fetch.push_back({asset_id, asset_data});
         }
       }
     }
     
-    if (fetch_count == 0) {
+    if (assets_to_fetch.empty()) {
       printf("No assets found matching '%s'\n", pack_identifier.c_str());
       printf("Note: You must specify the full asset ID as namespace.asset_id (e.g., singularity.std)\n");
       printf("Or you can specify just a namespace to fetch all assets in that namespace\n");
+      return 0;
     }
   }
   
-  return fetch_count;
+  ///////////////////////////////////////////////////////////
+  // Queue all downloads and processing in parallel
+  ///////////////////////////////////////////////////////////
+  std::atomic<int> completed_count{0};
+  std::mutex completion_mutex;
+  std::condition_variable completion_cv;
+  const int total_assets = assets_to_fetch.size();
+  
+  for (const auto& [asset_id, asset_data] : assets_to_fetch) {
+    // Queue the download and post-processing
+    queueAssetFetch(asset_id, asset_data, 
+      [&completed_count, &completion_mutex, &completion_cv, total_assets]() {
+        int count = ++completed_count;
+        if (count == total_assets) {
+          std::lock_guard<std::mutex> lock(completion_mutex);
+          completion_cv.notify_one();
+        }
+      });
+  }
+  
+  // Wait for all assets to complete
+  {
+    std::unique_lock<std::mutex> lock(completion_mutex);
+    completion_cv.wait(lock, [&completed_count, total_assets]() {
+      return completed_count >= total_assets;
+    });
+  }
+  
+  return completed_count.load();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool AssetFetcher::fetchAsset(const std::string& asset_id, const AssetManifest::AssetEntry& asset_data) {
-  printf("Fetching asset %s\n", asset_id.c_str());
+void AssetFetcher::queueAssetFetch(const std::string& asset_id, 
+                                   const AssetManifest::AssetEntry& asset_data,
+                                   std::function<void()> on_complete) {
+  printf("Queueing download for asset %s\n", asset_id.c_str());
   
   ///////////////////////////////////////////////////////////
   // Resolve source and destination paths
@@ -233,8 +261,8 @@ bool AssetFetcher::fetchAsset(const std::string& asset_id, const AssetManifest::
   // Resolve destination path
   file::Path dest_path = _config.resolvePath(dst_loc);
   
-  // Create download
-  file::Path temp_file = file::Path::temp_dir() / asset_data._filename;
+  // Create download with unique temp file per asset
+  file::Path temp_file = file::Path::mktemp(asset_id + "_", "_" + asset_data._filename);
   auto download = _download_manager->download(source_url, temp_file);
   
   ///////////////////////////////////////////////////////////
@@ -246,111 +274,110 @@ bool AssetFetcher::fetchAsset(const std::string& asset_id, const AssetManifest::
     }
   };
   
-  bool download_success = false;
-  std::mutex completion_mutex;
-  std::condition_variable completion_cv;
-  
-  download->_on_complete._item = [&](bool success, const file::Path& path) {
-    std::lock_guard<std::mutex> lock(completion_mutex);
-    download_success = success;
-    completion_cv.notify_one();
-  };
-  
-  download->_on_failure._item = [&](const std::string& error) {
-    printf("Download failed for %s: %s\n", asset_id.c_str(), error.c_str());
-    std::lock_guard<std::mutex> lock(completion_mutex);
-    download_success = false;
-    completion_cv.notify_one();
-  };
-  
-  // Wait for download completion
-  {
-    std::unique_lock<std::mutex> lock(completion_mutex);
-    completion_cv.wait(lock);
-  }
-  
-  if (!download_success) {
-    if (_on_asset_complete._item) {
-      _on_asset_complete._item(asset_id, false);
-    }
-    return false;
-  }
-  
-  ///////////////////////////////////////////////////////////
-  // Verify MD5
-  ///////////////////////////////////////////////////////////
-  if (!asset_data._md5.empty()) {
-    if (!verifyMD5(temp_file, asset_data._md5)) {
-      printf("MD5 verification failed for %s\n", asset_id.c_str());
-      if (_on_asset_complete._item) {
-        _on_asset_complete._item(asset_id, false);
+  // Capture necessary data for post-processing
+  auto post_process = [this, asset_id, asset_data, dest_path, on_complete](bool download_success, const file::Path& temp_file) {
+    // Queue post-processing on the opq
+    _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, temp_file, download_success, on_complete]() {
+      bool process_success = false;
+      
+      if (download_success) {
+        // Verify MD5
+        if (!asset_data._md5.empty()) {
+          if (!verifyMD5(temp_file, asset_data._md5)) {
+            printf("MD5 verification failed for %s\n", asset_id.c_str());
+            if (_on_asset_complete._item) {
+              _on_asset_complete._item(asset_id, false);
+            }
+            on_complete();
+            return;
+          }
+        }
+        
+        // Process based on asset type
+        if (asset_data._type == "asset_pak") {
+          process_success = processAssetPak(asset_id, asset_data, temp_file, dest_path);
+        } else if (asset_data._type == "asset") {
+          process_success = processAsset(asset_id, asset_data, temp_file, dest_path);
+        }
       }
+      
+      if (_on_asset_complete._item) {
+        _on_asset_complete._item(asset_id, process_success);
+      }
+      
+      on_complete();
+    });
+  };
+  
+  download->_on_complete._item = [post_process](bool success, const file::Path& path) {
+    post_process(success, path);
+  };
+  
+  download->_on_failure._item = [this, asset_id, post_process](const std::string& error) {
+    printf("Download failed for %s: %s\n", asset_id.c_str(), error.c_str());
+    post_process(false, file::Path());
+  };
+}
+
+bool AssetFetcher::processAssetPak(const std::string& asset_id,
+                                  const AssetManifest::AssetEntry& asset_data,
+                                  const file::Path& temp_file,
+                                  const file::Path& dest_path) {
+  // Decrypt if needed
+  file::Path decrypted_file = temp_file;
+  auto ns_it = _config._namespace_keys.find(asset_data._namespace);
+  if (ns_it != _config._namespace_keys.end()) {
+    // Use mktemp for unique decrypted file name
+    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar");
+    printf("Decrypting asset_pak %s\n", asset_id.c_str());
+    if (!decryptFile(temp_file, decrypted_file, ns_it->second)) {
+      printf("Decryption failed for %s\n", asset_id.c_str());
+      std::remove(temp_file.c_str());
       return false;
     }
   }
   
-  ///////////////////////////////////////////////////////////
-  // Process based on asset type
-  ///////////////////////////////////////////////////////////
-  bool process_success = false;
+  // Extract tar
+  printf("Extracting asset_pak %s\n", asset_id.c_str());
+  bool success = extractTar(decrypted_file, dest_path);
   
-  if (asset_data._type == "asset_pak") {
-    // Decrypt if needed
-    file::Path decrypted_file = temp_file;
-    auto ns_it = _config._namespace_keys.find(asset_data._namespace);
-    if (ns_it != _config._namespace_keys.end()) {
-      decrypted_file = file::Path(temp_file.c_str() + std::string(".dec"));
-      printf("Decrypting asset_pak %s\n", asset_id.c_str());
-      if (!decryptFile(temp_file, decrypted_file, ns_it->second)) {
-        printf("Decryption failed for %s\n", asset_id.c_str());
-        if (_on_asset_complete._item) {
-          _on_asset_complete._item(asset_id, false);
-        }
-        return false;
-      }
-    }
-    
-    // Extract tar
-    printf("Extracting asset_pak %s\n", asset_id.c_str());
-    process_success = extractTar(decrypted_file, dest_path);
-    
-    // Clean up temporary files
-    std::remove(decrypted_file.c_str());
-    if (decrypted_file != temp_file) {
-      std::remove(temp_file.c_str());
-    }
-    
-  } else if (asset_data._type == "asset") {
-    // Single file asset
-    file::Path final_dest = dest_path;
-    
-    // Decrypt if needed
-    auto ns_it = _config._namespace_keys.find(asset_data._namespace);
-    if (ns_it != _config._namespace_keys.end()) {
-      printf("Decrypting asset %s\n", asset_id.c_str());
-      process_success = decryptFile(temp_file, final_dest, ns_it->second);
-      std::remove(temp_file.c_str());
-    } else {
-      // Just move the file
-      // Copy file
-      std::ifstream src(temp_file.c_str(), std::ios::binary);
-      std::ofstream dst(final_dest.c_str(), std::ios::binary);
-      if (src && dst) {
-        dst << src.rdbuf();
-        process_success = true;
-      } else {
-        process_success = false;
-      }
-      std::remove(temp_file.c_str());
-    }
+  // Clean up temporary files
+  std::remove(decrypted_file.c_str());
+  if (decrypted_file != temp_file) {
+    std::remove(temp_file.c_str());
   }
   
-  if (_on_asset_complete._item) {
-    _on_asset_complete._item(asset_id, process_success);
-  }
-  
-  return process_success;
+  return success;
 }
+
+bool AssetFetcher::processAsset(const std::string& asset_id,
+                               const AssetManifest::AssetEntry& asset_data,
+                               const file::Path& temp_file,
+                               const file::Path& dest_path) {
+  // Single file asset
+  file::Path final_dest = dest_path;
+  bool success = false;
+  
+  // Decrypt if needed
+  auto ns_it = _config._namespace_keys.find(asset_data._namespace);
+  if (ns_it != _config._namespace_keys.end()) {
+    printf("Decrypting asset %s\n", asset_id.c_str());
+    success = decryptFile(temp_file, final_dest, ns_it->second);
+  } else {
+    // Just move the file
+    std::ifstream src(temp_file.c_str(), std::ios::binary);
+    std::ofstream dst(final_dest.c_str(), std::ios::binary);
+    if (src && dst) {
+      dst << src.rdbuf();
+      success = true;
+    }
+  }
+  
+  std::remove(temp_file.c_str());
+  return success;
+}
+
+// Legacy blocking fetch implementation removed - use queueAssetFetch instead
 
 ////////////////////////////////////////////////////////////////////////////////
 

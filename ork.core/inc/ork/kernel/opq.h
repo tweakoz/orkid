@@ -248,6 +248,8 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   void enqueueAndWait(const Op& the_op);
   void sync();
   void drain();
+  void terminate();
+  bool goingDown() const { return _terminated; }
 
   void _internalBeginLock();
   void _internalEndLock();
@@ -279,7 +281,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   ork::semaphore mSemaphore;
 
   std::atomic<bool> _lock;
-  std::atomic<bool> _goingdown;
+  std::atomic<bool> _terminated;
   std::atomic<int> _numThreadsRunning;
   std::atomic<int> _numPendingOperations;
   std::atomic<int> _numCompletedOperations;
@@ -321,6 +323,7 @@ void assertNotOnQueue(opq_ptr_t the_opQ);
 ///////////////////////////////////////////////////////////////////////////////
 
 void init();
+void exit();
 opq_ptr_t updateSerialQueue();
 opq_ptr_t mainSerialQueue();
 opq_ptr_t concurrentQueue();

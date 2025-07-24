@@ -4,30 +4,37 @@ from orkengine import core
 import tempfile
 import json
 import os
+import time
+import sys
 
 # Initialize core
 core.coreappinit()
 
+# Helper function to create asset entry
+def create_asset_entry(index):
+    return {
+        "type": "asset_pak",
+        "priority": 100,
+        "dst_loc": f"<temp>/test_singularity_{index}",
+        "src_loc": "<orkid_std>",
+        "filename": "SINGUL_PAK_STD",
+        "md5": "43be06d16db50d01be0187c2c7bcf831",
+        "dependencies": {}
+    }
+
+# Helper function to create test manifest with multiple assets
+def create_test_manifest(num_assets=1):
+    return {
+        "namespace": "test",
+        "version": "1.0.0",
+        "assets": {f"test_std_{i}": create_asset_entry(i) for i in range(num_assets)}
+    }
+
 # Test AssetManifest
 print("Testing AssetManifest...")
 
-# Create a test manifest JSON
-# This references the same asset as SINGUL_PAK_STD but with a different ID
-test_manifest = {
-    "namespace": "test",
-    "version": "1.0.0",
-    "assets": {
-        "test_std": {
-            "type": "asset_pak",
-            "priority": 100,
-            "dst_loc": "<temp>/test_singularity",
-            "src_loc": "<orkid_std>",
-            "filename": "SINGUL_PAK_STD",
-            "md5": "43be06d16db50d01be0187c2c7bcf831",
-            "dependencies": {}
-        }
-    }
-}
+# Create a test manifest with 5 assets for simultaneous download testing
+test_manifest = create_test_manifest(5)
 
 # Save to temp directory (fetcher will look for JSON files in manifest directories)
 manifest_dir = tempfile.mkdtemp()
@@ -99,7 +106,7 @@ def on_complete(asset_id, success):
 fetcher.on_asset_progress(on_progress)
 fetcher.on_asset_complete(on_complete)
 
-# Test downloading an asset
+# Test downloading assets
 print("\nTesting asset download...")
 
 # Try with the Orkid fetcher and real asset
@@ -107,15 +114,21 @@ print("Attempting to fetch singularity.std asset with Orkid fetcher...")
 fetch_count = fetcher_orkid.fetch_pak("singularity.std")
 print(f"Fetched {fetch_count} assets")
 
-# Try fetching by full ID with our test fetcher
-print("\nAttempting to fetch test.test_std asset...")
-fetch_count = fetcher.fetch_pak("test.test_std")
-print(f"Fetched {fetch_count} assets")
+# Test simultaneous download of 5 assets
+print("\n" + "="*60)
+print("Testing simultaneous download of 5 assets...")
+print("="*60)
 
-# Also try fetching by namespace only
-print("\nAttempting to fetch all 'test' namespace assets...")
+# Fetch all assets in the 'test' namespace (this will download all 5 simultaneously)
+print("\nFetching all 'test' namespace assets simultaneously...")
 fetch_count = fetcher.fetch_pak("test")
-print(f"Fetched {fetch_count} assets")
+print(f"\nFetched {fetch_count} assets successfully")
+
+# Verify all assets were downloaded
+if fetch_count == 5:
+    print("✓ All 5 assets downloaded successfully")
+else:
+    print(f"✗ Expected 5 assets, but only {fetch_count} were downloaded")
 
 # Clean up
 import shutil

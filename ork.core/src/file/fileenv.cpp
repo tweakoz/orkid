@@ -163,8 +163,8 @@ bool FileEnv::PathIsUrlForm(const file::Path& PathName) {
 file::Path::NameType FileEnv::StripUrlFromPath(const file::Path::NameType& urlName) {
   file::Path::NameType urlStr                    = urlName.c_str();
   file::Path::NameType path                      = "";
-  file::Path::NameType::size_type find_url_colon = urlStr.cue_to_char(':', 0);
-  if (urlStr.npos != find_url_colon) {
+  file::Path::NameType::size_type find_url_colon = urlStr.find(':');
+  if (std::string::npos != find_url_colon) {
     if (int(urlStr.size()) > (find_url_colon + 3)) {
       if ((urlStr[find_url_colon + 1] == '/') || (urlStr[find_url_colon + 2] == '/')) {
         file::Path::NameType::size_type ipathbase = find_url_colon + 3;
@@ -306,14 +306,14 @@ orkvector<file::Path::NameType> FileEnv::filespec_separate_terms(const file::Pat
   const file::Path::NameType delims("/");
   file::Path::NameType::size_type idx, len, ilen;
   ilen     = _instr.size();
-  idx      = _instr.cue_to_char('/', 0);
+  idx      = _instr.find('/');
   int word = 0;
   outvec.clear();
   bool bDone = false;
   file::Path::NameType::size_type Nidx;
   while ((idx < ilen) && (!bDone)) {
-    Nidx                         = _instr.cue_to_char('/', int(idx) + 1);
-    bool bAnotherSlash           = (Nidx != -1);
+    Nidx                         = _instr.find('/', idx + 1);
+    bool bAnotherSlash           = (Nidx != std::string::npos);
     len                          = Nidx - idx;
     file::Path::NameType newword = _instr.substr(idx + 1, len - 1);
     outvec.push_back(newword);

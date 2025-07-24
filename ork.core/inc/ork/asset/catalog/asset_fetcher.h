@@ -85,9 +85,21 @@ private:
   // Load and merge all config files
   void loadAllConfigs();
   
-  // Fetch individual asset
-  bool fetchAsset(const std::string& asset_id, 
-                  const AssetManifest::AssetEntry& asset_data);
+  // Queue asset fetch (non-blocking)
+  void queueAssetFetch(const std::string& asset_id, 
+                       const AssetManifest::AssetEntry& asset_data,
+                       std::function<void()> on_complete);
+                       
+  // Process downloaded assets
+  bool processAssetPak(const std::string& asset_id,
+                       const AssetManifest::AssetEntry& asset_data,
+                       const file::Path& temp_file,
+                       const file::Path& dest_path);
+                       
+  bool processAsset(const std::string& asset_id,
+                    const AssetManifest::AssetEntry& asset_data,
+                    const file::Path& temp_file,
+                    const file::Path& dest_path);
                   
   // Subprocess operations using Spawner
   bool decryptFile(const file::Path& src, const file::Path& dst, 

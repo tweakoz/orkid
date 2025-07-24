@@ -40,13 +40,21 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
     printf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", (void*) this, dir.c_str(), wild.c_str(), inumfiles);
 
     file::Path::NameType searchdir(dir.toAbsolute().c_str());
-    searchdir.replace_in_place("\\", "/");
+    // Convert backslashes to forward slashes
+    for (size_t i = 0; i < searchdir.length(); i++) {
+      if (searchdir[i] == '\\') searchdir[i] = '/';
+    }
     for (int ifile = 0; ifile < inumfiles; ifile++) {
       auto the_file                  = files[ifile];
       auto the_stripped              = FileEnv::filespec_strip_base(the_file, "./");
       file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(the_stripped);
       file::Path::NameType ObjPtrStrA;
-      ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
+      // Remove searchdir prefix from ObjPtrStr
+      ObjPtrStrA = ObjPtrStr;
+      size_t pos = ObjPtrStrA.find(searchdir);
+      if (pos == 0) {
+        ObjPtrStrA = ObjPtrStrA.substr(searchdir.length());
+      }
       // OldStlSchoolFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
       file::Path::NameType ObjPtrStr2 = file::Path::NameType(pid.c_str()) + ObjPtrStrA;
       file::Path OutPath(ObjPtrStr2.c_str());
@@ -86,13 +94,12 @@ bool FileAssetLoader::_find(
   //////////////////////////////////////////
 
   file::Path pathobjnoq(name);
-  file::Path pathobj(name);
-  AssetPath::NameType pathsp, qrysp;
-  pathobj.splitQuery(pathsp, qrysp);
-  pathobjnoq.set(pathsp.c_str());
-
+  // Query strings are no longer supported
+  
   file::Path::NameType preext;
-  preext.format(".%s", pathobjnoq.getExtension().c_str());
+  if (pathobjnoq.hasExtension()) {
+    preext = "." + pathobjnoq.getExtension();
+  }
   bool has_extension       = pathobjnoq.getExtension().length() != 0;
   bool has_valid_extension = false;
   if (has_extension) {
@@ -186,6 +193,21 @@ bool FileAssetLoader::resolvePath(
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
+  
+  // Catalog request? Use catalog loader.
+  if (loadreq->isCatalogLoad()) {
+    assetloader_ptr_t net_loader;
+    AssetLoader::_loaders_by_ext.atomicOp(
+      [&net_loader](loader_by_ext_map_t& map) {
+        auto it = map.find("catalog");
+        net_loader = (it != map.end()) ? it->second : nullptr;
+      });
+      
+    if (net_loader) {
+      return net_loader->load(loadreq);
+    }
+  }
+  
   ///////////////////////////////////////////////////////////////////////////////
   auto orig_path = loadreq->_asset_path;
   ///////////////////////////////////////////////////////////////////////////////

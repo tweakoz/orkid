@@ -41,9 +41,7 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
   if (AsPath.hasUrlBase()) {
     outvec.push_back(AsPath.getUrlBase().c_str());
   }
-  if (AsPath.hasDrive()) {
-    outvec.push_back(AsPath.getDrive().c_str());
-  }
+  // Drive support removed
   if (AsPath.hasFolder()) {
     const std::string str2 = AsPath.getFolder(ork::file::Path::EPATHTYPE_POSIX).c_str();
 
@@ -88,7 +86,7 @@ SlashNode::~SlashNode() {
 
 SlashNode::SlashNode()
     : _name("default")
-    , _parent(nullptr)
+    , _parent()
     , _data(nullptr) {
 }
 
@@ -104,9 +102,10 @@ void SlashNode::_dump(void) const {
 
   const SlashNode* par = this;
 
-  while (par != 0) {
+  while (par != nullptr) {
     path_vect.push_back(par->_name);
-    par = par->_parent;
+    auto parent_locked = par->_parent.lock();
+    par = parent_locked ? parent_locked.get() : nullptr;
   }
 
   size_t npel = path_vect.size();
@@ -126,14 +125,15 @@ void SlashNode::_dump(void) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const SlashNode* SlashNode::root() const {
-  return _parent ? _parent->root() : this;
+  auto parent_locked = _parent.lock();
+  return parent_locked ? parent_locked->root() : this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SlashNode::add_child(slashnode_ptr_t child) {
   _children_map[child->_name] = child;
-  child->_parent              = this;
+  // child->_parent needs to be set by the caller who has the shared_ptr to this
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ std::string SlashNode::pathAsString() const {
   }
 
   orkvector<const SlashNode*> hier;
-  GetPath(hier);
+  getPath(hier);
   int inumnodes = int(hier.size());
   std::string rval;
   for (int i = 0; i < inumnodes; i++) {
@@ -158,12 +158,13 @@ std::string SlashNode::pathAsString() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SlashNode::GetPath(orkvector<const SlashNode*>& pth) const {
+void SlashNode::getPath(orkvector<const SlashNode*>& pth) const {
   orkvector<const SlashNode*> revpth;
   const SlashNode* cur = this;
   while (cur) {
     revpth.push_back(cur);
-    cur = cur->_parent;
+    auto parent_locked = cur->_parent.lock();
+    cur = parent_locked ? parent_locked.get() : nullptr;
   }
   int inumnodes = int(revpth.size());
   pth.resize(inumnodes);
@@ -174,10 +175,10 @@ void SlashNode::GetPath(orkvector<const SlashNode*>& pth) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SlashTree::remove_node(SlashNode* pnode) {
+void SlashTree::removeNode(SlashNode* pnode) {
   bool bremoved = false;
 
-  auto pparent = pnode->_parent;
+  auto pparent = pnode->_parent.lock();
 
   if (pparent) {
 
@@ -197,7 +198,7 @@ void SlashTree::remove_node(SlashNode* pnode) {
       if (0 == inumchildren) {
         void* pdata = pparent->_data;
 
-        remove_node(pparent);
+        removeNode(pparent.get());
       }
     }
   }
@@ -205,7 +206,7 @@ void SlashTree::remove_node(SlashNode* pnode) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-slashnode_ptr_t SlashTree::add_node(const char* instr, void* ndata) {
+slashnode_ptr_t SlashTree::addNode(const char* instr, void* ndata) {
   slashnode_ptr_t rval = 0;
 
   orkvector<std::string> parsed_path;
@@ -230,7 +231,7 @@ slashnode_ptr_t SlashTree::add_node(const char* instr, void* ndata) {
       auto nnod                = std::make_shared<SlashNode>();
       nnod->_name              = mstr;
       ptr->_children_map[mstr] = nnod;
-      nnod->_parent            = ptr.get();
+      nnod->_parent            = ptr;
       rval                     = nnod;
 
       // orkprintf( "added node %08x %s parent %08x %s (Data %08x)\n", nnod, mstr.c_str(), ptr, ptr->_name.c_str(), ndata );
@@ -247,7 +248,7 @@ slashnode_ptr_t SlashTree::add_node(const char* instr, void* ndata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SlashTree::Clear(void) {
+void SlashTree::clear() {
   _root        = std::make_shared<SlashNode>();
   _root->_name = "";
 }
@@ -256,7 +257,7 @@ void SlashTree::Clear(void) {
 
 SlashTree::SlashTree()
     : _root(nullptr) {
-  Clear();
+  clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

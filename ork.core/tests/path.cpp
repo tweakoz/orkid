@@ -94,19 +94,7 @@ TEST(PathCorrectlyReturnsTheExtensionPartOfAPath) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TEST(PathCanStoreQueryStrings) {
-  Path testPath("testaa://hello/world/test.txt?yo=dude");
-  CHECK_EQUAL(true, testPath.hasQueryString());
-  CHECK_EQUAL("yo=dude", testPath.getQueryString().c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-TEST(PathCanNotStoreQueryStrings) {
-  Path testPath("testaa://hello/world/test.txt");
-  CHECK_EQUAL(false, testPath.hasQueryString());
-  CHECK_EQUAL("", testPath.getQueryString().c_str());
-}
+// Query string tests removed - no longer supported
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -158,15 +146,80 @@ TEST(PathExists) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// TEST(PathHostNameTest)
-//{
-//    Path p1("http://localhost:5901/yo.txt");
-//    DecomposedPath decomp;
-//    p1.DeCompose(decomp);
-//    CHECK_EQUAL( "localhost", decomp.mHostname.c_str() );
-//    // we know this fails now, I am working on it!
-//    //printf( "hname<%s>\n", decomp.mHostname.c_str() );
-//
-//}
+// Hostname/port tests removed - no longer supported
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathTempfileMkdtemp) {
+  // Test creating a temporary directory
+  Path temp_dir = Path::mkdtemp("test_", "_dir");
+  
+  CHECK(!temp_dir.empty());
+  CHECK(temp_dir.doesPathExist());
+  CHECK(temp_dir.isFolder());
+  
+  // Clean up
+  rmdir(temp_dir.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathTempfileMkstemp) {
+  // Test creating a temporary file
+  auto [fd, temp_file] = Path::mkstemp("test_", ".tmp");
+  
+  CHECK(fd >= 0);
+  CHECK(!temp_file.empty());
+  CHECK(temp_file.doesPathExist());
+  CHECK(temp_file.isFile());
+  
+  // Write something to the file
+  const char* test_data = "Hello, tempfile!";
+  write(fd, test_data, strlen(test_data));
+  
+  // Close and clean up
+  close(fd);
+  unlink(temp_file.c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathTempfileMktemp) {
+  // Test generating a temporary file path
+  Path temp_path = Path::mktemp("test_", ".dat");
+  
+  CHECK(!temp_path.empty());
+  CHECK(!temp_path.doesPathExist()); // Should not exist yet
+  
+  // The path should be unique
+  Path temp_path2 = Path::mktemp("test_", ".dat");
+  CHECK(temp_path != temp_path2);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST(PathTempfileCustomDir) {
+  // First create a custom temp directory
+  Path custom_dir = Path::mkdtemp("custom_", "_base");
+  CHECK(custom_dir.doesPathExist());
+  
+  // Test mkdtemp with custom parent
+  Path sub_dir = Path::mkdtemp("sub_", "", custom_dir);
+  CHECK(!sub_dir.empty());
+  CHECK(sub_dir.doesPathExist());
+  CHECK(sub_dir.toStdString().find(custom_dir.toStdString()) == 0); // Should be subdirectory
+  
+  // Test mkstemp with custom parent
+  auto [fd, temp_file] = Path::mkstemp("file_", ".tmp", custom_dir);
+  CHECK(fd >= 0);
+  CHECK(temp_file.doesPathExist());
+  CHECK(temp_file.toStdString().find(custom_dir.toStdString()) == 0); // Should be in custom dir
+  
+  // Clean up
+  close(fd);
+  unlink(temp_file.c_str());
+  rmdir(sub_dir.c_str());
+  rmdir(custom_dir.c_str());
+}
 
 ///////////////////////////////////////////////////////////////////////////////

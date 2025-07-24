@@ -457,8 +457,6 @@ struct ClassToucher {
 using classinit_ptr_t = std::shared_ptr<ClassToucher>;
 
 void GfxInit(const std::string& gfxlayer) {
-  opq::init();
-
   auto def_vrdev = std::make_shared<ork::lev2::orkidvr::novr::NoVrDevice>();
   ork::lev2::orkidvr::setDevice(def_vrdev);
 }

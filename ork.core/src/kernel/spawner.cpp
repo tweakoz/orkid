@@ -9,13 +9,14 @@
 #include <ork/kernel/spawner.h>
 #include <ork/kernel/string/string.h>
 #include <ork/file/path.h>
-#include <assert.h>
+#include <ork/orkstd.h>
 #include <time.h>
 #include <signal.h>
 #include <errno.h>
 #include <vector>
 #include <string.h>
 #include <sstream>
+#include <mutex>
 
 #if ! defined(WIN32)
 #include <sys/wait.h>
@@ -33,18 +34,35 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 static std::vector<std::string> parseCommandLine(const std::string& cmdline) {
     std::vector<std::string> args;
-    std::stringstream ss(cmdline);
     std::string arg;
     bool in_quotes = false;
     bool in_single_quotes = false;
+    bool escape_next = false;
     
     for (size_t i = 0; i < cmdline.length(); ++i) {
         char c = cmdline[i];
         
-        if (c == '"' && !in_single_quotes) {
+        if (escape_next) {
+            // Handle escaped characters
+            if (c == 'n') arg += '\n';
+            else if (c == 't') arg += '\t';
+            else if (c == 'r') arg += '\r';
+            else arg += c;  // For \", \', \\, etc.
+            escape_next = false;
+        } else if (c == '\\') {
+            escape_next = true;
+        } else if (c == '"' && !in_single_quotes) {
             in_quotes = !in_quotes;
+            // Don't skip empty quoted strings
+            if (!in_quotes && arg.empty()) {
+                args.push_back("");
+            }
         } else if (c == '\'' && !in_quotes) {
             in_single_quotes = !in_single_quotes;
+            // Don't skip empty quoted strings
+            if (!in_single_quotes && arg.empty()) {
+                args.push_back("");
+            }
         } else if (c == ' ' && !in_quotes && !in_single_quotes) {
             if (!arg.empty()) {
                 args.push_back(arg);
@@ -55,12 +73,18 @@ static std::vector<std::string> parseCommandLine(const std::string& cmdline) {
         }
     }
     
-    if (!arg.empty()) {
+    // Handle any remaining argument
+    if (!arg.empty() || in_quotes || in_single_quotes) {
         args.push_back(arg);
     }
     
     return args;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Mutex for thread-safe PID management
+///////////////////////////////////////////////////////////////////////////////
+static std::mutex g_spawner_mutex;
 
 ///////////////////////////////////////////////////////////////////////////////
 // process spawn utils
@@ -80,10 +104,15 @@ Spawner::Spawner()
 Spawner::~Spawner()
 {
 #if ! defined(WIN32)
+    std::lock_guard<std::mutex> lock(g_spawner_mutex);
 	if( mChildPID > 0 )
     {
         //printf( "KILLING PID<%d>\n", mChildPID );
         sendSignal(SIGKILL);
+        // Try to collect the zombie to clean up
+        int status;
+        waitpid(mChildPID, &status, WNOHANG);
+        mChildPID = -1;
     }
 #endif
 }
@@ -92,13 +121,38 @@ Spawner::~Spawner()
 
 void Spawner::sendSignal (int sig) {
 #if ! defined(WIN32)
-	kill(mChildPID, sig);
+    // Check if process exists before sending signal
+    if (mChildPID > 0) {
+        // kill with signal 0 tests if process exists
+        if (kill(mChildPID, 0) == 0) {
+            kill(mChildPID, sig);
+        } else {
+            // Process doesn't exist anymore
+            mChildPID = -1;
+        }
+    }
 #endif
 }
 
 void Spawner::spawnSynchronous(){
   spawn();
   collectZombie();
+}
+
+// Helper to free memory in child process
+static void freeChildMemory(char** env_vars, size_t num_env_vars, char** args, size_t num_args) {
+    if (env_vars) {
+        for (size_t i = 0; i < num_env_vars; ++i) {
+            free(env_vars[i]);
+        }
+        free(env_vars);
+    }
+    if (args) {
+        for (size_t i = 0; i < num_args; ++i) {
+            free(args[i]);
+        }
+        free(args);
+    }
 }
 
 void Spawner::spawn()
@@ -188,7 +242,11 @@ void Spawner::spawn()
         {
             //printf( "child changing to directory<%s>\n", mWorkingDirectory.c_str() );
             int iret = chdir( mWorkingDirectory.c_str() );
-            assert(iret==0);
+            if (iret != 0) {
+                perror("chdir failed");
+                freeChildMemory(env_vars, inum_vars, args, inum_args);
+                _exit(1);
+            }
         }
 
         /////////////////////////////////////////////////////////////
@@ -209,15 +267,19 @@ void Spawner::spawn()
             mExecRet = execvpe( args[0], args, env_vars );
         #endif
 
-       // kernel::glog.printf( "fork failed <child> mExecRet<%d> ERRNO<%d>\n", mExecRet, errno );
+       // kernel::glog.printf( "exec failed <child> mExecRet<%d> ERRNO<%d>\n", mExecRet, errno );
 
-        perror("FORK FAILED");
-
-        assert(false); // if exec fails, exit forked process
+        perror("EXEC FAILED");
+        
+        // Clean up allocated memory before exiting
+        freeChildMemory(env_vars, inum_vars, args, inum_args);
+        
+        // Use _exit() to avoid calling destructors in forked child
+        _exit(1);
     }
     else if( mChildPID<0 )
     {
-        assert(false); // failed to fork
+        OrkAssertI(false, "fork() failed"); // failed to fork
     }
     else // parent
     {
@@ -247,6 +309,11 @@ bool Spawner::is_alive()
 void Spawner::collectZombie () {
 #if defined(WIN32)
 #else
+    std::lock_guard<std::mutex> lock(g_spawner_mutex);
+    if (mChildPID <= 0) {
+        return; // Already collected
+    }
+    
 	int status;
     int err = waitpid(mChildPID, &status, 0);
 
