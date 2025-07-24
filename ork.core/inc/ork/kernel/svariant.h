@@ -696,4 +696,13 @@ typedef static_variant<4096> svar4096_t;
 typedef static_variant<kptrsize> svarp_t;
 typedef static_variant<kshptrsize> svarshp_t;
 
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> struct ItemAndData {
+  T _item = nullptr;
+  svar64_t _data;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork

@@ -22,6 +22,7 @@ using ork::FileH;
 #include <glob.h>
 #include <fts.h>
 #include <string.h>
+#include <sys/stat.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -290,8 +291,10 @@ bool FileDevStd::doesDirectoryExist(const file::Path& filespec) {
 
   const char* pFn = absol.c_str();
 
+  struct stat st;
   bool bv = false;
-  if (bv) {
+  if (stat(pFn, &st) == 0) {
+    bv = S_ISDIR(st.st_mode);
   }
   return bv;
 }

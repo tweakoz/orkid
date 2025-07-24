@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <vector>
 #include <string.h>
+#include <sstream>
 
 #if ! defined(WIN32)
 #include <sys/wait.h>
@@ -27,6 +28,40 @@
 #endif
 
 namespace ork {
+///////////////////////////////////////////////////////////////////////////////
+// Helper function to parse command line respecting quoted arguments
+///////////////////////////////////////////////////////////////////////////////
+static std::vector<std::string> parseCommandLine(const std::string& cmdline) {
+    std::vector<std::string> args;
+    std::stringstream ss(cmdline);
+    std::string arg;
+    bool in_quotes = false;
+    bool in_single_quotes = false;
+    
+    for (size_t i = 0; i < cmdline.length(); ++i) {
+        char c = cmdline[i];
+        
+        if (c == '"' && !in_single_quotes) {
+            in_quotes = !in_quotes;
+        } else if (c == '\'' && !in_quotes) {
+            in_single_quotes = !in_single_quotes;
+        } else if (c == ' ' && !in_quotes && !in_single_quotes) {
+            if (!arg.empty()) {
+                args.push_back(arg);
+                arg.clear();
+            }
+        } else {
+            arg += c;
+        }
+    }
+    
+    if (!arg.empty()) {
+        args.push_back(arg);
+    }
+    
+    return args;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // process spawn utils
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +82,7 @@ Spawner::~Spawner()
 #if ! defined(WIN32)
 	if( mChildPID > 0 )
     {
-        printf( "KILLING PID<%d>\n", mChildPID );
+        //printf( "KILLING PID<%d>\n", mChildPID );
         sendSignal(SIGKILL);
     }
 #endif
@@ -71,8 +106,8 @@ void Spawner::spawn()
 #if ! defined(WIN32)
 	mChildPID = fork();
 
-    printf( "fork<%d>\n", mChildPID );
-    fflush(stdout);
+    //printf( "fork<%d>\n", mChildPID );
+    //fflush(stdout);
 
     if( 0 == mChildPID ) // child
     {
@@ -93,7 +128,7 @@ void Spawner::spawn()
             const std::string& v = item.second;
             std::string VAR = k + "=" + v;
             env_vars[icounter] = strdup(VAR.c_str());
-            printf( "SETENV<%s>\n", env_vars[icounter] );
+            //printf( "SETENV<%s>\n", env_vars[icounter] );
             icounter++;
         }
         env_vars[icounter] = 0; // terminate envvar array
@@ -105,14 +140,14 @@ void Spawner::spawn()
         // build args
         /////////////////////////////////////////////////////////////
 
-        std::vector<std::string> vargs = SplitString(mCommandLine,' ');
+        std::vector<std::string> vargs = parseCommandLine(mCommandLine);
 
         //vargs.insert(vargs.begin(),vargs[0]);
 
         size_t inum_args = vargs.size();
 
-        printf( "child cp1 numargs<%d>\n", int(inum_args) );
-        fflush(stdout);
+        //printf( "child cp1 numargs<%d>\n", int(inum_args) );
+        //fflush(stdout);
 
         char** args =  (char**) malloc(sizeof(char*)*(inum_args+1));
 
@@ -136,7 +171,7 @@ void Spawner::spawn()
                 args[i] = strdup(arg.c_str());
             }
 
-            printf( "arg<%d> <%s>\n", i, args[i] );
+            //printf( "arg<%d> <%s>\n", i, args[i] );
 
             //kernel::glog.printf( "spawn arg<%d:%s>\n", i, args[i] );
         }
@@ -151,7 +186,7 @@ void Spawner::spawn()
 
         if( mWorkingDirectory.length() )
         {
-            printf( "child changing to directory<%s>\n", mWorkingDirectory.c_str() );
+            //printf( "child changing to directory<%s>\n", mWorkingDirectory.c_str() );
             int iret = chdir( mWorkingDirectory.c_str() );
             assert(iret==0);
         }
@@ -160,12 +195,12 @@ void Spawner::spawn()
         // exec
         /////////////////////////////////////////////////////////////
 
-        printf( "child calling exec exe<%s>\n", args[0] );
+        //printf( "child calling exec exe<%s>\n", args[0] );
 
         #if defined(__APPLE__)
         	::environ = env_vars;
         	if( decomposed_path.mFolder.length() ){
-            	printf( "folder<%s>\n", decomposed_path.mFolder.c_str() );
+            	//printf( "folder<%s>\n", decomposed_path.mFolder.c_str() );
             	mExecRet = execvP(args[0], decomposed_path.mFolder.c_str(), args);
         	}
         	else
@@ -218,6 +253,9 @@ void Spawner::collectZombie () {
     if (-1 == err) {
         printf("Spawner<%p>::collectZombie: waitpid: %s\n", (void*) this, strerror(errno));
     }
+    
+    // Reset child PID after collection to prevent double-kill in destructor
+    mChildPID = -1;
 #endif
 }
 ///////////////////////////////////////////////////////////////////////////////

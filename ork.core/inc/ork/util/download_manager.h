@@ -1,0 +1,64 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#pragma once
+
+#include <ork/orkstd.h>
+#include <ork/orktypes.h>
+#include <ork/util/download.h>
+#include <ork/kernel/opq.h>
+#include <memory>
+#include <thread>
+#include <atomic>
+
+namespace ork {
+
+struct DownloadManager;
+struct DownloadGroup;
+using downloadmanager_ptr_t = std::shared_ptr<DownloadManager>;
+using download_group_ptr_t = std::shared_ptr<DownloadGroup>;
+
+struct DownloadManager {
+  //////////////////////////////////////////////////////////////////////////////
+  // Public members
+  //////////////////////////////////////////////////////////////////////////////
+  opq::opq_ptr_t _work_queue;
+  size_t _max_concurrent_downloads = 4;
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Constructor/Destructor
+  //////////////////////////////////////////////////////////////////////////////
+  explicit DownloadManager(opq::opq_ptr_t queue = nullptr);
+  ~DownloadManager();
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Main interface - combined create and queue
+  //////////////////////////////////////////////////////////////////////////////
+  download_ptr_t download(const URL& url, const file::Path& dest_path);
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Download group support
+  //////////////////////////////////////////////////////////////////////////////
+  void downloadGroup(download_group_ptr_t group);
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Control methods
+  //////////////////////////////////////////////////////////////////////////////
+  void setMaxConcurrentDownloads(size_t max);
+  void shutdown();
+  bool isActive() const;
+  size_t activeDownloadCount() const;
+  
+private:
+  struct Impl;
+  std::unique_ptr<Impl> _impl;
+  
+  void processDownload(download_ptr_t dl);
+  void updateActiveDownloads();
+};
+
+} // namespace ork

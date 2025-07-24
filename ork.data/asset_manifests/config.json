@@ -1,0 +1,12 @@
+{
+  "namespace_keys": {
+    "singularity": "singularity_rulez"
+  },
+  "locations": {
+    "orkid_std": "https://www.tweakoz.com/resources"
+  },
+  "destinations": {
+    "stage": "<stage>",
+    "shared": "<stage>/share"
+  }
+}

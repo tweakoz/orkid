@@ -45,6 +45,10 @@ void pyinit_ipcq(py::module& module_core);
 void pyinit_logger(py::module& module_core);
 void pyinit_ncui(py::module& module_core);
 void pyinit_opq(py::module& module_core);
+void pyinit_download(py::module& module_core);
+namespace asset::catalog {
+  void pyinit_asset_catalog(py::module& module_core);
+}
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -371,6 +375,8 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_ipcq(module_core);
   pyinit_logger(module_core);
   pyinit_opq(module_core);
+  pyinit_download(module_core);
+  ork::asset::catalog::pyinit_asset_catalog(module_core);
   
   // Create ncui submodule
   auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");

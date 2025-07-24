@@ -45,16 +45,16 @@ FileEnv::FileEnv()
 ///////////////////////////////////////////////////////////////////////////////
 
 FileDev* FileEnv::GetDeviceForUrl(const file::Path& fileName) const {
+  FileDev* rval = GetRef().mpDefaultDevice;
   auto& env    = FileEnv::GetRef();
   auto urlbase = env.uriProtoToBase(fileName.getUrlBase().c_str());
   auto it      = env.uriRegistry().find(urlbase.c_str());
   bool found   = (it != env.uriRegistry().end());
-  // printf("GetDeviceForUrl filename<%s> urlbase<%s> found<%d>\n", fileName.c_str(), urlbase.c_str(), int(found));
   if (found)
     if (it->second->GetFileDevice())
-      return it->second->GetFileDevice();
-
-  return GetRef().mpDefaultDevice;
+      rval = it->second->GetFileDevice();
+  //printf("GetDeviceForUrl filename<%s> urlbase<%s> found<%d> rval<%p>\n", fileName.c_str(), urlbase.c_str(), int(found), (void*) rval);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
