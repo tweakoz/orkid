@@ -33,6 +33,8 @@ def setup():
 
   obt.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
   obt.env.set("ORKID_IS_MAIN_PROJECT","1")
+  obt.env.append("ORKID_ASSET_MANIFEST_DIRS",orkid_dir/"ork.data"/"asset_manifests")
+  
 
   ##############################################
   # add orkid scripts to enviromment PATH

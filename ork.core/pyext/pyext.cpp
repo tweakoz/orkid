@@ -29,6 +29,7 @@ struct CorePythonApplication {
 namespace ork {
 
   void initModule(ork::appinitdata_ptr_t init_data);
+  void exitModule(ork::appinitdata_ptr_t init_data);
 
 extern bool _ENABLE_LOGGING;
 
@@ -49,6 +50,8 @@ void pyinit_download(py::module& module_core);
 namespace asset::catalog {
   void pyinit_asset_catalog(py::module& module_core);
 }
+
+appinitdata_ptr_t gappinitdata = nullptr;
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -84,14 +87,18 @@ static void _coreappinit() {
     printf("dynarg<%d:%s>\n", i, argv[i]);
   }
 
-  static auto init_data = std::make_shared<AppInitData>(argc, argv);
+  gappinitdata = std::make_shared<AppInitData>(argc, argv);
 
   static CorePythonApplication the_app;
 
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
 
-  ork::initModule(init_data);
+  ork::initModule(gappinitdata);
+}
+static void _coreappexit() {
+  ork::exitModule(gappinitdata);
+  gappinitdata = nullptr;
 }
 
 static file::Path _thispath() {
@@ -160,6 +167,7 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
+  module_core.def("coreappexit", &_coreappexit);
   module_core.def("thispath", &_thispath);
   module_core.def("thisdir", &_thisdir);
   module_core.def("orkdir", &_orkdir);
