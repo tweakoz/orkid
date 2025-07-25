@@ -149,7 +149,7 @@ logchannel_ptr_t Logger::configureChannel(std::string named, ork::fvec3 color, b
       channel         = std::make_shared<LogChannel>(this, named, color, enabled);
       unlocked[named] = channel;
 
-      channel->_status_interval = _ENABLE_NOTCURSES() ? 1.0f : 15.0f;
+      channel->_status_interval = _ENABLE_NOTCURSES() ? 1.0f : 1.0f;
 
     } else {
       channel             = it->second;

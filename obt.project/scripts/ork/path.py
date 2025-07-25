@@ -20,4 +20,6 @@ def __getattr__(name):
   	return _root()/"ork.lev2"/"examples"/"python"/"lev2utils"
   elif name == "pyvenv":
   	return obt_path.Path(os.environ["OBT_PYTHONHOME"])
+  elif name == "assetcache":
+  	return obt_path.stage()/"assetcache"
   return None

@@ -53,8 +53,9 @@ struct DownloadManager {
   bool isActive() const;
   size_t activeDownloadCount() const;
   
-private:
   struct Impl;
+  
+private:
   std::unique_ptr<Impl> _impl;
   
   void processDownload(download_ptr_t dl);

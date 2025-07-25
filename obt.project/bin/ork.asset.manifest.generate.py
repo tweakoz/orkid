@@ -67,16 +67,23 @@ class AssetGenerator:
                 with open(full_path, 'rb') as f:
                     tar.addfile(tarinfo, f)
         
-        # Calculate MD5 of the tar file to check if we need to re-encrypt
-        tar_md5 = self.calculate_md5(temp_tar.name)
+        # XZ compress the tar file
+        print("Compressing tar file with XZ...")
+        xz_result = subprocess.run(['xz', '-6', '-f', temp_tar.name], capture_output=True, text=True)
+        if xz_result.returncode != 0:
+            raise RuntimeError(f"XZ compression failed: {xz_result.stderr}")
+        temp_tar_xz = Path(temp_tar.name + '.xz')
         
-        # Check if we already have this exact tar file encrypted
+        # Calculate MD5 of the compressed tar file to check if we need to re-encrypt
+        tar_xz_md5 = self.calculate_md5(temp_tar_xz)
+        
+        # Check if we already have this exact tar.xz file encrypted
         # Look for existing receipt with matching source hash
         existing_encrypted = None
         for receipt_file in self.cache_dir.glob("*.receipt.json"):
             with open(receipt_file, 'r') as f:
                 receipt = json.load(f)
-                if receipt.get('tar_md5') == tar_md5 and receipt.get('namespace') == namespace:
+                if receipt.get('tar_xz_md5') == tar_xz_md5 and receipt.get('namespace') == namespace:
                     # Found existing encrypted file for this exact content
                     existing_encrypted = self.cache_dir / receipt['cached_file'].split('/')[-1]
                     if existing_encrypted.exists():
@@ -90,9 +97,9 @@ class AssetGenerator:
             enc_key = self.get_encryption_key(namespace, self.override_key)
             print(f"Using encryption key<{enc_key}> for namespace: {namespace}" )
             
-            # Encrypt the tar file to a temporary location first
+            # Encrypt the tar.xz file to a temporary location first
             temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
-            crypt.encrypt_file(temp_tar.name, temp_enc_path, enc_key)
+            crypt.encrypt_file(str(temp_tar_xz), temp_enc_path, enc_key)
             
             # Calculate MD5 of the encrypted file
             md5_hash = self.calculate_md5(temp_enc_path)
@@ -104,8 +111,9 @@ class AssetGenerator:
                 os.unlink(encrypted_file)
             os.rename(temp_enc_path, str(encrypted_file))
         
-        # Clean up temp tar
-        os.unlink(temp_tar.name)
+        # Clean up temp files
+        if temp_tar_xz.exists():
+            os.unlink(temp_tar_xz)
         
         # Generate receipt for external use
         receipt = {
@@ -117,7 +125,7 @@ class AssetGenerator:
             "cached_file": str(encrypted_file),
             "file_size": encrypted_file.stat().st_size,
             "md5": md5_hash,
-            "tar_md5": tar_md5
+            "tar_xz_md5": tar_xz_md5
         }
         
         receipt_file = self.cache_dir / f"{md5_hash}.receipt.json"
@@ -275,7 +283,7 @@ def main():
             if args.filename:
                 filename = args.filename
             else:
-                filename = f"{args.namespace}_{args.asset_id}.tar.enc"
+                filename = f"{args.namespace}_{args.asset_id}.tar.xz.enc"
         else:
             cached_file, md5_hash, receipt = generator.create_asset_file(
                 source, args.namespace, args.asset_id
@@ -345,7 +353,7 @@ def main():
     
     # Copy to AssetFetcher cache with the manifest filename
     # Use obt_path to get the proper stage directory
-    asset_cache_dir = obt_path.stage() / "assetcache"
+    asset_cache_dir = obt_path.stage() / "assetcache" / "encrypted"
     asset_cache_dir.mkdir(parents=True, exist_ok=True)
     asset_cache_file = asset_cache_dir / filename
     

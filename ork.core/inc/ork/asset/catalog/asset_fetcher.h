@@ -115,6 +115,7 @@ private:
   // Subprocess operations using Spawner
   bool decryptFile(const file::Path& src, const file::Path& dst, 
                    const std::string& key);
+  bool decompressXZ(const file::Path& xz_file, const file::Path& tar_file);
   bool extractTar(const file::Path& tar_file, const file::Path& dest_dir);
   
   // MD5 verification

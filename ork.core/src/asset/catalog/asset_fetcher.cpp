@@ -14,6 +14,7 @@
 #include <ork/util/crc.h>
 #include <ork/util/md5.h>
 #include <ork/kernel/string/string.h>
+#include <ork/util/logger.h>
 #include <glob.h>
 #include <fstream>
 #include <sstream>
@@ -30,6 +31,13 @@ namespace ork::asset::catalog {
 
 struct AssetFetcher::Impl {
   std::mutex _mutex;
+  std::atomic<int> _cache_hits{0};
+  std::atomic<int> _cache_misses{0};
+  logchannel_ptr_t _logchan_fetch;
+  
+  Impl() {
+    _logchan_fetch = logger()->configureChannel("FETCH", fvec3(0.8f, 0.5f, 1.0f), true); // Light purple
+  }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +195,7 @@ int AssetFetcher::fetchPak(const std::string& pack_identifier) {
     if (it != _resolved_assets.end()) {
       assets_to_fetch.push_back({pack_identifier, it->second});
     } else {
-      printf("Asset %s not found in manifests\n", pack_identifier.c_str());
+      _impl->_logchan_fetch->log("Asset %s not found in manifests\n", pack_identifier.c_str());
     }
   } else {
     ///////////////////////////////////////////////////////////
@@ -204,9 +212,9 @@ int AssetFetcher::fetchPak(const std::string& pack_identifier) {
     }
     
     if (assets_to_fetch.empty()) {
-      printf("No assets found matching '%s'\n", pack_identifier.c_str());
-      printf("Note: You must specify the full asset ID as namespace.asset_id (e.g., singularity.std)\n");
-      printf("Or you can specify just a namespace to fetch all assets in that namespace\n");
+      _impl->_logchan_fetch->log("No assets found matching '%s'\n", pack_identifier.c_str());
+      _impl->_logchan_fetch->log("Note: You must specify the full asset ID as namespace.asset_id (e.g., singularity.std)\n");
+      _impl->_logchan_fetch->log("Or you can specify just a namespace to fetch all assets in that namespace\n");
       return 0;
     }
   }
@@ -247,7 +255,7 @@ int AssetFetcher::fetchPak(const std::string& pack_identifier) {
 void AssetFetcher::queueAssetFetch(const std::string& asset_id, 
                                    const AssetManifest::AssetEntry& asset_data,
                                    std::function<void()> on_complete) {
-  printf("Queueing download for asset %s\n", asset_id.c_str());
+  _impl->_logchan_fetch->log("fetch asset: %s", asset_id.c_str());
   
   ///////////////////////////////////////////////////////////
   // Resolve source and destination paths
@@ -259,35 +267,35 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   URL source_url;
   locationinfo_ptr_t location_info;
   
-  printf("[AssetFetcher] Resolving source location: %s\n", src_loc.c_str());
+  //printf("[AssetFetcher] Resolving source location: %s\n", src_loc.c_str());
   
   if (src_loc.find("<") == 0) {
     location_info = _config.resolveLocation(src_loc);
     if (location_info) {
       source_url = location_info->url;
-      printf("[AssetFetcher] Resolved base URL: %s\n", source_url.toString().c_str());
+      //printf("[AssetFetcher] Resolved base URL: %s\n", source_url.toString().c_str());
       // Use MD5 hash as filename for content-addressed storage on CDN
       if (!asset_data._md5.empty()) {
         std::string hash_filename = asset_data._md5 + ".enc";
         source_url = source_url / hash_filename;
-        printf("[AssetFetcher] Full URL with hash filename: %s\n", source_url.toString().c_str());
+        //printf("[AssetFetcher] Full URL with hash filename: %s\n", source_url.toString().c_str());
       } else if (!asset_data._filename.empty()) {
         // Fallback to regular filename if no MD5
         source_url = source_url / asset_data._filename;
-        printf("[AssetFetcher] Full URL with filename: %s\n", source_url.toString().c_str());
+        //printf("[AssetFetcher] Full URL with filename: %s\n", source_url.toString().c_str());
       }
     }
   } else {
     source_url = URL(src_loc);
-    printf("[AssetFetcher] Direct URL: %s\n", source_url.toString().c_str());
+    //printf("[AssetFetcher] Direct URL: %s\n", source_url.toString().c_str());
   }
   
   // Resolve destination path
   file::Path dest_path = _config.resolvePath(dst_loc);
-  printf("[AssetFetcher] dst_loc: %s -> dest_path: %s\n", dst_loc.c_str(), dest_path.c_str());
+  //printf("[AssetFetcher] dst_loc: %s -> dest_path: %s\n", dst_loc.c_str(), dest_path.c_str());
   
   // Setup cache directory
-  file::Path cache_dir = file::Path::stage_dir() / "assetcache";
+  file::Path cache_dir = file::Path::stage_dir() / "assetcache" / "encrypted";
   // Create directory if it doesn't exist
   mkdir(cache_dir.c_str(), 0755);
   
@@ -298,13 +306,16 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   if (!asset_data._md5.empty() && FileEnv::DoesFileExist(cache_file)) {
     // Check if cached file has correct MD5
     if (verifyMD5(cache_file, asset_data._md5)) {
-      printf("[AssetFetcher] Cache hit for %s (MD5 verified)\n", asset_id.c_str());
+      _impl->_logchan_fetch->log("Cache hit %s (MD5 verified)", asset_id.c_str());
       need_download = false;
     } else {
-      printf("[AssetFetcher] Cache file exists but MD5 mismatch, re-downloading\n");
+      _impl->_logchan_fetch->log("Cache miss %s (MD5 mismatch)", asset_id.c_str());
       // Remove invalid cached file
       std::remove(cache_file.c_str());
     }
+  }
+  else{
+    _impl->_logchan_fetch->log("Cache miss %s (not found..)", asset_id.c_str());
   }
   
   if (need_download) {
@@ -323,22 +334,22 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
       }
     }
     
-    printf("[AssetFetcher] Location key: %s\n", location_key.c_str());
+    //printf("[AssetFetcher] Location key: %s\n", location_key.c_str());
     std::string effective_key = location_info->getEffectiveApiKey(location_key);
     if (!effective_key.empty()) {
-      printf("[AssetFetcher] Setting API key (length=%zu)\n", effective_key.length());
+      //printf("[AssetFetcher] Setting API key (length=%zu)\n", effective_key.length());
       download->setApiKey(effective_key);
     } else {
-      printf("[AssetFetcher] No API key found for location\n");
+       _impl->_logchan_fetch->log("[AssetFetcher] No API key found for location\n");
     }
     
     // Apply disable_cert_check if set
     if (location_info->disable_cert_check) {
-      printf("[AssetFetcher] Disabling certificate check for this download\n");
+      //printf("[AssetFetcher] Disabling certificate check for this download\n");
       download->_ignore_tls_errors = true;
     }
   } else {
-    printf("[AssetFetcher] No location info found for URL\n");
+    _impl->_logchan_fetch->log("[AssetFetcher] No location info found for URL\n");
   }
   
   ///////////////////////////////////////////////////////////
@@ -360,7 +371,7 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
         // Verify MD5 of downloaded encrypted file
         if (!asset_data._md5.empty()) {
           if (!verifyMD5(temp_file, asset_data._md5)) {
-            printf("MD5 verification failed for downloaded file %s\n", asset_id.c_str());
+             _impl->_logchan_fetch->log("MD5 verification failed for downloaded file %s\n", asset_id.c_str());
             if (_on_asset_complete._item) {
               _on_asset_complete._item(asset_id, false);
             }
@@ -375,7 +386,7 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
         std::ofstream dst(cache_file.c_str(), std::ios::binary);
         if (src && dst) {
           dst << src.rdbuf();
-          printf("[AssetFetcher] Cached downloaded file to %s\n", cache_file.c_str());
+          //printf("[AssetFetcher] Cached downloaded file to %s\n", cache_file.c_str());
         }
         src.close();
         dst.close();
@@ -401,13 +412,21 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   };
   
   download->_on_failure._item = [this, asset_id, post_process](const std::string& error) {
-    printf("Download failed for %s: %s\n", asset_id.c_str(), error.c_str());
+     _impl->_logchan_fetch->log("Download failed for %s: %s\n", asset_id.c_str(), error.c_str());
     post_process(false, file::Path());
   };
   } else {
     // Use cached file - still need to decrypt and untar
     // MD5 verification will happen after decryption in processAssetPak
-    printf("[AssetFetcher] Using cached file for %s\n", asset_id.c_str());
+    //printf("[AssetFetcher] Using cached file for %s\n", asset_id.c_str());
+    
+    // Emit cache hit/miss ratio
+    int total = _impl->_cache_hits + _impl->_cache_misses;
+    if (total > 0) {
+      float hit_ratio = float(_impl->_cache_hits) / float(total);
+      _impl->_logchan_fetch->perfItem("FETCH:CacheHitRatio", hit_ratio);
+    }
+    
     _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, cache_file, on_complete]() {
       bool process_success = false;
       
@@ -432,24 +451,36 @@ bool AssetFetcher::processAssetPakFromCache(const std::string& asset_id,
                                            const file::Path& cache_file,
                                            const file::Path& dest_path) {
   // Process from cache - don't delete the cached file
-  printf("Processing asset_pak<%s> from cache<%s>\n", asset_id.c_str(), cache_file.c_str());
+  //printf("Processing asset_pak<%s> from cache<%s>\n", asset_id.c_str(), cache_file.c_str());
   file::Path decrypted_file = cache_file;
   auto ns_it = _config._namespace_keys.find(asset_data._namespace);
   if (ns_it != _config._namespace_keys.end()) {
-    // Use mktemp for unique decrypted file name
-    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar");
-    printf("Decrypting asset_pak %s\n", asset_id.c_str());
+    // Use mktemp for unique decrypted file name (.tar.xz)
+    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar.xz");
+    //printf("Decrypting asset_pak %s\n", asset_id.c_str());
     if (!decryptFile(cache_file, decrypted_file, ns_it->second)) {
-      printf("Decryption failed for %s\n", asset_id.c_str());
+       _impl->_logchan_fetch->log("Decryption failed for %s\n", asset_id.c_str());
       return false;
     }
   }
   
-  // Extract tar
-  printf("Extracting asset_pak<%s> to dest_path<%s>\n", asset_id.c_str(), dest_path.c_str() );
-  bool success = extractTar(decrypted_file, dest_path);
+  // Decompress XZ
+  file::Path tar_file = file::Path::mktemp(asset_id + "_tar_", ".tar");
+  _impl->_logchan_fetch->log("Decompressing XZ file %s", asset_id.c_str());
+  if (!decompressXZ(decrypted_file, tar_file)) {
+     _impl->_logchan_fetch->log("XZ decompression failed for %s\n", asset_id.c_str());
+    if (decrypted_file != cache_file) {
+      std::remove(decrypted_file.c_str());
+    }
+    return false;
+  }
   
-  // Only clean up the decrypted file, NOT the cached file
+  // Extract tar
+  _impl->_logchan_fetch->log("Extracting asset_pak<%s> -> dest_path<%s>", asset_id.c_str(), dest_path.c_str() );
+  bool success = extractTar(tar_file, dest_path);
+  
+  // Clean up temporary files (but NOT the cached file)
+  std::remove(tar_file.c_str());
   if (decrypted_file != cache_file) {
     std::remove(decrypted_file.c_str());
   }
@@ -462,25 +493,38 @@ bool AssetFetcher::processAssetPak(const std::string& asset_id,
                                   const file::Path& temp_file,
                                   const file::Path& dest_path) {
   // Decrypt if needed
-  printf("Processing asset_pak<%s> temp_file<%s>\n", asset_id.c_str(), temp_file.c_str());
+  //printf("Processing asset_pak<%s> temp_file<%s>\n", asset_id.c_str(), temp_file.c_str());
   file::Path decrypted_file = temp_file;
   auto ns_it = _config._namespace_keys.find(asset_data._namespace);
   if (ns_it != _config._namespace_keys.end()) {
-    // Use mktemp for unique decrypted file name
-    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar");
-    printf("Decrypting asset_pak %s\n", asset_id.c_str());
+    // Use mktemp for unique decrypted file name (.tar.xz)
+    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar.xz");
+    //printf("Decrypting asset_pak %s\n", asset_id.c_str());
     if (!decryptFile(temp_file, decrypted_file, ns_it->second)) {
-      printf("Decryption failed for %s\n", asset_id.c_str());
+       _impl->_logchan_fetch->log("Decryption failed for %s\n", asset_id.c_str());
       std::remove(temp_file.c_str());
       return false;
     }
   }
   
+  // Decompress XZ
+  file::Path tar_file = file::Path::mktemp(asset_id + "_tar_", ".tar");
+  _impl->_logchan_fetch->log("Decompressing XZ file %s", asset_id.c_str());
+  if (!decompressXZ(decrypted_file, tar_file)) {
+     _impl->_logchan_fetch->log("XZ decompression failed for %s\n", asset_id.c_str());
+    std::remove(decrypted_file.c_str());
+    if (decrypted_file != temp_file) {
+      std::remove(temp_file.c_str());
+    }
+    return false;
+  }
+  
   // Extract tar
-  printf("Extracting asset_pak<%s> to dest_path<%s>\n", asset_id.c_str(), dest_path.c_str() );
-  bool success = extractTar(decrypted_file, dest_path);
+  _impl->_logchan_fetch->log("Extracting asset_pak<%s> -> dest_path<%s>", asset_id.c_str(), dest_path.c_str() );
+  bool success = extractTar(tar_file, dest_path);
   
   // Clean up temporary files
+  std::remove(tar_file.c_str());
   std::remove(decrypted_file.c_str());
   if (decrypted_file != temp_file) {
     std::remove(temp_file.c_str());
@@ -500,7 +544,7 @@ bool AssetFetcher::processAssetFromCache(const std::string& asset_id,
   // Decrypt if needed
   auto ns_it = _config._namespace_keys.find(asset_data._namespace);
   if (ns_it != _config._namespace_keys.end()) {
-    printf("Decrypting asset %s from cache\n", asset_id.c_str());
+    //printf("Decrypting asset %s from cache\n", asset_id.c_str());
     success = decryptFile(cache_file, final_dest, ns_it->second);
   } else {
     // Just copy the file from cache
@@ -527,7 +571,7 @@ bool AssetFetcher::processAsset(const std::string& asset_id,
   // Decrypt if needed
   auto ns_it = _config._namespace_keys.find(asset_data._namespace);
   if (ns_it != _config._namespace_keys.end()) {
-    printf("Decrypting asset %s\n", asset_id.c_str());
+    //printf("Decrypting asset %s\n", asset_id.c_str());
     success = decryptFile(temp_file, final_dest, ns_it->second);
   } else {
     // Just move the file
@@ -576,7 +620,7 @@ bool AssetFetcher::verifyMD5(const file::Path& file, const std::string& expected
   // Compare with expected MD5
   bool match = (calculated_md5 == expected_md5);
   if (!match) {
-    printf("[AssetFetcher] MD5 mismatch: expected=%s, calculated=%s\n", 
+     _impl->_logchan_fetch->log("[AssetFetcher] MD5 mismatch: expected=%s, calculated=%s\n", 
            expected_md5.c_str(), calculated_md5.c_str());
   }
   
@@ -606,6 +650,38 @@ bool AssetFetcher::decryptFile(const file::Path& src, const file::Path& dst, con
 
 ////////////////////////////////////////////////////////////////////////////////
 
+bool AssetFetcher::decompressXZ(const file::Path& xz_file, const file::Path& tar_file) {
+  // Use xz to decompress
+  Spawner spawner;
+  spawner.mWorkingDirectory = file::Path::temp_dir().c_str();
+  
+  // Build command line - decompress to a specific file
+  std::string cmd = "xz -d -k ";  // -d = decompress, -k = keep input file
+  cmd += xz_file.c_str();
+  cmd += " -c > ";  // -c = write to stdout
+  cmd += tar_file.c_str();
+  
+  // Actually, let's use a simpler approach - copy the file and decompress in place
+  std::string copy_cmd = "cp ";
+  copy_cmd += xz_file.c_str();
+  copy_cmd += " ";
+  copy_cmd += tar_file.c_str();
+  copy_cmd += ".xz";
+  system(copy_cmd.c_str());
+  
+  // Now decompress in place
+  std::string decompress_cmd = "xz -d ";
+  decompress_cmd += tar_file.c_str();
+  decompress_cmd += ".xz";
+  
+  //printf("[AssetFetcher] XZ decompress command: %s\n", decompress_cmd.c_str());
+  
+  int ret = system(decompress_cmd.c_str());
+  return ret == 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 bool AssetFetcher::extractTar(const file::Path& tar_file, const file::Path& dest_dir) {
   // Ensure destination directory exists
   std::string mkdir_cmd = "mkdir -p ";
@@ -616,12 +692,12 @@ bool AssetFetcher::extractTar(const file::Path& tar_file, const file::Path& dest
   Spawner spawner;
   
   // Build command line with -C flag to specify extraction directory
-  std::string cmd = "tar xvf ";
+  std::string cmd = "tar xf ";
   cmd += tar_file.c_str();
   cmd += " -C ";
   cmd += dest_dir.c_str();
   
-  printf("[AssetFetcher] Tar extract command: %s\n", cmd.c_str());
+  //printf("[AssetFetcher] Tar extract command: %s\n", cmd.c_str());
   
   spawner.mCommandLine = cmd;
   spawner.spawnSynchronous();

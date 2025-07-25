@@ -240,7 +240,7 @@ void Spawner::spawn()
 
         if( mWorkingDirectory.length() )
         {
-            printf( "child changing to directory<%s>\n", mWorkingDirectory.c_str() );
+            //printf( "child changing to directory<%s>\n", mWorkingDirectory.c_str() );
             int iret = chdir( mWorkingDirectory.c_str() );
             if (iret != 0) {
                 perror("chdir failed");

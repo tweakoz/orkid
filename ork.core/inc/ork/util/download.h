@@ -77,6 +77,7 @@ struct Download {
   // Internal use by DownloadManager
   //////////////////////////////////////////////////////////////////////////////
   void* _curl_handle = nullptr;  // CURL* handle
+  void* _manager_impl = nullptr; // DownloadManager::Impl* for performance tracking
   
   // Helper to get progress percentage
   float progressPercentage() const;
