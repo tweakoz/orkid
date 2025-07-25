@@ -12,6 +12,7 @@
 #include <ork/file/fileenv.h>
 #include <ork/application/application.h>
 #include <ork/util/crc.h>
+#include <ork/util/md5.h>
 #include <ork/kernel/string/string.h>
 #include <glob.h>
 #include <fstream>
@@ -21,6 +22,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <sys/stat.h>
 
 namespace ork::asset::catalog {
 
@@ -247,23 +249,85 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   std::string src_loc = asset_data._src_loc;
   std::string dst_loc = asset_data._dst_loc;
   
-  // Resolve source URL
+  // Resolve source URL and location info
   URL source_url;
+  locationinfo_ptr_t location_info;
+  
+  printf("[AssetFetcher] Resolving source location: %s\n", src_loc.c_str());
+  
   if (src_loc.find("<") == 0) {
-    source_url = _config.resolveURL(src_loc);
-    if (!asset_data._filename.empty()) {
-      source_url = source_url / asset_data._filename;
+    location_info = _config.resolveLocation(src_loc);
+    if (location_info) {
+      source_url = location_info->url;
+      printf("[AssetFetcher] Resolved base URL: %s\n", source_url.toString().c_str());
+      if (!asset_data._filename.empty()) {
+        source_url = source_url / asset_data._filename;
+        printf("[AssetFetcher] Full URL with filename: %s\n", source_url.toString().c_str());
+      }
     }
   } else {
     source_url = URL(src_loc);
+    printf("[AssetFetcher] Direct URL: %s\n", source_url.toString().c_str());
   }
   
   // Resolve destination path
   file::Path dest_path = _config.resolvePath(dst_loc);
+  printf("[AssetFetcher] dst_loc: %s -> dest_path: %s\n", dst_loc.c_str(), dest_path.c_str());
   
-  // Create download with unique temp file per asset
-  file::Path temp_file = file::Path::mktemp(asset_id + "_", "_" + asset_data._filename);
-  auto download = _download_manager->download(source_url, temp_file);
+  // Setup cache directory
+  file::Path cache_dir = file::Path::stage_dir() / "assetcache";
+  // Create directory if it doesn't exist
+  mkdir(cache_dir.c_str(), 0755);
+  
+  // Check cache for this asset
+  file::Path cache_file = cache_dir / asset_data._filename;
+  bool need_download = true;
+  
+  if (!asset_data._md5.empty() && FileEnv::DoesFileExist(cache_file)) {
+    // Check if cached file has correct MD5
+    if (verifyMD5(cache_file, asset_data._md5)) {
+      printf("[AssetFetcher] Cache hit for %s (MD5 verified)\n", asset_id.c_str());
+      need_download = false;
+    } else {
+      printf("[AssetFetcher] Cache file exists but MD5 mismatch, re-downloading\n");
+      // Remove invalid cached file
+      std::remove(cache_file.c_str());
+    }
+  }
+  
+  if (need_download) {
+    // Create download with unique temp file per asset
+    file::Path temp_file = file::Path::mktemp(asset_id + "_", "_" + asset_data._filename);
+    auto download = _download_manager->download(source_url, temp_file);
+  
+    // Apply API key if available
+    if (location_info) {
+    // Extract location key from src_loc for env var lookup
+    std::string location_key;
+    if (src_loc.find("<") == 0) {
+      size_t end_pos = src_loc.find(">");
+      if (end_pos != std::string::npos) {
+        location_key = src_loc.substr(1, end_pos - 1);
+      }
+    }
+    
+    printf("[AssetFetcher] Location key: %s\n", location_key.c_str());
+    std::string effective_key = location_info->getEffectiveApiKey(location_key);
+    if (!effective_key.empty()) {
+      printf("[AssetFetcher] Setting API key (length=%zu)\n", effective_key.length());
+      download->setApiKey(effective_key);
+    } else {
+      printf("[AssetFetcher] No API key found for location\n");
+    }
+    
+    // Apply disable_cert_check if set
+    if (location_info->disable_cert_check) {
+      printf("[AssetFetcher] Disabling certificate check for this download\n");
+      download->_ignore_tls_errors = true;
+    }
+  } else {
+    printf("[AssetFetcher] No location info found for URL\n");
+  }
   
   ///////////////////////////////////////////////////////////
   // Set up download callbacks
@@ -275,16 +339,16 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   };
   
   // Capture necessary data for post-processing
-  auto post_process = [this, asset_id, asset_data, dest_path, on_complete](bool download_success, const file::Path& temp_file) {
+  auto post_process = [this, asset_id, asset_data, dest_path, cache_dir, on_complete](bool download_success, const file::Path& temp_file) {
     // Queue post-processing on the opq
-    _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, temp_file, download_success, on_complete]() {
+    _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, cache_dir, temp_file, download_success, on_complete]() {
       bool process_success = false;
       
       if (download_success) {
-        // Verify MD5
+        // Verify MD5 of downloaded encrypted file
         if (!asset_data._md5.empty()) {
           if (!verifyMD5(temp_file, asset_data._md5)) {
-            printf("MD5 verification failed for %s\n", asset_id.c_str());
+            printf("MD5 verification failed for downloaded file %s\n", asset_id.c_str());
             if (_on_asset_complete._item) {
               _on_asset_complete._item(asset_id, false);
             }
@@ -292,6 +356,17 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
             return;
           }
         }
+        
+        // Save to cache (encrypted file)
+        file::Path cache_file = cache_dir / asset_data._filename;
+        std::ifstream src(temp_file.c_str(), std::ios::binary);
+        std::ofstream dst(cache_file.c_str(), std::ios::binary);
+        if (src && dst) {
+          dst << src.rdbuf();
+          printf("[AssetFetcher] Cached downloaded file to %s\n", cache_file.c_str());
+        }
+        src.close();
+        dst.close();
         
         // Process based on asset type
         if (asset_data._type == "asset_pak") {
@@ -317,6 +392,27 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
     printf("Download failed for %s: %s\n", asset_id.c_str(), error.c_str());
     post_process(false, file::Path());
   };
+  } else {
+    // Use cached file - still need to decrypt and untar
+    // MD5 verification will happen after decryption in processAssetPak
+    printf("[AssetFetcher] Using cached file for %s\n", asset_id.c_str());
+    _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, cache_file, on_complete]() {
+      bool process_success = false;
+      
+      // Process based on asset type
+      if (asset_data._type == "asset_pak") {
+        process_success = processAssetPak(asset_id, asset_data, cache_file, dest_path);
+      } else if (asset_data._type == "asset") {
+        process_success = processAsset(asset_id, asset_data, cache_file, dest_path);
+      }
+      
+      if (_on_asset_complete._item) {
+        _on_asset_complete._item(asset_id, process_success);
+      }
+      
+      on_complete();
+    });
+  }
 }
 
 bool AssetFetcher::processAssetPak(const std::string& asset_id,
@@ -324,6 +420,7 @@ bool AssetFetcher::processAssetPak(const std::string& asset_id,
                                   const file::Path& temp_file,
                                   const file::Path& dest_path) {
   // Decrypt if needed
+  printf("Processing asset_pak<%s> temp_file<%s>\n", asset_id.c_str(), temp_file.c_str());
   file::Path decrypted_file = temp_file;
   auto ns_it = _config._namespace_keys.find(asset_data._namespace);
   if (ns_it != _config._namespace_keys.end()) {
@@ -338,7 +435,7 @@ bool AssetFetcher::processAssetPak(const std::string& asset_id,
   }
   
   // Extract tar
-  printf("Extracting asset_pak %s\n", asset_id.c_str());
+  printf("Extracting asset_pak<%s> to dest_path<%s>\n", asset_id.c_str(), dest_path.c_str() );
   bool success = extractTar(decrypted_file, dest_path);
   
   // Clean up temporary files
@@ -388,12 +485,33 @@ bool AssetFetcher::verifyMD5(const file::Path& file, const std::string& expected
     return false;
   }
   
-  // TODO: Implement proper MD5 calculation
-  // For now, just skip verification
+  // Calculate MD5 hash of file contents
+  CMD5 hasher;
+  
+  // Read file in chunks and update hash
+  const size_t buffer_size = 8192;
+  char buffer[buffer_size];
+  while (ifs.good()) {
+    ifs.read(buffer, buffer_size);
+    size_t bytes_read = ifs.gcount();
+    if (bytes_read > 0) {
+      hasher.update((unsigned char*)buffer, bytes_read);
+    }
+  }
   ifs.close();
   
-  printf("Warning: MD5 verification not yet implemented, skipping check\n");
-  return true;
+  hasher.finalize();
+  Md5Sum result = hasher.Result();
+  std::string calculated_md5 = result.hex_digest();
+  
+  // Compare with expected MD5
+  bool match = (calculated_md5 == expected_md5);
+  if (!match) {
+    printf("[AssetFetcher] MD5 mismatch: expected=%s, calculated=%s\n", 
+           expected_md5.c_str(), calculated_md5.c_str());
+  }
+  
+  return match;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -427,13 +545,14 @@ bool AssetFetcher::extractTar(const file::Path& tar_file, const file::Path& dest
   
   // Use tar for extraction
   Spawner spawner;
-  // Don't set working directory - use -C flag instead
   
-  // Build command line matching Python implementation
-  std::string cmd = "tar xf ";
+  // Build command line with -C flag to specify extraction directory
+  std::string cmd = "tar xvf ";
   cmd += tar_file.c_str();
   cmd += " -C ";
   cmd += dest_dir.c_str();
+  
+  printf("[AssetFetcher] Tar extract command: %s\n", cmd.c_str());
   
   spawner.mCommandLine = cmd;
   spawner.spawnSynchronous();

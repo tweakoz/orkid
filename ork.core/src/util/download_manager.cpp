@@ -183,24 +183,42 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);  // No timeout
   
+  // Enable verbose debug output
+  //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+  
+  // Log the URL being downloaded
+  printf("[CURL] Downloading from: %s\n", dl->_url.toString().c_str());
+  
   ///////////////////////////////////////////////////////////
   // Handle TLS options
   ///////////////////////////////////////////////////////////
   if (dl->_ignore_tls_errors) {
+    printf("[CURL] Disabling TLS certificate verification\n");
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+  } else {
+    printf("[CURL] TLS certificate verification enabled\n");
   }
   
   ///////////////////////////////////////////////////////////
   // Set headers
   ///////////////////////////////////////////////////////////
   struct curl_slist* headers = nullptr;
+  printf("[CURL] Setting headers:\n");
   for (const auto& [key, value] : dl->_headers) {
     std::string header = key + ": " + value;
+    // Log header (mask API key value for security)
+    if (key == "X-API-Key" || key == "Authorization") {
+      printf("  %s: ***masked***\n", key.c_str());
+    } else {
+      printf("  %s: %s\n", key.c_str(), value.c_str());
+    }
     headers = curl_slist_append(headers, header.c_str());
   }
   if (headers) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+  } else {
+    printf("  (no custom headers)\n");
   }
   
   ///////////////////////////////////////////////////////////
@@ -222,18 +240,35 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   // Handle result
   ///////////////////////////////////////////////////////////
   if (res == CURLE_OK) {
-    dl->_state = DownloadState::COMPLETED;
-    if (dl->_on_complete._item) {
-      dl->_on_complete._item(true, dl->_destination_path);
+    // Get HTTP response code
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    printf("[CURL] HTTP Response Code: %ld\n", response_code);
+    
+    if (response_code >= 200 && response_code < 300) {
+      dl->_state = DownloadState::COMPLETED;
+      if (dl->_on_complete._item) {
+        dl->_on_complete._item(true, dl->_destination_path);
+      }
+    } else {
+      dl->_state = DownloadState::FAILED;
+      dl->_error_message = "HTTP error " + std::to_string(response_code);
+      printf("[CURL] Download failed with HTTP %ld\n", response_code);
+      if (dl->_on_failure._item) {
+        dl->_on_failure._item(dl->_error_message);
+      }
+      // Remove partial file
+      std::remove(dl->_destination_path.c_str());
     }
   } else {
     dl->_state = DownloadState::FAILED;
     dl->_error_message = curl_easy_strerror(res);
+    printf("[CURL] Download failed: %s\n", dl->_error_message.c_str());
     if (dl->_on_failure._item) {
       dl->_on_failure._item(dl->_error_message);
     }
     // Remove partial file
-    // TODO: Add file deletion logic
+    std::remove(dl->_destination_path.c_str());
   }
   
   updateActiveDownloads();

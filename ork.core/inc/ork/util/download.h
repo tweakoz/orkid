@@ -65,6 +65,7 @@ struct Download {
   ItemAndData<download_complete_fn_t> _on_complete;
   ItemAndData<download_failure_fn_t> _on_failure;
   
+  
   // Constructor
   Download(const URL& url, const file::Path& dest_path);
   

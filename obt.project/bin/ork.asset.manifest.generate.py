@@ -11,9 +11,11 @@ import os
 import hashlib
 import tarfile
 import tempfile
+import subprocess
 from pathlib import Path
 from datetime import datetime
 from obt import crypt, path as obt_path
+from orkengine import core
 
 class AssetGenerator:
     def __init__(self, cache_dir=None, override_key=None):
@@ -29,29 +31,44 @@ class AssetGenerator:
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
     
-    def create_asset_pak(self, source_dir, namespace, asset_id):
+    def create_asset_pak(self, source_dir, namespace, asset_id, strip_leading=False):
         """Create tar file from directory, encrypt it, and cache it"""
         source_dir = Path(source_dir).resolve()
         temp_tar = tempfile.NamedTemporaryFile(suffix='.tar', delete=False)
         
-        # Create tar archive with stripped paths
+        # Create tar archive
         with tarfile.open(temp_tar.name, 'w') as tar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     full_path = Path(root) / file
-                    # Calculate relative path from source_dir
-                    rel_path = full_path.relative_to(source_dir)
-                    tar.add(str(full_path), arcname=str(rel_path))
-        
-        # Calculate MD5 of the tar file (before encryption)
-        md5_hash = self.calculate_md5(temp_tar.name)
+                    if strip_leading:
+                        # Strip the source_dir from the path, keeping only the relative part
+                        rel_path = full_path.relative_to(source_dir)
+                        arcname = str(rel_path)
+                    else:
+                        # Keep the full path structure including source_dir name
+                        arcname = str(full_path)
+                    tar.add(str(full_path), arcname=arcname)
         
         # Get encryption key for namespace
         enc_key = self.get_encryption_key(namespace, self.override_key)
+        print(f"Using encryption key<{enc_key}> for namespace: {namespace}" )
         
-        # Encrypt the tar file
+        # Encrypt the tar file to a temporary location first
+        # Use mktemp to get a unique name that doesn't exist
+        temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+        
+        crypt.encrypt_file(temp_tar.name, temp_enc_path, enc_key)
+        
+        # Calculate MD5 of the encrypted file
+        md5_hash = self.calculate_md5(temp_enc_path)
+        
+        # Move encrypted file to cache with MD5-based name
         encrypted_file = self.cache_dir / f"{md5_hash}.enc"
-        crypt.encrypt_file(temp_tar.name, str(encrypted_file), enc_key)
+        print(f"Encrypted asset pak path: {encrypted_file}")
+        if encrypted_file.exists():
+            os.unlink(encrypted_file)
+        os.rename(temp_enc_path, str(encrypted_file))
         
         # Clean up temp tar
         os.unlink(temp_tar.name)
@@ -78,15 +95,23 @@ class AssetGenerator:
         """Encrypt single file and cache it"""
         source_file = Path(source_file).resolve()
         
-        # Calculate MD5 of original (unencrypted) file
-        md5_hash = self.calculate_md5(source_file)
-        
         # Get encryption key
         enc_key = self.get_encryption_key(namespace, self.override_key)
         
-        # Encrypt the file
+        # Encrypt the file to a temporary location first
+        # Use mktemp to get a unique name that doesn't exist
+        temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+        
+        crypt.encrypt_file(str(source_file), temp_enc_path, enc_key)
+        
+        # Calculate MD5 of the encrypted file
+        md5_hash = self.calculate_md5(temp_enc_path)
+        
+        # Move encrypted file to cache with MD5-based name
         cached_file = self.cache_dir / f"{md5_hash}.enc"
-        crypt.encrypt_file(str(source_file), str(cached_file), enc_key)
+        if cached_file.exists():
+            os.unlink(cached_file)
+        os.rename(temp_enc_path, str(cached_file))
         
         # Generate receipt for external use
         receipt = {
@@ -150,6 +175,10 @@ def main():
     parser.add_argument('--dependencies', nargs='*', help='Dependencies (namespace.asset_id)')
     parser.add_argument('--key', help='Encryption key (alternative to environment variable)')
     parser.add_argument('--filename', help='Override filename in manifest (without path)')
+    parser.add_argument('--strip-leading', action='store_true', help='Strip base directory from tar archive paths')
+    
+    # SCP upload args
+    parser.add_argument('--scp-upload', action='store_true', help='Upload to SCP destination from config')
     
     args = parser.parse_args()
     
@@ -172,7 +201,7 @@ def main():
     try:
         if asset_type == 'asset_pak':
             cached_file, md5_hash, receipt = generator.create_asset_pak(
-                source, args.namespace, args.asset_id
+                source, args.namespace, args.asset_id, args.strip_leading
             )
             if args.filename:
                 filename = args.filename
@@ -248,6 +277,79 @@ def main():
     print(f"✓ MD5: {md5_hash}")
     print(f"✓ Receipt saved: {receipt}")
     print(f"✓ Manifest updated: {args.output}")
+    
+    # Handle SCP upload if requested
+    if args.scp_upload:
+        # Initialize core and load config to get scp_destination
+        core.coreappinit()
+        
+        # Create fetcher to load configs
+        fetcher = core.AssetFetcher()
+        fetcher.reload()
+        config = fetcher.get_config()
+        
+        # Debug: print manifest directories
+        import os
+        manifest_dirs = os.environ.get('ORKID_ASSET_MANIFEST_DIRS', '').split(':')
+        print(f"Manifest directories: {manifest_dirs}")
+        
+        # Debug: print all locations
+        print(f"Available locations: {list(config.locations.keys())}")
+        for loc_name, loc_info in config.locations.items():
+            print(f"  {loc_name}: {loc_info}")
+        
+        # Extract location name from src_loc (e.g., "<devcdn>" -> "devcdn")
+        src_loc = args.src_loc
+        location_name = None
+        if src_loc.startswith('<') and src_loc.endswith('>'):
+            location_name = src_loc[1:-1]
+        
+        if not location_name:
+            print(f"✗ Cannot determine location name from src_loc: {src_loc}")
+            return 1
+            
+        # Get the LocationInfo for this location
+        if location_name not in config.locations:
+            print(f"✗ Location '{location_name}' not found in config")
+            print(f"Available locations: {list(config.locations.keys())}")
+            return 1
+            
+        location_info = config.locations[location_name]
+        if not location_info:
+            print(f"✗ LocationInfo is None for '{location_name}'")
+            return 1
+            
+        # Debug: print location info
+        print(f"LocationInfo for '{location_name}': {location_info}")
+        
+        if not hasattr(location_info, 'scp_destination') or not location_info.scp_destination:
+            print(f"✗ No scp_destination configured for location '{location_name}'")
+            return 1
+            
+        scp_dest = location_info.scp_destination
+        print(f"\nUploading asset to {scp_dest}...")
+        
+        try:
+            # Ensure destination ends with /
+            if not scp_dest.endswith('/'):
+                scp_dest += '/'
+            
+            # Construct full destination path with filename
+            full_dest = scp_dest + filename
+            
+            # Run SCP in foreground so user can provide auth info
+            scp_cmd = ['scp', str(cached_file), full_dest]
+            print(f"Running: {' '.join(scp_cmd)}")
+            result = subprocess.run(scp_cmd)
+            
+            if result.returncode == 0:
+                print(f"✓ Uploaded to: {full_dest}")
+            else:
+                print(f"✗ SCP upload failed with exit code: {result.returncode}")
+                return 1
+        except Exception as e:
+            print(f"✗ SCP upload error: {e}")
+            return 1
     
     return 0
 

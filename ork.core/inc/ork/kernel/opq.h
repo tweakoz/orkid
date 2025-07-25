@@ -285,6 +285,7 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   std::atomic<int> _numThreadsRunning;
   std::atomic<int> _numPendingOperations;
   std::atomic<int> _numCompletedOperations;
+  std::atomic<int> _numInFlight;
   std::string _name;
   std::string _debuginfo;
 

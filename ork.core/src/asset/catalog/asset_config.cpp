@@ -9,14 +9,45 @@
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/kernel/environment.h>
+#include <ork/kernel/string/string.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <fstream>
 #include <sstream>
 #include <glob.h>
 #include <ork/application/application.h>
+#include <algorithm>
+#include <cctype>
 
 namespace ork::asset::catalog {
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string LocationInfo::getEffectiveApiKey(const std::string& location_name) const {
+  // Transform location name to uppercase and replace non-alphanumeric with underscore
+  std::string env_var_name = "ORKID_ASSET_API_KEY_";
+  for (char c : location_name) {
+    if (std::isalnum(c)) {
+      env_var_name += std::toupper(c);
+    } else {
+      env_var_name += '_';
+    }
+  }
+  
+  // Check environment variable first
+  std::string env_value;
+  if (genviron.get(env_var_name, env_value) && !env_value.empty()) {
+    return env_value;
+  }
+  
+  // Check for global fallback
+  if (genviron.get("ORKID_ASSET_API_KEY_DEFAULT", env_value) && !env_value.empty()) {
+    return env_value;
+  }
+  
+  // Fall back to configured value
+  return api_key.value_or("");
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -71,9 +102,16 @@ void AssetConfig::merge(const AssetConfig& other) {
     _namespace_keys[key] = value;
   }
   
-  // Merge locations
+  // Merge locations (deep copy LocationInfo)
   for (const auto& [key, value] : other._locations) {
-    _locations[key] = value;
+    if (value) {
+      auto new_loc = std::make_shared<LocationInfo>();
+      new_loc->url = value->url;
+      new_loc->api_key = value->api_key;
+      new_loc->disable_cert_check = value->disable_cert_check;
+      new_loc->scp_destination = value->scp_destination;
+      _locations[key] = new_loc;
+    }
   }
   
   // Merge destinations
@@ -115,14 +153,44 @@ void AssetConfig::parseFromJsonInternal(const std::string& json_str) {
   if (doc.HasMember("locations") && doc["locations"].IsObject()) {
     const auto& locs = doc["locations"];
     for (auto it = locs.MemberBegin(); it != locs.MemberEnd(); ++it) {
-      if (it->value.IsString()) {
+      auto loc_info = std::make_shared<LocationInfo>();
+      
+      if (it->value.IsObject()) {
+        // New format: {"url": "...", "api_key": "..."}
+        if (it->value.HasMember("url") && it->value["url"].IsString()) {
+          std::string url_str = it->value["url"].GetString();
+          if (url_str.substr(0, 4) == "http") {
+            //printf("Parsing URL: %s\n", url_str.c_str());
+            loc_info->url = URL(url_str);
+          } else {
+            loc_info->url = URL("file://" + url_str);
+          }
+        }
+        
+        if (it->value.HasMember("api_key") && it->value["api_key"].IsString()) {
+          auto api_key_str = it->value["api_key"].GetString();
+          //printf("Parsing API key: %s\n", api_key_str);
+          loc_info->api_key = api_key_str;
+        }
+        
+        if (it->value.HasMember("disable_cert_check") && it->value["disable_cert_check"].IsBool()) {
+          loc_info->disable_cert_check = it->value["disable_cert_check"].GetBool();
+        }
+        
+        if (it->value.HasMember("scp_destination") && it->value["scp_destination"].IsString()) {
+          loc_info->scp_destination = it->value["scp_destination"].GetString();
+        }
+        
+        _locations[it->name.GetString()] = loc_info;
+      } else if (it->value.IsString()) {
+        // Backward compatibility: string format
         std::string value = it->value.GetString();
         if (value.substr(0, 4) == "http") {
-          _locations[it->name.GetString()] = URL(value);
+          loc_info->url = URL(value);
         } else {
-          // Non-URL location, store as file URL
-          _locations[it->name.GetString()] = URL("file://" + value);
+          loc_info->url = URL("file://" + value);
         }
+        _locations[it->name.GetString()] = loc_info;
       }
     }
   }
@@ -152,9 +220,15 @@ void AssetConfig::processDestinationTemplates() {
     if (path_str.find("<stage>") == 0) {
       // Replace <stage> with actual stage path
       file::Path stage_path = file::Path::stage_dir();
-      path_str = path_str.replace(0, 7, stage_path.c_str());  // 7 = len("<stage>")
-      if (path_str[0] == '/') path_str = path_str.substr(1);  // Remove leading slash
-      processed[key] = stage_path / path_str;
+      if (path_str == "<stage>") {
+        // If it's exactly <stage>, just use the stage path
+        processed[key] = stage_path;
+      } else {
+        // Otherwise, append the rest after <stage>/
+        path_str = path_str.substr(7);  // Remove "<stage>"
+        if (path_str[0] == '/') path_str = path_str.substr(1);  // Remove leading slash
+        processed[key] = stage_path / path_str;
+      }
     }
     else if (path_str.find("<temp>") == 0) {
       // Replace <temp> with actual temp path
@@ -200,15 +274,57 @@ URL AssetConfig::resolveURL(const std::string& template_url) const {
   
   // Replace all known location templates
   for (const auto& [key, value] : _locations) {
-    std::string token = "<" + key + ">";
-    size_t pos = 0;
-    while ((pos = url.find(token, pos)) != std::string::npos) {
-      url.replace(pos, token.length(), value.toString());
-      pos += value.toString().length();
+    if (value) {
+      std::string token = "<" + key + ">";
+      size_t pos = 0;
+      while ((pos = url.find(token, pos)) != std::string::npos) {
+        url.replace(pos, token.length(), value->url.toString());
+        pos += value->url.toString().length();
+      }
     }
   }
   
   return URL(url);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+locationinfo_ptr_t AssetConfig::resolveLocation(const std::string& template_url) const {
+  if (template_url.empty()) return nullptr;
+  
+  // Check if the template starts with a known location key
+  if (template_url.find("<") == 0) {
+    size_t end_pos = template_url.find(">");
+    if (end_pos != std::string::npos) {
+      std::string location_key = template_url.substr(1, end_pos - 1);
+      auto it = _locations.find(location_key);
+      if (it != _locations.end()) {
+        // Create a new LocationInfo with resolved URL
+        auto resolved = std::make_shared<LocationInfo>();
+        resolved->api_key = it->second->api_key;
+        resolved->disable_cert_check = it->second->disable_cert_check;
+        
+        // If there's a path after the location key, append it
+        if (end_pos + 1 < template_url.length()) {
+          std::string path_suffix = template_url.substr(end_pos + 1);
+          if (path_suffix[0] == '/') {
+            resolved->url = it->second->url / path_suffix.substr(1);
+          } else {
+            resolved->url = it->second->url / path_suffix;
+          }
+        } else {
+          resolved->url = it->second->url;
+        }
+        
+        return resolved;
+      }
+    }
+  }
+  
+  // Not a template, just return a LocationInfo with the URL
+  auto result = std::make_shared<LocationInfo>();
+  result->url = URL(template_url);
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -42,19 +42,22 @@ static void _coordinatorThreadStartup() {
   auto coordinator_thread_impl = [](anyp data) {
     int num_completed = 0;
     int check_index   = 0;
+    int last_thread_add_completed = -1;  // Track when we last added a thread
     while (OpqThread::_gthreadcount > 0 && !gthread_coordinator_should_exit) {
       ork::usleep(1 << 20);
       auto cq = concurrentQueue();
       int nt  = cq->_numThreadsRunning;
       int nc  = cq->_numCompletedOperations;
       int np  = cq->_numPendingOperations;
-      if ((check_index & 7) == 0) {
-        logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d>", nt, nc, np );
-      }
+      int nif = cq->_numInFlight;
+      int idle_threads = nt - nif;
+      //if ((check_index & 7) == 0) {
+        //logchan_opq->log( "concurrentQueue numthreads<%d> completed<%d> pending<%d> in_flight<%d>", nt, nc, np, nif );
+      //}
       ///////////////////////////////////////////////////////////
-      // thread creation (if stalled)
+      // thread creation (if stalled and no idle threads)
       ///////////////////////////////////////////////////////////
-      if ((np > 0) and num_completed <= nc) {
+      if ((np > 0) and (idle_threads == 0) and (num_completed == nc) and (nc != last_thread_add_completed)) {
         if (nt >= MAX_THREADS) {
           logchan_opq->log( "concurrentQueue stalled, max threads reached" );
           continue;
@@ -65,6 +68,7 @@ static void _coordinatorThreadStartup() {
         auto thread = new OpqThread(cq.get(), numthreads);
         cq->_threads.atomicOp([=](OperationsQueue::threadset_t& thset) { thset.insert(thread); });
         thread->start();
+        last_thread_add_completed = nc;  // Remember that we added a thread at this completed count
       }
       ///////////////////////////////////////////////////////////
       // thread deletion (if idle)
@@ -452,7 +456,9 @@ bool OperationsQueue::Process() {
         }
         
         // Execute the operation
+        _numInFlight.fetch_add(1);
         the_op.invoke();
+        _numInFlight.fetch_add(-1);
         
         _numCompletedOperations.fetch_add(1);
         _numPendingOperations.fetch_add(-1);
@@ -549,6 +555,7 @@ OperationsQueue::OperationsQueue(int inumthreads, const char* name)
   _numThreadsRunning      = 0;
   _numPendingOperations   = 0;
   _numCompletedOperations = 0;
+  _numInFlight            = 0;
 
   // Simple performance tracking initialization
   _perf_tracking_active = false;

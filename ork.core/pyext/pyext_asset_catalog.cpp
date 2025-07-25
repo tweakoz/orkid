@@ -76,6 +76,28 @@ void pyinit_asset_catalog(py::module& module_core) {
     });
 
   /////////////////////////////////////////////////////////////////////////////////
+  // LocationInfo
+  /////////////////////////////////////////////////////////////////////////////////
+  auto location_type = py::class_<LocationInfo, locationinfo_ptr_t>(module_core, "LocationInfo")
+    .def(py::init<>())
+    .def_readonly("url", &LocationInfo::url)
+    .def_readonly("api_key", &LocationInfo::api_key)
+    .def_readonly("disable_cert_check", &LocationInfo::disable_cert_check)
+    .def_property_readonly("scp_destination", [](const LocationInfo& loc) -> py::object {
+      if (loc.scp_destination.has_value()) {
+        return py::str(loc.scp_destination.value());
+      }
+      return py::none();
+    })
+    .def("get_effective_api_key", &LocationInfo::getEffectiveApiKey)
+    .def("__repr__", [](locationinfo_ptr_t loc) -> std::string {
+      std::string scp_dest = loc->scp_destination.has_value() ? loc->scp_destination.value() : "None";
+      return FormatString("LocationInfo(url='%s', scp_destination='%s')", 
+        loc->url.toString().c_str(), scp_dest.c_str());
+    });
+  type_codec->registerStdCodec<locationinfo_ptr_t>(location_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   // AssetConfig
   /////////////////////////////////////////////////////////////////////////////////
   auto config_type = py::class_<AssetConfig, assetconfig_ptr_t>(module_core, "AssetConfig")
