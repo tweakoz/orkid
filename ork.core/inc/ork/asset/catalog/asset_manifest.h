@@ -39,6 +39,10 @@ struct AssetManifest {
     std::map<std::string, std::string> _dependencies;
     std::string _namespace;
     std::string _manifest_source;
+    std::vector<std::string> _platforms; // Supported platforms: ["mac"], ["linux"], or ["mac", "linux"]
+    
+    // Check if this asset supports the current platform
+    bool supportsCurrentPlatform() const;
   };
   
   //////////////////////////////////////////////////////////////////////////////

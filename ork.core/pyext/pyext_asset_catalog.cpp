@@ -70,9 +70,17 @@ void pyinit_asset_catalog(py::module& module_core) {
     .def_readonly("dependencies", &AssetManifest::AssetEntry::_dependencies)
     .def_readonly("namespace", &AssetManifest::AssetEntry::_namespace)
     .def_readonly("manifest_source", &AssetManifest::AssetEntry::_manifest_source)
+    .def_readonly("platforms", &AssetManifest::AssetEntry::_platforms)
+    .def("supports_current_platform", &AssetManifest::AssetEntry::supportsCurrentPlatform)
     .def("__repr__", [](const AssetManifest::AssetEntry& entry) -> std::string {
-      return FormatString("AssetEntry(type='%s', filename='%s', priority=%d)", 
-        entry._type.c_str(), entry._filename.c_str(), entry._priority);
+      std::string platforms_str = "[";
+      for (size_t i = 0; i < entry._platforms.size(); ++i) {
+        if (i > 0) platforms_str += ", ";
+        platforms_str += "'" + entry._platforms[i] + "'";
+      }
+      platforms_str += "]";
+      return FormatString("AssetEntry(type='%s', filename='%s', priority=%d, platforms=%s)", 
+        entry._type.c_str(), entry._filename.c_str(), entry._priority, platforms_str.c_str());
     });
 
   /////////////////////////////////////////////////////////////////////////////////

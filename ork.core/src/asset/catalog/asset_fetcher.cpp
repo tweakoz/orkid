@@ -146,6 +146,12 @@ void AssetFetcher::loadAllManifests() {
           //printf("    Loaded manifest with %zu assets\n", manifest->_assets.size());
           // Add all assets with priority resolution
           for (const auto& [asset_id, asset_data] : manifest->_assets) {
+            // Skip assets that don't support current platform
+            if (!asset_data.supportsCurrentPlatform()) {
+              //printf("    Skipping asset %s (not supported on current platform)\n", asset_id.c_str());
+              continue;
+            }
+            
             std::string full_id = manifest->_namespace + "." + asset_id;
             
             // Priority resolution
@@ -260,7 +266,13 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
     if (location_info) {
       source_url = location_info->url;
       printf("[AssetFetcher] Resolved base URL: %s\n", source_url.toString().c_str());
-      if (!asset_data._filename.empty()) {
+      // Use MD5 hash as filename for content-addressed storage on CDN
+      if (!asset_data._md5.empty()) {
+        std::string hash_filename = asset_data._md5 + ".enc";
+        source_url = source_url / hash_filename;
+        printf("[AssetFetcher] Full URL with hash filename: %s\n", source_url.toString().c_str());
+      } else if (!asset_data._filename.empty()) {
+        // Fallback to regular filename if no MD5
         source_url = source_url / asset_data._filename;
         printf("[AssetFetcher] Full URL with filename: %s\n", source_url.toString().c_str());
       }

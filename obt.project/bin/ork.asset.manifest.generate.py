@@ -12,6 +12,7 @@ import hashlib
 import tarfile
 import tempfile
 import subprocess
+import platform
 from pathlib import Path
 from datetime import datetime
 from obt import crypt, path as obt_path
@@ -203,6 +204,16 @@ class AssetGenerator:
                 raise ValueError(f"No encryption key found for namespace '{namespace}'. Set {env_key} environment variable or use --key option.")
         return key
 
+def get_current_platform():
+    """Get the current platform name"""
+    system = platform.system()
+    if system == "Darwin":
+        return "mac"
+    elif system == "Linux":
+        return "linux"
+    else:
+        raise ValueError(f"Unsupported platform: {system}")
+
 def main():
     parser = argparse.ArgumentParser(description='Generate Orkid assets and manifests')
     
@@ -229,11 +240,16 @@ def main():
     parser.add_argument('--key', help='Encryption key (alternative to environment variable)')
     parser.add_argument('--filename', help='Override filename in manifest (without path)')
     parser.add_argument('--strip-leading', action='store_true', help='Strip base directory from tar archive paths')
+    parser.add_argument('--platforms', nargs='+', help='Target platforms (default: current platform)')
     
     # SCP upload args
     parser.add_argument('--scp-upload', action='store_true', help='Upload to SCP destination from config')
     
     args = parser.parse_args()
+    
+    # Set default platforms if not specified
+    if not args.platforms:
+        args.platforms = [get_current_platform()]
     
     # Determine type and source
     if args.asset_pak:
@@ -281,7 +297,8 @@ def main():
         "src_loc": args.src_loc,
         "dst_loc": args.dst_loc,
         "filename": filename,
-        "md5": md5_hash
+        "md5": md5_hash,
+        "platforms": args.platforms
     }
     
     if asset_type == "asset_pak" and args.merge is not None:
@@ -397,12 +414,15 @@ def main():
             if not scp_dest.endswith('/'):
                 scp_dest += '/'
             
-            # Construct full destination path with filename
-            full_dest = scp_dest + filename
+            # Upload with MD5 hash as filename (content-addressed storage)
+            # The actual filename in the manifest is for local cache only
+            hash_filename = md5_hash + ".enc"
+            full_dest = scp_dest + hash_filename
             
             # Run SCP in foreground so user can provide auth info
             scp_cmd = ['scp', str(asset_cache_file), full_dest]
             print(f"Running: {' '.join(scp_cmd)}")
+            print(f"Note: Uploading as {hash_filename} (content-addressed) instead of {filename}")
             result = subprocess.run(scp_cmd)
             
             if result.returncode == 0:

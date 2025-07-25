@@ -12,8 +12,35 @@
 #include <rapidjson/error/en.h>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 namespace ork::asset::catalog {
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Get current platform
+static std::string getCurrentPlatform() {
+  #ifdef __APPLE__
+    return "mac";
+  #elif __linux__
+    return "linux";
+  #else
+    return "unknown";
+  #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool AssetManifest::AssetEntry::supportsCurrentPlatform() const {
+  // If no platforms specified, support all platforms (backward compatibility)
+  if (_platforms.empty()) {
+    return true;
+  }
+  
+  // Check if current platform is in the supported list
+  std::string current = getCurrentPlatform();
+  return std::find(_platforms.begin(), _platforms.end(), current) != _platforms.end();
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -107,6 +134,18 @@ void AssetManifest::parseFromJsonInternal(const std::string& json_str, const fil
         
         if (asset_data.HasMember("md5") && asset_data["md5"].IsString()) {
           entry._md5 = asset_data["md5"].GetString();
+        }
+        
+        ///////////////////////////////////////////////////////////
+        // Parse platforms
+        ///////////////////////////////////////////////////////////
+        if (asset_data.HasMember("platforms") && asset_data["platforms"].IsArray()) {
+          const auto& platforms = asset_data["platforms"];
+          for (rapidjson::SizeType i = 0; i < platforms.Size(); ++i) {
+            if (platforms[i].IsString()) {
+              entry._platforms.push_back(platforms[i].GetString());
+            }
+          }
         }
         
         ///////////////////////////////////////////////////////////
