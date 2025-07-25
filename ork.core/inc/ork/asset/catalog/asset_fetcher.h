@@ -100,6 +100,17 @@ private:
                     const AssetManifest::AssetEntry& asset_data,
                     const file::Path& temp_file,
                     const file::Path& dest_path);
+                    
+  // Process assets from cache (don't delete cached files)
+  bool processAssetPakFromCache(const std::string& asset_id,
+                                const AssetManifest::AssetEntry& asset_data,
+                                const file::Path& cache_file,
+                                const file::Path& dest_path);
+                                
+  bool processAssetFromCache(const std::string& asset_id,
+                             const AssetManifest::AssetEntry& asset_data,
+                             const file::Path& cache_file,
+                             const file::Path& dest_path);
                   
   // Subprocess operations using Spawner
   bool decryptFile(const file::Path& src, const file::Path& dst, 

@@ -36,10 +36,14 @@ class AssetGenerator:
         source_dir = Path(source_dir).resolve()
         temp_tar = tempfile.NamedTemporaryFile(suffix='.tar', delete=False)
         
-        # Create tar archive
+        # Create tar archive with deterministic settings
         with tarfile.open(temp_tar.name, 'w') as tar:
+            # Get all files and sort them for deterministic order
+            all_files = []
             for root, dirs, files in os.walk(source_dir):
-                for file in files:
+                # Sort dirs to ensure deterministic walk order
+                dirs.sort()
+                for file in sorted(files):
                     full_path = Path(root) / file
                     if strip_leading:
                         # Strip the source_dir from the path, keeping only the relative part
@@ -48,27 +52,56 @@ class AssetGenerator:
                     else:
                         # Keep the full path structure including source_dir name
                         arcname = str(full_path)
-                    tar.add(str(full_path), arcname=arcname)
+                    all_files.append((full_path, arcname))
+            
+            # Add files in sorted order with fixed timestamp
+            for full_path, arcname in sorted(all_files, key=lambda x: x[1]):
+                tarinfo = tar.gettarinfo(str(full_path), arcname=arcname)
+                # Set fixed timestamp for deterministic output
+                tarinfo.mtime = 0
+                tarinfo.uid = 0
+                tarinfo.gid = 0
+                tarinfo.uname = ""
+                tarinfo.gname = ""
+                with open(full_path, 'rb') as f:
+                    tar.addfile(tarinfo, f)
         
-        # Get encryption key for namespace
-        enc_key = self.get_encryption_key(namespace, self.override_key)
-        print(f"Using encryption key<{enc_key}> for namespace: {namespace}" )
+        # Calculate MD5 of the tar file to check if we need to re-encrypt
+        tar_md5 = self.calculate_md5(temp_tar.name)
         
-        # Encrypt the tar file to a temporary location first
-        # Use mktemp to get a unique name that doesn't exist
-        temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+        # Check if we already have this exact tar file encrypted
+        # Look for existing receipt with matching source hash
+        existing_encrypted = None
+        for receipt_file in self.cache_dir.glob("*.receipt.json"):
+            with open(receipt_file, 'r') as f:
+                receipt = json.load(f)
+                if receipt.get('tar_md5') == tar_md5 and receipt.get('namespace') == namespace:
+                    # Found existing encrypted file for this exact content
+                    existing_encrypted = self.cache_dir / receipt['cached_file'].split('/')[-1]
+                    if existing_encrypted.exists():
+                        print(f"Reusing existing encrypted file: {existing_encrypted}")
+                        encrypted_file = existing_encrypted
+                        md5_hash = receipt['md5']
+                        break
         
-        crypt.encrypt_file(temp_tar.name, temp_enc_path, enc_key)
-        
-        # Calculate MD5 of the encrypted file
-        md5_hash = self.calculate_md5(temp_enc_path)
-        
-        # Move encrypted file to cache with MD5-based name
-        encrypted_file = self.cache_dir / f"{md5_hash}.enc"
-        print(f"Encrypted asset pak path: {encrypted_file}")
-        if encrypted_file.exists():
-            os.unlink(encrypted_file)
-        os.rename(temp_enc_path, str(encrypted_file))
+        if not existing_encrypted:
+            # Get encryption key for namespace
+            enc_key = self.get_encryption_key(namespace, self.override_key)
+            print(f"Using encryption key<{enc_key}> for namespace: {namespace}" )
+            
+            # Encrypt the tar file to a temporary location first
+            temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+            crypt.encrypt_file(temp_tar.name, temp_enc_path, enc_key)
+            
+            # Calculate MD5 of the encrypted file
+            md5_hash = self.calculate_md5(temp_enc_path)
+            
+            # Move to final location
+            encrypted_file = self.cache_dir / f"{md5_hash}.enc"
+            print(f"Encrypted asset pak path: {encrypted_file}")
+            if encrypted_file.exists():
+                os.unlink(encrypted_file)
+            os.rename(temp_enc_path, str(encrypted_file))
         
         # Clean up temp tar
         os.unlink(temp_tar.name)
@@ -82,12 +115,15 @@ class AssetGenerator:
             "source_dir": str(source_dir),
             "cached_file": str(encrypted_file),
             "file_size": encrypted_file.stat().st_size,
-            "md5": md5_hash
+            "md5": md5_hash,
+            "tar_md5": tar_md5
         }
         
         receipt_file = self.cache_dir / f"{md5_hash}.receipt.json"
         with open(receipt_file, 'w') as f:
             json.dump(receipt, f, indent=2)
+        
+        # Note: Asset cache copy happens after we have the filename from manifest
         
         return encrypted_file, md5_hash, receipt_file
     
@@ -95,23 +131,39 @@ class AssetGenerator:
         """Encrypt single file and cache it"""
         source_file = Path(source_file).resolve()
         
-        # Get encryption key
-        enc_key = self.get_encryption_key(namespace, self.override_key)
+        # Calculate MD5 of the source file to check if we need to re-encrypt
+        source_md5 = self.calculate_md5(source_file)
         
-        # Encrypt the file to a temporary location first
-        # Use mktemp to get a unique name that doesn't exist
-        temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+        # Check if we already have this exact file encrypted
+        existing_encrypted = None
+        for receipt_file in self.cache_dir.glob("*.receipt.json"):
+            with open(receipt_file, 'r') as f:
+                receipt = json.load(f)
+                if receipt.get('source_md5') == source_md5 and receipt.get('namespace') == namespace:
+                    # Found existing encrypted file for this exact content
+                    existing_encrypted = self.cache_dir / receipt['cached_file'].split('/')[-1]
+                    if existing_encrypted.exists():
+                        print(f"Reusing existing encrypted file: {existing_encrypted}")
+                        cached_file = existing_encrypted
+                        md5_hash = receipt['md5']
+                        break
         
-        crypt.encrypt_file(str(source_file), temp_enc_path, enc_key)
-        
-        # Calculate MD5 of the encrypted file
-        md5_hash = self.calculate_md5(temp_enc_path)
-        
-        # Move encrypted file to cache with MD5-based name
-        cached_file = self.cache_dir / f"{md5_hash}.enc"
-        if cached_file.exists():
-            os.unlink(cached_file)
-        os.rename(temp_enc_path, str(cached_file))
+        if not existing_encrypted:
+            # Get encryption key
+            enc_key = self.get_encryption_key(namespace, self.override_key)
+            
+            # Encrypt the file to a temporary location first
+            temp_enc_path = tempfile.mktemp(suffix='.enc', dir=str(self.cache_dir))
+            crypt.encrypt_file(str(source_file), temp_enc_path, enc_key)
+            
+            # Calculate MD5 of the encrypted file
+            md5_hash = self.calculate_md5(temp_enc_path)
+            
+            # Move to final location
+            cached_file = self.cache_dir / f"{md5_hash}.enc"
+            if cached_file.exists():
+                os.unlink(cached_file)
+            os.rename(temp_enc_path, str(cached_file))
         
         # Generate receipt for external use
         receipt = {
@@ -122,7 +174,8 @@ class AssetGenerator:
             "source_file": str(source_file),
             "cached_file": str(cached_file),
             "file_size": cached_file.stat().st_size,
-            "md5": md5_hash
+            "md5": md5_hash,
+            "source_md5": source_md5
         }
         
         receipt_file = self.cache_dir / f"{md5_hash}.receipt.json"
@@ -272,6 +325,16 @@ def main():
     
     with open(output_path, 'w') as f:
         json.dump(manifest, f, indent=2)
+    
+    # Copy to AssetFetcher cache with the manifest filename
+    # Use obt_path to get the proper stage directory
+    asset_cache_dir = obt_path.stage() / "assetcache"
+    asset_cache_dir.mkdir(parents=True, exist_ok=True)
+    asset_cache_file = asset_cache_dir / filename
+    
+    import shutil
+    shutil.copy2(str(cached_file), str(asset_cache_file))
+    print(f"✓ Copied to asset cache: {asset_cache_file}")
     
     print(f"✓ Generated asset: {cached_file}")
     print(f"✓ MD5: {md5_hash}")

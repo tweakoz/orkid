@@ -399,11 +399,11 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
     _download_manager->_work_queue->enqueue([this, asset_id, asset_data, dest_path, cache_file, on_complete]() {
       bool process_success = false;
       
-      // Process based on asset type
+      // Process based on asset type - pass true to indicate this is a cached file
       if (asset_data._type == "asset_pak") {
-        process_success = processAssetPak(asset_id, asset_data, cache_file, dest_path);
+        process_success = processAssetPakFromCache(asset_id, asset_data, cache_file, dest_path);
       } else if (asset_data._type == "asset") {
-        process_success = processAsset(asset_id, asset_data, cache_file, dest_path);
+        process_success = processAssetFromCache(asset_id, asset_data, cache_file, dest_path);
       }
       
       if (_on_asset_complete._item) {
@@ -413,6 +413,36 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
       on_complete();
     });
   }
+}
+
+bool AssetFetcher::processAssetPakFromCache(const std::string& asset_id,
+                                           const AssetManifest::AssetEntry& asset_data,
+                                           const file::Path& cache_file,
+                                           const file::Path& dest_path) {
+  // Process from cache - don't delete the cached file
+  printf("Processing asset_pak<%s> from cache<%s>\n", asset_id.c_str(), cache_file.c_str());
+  file::Path decrypted_file = cache_file;
+  auto ns_it = _config._namespace_keys.find(asset_data._namespace);
+  if (ns_it != _config._namespace_keys.end()) {
+    // Use mktemp for unique decrypted file name
+    decrypted_file = file::Path::mktemp(asset_id + "_dec_", ".tar");
+    printf("Decrypting asset_pak %s\n", asset_id.c_str());
+    if (!decryptFile(cache_file, decrypted_file, ns_it->second)) {
+      printf("Decryption failed for %s\n", asset_id.c_str());
+      return false;
+    }
+  }
+  
+  // Extract tar
+  printf("Extracting asset_pak<%s> to dest_path<%s>\n", asset_id.c_str(), dest_path.c_str() );
+  bool success = extractTar(decrypted_file, dest_path);
+  
+  // Only clean up the decrypted file, NOT the cached file
+  if (decrypted_file != cache_file) {
+    std::remove(decrypted_file.c_str());
+  }
+  
+  return success;
 }
 
 bool AssetFetcher::processAssetPak(const std::string& asset_id,
@@ -444,6 +474,33 @@ bool AssetFetcher::processAssetPak(const std::string& asset_id,
     std::remove(temp_file.c_str());
   }
   
+  return success;
+}
+
+bool AssetFetcher::processAssetFromCache(const std::string& asset_id,
+                                        const AssetManifest::AssetEntry& asset_data,
+                                        const file::Path& cache_file,
+                                        const file::Path& dest_path) {
+  // Single file asset from cache - don't delete the cached file
+  file::Path final_dest = dest_path;
+  bool success = false;
+  
+  // Decrypt if needed
+  auto ns_it = _config._namespace_keys.find(asset_data._namespace);
+  if (ns_it != _config._namespace_keys.end()) {
+    printf("Decrypting asset %s from cache\n", asset_id.c_str());
+    success = decryptFile(cache_file, final_dest, ns_it->second);
+  } else {
+    // Just copy the file from cache
+    std::ifstream src(cache_file.c_str(), std::ios::binary);
+    std::ofstream dst(final_dest.c_str(), std::ios::binary);
+    if (src && dst) {
+      dst << src.rdbuf();
+      success = true;
+    }
+  }
+  
+  // Don't delete the cached file
   return success;
 }
 
