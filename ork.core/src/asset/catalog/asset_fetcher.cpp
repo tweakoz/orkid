@@ -296,8 +296,10 @@ void AssetFetcher::queueAssetFetch(const std::string& asset_id,
   
   // Setup cache directory
   file::Path cache_dir = file::Path::stage_dir() / "assetcache" / "encrypted";
-  // Create directory if it doesn't exist
-  mkdir(cache_dir.c_str(), 0755);
+  // Create directory if it doesn't exist (recursively)
+  std::string mkdir_cmd = "mkdir -p ";
+  mkdir_cmd += cache_dir.c_str();
+  system(mkdir_cmd.c_str());
   
   // Check cache for this asset
   file::Path cache_file = cache_dir / asset_data._filename;

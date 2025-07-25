@@ -48,7 +48,7 @@ struct DownloadManager::Impl {
     curl_global_init(CURL_GLOBAL_ALL);
     
     // Initialize performance logging
-    _logchan_download = logger()->configureChannel("DOWNLOAD", fvec3(0.5f, 0.8f, 1.0f), true); // Light blue
+    _logchan_download = logger()->configureChannel("DOWNLOAD", fvec3(0.9f, 0.6f, 1.0f), true); // Light blue
     _perf_timer.Start();
   }
   
