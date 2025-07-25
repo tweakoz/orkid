@@ -401,7 +401,7 @@ def main():
             full_dest = scp_dest + filename
             
             # Run SCP in foreground so user can provide auth info
-            scp_cmd = ['scp', str(cached_file), full_dest]
+            scp_cmd = ['scp', str(asset_cache_file), full_dest]
             print(f"Running: {' '.join(scp_cmd)}")
             result = subprocess.run(scp_cmd)
             
