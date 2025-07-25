@@ -13,6 +13,7 @@ import tarfile
 import tempfile
 import subprocess
 import platform
+import fnmatch
 from pathlib import Path
 from datetime import datetime
 from obt import crypt, path as obt_path
@@ -32,7 +33,7 @@ class AssetGenerator:
                 hash_md5.update(chunk)
         return hash_md5.hexdigest()
     
-    def create_asset_pak(self, source_dir, namespace, asset_id, strip_leading=False):
+    def create_asset_pak(self, source_dir, namespace, asset_id, strip_leading=False, filter_pattern=None):
         """Create tar file from directory, encrypt it, and cache it"""
         source_dir = Path(source_dir).resolve()
         temp_tar = tempfile.NamedTemporaryFile(suffix='.tar', delete=False)
@@ -45,6 +46,11 @@ class AssetGenerator:
                 # Sort dirs to ensure deterministic walk order
                 dirs.sort()
                 for file in sorted(files):
+                    # Apply filter if specified
+                    if filter_pattern:
+                        if not fnmatch.fnmatch(file, filter_pattern):
+                            continue
+                    
                     full_path = Path(root) / file
                     if strip_leading:
                         # Strip the source_dir from the path, keeping only the relative part
@@ -248,6 +254,7 @@ def main():
     parser.add_argument('--key', help='Encryption key (alternative to environment variable)')
     parser.add_argument('--filename', help='Override filename in manifest (without path)')
     parser.add_argument('--strip-leading', action='store_true', help='Strip base directory from tar archive paths')
+    parser.add_argument('--filter', help='Wildcard pattern to filter files (only for --asset-pak)')
     parser.add_argument('--platforms', nargs='+', help='Target platforms (default: current platform)')
     
     # SCP upload args
@@ -278,7 +285,7 @@ def main():
     try:
         if asset_type == 'asset_pak':
             cached_file, md5_hash, receipt = generator.create_asset_pak(
-                source, args.namespace, args.asset_id, args.strip_leading
+                source, args.namespace, args.asset_id, args.strip_leading, args.filter
             )
             if args.filename:
                 filename = args.filename
