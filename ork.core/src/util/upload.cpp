@@ -317,7 +317,7 @@ bool HttpsUploader::uploadFile(
   }
   
   // Build full URL - always use HTTPS for port 443
-  std::string protocol = (_config->port == 443 || _config->port == 8443) ? "https" : "http";
+  std::string protocol = _config->protocol();
   
   // Ensure proper path construction
   std::string base_path = _config->remote_base_path;
@@ -471,7 +471,7 @@ bool HttpsUploader::remoteFileExists(const std::string& remote_path) {
   }
   
   // Build full URL - same logic as uploadFile
-  std::string protocol = (_config->port == 443 || _config->port == 8443) ? "https" : "http";
+  std::string protocol = _config->protocol();
   
   // Ensure proper path construction
   std::string base_path = _config->remote_base_path;
@@ -571,7 +571,7 @@ std::vector<std::string> HttpsUploader::listRemoteDirectory(const std::string& p
   }
   
   // Build API URL
-  std::string protocol = (_config->port == 443 || _config->port == 8443) ? "https" : "http";
+  std::string protocol = _config->protocol();
   std::string full_url = FormatString("%s://%s:%d/api/list",
     protocol.c_str(),
     _config->host.c_str(),
@@ -668,9 +668,13 @@ void HttpsUploader::handleUploadProgress(size_t uploaded, size_t total) {
   // Update rate tracking
   if (_impl->_last_uploaded_bytes < uploaded) {
     double elapsed = _impl->_upload_timer.SecsSinceStart();
-    if (elapsed > 0) {
+    if (elapsed > 4.0) {
       size_t bytes_delta = uploaded - _impl->_last_uploaded_bytes;
       _impl->_last_upload_rate = bytes_delta / elapsed;
+      printf("[HTTPS] Upload rate: %.2f bytes/sec\n", _impl->_last_upload_rate);
+      printf("[HTTPS] Upload progress: %zu/%zu bytes (%.2f%%)\n",
+        uploaded, total, (total > 0 ? (static_cast<double>(uploaded) / total) * 100.0 : 0.0));
+      _impl->_upload_timer.Start();
     }
     _impl->_last_uploaded_bytes = uploaded;
   }
@@ -884,7 +888,7 @@ bool HttpsUploader::remoteFileMatchesLocal(const file::Path& local_file, const s
   }
   
   // Build API URL
-  std::string protocol = (_config->port == 443 || _config->port == 8443) ? "https" : "http";
+  std::string protocol = _config->protocol();
   std::string api_url = FormatString("%s://%s:%d/api/fileinfo/%s",
     protocol.c_str(),
     _config->host.c_str(),

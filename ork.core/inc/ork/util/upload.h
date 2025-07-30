@@ -352,6 +352,13 @@ struct HttpsUploaderConfig : public UploadConfig {
   bool verify_ssl = true;
   std::map<std::string, std::string> custom_headers;
   
+  bool useTLS() const {
+    // TODO FIXME
+    return ((port%1000) == 443); // Common HTTPS ports
+  }
+  std::string protocol() const {
+    return useTLS() ? "https" : "http"; // Common HTTPS ports
+  }
   // Validation
   bool isValid() const override {
     return !host.empty() && (port > 0 && port < 65536);

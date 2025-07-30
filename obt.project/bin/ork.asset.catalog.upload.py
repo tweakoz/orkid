@@ -100,53 +100,12 @@ def upload_all_namespaces(catalog, dry_run=False):
 
 def upload_single_asset(catalog, asset_id, dry_run=False):
     """Upload a single asset"""
-    
-    print(f"\nUploading asset '{asset_id}'...")
-    
-    # Get asset info
-    asset_info = catalog.get_asset_info(asset_id)
-    if not asset_info:
-        print(f"✗ Asset not found: {asset_id}")
-        return False
-    
-    # Get the manifest that contains this asset
-    namespace_id = asset_id.split('|')[0]
-    manifest = catalog.get_manifest(namespace_id)
-    if not manifest:
-        print(f"✗ No manifest found for namespace: {namespace_id}")
-        return False
-    
-    # Get config space
-    config_space = catalog.getConfigSpace()
-    if not config_space:
-        print(f"✗ No config space available")
-        return False
-        
-    merged_config = config_space.merged_config
-    if not merged_config:
-        print(f"✗ No merged config available")
-        return False
-    
-    # Get upload location for namespace
-    upload_location = merged_config.getUploadLocationForNamespace(namespace_id)
-    if not upload_location:
-        print(f"✗ No upload location configured for namespace '{namespace_id}'")
-        return False
-    
-    if dry_run:
-        print(f"[DRY RUN] Would upload asset to location: {upload_location}")
-        return True
-    
+   
     try:
-        # Upload the single asset
-        receipt = asset_info.upload(merged_config, upload_location)
-        
-        if receipt:
-            print_upload_receipt(receipt)
-            return receipt.success
-        else:
-            print(f"✗ Upload failed - no receipt returned")
-            return False
+        print(f"\nUploading asset '{asset_id}'...")
+        receipt = catalog.upload(asset_id)
+        print_upload_receipt(receipt, "  ")
+        return receipt.success
             
     except Exception as e:
         print(f"✗ Upload error: {e}")
