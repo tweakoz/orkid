@@ -1,0 +1,15 @@
+{
+  "namespaces": {
+    "cdntest": {
+      "encryption_key": "api_key",
+      "upload_location": "cdntest_remote"
+    }
+  },
+  "locations": {
+    "cdntest_remote": "https://localhost:8443/"
+  },
+  "destinations": {
+    "cache": "<assetcache>",
+    "stage": "<stage>"
+  }
+}

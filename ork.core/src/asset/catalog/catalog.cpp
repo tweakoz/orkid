@@ -1,0 +1,704 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
+#include <ork/asset/catalog/catalog.h>
+#include <ork/asset/catalog/chunk_assembler.h>
+#include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/uploader.h>
+#include <ork/file/file.h>
+#include <ork/kernel/string/deco.inl>
+#include <ork/util/crypt.h>
+#include <ork/util/tar.h>
+#include <ork/util/logger.h>
+#include <boost/filesystem.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <regex>
+#include <thread>
+#include <chrono>
+#include <cstdio>
+#include <sstream>
+#include <algorithm>
+#include <functional>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/stringbuffer.h>
+#include <boost/filesystem.hpp>
+#include "catalog_impl.h"
+
+namespace ork::asset::catalog {
+
+static logchannel_ptr_t logchan_catalog = logger()->getChannel("CATALOG");
+
+////////////////////////////////////////////////////////////////
+// AssetResult implementations moved from header
+////////////////////////////////////////////////////////////////
+
+bool AssetResult::isSuccess() const {
+  return status == AssetStatus::OK;
+}
+
+AssetResult::operator bool() const {
+  return isSuccess();
+}
+
+////////////////////////////////////////////////////////////////
+// AssetCatalog
+////////////////////////////////////////////////////////////////
+
+AssetCatalog::AssetCatalog() {
+  auto impl = _impl.makeShared<CatalogImpl>(this);
+  
+  // Initialize cache directory
+  _cache_dir = file::Path::stage_dir() / "assetcache";
+  
+  // Ensure cache directory structure exists
+  boost::filesystem::create_directories(_cache_dir.toBFS());
+  boost::filesystem::create_directories(getEncryptedDir().toBFS());
+  boost::filesystem::create_directories(getChunksDir().toBFS());
+  boost::filesystem::create_directories(getReceiptsDir().toBFS());
+  boost::filesystem::create_directories(getTempDir().toBFS());
+}
+
+AssetCatalog::AssetCatalog(assetconfigspace_ptr_t space) {
+  auto impl = _impl.makeShared<CatalogImpl>(this);
+  
+  // Initialize cache directory
+  _cache_dir = file::Path::stage_dir() / "assetcache";
+  
+  // Ensure cache directory structure exists
+  boost::filesystem::create_directories(_cache_dir.toBFS());
+  boost::filesystem::create_directories(getEncryptedDir().toBFS());
+  boost::filesystem::create_directories(getChunksDir().toBFS());
+  boost::filesystem::create_directories(getReceiptsDir().toBFS());
+  boost::filesystem::create_directories(getTempDir().toBFS());
+  impl->_config_space = space;
+}
+
+AssetCatalog::~AssetCatalog() {
+  auto impl       = _impl.getShared<CatalogImpl>();
+  impl->_shutdown = true;
+  cancelAllDownloads();
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+bool AssetCatalog::hasAsset(const assetid_t& fq_asset_id) const {
+  auto impl     = _impl.getShared<CatalogImpl>();
+  auto location = impl->locateAsset(fq_asset_id);
+  return location != nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+assetentry_ptr_t AssetCatalog::getAssetInfo(const assetid_t& fq_asset_id) const {
+  auto impl               = _impl.getShared<CatalogImpl>();
+  assetentry_ptr_t result = nullptr;
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    auto it = state._entries_by_assetid.find(fq_asset_id);
+    if (it != state._entries_by_assetid.end()) {
+      result = it->second.entry;
+    }
+  });
+  return result;
+}
+
+////////////////////////////////////////////////////////////////
+// Asset Queries
+////////////////////////////////////////////////////////////////
+
+assetid_list_t AssetCatalog::listAssets(const std::string& pattern) const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  assetid_list_t result;
+
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    for (const auto& [asset_id, entry] : state._entries_by_assetid) {
+      bool matches = false;
+
+      if (pattern.empty() || pattern == "*") {
+        // Empty pattern or single wildcard matches everything
+        matches = true;
+      } else if (pattern.find('*') != std::string::npos) {
+        // Handle wildcard patterns
+        if (pattern.back() == '*') {
+          // Pattern ends with wildcard - prefix match
+          std::string prefix = pattern.substr(0, pattern.length() - 1);
+          matches            = asset_id.find(prefix) == 0;
+        } else {
+          // TODO: Handle more complex wildcard patterns
+          matches = false;
+        }
+      } else {
+        // No wildcards - check if pattern is contained in asset_id
+        matches = asset_id.find(pattern) != std::string::npos;
+      }
+
+      if (matches) {
+        result.push_back(asset_id);
+      }
+    }
+  });
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////
+
+assetid_list_t AssetCatalog::listAssetsInNamespace(const namespaceid_t& namespace_id) const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  assetid_list_t result;
+
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    for (const auto& [asset_id, entry] : state._entries_by_assetid) {
+      if (entry.namespace_id == namespace_id) {
+        result.push_back(asset_id);
+      }
+    }
+  });
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////
+
+std::string AssetCatalog::dumpAllAssetFQIDs() const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  std::string result;
+  
+  // Helper function to recursively dump assets from a namespace
+  std::function<void(assetnamespace_ptr_t, int)> dumpNamespace = 
+    [&](assetnamespace_ptr_t ns, int depth) {
+      if (!ns) return;
+      
+      // Get all assets in this namespace (non-container namespaces)
+      if (!ns->isContainerOnly()) {
+        impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+          for (const auto& [fq_asset_id, index_entry] : state._entries_by_assetid) {
+            if (index_entry.namespace_id == ns->_id) {
+              // Use the AssetEntry's buildFullyQualifiedId method
+              std::string fqid = index_entry.entry->buildFullyQualifiedId();
+              result += fqid + "\n";
+            }
+          }
+        });
+      }
+      
+      // Recursively process children (sort for consistent output)
+      std::vector<std::pair<std::string, assetnamespace_ptr_t>> sorted_children;
+      for (const auto& [name, child] : ns->children) {
+        sorted_children.emplace_back(name, child);
+      }
+      std::sort(sorted_children.begin(), sorted_children.end());
+      
+      for (const auto& [name, child] : sorted_children) {
+        dumpNamespace(child, depth + 1);
+      }
+    };
+  
+  // Start from root namespace
+  dumpNamespace(impl->_root_namespace, 0);
+  
+  return result;
+}
+
+////////////////////////////////////////////////////////////////
+// Manifest Factory
+////////////////////////////////////////////////////////////////
+
+assetmanifest_ptr_t AssetCatalog::createManifest(
+    assetcatalog_ptr_t catalog,
+    const std::string& id,
+    const std::string& version,
+    const namespaceid_t& namespace_id,
+    const file::Path& file) {
+  
+  auto impl = catalog->_impl.getShared<CatalogImpl>();
+  
+  // Create new manifest with parent catalog reference
+  auto manifest = std::make_shared<AssetManifest>(std::weak_ptr<AssetCatalog>(catalog));
+  
+  // Set basic properties
+  manifest->setNamespace(namespace_id);
+  manifest->setVersion(version);
+  
+  // UUID is automatically generated in AssetManifest constructor
+  
+  // Register namespace if it doesn't exist
+  auto ns = catalog->mergeNamespace(namespace_id);
+  
+  // Add manifest to catalog
+  catalog->addManifest(manifest);
+  
+  // TODO: Track file path for later writeToDisk
+  
+  return manifest;
+}
+
+////////////////////////////////////////////////////////////////
+// Configuration
+////////////////////////////////////////////////////////////////
+
+void AssetCatalog::setConfigSpace(assetconfigspace_ptr_t space) {
+  auto impl = _impl.getShared<CatalogImpl>();
+  impl->_config_space = space;
+}
+
+assetconfigspace_ptr_t AssetCatalog::getConfigSpace() const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  return impl->_config_space;
+}
+
+void AssetCatalog::setDownloadManager(downloadmanager_ptr_t mgr) {
+  auto impl               = _impl.getShared<CatalogImpl>();
+  impl->_download_manager = mgr;
+}
+
+////////////////////////////////////////////////////////////////
+// Utility Methods
+////////////////////////////////////////////////////////////////
+
+std::pair<std::string, std::string> CatalogImpl::parseAssetId(const assetid_t& fq_asset_id) const {
+  // Find the last occurrence of :: to separate namespace path from asset path
+  size_t last_sep = fq_asset_id.rfind("::");
+  if (last_sep != std::string::npos) {
+    // Everything before last :: is the namespace path
+    // Everything after last :: is the asset path
+    return {fq_asset_id.substr(0, last_sep), fq_asset_id.substr(last_sep + 2)};
+  }
+  // No :: found, so no namespace - asset is in root namespace
+  return {"", fq_asset_id};
+}
+
+assetid_t AssetCatalog::buildAssetId(const namespaceid_t& namespace_id, const std::string& asset_path) {
+  if (namespace_id.empty()) {
+    return asset_path;
+  }
+  return namespace_id + "|" + asset_path;
+}
+
+////////////////////////////////////////////////////////////////
+// Cache Directory Management
+////////////////////////////////////////////////////////////////
+
+void AssetCatalog::setCacheDir(const file::Path& dir) {
+  _cache_dir = dir;
+  // Recreate directory structure
+  boost::filesystem::create_directories(_cache_dir.toBFS());
+  boost::filesystem::create_directories(getEncryptedDir().toBFS());
+  boost::filesystem::create_directories(getChunksDir().toBFS());
+  boost::filesystem::create_directories(getReceiptsDir().toBFS());
+  boost::filesystem::create_directories(getTempDir().toBFS());
+}
+
+file::Path AssetCatalog::getCacheDir() const {
+  return _cache_dir;
+}
+
+file::Path AssetCatalog::getEncryptedDir() const {
+  return _cache_dir / "enc";
+}
+
+file::Path AssetCatalog::getChunksDir() const {
+  return _cache_dir / "enc" / "chunks";
+}
+
+file::Path AssetCatalog::getReceiptsDir() const {
+  return _cache_dir / "receipts";
+}
+
+file::Path AssetCatalog::getTempDir() const {
+  return _cache_dir / "temp";
+}
+
+////////////////////////////////////////////////////////////////
+// Asset Request State Management (Flyweight)
+////////////////////////////////////////////////////////////////
+
+assetreq_ptr_t AssetCatalog::mergeAssetReq(const assetid_t& asset_id) {
+  auto impl = _impl.getShared<CatalogImpl>();
+  assetreq_ptr_t request;
+
+  impl->_active_requests.atomicOp([&](std::map<assetid_t, assetreq_ptr_t>& requests) {
+    auto it = requests.find(asset_id);
+    if (it != requests.end()) {
+      // Return existing request (flyweight pattern)
+      request = it->second;
+    } else {
+      // Create new request
+      request            = std::make_shared<AssetRequest>();
+      request->_asset_id = asset_id;
+      requests[asset_id] = request;
+    }
+    // Increment refcount for this access
+    request->_refcount.fetch_add(1);
+  });
+
+  return request;
+}
+
+////////////////////////////////////////////////////////////////
+
+assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace_id) {
+  auto impl = _impl.getShared<CatalogImpl>();
+  assetnamespace_ptr_t ns;
+
+  impl->_state.atomicOp([&](CatalogImpl::CatalogState& state) {
+    auto it = state._nodes_by_namespace.find(namespace_id);
+    if (it != state._nodes_by_namespace.end()) {
+      // Return existing namespace (flyweight pattern)
+      ns = it->second;
+      return;
+    }
+
+    // Split namespace path into components (e.g., "game::textures::characters" -> ["game", "textures", "characters"])
+    std::vector<std::string> components;
+    size_t start = 0;
+    size_t end = 0;
+    
+    while ((end = namespace_id.find("::", start)) != std::string::npos) {
+      if (end > start) {
+        components.push_back(namespace_id.substr(start, end - start));
+      }
+      start = end + 2; // Skip "::"
+    }
+    
+    // Add the last component
+    if (start < namespace_id.length()) {
+      components.push_back(namespace_id.substr(start));
+    }
+
+    // Create hierarchy from root down
+    assetnamespace_ptr_t current = impl->_root_namespace;
+    std::string current_path = "";
+    
+    for (size_t i = 0; i < components.size(); ++i) {
+      const std::string& component = components[i];
+      
+      // Build full path for this level
+      if (current_path.empty()) {
+        current_path = component;
+      } else {
+        current_path += "::" + component;
+      }
+      
+      // Check if this level already exists
+      auto level_it = state._nodes_by_namespace.find(current_path);
+      if (level_it != state._nodes_by_namespace.end()) {
+        current = level_it->second;
+      } else {
+        // Create new namespace for this level
+        auto new_ns = std::make_shared<AssetNamespace>(component);
+        new_ns->full_path = current_path;
+        new_ns->parent = current;
+        
+        // Mark intermediate levels as container-only (except the final one)
+        if (i < components.size() - 1) {
+          new_ns->setContainerOnly(true);
+        }
+        
+        // Add to parent's children
+        current->children[component] = new_ns;
+        
+        // Store in flyweight map
+        state._nodes_by_namespace[current_path] = new_ns;
+        
+        current = new_ns;
+      }
+    }
+    
+    ns = current;
+  });
+
+  return ns;
+}
+
+////////////////////////////////////////////////////////////////
+
+std::vector<assetreq_ptr_t> AssetCatalog::getRequestsInState(AssetState state) const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  std::vector<assetreq_ptr_t> result;
+
+  impl->_active_requests.atomicOp([&](const std::map<assetid_t, assetreq_ptr_t>& requests) {
+    for (const auto& [asset_id, request] : requests) {
+      if (request && request->_state == state) {
+        result.push_back(request);
+      }
+    }
+  });
+
+  return result;
+}
+
+////////////////////////////////////////////////////////////////
+
+int AssetCatalog::getRequestCount(const assetid_t& asset_id) const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  int count = 0;
+  impl->_active_requests.atomicOp([&](const std::map<assetid_t, assetreq_ptr_t>& requests) {
+    auto it = requests.find(asset_id);
+    if (it != requests.end()) {
+      count = 1; // Request exists
+    }
+  });
+  return count;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string AssetCatalog::toJson() const {
+  auto impl = _impl.getShared<CatalogImpl>();
+  
+  rapidjson::Document doc;
+  doc.SetObject();
+  auto& allocator = doc.GetAllocator();
+  
+  // Get all manifests and convert to JSON
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    // Iterate through all manifests by namespace
+    for (const auto& [namespace_id, manifest_list] : state._manifests_by_namespace) {
+      // For each manifest in this namespace
+      for (const auto& manifest : manifest_list) {
+        if (manifest) {
+          // Use namespace_id as the key for now
+          // In the future, we might want to track actual file paths
+          std::string key = namespace_id + "_manifest";
+          
+          // Get the manifest JSON
+          std::string manifest_json = manifest->toJson();
+          
+          // Parse it to add to our document
+          rapidjson::Document manifest_doc;
+          manifest_doc.Parse(manifest_json.c_str());
+          
+          if (!manifest_doc.HasParseError()) {
+            rapidjson::Value manifest_value(manifest_doc, allocator);
+            doc.AddMember(
+              rapidjson::Value(key.c_str(), allocator),
+              manifest_value,
+              allocator
+            );
+          }
+        }
+      }
+    }
+  });
+  
+  // Convert to pretty printed string
+  rapidjson::StringBuffer buffer;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+  writer.SetIndent(' ', 2);
+  doc.Accept(writer);
+  
+  return buffer.GetString();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void AssetCatalog::repackage() {
+  auto impl = _impl.getShared<CatalogImpl>();
+  
+  // Collect all manifests to repackage
+  std::vector<std::pair<namespaceid_t, assetmanifest_ptr_t>> manifests_to_repackage;
+  
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    for (const auto& [namespace_id, manifest_list] : state._manifests_by_namespace) {
+      for (const auto& manifest : manifest_list) {
+        manifests_to_repackage.push_back({namespace_id, manifest});
+      }
+    }
+  });
+  
+  logchan_catalog->log("Repackaging catalog with %zu manifests...", manifests_to_repackage.size());
+  
+  // Repackage each manifest (outside the lock)
+  for (const auto& [namespace_id, manifest] : manifests_to_repackage) {
+    logchan_catalog->log("  Repackaging manifest for namespace: %s", namespace_id.c_str());
+    
+    if (manifest) {
+      manifest->repackage();
+    }
+  }
+  
+  logchan_catalog->log("Catalog repackaging complete.");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uploadreceipt_ptr_t AssetCatalog::upload(const namespaceid_t& namespace_id) {
+  logchan_catalog->log("Starting upload for namespace: %s", namespace_id.c_str());
+  
+  auto impl = _impl.getShared<CatalogImpl>();
+  
+  // Get the config space to determine destination
+  auto config_space = getConfigSpace();
+  if (!config_space) {
+    logchan_catalog->log("ERROR: No config space available for catalog upload");
+    return nullptr;
+  }
+  
+  // Get merged config (should have namespace configuration)
+  auto config = config_space->merged();
+  if (!config) {
+    logchan_catalog->log("ERROR: No merged config found in config space");
+    return nullptr;
+  }
+  
+  // Check if namespace has upload location configured
+  auto upload_location = config->getUploadLocationForNamespace(namespace_id);
+  if (!upload_location) {
+    logchan_catalog->log("ERROR: No upload location configured for namespace: %s", namespace_id.c_str());
+    return nullptr;
+  }
+  
+  // Find all manifests for this namespace
+  std::vector<assetmanifest_ptr_t> manifests_to_upload;
+  
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    auto it = state._manifests_by_namespace.find(namespace_id);
+    if (it != state._manifests_by_namespace.end()) {
+      for (const auto& manifest : it->second) {
+        if (manifest) {
+          manifests_to_upload.push_back(manifest);
+        }
+      }
+    }
+  });
+  
+  if (manifests_to_upload.empty()) {
+    logchan_catalog->log("WARNING: No manifests found for namespace: %s", namespace_id.c_str());
+    return nullptr;
+  }
+  
+  logchan_catalog->log("Found %zu manifests to upload for namespace: %s", manifests_to_upload.size(), namespace_id.c_str());
+  
+  // Create combined receipt for all manifests in namespace
+  auto combined_receipt = std::make_shared<UploadReceipt>();
+  combined_receipt->upload_id = "catalog_" + namespace_id + "_" + std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+  combined_receipt->timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  combined_receipt->success = true;
+  combined_receipt->status_message = "Starting catalog upload for namespace: " + namespace_id;
+  combined_receipt->total_files = 0;
+  combined_receipt->bytes_uploaded = 0;
+  
+  // Upload each manifest and aggregate results
+  for (size_t i = 0; i < manifests_to_upload.size(); i++) {
+    const auto& manifest = manifests_to_upload[i];
+    logchan_catalog->log("  Uploading manifest %zu/%zu: %s", i + 1, manifests_to_upload.size(), manifest->getManifestId().c_str());
+    
+    try {
+      auto manifest_receipt = manifest->upload(*config, upload_location);
+      
+      if (manifest_receipt) {
+        // Aggregate results
+        combined_receipt->total_files += manifest_receipt->total_files;
+        combined_receipt->bytes_uploaded += manifest_receipt->bytes_uploaded;
+        
+        if (!manifest_receipt->success) {
+          combined_receipt->success = false;
+          combined_receipt->status_message += "\n  Manifest " + manifest->getManifestId() + " failed: " + manifest_receipt->status_message;
+        } else {
+          logchan_catalog->log("    Manifest uploaded: %zu files, %zu bytes", manifest_receipt->total_files, manifest_receipt->bytes_uploaded);
+        }
+      } else {
+        combined_receipt->success = false;
+        combined_receipt->status_message += "\n  Manifest " + manifest->getManifestId() + " failed: no receipt returned";
+      }
+    } catch (const std::exception& e) {
+      combined_receipt->success = false;
+      combined_receipt->status_message += "\n  Manifest " + manifest->getManifestId() + " failed: " + e.what();
+      logchan_catalog->log("    ERROR: Manifest upload failed: %s", e.what());
+    }
+  }
+  
+  if (combined_receipt->success) {
+    combined_receipt->status_message = "Successfully uploaded namespace '" + namespace_id + "': " + 
+                                      std::to_string(combined_receipt->total_files) + " files, " + 
+                                      std::to_string(combined_receipt->bytes_uploaded) + " bytes";
+    logchan_catalog->log("Namespace upload SUCCESS - namespace: %s, files: %zu, bytes: %zu", 
+                         namespace_id.c_str(), combined_receipt->total_files, combined_receipt->bytes_uploaded);
+  } else {
+    logchan_catalog->log("ERROR: Namespace upload FAILED - namespace: %s, error: %s", 
+                         namespace_id.c_str(), combined_receipt->status_message.c_str());
+  }
+  
+  logchan_catalog->log("Completed upload for namespace: %s", namespace_id.c_str());
+  return combined_receipt;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+upload_result_map_t AssetCatalog::uploadAllNamespaces() {
+  logchan_catalog->log("Starting upload for all namespaces");
+  
+  auto impl = _impl.getShared<CatalogImpl>();
+  upload_result_map_t results;
+  
+  // Collect all namespace IDs
+  std::vector<namespaceid_t> namespace_ids;
+  
+  impl->_state.atomicOp([&](const CatalogImpl::CatalogState& state) {
+    for (const auto& [namespace_id, manifest_list] : state._manifests_by_namespace) {
+      if (!manifest_list.empty()) {
+        namespace_ids.push_back(namespace_id);
+      }
+    }
+  });
+  
+  logchan_catalog->log("Found %zu namespaces to upload", namespace_ids.size());
+  
+  // Upload each namespace
+  for (const auto& namespace_id : namespace_ids) {
+    logchan_catalog->log("Uploading namespace: %s", namespace_id.c_str());
+    
+    try {
+      auto receipt = upload(namespace_id);
+      results[namespace_id] = receipt;
+      
+      if (receipt && receipt->success) {
+        logchan_catalog->log("Namespace '%s' uploaded successfully", namespace_id.c_str());
+      } else {
+        logchan_catalog->log("ERROR: Namespace '%s' upload failed", namespace_id.c_str());
+      }
+    } catch (const std::exception& e) {
+      logchan_catalog->log("ERROR: Exception uploading namespace '%s': %s", namespace_id.c_str(), e.what());
+      
+      // Create failure receipt
+      auto failed_receipt = std::make_shared<UploadReceipt>();
+      failed_receipt->upload_id = "failed_" + namespace_id;
+      failed_receipt->timestamp = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+      failed_receipt->success = false;
+      failed_receipt->status_message = "Exception: " + std::string(e.what());
+      results[namespace_id] = failed_receipt;
+    }
+  }
+  
+  // Summary
+  size_t successful = 0;
+  size_t failed = 0;
+  size_t total_files = 0;
+  size_t total_bytes = 0;
+  
+  for (const auto& [namespace_id, receipt] : results) {
+    if (receipt && receipt->success) {
+      successful++;
+      total_files += receipt->total_files;
+      total_bytes += receipt->bytes_uploaded;
+    } else {
+      failed++;
+    }
+  }
+  
+  logchan_catalog->log("Upload all namespaces summary - total: %zu, successful: %zu, failed: %zu, files: %zu, bytes: %zu",
+                       namespace_ids.size(), successful, failed, total_files, total_bytes);
+  
+  logchan_catalog->log("Completed upload for all namespaces");
+  return results;
+}
+
+} // namespace ork::asset::catalog

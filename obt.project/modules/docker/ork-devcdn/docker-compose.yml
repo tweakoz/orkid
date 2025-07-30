@@ -1,0 +1,32 @@
+services:
+  cdn:
+    image: openresty/openresty:alpine
+    container_name: ork-secure-cdn
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./nginx/auth.lua:/usr/local/openresty/nginx/auth.lua:ro
+      - ./nginx/upload.lua:/usr/local/openresty/nginx/upload.lua:ro
+      - ./nginx/api.lua:/usr/local/openresty/nginx/api.lua:ro
+      - ./nginx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - $CONTENT_PATH:/cdn/content:rw
+      - ./keys:/cdn/keys:ro
+      - .$LOGDIR:/var/log/nginx
+    entrypoint: ["/docker-entrypoint.sh"]
+    restart: unless-stopped
+    networks:
+      - ork-cdn-network
+    # Forward logs to docker logs (visible in docker-compose up)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ork-cdn-network:
+    driver: bridge
+
