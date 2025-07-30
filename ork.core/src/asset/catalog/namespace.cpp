@@ -119,7 +119,7 @@ std::shared_ptr<AssetNamespace> AssetNamespace::getOrCreateChild(std::shared_ptr
   // Create new child
   auto child = std::make_shared<AssetNamespace>(id);
   child->parent = parent;
-  child->full_path = parent->full_path.empty() ? id : parent->full_path + "::" + id;
+  child->full_path = parent->full_path.empty() ? id : parent->full_path + "|" + id;
   parent->children[id] = child;
   return child;
 }
@@ -164,7 +164,7 @@ size_t AssetNamespace::maxDepth() const {
 namespace_component_list_t splitNamespacePath(const namespaceid_t& path) {
   namespace_component_list_t components;
   
-  // TODO: Implement "::" delimiter parsing
+  // TODO: Implement "|" delimiter parsing
   if (!path.empty()) {
     components.push_back(path);
   }
@@ -177,7 +177,7 @@ namespaceid_t joinNamespacePath(const namespace_component_list_t& components) {
   
   for (size_t i = 0; i < components.size(); ++i) {
     if (i > 0) {
-      result += "::";
+      result += "|";
     }
     result += components[i];
   }

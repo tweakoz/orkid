@@ -265,7 +265,7 @@ void AssetCatalog::setDownloadManager(downloadmanager_ptr_t mgr) {
 
 std::pair<std::string, std::string> CatalogImpl::parseAssetId(const assetid_t& fq_asset_id) const {
   // Find the last occurrence of :: to separate namespace path from asset path
-  size_t last_sep = fq_asset_id.rfind("::");
+  size_t last_sep = fq_asset_id.rfind("|");
   if (last_sep != std::string::npos) {
     // Everything before last :: is the namespace path
     // Everything after last :: is the asset path
@@ -361,11 +361,11 @@ assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace
     size_t start = 0;
     size_t end = 0;
     
-    while ((end = namespace_id.find("::", start)) != std::string::npos) {
+    while ((end = namespace_id.find("|", start)) != std::string::npos) {
       if (end > start) {
         components.push_back(namespace_id.substr(start, end - start));
       }
-      start = end + 2; // Skip "::"
+      start = end + 2; // Skip "|"
     }
     
     // Add the last component
@@ -384,7 +384,7 @@ assetnamespace_ptr_t AssetCatalog::mergeNamespace(const namespaceid_t& namespace
       if (current_path.empty()) {
         current_path = component;
       } else {
-        current_path += "::" + component;
+        current_path += "|" + component;
       }
       
       // Check if this level already exists
