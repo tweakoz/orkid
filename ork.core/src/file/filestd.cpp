@@ -429,16 +429,10 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
   if (_wildcards == (file::Path::NameType) "")
     _wildcards = (file::Path::NameType) "*";
 
-  printf("[FILESPEC_DEBUG] wildcards: '%s'\n", wildcards.c_str());
-  printf("[FILESPEC_DEBUG] _wildcards: '%s'\n", _wildcards.c_str());
-  printf("[FILESPEC_DEBUG] initdir: '%s'\n", initdir.c_str());
-
   auto absolute_path = initdir.toAbsolute(ork::file::Path::EPATHTYPE_POSIX);
   const char* path = absolute_path.c_str();
   char* const paths[] = {(char* const)path, 0};
 
-  printf("[FILESPEC_DEBUG] absolute path: '%s'\n", path);
-  printf( "path<%s>\n", path );
 
   FTS* tree = fts_open(&paths[0], FTS_NOCHDIR, 0);
   if (!tree) {
@@ -454,18 +448,14 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
       fts_set(tree, node, FTS_SKIP);
     else if (node->fts_info & FTS_F) {
       file_count++;
-      printf("[FILESPEC_DEBUG] Found file: '%s'\n", node->fts_name);
 
       int match = wildcmp(_wildcards.c_str(), node->fts_name);
-      printf("[FILESPEC_DEBUG] wildcmp('%s', '%s') = %d\n", _wildcards.c_str(), node->fts_name, match);
       if (match) {
         file::Path::NameType fullname = node->fts_accpath;
         rval.push_back(fullname);
-        printf("[FILESPEC_DEBUG] Match! Added: '%s'\n", fullname.c_str());
       }
     }
   }
-  printf("[FILESPEC_DEBUG] Total files found: %d, matches: %zu\n", file_count, rval.size());
   if (errno) {
     perror("fts_read");
     OrkAssert(false);
