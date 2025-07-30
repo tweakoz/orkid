@@ -8,9 +8,8 @@
 #pragma once
 
 #include <ork/asset/AssetLoader.h>
-#include <ork/asset/catalog/asset_fetcher.h>
-#include <ork/asset/catalog/asset_config.h>
-#include <ork/asset/catalog/asset_manifest.h>
+#include <ork/asset/catalog/config.h>
+#include <ork/asset/catalog/manifest.h>
 
 namespace ork::asset {
 
@@ -29,9 +28,9 @@ struct NetAssetLoader : public AssetLoader {
   void reloadManifests();
   
 private:
-  catalog::assetfetcher_ptr_t _fetcher;
+//  catalog::assetfetcher_ptr_t _fetcher;
   catalog::assetconfig_ptr_t _config;
-  std::map<std::string, catalog::AssetManifest::AssetEntry> _manifest_cache;
+  std::map<std::string, catalog::assetentry_ptr_t> _manifest_cache;
   std::vector<file::Path> _manifest_dirs;
   
   // Cache management

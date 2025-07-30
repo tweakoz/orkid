@@ -19,6 +19,8 @@ exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
 
 
 cmd_list = ["lldb",
+            "-o", "command alias run process launch -X 0 --",
+            "-o", f"process launch -X 0 -- {' '.join(exe_args)}" if exe_args else "",
             "--",
             exe_path
            ]

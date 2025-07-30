@@ -20,7 +20,7 @@ namespace ork::asset {
 NetAssetLoader::NetAssetLoader() {
   // Initialize download manager if not provided
   auto dl_mgr = std::make_shared<DownloadManager>();
-  _fetcher = std::make_shared<catalog::AssetFetcher>(dl_mgr);
+  //_fetcher = std::make_shared<catalog::AssetFetcher>(dl_mgr);
   
   // Load manifest directories from environment
   std::string manifest_dirs_env;
@@ -46,14 +46,6 @@ NetAssetLoader::NetAssetLoader() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void NetAssetLoader::reloadManifests() {
-  if (!_manifest_dirs.empty()) {
-    _fetcher->setManifestDirectories(_manifest_dirs);
-  }
-  _fetcher->reload();
-  
-  // Cache the resolved assets
-  _manifest_cache = _fetcher->getAssets();
-  _config = std::make_shared<catalog::AssetConfig>(_fetcher->getConfig());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,19 +146,7 @@ asset_ptr_t NetAssetLoader::loadFromCache(const file::Path& cache_path, loadrequ
 ///////////////////////////////////////////////////////////////////////////////
 
 bool NetAssetLoader::fetchAsset(const std::string& asset_id, loadrequest_ptr_t loadreq) {
-  // Set up progress callback if provided
-  if (loadreq->_catalog_request && loadreq->_catalog_request->_progress_callback._item) {
-    _fetcher->_on_asset_progress._item = 
-      [loadreq, asset_id](const std::string& id, size_t down, size_t total) {
-        if (id == asset_id && loadreq->_catalog_request->_progress_callback._item) {
-          loadreq->_catalog_request->_progress_callback._item(down, total);
-        }
-      };
-  }
-  
-  // Fetch the asset
-  int fetched = _fetcher->fetchPak(asset_id);
-  return fetched > 0;
+  return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,66 +172,7 @@ void NetAssetLoader::waitForDownload(const std::string& asset_id) {
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t NetAssetLoader::load(loadrequest_ptr_t loadreq) {
-  if (!loadreq->isCatalogLoad()) {
-    printf("NetAssetLoader: LoadRequest is not a catalog load\n");
-    return nullptr;
-  }
-  
-  // Get the asset identifier
-  std::string asset_id = loadreq->getAssetIdentifier();
-  
-  // Check if asset exists in manifest
-  auto it = _manifest_cache.find(asset_id);
-  if (it == _manifest_cache.end()) {
-    printf("Asset not found in catalog: %s\n", asset_id.c_str());
-    return nullptr;
-  }
-  
-  const auto& asset_entry = it->second;
-  
-  // Determine cache path with proper extension
-  auto cache_base = getCachePath(asset_id);
-  auto cache_path = file::Path(cache_base.c_str() + asset_entry._filename);
-  
-  // Check cache first
-  if (cache_path.doesPathExist()) {
-    // Verify MD5 if requested
-    if (!asset_entry._md5.empty()) {
-      // TODO: Implement MD5 verification
-    }
-    
-    return loadFromCache(cache_path, loadreq);
-  }
-  
-  // Need to fetch from network
-  loadreq->incrementPartialLoadCount();
-  
-  if (loadreq->_on_load_complete) {
-    // Async path
-    _fetcher->_on_asset_complete._item = 
-      [this, loadreq, asset_id, cache_path](const std::string& id, bool success) {
-        if (id == asset_id && success) {
-          auto asset = loadFromCache(cache_path, loadreq);
-          if (asset) {
-            loadreq->_asset = asset;
-            loadreq->decrementPartialLoadCount();
-          }
-        }
-      };
-    
-    fetchAsset(asset_id, loadreq);
-    return nullptr; // Will complete asynchronously
-    
-  } else {
-    // Sync path
-    if (fetchAsset(asset_id, loadreq)) {
-      waitForDownload(asset_id);
-      auto asset = loadFromCache(cache_path, loadreq);
-      loadreq->decrementPartialLoadCount();
-      return asset;
-    }
-  }
-  
+
   return nullptr;
 }
 

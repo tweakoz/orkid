@@ -9,6 +9,11 @@
 #include <ork/kernel/opq.h>
 #include <ork/util/crc.h>
 #include <ork/util/xxhash.inl>
+#include <random>
+
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
+#include <lz4.h>
+#include <lz4hc.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -239,5 +244,140 @@ datablock_ptr_t DataBlock::clone() const {
   rval->_storage = _storage;
   return rval;
 }
+
+//////////////////////////////////////////////////////////////////////
+
+datablock_ptr_t DataBlock::compressed(int level) const {
+  if (_storage.empty()) {
+    // Even for empty data, create proper LZ4 format with header
+    auto output = std::make_shared<DataBlock>();
+    output->_name = _name + ".lz4";
+    output->addItem<uint32_t>(0x4C5A3434); // "LZ44"
+    output->addItem<uint64_t>(0); // uncompressed size = 0
+    // No compressed data to add
+    return output;
+  }
+
+  // Determine max compressed size
+  int max_compressed_size = LZ4_compressBound(_storage.size());
+  
+  // Create output datablock with header
+  auto output = std::make_shared<DataBlock>();
+  output->_name = _name + ".lz4";
+  
+  // Reserve space for: magic(4) + uncompressed_size(8) + compressed_data
+  output->reserve(4 + 8 + max_compressed_size);
+  
+  // Write magic number
+  output->addItem<uint32_t>(0x4C5A3434); // "LZ44"
+  
+  // Write uncompressed size
+  output->addItem<uint64_t>(_storage.size());
+  
+  // Allocate space for compressed data
+  uint8_t* compressed_buffer = static_cast<uint8_t*>(output->allocateBlock(max_compressed_size));
+  
+  // Compress
+  int compressed_size;
+  if (level > 0) {
+    // Use HC compression for higher levels
+    compressed_size = LZ4_compress_HC(
+      reinterpret_cast<const char*>(_storage.data()),
+      reinterpret_cast<char*>(compressed_buffer),
+      _storage.size(),
+      max_compressed_size,
+      level);
+  } else {
+    // Use fast compression
+    compressed_size = LZ4_compress_default(
+      reinterpret_cast<const char*>(_storage.data()),
+      reinterpret_cast<char*>(compressed_buffer),
+      _storage.size(),
+      max_compressed_size);
+  }
+  
+  if (compressed_size <= 0) {
+    throw std::runtime_error("LZ4 compression failed");
+  }
+  
+  // Trim to actual compressed size
+  output->_storage.resize(4 + 8 + compressed_size);
+  
+  return output;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+datablock_ptr_t DataBlock::decompressed() const {
+  if (_storage.size() < 12) { // magic(4) + size(8)
+    throw std::runtime_error("DataBlock too small to be LZ4 compressed");
+  }
+  
+  DataBlockInputStream stream(std::make_shared<const DataBlock>(*this));
+  
+  // Check magic number
+  uint32_t magic = stream.getItem<uint32_t>();
+  if (magic != 0x4C5A3434) { // "LZ44"
+    throw std::runtime_error("DataBlock does not have LZ4 magic header");
+  }
+  
+  // Read uncompressed size
+  uint64_t uncompressed_size = stream.getItem<uint64_t>();
+  
+  // Validate size
+  if (uncompressed_size > 1024 * 1024 * 1024) { // 1GB limit
+    throw std::runtime_error("Uncompressed size too large");
+  }
+  
+  // Create output datablock
+  auto output = std::make_shared<DataBlock>();
+  output->_name = _name;
+  if (output->_name.ends_with(".lz4")) {
+    output->_name = output->_name.substr(0, output->_name.length() - 4);
+  }
+  
+  // Handle empty data case
+  if (uncompressed_size == 0) {
+    return output; // Return empty datablock
+  }
+  
+  output->reserve(uncompressed_size);
+  
+  // Allocate decompression buffer
+  uint8_t* decompressed_buffer = static_cast<uint8_t*>(output->allocateBlock(uncompressed_size));
+  
+  // Decompress
+  const uint8_t* compressed_data = _storage.data() + 12; // skip header
+  size_t compressed_size = _storage.size() - 12;
+  
+  int decompressed_size = LZ4_decompress_safe(
+    reinterpret_cast<const char*>(compressed_data),
+    reinterpret_cast<char*>(decompressed_buffer),
+    compressed_size,
+    uncompressed_size);
+  
+  if (decompressed_size < 0 || static_cast<size_t>(decompressed_size) != uncompressed_size) {
+    throw std::runtime_error("LZ4 decompression failed or size mismatch");
+  }
+  
+  return output;
+}
+
+datablock_ptr_t DataBlock::createFromRandom(size_t length) {
+  auto block = std::make_shared<DataBlock>();
+  block->_name = "random_data";
+  block->_storage.resize(length);
+  
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0, 255);
+  for (size_t i = 0; i < length; ++i) {
+    block->_storage[i] = static_cast<uint8_t>(dis(gen));
+  }
+  
+  return block;
+}
+
+
 //////////////////////////////////////////////////////////////////////
 } // namespace ork

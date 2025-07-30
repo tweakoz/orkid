@@ -860,6 +860,31 @@ bool Path::isSymLink() const {
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0) ? bool(S_ISLNK(file_stat.st_mode)) : false;
 }
+///////////////////////////////////////////////////////////////////////////////
+bool Path::ensureDirectoryExists() const {
+  namespace bfs = boost::filesystem;
+  
+  try {
+    bfs::path bfs_path = toBFS();
+    
+    // If it already exists and is a directory, we're done
+    if (bfs::exists(bfs_path) && bfs::is_directory(bfs_path)) {
+      return true;
+    }
+    
+    // If it exists but is not a directory, we can't create it
+    if (bfs::exists(bfs_path) && !bfs::is_directory(bfs_path)) {
+      return false;
+    }
+    
+    // Create all directories in the path
+    return bfs::create_directories(bfs_path);
+  }
+  catch (const bfs::filesystem_error& ex) {
+    logchan_path->log("Failed to create directory '%s': %s", c_str(), ex.what());
+    return false;
+  }
+}
 
 Path::HashType Path::hashFileContents() const{
   if(not isFile()){

@@ -153,6 +153,18 @@ void pyinit_datablock(py::module& module_core) {
                          })
                          .def("hexdump", [](datablock_ptr_t db) -> std::string {
                            return ork::hexdumptostr(db->data(), db->length());
+                         })
+                         .def("encrypt", [](datablock_ptr_t db, encryptioncodec_ptr_t codec) -> datablock_ptr_t {
+                           return db->encrypt(codec);
+                         })
+                         .def("decrypt", [](datablock_ptr_t db, encryptioncodec_ptr_t codec) -> datablock_ptr_t {
+                           return db->decrypt(codec);
+                         })
+                         .def("compressed", [](datablock_ptr_t db, int level) -> datablock_ptr_t {
+                           return db->compressed(level);
+                         }, py::arg("level") = 0)
+                         .def("decompressed", [](datablock_ptr_t db) -> datablock_ptr_t {
+                           return db->decompressed();
                          });
   type_codec->registerStdCodec<datablock_ptr_t>(dblock_type);
   /////////////////////////////////////////////////////////////////////////////////

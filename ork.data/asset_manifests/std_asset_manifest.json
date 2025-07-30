@@ -1,4 +1,6 @@
 {
+  "id": "singularity",
+  "uuid": "12345678-1234-5678-9abc-123456789abc",
   "namespace": "singularity",
   "version": "1.0.0",
   "assets": {
@@ -6,11 +8,14 @@
       "type": "asset_pak",
       "priority": 100,
       "merge": true,
-      "dst_loc": "<shared>/singularity",
-      "src_loc": "<orkid_std>",
+      "local_loc": "<shared>/singularity",
+      "remote_loc": "<orkid_std>",
       "filename": "SINGUL_PAK_STD",
-      "md5": "43be06d16db50d01be0187c2c7bcf831",
-      "dependencies": {}
+      "storage_hash": "43be06d16db50d01be0187c2c7bcf831",
+      "hash_algorithm": "md5",
+      "use_cafs": false,
+      "platforms": ["mac", "linux", "win32"],
+      "dependencies": []
     }
   }
 }

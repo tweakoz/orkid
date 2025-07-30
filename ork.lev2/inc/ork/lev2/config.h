@@ -30,7 +30,7 @@
  #define ENABLE_PORTAUDIO 
  #define ENABLE_PIPEWIRE
  #define ENABLE_SSBO
- #define ENABLE_CUDA
+// #define ENABLE_CUDA
 #else 
 #define ENABLE_PORTAUDIO
 #define ENABLE_CORE_AUDIO

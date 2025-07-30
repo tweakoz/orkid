@@ -8,7 +8,7 @@
 #include "pyext.h"
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetLoader.h>
-#include <ork/asset/catalog/asset_manifest.h>
+#include <ork/asset/catalog/manifest.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {

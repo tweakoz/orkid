@@ -45,4 +45,37 @@ float Download::progressPercentage() const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+bool Download::shouldRetry() const {
+  if (_retry_count >= _max_retries) {
+    return false;
+  }
+  
+  // Only retry on network errors, not on HTTP errors like 404
+  if (_state == DownloadState::FAILED) {
+    // TODO: Check specific error types
+    return true;
+  }
+  
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int Download::getNextRetryDelay() const {
+  // Calculate exponential backoff
+  int delay = _retry_delay_ms;
+  for (int i = 0; i < _retry_count; ++i) {
+    delay = static_cast<int>(delay * _retry_backoff_multiplier);
+  }
+  
+  // Cap at max delay
+  if (delay > _max_retry_delay_ms) {
+    delay = _max_retry_delay_ms;
+  }
+  
+  return delay;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 } // namespace ork

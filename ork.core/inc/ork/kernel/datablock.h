@@ -14,6 +14,9 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/fixedstring.h>
 
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
+#include <lz4.h>
+
 namespace ork {
 
 struct DataBlock;
@@ -93,7 +96,12 @@ struct DataBlock {
   static datablock_ptr_t createFromPath(std::string path);
   /////////////////////////////////////////////
   datablock_ptr_t clone() const;
-
+  /////////////////////////////////////////////
+  datablock_ptr_t compressed(int level = 0) const;
+  /////////////////////////////////////////////
+  datablock_ptr_t decompressed() const;
+  /////////////////////////////////////////////
+  static datablock_ptr_t createFromRandom(size_t length);
   /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;

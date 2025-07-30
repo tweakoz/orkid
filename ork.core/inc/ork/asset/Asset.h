@@ -14,7 +14,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/file/path.h>
 #include <ork/kernel/datablock.h>
-#include <ork/asset/catalog/asset_manifest.h>
+#include <ork/asset/catalog/types.h>
 
 namespace ork::asset {
 

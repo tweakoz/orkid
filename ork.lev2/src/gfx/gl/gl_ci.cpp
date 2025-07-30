@@ -325,12 +325,21 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
   mapping->_mappedaddr = nullptr;
 }
 #endif
-///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_PYTORCH) and defined(ENABLE_CUDA)
-
+#if defined(ENABLE_PYTORCH) and defined(ENABLE_SSBO)
 FxShaderStorageBuffer* ComputeInterface::storageBufferFromTensor(torchtensor_ptr_t l2tensor) {
   return nullptr;
 }
+#endif
+#if defined(ENABLE_PYTORCH) and defined(ENABLE_SSBO) and ! defined(ENABLE_CUDA)
+void ComputeInterface::copyTensorIntoStorageBuffer(
+  FxShaderStorageBuffer* ssbo, 
+  torchtensor_ptr_t l2tensor,
+  size_t dest_offset ) {
+}
+#endif
+///////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_PYTORCH) and defined(ENABLE_CUDA)
+
 
 void ComputeInterface::copyTensorIntoStorageBuffer(
   FxShaderStorageBuffer* ssbo, 
@@ -446,7 +455,7 @@ void ComputeInterface::copyTensorIntoStorageBuffer(
     _stats_timer.Start();
   }
 }
-#endif
+#endif // #if defined(ENABLE_PYTORCH) and defined(ENABLE_CUDA)
 #if defined(ENABLE_SSBO)
 void ComputeInterface::copyBufferIntoStorageBuffer(FxShaderStorageBuffer* ssbo, 
                                                    std::vector<uint8_t> data, 

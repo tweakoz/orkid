@@ -40,6 +40,11 @@ using download_complete_fn_t = std::function<void(bool, const file::Path&)>;
 // Failure callback: (error_message) -> void
 using download_failure_fn_t = std::function<void(const std::string&)>;
 
+// Python-safe wrappers
+using pysafe_download_progress_fn_t = ItemAndData<download_progress_fn_t>;
+using pysafe_download_complete_fn_t = ItemAndData<download_complete_fn_t>;
+using pysafe_download_failure_fn_t = ItemAndData<download_failure_fn_t>;
+
 struct Download {
   //////////////////////////////////////////////////////////////////////////////
   // Public members
@@ -51,12 +56,26 @@ struct Download {
   std::map<std::string, std::string> _headers;
   
   //////////////////////////////////////////////////////////////////////////////
+  // Retry configuration
+  //////////////////////////////////////////////////////////////////////////////
+  int _max_retries = 3;                     // Maximum retry attempts
+  int _retry_delay_ms = 1000;               // Initial delay between retries
+  float _retry_backoff_multiplier = 2.0f;   // Exponential backoff multiplier
+  int _max_retry_delay_ms = 30000;          // Cap on retry delay (30 seconds)
+  
+  //////////////////////////////////////////////////////////////////////////////
   // State
   //////////////////////////////////////////////////////////////////////////////
   std::atomic<DownloadState> _state{DownloadState::PENDING};
   std::atomic<size_t> _downloaded_bytes{0};
   std::atomic<size_t> _total_bytes{0};
   std::string _error_message;
+  
+  //////////////////////////////////////////////////////////////////////////////
+  // Retry state (managed by DownloadManager)
+  //////////////////////////////////////////////////////////////////////////////
+  std::atomic<int> _retry_count{0};        // Current retry attempt
+  std::atomic<int> _next_retry_delay_ms{0}; // Next retry delay (for backoff)
   
   //////////////////////////////////////////////////////////////////////////////
   // Callbacks
@@ -81,6 +100,16 @@ struct Download {
   
   // Helper to get progress percentage
   float progressPercentage() const;
+  
+  // Check if should retry based on error and retry count
+  // Returns true if download should be retried
+  // Implementation considers:
+  // - Current retry count vs max_retries
+  // - Error type (network errors retry, others don't)
+  bool shouldRetry() const;
+  
+  // Calculate next retry delay with exponential backoff
+  int getNextRetryDelay() const;
 };
 
 } // namespace ork

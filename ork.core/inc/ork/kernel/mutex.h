@@ -168,6 +168,13 @@ public:
     UnLock();
     return rval;
   }
+  T atomicExchange(const T& with) const {
+    LockForWrite();
+    T rval = (*_resource);
+    (*_resource) = with;
+    UnLock();
+    return rval;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

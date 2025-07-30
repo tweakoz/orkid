@@ -1,13 +1,11 @@
 {
-  "namespace_keys": {
-    "singularity": "singularity_rulez"
+  "namespaces": {
+    "singularity": {
+      "encryption_key": "singularity_rulez",
+      "upload_location": "orkid_std"
+    }
   },
   "locations": {
     "orkid_std": "https://www.tweakoz.com/resources"
-  },
-  "destinations": {
-    "stage": "<stage>",
-    "shared": "<stage>/share",
-    "assetcache": "<stage>/assetcache"
   }
 }

@@ -429,10 +429,16 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
   if (_wildcards == (file::Path::NameType) "")
     _wildcards = (file::Path::NameType) "*";
 
-  const char* path    = initdir.toAbsolute(ork::file::Path::EPATHTYPE_POSIX).c_str();
+  printf("[FILESPEC_DEBUG] wildcards: '%s'\n", wildcards.c_str());
+  printf("[FILESPEC_DEBUG] _wildcards: '%s'\n", _wildcards.c_str());
+  printf("[FILESPEC_DEBUG] initdir: '%s'\n", initdir.c_str());
+
+  auto absolute_path = initdir.toAbsolute(ork::file::Path::EPATHTYPE_POSIX);
+  const char* path = absolute_path.c_str();
   char* const paths[] = {(char* const)path, 0};
 
-   printf( "path<%s>\n", path );
+  printf("[FILESPEC_DEBUG] absolute path: '%s'\n", path);
+  printf( "path<%s>\n", path );
 
   FTS* tree = fts_open(&paths[0], FTS_NOCHDIR, 0);
   if (!tree) {
@@ -442,30 +448,24 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
   }
 
   FTSENT* node;
+  int file_count = 0;
   while ((node = fts_read(tree))) {
     if (node->fts_level > 0 && node->fts_name[0] == '.')
       fts_set(tree, node, FTS_SKIP);
     else if (node->fts_info & FTS_F) {
+      file_count++;
+      printf("[FILESPEC_DEBUG] Found file: '%s'\n", node->fts_name);
 
       int match = wildcmp(_wildcards.c_str(), node->fts_name);
+      printf("[FILESPEC_DEBUG] wildcmp('%s', '%s') = %d\n", _wildcards.c_str(), node->fts_name, match);
       if (match) {
         file::Path::NameType fullname = node->fts_accpath;
         rval.push_back(fullname);
-        // orkprintf( "file found <%s>\n", fullname.c_str() );
+        printf("[FILESPEC_DEBUG] Match! Added: '%s'\n", fullname.c_str());
       }
-
-#if 0
-			printf("got file named %s at depth %d, "
-			"accessible via %s from the current directory "
-			"or via %s from the original starting directory\n",
-			node->fts_name, node->fts_level,
-			node->fts_accpath, node->fts_path);
-#endif
-
-      /* if fts_open is not given FTS_NOCHDIR,
-       * fts may change the program's current working directory */
     }
   }
+  printf("[FILESPEC_DEBUG] Total files found: %d, matches: %zu\n", file_count, rval.size());
   if (errno) {
     perror("fts_read");
     OrkAssert(false);

@@ -189,6 +189,18 @@ void pyinit_download(py::module& module_core) {
     .def("shutdown", &DownloadManager::shutdown)
     .def("is_active", &DownloadManager::isActive)
     .def("active_download_count", &DownloadManager::activeDownloadCount)
+    .def("remoteFileExists", 
+         [](downloadmanager_ptr_t mgr, const URL& url, py::dict headers, bool ignore_tls_errors) -> bool {
+           std::map<std::string, std::string> header_map;
+           for (auto item : headers) {
+             header_map[py::str(item.first)] = py::str(item.second);
+           }
+           return mgr->remoteFileExists(url, header_map, ignore_tls_errors);
+         },
+         py::arg("url"),
+         py::arg("headers") = py::dict(),
+         py::arg("ignore_tls_errors") = false,
+         "Check if a remote file exists using HEAD request")
     .def("__repr__", [](downloadmanager_ptr_t mgr) -> std::string {
       return FormatString("DownloadManager(max_concurrent=%zu, active=%zu)", 
         mgr->_max_concurrent_downloads, mgr->activeDownloadCount());

@@ -176,6 +176,9 @@ public:
   bool isFolder() const;
   bool isSymLink() const;
   HashType hashFileContents() const;
+  
+  // Directory creation
+  bool ensureDirectoryExists() const;
 
   //////////////////////////////////////
 

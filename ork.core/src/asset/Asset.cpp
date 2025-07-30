@@ -10,6 +10,7 @@
 
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetSetEntry.h>
+#include <ork/asset/catalog/catalog.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////

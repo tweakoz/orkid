@@ -61,11 +61,14 @@ int main(int argc, char** argv, char** envp) {
 
    // OrkAssert(false);
 
-  return test::harness(
+  int val = test::harness(
       init_data,
       "ork.core-unittests",
       [=](test::appvar_t& scoped_var) { //
         // instantiate a TestApplication on the harness's stack
         scoped_var.makeShared<TestApplication>(init_data);
       });
+
+      ::ork::exitModule(init_data);
+      return val;
 }

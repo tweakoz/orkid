@@ -1,4 +1,5 @@
 makefile
+.*
 *stag*
 .vscode
 *.blend1
@@ -35,6 +36,7 @@ workspace.mel
 ork.core/bin
 ork.data/*.mox
 ork.data/pc/*
+ork.data/_temp/*
 ork.ent/bin
 ork.lev2/bin
 ork.tool/bin

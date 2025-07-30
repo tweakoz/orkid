@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env ork.python
 ###############################################33
 # hash a string using orkengine's CrcString
 #  and return the hash

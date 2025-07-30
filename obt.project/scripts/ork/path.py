@@ -8,6 +8,8 @@ def _root():
 def __getattr__(name):
   if name == "root":
   	return _root()
+  elif name == "data":
+  	return _root()/"ork.data"
   elif name == "lev2":
   	return _root()/"ork.lev2"
   elif name == "lev2_pylib":
@@ -22,4 +24,6 @@ def __getattr__(name):
   	return obt_path.Path(os.environ["OBT_PYTHONHOME"])
   elif name == "assetcache":
   	return obt_path.stage()/"assetcache"
+  elif name == "cdntest":
+  	return obt_path.stage()/"cdntest"
   return None

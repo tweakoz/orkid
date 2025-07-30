@@ -618,10 +618,8 @@ struct ComputeInterface : public lev2::ComputeInterface {
   storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
   void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
-  #if defined(ENABLE_PYTORCH)
   FxShaderStorageBuffer* storageBufferFromTensor(torchtensor_ptr_t tensor) final;
   void copyTensorIntoStorageBuffer(FxShaderStorageBuffer* ssbo, torchtensor_ptr_t tensor, size_t dest_offset) final;
-  #endif
   #endif
 
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;

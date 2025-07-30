@@ -47,8 +47,13 @@ void pyinit_logger(py::module& module_core);
 void pyinit_ncui(py::module& module_core);
 void pyinit_opq(py::module& module_core);
 void pyinit_download(py::module& module_core);
+void pyinit_upload(py::module& module_core);
 namespace asset::catalog {
   void pyinit_asset_catalog(py::module& module_core);
+  void pyinit_asset_config(py::module& module_core);
+}
+namespace util::crypt {
+  void pyinit_crypt(py::module& module_core);
 }
 
 appinitdata_ptr_t gappinitdata = nullptr;
@@ -384,7 +389,10 @@ PYBIND11_MODULE(_core, module_core) {
   pyinit_logger(module_core);
   pyinit_opq(module_core);
   pyinit_download(module_core);
+  pyinit_upload(module_core);
+  ork::asset::catalog::pyinit_asset_config(module_core);
   ork::asset::catalog::pyinit_asset_catalog(module_core);
+  ork::util::crypt::pyinit_crypt(module_core);
   
   // Create ncui submodule
   auto ncui_module = module_core.def_submodule("ncui", "NotCurses UI Framework");
