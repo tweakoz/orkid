@@ -301,7 +301,7 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   // Handle TLS options
   ///////////////////////////////////////////////////////////
 
-  if (true) { //dl->_ignore_tls_errors) {
+  if (dl->_ignore_tls_errors) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
   } else {
