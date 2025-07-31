@@ -301,7 +301,7 @@ void DownloadManager::processDownload(download_ptr_t dl) {
   // Handle TLS options
   ///////////////////////////////////////////////////////////
 
-  if (dl->_ignore_tls_errors) {
+  if (true) { //dl->_ignore_tls_errors) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
   } else {
@@ -456,7 +456,7 @@ bool DownloadManager::remoteFileExists(const URL& url, const std::map<std::strin
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
   // TLS options
-  if (ignore_tls_errors) {
+  if (true) { //ignore_tls_errors) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
   }
