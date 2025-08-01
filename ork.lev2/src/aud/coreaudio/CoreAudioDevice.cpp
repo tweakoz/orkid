@@ -186,6 +186,8 @@ void CoreAudioDevice::startup() {
   }
 
   _aucontext = std::make_shared<AuContext>();
+  logchan_coreaudio->log("CoreAudioThread _input_impl<%p> _output_impl<%p>", (void*)_input_impl.get(), (void*)_output_impl.get());
+
   if (_input_impl or _output_impl) {
     _aucontext->Init(_input_impl, _output_impl);
     _aucontext->Start();
@@ -205,6 +207,7 @@ void CoreAudioDevice::startup() {
     }
 
     _au_thread->start([=](anyp data) { //
+        logchan_coreaudio->log("CoreAudioThread starting...");
       while (_aucontext->_keep_going) {
         //printf("CoreAudioThread running\n");
 
@@ -250,6 +253,13 @@ void CoreAudioDevice::startup() {
             }
             _input_handler(chunk.get());
           }
+
+          static int inp_counter = 0;
+            if((inp_counter%16)==0){
+              logchan_coreaudio->perfItem("INPCOUNTER<%d>", inp_counter);
+            }
+            inp_counter++;
+
         }
 
         /////////////////////////
@@ -300,9 +310,10 @@ void CoreAudioDevice::startup() {
           _the_synth->_cpuload = calculateCPULoad();
         static int counter = 0;
           if((counter%16)==0){
-            logchan_coreaudio->perfItem("SYNCPUTIM(ms)", elapsed_micros*0.001f);
-            logchan_coreaudio->perfItem("SYNCPU(%)", _the_synth->_cpuload*100.0);
+            logchan_coreaudio->perfItem("SYN.TIM(ms)", elapsed_micros*0.001f);
+            logchan_coreaudio->perfItem("SYN.CPU(%)", _the_synth->_cpuload*100.0);
           }
+          counter++;
         }
 
         /////////////////////////
