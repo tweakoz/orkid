@@ -19,7 +19,8 @@ class BundleCreator:
         self.temp_dir = path.temp() / "inplace_bundles"
         
     def create_bundle(self, executable_name, exec_args, bundle_name, 
-                     additional_env=None, icon_path=None, additional_capture_vars=None):
+                     additional_env=None, icon_path=None, additional_capture_vars=None,
+                     add_mic_entitlement=False):
         """
         Create a macOS app bundle.
         
@@ -30,6 +31,7 @@ class BundleCreator:
             additional_env: Dict of additional environment variables to include
             icon_path: Optional custom icon path (defaults to orkidlogo.icns)
             additional_capture_vars: List of additional env var names to capture
+            add_mic_entitlement: Boolean to add microphone access entitlement
         
         Returns:
             Path to created bundle on Desktop
@@ -105,8 +107,8 @@ class BundleCreator:
         self._create_info_plist(bundle_dir, bundle_name)
         
         # Copy to Desktop and sign
-        desktop_path = self._finalize_bundle(bundle_name)
-        
+        desktop_path = self._finalize_bundle(bundle_name, add_mic_entitlement)
+         
         return desktop_path
     
     def _capture_environment(self, additional_env=None, additional_capture_vars=None):
@@ -423,12 +425,20 @@ exit 0
             'LSUIElement': False,  # Show in Dock
             'NSHighResolutionCapable': True,
             'NSSupportsAutomaticTermination': False,
+            'NSMicrophoneUsageDescription': 'This app needs microphone access for audio processing',
         }
         
         with open(bundle_dir / "Info.plist", 'wb') as plist_file:
             plistlib.dump(info_plist, plist_file)
     
-    def _finalize_bundle(self, bundle_name):
+    def _create_entitlements_plist(self):
+        """Create entitlements.plist for microphone access."""
+        entitlements = {
+            'com.apple.security.device.audio-input': True
+        }
+        return entitlements
+    
+    def _finalize_bundle(self, bundle_name, add_mic_entitlement=False):
         """Copy bundle to Desktop and sign it."""
         bundle_path = self.temp_dir / f"{bundle_name}.app"
         desktop_path = Path.home() / "Desktop" / f"{bundle_name}.app"
@@ -442,9 +452,28 @@ exit 0
         # Ad-hoc sign the bundle
         print(deco.yellow("\n=== Signing Bundle ==="))
         sign_cmd = ["codesign", "--force", "--deep", "--sign", "-", str(desktop_path)]
+        
+        if add_mic_entitlement:
+            # Create temporary entitlements file
+            entitlements_path = self.temp_dir / "entitlements.plist"
+            entitlements = self._create_entitlements_plist()
+            with open(entitlements_path, 'wb') as f:
+                plistlib.dump(entitlements, f)
+            
+            sign_cmd = [
+                "codesign", "--force", "--deep", "--sign", "-",
+                "--entitlements", str(entitlements_path),
+                str(desktop_path)
+            ]
+            print("Adding microphone entitlement...")
+        else:
+            sign_cmd = ["codesign", "--force", "--deep", "--sign", "-", str(desktop_path)]
+        
         sign_result = subprocess.run(sign_cmd, capture_output=True, text=True)
         if sign_result.returncode == 0:
             print("Bundle signed successfully (ad-hoc)")
+            if add_mic_entitlement:
+                print("✓ Microphone entitlement added")
         else:
             print(f"Warning: Could not sign bundle: {sign_result.stderr}")
         
