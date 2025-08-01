@@ -118,6 +118,7 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
   auto unlocked_appinitdata = _appinitdata.lock();
 
   if( unlocked_appinitdata->_enable_audio_input ) {
+    logchan_coreaudio->log("looking for Input: <%s>", unlocked_appinitdata->_audio_input_devname.c_str());
     for (const auto& input : _inputDevList.GetMap()) {
       auto info   = input.second;
       auto format = info->_format;
@@ -135,12 +136,13 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
     }
   }
   if( unlocked_appinitdata->_enable_audio_output ) {
+    logchan_coreaudio->log("looking for Output: <%s>", unlocked_appinitdata->_audio_output_devname.c_str());
     for (const auto& output : _outputDevList.GetMap()) {
       auto info   = output.second;
       auto format = info->_format;
       logchan_coreaudio->log("output id<%d> name<%s> numch<%d>", info->_ID, output.first.c_str(), info->countChannels());
       CAStreamBasicDescription::Print(format);
-      if (output.first == _appinitdata.lock()->_audio_output_devname) {
+      if (output.first == unlocked_appinitdata->_audio_output_devname) {
         //_inp_dev_name = input.first;
         //_num_input_channels = info->countChannels();
         logchan_coreaudio->log("FOUND OUTPUT DEVICE !!!!! name<%s> numch<%d>", output.first.c_str(), info->countChannels());
@@ -154,7 +156,9 @@ CoreAudioDevice::CoreAudioDevice(appinitdata_wkptr_t appinitd)
 
 void CoreAudioDevice::startup() {
 
-  auto unlocked_appinitdata = _appinitdata.lock();
+  logchan_coreaudio->log("CoreAudioDevice::startup");
+
+    auto unlocked_appinitdata = _appinitdata.lock();
 
   constexpr double desired_sample_rate = 48000.0;
   constexpr int inumfr                = desired_framesize;
@@ -181,6 +185,7 @@ void CoreAudioDevice::startup() {
   }
 
   if (unlocked_appinitdata->_enable_audio_synth) {
+  logchan_coreaudio->log("synth is enabled, initializing...");
     _the_synth = synth::instance();
     _the_synth->setSampleRate(desired_sample_rate);
   }
