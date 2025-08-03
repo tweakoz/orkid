@@ -14,10 +14,10 @@ COUNT = args['count']
 core.coreappinit()
 
 if is_server:
-  chanA_sendr = core.ipcq.Sender()
-  chanA_sendr.create("SHM_TESTA")
-  chanB_sendr = core.ipcq.Sender()
-  chanB_sendr.create("SHM_TESTB")
+  # Wait a bit for receiver to create the shared memory
+  time.sleep(0.5)
+  chanA_sendr = core.ipcq.Sender("SHM_TESTA")
+  chanB_sendr = core.ipcq.Sender("SHM_TESTB")
   thr_a1 = Thread(target=lambda: chanA_sendr.benchSendPerformance(COUNT) )
   thr_b1 = Thread(target=lambda: chanB_sendr.benchSendPerformance(COUNT) )
   thr_a1.start()
@@ -30,10 +30,8 @@ if is_server:
   print( "dblock: ", dblock, dblock.hexdump() )
   chanA_sendr.sendDataBlock(dblock)
 else:
-  chanA_recvr = core.ipcq.Receiver()
-  chanA_recvr.connect("SHM_TESTA")
-  chanB_recvr = core.ipcq.Receiver()
-  chanB_recvr.connect("SHM_TESTB")
+  chanA_recvr = core.ipcq.Receiver("SHM_TESTA")
+  chanB_recvr = core.ipcq.Receiver("SHM_TESTB")
   thr_a2 = Thread(target=lambda: chanA_recvr.benchReceivePerformance(COUNT) )
   thr_b2 = Thread(target=lambda: chanB_recvr.benchReceivePerformance(COUNT) )
   thr_a2.start()

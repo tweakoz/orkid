@@ -12,6 +12,7 @@
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
+#include <ork/util/shmobject.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication {
@@ -401,6 +402,25 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto l2pedir = py::cast(_lev2pyexdir());
   module_core.attr("lev2_pyexdir") = l2pedir;
+  /////////////////////////////////////////////////////////////////////////////////
+  // Shared memory utilities
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("list_shmobjects", 
+    [](const std::string& pattern) { 
+      return listShmObjects(pattern); 
+    },
+    py::arg("pattern") = "ork\\.shm\\..*",
+    "List shared memory segments matching a regex pattern");
+    
+  module_core.def("remove_shmobject", 
+    &removeShmObject,
+    py::arg("name"),
+    "Remove a shared memory segment by name");
+    
+  module_core.def("cleanup_orkid_shmobjects", 
+    &cleanupOrkidShmObjects,
+    py::arg("verbose") = true,
+    "Clean up all Orkid shared memory segments (returns number removed)");
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {
 

@@ -8,6 +8,10 @@ def _root():
 def __getattr__(name):
   if name == "root":
   	return _root()
+  if name == "project":
+  	return _root()/"obt.project"
+  if name == "scripts":
+  	return _root()/"obt.project"/"scripts"
   elif name == "data":
   	return _root()/"ork.data"
   elif name == "lev2":
