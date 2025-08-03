@@ -13,7 +13,7 @@ try:
     from orkengine.core import (
         list_shmobjects,
         remove_shmobject,
-        cleanup_orkid_shmobjects
+        cleanup_shmobjects
     )
 except ImportError:
     print("Error: Could not import orkengine.core")
@@ -43,7 +43,7 @@ def cleanup_segments(verbose=True):
     print("Orkid Shared Memory Cleanup")
     print("=" * 60)
     
-    removed = cleanup_orkid_shmobjects(verbose)
+    removed = cleanup_shmobjects(verbose)
     
     if removed > 0:
         print(f"\n✅ Successfully cleaned up {removed} segment(s)")

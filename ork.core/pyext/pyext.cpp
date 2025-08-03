@@ -417,7 +417,7 @@ PYBIND11_MODULE(_core, module_core) {
     py::arg("name"),
     "Remove a shared memory segment by name");
     
-  module_core.def("cleanup_orkid_shmobjects", 
+  module_core.def("cleanup_shmobjects", 
     &cleanupOrkidShmObjects,
     py::arg("verbose") = true,
     "Clean up all Orkid shared memory segments (returns number removed)");
