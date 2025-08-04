@@ -121,7 +121,8 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def_property(
               "listener_matrix", //
               [](synth_ptr_t synth) -> fmtx4 { return synth->_listener_matrix; },
-              [](synth_ptr_t synth, fmtx4 pos) { synth->_listener_matrix = pos; });
+              [](synth_ptr_t synth, fmtx4 pos) { synth->_listener_matrix = pos; //
+                                                 synth->_inv_listener_matrix = pos.inverse(); });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst")

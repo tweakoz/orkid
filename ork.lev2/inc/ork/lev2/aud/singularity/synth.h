@@ -241,6 +241,7 @@ struct synth {
   float _cpuload                = 0.0f;
   float _velcurvepower          = 0.5f;
   fmtx4 _listener_matrix;
+  fmtx4 _inv_listener_matrix;
 
   outbus_ptr_t _curprogrambus;
 
