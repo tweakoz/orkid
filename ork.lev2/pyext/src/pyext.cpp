@@ -133,7 +133,11 @@ void lev2apppoll() {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+void lev2appshutdown() { // TODO fixme
+  exit(0);
+}
+
+  ////////////////////////////////////////////////////////////////////////////////
 
 static file::Path lev2exdir() {
   std::string base;
@@ -155,6 +159,8 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   module_lev2.def("lev2appinit", &lev2appinit);
   module_lev2.def("lev2apppoll", &lev2apppoll);
   module_lev2.def("lev2exdir", &lev2exdir);
+  module_lev2.def("shutdownApp", &lev2appshutdown);
+  
   //////////////////////////////////////////////////////////////////////////////
   pyinit_aud_device(module_lev2);
   pyinit_ui(module_lev2);

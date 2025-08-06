@@ -134,7 +134,7 @@ void Timer::staticInit() {
 ///////////////////////////////////////////////////////////////////////////////
 
 float Timer::get_sync_time() {
-	auto gimpl = Timer::_gimpl.getShared<TimerGlobalImpl>();
+	static auto gimpl = Timer::_gimpl.getShared<TimerGlobalImpl>();
 	////////////////////////////////
 	#if defined(ORK_OSX)
 	////////////////////////////////
