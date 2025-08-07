@@ -341,7 +341,7 @@ void CtxGLFW::Show() {
     glfwWindowHint(
         GLFW_COCOA_RETINA_FRAMEBUFFER, //
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
-#endif
+    #endif
 
     if (_appinitdata->_fullscreen) {
 
@@ -350,6 +350,7 @@ void CtxGLFW::Show() {
 
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
+      logchan_glfw->log("desired_monitor_name<%s> ", desired_monitor_name.c_str());
 
       if (desired_monitor_name != "none") {
         for (int i = 0; i < monitor_count; i++) {
@@ -357,7 +358,7 @@ void CtxGLFW::Show() {
           const char* monitorName = glfwGetMonitorName(monitor);
           if (desired_monitor_name == std::string(monitorName)) {
             fullscreen_monitor = monitor;
-            logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
+            logchan_glfw->log("1: USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
           }
         }
       } else { // by position
@@ -368,7 +369,6 @@ void CtxGLFW::Show() {
           int mon_x               = 0;
           int mon_y               = 0;
           glfwGetMonitorPos(monitor, &mon_x, &mon_y);
-          printf("monitor<%d> %s mon_x<%d> mon_y<%d>\n", i, monitorName, mon_x, mon_y);
 
           /////////////////////////////////
           // select monitor whose left edge is the closest to the appinitdata's left
@@ -376,10 +376,12 @@ void CtxGLFW::Show() {
 
           int d = abs(mon_x - l);
 
+          logchan_glfw->log("diffmode: monitor<%d> %s mon_x<%d> mon_y<%d> dist<%d> idiff<%d>\n", i, monitorName, mon_x, mon_y, d, idiff);
+
           if (d < idiff) {
             fullscreen_monitor = monitor;
             idiff              = d;
-            logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
+            logchan_glfw->log("2: USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
           }
 
           /////////////////////////////////
@@ -398,6 +400,7 @@ void CtxGLFW::Show() {
 
       _width  = mode->width * contentScaleX;
       _height = mode->height * contentScaleY;
+      logchan_glfw->log("USING GLFW 'windowed fullscreen' ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
