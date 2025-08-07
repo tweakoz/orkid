@@ -429,7 +429,7 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
       glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-      glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+      glfwWindowHint(GLFW_FLOATING, GLFW_TRUE); // Changed from TRUE to avoid positioning issues
       glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
       glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
       glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
@@ -543,6 +543,17 @@ void CtxGLFW::Show() {
   }
   if (not _appinitdata->_offscreen) {
     glfwShowWindow(_glfwWindow);
+    
+    // Re-apply position after window is shown for fullscreen mode
+    if (_appinitdata->_fullscreen) {
+      glfwSetWindowPos(
+        _glfwWindow,
+        _appinitdata->_left,
+        _appinitdata->_top);
+      logchan_glfw->log("Re-positioning window after show to: x<%d> y<%d>", 
+        _appinitdata->_left, 
+        _appinitdata->_top);
+    }
   }
   _appinitdata->_width  = (_appinitdata->_width * _contentScaleX);
   _appinitdata->_height = (_appinitdata->_height * _contentScaleY);
