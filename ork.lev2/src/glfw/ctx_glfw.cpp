@@ -352,6 +352,16 @@ void CtxGLFW::Show() {
       auto monitors     = glfwGetMonitors(&monitor_count);
       logchan_glfw->log("desired_monitor_name<%s> ", desired_monitor_name.c_str());
 
+      for (int i = 0; i < monitor_count; i++) {
+        GLFWmonitor* monitor    = monitors[i];
+          int mon_x               = 0;
+          int mon_y               = 0;
+          glfwGetMonitorPos(monitor, &mon_x, &mon_y);
+          const char* monitorName = glfwGetMonitorName(monitor);
+          logchan_glfw->log("have monitor<%d:%s> monx<%d> mony<%d>", i, monitorName, mon_x, mon_y);
+      }
+
+
       if (desired_monitor_name != "none") {
         for (int i = 0; i < monitor_count; i++) {
           GLFWmonitor* monitor    = monitors[i];
