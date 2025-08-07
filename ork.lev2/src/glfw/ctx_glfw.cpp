@@ -402,7 +402,10 @@ void CtxGLFW::Show() {
       // technically "windowed fullscreen"
       //////////////////////////////////////
       const GLFWvidmode* mode = glfwGetVideoMode(fullscreen_monitor);
-
+      const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
+      if(monitorName==nullptr){
+        monitorName = "";
+      }
       float contentScaleX = 1.0f;
       float contentScaleY = 1.0f;
       // fetch content scale
@@ -410,7 +413,7 @@ void CtxGLFW::Show() {
 
       _width  = mode->width * contentScaleX;
       _height = mode->height * contentScaleY;
-      logchan_glfw->log("USING GLFW 'windowed fullscreen' ", int(mode->refreshRate));
+      logchan_glfw->log("USING GLFW 'windowed fullscreen on monitor<%s>' ", monitorName);
       logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
       logchan_glfw->log("USING GLFW _width<%d> ", _width);
       logchan_glfw->log("USING GLFW _height<%d> ", _height);
@@ -430,6 +433,16 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
       glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
       glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+
+      // set window position to the top left corner of the monitor here
+      //  goal is to have the window cover the entire monitor (without fullscreen actually active)
+      int mon_x = 0;
+      int mon_y = 0;
+      glfwGetMonitorPos(selected_monitor, &mon_x, &mon_y);
+      _appinitdata->_left = mon_x;  // Use directly - already in screen coordinates
+      _appinitdata->_top = mon_y;   // Use directly - already in screen coordinates
+      logchan_glfw->log("Setting window position to monitor position: x<%d> y<%d>", mon_x, mon_y);
+
 
       this->onResize(_width, _height);
       fullscreen_monitor = nullptr; // disable actual fullscreen
